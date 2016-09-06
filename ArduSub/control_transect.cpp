@@ -21,10 +21,6 @@ namespace {
 	// Heading PID controller update interval
 	uint32_t last_pid_ms = 0;
 	uint8_t pid_dt = 1000/20;
-
-	// Desired heading, as requested by pilot
-	uint32_t last_pilot_heading = 0;
-	uint32_t last_pilot_yaw_ms = 0;
 }
 
 // Initialize transect controller
@@ -172,11 +168,11 @@ void Sub::transect_run()
 	if(!is_zero(target_yaw_rate)) {
 		// Allow pilot to set approximate heading to maintain during transect
 		last_pilot_heading = ahrs.yaw_sensor;
-		last_pilot_yaw_ms = tnow;
+		last_pilot_yaw_input_ms = tnow;
 
 	} else {
 		// Set target heading after we have slowed to a stop after pilot input
-		if(tnow < last_pilot_yaw_ms + 250) {
+		if(tnow < last_pilot_yaw_input_ms + 250) {
 			target_yaw_rate = 0;
 			last_pilot_heading = ahrs.yaw_sensor;
 		} else {
@@ -212,8 +208,23 @@ void Sub::transect_run()
 		target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
 	}
 
-	// update altitude target and call position controller
-	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+	// call z axis position controller
+	if(ap.at_bottom) {
+		pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
+		pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+	} else {
+		if(inertial_nav.get_altitude() < g.surface_depth) { // pilot allowed to move up or down freely
+			pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+		} else if(target_climb_rate < 0) { // pilot allowed to move only down freely
+			if(pos_control.get_vel_target_z() > 0) {
+				pos_control.relax_alt_hold_controllers(0); // reset target velocity and acceleration
+			}
+			pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+		} else if(pos_control.get_alt_target() > g.surface_depth) { // hold depth at surface level.
+			pos_control.set_alt_target(g.surface_depth);
+		}
+	}
+
 	pos_control.update_z_controller();
 
 	if(tnow > last_sport_message_ms + 200) {

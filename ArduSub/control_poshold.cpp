@@ -133,8 +133,23 @@ void Sub::poshold_run()
 		target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
 	}
 
-	// update altitude target and call position controller
-	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+	// call z axis position controller
+	if(ap.at_bottom) {
+		pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
+		pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+	} else {
+		if(inertial_nav.get_altitude() < g.surface_depth) { // pilot allowed to move up or down freely
+			pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+		} else if(target_climb_rate < 0) { // pilot allowed to move only down freely
+			if(pos_control.get_vel_target_z() > 0) {
+				pos_control.relax_alt_hold_controllers(0); // reset target velocity and acceleration
+			}
+			pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+		} else if(pos_control.get_alt_target() > g.surface_depth) { // hold depth at surface level.
+			pos_control.set_alt_target(g.surface_depth);
+		}
+	}
+
 	pos_control.update_z_controller();
 }
 #endif  // POSHOLD_ENABLED == ENABLED
