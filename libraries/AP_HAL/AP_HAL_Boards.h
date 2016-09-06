@@ -271,7 +271,7 @@
 #define HAL_FLOW_PX4_BOTTOM_FLOW_VALUE_THRESHOLD 5000
 #define HAL_RCOUT_DISCO_BLDC_I2C_BUS 1
 #define HAL_RCOUT_DISCO_BLDC_I2C_ADDR 0x08
-#define HAL_PARAM_DEFAULTS_PATH "/etc/arducopter/bebop.parm"
+#define HAL_PARAM_DEFAULTS_PATH "/etc/arduplane/disco.parm"
 /* focal length 3.6 um, 2x binning in each direction
  * 240x240 crop rescaled to 64x64 */
 #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.5 / (3.6 * 2.0 * 240 / 64))
