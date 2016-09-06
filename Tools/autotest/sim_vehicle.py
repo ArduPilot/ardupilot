@@ -220,9 +220,12 @@ def find_root_dir():
 progress("Start")
 
 # define and run parser
-parser = CompatOptionParser("sim_vehicle.py", epilog="""
-    eeprom.bin in the starting directory contains the parameters for your simulated vehicle. Always start from the same directory. It is recommended that you start in the main vehicle directory for the vehicle you are simulating, for example, start in the ArduPlane directory to simulate ArduPlane
-""")
+parser = CompatOptionParser("sim_vehicle.py",
+        epilog="eeprom.bin in the starting directory contains the parameters for your " \
+               "simulated vehicle. Always start from the same directory. It is "\
+               "recommended that you start in the main vehicle directory for the vehicle" \
+               "you are simulating, for example, start in the ArduPlane directory to " \
+               "simulate ArduPlane")
 
 parser.add_option("-v", "--vehicle", type='string', default=None, help="vehicle type (ArduPlane, ArduCopter or APMrover2)")
 parser.add_option("-f", "--frame", type='string', default=None, help="""set aircraft frame type
