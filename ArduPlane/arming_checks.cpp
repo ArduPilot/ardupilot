@@ -83,6 +83,15 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
         ret = false;
     }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    if (plane.last_mixer_crc == -1) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: Mixer not okay");
+        }
+        ret = false;
+    }
+#endif // CONFIG_HAL_BOARD
+
     return ret;
 }
 
