@@ -388,7 +388,13 @@ class DataflashLogHelper:
         if logdata.vehicleType == VehicleType.Copter:
             throttleThreshold = 200 # copter uses 0-1000, plane+rover use 0-100
         if "CTUN" in logdata.channels:
-            maxThrottle = logdata.channels["CTUN"]["ThrOut"].max()
+            try:
+                maxThrottle = logdata.channels["CTUN"]["ThrOut"].max()
+            except KeyError as e:
+                # ThrOut was shorted to ThO at some stage...
+                maxThrottle = logdata.channels["CTUN"]["ThO"].max()
+                # at roughly the same time ThO became a range from 0 to 1
+                throttleThreshold = 0.2
             if maxThrottle < throttleThreshold:
                 return "Throttle never above 20%"
         return None
