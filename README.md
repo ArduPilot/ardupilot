@@ -106,3 +106,5 @@
 >>   - ***Administration***: Dronecode Technical Community Manager
 >> - [Tom Pittenger] (https://github.com/magicrub)
 >>   - ***Vehicle***: Plane
+>> - [Hiroshi Takey] (https://github.com/hiro2233)
+>>   - ***Board***: APM 2.x
