@@ -1173,8 +1173,9 @@ uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
     core[primary].getEulerAngles(eulers_primary);
     if (primary != yaw_step_data.prev_instance) {
         // the delta is the difference between the current and previous yaw
-        // This overwrites any yaw reset value recorded from an internal eff reset
-        yaw_step_data.yaw_delta += wrap_PI(eulers_primary.z - yaw_step_data.prev_yaw);
+        // This overwrites any yaw reset value recorded from an internal ekf reset
+        // that has occured on the same time-step
+        yaw_step_data.yaw_delta = wrap_PI(eulers_primary.z - yaw_step_data.prev_yaw);
 
         // record the time of the yaw reset event
         yaw_step_data.yaw_reset_time_ms = imuSampleTime_us/1000;
