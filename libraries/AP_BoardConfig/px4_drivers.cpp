@@ -51,6 +51,7 @@ extern "C" {
     int mb12xx_main(int, char **);
     int pwm_input_main(int, char **);
     int uavcan_main(int, char **);
+    int fmu_main(int, char **);
 };
 
 
@@ -468,6 +469,17 @@ void AP_BoardConfig::px4_start_fmuv4_sensors(void)
  */
 void AP_BoardConfig::px4_start_common_sensors(void)
 {
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+    /*
+      this works around an issue with some FMUv4 hardware (eg. copies
+      of the Pixracer) which have incorrect components leading to
+      sensor brownout on boot
+     */
+    if (px4_start_driver(fmu_main, "fmu", "sensor_reset 20")) {
+        printf("FMUv4 sensor reset complete\n");        
+    }
+#endif
+
     if (px4_start_driver(ms5611_main, "ms5611", "start")) {
         printf("ms5611 started OK\n");
     } else {
