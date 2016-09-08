@@ -162,7 +162,7 @@ def pexpect_drain(p):
     import pexpect
     try:
         p.read_nonblocking(1000, timeout=0)
-    except pexpect.TIMEOUT:
+    except Exception:
         pass
 
 
