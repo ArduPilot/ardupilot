@@ -939,7 +939,7 @@ void Tracker::gcs_update(void)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
-            gcs[i].update(NULL);
+            gcs[i].update(nullptr);
         }
     }
 }

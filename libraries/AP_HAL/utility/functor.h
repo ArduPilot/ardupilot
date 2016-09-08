@@ -42,6 +42,13 @@ public:
     {
     }
 
+    // construct from a free function
+    constexpr Functor( RetType(* pfn)(Args...) )
+        : _obj{reinterpret_cast<void*>(pfn)}
+        , _method{free_wrapper}
+    {
+    }
+
     // Allow to construct an empty Functor
     constexpr Functor(decltype(nullptr))
         : Functor(nullptr, nullptr) { }
@@ -74,6 +81,11 @@ public:
         return { obj, method_wrapper<T, method> };
     }
 
+    static constexpr Functor bind(RetType(*pfn)(Args...))
+    {
+        return {pfn};
+    }
+
 private:
     void *_obj;
     RetType (*_method)(void *obj, Args...);
@@ -83,5 +95,11 @@ private:
     {
         T *t = static_cast<T*>(obj);
         return (t->*method)(args...);
+    }
+
+    static RetType free_wrapper(void * obj, Args... args)
+    {
+        RetType(*pfn)(Args... ) = reinterpret_cast<RetType(*)(Args...)>(obj);
+        return pfn(args...);
     }
 };
