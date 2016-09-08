@@ -25,6 +25,7 @@
 #include "AP_RangeFinder_LightWareSerial.h"
 #include "AP_RangeFinder_Bebop.h"
 #include "AP_RangeFinder_MAVLink.h"
+#include "AP_RangeFinder_LeddarOne.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -536,6 +537,13 @@ void RangeFinder::detect_instance(uint8_t instance)
             drivers[instance] = new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager);
             return;
         }
+    }
+    if (type == RangeFinder_TYPE_LEDDARONE) {
+    	if (AP_RangeFinder_LeddarOne::detect(*this, instance, serial_manager)) {
+    		state[instance].instance = instance;
+    		drivers[instance] = new AP_RangeFinder_LeddarOne(*this, instance, state[instance], serial_manager);
+    		return;
+    	}
     }
 #if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
