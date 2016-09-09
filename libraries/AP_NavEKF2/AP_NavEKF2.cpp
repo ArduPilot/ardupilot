@@ -485,6 +485,14 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: %
     AP_GROUPINFO("RNG_USE_HGT", 42, NavEKF2, _useRngSwHgt, -1),
 
+    // @Param: TERR_GRAD
+    // @DisplayName: Maximum terrain gradient
+    // @Description: Specifies the maxium gradient of the terrain below the vehicle when it is using range finder as a height reference
+    // @Range: 0 0.2
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("TERR_GRAD", 43, NavEKF2, _terrGradMax, 0.1f),
+
     AP_GROUPEND
 };
 

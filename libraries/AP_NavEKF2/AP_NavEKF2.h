@@ -340,6 +340,7 @@ private:
     AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
     AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
     AP_Int8 _useRngSwHgt;           // Maximum valid range of the range finder in metres
+    AP_Float _terrGradMax;          // Maximum terrain gradient below the vehicle
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
