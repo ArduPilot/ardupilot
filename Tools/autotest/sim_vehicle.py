@@ -269,6 +269,7 @@ group = optparse.OptionGroup(parser, "Compatibility MAVProxy options (consider u
 group.add_option("", "--out", default=[], type='string', action="append", help="create an additional mavlink output")
 group.add_option("", "--map", default=False, action='store_true', help="load map module on startup")
 group.add_option("", "--console", default=False, action='store_true', help="load console module on startup")
+group.add_option("", "--aircraft", default=None, help="store state and logs in named directory")
 parser.add_option_group(group)
 
 cmd_opts, cmd_args = parser.parse_args()
@@ -770,6 +771,8 @@ def start_mavproxy(opts, stuff):
         cmd.append('--map')
     if opts.console:
         cmd.append('--console')
+    if opts.aircraft is not None:
+        cmd.extend(['--aircraft', opts.aircraft])
 
     if len(extra_cmd):
         cmd.extend(['--cmd', extra_cmd])
