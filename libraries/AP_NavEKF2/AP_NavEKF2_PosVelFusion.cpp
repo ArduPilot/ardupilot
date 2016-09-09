@@ -719,6 +719,8 @@ void NavEKF2_core::selectHeightForFusion()
             fuseHgtData = true;
             // set the observation noise
             posDownObsNoise = sq(constrain_float(frontend->_rngNoise, 0.1f, 10.0f));
+            // add uncertainty created by terrain gradient and vehicle tilt
+            posDownObsNoise += sq(rangeDataDelayed.rng * frontend->_terrGradMax) * MAX(0.0f , (1.0f - sq(prevTnb.c.z)));
         } else {
             // disable fusion if tilted too far
             fuseHgtData = false;
