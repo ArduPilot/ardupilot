@@ -158,7 +158,7 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler<Copter> scheduler = AP_Scheduler<Copter>(this, 400);
 
     // AP_Notify instance
     AP_Notify notify;
@@ -631,7 +631,7 @@ private:
         float takeoff_alt_cm;
     } gndeffect_state;
 
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static const AP_Task<Copter> scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
