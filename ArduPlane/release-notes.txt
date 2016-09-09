@@ -1,5 +1,5 @@
-Release 3.7.0, xxth September 2016
-----------------------------------
+Release 3.7.0, 9th September 2016
+---------------------------------
 
 The ArduPilot development team is proud to announce the release of
 version 3.7.0 of APM:Plane. This is a major update so please read the
