@@ -112,7 +112,7 @@ private:
     Parameters g;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler<Rover> scheduler = AP_Scheduler<Rover>(this);
 
     // mapping between input channels
     RCMapper rcmap;
@@ -346,7 +346,7 @@ private:
     // set if we are driving backwards
     bool in_reverse;
 
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static const AP_Task<Rover> scheduler_tasks[];
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
