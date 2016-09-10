@@ -102,7 +102,7 @@ void Plane::init_ardupilot()
     set_control_channels();
     init_rc_out_main();
     
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAVE_PX4_MIXER
     if (!quadplane.enable) {
         // this must be before BoardConfig.init() so if
         // BRD_SAFETYENABLE==0 then we don't have safety off yet. For

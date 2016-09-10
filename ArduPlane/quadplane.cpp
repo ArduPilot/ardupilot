@@ -462,7 +462,7 @@ bool QuadPlane::setup(void)
         }
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAVE_PX4_MIXER
     // redo failsafe mixing on px4
     plane.setup_failsafe_mixing();
 #endif
