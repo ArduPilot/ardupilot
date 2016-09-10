@@ -54,6 +54,7 @@ private:
         uint16_t ground_distance;
         int16_t gyro_temperature;
         uint8_t qual;
+        uint8_t padding_not_used;
     } i2c_integral_frame;
 
     typedef struct {
