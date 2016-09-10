@@ -12,7 +12,7 @@
   that include flaps, landing gear, ignition cut etc
  */
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAVE_PX4_MIXER
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

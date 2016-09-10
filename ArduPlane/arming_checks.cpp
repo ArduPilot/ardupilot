@@ -83,7 +83,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
         ret = false;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAVE_PX4_MIXER
     if (plane.last_mixer_crc == -1) {
         if (report) {
             // if you ever get this error, a reboot is recommended.

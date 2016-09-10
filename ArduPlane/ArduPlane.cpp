@@ -308,7 +308,7 @@ void Plane::one_second_loop()
     // make it possible to change control channel ordering at runtime
     set_control_channels();
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAVE_PX4_MIXER
     if (!hal.util->get_soft_armed() && (last_mixer_crc == -1)) {
         // if disarmed try to configure the mixer
         setup_failsafe_mixing();
