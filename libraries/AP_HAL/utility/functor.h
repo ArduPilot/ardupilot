@@ -36,18 +36,6 @@ template <class RetType, class... Args>
 class Functor
 {
 public:
-    constexpr Functor(void *obj, RetType (*method)(void *obj, Args...))
-        : _obj(obj)
-        , _method(method)
-    {
-    }
-
-    // construct from a free function
-    constexpr Functor( RetType(* pfn)(Args...) )
-        : _obj{reinterpret_cast<void*>(pfn)}
-        , _method{free_wrapper}
-    {
-    }
 
     // Allow to construct an empty Functor
     constexpr Functor(decltype(nullptr))
@@ -87,6 +75,19 @@ public:
     }
 
 private:
+
+    constexpr Functor(void *obj, RetType (*method)(void *obj, Args...))
+        : _obj(obj)
+        , _method(method)
+    {
+    }
+
+    // construct from a free function
+    constexpr Functor( RetType(* pfn)(Args...) )
+        : _obj{reinterpret_cast<void*>(pfn)}
+        , _method{free_wrapper}
+    {
+    }
     void *_obj;
     RetType (*_method)(void *obj, Args...);
 
