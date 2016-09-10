@@ -55,7 +55,7 @@ public:
     // constructor
     AP_Scheduler(void);
     
-    FUNCTOR_TYPEDEF(task_fn_t, void);
+    typedef Functor<void> task_fn_t;
 
     struct Task {
         task_fn_t function;
