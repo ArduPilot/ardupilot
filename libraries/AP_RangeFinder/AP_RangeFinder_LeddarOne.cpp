@@ -133,10 +133,11 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
  */
 
     // send a request message to update register
-    send_request();
+    if (send_request() < 0) {
+    	return false;
+    }
 
-
-    // parse a response message, set distancea and amplitude to detections
+    // parse a response message, set distance and amplitude to detections
     if (parse_response() < 0) {
     	return false;
     }
@@ -160,16 +161,16 @@ void AP_RangeFinder_LeddarOne::update(void)
 }
 
 /*
-   CRC16 check
+   CRC16 calculate
 */
 bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck)
 {
     uint8_t lCRCHi = 0xFF;
     uint8_t lCRCLo = 0xFF;
-    int i;
+    uint16_t i;
 
     for (i = 0; i<aLength; i++) {
-        int lIndex = lCRCLo ^ aBuffer[i];
+        uint16_t lIndex = lCRCLo ^ aBuffer[i];
         lCRCLo = lCRCHi ^ CRC_HI[lIndex];
         lCRCHi = CRC_LO[lIndex];
     }
@@ -188,6 +189,34 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
  */
 int8_t AP_RangeFinder_LeddarOne::send_request(void)
 {
+	uint8_t data_buffer[19] = {0};
+	uint8_t i = 0;
+
+	int32_t nbytes = uart->available();
+
+	// clear buffer
+	while (nbytes-- > 0) {
+		uart->read();
+		if (++i > 250) return LEDDARONE_ERR_SERIAL_PORT;
+	}
+
+	// Modbus read input register (function code 0x04)
+	data_buffer[0] = LEDDARONE_DEFAULT_ADDRESS;
+	data_buffer[1] = 0x04;
+	data_buffer[2] = 0;
+	data_buffer[3] = 20;
+	data_buffer[4] = 0;
+	data_buffer[5] = 10;
+
+	// CRC16
+	CRC16(data_buffer, 6, false);
+
+	// write buffer data with CRC16 bit
+	for (i=0; i<7; i++) {
+		uart->write(data_buffer[i]);
+	}
+	uart->flush();
+
 	return 0;
 }
 
@@ -196,6 +225,49 @@ int8_t AP_RangeFinder_LeddarOne::send_request(void)
   */
 int8_t AP_RangeFinder_LeddarOne::parse_response(void)
 {
-	return 0;
+	uint8_t data_buffer[25] = {0};
+	uint32_t start_ms = AP_HAL::millis();
+	uint32_t nbytes = 0;
+	uint8_t i = 0;
+	uint8_t index_offset = 11;
+
+	// wait for the buffer available while 200ms
+	while (!nbytes) {
+		nbytes = uart->available();
+		if (AP_HAL::millis() - start_ms > 200) {
+			return LEDDARONE_ERR_NO_RESPONSES;
+		}
+	}
+
+	if (nbytes != 25) {
+		return LEDDARONE_ERR_BAD_RESPONSE;
+	}
+
+	// read buffer
+	while (1) {
+		data_buffer[i++] = uart->read();
+		if (nbytes == i) break;
+	}
+
+	// CRC16
+	if (!CRC16(data_buffer, nbytes-2, true)) {
+		return LEDDARONE_ERR_BAD_CRC;
+	}
+
+	// number of detections
+	number_detections = data_buffer[10];
+
+	// if the number of detection is over , it is false
+	if (number_detections > (sizeof(detections) / sizeof(detections[0]))) {
+		return LEDDARONE_ERR_NUMBER_DETECTIONS;
+	}
+
+	memset(detections, 0 , sizeof(detections));
+	for (i=0; i<number_detections; i++) {
+		detections[i].distance = ((uint32_t)data_buffer[index_offset])*256 + data_buffer[index_offset+1];
+		index_offset += 4;
+	}
+
+	return number_detections;
 }
 

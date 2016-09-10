@@ -61,5 +61,7 @@ private:
     //uint8_t linebuf_len = 0;
 
     detection detections[3];
+    uint8_t number_detections = 0;
+
 
 };
