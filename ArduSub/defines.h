@@ -466,6 +466,18 @@ enum ThrowModeState {
 #define FS_LEAK_WARN_ONLY	1 // Only send waring to gcs
 #define FS_LEAK_SURFACE		2 // Switch to surface mode
 
+// Internal pressure failsafe threshold (FS_PRESS_MAX parameter)
+#define FS_PRESS_MAX_DEFAULT 105000 // Maximum internal pressure in pascal before failsafe is triggered
+// Internal pressure failsafe definitions (FS_PRESS_ENABLE parameter)
+#define FS_PRESS_DISABLED 0
+#define FS_PRESS_WARN_ONLY 1
+
+// Internal temperature failsafe threshold (FS_TEMP_MAX parameter)
+#define FS_TEMP_MAX_DEFAULT 62	// Maximum internal pressure in degrees C before failsafe is triggered
+// Internal temperature failsafe definitions (FS_TEMP_ENABLE parameter)
+#define FS_TEMP_DISABLED 0
+#define FS_TEMP_WARN_ONLY 1
+
 // EKF failsafe definitions (FS_EKF_ENABLE parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe
 #define FS_EKF_ACTION_ALTHOLD               2       // switch to ALTHOLD mode on EKF failsafe
