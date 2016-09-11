@@ -3,9 +3,7 @@
 
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
-
-// default baud rate
-#define LDDARONE_DEFAULT_BAUD_RATE 1115200
+#include <GCS_MAVLink/GCS.h>
 
 // default slabe address
 #define LEDDARONE_DEFAULT_ADDRESS 0x01
@@ -17,16 +15,6 @@
 #define LEDDARONE_ERR_SHORT_RESPONSE -4
 #define LEDDARONE_ERR_SERIAL_PORT -5
 #define LEDDARONE_ERR_NUMBER_DETECTIONS -6
-
-struct detection {
-	uint8_t segment;
-	uint16_t distance;
-	uint16_t amplitude;
-
-	// default constructor
-	detection(): segment(0), distance(0xFFFF), amplitude(0){};
-};
-
 
 class AP_RangeFinder_LeddarOne : public AP_RangeFinder_Backend
 {
@@ -57,11 +45,13 @@ private:
 
     AP_HAL::UARTDriver *uart = nullptr;
     uint32_t last_reading_ms = 0;
-    //char linebuf[10];
-    //uint8_t linebuf_len = 0;
 
-    detection detections[3];
+    uint16_t detections[3];
     uint8_t number_detections = 0;
+    uint32_t sum_distance = 0;
+
+
+    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
 
 
 };
