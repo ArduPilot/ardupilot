@@ -1,8 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Sub.h"
-#define FS_INTERNAL_PRESSURE_MAX 105000 // 103000 pascal
-#define FS_INTERNAL_TEMPERATURE_MAX 55 // 50 deg C
+
 /*
  *       This event will be called when the failsafe changes
  *       boolean failsafe reflects the current state
@@ -75,20 +74,27 @@ void Sub::failsafe_battery_event(void)
 }
 
 void Sub::failsafe_internal_pressure_check() {
+
+	if(g.failsafe_pressure == FS_PRESS_DISABLED) {
+		return; // Nothing to do
+	}
+
 	uint32_t tnow = AP_HAL::millis();
 	static uint32_t last_pressure_warn_ms;
 	static uint32_t last_pressure_good_ms;
-	if(barometer.get_pressure(0) < FS_INTERNAL_PRESSURE_MAX) {
+	if(barometer.get_pressure(0) < g.failsafe_pressure_max) {
 		last_pressure_good_ms = tnow;
 		last_pressure_warn_ms = tnow;
 		failsafe.internal_pressure = false;
 		return;
 	}
 
+	// 2 seconds with no readings below threshold triggers failsafe
 	if(tnow > last_pressure_good_ms + 2000) {
 		failsafe.internal_pressure = true;
 	}
 
+	// Warn every 5 seconds
 	if(failsafe.internal_pressure && tnow > last_pressure_warn_ms + 5000) {
 		last_pressure_warn_ms = tnow;
 		gcs_send_text(MAV_SEVERITY_WARNING, "Internal pressure critical!");
@@ -96,20 +102,27 @@ void Sub::failsafe_internal_pressure_check() {
 }
 
 void Sub::failsafe_internal_temperature_check() {
+
+	if(g.failsafe_temperature == FS_TEMP_DISABLED) {
+		return; // Nothing to do
+	}
+
 	uint32_t tnow = AP_HAL::millis();
 	static uint32_t last_temperature_warn_ms;
 	static uint32_t last_temperature_good_ms;
-	if(barometer.get_temperature(0) < FS_INTERNAL_TEMPERATURE_MAX) {
+	if(barometer.get_temperature(0) < g.failsafe_temperature_max) {
 		last_temperature_good_ms = tnow;
 		last_temperature_warn_ms = tnow;
 		failsafe.internal_temperature = false;
 		return;
 	}
 
+	// 2 seconds with no readings below threshold triggers failsafe
 	if(tnow > last_temperature_good_ms + 2000) {
 		failsafe.internal_temperature = true;
 	}
 
+	// Warn every 5 seconds
 	if(failsafe.internal_temperature && tnow > last_temperature_warn_ms + 5000) {
 		last_temperature_warn_ms = tnow;
 		gcs_send_text(MAV_SEVERITY_WARNING, "Internal temperature critical!");
