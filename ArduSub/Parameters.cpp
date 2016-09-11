@@ -202,6 +202,34 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_leak, "FS_LEAK_ENABLE", FS_LEAK_DISABLED),
 
+    // @Param: FS_PRESS_ENABLE
+    // @DisplayName: Internal Pressure Failsafe Enable
+    // @Description: Controls what action to take if internal pressure exceeds FS_PRESS_MAX parameter.
+    // @Values: 0:Disabled,1:Warn only
+    // @User: Standard
+    GSCALAR(failsafe_pressure, "FS_PRESS_ENABLE", FS_PRESS_DISABLED),
+
+    // @Param: FS_TEMP_ENABLE
+    // @DisplayName: Internal Temperature Failsafe Enable
+    // @Description: Controls what action to take if internal temperature exceeds FS_TEMP_MAX parameter.
+    // @Values: 0:Disabled,1:Warn only
+    // @User: Standard
+    GSCALAR(failsafe_temperature, "FS_TEMP_ENABLE", FS_TEMP_DISABLED),
+
+    // @Param: FS_PRESS_MAX
+    // @DisplayName: Internal Pressure Failsafe Threshold
+    // @Description: The maximum internal pressure allowed before triggering failsafe. Failsafe action is determined by FS_PRESS_ENABLE parameter
+    // @Units: Pascal
+    // @User: Standard
+    GSCALAR(failsafe_pressure_max, "FS_PRESS_MAX", FS_PRESS_MAX_DEFAULT),
+
+    // @Param: FS_TEMP_MAX
+    // @DisplayName: Internal Temperature Failsafe Threshold
+    // @Description: The maximum internal temperature allowed before triggering failsafe. Failsafe action is determined by FS_TEMP_ENABLE parameter.
+    // @Units: Degrees Centigrade
+    // @User: Standard
+    GSCALAR(failsafe_temperature_max, "FS_TEMP_MAX", FS_TEMP_MAX_DEFAULT),
+
     // @Param: GPS_HDOP_GOOD
     // @DisplayName: GPS Hdop Good
     // @Description: GPS Hdop value at or below this value represent a good position.  Used for pre-arm checks
