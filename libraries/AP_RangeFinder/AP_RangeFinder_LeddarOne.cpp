@@ -255,7 +255,7 @@ GCS_MAVLINK::send_statustext(MAV_SEVERITY_DEBUG, 0xFF, "LeddarOne: NUMBER_DETECT
     memset(detections, 0, sizeof(detections));
     sum_distance = 0;
     for (i=0; i<number_detections; i++) {
-        detections[i] =  ((uint32_t)data_buffer[index_offset])*256 + data_buffer[index_offset+1];
+        detections[i] =  (((uint16_t)data_buffer[index_offset])*256 + data_buffer[index_offset+1])/10;
         sum_distance += detections[i];
         index_offset += 4;
     }
