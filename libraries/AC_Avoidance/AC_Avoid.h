@@ -43,18 +43,45 @@ private:
 
     /*
      * Adjusts the desired velocity for the polygon fence.
+     *
+     * This function is supposed to solve the following optimization problem.
+     * Find the vector safe_vel that is closest to desired_vel,
+     * subject to the following constraints for each edge:
+     * Let P be the closest point to the current position of the vehicle.
+     * Let U be the unit vector in the direction of P from the current position.
+     * Let D be the distance from the current position to P.
+     *
+     *    safe_vel must satisfy safe_vel * P <= max_speed(D)
      */
     void adjust_velocity_poly(const float kP, const float accel_cmss, Vector2f &desired_vel);
 
+    /*
+     * Adjusts the velocity to satisfy the given set of constraints. The ith constraint is
+     *    desired_vel * constraint_directions[i] <= max_speeds[i]
+     */
+    void adjust_velocity_constraints(const float kP, const float accel_cmss, const Vector2f* constraint_directions, const float* max_speeds, const uint16_t num_constraints, Vector2f& desired_vel);
+
+
+    /*
+     * Compute the intersection of the following two lines:
+     *   vec1.x * x + vec1.y * y = c1
+     *   vec2.x * x + vec2.y * y = c2
+     *
+     * Stores the result in out. Leaves out unchanged if there
+     * is no intersection.
+     */
+    void intersection(const Vector2f vec1, const float c1, const Vector2f vec2, const float c2, Vector2f& out);
 
     /*
      * Limits the component of desired_vel in the direction of the unit vector
-     * limit_direction to be at most the maximum speed permitted by the limit_distance.
+     * limit_direction to be at most the maximum speed.
+     *
+     * Return true iff the velocity was actually changed.
      *
      * Uses velocity adjustment idea from Randy's second email on this thread:
      * https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
      */
-    void limit_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel, const Vector2f limit_direction, const float limit_distance) const;
+    bool limit_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel, const Vector2f limit_direction, const float max_speed) const;
 
     /*
      * Gets the current position, relative to home (not relative to EKF origin)
@@ -75,7 +102,9 @@ private:
     /*
      * Gets the fence margin in cm
      */
-    float get_margin() const { return _fence.get_margin() * 100.0f; }
+    float get_margin() const {
+        return _fence.get_margin() * 100.0f;
+    }
 
     // external references
     const AP_AHRS& _ahrs;
