@@ -20,7 +20,7 @@
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // index 0 and 1 are for old parameters that are no longer not used
 
     // @Param: GPS_GAIN
@@ -120,7 +120,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Description: This controls whether the NavEKF Kalman filter is used for attitude and position estimation and whether fallback to the DCM algorithm is allowed. Note that on copters "disabled" is not available, and will be the same as "enabled - no fallback"
     // @Values: 0:Disabled,1:Enabled,2:Enable EKF2
     // @User: Advanced
-    AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, 1),
+    AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, 2),
 #endif
 
     AP_GROUPEND
@@ -231,7 +231,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 void AP_AHRS::update_trig(void)
 {
     Vector2f yaw_vector;
-    const Matrix3f &temp = get_dcm_matrix();
+    const Matrix3f &temp = get_rotation_body_to_ned();
 
     // sin_yaw, cos_yaw
     yaw_vector.x = temp.a.x;
@@ -250,7 +250,7 @@ void AP_AHRS::update_trig(void)
         _cos_roll = temp.c.z / _cos_pitch;
     }
     _cos_pitch = constrain_float(_cos_pitch, 0, 1.0);
-    _cos_roll = constrain_float(_cos_roll, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing,which it does do in avr-libc
+    _cos_roll = constrain_float(_cos_roll, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing
 
     // sin_roll, sin_pitch
     _sin_pitch = -temp.c.x;

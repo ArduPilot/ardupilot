@@ -3,10 +3,11 @@
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: _MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
@@ -57,7 +58,18 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     AP_GROUPINFO("_CAPACITY", 6, AP_BattMonitor, _pack_capacity[0], AP_BATT_CAPACITY_DEFAULT),
 
     // 7 & 8 were used for VOLT2_PIN and VOLT2_MULT
-    // 9..10 left for future expansion
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // @Param: _WATT_MAX
+    // @DisplayName: Maximum allowed power (Watts)
+    // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
+    // @Units: Watts
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_WATT_MAX", 9, AP_BattMonitor, _watt_max[0], AP_BATT_MAX_WATT_DEFAULT),
+#endif
+
+    // 10 is left for future expansion
 
 #if AP_BATT_MONITOR_MAX_INSTANCES > 1
     // @Param: 2_MONITOR
@@ -109,6 +121,17 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("2_CAPACITY", 17, AP_BattMonitor, _pack_capacity[1], AP_BATT_CAPACITY_DEFAULT),
 
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // @Param: 2_WATT_MAX
+    // @DisplayName: Maximum allowed current
+    // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
+    // @Units: Amps
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("2_WATT_MAX", 18, AP_BattMonitor, _watt_max[1], AP_BATT_MAX_WATT_DEFAULT),
+#endif
+
 #endif // AP_BATT_MONITOR_MAX_INSTANCES > 1
 
     AP_GROUPEND
@@ -133,7 +156,7 @@ AP_BattMonitor::init()
         return;
     }
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
     // force monitor for bebop
     _monitoring[0] = BattMonitor_TYPE_BEBOP;
 #endif
@@ -153,12 +176,13 @@ AP_BattMonitor::init()
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
                 drivers[instance] = new AP_BattMonitor_SMBus_PX4(*this, instance, state[instance]);
 #else
-                drivers[instance] = new AP_BattMonitor_SMBus_I2C(*this, instance, state[instance]);
+                drivers[instance] = new AP_BattMonitor_SMBus_I2C(*this, instance, state[instance],
+                                                                 hal.i2c_mgr->get_device(BATTMONITOR_SBUS_I2C_BUS, BATTMONITOR_SMBUS_I2C_ADDR));
 #endif
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_BEBOP:
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 state[instance].instance = instance;
                 drivers[instance] = new AP_BattMonitor_Bebop(*this, instance, state[instance]);
                 _num_instances++;
@@ -177,12 +201,7 @@ AP_BattMonitor::init()
 void
 AP_BattMonitor::read()
 {
-    // exit immediately if no monitors setup
-    if (_num_instances == 0) {
-        return;
-    }
-
-    for (uint8_t i=0; i<AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<_num_instances; i++) {
         if (drivers[i] != NULL && _monitoring[i] != BattMonitor_TYPE_NONE) {
             drivers[i]->read();
         }
@@ -191,19 +210,21 @@ AP_BattMonitor::read()
 
 // healthy - returns true if monitor is functioning
 bool AP_BattMonitor::healthy(uint8_t instance) const {
-    return instance < AP_BATT_MONITOR_MAX_INSTANCES && _BattMonitor_STATE(instance).healthy;
+    return instance < _num_instances && _BattMonitor_STATE(instance).healthy;
+}
+
+bool AP_BattMonitor::is_powering_off(uint8_t instance) const {
+    return instance < _num_instances && _BattMonitor_STATE(instance).is_powering_off;
 }
 
 /// has_current - returns true if battery monitor instance provides current info
 bool AP_BattMonitor::has_current(uint8_t instance) const
 {
     // check for analog voltage and current monitor or smbus monitor
-    if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
-        if (drivers[instance] != NULL) {
-            return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT ||
-                    _monitoring[instance] == BattMonitor_TYPE_SMBUS ||
-                    _monitoring[instance] == BattMonitor_TYPE_BEBOP);
-        }
+    if (instance < _num_instances && drivers[instance] != NULL) {
+        return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT ||
+                _monitoring[instance] == BattMonitor_TYPE_SMBUS ||
+                _monitoring[instance] == BattMonitor_TYPE_BEBOP);
     }
 
     // not monitoring current
@@ -213,35 +234,16 @@ bool AP_BattMonitor::has_current(uint8_t instance) const
 /// voltage - returns battery voltage in volts
 float AP_BattMonitor::voltage(uint8_t instance) const
 {
-    if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
+    if (instance < _num_instances) {
         return _BattMonitor_STATE(instance).voltage;
     } else {
         return 0.0f;
     }
 }
 
-// voltage2 - returns the voltage of the second battery (helper function to send 2nd voltage to GCS)
-float AP_BattMonitor::voltage2() const
-{
-    // exit immediately if one or fewer monitors
-    if (_num_instances < 2) {
-        return 0.0f;
-    }
-
-    // get next battery's voltage
-    for (uint8_t i=1; i<AP_BATT_MONITOR_MAX_INSTANCES; i++) {
-        if (drivers[i] != NULL) {
-            return _BattMonitor_STATE(i).voltage;
-        }
-    }
-
-    // if we somehow got here, return zero
-    return 0.0f;
-}
-
 /// current_amps - returns the instantaneous current draw in amperes
 float AP_BattMonitor::current_amps(uint8_t instance) const {
-    if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
+    if (instance < _num_instances) {
         return _BattMonitor_STATE(instance).current_amps;
     } else {
         return 0.0f;
@@ -250,7 +252,7 @@ float AP_BattMonitor::current_amps(uint8_t instance) const {
 
 /// current_total_mah - returns total current drawn since start-up in amp-hours
 float AP_BattMonitor::current_total_mah(uint8_t instance) const {
-    if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
+    if (instance < _num_instances) {
         return _BattMonitor_STATE(instance).current_total_mah;
     } else {
         return 0.0f;
@@ -260,42 +262,73 @@ float AP_BattMonitor::current_total_mah(uint8_t instance) const {
 /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
 uint8_t AP_BattMonitor::capacity_remaining_pct(uint8_t instance) const
 {
-    if (_num_instances == 0 || instance >= AP_BATT_MONITOR_MAX_INSTANCES || drivers[instance] == NULL) {
-        return 0;
-    } else {
+    if (instance < _num_instances && drivers[instance] != NULL) {
         return drivers[instance]->capacity_remaining_pct();
+    } else {
+        return 0;
     }
 }
 
-/// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
+/// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
+ int32_t AP_BattMonitor::pack_capacity_mah(uint8_t instance) const
+ {
+ if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
+        return _pack_capacity[instance];
+    } else {
+        return 0;
+    }
+ }
+ 
+ /// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
 bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_capacity_mah)
 {
     // exit immediately if no monitors setup
-    if (_num_instances == 0 || instance >= AP_BATT_MONITOR_MAX_INSTANCES || drivers[instance] == NULL) {
+    if (_num_instances == 0 || instance >= _num_instances) {
         return false;
     }
 
-    // get current time
-    uint32_t tnow = hal.scheduler->millis();
-
     // check voltage
-    if ((state[instance].voltage > 0.0f) && (low_voltage > 0) && (state[instance].voltage < low_voltage)) {
+    if ((state[instance].voltage > 0) && (low_voltage > 0) && (state[instance].voltage < low_voltage)) {
         // this is the first time our voltage has dropped below minimum so start timer
         if (state[instance].low_voltage_start_ms == 0) {
-            state[instance].low_voltage_start_ms = tnow;
-        }else if (tnow - state[instance].low_voltage_start_ms > AP_BATT_LOW_VOLT_TIMEOUT_MS) {
+            state[instance].low_voltage_start_ms = AP_HAL::millis();
+        } else if (AP_HAL::millis() - state[instance].low_voltage_start_ms > AP_BATT_LOW_VOLT_TIMEOUT_MS) {
             return true;
         }
-    }else{
+    } else {
         // acceptable voltage so reset timer
         state[instance].low_voltage_start_ms = 0;
     }
 
     // check capacity if current monitoring is enabled
-    if (has_current(instance) && (min_capacity_mah>0) && (_pack_capacity[instance] - state[instance].current_total_mah < min_capacity_mah)) {
+    if (has_current(instance) && (min_capacity_mah > 0) && (_pack_capacity[instance] - state[instance].current_total_mah < min_capacity_mah)) {
         return true;
     }
 
-    // if we've gotten this far battery is ok
+    // if we've gotten this far then battery is ok
     return false;
 }
+
+// return true if any battery is pushing too much power
+bool AP_BattMonitor::overpower_detected() const
+{
+    bool result = false;
+    for (int instance = 0; instance < _num_instances; instance++) {
+        result |= overpower_detected(instance);
+    }
+    return result;
+}
+
+bool AP_BattMonitor::overpower_detected(uint8_t instance) const
+{
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    if (instance < _num_instances && _watt_max[instance] > 0) {
+        float power = _BattMonitor_STATE(instance).current_amps * _BattMonitor_STATE(instance).voltage;
+        return _BattMonitor_STATE(instance).healthy && (power > _watt_max[instance]);
+    }
+    return false;
+#else
+    return false;
+#endif
+}
+

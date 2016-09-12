@@ -24,7 +24,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Param: TCONST
 	// @DisplayName: Steering Time Constant
 	// @Description: This controls the time constant in seconds from demanded to achieved steering angle. A value of 0.75 is a good default and will work with nearly all rovers. Ground steering in aircraft needs a bit smaller time constant, and a value of 0.5 is recommended for best ground handling in fixed wing aircraft. A value of 0.75 means that the controller will try to correct any deviation between the desired and actual steering angle in 0.75 seconds. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the vehicle can achieve.
@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 */
 int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 {
-	uint32_t tnow = hal.scheduler->millis();
+	uint32_t tnow = AP_HAL::millis();
 	uint32_t dt = tnow - _last_t;
 	if (_last_t == 0 || dt > 1000) {
 		dt = 0;
@@ -114,12 +114,17 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     _pid_info.desired = desired_rate;
 
 	// Calculate the steering rate error (deg/sec) and apply gain scaler
-	float rate_error = (desired_rate - ToDeg(_ahrs.get_gyro().z)) * scaler;
+    // We do this in earth frame to allow for rover leaning over in hard corners
+    float yaw_rate_earth = ToDeg(_ahrs.get_yaw_rate_earth());
+    if (_reverse) {
+        yaw_rate_earth = wrap_180(180 + yaw_rate_earth);
+    }
+    float rate_error = (desired_rate - yaw_rate_earth) * scaler;
 	
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
 	float ki_rate = _K_I * _tau * 45.0f;
-	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0) * 45.0f;
+	float kp_ff = MAX((_K_P - _K_I * _tau) * _tau  - _K_D , 0) * 45.0f;
 	float k_ff = _K_FF * 45.0f;
 	float delta_time    = (float)dt * 0.001f;
 	
@@ -131,10 +136,10 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			// prevent the integrator from increasing if steering defln demand is above the upper limit
 			if (_last_out < -45) {
-                integrator_delta = max(integrator_delta , 0);
+                integrator_delta = MAX(integrator_delta , 0);
             } else if (_last_out > 45) {
                 // prevent the integrator from decreasing if steering defln demand is below the lower limit
-                integrator_delta = min(integrator_delta, 0);
+                integrator_delta = MIN(integrator_delta, 0);
             }
 			_pid_info.I += integrator_delta;
 		}
@@ -174,6 +179,9 @@ int32_t AP_SteerController::get_steering_out_lat_accel(float desired_accel)
 
 	// Calculate the desired steering rate given desired_accel and speed
     float desired_rate = ToDeg(desired_accel / speed);
+    if (_reverse) {
+        desired_rate *= -1;
+    }
     return get_steering_out_rate(desired_rate);
 }
 

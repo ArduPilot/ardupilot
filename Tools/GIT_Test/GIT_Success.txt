@@ -13,9 +13,34 @@ Andreas Antonopoulos wuz'ere
 Robert Lefebvre, unconfuzzled his clone.
 Olivier check test
 Phil Rowse was here :)
-Nils Högberg (Vizual54) testing
+Nils Hogberg (Vizual54) testing
 Linus Penzlien 
 Hazy
 Benoit GRUSON
 Dario Lindo Andres
 George Zogopoulos Papaliakos, struggling with Git
+Hao Zhou
+
+Shingo Matsuura (assignment)
+Murata Katsutoshi, Yoseijyuku-Sei.
+Hiroshi Kitaoka
+Yu Kuwahara (assignment)
+Ikegami Atsushi
+Eiji Aoki
+Kazutaka Ozawa
+Kunihiro Yoshida
+Yasuhide Horiuchi
+Tatsuya Yamaguchi
+Kenji Koseki
+Shinya Oda
+Kouichi Nakajima
+Yuki Yoshioka
+Takanobu Minoshima
+Yuki Miyama
+Masahiro Saegusa
+Fumikatsu Murozaki
+Yuta Yoshinuma
+Yasuyuki Suzuki
+Koji Hosaka
+Mitsuhiro Komiya
+Eduardo Cáceres (eduherminio)

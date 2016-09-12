@@ -1,13 +1,11 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdlib.h>
-
 #include "TCPServerDevice.h"
+
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -64,23 +62,23 @@ bool TCPServerDevice::open()
     listener.reuseaddress();
 
     if (!listener.bind(_ip, _port)) {
-        if (hal.scheduler->millis() - _last_bind_warning > 5000) {
+        if (AP_HAL::millis() - _last_bind_warning > 5000) {
             ::printf("bind failed on %s port %u - %s\n",
                      _ip,
                      _port,
                      strerror(errno));
-            _last_bind_warning = hal.scheduler->millis();
+            _last_bind_warning = AP_HAL::millis();
         }
         return false;
     }
 
     if (!listener.listen(1)) {
-        if (hal.scheduler->millis() - _last_bind_warning > 5000) {
+        if (AP_HAL::millis() - _last_bind_warning > 5000) {
             ::printf("listen failed on %s port %u - %s\n",
                      _ip,
                      _port,
                      strerror(errno));
-            _last_bind_warning = hal.scheduler->millis();
+            _last_bind_warning = AP_HAL::millis();
         }
         return false;
     }
@@ -120,5 +118,3 @@ void TCPServerDevice::set_blocking(bool blocking)
 void TCPServerDevice::set_speed(uint32_t speed)
 {
 }
-
-#endif

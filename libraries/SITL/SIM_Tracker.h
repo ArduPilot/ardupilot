@@ -17,16 +17,16 @@
   antenna-tracker simulator class
 */
 
-#ifndef _SIM_TRACKER_H
-#define _SIM_TRACKER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
+
+namespace SITL {
 
 /*
   a antenna tracker simulator
  */
-class Tracker : public Aircraft
-{
+class Tracker : public Aircraft {
 public:
     Tracker(const char *home_str, const char *frame_str);
     void update(const struct sitl_input &input);
@@ -57,4 +57,4 @@ private:
     void update_onoff_servos(float &yaw_rate, float &pitch_rate);
 };
 
-#endif
+} // namespace SITL

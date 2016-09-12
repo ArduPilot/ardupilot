@@ -17,15 +17,15 @@
   gimbal simulator class
 */
 
-#ifndef _SIM_GIMBAL_H
-#define _SIM_GIMBAL_H
+#pragma once
 
-#include "SIM_Aircraft.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_HAL/utility/Socket.h>
 
-class Gimbal
-{
+#include "SIM_Aircraft.h"
+
+namespace SITL {
+
+class Gimbal {
 public:
     Gimbal(const struct sitl_fdm &_fdm);
     void update(void);
@@ -69,7 +69,7 @@ private:
 
     // reporting period in ms
     const float reporting_period_ms;
-        
+
     // integral of gyro vector over last time interval. In radians
     Vector3f delta_angle;
 
@@ -105,6 +105,5 @@ private:
 
     void send_report(void);
 };
-#endif // CONFIG_HAL_BOARD
 
-#endif // _SIM_GIMBAL_H
+}  // namespace SITL

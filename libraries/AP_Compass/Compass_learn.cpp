@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#include "Compass.h"
-#include <math.h>
+#include <AP_Math/AP_Math.h>
+
+#include "AP_Compass.h"
 
 // don't allow any axis of the offset to go above 2000
 #define COMPASS_OFS_LIMIT 2000

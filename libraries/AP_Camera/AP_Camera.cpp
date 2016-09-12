@@ -5,11 +5,19 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_HAL/AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#include <drivers/drv_input_capture.h>
+#include <drivers/drv_pwm_output.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
 
-const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Param: TRIGG_TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture
@@ -55,10 +63,46 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Values: 0:Low,1:High
     // @User: Standard
     AP_GROUPINFO("RELAY_ON",    5, AP_Camera, _relay_on, 1),
+
+    // @Param: MIN_INTERVAL
+    // @DisplayName: Minimum time between photos
+    // @Description: Postpone shooting if previous picture was taken less than preset time(ms) ago.
+    // @User: Standard
+    // @Units: milliseconds
+    // @Range: 0 10000
+    AP_GROUPINFO("MIN_INTERVAL",  6, AP_Camera, _min_interval, 0),
+
+    // @Param: MAX_ROLL
+    // @DisplayName: Maximum photo roll angle.
+    // @Description: Postpone shooting if roll is greater than limit. (0=Disable, will shoot regardless of roll).
+    // @User: Standard
+    // @Units: Degrees
+    // @Range: 0 180
+    AP_GROUPINFO("MAX_ROLL",  7, AP_Camera, _max_roll, 0),
+ 
+    // @Param: FEEDBACK_PIN
+    // @DisplayName: Camera feedback pin
+    // @Description: pin number to use for save accurate camera feedback messages. If set to -1 then don't use a pin flag for this, otherwise this is a pin number which if held high after a picture trigger order, will save camera messages when camera really takes a picture. A universal camera hot shoe is needed. The pin should be held high for at least 2 milliseconds for reliable trigger detection. See also the CAM_FEEDBACK_POL option. If using AUX4 pin on a Pixhawk then a fast capture method is used that allows for the trigger time to be as short as one microsecond.
+    // @Values: -1:Disabled,50:PX4 AUX1,51:PX4 AUX2,52:PX4 AUX3,53:PX4 AUX4(fast capture),54:PX4 AUX5,55:PX4 AUX6
+    // @User: Standard
+    AP_GROUPINFO("FEEDBACK_PIN",  8, AP_Camera, _feedback_pin, AP_CAMERA_FEEDBACK_DEFAULT_FEEDBACK_PIN),
+
+    // @Param: FEEDBACK_POL
+    // @DisplayName: Camera feedback pin polarity
+    // @Description: Polarity for feedback pin. If this is 1 then the feedback pin should go high on trigger. If set to 0 then it should go low
+    // @Values: 0:TriggerLow,1:TriggerHigh
+    // @User: Standard
+    AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
     
     AP_GROUPEND
 };
 
+extern const AP_HAL::HAL& hal;
+
+/*
+  static trigger var for PX4 callback
+ */
+volatile bool   AP_Camera::_camera_triggered;
 
 /// Servo operated camera
 void
@@ -89,6 +133,8 @@ AP_Camera::relay_pic()
 void
 AP_Camera::trigger_pic(bool send_mavlink_msg)
 {
+    setup_feedback_callback();
+
     _image_index++;
     switch (_trigger_type)
     {
@@ -173,11 +219,14 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     GCS_MAVLINK::send_to_components(&msg);
 }
 
-void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
+    bool ret = false;
+    
     // take picture
     if (is_equal(shooting_cmd,1.0f)) {
         trigger_pic(false);
+        ret = true;
     }
 
     mavlink_message_t msg;
@@ -197,6 +246,7 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 
     // send to all components
     GCS_MAVLINK::send_to_components(&msg);
+    return ret;
 }
 
 /*
@@ -228,7 +278,7 @@ void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS
     The caller is responsible for taking the picture based on the return value of this function.
     The caller is also responsible for logging the details about the photo
 */
-bool AP_Camera::update_location(const struct Location &loc)
+bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
 {
     if (is_zero(_trigg_dist)) {
         return false;
@@ -242,9 +292,111 @@ bool AP_Camera::update_location(const struct Location &loc)
         // be called without a new GPS fix
         return false;
     }
+
     if (get_distance(loc, _last_location) < _trigg_dist) {
         return false;
     }
-    _last_location = loc;
-    return true;
+
+    if (_max_roll > 0 && labs(ahrs.roll_sensor/100) > _max_roll) {
+        return false;
+    }
+
+    uint32_t tnow = AP_HAL::millis();
+    if (tnow - _last_photo_time < (unsigned) _min_interval) {
+        return false;
+    }  else {
+        _last_location = loc;
+        _last_photo_time = tnow;
+        return true;
+    }
+}
+
+/*
+  check if feedback pin is high
+ */
+void AP_Camera::feedback_pin_timer(void)
+{
+    int8_t dpin = hal.gpio->analogPinToDigitalPin(_feedback_pin);
+    if (dpin == -1) {
+        return;
+    }
+    // ensure we are in input mode
+    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
+
+    // enable pullup
+    hal.gpio->write(dpin, 1);
+
+    uint8_t pin_state = hal.gpio->read(dpin);
+    uint8_t trigger_polarity = _feedback_polarity==0?0:1;
+    if (pin_state == trigger_polarity &&
+        _last_pin_state != trigger_polarity) {
+        _camera_triggered = true;
+    }
+    _last_pin_state = pin_state;
+}
+
+/*
+  check if camera has triggered
+ */
+bool AP_Camera::check_trigger_pin(void)
+{
+    if (_camera_triggered) {
+        _camera_triggered = false;
+        return true;
+    }
+    return false;
+}
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+/*
+  callback for timer capture on PX4
+ */
+void AP_Camera::capture_callback(void *context, uint32_t chan_index,
+                                 hrt_abstime edge_time, uint32_t edge_state, uint32_t overflow)
+{
+    _camera_triggered = true;    
+}
+#endif
+
+/*
+  setup a callback for a feedback pin. When on PX4 with the right FMU
+  mode we can use the microsecond timer.
+ */
+void AP_Camera::setup_feedback_callback(void)
+{
+    if (_feedback_pin <= 0 || _timer_installed) {
+        // invalid or already installed
+        return;
+    }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    /*
+      special case for pin 53 on PX4. We can use the fast timer support
+     */
+    if (_feedback_pin == 53) {
+        int fd = open("/dev/px4fmu", 0);
+        if (fd != -1) {
+            if (ioctl(fd, PWM_SERVO_SET_MODE, PWM_SERVO_MODE_3PWM1CAP) != 0) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: unable to setup 3PWM1CAP\n");
+                close(fd);
+                goto failed;
+            }   
+            if (up_input_capture_set(3, _feedback_polarity==1?Rising:Falling, 0, capture_callback, this) != 0) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: unable to setup timer capture\n");
+                close(fd);
+                goto failed;
+            }
+            close(fd);
+            _timer_installed = true;
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: setup fast trigger capture\n");
+        }
+    }
+failed:
+#endif // CONFIG_HAL_BOARD
+
+    if (!_timer_installed) {
+        // install a 1kHz timer to check feedback pin
+        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Camera::feedback_pin_timer, void));
+    }
+    _timer_installed = true;
 }

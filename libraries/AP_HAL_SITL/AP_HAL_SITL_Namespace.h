@@ -1,18 +1,17 @@
-
-#ifndef __AP_HAL_SITL_NAMESPACE_H__
-#define __AP_HAL_SITL_NAMESPACE_H__
+#pragma once
 
 namespace HALSITL {
-class SITLUARTDriver;
-class SITLScheduler;
+class UARTDriver;
+class Scheduler;
 class SITL_State;
-class SITLEEPROMStorage;
-class SITLAnalogIn;
-class SITLRCInput;
-class SITLRCOutput;
+class EEPROMStorage;
+class AnalogIn;
+class RCInput;
+class RCOutput;
 class ADCSource;
 class RCInput;
-class SITLUtil;
+class Util;
+class Semaphore;
+class GPIO;
+class DigitalSource;
 }
-
-#endif // __AP_HAL_SITL_NAMESPACE_H__

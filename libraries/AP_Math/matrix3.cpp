@@ -17,6 +17,8 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma GCC optimize("O3")
+
 #include "AP_Math.h"
 
 // create a rotation matrix given some euler angles
@@ -218,11 +220,76 @@ Matrix3<T> Matrix3<T>::transposed(void) const
 }
 
 template <typename T>
+T Matrix3<T>::det() const
+{
+    return a.x * (b.y * c.z - b.z * c.y) +
+           a.y * (b.z * c.x - b.x * c.z) +
+           a.z * (b.x * c.y - b.y * c.x);
+}
+
+template <typename T>
+bool Matrix3<T>::inverse(Matrix3<T>& inv) const
+{
+    T d = det();
+
+    if (is_zero(d)) {
+        return false;
+    }
+
+    inv.a.x = (b.y * c.z - c.y * b.z) / d;
+    inv.a.y = (a.z * c.y - a.y * c.z) / d;
+    inv.a.z = (a.y * b.z - a.z * b.y) / d;
+    inv.b.x = (b.z * c.x - b.x * c.z) / d;
+    inv.b.y = (a.x * c.z - a.z * c.x) / d;
+    inv.b.z = (b.x * a.z - a.x * b.z) / d;
+    inv.c.x = (b.x * c.y - c.x * b.y) / d;
+    inv.c.y = (c.x * a.y - a.x * c.y) / d;
+    inv.c.z = (a.x * b.y - b.x * a.y) / d;
+
+    return true;
+}
+
+template <typename T>
+bool Matrix3<T>::invert()
+{
+    Matrix3<T> inv;
+    bool success = inverse(inv);
+    if (success) {
+        *this = inv;
+    }
+    return success;
+}
+
+template <typename T>
 void Matrix3<T>::zero(void)
 {
     a.x = a.y = a.z = 0;
     b.x = b.y = b.z = 0;
     c.x = c.y = c.z = 0;
+}
+
+// create rotation matrix for rotation about the vector v by angle theta
+// See: http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToMatrix/
+template <typename T>
+void Matrix3<T>::from_axis_angle(const Vector3<T> &v, float theta)
+{
+    float C = cosf(theta);
+    float S = sinf(theta);
+    float t = 1.0f - C;
+    Vector3f normv = v.normalized();
+    float x = normv.x;
+    float y = normv.y;
+    float z = normv.z;
+    
+    a.x = t*x*x + C;
+    a.y = t*x*y - z*S;
+    a.z = t*x*z + y*S;
+    b.x = t*x*y + z*S;
+    b.y = t*y*y + C;
+    b.z = t*y*z - x*S;
+    c.x = t*x*z - y*S;
+    c.y = t*y*z + x*S;
+    c.z = t*z*z + C;
 }
 
 
@@ -235,14 +302,17 @@ template void Matrix3<float>::normalize(void);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw) const;
 template void Matrix3<float>::from_euler312(float roll, float pitch, float yaw);
+template void Matrix3<float>::from_axis_angle(const Vector3<float> &v, float theta);
 template Vector3<float> Matrix3<float>::to_euler312(void) const;
 template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;
 template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
 template Matrix3<float> Matrix3<float>::transposed(void) const;
+template float Matrix3<float>::det() const;
+template bool Matrix3<float>::inverse(Matrix3<float>& inv) const;
+template bool Matrix3<float>::invert();
 template Vector2<float> Matrix3<float>::mulXY(const Vector3<float> &v) const;
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 template void Matrix3<double>::zero(void);
 template void Matrix3<double>::rotate(const Vector3<double> &g);
 template void Matrix3<double>::rotateXY(const Vector3<double> &g);
@@ -253,5 +323,7 @@ template Vector3<double> Matrix3<double>::operator *(const Vector3<double> &v) c
 template Vector3<double> Matrix3<double>::mul_transpose(const Vector3<double> &v) const;
 template Matrix3<double> Matrix3<double>::operator *(const Matrix3<double> &m) const;
 template Matrix3<double> Matrix3<double>::transposed(void) const;
+template double Matrix3<double>::det() const;
+template bool Matrix3<double>::inverse(Matrix3<double>& inv) const;
+template bool Matrix3<double>::invert();
 template Vector2<double> Matrix3<double>::mulXY(const Vector3<double> &v) const;
-#endif

@@ -1,6 +1,4 @@
-
-#ifndef __SIMPLE_GCS_H__
-#define __SIMPLE_GCS_H__
+#pragma once
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
@@ -10,6 +8,3 @@ bool try_send_statustext(mavlink_channel_t chan, const char *text, int len);
 
 void simplegcs_update(mavlink_channel_t chan);
 void handle_message(mavlink_channel_t chan, mavlink_message_t* msg);
-
-#endif // __SIMPLE_GCS_H__
-

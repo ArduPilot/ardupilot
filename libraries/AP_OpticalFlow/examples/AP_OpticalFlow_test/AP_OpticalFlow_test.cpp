@@ -3,36 +3,35 @@
  *  Code by Randy Mackay. DIYDrones.com
  */
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Notify/AP_Notify.h>
-#include <DataFlash/DataFlash.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
-#include <Filter/Filter.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
-#include <AP_Mission/AP_Mission.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static OpticalFlow optflow;
+class DummyVehicle {
+public:
+    AP_GPS gps;
+    AP_Baro barometer;
+    Compass compass;
+    AP_InertialSensor ins;
+    AP_SerialManager serial_manager;
+    RangeFinder sonar {serial_manager};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF, EKF2,
+                        AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF EKF{&ahrs, barometer, sonar};
+    NavEKF2 EKF2{&ahrs, barometer, sonar};
+};
+
+static DummyVehicle vehicle;
+static OpticalFlow optflow(vehicle.ahrs);
 
 void setup()
 {

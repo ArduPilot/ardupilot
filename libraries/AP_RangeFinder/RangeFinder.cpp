@@ -23,13 +23,17 @@
 #include "AP_RangeFinder_BBB_PRU.h"
 #include "AP_RangeFinder_LightWareI2C.h"
 #include "AP_RangeFinder_LightWareSerial.h"
+#include "AP_RangeFinder_Bebop.h"
+#include "AP_RangeFinder_MAVLink.h"
+
+extern const AP_HAL::HAL &hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
+const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
+    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, RangeFinder, _type[0], 0),
 
@@ -118,13 +122,19 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, _ground_clearance_cm[0], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
-    // 10..12 left for future expansion
+    // @Param: _ADDR
+    // @DisplayName: Bus address of sensor
+    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_ADDR", 23, RangeFinder, _address[0], 0),
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
+    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    12, RangeFinder, _type[1], 0),
 
@@ -204,31 +214,23 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_GNDCLEAR", 22, RangeFinder, _ground_clearance_cm[1], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
-#endif
 
-    // @Param: _ADDR
-    // @DisplayName: Bus address of sensor
-    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("_ADDR", 23, RangeFinder, _address[0], 0),
-
-#if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_ADDR
-    // @DisplayName: Bus address of 2nd rangefinder
+    // @DisplayName: Bus address of second rangefinder
     // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_ADDR", 24, RangeFinder, _address[1], 0),
+
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
+
     // @Param: 3_TYPE
-    // @DisplayName: Second Rangefinder type
+    // @DisplayName: Third Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
+    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink
     AP_GROUPINFO("3_TYPE",    25, RangeFinder, _type[2], 0),
 
     // @Param: 3_PIN
@@ -291,28 +293,30 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     AP_GROUPINFO("3_RMETRIC", 34, RangeFinder, _ratiometric[2], 1),
 
     // @Param: 3_GNDCLEAR
-    // @DisplayName: Distance (in cm) from the second range finder to the ground
-    // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
+    // @DisplayName: Distance (in cm) from the third range finder to the ground
+    // @Description: This parameter sets the expected range measurement(in cm) that the third range finder should return when the vehicle is on the ground.
     // @Units: centimeters
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_GNDCLEAR", 35, RangeFinder, _ground_clearance_cm[2], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
-#endif
 
-#if RANGEFINDER_MAX_INSTANCES > 3
     // @Param: 3_ADDR
-    // @DisplayName: Bus address of 2nd rangefinder
+    // @DisplayName: Bus address of third rangefinder
     // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_ADDR", 36, RangeFinder, _address[2], 0),
-    
+
+#endif
+
+#if RANGEFINDER_MAX_INSTANCES > 3
+
     // @Param: 4_TYPE
-    // @DisplayName: Second Rangefinder type
+    // @DisplayName: Fourth Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
+    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink
     AP_GROUPINFO("4_TYPE",    37, RangeFinder, _type[3], 0),
 
     // @Param: 4_PIN
@@ -375,8 +379,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     AP_GROUPINFO("4_RMETRIC", 46, RangeFinder, _ratiometric[3], 1),
 
     // @Param: 4_GNDCLEAR
-    // @DisplayName: Distance (in cm) from the second range finder to the ground
-    // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
+    // @DisplayName: Distance (in cm) from the fourth range finder to the ground
+    // @Description: This parameter sets the expected range measurement(in cm) that the fourth range finder should return when the vehicle is on the ground.
     // @Units: centimeters
     // @Range: 0 127
     // @Increment: 1
@@ -384,7 +388,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     AP_GROUPINFO("4_GNDCLEAR", 47, RangeFinder, _ground_clearance_cm[3], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: 4_ADDR
-    // @DisplayName: Bus address of 2nd rangefinder
+    // @DisplayName: Bus address of fourth rangefinder
     // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
     // @Range: 0 127
     // @Increment: 1
@@ -463,6 +467,18 @@ void RangeFinder::update(void)
         }
     }
 }
+
+void RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
+{
+    if (!backend) {
+        return;
+    }
+    if (num_instances == RANGEFINDER_MAX_INSTANCES) {
+        AP_HAL::panic("Too many RANGERS backends");
+    }
+
+    drivers[num_instances++] = backend;
+}
     
 /*
   detect if an instance of a rangefinder is connected. 
@@ -478,26 +494,17 @@ void RangeFinder::detect_instance(uint8_t instance)
     }
 #endif
     if (type == RangeFinder_TYPE_PLI2C) {
-        if (AP_RangeFinder_PulsedLightLRF::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PulsedLightLRF(*this, instance, state[instance]);
-            return;
-        }
-    } 
+        _add_backend(AP_RangeFinder_PulsedLightLRF::detect(*this, instance, state[instance]));
+    }
     if (type == RangeFinder_TYPE_MBI2C) {
-        if (AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MaxsonarI2CXL(*this, instance, state[instance]);
-            return;
-        }
+        _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance]));
     }
     if (type == RangeFinder_TYPE_LWI2C) {
-        if (AP_RangeFinder_LightWareI2C::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareI2C(*this, instance, state[instance]);
-            return;
+        if (_address[instance]) {
+            _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
+                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, _address[instance])));
         }
-    } 
+    }
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (type == RangeFinder_TYPE_PX4) {
         if (AP_RangeFinder_PX4::detect(*this, instance)) {
@@ -529,7 +536,24 @@ void RangeFinder::detect_instance(uint8_t instance)
             drivers[instance] = new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager);
             return;
         }
-    } 
+    }
+#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
+     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
+    if (type == RangeFinder_TYPE_BEBOP) {
+        if (AP_RangeFinder_Bebop::detect(*this, instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_Bebop(*this, instance, state[instance]);
+            return;
+        }
+    }
+#endif
+    if (type == RangeFinder_TYPE_MAVLink) {
+        if (AP_RangeFinder_MAVLink::detect(*this, instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_MAVLink(*this, instance, state[instance]);
+            return;
+        }
+    }
     if (type == RangeFinder_TYPE_ANALOG) {
         // note that analog must be the last to be checked, as it will
         // always come back as present if the pin is valid
@@ -554,6 +578,15 @@ RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
     }
 
     return state[instance].status;
+}
+
+void RangeFinder::handle_msg(mavlink_message_t *msg) {
+  uint8_t i;
+  for (i=0; i<num_instances; i++) {
+      if ((drivers[i] != NULL) && (_type[i] != RangeFinder_TYPE_NONE)) {
+          drivers[i]->handle_msg(msg);
+      }
+  }
 }
 
 // true if sensor is returning data
@@ -596,14 +629,14 @@ void RangeFinder::update_pre_arm_check(uint8_t instance)
     }
 
     // update min, max captured distances
-    state[instance].pre_arm_distance_min = min(state[instance].distance_cm, state[instance].pre_arm_distance_min);
-    state[instance].pre_arm_distance_max = max(state[instance].distance_cm, state[instance].pre_arm_distance_max);
+    state[instance].pre_arm_distance_min = MIN(state[instance].distance_cm, state[instance].pre_arm_distance_min);
+    state[instance].pre_arm_distance_max = MAX(state[instance].distance_cm, state[instance].pre_arm_distance_max);
 
     // Check that the range finder has been exercised through a realistic range of movement
     if (((state[instance].pre_arm_distance_max - state[instance].pre_arm_distance_min) > RANGEFINDER_PREARM_REQUIRED_CHANGE_CM) &&
          (state[instance].pre_arm_distance_max < RANGEFINDER_PREARM_ALT_MAX_CM) &&
-         ((int16_t)state[instance].pre_arm_distance_min < (max(_ground_clearance_cm[instance],min_distance_cm(instance)) + 10)) &&
-         ((int16_t)state[instance].pre_arm_distance_min > (min(_ground_clearance_cm[instance],min_distance_cm(instance)) - 10))) {
+         ((int16_t)state[instance].pre_arm_distance_min < (MAX(_ground_clearance_cm[instance],min_distance_cm(instance)) + 10)) &&
+         ((int16_t)state[instance].pre_arm_distance_min > (MIN(_ground_clearance_cm[instance],min_distance_cm(instance)) - 10))) {
         state[instance].pre_arm_check = true;
     }
 }

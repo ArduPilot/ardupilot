@@ -17,16 +17,16 @@
   helicopter simulator class
 */
 
-#ifndef _SIM_HELICOPTER_H
-#define _SIM_HELICOPTER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
+
+namespace SITL {
 
 /*
   a helicopter simulator
  */
-class Helicopter : public Aircraft
-{
+class Helicopter : public Aircraft {
 public:
     Helicopter(const char *home_str, const char *frame_str);
 
@@ -42,7 +42,7 @@ private:
     float terminal_rotation_rate = 4*radians(360.0f);
     float hover_throttle = 0.65f;
     float terminal_velocity = 40;
-    float hover_lean = 8.0f;
+    float hover_lean = 3.0f;
     float yaw_zero = 0.1f;
     float rotor_rot_accel = radians(20);
     float roll_rate_max = radians(1400);
@@ -59,5 +59,4 @@ private:
     bool gas_heli = false;
 };
 
-
-#endif // _SIM_HELICOPTER_H
+} // namespace SITL

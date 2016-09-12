@@ -19,6 +19,7 @@
 //
 // - Try to keep this file organised in the same order as APM_Config.h.example
 //
+#pragma once
 
 #include "defines.h"
 
@@ -26,15 +27,7 @@
 /// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
 /// change in your local copy of APM_Config.h.
 ///
-#ifdef USE_CMAKE_APM_CONFIG
- #include "APM_Config_cmake.h" // <== Prefer cmake config if it exists
-#else
- #include "APM_Config.h" // <== THIS INCLUDE, DO NOT EDIT IT. EVER.
-#endif
-///
-/// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
-/// change in your local copy of APM_Config.h.
-///
+#include "APM_Config.h"
 
 // Just so that it's completely clear...
 #define ENABLED                 1
@@ -63,11 +56,7 @@
 //
 
 #ifndef FRSKY_TELEM_ENABLED
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
- # define FRSKY_TELEM_ENABLED ENABLED
-#else
- # define FRSKY_TELEM_ENABLED DISABLED
-#endif
+#define FRSKY_TELEM_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -82,11 +71,7 @@
 #endif
 #endif
 
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
-# define RANGEFINDER_ENABLED ENABLED
-#else
-# define RANGEFINDER_ENABLED DISABLED
-#endif
+#define RANGEFINDER_ENABLED ENABLED
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -235,6 +220,10 @@
  # define ELEVON_CH2_REVERSE     DISABLED
 #endif
 
+#ifndef DSPOILR_RUD_RATE_DEFAULT
+ #define DSPOILR_RUD_RATE_DEFAULT 100
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
 //
@@ -248,11 +237,7 @@
 //
 // uses 7726 bytes of memory on 2560 chips (all options are enabled)
 #ifndef MOUNT
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
- # define MOUNT          ENABLED
-#else
- # define MOUNT          DISABLED
-#endif
+#define MOUNT          ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -351,25 +336,7 @@
  # define LOGGING_ENABLED                ENABLED
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#define DEFAULT_LOG_BITMASK     \
-    MASK_LOG_ATTITUDE_MED | \
-    MASK_LOG_GPS | \
-    MASK_LOG_PM | \
-    MASK_LOG_NTUN | \
-    MASK_LOG_CTUN | \
-    MASK_LOG_MODE | \
-    MASK_LOG_CMD | \
-    MASK_LOG_COMPASS | \
-    MASK_LOG_CURRENT | \
-    MASK_LOG_TECS | \
-    MASK_LOG_CAMERA | \
-    MASK_LOG_RC
-#else
-// other systems have plenty of space for full logs
 #define DEFAULT_LOG_BITMASK   0xffff
-#endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -411,11 +378,7 @@
 // use this to completely disable the CLI. We now default the CLI to
 // off on smaller boards.
 #ifndef CLI_ENABLED
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
- # define CLI_ENABLED ENABLED
-#else
- # define CLI_ENABLED DISABLE
-#endif
+#define CLI_ENABLED ENABLED
 #endif
 
 // use this to disable geo-fencing
@@ -442,31 +405,17 @@
  # define RESET_SWITCH_CHAN_PWM 1750
 #endif
 
-// OBC Failsafe enable
-#ifndef OBC_FAILSAFE
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
- # define OBC_FAILSAFE ENABLED
-#else
- # define OBC_FAILSAFE DISABLED
-#endif
-#endif
-
-#if OBC_FAILSAFE == ENABLED && HAL_CPU_CLASS < HAL_CPU_CLASS_75
-#define CLI_ENABLED DISABLED
-#endif
-
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
-#define HIL_SUPPORT DISABLED
-#else
 #define HIL_SUPPORT ENABLED
+
+//////////////////////////////////////////////////////////////////////////////
+// Parachute release
+#ifndef PARACHUTE
+#define PARACHUTE ENABLED
 #endif
 
-/*
-  build a firmware version string.
-  GIT_VERSION comes from Makefile builds
-*/
-#ifndef GIT_VERSION
-#define FIRMWARE_STRING THISFIRMWARE
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+# define HAVE_PX4_MIXER 1
 #else
-#define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
+# define HAVE_PX4_MIXER 0
 #endif
+

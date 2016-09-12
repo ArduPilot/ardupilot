@@ -2,6 +2,9 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "RCInput.h"
+#include <fcntl.h>
+#include <unistd.h>
+#include <drivers/drv_pwm_output.h>
 #include <drivers/drv_hrt.h>
 #include <uORB/uORB.h>
 
@@ -9,12 +12,12 @@ using namespace VRBRAIN;
 
 extern const AP_HAL::HAL& hal;
 
-void VRBRAINRCInput::init(void* unused)
+void VRBRAINRCInput::init()
 {
 	_perf_rcin = perf_alloc(PC_ELAPSED, "APM_rcin");
 	_rc_sub = orb_subscribe(ORB_ID(input_rc));
 	if (_rc_sub == -1) {
-		hal.scheduler->panic("Unable to subscribe to input_rc");		
+		AP_HAL::panic("Unable to subscribe to input_rc");
 	}
 	clear_overrides();
         pthread_mutex_init(&rcin_mutex, NULL);
@@ -112,6 +115,24 @@ void VRBRAINRCInput::_timer_tick(void)
         // note, we rely on the vehicle code checking new_input() 
         // and a timeout for the last valid input to handle failsafe
 	perf_end(_perf_rcin);
+}
+
+bool VRBRAINRCInput::rc_bind(int dsmMode)
+{
+
+
+
+
+
+
+
+
+
+
+
+
+
+    return true;
 }
 
 #endif

@@ -1,5 +1,3 @@
-#ifndef __OpticalFlow_H__
-#define __OpticalFlow_H__
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -14,6 +12,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
 /*
  *       OpticalFlow.h - OpticalFlow Base Class for Ardupilot
@@ -24,6 +23,7 @@
 #include <AP_Math/AP_Math.h>
 
 class OpticalFlow_backend;
+class AP_AHRS_NavEKF;
 
 class OpticalFlow
 {
@@ -31,7 +31,7 @@ class OpticalFlow
 
 public:
     // constructor
-    OpticalFlow(void);
+    OpticalFlow(AP_AHRS_NavEKF& ahrs);
 
     // init - initialise sensor
     void init(void);
@@ -97,5 +97,3 @@ private:
 #include "AP_OpticalFlow_HIL.h"
 #include "AP_OpticalFlow_PX4.h"
 #include "AP_OpticalFlow_Linux.h"
-
-#endif

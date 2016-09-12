@@ -4,53 +4,39 @@
 // Simple test for the GCS_MAVLink routing 
 //
 
-#include <stdarg.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_ADC/AP_ADC.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
-#include <Filter/Filter.h>
-#include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Mission/AP_Mission.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <AP_NavEKF/AP_NavEKF.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_Rally/AP_Rally.h>
-#include <AP_Scheduler/AP_Scheduler.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
-#include <SITL/SITL.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+class GCS_MAVLINK_routing : public GCS_MAVLINK
+{
+
+public:
+
+    void data_stream_send(void) override { };
+
+protected:
+
+    uint32_t telem_delay() const override { return 0; }
+
+private:
+
+    void handleMessage(mavlink_message_t * msg) { }
+    bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return false ; }
+    void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override { }
+    bool try_send_message(enum ap_message id) override { return false; }
+
+};
+
 
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+static GCS_MAVLINK_routing gcs[MAVLINK_COMM_NUM_BUFFERS];
 
 extern mavlink_system_t mavlink_system;
 
-const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
+const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
@@ -85,7 +71,7 @@ void loop(void)
         err_count++;
     }
 
-    // incoming targetted message for someone else
+    // incoming targeted message for someone else
     mavlink_param_set_t param_set = {0};
     param_set.target_system = mavlink_system.sysid+1;
     param_set.target_component = mavlink_system.compid;
@@ -95,7 +81,7 @@ void loop(void)
         err_count++;
     }
 
-    // incoming targetted message for us
+    // incoming targeted message for us
     param_set.target_system = mavlink_system.sysid;
     param_set.target_component = mavlink_system.compid;
     mavlink_msg_param_set_encode(3, 1, &msg, &param_set);
@@ -104,7 +90,7 @@ void loop(void)
         err_count++;
     }
 
-    // incoming targetted message for our system, but other compid
+    // incoming targeted message for our system, but other compid
     // should be processed locally
     param_set.target_system = mavlink_system.sysid;
     param_set.target_component = mavlink_system.compid+1;

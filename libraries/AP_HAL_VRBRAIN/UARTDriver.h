@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_VRBRAIN_UARTDRIVER_H__
-#define __AP_HAL_VRBRAIN_UARTDRIVER_H__
+#pragma once
 
 #include "AP_HAL_VRBRAIN.h"
 #include <systemlib/perf_counter.h>
@@ -18,9 +16,9 @@ public:
     bool tx_pending();
 
     /* VRBRAIN implementations of Stream virtual methods */
-    int16_t available();
-    int16_t txspace();
-    int16_t read();
+    uint32_t available() override;
+    uint32_t txspace() override;
+    int16_t read() override;
 
     /* VRBRAIN implementations of Print virtual methods */
     size_t write(uint8_t c);
@@ -76,6 +74,7 @@ private:
     uint32_t _total_read;
     uint32_t _total_written;
     enum flow_control _flow_control;
-};
 
-#endif // __AP_HAL_VRBRAIN_UARTDRIVER_H__
+    pid_t _uart_owner_pid;
+
+};

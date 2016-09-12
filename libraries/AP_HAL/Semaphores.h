@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_SEMAPHORES_H__
-#define __AP_HAL_SEMAPHORES_H__
+#pragma once
 
 #include "AP_HAL_Namespace.h"
 
@@ -12,5 +10,3 @@ public:
     virtual bool take_nonblocking() WARN_IF_UNUSED = 0;
     virtual bool give() = 0;
 };
-
-#endif  // __AP_HAL_SEMAPHORES_H__

@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_PX4_UARTDRIVER_H__
-#define __AP_HAL_PX4_UARTDRIVER_H__
+#pragma once
 
 #include "AP_HAL_PX4.h"
 #include <systemlib/perf_counter.h>
@@ -18,9 +16,9 @@ public:
     bool tx_pending();
 
     /* PX4 implementations of Stream virtual methods */
-    int16_t available();
-    int16_t txspace();
-    int16_t read();
+    uint32_t available() override;
+    uint32_t txspace() override;
+    int16_t read() override;
 
     /* PX4 implementations of Print virtual methods */
     size_t write(uint8_t c);
@@ -80,5 +78,3 @@ private:
     pid_t _uart_owner_pid;
 
 };
-
-#endif // __AP_HAL_PX4_UARTDRIVER_H__

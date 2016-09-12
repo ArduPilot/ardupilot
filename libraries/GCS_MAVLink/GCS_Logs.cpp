@@ -63,16 +63,14 @@ void GCS_MAVLINK::handle_log_request_list(mavlink_message_t *msg, DataFlash_Clas
         _log_next_list_entry = 0;
         _log_last_list_entry = 0;        
     } else {
-        uint16_t last_log_num = dataflash.find_last_log();
-
         _log_next_list_entry = packet.start;
         _log_last_list_entry = packet.end;
 
-        if (_log_last_list_entry > last_log_num) {
-            _log_last_list_entry = last_log_num;
+        if (_log_last_list_entry > _log_num_logs) {
+            _log_last_list_entry = _log_num_logs;
         }
-        if (_log_next_list_entry < last_log_num + 1 - _log_num_logs) {
-            _log_next_list_entry = last_log_num + 1 - _log_num_logs;
+        if (_log_next_list_entry < 1) {
+            _log_next_list_entry = 1;
         }
     }
 
@@ -94,8 +92,7 @@ void GCS_MAVLINK::handle_log_request_data(mavlink_message_t *msg, DataFlash_Clas
         _log_sending = false;
 
         uint16_t num_logs = dataflash.get_num_logs();
-        uint16_t last_log_num = dataflash.find_last_log();
-        if (packet.id > last_log_num || packet.id < last_log_num + 1 - num_logs) {
+        if (packet.id > num_logs || packet.id < 1) {
             return;
         }
 
@@ -154,21 +151,22 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
     if (!_log_sending) {
         return;
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // assume USB speeds in SITL for the purposes of log download
+    const uint8_t num_sends = 40;
+#else
     uint8_t num_sends = 1;
     if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
         // when on USB we can send a lot more data
         num_sends = 40;
     } else if (have_flow_control()) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         num_sends = 80;
-#else
+    #else
         num_sends = 10;
-#endif
+    #endif
     }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    // assume USB speeds in SITL for the purposes of log download
-    num_sends = 40;
 #endif
 
     for (uint8_t i=0; i<num_sends; i++) {
@@ -183,12 +181,11 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
  */
 void GCS_MAVLINK::handle_log_send_listing(DataFlash_Class &dataflash)
 {
-    uint16_t txspace = comm_get_txspace(chan);
-    if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_LOG_ENTRY_LEN) {
+    if (!HAVE_PAYLOAD_SPACE(chan, LOG_ENTRY)) {
         // no space
         return;
     }
-    if (hal.scheduler->millis() - last_heartbeat_time > 3000) {
+    if (AP_HAL::millis() - last_heartbeat_time > 3000) {
         // give a heartbeat a chance
         return;
     }
@@ -213,12 +210,11 @@ void GCS_MAVLINK::handle_log_send_listing(DataFlash_Class &dataflash)
  */
 bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
 {
-    uint16_t txspace = comm_get_txspace(chan);
-    if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_LOG_DATA_LEN) {
+    if (!HAVE_PAYLOAD_SPACE(chan, LOG_DATA)) {
         // no space
         return false;
     }
-    if (hal.scheduler->millis() - last_heartbeat_time > 3000) {
+    if (AP_HAL::millis() - last_heartbeat_time > 3000) {
         // give a heartbeat a chance
         return false;
     }
@@ -243,7 +239,9 @@ bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
     packet.id = _log_num_data;
     packet.count = ret;
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOG_DATA, (const char *)&packet, 
-                                    MAVLINK_MSG_ID_LOG_DATA_LEN, MAVLINK_MSG_ID_LOG_DATA_CRC);
+                                    MAVLINK_MSG_ID_LOG_DATA_MIN_LEN,
+                                    MAVLINK_MSG_ID_LOG_DATA_LEN,
+                                    MAVLINK_MSG_ID_LOG_DATA_CRC);
 
     _log_data_offset += len;
     _log_data_remaining -= len;

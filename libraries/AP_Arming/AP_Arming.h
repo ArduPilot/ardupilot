@@ -1,9 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_ARMING_H__
-#define __AP_ARMING_H__ 
+#pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -23,6 +22,8 @@ public:
         ARMING_CHECK_BATTERY    = 0x0100,
         ARMING_CHECK_AIRSPEED   = 0x0200,
         ARMING_CHECK_LOGGING    = 0x0400,
+        ARMING_CHECK_SWITCH     = 0x0800,
+        ARMING_CHECK_GPS_CONFIG = 0x1000,
     };
 
     enum ArmingMethod {
@@ -44,7 +45,7 @@ public:
     };
 
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-              const enum HomeState &home_set);
+              const AP_BattMonitor &battery, const enum HomeState &home_set);
 
     ArmingRequired arming_required();
     bool arm(uint8_t method);
@@ -68,11 +69,14 @@ protected:
     AP_Int8                 require;
     AP_Int8                 rudder_arming_value;
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
+    AP_Float                accel_error_threshold;
+    AP_Float                _min_voltage[AP_BATT_MONITOR_MAX_INSTANCES];
 
     // references
     const AP_AHRS           &ahrs;
     const AP_Baro           &barometer;
     Compass                 &_compass;
+    const AP_BattMonitor    &_battery;
     const enum HomeState    &home_is_set;
 
     // internal members
@@ -104,5 +108,3 @@ protected:
 
     bool manual_transmitter_checks(bool report);
 };
-
-#endif //__AP_ARMING_H__

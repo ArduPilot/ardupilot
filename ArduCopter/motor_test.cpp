@@ -27,7 +27,7 @@ void Copter::motor_test_output()
     }
 
     // check for test timeout
-    if ((hal.scheduler->millis() - motor_test_start_ms) >= motor_test_timeout_ms) {
+    if ((AP_HAL::millis() - motor_test_start_ms) >= motor_test_timeout_ms) {
         // stop motor test
         motor_test_stop();
     } else {
@@ -38,9 +38,13 @@ void Copter::motor_test_output()
 
             case MOTOR_TEST_THROTTLE_PERCENT:
                 // sanity check motor_test_throttle value
+#if FRAME_CONFIG != HELI_FRAME
                 if (motor_test_throttle_value <= 100) {
-                    pwm = channel_throttle->radio_min + (channel_throttle->radio_max - channel_throttle->radio_min) * (float)motor_test_throttle_value/100.0f;
+                    int16_t pwm_min = motors.get_pwm_output_min();
+                    int16_t pwm_max = motors.get_pwm_output_max();
+                    pwm = pwm_min + (pwm_max - pwm_min) * (float)motor_test_throttle_value/100.0f;
                 }
+#endif
                 break;
 
             case MOTOR_TEST_THROTTLE_PWM:
@@ -48,7 +52,7 @@ void Copter::motor_test_output()
                 break;
 
             case MOTOR_TEST_THROTTLE_PILOT:
-                pwm = channel_throttle->radio_in;
+                pwm = channel_throttle->get_radio_in();
                 break;
 
             default:
@@ -74,19 +78,19 @@ bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
     // check rc has been calibrated
     pre_arm_rc_checks();
     if(check_rc && !ap.pre_arm_rc_check) {
-        gcs[chan-MAVLINK_COMM_0].send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Motor Test: RC not calibrated"));
+        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: RC not calibrated");
         return false;
     }
 
     // ensure we are landed
     if (!ap.land_complete) {
-        gcs[chan-MAVLINK_COMM_0].send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Motor Test: vehicle not landed"));
+        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: vehicle not landed");
         return false;
     }
 
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        gcs[chan-MAVLINK_COMM_0].send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Motor Test: Safety Switch"));
+        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety switch");
         return false;
     }
 
@@ -128,8 +132,8 @@ uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_s
     }
 
     // set timeout
-    motor_test_start_ms = hal.scheduler->millis();
-    motor_test_timeout_ms = min(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
+    motor_test_start_ms = AP_HAL::millis();
+    motor_test_timeout_ms = MIN(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
 
     // store required output
     motor_test_seq = motor_seq;

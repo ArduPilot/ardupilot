@@ -14,21 +14,21 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
 /*
-  backend driver for airspeed from I2C
+  backend driver for airspeed from PX4Firmware
  */
 
-#ifndef __AP_AIRSPEED_PX4_H__
-#define __AP_AIRSPEED_PX4_H__
-
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
 #include "AP_Airspeed_Backend.h"
 
 class AP_Airspeed_PX4 : public AP_Airspeed_Backend {
 public:
     // constructor
-    AP_Airspeed_PX4() : _fd(-1) {}
+    AP_Airspeed_PX4(const AP_Float &psi_range) :
+        _psi_range(psi_range) {}
 
     // probe and initialise the sensor
     bool init(void);
@@ -40,9 +40,8 @@ public:
     bool get_temperature(float &temperature);
 
 private:
-    int _fd;
+    int _fd = -1;
     uint64_t _last_timestamp;
     float _temperature;
+    const AP_Float &_psi_range;
 };
-
-#endif // __AP_AIRSPEED_PX4_H__

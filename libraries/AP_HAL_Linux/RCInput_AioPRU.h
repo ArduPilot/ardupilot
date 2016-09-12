@@ -8,10 +8,7 @@
 // GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-
-#ifndef __AP_HAL_LINUX_RCINPUT_AIOPRU_H__
-#define __AP_HAL_LINUX_RCINPUT_AIOPRU_H__
+#pragma once
 
 /*
   This class implements RCInput on the BeagleBoneBlack with a PRU
@@ -21,16 +18,18 @@
 #include "AP_HAL_Linux.h"
 
 #define RCIN_PRUSS_RAM_BASE   0x4a303000
+
 // we use 300 ring buffer entries to guarantee that a full 25 byte
 // frame of 12 bits per byte
 
-class Linux::LinuxRCInput_AioPRU : public Linux::LinuxRCInput 
-{
+namespace Linux {
+
+class RCInput_AioPRU : public RCInput {
 public:
-    void init(void*);
+    void init();
     void _timer_tick(void);
 
- private:
+protected:
     static const uint32_t TICK_PER_US = 200;
     static const uint32_t NUM_RING_ENTRIES = 300;
     // shared ring buffer with the PRU which records pin transitions
@@ -45,4 +44,4 @@ public:
     volatile struct ring_buffer *ring_buffer;
 };
 
-#endif // __AP_HAL_LINUX_RCINPUT_AIOPRU_H__
+}

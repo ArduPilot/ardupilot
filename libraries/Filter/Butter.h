@@ -1,6 +1,4 @@
-
-#ifndef __FILTER_BUTTER_H__
-#define __FILTER_BUTTER_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -107,5 +105,3 @@ struct butter50_8_coeffs
 };
 typedef Butter2<butter50_8_coeffs> butter50hz8_0; //50hz sample, 8hz fcut
 typedef Butter2<butter50_8_coeffs> butter10hz1_6; //10hz sample, 1.6hz fcut
-
-#endif // __FILTER_BUTTER_H__

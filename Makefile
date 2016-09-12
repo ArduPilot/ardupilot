@@ -15,13 +15,13 @@ clean: plane copter rover antennatracker
 .PHONY: plane copter rover antennatracker
 
 plane:
-	make -C ArduPlane $(TARGET)
+	$(MAKE) -C ArduPlane $(TARGET)
 
 copter:
-	make -C ArduCopter $(TARGET)
+	$(MAKE) -C ArduCopter $(TARGET)
 
 rover:
-	make -C APMrover2 $(TARGET)
+	$(MAKE) -C APMrover2 $(TARGET)
 
 antennatracker:
-	make -C AntennaTracker $(TARGET)
+	$(MAKE) -C AntennaTracker $(TARGET)

@@ -13,351 +13,290 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_Baro_MS5611.h"
 
+#include <utility>
+
+#include <AP_Math/AP_Math.h>
+
+extern const AP_HAL::HAL &hal;
+
+static const uint8_t CMD_MS56XX_RESET = 0x1E;
+static const uint8_t CMD_MS56XX_READ_ADC = 0x00;
+
+/* PROM start address */
+static const uint8_t CMD_MS56XX_PROM = 0xA0;
+
+/* write to one of these addresses to start pressure conversion */
+#define ADDR_CMD_CONVERT_D1_OSR256  0x40
+#define ADDR_CMD_CONVERT_D1_OSR512  0x42
+#define ADDR_CMD_CONVERT_D1_OSR1024 0x44
+#define ADDR_CMD_CONVERT_D1_OSR2048 0x46
+#define ADDR_CMD_CONVERT_D1_OSR4096 0x48
+
+/* write to one of these addresses to start temperature conversion */
+#define ADDR_CMD_CONVERT_D2_OSR256  0x50
+#define ADDR_CMD_CONVERT_D2_OSR512  0x52
+#define ADDR_CMD_CONVERT_D2_OSR1024 0x54
+#define ADDR_CMD_CONVERT_D2_OSR2048 0x56
+#define ADDR_CMD_CONVERT_D2_OSR4096 0x58
+
+#define CONVERSION_TIME_OSR_4096   9.04 * USEC_PER_MSEC
+#define CONVERSION_TIME_OSR_2048   4.54 * USEC_PER_MSEC
+#define CONVERSION_TIME_OSR_1024   2.28 * USEC_PER_MSEC
+#define CONVERSION_TIME_OSR_0512   1.17 * USEC_PER_MSEC
+#define CONVERSION_TIME_OSR_0256   0.60 * USEC_PER_MSEC
 /*
-  originally written by Jose Julio, Pat Hickey and Jordi Muñoz
-
-  Heavily modified by Andrew Tridgell
-*/
-
-#include <AP_HAL/AP_HAL.h>
-#include "AP_Baro.h"
-
-extern const AP_HAL::HAL& hal;
-
-#define CMD_MS5611_RESET 0x1E
-#define CMD_MS5611_PROM_Setup 0xA0
-#define CMD_MS5611_PROM_C1 0xA2
-#define CMD_MS5611_PROM_C2 0xA4
-#define CMD_MS5611_PROM_C3 0xA6
-#define CMD_MS5611_PROM_C4 0xA8
-#define CMD_MS5611_PROM_C5 0xAA
-#define CMD_MS5611_PROM_C6 0xAC
-#define CMD_MS5611_PROM_CRC 0xAE
-#define CMD_CONVERT_D1_OSR4096 0x48   // Maximum resolution (oversampling)
-#define CMD_CONVERT_D2_OSR4096 0x58   // Maximum resolution (oversampling)
-
-// SPI Device //////////////////////////////////////////////////////////////////
-
-AP_SerialBus_SPI::AP_SerialBus_SPI(enum AP_HAL::SPIDevice device, enum AP_HAL::SPIDeviceDriver::bus_speed speed) :
-    _device(device),
-    _speed(speed),
-    _spi(NULL),
-    _spi_sem(NULL)
-{
-}
-
-void AP_SerialBus_SPI::init()
-{
-    _spi = hal.spi->device(_device);
-    if (_spi == NULL) {
-        hal.scheduler->panic(PSTR("did not get valid SPI device driver!"));
-    }
-    _spi_sem = _spi->get_semaphore();
-    if (_spi_sem == NULL) {
-        hal.scheduler->panic(PSTR("AP_SerialBus_SPI did not get valid SPI semaphroe!"));
-    }
-    _spi->set_bus_speed(_speed);
-}
-
-uint16_t AP_SerialBus_SPI::read_16bits(uint8_t reg)
-{
-    uint8_t tx[3] = { reg, 0, 0 };
-    uint8_t rx[3];
-    _spi->transaction(tx, rx, 3);
-    return ((uint16_t) rx[1] << 8 ) | ( rx[2] );
-}
-
-uint32_t AP_SerialBus_SPI::read_24bits(uint8_t reg)
-{
-    uint8_t tx[4] = { reg, 0, 0, 0 };
-    uint8_t rx[4];
-    _spi->transaction(tx, rx, 4);
-    return (((uint32_t)rx[1])<<16) | (((uint32_t)rx[2])<<8) | ((uint32_t)rx[3]);
-}
-
-bool AP_SerialBus_SPI::write(uint8_t reg)
-{
-    uint8_t tx[1] = { reg };
-    _spi->transaction(tx, NULL, 1);
-    return true;
-}
-
-bool AP_SerialBus_SPI::sem_take_blocking() 
-{
-    return _spi_sem->take(10);
-}
-
-bool AP_SerialBus_SPI::sem_take_nonblocking()
-{
-    return _spi_sem->take_nonblocking();
-}
-
-void AP_SerialBus_SPI::sem_give()
-{
-    _spi_sem->give();
-}
-
-
-/// I2C SerialBus
-AP_SerialBus_I2C::AP_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
-    _i2c(i2c),
-    _addr(addr),
-    _i2c_sem(NULL) 
-{
-}
-
-void AP_SerialBus_I2C::init()
-{
-    _i2c_sem = _i2c->get_semaphore();
-    if (_i2c_sem == NULL) {
-        hal.scheduler->panic(PSTR("AP_SerialBus_I2C did not get valid I2C semaphore!"));
-    }
-}
-
-uint16_t AP_SerialBus_I2C::read_16bits(uint8_t reg)
-{
-    uint8_t buf[2];
-    if (_i2c->readRegisters(_addr, reg, sizeof(buf), buf) == 0) {
-        return (((uint16_t)(buf[0]) << 8) | buf[1]);
-    }
-    return 0;
-}
-
-uint32_t AP_SerialBus_I2C::read_24bits(uint8_t reg)
-{
-    uint8_t buf[3];
-    if (_i2c->readRegisters(_addr, reg, sizeof(buf), buf) == 0) {
-        return (((uint32_t)buf[0]) << 16) | (((uint32_t)buf[1]) << 8) | buf[2];
-    }
-    return 0;
-}
-
-bool AP_SerialBus_I2C::write(uint8_t reg)
-{
-    return _i2c->write(_addr, 1, &reg) == 0;
-}
-
-bool AP_SerialBus_I2C::sem_take_blocking() 
-{
-    return _i2c_sem->take(10);
-}
-
-bool AP_SerialBus_I2C::sem_take_nonblocking()
-{
-    return _i2c_sem->take_nonblocking();
-}
-
-void AP_SerialBus_I2C::sem_give()
-{
-    _i2c_sem->give();
-}
-
+  use an OSR of 1024 to reduce the self-heating effect of the
+  sensor. Information from MS tells us that some individual sensors
+  are quite sensitive to this effect and that reducing the OSR can
+  make a big difference
+ */
+static const uint8_t ADDR_CMD_CONVERT_PRESSURE = ADDR_CMD_CONVERT_D1_OSR1024;
+static const uint8_t ADDR_CMD_CONVERT_TEMPERATURE = ADDR_CMD_CONVERT_D2_OSR1024;
+static const uint32_t CONVERSION_TIME = CONVERSION_TIME_OSR_1024;
 /*
   constructor
  */
-AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer) :
-    AP_Baro_Backend(baro),
-    _serial(serial),
-    _updated(false),
-    _state(0),
-    _last_timer(0),
-    _use_timer(use_timer),
-    _D1(0.0f),
-    _D2(0.0f)
+AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+    : AP_Baro_Backend(baro)
+    , _dev(std::move(dev))
 {
-    _instance = _frontend.register_sensor();
-    _serial->init();
+}
 
-    // we need to suspend timers to prevent other SPI drivers grabbing
-    // the bus while we do the long initialisation
-    hal.scheduler->suspend_timer_procs();
-
-    if (!_serial->sem_take_blocking()){
-        hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init"));
+void AP_Baro_MS56XX::_init()
+{
+    if (!_dev) {
+        AP_HAL::panic("AP_Baro_MS56XX: failed to use device");
     }
 
-    _serial->write(CMD_MS5611_RESET);
+    _sem = hal.util->new_semaphore();
+    if (!_sem) {
+        AP_HAL::panic("AP_Baro_MS56XX: failed to create semaphore");
+    }
+
+    _instance = _frontend.register_sensor();
+
+    if (!_dev->get_semaphore()->take(10)) {
+        AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
+    }
+
+    _dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0);
     hal.scheduler->delay(4);
 
-    // We read the factory calibration
-    // The on-chip CRC is not used
-    _C1 = _serial->read_16bits(CMD_MS5611_PROM_C1);
-    _C2 = _serial->read_16bits(CMD_MS5611_PROM_C2);
-    _C3 = _serial->read_16bits(CMD_MS5611_PROM_C3);
-    _C4 = _serial->read_16bits(CMD_MS5611_PROM_C4);
-    _C5 = _serial->read_16bits(CMD_MS5611_PROM_C5);
-    _C6 = _serial->read_16bits(CMD_MS5611_PROM_C6);
-
-    if (!_check_crc()) {
-        hal.scheduler->panic(PSTR("Bad CRC on MS5611"));
+    uint16_t prom[8];
+    if (!_read_prom(prom)) {
+        AP_HAL::panic("Can't read PROM");
     }
 
-    // Send a command to read Temp first
-    _serial->write(CMD_CONVERT_D2_OSR4096);
-    _last_timer = hal.scheduler->micros();
+    // Save factory calibration coefficients
+    _cal_reg.c1 = prom[1];
+    _cal_reg.c2 = prom[2];
+    _cal_reg.c3 = prom[3];
+    _cal_reg.c4 = prom[4];
+    _cal_reg.c5 = prom[5];
+    _cal_reg.c6 = prom[6];
+
+    // Send a command to read temperature first
+    _dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0);
+    _last_cmd_usec = AP_HAL::micros();
     _state = 0;
 
-    _s_D1 = 0;
-    _s_D2 = 0;
-    _d1_count = 0;
-    _d2_count = 0;
+    memset(&_accum, 0, sizeof(_accum));
 
-    _serial->sem_give();
+    _dev->get_semaphore()->give();
 
-    hal.scheduler->resume_timer_procs();
-
-    if (_use_timer) {
-        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void));
-    }
+    /* Request 100Hz update */
+    _dev->register_periodic_callback(10 * USEC_PER_MSEC,
+                                     FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, bool));
 }
 
 /**
- * MS5611 crc4 method based on PX4Firmware code
+ * MS56XX crc4 method from datasheet for 16 bytes (8 short values)
  */
-bool AP_Baro_MS56XX::_check_crc(void)
+static uint16_t crc4(uint16_t *data)
 {
-    int16_t cnt;
-    uint16_t n_rem;
-    uint16_t crc_read;
+    uint16_t n_rem = 0;
     uint8_t n_bit;
-    uint16_t n_prom[8] = { _serial->read_16bits(CMD_MS5611_PROM_Setup),
-                           _C1, _C2, _C3, _C4, _C5, _C6,
-                           _serial->read_16bits(CMD_MS5611_PROM_CRC) };
-    n_rem = 0x00;
 
-    /* save the read crc */
-    crc_read = n_prom[7];
-
-    /* remove CRC byte */
-    n_prom[7] = (0xFF00 & (n_prom[7]));
-
-    for (cnt = 0; cnt < 16; cnt++) {
+    for (uint8_t cnt = 0; cnt < 16; cnt++) {
         /* uneven bytes */
         if (cnt & 1) {
-            n_rem ^= (uint8_t)((n_prom[cnt >> 1]) & 0x00FF);
-
+            n_rem ^= (uint8_t)((data[cnt >> 1]) & 0x00FF);
         } else {
-            n_rem ^= (uint8_t)(n_prom[cnt >> 1] >> 8);
+            n_rem ^= (uint8_t)(data[cnt >> 1] >> 8);
         }
 
         for (n_bit = 8; n_bit > 0; n_bit--) {
             if (n_rem & 0x8000) {
                 n_rem = (n_rem << 1) ^ 0x3000;
-
             } else {
                 n_rem = (n_rem << 1);
             }
         }
     }
 
-    /* final 4 bit remainder is CRC value */
-    n_rem = (0x000F & (n_rem >> 12));
-    n_prom[7] = crc_read;
-
-    /* return true if CRCs match */
-    return (0x000F & crc_read) == (n_rem ^ 0x00);
+    return (n_rem >> 12) & 0xF;
 }
 
+uint16_t AP_Baro_MS56XX::_read_prom_word(uint8_t word)
+{
+    const uint8_t reg = CMD_MS56XX_PROM + (word << 1);
+    uint8_t val[2];
+
+    if (!_dev->transfer(&reg, 1, val, 2)) {
+        return 0;
+    }
+    return (val[0] << 8) | val[1];
+}
+
+uint32_t AP_Baro_MS56XX::_read_adc()
+{
+    uint8_t val[3];
+
+    if (!_dev->transfer(&CMD_MS56XX_READ_ADC, 1, val, 3)) {
+        return 0;
+    }
+    return (val[0] << 16) | (val[1] << 8) | val[2];
+}
+
+bool AP_Baro_MS56XX::_read_prom(uint16_t prom[8])
+{
+    /*
+     * MS5611-01BA datasheet, CYCLIC REDUNDANCY CHECK (CRC): "MS5611-01BA
+     * contains a PROM memory with 128-Bit. A 4-bit CRC has been implemented
+     * to check the data validity in memory."
+     *
+     * CRC field must me removed for CRC-4 calculation.
+     */
+    for (uint8_t i = 0; i < 8; i++) {
+        prom[i] = _read_prom_word(i);
+    }
+
+    /* save the read crc */
+    const uint16_t crc_read = prom[7] & 0xf;
+
+    /* remove CRC byte */
+    prom[7] &= 0xff00;
+
+    return crc_read == crc4(prom);
+}
+
+bool AP_Baro_MS5637::_read_prom(uint16_t prom[8])
+{
+    /*
+     * MS5637-02BA03 datasheet, CYCLIC REDUNDANCY CHECK (CRC): "MS5637
+     * contains a PROM memory with 112-Bit. A 4-bit CRC has been implemented
+     * to check the data validity in memory."
+     *
+     * 8th PROM word must be zeroed and CRC field removed for CRC-4
+     * calculation.
+     */
+    for (uint8_t i = 0; i < 7; i++) {
+        prom[i] = _read_prom_word(i);
+    }
+
+    prom[7] = 0;
+
+    /* save the read crc */
+    const uint16_t crc_read = (prom[0] & 0xf000) >> 12;
+
+    /* remove CRC byte */
+    prom[0] &= ~0xf000;
+
+    return crc_read == crc4(prom);
+}
 
 /*
-  Read the sensor. This is a state machine
-  We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
-  temperature does not change so quickly...
+ * Read the sensor with a state machine
+ * We read one time temperature (state=0) and then 4 times pressure (states 1-4)
+ *
+ * Temperature is used to calculate the compensated pressure and doesn't vary
+ * as fast as pressure. Hence we reuse the same temperature for 4 samples of
+ * pressure.
 */
-void AP_Baro_MS56XX::_timer(void)
+bool AP_Baro_MS56XX::_timer(void)
 {
-    // Throttle read rate to 100hz maximum.
-    if (hal.scheduler->micros() - _last_timer < 10000) {
-        return;
+    /*
+     * transfer is taking longer than it should or we got stuck by other
+     * sensors: skip one sample
+     */
+    if (AP_HAL::micros() - _last_cmd_usec < CONVERSION_TIME) {
+        return true;
     }
 
-    if (!_serial->sem_take_nonblocking()) {
-        return;
-    }
+    uint8_t next_cmd;
+    uint8_t next_state;
+    uint32_t adc_val = _read_adc();
 
-    if (_state == 0) {
-        // On state 0 we read temp
-        uint32_t d2 = _serial->read_24bits(0);
-        if (d2 != 0) {
-            _s_D2 += d2;
-            _d2_count++;
-            if (_d2_count == 32) {
-                // we have summed 32 values. This only happens
-                // when we stop reading the barometer for a long time
-                // (more than 1.2 seconds)
-                _s_D2 >>= 1;
-                _d2_count = 16;
-            }
-
-            if (_serial->write(CMD_CONVERT_D1_OSR4096)) {      // Command to read pressure
-                _state++;
-            }
-        } else {
-            /* if read fails, re-initiate a temperature read command or we are
-             * stuck */
-            _serial->write(CMD_CONVERT_D2_OSR4096);
-        }
+    /*
+     * If read fails, re-initiate a read command for current state or we are
+     * stuck
+     */
+    if (adc_val == 0) {
+        next_state = _state;
     } else {
-        uint32_t d1 = _serial->read_24bits(0);;
-        if (d1 != 0) {
-            // occasional zero values have been seen on the PXF
-            // board. These may be SPI errors, but safest to ignore
-            _s_D1 += d1;
-            _d1_count++;
-            if (_d1_count == 128) {
-                // we have summed 128 values. This only happens
-                // when we stop reading the barometer for a long time
-                // (more than 1.2 seconds)
-                _s_D1 >>= 1;
-                _d1_count = 64;
-            }
-            // Now a new reading exists
-            _updated = true;
-
-            if (_state == 4) {
-                if (_serial->write(CMD_CONVERT_D2_OSR4096)) { // Command to read temperature
-                    _state = 0;
-                }
-            } else {
-                if (_serial->write(CMD_CONVERT_D1_OSR4096)) { // Command to read pressure
-                    _state++;
-                }
-            }
-        } else {
-            /* if read fails, re-initiate a pressure read command or we are
-             * stuck */
-            _serial->write(CMD_CONVERT_D1_OSR4096);
-        }
+        next_state = (_state + 1) % 5;
     }
 
-    _last_timer = hal.scheduler->micros();
-    _serial->sem_give();
+    next_cmd = next_state == 0 ? ADDR_CMD_CONVERT_TEMPERATURE
+                               : ADDR_CMD_CONVERT_PRESSURE;
+    _dev->transfer(&next_cmd, 1, nullptr, 0);
+
+    _last_cmd_usec = AP_HAL::micros();
+
+    /* if we had a failed read we are all done */
+    if (adc_val == 0) {
+        return true;
+    }
+
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        if (_state == 0) {
+            _update_and_wrap_accumulator(&_accum.s_D2, adc_val,
+                                         &_accum.d2_count, 32);
+        } else {
+            _update_and_wrap_accumulator(&_accum.s_D1, adc_val,
+                                         &_accum.d1_count, 128);
+        }
+        _sem->give();
+        _state = next_state;
+    }
+
+    return true;
+}
+
+void AP_Baro_MS56XX::_update_and_wrap_accumulator(uint32_t *accum, uint32_t val,
+                                                  uint8_t *count, uint8_t max_count)
+{
+    *accum += val;
+    *count += 1;
+    if (*count == max_count) {
+        *count = max_count / 2;
+        *accum = *accum / 2;
+    }
 }
 
 void AP_Baro_MS56XX::update()
 {
-    if (!_use_timer) {
-        // if we're not using the timer then accumulate one more time
-        // to cope with the calibration loop and minimise lag
-        accumulate();
-    }
-
-    if (!_updated) {
-        return;
-    }
     uint32_t sD1, sD2;
     uint8_t d1count, d2count;
 
-    // Suspend timer procs because these variables are written to
-    // in "_update".
-    hal.scheduler->suspend_timer_procs();
-    sD1 = _s_D1; _s_D1 = 0;
-    sD2 = _s_D2; _s_D2 = 0;
-    d1count = _d1_count; _d1_count = 0;
-    d2count = _d2_count; _d2_count = 0;
-    _updated = false;
-    hal.scheduler->resume_timer_procs();
+    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
+
+    if (_accum.d1_count == 0) {
+        _sem->give();
+        return;
+    }
+
+    sD1 = _accum.s_D1;
+    sD2 = _accum.s_D2;
+    d1count = _accum.d1_count;
+    d2count = _accum.d2_count;
+    memset(&_accum, 0, sizeof(_accum));
+
+    _sem->give();
 
     if (d1count != 0) {
         _D1 = ((float)sD1) / d1count;
@@ -369,9 +308,11 @@ void AP_Baro_MS56XX::update()
 }
 
 /* MS5611 class */
-AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    :AP_Baro_MS56XX(baro, serial, use_timer)
-{}
+AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+    : AP_Baro_MS56XX(baro, std::move(dev))
+{
+    _init();
+}
 
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
 void AP_Baro_MS5611::_calculate()
@@ -384,14 +325,13 @@ void AP_Baro_MS5611::_calculate()
     // Formulas from manufacturer datasheet
     // sub -15c temperature compensation is not included
 
-    // we do the calculations using floating point
-    // as this is much faster on an AVR2560, and also allows
-    // us to take advantage of the averaging of D1 and D1 over
-    // multiple samples, giving us more precision
-    dT = _D2-(((uint32_t)_C5)<<8);
-    TEMP = (dT * _C6)/8388608;
-    OFF = _C2 * 65536.0f + (_C4 * dT) / 128;
-    SENS = _C1 * 32768.0f + (_C3 * dT) / 256;
+    // we do the calculations using floating point allows us to take advantage
+    // of the averaging of D1 and D1 over multiple samples, giving us more
+    // precision
+    dT = _D2-(((uint32_t)_cal_reg.c5)<<8);
+    TEMP = (dT * _cal_reg.c6)/8388608;
+    OFF = _cal_reg.c2 * 65536.0f + (_cal_reg.c4 * dT) / 128;
+    SENS = _cal_reg.c1 * 32768.0f + (_cal_reg.c3 * dT) / 256;
 
     if (TEMP < 0) {
         // second order temperature compensation when under 20 degrees C
@@ -410,9 +350,12 @@ void AP_Baro_MS5611::_calculate()
 }
 
 /* MS5607 Class */
-AP_Baro_MS5607::AP_Baro_MS5607(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    :AP_Baro_MS56XX(baro, serial, use_timer)
-{}
+AP_Baro_MS5607::AP_Baro_MS5607(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+    : AP_Baro_MS56XX(baro, std::move(dev))
+{
+    _init();
+}
+
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
 void AP_Baro_MS5607::_calculate()
 {
@@ -424,14 +367,13 @@ void AP_Baro_MS5607::_calculate()
     // Formulas from manufacturer datasheet
     // sub -15c temperature compensation is not included
 
-    // we do the calculations using floating point
-    // as this is much faster on an AVR2560, and also allows
-    // us to take advantage of the averaging of D1 and D1 over
-    // multiple samples, giving us more precision
-    dT = _D2-(((uint32_t)_C5)<<8);
-    TEMP = (dT * _C6)/8388608;
-    OFF = _C2 * 131072.0f + (_C4 * dT) / 64;
-    SENS = _C1 * 65536.0f + (_C3 * dT) / 128;
+    // we do the calculations using floating point allows us to take advantage
+    // of the averaging of D1 and D1 over multiple samples, giving us more
+    // precision
+    dT = _D2-(((uint32_t)_cal_reg.c5)<<8);
+    TEMP = (dT * _cal_reg.c6)/8388608;
+    OFF = _cal_reg.c2 * 131072.0f + (_cal_reg.c4 * dT) / 64;
+    SENS = _cal_reg.c1 * 65536.0f + (_cal_reg.c3 * dT) / 128;
 
     if (TEMP < 0) {
         // second order temperature compensation when under 20 degrees C
@@ -449,10 +391,11 @@ void AP_Baro_MS5607::_calculate()
     _copy_to_frontend(_instance, pressure, temperature);
 }
 
-/* MS563 Class */
-AP_Baro_MS5637::AP_Baro_MS5637(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    : AP_Baro_MS56XX(baro, serial, use_timer)
+/* MS5637 Class */
+AP_Baro_MS5637::AP_Baro_MS5637(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+    : AP_Baro_MS56XX(baro, std::move(dev))
 {
+    _init();
 }
 
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
@@ -466,10 +409,10 @@ void AP_Baro_MS5637::_calculate()
     // Formulas from manufacturer datasheet
     // sub -15c temperature compensation is not included
 
-    dT = raw_temperature - (((uint32_t)_C5) << 8);
-    TEMP = 2000 + ((int64_t)dT * (int64_t)_C6) / 8388608;
-    OFF = (int64_t)_C2 * (int64_t)131072 + ((int64_t)_C4 * (int64_t)dT) / (int64_t)64;
-    SENS = (int64_t)_C1 * (int64_t)65536 + ((int64_t)_C3 * (int64_t)dT) / (int64_t)128;
+    dT = raw_temperature - (((uint32_t)_cal_reg.c5) << 8);
+    TEMP = 2000 + ((int64_t)dT * (int64_t)_cal_reg.c6) / 8388608;
+    OFF = (int64_t)_cal_reg.c2 * (int64_t)131072 + ((int64_t)_cal_reg.c4 * (int64_t)dT) / (int64_t)64;
+    SENS = (int64_t)_cal_reg.c1 * (int64_t)65536 + ((int64_t)_cal_reg.c3 * (int64_t)dT) / (int64_t)128;
 
     if (TEMP < 2000) {
         // second order temperature compensation when under 20 degrees C
@@ -486,18 +429,4 @@ void AP_Baro_MS5637::_calculate()
     int32_t pressure = ((int64_t)raw_pressure * SENS / (int64_t)2097152 - OFF) / (int64_t)32768;
     float temperature = TEMP * 0.01f;
     _copy_to_frontend(_instance, (float)pressure, temperature);
-}
-
-/*
-  Read the sensor from main code. This is only used for I2C MS5611 to
-  avoid conflicts on the semaphore from calling it in a timer, which
-  conflicts with the compass driver use of I2C
-*/
-void AP_Baro_MS56XX::accumulate(void)
-{
-    if (!_use_timer) {
-        // the timer isn't being called as a timer, so we need to call
-        // it in accumulate()
-        _timer();
-    }
 }

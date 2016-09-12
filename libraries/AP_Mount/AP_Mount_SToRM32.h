@@ -3,9 +3,7 @@
 /*
   SToRM32 mount backend class
  */
-
-#ifndef __AP_MOUNT_STORM32_H__
-#define __AP_MOUNT_STORM32_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -58,5 +56,3 @@ private:
     mavlink_channel_t _chan;        // mavlink channel used to communicate with gimbal.  Currently hard-coded to Telem2
     uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
 };
-
-#endif // __AP_MOUNT_STORM32_H__

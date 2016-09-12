@@ -20,6 +20,7 @@
  *      Author: MLandes
  */
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "AP_IRLock_PX4.h"
@@ -31,12 +32,28 @@
 extern const AP_HAL::HAL& hal;
 
 AP_IRLock_PX4::AP_IRLock_PX4() :
-    _fd(0),
-    _last_timestamp(0)
+    _fd(0)
 {}
+
+extern "C" int irlock_main(int, char **);
 
 void AP_IRLock_PX4::init()
 {
+    if (!AP_BoardConfig::px4_start_driver(irlock_main, "irlock", "start")) {
+        hal.console->printf("irlock driver start failed\n");
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+        if (!AP_BoardConfig::px4_start_driver(irlock_main, "irlock", "start -b 2")) {
+            hal.console->printf("irlock driver start failed (bus2)\n");
+        } else {
+            // give it time to initialise
+            hal.scheduler->delay(500);
+        }
+#endif
+    } else {
+        // give it time to initialise
+        hal.scheduler->delay(500);
+    }
+
     _fd = open(IRLOCK0_DEVICE_PATH, O_RDONLY);
     if (_fd < 0) {
         hal.console->printf("Unable to open " IRLOCK0_DEVICE_PATH "\n");
@@ -55,29 +72,23 @@ bool AP_IRLock_PX4::update()
     }
 
     // read position of all objects
+    bool new_data = false;
     struct irlock_s report;
-    uint16_t count = 0;
-    while(::read(_fd, &report, sizeof(struct irlock_s)) == sizeof(struct irlock_s) && report.timestamp >_last_timestamp) {
-        _target_info[count].timestamp = report.timestamp;
-        _target_info[count].target_num = report.target_num;
-        _target_info[count].angle_x = report.angle_x;
-        _target_info[count].angle_y = report.angle_y;
-        _target_info[count].size_x = report.size_x;
-        _target_info[count].size_y = report.size_y;
-        count++;
-        _last_timestamp = report.timestamp;
-        _last_update = hal.scheduler->millis();
-    }
-
-    // update num_blocks and implement timeout
-    if (count > 0) {
-        _num_targets = count;
-    } else if ((hal.scheduler->millis() - _last_update) > IRLOCK_TIMEOUT_MS) {
-        _num_targets = 0;
+    while(::read(_fd, &report, sizeof(struct irlock_s)) == sizeof(struct irlock_s)) {
+        new_data = true;
+        _num_targets = report.num_targets;
+        for (uint8_t i=0; i<report.num_targets; i++) {
+            _target_info[i].timestamp = report.timestamp;
+            _target_info[i].pos_x = report.targets[i].pos_x;
+            _target_info[i].pos_y = report.targets[i].pos_y;
+            _target_info[i].size_x = report.targets[i].size_x;
+            _target_info[i].size_y = report.targets[i].size_y;
+        }
+        _last_update_ms = AP_HAL::millis();
     }
 
     // return true if new data found
-    return (_num_targets > 0);
+    return new_data;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

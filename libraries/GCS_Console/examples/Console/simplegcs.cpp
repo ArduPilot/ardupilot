@@ -71,7 +71,7 @@ void simplegcs_update(mavlink_channel_t chan) {
 
 
 void handle_message(mavlink_channel_t chan, mavlink_message_t* msg) {
-    hal.console->printf_P(PSTR("SimpleGCS Handle Message %d\r\n"), msg->msgid);
+    hal.console->printf("SimpleGCS Handle Message %d\r\n", msg->msgid);
     switch (msg->msgid) {
         case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
         {

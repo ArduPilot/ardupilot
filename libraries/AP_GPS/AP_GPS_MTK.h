@@ -22,10 +22,10 @@
 //
 // Note - see AP_GPS_MTK16.h for firmware 1.6 and later.
 //
-#ifndef __AP_GPS_MTK_H__
-#define __AP_GPS_MTK_H__
+#pragma once
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 #include "AP_GPS_MTK_Common.h"
 
 class AP_GPS_MTK : public AP_GPS_Backend {
@@ -71,14 +71,12 @@ private:
 
     // Receive buffer
     union PACKED {
+        DEFINE_BYTE_ARRAY_METHODS
         diyd_mtk_msg msg;
-        uint8_t bytes[];
     } _buffer;
 
     // Buffer parse & GPS state update
     void        _parse_gps();
 
-    static const prog_char _initialisation_blob[];
+    static const char _initialisation_blob[];
 };
-
-#endif  // __AP_GPS_MTK_H__

@@ -4,8 +4,8 @@
 
 /**
  *
- * ekf_check.pde - detects failures of the ekf or inertial nav system
- *                 triggers an alert to the pilot and helps take countermeasures
+ * Detects failures of the ekf or inertial nav system triggers an alert
+ * to the pilot and helps take countermeasures
  *
  */
 
@@ -32,7 +32,7 @@ void Copter::ekf_check()
 {
     // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
     Location temp_loc;
-    if (!ahrs.get_NavEKF_const().getOriginLLH(temp_loc)) {
+    if (!ahrs.get_origin(temp_loc)) {
         return;
     }
 
@@ -59,9 +59,9 @@ void Copter::ekf_check()
                 // log an error in the dataflash
                 Log_Write_Error(ERROR_SUBSYSTEM_EKFCHECK, ERROR_CODE_EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
-                if ((hal.scheduler->millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("EKF variance"));
-                    ekf_check_state.last_warn_time = hal.scheduler->millis();
+                if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
+                    gcs_send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
+                    ekf_check_state.last_warn_time = AP_HAL::millis();
                 }
                 failsafe_ekf_event();
             }
@@ -107,7 +107,7 @@ bool Copter::ekf_over_threshold()
     Vector2f offset;
     float compass_variance;
     float vel_variance;
-    ahrs.get_NavEKF().getVariances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
+    ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
     compass_variance = magVar.length();
 
     // return true if compass and velocity variance over the threshold
@@ -141,12 +141,12 @@ void Copter::failsafe_ekf_event()
     switch (g.fs_ekf_action) {
         case FS_EKF_ACTION_ALTHOLD:
             // AltHold
-            if (failsafe.radio || !set_mode(ALT_HOLD)) {
-                set_mode_land_with_pause();
+            if (failsafe.radio || !set_mode(ALT_HOLD, MODE_REASON_EKF_FAILSAFE)) {
+                set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
             }
             break;
         default:
-            set_mode_land_with_pause();
+            set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
             break;
     }
 

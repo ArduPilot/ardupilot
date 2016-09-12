@@ -4,11 +4,6 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
-/*
-  optionally turn down optimisation for debugging
- */
-// #pragma GCC optimize("O0")
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -26,11 +21,15 @@ extern const AP_HAL::HAL& hal;
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
 
-// fuse true airspeed measurements
+/*
+ * Fuse true airspeed measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and other equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+*/
 void NavEKF2_core::FuseAirspeed()
 {
     // start performance timer
-    perf_begin(_perf_FuseAirspeed);
+    hal.util->perf_begin(_perf_FuseAirspeed);
 
     // declarations
     float vn;
@@ -39,7 +38,7 @@ void NavEKF2_core::FuseAirspeed()
     float vwn;
     float vwe;
     float EAS2TAS = _ahrs->get_EAS2TAS();
-    const float R_TAS = sq(constrain_float(frontend._easNoise, 0.5f, 5.0f) * constrain_float(EAS2TAS, 0.9f, 10.0f));
+    const float R_TAS = sq(constrain_float(frontend->_easNoise, 0.5f, 5.0f) * constrain_float(EAS2TAS, 0.9f, 10.0f));
     Vector3 SH_TAS;
     float SK_TAS;
     Vector24 H_TAS;
@@ -55,8 +54,8 @@ void NavEKF2_core::FuseAirspeed()
     vwn = stateStruct.wind_vel.x;
     vwe = stateStruct.wind_vel.y;
 
-    // calculate the predicted airspeed, compensating for bias in GPS velocity when we are pulling a glitch offset back in
-    VtasPred = pythagorous3((ve - gpsVelGlitchOffset.y - vwe) , (vn - gpsVelGlitchOffset.x - vwn) , vd);
+    // calculate the predicted airspeed
+    VtasPred = norm((ve - vwe) , (vn - vwn) , vd);
     // perform fusion of True Airspeed measurement
     if (VtasPred > 1.0f)
     {
@@ -98,8 +97,7 @@ void NavEKF2_core::FuseAirspeed()
         Kfusion[12] = SK_TAS*(P[12][3]*SH_TAS[2] - P[12][22]*SH_TAS[2] + P[12][4]*SH_TAS[1] - P[12][23]*SH_TAS[1] + P[12][5]*vd*SH_TAS[0]);
         Kfusion[13] = SK_TAS*(P[13][3]*SH_TAS[2] - P[13][22]*SH_TAS[2] + P[13][4]*SH_TAS[1] - P[13][23]*SH_TAS[1] + P[13][5]*vd*SH_TAS[0]);
         Kfusion[14] = SK_TAS*(P[14][3]*SH_TAS[2] - P[14][22]*SH_TAS[2] + P[14][4]*SH_TAS[1] - P[14][23]*SH_TAS[1] + P[14][5]*vd*SH_TAS[0]);
-        // this term has been zeroed to improve stability of the Z accel bias
-        Kfusion[15] = 0.0f;// SK_TAS*(P[15][3]*SH_TAS[2] - P[15][22]*SH_TAS[2] + P[15][4]*SH_TAS[1] - P[15][23]*SH_TAS[1] + P[15][5]*vd*SH_TAS[0]);
+        Kfusion[15] = SK_TAS*(P[15][3]*SH_TAS[2] - P[15][22]*SH_TAS[2] + P[15][4]*SH_TAS[1] - P[15][23]*SH_TAS[1] + P[15][5]*vd*SH_TAS[0]);
         Kfusion[22] = SK_TAS*(P[22][3]*SH_TAS[2] - P[22][22]*SH_TAS[2] + P[22][4]*SH_TAS[1] - P[22][23]*SH_TAS[1] + P[22][5]*vd*SH_TAS[0]);
         Kfusion[23] = SK_TAS*(P[23][3]*SH_TAS[2] - P[23][22]*SH_TAS[2] + P[23][4]*SH_TAS[1] - P[23][23]*SH_TAS[1] + P[23][5]*vd*SH_TAS[0]);
         // zero Kalman gains to inhibit magnetic field state estimation
@@ -123,11 +121,11 @@ void NavEKF2_core::FuseAirspeed()
         innovVtas = VtasPred - tasDataDelayed.tas;
 
         // calculate the innovation consistency test ratio
-        tasTestRatio = sq(innovVtas) / (sq(frontend._tasInnovGate) * varInnovVtas);
+        tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (float)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
-        tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend.tasRetryTime_ms;
+        tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
         if (tasHealth || (tasTimeout && posTimeout)) {
@@ -151,33 +149,33 @@ void NavEKF2_core::FuseAirspeed()
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=2; j++) {
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                for (unsigned j = 0; j<=2; j++) {
                     KH[i][j] = 0.0f;
                 }
-                for (uint8_t j = 3; j<=5; j++) {
+                for (unsigned j = 3; j<=5; j++) {
                     KH[i][j] = Kfusion[i] * H_TAS[j];
                 }
-                for (uint8_t j = 6; j<=21; j++) {
+                for (unsigned j = 6; j<=21; j++) {
                     KH[i][j] = 0.0f;
                 }
-                for (uint8_t j = 22; j<=23; j++) {
+                for (unsigned j = 22; j<=23; j++) {
                     KH[i][j] = Kfusion[i] * H_TAS[j];
                 }
             }
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=stateIndexLim; j++) {
-                    KHP[i][j] = 0;
-                    for (uint8_t k = 3; k<=5; k++) {
-                        KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
-                    }
-                    for (uint8_t k = 22; k<=23; k++) {
-                        KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
-                    }
+            for (unsigned j = 0; j<=stateIndexLim; j++) {
+                for (unsigned i = 0; i<=stateIndexLim; i++) {
+                    ftype res = 0;
+                    res += KH[i][3] * P[3][j];
+                    res += KH[i][4] * P[4][j];
+                    res += KH[i][5] * P[5][j];
+                    res += KH[i][22] * P[22][j];
+                    res += KH[i][23] * P[23][j];
+                    KHP[i][j] = res;
                 }
             }
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=stateIndexLim; j++) {
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                for (unsigned j = 0; j<=stateIndexLim; j++) {
                     P[i][j] = P[i][j] - KHP[i][j];
                 }
             }
@@ -189,96 +187,75 @@ void NavEKF2_core::FuseAirspeed()
     ConstrainVariances();
 
     // stop performance timer
-    perf_end(_perf_FuseAirspeed);
+    hal.util->perf_end(_perf_FuseAirspeed);
 }
 
 // select fusion of true airspeed measurements
 void NavEKF2_core::SelectTasFusion()
 {
+    // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
+    // If so, don't fuse measurements on this time step to reduce frame over-runs
+    // Only allow one time slip to prevent high rate magnetometer data locking out fusion of other measurements
+    if (magFusePerformed && dtIMUavg < 0.005f && !airSpdFusionDelayed) {
+        airSpdFusionDelayed = true;
+        return;
+    } else {
+        airSpdFusionDelayed = false;
+    }
+
     // get true airspeed measurement
     readAirSpdData();
 
     // If we haven't received airspeed data for a while, then declare the airspeed data as being timed out
-    if (imuSampleTime_ms - tasDataNew.time_ms > frontend.tasRetryTime_ms) {
+    if (imuSampleTime_ms - tasDataNew.time_ms > frontend->tasRetryTime_ms) {
         tasTimeout = true;
     }
 
     // if the filter is initialised, wind states are not inhibited and we have data to fuse, then perform TAS fusion
-    tasDataWaiting = (statesInitialised && !inhibitWindStates && newDataTas);
-    if (tasDataWaiting)
-    {
-        // ensure that the covariance prediction is up to date before fusing data
-        if (!covPredStep) CovariancePrediction();
+    if (tasDataToFuse && statesInitialised && !inhibitWindStates) {
         FuseAirspeed();
         prevTasStep_ms = imuSampleTime_ms;
-        tasDataWaiting = false;
-        newDataTas = false;
     }
 }
 
-// store TAS in a history array
-void NavEKF2_core::StoreTAS()
-{
-    if (tasStoreIndex >= OBS_BUFFER_LENGTH) {
-        tasStoreIndex = 0;
-    }
-    storedTAS[tasStoreIndex] = tasDataNew;
-    tasStoreIndex += 1;
-}
-
-// return newest un-used true airspeed data that has fallen behind the fusion time horizon
-// if no un-used data is available behind the fusion horizon, return false
-bool NavEKF2_core::RecallTAS()
-{
-    tas_elements dataTemp;
-    tas_elements dataTempZero;
-    dataTempZero.time_ms = 0;
-    uint32_t temp_ms = 0;
-    for (uint8_t i=0; i<OBS_BUFFER_LENGTH; i++) {
-        dataTemp = storedTAS[i];
-        // find a measurement older than the fusion time horizon that we haven't checked before
-        if (dataTemp.time_ms != 0 && dataTemp.time_ms <= imuDataDelayed.time_ms) {
-            // zero the time stamp so we won't use it again
-            storedTAS[i]=dataTempZero;
-            // Find the most recent non-stale measurement that meets the time horizon criteria
-            if (((imuDataDelayed.time_ms - dataTemp.time_ms) < 500) && dataTemp.time_ms > temp_ms) {
-                tasDataDelayed = dataTemp;
-                temp_ms = dataTemp.time_ms;
-            }
-        }
-    }
-    if (temp_ms != 0) {
-        return true;
-    } else {
-        return false;
-    }
-}
 
 // select fusion of synthetic sideslip measurements
 // synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
 // it requires a stable wind for best results and should not be used for aerobatic flight with manoeuvres that induce large sidslip angles (eg knife-edge, spins, etc)
 void NavEKF2_core::SelectBetaFusion()
 {
+    // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
+    // If so, don't fuse measurements on this time step to reduce frame over-runs
+    // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
+    if (magFusePerformed && dtIMUavg < 0.005f && !sideSlipFusionDelayed) {
+        sideSlipFusionDelayed = true;
+        return;
+    } else {
+        sideSlipFusionDelayed = false;
+    }
+
     // set true when the fusion time interval has triggered
-    bool f_timeTrigger = ((imuSampleTime_ms - prevBetaStep_ms) >= frontend.betaAvg_ms);
+    bool f_timeTrigger = ((imuSampleTime_ms - prevBetaStep_ms) >= frontend->betaAvg_ms);
     // set true when use of synthetic sideslip fusion is necessary because we have limited sensor data or are dead reckoning position
-    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime_ms) < frontend.gpsRetryTimeNoTAS_ms));
+    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime_ms) < frontend->gpsRetryTimeNoTAS_ms));
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
     bool f_feasible = (assume_zero_sideslip() && !inhibitWindStates);
     // use synthetic sideslip fusion if feasible, required and enough time has lapsed since the last fusion
     if (f_feasible && f_required && f_timeTrigger) {
-        // ensure that the covariance prediction is up to date before fusing data
-        if (!covPredStep) CovariancePrediction();
         FuseSideslip();
         prevBetaStep_ms = imuSampleTime_ms;
     }
 }
 
-// fuse sythetic sideslip measurement of zero
+/*
+ * Fuse sythetic sideslip measurement of zero using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and other equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+*/
 void NavEKF2_core::FuseSideslip()
 {
     // start performance timer
-    perf_begin(_perf_FuseSideslip);
+    hal.util->perf_begin(_perf_FuseSideslip);
 
     // declarations
     float q0;
@@ -308,9 +285,9 @@ void NavEKF2_core::FuseSideslip()
     vwn = stateStruct.wind_vel.x;
     vwe = stateStruct.wind_vel.y;
 
-    // calculate predicted wind relative velocity in NED, compensating for offset in velcity when we are pulling a GPS glitch offset back in
-    vel_rel_wind.x = vn - vwn - gpsVelGlitchOffset.x;
-    vel_rel_wind.y = ve - vwe - gpsVelGlitchOffset.y;
+    // calculate predicted wind relative velocity in NED
+    vel_rel_wind.x = vn - vwn;
+    vel_rel_wind.y = ve - vwe;
     vel_rel_wind.z = vd;
 
     // rotate into body axes
@@ -380,8 +357,7 @@ void NavEKF2_core::FuseSideslip()
         Kfusion[12] = SK_BETA[0]*(P[12][5]*SK_BETA[1] - P[12][2]*SK_BETA[4] - P[12][3]*SK_BETA[2] + P[12][4]*SK_BETA[3] + P[12][22]*SK_BETA[2] - P[12][23]*SK_BETA[3] + P[12][0]*SH_BETA[6]*SH_BETA[2] + P[12][1]*SH_BETA[1]*SH_BETA[3]*SH_BETA[2]);
         Kfusion[13] = SK_BETA[0]*(P[13][5]*SK_BETA[1] - P[13][2]*SK_BETA[4] - P[13][3]*SK_BETA[2] + P[13][4]*SK_BETA[3] + P[13][22]*SK_BETA[2] - P[13][23]*SK_BETA[3] + P[13][0]*SH_BETA[6]*SH_BETA[2] + P[13][1]*SH_BETA[1]*SH_BETA[3]*SH_BETA[2]);
         Kfusion[14] = SK_BETA[0]*(P[14][5]*SK_BETA[1] - P[14][2]*SK_BETA[4] - P[14][3]*SK_BETA[2] + P[14][4]*SK_BETA[3] + P[14][22]*SK_BETA[2] - P[14][23]*SK_BETA[3] + P[14][0]*SH_BETA[6]*SH_BETA[2] + P[14][1]*SH_BETA[1]*SH_BETA[3]*SH_BETA[2]);
-        // this term has been zeroed to improve stability of the Z accel bias
-        Kfusion[15] = 0.0f;//SK_BETA[0]*(P[15][5]*SK_BETA[1] - P[15][2]*SK_BETA[4] - P[15][3]*SK_BETA[2] + P[15][4]*SK_BETA[3] + P[15][22]*SK_BETA[2] - P[15][23]*SK_BETA[3] + P[15][0]*SH_BETA[6]*SH_BETA[2] + P[15][1]*SH_BETA[1]*SH_BETA[3]*SH_BETA[2]);
+        Kfusion[15] = SK_BETA[0]*(P[15][5]*SK_BETA[1] - P[15][2]*SK_BETA[4] - P[15][3]*SK_BETA[2] + P[15][4]*SK_BETA[3] + P[15][22]*SK_BETA[2] - P[15][23]*SK_BETA[3] + P[15][0]*SH_BETA[6]*SH_BETA[2] + P[15][1]*SH_BETA[1]*SH_BETA[3]*SH_BETA[2]);
         Kfusion[22] = SK_BETA[0]*(P[22][5]*SK_BETA[1] - P[22][2]*SK_BETA[4] - P[22][3]*SK_BETA[2] + P[22][4]*SK_BETA[3] + P[22][22]*SK_BETA[2] - P[22][23]*SK_BETA[3] + P[22][0]*SH_BETA[6]*SH_BETA[2] + P[22][1]*SH_BETA[1]*SH_BETA[3]*SH_BETA[2]);
         Kfusion[23] = SK_BETA[0]*(P[23][5]*SK_BETA[1] - P[23][2]*SK_BETA[4] - P[23][3]*SK_BETA[2] + P[23][4]*SK_BETA[3] + P[23][22]*SK_BETA[2] - P[23][23]*SK_BETA[3] + P[23][0]*SH_BETA[6]*SH_BETA[2] + P[23][1]*SH_BETA[1]*SH_BETA[3]*SH_BETA[2]);
         // zero Kalman gains to inhibit magnetic field state estimation
@@ -421,30 +397,33 @@ void NavEKF2_core::FuseSideslip()
         // correct the covariance P = (I - K*H)*P
         // take advantage of the empty columns in KH to reduce the
         // number of operations
-        for (uint8_t i = 0; i<=stateIndexLim; i++) {
-            for (uint8_t j = 0; j<=5; j++) {
+        for (unsigned i = 0; i<=stateIndexLim; i++) {
+            for (unsigned j = 0; j<=5; j++) {
                 KH[i][j] = Kfusion[i] * H_BETA[j];
             }
-            for (uint8_t j = 6; j<=21; j++) {
+            for (unsigned j = 6; j<=21; j++) {
                 KH[i][j] = 0.0f;
             }
-            for (uint8_t j = 22; j<=23; j++) {
+            for (unsigned j = 22; j<=23; j++) {
                 KH[i][j] = Kfusion[i] * H_BETA[j];
             }
         }
-        for (uint8_t i = 0; i<=stateIndexLim; i++) {
-            for (uint8_t j = 0; j<=stateIndexLim; j++) {
-                KHP[i][j] = 0;
-                for (uint8_t k = 0; k<=5; k++) {
-                    KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
-                }
-                for (uint8_t k = 22; k<=23; k++) {
-                    KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
-                }
+        for (unsigned j = 0; j<=stateIndexLim; j++) {
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                ftype res = 0;
+                res += KH[i][0] * P[0][j];
+                res += KH[i][1] * P[1][j];
+                res += KH[i][2] * P[2][j];
+                res += KH[i][3] * P[3][j];
+                res += KH[i][4] * P[4][j];
+                res += KH[i][5] * P[5][j];
+                res += KH[i][22] * P[22][j];
+                res += KH[i][23] * P[23][j];
+                KHP[i][j] = res;
             }
         }
-        for (uint8_t i = 0; i<=stateIndexLim; i++) {
-            for (uint8_t j = 0; j<=stateIndexLim; j++) {
+        for (unsigned i = 0; i<=stateIndexLim; i++) {
+            for (unsigned j = 0; j<=stateIndexLim; j++) {
                 P[i][j] = P[i][j] - KHP[i][j];
             }
         }
@@ -455,7 +434,7 @@ void NavEKF2_core::FuseSideslip()
     ConstrainVariances();
 
     // stop the performance timer
-    perf_end(_perf_FuseSideslip);
+    hal.util->perf_end(_perf_FuseSideslip);
 }
 
 /********************************************************

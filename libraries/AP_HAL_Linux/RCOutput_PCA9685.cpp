@@ -1,19 +1,19 @@
+#include "RCOutput_PCA9685.h"
+
+#include <cmath>
+#include <dirent.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <utility>
 
 #include <AP_HAL/AP_HAL.h>
+
 #include "GPIO.h"
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include "RCOutput_PCA9685.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <math.h>
 
 #define PCA9685_RA_MODE1           0x00
 #define PCA9685_RA_MODE2           0x01
@@ -44,7 +44,7 @@
 
 /*
  * Drift for internal oscillator
- * see: https://github.com/diydrones/ardupilot/commit/50459bdca0b5a1adf95
+ * see: https://github.com/ArduPilot/ardupilot/commit/50459bdca0b5a1adf95
  * and https://github.com/adafruit/Adafruit-PWM-Servo-Driver-Library/issues/11
  */
 #define PCA9685_INTERNAL_CLOCK (1.04f * 25000000.f)
@@ -54,17 +54,16 @@ using namespace Linux;
 
 #define PWM_CHAN_COUNT 16
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-LinuxRCOutput_PCA9685::LinuxRCOutput_PCA9685(uint8_t addr,
-                                             bool external_clock,
-                                             uint8_t channel_offset,
-                                             int16_t oe_pin_number) :
-    _i2c_sem(NULL),
+RCOutput_PCA9685::RCOutput_PCA9685(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                   bool external_clock,
+                                   uint8_t channel_offset,
+                                   int16_t oe_pin_number) :
+    _dev(std::move(dev)),
     _enable_pin(NULL),
     _frequency(50),
     _pulses_buffer(new uint16_t[PWM_CHAN_COUNT - channel_offset]),
-    _addr(addr),
     _external_clock(external_clock),
     _channel_offset(channel_offset),
     _oe_pin_number(oe_pin_number)
@@ -75,20 +74,13 @@ LinuxRCOutput_PCA9685::LinuxRCOutput_PCA9685(uint8_t addr,
         _osc_clock = PCA9685_INTERNAL_CLOCK;
 }
 
-LinuxRCOutput_PCA9685::~LinuxRCOutput_PCA9685()
+RCOutput_PCA9685::~RCOutput_PCA9685()
 {
     delete [] _pulses_buffer;
 }
 
-void LinuxRCOutput_PCA9685::init(void* machtnicht)
+void RCOutput_PCA9685::init()
 {
-    _i2c_sem = hal.i2c->get_semaphore();
-    if (_i2c_sem == NULL) {
-        hal.scheduler->panic(PSTR("PANIC: RCOutput_PCA9685 did not get "
-                                  "valid I2C semaphore!"));
-        return; /* never reached */
-    }
-
     reset_all_channels();
 
     /* Set the initial frequency */
@@ -102,22 +94,22 @@ void LinuxRCOutput_PCA9685::init(void* machtnicht)
     }
 }
 
-void LinuxRCOutput_PCA9685::reset_all_channels()
+void RCOutput_PCA9685::reset_all_channels()
 {
-    if (!_i2c_sem->take(10)) {
+    if (!_dev->get_semaphore()->take(10)) {
         return;
     }
 
-    uint8_t data[4] = {0x00, 0x00, 0x00, 0x00};
-    hal.i2c->writeRegisters(_addr, PCA9685_RA_ALL_LED_ON_L, 4, data);
+    uint8_t data[] = {PCA9685_RA_ALL_LED_ON_L, 0, 0, 0, 0};
+    _dev->transfer(data, sizeof(data), nullptr, 0);
 
     /* Wait for the last pulse to end */
     hal.scheduler->delay(2);
 
-    _i2c_sem->give();
+    _dev->get_semaphore()->give();
 }
 
-void LinuxRCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
+void RCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
 
     /* Correctly finish last pulses */
@@ -125,17 +117,17 @@ void LinuxRCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
         write(i, _pulses_buffer[i]);
     }
 
-    if (!_i2c_sem->take(10)) {
+    if (!_dev->get_semaphore()->take(10)) {
         return;
     }
 
     /* Shutdown before sleeping.
      * see p.14 of PCA9685 product datasheet
      */
-    hal.i2c->writeRegister(_addr, PCA9685_RA_ALL_LED_OFF_H, PCA9685_ALL_LED_OFF_H_SHUT);
+    _dev->write_register(PCA9685_RA_ALL_LED_OFF_H, PCA9685_ALL_LED_OFF_H_SHUT);
 
     /* Put PCA9685 to sleep (required to write prescaler) */
-    hal.i2c->writeRegister(_addr, PCA9685_RA_MODE1, PCA9685_MODE1_SLEEP_BIT);
+    _dev->write_register(PCA9685_RA_MODE1, PCA9685_MODE1_SLEEP_BIT);
 
     /* Calculate prescale and save frequency using this value: it may be
      * different from @freq_hz due to rounding/ceiling. We use ceil() rather
@@ -145,37 +137,37 @@ void LinuxRCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
     _frequency = _osc_clock / (4096 * (prescale + 1));
 
     /* Write prescale value to match frequency */
-    hal.i2c->writeRegister(_addr, PCA9685_RA_PRE_SCALE, prescale);
+    _dev->write_register(PCA9685_RA_PRE_SCALE, prescale);
 
     if (_external_clock) {
         /* Enable external clocking */
-        hal.i2c->writeRegister(_addr, PCA9685_RA_MODE1,
-                               PCA9685_MODE1_SLEEP_BIT | PCA9685_MODE1_EXTCLK_BIT);
+        _dev->write_register(PCA9685_RA_MODE1,
+                             PCA9685_MODE1_SLEEP_BIT | PCA9685_MODE1_EXTCLK_BIT);
     }
 
     /* Restart the device to apply new settings and enable auto-incremented write */
-    hal.i2c->writeRegister(_addr, PCA9685_RA_MODE1,
-                            PCA9685_MODE1_RESTART_BIT | PCA9685_MODE1_AI_BIT);
+    _dev->write_register(PCA9685_RA_MODE1,
+                         PCA9685_MODE1_RESTART_BIT | PCA9685_MODE1_AI_BIT);
 
-    _i2c_sem->give();
+    _dev->get_semaphore()->give();
 }
 
-uint16_t LinuxRCOutput_PCA9685::get_freq(uint8_t ch)
+uint16_t RCOutput_PCA9685::get_freq(uint8_t ch)
 {
     return _frequency;
 }
 
-void LinuxRCOutput_PCA9685::enable_ch(uint8_t ch)
+void RCOutput_PCA9685::enable_ch(uint8_t ch)
 {
 
 }
 
-void LinuxRCOutput_PCA9685::disable_ch(uint8_t ch)
+void RCOutput_PCA9685::disable_ch(uint8_t ch)
 {
     write(ch, 0);
 }
 
-void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
+void RCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
 {
     if (ch >= (PWM_CHAN_COUNT - _channel_offset)) {
         return;
@@ -188,12 +180,12 @@ void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
         push();
 }
 
-void LinuxRCOutput_PCA9685::cork()
+void RCOutput_PCA9685::cork()
 {
     _corking = true;
 }
 
-void LinuxRCOutput_PCA9685::push()
+void RCOutput_PCA9685::push()
 {
     _corking = false;
 
@@ -208,46 +200,47 @@ void LinuxRCOutput_PCA9685::push()
      * scratch buffer size is always for all the channels, but we write only
      * from min_ch to max_ch
      */
-    uint8_t data[PWM_CHAN_COUNT * 4] = { };
+    struct PACKED pwm_values {
+        uint8_t reg;
+        uint8_t data[PWM_CHAN_COUNT * 4];
+    } pwm_values;
 
     for (unsigned ch = min_ch; ch < max_ch; ch++) {
         uint16_t period_us = _pulses_buffer[ch];
         uint16_t length = 0;
 
-        if (period_us)
+        if (period_us) {
             length = round((period_us * 4096) / (1000000.f / _frequency)) - 1;
+        }
 
-        uint8_t *d = &data[ch * 4];
+        uint8_t *d = &pwm_values.data[(ch - min_ch) * 4];
         *d++ = 0;
         *d++ = 0;
         *d++ = length & 0xFF;
         *d++ = length >> 8;
     }
 
-    if (!_i2c_sem->take_nonblocking()) {
-        hal.console->printf("RCOutput: Unable to get bus semaphore");
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 
-    hal.i2c->writeRegisters(_addr,
-                            PCA9685_RA_LED0_ON_L + 4 * (_channel_offset + min_ch),
-                            (max_ch - min_ch) * 4,
-                            &data[min_ch * 4]);
+    pwm_values.reg = PCA9685_RA_LED0_ON_L + 4 * (_channel_offset + min_ch);
+    /* reg + all the channels we are going to write */
+    size_t payload_size = 1 + (max_ch - min_ch) * 4;
 
-    _i2c_sem->give();
-
+    _dev->transfer((uint8_t *)&pwm_values, payload_size, nullptr, 0);
+    _dev->get_semaphore()->give();
     _pending_write_mask = 0;
 }
 
-uint16_t LinuxRCOutput_PCA9685::read(uint8_t ch)
+uint16_t RCOutput_PCA9685::read(uint8_t ch)
 {
     return _pulses_buffer[ch];
 }
 
-void LinuxRCOutput_PCA9685::read(uint16_t* period_us, uint8_t len)
+void RCOutput_PCA9685::read(uint16_t* period_us, uint8_t len)
 {
-    for (int i = 0; i < len; i++)
+    for (int i = 0; i < len; i++) {
         period_us[i] = read(0 + i);
+    }
 }
-
-#endif

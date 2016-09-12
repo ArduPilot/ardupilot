@@ -34,9 +34,11 @@ void Plane::adjust_altitude_target()
         // in land final TECS uses TECS_LAND_SINK as a target sink
         // rate, and ignores the target altitude
         set_target_altitude_location(next_WP_loc);
-    } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+    } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+            flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE) {
         setup_landing_glide_slope();
-    } else if (nav_controller->reached_loiter_target()) {
+        adjust_landing_slope_for_rangefinder_bump();
+    } else if (reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
         // altitude target
         set_target_altitude_location(next_WP_loc);
@@ -47,7 +49,7 @@ void Plane::adjust_altitude_target()
 
         // stay within the range of the start and end locations in altitude
         constrain_target_altitude_location(next_WP_loc, prev_WP_loc);
-    } else if (mission.get_current_do_cmd().id != MAV_CMD_CONDITION_CHANGE_ALT) {
+    } else {
         set_target_altitude_location(next_WP_loc);
     }
 
@@ -64,6 +66,8 @@ void Plane::setup_glide_slope(void)
     auto_state.wp_distance = get_distance(current_loc, next_WP_loc);
     auto_state.wp_proportion = location_path_proportion(current_loc, 
                                                         prev_WP_loc, next_WP_loc);
+    SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
+    update_flight_stage();
 
     /*
       work out if we will gradually change altitude, or try to get to
@@ -71,10 +75,11 @@ void Plane::setup_glide_slope(void)
      */
     switch (control_mode) {
     case RTL:
+    case AVOID_ADSB:
     case GUIDED:
         /* glide down slowly if above target altitude, but ascend more
            rapidly if below it. See
-           https://github.com/diydrones/ardupilot/issues/39
+           https://github.com/ArduPilot/ardupilot/issues/39
         */
         if (above_location_current(next_WP_loc)) {
             set_offset_altitude_location(next_WP_loc);
@@ -129,6 +134,28 @@ int32_t Plane::relative_altitude_abs_cm(void)
     return labs(current_loc.alt - home.alt);
 }
 
+/*
+  return relative altitude in meters (relative to terrain, if available,
+  or home otherwise)
+ */
+float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
+{
+#if RANGEFINDER_ENABLED == ENABLED
+   if (use_rangefinder_if_available && rangefinder_state.in_range) {
+        return rangefinder_state.height_estimate;
+    }
+#endif
+
+#if AP_TERRAIN_AVAILABLE
+    float altitude;
+    if (target_altitude.terrain_following &&
+        terrain.status() == AP_Terrain::TerrainStatusOK &&
+        terrain.height_above_terrain(altitude, true)) {
+        return altitude;
+    }
+#endif
+    return relative_altitude();
+}
 
 /*
   set the target altitude to the current altitude. This is used when 
@@ -223,7 +250,7 @@ int32_t Plane::relative_target_altitude_cm(void)
     }
 #endif
     int32_t relative_alt = target_altitude.amsl_cm - home.alt;
-    relative_alt += int32_t(g.alt_offset)*100;
+    relative_alt += mission_alt_offset()*100;
     relative_alt += rangefinder_correction() * 100;
     return relative_alt;
 }
@@ -356,7 +383,8 @@ void Plane::set_offset_altitude_location(const Location &loc)
     }
 #endif
 
-    if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
+    if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
         flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
         // if we are within GLIDE_SLOPE_MIN meters of the target altitude
         // then reset the offset to not use a glide slope. This allows for
@@ -424,7 +452,7 @@ void Plane::setup_terrain_target_alt(Location &loc)
  */
 int32_t Plane::adjusted_altitude_cm(void)
 {
-    return current_loc.alt - (g.alt_offset*100);
+    return current_loc.alt - (mission_alt_offset()*100);
 }
 
 /*
@@ -435,6 +463,25 @@ int32_t Plane::adjusted_altitude_cm(void)
 int32_t Plane::adjusted_relative_altitude_cm(void)
 {
     return adjusted_altitude_cm() - home.alt;
+}
+
+
+/*
+  return the mission altitude offset. This raises or lowers all
+  mission items. It is primarily set using the ALT_OFFSET parameter,
+  but can also be adjusted by the rangefinder landing code for a
+  NAV_LAND command if we have aborted a steep landing
+ */
+float Plane::mission_alt_offset(void)
+{
+    float ret = g.alt_offset;
+    if (control_mode == AUTO &&
+            (auto_state.land_in_progress || auto_state.wp_is_land_approach)) {
+        // when landing after an aborted landing due to too high glide
+        // slope we use an offset from the last landing attempt
+        ret += auto_state.land_alt_offset;
+    }
+    return ret;
 }
 
 /*
@@ -472,7 +519,7 @@ float Plane::lookahead_adjustment(void)
         // there is no target waypoint in FBWB, so use yaw as an approximation
         bearing_cd = ahrs.yaw_sensor;
         distance = g.terrain_lookahead;
-    } else if (!nav_controller->reached_loiter_target()) {
+    } else if (!reached_loiter_target()) {
         bearing_cd = nav_controller->target_bearing_cd();
         distance = constrain_float(auto_state.wp_distance, 0, g.terrain_lookahead);
     } else {
@@ -535,6 +582,7 @@ float Plane::rangefinder_correction(void)
     bool using_rangefinder = (g.rangefinder_landing &&
                               control_mode == AUTO && 
                               (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
                                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL));
     if (!using_rangefinder) {
         return 0;
@@ -553,7 +601,6 @@ float Plane::rangefinder_correction(void)
 void Plane::rangefinder_height_update(void)
 {
     float distance = rangefinder.distance_cm()*0.01f;
-    float height_estimate = 0;
     if ((rangefinder.status() == RangeFinder::RangeFinder_Good) && home_is_set != HOME_UNSET) {
         if (!rangefinder_state.have_initial_reading) {
             rangefinder_state.have_initial_reading = true;
@@ -561,7 +608,7 @@ void Plane::rangefinder_height_update(void)
         }
         // correct the range for attitude (multiply by DCM.c.z, which
         // is cos(roll)*cos(pitch))
-        height_estimate = distance * ahrs.get_dcm_matrix().c.z;
+        rangefinder_state.height_estimate = distance * ahrs.get_rotation_body_to_ned().c.z;
 
         // we consider ourselves to be fully in range when we have 10
         // good samples (0.2s) that are different by 5% of the maximum
@@ -575,10 +622,15 @@ void Plane::rangefinder_height_update(void)
         } else {
             rangefinder_state.in_range = true;
             if (!rangefinder_state.in_use &&
-                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
+                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+                 flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
+                 flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+                 control_mode == QLAND ||
+                 control_mode == QRTL ||
+                 (control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND)) &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
-                gcs_send_text_fmt(PSTR("Rangefinder engaged at %.2fm"), height_estimate);
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
             }
         }
     } else {
@@ -589,33 +641,35 @@ void Plane::rangefinder_height_update(void)
     if (rangefinder_state.in_range) {
         // base correction is the difference between baro altitude and
         // rangefinder estimate
-        float correction = relative_altitude() - height_estimate;
+        float correction = relative_altitude() - rangefinder_state.height_estimate;
 
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
         float terrain_altitude;
         if ((target_altitude.terrain_following || g.terrain_follow) && 
             terrain.height_above_terrain(terrain_altitude, true)) {
-            correction = terrain_altitude - height_estimate;
+            correction = terrain_altitude - rangefinder_state.height_estimate;
         }
 #endif    
 
         // remember the last correction. Use a low pass filter unless
         // the old data is more than 5 seconds old
-        if (millis() - rangefinder_state.last_correction_time_ms > 5000) {
+        uint32_t now = millis();
+        if (now - rangefinder_state.last_correction_time_ms > 5000) {
             rangefinder_state.correction = correction;
             rangefinder_state.initial_correction = correction;
+            auto_state.initial_land_slope = auto_state.land_slope;
         } else {
             rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
             if (fabsf(rangefinder_state.correction - rangefinder_state.initial_correction) > 30) {
                 // the correction has changed by more than 30m, reset use of Lidar. We may have a bad lidar
                 if (rangefinder_state.in_use) {
-                    gcs_send_text_fmt(PSTR("Rangefinder disengaged at %.2fm"), height_estimate);
+                    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", (double)rangefinder_state.height_estimate);
                 }
                 memset(&rangefinder_state, 0, sizeof(rangefinder_state));
             }
         }
-        rangefinder_state.last_correction_time_ms = millis();    
+        rangefinder_state.last_correction_time_ms = now;
     }
 }
 #endif

@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_BATTMONITOR_H
-#define AP_BATTMONITOR_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -14,6 +13,7 @@
 
 #define AP_BATT_CAPACITY_DEFAULT            3300
 #define AP_BATT_LOW_VOLT_TIMEOUT_MS         10000   // low voltage of 10 seconds will cause battery_exhausted to return true
+#define AP_BATT_MAX_WATT_DEFAULT            0
 
 // declare backend class
 class AP_BattMonitor_Backend;
@@ -48,6 +48,7 @@ public:
     struct BattMonitor_State {
         uint8_t     instance;           // the instance number of this monitor
         bool        healthy;            // battery monitor is communicating correctly
+        bool        is_powering_off;    // true if the battery is about to power off
         float       voltage;            // voltage in volts
         float       current_amps;       // current in amperes
         float       current_total_mah;  // total current draw since start-up
@@ -70,6 +71,9 @@ public:
     bool healthy(uint8_t instance) const;
     bool healthy() const { return healthy(AP_BATT_PRIMARY_INSTANCE); }
 
+    bool is_powering_off(uint8_t instance) const;
+    bool is_powering_off() const { return is_powering_off(AP_BATT_PRIMARY_INSTANCE); }
+
     /// has_current - returns true if battery monitor instance provides current info
     bool has_current(uint8_t instance) const;
     bool has_current() const { return has_current(AP_BATT_PRIMARY_INSTANCE); }
@@ -77,9 +81,6 @@ public:
     /// voltage - returns battery voltage in millivolts
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
-
-    // voltage2 - returns the voltage of the second battery (helper function to send 2nd voltage to GCS)
-    float voltage2() const;
 
     /// current_amps - returns the instantaneous current draw in amperes
     float current_amps(uint8_t instance) const;
@@ -93,6 +94,10 @@ public:
     virtual uint8_t capacity_remaining_pct(uint8_t instance) const;
     uint8_t capacity_remaining_pct() const { return capacity_remaining_pct(AP_BATT_PRIMARY_INSTANCE); }
 
+    /// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
+    int32_t pack_capacity_mah(uint8_t instance) const;
+    int32_t pack_capacity_mah() const { return pack_capacity_mah(AP_BATT_PRIMARY_INSTANCE); }
+ 
     /// exhausted - returns true if the battery's voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity
     bool exhausted(uint8_t instance, float low_voltage, float min_capacity_mah);
     bool exhausted(float low_voltage, float min_capacity_mah) { return exhausted(AP_BATT_PRIMARY_INSTANCE, low_voltage, min_capacity_mah); }
@@ -103,6 +108,13 @@ public:
 
     /// set_monitoring - sets the monitor type (used for example sketch only)
     void set_monitoring(uint8_t instance, uint8_t mon) { _monitoring[instance].set(mon); }
+
+    bool get_watt_max() { return get_watt_max(AP_BATT_PRIMARY_INSTANCE); }
+    bool get_watt_max(uint8_t instance) { return _watt_max[instance]; }
+
+    /// true when (voltage * current) > watt_max
+    bool overpower_detected() const;
+    bool overpower_detected(uint8_t instance) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -116,10 +128,10 @@ protected:
     AP_Float    _curr_amp_per_volt[AP_BATT_MONITOR_MAX_INSTANCES];  /// voltage on current pin multiplied by this to calculate current in amps
     AP_Float    _curr_amp_offset[AP_BATT_MONITOR_MAX_INSTANCES];    /// offset voltage that is subtracted from current pin before conversion to amps
     AP_Int32    _pack_capacity[AP_BATT_MONITOR_MAX_INSTANCES];      /// battery pack capacity less reserve in mAh
+    AP_Int16    _watt_max[AP_BATT_MONITOR_MAX_INSTANCES];           /// max battery power allowed. Reduce max throttle to reduce current to satisfy this limit
 
 private:
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];
     AP_BattMonitor_Backend *drivers[AP_BATT_MONITOR_MAX_INSTANCES];
     uint8_t     _num_instances;                                     /// number of monitors
 };
-#endif  // AP_BATTMONITOR_H

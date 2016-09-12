@@ -11,17 +11,32 @@
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &rover.v, {group_info:class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &rover.v, {group_info : class::var_info} }
 
-const AP_Param::Info Rover::var_info[] PROGMEM = {
+const AP_Param::Info Rover::var_info[] = {
+    // @Param: FORMAT_VERSION
+    // @DisplayName: Eeprom format version number
+    // @Description: This value is incremented when changes are made to the eeprom format
+    // @User: Advanced
 	GSCALAR(format_version,         "FORMAT_VERSION",   1),
+    
+    // @Param: SYSID_SW_TYPE
+    // @DisplayName: Software Type
+    // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
+    // @User: Advanced
+    // @ReadOnly: True
 	GSCALAR(software_type,          "SYSID_SW_TYPE",    Parameters::k_software_type),
 
-	// misc
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
-    // @Description: Two byte bitmap of log types to enable in dataflash
-    // @Values: 0:Disabled,3950:Default,4078:Default+IMU
+    // @Description: Bitmap of what log types to enable in dataflash. This values is made up of the sum of each of the log types you want to be saved on dataflash. On a PX4 or Pixhawk the large storage size of a microSD card means it is usually best just to enable all log types by setting this to 65535. On APM2 the smaller 4 MByte dataflash means you need to be more selective in your logging or you may run out of log space while flying (in which case it will wrap and overwrite the start of the log). The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Sonar=16384, Arming=32768, FullLogs=65535
+    // @Values: 0:Disabled,5190:APM2-Default,65535:PX4/Pixhawk-Default
+    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:MODE,7:IMU,8:CMD,9:CURRENT,10:COMPASS,11:TECS,12:CAMERA,13:RC,14:SONAR,15:ARM/DISARM,19:IMU_RAW
     // @User: Advanced
 	GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
+
+    // @Param: SYS_NUM_RESETS
+    // @DisplayName: Num Resets
+    // @Description: Number of APM board resets
+    // @User: Advanced
 	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
 
     // @Param: RST_SWITCH_CH
@@ -46,7 +61,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
 
     // @Param: SYSID_MYGCS
     // @DisplayName: MAVLink ground station ID
-    // @Description: ID used in MAVLink protocol to identify the controlling ground station
+    // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
     // @Range: 1 255
     // @User: Advanced
 	GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
@@ -65,7 +80,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
     // @User: Standard
     // @Units: seconds
-    // @Range: 0 10
+    // @Range: 0 30
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
@@ -73,13 +88,13 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Steering
-    // @Bitmask: 0:Steering
+    // @Values: 0:None,1:Steering,2:Throttle
+    // @Bitmask: 0:Steering,1:Throttle
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
-    // @Param: MAG_ENABLED
-    // @DisplayName: Magnetometer (compass) enabled
-    // @Description: This should be set to 1 if a compass is installed
+    // @Param: MAG_ENABLE
+    // @DisplayName: Enable Compass
+    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
     // @User: Standard
     // @Values: 0:Disabled,1:Enabled
 	GSCALAR(compass_enabled,        "MAG_ENABLE",       MAGNETOMETER),
@@ -107,7 +122,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
-	GSCALAR(speed_cruise,        "CRUISE_SPEED",    5),
+	GSCALAR(speed_cruise,        "CRUISE_SPEED",    SPEED_CRUISE),
 
     // @Param: SPEED_TURN_GAIN
     // @DisplayName: Target speed reduction while turning
@@ -193,13 +208,10 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
 	GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC9_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
-#endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC10_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
@@ -207,9 +219,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Group: RC11_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
-#endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC12_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_12,                    "RC12_", RC_Channel_aux),
@@ -221,7 +231,6 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Group: RC14_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_14,                    "RC14_", RC_Channel_aux),
-#endif
 
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
@@ -296,7 +305,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on channel 3 below which throttle failsafe triggers.
+    // @Description: The PWM level on the throttle channel below which throttle failsafe triggers.
     // @Range: 925 1100
     // @Increment: 1
     // @User: Standard
@@ -425,7 +434,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
 	// variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_
-    // @Path: ../libraries/AP_Compass/Compass.cpp
+    // @Path: ../libraries/AP_Compass/AP_Compass.cpp
 	GOBJECT(compass,                "COMPASS_",	Compass),
 
     // @Group: SCHED_
@@ -454,17 +463,13 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
-#if MAVLINK_COMM_NUM_BUFFERS > 2
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
-#endif
 
-#if MAVLINK_COMM_NUM_BUFFERS > 3
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
-#endif
 
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
@@ -485,7 +490,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
-    GOBJECT(sitl, "SIM_", SITL),
+    GOBJECT(sitl, "SIM_", SITL::SITL),
 #endif
 
     // @Group: AHRS_
@@ -503,6 +508,14 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Mount/AP_Mount.cpp
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
+
+    // @Group: ARMING_
+    // @Path: ../libraries/AP_Arming/AP_Arming.cpp
+    GOBJECT(arming,                 "ARMING_", AP_Arming),
+
+    // @Group: LOG
+    // @Path: ../libraries/DataFlash/DataFlash.cpp
+    GOBJECT(DataFlash,           "LOG",  DataFlash_Class),
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
@@ -535,6 +548,14 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
     GOBJECT(rssi, "RSSI_",  AP_RSSI),        
 
+    // @Group: NTF_
+    // @Path: ../libraries/AP_Notify/AP_Notify.cpp
+    GOBJECT(notify, "NTF_",  AP_Notify),
+
+    // @Group: BTN_
+    // @Path: ../libraries/AP_Button/AP_Button.cpp
+    GOBJECT(button, "BTN_",  AP_Button),
+    
 	AP_VAREND
 };
 
@@ -551,7 +572,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
   The second column below is the index in the var_info[] table for the
   old object. This should be zero for top level parameters.
  */
-const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
+const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_battery_monitoring, 0,      AP_PARAM_INT8,  "BATT_MONITOR" },
     { Parameters::k_param_battery_volt_pin,   0,      AP_PARAM_INT8,  "BATT_VOLT_PIN" },
     { Parameters::k_param_battery_curr_pin,   0,      AP_PARAM_INT8,  "BATT_CURR_PIN" },
@@ -566,27 +587,27 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
 void Rover::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf_P(PSTR("Bad var table\n"));        
-        hal.scheduler->panic(PSTR("Bad var table"));
+        cliSerial->printf("Bad var table\n");
+        AP_HAL::panic("Bad var table");
     }
 
 	if (!g.format_version.load() ||
 	     g.format_version != Parameters::k_format_version) {
 
 		// erase all parameters
-		cliSerial->printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
+		cliSerial->printf("Firmware change: erasing EEPROM...\n");
 		AP_Param::erase_all();
 
 		// save the current format version
 		g.format_version.set_and_save(Parameters::k_format_version);
-		cliSerial->println_P(PSTR("done."));
-    } else {
-	    unsigned long before = micros();
-	    // Load all auto-loaded EEPROM variables
-	    AP_Param::load_all();
+		cliSerial->println("done.");
+    }
 
-	    cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
-	}
+    unsigned long before = micros();
+    // Load all auto-loaded EEPROM variables
+    AP_Param::load_all();
+    
+    cliSerial->printf("load_all took %luus\n", micros() - before);
 
     // set a more reasonable default NAVL1_PERIOD for rovers
     L1_controller.set_default_period(8);

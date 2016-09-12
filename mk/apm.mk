@@ -24,15 +24,8 @@ include $(MK_DIR)/targets.mk
 include $(MK_DIR)/sketch_sources.mk
 
 ifneq ($(MAKECMDGOALS),clean)
+
 # board specific includes
-ifeq ($(HAL_BOARD),HAL_BOARD_APM1)
-include $(MK_DIR)/board_avr.mk
-endif
-
-ifeq ($(HAL_BOARD),HAL_BOARD_APM2)
-include $(MK_DIR)/board_avr.mk
-endif
-
 ifeq ($(HAL_BOARD),HAL_BOARD_SITL)
 include $(MK_DIR)/board_native.mk
 endif
@@ -49,8 +42,8 @@ ifeq ($(HAL_BOARD),HAL_BOARD_VRBRAIN)
 include $(MK_DIR)/board_vrbrain.mk
 endif
 
-ifeq ($(HAL_BOARD),HAL_BOARD_FLYMAPLE)
-include $(MK_DIR)/board_flymaple.mk
+ifeq ($(HAL_BOARD),HAL_BOARD_QURT)
+include $(MK_DIR)/board_qurt.mk
 endif
 
 endif

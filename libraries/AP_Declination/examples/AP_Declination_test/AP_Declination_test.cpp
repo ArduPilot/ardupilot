@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_HAL/AP_HAL.h>
@@ -10,9 +10,7 @@
 #include <AP_Buffer/AP_Buffer.h>
 #include <Filter/Filter.h>
 
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static const int16_t dec_tbl[37][73] = \
 { \
@@ -93,9 +91,9 @@ void setup(void)
     {
         for(int16_t j = -180; j <= 180; j+=5)
         {
-            uint32_t t1 = hal.scheduler->micros();
+            uint32_t t1 = AP_HAL::micros();
             declination = AP_Declination::get_declination(i, j);
-            total_time += hal.scheduler->micros() - t1;
+            total_time += AP_HAL::micros() - t1;
             declination_test = get_declination(i, j);
             if(declination == declination_test)
             {

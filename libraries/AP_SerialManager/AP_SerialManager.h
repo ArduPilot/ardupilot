@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-   Please contribute your ideas! See http://dev.ardupilot.com for details
+   Please contribute your ideas! See http://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,16 +20,14 @@
   serial ports and provides helper functions so objects (like a gimbal) can
   find which serial port they should use
  */
-
-#ifndef _AP_SERIALMANAGER_
-#define _AP_SERIALMANAGER_
+#pragma once
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define SERIALMANAGER_NUM_PORTS 5
+#define SERIALMANAGER_NUM_PORTS 6
 
  // console default baud rates and buffer sizes
 #ifdef HAL_SERIAL0_BAUD_DEFAULT
@@ -45,8 +43,8 @@
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX     256
 
-// mavlink default baud rates, use default buffer sizes
-#define AP_SERIALMANAGER_FRSKY_DPORT_BAUD       9600
+// FrSky default baud rates, use default buffer sizes
+#define AP_SERIALMANAGER_FRSKY_D_BAUD           9600
 #define AP_SERIALMANAGER_FRSKY_SPORT_BAUD       57600
 #define AP_SERIALMANAGER_FRSKY_BUFSIZE_RX       0
 #define AP_SERIALMANAGER_FRSKY_BUFSIZE_TX       0
@@ -72,16 +70,18 @@ class AP_SerialManager {
 public:
 
     enum SerialProtocol {
-        SerialProtocol_Console = 0,
+        SerialProtocol_None = -1,
+        SerialProtocol_Console = 0, // unused
         SerialProtocol_MAVLink = 1,
-        SerialProtocol_MAVLink2 = 2,    // do not use - use MAVLink and provide instance of 1
-        SerialProtocol_FRSky_DPort = 3,
-        SerialProtocol_FRSky_SPort = 4,
+        SerialProtocol_MAVLink2 = 2,                 // do not use - use MAVLink and provide instance of 1
+        SerialProtocol_FrSky_D = 3,                  // FrSky D protocol (D-receivers)
+        SerialProtocol_FrSky_SPort = 4,              // FrSky SPort protocol (X-receivers)
         SerialProtocol_GPS = 5,
-        SerialProtocol_GPS2 = 6,        // do not use - use GPS and provide instance of 1
+        SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
         SerialProtocol_Lidar = 9,
+        SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
     };
 
     // Constructor
@@ -108,11 +108,14 @@ public:
     //  returns true if a channel is found, false if not
     bool get_mavlink_channel(enum SerialProtocol protocol, uint8_t instance, mavlink_channel_t &mav_chan) const;
 
+    // get_mavlink_protocol - provides the specific MAVLink protocol for a
+    // given channel, or SerialProtocol_None if not found
+    SerialProtocol get_mavlink_protocol(mavlink_channel_t mav_chan) const;
+    
     // set_blocking_writes_all - sets block_writes on or off for all serial channels
     void set_blocking_writes_all(bool blocking);
 
     // set_console_baud - sets the console's baud rate to the rate specified by the protocol
-    //  used on APM2 to switch the console between the console baud rate (115200) and the SERIAL1 baud rate (user configurable)
     void set_console_baud(enum SerialProtocol protocol, uint8_t instance) const;
 
     // parameter var table
@@ -132,5 +135,3 @@ private:
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
 };
-
-#endif // _AP_SERIALMANAGER_

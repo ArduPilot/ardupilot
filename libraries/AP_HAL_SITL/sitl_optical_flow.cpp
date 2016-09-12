@@ -21,7 +21,7 @@ extern const AP_HAL::HAL& hal;
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <math.h>
+#include <cmath>
 
 #define MAX_OPTFLOW_DELAY 20
 static uint8_t next_optflow_index;
@@ -42,7 +42,7 @@ void SITL_State::_update_flow(void)
     }
 
     // update at the requested rate
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     if (now - last_flow_ms < 1000*(1.0f/_sitl->flow_rate)) {
         return;
     }

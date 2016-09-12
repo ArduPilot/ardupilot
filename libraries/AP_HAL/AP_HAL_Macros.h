@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_MACROS_H__
-#define __AP_HAL_MACROS_H__
+#pragma once
 
 /*
   macros to allow code to build on multiple platforms more easily
@@ -18,5 +17,3 @@
 #endif
 
 #define NORETURN __attribute__ ((noreturn))
-
-#endif // __AP_HAL_MACROS_H__

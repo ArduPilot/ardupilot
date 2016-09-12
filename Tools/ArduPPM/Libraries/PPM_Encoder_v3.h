@@ -14,9 +14,7 @@
 // -------------------------------------------------------------
 
 // Not for production - Work in progress
-
-#ifndef _PPM_ENCODER_H_
-#define _PPM_ENCODER_H_
+#pragma once
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -63,7 +61,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 // -------------------------------------------------------------
 
 #define SWITCHOVER_CHANNEL_A		9	// Receiver 1 PPM channel to force receiver 2. Use 0 for no switchover channel
-										// Must be choosed between 6 to 16. Preferabily from 9 to 16 so that APM can use
+										// Must be chosen between 6 to 16. Preferabily from 9 to 16 so that APM can use
 										// channels 1 to 8.
 
 
@@ -115,7 +113,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 1520
 #define PPM_CH1_FORCE_VAL_MIN	1800
 
-// PPM channel pre pulse lenght
+// PPM channel pre pulse length
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
 // PPM frame sync symbol limits
@@ -138,7 +136,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 760
 #define PPM_CH1_FORCE_VAL_MIN	900
 
-// PPM channel pre pulse lenght
+// PPM channel pre pulse length
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		200
 
 // PPM frame sync symbol limits
@@ -161,7 +159,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH1_VAL_CENTER      TICKS_FOR_ONE_US * 1050
 #define PPM_CH1_FORCE_VAL_MIN	1260
 
-// PPM channel pre pulse lenght
+// PPM channel pre pulse length
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
 // PPM frame sync symbol limits
@@ -197,7 +195,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 2120
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 1520
 
-// PPM channel pre pulse lenght
+// PPM channel pre pulse length
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
 // PPM frame sync symbol limits
@@ -219,7 +217,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1060
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 760
 
-// PPM channel pre pulse lenght
+// PPM channel pre pulse length
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		200
 
 // PPM sync symbol limits
@@ -241,7 +239,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 #define PPM_CH2_VAL_MAX         TICKS_FOR_ONE_US * 1350
 #define PPM_CH2_VAL_CENTER      TICKS_FOR_ONE_US * 1050
 
-// PPM channel pre pulse lenght
+// PPM channel pre pulse length
 #define PPM_CH1_CHANNEL_PREPULSE_LENGHT		400
 
 // PPM sync symbol limits
@@ -620,9 +618,9 @@ ISR( SERVO_INT_VECTOR )
 		// PPM2 pulse start time
 		static uint16_t ppm2_start[ 16 ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 		
-		// PPM1 pulse lenght
+		// PPM1 pulse length
 		static uint16_t ppm1_width[ 16 ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		// PPM2 pulse lenght
+		// PPM2 pulse length
 		static uint16_t ppm2_width[ 16 ] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 				
 		// Reset PPM channels ( 0 = Sync Symbol )
@@ -694,9 +692,9 @@ ISR( SERVO_INT_VECTOR )
 			// Check if we've got a high level (raising edge, channel start or sync symbol end)
 			if( servo_pins & 1 )
 			{
-				// Check for pre pulse lenght
+				// Check for pre pulse length
 				ppm1_prepulse_width = servo_time - ppm1_prepulse_start;
-				if ( true ) //Todo optionnal: We could add a test here for channel pre pulse lenght check
+				if ( true ) //Todo optionnal: We could add a test here for channel pre pulse length check
 				{
 					//We have a valid pre pulse
 					if( ppm1_channel ==  channel_count_ch1 ) // Check for last channel
@@ -723,16 +721,16 @@ ISR( SERVO_INT_VECTOR )
 			// -----------------------------------------------------------------------------------------------------------------------
 			else // We've got a low level (falling edge, channel end or sync symbol start)
 			{
-				ppm1_width[ ppm1_channel ] = servo_time - ppm1_start[ ppm1_channel ]; // Calculate channel pulse lenght, or sync symbol lenght
+				ppm1_width[ ppm1_channel ] = servo_time - ppm1_start[ ppm1_channel ]; // Calculate channel pulse length, or sync symbol length
 				if(sync_ch1 == true) // Are we synchronized ?
 				{
-					// Check channel pulse lenght validity
-					if( ppm1_width[ ppm1_channel ] > ( PPM_CH1_VAL_MAX - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) ) || ( ppm1_width[ ppm1_channel ] < ( PPM_CH1_VAL_MIN - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) ) // If we have a valid pulse lenght
+					// Check channel pulse length validity
+					if( ppm1_width[ ppm1_channel ] > ( PPM_CH1_VAL_MAX - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) ) || ( ppm1_width[ ppm1_channel ] < ( PPM_CH1_VAL_MIN - PPM_CH1_CHANNEL_PREPULSE_LENGHT ) ) // If we have a valid pulse length
 					{
 						// Reset channel error flag
 						channel_error_ch1 = false;
 					}
-					else	// We do not have a valid channel lenght
+					else	// We do not have a valid channel length
 					{
 						if( ppm1_width[ ppm1_channel ] > PPM_CH1_MIN_SYNC_LENGHT ) || ( ppm1_width[ ppm1_channel ] < PPM_CH1_MAX_SYNC_LENGHT ) //Check for sync symbol
 						{
@@ -793,9 +791,9 @@ ISR( SERVO_INT_VECTOR )
 			// Check if we've got a high level (raising edge, channel start or sync symbol end)
 			if( servo_pins & 2 )
 			{
-				// Check for pre pulse lenght
+				// Check for pre pulse length
 				ppm2_prepulse_width = servo_time - ppm2_prepulse_start;
-				if ( true ) //Todo optionnal: We could add a test here for channel pre pulse lenght check
+				if ( true ) //Todo optionnal: We could add a test here for channel pre pulse length check
 				{
 					//We have a valid pre pulse
 					if( ppm2_channel ==  channel_count_ch2 ) // Check for last channel
@@ -822,16 +820,16 @@ ISR( SERVO_INT_VECTOR )
 			// -----------------------------------------------------------------------------------------------------------------------
 			else // We've got a low level (falling edge, channel end or sync symbol start)
 			{
-				ppm2_width[ ppm2_channel ] = servo_time - ppm2_start[ ppm2_channel ]; // Calculate channel pulse lenght, or sync symbol lenght
+				ppm2_width[ ppm2_channel ] = servo_time - ppm2_start[ ppm2_channel ]; // Calculate channel pulse length, or sync symbol length
 				if(sync_ch2 == true) // Are we synchronized ?
 				{
-					// Check channel pulse lenght validity
-					if( ppm2_width[ ppm2_channel ] > ( PPM_CH2_VAL_MAX - PPM_CH2_CHANNEL_PREPULSE_LENGHT ) ) || ( ppm2_width[ ppm2_channel ] < ( PPM_CH2_VAL_MIN - PPM_CH2_CHANNEL_PREPULSE_LENGHT ) ) // If we have a valid pulse lenght
+					// Check channel pulse length validity
+					if( ppm2_width[ ppm2_channel ] > ( PPM_CH2_VAL_MAX - PPM_CH2_CHANNEL_PREPULSE_LENGHT ) ) || ( ppm2_width[ ppm2_channel ] < ( PPM_CH2_VAL_MIN - PPM_CH2_CHANNEL_PREPULSE_LENGHT ) ) // If we have a valid pulse length
 					{
 						// Reset channel error flag
 						channel_error_ch2 = false;
 					}
-					else	// We do not have a valid channel lenght
+					else	// We do not have a valid channel length
 					{
 						if( ppm2_width[ ppm2_channel ] > PPM_CH2_MIN_SYNC_LENGHT ) || ( ppm2_width[ ppm2_channel ] < PPM_CH2_MAX_SYNC_LENGHT ) //Check for sync symbol
 						{
@@ -1474,6 +1472,3 @@ void ppm_encoder_init( void )
 	
 }
 // ------------------------------------------------------------------------------
-
-#endif // _PPM_ENCODER_H_
-

@@ -16,9 +16,7 @@
         8. set the SPRAY_PUMP_MIN to the minimum value that the pump servo should move to while engaged expressed as a percentage (i.e. 0 ~ 100) of the full servo range
         9. set the SPRAY_SPEED_MIN to the minimum speed (in cm/s) the vehicle should be moving at before the pump and sprayer are turned on.  0 will mean the pump and spinner will always be on when the system is enabled with ch7/ch8 switch
 **/
-
-#ifndef AC_SPRAYER_H
-#define AC_SPRAYER_H
+#pragma once
 
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
@@ -83,5 +81,3 @@ private:
     uint32_t        _speed_over_min_time;   // time at which we reached speed minimum
     uint32_t        _speed_under_min_time;  // time at which we fell below speed minimum
 };
-
-#endif /* AC_SPRAYER_H */

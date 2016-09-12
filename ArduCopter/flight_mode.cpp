@@ -3,15 +3,15 @@
 #include "Copter.h"
 
 /*
- * flight.pde - high level calls to set and update flight modes
- *      logic for individual flight modes is in control_acro.pde, control_stabilize.pde, etc
+ * High level calls to set and update flight modes logic for individual
+ * flight modes is in control_acro.cpp, control_stabilize.cpp, etc
  */
 
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
-// returns true if mode was succesfully set
+// returns true if mode was successfully set
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
-bool Copter::set_mode(uint8_t mode)
+bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 {
     // boolean to record if flight mode could be set
     bool success = false;
@@ -19,6 +19,10 @@ bool Copter::set_mode(uint8_t mode)
 
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
+        prev_control_mode = control_mode;
+        prev_control_mode_reason = control_mode_reason;
+
+        control_mode_reason = reason;
         return true;
     }
 
@@ -95,6 +99,18 @@ bool Copter::set_mode(uint8_t mode)
             success = brake_init(ignore_checks);
             break;
 
+        case THROW:
+            success = throw_init(ignore_checks);
+            break;
+
+        case AVOID_ADSB:
+            success = avoid_adsb_init(ignore_checks);
+            break;
+
+        case GUIDED_NOGPS:
+            success = guided_nogps_init(ignore_checks);
+            break;
+
         default:
             success = false;
             break;
@@ -104,8 +120,15 @@ bool Copter::set_mode(uint8_t mode)
     if (success) {
         // perform any cleanup required by previous flight mode
         exit_mode(control_mode, mode);
+        
+        prev_control_mode = control_mode;
+        prev_control_mode_reason = control_mode_reason;
+
         control_mode = mode;
-        DataFlash.Log_Write_Mode(control_mode);
+        control_mode_reason = reason;
+        DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+
+        adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
 
 #if AC_FENCE == ENABLED
         // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
@@ -113,6 +136,11 @@ bool Copter::set_mode(uint8_t mode)
         // but it should be harmless to disable the fence temporarily in these situations as well
         fence.manual_recovery_start();
 #endif
+        
+#if FRSKY_TELEM_ENABLED == ENABLED
+        frsky_telemetry.update_control_mode(control_mode);
+#endif
+        
     }else{
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
@@ -206,11 +234,26 @@ void Copter::update_flight_mode()
         case BRAKE:
             brake_run();
             break;
+
+        case THROW:
+            throw_run();
+            break;
+
+        case AVOID_ADSB:
+            avoid_adsb_run();
+            break;
+
+        case GUIDED_NOGPS:
+            guided_nogps_run();
+            break;
+
+        default:
+            break;
     }
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
-void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
+void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode)
 {
 #if AUTOTUNE_ENABLED == ENABLED
     if (old_control_mode == AUTOTUNE) {
@@ -231,7 +274,7 @@ void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
     // smooth throttle transition when switching from manual to automatic flight modes
     if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && motors.armed() && !ap.land_complete) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
-        set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(channel_throttle->control_in));
+        set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(channel_throttle->get_control_in()));
     }
 
     // cancel any takeoffs in progress
@@ -244,13 +287,21 @@ void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
         motors.set_acro_tail(false);
     }
 
-    // reset RC Passthrough to motors
-    motors.reset_radio_passthrough();
+    // if we are changing from a mode that did not use manual throttle,
+    // stab col ramp value should be pre-loaded to the correct value to avoid a twitch
+    // heli_stab_col_ramp should really only be active switching between Stabilize and Acro modes
+    if (!mode_has_manual_throttle(old_control_mode)){
+        if (new_control_mode == STABILIZE){
+            input_manager.set_stab_col_ramp(1.0);
+        } else if (new_control_mode == ACRO){
+            input_manager.set_stab_col_ramp(0.0);
+        }
+    }
 #endif //HELI_FRAME
 }
 
 // returns true or false whether mode requires GPS
-bool Copter::mode_requires_GPS(uint8_t mode) {
+bool Copter::mode_requires_GPS(control_mode_t mode) {
     switch(mode) {
         case AUTO:
         case GUIDED:
@@ -260,6 +311,8 @@ bool Copter::mode_requires_GPS(uint8_t mode) {
         case DRIFT:
         case POSHOLD:
         case BRAKE:
+        case AVOID_ADSB:
+        case THROW:
             return true;
         default:
             return false;
@@ -269,7 +322,7 @@ bool Copter::mode_requires_GPS(uint8_t mode) {
 }
 
 // mode_has_manual_throttle - returns true if the flight mode has a manual throttle (i.e. pilot directly controls throttle)
-bool Copter::mode_has_manual_throttle(uint8_t mode) {
+bool Copter::mode_has_manual_throttle(control_mode_t mode) {
     switch(mode) {
         case ACRO:
         case STABILIZE:
@@ -283,20 +336,22 @@ bool Copter::mode_has_manual_throttle(uint8_t mode) {
 
 // mode_allows_arming - returns true if vehicle can be armed in the specified mode
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
-bool Copter::mode_allows_arming(uint8_t mode, bool arming_from_gcs) {
-    if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || (arming_from_gcs && mode == GUIDED)) {
+bool Copter::mode_allows_arming(control_mode_t mode, bool arming_from_gcs) {
+    if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == DRIFT || mode == SPORT || mode == THROW || (arming_from_gcs && (mode == GUIDED || mode == GUIDED_NOGPS))) {
         return true;
     }
     return false;
 }
 
 // notify_flight_mode - sets notify object based on flight mode.  Only used for OreoLED notify device
-void Copter::notify_flight_mode(uint8_t mode) {
+void Copter::notify_flight_mode(control_mode_t mode) {
     switch(mode) {
         case AUTO:
         case GUIDED:
         case RTL:
         case CIRCLE:
+        case AVOID_ADSB:
+        case GUIDED_NOGPS:
         case LAND:
             // autopilot modes
             AP_Notify::flags.autopilot_mode = true;
@@ -315,55 +370,61 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case STABILIZE:
-        port->print_P(PSTR("STABILIZE"));
+        port->print("STABILIZE");
         break;
     case ACRO:
-        port->print_P(PSTR("ACRO"));
+        port->print("ACRO");
         break;
     case ALT_HOLD:
-        port->print_P(PSTR("ALT_HOLD"));
+        port->print("ALT_HOLD");
         break;
     case AUTO:
-        port->print_P(PSTR("AUTO"));
+        port->print("AUTO");
         break;
     case GUIDED:
-        port->print_P(PSTR("GUIDED"));
+        port->print("GUIDED");
         break;
     case LOITER:
-        port->print_P(PSTR("LOITER"));
+        port->print("LOITER");
         break;
     case RTL:
-        port->print_P(PSTR("RTL"));
+        port->print("RTL");
         break;
     case CIRCLE:
-        port->print_P(PSTR("CIRCLE"));
+        port->print("CIRCLE");
         break;
     case LAND:
-        port->print_P(PSTR("LAND"));
-        break;
-    case OF_LOITER:
-        port->print_P(PSTR("OF_LOITER"));
+        port->print("LAND");
         break;
     case DRIFT:
-        port->print_P(PSTR("DRIFT"));
+        port->print("DRIFT");
         break;
     case SPORT:
-        port->print_P(PSTR("SPORT"));
+        port->print("SPORT");
         break;
     case FLIP:
-        port->print_P(PSTR("FLIP"));
+        port->print("FLIP");
         break;
     case AUTOTUNE:
-        port->print_P(PSTR("AUTOTUNE"));
+        port->print("AUTOTUNE");
         break;
     case POSHOLD:
-        port->print_P(PSTR("POSHOLD"));
+        port->print("POSHOLD");
         break;
     case BRAKE:
-        port->print_P(PSTR("BRAKE"));
+        port->print("BRAKE");
+        break;
+    case THROW:
+        port->print("THROW");
+        break;
+    case AVOID_ADSB:
+        port->print("AVOID_ADSB");
+        break;
+    case GUIDED_NOGPS:
+        port->print("GUIDED_NOGPS");
         break;
     default:
-        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
+        port->printf("Mode(%u)", (unsigned)mode);
         break;
     }
 }

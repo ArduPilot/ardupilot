@@ -7,13 +7,13 @@ extern const AP_HAL::HAL& hal;
 
 // ------------------------------
 
-const AP_Param::GroupInfo AC_Sprayer::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Sprayer enable/disable
     // @Description: Allows you to enable (1) or disable (0) the sprayer
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("ENABLE",      0,  AC_Sprayer, _enabled, 0),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, AC_Sprayer, _enabled, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: PUMP_RATE
     // @DisplayName: Pump speed
@@ -113,10 +113,10 @@ AC_Sprayer::update()
 
     // get horizontal velocity
     const Vector3f &velocity = _inav->get_velocity();
-    ground_speed = pythagorous2(velocity.x,velocity.y);
+    ground_speed = norm(velocity.x,velocity.y);
 
     // get the current time
-    now = hal.scheduler->millis();
+    now = AP_HAL::millis();
 
     // check our speed vs the minimum
     if (ground_speed >= _speed_min) {
@@ -160,7 +160,7 @@ AC_Sprayer::update()
 
     // if spraying or testing update the pump servo position
     if (_flags.spraying || _flags.testing) {        
-        RC_Channel_aux::move_servo(RC_Channel_aux::k_sprayer_pump, min(max(ground_speed * _pump_pct_1ms, 100 *_pump_min_pct),10000),0,10000);
+        RC_Channel_aux::move_servo(RC_Channel_aux::k_sprayer_pump, MIN(MAX(ground_speed * _pump_pct_1ms, 100 *_pump_min_pct),10000),0,10000);
         RC_Channel_aux::set_radio(RC_Channel_aux::k_sprayer_spinner, _spinner_pwm);
     }else{
         // ensure sprayer and spinner are off

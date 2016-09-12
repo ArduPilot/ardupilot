@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#include "AP_Baro_HIL.h"
 
-#include "AP_Baro.h"
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -54,19 +54,38 @@ void AP_Baro::setHIL(float altitude_msl)
     float p = p0 * delta;
     float T = 303.16f * theta - 273.16f; // Assume 30 degrees at sea level - converted to degrees Kelvin
 
-    setHIL(0, p, T);
+    _hil.pressure = p;
+    _hil.temperature = T;
+    _hil.updated = true;
 }
 
 /*
   set HIL pressure and temperature for an instance
  */
-void AP_Baro::setHIL(uint8_t instance, float pressure, float temperature)
+void AP_Baro::setHIL(uint8_t instance, float pressure, float temperature, float altitude, float climb_rate, uint32_t last_update_ms)
 {
     if (instance >= _num_sensors) {
         // invalid
         return;
     }
-    sensors[instance].pressure = pressure;
-    sensors[instance].temperature = temperature;
-    sensors[instance].last_update_ms = hal.scheduler->millis();
+    _hil.pressure = pressure;
+    _hil.temperature = temperature;
+    _hil.altitude = altitude;
+    _hil.climb_rate = climb_rate;
+    _hil.updated = true;
+    _hil.have_alt = true;
+
+    if (last_update_ms != 0) {
+        _hil.last_update_ms = last_update_ms;
+        _hil.have_last_update = true;
+    }
+}
+
+// Read the sensor
+void AP_Baro_HIL::update(void)
+{
+    if (_frontend._hil.updated) {
+        _frontend._hil.updated = false;
+        _copy_to_frontend(0, _frontend._hil.pressure, _frontend._hil.temperature);
+    }
 }

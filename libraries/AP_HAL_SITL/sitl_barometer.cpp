@@ -21,7 +21,7 @@ extern const AP_HAL::HAL& hal;
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <math.h>
+#include <cmath>
 
 /*
   setup the barometer with new input
@@ -43,8 +43,8 @@ void SITL_State::_update_barometer(float altitude)
         return;
     }
 
-    // 80Hz, to match the real APM2 barometer
-    uint32_t now = hal.scheduler->millis();
+    // 80Hz
+    uint32_t now = AP_HAL::millis();
     if ((now - last_update) < 12) {
         return;
     }
@@ -76,7 +76,9 @@ void SITL_State::_update_barometer(float altitude)
 
     // find data corresponding to delayed time in buffer
     for (uint8_t i=0; i<=baro_buffer_length-1; i++) {
-        time_delta_baro = abs(delayed_time_baro - buffer_baro[i].time); // find difference between delayed time and time stamp in buffer
+        // find difference between delayed time and time stamp in buffer
+        time_delta_baro = abs(
+                (int32_t)(delayed_time_baro - buffer_baro[i].time));
         // if this difference is smaller than last delta, store this time
         if (time_delta_baro < best_time_delta_baro) {
             best_index_baro = i;

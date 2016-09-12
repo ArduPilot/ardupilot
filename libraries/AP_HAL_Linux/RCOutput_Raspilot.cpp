@@ -1,47 +1,41 @@
 
 #include <AP_HAL/AP_HAL.h>
-#include "GPIO.h"
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-
 #include "RCOutput_Raspilot.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
+
+#include <cmath>
 #include <dirent.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <fcntl.h>
 #include <stdint.h>
-#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "px4io_protocol.h"
+#include "GPIO.h"
 
 using namespace Linux;
 
 #define PWM_CHAN_COUNT 8
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-void LinuxRCOutput_Raspilot::init(void* machtnicht)
+void RCOutput_Raspilot::init()
 {
-    _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
-    _spi_sem = _spi->get_semaphore();
-    
-    if (_spi_sem == NULL) {
-        hal.scheduler->panic(PSTR("PANIC: RCOutput_Raspilot did not get "
-                                  "valid SPI semaphore!"));
-        return; // never reached
-    }
-    
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&LinuxRCOutput_Raspilot::_update, void));
+    _dev = hal.spi->get_device("raspio");
+
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&RCOutput_Raspilot::_update, void));
 }
 
-void LinuxRCOutput_Raspilot::set_freq(uint32_t chmask, uint16_t freq_hz)
-{    
-    if (!_spi_sem->take(10)) {
+void RCOutput_Raspilot::set_freq(uint32_t chmask, uint16_t freq_hz)
+{
+    if (!_dev->get_semaphore()->take(10)) {
         return;
     }
-    
+
     struct IOPacket _dma_packet_tx, _dma_packet_rx;
     uint16_t count = 1;
     _dma_packet_tx.count_code = count | PKT_CODE_WRITE;
@@ -50,63 +44,64 @@ void LinuxRCOutput_Raspilot::set_freq(uint32_t chmask, uint16_t freq_hz)
     _dma_packet_tx.regs[0] = freq_hz;
     _dma_packet_tx.crc = 0;
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
-    _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
-    
+    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
+                   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
+
     _frequency = freq_hz;
-    
-    _spi_sem->give();
+
+    _dev->get_semaphore()->give();
 }
 
-uint16_t LinuxRCOutput_Raspilot::get_freq(uint8_t ch)
+uint16_t RCOutput_Raspilot::get_freq(uint8_t ch)
 {
     return _frequency;
 }
 
-void LinuxRCOutput_Raspilot::enable_ch(uint8_t ch)
+void RCOutput_Raspilot::enable_ch(uint8_t ch)
 {
-    
+
 }
 
-void LinuxRCOutput_Raspilot::disable_ch(uint8_t ch)
+void RCOutput_Raspilot::disable_ch(uint8_t ch)
 {
     write(ch, 0);
 }
 
-void LinuxRCOutput_Raspilot::write(uint8_t ch, uint16_t period_us)
-{   
+void RCOutput_Raspilot::write(uint8_t ch, uint16_t period_us)
+{
     if(ch >= PWM_CHAN_COUNT){
         return;
     }
-    
+
     _period_us[ch] = period_us;
 }
 
-uint16_t LinuxRCOutput_Raspilot::read(uint8_t ch)
+uint16_t RCOutput_Raspilot::read(uint8_t ch)
 {
     if(ch >= PWM_CHAN_COUNT){
         return 0;
     }
-    
+
     return _period_us[ch];
 }
 
-void LinuxRCOutput_Raspilot::read(uint16_t* period_us, uint8_t len)
+void RCOutput_Raspilot::read(uint16_t* period_us, uint8_t len)
 {
-    for (int i = 0; i < len; i++) 
+    for (int i = 0; i < len; i++)
         period_us[i] = read(0 + i);
 }
 
-void LinuxRCOutput_Raspilot::_update(void)
+void RCOutput_Raspilot::_update(void)
 {
     int i;
-    
-    if (hal.scheduler->micros() - _last_update_timestamp < 10000) {
+
+    if (AP_HAL::micros() - _last_update_timestamp < 10000) {
         return;
     }
-    
-    _last_update_timestamp = hal.scheduler->micros();
-    
-    if (!_spi_sem->take_nonblocking()) {
+
+    _last_update_timestamp = AP_HAL::micros();
+
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 
@@ -118,8 +113,9 @@ void LinuxRCOutput_Raspilot::_update(void)
     _dma_packet_tx.regs[0] = 75;
     _dma_packet_tx.crc = 0;
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
-    _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
-    
+    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
+                   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
+
     count = 1;
     _dma_packet_tx.count_code = count | PKT_CODE_WRITE;
     _dma_packet_tx.page = 50;
@@ -127,8 +123,9 @@ void LinuxRCOutput_Raspilot::_update(void)
     _dma_packet_tx.regs[0] = 0x560B;
     _dma_packet_tx.crc = 0;
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
-    _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
-    
+    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
+                   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
+
     count = PWM_CHAN_COUNT;
     _dma_packet_tx.count_code = count | PKT_CODE_WRITE;
     _dma_packet_tx.page = 54;
@@ -138,9 +135,10 @@ void LinuxRCOutput_Raspilot::_update(void)
     }
     _dma_packet_tx.crc = 0;
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
-    _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
-    
-    _spi_sem->give();
+    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
+                   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
+
+    _dev->get_semaphore()->give();
 }
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT

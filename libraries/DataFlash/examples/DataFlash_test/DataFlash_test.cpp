@@ -4,42 +4,10 @@
  * originally based on code by Jordi MuÒoz and Jose Julio
  */
 
-// Libraries
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-
-#include <AP_Common/AP_Common.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Compass/AP_Compass.h>
-#include <Filter/Filter.h>
-#include <AP_Declination/AP_Declination.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_GPS/AP_GPS.h>
 #include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Mission/AP_Mission.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_NavEKF/AP_NavEKF.h>
-#include <AP_Rally/AP_Rally.h>
-#include <AP_Scheduler/AP_Scheduler.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 
-
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define LOG_TEST_MSG 1
 
@@ -49,7 +17,7 @@ struct PACKED log_Test {
     int32_t  l1, l2;
 };
 
-static const struct LogStructure log_structure[] PROGMEM = {
+static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_TEST_MSG, sizeof(log_Test),       
     "TEST", "HHHHii",        "V1,V2,V3,V4,L1,L2" }
@@ -66,7 +34,7 @@ public:
 
 private:
 
-    DataFlash_Class dataflash{PSTR("DF Test 0.1")};
+    DataFlash_Class dataflash{"DF Test 0.1"};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 };
 
@@ -89,7 +57,8 @@ void DataFlashTest::setup(void)
 
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
-    log_num = dataflash.StartNewLog();
+    dataflash.StartNewLog();
+    log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
     hal.console->println("After testing perform erase before using DataFlash for logging!");
     hal.console->println("");
@@ -99,7 +68,7 @@ void DataFlashTest::setup(void)
     uint16_t i;
 
     for (i = 0; i < NUM_PACKETS; i++) {
-        uint32_t start = hal.scheduler->micros();
+        uint32_t start = AP_HAL::micros();
         // note that we use g++ style initialisers to make larger
         // structures easier to follow        
         struct log_Test pkt = {
@@ -112,7 +81,7 @@ void DataFlashTest::setup(void)
             l2    : (int32_t)(i * 16268)
         };
         dataflash.WriteBlock(&pkt, sizeof(pkt));
-        total_micros += hal.scheduler->micros() - start;
+        total_micros += AP_HAL::micros() - start;
         hal.scheduler->delay(20);
     }
 
@@ -142,7 +111,7 @@ void DataFlashTest::loop(void)
 
 void DataFlashTest::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
-    port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
+    port->printf("Mode(%u)", (unsigned)mode);
 }
 
 /*

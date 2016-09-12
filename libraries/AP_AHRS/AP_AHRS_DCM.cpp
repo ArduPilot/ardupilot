@@ -53,7 +53,7 @@ AP_AHRS_DCM::update(void)
     float delta_t;
 
     if (_last_startup_ms == 0) {
-        _last_startup_ms = hal.scheduler->millis();
+        _last_startup_ms = AP_HAL::millis();
     }
 
     // tell the IMU to grab some data
@@ -146,11 +146,38 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
         _dcm_matrix.from_euler(roll, pitch, yaw);
     } else {
-        // otherwise make it flat
-        _dcm_matrix.from_euler(0, 0, 0);
+
+        // Use the measured accel due to gravity to calculate an initial
+        // roll and pitch estimate
+
+        // Get body frame accel vector
+        Vector3f initAccVec;
+        uint8_t counter = 0;
+        initAccVec = _ins.get_accel();
+
+        // the first vector may be invalid as the filter starts up
+        while (initAccVec.length() <= 5.0f && counter++ < 10) {
+            _ins.wait_for_sample();
+            _ins.update();
+            initAccVec = _ins.get_accel();
+        }
+
+        // normalise the acceleration vector
+        if (initAccVec.length() > 5.0f) {
+            // calculate initial pitch angle
+            pitch = atan2f(initAccVec.x, norm(initAccVec.y, initAccVec.z));
+            // calculate initial roll angle
+            roll = atan2f(-initAccVec.y, -initAccVec.z);
+        } else {
+            // If we can't use the accel vector, then align flat
+            roll = 0.0f;
+            pitch = 0.0f;
+        }
+        _dcm_matrix.from_euler(roll, pitch, 0);
+
     }
 
-    _last_startup_ms = hal.scheduler->millis();
+    _last_startup_ms = AP_HAL::millis();
 }
 
 // reset the current attitude, used by HIL
@@ -265,7 +292,7 @@ AP_AHRS_DCM::normalize(void)
             !renorm(t2, _dcm_matrix.c)) {
         // Our solution is blowing up and we will force back
         // to last euler angles
-        _last_failure_ms = hal.scheduler->millis();
+        _last_failure_ms = AP_HAL::millis();
         AP_AHRS_DCM::reset(true);
     }
 }
@@ -327,7 +354,7 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 float
 AP_AHRS_DCM::_yaw_gain(void) const
 {
-    float VdotEFmag = pythagorous2(_accel_ef[_active_accel_instance].x,
+    float VdotEFmag = norm(_accel_ef[_active_accel_instance].x,
                                    _accel_ef[_active_accel_instance].y);
     if (VdotEFmag <= 4.0f) {
         return 0.2f*(4.5f - VdotEFmag);
@@ -355,7 +382,7 @@ bool AP_AHRS_DCM::have_gps(void) const
  */
 bool AP_AHRS_DCM::use_fast_gains(void) const
 {
-    return !hal.util->get_soft_armed() && (hal.scheduler->millis() - _last_startup_ms) < 20000U;
+    return !hal.util->get_soft_armed() && (AP_HAL::millis() - _last_startup_ms) < 20000U;
 }
 
 
@@ -381,13 +408,13 @@ bool AP_AHRS_DCM::use_compass(void)
     // prevent flyaways with very bad compass offsets
     int32_t error = abs(wrap_180_cd(yaw_sensor - _gps.ground_course_cd()));
     if (error > 4500 && _wind.length() < _gps.ground_speed()*0.8f) {
-        if (hal.scheduler->millis() - _last_consistent_heading > 2000) {
+        if (AP_HAL::millis() - _last_consistent_heading > 2000) {
             // start using the GPS for heading if the compass has been
             // inconsistent with the GPS for 2 seconds
             return false;
         }
     } else {
-        _last_consistent_heading = hal.scheduler->millis();
+        _last_consistent_heading = AP_HAL::millis();
     }
 
     // use the compass
@@ -570,7 +597,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     //update _accel_ef_blended
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     if (_ins.get_accel_count() == 2 && _ins.use_accel(0) && _ins.use_accel(1)) {
         float imu1_weight_target = _active_accel_instance == 0 ? 1.0f : 0.0f;
         // slew _imu1_weight over one second
@@ -579,9 +605,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
     } else {
         _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
     }
-#else
-    _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
-#endif // HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 
     // keep a sum of the deltat values, so we know how much time
     // we have integrated over
@@ -614,7 +637,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // add in wind estimate
         velocity += _wind;
 
-        last_correction_time = hal.scheduler->millis();
+        last_correction_time = AP_HAL::millis();
         _have_gps_lock = false;
     } else {
         if (_gps.last_fix_time_ms() == _ra_sum_start) {
@@ -680,7 +703,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         GA_e.normalize();
         if (GA_e.is_inf()) {
             // wait for some non-zero acceleration information
-            _last_failure_ms = hal.scheduler->millis();
+            _last_failure_ms = AP_HAL::millis();
             return;
         }
         using_gps_corrections = true;
@@ -739,7 +762,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     if (besti == -1) {
         // no healthy accelerometers!
-        _last_failure_ms = hal.scheduler->millis();
+        _last_failure_ms = AP_HAL::millis();
         return;
     }
 
@@ -751,7 +774,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     float earth_error_Z = error.z;
 
     // equation 10
-    float tilt = pythagorous2(GA_e.x, GA_e.y);
+    float tilt = norm(GA_e.x, GA_e.y);
 
     // equation 11
     float theta = atan2f(GA_b[besti].y, GA_b[besti].x);
@@ -769,7 +792,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // flat, but still allow for yaw correction using the
     // accelerometers at high roll angles as long as we have a GPS
     if (AP_AHRS_DCM::use_compass()) {
-        if (have_gps() && is_equal(gps_gain,1.0f)) {
+        if (have_gps() && is_equal(gps_gain.get(), 1.0f)) {
             error[besti].z *= sinf(fabsf(roll));
         } else {
             error[besti].z = 0;
@@ -789,7 +812,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     if (error[besti].is_nan() || error[besti].is_inf()) {
         // don't allow bad values
         check_matrix();
-        _last_failure_ms = hal.scheduler->millis();
+        _last_failure_ms = AP_HAL::millis();
         return;
     }
 
@@ -864,7 +887,7 @@ void AP_AHRS_DCM::estimate_wind(void)
     // See http://gentlenav.googlecode.com/files/WindEstimation.pdf
     Vector3f fuselageDirection = _dcm_matrix.colx();
     Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
 
     // scrap our data and start over if we're taking too long to get a direction change
     if (now - _last_wind_time > 10000) {
@@ -884,11 +907,11 @@ void AP_AHRS_DCM::estimate_wind(void)
         // estimate airspeed it using equation 6
         V = velocityDiff.length() / diff_length;
 
-        _last_fuse = fuselageDirection;
-        _last_vel = velocity;
-
         Vector3f fuselageDirectionSum = fuselageDirection + _last_fuse;
         Vector3f velocitySum = velocity + _last_vel;
+
+        _last_fuse = fuselageDirection;
+        _last_vel = velocity;
 
         float theta = atan2f(velocityDiff.y, velocityDiff.x) - atan2f(fuselageDirectionDiff.y, fuselageDirectionDiff.x);
         float sintheta = sinf(theta);
@@ -988,7 +1011,7 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 bool AP_AHRS_DCM::healthy(void) const
 {
     // consider ourselves healthy if there have been no failures for 5 seconds
-    return (_last_failure_ms == 0 || hal.scheduler->millis() - _last_failure_ms > 5000);
+    return (_last_failure_ms == 0 || AP_HAL::millis() - _last_failure_ms > 5000);
 }
 
 /*
@@ -999,5 +1022,5 @@ uint32_t AP_AHRS_DCM::uptime_ms(void) const
     if (_last_startup_ms == 0) {
         return 0;
     }
-    return hal.scheduler->millis() - _last_startup_ms;
+    return AP_HAL::millis() - _last_startup_ms;
 }

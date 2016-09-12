@@ -23,6 +23,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #include "AP_Airspeed_PX4.h"
+
 #include <drivers/drv_airspeed.h>
 #include <uORB/topics/differential_pressure.h>
 #include <sys/types.h>
@@ -30,7 +31,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
 bool AP_Airspeed_PX4::init()
 {
@@ -57,10 +58,10 @@ bool AP_Airspeed_PX4::get_differential_pressure(float &pressure)
     float tsum = 0;
     uint16_t count = 0;
     struct differential_pressure_s report;
-    
+
     while (::read(_fd, &report, sizeof(report)) == sizeof(report) &&
            report.timestamp != _last_timestamp) {
-        psum += report.differential_pressure_raw_pa;
+        psum += report.differential_pressure_raw_pa / _psi_range.get();
         tsum += report.temperature;
         count++;
         _last_timestamp = report.timestamp;

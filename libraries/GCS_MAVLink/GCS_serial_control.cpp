@@ -132,11 +132,11 @@ more_data:
     }
 
     if (packet.flags & SERIAL_CONTROL_FLAG_BLOCKING) {
-        while (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_SERIAL_CONTROL) {
+        while (!HAVE_PAYLOAD_SPACE(chan, SERIAL_CONTROL)) {
             hal.scheduler->delay(1);
         }
     } else {
-        if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_SERIAL_CONTROL) {
+        if (!HAVE_PAYLOAD_SPACE(chan, SERIAL_CONTROL)) {
             // no space for reply
             return;
         }
@@ -154,6 +154,7 @@ more_data:
     _mav_finalize_message_chan_send(chan, 
                                     MAVLINK_MSG_ID_SERIAL_CONTROL,
                                     (const char *)&packet,
+                                    MAVLINK_MSG_ID_SERIAL_CONTROL_MIN_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_CRC);
     if ((flags & SERIAL_CONTROL_FLAG_MULTI) && packet.count != 0) {

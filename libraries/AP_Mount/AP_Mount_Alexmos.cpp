@@ -165,7 +165,7 @@ void AP_Mount_Alexmos::write_params()
 */
 void AP_Mount_Alexmos::send_command(uint8_t cmd, uint8_t* data, uint8_t size)
 {
-    if (_port->txspace() < (size + 5)) {
+    if (_port->txspace() < (size + 5U)) {
         return;
     }
     uint8_t checksum = 0;
@@ -267,7 +267,7 @@ void AP_Mount_Alexmos::read_incoming()
             case 4: // parsing body
                 _checksum += data;
                 if (_payload_counter < sizeof(_buffer)) {
-                    _buffer.bytes[_payload_counter] = data;
+                    _buffer[_payload_counter] = data;
                 }
                 if (++_payload_counter == _payload_length)
                     _step++;

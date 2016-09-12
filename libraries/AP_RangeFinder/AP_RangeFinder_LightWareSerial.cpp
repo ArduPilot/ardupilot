@@ -62,7 +62,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
         char c = uart->read();
         if (c == '\r') {
             linebuf[linebuf_len] = 0;
-            sum += atof(linebuf);
+            sum += (float)atof(linebuf);
             count++;
             linebuf_len = 0;
         } else if (isdigit(c) || c == '.') {
@@ -75,7 +75,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
     }
 
     // we need to write a byte to prompt another reading
-    uart->write('\n');
+    uart->write('d');
 
     if (count == 0) {
         return false;
@@ -91,9 +91,9 @@ void AP_RangeFinder_LightWareSerial::update(void)
 {
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
-        last_reading_ms = hal.scheduler->millis();
+        last_reading_ms = AP_HAL::millis();
         update_status();
-    } else if (hal.scheduler->millis() - last_reading_ms > 200) {
+    } else if (AP_HAL::millis() - last_reading_ms > 200) {
         set_status(RangeFinder::RangeFinder_NoData);
     }
 }

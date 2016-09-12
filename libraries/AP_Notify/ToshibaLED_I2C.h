@@ -14,14 +14,17 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __TOSHIBA_LED_I2C_H__
-#define __TOSHIBA_LED_I2C_H__
+#pragma once
+
+#include <AP_HAL/I2CDevice.h>
+#include "ToshibaLED.h"
 
 class ToshibaLED_I2C : public ToshibaLED
 {
 public:
     bool hw_init(void);
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b);
-};
 
-#endif // __TOSHIBA_LED_I2C_H__
+private:
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+};

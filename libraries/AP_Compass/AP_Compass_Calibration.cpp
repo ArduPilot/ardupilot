@@ -1,15 +1,16 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
-#include "Compass.h"
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
+
+#include "AP_Compass.h"
 
 extern AP_HAL::HAL& hal;
 
 void
 Compass::compass_cal_update()
 {
-    AP_Notify::flags.compass_cal_running = 0;
+    bool running = false;
 
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         bool failure;
@@ -24,9 +25,12 @@ Compass::compass_cal_update()
         }
 
         if (_calibrator[i].running()) {
-            AP_Notify::flags.compass_cal_running = 1;
+            running = true;
         }
     }
+
+    AP_Notify::flags.compass_cal_running = running;
+
     if (is_calibrating()) {
         _cal_has_run = true;
         return;
@@ -46,9 +50,12 @@ Compass::start_calibration(uint8_t i, bool retry, bool autosave, float delay, bo
     if (!is_calibrating() && delay > 0.5f) {
         AP_Notify::events.initiated_compass_cal = 1;
     }
-    if (i == get_primary()) {
+    if (i == get_primary() && _state[i].external != 0) {
         _calibrator[i].set_tolerance(_calibration_threshold);
     } else {
+        // internal compasses or secondary compasses get twice the
+        // threshold. This is because internal compasses tend to be a
+        // lot noisier
         _calibrator[i].set_tolerance(_calibration_threshold*2);
     }
     _calibrator[i].start(retry, autosave, delay);
@@ -91,9 +98,12 @@ Compass::start_calibration_all(bool retry, bool autosave, float delay, bool auto
 void
 Compass::cancel_calibration(uint8_t i)
 {
-    _calibrator[i].clear();
-    AP_Notify::events.compass_cal_canceled = 1;
     AP_Notify::events.initiated_compass_cal = 0;
+
+    if (_calibrator[i].running() || _calibrator[i].get_status() == COMPASS_CAL_WAITING_TO_START) {
+        AP_Notify::events.compass_cal_canceled = 1;
+    }
+    _calibrator[i].clear();
 }
 
 void
@@ -175,23 +185,22 @@ Compass::send_mag_cal_progress(mavlink_channel_t chan)
     uint8_t cal_mask = get_cal_mask();
 
     for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
-        uint8_t cal_status = _calibrator[compass_id].get_status();
+        auto& calibrator = _calibrator[compass_id];
+        uint8_t cal_status = calibrator.get_status();
 
         if (cal_status == COMPASS_CAL_WAITING_TO_START  ||
             cal_status == COMPASS_CAL_RUNNING_STEP_ONE ||
             cal_status == COMPASS_CAL_RUNNING_STEP_TWO) {
-            uint8_t completion_pct = _calibrator[compass_id].get_completion_percent();
-            uint8_t completion_mask[10];
+            uint8_t completion_pct = calibrator.get_completion_percent();
+            auto& completion_mask = calibrator.get_completion_mask();
             Vector3f direction(0.0f,0.0f,0.0f);
             uint8_t attempt = _calibrator[compass_id].get_attempt();
-
-            memset(completion_mask, 0, sizeof(completion_mask));
 
             // ensure we don't try to send with no space available
             if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_PROGRESS)) {
                 return;
             }
-            
+
             mavlink_msg_mag_cal_progress_send(
                 chan,
                 compass_id, cal_mask,
@@ -280,10 +289,10 @@ uint8_t Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
         }
 
         uint8_t mag_mask = packet.param1;
-        bool retry = packet.param2;
-        bool autosave = packet.param3;
+        bool retry = !is_zero(packet.param2);
+        bool autosave = !is_zero(packet.param3);
         float delay = packet.param4;
-        bool autoreboot = packet.param5;
+        bool autoreboot = !is_zero(packet.param5);
 
         if (mag_mask == 0) { // 0 means all
             if (!start_calibration_all(retry, autosave, delay, autoreboot)) {

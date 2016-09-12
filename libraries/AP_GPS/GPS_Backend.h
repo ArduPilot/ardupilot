@@ -17,8 +17,7 @@
 /*
   GPS driver backend class
  */
-#ifndef __AP_GPS_BACKEND_H__
-#define __AP_GPS_BACKEND_H__
+#pragma once
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_GPS.h"
@@ -37,21 +36,22 @@ public:
     // valid packet from the GPS.
     virtual bool read() = 0;
 
-    virtual void inject_data(uint8_t *data, uint8_t len) { return; }
-
-#if GPS_RTK_AVAILABLE
     // Highest status supported by this GPS. 
     // Allows external system to identify type of receiver connected.
     virtual AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D; }
 
+    virtual bool is_configured(void) { return true; }
+
+    virtual void inject_data(uint8_t *data, uint8_t len) { return; }
+
     //MAVLink methods
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan) { return ; }
 
-#if GPS_MAX_INSTANCES > 1
     virtual void send_mavlink_gps2_rtk(mavlink_channel_t chan) { return ; }
-#endif
 
-#endif
+    virtual void broadcast_configuration_failure_reason(void) const { return ; }
+
+    virtual void handle_msg(mavlink_message_t *msg) { return ; }
 
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
@@ -73,5 +73,3 @@ protected:
     */
     void make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);
 };
-
-#endif // __AP_GPS_BACKEND_H__

@@ -15,12 +15,12 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __TOSHIBA_LED_PX4_H__
-#define __TOSHIBA_LED_PX4_H__
+#pragma once
 
-#include "ToshibaLED.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
+
+#include "ToshibaLED.h"
 
 class ToshibaLED_PX4 : public ToshibaLED
 {
@@ -44,5 +44,3 @@ private:
     
     union rgb_value last, next;
 };
-
-#endif // __TOSHIBA_LED_PX4_H__

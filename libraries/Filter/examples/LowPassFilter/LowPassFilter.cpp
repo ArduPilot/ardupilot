@@ -3,17 +3,11 @@
  *       Code by Randy Mackay. DIYDrones.com
  */
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <Filter/Filter.h>                     // Filter library
 #include <Filter/LowPassFilter.h>      // LowPassFilter class (inherits from Filter class)
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // create a global instance of the class
 LowPassFilterFloat low_pass_filter;
@@ -44,7 +38,7 @@ void loop()
     for( i=0; i<300; i++ ) {
 
         // new data value
-        new_value = sinf((float)i*2*PI*5/50.0f);  // 5hz
+        new_value = sinf((float)i*2*M_PI*5/50.0f);  // 5hz
 
         // output to user
         hal.console->printf("applying: %6.4f", new_value);

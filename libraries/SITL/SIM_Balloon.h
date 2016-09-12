@@ -17,16 +17,16 @@
   balloon simulator class
 */
 
-#ifndef _SIM_BALLOON_H
-#define _SIM_BALLOON_H
+#pragma once
 
 #include "SIM_Aircraft.h"
+
+namespace SITL {
 
 /*
   a balloon simulator
  */
-class Balloon : public Aircraft
-{
+class Balloon : public Aircraft {
 public:
     Balloon(const char *home_str, const char *frame_str);
 
@@ -47,5 +47,4 @@ private:
     bool released = false;
 };
 
-
-#endif // _SIM_BALLOON_H
+} // namespace SITL

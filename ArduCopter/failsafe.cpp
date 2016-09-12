@@ -36,7 +36,7 @@ void Copter::failsafe_disable()
 //
 void Copter::failsafe_check()
 {
-    uint32_t tnow = hal.scheduler->micros();
+    uint32_t tnow = AP_HAL::micros();
 
     if (mainLoop_count != failsafe_last_mainLoop_count) {
         // the main loop is running, all is OK
@@ -71,3 +71,15 @@ void Copter::failsafe_check()
         }
     }
 }
+
+
+#if ADVANCED_FAILSAFE == ENABLED
+/*
+  check for AFS failsafe check
+*/
+void Copter::afs_fs_check(void)
+{
+    // perform AFS failsafe checks
+    g2.afs.check(failsafe.last_heartbeat_ms, fence.get_breaches() != 0, last_radio_update_ms);
+}
+#endif

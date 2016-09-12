@@ -17,17 +17,18 @@
   simulator connection for ardupilot version of CRRCSim
 */
 
-#ifndef _SIM_CRRCSIM_H
-#define _SIM_CRRCSIM_H
+#pragma once
+
+#include <AP_HAL/utility/Socket.h>
 
 #include "SIM_Aircraft.h"
-#include <AP_HAL/utility/Socket.h>
+
+namespace SITL {
 
 /*
   a CRRCSim simulator
  */
-class CRRCSim : public Aircraft
-{
+class CRRCSim : public Aircraft {
 public:
     CRRCSim(const char *home_str, const char *frame_str);
 
@@ -50,7 +51,7 @@ private:
         float yaw_rate;
         float col_pitch;
     };
-    
+
     /*
       reply packet sent from CRRCSim to ArduPilot
      */
@@ -76,5 +77,4 @@ private:
     SocketAPM sock;
 };
 
-
-#endif // _SIM_CRRCSIM_H
+} // namespace SITL

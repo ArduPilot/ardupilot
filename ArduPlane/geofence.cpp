@@ -49,7 +49,7 @@ static const StorageAccess fence_storage(StorageManager::StorageFence);
  */
 uint8_t Plane::max_fencepoints(void)
 {
-    return min(255, fence_storage.size() / sizeof(Vector2l));
+    return MIN(255U, fence_storage.size() / sizeof(Vector2l));
 }
 
 /*
@@ -137,13 +137,13 @@ void Plane::geofence_load(void)
     geofence_state->boundary_uptodate = true;
     geofence_state->fence_triggered = false;
 
-    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("geo-fence loaded"));
+    gcs_send_text(MAV_SEVERITY_INFO,"Geofence loaded");
     gcs_send_message(MSG_FENCE_STATUS);
     return;
 
 failed:
     g.fence_action.set(FENCE_ACTION_NONE);
-    gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("geo-fence setup error"));
+    gcs_send_text(MAV_SEVERITY_WARNING,"Geofence setup error");
 }
 
 /*
@@ -284,15 +284,15 @@ void Plane::geofence_check(bool altitude_check_only)
         // switch back to the chosen control mode if still in
         // GUIDED to the return point
         if (geofence_state != NULL &&
-            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) &&
-            control_mode == GUIDED &&
+            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS || g.fence_action == FENCE_ACTION_RTL) &&
+            (control_mode == GUIDED || control_mode == AVOID_ADSB) &&
             geofence_present() &&
             geofence_state->boundary_uptodate &&
             geofence_state->old_switch_position == oldSwitchPosition &&
             guided_WP_loc.lat == geofence_state->guided_lat &&
             guided_WP_loc.lng == geofence_state->guided_lng) {
             geofence_state->old_switch_position = 254;
-            set_mode(get_previous_mode());
+            set_mode(get_previous_mode(), MODE_REASON_GCS_COMMAND);
         }
         return;
     }
@@ -311,7 +311,7 @@ void Plane::geofence_check(bool altitude_check_only)
     struct Location loc;
 
     // Never trigger a fence breach in the final stage of landing
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE) {
         return;
     }
 
@@ -335,7 +335,7 @@ void Plane::geofence_check(bool altitude_check_only)
         if (geofence_state->fence_triggered && !altitude_check_only) {
             // we have moved back inside the fence
             geofence_state->fence_triggered = false;
-            gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("geo-fence OK"));
+            gcs_send_text(MAV_SEVERITY_INFO,"Geofence OK");
  #if FENCE_TRIGGERED_PIN > 0
             hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
             hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
@@ -348,7 +348,7 @@ void Plane::geofence_check(bool altitude_check_only)
 
     // we are outside the fence
     if (geofence_state->fence_triggered &&
-        (control_mode == GUIDED || g.fence_action == FENCE_ACTION_REPORT)) {
+        (control_mode == GUIDED || control_mode == AVOID_ADSB || control_mode == RTL || g.fence_action == FENCE_ACTION_REPORT)) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
@@ -365,7 +365,7 @@ void Plane::geofence_check(bool altitude_check_only)
     hal.gpio->write(FENCE_TRIGGERED_PIN, 1);
  #endif
 
-    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("geo-fence triggered"));
+    gcs_send_text(MAV_SEVERITY_NOTICE,"Geofence triggered");
     gcs_send_message(MSG_FENCE_STATUS);
 
     // see what action the user wants
@@ -375,13 +375,18 @@ void Plane::geofence_check(bool altitude_check_only)
 
     case FENCE_ACTION_GUIDED:
     case FENCE_ACTION_GUIDED_THR_PASS:
+    case FENCE_ACTION_RTL:
         // make sure we don't auto trim the surfaces on this mode change
         int8_t saved_auto_trim = g.auto_trim;
         g.auto_trim.set(0);
-        set_mode(GUIDED);
+        if (g.fence_action == FENCE_ACTION_RTL) {
+            set_mode(RTL, MODE_REASON_FENCE_BREACH);
+        } else {
+            set_mode(GUIDED, MODE_REASON_FENCE_BREACH);
+        }
         g.auto_trim.set(saved_auto_trim);
 
-        if (g.fence_ret_rally != 0) { //return to a rally point
+        if (g.fence_ret_rally != 0 || g.fence_action == FENCE_ACTION_RTL) { //return to a rally point
             guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
 
         } else { //return to fence return point, not a rally point
@@ -404,9 +409,10 @@ void Plane::geofence_check(bool altitude_check_only)
         geofence_state->guided_lng = guided_WP_loc.lng;
         geofence_state->old_switch_position = oldSwitchPosition;
 
-        setup_terrain_target_alt(guided_WP_loc);
-
-        set_guided_WP();
+        if (g.fence_action != FENCE_ACTION_RTL) { //not needed for RTL mode
+            setup_terrain_target_alt(guided_WP_loc);
+            set_guided_WP();
+        }
 
         if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
             guided_throttle_passthru = true;
@@ -426,7 +432,7 @@ bool Plane::geofence_stickmixing(void) {
     if (geofence_enabled() &&
         geofence_state != NULL &&
         geofence_state->fence_triggered &&
-        control_mode == GUIDED) {
+        (control_mode == GUIDED || control_mode == AVOID_ADSB)) {
         // don't mix in user input
         return false;
     }

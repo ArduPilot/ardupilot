@@ -19,8 +19,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include "OreoLED_PX4.h"
-#include "AP_Notify.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -31,6 +31,8 @@
 #include <drivers/drv_oreoled.h>
 #include <stdio.h>
 #include <errno.h>
+
+#include "AP_Notify.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -52,9 +54,20 @@ OreoLED_PX4::OreoLED_PX4() : NotifyDevice(),
     memset(_state_sent,0,sizeof(_state_sent));
 }
 
+extern "C" int oreoled_main(int, char **);
+
 // init - initialised the device
 bool OreoLED_PX4::init()
 {
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    if (!AP_BoardConfig::px4_start_driver(oreoled_main, "oreoled", "start autoupdate")) {
+        hal.console->printf("Unable to start oreoled driver\n");
+    } else {
+        // give it time to initialise
+        hal.scheduler->delay(500);
+    }
+#endif
+    
     // open the device
     _oreoled_fd = open(OREOLED0_DEVICE_PATH, O_RDWR);
     if (_oreoled_fd == -1) {

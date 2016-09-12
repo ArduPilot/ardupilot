@@ -32,17 +32,17 @@ void Copter::init_rc_in()
     channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_pitch->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_yaw->set_angle(4500);
-    channel_throttle->set_range(g.throttle_min, THR_MAX);
+    channel_throttle->set_range(0, 1000);
 
     channel_roll->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_pitch->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_yaw->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     //set auxiliary servo ranges
-    g.rc_5.set_range(0,1000);
-    g.rc_6.set_range(0,1000);
-    g.rc_7.set_range(0,1000);
-    g.rc_8.set_range(0,1000);
+    g.rc_5.set_range_in(0,1000);
+    g.rc_6.set_range_in(0,1000);
+    g.rc_7.set_range_in(0,1000);
+    g.rc_8.set_range_in(0,1000);
 
     // set default dead zones
     default_dead_zones();
@@ -56,10 +56,10 @@ void Copter::init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
     motors.set_frame_orientation(g.frame_orientation);
+    motors.set_loop_rate(scheduler.get_loop_rate_hz());
     motors.Init();                                              // motor initialisation
 #if FRAME_CONFIG != HELI_FRAME
-    motors.set_throttle_range(g.throttle_min, channel_throttle->radio_min, channel_throttle->radio_max);
-    motors.set_hover_throttle(g.throttle_mid);
+    motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif
 
     for(uint8_t i = 0; i < 5; i++) {
@@ -69,6 +69,10 @@ void Copter::init_rc_out()
 
     // we want the input to be scaled correctly
     channel_throttle->set_range_out(0,1000);
+
+    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
+    // take a proportion of speed. 
+    hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 
     // check if we should enter esc calibration mode
     esc_calibration_startup_check();
@@ -81,10 +85,6 @@ void Copter::init_rc_out()
 
     // refresh auxiliary channel to function map
     RC_Channel_aux::update_aux_servo_function();
-
-    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
-    // take a proportion of speed. 
-    hal.rcout->set_esc_scaling(channel_throttle->radio_min, channel_throttle->radio_max);
 }
 
 // enable_motor_output() - enable and output lowest possible value to motors
@@ -97,16 +97,14 @@ void Copter::enable_motor_output()
 
 void Copter::read_radio()
 {
-    static uint32_t last_update_ms = 0;
     uint32_t tnow_ms = millis();
 
     if (hal.rcin->new_input()) {
-        last_update_ms = tnow_ms;
         ap.new_radio_frame = true;
         RC_Channel::set_pwm_all();
 
-        set_throttle_and_failsafe(channel_throttle->radio_in);
-        set_throttle_zero_flag(channel_throttle->control_in);
+        set_throttle_and_failsafe(channel_throttle->get_radio_in());
+        set_throttle_zero_flag(channel_throttle->get_control_in());
 
         // flag we must have an rc receiver attached
         if (!failsafe.rc_override_active) {
@@ -115,8 +113,15 @@ void Copter::read_radio()
 
         // update output on any aux channels, for manual passthru
         RC_Channel_aux::output_ch_all();
+
+        // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
+        radio_passthrough_to_motors();
+
+        float dt = (tnow_ms - last_radio_update_ms)*1.0e-3f;
+        rc_throttle_control_in_filter.apply(g.rc_3.get_control_in(), dt);
+        last_radio_update_ms = tnow_ms;
     }else{
-        uint32_t elapsed = tnow_ms - last_update_ms;
+        uint32_t elapsed = tnow_ms - last_radio_update_ms;
         // turn on throttle failsafe if no update from the RC Radio for 500ms or 2000ms if we are using RC_OVERRIDE
         if (((!failsafe.rc_override_active && (elapsed >= FS_RADIO_TIMEOUT_MS)) || (failsafe.rc_override_active && (elapsed >= FS_RADIO_RC_OVERRIDE_TIMEOUT_MS))) &&
             (g.failsafe_throttle && (ap.rc_receiver_present||motors.armed()) && !failsafe.radio)) {
@@ -145,7 +150,7 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
         }
 
         // check for 3 low throttle values
-        // Note: we do not pass through the low throttle until 3 low throttle values are recieved
+        // Note: we do not pass through the low throttle until 3 low throttle values are received
         failsafe.radio_counter++;
         if( failsafe.radio_counter >= FS_COUNTER ) {
             failsafe.radio_counter = FS_COUNTER;  // check to ensure we don't overflow the counter
@@ -187,4 +192,10 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
         ap.throttle_zero = true;
     }
+}
+
+// pass pilot's inputs to motors library (used to allow wiggling servos while disarmed on heli, single, coax copters)
+void Copter::radio_passthrough_to_motors()
+{
+    motors.set_radio_passthrough(channel_roll->get_control_in()/1000.0f, channel_pitch->get_control_in()/1000.0f, channel_throttle->get_control_in()/1000.0f, channel_yaw->get_control_in()/1000.0f);
 }

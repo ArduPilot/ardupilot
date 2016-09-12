@@ -17,16 +17,20 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_TYPE == CONFIG_HAL_BOARD_TYPE_LINUX && \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && \
+    (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO)
 
 #include "AP_BattMonitor_Bebop.h"
 #include <AP_HAL_Linux/RCOutput_Bebop.h>
-
-extern const AP_HAL::HAL& hal;
+#include <AP_HAL_Linux/RCOutput_Disco.h>
 
 #define BATTERY_CAPACITY (1200U) /* mAh */
 #define BATTERY_VOLTAGE_COMPENSATION_LANDED (0.2f)
+
+
+extern const AP_HAL::HAL &hal;
+
+using namespace Linux;
 
 /* polynomial compensation coefficients */
 static const float bat_comp_polynomial_coeffs[5] = {
@@ -143,8 +147,12 @@ void AP_BattMonitor_Bebop::read(void)
     BebopBLDC_ObsData data;
     float remaining, vbat, vbat_raw;
 
-    auto rcout = Linux::LinuxRCOutput_Bebop::from(hal.rcout);
-    tnow = hal.scheduler->micros();
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    auto rcout = Linux::RCOutput_Bebop::from(hal.rcout);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+    auto rcout = Linux::RCOutput_Disco::from(hal.rcout);
+#endif
+    tnow = AP_HAL::micros();
 
     ret = rcout->read_obs_data(data);
     if (ret < 0) {

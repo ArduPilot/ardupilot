@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_LINUX_TCPCLIENTDEVICE_H__
-#define __AP_HAL_LINUX_TCPCLIENTDEVICE_H__
+#pragma once
 
 #include "SerialDevice.h"
 #include <AP_HAL/utility/Socket.h>
@@ -25,5 +24,3 @@ private:
     bool _blocking = false;
     uint32_t _last_bind_warning = 0;
 };
-
-#endif

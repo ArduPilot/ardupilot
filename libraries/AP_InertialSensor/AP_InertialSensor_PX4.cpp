@@ -7,8 +7,6 @@
 
 const extern AP_HAL::HAL& hal;
 
-#include <DataFlash/DataFlash.h>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -21,17 +19,8 @@ const extern AP_HAL::HAL& hal;
 #include <stdio.h>
 
 AP_InertialSensor_PX4::AP_InertialSensor_PX4(AP_InertialSensor &imu) :
-    AP_InertialSensor_Backend(imu),
-    _last_get_sample_timestamp(0),
-    _last_sample_timestamp(0),
-    _last_gyro_filter_hz(-1),
-    _last_accel_filter_hz(-1)
+    AP_InertialSensor_Backend(imu)
 {
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        _delta_angle_accumulator[i].zero();
-        _delta_velocity_accumulator[i].zero();
-        _delta_velocity_dt[i] = 0.0f;
-    }
 }
 
 /*
@@ -78,11 +67,9 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         if (_accel_fd[i] >= 0) {
             _num_accel_instances = i+1;
-            _accel_instance[i] = _imu.register_accel();
         }
         if (_gyro_fd[i] >= 0) {
             _num_gyro_instances = i+1;
-            _gyro_instance[i] = _imu.register_gyro();
         }
     }
     if (_num_accel_instances == 0) {
@@ -125,8 +112,9 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         // calculate gyro sample time
         int samplerate = ioctl(fd,  GYROIOCGSAMPLERATE, 0);
         if (samplerate < 100 || samplerate > 10000) {
-            hal.scheduler->panic("Invalid gyro sample rate");
+            AP_HAL::panic("Invalid gyro sample rate");
         }
+        _gyro_instance[i] = _imu.register_gyro(samplerate);
         _gyro_sample_time[i] = 1.0f / samplerate;
     }
 
@@ -164,47 +152,24 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         // calculate accel sample time
         int samplerate = ioctl(fd,  ACCELIOCGSAMPLERATE, 0);
         if (samplerate < 100 || samplerate > 10000) {
-            hal.scheduler->panic("Invalid accel sample rate");
+            AP_HAL::panic("Invalid accel sample rate");
         }
-        _set_accel_sample_rate(_accel_instance[i], (uint32_t) samplerate);
+        _accel_instance[i] = _imu.register_accel(samplerate);
         _accel_sample_time[i] = 1.0f / samplerate;
     }
-
-    _set_accel_filter_frequency(_accel_filter_cutoff());
-    _set_gyro_filter_frequency(_gyro_filter_cutoff());
 
 #if  CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     _product_id = AP_PRODUCT_ID_VRBRAIN;
 #else
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
     _product_id = AP_PRODUCT_ID_PX4_V2;
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+    _product_id = AP_PRODUCT_ID_PX4_V4;
 #else
     _product_id = AP_PRODUCT_ID_PX4;
 #endif
 #endif
     return true;
-}
-
-/*
-  set the accel filter frequency
- */
-void AP_InertialSensor_PX4::_set_accel_filter_frequency(uint8_t filter_hz)
-{
-    for (uint8_t i=0; i<_num_accel_instances; i++) {
-        float samplerate = _accel_sample_rate(_accel_instance[i]);
-        _accel_filter[i].set_cutoff_frequency(samplerate, filter_hz);
-    }
-}
-
-/*
-  set the gyro filter frequency
- */
-void AP_InertialSensor_PX4::_set_gyro_filter_frequency(uint8_t filter_hz)
-{
-    for (uint8_t i=0; i<_num_gyro_instances; i++) {
-        float samplerate = 1.0f / _gyro_sample_time[i];
-        _gyro_filter[i].set_cutoff_frequency(samplerate, filter_hz);
-    }
 }
 
 bool AP_InertialSensor_PX4::update(void) 
@@ -213,41 +178,11 @@ bool AP_InertialSensor_PX4::update(void)
     _get_sample();
 
     for (uint8_t k=0; k<_num_accel_instances; k++) {
-        Vector3f accel = _accel_in[k];
-        // calling _publish_accel sets the sensor healthy,
-        // so we only want to do this if we have new data from it
-        if (_last_accel_timestamp[k] != _last_accel_update_timestamp[k]) {
-            _publish_accel(_accel_instance[k], accel);
-            _publish_delta_velocity(_accel_instance[k], _delta_velocity_accumulator[k], _delta_velocity_dt[k]);
-            _last_accel_update_timestamp[k] = _last_accel_timestamp[k];
-        }
+        update_accel(_accel_instance[k]);
     }
 
     for (uint8_t k=0; k<_num_gyro_instances; k++) {
-        Vector3f gyro = _gyro_in[k];
-        // calling _publish_accel sets the sensor healthy,
-        // so we only want to do this if we have new data from it
-        if (_last_gyro_timestamp[k] != _last_gyro_update_timestamp[k]) {
-            _publish_gyro(_gyro_instance[k], gyro);
-            _publish_delta_angle(_gyro_instance[k], _delta_angle_accumulator[k]);
-            _last_gyro_update_timestamp[k] = _last_gyro_timestamp[k];
-        }
-    }
-
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        _delta_angle_accumulator[i].zero();
-        _delta_velocity_accumulator[i].zero();
-        _delta_velocity_dt[i] = 0.0f;
-    }
-
-    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
-        _set_accel_filter_frequency(_accel_filter_cutoff());
-        _last_accel_filter_hz = _accel_filter_cutoff();
-    }
-
-    if (_last_gyro_filter_hz != _gyro_filter_cutoff()) {
-        _set_gyro_filter_frequency(_gyro_filter_cutoff());
-        _last_gyro_filter_hz = _gyro_filter_cutoff();
+        update_gyro(_gyro_instance[k]);
     }
     
     return true;
@@ -260,20 +195,7 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
 
     // apply corrections
     _rotate_and_correct_accel(frontend_instance, accel);
-    _notify_new_accel_raw_sample(frontend_instance, accel);
-
-    // apply filter for control path
-    _accel_in[i] = _accel_filter[i].apply(accel);
-
-    // get time since last sample
-    float dt = _accel_sample_time[i];
-
-    // compute delta velocity
-    Vector3f delVel = Vector3f(accel.x, accel.y, accel.z) * dt;
-
-    // integrate delta velocity accumulator
-    _delta_velocity_accumulator[i] += delVel;
-    _delta_velocity_dt[i] += dt;
+    _notify_new_accel_raw_sample(frontend_instance, accel, accel_report.timestamp);
 
     // save last timestamp
     _last_accel_timestamp[i] = accel_report.timestamp;
@@ -285,12 +207,15 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     _publish_temperature(frontend_instance, accel_report.temperature);
 
 #ifdef AP_INERTIALSENSOR_PX4_DEBUG
-    _accel_dt_max[i] = max(_accel_dt_max[i],dt);
+    // get time since last sample
+    float dt = _accel_sample_time[i];
+
+    _accel_dt_max[i] = MAX(_accel_dt_max[i],dt);
 
     _accel_meas_count[i] ++;
 
     if(_accel_meas_count[i] >= 10000) {
-        uint32_t tnow = hal.scheduler->micros();
+        uint32_t tnow = AP_HAL::micros();
 
         ::printf("a%d %.2f Hz max %.8f s\n", frontend_instance, 10000.0f/((tnow-_accel_meas_count_start_us[i])*1.0e-6f),_accel_dt_max[i]);
 
@@ -308,46 +233,24 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
 
     // apply corrections
     _rotate_and_correct_gyro(frontend_instance, gyro);
-
-    // apply filter for control path
-    _gyro_in[i] = _gyro_filter[i].apply(gyro);
-
-    // get time since last sample
-    float dt = _gyro_sample_time[i];
-
-    // compute delta angle
-    Vector3f delAng = (gyro+_last_gyro[i]) * 0.5f * dt;
-
-    /* compute coning correction
-     * see page 26 of:
-     * Tian et al (2010) Three-loop Integration of GPS and Strapdown INS with Coning and Sculling Compensation
-     * Available: http://www.sage.unsw.edu.au/snap/publications/tian_etal2010b.pdf
-     * see also examples/coning.py
-     */
-    Vector3f delConing = ((_delta_angle_accumulator[i]+_last_delAng[i]*(1.0f/6.0f)) % delAng) * 0.5f;
-
-    // integrate delta angle accumulator
-    // the angles and coning corrections are accumulated separately in the
-    // referenced paper, but in simulation little difference was found between
-    // integrating together and integrating separately (see examples/coning.py)
-    _delta_angle_accumulator[i] += delAng + delConing;
-
-    // save previous delta angle for coning correction
-    _last_delAng[i] = delAng;
-    _last_gyro[i] = gyro;
+    _notify_new_gyro_raw_sample(frontend_instance, gyro, gyro_report.timestamp);
 
     // save last timestamp
     _last_gyro_timestamp[i] = gyro_report.timestamp;
 
     // report error count
     _set_gyro_error_count(_gyro_instance[i], gyro_report.error_count);
+
 #ifdef AP_INERTIALSENSOR_PX4_DEBUG
-    _gyro_dt_max[i] = max(_gyro_dt_max[i],dt);
+    // get time since last sample
+    float dt = _gyro_sample_time[i];
+
+    _gyro_dt_max[i] = MAX(_gyro_dt_max[i],dt);
 
     _gyro_meas_count[i] ++;
 
     if(_gyro_meas_count[i] >= 10000) {
-        uint32_t tnow = hal.scheduler->micros();
+        uint32_t tnow = AP_HAL::micros();
 
         ::printf("g%d %.2f Hz max %.8f s\n", frontend_instance, 10000.0f/((tnow-_gyro_meas_count_start_us[i])*1.0e-6f), _gyro_dt_max[i]);
 
@@ -360,7 +263,7 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
 
 void AP_InertialSensor_PX4::_get_sample()
 {
-    for (uint8_t i=0; i<max(_num_accel_instances,_num_gyro_instances);i++) {
+    for (uint8_t i=0; i<MAX(_num_accel_instances,_num_gyro_instances);i++) {
         struct accel_report accel_report;
         struct gyro_report gyro_report;
 
@@ -388,7 +291,6 @@ void AP_InertialSensor_PX4::_get_sample()
             }
         }
     }
-    _last_get_sample_timestamp = hal.scheduler->micros64();
 }
 
 bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &accel_report) 
@@ -397,18 +299,6 @@ bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &ac
         _accel_fd[i] != -1 && 
         ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) && 
         accel_report.timestamp != _last_accel_timestamp[i]) {
-        DataFlash_Class *dataflash = get_dataflash();
-        if (dataflash != NULL) {
-            struct log_ACCEL pkt = {
-                LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+i)),
-                time_us   : hal.scheduler->micros64(),
-                sample_us : accel_report.timestamp,
-                AccX      : accel_report.x,
-                AccY      : accel_report.y,
-                AccZ      : accel_report.z
-            };
-            dataflash->WriteBlock(&pkt, sizeof(pkt));
-        }
         return true;
     }
     return false;
@@ -420,42 +310,8 @@ bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro
         _gyro_fd[i] != -1 && 
         ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) && 
         gyro_report.timestamp != _last_gyro_timestamp[i]) {
-        DataFlash_Class *dataflash = get_dataflash();
-        if (dataflash != NULL) {
-            struct log_GYRO pkt = {
-                LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+i)),
-                time_us   : hal.scheduler->micros64(),
-                sample_us : gyro_report.timestamp,
-                GyrX      : gyro_report.x,
-                GyrY      : gyro_report.y,
-                GyrZ      : gyro_report.z
-            };
-            dataflash->WriteBlock(&pkt, sizeof(pkt));
-        }
         return true;
     }
-    return false;
-}
-
-bool AP_InertialSensor_PX4::gyro_sample_available(void)
-{
-    _get_sample();
-    for (uint8_t i=0; i<_num_gyro_instances; i++) {
-        if (_last_gyro_timestamp[i] != _last_gyro_update_timestamp[i]) {
-            return true;
-        }
-    }    
-    return false;
-}
-
-bool AP_InertialSensor_PX4::accel_sample_available(void)
-{
-    _get_sample();
-    for (uint8_t i=0; i<_num_accel_instances; i++) {
-        if (_last_accel_timestamp[i] != _last_accel_update_timestamp[i]) {
-            return true;
-        }
-    }    
     return false;
 }
 

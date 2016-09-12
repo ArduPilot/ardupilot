@@ -15,21 +15,18 @@ bool Plane::auto_takeoff_check(void)
 {
     // this is a more advanced check that relies on TECS
     uint32_t now = millis();
-    static bool launchTimerStarted;
-    static uint32_t last_tkoff_arm_time;
-    static uint32_t last_check_ms;
-    uint16_t wait_time_ms = min(uint16_t(g.takeoff_throttle_delay)*100,12700);
+    uint16_t wait_time_ms = MIN(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
     // Reset states if process has been interrupted
-    if (last_check_ms && (now - last_check_ms) > 200) {
-        gcs_send_text_fmt(PSTR("Timer Interrupted AUTO"));
-	    launchTimerStarted = false;
-	    last_tkoff_arm_time = 0;
-        last_check_ms = now;
+    if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timer interrupted AUTO");
+	    takeoff_state.launchTimerStarted = false;
+	    takeoff_state.last_tkoff_arm_time = 0;
+        takeoff_state.last_check_ms = now;
         return false;
     }
 
-    last_check_ms = now;
+    takeoff_state.last_check_ms = now;
 
     // Check for bad GPS
     if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
@@ -38,23 +35,29 @@ bool Plane::auto_takeoff_check(void)
     }
 
     // Check for launch acceleration or timer started. NOTE: relies on TECS 50Hz processing
-    if (!launchTimerStarted &&
+    if (!takeoff_state.launchTimerStarted &&
         !is_zero(g.takeoff_throttle_min_accel) &&
         SpdHgt_Controller->get_VXdot() < g.takeoff_throttle_min_accel) {
         goto no_launch;
     }
 
     // we've reached the acceleration threshold, so start the timer
-    if (!launchTimerStarted) {
-        launchTimerStarted = true;
-        last_tkoff_arm_time = now;
-        gcs_send_text_fmt(PSTR("Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec"), 
-                (double)SpdHgt_Controller->get_VXdot(), (double)(wait_time_ms*0.001f));
+    if (!takeoff_state.launchTimerStarted) {
+        takeoff_state.launchTimerStarted = true;
+        takeoff_state.last_tkoff_arm_time = now;
+        if (now - takeoff_state.last_report_ms > 2000) {
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec",
+                              (double)SpdHgt_Controller->get_VXdot(), (double)(wait_time_ms*0.001f));
+            takeoff_state.last_report_ms = now;
+        }
     }
 
     // Only perform velocity check if not timed out
-    if ((now - last_tkoff_arm_time) > wait_time_ms+100U) {
-        gcs_send_text_fmt(PSTR("Timeout AUTO"));
+    if ((now - takeoff_state.last_tkoff_arm_time) > wait_time_ms+100U) {
+        if (now - takeoff_state.last_report_ms > 2000) {
+            gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timeout AUTO");
+            takeoff_state.last_report_ms = now;
+        }
         goto no_launch;
     }
 
@@ -62,16 +65,17 @@ bool Plane::auto_takeoff_check(void)
     if (ahrs.pitch_sensor <= -3000 ||
         ahrs.pitch_sensor >= 4500 ||
         labs(ahrs.roll_sensor) > 3000) {
-        gcs_send_text_fmt(PSTR("Bad Launch AUTO"));
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad launch AUTO");
         goto no_launch;
     }
 
     // Check ground speed and time delay
     if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
-        ((now - last_tkoff_arm_time) >= wait_time_ms)) {
-        gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), (double)gps.ground_speed());
-        launchTimerStarted = false;
-        last_tkoff_arm_time = 0;
+        ((now - takeoff_state.last_tkoff_arm_time) >= wait_time_ms)) {
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
+        takeoff_state.launchTimerStarted = false;
+        takeoff_state.last_tkoff_arm_time = 0;
+        steer_state.locked_course_err = 0; // use current heading without any error offset
         return true;
     }
 
@@ -79,8 +83,8 @@ bool Plane::auto_takeoff_check(void)
     return false;
 
 no_launch:
-    launchTimerStarted = false;
-    last_tkoff_arm_time = 0;
+    takeoff_state.launchTimerStarted = false;
+    takeoff_state.last_tkoff_arm_time = 0;
     return false;
 }
 
@@ -132,14 +136,50 @@ void Plane::takeoff_calc_pitch(void)
     }
 
     if (ahrs.airspeed_sensor_enabled()) {
+        int16_t takeoff_pitch_min_cd = get_takeoff_pitch_min_cd();
         calc_nav_pitch();
-        if (nav_pitch_cd < auto_state.takeoff_pitch_cd) {
-            nav_pitch_cd = auto_state.takeoff_pitch_cd;
+        if (nav_pitch_cd < takeoff_pitch_min_cd) {
+            nav_pitch_cd = takeoff_pitch_min_cd;
         }
     } else {
         nav_pitch_cd = ((gps.ground_speed()*100) / (float)g.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
         nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
     }
+}
+
+/*
+ * get the pitch min used during takeoff. This matches the mission pitch until near the end where it allows it to levels off
+ */
+int16_t Plane::get_takeoff_pitch_min_cd(void)
+{
+    if (flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+        return auto_state.takeoff_pitch_cd;
+    }
+
+    int32_t relative_alt_cm = adjusted_relative_altitude_cm();
+    int32_t remaining_height_to_target_cm = (auto_state.takeoff_altitude_rel_cm - relative_alt_cm);
+
+    // seconds to target alt method
+    if (g.takeoff_pitch_limit_reduction_sec > 0) {
+        // if height-below-target has been initialized then use it to create and apply a scaler to the pitch_min
+        if (auto_state.height_below_takeoff_to_level_off_cm != 0) {
+            float scalar = remaining_height_to_target_cm / (float)auto_state.height_below_takeoff_to_level_off_cm;
+            return auto_state.takeoff_pitch_cd * scalar;
+        }
+
+        // are we entering the region where we want to start leveling off before we reach takeoff alt?
+        if (auto_state.sink_rate < -0.1f) {
+            float sec_to_target = (remaining_height_to_target_cm * 0.01f) / (-auto_state.sink_rate);
+            if (sec_to_target > 0 &&
+                relative_alt_cm >= 1000 &&
+                sec_to_target <= g.takeoff_pitch_limit_reduction_sec) {
+                // make a note of that altitude to use it as a start height for scaling
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", remaining_height_to_target_cm/100);
+                auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
+            }
+        }
+    }
+    return auto_state.takeoff_pitch_cd;
 }
 
 /*
@@ -179,9 +219,25 @@ int8_t Plane::takeoff_tail_hold(void)
 
 return_zero:
     if (auto_state.fbwa_tdrag_takeoff_mode) {
-        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("FBWA tdrag off"));
+        gcs_send_text(MAV_SEVERITY_NOTICE, "FBWA tdrag off");
         auto_state.fbwa_tdrag_takeoff_mode = false;
     }
     return 0;
 }
 
+
+/*
+  called when an auto-takeoff is complete
+ */
+void Plane::complete_auto_takeoff(void)
+{
+#if GEOFENCE_ENABLED == ENABLED
+    if (g.fence_autoenable > 0) {
+        if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
+            gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
+        } else {
+            gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");
+        }
+    }
+#endif
+}

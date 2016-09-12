@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef PARAMETERS_H
-#define PARAMETERS_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 
@@ -57,6 +55,9 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
+
+        // 100: Arming parameters
+        k_param_arming = 100,
                 
         // 110: Telemetry control
         //
@@ -83,6 +84,7 @@ public:
         k_param_steering_learn, // unused
         k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
         k_param_mission, // mission library
+        k_param_NavEKF2_old, // deprecated
         k_param_NavEKF2,
 
         // 140: battery controls
@@ -192,6 +194,10 @@ public:
         k_param_L1_controller,
         k_param_steerController,
         k_param_barometer,
+        k_param_notify,
+        k_param_button,
+
+        k_param_DataFlash = 253, // Logging Group
 
         // 254,255: reserved
         };
@@ -243,18 +249,12 @@ public:
     RC_Channel_aux	rc_6;
     RC_Channel_aux	rc_7;
     RC_Channel_aux	rc_8;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    RC_Channel_aux rc_9;
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    RC_Channel_aux rc_10;
-    RC_Channel_aux rc_11;
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    RC_Channel_aux rc_12;
-    RC_Channel_aux rc_13;
-    RC_Channel_aux rc_14;
-#endif
+    RC_Channel_aux  rc_9;
+    RC_Channel_aux  rc_10;
+    RC_Channel_aux  rc_11;
+    RC_Channel_aux  rc_12;
+    RC_Channel_aux  rc_13;
+    RC_Channel_aux  rc_14;
 
     // Throttle
     //
@@ -308,18 +308,12 @@ public:
         rc_6(CH_6),
         rc_7(CH_7),
         rc_8(CH_8),
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-        rc_9                                    (CH_9),
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-        rc_10                                   (CH_10),
-        rc_11                                   (CH_11),
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-        rc_12                                   (CH_12),
-        rc_13                                   (CH_13),
-        rc_14                                   (CH_14),
-#endif
+        rc_9(CH_9),
+        rc_10(CH_10),
+        rc_11(CH_11),
+        rc_12(CH_12),
+        rc_13(CH_13),
+        rc_14(CH_14),
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
@@ -328,6 +322,3 @@ public:
 };
 
 extern const AP_Param::Info var_info[];
-
-#endif // PARAMETERS_H
-

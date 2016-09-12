@@ -13,9 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __RANGEFINDER_H__
-#define __RANGEFINDER_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -48,7 +46,9 @@ public:
         RangeFinder_TYPE_PX4_PWM= 5,
         RangeFinder_TYPE_BBB_PRU= 6,
         RangeFinder_TYPE_LWI2C  = 7,
-        RangeFinder_TYPE_LWSER  = 8
+        RangeFinder_TYPE_LWSER  = 8,
+        RangeFinder_TYPE_BEBOP  = 9,
+        RangeFinder_TYPE_MAVLink = 10
     };
 
     enum RangeFinder_Function {
@@ -106,7 +106,10 @@ public:
     // update state of all rangefinders. Should be called at around
     // 10Hz from main loop
     void update(void);
-    
+
+    // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
+    void handle_msg(mavlink_message_t *msg);
+
 #define _RangeFinder_STATE(instance) state[instance]
 
     uint16_t distance_cm(uint8_t instance) const {
@@ -190,5 +193,5 @@ private:
     void update_instance(uint8_t instance);  
 
     void update_pre_arm_check(uint8_t instance);
+    void _add_backend(AP_RangeFinder_Backend *driver);
 };
-#endif // __RANGEFINDER_H__

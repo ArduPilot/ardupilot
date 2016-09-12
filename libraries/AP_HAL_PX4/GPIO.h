@@ -1,7 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_HAL_PX4_GPIO_H__
-#define __AP_HAL_PX4_GPIO_H__
+#pragma once
 
 #include "AP_HAL_PX4.h"
 
@@ -50,10 +48,10 @@ public:
     void set_usb_connected(void) { _usb_connected = true; }
 
 private:
-    int _led_fd;
-    int _tone_alarm_fd;
-    int _gpio_fmu_fd;
-    int _gpio_io_fd;
+    int _led_fd = -1;
+    int _tone_alarm_fd = -1;
+    int _gpio_fmu_fd = -1;
+    int _gpio_io_fd = -1;
     bool _usb_connected = false;
 };
 
@@ -67,5 +65,3 @@ public:
 private:
     uint8_t _v;
 };
-
-#endif // __AP_HAL_PX4_GPIO_H__

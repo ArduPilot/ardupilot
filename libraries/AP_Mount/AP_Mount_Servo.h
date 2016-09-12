@@ -3,9 +3,7 @@
 /*
   Servo controlled mount backend class
  */
-
-#ifndef __AP_MOUNT_SERVO_H__
-#define __AP_MOUNT_SERVO_H__
+#pragma once
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
@@ -80,5 +78,3 @@ private:
 
     uint32_t _last_check_servo_map_ms;  // system time of latest call to check_servo_map function
 };
-
-#endif // __AP_MOUNT_SERVO_H__

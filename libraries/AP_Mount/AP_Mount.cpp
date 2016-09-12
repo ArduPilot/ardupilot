@@ -1,17 +1,16 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Param/AP_Param.h>
 #include "AP_Mount.h"
 #include "AP_Mount_Backend.h"
 #include "AP_Mount_Servo.h"
-#include "AP_Mount_MAVLink.h"
+#include "AP_Mount_SoloGimbal.h"
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
 
-const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
@@ -197,83 +196,19 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
     // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
 
-    // @Param: _OFF_JNT_X
-    // @DisplayName: MAVLink Mount's roll angle offsets
-    // @Description: MAVLink Mount's roll angle offsets
-    // @Units: radians
-    // @Range: 0 0.5
-    // @User: Advanced
+    // 20 formerly _OFF_JNT
 
-    // @Param: _OFF_JNT_Y
-    // @DisplayName: MAVLink Mount's pitch angle offsets
-    // @Description: MAVLink Mount's pitch angle offsets
-    // @Units: radians
-    // @Range: 0 0.5
-    // @User: Advanced
+    // 21 formerly _OFF_ACC
 
-    // @Param: _OFF_JNT_Z
-    // @DisplayName: MAVLink Mount's yaw angle offsets
-    // @Description: MAVLink Mount's yaw angle offsets
-    // @Units: radians
-    // @Range: 0 0.5
-    // @User: Advanced
-    AP_GROUPINFO("_OFF_JNT", 20, AP_Mount, state[0]._gimbalParams.joint_angles_offsets, 0),
+    // 22 formerly _OFF_GYRO
 
-    // @Param: _OFF_ACC_X
-    // @DisplayName: MAVLink Mount's roll velocity offsets
-    // @Description: MAVLink Mount's roll velocity offsets
-    // @Units: m/s
-    // @Range: 0 2
-    // @User: Advanced
+    // 23 formerly _K_RATE
 
-    // @Param: _OFF_ACC_Y
-    // @DisplayName: MAVLink Mount's pitch velocity offsets
-    // @Description: MAVLink Mount's pitch velocity offsets
-    // @Units: m/s
-    // @Range: 0 2
-    // @User: Advanced
-
-    // @Param: _OFF_ACC_Z
-    // @DisplayName: MAVLink Mount's yaw velocity offsets
-    // @Description: MAVLink Mount's yaw velocity offsets
-    // @Units: m/s
-    // @Range: 0 2
-    // @User: Advanced
-    AP_GROUPINFO("_OFF_ACC",  21, AP_Mount, state[0]._gimbalParams.delta_velocity_offsets, 0),
-
-    // @Param: _OFF_GYRO_X
-    // @DisplayName: MAVLink Mount's roll gyro offsets
-    // @Description: MAVLink Mount's roll gyro offsets
-    // @Units: radians/sec
-    // @Range: 0 0.5
-    // @User: Advanced
-
-    // @Param: _OFF_GYRO_Y
-    // @DisplayName: MAVLink Mount's pitch gyro offsets
-    // @Description: MAVLink Mount's pitch gyro offsets
-    // @Units: radians/sec
-    // @Range: 0 0.5
-    // @User: Advanced
-
-    // @Param: _OFF_GYRO_Z
-    // @DisplayName: MAVLink Mount's yaw gyro offsets
-    // @Description: MAVLink Mount's yaw gyro offsets
-    // @Units: radians/sec
-    // @Range: 0 0.5
-    // @User: Advanced
-    AP_GROUPINFO("_OFF_GYRO", 22, AP_Mount, state[0]._gimbalParams.delta_angles_offsets, 0),
-
-    // @Param: _K_RATE
-    // @DisplayName: MAVLink Mount's rate gain
-    // @Description: MAVLink Mount's rate gain
-    // @Range: 0 10
-    // @User: Advanced
-    AP_GROUPINFO("_K_RATE", 23, AP_Mount, state[0]._gimbalParams.K_gimbalRate, 5.0f),
-
-    // 20 ~ 24 reserved for future parameters
+    // 24 is AVAILABLE
 
 #if AP_MOUNT_MAX_INSTANCES > 1
     // @Param: 2_DEFLT_MODE
@@ -475,15 +410,17 @@ AP_Mount::AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc)
 }
 
 // init - detect and initialise all mounts
-void AP_Mount::init(const AP_SerialManager& serial_manager)
+void AP_Mount::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager)
 {
     // check init has not been called before
     if (_num_instances != 0) {
         return;
     }
 
+    _dataflash = dataflash;
+
     // default mount to servo mount if rc output channels to control roll, tilt or pan have been defined
-    if (!state[0]._type.load()) {
+    if (!state[0]._type.configured()) {
         if (RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t::k_mount_pan) ||
             RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t::k_mount_tilt) ||
             RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t::k_mount_roll)) {
@@ -508,8 +445,8 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
 
 #if AP_AHRS_NAVEKF_AVAILABLE
         // check for MAVLink mounts
-        } else if (mount_type == Mount_Type_MAVLink) {
-            _backends[instance] = new AP_Mount_MAVLink(*this, state[instance], instance);
+        } else if (mount_type == Mount_Type_SoloGimbal) {
+            _backends[instance] = new AP_Mount_SoloGimbal(*this, state[instance], instance);
             _num_instances++;
 #endif
 
@@ -551,6 +488,17 @@ void AP_Mount::update()
     }
 }
 
+// used for gimbals that need to read INS data at full rate
+void AP_Mount::update_fast()
+{
+    // update each instance
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != NULL) {
+            _backends[instance]->update_fast();
+        }
+    }
+}
+
 // get_mount_type - returns the type of mount
 AP_Mount::MountType AP_Mount::get_mount_type(uint8_t instance) const
 {
@@ -584,7 +532,7 @@ MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 }
 
 // set_mode_to_default - restores the mode to it's default mode held in the MNT_MODE parameter
-//      this operation requires 230us on an APM2, 60us on a Pixhawk/PX4
+//      this operation requires 60us on a Pixhawk/PX4
 void AP_Mount::set_mode_to_default(uint8_t instance)
 {
     set_mode(instance, (enum MAV_MOUNT_MODE)state[instance]._default_mode.get());
@@ -674,7 +622,17 @@ void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *m
         if (_backends[instance] != NULL) {
             _backends[instance]->handle_gimbal_report(chan, msg);
         }
-    }    
+    }
+}
+
+// handle PARAM_VALUE
+void AP_Mount::handle_param_value(mavlink_message_t *msg)
+{
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != NULL) {
+            _backends[instance]->handle_param_value(msg);
+        }
+    }
 }
 
 // send a GIMBAL_REPORT message to the GCS

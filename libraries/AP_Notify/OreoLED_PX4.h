@@ -14,8 +14,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __OREOLED_PX4_H__
-#define __OREOLED_PX4_H__
+#pragma once
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
@@ -93,5 +92,3 @@ private:
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
-
-#endif // __OREOLED_PX4_H__

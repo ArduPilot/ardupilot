@@ -20,11 +20,10 @@
 //
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
 //
-
-#ifndef __AP_GPS_SBP_H__
-#define __AP_GPS_SBP_H__
+#pragma once
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 
 class AP_GPS_SBP : public AP_GPS_Backend
 {
@@ -164,14 +163,8 @@ private:
     // Logging to DataFlash
     // ************************************************************************
 
-    // have we written the logging headers to DataFlash?
-    static bool logging_started;
-
-    void logging_write_headers();
     void logging_log_full_update();
     void logging_log_raw_sbp(uint16_t msg_type, uint16_t sender_id, uint8_t msg_len, uint8_t *msg_buff);
    
 
 };
-
-#endif // __AP_GPS_SBP_H__

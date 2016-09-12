@@ -17,16 +17,14 @@
   rover simulator class
 */
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Rover.h"
-#include <stdio.h>
-#include <string.h>
 
-/*
-  constructor
- */
-Rover::Rover(const char *home_str, const char *frame_str) :
+#include <string.h>
+#include <stdio.h>
+
+namespace SITL {
+
+SimRover::SimRover(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     max_speed(20),
     max_accel(30),
@@ -40,6 +38,7 @@ Rover::Rover(const char *home_str, const char *frame_str) :
     skid_steering = strstr(frame_str, "skid") != NULL;
 
     if (skid_steering) {
+        printf("SKID Steering Rover Simulation Started\n");
         // these are taken from a 6V wild thumper with skid steering,
         // with a sabertooth controller
         max_accel = 14;
@@ -52,18 +51,18 @@ Rover::Rover(const char *home_str, const char *frame_str) :
 /*
   return turning circle (diameter) in meters for steering angle proportion in degrees
 */
-float Rover::turn_circle(float steering)
+float SimRover::turn_circle(float steering)
 {
     if (fabsf(steering) < 1.0e-6) {
         return 0;
     }
-    return turning_circle * sinf(radians(35)) / sinf(radians(steering*35));
+    return turning_circle * sinf(radians(max_wheel_turn)) / sinf(radians(steering*max_wheel_turn));
 }
 
 /*
    return yaw rate in degrees/second given steering_angle and speed
 */
-float Rover::calc_yaw_rate(float steering, float speed)
+float SimRover::calc_yaw_rate(float steering, float speed)
 {
     if (skid_steering) {
         return steering * skid_turn_rate;
@@ -72,7 +71,7 @@ float Rover::calc_yaw_rate(float steering, float speed)
         return 0;
     }
     float d = turn_circle(steering);
-    float c = M_PI_F * d;
+    float c = M_PI * d;
     float t = c / speed;
     float rate = 360.0f / t;
     return rate;
@@ -81,7 +80,7 @@ float Rover::calc_yaw_rate(float steering, float speed)
 /*
   return lateral acceleration in m/s/s
 */
-float Rover::calc_lat_accel(float steering_angle, float speed)
+float SimRover::calc_lat_accel(float steering_angle, float speed)
 {
     float yaw_rate = calc_yaw_rate(steering_angle, speed);
     float accel = radians(yaw_rate) * speed;
@@ -91,7 +90,7 @@ float Rover::calc_lat_accel(float steering_angle, float speed)
 /*
   update the rover simulation by one time step
  */
-void Rover::update(const struct sitl_input &input)
+void SimRover::update(const struct sitl_input &input)
 {
     float steering, throttle;
 
@@ -152,9 +151,12 @@ void Rover::update(const struct sitl_input &input)
 
     // new position vector
     position += velocity_ef * delta_time;
-    position.z = -home.alt*0.01f;
 
     // update lat/lon/altitude
     update_position();
+
+    // update magnetic field
+    update_mag_field_bf();
 }
-#endif // CONFIG_HAL_BOARD
+
+} // namespace SITL

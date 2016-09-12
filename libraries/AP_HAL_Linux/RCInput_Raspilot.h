@@ -1,22 +1,23 @@
-
-#ifndef __AP_HAL_LINUX_RCINPUT_RASPILOT_H__
-#define __AP_HAL_LINUX_RCINPUT_RASPILOT_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 #include "RCInput.h"
+#include <AP_HAL/SPIDevice.h>
 
-class Linux::LinuxRCInput_Raspilot : public Linux::LinuxRCInput
+
+namespace Linux {
+
+class RCInput_Raspilot : public RCInput
 {
 public:
-    void init(void*);
-    
+    void init();
+
 private:
     uint32_t _last_timer;
-    
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
-    
+
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
+
     void _poll_data(void);
 };
 
-#endif // __AP_HAL_LINUX_RCINPUT_RASPILOT_H__
+}

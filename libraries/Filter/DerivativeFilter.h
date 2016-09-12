@@ -18,9 +18,7 @@
 /// @file	Derivative.h
 /// @brief	A class to implement a derivative (slope) filter
 /// See http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/smooth-low-noise-differentiators/
-
-#ifndef __DERIVATIVE_FILTER_H__
-#define __DERIVATIVE_FILTER_H__
+#pragma once
 
 #include "FilterClass.h"
 #include "FilterWithBuffer.h"
@@ -56,7 +54,3 @@ private:
 typedef DerivativeFilter<float,5> DerivativeFilterFloat_Size5;
 typedef DerivativeFilter<float,7> DerivativeFilterFloat_Size7;
 typedef DerivativeFilter<float,9> DerivativeFilterFloat_Size9;
-
-
-#endif // __DERIVATIVE_FILTER_H__
-

@@ -1,0 +1,17 @@
+#include "AEEStdDef.idl"
+
+interface ardupilot {
+    // start main thread
+    uint32 start(in sequence<char> cmdline);
+
+    // a heartbeat for debugging
+    uint32 heartbeat();
+
+    // get eeprom updates
+    uint32 set_storage(in sequence<uint8> eeprom);    
+    uint32 get_storage(rout sequence<uint8> eeprom);
+
+    // handle socket data
+    uint32 socket_check(rout sequence<uint8> buf, rout uint32 nbytes);
+    uint32 socket_input(in sequence<uint8> buf, rout uint32 nbytes);
+};

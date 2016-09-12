@@ -3,16 +3,10 @@
 // Unit tests for the AP_Math polygon code
 //
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
+#include <AP_Math/AP_Math.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 /*
  *  this is the boundary of the 2010 outback challenge
@@ -86,7 +80,7 @@ void setup(void)
         bool result;
         result = Polygon_outside(test_points[i].point,
                 OBC_boundary, ARRAY_SIZE(OBC_boundary));
-        hal.console->printf_P(PSTR("%10f,%10f  %s  %s\n"),
+        hal.console->printf("%10f,%10f  %s  %s\n",
                         1.0e-7f*test_points[i].point.x,
                         1.0e-7f*test_points[i].point.y,
                         result ? "OUTSIDE" : "INSIDE ",
@@ -98,7 +92,7 @@ void setup(void)
     hal.console->println(all_passed ? "TEST PASSED" : "TEST FAILED");
 
     hal.console->println("Speed test:");
-    start_time = hal.scheduler->micros();
+    start_time = AP_HAL::micros();
     for (count=0; count<1000; count++) {
         for (i=0; i<ARRAY_SIZE(test_points); i++) {
             bool result;
@@ -109,7 +103,7 @@ void setup(void)
             }
         }
     }
-    hal.console->printf("%u usec/call\n", (unsigned)((hal.scheduler->micros() 
+    hal.console->printf("%u usec/call\n", (unsigned)((AP_HAL::micros()
                     - start_time)/(count*ARRAY_SIZE(test_points))));
     hal.console->println(all_passed ? "ALL TESTS PASSED" : "TEST FAILED");
 }

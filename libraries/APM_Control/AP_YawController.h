@@ -1,13 +1,11 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_YAW_CONTROLLER_H__
-#define __AP_YAW_CONTROLLER_H__
+#pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <DataFlash/DataFlash.h>
-#include <math.h>
+#include <cmath>
 
 class AP_YawController {
 public:                      
@@ -37,7 +35,6 @@ private:
 	AP_Float _K_FF;
     AP_Int16 _imax;
 	uint32_t _last_t;
-	float _last_error;
 	float _last_out;
 	float _last_rate_hp_out;
 	float _last_rate_hp_in;
@@ -49,5 +46,3 @@ private:
 
 	AP_AHRS &_ahrs;
 };
-
-#endif // __AP_YAW_CONTROLLER_H__

@@ -10,7 +10,7 @@
 #include "Storage.h"
 using namespace HALSITL;
 
-void SITLEEPROMStorage::_eeprom_open(void)
+void EEPROMStorage::_eeprom_open(void)
 {
     if (_eeprom_fd == -1) {
         _eeprom_fd = open("eeprom.bin", O_RDWR|O_CREAT, 0777);
@@ -18,14 +18,14 @@ void SITLEEPROMStorage::_eeprom_open(void)
     }
 }
 
-void SITLEEPROMStorage::read_block(void *dst, uint16_t src, size_t n)
+void EEPROMStorage::read_block(void *dst, uint16_t src, size_t n)
 {
     assert(src < HAL_STORAGE_SIZE && src + n <= HAL_STORAGE_SIZE);
     _eeprom_open();
     assert(pread(_eeprom_fd, dst, n, src) == (ssize_t)n);
 }
 
-void SITLEEPROMStorage::write_block(uint16_t dst, const void *src, size_t n)
+void EEPROMStorage::write_block(uint16_t dst, const void *src, size_t n)
 {
     assert(dst < HAL_STORAGE_SIZE);
     _eeprom_open();

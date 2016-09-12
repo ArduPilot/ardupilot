@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsOcta.h
 /// @brief	Motor control class for Octacopters
-
-#ifndef __AP_MOTORS_OCTA_H__
-#define __AP_MOTORS_OCTA_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -26,5 +24,3 @@ public:
 protected:
 
 };
-
-#endif  // AP_MOTORSOCTA

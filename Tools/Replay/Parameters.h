@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef PARAMETERS_H
-#define PARAMETERS_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 
@@ -17,11 +15,10 @@ public:
         k_param_airspeed,
         k_param_NavEKF,
         k_param_NavEKF2,
-        k_param_compass
+        k_param_compass,
+        k_param_dataflash
     };
     AP_Int8 dummy;
 };
 
 extern const AP_Param::Info var_info[];
-
-#endif // PARAMETERS_H

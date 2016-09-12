@@ -1,9 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
-#ifndef __AP_BARO_PX4_H__
-#define __AP_BARO_PX4_H__
-
-#include "AP_Baro.h"
+#include "AP_Baro_Backend.h"
 
 class AP_Baro_PX4 : public AP_Baro_Backend
 {
@@ -23,5 +21,3 @@ private:
         uint64_t last_timestamp;
     } instances[BARO_MAX_INSTANCES];
 };
-
-#endif //  __AP_BARO_PX4_H__

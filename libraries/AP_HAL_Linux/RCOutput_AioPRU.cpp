@@ -8,32 +8,27 @@
 // GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
+#include "RCOutput_AioPRU.h"
 
+#include <fcntl.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include "RCOutput_AioPRU.h"
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <sys/mman.h>
-#include <signal.h>
 
 #include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_bin.h"
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
-
 static void catch_sigbus(int sig)
 {
-    hal.scheduler->panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
+    AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
 }
-void LinuxRCOutput_AioPRU::init(void* machtnicht)
+void RCOutput_AioPRU::init()
 {
    uint32_t mem_fd;
    uint32_t *iram;
@@ -51,20 +46,19 @@ void LinuxRCOutput_AioPRU::init(void* machtnicht)
 
    // Reset PRU 1
    *ctrl = 0;
-   hal.scheduler->delay(1);
 
    // Load firmware
    memcpy(iram, PRUcode, sizeof(PRUcode));
 
    // Start PRU 1
-   *ctrl = 3;
+   *ctrl |= 2;
 
    // all outputs default to 50Hz, the top level vehicle code
    // overrides this when necessary
    set_freq(0xFFFFFFFF, 50);
 }
 
-void LinuxRCOutput_AioPRU::set_freq(uint32_t chmask, uint16_t freq_hz)
+void RCOutput_AioPRU::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
    uint8_t i;
    uint32_t tick = TICK_PER_S / freq_hz;
@@ -76,7 +70,7 @@ void LinuxRCOutput_AioPRU::set_freq(uint32_t chmask, uint16_t freq_hz)
    }
 }
 
-uint16_t LinuxRCOutput_AioPRU::get_freq(uint8_t ch)
+uint16_t RCOutput_AioPRU::get_freq(uint8_t ch)
 {
    uint16_t ret = 0;
 
@@ -87,28 +81,28 @@ uint16_t LinuxRCOutput_AioPRU::get_freq(uint8_t ch)
    return ret;
 }
 
-void LinuxRCOutput_AioPRU::enable_ch(uint8_t ch)
+void RCOutput_AioPRU::enable_ch(uint8_t ch)
 {
    if(ch < PWM_CHAN_COUNT) {
       pwm->channelenable |= 1U << ch;
    }
 }
 
-void LinuxRCOutput_AioPRU::disable_ch(uint8_t ch)
+void RCOutput_AioPRU::disable_ch(uint8_t ch)
 {
    if(ch < PWM_CHAN_COUNT) {
       pwm->channelenable &= !(1U << ch);
    }
 }
 
-void LinuxRCOutput_AioPRU::write(uint8_t ch, uint16_t period_us)
+void RCOutput_AioPRU::write(uint8_t ch, uint16_t period_us)
 {
    if(ch < PWM_CHAN_COUNT) {
       pwm->channel[ch].time_high = TICK_PER_US * period_us;
    }
 }
 
-uint16_t LinuxRCOutput_AioPRU::read(uint8_t ch)
+uint16_t RCOutput_AioPRU::read(uint8_t ch)
 {
    uint16_t ret = 0;
 
@@ -119,7 +113,7 @@ uint16_t LinuxRCOutput_AioPRU::read(uint8_t ch)
    return ret;
 }
 
-void LinuxRCOutput_AioPRU::read(uint16_t* period_us, uint8_t len)
+void RCOutput_AioPRU::read(uint16_t* period_us, uint8_t len)
 {
    uint8_t i;
 
@@ -131,6 +125,3 @@ void LinuxRCOutput_AioPRU::read(uint16_t* period_us, uint8_t len)
       period_us[i] = pwm->channel[i].time_high / TICK_PER_US;
    }
 }
-
-#endif
-

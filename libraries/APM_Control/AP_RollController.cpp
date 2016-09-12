@@ -23,7 +23,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @Param: TCONST
 	// @DisplayName: Roll Time Constant
 	// @Description: This controls the time constant in seconds from demanded to achieved bank angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0.1 4.0
 	// @Increment: 0.1
 	// @User: User
-	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        0.4f),
+	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        0.6f),
 
 	// @Param: D
 	// @DisplayName: Damping Gain
@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 1.0
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.04f),
+	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.1f),
 
 	// @Param: RMAX
 	// @DisplayName: Maximum Roll Rate
@@ -92,7 +92,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 */
 int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
 {
-	uint32_t tnow = hal.scheduler->millis();
+	uint32_t tnow = AP_HAL::millis();
 	uint32_t dt = tnow - _last_t;
 	if (_last_t == 0 || dt > 1000) {
 		dt = 0;
@@ -103,7 +103,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     // No conversion is required for K_D
 	float ki_rate = gains.I * gains.tau;
     float eas2tas = _ahrs.get_EAS2TAS();
-	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
+	float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
     float k_ff = gains.FF / eas2tas;
 	float delta_time    = (float)dt * 0.001f;
 	
@@ -137,10 +137,10 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
 			if (_last_out < -45) {
-                integrator_delta = max(integrator_delta , 0);
+                integrator_delta = MAX(integrator_delta , 0);
             } else if (_last_out > 45) {
                 // prevent the integrator from decreasing if surface defln demand  is below the lower limit
-                 integrator_delta = min(integrator_delta, 0);
+                 integrator_delta = MIN(integrator_delta, 0);
             }
 			_pid_info.I += integrator_delta;
 		}

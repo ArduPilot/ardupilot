@@ -25,19 +25,6 @@
    all boards, although they can be overridden by a port
  */
 
-void AP_HAL::UARTDriver::print_P(const prog_char_t *s) 
-{
-    char    c;
-    while ('\0' != (c = pgm_read_byte((const prog_char *)s++)))
-        write(c);
-}
-
-void AP_HAL::UARTDriver::println_P(const prog_char_t *s) 
-{
-    print_P(s);
-    println();
-}
-
 void AP_HAL::UARTDriver::printf(const char *fmt, ...) 
 {
     va_list ap;
@@ -48,18 +35,5 @@ void AP_HAL::UARTDriver::printf(const char *fmt, ...)
 
 void AP_HAL::UARTDriver::vprintf(const char *fmt, va_list ap) 
 {
-    print_vprintf((AP_HAL::Print*)this, 0, fmt, ap);
-}
-
-void AP_HAL::UARTDriver::_printf_P(const prog_char *fmt, ...) 
-{
-    va_list ap;
-    va_start(ap, fmt);
-    vprintf_P(fmt, ap);
-    va_end(ap);
-}
-
-void AP_HAL::UARTDriver::vprintf_P(const prog_char *fmt, va_list ap) 
-{
-    print_vprintf((AP_HAL::Print*)this, 1, fmt, ap);
+    print_vprintf(this, fmt, ap);
 }

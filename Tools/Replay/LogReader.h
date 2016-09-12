@@ -1,11 +1,12 @@
 #include "VehicleType.h"
 #include "DataFlashFileReader.h"
 #include "LR_MsgHandler.h"
+#include "Parameters.h"
 
 class LogReader : public DataFlashFileReader
 {
 public:
-    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *structure, uint8_t num_types, const char **&nottypes);
+    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const char **&nottypes);
     bool wait_type(const char *type);
 
     const Vector3f &get_attitude(void) const { return attitude; }
@@ -63,9 +64,6 @@ private:
     // next available msgid for mapping
     uint8_t next_msgid = 1;
 
-    const struct LogStructure *structure;
-    uint8_t num_types;
-
     LR_MsgHandler::CheckState check_state;
 
     bool installed_vehicle_specific_parsers;
@@ -79,3 +77,10 @@ private:
 
     bool save_message_type(const char *name);
 };
+
+// some vars are difficult to get through the layers
+struct globals {
+    bool no_params;
+};
+
+extern struct globals globals;

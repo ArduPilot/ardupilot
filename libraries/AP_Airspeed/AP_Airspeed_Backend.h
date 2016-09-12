@@ -14,13 +14,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
 /*
   backend driver class for airspeed
  */
-
-#ifndef __AP_AIRSPEED_BACKEND_H__
-#define __AP_AIRSPEED_BACKEND_H__
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -36,5 +34,3 @@ public:
     // return the current temperature in degrees C, if available
     virtual bool get_temperature(float &temperature) = 0;
 };
-
-#endif // __AP_AIRSPEED_BACKEND_H__

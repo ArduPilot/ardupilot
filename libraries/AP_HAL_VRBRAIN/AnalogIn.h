@@ -1,7 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_HAL_VRBRAIN_ANALOGIN_H__
-#define __AP_HAL_VRBRAIN_ANALOGIN_H__
+#pragma once
 
 #include "AP_HAL_VRBRAIN.h"
 #include <pthread.h>
@@ -10,7 +8,7 @@
 #define VRBRAIN_ANALOG_MAX_CHANNELS 16
 
 
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRHERO_V10)
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRCORE_V10) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
 #define VRBRAIN_ANALOG_ORB_BATTERY_VOLTAGE_PIN     10
 #define VRBRAIN_ANALOG_ORB_BATTERY_CURRENT_PIN     11
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
@@ -56,7 +54,7 @@ private:
 class VRBRAIN::VRBRAINAnalogIn : public AP_HAL::AnalogIn {
 public:
     VRBRAINAnalogIn();
-    void init(void* implspecific);
+    void init();
     AP_HAL::AnalogSource* channel(int16_t pin);
     void _timer_tick(void);
     float board_voltage(void) { return _board_voltage; }
@@ -83,4 +81,3 @@ private:
 
     void next_stop_pin(void);
 };
-#endif // __AP_HAL_VRBRAIN_ANALOGIN_H__

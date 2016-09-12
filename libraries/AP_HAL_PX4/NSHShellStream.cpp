@@ -22,21 +22,22 @@ extern const AP_HAL::HAL& hal;
 #include "Util.h"
 using namespace PX4;
 
-void NSHShellStream::shell_thread(void)
+void NSHShellStream::shell_thread(void *arg)
 {
+    NSHShellStream *nsh = (NSHShellStream *)arg;
     close(0);
     close(1);
     close(2);
-    dup2(child.in, 0);
-    dup2(child.out, 1);
-    dup2(child.out, 2);
+    dup2(nsh->child.in, 0);
+    dup2(nsh->child.out, 1);
+    dup2(nsh->child.out, 2);
 
     nsh_consolemain(0, NULL);    
 
-    shell_stdin  = -1;
-    shell_stdout = -1;
-    child.in  = -1;
-    child.out = -1;
+    nsh->shell_stdin  = -1;
+    nsh->shell_stdout = -1;
+    nsh->child.in  = -1;
+    nsh->child.out = -1;
 }
 
 void NSHShellStream::start_shell(void)
@@ -121,18 +122,18 @@ int16_t NSHShellStream::read()
     return -1;
 }
 
-int16_t NSHShellStream::available()
+uint32_t NSHShellStream::available()
 {
-    int ret = 0;
+    uint32_t ret = 0;
     if (ioctl(shell_stdin, FIONREAD, (unsigned long)&ret) == OK) {
         return ret;
     }
     return 0;
 }
 
-int16_t NSHShellStream::txspace()
+uint32_t NSHShellStream::txspace()
 {
-    int ret = 0;
+    uint32_t ret = 0;
     if (ioctl(shell_stdout, FIONWRITE, (unsigned long)&ret) == OK) {
         return ret;
     }

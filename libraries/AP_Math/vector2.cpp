@@ -17,12 +17,14 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma GCC optimize("O3")
+
 #include "AP_Math.h"
 
 template <typename T>
 float Vector2<T>::length(void) const
 {
-	return pythagorous2(x, y);
+	return norm(x, y);
 }
 
 

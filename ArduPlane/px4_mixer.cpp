@@ -12,7 +12,7 @@
   that include flaps, landing gear, ignition cut etc
  */
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAVE_PX4_MIXER
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -21,6 +21,7 @@
 #include <drivers/drv_pwm_output.h>
 #include <systemlib/mixer/mixer.h>
 #include <modules/px4iofirmware/protocol.h>
+#include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
 
 #define PX4_LIM_RC_MIN 900
 #define PX4_LIM_RC_MAX 2100
@@ -44,9 +45,9 @@ bool Plane::print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...)
 }
 
 /*
-  create a PX4 mixer buffer given the current fixed wing parameters
+  create a PX4 mixer buffer given the current fixed wing parameters, returns the size of the buffer used
  */
-bool Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
+uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
 {
     char *buf0 = buf;
     uint16_t buf_size0 = buf_size;
@@ -125,34 +126,34 @@ bool Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
         } else {
             // a empty output
             if (!print_buffer(buf, buf_size, "Z:\n")) {
-                return false;
+                return 0;
             }
             continue;
         }
         if (mix == 0) {
-            // pass thru channel, possibly with reversal. We also
+            // pass through channel, possibly with reversal. We also
             // adjust the gain based on the range of input and output
             // channels and adjust for trims
             const RC_Channel *chan1 = RC_Channel::rc_channel(i);
             const RC_Channel *chan2 = RC_Channel::rc_channel(c1);
-            int16_t chan1_trim = (i==rcmap.throttle()-1?1500:chan1->radio_trim);
-            int16_t chan2_trim = (c1==rcmap.throttle()-1?1500:chan2->radio_trim);
+            int16_t chan1_trim = (i==rcmap.throttle()-1?1500:chan1->get_radio_trim());
+            int16_t chan2_trim = (c1==rcmap.throttle()-1?1500:chan2->get_radio_trim());
             chan1_trim = constrain_int16(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
             chan2_trim = constrain_int16(chan2_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
             // if the input and output channels are the same then we
             // apply clipping. This allows for direct pass-thru
             int32_t limit = (c1==i?scale_max2:scale_max1);
             int32_t in_scale_low;
-            if (chan2_trim <= chan2->radio_min) {
+            if (chan2_trim <= chan2->get_radio_min()) {
                 in_scale_low = scale_max1;
             } else {
-                in_scale_low = scale_max1*(chan2_trim - pwm_min)/(float)(chan2_trim - chan2->radio_min);
+                in_scale_low = scale_max1*(chan2_trim - pwm_min)/(float)(chan2_trim - chan2->get_radio_min());
             }
             int32_t in_scale_high;
-            if (chan2->radio_max <= chan2_trim) {
+            if (chan2->get_radio_max() <= chan2_trim) {
                 in_scale_high = scale_max1;
             } else {
-                in_scale_high = scale_max1*(pwm_max - chan2_trim)/(float)(chan2->radio_max - chan2_trim);
+                in_scale_high = scale_max1*(pwm_max - chan2_trim)/(float)(chan2->get_radio_max() - chan2_trim);
             }
             if (chan1->get_reverse() != chan2->get_reverse()) {
                 in_scale_low = -in_scale_low;
@@ -160,8 +161,8 @@ bool Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             }
             if (!print_buffer(buf, buf_size, "M: 1\n") ||
                 !print_buffer(buf, buf_size, "O: %d %d %d %d %d\n",
-                              (int)(pwm_scale*(chan1_trim - chan1->radio_min)),
-                              (int)(pwm_scale*(chan1->radio_max - chan1_trim)),
+                              (int)(pwm_scale*(chan1_trim - chan1->get_radio_min())),
+                              (int)(pwm_scale*(chan1->get_radio_max() - chan1_trim)),
                               (int)(pwm_scale*(chan1_trim - 1500)),
                               (int)-scale_max2, (int)scale_max2) ||
                 !print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", c1,
@@ -169,13 +170,13 @@ bool Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
                               in_scale_high,
                               0,
                               -limit, limit)) {
-                return false;
+                return 0;
             }
         } else {
             const RC_Channel *chan1 = RC_Channel::rc_channel(c1);
             const RC_Channel *chan2 = RC_Channel::rc_channel(c2);
-            int16_t chan1_trim = (c1==rcmap.throttle()-1?1500:chan1->radio_trim);
-            int16_t chan2_trim = (c2==rcmap.throttle()-1?1500:chan2->radio_trim);
+            int16_t chan1_trim = (c1==rcmap.throttle()-1?1500:chan1->get_radio_trim());
+            int16_t chan2_trim = (c2==rcmap.throttle()-1?1500:chan2->get_radio_trim());
             chan1_trim = constrain_int16(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
             chan2_trim = constrain_int16(chan2_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
             // mix of two input channels to give an output channel. To
@@ -184,7 +185,7 @@ bool Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             // of the PX4IO input processing
             if (!print_buffer(buf, buf_size, "M: 2\n") ||
                 !print_buffer(buf, buf_size, "O: %d %d 0 %d %d\n", mix, mix, (int)-scale_max1, (int)scale_max1)) {
-                return false;
+                return 0;
             }
             int32_t in_scale_low = pwm_scale*(chan1_trim - pwm_min);
             int32_t in_scale_high = pwm_scale*(pwm_max - chan1_trim);
@@ -192,7 +193,7 @@ bool Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
                               c1, in_scale_low, in_scale_high, offset,
                               (int)-scale_max2, (int)scale_max2)) {
-                return false;
+                return 0;
             }
             in_scale_low = pwm_scale*(chan2_trim - pwm_min);
             in_scale_high = pwm_scale*(pwm_max - chan2_trim);
@@ -201,13 +202,13 @@ bool Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
                 if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
                                   c2, in_scale_low, in_scale_high, offset,
                                   (int)-scale_max2, (int)scale_max2)) {
-                    return false;
+                    return 0;
                 }
             } else {
                 if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
                                   c2, -in_scale_low, -in_scale_high, -offset,
                                   (int)-scale_max2, (int)scale_max2)) {
-                    return false;
+                    return 0;
                 }
             }
         }
@@ -221,7 +222,7 @@ bool Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
         write(mix_fd, buf0, buf_size0 - buf_size);
         close(mix_fd);
     }
-    return true;
+    return buf_size0 - buf_size;
 }
 
 
@@ -234,26 +235,36 @@ bool Plane::setup_failsafe_mixing(void)
     bool ret = false;
     char *buf = NULL;
     const uint16_t buf_size = 2048;
+    uint16_t fileSize, new_crc;
+    int px4io_fd = -1;
+    enum AP_HAL::Util::safety_state old_state = hal.util->safety_switch_state();
+    struct pwm_output_values pwm_values = {.values = {0}, .channel_count = 8};
+    unsigned mixer_status = 0;
 
     buf = (char *)malloc(buf_size);
     if (buf == NULL) {
-        return false;
+        goto failed;
     }
 
-    if (!create_mixer(buf, buf_size, mixer_filename)) {
+    fileSize = create_mixer(buf, buf_size, mixer_filename);
+    if (!fileSize) {
         hal.console->printf("Unable to create mixer\n");
-        free(buf);
-        return false;
+        goto failed;
     }
 
-    enum AP_HAL::Util::safety_state old_state = hal.util->safety_switch_state();
-    struct pwm_output_values pwm_values = {.values = {0}, .channel_count = 8};
+    new_crc = crc_calculate((uint8_t *)buf, fileSize);
 
-    int px4io_fd = open("/dev/px4io", 0);
+    if ((int32_t)new_crc == last_mixer_crc) {
+        free(buf);
+        return true;
+    } else {
+        last_mixer_crc = new_crc;
+    }
+
+    px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd == -1) {
         // px4io isn't started, no point in setting up a mixer
-        free(buf);
-        return false;
+        goto failed;
     }
 
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
@@ -266,7 +277,7 @@ bool Plane::setup_failsafe_mixing(void)
     // it twice as there have been reports that this call can fail
     // with a small probability
     hal.rcout->force_safety_on();
-    hal.rcout->force_safety_on();
+    hal.rcout->force_safety_no_wait();
 
     /* reset any existing mixer in px4io. This shouldn't be needed,
      * but is good practice */
@@ -305,7 +316,7 @@ bool Plane::setup_failsafe_mixing(void)
             // by small numbers near RC3_MIN
             config.rc_trim = 1500;
         } else {
-            config.rc_trim = constrain_int16(ch->radio_trim, config.rc_min+1, config.rc_max-1);
+            config.rc_trim = constrain_int16(ch->get_radio_trim(), config.rc_min+1, config.rc_max-1);
         }
         config.rc_dz = 0; // zero for the purposes of manual takeover
 
@@ -324,14 +335,14 @@ bool Plane::setup_failsafe_mixing(void)
             /*
               This is an OVERRIDE_CHAN channel. We want IO to trigger
               override with a channel input of over 1750. The px4io
-              code is setup for triggering below 10% of full range. To
-              map this to values above 1750 we need to reverse the
-              direction and set the rc range for this channel to 1000
-              to 1833 (1833 = 1000 + 750/0.9)
+              code is setup for triggering below 80% of the range below
+              trim. To  map this to values above 1750 we need to reverse
+              the direction and set the rc range for this channel to 1000
+              to 1813 (1812.5 = 1500 + 250/0.8)
              */
             config.rc_assignment = PX4IO_P_RC_CONFIG_ASSIGNMENT_MODESWITCH;
             config.rc_reverse = true;
-            config.rc_max = 1833;
+            config.rc_max = 1813; // round 1812.5 up to grant > 1750
             config.rc_min = 1000;
             config.rc_trim = 1500;
         } else {
@@ -345,7 +356,12 @@ bool Plane::setup_failsafe_mixing(void)
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
-        pwm_values.values[i] = 900;
+        if (RC_Channel_aux::channel_function(i) >= RC_Channel_aux::k_motor1 &&
+            RC_Channel_aux::channel_function(i) <= RC_Channel_aux::k_motor8) {
+            pwm_values.values[i] = quadplane.thr_min_pwm;
+        } else {
+            pwm_values.values[i] = 900;
+        }
     }
     if (ioctl(px4io_fd, PWM_SERVO_SET_MIN_PWM, (long unsigned int)&pwm_values) != 0) {
         hal.console->printf("SET_MIN_PWM failed\n");
@@ -353,7 +369,13 @@ bool Plane::setup_failsafe_mixing(void)
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
-        pwm_values.values[i] = 2100;
+        if (RC_Channel_aux::channel_function(i) >= RC_Channel_aux::k_motor1 &&
+            RC_Channel_aux::channel_function(i) <= RC_Channel_aux::k_motor8) {
+            hal.rcout->write(i, quadplane.thr_min_pwm);
+            pwm_values.values[i] = quadplane.thr_min_pwm;
+        } else {
+            pwm_values.values[i] = 2100;
+        }
     }
     if (ioctl(px4io_fd, PWM_SERVO_SET_MAX_PWM, (long unsigned int)&pwm_values) != 0) {
         hal.console->printf("SET_MAX_PWM failed\n");
@@ -364,9 +386,14 @@ bool Plane::setup_failsafe_mixing(void)
         goto failed;
     }
 
-    // setup for immediate manual control if FMU dies
     if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 1) != 0) {
         hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
+        goto failed;
+    }
+
+    if (ioctl(px4io_fd, PWM_IO_GET_STATUS, (unsigned long)&mixer_status) != 0 ||
+        (mixer_status & PX4IO_P_STATUS_FLAGS_MIXER_OK) != 0) {
+        hal.console->printf("Mixer failed: 0x%04x\n", mixer_status);
         goto failed;
     }
 
@@ -382,7 +409,11 @@ failed:
     // restore safety state if it was previously armed
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
         hal.rcout->force_safety_off();
-        hal.rcout->force_safety_off();
+        hal.rcout->force_safety_no_wait();
+    }
+    if (!ret) {
+        // clear out the mixer CRC so that we will attempt to send it again
+        last_mixer_crc = -1;
     }
     return ret;
 }

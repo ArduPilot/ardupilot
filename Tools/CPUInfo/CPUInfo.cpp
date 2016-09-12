@@ -5,41 +5,12 @@
   Andrew Tridgell September 2011
 */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Scheduler/AP_Scheduler.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_ADC/AP_ADC.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_Notify/AP_Notify.h>
-#include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <SITL/SITL.h>
-#include <Filter/Filter.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_NavEKF/AP_NavEKF.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Mission/AP_Mission.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_Rally/AP_Rally.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <cmath>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup() {
 }
@@ -47,13 +18,13 @@ void setup() {
 static void show_sizes(void)
 {
 	hal.console->println("Type sizes:");
-	hal.console->printf("char      : %d\n", sizeof(char));
-	hal.console->printf("short     : %d\n", sizeof(short));
-	hal.console->printf("int       : %d\n", sizeof(int));
-	hal.console->printf("long      : %d\n", sizeof(long));
-	hal.console->printf("long long : %d\n", sizeof(long long));
-	hal.console->printf("bool      : %d\n", sizeof(bool));
-	hal.console->printf("void*     : %d\n", sizeof(void *));
+	hal.console->printf("char      : %lu\n", (unsigned long)sizeof(char));
+	hal.console->printf("short     : %lu\n", (unsigned long)sizeof(short));
+	hal.console->printf("int       : %lu\n", (unsigned long)sizeof(int));
+	hal.console->printf("long      : %lu\n", (unsigned long)sizeof(long));
+	hal.console->printf("long long : %lu\n", (unsigned long)sizeof(long long));
+	hal.console->printf("bool      : %lu\n", (unsigned long)sizeof(bool));
+	hal.console->printf("void*     : %lu\n", (unsigned long)sizeof(void *));
 
 	hal.console->printf("printing NaN: %f\n", sqrt(-1.0f));
 	hal.console->printf("printing +Inf: %f\n", 1.0f/0.0f);
@@ -65,11 +36,11 @@ static void show_sizes(void)
 
 #define TIMEIT(name, op, count) do { \
 	uint32_t us_end, us_start; \
-	us_start = hal.scheduler->micros(); \
+	us_start = AP_HAL::micros(); \
 	for (uint8_t i=0; i<count; i++) { \
 		FIFTYTIMES(op);				\
 	} \
-	us_end = hal.scheduler->micros(); \
+	us_end = AP_HAL::micros(); \
 	hal.console->printf("%-10s %7.2f usec/call\n", name, double(us_end-us_start)/(count*50.0)); \
 } while (0)
 
@@ -90,17 +61,17 @@ volatile uint64_t v_out_64 = 1;
 static void show_timings(void)
 {
 
-	v_f = 1+(hal.scheduler->micros() % 5);
-	v_out = 1+(hal.scheduler->micros() % 3);
+	v_f = 1+(AP_HAL::micros() % 5);
+	v_out = 1+(AP_HAL::micros() % 3);
 
-	v_32 = 1+(hal.scheduler->micros() % 5);
-	v_out_32 = 1+(hal.scheduler->micros() % 3);
+	v_32 = 1+(AP_HAL::micros() % 5);
+	v_out_32 = 1+(AP_HAL::micros() % 3);
 
-	v_16 = 1+(hal.scheduler->micros() % 5);
-	v_out_16 = 1+(hal.scheduler->micros() % 3);
+	v_16 = 1+(AP_HAL::micros() % 5);
+	v_out_16 = 1+(AP_HAL::micros() % 3);
 
-	v_8 = 1+(hal.scheduler->micros() % 5);
-	v_out_8 = 1+(hal.scheduler->micros() % 3);
+	v_8 = 1+(AP_HAL::micros() % 5);
+	v_out_8 = 1+(AP_HAL::micros() % 3);
 
 
 	hal.console->println("Operation timings:");
@@ -108,8 +79,8 @@ static void show_timings(void)
 
 	TIMEIT("nop", asm volatile("nop"::), 255);
 
-	TIMEIT("micros()", hal.scheduler->micros(), 200);
-	TIMEIT("millis()", hal.scheduler->millis(), 200);
+	TIMEIT("micros()", AP_HAL::micros(), 200);
+	TIMEIT("millis()", AP_HAL::millis(), 200);
 
 	TIMEIT("fadd", v_out += v_f, 100);
 	TIMEIT("fsub", v_out -= v_f, 100);

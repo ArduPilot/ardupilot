@@ -15,6 +15,7 @@
  */
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -59,9 +60,18 @@ int16_t AP_GPS_Backend::swap_int16(int16_t v) const
 }
 
 /**
-   calculate current time since the unix epoch in microseconds
+   convert GPS week and milliseconds to unix epoch in milliseconds
+ */
+uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
+{
+    const uint64_t ms_per_week = 7000ULL*86400ULL;
+    const uint64_t unix_offset = 17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL;
+    uint64_t fix_time_ms = unix_offset + gps_week*ms_per_week + gps_ms;
+    return fix_time_ms;
+}
 
-   This costs about 60 usec on AVR2560
+/**
+   calculate current time since the unix epoch in microseconds
  */
 uint64_t AP_GPS::time_epoch_usec(uint8_t instance)
 {
@@ -69,19 +79,15 @@ uint64_t AP_GPS::time_epoch_usec(uint8_t instance)
     if (istate.last_gps_time_ms == 0) {
         return 0;
     }
-    const uint64_t ms_per_week = 7000ULL*86400ULL;
-    const uint64_t unix_offset = 17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL;
-    uint64_t fix_time_ms = unix_offset + istate.time_week*ms_per_week + istate.time_week_ms;
+    uint64_t fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
     // add in the milliseconds since the last fix
-    return (fix_time_ms + (hal.scheduler->millis() - istate.last_gps_time_ms)) * 1000ULL;
+    return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
 }
 
 
 /**
    fill in time_week_ms and time_week from BCD date and time components
    assumes MTK19 millisecond form of bcd_time
-
-   This function takes about 340 usec on the AVR2560
  */
 void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
 {
@@ -125,7 +131,7 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
  */
 void AP_GPS_Backend::fill_3d_velocity(void)
 {
-    float gps_heading = ToRad(state.ground_course_cd * 0.01f);
+    float gps_heading = radians(state.ground_course);
 
     state.velocity.x = state.ground_speed * cosf(gps_heading);
     state.velocity.y = state.ground_speed * sinf(gps_heading);

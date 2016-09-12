@@ -1,15 +1,9 @@
 // -*- Mode: C++; c-basic-offset: 8; indent-tabs-mode: nil -*-
 
-//
-// Example code for the AP_HAL AVRUARTDriver, based on FastSerial
-//
 // This code is placed into the public domain.
-//
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -21,7 +15,7 @@
 
 #include "simplegcs.h"
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void flush_console_to_statustext() {
     uint8_t data[50];
@@ -55,7 +49,7 @@ void setup(void) {
     try_send_statustext(MAVLINK_COMM_0, hello, strlen(hello));
 
     hal.console->backend_open();
-    hal.console->printf_P(PSTR("Hello hal.console\r\n"));
+    hal.console->printf("Hello hal.console\r\n");
 }
 
 int i = 0;

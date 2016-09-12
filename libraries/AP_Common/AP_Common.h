@@ -19,24 +19,15 @@
 ///				libraries.
 ///
 
-#ifndef __AP_COMMON_H__
-#define __AP_COMMON_H__
+#pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
-#pragma GCC diagnostic warning "-Wall"
-#pragma GCC diagnostic warning "-Wextra"
-#pragma GCC diagnostic warning "-Wlogical-op"
-#pragma GCC diagnostic ignored "-Wredundant-decls"
-
 // used to pack structures
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-#define PACKED
-#else
 #define PACKED __attribute__((__packed__))
-#endif
 
 // used to mark a function that may be unused in some builds
 #define UNUSED_FUNCTION __attribute__((unused))
@@ -47,28 +38,19 @@
 // sometimes we need to prevent inlining to prevent large stack usage
 #define NOINLINE __attribute__((noinline))
 
-// Make some dire warnings into errors
-//
-// Some warnings indicate questionable code; rather than let
-// these slide, we force them to become errors so that the
-// developer has to find a safer alternative.
-//
-//#pragma GCC diagnostic error "-Wfloat-equal"
-
-// The following is strictly for type-checking arguments to printf_P calls
-// in conjunction with a suitably modified Arduino IDE; never define for
-// production as it generates bad code.
-//
-#if defined(PRINTF_FORMAT_WARNING_DEBUG)
- # undef PSTR
- # define PSTR(_x)               _x             // help the compiler with printf_P
- # define float double                  // silence spurious format warnings for %f
-#endif
-
-#define FPSTR(s) (wchar_t *)(s)
+#define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
+#define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
 
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
+
+/* Declare and implement const and non-const versions of the array subscript
+ * operator. The object is treated as an array of type_ values. */
+#define DEFINE_BYTE_ARRAY_METHODS                                                                   \
+    inline uint8_t &operator[](size_t i) { return reinterpret_cast<uint8_t *>(this)[i]; }           \
+    inline uint8_t operator[](size_t i) const { return reinterpret_cast<const uint8_t *>(this)[i]; }
+
+#define LOCATION_ALT_MAX_M  83000   // maximum altitude (in meters) that can be fit into Location structure's alt field
 
 /*
   check if bit bitnumber is set in value, returned as a
@@ -88,6 +70,27 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 
 #define ARRAY_SIZE(_arr) sizeof(_ARRAY_SIZE_HELPER(_arr))
 
+/*
+ * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to
+ * be used for its internal variable.
+ *
+ * @uniq_: a unique name to use for variable name
+ * @expr_: the expression to be evaluated
+ */
+#define _UNUSED_RESULT(uniq_, expr_)                      \
+    do {                                                  \
+        decltype(expr_) uniq_ __attribute__((unused));    \
+        uniq_ = expr_;                                    \
+    } while (0)
+
+/*
+ * Allow to call a function annotated with warn_unused_result attribute
+ * without getting a warning, because sometimes this is what we want to do.
+ *
+ * @expr_: the expression to be evaluated
+ */
+#define UNUSED_RESULT(expr_) _UNUSED_RESULT(__unique_name_##__COUNTER__, expr_)
+
 // @}
 
 
@@ -100,7 +103,7 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 /// bit 2: Direction of loiter command      0: Clockwise	1: Counter-Clockwise
 /// bit 3: Req.to hit WP.alt to continue    0: No,          1: Yes
 /// bit 4: Relative to Home					0: No,          1: Yes
-/// bit 5:
+/// bit 5: Loiter crosstrack reference      0: WP center    1: Tangent exit point
 /// bit 6:
 /// bit 7: Move to next Command             0: YES,         1: Loiter until commanded
 
@@ -111,6 +114,8 @@ struct PACKED Location_Option_Flags {
     uint8_t unused1      : 1;           // unused flag (defined so that loiter_ccw uses the correct bit)
     uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
     uint8_t terrain_alt  : 1;           // this altitude is above terrain
+    uint8_t origin_alt   : 1;           // this altitude is above ekf origin
+    uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
 };
 
 struct PACKED Location {
@@ -123,7 +128,7 @@ struct PACKED Location {
     // storage cost per mission item at 15 bytes, and allows mission
     // altitudes of up to +/- 83km
     int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100)
-    int32_t lat;                                        ///< param 3 - Lattitude * 10**7
+    int32_t lat;                                        ///< param 3 - Latitude * 10**7
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 
@@ -149,26 +154,31 @@ enum HomeState {
 /*  Product IDs for all supported products follow */
 
 #define AP_PRODUCT_ID_NONE                      0x00    // Hardware in the loop
-#define AP_PRODUCT_ID_APM1_1280         0x01    // APM1 with 1280 CPUs
-#define AP_PRODUCT_ID_APM1_2560         0x02    // APM1 with 2560 CPUs
 #define AP_PRODUCT_ID_SITL              0x03    // Software in the loop
 #define AP_PRODUCT_ID_PX4               0x04    // PX4 on NuttX
 #define AP_PRODUCT_ID_PX4_V2            0x05    // PX4 FMU2 on NuttX
-#define AP_PRODUCT_ID_APM2ES_REV_C4 0x14        // APM2 with MPU6000ES_REV_C4
-#define AP_PRODUCT_ID_APM2ES_REV_C5     0x15    // APM2 with MPU6000ES_REV_C5
-#define AP_PRODUCT_ID_APM2ES_REV_D6     0x16    // APM2 with MPU6000ES_REV_D6
-#define AP_PRODUCT_ID_APM2ES_REV_D7     0x17    // APM2 with MPU6000ES_REV_D7
-#define AP_PRODUCT_ID_APM2ES_REV_D8     0x18    // APM2 with MPU6000ES_REV_D8
-#define AP_PRODUCT_ID_APM2_REV_C4       0x54    // APM2 with MPU6000_REV_C4
-#define AP_PRODUCT_ID_APM2_REV_C5       0x55    // APM2 with MPU6000_REV_C5
-#define AP_PRODUCT_ID_APM2_REV_D6       0x56    // APM2 with MPU6000_REV_D6
-#define AP_PRODUCT_ID_APM2_REV_D7       0x57    // APM2 with MPU6000_REV_D7
-#define AP_PRODUCT_ID_APM2_REV_D8       0x58    // APM2 with MPU6000_REV_D8
-#define AP_PRODUCT_ID_APM2_REV_D9       0x59    // APM2 with MPU6000_REV_D9
-#define AP_PRODUCT_ID_FLYMAPLE          0x100   // Flymaple with ITG3205, ADXL345, HMC5883, BMP085
+#define AP_PRODUCT_ID_PX4_V4            0x06    // PX4 FMU4 on NuttX
 #define AP_PRODUCT_ID_L3G4200D          0x101   // Linux with L3G4200D and ADXL345
 #define AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE 0x102   // Linux with the PixHawk Fire Cape
 #define AP_PRODUCT_ID_MPU9250           0x103   // MPU9250
 #define AP_PRODUCT_ID_VRBRAIN           0x150   // VRBRAIN on NuttX
 
-#endif // _AP_COMMON_H
+/*
+  Return true if value is between lower and upper bound inclusive.
+  False otherwise.
+*/
+bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#include <AP_HAL_QURT/replace.h>
+#endif
+
+/*
+  useful debugging macro for SITL
+ */
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define SITL_printf(fmt, args ...) do { ::printf("%s(%u): " fmt, __FILE__, __LINE__, ##args); } while(0)
+#else
+#define SITL_printf(fmt, args ...)
+#endif
+

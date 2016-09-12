@@ -28,6 +28,8 @@ using namespace HALSITL;
  */
 void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
 {
+    static uint32_t last_update;
+
     if (_compass == NULL) {
         // no compass in this sketch
         return;
@@ -39,13 +41,19 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
     if (yawDeg < -180.0f) {
         yawDeg += 360.0f;
     }
-    _compass->setHIL(0, radians(rollDeg), radians(pitchDeg), radians(yawDeg));
-    _compass->setHIL(1, radians(rollDeg), radians(pitchDeg), radians(yawDeg));
-    Vector3f noise = _rand_vec3f() * _sitl->mag_noise;
-    Vector3f motor = _sitl->mag_mot.get() * _current;
-    Vector3f new_mag_data = _compass->getHIL(0) + noise + motor;
 
-    uint32_t now = hal.scheduler->millis();
+    // 100Hz
+    uint32_t now = AP_HAL::millis();
+    if ((now - last_update) < 10) {
+        return;
+    }
+    last_update = now;
+
+    // calculate sensor noise and add to 'truth' field in body frame
+    // units are milli-Gauss
+    Vector3f noise = _rand_vec3f() * _sitl->mag_noise;
+    Vector3f new_mag_data = _sitl->state.bodyMagField + noise;
+
     // add delay
     uint32_t best_time_delta_mag = 1000; // initialise large time representing buffer entry closest to current time - delay.
     uint8_t best_index_mag = 0; // initialise number representing the index of the entry in buffer closest to delay.
@@ -65,7 +73,8 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
     delayed_time_mag = now - _sitl->mag_delay; // get time corresponding to delay
     // find data corresponding to delayed time in buffer
     for (uint8_t i=0; i<=mag_buffer_length-1; i++) {
-        time_delta_mag = abs(delayed_time_mag - buffer_mag[i].time); // find difference between delayed time and time stamp in buffer
+        // find difference between delayed time and time stamp in buffer
+        time_delta_mag = abs((int32_t)(delayed_time_mag - buffer_mag[i].time));
         // if this difference is smaller than last delta, store this time
         if (time_delta_mag < best_time_delta_mag) {
             best_index_mag = i;
@@ -78,8 +87,8 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
 
     new_mag_data -= _sitl->mag_ofs.get();
 
-    _compass->setHIL(0, new_mag_data);
-    _compass->setHIL(1, new_mag_data);
+    _compass->setHIL(0, new_mag_data, AP_HAL::micros());
+    _compass->setHIL(1, new_mag_data, AP_HAL::micros());
 }
 
 #endif

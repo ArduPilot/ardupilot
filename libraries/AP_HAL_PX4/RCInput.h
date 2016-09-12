@@ -1,15 +1,18 @@
-
-#ifndef __AP_HAL_PX4_RCINPUT_H__
-#define __AP_HAL_PX4_RCINPUT_H__
+#pragma once
 
 #include "AP_HAL_PX4.h"
 #include <drivers/drv_rc_input.h>
 #include <systemlib/perf_counter.h>
 #include <pthread.h>
 
+
+#ifndef RC_INPUT_MAX_CHANNELS
+#define RC_INPUT_MAX_CHANNELS 18
+#endif
+
 class PX4::PX4RCInput : public AP_HAL::RCInput {
 public:
-    void init(void* machtnichts);
+    void init();
     bool new_input();
     uint8_t num_channels();
     uint16_t read(uint8_t ch);
@@ -33,5 +36,3 @@ private:
     perf_counter_t _perf_rcin;
     pthread_mutex_t rcin_mutex;
 };
-
-#endif // __AP_HAL_PX4_RCINPUT_H__

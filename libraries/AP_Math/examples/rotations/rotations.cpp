@@ -2,42 +2,11 @@
 //
 // Unit tests for the AP_Math rotations code
 //
-#include <AP_HAL/AP_HAL.h>
-#include <stdlib.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_Math/AP_Math.h>
-#include <Filter/Filter.h>
-#include <AP_ADC/AP_ADC.h>
-#include <SITL/SITL.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_GPS/AP_GPS.h>
-#include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Mission/AP_Mission.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_NavEKF/AP_NavEKF.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
-#include <AP_Rally/AP_Rally.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static void print_vector(Vector3f &v)
 {
@@ -54,8 +23,70 @@ static void test_rotation_accuracy(void)
     int16_t i;
     float rot_angle;
 
-    hal.console->println_P(PSTR("\nRotation method accuracy:"));
+    hal.console->println("\nRotation method accuracy:");
 
+    // test roll
+    for( i=0; i<90; i++ ) {
+
+        // reset initial attitude
+        attitude.from_euler(0,0,0);
+
+        // calculate small rotation vector
+        rot_angle = ToRad(i);
+        small_rotation = Vector3f(rot_angle,0,0);
+
+        // apply small rotation
+        attitude.rotate(small_rotation);
+
+        // get resulting attitude's euler angles
+        attitude.to_euler(&roll, &pitch, &yaw);
+
+        // now try via from_axis_angle
+        Matrix3f r2;
+        r2.from_axis_angle(Vector3f(1,0,0), rot_angle);
+        attitude.from_euler(0,0,0);
+        attitude = r2 * attitude;
+
+        float roll2, pitch2, yaw2;
+        attitude.to_euler(&roll2, &pitch2, &yaw2);
+        
+        // display results
+        hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
+                            (int)i,ToDeg(roll), ToDeg(roll2));
+    }
+
+    // test pitch
+    for( i=0; i<90; i++ ) {
+
+        // reset initial attitude
+        attitude.from_euler(0,0,0);
+
+        // calculate small rotation vector
+        rot_angle = ToRad(i);
+        small_rotation = Vector3f(0,rot_angle,0);
+
+        // apply small rotation
+        attitude.rotate(small_rotation);
+
+        // get resulting attitude's euler angles
+        attitude.to_euler(&roll, &pitch, &yaw);
+
+        // now try via from_axis_angle
+        Matrix3f r2;
+        r2.from_axis_angle(Vector3f(0,1,0), rot_angle);
+        attitude.from_euler(0,0,0);
+        attitude = r2 * attitude;
+
+        float roll2, pitch2, yaw2;
+        attitude.to_euler(&roll2, &pitch2, &yaw2);
+        
+        // display results
+        hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
+                            (int)i,ToDeg(pitch), ToDeg(pitch2));
+    }
+    
+
+    // test yaw
     for( i=0; i<90; i++ ) {
 
         // reset initial attitude
@@ -71,10 +102,18 @@ static void test_rotation_accuracy(void)
         // get resulting attitude's euler angles
         attitude.to_euler(&roll, &pitch, &yaw);
 
+        // now try via from_axis_angle
+        Matrix3f r2;
+        r2.from_axis_angle(Vector3f(0,0,1), rot_angle);
+        attitude.from_euler(0,0,0);
+        attitude = r2 * attitude;
+
+        float roll2, pitch2, yaw2;
+        attitude.to_euler(&roll2, &pitch2, &yaw2);
+        
         // display results
-        hal.console->printf_P(
-                PSTR("actual angle: %d\tcalculated angle:%4.2f\n"),
-                (int)i,ToDeg(yaw));
+        hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
+                            (int)i,ToDeg(yaw), ToDeg(yaw2));
     }
 }
 
@@ -110,6 +149,26 @@ static void test_euler(enum Rotation rotation, float roll, float pitch, float ya
     }
 }
 
+static void test_rotate_inverse(void)
+{
+    hal.console->println("\nrotate inverse test(Vector (1,1,1)):");
+    Vector3f vec(1.0f,1.0f,1.0f), cmp_vec(1.0f,1.0f,1.0f);
+    for (enum Rotation r=ROTATION_NONE; 
+         r<ROTATION_MAX;
+         r = (enum Rotation)((uint8_t)r+1)) {
+        hal.console->printf("\nROTATION(%d) ",r);
+        vec.rotate(r);
+        print_vector(vec);
+
+        hal.console->printf("INV_ROTATION(%d)",r);
+        vec.rotate_inverse(r);
+        print_vector(vec);
+        if((vec - cmp_vec).length() > 1e-5) {
+            hal.console->printf("Rotation Test Failed!!! %.8f\n",(vec - cmp_vec).length());
+            return;
+        }
+    }
+}
 static void test_eulers(void)
 {
     hal.console->println("euler tests");
@@ -151,7 +210,7 @@ static void test_eulers(void)
     test_euler(ROTATION_ROLL_270_PITCH_270,270,270,   0);    
     test_euler(ROTATION_ROLL_90_PITCH_180_YAW_90, 90, 180,  90);    
     test_euler(ROTATION_ROLL_90_YAW_270,   90,   0, 270);
-    test_euler(ROTATION_YAW_293_PITCH_68_ROLL_90,90,68.8,293.3);
+    test_euler(ROTATION_ROLL_90_PITCH_68_YAW_293,90,68.8,293.3);
 }
 
 static bool have_rotation(const Matrix3f &m)
@@ -195,6 +254,7 @@ void setup(void)
     test_rotation_accuracy();
     test_eulers();
     missing_rotations();
+    test_rotate_inverse();
     hal.console->println("rotation unit tests done\n");
 }
 

@@ -3,20 +3,16 @@
   dummy backend for HIL (and SITL). This doesn't actually need to do
   any work, as setHIL() is in the frontend
  */
+#pragma once
 
-#ifndef __AP_BARO_HIL_H__
-#define __AP_BARO_HIL_H__
-
-#include "AP_Baro.h"
+#include "AP_Baro_Backend.h"
 
 class AP_Baro_HIL : public AP_Baro_Backend
 {
 public:
     AP_Baro_HIL(AP_Baro &baro);
-    void update() {}
+    void update(void);
 
 private:
     uint8_t _instance;
 };
-
-#endif //  __AP_BARO_HIL_H__

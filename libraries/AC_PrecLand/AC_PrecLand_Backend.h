@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef __AC_PRECLAND_BACKEND_H__
-#define __AC_PRECLAND_BACKEND_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
@@ -11,7 +10,6 @@
 class AC_PrecLand_Backend
 {
 public:
-
     // Constructor
     AC_PrecLand_Backend(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state) :
         _frontend(frontend),
@@ -20,25 +18,26 @@ public:
     // destructor
     virtual ~AC_PrecLand_Backend() {}
 
-    // init - perform any required initialisation of backend controller
+    // perform any required initialisation of backend
     virtual void init() = 0;
 
-    // update - give chance to driver to get updates from sensor
-    //  returns true if new data available
-    virtual bool update() = 0;
+    // retrieve updates from sensor
+    virtual void update() = 0;
 
-    // get_angle_to_target - returns body frame angles (in radians) to target
-    //  returns true if angles are available, false if not (i.e. no target)
-    //  x_angle_rad : body-frame roll direction, positive = target is to right (looking down)
-    //  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
-    virtual bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad) = 0;
-
-    // handle_msg - parses a mavlink message from the companion computer
+    // provides a unit vector towards the target in body frame
+    //  returns same as have_los_meas()
+    virtual bool get_los_body(Vector3f& dir_body) = 0;
+    
+    // returns system time in milliseconds of last los measurement
+    virtual uint32_t los_meas_time_ms() = 0;
+    
+    // return true if there is a valid los measurement available
+    virtual bool have_los_meas() = 0;
+    
+    // parses a mavlink message from the companion computer
     virtual void handle_msg(mavlink_message_t* msg) = 0;
 
 protected:
-
     const AC_PrecLand&  _frontend;          // reference to precision landing front end
     AC_PrecLand::precland_state &_state;    // reference to this instances state
 };
-#endif	// __AC_PRECLAND_BACKEND_H__

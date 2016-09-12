@@ -15,10 +15,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "Buzzer.h"
 
 #include <AP_HAL/AP_HAL.h>
 
-#include "Buzzer.h"
 #include "AP_Notify.h"
 
 extern const AP_HAL::HAL& hal;
@@ -34,7 +34,7 @@ bool Buzzer::init()
     hal.gpio->pinMode(BUZZER_PIN, HAL_GPIO_OUTPUT);
     on(false);
 
-    // set initial boot states. This prevents us issueing a arming
+    // set initial boot states. This prevents us issuing a arming
     // warning in plane and rover on every boot
     _flags.armed = AP_Notify::flags.armed;
     _flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
@@ -97,11 +97,11 @@ void Buzzer::update()
             case ARMING_BUZZ:
                 // record start time
                 if (_pattern_counter == 1) {
-                    _arming_buzz_start_ms = hal.scheduler->millis();
+                    _arming_buzz_start_ms = AP_HAL::millis();
                     on(true);
                 } else {
                     // turn off buzzer after 3 seconds
-                    if (hal.scheduler->millis() - _arming_buzz_start_ms >= BUZZER_ARMING_BUZZ_MS) {
+                    if (AP_HAL::millis() - _arming_buzz_start_ms >= BUZZER_ARMING_BUZZ_MS) {
                         _arming_buzz_start_ms = 0;
                         on(false);
                         _pattern = NONE;
@@ -183,6 +183,11 @@ void Buzzer::update()
             play_pattern(EKF_BAD);
         }
         return;
+    }
+
+    // if vehicle lost was enabled, starting beep
+    if (AP_Notify::flags.vehicle_lost) {
+        play_pattern(DOUBLE_BUZZ);
     }
 
     // if battery failsafe constantly single buzz

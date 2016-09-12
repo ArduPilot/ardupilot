@@ -1,15 +1,13 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
 /// @file	AC_PID.h
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 
-#ifndef __AC_PID_H__
-#define __AC_PID_H__
-
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 #include <DataFlash/DataFlash.h>
 
 #define AC_PID_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
@@ -59,9 +57,9 @@ public:
     void operator() (float p, float i, float d, float imaxval, float input_filt_hz, float dt );
 
     // get accessors
-    float       kP() const { return _kp.get(); }
-    float       kI() const { return _ki.get(); }
-    float       kD() const { return _kd.get(); }
+    AP_Float   &kP() { return _kp; }
+    AP_Float   &kI() { return _ki; }
+    AP_Float   &kD() { return _kd; }
     float       imax() const { return _imax.get(); }
     float       filt_hz() const { return _filt_hz.get(); }
     float       get_filt_alpha() const;
@@ -106,5 +104,3 @@ protected:
 
     DataFlash_Class::PID_Info        _pid_info;
 };
-
-#endif // __AC_PID_H__

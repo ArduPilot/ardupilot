@@ -6,7 +6,6 @@ nice fgfs \
     --native-fdm=socket,in,10,,5503,udp \
     --fdm=external \
     --aircraft=arducopter \
-    --control=mouse \
     --fg-aircraft="$AUTOTESTDIR/aircraft" \
     --airport=YKRY \
     --geometry=650x550 \

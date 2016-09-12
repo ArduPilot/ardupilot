@@ -17,11 +17,10 @@
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
-LinuxGPIO_BBB::LinuxGPIO_BBB()
+GPIO_BBB::GPIO_BBB()
 {}
 
-void LinuxGPIO_BBB::init()
+void GPIO_BBB::init()
 {
 #if LINUX_GPIO_NUM_BANKS == 4
     int mem_fd;
@@ -32,7 +31,7 @@ void LinuxGPIO_BBB::init()
     uint8_t bank_enable[3] = { 5, 65, 105 };
     int export_fd = open("/sys/class/gpio/export", O_WRONLY);
     if (export_fd == -1) {
-        hal.scheduler->panic("unable to open /sys/class/gpio/export");
+        AP_HAL::panic("unable to open /sys/class/gpio/export");
     }
     for (uint8_t i=0; i<3; i++) {
         dprintf(export_fd, "%u\n", (unsigned)bank_enable[i]);
@@ -51,7 +50,7 @@ void LinuxGPIO_BBB::init()
     for (uint8_t i=0; i<LINUX_GPIO_NUM_BANKS; i++) {
         gpio_bank[i].base = (volatile unsigned *)mmap(0, GPIO_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, offsets[i]);
         if ((char *)gpio_bank[i].base == MAP_FAILED) {
-            hal.scheduler->panic("unable to map GPIO bank");
+            AP_HAL::panic("unable to map GPIO bank");
         }
         gpio_bank[i].oe = gpio_bank[i].base + GPIO_OE;
         gpio_bank[i].in = gpio_bank[i].base + GPIO_IN;
@@ -62,7 +61,7 @@ void LinuxGPIO_BBB::init()
 #endif // LINUX_GPIO_NUM_BANKS
 }
 
-void LinuxGPIO_BBB::pinMode(uint8_t pin, uint8_t output)
+void GPIO_BBB::pinMode(uint8_t pin, uint8_t output)
 {
     uint8_t bank = pin/32;
     uint8_t bankpin = pin & 0x1F;
@@ -76,13 +75,13 @@ void LinuxGPIO_BBB::pinMode(uint8_t pin, uint8_t output)
     }
 }
 
-int8_t LinuxGPIO_BBB::analogPinToDigitalPin(uint8_t pin)
+int8_t GPIO_BBB::analogPinToDigitalPin(uint8_t pin)
 {
     return -1;
 }
 
 
-uint8_t LinuxGPIO_BBB::read(uint8_t pin) {
+uint8_t GPIO_BBB::read(uint8_t pin) {
 
     uint8_t bank = pin/32;
     uint8_t bankpin = pin & 0x1F;
@@ -93,7 +92,7 @@ uint8_t LinuxGPIO_BBB::read(uint8_t pin) {
 
 }
 
-void LinuxGPIO_BBB::write(uint8_t pin, uint8_t value)
+void GPIO_BBB::write(uint8_t pin, uint8_t value)
 {
     uint8_t bank = pin/32;
     uint8_t bankpin = pin & 0x1F;
@@ -107,23 +106,23 @@ void LinuxGPIO_BBB::write(uint8_t pin, uint8_t value)
     }
 }
 
-void LinuxGPIO_BBB::toggle(uint8_t pin)
+void GPIO_BBB::toggle(uint8_t pin)
 {
     write(pin, !read(pin));
 }
 
 /* Alternative interface: */
-AP_HAL::DigitalSource* LinuxGPIO_BBB::channel(uint16_t n) {
-    return new LinuxDigitalSource(n);
+AP_HAL::DigitalSource* GPIO_BBB::channel(uint16_t n) {
+    return new DigitalSource(n);
 }
 
 /* Interrupt interface: */
-bool LinuxGPIO_BBB::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
+bool GPIO_BBB::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
 {
     return true;
 }
 
-bool LinuxGPIO_BBB::usb_connected(void)
+bool GPIO_BBB::usb_connected(void)
 {
     return false;
 }

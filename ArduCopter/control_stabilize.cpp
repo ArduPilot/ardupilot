@@ -3,17 +3,19 @@
 #include "Copter.h"
 
 /*
- * control_stabilize.pde - init and run calls for stabilize flight mode
+ * Init and run calls for stabilize flight mode
  */
 
 // stabilize_init - initialise stabilize controller
 bool Copter::stabilize_init(bool ignore_checks)
 {
+    // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
+    if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (get_pilot_desired_throttle(channel_throttle->get_control_in()) > get_non_takeoff_throttle())) {
+        return false;
+    }
     // set target altitude to zero for reporting
-    // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
     pos_control.set_alt_target(0);
 
-    // stabilize should never be made to fail
     return true;
 }
 
@@ -23,33 +25,35 @@ void Copter::stabilize_run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate;
-    int16_t pilot_throttle_scaled;
+    float pilot_throttle_scaled;
 
-    // if not armed or throttle at zero, set throttle to zero and exit immediately
-    if(!motors.armed() || ap.throttle_zero) {
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed() || ap.throttle_zero || !motors.get_interlock()) {
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        // slow start if landed
-        if (ap.land_complete) {
-            motors.slow_start(true);
-        }
         return;
     }
+
+    // clear landing flag
+    set_land_complete(false);
+
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
-    get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, aparm.angle_max);
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->control_in);
+    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     // call attitude controller
-    attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // body-frame rate controller is run directly from 100hz loop
 

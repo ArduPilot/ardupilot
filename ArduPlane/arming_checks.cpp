@@ -4,13 +4,13 @@
  */
 #include "Plane.h"
 
-const AP_Param::GroupInfo AP_Arming_Plane::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
     // variables from parent vehicle
     AP_NESTEDGROUPINFO(AP_Arming, 0),
 
     // @Param: RUDDER
     // @DisplayName: Rudder Arming
-    // @Description: Control arm/disarm by rudder input. When enabled arming is done with right rudder, disarming with left rudder. Rudder arming only works in manual throttle modes with throttle at zero
+    // @Description: Control arm/disarm by rudder input. When enabled arming is done with right rudder, disarming with left rudder. Rudder arming only works in manual throttle modes with throttle at zero +- deadzone (RCx_DZ)
     // @Values: 0:Disabled,1:ArmingOnly,2:ArmOrDisarm
     // @User: Advanced
     AP_GROUPINFO("RUDDER",       3,     AP_Arming_Plane,  rudder_arming_value,     ARMING_RUDDER_ARMONLY),
@@ -30,23 +30,23 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
     // Check airspeed sensor
     ret &= AP_Arming::airspeed_checks(report);
 
-    if (plane.g.roll_limit_cd < 300) {
+    if (plane.aparm.roll_limit_cd < 300) {
         if (report) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: LIM_ROLL_CD too small (%u)"), plane.g.roll_limit_cd);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: LIM_ROLL_CD too small (%u)", plane.aparm.roll_limit_cd);
         }
         ret = false;        
     }
 
     if (plane.aparm.pitch_limit_max_cd < 300) {
         if (report) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: LIM_PITCH_MAX too small (%u)"), plane.aparm.pitch_limit_max_cd);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: LIM_PITCH_MAX too small (%u)", plane.aparm.pitch_limit_max_cd);
         }
         ret = false;        
     }
 
     if (plane.aparm.pitch_limit_min_cd > -300) {
         if (report) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: LIM_PITCH_MIN too large (%u)"), plane.aparm.pitch_limit_min_cd);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: LIM_PITCH_MIN too large (%u)", plane.aparm.pitch_limit_min_cd);
         }
         ret = false;        
     }
@@ -54,12 +54,44 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
     if (plane.channel_throttle->get_reverse() && 
         plane.g.throttle_fs_enabled &&
         plane.g.throttle_fs_value < 
-        plane.channel_throttle->radio_max) {
+        plane.channel_throttle->get_radio_max()) {
         if (report) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: invalid THR_FS_VALUE for rev throttle"));        
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Invalid THR_FS_VALUE for rev throttle");
         }
         ret = false;
     }
+
+    if (plane.quadplane.available() && plane.scheduler.get_loop_rate_hz() < 100) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: quadplane needs SCHED_LOOP_RATE > 100");
+        }
+        ret = false;
+    }
+
+    if (plane.control_mode == AUTO && plane.mission.num_commands() <= 1) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: No mission loaded");
+        }
+        ret = false;
+    }
+
+    // check adsb avoidance failsafe
+    if (plane.failsafe.adsb) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: ADSB threat detected");
+        }
+        ret = false;
+    }
+
+#if HAVE_PX4_MIXER
+    if (plane.last_mixer_crc == -1) {
+        if (report) {
+            // if you ever get this error, a reboot is recommended.
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: Mixer error");
+        }
+        ret = false;
+    }
+#endif // CONFIG_HAL_BOARD
 
     return ret;
 }
@@ -78,9 +110,9 @@ bool AP_Arming_Plane::ins_checks(bool report)
             if (report) {
                 const char *reason = ahrs.prearm_failure_reason();
                 if (reason) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: %s"), reason);
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
                 } else {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: AHRS not healthy"));
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: AHRS not healthy");
                 }
             }
             return false;
