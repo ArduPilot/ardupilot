@@ -102,27 +102,28 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
         return false;
     }
 
-    // send a request message to update register
+    // send a request message for Modbus function 4
     if (send_request() < 0) {
         return false;
     }
 
     uint32_t start_ms = AP_HAL::millis();
-	while (!uart->available())
-	{
-		// wait up to 200ms
-		if (AP_HAL::millis() - start_ms > 200) {
-			return false;
-		}
-	}
+    while (!uart->available())
+    {
+        // wait up to 200ms
+        if (AP_HAL::millis() - start_ms > 200) {
+            return false;
+        }
+    }
 
-    // parse a response message, set distance and amplitude to detections
+    // parse a response message, set detections and sum_distance
     if (parse_response() < 0) {
         return false;
     }
 
+    // calculate average distance
     reading_cm = sum_distance / number_detections;
-gcs_send_text_fmt(MAV_SEVERITY_DEBUG, "LeddarOne: %d cm\n", reading_cm);
+
     return true;
 }
 
@@ -141,7 +142,7 @@ void AP_RangeFinder_LeddarOne::update(void)
 }
 
 /*
-   CRC16 calculate
+   CRC16
 */
 bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck)
 {
@@ -165,11 +166,11 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
 }
 
 /*
-   send a request message to execute ModBus function
+   send a request message to execute ModBus function 0x04
  */
 int8_t AP_RangeFinder_LeddarOne::send_request(void)
 {
-    uint8_t data_buffer[19] = {0};
+    uint8_t data_buffer[10] = {0};
     uint8_t i = 0;
 
     int32_t nbytes = uart->available();
@@ -178,7 +179,7 @@ int8_t AP_RangeFinder_LeddarOne::send_request(void)
     while (nbytes-- > 0) {
         uart->read();
         if (++i > 250) {
-        	return LEDDARONE_ERR_SERIAL_PORT;
+            return LEDDARONE_ERR_SERIAL_PORT;
         }
     }
 
@@ -193,7 +194,7 @@ int8_t AP_RangeFinder_LeddarOne::send_request(void)
     // CRC16
     CRC16(data_buffer, 6, false);
 
-    // write buffer data with CRC16 bit
+    // write buffer data with CRC16 bits
     for (i=0; i<8; i++) {
         uart->write(data_buffer[i]);
     }
@@ -203,44 +204,37 @@ int8_t AP_RangeFinder_LeddarOne::send_request(void)
 }
 
  /*
-    parse a response message from ModBus
+    parse a response message from Modbus
   */
 int8_t AP_RangeFinder_LeddarOne::parse_response(void)
 {
     uint8_t data_buffer[25] = {0};
     uint32_t start_ms = AP_HAL::millis();
     uint32_t nbytes = 0;
-    uint8_t i = 0;
     uint32_t len =0;
+    uint8_t i = 0;
     uint8_t index_offset = 11;
 
     // read serial
     while (AP_HAL::millis() - start_ms < 10) {
         nbytes = uart->available();
-
         if (len == 25 && nbytes == 0) {
-        	break;
+            break;
         } else {
             for (i=len; i<nbytes+len; i++) {
-            	if (i >= 25) {
-    GCS_MAVLINK::send_statustext(MAV_SEVERITY_DEBUG, 0xFF, "LeddarOne: BAD_RESPONSE");
-            	    	return LEDDARONE_ERR_BAD_RESPONSE;
-            	}
+                if (i >= 25) {
+                    return LEDDARONE_ERR_BAD_RESPONSE;
+                }
                 data_buffer[i] = uart->read();
             }
-
             start_ms = AP_HAL::millis();
             len += nbytes;
         }
     }
 
-gcs_send_text_fmt(MAV_SEVERITY_DEBUG, "LeddarOne: data length %d", len);
-
-
     // CRC16
     if (!CRC16(data_buffer, len-2, true)) {
-GCS_MAVLINK::send_statustext(MAV_SEVERITY_DEBUG, 0xFF, "LeddarOne: BAD_CRC");
-    	return LEDDARONE_ERR_BAD_CRC;
+        return LEDDARONE_ERR_BAD_CRC;
     }
 
     // number of detections
@@ -248,28 +242,17 @@ GCS_MAVLINK::send_statustext(MAV_SEVERITY_DEBUG, 0xFF, "LeddarOne: BAD_CRC");
 
     // if the number of detection is over , it is false
     if (number_detections > (sizeof(detections) / sizeof(detections[0]))) {
-GCS_MAVLINK::send_statustext(MAV_SEVERITY_DEBUG, 0xFF, "LeddarOne: NUMBER_DETECTIONS");
-    	return LEDDARONE_ERR_NUMBER_DETECTIONS;
+        return LEDDARONE_ERR_NUMBER_DETECTIONS;
     }
 
     memset(detections, 0, sizeof(detections));
     sum_distance = 0;
     for (i=0; i<number_detections; i++) {
-        detections[i] =  (((uint16_t)data_buffer[index_offset])*256 + data_buffer[index_offset+1])/10;
+        // mm to cm
+        detections[i] =  (((uint16_t)data_buffer[index_offset])*256 + data_buffer[index_offset+1]) / 10;
         sum_distance += detections[i];
         index_offset += 4;
     }
 
     return number_detections;
 }
-
-void AP_RangeFinder_LeddarOne::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
-{
-    char str[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    va_end(arg_list);
-    hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
-    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
-}
-

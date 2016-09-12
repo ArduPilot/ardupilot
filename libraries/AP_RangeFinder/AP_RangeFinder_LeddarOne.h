@@ -5,7 +5,7 @@
 #include "RangeFinder_Backend.h"
 #include <GCS_MAVLink/GCS.h>
 
-// default slabe address
+// default slave address
 #define LEDDARONE_DEFAULT_ADDRESS 0x01
 
 // error codes
@@ -49,9 +49,4 @@ private:
     uint16_t detections[3];
     uint8_t number_detections = 0;
     uint32_t sum_distance = 0;
-
-
-    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
-
-
 };
