@@ -88,6 +88,9 @@ float           safe_asin(float v);
 // a varient of sqrt() that always gives a valid answer.
 float           safe_sqrt(float v);
 
+// matrix algebra
+bool inverse(float x[], float y[], uint16_t dim);
+
 #if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
 // rotations. This is used to allow us to add an overall board
