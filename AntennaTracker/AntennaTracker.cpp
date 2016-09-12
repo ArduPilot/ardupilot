@@ -3,7 +3,7 @@
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
  
-   Please contribute your ideas! See http://dev.ardupilot.com for details
+   Please contribute your ideas! See http://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
  */
 
 #include "Tracker.h"
+#include "version.h"
 
 #define SCHED_TASK(func) FUNCTOR_BIND(&tracker, &Tracker::func, void)
 
@@ -40,10 +41,14 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(gcs_data_stream_send),   1,   3000 },
     { SCHED_TASK(compass_accumulate),     1,   1500 },
     { SCHED_TASK(barometer_accumulate),   1,    900 },
+    { SCHED_TASK(ten_hz_logging_loop),    5,    300 },
+    { SCHED_TASK(dataflash_periodic),     1,    300 },
     { SCHED_TASK(update_notify),          1,    100 },
     { SCHED_TASK(check_usb_mux),          5,    300 },
     { SCHED_TASK(gcs_retry_deferred),     1,   1000 },
-    { SCHED_TASK(one_second_loop),       50,   3900 }
+    { SCHED_TASK(one_second_loop),       50,   3900 },
+    { SCHED_TASK(compass_cal_update),     1,    100 },
+    { SCHED_TASK(accel_cal_update),       5,    100 }
 };
 
 /**
@@ -58,8 +63,8 @@ void Tracker::setup()
     notify.init(false);
 
     // antenna tracker does not use pre-arm checks or battery failsafe
-    AP_Notify::flags.pre_arm_check = true;
-    AP_Notify::flags.pre_arm_gps_check = true;
+    AP_Notify::flags.pre_arm_check = false;
+    AP_Notify::flags.pre_arm_gps_check = false;
     AP_Notify::flags.failsafe_battery = false;
 
     init_tracker();
@@ -80,6 +85,11 @@ void Tracker::loop()
     scheduler.tick();
 
     scheduler.run(19900UL);
+}
+
+void Tracker::dataflash_periodic(void)
+{
+    //DataFlash.periodic_tasks();
 }
 
 void Tracker::one_second_loop()
@@ -106,14 +116,26 @@ void Tracker::one_second_loop()
     }
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-// needed for APM1 inertialsensor driver
-AP_ADC_ADS7844 apm1_adc;
-#endif
+void Tracker::ten_hz_logging_loop()
+{
+    if (should_log(MASK_LOG_IMU)) {
+        //DataFlash.Log_Write_IMU(ins);
+    }
+    if (should_log(MASK_LOG_ATTITUDE)) {
+        Log_Write_Attitude();
+    }
+    if (should_log(MASK_LOG_RCIN)) {
+        //DataFlash.Log_Write_RCIN();
+    }
+    if (should_log(MASK_LOG_RCOUT)) {
+        //DataFlash.Log_Write_RCOUT();
+    }
+}
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 Tracker::Tracker(void)
+    //: DataFlash{FIRMWARE_STRING}
 {
     memset(&current_loc, 0, sizeof(current_loc));
     memset(&vehicle, 0, sizeof(vehicle));
@@ -121,9 +143,6 @@ Tracker::Tracker(void)
 
 Tracker tracker;
 
-/*
-  compatibility with old pde style build
- */
 void setup(void);
 void loop(void);
 

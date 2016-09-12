@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Tracker.h"
+#include "version.h"
 
 // mission storage
 static const StorageAccess wp_storage(StorageManager::StorageMission);
@@ -17,6 +18,7 @@ static void mavlink_delay_cb_static()
 
 void Tracker::init_tracker()
 {
+
     // initialise console serial port
     serial_manager.init_console();
 
@@ -27,15 +29,12 @@ void Tracker::init_tracker()
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();
 
-    BoardConfig.init();
+    //GCS_MAVLINK::set_dataflash(&DataFlash);
 
     // initialise serial ports
     serial_manager.init();
 
-    // init baro before we start the GCS, so that the CLI baro test works
-    barometer.init();
-
-    // init the GCS and start snooping for vehicle data
+    // setup first port early to allow BoardConfig to report errors
     gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console, 0);
     gcs[0].set_snoop(mavlink_snoop_static);
 
@@ -43,32 +42,31 @@ void Tracker::init_tracker()
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
+    BoardConfig.init();
+
+    // init baro before we start the GCS, so that the CLI baro test works
+    barometer.init();
+
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
     usb_connected = true;
     check_usb_mux();
 
-    // setup serial port for telem1 and start snooping for vehicle data
-    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
-    gcs[1].set_snoop(mavlink_snoop_static);
-
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    // setup serial port for telem2 and start snooping for vehicle data
-    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
-    gcs[2].set_snoop(mavlink_snoop_static);
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS > 3
-    // setup serial port for fourth telemetry port (not used by default) and start snooping for vehicle data
-    gcs[3].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 2);
-    gcs[3].set_snoop(mavlink_snoop_static);
-#endif
+    // setup telem slots with serial ports
+    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+        gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
+        gcs[i].set_snoop(mavlink_snoop_static);
+    }
 
     mavlink_system.sysid = g.sysid_this_mav;
 
+#if LOGGING_ENABLED == ENABLED
+    log_init();
+#endif
+
     if (g.compass_enabled==true) {
         if (!compass.init() || !compass.read()) {
-            hal.console->println_P(PSTR("Compass initialisation failed!"));
+            hal.console->printf_P(PSTR("Compass initialisation failed!\n"));
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
@@ -79,12 +77,14 @@ void Tracker::init_tracker()
     gps.init(NULL, serial_manager);
 
     ahrs.init();
+
     ahrs.set_fly_forward(false);
 
-    ins.init(AP_InertialSensor::WARM_START, ins_sample_rate);
+    ins.init(AP_InertialSensor::COLD_START, ins_sample_rate);
+
     ahrs.reset();
 
-    init_barometer();
+    init_barometer(true);
 
     // set serial ports non-blocking
     serial_manager.set_blocking_writes_all(false);
@@ -94,8 +94,13 @@ void Tracker::init_tracker()
 
     // use given start positions - useful for indoor testing, and
     // while waiting for GPS lock
-    current_loc.lat = g.start_latitude * 1.0e7f;
-    current_loc.lng = g.start_longitude * 1.0e7f;
+    // sanity check location
+    if (fabsf(g.start_latitude) <= 90.0f && fabsf(g.start_longitude) <= 180.0f) {
+        current_loc.lat = g.start_latitude * 1.0e7f;
+        current_loc.lng = g.start_longitude * 1.0e7f;
+    } else {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Ignoring invalid START_LATITUDE or START_LONGITUDE parameter"));
+    }
 
     // see if EEPROM has a default location as well
     if (current_loc.lat == 0 && current_loc.lng == 0) {
@@ -104,7 +109,7 @@ void Tracker::init_tracker()
 
     init_capabilities();
 
-    gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
+    gcs_send_text_P(SEVERITY_LOW,PSTR("Ready to track"));
     hal.scheduler->delay(1000); // Why????
 
     set_mode(AUTO); // tracking
@@ -115,8 +120,6 @@ void Tracker::init_tracker()
         prepare_servos();
     }
 
-    // calibrate pressure on startup by default
-    nav_status.need_altitude_calibration = true;
 }
 
 // updates the status of the notify objects
@@ -161,6 +164,7 @@ void Tracker::set_home(struct Location temp)
 {
     set_home_eeprom(temp);
     current_loc = temp;
+    //GCS_MAVLINK::send_home_all(temp);
 }
 
 void Tracker::arm_servos()
@@ -181,8 +185,8 @@ void Tracker::disarm_servos()
 void Tracker::prepare_servos()
 {
     start_time_ms = hal.scheduler->millis();
-    channel_yaw.radio_out = channel_yaw.radio_trim;
-    channel_pitch.radio_out = channel_pitch.radio_trim;
+    channel_yaw.set_radio_out(channel_yaw.get_radio_trim());
+    channel_pitch.set_radio_out(channel_pitch.get_radio_trim());
     channel_yaw.output();
     channel_pitch.output();
 }
@@ -208,6 +212,9 @@ void Tracker::set_mode(enum ControlMode mode)
         disarm_servos();
         break;
     }
+
+	// log mode change
+	//DataFlash.Log_Write_Mode(control_mode);
 }
 
 /*
@@ -236,16 +243,15 @@ void Tracker::check_usb_mux(void)
 
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
+}
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    // the APM2 has a MUX setup where the first serial port switches
-    // between USB and a TTL serial connection. When on USB we use
-    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
-    // at SERIAL1_BAUD.
-    if (usb_connected) {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console, 0);
-    } else {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink, 0);
+/*
+  should we log a message type now?
+ */
+bool Tracker::should_log(uint32_t mask)
+{
+    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
+        return false;
     }
-#endif
+    return true;
 }

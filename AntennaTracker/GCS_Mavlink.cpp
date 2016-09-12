@@ -1,6 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#include "GCS_Mavlink.h"
 
 #include "Tracker.h"
+#include "version.h"
 
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS)
@@ -101,21 +103,6 @@ void Tracker::send_location(mavlink_channel_t chan)
         ahrs.yaw_sensor);
 }
 
-void Tracker::send_radio_out(mavlink_channel_t chan)
-{
-    mavlink_msg_servo_output_raw_send(
-        chan,
-        hal.scheduler->micros(),
-        0,     // port
-        hal.rcout->read(0),
-        hal.rcout->read(1),
-        hal.rcout->read(2),
-        hal.rcout->read(3),
-        hal.rcout->read(4),
-        hal.rcout->read(5),
-        hal.rcout->read(6),
-        hal.rcout->read(7));
-}
 
 void Tracker::send_hwstatus(mavlink_channel_t chan)
 {
@@ -130,14 +117,6 @@ void Tracker::send_waypoint_request(mavlink_channel_t chan)
     gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
 }
 
-void Tracker::send_statustext(mavlink_channel_t chan)
-{
-    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
-    mavlink_msg_statustext_send(
-        chan,
-        s->severity,
-        s->text);
-}
 
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
 {
@@ -148,7 +127,7 @@ void Tracker::send_nav_controller_output(mavlink_channel_t chan)
         nav_status.bearing,
         nav_status.bearing,
         nav_status.distance,
-        nav_status.altitude_difference,
+        0,
         0,
         0);
 }
@@ -162,18 +141,18 @@ void Tracker::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command&)
+void GCS_MAVLINK_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
 }
 
-void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command&)
+void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&)
 {
     // do nothing
 }
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK::try_send_message(enum ap_message id)
+bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
 {
     switch (id) {
     case MSG_HEARTBEAT:
@@ -208,12 +187,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        tracker.gcs[chan-MAVLINK_COMM_0].send_radio_in(0);
+        //tracker.gcs[chan-MAVLINK_COMM_0].send_radio_in(0);
         break;
 
     case MSG_RADIO_OUT:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        tracker.send_radio_out(chan);
+        //tracker.send_radio_out(chan);
         break;
 
     case MSG_RAW_IMU1:
@@ -243,7 +222,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        tracker.send_statustext(chan);
+        //tracker.send_statustext(chan);
         break;
 
     case MSG_AHRS:
@@ -376,39 +355,8 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-// see if we should send a stream now. Called at 50Hz
-bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
-{
-    if (stream_num >= NUM_STREAMS) {
-        return false;
-    }
-    float rate = (uint8_t)streamRates[stream_num].get();
-
-    // send at a much lower rate during parameter sends
-    if (_queued_parameter != NULL) {
-        rate *= 0.25f;
-    }
-
-    if (rate <= 0) {
-        return false;
-    }
-
-    if (stream_ticks[stream_num] == 0) {
-        // we're triggering now, setup the next trigger point
-        if (rate > 50) {
-            rate = 50;
-        }
-        stream_ticks[stream_num] = (50 / rate) -1 + stream_slowdown;
-        return true;
-    }
-
-    // count down at 50Hz
-    stream_ticks[stream_num]--;
-    return false;
-}
-
 void
-GCS_MAVLINK::data_stream_send(void)
+GCS_MAVLINK_Tracker::data_stream_send(void)
 {
     if (_queued_parameter != NULL) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
@@ -545,7 +493,7 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
     target_set = true;
 }
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 
@@ -604,7 +552,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 } 
                 if (is_equal(packet.param3,1.0f)) {
-                    tracker.init_barometer();
+                    tracker.init_barometer(true);
                     // zero the altitude difference on next baro update
                     tracker.nav_status.need_altitude_calibration = true;
                 }
@@ -890,7 +838,7 @@ void Tracker::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM...\n"));
     }
     in_mavlink_delay = false;
 }
