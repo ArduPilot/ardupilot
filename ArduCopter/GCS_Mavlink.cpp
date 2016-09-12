@@ -960,7 +960,10 @@ void GCS_MAVLINK_Copter::handle_change_alt_request(AP_Mission::Mission_Command &
 void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
                                         mavlink_message_t &msg)
 {
-    copter.avoidance_adsb.handle_msg(msg);
+    if (copter.g2.dev_options.get() & DevOptionADSBMAVLink) {
+        // optional handling of GLOBAL_POSITION_INT as a MAVLink based avoidance source
+        copter.avoidance_adsb.handle_msg(msg);
+    }
     GCS_MAVLINK::packetReceived(status, msg);
 }
 

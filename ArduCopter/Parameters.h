@@ -562,6 +562,9 @@ public:
     // advanced failsafe library
     AP_AdvancedFailsafe_Copter afs;
 #endif
+
+    // developer options
+    AP_Int32 dev_options;
 };
 
 extern const AP_Param::Info        var_info[];
