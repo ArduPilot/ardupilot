@@ -86,7 +86,7 @@ public:
     void        send_message(enum ap_message id);
     void        send_text(gcs_severity severity, const char *str);
     void        send_text_P(gcs_severity severity, const prog_char_t *str);
-    void        data_stream_send(void);
+    virtual void        data_stream_send(void) = 0;
     void        queued_param_send();
     void        queued_waypoint_send();
     void        set_snoop(void (*_msg_snoop)(const mavlink_message_t* msg)) {
@@ -175,16 +175,46 @@ public:
      */
     static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
 
+    // update signing timestamp on GPS lock
+    static void update_signing_timestamp(uint64_t timestamp_usec);
+
+    mavlink_channel_t           chan;
+    AP_Param *                  _queued_parameter;      ///< next parameter to
+                                                        // be sent in queue
+
+    // saveable rate of each stream
+    AP_Int16        streamRates[NUM_STREAMS];
+
+    // waypoints
+    uint16_t        waypoint_request_i; // request index
+    uint16_t        waypoint_request_last; // last request index
+    uint16_t        waypoint_dest_sysid; // where to send requests
+    uint16_t        waypoint_dest_compid; // "
+    bool            waypoint_receiving; // currently receiving
+    uint16_t        waypoint_count;
+    uint32_t        waypoint_timelast_receive; // milliseconds
+    uint32_t        waypoint_timelast_request; // milliseconds
+    const uint16_t  waypoint_receive_timeout = 8000; // milliseconds
+
+    void handle_request_data_stream(mavlink_message_t *msg, bool save);
+    void handle_param_request_list(mavlink_message_t *msg);
+    FUNCTOR_TYPEDEF(set_mode_fn, bool, uint8_t);
+    void handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode);
+    void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
+    void handle_param_request_read(mavlink_message_t *msg);
+    virtual uint32_t telem_delay() const = 0;
+
 private:
-    void        handleMessage(mavlink_message_t * msg);
+
+    float       adjust_rate_for_stream_trigger(enum streams stream_num);
+    virtual void        handleMessage(mavlink_message_t * msg) = 0;
 
     /// The stream we are communicating over
     AP_HAL::UARTDriver *_port;
 
     /// Perform queued sending operations
     ///
-    AP_Param *                  _queued_parameter;      ///< next parameter to
-                                                        // be sent in queue
+
     enum ap_var_type            _queued_parameter_type; ///< type of the next
                                                         // parameter
     AP_Param::ParamToken        _queued_parameter_token; ///AP_Param token for
@@ -212,25 +242,10 @@ private:
     uint16_t                    _parameter_count;   ///< cache of reportable
                                                     // parameters
 
-    mavlink_channel_t           chan;
     uint16_t                    packet_drops;
 
     // this allows us to detect the user wanting the CLI to start
     uint8_t        crlf_count;
-
-    // waypoints
-    uint16_t        waypoint_request_i; // request index
-    uint16_t        waypoint_request_last; // last request index
-    uint16_t        waypoint_dest_sysid; // where to send requests
-    uint16_t        waypoint_dest_compid; // "
-    bool            waypoint_receiving; // currently receiving
-    uint16_t        waypoint_count;
-    uint32_t        waypoint_timelast_receive; // milliseconds
-    uint32_t        waypoint_timelast_request; // milliseconds
-    const uint16_t  waypoint_receive_timeout; // milliseconds
-
-    // saveable rate of each stream
-    AP_Int16        streamRates[NUM_STREAMS];
 
     // number of 50Hz ticks until we next send this stream
     uint8_t         stream_ticks[NUM_STREAMS];
@@ -277,6 +292,9 @@ private:
     // bitmask of what mavlink channels are active
     static uint8_t mavlink_active;
 
+    // bitmask of what mavlink channels are streaming
+    static uint8_t chan_is_streaming;
+
     // mavlink routing object
     static MAVLink_routing routing;
 
@@ -284,10 +302,10 @@ private:
     static void (*msg_snoop)(const mavlink_message_t* msg);
 
     // vehicle specific message send function
-    bool try_send_message(enum ap_message id);
+    virtual bool try_send_message(enum ap_message id) = 0;
 
-    void handle_guided_request(AP_Mission::Mission_Command &cmd);
-    void handle_change_alt_request(AP_Mission::Mission_Command &cmd);
+    virtual void handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
+    virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
 
     void handle_log_request_list(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_request_data(mavlink_message_t *msg, DataFlash_Class &dataflash);
@@ -307,21 +325,17 @@ private:
     void handle_mission_write_partial_list(AP_Mission &mission, mavlink_message_t *msg);
     bool handle_mission_item(mavlink_message_t *msg, AP_Mission &mission);
 
-    void handle_request_data_stream(mavlink_message_t *msg, bool save);
-    void handle_param_request_list(mavlink_message_t *msg);
-    void handle_param_request_read(mavlink_message_t *msg);
-    void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
     void lock_channel(mavlink_channel_t chan, bool lock);
-    FUNCTOR_TYPEDEF(set_mode_fn, bool, uint8_t);
-    void handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode);
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
 
     void handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps);
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
+
+    static StorageAccess _signing_storage;
 };
 
 #endif // __GCS_H
