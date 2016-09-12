@@ -8,6 +8,9 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
+#include "CompassCalibrator.h"
 #include "AP_Compass_Backend.h"
 
 // compass product id
@@ -36,9 +39,13 @@
    maximum number of compass instances available on this platform. If more
    than 1 then redundent sensors may be available
  */
+//MAXIMUM COMPASS REPORTS
+#define MAX_CAL_REPORTS 10
+#define CONTINUOUS_REPORTS 0
+
 #if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define COMPASS_MAX_INSTANCES 3
-#define COMPASS_MAX_BACKEND   3   
+#define COMPASS_MAX_BACKEND   3
 #else
 #define COMPASS_MAX_INSTANCES 1
 #define COMPASS_MAX_BACKEND   1   
@@ -88,6 +95,8 @@ public:
     /// @param  offsets             Offsets to the raw mag_ values.
     ///
     void set_and_save_offsets(uint8_t i, const Vector3f &offsets);
+    void set_and_save_diagonals(uint8_t i, const Vector3f &diagonals);
+    void set_and_save_offdiagonals(uint8_t i, const Vector3f &diagonals);
 
     /// Saves the current offset x/y/z values for one or all compasses
     ///
@@ -105,6 +114,33 @@ public:
     /// Return the current field as a Vector3f
     const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
+
+    // compass calibrator interface
+    void compass_cal_update();
+    bool start_calibration(uint8_t i, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
+    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
+    bool start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
+
+    void cancel_calibration(uint8_t i);
+    void cancel_calibration_all();
+    void cancel_calibration_mask(uint8_t mask);
+
+    bool accept_calibration(uint8_t i);
+    bool accept_calibration_all();
+    bool accept_calibration_mask(uint8_t mask);
+
+    bool compass_cal_requires_reboot() { return _cal_complete_requires_reboot; }
+    bool auto_reboot() { return _compass_cal_autoreboot; }
+    uint8_t get_cal_mask() const;
+    bool is_calibrating() const;
+
+    /*
+      handle an incoming MAG_CAL command
+    */
+    uint8_t handle_mag_cal_command(const mavlink_command_long_t &packet);
+
+    void send_mag_cal_progress(mavlink_channel_t chan);
+    void send_mag_cal_report(mavlink_channel_t chan);
 
     /// Return the health of a compass
     bool healthy(uint8_t i) const { return _state[i].healthy; }
@@ -255,6 +291,14 @@ private:
     void _add_backend(AP_Compass_Backend *(detect)(Compass &));
     void _detect_backends(void);
 
+    //keep track of number of calibration reports sent
+    uint8_t _reports_sent[COMPASS_MAX_INSTANCES];
+
+    //autoreboot after compass calibration
+    bool _compass_cal_autoreboot;
+    bool _cal_complete_requires_reboot;
+    bool _cal_has_run;
+
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;
@@ -321,8 +365,12 @@ private:
         uint32_t    last_update_usec;
     } _state[COMPASS_MAX_INSTANCES];
 
+    CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];
+
     // if we want HIL only
     bool _hil_mode:1;
+
+    AP_Float _calibration_threshold;
 };
 
 #include "AP_Compass_Backend.h"
