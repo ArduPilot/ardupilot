@@ -423,6 +423,12 @@ then
     echo "oreoled started OK"
 fi
 
+# optional irlock
+if irlock start
+then
+    echo "irlock started"
+fi
+
 if [ $BOARD == FMUv2 ]
 then
   # the ramtron on FMUv2 is very fast and can handle trillions of

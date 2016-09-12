@@ -287,6 +287,9 @@ void Copter::auto_land_start()
 
     // call location specific land start function
     auto_land_start(stopping_point);
+
+    // reset flag indicating if pilot has applied roll or pitch inputs during landing
+    ap.land_repo_active = false;
 }
 
 // auto_land_start - initialises controller to implement a landing
@@ -302,6 +305,9 @@ void Copter::auto_land_start(const Vector3f& destination)
 
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
+
+    // reset flag indicating if pilot has applied roll or pitch inputs during landing
+    ap.land_repo_active = false;
 }
 
 // auto_land_run - lands in auto mode
@@ -339,6 +345,11 @@ void Copter::auto_land_run()
             // process pilot's roll and pitch input
             roll_control = channel_roll->control_in;
             pitch_control = channel_pitch->control_in;
+
+            // record if pilot has overriden roll or pitch
+            if (roll_control != 0 || pitch_control != 0) {
+                ap.land_repo_active = true;
+            }
         }
 
         // get pilot's desired yaw rate
@@ -347,6 +358,13 @@ void Copter::auto_land_run()
 
     // process roll, pitch inputs
     wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
+
+#if PRECISION_LANDING == ENABLED
+    // run precision landing
+    if (!ap.land_repo_active) {
+        wp_nav.shift_loiter_target(precland.get_target_shift(wp_nav.get_loiter_target()));
+    }
+#endif
 
     // run loiter controller
     wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);

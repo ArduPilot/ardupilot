@@ -438,6 +438,49 @@ void Copter::Log_Write_MotBatt()
 #endif
 }
 
+// precision landing logging
+struct PACKED log_Precland {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t healthy;
+    float bf_angle_x;
+    float bf_angle_y;
+    float ef_angle_x;
+    float ef_angle_y;
+    float size_rad;
+    float pos_x;
+    float pos_y;
+};
+
+// Write an optical flow packet
+//static void Log_Write_Precland()
+void Copter::Log_Write_Precland()
+{
+ #if PRECISION_LANDING == ENABLED
+  // exit immediately if not enabled
+    if (!precland.enabled()) {
+        return;
+   }
+
+    const Vector2f &bf_angle = precland.last_bf_angle_to_target();
+    const Vector2f &ef_angle = precland.last_ef_angle_to_target();
+    const Vector3f &target_pos_ofs = precland.last_target_pos_offset();
+   struct log_Precland pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
+        time_ms         : hal.scheduler->millis(),
+        healthy         : precland.healthy(),
+        bf_angle_x      : degrees(bf_angle.x),
+        bf_angle_y      : degrees(bf_angle.y),
+        ef_angle_x      : degrees(ef_angle.x),
+        ef_angle_y      : degrees(ef_angle.y),
+        size_rad        : precland.last_size_rad(),
+        pos_x           : target_pos_ofs.x,
+        pos_y           : target_pos_ofs.y
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+ #endif     // PRECISION_LANDING == ENABLED
+}
+
 struct PACKED log_Startup {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -693,6 +736,8 @@ const struct LogStructure Copter::log_structure[] PROGMEM = {
       "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
+    { LOG_PRECLAND_MSG, sizeof(log_Precland),
+      "PL",   "IBfffffff",   "TimeMS,Heal,bX,bY,eX,eY,sz,pX,pY" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
