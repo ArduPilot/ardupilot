@@ -276,6 +276,11 @@ enum LandStateType {
     LandStateType_Descending = 1
 };
 
+// bit options for DEV_OPTIONS parameter
+enum DevOptions {
+    DevOptionADSBMAVLink = 1,
+};
+
 //  Logging parameters
 #define TYPE_AIRSTART_MSG               0x00
 #define TYPE_GROUNDSTART_MSG            0x01

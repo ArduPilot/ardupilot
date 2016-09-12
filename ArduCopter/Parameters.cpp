@@ -1000,6 +1000,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
     AP_SUBGROUPINFO(afs, "AFS_", 6, ParametersG2, AP_AdvancedFailsafe),
 #endif
+
+    // @Param: DEV_OPTIONS
+    // @DisplayName: Development options
+    // @Description: Bitmask of developer options. The meanings of the bit fields in this parameter may vary at any time. Developers should check the source code for current meaning
+    // @Bitmask: 0:ADSBMavlinkProcessing
+    // @User: Advanced
+    AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
     
     AP_GROUPEND
 };
