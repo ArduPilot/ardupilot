@@ -15,6 +15,16 @@
 #define AC_AVOID_STOP_AT_FENCE          1       // stop at fence
 
 /*
+ * A constraint on a 2 dimensional vector v.
+ * Represents
+ *    v * A <= c
+ */
+struct constraint {
+    Vector2f A;
+    float c;
+};
+
+/*
  * This class prevents the vehicle from leaving a polygon fence in
  * 2 dimensions by limiting velocity (adjust_velocity).
  */
@@ -37,30 +47,62 @@ public:
 private:
 
     /*
-     * Adjusts the desired velocity for the circular fence.
+     * Returns true if the regular polygon fence (centered at home)
+     * adjustment should be run.
      */
-    void adjust_velocity_circle(const float kP, const float accel_cmss, Vector2f &desired_vel);
+    bool can_adjust_reg_poly();
 
     /*
-     * Adjusts the desired velocity for the polygon fence.
+     * Returns true if the polygon fence adjustment should be run.
+     */
+    bool can_adjust_poly();
+
+    /*
+     * Computes velocity constraints for the regular polygon fence centered at home.
      *
-     * This function is supposed to solve the following optimization problem.
-     * Find the vector safe_vel that is closest to desired_vel,
-     * subject to the following constraints for each edge:
+     * In particular, for each edge:
      * Let P be the closest point to the current position of the vehicle.
      * Let U be the unit vector in the direction of P from the current position.
      * Let D be the distance from the current position to P.
+     * safe_vel must satisfy
      *
-     *    safe_vel must satisfy safe_vel * P <= max_speed(D)
+     *       safe_vel * U <= max_speed(D)
      */
-    void adjust_velocity_poly(const float kP, const float accel_cmss, Vector2f &desired_vel);
+    void velocity_constraints_reg_poly(const float kP, const float accel_cmss, const uint16_t num_points,
+                                       const float radius, constraint* constraints, uint16_t& free_index);
+
+    /*
+     * Computes velocity constraints for the polygon fence.
+     *
+     * In particular, for each edge:
+     * Let P be the closest point to the current position of the vehicle.
+     * Let U be the unit vector in the direction of P from the current position.
+     * Let D be the distance from the current position to P.
+     * safe_vel must satisfy
+     *
+     *       safe_vel * U <= max_speed(D)
+     */
+    void velocity_constraints_poly(const float kP, const float accel_cmss, const Vector2f* boundary,
+                                   const uint16_t num_points, constraint* constraints, uint16_t& free_index);
+
+    /*
+     * Computes the velocity constraint for the given edge. In particular,
+     * Let P be the closest point to the current position of the vehicle.
+     * Let U be the unit vector in the direction of P from the current position.
+     * Let D be the distance from the current position to P.
+     * The velocity must satisfy
+     *
+     *       velocity * U <= max_speed(D)
+     */
+    constraint velocity_constraint_edge(const float kP, const float accel_cmss, const Vector2f start, const Vector2f end,
+                                        const Vector2f position_xy);
 
     /*
      * Adjusts the velocity to satisfy the given set of constraints. The ith constraint is
-     *    desired_vel * constraint_directions[i] <= max_speeds[i]
+     *    desired_vel * constraints[i].A <= constraints[i].c
      */
-    void adjust_velocity_constraints(const float kP, const float accel_cmss, const Vector2f* constraint_directions, const float* max_speeds, const uint16_t num_constraints, Vector2f& desired_vel);
-
+    void adjust_velocity_constraints(const float kP, const float accel_cmss, const constraint* constraints,
+                                     const uint16_t num_constraints, Vector2f& desired_vel);
 
     /*
      * Compute the intersection of the following two lines:
@@ -81,7 +123,8 @@ private:
      * Uses velocity adjustment idea from Randy's second email on this thread:
      * https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
      */
-    bool limit_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel, const Vector2f limit_direction, const float max_speed) const;
+    bool limit_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel, const Vector2f limit_direction,
+                        const float max_speed) const;
 
     /*
      * Gets the current position, relative to home (not relative to EKF origin)
@@ -104,6 +147,21 @@ private:
      */
     float get_margin() const {
         return _fence.get_margin() * 100.0f;
+    }
+
+    /*
+     * Gets the fence radius in cm
+     */
+    float get_radius() const {
+        return _fence.get_radius() * 100.0f;
+    }
+
+    /*
+     * Returns the number of edges/vertices of the regular polygon
+     * centered at the origin.
+     */
+    uint16_t get_num_points_reg_poly() const {
+        return _fence.get_num_pts_circle();
     }
 
     // external references

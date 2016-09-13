@@ -61,6 +61,13 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TOTAL",       6,  AC_Fence,   _total, 0),
 
+    // @Param: PTS_CIRC
+    // @DisplayName: Number of vertices on circle
+    // @Description: Number of vertices of the regular polygon inside the circular fence
+    // @Range: 1 20
+    // @User: Standard
+    AP_GROUPINFO("PTS_CIRC",    7,  AC_Fence,   _num_pts_circle, AC_FENCE_NUM_PTS_CIRCLE_DEFAULT),
+
     AP_GROUPEND
 };
 
