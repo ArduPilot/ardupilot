@@ -48,11 +48,13 @@ Gazebo::Gazebo(const char *home_str, const char *frame_str) :
 void Gazebo::send_servos(const struct sitl_input &input)
 {
     servo_packet pkt;
-    pkt.motor_speed[0] = (input.servos[0]-1000) / 1000.0f;
-    pkt.motor_speed[1] = (input.servos[1]-1000) / 1000.0f;
-    pkt.motor_speed[2] = (input.servos[2]-1000) / 1000.0f;
-    pkt.motor_speed[3] = (input.servos[3]-1000) / 1000.0f;
-    sock.sendto(&pkt, sizeof(pkt), "127.0.0.1", 9002);
+    // should rename servo_command
+    // 16 because struct sitl_input.servos is 16 large in SIM_Aircraft.h
+    for (unsigned i = 0; i < 16; ++i)
+    {
+      pkt.motor_speed[i] = (input.servos[i]-1000) / 1000.0f;
+    }
+    sock.sendto(&pkt, sizeof(servo_packet), "127.0.0.1", 9002);
 }
 
 /*
