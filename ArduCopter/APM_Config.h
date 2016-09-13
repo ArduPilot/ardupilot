@@ -36,9 +36,9 @@
 //#define FRSKY_TELEM_ENABLED   DISABLED            // disable FRSky telemetry
 //#define ADSB_ENABLED          DISABLED            // disable ADSB support
 //#define PRECISION_LANDING     DISABLED            // disable precision landing using companion computer or IRLock sensor
+//#define SPRAYER               DISABLED            // disable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 
 // features below are disabled by default on all boards
-//#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define CAL_ALWAYS_REBOOT                         // flight controller will reboot after compass or accelerometer calibration completes
 //#define DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE   // disable mode changes from GCS during Radio failsafes.  Avoids a race condition for vehicle like Solo in which the RC and telemetry travel along the same link
 
