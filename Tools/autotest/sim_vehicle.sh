@@ -305,10 +305,15 @@ case $FRAME in
 	BUILD_TARGET="sitl"
         DEFAULTS_PATH="$autotest/default_params/copter_params.parm"
 	;;
-    Gazebo)
+    Gazebo|IrisGazebo)
 	BUILD_TARGET="sitl"
-        MODEL="$FRAME"
+        MODEL="Gazebo"
         DEFAULTS_PATH="$autotest/default_params/copter_params.parm"
+	;;
+    ZephyrGazebo)
+	BUILD_TARGET="sitl"
+        MODEL="Gazebo"
+        DEFAULTS_PATH="$autotest/default_params/gazebo-elevons.parm"
 	;;
     CRRCSim|last_letter*)
 	BUILD_TARGET="sitl"
