@@ -1129,7 +1129,7 @@ void Copter::convert_pid_parameters(void)
     // and motor libraries switch to accept inputs in -1 to +1 range instead of -4500 ~ +4500
     float pid_scaler = 1.27f;
 
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_CONFIG == QUAD_FRAME || FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME  || FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
     // Multicopter x-frame gains are 40% lower because -1 or +1 input to motors now results in maximum rotation
     if (g.frame_orientation == AP_MOTORS_X_FRAME || g.frame_orientation == AP_MOTORS_V_FRAME || g.frame_orientation == AP_MOTORS_H_FRAME) {
         pid_scaler = 0.9f;
