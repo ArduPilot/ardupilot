@@ -50,13 +50,16 @@ Compass::start_calibration(uint8_t i, bool retry, bool autosave, float delay, bo
     if (!is_calibrating() && delay > 0.5f) {
         AP_Notify::events.initiated_compass_cal = 1;
     }
-    if (i == get_primary() && _state[i].external != 0) {
-        _calibrator[i].set_tolerance(_calibration_threshold);
+    float max_fitness_primary_ext = MIN(AP_COMPASS_MAX_FITNESS_EXT, _calibration_threshold);
+
+    if (i == get_primary() || _state[i].external != 0) {
+        //use stricter fitness tolerance if the compass is primary or external
+        _calibrator[i].set_tolerance(max_fitness_primary_ext);
     } else {
-        // internal compasses or secondary compasses get twice the
-        // threshold. This is because internal compasses tend to be a
-        // lot noisier
-        _calibrator[i].set_tolerance(_calibration_threshold*2);
+        // internal compasses that are secondary compasses get twice or more per users choice
+        // This is because internal compasses tend to be a lot noisier
+        float max_fitness_int = MAX(max_fitness_primary_ext*2.0f, MIN(_int_calibration_threshold, AP_COMPASS_MAX_FITNESS_INT));
+        _calibrator[i].set_tolerance(max_fitness_int);
     }
     _calibrator[i].start(retry, autosave, delay);
     _compass_cal_autoreboot = autoreboot;

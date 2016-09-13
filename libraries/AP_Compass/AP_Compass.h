@@ -56,7 +56,8 @@
 #define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(50.0f)
 #define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
 #define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
-
+#define AP_COMPASS_MAX_FITNESS_EXT  25.0f
+#define AP_COMPASS_MAX_FITNESS_INT  50.0f
 class Compass
 {
 friend class AP_Compass_Backend;
@@ -398,4 +399,5 @@ private:
     bool _hil_mode:1;
 
     AP_Float _calibration_threshold;
+    AP_Float _int_calibration_threshold;
 };
