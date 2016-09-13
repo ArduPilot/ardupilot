@@ -207,7 +207,10 @@ void DataFlash_File::periodic_fullrate(const uint32_t now)
 uint16_t DataFlash_File::bufferspace_available()
 {
     uint16_t _head;
-    return (BUF_SPACE(_writebuf)) - critical_message_reserved_space();
+    const uint16_t space = BUF_SPACE(_writebuf);
+    const uint16_t crit = critical_message_reserved_space();
+
+    return (space > crit) ? space - crit : 0;
 }
 
 // return true for CardInserted() if we successfully initialised
