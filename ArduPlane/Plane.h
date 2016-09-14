@@ -31,7 +31,7 @@
 
 #include <math.h>
 #include <stdarg.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -97,6 +97,7 @@
 #include "defines.h"
 
 #include "Parameters.h"
+#include "GCS_Mavlink.h"
 
 #include <AP_HAL_AVR/AP_HAL_AVR.h>
 #include <AP_HAL_SITL/AP_HAL_SITL.h>
@@ -123,7 +124,7 @@ public:
  */
 class Plane {
 public:
-    friend class GCS_MAVLINK;
+    friend class GCS_MAVLINK_Plane;
     friend class Parameters;
     friend class AP_Arming_Plane;
 
@@ -238,7 +239,7 @@ private:
     // GCS selection
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Plane gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
