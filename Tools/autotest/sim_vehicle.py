@@ -329,10 +329,18 @@ _options_for_frame = {
         "waf_target": "bin/ardurover",
         "default_params_filename": "default_params/rover-skid.parm",
     },
-    # SIM
+    # SIM (use GazeboIris in place of Gazebo)
     "Gazebo": {
         "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "default_params/copter.parm",
+        "default_params_filename": "default_params/gazebo-iris.parm",
+    },
+    "GazeboIris": {
+        "waf_target": "bin/arducopter-quad",
+        "default_params_filename": "default_params/gazebo-iris.parm",
+    },
+    "GazeboZephyr": {
+        "waf_target": "bin/arduplane",
+        "default_params_filename": "default_params/gazebo-zephyr.parm",
     },
     "last_letter": {
         "waf_target": "bin/arduplane",
@@ -365,7 +373,7 @@ def options_for_frame(frame, vehicle, opts):
     if frame in _options_for_frame:
         ret = _options_for_frame[frame]
     else:
-        for p in ["octa", "tri", "y6", "firefly", "heli", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
+        for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
             if frame.startswith(p):
                 ret = _options_for_frame[p]
                 break
