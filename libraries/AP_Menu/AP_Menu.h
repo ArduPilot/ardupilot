@@ -99,7 +99,7 @@ public:
     /// @param commands		An array of ::command structures in program memory.
     /// @param entries		The number of entries in the menu.
     ///
-    Menu(const char *prompt, const struct command *commands, uint8_t entries, preprompt ppfunc = 0);
+    Menu(const char *prompt, const struct command *commands, uint8_t entries, preprompt ppfunc = nullptr);
 
     /// set command line length limit
     void set_limits(uint8_t commandline_max, uint8_t args_max);
