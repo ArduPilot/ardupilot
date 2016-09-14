@@ -162,6 +162,7 @@ public:
     uint16_t bus;
     uint16_t kernel_cs;
     uint8_t ref;
+    int16_t last_mode = -1;
 };
 
 SPIBus::~SPIBus()
@@ -275,11 +276,35 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         return false;
     }
 
-    int r = ioctl(_bus.fd, SPI_IOC_WR_MODE, &_desc.mode);
-    if (r < 0) {
-        hal.console->printf("SPIDevice: error on setting mode fd=%d (%s)\n",
-                            _bus.fd, strerror(errno));
-        return false;
+    int r;
+    if (_bus.last_mode == _desc.mode) {
+        /*
+          the mode in the kernel is not tied to the file descriptor,
+          so there is a chance some other process has changed it since
+          we last used the bus. We want to report when this happens so
+          the user has a chance of figuring out when there is
+          conflicted use of the SPI bus. Unfortunately this costs us
+          an extra syscall per transfer.
+         */
+        uint8_t current_mode;
+        if (ioctl(_bus.fd, SPI_IOC_RD_MODE, &current_mode) < 0) {
+            hal.console->printf("SPIDevice: error on getting mode fd=%d (%s)\n",
+                                _bus.fd, strerror(errno));
+            _bus.last_mode = -1;
+        } else if (current_mode != _bus.last_mode) {
+            hal.console->printf("SPIDevice: bus mode conflict fd=%d mode=%u/%u\n",
+                                _bus.fd, (unsigned)_bus.last_mode, (unsigned)current_mode);
+            _bus.last_mode = -1;
+        }
+    }
+    if (_desc.mode != _bus.last_mode) {
+        r = ioctl(_bus.fd, SPI_IOC_WR_MODE, &_desc.mode);
+        if (r < 0) {
+            hal.console->printf("SPIDevice: error on setting mode fd=%d (%s)\n",
+                                _bus.fd, strerror(errno));
+            return false;
+        }
+        _bus.last_mode = _desc.mode;
     }
 
     _cs_assert();
