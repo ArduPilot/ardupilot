@@ -1,5 +1,15 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.0-rc5 14-Sep-2016
+Changes from 3.4.0-rc4
+1) Sprayer enabled by default
+2) Bug fixes, minor improvements:
+    a) EKF fix for yaw angle reset fix when switching between cores (AC3.4 runs multiple EKFs simultaneously)
+    b) EKF fixes when fusing range finder into height estimate
+    c) pixracer clone board IMU hardware issue work around
+    d) dataflash time-going-backwards fix
+    e) fix rate PID conversion (AC3.3->AC3.4) for single, coax and tricopters
+------------------------------------------------------------------
 Copter 3.4.0-rc4 06-Sep-2016
 Changes from 3.4.0-rc3
 1) Intel Aero flight controller support
