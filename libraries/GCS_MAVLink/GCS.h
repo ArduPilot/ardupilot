@@ -230,6 +230,10 @@ public:
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
 
+    void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
+
+    void handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps);
+
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
@@ -328,9 +332,6 @@ private:
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
 
     void lock_channel(mavlink_channel_t chan, bool lock);
-    void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
-
-    void handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps);
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
