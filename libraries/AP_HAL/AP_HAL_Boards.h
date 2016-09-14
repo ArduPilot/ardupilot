@@ -276,6 +276,8 @@
  * 240x240 crop rescaled to 64x64 */
 #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.5 / (3.6 * 2.0 * 240 / 64))
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
+// the disco has challenges with its magnetic setup
+#define AP_ARMING_COMPASS_OFFSETS_MAX 1500
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
