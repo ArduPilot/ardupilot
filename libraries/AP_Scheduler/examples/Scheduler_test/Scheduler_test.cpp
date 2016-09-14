@@ -25,7 +25,6 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
 
     void ins_update(void);
-    void one_hz_print(void);
     void five_second_call(void);
 };
 
@@ -33,17 +32,24 @@ static SchedTest schedtest;
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(SchedTest, &schedtest, func, _interval_ticks, _max_time_micros)
 
+void one_hz_print(void);
+
 /*
   scheduler table - all regular tasks are listed here, along with how
-  often they should be called (in 20ms units) and the maximum time
+  often they should be called (in Hz units) and the maximum time
   they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
     SCHED_TASK(ins_update,             50,   1000),
-    SCHED_TASK(one_hz_print,            1,   1000),
+    // here we install a global free function
+    {.function = AP_Scheduler::task_fn_t::bind(one_hz_print),
+     .name = "one_hz_print",
+     .rate_hz = 1.0f,
+     .max_time_micros = 1000
+    },
     SCHED_TASK(five_second_call,      0.2,   1800),
-};
 
+};
 
 void SchedTest::setup(void)
 {
@@ -80,7 +86,7 @@ void SchedTest::ins_update(void)
 /*
   print something once a second
  */
-void SchedTest::one_hz_print(void)
+void one_hz_print(void)
 {
     hal.console->printf("one_hz: t=%lu\n", (unsigned long)AP_HAL::millis());
 }
@@ -103,8 +109,10 @@ void setup(void)
 {
     schedtest.setup();
 }
+
 void loop(void)
 {
     schedtest.loop();
 }
+
 AP_HAL_MAIN();
