@@ -12,23 +12,20 @@ set -x
 
 # If TRAVIS_BUILD_TARGET is not set, default to all of them
 if [ -z "$TRAVIS_BUILD_TARGET" ]; then
-    TRAVIS_BUILD_TARGET="sitl linux apm2 navio"
+    TRAVIS_BUILD_TARGET="sitl apm2"
 fi
 
 declare -A build_platforms
 declare -A build_concurrency
 declare -A build_extra_clean
 
-build_platforms=(  ["ArduPlane"]="apm2 navio sitl linux"
-                   ["ArduCopter"]="navio sitl linux"
-                   ["APMrover2"]="apm2 navio sitl linux"
-                   ["AntennaTracker"]="apm2 navio sitl linux"
+build_platforms=(  ["ArduPlane"]="apm2 sitl"
+                   ["ArduCopter"]=" sitl "
+                   ["APMrover2"]="apm2 sitl"
+                   ["AntennaTracker"]="apm2"
                    ["Tools/Replay"]="linux")
 
-build_concurrency=(["apm2"]="-j2"
-                   ["navio"]="-j2"
-                   ["sitl"]="-j2"
-                   ["linux"]="-j2")
+build_concurrency=(["apm2"]="-j2")
 
 echo "Targets: $TRAVIS_BUILD_TARGET"
 for t in $TRAVIS_BUILD_TARGET; do

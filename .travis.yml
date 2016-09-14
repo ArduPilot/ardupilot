@@ -1,28 +1,6 @@
 language: cpp
 sudo: required
 
-before_install:
-  -  APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/install-travis-env.sh -y && . ~/.profile && popd
-
-script: 
-  - Tools/scripts/build_all_travis.sh
-
-notifications:
-  webhooks:
-    urls:
-      - https://webhooks.gitter.im/e/e5e0b55e353e53945b4b
-    on_success: change  # options: [always|never|change] default: always
-    on_failure: always  # options: [always|never|change] default: always
-    on_start: false     # default: false
-
-env:
-  global:
-    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
-    #   via the "travis encrypt" command using the project repo's public key
-    - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
-  matrix:
-    - TRAVIS_BUILD_TARGET="sitl linux apm2 navio"
-
 addons:
   coverity_scan:
     project:
@@ -32,3 +10,56 @@ addons:
     build_command_prepend: "make clean"
     build_command:   "make"
     branch_pattern: coverity_scan
+
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - george-edison55-precise-backports
+#      - llvm-toolchain-precise-3.7
+    packages:
+      - build-essential
+      - gawk
+      - ccache
+      - genromfs
+      - libc6-i386
+      - python-pip
+      - python-dev
+      - zlib1g-dev
+      - gcc-4.9
+      - g++-4.9
+      - cmake
+      - cmake-data
+#      - clang-3.7
+#      - llvm-3.7
+
+#cache:
+#  ccache: true
+#  directories:
+#    - $HOME/opt
+
+before_install:
+  - Tools/scripts/configure-ci.sh
+#  - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then export CI_CRON_JOB=1 ; fi
+
+script:
+  - Tools/scripts/build_ci.sh
+
+notifications:
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/e5e0b55e353e53945b4b
+    on_success: change  # options: [always|never|change] default: always
+    on_failure: always  # options: [always|never|change] default: always
+    on_start: false     # default: false
+
+#compiler:
+#  - gcc
+#  - clang
+
+env:
+  global:
+    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+    #   via the "travis encrypt" command using the project repo's public key
+    - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
+  matrix:
+    - CI_BUILD_TARGET="apm2"
