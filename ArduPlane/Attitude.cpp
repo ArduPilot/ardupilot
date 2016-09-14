@@ -749,6 +749,26 @@ void Plane::channel_output_mixer(uint8_t mixing_type, int16_t & chan1_out, int16
         v1 = -v1;
         v2 = -v2;
         break;
+
+    case MIXING_UPUP_SWP:
+        std::swap(v1, v2);
+        break;
+
+    case MIXING_UPDN_SWP:
+        v2 = -v2;
+        std::swap(v1, v2);        
+        break;
+
+    case MIXING_DNUP_SWP:
+        v1 = -v1;
+        std::swap(v1, v2);        
+        break;
+
+    case MIXING_DNDN_SWP:
+        v1 = -v1;
+        v2 = -v2;
+        std::swap(v1, v2);        
+        break;
     }
 
     // scale for a 1500 center and 900..2100 range, symmetric
