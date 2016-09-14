@@ -356,7 +356,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: CAL_FIT
     // @DisplayName: Compass calibration fitness
     // @Description: This controls the fitness level required for a successful compass calibration. A lower value makes for a stricter fit (less likely to pass). This is the value used for the primary magnetometer. Other magnetometers get double the value.
-    // @Range: 4 20
+    // @Range: 4 32
+    // @Values: 4:Very Strict,8:Default,16:Relaxed,32:Very Relaxed
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, 8.0f),
