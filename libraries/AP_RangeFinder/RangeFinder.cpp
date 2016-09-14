@@ -25,6 +25,7 @@
 #include "AP_RangeFinder_LightWareSerial.h"
 #include "AP_RangeFinder_Bebop.h"
 #include "AP_RangeFinder_MAVLink.h"
+#include "AP_RangeFinder_TeraRangerOneI2C.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -562,6 +563,13 @@ void RangeFinder::detect_instance(uint8_t instance)
             drivers[instance] = new AP_RangeFinder_analog(*this, instance, state[instance]);
             return;
         }
+    }
+    if(type == RangeFinder_TYPE_TeraRanger) {
+       if (AP_RangeFinder_TerarangerI2C::detect(*this, instance)) {
+          state[instance].instance = instance;
+          drivers[instance] = new AP_RangeFinder_TerarangerI2C(*this, instance, state[instance]);
+          return;
+       }
     }
 }
 
