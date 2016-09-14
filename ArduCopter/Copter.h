@@ -114,10 +114,11 @@
 
 // Local modules
 #include "Parameters.h"
+#include "GCS_Mavlink.h"
 
 class Copter {
     public:
-    friend class GCS_MAVLINK;
+    friend class GCS_MAVLINK_Copter;
     friend class Parameters;
 
     Copter(void);
@@ -203,7 +204,7 @@ private:
     AP_SerialManager serial_manager;
     static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Copter gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     // User variables
 #ifdef USERHOOK_VARIABLES

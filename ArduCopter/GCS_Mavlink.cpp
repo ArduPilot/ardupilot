@@ -1,5 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
+#include "GCS_Mavlink.h"
 #include "Copter.h"
 
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
@@ -512,7 +512,7 @@ bool Copter::telemetry_delayed(mavlink_channel_t chan)
 
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK::try_send_message(enum ap_message id)
+bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 {
     if (copter.telemetry_delayed(chan)) {
         return false;
@@ -831,7 +831,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
 
 
 // see if we should send a stream now. Called at 50Hz
-bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
+bool GCS_MAVLINK_Copter::stream_trigger(enum streams stream_num)
 {
     if (stream_num >= NUM_STREAMS) {
         return false;
@@ -864,7 +864,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 }
 
 void
-GCS_MAVLINK::data_stream_send(void)
+GCS_MAVLINK_Copter::data_stream_send(void)
 {
     if (waypoint_receiving) {
         // don't interfere with mission transfer
@@ -967,12 +967,12 @@ GCS_MAVLINK::data_stream_send(void)
 }
 
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+void GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     copter.do_guided(cmd);
 }
 
-void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
+void GCS_MAVLINK_Copter::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     // add home alt if needed
     if (cmd.content.location.flags.relative_alt) {
@@ -982,7 +982,7 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
 }
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
 
