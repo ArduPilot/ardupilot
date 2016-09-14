@@ -1461,6 +1461,34 @@ void AP_InertialSensor::set_delta_angle(uint8_t instance, const Vector3f &deltaa
     }
 }
 
+// update accel calibrator
+void AP_InertialSensor::acal_update()
+{
+    if(_acal == NULL) {
+        return;
+    }
+
+    _acal->update();
+
+    if (hal.util->get_soft_armed() && _acal->get_status() != ACCEL_CAL_NOT_STARTED) {
+        _acal->cancel();
+    }
+}
+
+/*
+    Returns true if new valid trim values are available and passes them to reference vars
+*/
+bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
+{
+    if (_new_trim) {
+        trim_roll = _trim_roll;
+        trim_pitch = _trim_pitch;
+        _new_trim = false;
+        return true;
+    }
+    return false;
+}
+
 #if INS_VIBRATION_CHECK
 // calculate vibration levels and check for accelerometer clipping (called by a backends)
 void AP_InertialSensor::calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt)
