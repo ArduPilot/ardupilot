@@ -355,6 +355,39 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
+// see if we should send a stream now. Called at 50Hz
+bool GCS_MAVLINK_Tracker::stream_trigger(enum streams stream_num)
+{
+    if (stream_num >= NUM_STREAMS) {
+        return false;
+    }
+    float rate = (uint8_t)streamRates[stream_num].get();
+
+    // send at a much lower rate while handling waypoints and
+    // parameter sends
+    if ((stream_num != STREAM_PARAMS) &&
+        (waypoint_receiving || _queued_parameter != NULL)) {
+        rate *= 0.25f;
+    }
+
+    if (rate <= 0) {
+        return false;
+    }
+
+    if (stream_ticks[stream_num] == 0) {
+        // we're triggering now, setup the next trigger point
+        if (rate > 50) {
+            rate = 50;
+        }
+        stream_ticks[stream_num] = (50 / rate) - 1 + stream_slowdown;
+        return true;
+    }
+
+    // count down at 50Hz
+    stream_ticks[stream_num]--;
+    return false;
+}
+
 void
 GCS_MAVLINK_Tracker::data_stream_send(void)
 {
