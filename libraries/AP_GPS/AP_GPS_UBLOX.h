@@ -506,8 +506,6 @@ private:
     // used to update fix between status and position packets
     AP_GPS::GPS_Status next_fix;
 
-    uint32_t _last_5hz_time;
-
     bool _cfg_needs_save;
 
     bool noReceivedHdop;
@@ -519,7 +517,6 @@ private:
     void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
     void	send_next_rate_update(void);
     bool        _request_message_rate(uint8_t msg_class, uint8_t msg_id);
-    void        _request_navigation_rate(void);
     void        _request_next_config(void);
     void        _request_port(void);
     void        _request_version(void);
