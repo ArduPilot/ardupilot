@@ -3,7 +3,7 @@
 #include "Tracker.h"
 
 /*
- * control_servo_test.pde - GCS controlled servo test mode
+ * GCS controlled servo test mode
  */
 
 /*
@@ -27,13 +27,13 @@ bool Tracker::servo_test_set_servo(uint8_t servo_num, uint16_t pwm)
 
     // set yaw servo pwm and send output to servo
     if (servo_num == CH_YAW) {
-        channel_yaw.radio_out = constrain_int16(pwm, channel_yaw.radio_min, channel_yaw.radio_max);
+        channel_yaw.set_radio_out(constrain_int16(pwm, channel_yaw.get_radio_min(), channel_yaw.get_radio_max()));
         channel_yaw.output();
     }
 
     // set pitch servo pwm and send output to servo
     if (servo_num == CH_PITCH) {
-        channel_pitch.radio_out = constrain_int16(pwm, channel_pitch.radio_min, channel_pitch.radio_max);
+        channel_pitch.set_radio_out(constrain_int16(pwm, channel_pitch.get_radio_min(), channel_pitch.get_radio_max()));
         channel_pitch.output();
     }
 

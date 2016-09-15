@@ -27,6 +27,7 @@
 
 
 #include <stdint.h>
+#include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_InertialSensor_UserInteract.h"
@@ -235,6 +236,12 @@ public:
     void set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav);
     void set_delta_angle(uint8_t instance, const Vector3f &deltaa);
 
+    // Returns newly calculated trim values if calculated
+    bool get_new_trim(float& trim_roll, float &trim_pitch);
+
+    // update accel calibrator
+    void acal_update();
+
 private:
 
     // load backend drivers
@@ -365,6 +372,12 @@ private:
     } _hil {};
 
     DataFlash_Class *_dataflash;
+
+    AP_AccelCal* _acal;
+
+    float _trim_pitch;
+    float _trim_roll;
+    bool _new_trim;
 };
 
 #include "AP_InertialSensor_Backend.h"

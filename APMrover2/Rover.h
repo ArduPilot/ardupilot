@@ -92,12 +92,13 @@
 #include "defines.h"
 #include "Parameters.h"
 #include <GCS_MAVLink/GCS.h>
+#include "GCS_Mavlink.h"
 
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
 class Rover {
 public:
-    friend class GCS_MAVLINK;
+    friend class GCS_MAVLINK_Rover;
     friend class Parameters;
 
     Rover(void);
@@ -176,7 +177,7 @@ private:
     // GCS handling
     AP_SerialManager serial_manager;
     const uint8_t num_gcs;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Rover gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     // a pin for reading the receiver RSSI voltage. The scaling by 0.25 
     // is to take the 0 to 1024 range down to an 8 bit range for MAVLink

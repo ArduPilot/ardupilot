@@ -185,6 +185,23 @@ public:
         *this = transposed();
     }
 
+    /**
+     * Calculate the determinant of this matrix.
+     *
+     * @return The value of the determinant.
+     */
+    T det() const;
+
+    /**
+     * Calculate the inverse of this matrix.
+     *
+     * @param inv[in] Where to store the result.
+     *
+     * @return If this matrix is invertible, then true is returned. Otherwise,
+     * \p inv is unmodified and false is returned.
+     */
+    bool inverse(Matrix3<T>& inv) const;
+
     // zero the matrix
     void        zero(void);
 

@@ -1,12 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "AntennaTracker V0.7.2"
-#define FIRMWARE_VERSION 0,7,2,FIRMWARE_VERSION_TYPE_DEV
-
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
- 
-   Please contribute your ideas! See http://dev.ardupilot.com for details
+
+   Please contribute your ideas! See http://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +18,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
 // Header includes
@@ -28,10 +26,9 @@
 
 #include <math.h>
 #include <stdarg.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
@@ -40,8 +37,8 @@
 #include <AP_Compass/AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_ADC/AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor Library
+#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <Filter/Filter.h>                     // Filter library
 #include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
@@ -51,10 +48,10 @@
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
-#include <SITL/SITL.h>
-#include <PID/PID.h>
+#include <AC_PID/AC_PID.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_NavEKF/AP_NavEKF.h>
+//#include <AP_NavEKF2/AP_NavEKF2.h>
 
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Mission/AP_Mission.h>
@@ -73,26 +70,26 @@
 #include "defines.h"
 
 #include "Parameters.h"
-#include <GCS_MAVLink/GCS.h>
+#include "GCS_Mavlink.h"
 
 #include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
 
-class Tracker {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
+
+class Tracker  {
 public:
-    friend class GCS_MAVLINK;
+    friend class GCS_MAVLINK_Tracker;
     friend class Parameters;
 
     Tracker(void);
-    void setup();
-    void loop();
+
+    // HAL::Callbacks implementation.
+    void setup() ;
+    void loop() ;
 
 private:
-    const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_50HZ;
 
     Parameters g;
 
@@ -105,6 +102,11 @@ private:
     uint32_t start_time_ms = 0;
 
     bool usb_connected = false;
+
+    // has a log download started?
+    bool in_log_download = false;
+    bool logging_started = false;
+    //DataFlash_Class DataFlash;
 
     AP_GPS gps;
 
@@ -119,13 +121,14 @@ private:
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF EKF{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rng, EKF};
+    NavEKF2 EKF2{&ahrs, barometer, rng};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rng, EKF, EKF2};
 #else
     AP_AHRS_DCM ahrs{ins, barometer, gps};
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL sitl;
+    SITL::SITL sitl;
 #endif
     
     /**
@@ -134,9 +137,15 @@ private:
     RC_Channel channel_yaw{CH_YAW};
     RC_Channel channel_pitch{CH_PITCH};
 
+    LowPassFilterFloat yaw_servo_out_filt;
+    LowPassFilterFloat pitch_servo_out_filt;
+
+    bool yaw_servo_out_filt_init = false;
+    bool pitch_servo_out_filt_init = false;
+
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Tracker gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     AP_BoardConfig BoardConfig;
 
@@ -149,10 +158,10 @@ private:
         bool location_valid;    // true if we have a valid location for the vehicle
         Location location;      // lat, long in degrees * 10^7; alt in meters * 100
         Location location_estimate; // lat, long in degrees * 10^7; alt in meters * 100
-        uint32_t last_update_us;    // last position update in micxroseconds
+        uint32_t last_update_us;    // last position update in microseconds
         uint32_t last_update_ms;    // last position update in milliseconds
-        float heading;          // last known direction vehicle is moving
-        float ground_speed;     // vehicle's last known ground speed in m/s
+        Vector3f vel;           // the vehicle's velocity in m/s
+        int32_t relative_alt;	// the vehicle's relative altitude in meters * 100
     } vehicle;
 
     // Navigation controller state
@@ -160,42 +169,39 @@ private:
         float bearing;                  // bearing to vehicle in centi-degrees
         float distance;                 // distance to vehicle in meters
         float pitch;                    // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
-        float altitude_difference;      // altitude difference between tracker and vehicle in meters.  positive value means vehicle is above tracker
+        float angle_error_pitch;        // angle error between target and current pitch in centi-degrees
+        float angle_error_yaw;          // angle error between target and current yaw in centi-degrees
+        float alt_difference_baro;      // altitude difference between tracker and vehicle in meters according to the barometer.  positive value means vehicle is above tracker
+        float alt_difference_gps;       // altitude difference between tracker and vehicle in meters according to the gps.  positive value means vehicle is above tracker
         float altitude_offset;          // offset in meters which is added to tracker altitude to align altitude measurements with vehicle's barometer
         bool manual_control_yaw         : 1;// true if tracker yaw is under manual control
         bool manual_control_pitch       : 1;// true if tracker pitch is manually controlled
         bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
         bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
         bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
-    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
-
-    // Servo state
-    struct {
-        bool yaw_lower      : 1;    // true if yaw servo has been limited from moving to a lower position (i.e. position or rate limited)
-        bool yaw_upper      : 1;    // true if yaw servo has been limited from moving to a higher position (i.e. position or rate limited)
-        bool pitch_lower    : 1;    // true if pitch servo has been limited from moving to a lower position (i.e. position or rate limited)
-        bool pitch_upper    : 1;    // true if pitch servo has been limited from moving to a higher position (i.e. position or rate limited)
-    } servo_limit = {true, true, true, true};
+    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
 
     // setup the var_info table
     AP_Param param_loader{var_info};
 
     uint8_t one_second_counter = 0;
     bool target_set = false;
-    int8_t slew_dir = 0;
-    uint32_t slew_start_ms = 0;
+
+    // use this to prevent recursion during sensor init
+    bool in_mavlink_delay = false;
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
+    static const struct LogStructure log_structure[];
 
+    void dataflash_periodic(void);
     void one_second_loop();
+    void ten_hz_logging_loop();
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
-    void send_radio_out(mavlink_channel_t chan);
     void send_hwstatus(mavlink_channel_t chan);
     void send_waypoint_request(mavlink_channel_t chan);
-    void send_statustext(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void mavlink_check_target(const mavlink_message_t* msg);
@@ -206,24 +212,29 @@ private:
     void gcs_retry_deferred(void);
     void load_parameters(void);
     void update_auto(void);
+    void calc_angle_error(float pitch, float yaw, bool direction_reversed);
+    void convert_ef_to_bf(float pitch, float yaw, float& bf_pitch, float& bf_yaw);
+    bool convert_bf_to_ef(float pitch, float yaw, float& ef_pitch, float& ef_yaw);
+    bool get_ef_yaw_direction();
     void update_manual(void);
     void update_scan(void);
     bool servo_test_set_servo(uint8_t servo_num, uint16_t pwm);
     void read_radio();
-    void init_barometer(void);
+    void init_barometer(bool full_calibration);
     void update_barometer(void);
     void update_ahrs();
     void update_compass(void);
     void compass_accumulate(void);
+    void accel_cal_update(void);
     void barometer_accumulate(void);
     void update_GPS(void);
     void init_servos();
     void update_pitch_servo(float pitch);
-    void update_pitch_position_servo(float pitch);
+    void update_pitch_position_servo(void);
     void update_pitch_cr_servo(float pitch);
     void update_pitch_onoff_servo(float pitch);
     void update_yaw_servo(float yaw);
-    void update_yaw_position_servo(float yaw);
+    void update_yaw_position_servo(void);
     void update_yaw_cr_servo(float yaw);
     void update_yaw_onoff_servo(float yaw);
     void init_tracker();
@@ -247,8 +258,19 @@ private:
     void update_armed_disarmed();
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
     void init_capabilities(void);
+    void compass_cal_update();
+    void Log_Write_Attitude();
+    void Log_Write_Baro(void);
+    void Log_Write_Vehicle_Pos(int32_t lat,int32_t lng,int32_t alt, const Vector3f& vel);
+    void Log_Write_Vehicle_Baro(float pressure, float altitude);
+    void Log_Write_Vehicle_Startup_Messages();
+    void start_logging();
+    void log_init(void);
+    bool should_log(uint32_t mask);
+    const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_50HZ;
 
 public:
+
     void mavlink_snoop(const mavlink_message_t* msg);
     void mavlink_delay_cb();
 };

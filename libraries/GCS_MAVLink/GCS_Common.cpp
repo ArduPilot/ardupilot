@@ -26,9 +26,9 @@ extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
+uint8_t GCS_MAVLINK::chan_is_streaming = 0;
 
-GCS_MAVLINK::GCS_MAVLINK() :
-    waypoint_receive_timeout(5000)
+GCS_MAVLINK::GCS_MAVLINK()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -599,6 +599,49 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
     }
 }
 
+// see if we should send a stream now. Called at 50Hz
+bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
+{
+    if (stream_num >= NUM_STREAMS) {
+        return false;
+    }
+    float rate = (uint8_t)streamRates[stream_num].get();
+
+    rate *= adjust_rate_for_stream_trigger(stream_num);
+
+    if (rate <= 0) {
+        if (chan_is_streaming & (1U<<(chan-MAVLINK_COMM_0))) {
+            // if currently streaming then check if all streams are disabled
+            // to allow runtime detection of user disabling streaming
+            bool is_streaming = false;
+            for (uint8_t i=0; i<stream_num; i++) {
+                if (streamRates[stream_num] > 0) {
+                    is_streaming = true;
+                }
+            }
+            if (!is_streaming) {
+                // all streams have been turned off, clear the bit flag
+                chan_is_streaming &= ~(1U<<(chan-MAVLINK_COMM_0));
+            }
+        }
+        return false;
+    } else {
+        chan_is_streaming |= (1U<<(chan-MAVLINK_COMM_0));
+    }
+
+    if (stream_ticks[stream_num] == 0) {
+        // we're triggering now, setup the next trigger point
+        if (rate > 50) {
+            rate = 50;
+        }
+        stream_ticks[stream_num] = (50 / rate) - 1 + stream_slowdown;
+        return true;
+    }
+
+    // count down at 50Hz
+    stream_ticks[stream_num]--;
+    return false;
+}
 
 void
 GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
@@ -1336,6 +1379,18 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
         velocity.x,
         velocity.y,
         velocity.z);
+}
+
+float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
+{
+    // send at a much lower rate while handling waypoints and
+    // parameter sends
+    if ((stream_num != STREAM_PARAMS) && 
+        (waypoint_receiving || _queued_parameter != NULL)) {
+        return 0.25f;
+    }
+
+    return 1.0f;
 }
 
 /*

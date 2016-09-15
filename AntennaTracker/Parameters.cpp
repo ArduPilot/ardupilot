@@ -14,7 +14,18 @@
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&tracker.v, {group_info : class::var_info} }
 
 const AP_Param::Info Tracker::var_info[] PROGMEM = {
+    // @Param: FORMAT_VERSION
+    // @DisplayName: Eeprom format version number
+    // @Description: This value is incremented when changes are made to the eeprom format
+    // @User: Advanced
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
+
+    // @Param: SYSID_SW_TYPE
+    // @DisplayName: Software Type
+    // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
+    // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover
+    // @User: Advanced
+    // @ReadOnly: True
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
 
     // @Param: SYSID_THISMAV
@@ -108,12 +119,19 @@ const AP_Param::Info Tracker::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(startup_delay,          "STARTUP_DELAY",   0),
 
-    // @Param: SERVO_TYPE
-    // @DisplayName: Type of servo system being used
-    // @Description: This allows selection of position servos or on/off servos
+    // @Param: SERVO_PITCH_TYPE
+    // @DisplayName: Type of servo system being used for pitch
+    // @Description: This allows selection of position servos or on/off servos for pitch
     // @Values: 0:Position,1:OnOff,2:ContinuousRotation
     // @User: Standard
-    GSCALAR(servo_type,          "SERVO_TYPE",   SERVO_TYPE_POSITION),
+    GSCALAR(servo_pitch_type,          "SERVO_PITCH_TYPE",   SERVO_TYPE_POSITION),
+
+    // @Param: SERVO_YAW_TYPE
+    // @DisplayName: Type of servo system being used for yaw
+    // @Description: This allows selection of position servos or on/off servos for yaw
+    // @Values: 0:Position,1:OnOff,2:ContinuousRotation
+    // @User: Standard
+    GSCALAR(servo_yaw_type,          "SERVO_YAW_TYPE",   SERVO_TYPE_POSITION),
 
     // @Param: ONOFF_YAW_RATE
     // @DisplayName: Yaw rate for on/off servos
@@ -178,15 +196,6 @@ const AP_Param::Info Tracker::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(yaw_range,              "YAW_RANGE", YAW_RANGE_DEFAULT),
 
-    // @Param: PITCH_RANGE
-    // @DisplayName: Pitch Range
-    // @Description: Pitch axis total range of motion in degrees
-    // @Units: degrees
-    // @Increment: 0.1
-    // @Range: 0 180
-    // @User: Standard
-    GSCALAR(pitch_range,            "PITCH_RANGE", PITCH_RANGE_DEFAULT),
-
     // @Param: DISTANCE_MIN
     // @DisplayName: Distance minimum to target
     // @Description: Tracker will track targets at least this distance away
@@ -196,6 +205,40 @@ const AP_Param::Info Tracker::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(distance_min,           "DISTANCE_MIN", DISTANCE_MIN_DEFAULT),
 
+    // @Param: ALT_SOURCE
+    // @DisplayName: Altitude Source
+    // @Description: What provides altitude information for vehicle. Vehicle only assumes tracker has same altitude as vehicle's home
+    // @Values: 0:Barometer,1:GPS,2:GPS vehicle only
+    // @User: Standard
+    GSCALAR(alt_source,				"ALT_SOURCE",	0),
+
+    // @Param: MAV_UPDATE_RATE
+    // @DisplayName: Mavlink Update Rate
+    // @Description: The rate at which Mavlink updates position and baro data
+    // @Units: Hz
+    // @Increment: 1
+    // @Range: 1 10
+    // @User: Standard
+    GSCALAR(mavlink_update_rate,	"MAV_UPDATE_RATE",	1),
+
+    // @Param: PITCH_MIN
+    // @DisplayName: Minimum Pitch Angle
+    // @Description: The lowest angle the pitch can reach
+    // @Units: Degrees
+    // @Increment: 1
+    // @Range: -90 0
+    // @User: Standard
+    GSCALAR(pitch_min,               "PITCH_MIN",	PITCH_MIN_DEFAULT),
+
+    // @Param: PITCH_MAX
+    // @DisplayName: Maximum Pitch Angle
+    // @Description: The highest angle the pitch can reach
+    // @Units: Degrees
+    // @Increment: 1
+    // @Range: 0 90
+    // @User: Standard
+    GSCALAR(pitch_max,               "PITCH_MAX",	PITCH_MAX_DEFAULT),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_
@@ -203,7 +246,7 @@ const AP_Param::Info Tracker::var_info[] PROGMEM = {
     GOBJECT(barometer, "GND_", AP_Baro),
 
     // @Group: COMPASS_
-    // @Path: ../libraries/AP_Compass/Compass.cpp
+    // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass,                "COMPASS_",     Compass),
 
     // @Group: SCHED_
@@ -218,17 +261,21 @@ const AP_Param::Info Tracker::var_info[] PROGMEM = {
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
-#if MAVLINK_COMM_NUM_BUFFERS > 2
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
-#endif
+    //GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
 
-#if MAVLINK_COMM_NUM_BUFFERS > 3
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
-#endif
+    //GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
+
+    // @Param: LOG_BITMASK
+    // @DisplayName: Log bitmask
+    // @Description: 4 byte bitmap of log types to enable
+    // @Values: 63:Default,0:Disabled
+    // @Bitmask: 0:ATTITUDE,1:GPS,2:RCIN,3:IMU,4:RCOUT,5:COMPASS
+    // @User: Standard
+    GSCALAR(log_bitmask, "LOG_BITMASK", DEFAULT_LOG_BITMASK),
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
@@ -241,7 +288,7 @@ const AP_Param::Info Tracker::var_info[] PROGMEM = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
-    GOBJECT(sitl, "SIM_", SITL),
+    GOBJECT(sitl, "SIM_", SITL::SITL),
 #endif
 
     // @Group: BRD_
@@ -252,6 +299,10 @@ const AP_Param::Info Tracker::var_info[] PROGMEM = {
     // @Group: GPS_
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS_", AP_GPS),
+
+    // @Group: NTF_
+    // @Path: ../libraries/AP_Notify/AP_Notify.cpp
+    //GOBJECT(notify, "NTF_",  AP_Notify),
 
     // RC channel
     //-----------
@@ -267,8 +318,65 @@ const AP_Param::Info Tracker::var_info[] PROGMEM = {
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager,    "SERIAL",   AP_SerialManager),
 
-	GGROUP(pidPitch2Srv,       "PITCH2SRV_", PID),
-	GGROUP(pidYaw2Srv,         "YAW2SRV_", PID),
+    // @Param: PITCH2SRV_P
+    // @DisplayName: Pitch axis controller P gain
+    // @Description: Pitch axis controller P gain.  Converts the difference between desired pitch angle and actual pitch angle into a pitch servo pwm change
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: PITCH2SRV_I
+    // @DisplayName: Pitch axis controller I gain
+    // @Description: Pitch axis controller I gain.  Corrects long-term difference in desired pitch angle vs actual pitch angle
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: PITCH2SRV_IMAX
+    // @DisplayName: Pitch axis controller I gain maximum
+    // @Description: Pitch axis controller I gain maximum.  Constrains the maximum pwm change that the I gain will output
+    // @Range: 0 4000
+    // @Increment: 10
+    // @Units: Percent*10
+    // @User: Standard
+
+    // @Param: PITCH2SRV_D
+    // @DisplayName: Pitch axis controller D gain
+    // @Description: Pitch axis controller D gain.  Compensates for short-term change in desired pitch angle vs actual pitch angle
+    // @Range: 0.001 0.1
+    // @Increment: 0.001
+    // @User: Standard
+	GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
+
+    // @Param: YAW2SRV_P
+    // @DisplayName: Yaw axis controller P gain
+    // @Description: Yaw axis controller P gain.  Converts the difference between desired yaw angle (heading) and actual yaw angle into a yaw servo pwm change
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: YAW2SRV_I
+    // @DisplayName: Yaw axis controller I gain
+    // @Description: Yaw axis controller I gain.  Corrects long-term difference in desired yaw angle (heading) vs actual yaw angle
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: YAW2SRV_IMAX
+    // @DisplayName: Yaw axis controller I gain maximum
+    // @Description: Yaw axis controller I gain maximum.  Constrains the maximum pwm change that the I gain will output
+    // @Range: 0 4000
+    // @Increment: 10
+    // @Units: Percent*10
+    // @User: Standard
+
+    // @Param: YAW2SRV_D
+    // @DisplayName: Yaw axis controller D gain
+    // @Description: Yaw axis controller D gain.  Compensates for short-term change in desired yaw angle (heading) vs actual yaw angle
+    // @Range: 0.001 0.1
+    // @Increment: 0.001
+    // @User: Standard
+	GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
     // @Param: CMD_TOTAL
     // @DisplayName: Number of loaded mission items
@@ -281,7 +389,6 @@ const AP_Param::Info Tracker::var_info[] PROGMEM = {
     AP_VAREND
 };
 
-
 void Tracker::load_parameters(void)
 {
     if (!g.format_version.load() ||
@@ -293,11 +400,11 @@ void Tracker::load_parameters(void)
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->println_P(PSTR("done."));
-    } else {
-        uint32_t before = hal.scheduler->micros();
-        // Load all auto-loaded EEPROM variables
-        AP_Param::load_all();
-        hal.console->printf_P(PSTR("load_all took %luus\n"), (unsigned long)(hal.scheduler->micros() - before));
+        hal.console->printf_P(PSTR("done.\n"));
     }
+
+    uint32_t before = hal.scheduler->micros();
+    // Load all auto-loaded EEPROM variables
+    AP_Param::load_all();
+    hal.console->printf_P(PSTR("load_all took %luus\n"), (unsigned long)(hal.scheduler->micros() - before));
 }

@@ -1,5 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "GCS_Mavlink.h"
 #include "Rover.h"
 
 // default sensors are present and healthy: gyro, accelerometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
@@ -410,7 +411,7 @@ bool Rover::telemetry_delayed(mavlink_channel_t chan)
 
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK::try_send_message(enum ap_message id)
+bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 {
     if (rover.telemetry_delayed(chan)) {
         return false;
@@ -690,7 +691,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
 
 
 // see if we should send a stream now. Called at 50Hz
-bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
+bool GCS_MAVLINK_Rover::stream_trigger(enum streams stream_num)
 {
     if (stream_num >= NUM_STREAMS) {
         return false;
@@ -723,7 +724,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 }
 
 void
-GCS_MAVLINK::data_stream_send(void)
+GCS_MAVLINK_Rover::data_stream_send(void)
 {
     rover.gcs_out_of_time = false;
 
@@ -827,7 +828,7 @@ GCS_MAVLINK::data_stream_send(void)
 
 
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+void GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (rover.control_mode != GUIDED) {
         // only accept position updates when in GUIDED mode
@@ -841,12 +842,12 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     rover.set_guided_WP();
 }
 
-void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
+void GCS_MAVLINK_Rover::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     // nothing to do
 }
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 

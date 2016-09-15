@@ -82,7 +82,7 @@ static void test_passed_waypoint(void)
         struct Location wp1 = location_from_point(test_points[i].wp1);
         struct Location wp2 = location_from_point(test_points[i].wp2);
         if (location_passed_point(loc, wp1, wp2) != test_points[i].passed) {
-            hal.console->printf("Failed waypoint test %u\n", (unsigned)i);
+            hal.console->printf_P(PSTR("Failed waypoint test %u\n"), (unsigned)i);
             return;
         }
     }
@@ -99,7 +99,7 @@ static void test_one_offset(const struct Location &loc,
     loc2 = loc;
     uint32_t t1 = hal.scheduler->micros();
     location_offset(loc2, ofs_north, ofs_east);
-    hal.console->printf("location_offset took %u usec\n",
+    hal.console->printf_P(PSTR("location_offset took %u usec\n"),
                         (unsigned)(hal.scheduler->micros() - t1));
     dist2 = get_distance(loc, loc2);
     bearing2 = get_bearing_cd(loc, loc2) * 0.01f;
@@ -112,7 +112,7 @@ static void test_one_offset(const struct Location &loc,
 
     if (fabsf(dist - dist2) > 1.0f ||
         brg_error > 1.0f) {
-        hal.console->printf("Failed offset test brg_error=%f dist_error=%f\n",
+        hal.console->printf_P(PSTR("Failed offset test brg_error=%f dist_error=%f\n"),
                       brg_error, dist-dist2);
     }
 }
@@ -160,7 +160,7 @@ static void test_accuracy(void)
     loc2 = loc;
     loc2.lat += 10000000;
     v2 = Vector2f(loc2.lat*1.0e-7f, loc2.lng*1.0e-7f);
-    hal.console->printf("1 degree lat dist=%.4f\n", get_distance(loc, loc2));
+    hal.console->printf_P(PSTR("1 degree lat dist=%.4f\n"), get_distance(loc, loc2));
 
     loc2 = loc;
     loc2.lng += 10000000;

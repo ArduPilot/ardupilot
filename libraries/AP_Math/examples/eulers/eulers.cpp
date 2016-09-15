@@ -60,7 +60,7 @@ static void check_result(const char *msg,
     if (isnan(roll2) ||
         isnan(pitch2) ||
         isnan(yaw2)) {
-        hal.console->printf("%s NAN eulers roll=%f pitch=%f yaw=%f\n",
+        hal.console->printf_P(PSTR("%s NAN eulers roll=%f pitch=%f yaw=%f\n"),
                             msg, roll, pitch, yaw);
     }
 
@@ -202,7 +202,7 @@ static void test_conversion(float roll, float pitch, float yaw)
     m2.from_euler(roll, pitch, yaw);
     m2.to_euler(&roll3, &pitch3, &yaw3);
     if (m.is_nan()) {
-        hal.console->printf("NAN matrix roll=%f pitch=%f yaw=%f\n",
+        hal.console->printf_P(PSTR("NAN matrix roll=%f pitch=%f yaw=%f\n"),
                       roll, pitch, yaw);
     }
 
@@ -237,7 +237,7 @@ void test_frame_transforms(void)
     Quaternion q;
     Matrix3f m;
 
-    hal.console->println("frame transform tests\n");
+    //hal.console->println("frame transform tests\n");
 
     q.from_euler(ToRad(45), ToRad(45), ToRad(45));
     q.normalize();
@@ -245,21 +245,21 @@ void test_frame_transforms(void)
 
     v2 = v = Vector3f(0, 0, 1);
     q.earth_to_body(v2);
-    hal.console->printf("%f %f %f\n", v2.x, v2.y, v2.z);
+    //hal.console->printf("%f %f %f\n", v2.x, v2.y, v2.z);
     v2 = m * v;
-    hal.console->printf("%f %f %f\n\n", v2.x, v2.y, v2.z);
+    //hal.console->printf("%f %f %f\n\n", v2.x, v2.y, v2.z);
 
     v2 = v = Vector3f(0, 1, 0);
     q.earth_to_body(v2);
-    hal.console->printf("%f %f %f\n", v2.x, v2.y, v2.z);
+    //hal.console->printf("%f %f %f\n", v2.x, v2.y, v2.z);
     v2 = m * v;
-    hal.console->printf("%f %f %f\n\n", v2.x, v2.y, v2.z);
+    //hal.console->printf("%f %f %f\n\n", v2.x, v2.y, v2.z);
 
     v2 = v = Vector3f(1, 0, 0);
     q.earth_to_body(v2);
-    hal.console->printf("%f %f %f\n", v2.x, v2.y, v2.z);
+    //hal.console->printf("%f %f %f\n", v2.x, v2.y, v2.z);
     v2 = m * v;
-    hal.console->printf("%f %f %f\n", v2.x, v2.y, v2.z);
+    //hal.console->printf("%f %f %f\n", v2.x, v2.y, v2.z);
 }
 
 // generate a random float between -1 and 1
@@ -303,7 +303,7 @@ void test_matrix_rotate(void)
         float err = diff.a.length() + diff.b.length() + diff.c.length();
 
         if (err > 0) {
-            hal.console->printf("ERROR: i=%u err=%f\n", (unsigned)i, err);
+            hal.console->printf_P(PSTR("ERROR: i=%u err=%f\n"), (unsigned)i, err);
         }
     }
 }
