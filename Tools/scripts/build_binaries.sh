@@ -233,7 +233,7 @@ build_arduplane() {
         touch $binaries/Plane/$tag
     done
     popd
-    for b in erlebrain2 navio navio2 pxf pxfmini; do
+    for b in erlebrain2 navio navio2 pxf pxfmini disco; do
         checkout ArduPlane $tag $b "" || {
             echo "Failed checkout of ArduPlane $b $tag"
             error_count=$((error_count+1))
