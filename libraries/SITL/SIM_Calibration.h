@@ -71,10 +71,15 @@ public:
 private:
     void _stop_control(const struct sitl_input& input, Vector3f& rot_accel);
 
+    void _attitude_set(float desired_roll, float desired_pitch, float desired_yaw,
+                       Vector3f& rot_accel);
+
     void _attitude_control(const struct sitl_input& input,
                            Vector3f& rot_accel);
 
     void _angular_velocity_control(const struct sitl_input& input,
                                    Vector3f& rot_accel);
+
+    void _calibration_poses(Vector3f& rot_accel);
 };
 }
