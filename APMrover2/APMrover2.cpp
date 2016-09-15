@@ -412,21 +412,34 @@ void Rover::update_current_mode(void)
         calc_throttle(g.speed_cruise);
         break;
 
-    case GUIDED:
-        if (rtl_complete || verify_RTL()) {
-            // we have reached destination so stop where we are
-            if (channel_throttle->get_servo_out() != g.throttle_min.get()) {
-                gcs_send_mission_item_reached_message(0);
+    case GUIDED: {
+        switch (guided_mode){
+        case Guided_Angle:
+            nav_set_yaw_speed();
+            break;
+
+        case Guided_WP:
+            if (rtl_complete || verify_RTL()) {
+                // we have reached destination so stop where we are
+                if (channel_throttle->get_servo_out() != g.throttle_min.get()) {
+                    gcs_send_mission_item_reached_message(0);
+                }
+                channel_throttle->set_servo_out(g.throttle_min.get());
+                channel_steer->set_servo_out(0);
+                lateral_acceleration = 0;
+            } else {
+                calc_lateral_acceleration();
+                calc_nav_steer();
+                calc_throttle(g.speed_cruise);
             }
-            channel_throttle->set_servo_out(g.throttle_min.get());
-            channel_steer->set_servo_out(0);
-            lateral_acceleration = 0;
-        } else {
-            calc_lateral_acceleration();
-            calc_nav_steer();
-            calc_throttle(g.speed_cruise);
+            break;
+
+        default:
+            gcs_send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            break;
         }
         break;
+    }
 
     case STEERING: {
         /*
@@ -509,17 +522,29 @@ void Rover::update_navigation()
         break;
 
     case GUIDED:
-        // no loitering around the wp with the rover, goes direct to the wp position
-        calc_lateral_acceleration();
-        calc_nav_steer();
-        if (rtl_complete || verify_RTL()) {
-            // we have reached destination so stop where we are
-            channel_throttle->set_servo_out(g.throttle_min.get());
-            channel_steer->set_servo_out(0);
-            lateral_acceleration = 0;
+        switch (guided_mode){
+        case Guided_Angle:
+            nav_set_yaw_speed();
+            break;
+
+        case Guided_WP:
+            // no loitering around the wp with the rover, goes direct to the wp position
+            calc_lateral_acceleration();
+            calc_nav_steer();
+            if (rtl_complete || verify_RTL()) {
+                // we have reached destination so stop where we are
+                channel_throttle->set_servo_out(g.throttle_min.get());
+                channel_steer->set_servo_out(0);
+                lateral_acceleration = 0;
+            }
+            break;
+
+        default:
+            gcs_send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            break;
         }
         break;
     }
 }
- 
+
 AP_HAL_MAIN_CALLBACKS(&rover);

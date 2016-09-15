@@ -307,6 +307,29 @@ bool Rover::verify_loiter_unlim()
     return false;
 }
 
+void Rover::nav_set_yaw_speed()
+{
+    // if we haven't received a MAV_CMD_NAV_SET_YAW_SPEED message within the last 3 seconds bring the rover to a halt
+    if ((millis() - guided_yaw_speed.msg_time_ms) > 3000)
+    {
+        gcs_send_text(MAV_SEVERITY_WARNING, "NAV_SET_YAW_SPEED not recvd last 3secs, stopping");
+        channel_throttle->set_servo_out(g.throttle_min.get());
+        channel_steer->set_servo_out(0);
+        lateral_acceleration = 0;
+        return;
+    }
+
+    channel_steer->set_servo_out(steerController.get_steering_out_angle_error(guided_yaw_speed.turn_angle));
+
+    // speed param in the message gives speed as a proportion of cruise speed.
+    // 0.5 would set speed to the cruise speed
+    // 1 is double the cruise speed.
+    float target_speed = g.speed_cruise * guided_yaw_speed.target_speed * 2;
+    calc_throttle(target_speed);
+
+    return;
+}
+
 /********************************************************************************/
 //  Condition (May) commands
 /********************************************************************************/

@@ -369,7 +369,18 @@ private:
     bool auto_throttle_mode;
 
     // Store the time the last GPS message was received.
-    uint32_t last_gps_msg_ms{0}; 
+    uint32_t last_gps_msg_ms{0};
+
+    // Store parameters from NAV_SET_YAW_SPEED
+    struct {
+        float turn_angle;
+        float target_speed;
+        uint32_t msg_time_ms;
+    } guided_yaw_speed;
+
+    // Guided
+    GuidedMode guided_mode;  // stores which GUIDED mode the vehicle is in
+
 
 private:
     // private member functions
@@ -520,6 +531,7 @@ private:
     bool motor_active();
     void update_home();
     void accel_cal_update(void);
+    void nav_set_yaw_speed();
 public:
     bool print_log_menu(void);
     int8_t dump_log(uint8_t argc, const Menu::arg *argv);
