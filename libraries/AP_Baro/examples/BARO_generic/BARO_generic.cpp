@@ -4,6 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -15,6 +16,8 @@ static uint8_t counter;
 void setup()
 {
     hal.console->println("Barometer library test");
+
+    AP_BoardConfig{}.init();
 
     hal.scheduler->delay(1000);
 
