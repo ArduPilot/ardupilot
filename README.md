@@ -32,16 +32,6 @@
 ### Contributors ###
 >>[Github statistics](https://github.com/ArduPilot/ardupilot/graphs/contributors)
 
-### Dronecode.org ###
-
->>ArduPilot is part of Dronecode.org, a Linux Foundation collaborative project.
-
->>Dronecode encompasses projects that control flight, enable mission planning, and otherwise make drone flight and advanced functionality possible.
-
->>Dronecode development is done at the project level with coordinating and resource allocation performed by the TSC and the Board.
-
->>For information on the foundation please visit https://www.dronecode.org and https://github.com/Dronecode for further information or contact celder@dronecode.org
-
 ### How To Get Involved ###
 >>The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](http://dev.ardupilot.org/wiki/guidelines-for-contributors-to-the-apm-codebase)
 
