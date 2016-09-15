@@ -16,7 +16,7 @@ uint32_t timer;
 void setup() {
     hal.console->println("Compass library test");
 
-    AP_BoardConfig{}.init();
+    AP_BoardConfig{}.init(); // initialise the board drivers
 
     if (!compass.init()) {
         AP_HAL::panic("compass initialisation failed!");
