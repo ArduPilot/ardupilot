@@ -34,6 +34,20 @@ board_branch() {
     esac
 }
 
+# add board specific options
+board_options() {
+    board="$1"
+    case $board in
+        bebop)
+            # bebop needs a static build
+            echo "--static"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
 waf() {
     if [ -x ./waf ]; then
         ./waf "$@"
@@ -289,7 +303,8 @@ build_arducopter() {
             ddir=$binaries/Copter/$hdate/$b-$f
             skip_build $tag $ddir && continue
             skip_frame $b $f && continue
-            waf configure --board $b --out $BUILDROOT clean \
+            options=$(board_options $b)
+            waf configure --board $b $options --out $BUILDROOT clean \
                     build --targets bin/arducopter-$f || {
                 echo "Failed build of ArduCopter $b-$f $tag"
                 error_count=$((error_count+1))
