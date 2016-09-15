@@ -5,6 +5,7 @@
 
 #include <AP_Compass/AP_Compass.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -14,6 +15,8 @@ uint32_t timer;
 
 void setup() {
     hal.console->println("Compass library test");
+
+    AP_BoardConfig{}.init();
 
     if (!compass.init()) {
         AP_HAL::panic("compass initialisation failed!");
