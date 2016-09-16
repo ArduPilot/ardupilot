@@ -319,7 +319,7 @@ AP_GPS::detect_instance(uint8_t instance)
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
         }
         // user has to explicitly set the MAV type, do not use AUTO
-        // Do not try to detect the MAV type, assume its there
+        // Do not try to detect the MAV type, assume it's there
         else if (_type[instance] == GPS_TYPE_MAV) {
             _broadcast_gps_type("MAV", instance, dstate->last_baud);
             new_gps = new AP_GPS_MAV(*this, state[instance], NULL);
