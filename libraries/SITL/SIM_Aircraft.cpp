@@ -429,7 +429,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     position += velocity_ef * delta_time;
 
     // velocity relative to air mass, in earth frame
-    velocity_air_ef = velocity_ef - wind_ef;
+    velocity_air_ef = velocity_ef + wind_ef;
     
     // velocity relative to airmass in body frame
     velocity_air_bf = dcm.transposed() * velocity_air_ef;

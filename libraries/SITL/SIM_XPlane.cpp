@@ -343,7 +343,7 @@ failed:
     // new velocity and position vectors
     velocity_ef += accel_earth * delta_time;
     position += velocity_ef * delta_time;
-    velocity_air_ef = velocity_ef - wind_ef;
+    velocity_air_ef = velocity_ef + wind_ef;
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 
     update_position();
