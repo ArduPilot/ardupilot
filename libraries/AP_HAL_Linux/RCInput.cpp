@@ -12,6 +12,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/dsm.h>
+#include <AP_HAL/utility/sumd.h>
+#include <AP_HAL/utility/st24.h>
 
 #include "RCInput.h"
 #include "sbus.h"
@@ -404,6 +406,61 @@ void RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
 #endif
             }
         }
+    }
+}
+
+
+/*
+  add some bytes of input in SUMD serial stream format, coping with partial packets
+ */
+void RCInput::add_sumd_input(const uint8_t *bytes, size_t nbytes)
+{
+    uint16_t values[LINUX_RC_INPUT_NUM_CHANNELS];
+    uint8_t rssi;
+    uint8_t rx_count;
+    uint16_t channel_count;
+
+    while (nbytes > 0) {
+        if (sumd_decode(*bytes++, &rssi, &rx_count, &channel_count, values, LINUX_RC_INPUT_NUM_CHANNELS) == 0) {
+            if (channel_count > LINUX_RC_INPUT_NUM_CHANNELS) {
+                return;
+            }
+            for (uint8_t i=0; i<channel_count; i++) {
+                if (values[i] != 0) {
+                    _pwm_values[i] = values[i];
+                }
+            }
+            _num_channels = channel_count;
+            new_rc_input = true;
+        }
+        nbytes--;
+    }
+}
+
+/*
+  add some bytes of input in ST24 serial stream format, coping with partial packets
+ */
+void RCInput::add_st24_input(const uint8_t *bytes, size_t nbytes)
+{
+    uint16_t values[LINUX_RC_INPUT_NUM_CHANNELS];
+    uint8_t rssi;
+    uint8_t rx_count;
+    uint16_t channel_count;
+
+    while (nbytes > 0) {
+        if (st24_decode(*bytes++, &rssi, &rx_count, &channel_count, values, LINUX_RC_INPUT_NUM_CHANNELS) == 0) {
+            if (channel_count > LINUX_RC_INPUT_NUM_CHANNELS) {
+                return;
+            }
+            for (uint8_t i=0; i<channel_count; i++) {
+                if (values[i] != 0) {
+                    _pwm_values[i] = values[i];
+                }
+            }
+            _num_channels = channel_count;
+            new_rc_input = true;
+        }
+        nbytes--;
     }
 }
 
