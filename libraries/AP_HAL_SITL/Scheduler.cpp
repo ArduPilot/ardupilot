@@ -19,11 +19,11 @@ AP_HAL::Proc Scheduler::_failsafe = NULL;
 volatile bool Scheduler::_timer_suspended = false;
 volatile bool Scheduler::_timer_event_missed = false;
 
-AP_HAL::MemberProc Scheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc Scheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_timer_procs = 0;
 bool Scheduler::_in_timer_proc = false;
 
-AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_io_procs = 0;
 bool Scheduler::_in_io_proc = false;
 
