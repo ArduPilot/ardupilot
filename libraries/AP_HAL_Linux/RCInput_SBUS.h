@@ -20,7 +20,6 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
 
 #include "RCInput.h"
-#include "RCInput_SBUS.h"
 
 namespace Linux {
 
