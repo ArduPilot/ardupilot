@@ -119,6 +119,7 @@ private:
     float calc_mean_squared_residuals(const param_t& params) const;
     float calc_mean_squared_residuals() const;
 
+    void calc_initial_offset();
     void calc_sphere_jacob(const Vector3f& sample, const param_t& params, float* ret) const;
     void run_sphere_fit();
 

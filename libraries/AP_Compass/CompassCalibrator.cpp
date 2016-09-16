@@ -187,6 +187,9 @@ void CompassCalibrator::update(bool &failure) {
             }
             set_status(COMPASS_CAL_RUNNING_STEP_TWO);
         } else {
+            if (_fit_step == 0) {
+                calc_initial_offset();
+            }
             run_sphere_fit();
             _fit_step++;
         }
@@ -470,6 +473,16 @@ void CompassCalibrator::calc_sphere_jacob(const Vector3f& sample, const param_t&
     ret[1] = -1.0f * (((diag.x    * A) + (offdiag.x * B) + (offdiag.y * C))/length);
     ret[2] = -1.0f * (((offdiag.x * A) + (diag.y    * B) + (offdiag.z * C))/length);
     ret[3] = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
+}
+
+void CompassCalibrator::calc_initial_offset()
+{
+    // Set initial offset to the average value of the samples
+    _params.offset.zero();
+    for(uint16_t k = 0; k<_samples_collected; k++) {
+        _params.offset -= _sample_buffer[k].get();
+    }
+    _params.offset /= _samples_collected;
 }
 
 void CompassCalibrator::run_sphere_fit()
