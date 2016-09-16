@@ -936,7 +936,7 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     // this message id might already be deferred
     for (i=0, nextid = next_deferred_message; i < num_deferred_messages; i++) {
         if (deferred_messages[nextid] == id) {
-            // its already deferred, discard
+            // it's already deferred, discard
             return;
         }
         nextid++;
