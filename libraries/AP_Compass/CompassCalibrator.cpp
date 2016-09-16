@@ -686,16 +686,17 @@ uint16_t CompassCalibrator::get_random(void)
 //////////// CompassSample public interface //////////////
 //////////////////////////////////////////////////////////
 
+#define COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(__X) ((int16_t)constrain_float(roundf(__X*16.0f), INT16_MIN, INT16_MAX))
+#define COMPASS_CAL_SAMPLE_SCALE_TO_FLOAT(__X) (__X/16.0f)
+
 Vector3f CompassCalibrator::CompassSample::get() const {
-    Vector3f out;
-    out.x = (float)x*2048.0f/32700.0f;
-    out.y = (float)y*2048.0f/32700.0f;
-    out.z = (float)z*2048.0f/32700.0f;
-    return out;
+    return Vector3f(COMPASS_CAL_SAMPLE_SCALE_TO_FLOAT(x),
+                    COMPASS_CAL_SAMPLE_SCALE_TO_FLOAT(y),
+                    COMPASS_CAL_SAMPLE_SCALE_TO_FLOAT(z));
 }
 
 void CompassCalibrator::CompassSample::set(const Vector3f &in) {
-    x = (int16_t)(in.x*32700.0f/2048.0f + 0.5f);
-    y = (int16_t)(in.y*32700.0f/2048.0f + 0.5f);
-    z = (int16_t)(in.z*32700.0f/2048.0f + 0.5f);
+    x = COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(in.x);
+    y = COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(in.y);
+    z = COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(in.z);
 }
