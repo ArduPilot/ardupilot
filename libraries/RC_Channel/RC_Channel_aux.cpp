@@ -22,6 +22,7 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] = {
 RC_Channel_aux *RC_Channel_aux::_aux_channels[RC_AUX_MAX_CHANNELS];
 uint64_t RC_Channel_aux::_function_mask[2];
 bool RC_Channel_aux::_initialised;
+bool RC_Channel_aux::_disable_passthrough;
 
 void
 RC_Channel_aux::set_function_mask(uint8_t fn)
@@ -47,10 +48,18 @@ RC_Channel_aux::output_ch(void)
     case k_none:                // disabled
         return;
     case k_manual:              // manual
-        set_radio_out(get_radio_in());
+        if (_disable_passthrough) {
+            set_radio_out(get_radio_trim());
+        } else {
+            set_radio_out(get_radio_in());
+        }
         break;
     case k_rcin1 ... k_rcin16: // rc pass-thru
-        set_radio_out(hal.rcin->read(function-k_rcin1));
+        if (_disable_passthrough) {
+            set_radio_out(get_radio_trim());
+        } else {
+            set_radio_out(hal.rcin->read(function-k_rcin1));
+        }
         break;
     case k_motor1 ... k_motor8:
         // handled by AP_Motors::rc_write()

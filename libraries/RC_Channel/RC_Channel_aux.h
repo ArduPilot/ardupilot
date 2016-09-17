@@ -165,11 +165,17 @@ public:
 
     // find first channel that a function is assigned to
     static bool find_channel(Aux_servo_function_t function, uint8_t &chan);
+
+    // control pass-thru of channels
+    static void disable_passthrough(bool disable) {
+        _disable_passthrough = disable;
+    }
     
 private:
     static uint64_t _function_mask[2];
     static bool _initialised;
     static RC_Channel_aux *_aux_channels[RC_AUX_MAX_CHANNELS];
+    static bool _disable_passthrough;
 
     void aux_servo_function_setup(void);
     static void set_function_mask(uint8_t function);
