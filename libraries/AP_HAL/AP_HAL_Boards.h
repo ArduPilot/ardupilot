@@ -2,7 +2,7 @@
  * C preprocesor enumeration of the boards supported by the AP_HAL.
  * This list exists so HAL_BOARD == HAL_BOARD_xxx preprocessor blocks
  * can be used to exclude HAL boards from the build when appropriate.
- * Its not an elegant solution but we can improve it in future.
+ * It's not an elegant solution but we can improve it in future.
  */
 #pragma once
 
