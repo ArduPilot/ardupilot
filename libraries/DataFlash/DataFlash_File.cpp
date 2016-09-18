@@ -451,6 +451,7 @@ char *DataFlash_File::_lastlog_file_name(void) const
 void DataFlash_File::EraseAll()
 {
     uint16_t log_num;
+    const bool was_logging = (_write_fd != -1);
     stop_logging();
 #if !DATAFLASH_FILE_MINIMAL
     for (log_num=1; log_num<=MAX_LOG_FILES; log_num++) {
@@ -468,6 +469,10 @@ void DataFlash_File::EraseAll()
     }
 #endif
     _cached_oldest_log = 0;
+
+    if (was_logging) {
+        start_new_log();
+    }
 }
 
 /* Write a block of data at current offset */
