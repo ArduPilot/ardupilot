@@ -104,6 +104,7 @@ public:
     AP_Int8  flow_delay; // optflow data delay
     AP_Int8  terrain_enable; // enable using terrain for height
     AP_Int8  pin_mask; // for GPIO emulation
+    AP_Float speedup; // simulation speedup
 
     // wind control
     float wind_speed_active;

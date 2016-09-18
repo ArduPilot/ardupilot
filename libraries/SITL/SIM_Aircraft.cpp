@@ -360,6 +360,11 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         fdm.longitude = smoothing.location.lng * 1.0e-7;
         fdm.altitude  = smoothing.location.alt * 1.0e-2;
     }
+
+    if (last_speedup != sitl->speedup && sitl->speedup > 0) {
+        set_speedup(sitl->speedup);
+        last_speedup = sitl->speedup;
+    }
 }
 
 uint64_t Aircraft::get_wall_time_us() const

@@ -147,6 +147,7 @@ protected:
     const char *autotest_dir;
     const char *frame;
     bool use_time_sync = true;
+    float last_speedup = -1;
 
     enum {
         GROUND_BEHAVIOR_NONE=0,
