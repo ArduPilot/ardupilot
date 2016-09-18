@@ -115,8 +115,8 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
         }
     }
 
-    lCRCLo = (uint8_t)(crc & 0xFF);
-    lCRCHi = (uint8_t)((crc >> 8) & 0xFF);
+    lCRCLo = LOWBYTE(crc);
+    lCRCHi = HIGHBYTE(crc);
 
     if (aCheck) {
         return (aBuffer[aLength] == lCRCLo) && (aBuffer[aLength+1] == lCRCHi);
