@@ -5,6 +5,8 @@
 #include "RangeFinder_Backend.h"
 #include <GCS_MAVLink/GCS.h>
 
+#define LEDDARONE_DETECTIONS_MAX 3
+
 // default slave address
 #define LEDDARONE_DEFAULT_ADDRESS 0x01
 
@@ -44,8 +46,8 @@ private:
     int8_t parse_response(void);
 
     AP_HAL::UARTDriver *uart = nullptr;
-    uint32_t last_reading_ms = 0;
+    uint32_t last_reading_ms;
 
-    uint16_t detections[3];
-    uint32_t sum_distance = 0;
+    uint16_t detections[LEDDARONE_DETECTIONS_MAX];
+    uint32_t sum_distance;
 };
