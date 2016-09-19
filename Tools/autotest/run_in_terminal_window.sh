@@ -5,7 +5,7 @@
 # Sigh: theres no common way of handling command line args :-(
 name="$1"
 shift
-echo "Starting $name : $*"
+echo "RiTW: Starting $name : $*"
 # default to xterm as it has the most consistent options and can start minimised
 if [ -n "$DISPLAY" -a -n "$(which osascript)" ]; then
   osascript -e 'tell application "Terminal" to do script "'"$* "'"'
@@ -20,7 +20,7 @@ elif [ -n "$STY" ]; then
   screen -X screen -t "$name" $*
 else
   filename="/tmp/$name.log"
-  echo "Window access not found, logging to $filename"
+  echo "RiTW: Window access not found, logging to $filename"
   cmd="$1"
   shift
 # the following "true" is to avoid bash optimising the following call
