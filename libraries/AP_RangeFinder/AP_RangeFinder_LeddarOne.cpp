@@ -68,12 +68,16 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
     }
 
     // parse a response message, set detections and sum_distance
-    if (parse_response() <= 0) {
+    // must be signed to handle errors
+    int8_t number_detections = parse_response();
+
+    if (number_detections <= 0) {
+        // TODO: when (number_detections < 0) handle LEDDARONE_ERR_
         return false;
     }
 
     // calculate average distance
-    reading_cm = sum_distance / number_detections;
+    reading_cm = sum_distance / (uint8_t)number_detections;
 
     return true;
 }
@@ -204,7 +208,7 @@ int8_t AP_RangeFinder_LeddarOne::parse_response(void)
     }
 
     // number of detections
-    number_detections = data_buffer[10];
+    uint8_t number_detections = data_buffer[10];
 
     // if the number of detection is over , it is false
     if (number_detections > (sizeof(detections) / sizeof(detections[0]))) {
@@ -220,5 +224,5 @@ int8_t AP_RangeFinder_LeddarOne::parse_response(void)
         index_offset += 4;
     }
 
-    return number_detections;
+    return (int8_t)number_detections;
 }
