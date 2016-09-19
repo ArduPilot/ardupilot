@@ -17,7 +17,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_LeddarOne.h"
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -56,6 +55,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 
     // send a request message for Modbus function 4
     if (send_request() < 0) {
+        // TODO: handle LEDDARONE_ERR_SERIAL_PORT
         return false;
     }
 
@@ -103,10 +103,10 @@ void AP_RangeFinder_LeddarOne::update(void)
 bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck)
 {
     uint16_t crc = 0xFFFF;
-    uint32_t i = 0;
-    uint32_t j = 0;
-    uint8_t lCRCHi = 0;
-    uint8_t lCRCLo = 0;
+    uint32_t i;
+    uint32_t j;
+    uint8_t lCRCHi;
+    uint8_t lCRCLo;
 
     for (i=0; i<aLength; i++) {
         crc ^= aBuffer[i];
@@ -139,7 +139,7 @@ int8_t AP_RangeFinder_LeddarOne::send_request(void)
     uint8_t data_buffer[10] = {0};
     uint8_t i = 0;
 
-    int32_t nbytes = uart->available();
+    uint32_t nbytes = uart->available();
 
     // clear buffer
     while (nbytes-- > 0) {
@@ -176,9 +176,9 @@ int8_t AP_RangeFinder_LeddarOne::parse_response(void)
 {
     uint8_t data_buffer[25] = {0};
     uint32_t start_ms = AP_HAL::millis();
-    uint32_t nbytes = 0;
-    uint32_t len =0;
-    uint8_t i = 0;
+    uint32_t nbytes;
+    uint32_t len = 0;
+    uint8_t i;
     uint8_t index_offset = 11;
 
     // read serial
@@ -211,14 +211,14 @@ int8_t AP_RangeFinder_LeddarOne::parse_response(void)
     uint8_t number_detections = data_buffer[10];
 
     // if the number of detection is over , it is false
-    if (number_detections > (sizeof(detections) / sizeof(detections[0]))) {
+    if (number_detections > LEDDARONE_DETECTIONS_MAX) {
         return LEDDARONE_ERR_NUMBER_DETECTIONS;
     }
 
     memset(detections, 0, sizeof(detections));
     sum_distance = 0;
     for (i=0; i<number_detections; i++) {
-        // mm to cm
+        // construct data word from two bytes and convert mm to cm
         detections[i] =  (((uint16_t)data_buffer[index_offset])*256 + data_buffer[index_offset+1]) / 10;
         sum_distance += detections[i];
         index_offset += 4;
