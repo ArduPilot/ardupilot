@@ -88,7 +88,7 @@ for t in $CI_BUILD_TARGET; do
 
             pushd "Tools/Replay"
             make clean
-            make $t -j2
+            make -j2
             popd
         fi
     fi
