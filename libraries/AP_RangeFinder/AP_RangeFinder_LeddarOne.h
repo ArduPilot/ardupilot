@@ -47,6 +47,5 @@ private:
     uint32_t last_reading_ms = 0;
 
     uint16_t detections[3];
-    uint8_t number_detections = 0;
     uint32_t sum_distance = 0;
 };
