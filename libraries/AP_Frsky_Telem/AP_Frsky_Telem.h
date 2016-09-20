@@ -130,7 +130,7 @@ public:
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    void update_sensor_status_flags(uint32_t error_mask) { _ap.sensor_status_error_flags = error_mask; }
+    void update_sensor_status_flags(uint32_t error_mask) { _ap.sensor_status_flags = error_mask; }
     
     struct msg_t
     {
@@ -162,11 +162,11 @@ private:
     {
         uint8_t control_mode;
         uint32_t *value;
-        uint32_t sensor_status_error_flags;
+        uint32_t sensor_status_flags;
     } _ap;
     
     float _relative_home_altitude; // altitude in centimeters above home
-    uint32_t _control_sensors_timer;
+    uint32_t check_sensor_status_timer;
     uint8_t _paramID;
     
     struct
@@ -189,16 +189,16 @@ private:
         uint8_t new_byte;
         bool send_attiandrng;
         bool send_latitude;
-        uint32_t timer_params;
-        uint32_t timer_ap_status;
-        uint32_t timer_batt;
-        uint32_t timer_gps_status;
-        uint32_t timer_home;
-        uint32_t timer_velandyaw;
-        uint32_t timer_gps_latlng;
-        uint32_t timer_vario;
-        uint32_t timer_alt;
-        uint32_t timer_vfas;
+        uint32_t params_timer;
+        uint32_t ap_status_timer;
+        uint32_t batt_timer;
+        uint32_t gps_status_timer;
+        uint32_t home_timer;
+        uint32_t velandyaw_timer;
+        uint32_t gps_latlng_timer;
+        uint32_t vario_timer;
+        uint32_t alt_timer;
+        uint32_t vfas_timer;
     } _passthrough;
     
     struct
@@ -243,7 +243,7 @@ private:
 
     // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format
     uint32_t get_next_msg_chunk(void);
-    void control_sensors_check(void);
+    void check_sensor_status_flags(void);
     uint32_t calc_param(void);
     uint32_t calc_gps_latlng(bool *send_latitude);
     uint32_t calc_gps_status(void);

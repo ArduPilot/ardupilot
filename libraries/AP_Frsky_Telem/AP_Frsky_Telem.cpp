@@ -110,8 +110,8 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
             _passthrough.send_attiandrng = false; // next iteration, check if we should send something other
         } else { // check if there's other data to send
             _passthrough.send_attiandrng = true; // next iteration, send attitude b/c it needs frequent updates to remain smooth
-            // build mavlink message queue for control_sensors flags
-            control_sensors_check();
+            // build mavlink message queue for sensor_status_flags
+            check_sensor_status_flags();
             // if there's any message in the queue, start sending them chunk by chunk; three times each chunk
             if (_msg.sent_idx != _msg.queued_idx) {
                 send_uint32(DIY_FIRST_ID, get_next_msg_chunk());
@@ -119,50 +119,50 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
             }
             // send other sensor data if it's time for them, and reset the corresponding timer if sent
             uint32_t now = AP_HAL::millis();
-            if (((now - _passthrough.timer_params) > 1000) && (!AP_Notify::flags.armed)) {
+            if (((now - _passthrough.params_timer) > 1000) && (!AP_Notify::flags.armed)) {
                 send_uint32(DIY_FIRST_ID+7, calc_param());
-                _passthrough.timer_params = AP_HAL::millis();
+                _passthrough.params_timer = AP_HAL::millis();
                 return;
-            } else if ((now - _passthrough.timer_ap_status) > 500) {
+            } else if ((now - _passthrough.ap_status_timer) > 500) {
                 send_uint32(DIY_FIRST_ID+1, calc_ap_status());
-                _passthrough.timer_ap_status = AP_HAL::millis();
+                _passthrough.ap_status_timer = AP_HAL::millis();
                 return;
-            } else if ((now - _passthrough.timer_batt) > 1000) {
+            } else if ((now - _passthrough.batt_timer) > 1000) {
                 send_uint32(DIY_FIRST_ID+3, calc_batt());
-                _passthrough.timer_batt = AP_HAL::millis();
+                _passthrough.batt_timer = AP_HAL::millis();
                 return;
-            } else if ((now - _passthrough.timer_gps_status) > 1000) {
+            } else if ((now - _passthrough.gps_status_timer) > 1000) {
                 send_uint32(DIY_FIRST_ID+2, calc_gps_status());
-                _passthrough.timer_gps_status = AP_HAL::millis();
+                _passthrough.gps_status_timer = AP_HAL::millis();
                 return;
-            } else if ((now - _passthrough.timer_home) > 500) {
+            } else if ((now - _passthrough.home_timer) > 500) {
                 send_uint32(DIY_FIRST_ID+4, calc_home());
-                _passthrough.timer_home = AP_HAL::millis();
+                _passthrough.home_timer = AP_HAL::millis();
                 return;
-            } else if ((now - _passthrough.timer_velandyaw) > 500) {
+            } else if ((now - _passthrough.velandyaw_timer) > 500) {
                 send_uint32(DIY_FIRST_ID+5, calc_velandyaw());
-                _passthrough.timer_velandyaw = AP_HAL::millis();
+                _passthrough.velandyaw_timer = AP_HAL::millis();
                 return;
-            } else if ((now - _passthrough.timer_gps_latlng) > 1000) {
+            } else if ((now - _passthrough.gps_latlng_timer) > 1000) {
                 send_uint32(GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
                 if (!_passthrough.send_latitude) { // we've cycled and sent one each of longitude then latitude, so reset the timer
-                    _passthrough.timer_gps_latlng = AP_HAL::millis();
+                    _passthrough.gps_latlng_timer = AP_HAL::millis();
                 }
                 return;
-            } else if ((now - _passthrough.timer_vario) > 500) {
+            } else if ((now - _passthrough.vario_timer) > 500) {
                 Vector3f velNED;
                 if (_ahrs.get_velocity_NED(velNED)) {
                     send_uint32(VARIO_FIRST_ID, (int32_t)roundf(-velNED.z*100)); // vertical velocity in cm/s, +ve up
                 }
-                _passthrough.timer_vario = AP_HAL::millis();
+                _passthrough.vario_timer = AP_HAL::millis();
                 return;
-            } else if ((now - _passthrough.timer_alt) > 1000) {
+            } else if ((now - _passthrough.alt_timer) > 1000) {
                 send_uint32(ALT_FIRST_ID, (int32_t)_relative_home_altitude); // altitude in cm above home position
-                _passthrough.timer_alt = AP_HAL::millis();
+                _passthrough.alt_timer = AP_HAL::millis();
                 return;
-            } else if ((now - _passthrough.timer_vfas) > 1000) {
+            } else if ((now - _passthrough.vfas_timer) > 1000) {
                 send_uint32(VFAS_FIRST_ID, (uint32_t)roundf(_battery.voltage() * 100.0f)); // battery pack voltage in volts
-                _passthrough.timer_vfas = AP_HAL::millis();
+                _passthrough.vfas_timer = AP_HAL::millis();
                 return;
             }
         }
@@ -484,42 +484,42 @@ void AP_Frsky_Telem::queue_message(MAV_SEVERITY severity, const char *text)
  * add control_sensors information to message cue, normally passed as sys_status mavlink messages to the GCS, for transmission through FrSky link
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-void AP_Frsky_Telem::control_sensors_check(void)
+void AP_Frsky_Telem::check_sensor_status_flags(void)
 {
     uint32_t now = AP_HAL::millis();
 
-    if ((now - _control_sensors_timer) > 5000) { // prevent repeating any system_status messages unless 5 seconds have passed
+    if ((now - check_sensor_status_timer) > 5000) { // prevent repeating any system_status messages unless 5 seconds have passed
         // only one error is reported at a time (in order of preference). Same setup and displayed messages as Mission Planner.
-        if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_GPS) > 0) {
+        if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_GPS) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad GPS Health");
-            _control_sensors_timer = now;
-        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_3D_GYRO) > 0) {
+            check_sensor_status_timer = now;
+        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_3D_GYRO) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Gyro Health");
-            _control_sensors_timer = now;
-        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_3D_ACCEL) > 0) {
+            check_sensor_status_timer = now;
+        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_3D_ACCEL) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Accel Health");
-            _control_sensors_timer = now;
-        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_3D_MAG) > 0) {
+            check_sensor_status_timer = now;
+        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_3D_MAG) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Compass Health");
-            _control_sensors_timer = now;
-        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE) > 0) {
+            check_sensor_status_timer = now;
+        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Baro Health");
-            _control_sensors_timer = now;
-        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_LASER_POSITION) > 0) {
+            check_sensor_status_timer = now;
+        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_LASER_POSITION) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad LiDAR Health");
-            _control_sensors_timer = now;
-        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW) > 0) {
+            check_sensor_status_timer = now;
+        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad OptFlow Health");
-            _control_sensors_timer = now;
-        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_TERRAIN) > 0) {
+            check_sensor_status_timer = now;
+        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_TERRAIN) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad or No Terrain Data");
-            _control_sensors_timer = now;
-        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_GEOFENCE) > 0) {
+            check_sensor_status_timer = now;
+        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_GEOFENCE) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Geofence Breach");
-            _control_sensors_timer = now;
-        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_AHRS) > 0) {
+            check_sensor_status_timer = now;
+        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_AHRS) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad AHRS");
-            _control_sensors_timer = now;
+            check_sensor_status_timer = now;
         }
     }
 }
