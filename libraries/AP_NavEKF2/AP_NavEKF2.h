@@ -268,7 +268,7 @@ public:
     // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
     bool getHeightControlLimit(float &height) const;
 
-    // return the amount of yaw angle change due to the last yaw angle reset in radians
+    // return the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     uint32_t getLastYawResetAngle(float &yawAngDelta);
 
@@ -380,4 +380,11 @@ private:
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;
+    
+    struct {
+        uint32_t last_function_call;  // last time getLastYawYawResetAngle was called
+        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
+        uint32_t last_primary_change; // last time a primary has changed
+        float core_delta;             // the ammount of yaw change between cores when a change happened
+    } yaw_reset_data;
 };
