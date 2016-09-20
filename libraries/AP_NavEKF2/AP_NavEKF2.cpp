@@ -1159,52 +1159,7 @@ uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
     if (!core) {
         return 0;
     }
-
-    // check for an internal ekf yaw reset
-    float temp_yaw_delta;
-    uint32_t ekf_reset_ms = core[primary].getLastYawResetAngle(temp_yaw_delta);
-    if (ekf_reset_ms != yaw_step_data.last_ekf_reset_ms) {
-        // record the time of the ekf's internal yaw reset event
-        yaw_step_data.last_ekf_reset_ms = ekf_reset_ms;
-
-        // record the the ekf's internal yaw reset value
-        yaw_step_data.yaw_delta = temp_yaw_delta;
-
-        // record the yaw reset event time
-        yaw_step_data.yaw_reset_time_ms = imuSampleTime_us/1000;
-
-    }
-
-    // check for a core switch and if a switch has occurred, set the yaw reset delta
-    // to the difference in yaw angle between the current and last yaw angle
-    Vector3f eulers_primary;
-    core[primary].getEulerAngles(eulers_primary);
-    if (primary != yaw_step_data.prev_instance) {
-        // the delta is the difference between the current and previous yaw
-        // This overwrites any yaw reset value recorded from an internal ekf reset
-        // that has occured on the same time-step
-        yaw_step_data.yaw_delta = wrap_PI(eulers_primary.z - yaw_step_data.prev_yaw);
-
-        // record the time of the yaw reset event
-        yaw_step_data.yaw_reset_time_ms = imuSampleTime_us/1000;
-
-        // update the time recorded for the last ekf internal yaw reset forthe primary core to
-        // prevent a yaw ekf reset event being published on the next frame due to the change in time
-        yaw_step_data.last_ekf_reset_ms = ekf_reset_ms;
-
-    }
-
-    // record the yaw angle from the primary core
-    yaw_step_data.prev_yaw = eulers_primary.z;
-
-    // record the primary core
-    yaw_step_data.prev_instance = primary;
-
-    // return the yaw delta from the last event
-    yawAngDelta = yaw_step_data.yaw_delta;
-
-    // return the time of the last event
-    return yaw_step_data.yaw_reset_time_ms;
+    return core[primary].getLastYawResetAngle(yawAng);
 }
 
 // return the amount of NE position change due to the last position reset in metres
