@@ -201,6 +201,13 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
     state.gyro_bias[0] = gyro_bias[0];
     state.gyro_bias[1] = gyro_bias[1];
     state.gyro_bias[2] = gyro_bias[2];
+
+    Vector3f vel;
+    if (ahrs.get_velocity_NED(vel)) {
+        state.velocity_ned[0] = vel.x;
+        state.velocity_ned[1] = vel.y;
+        state.velocity_ned[2] = vel.z;
+    }
     
     for (const struct hook_list *h=hooks[HOOK_AHRS_UPDATE]; h; h=h->next) {
         ap_hook_AHRS_update_fn_t fn = reinterpret_cast<ap_hook_AHRS_update_fn_t>(h->symbol);
