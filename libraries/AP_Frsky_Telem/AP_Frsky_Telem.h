@@ -120,8 +120,8 @@ public:
     // init - perform required initialisation
     void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage = nullptr, AP_Float *fs_batt_mah = nullptr, uint32_t *ap_valuep = nullptr);
 
-    // add statustext message to FrSky lib message queue
-    void queue_message(MAV_SEVERITY severity, const char *text);
+    // add statustext message to FrSky lib queue
+    static void queue_message(MAV_SEVERITY severity, const char *text);
 
     // update flight control mode. The control mode is vehicle type specific
     void update_control_mode(uint8_t mode) { _ap.control_mode = mode; }
