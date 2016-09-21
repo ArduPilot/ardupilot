@@ -20,9 +20,14 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_DRDY_PIN RPI_GPIO_24
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #define MPU6000_DRDY_PIN MINNOW_GPIO_I2S_CLK
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #define MPU6000_EXT_SYNC_ENABLE 1
+#define MPU6000_FREQ 991.821289065
 #endif
+#endif
+
+#ifndef MPU6000_FREQ
+#define MPU6000_FREQ 1000
 #endif
 
 /*
@@ -384,8 +389,8 @@ void AP_InertialSensor_MPU6000::start()
     _dev->get_semaphore()->give();
 
     // grab the used instances
-    _gyro_instance = _imu.register_gyro(1000);
-    _accel_instance = _imu.register_accel(1000);
+    _gyro_instance = _imu.register_gyro(MPU6000_FREQ);
+    _accel_instance = _imu.register_accel(MPU6000_FREQ);
 
     hal.scheduler->resume_timer_procs();
 
