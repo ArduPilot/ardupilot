@@ -1360,7 +1360,7 @@ void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, c
 
     // add statustext message to FrSky lib queue
     AP_Frsky_Telem::queue_message(severity, text);
-    
+
     // try and send immediately if possible
     service_statustext();
 }
