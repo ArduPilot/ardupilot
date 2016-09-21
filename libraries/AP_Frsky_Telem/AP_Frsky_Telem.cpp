@@ -98,8 +98,10 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
             _passthrough.send_attiandrng = false; // next iteration, check if we should send something other
         } else { // check if there's other data to send
             _passthrough.send_attiandrng = true; // next iteration, send attitude b/c it needs frequent updates to remain smooth
-            // build mavlink message queue for sensor_status_flags
+            // build message queue for sensor_status_flags
             check_sensor_status_flags();
+            // build message queue for ekf_status
+            check_ekf_status();
             // if there's any message in the queue, start sending them chunk by chunk; three times each chunk
             if (get_next_msg_chunk()) {
                 send_uint32(DIY_FIRST_ID, _msg_chunk.chunk);
@@ -479,7 +481,7 @@ void AP_Frsky_Telem::queue_message(MAV_SEVERITY severity, const char *text)
 }
 
 /*
- * add control_sensors information to message cue, normally passed as sys_status mavlink messages to the GCS, for transmission through FrSky link
+ * add sensor_status_flags information to message cue, normally passed as sys_status mavlink messages to the GCS, for transmission through FrSky link
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
 void AP_Frsky_Telem::check_sensor_status_flags(void)
@@ -528,6 +530,44 @@ void AP_Frsky_Telem::check_sensor_status_flags(void)
     }
 }
 
+/*
+ * add innovation variance information to message cue, normally passed as ekf_status_report mavlink messages to the GCS, for transmission through FrSky link
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+void AP_Frsky_Telem::check_ekf_status(void)
+{
+    // get variances
+    float velVar, posVar, hgtVar, tasVar;
+    Vector3f magVar;
+    Vector2f offset;
+    if (_ahrs.get_variances(velVar, posVar, hgtVar, magVar, tasVar, offset)) {
+        uint32_t now = AP_HAL::millis();
+        if ((now - check_ekf_status_timer) > 10000) { // prevent repeating any ekf_status message unless 10 seconds have passed
+            // multiple errors can be reported at a time. Same setup as Mission Planner.
+            if (velVar >= 1) {
+                queue_message(MAV_SEVERITY_CRITICAL, "Error velocity variance");
+                check_ekf_status_timer = now;
+            }
+            if (posVar >= 1) {
+                queue_message(MAV_SEVERITY_CRITICAL, "Error pos horiz variance");
+                check_ekf_status_timer = now;
+            }
+            if (hgtVar >= 1) {
+                queue_message(MAV_SEVERITY_CRITICAL, "Error pos vert variance");
+                check_ekf_status_timer = now;
+            }
+            if (magVar.length() >= 1) {
+                queue_message(MAV_SEVERITY_CRITICAL, "Error compass variance");
+                check_ekf_status_timer = now;
+            }
+            if (tasVar >= 1) {
+                queue_message(MAV_SEVERITY_CRITICAL, "Error terrain alt variance");
+                check_ekf_status_timer = now;
+            }
+        }
+    }
+}
+      
 /*
  * prepare parameter data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)

@@ -164,6 +164,7 @@ private:
     
     float _relative_home_altitude; // altitude in centimeters above home
     uint32_t check_sensor_status_timer;
+    uint32_t check_ekf_status_timer;
     uint8_t _paramID;
     
     struct
@@ -239,6 +240,7 @@ private:
     // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format
     bool get_next_msg_chunk(void);
     void check_sensor_status_flags(void);
+    void check_ekf_status(void);
     uint32_t calc_param(void);
     uint32_t calc_gps_latlng(bool *send_latitude);
     uint32_t calc_gps_status(void);
