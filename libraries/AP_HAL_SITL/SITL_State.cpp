@@ -97,7 +97,10 @@ void SITL_State::_sitl_setup(const char *home_str)
             gimbal = new SITL::Gimbal(_sitl->state);
         }
 
-        fg_socket.connect("127.0.0.1", 5503);
+        if (_use_fg_view) {
+            fg_socket.connect("127.0.0.1", 5503);
+        }
+
     }
 
     if (_synthetic_clock_mode) {
@@ -295,7 +298,7 @@ void SITL_State::_fdm_input_local(void)
         adsb->update();
     }
 
-    if (_sitl) {
+    if (_sitl && _use_fg_view) {
         _output_to_flightgear();
     }
 
