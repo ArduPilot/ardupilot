@@ -42,11 +42,28 @@ static const float bat_comp_polynomial_coeffs[5] = {
 };
 
 /* battery percent lookup table */
-#define BATTERY_PERCENT_LUT_SIZE 12
 static const struct {
     float voltage;
     float percent;
-} bat_lut[BATTERY_PERCENT_LUT_SIZE] = {
+} bat_lut[] = {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+    {9.5, 0},
+    {11.04, 5},
+    {11.11, 10},
+    {11.21, 15},
+    {11.3, 25},
+    {11.4, 45},
+    {11.6, 55},
+    {11.9, 79},
+    {12.02, 84},
+    {12.11, 88},
+    {12.19, 91},
+    {12.26, 94},
+    {12.35, 96},
+    {12.45, 98},
+    {12.5, 10}
+#else
+    // bebop
     {10.50f, 0.0f},
     {10.741699f, 2.6063901f},
     {10.835779f, 5.1693798f},
@@ -59,8 +76,10 @@ static const struct {
     {11.746556f, 79.496082f},
     {12.110226f, 94.874021f},
     {12.3f, 100.0f }
+#endif
 };
-
+#define BATTERY_PERCENT_LUT_SIZE ARRAY_SIZE(bat_lut)
+      
 void AP_BattMonitor_Bebop::init(void)
 {
     set_capacity(BATTERY_CAPACITY);
