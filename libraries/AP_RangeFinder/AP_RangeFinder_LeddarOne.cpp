@@ -103,14 +103,10 @@ void AP_RangeFinder_LeddarOne::update(void)
 bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck)
 {
     uint16_t crc = 0xFFFF;
-    uint32_t i;
-    uint32_t j;
-    uint8_t lCRCHi;
-    uint8_t lCRCLo;
 
-    for (i=0; i<aLength; i++) {
+    for (uint32_t i=0; i<aLength; i++) {
         crc ^= aBuffer[i];
-        for (j=0; j<8; j++) {
+        for (uint32_t j=0; j<8; j++) {
             if (crc & 1) {
                 crc = (crc >> 1) ^ 0xA001;
             } else {
@@ -119,8 +115,8 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
         }
     }
 
-    lCRCLo = LOWBYTE(crc);
-    lCRCHi = HIGHBYTE(crc);
+    uint8_t lCRCLo = LOWBYTE(crc);
+    uint8_t lCRCHi = HIGHBYTE(crc);
 
     if (aCheck) {
         return (aBuffer[aLength] == lCRCLo) && (aBuffer[aLength+1] == lCRCHi);
@@ -176,14 +172,13 @@ int8_t AP_RangeFinder_LeddarOne::parse_response(void)
 {
     uint8_t data_buffer[25] = {0};
     uint32_t start_ms = AP_HAL::millis();
-    uint32_t nbytes;
     uint32_t len = 0;
     uint8_t i;
     uint8_t index_offset = 11;
 
     // read serial
     while (AP_HAL::millis() - start_ms < 10) {
-        nbytes = uart->available();
+        uint32_t nbytes = uart->available();
         if (len == 25 && nbytes == 0) {
             break;
         } else {
