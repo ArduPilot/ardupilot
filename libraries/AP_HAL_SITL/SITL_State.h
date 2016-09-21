@@ -169,6 +169,7 @@ private:
     bool _synthetic_clock_mode;
 
     bool _use_rtscts;
+    bool _use_fg_view;
     
     const char *_fdm_address;
 
