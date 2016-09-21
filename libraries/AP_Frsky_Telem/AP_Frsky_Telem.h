@@ -118,6 +118,7 @@ public:
 
     // init - perform required initialisation
     void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value);
+    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah);
     void init(const AP_SerialManager &serial_manager);
 
     // add statustext message to FrSky lib queue.
@@ -126,6 +127,9 @@ public:
     // update flight control mode. The control mode is vehicle type specific
     void update_control_mode(uint8_t mode) { _ap.control_mode = mode; }
 
+    // update whether we're flying (used for Plane)
+    void set_is_flying(bool is_flying) { *_ap.value == is_flying ? (*_ap.value | AP_ISFLYING_FLAG) : (*_ap.value & (~AP_ISFLYING_FLAG)); }
+ 
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
