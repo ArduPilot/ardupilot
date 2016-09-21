@@ -333,10 +333,12 @@ _options_for_frame = {
     },
     # SIM
     "gazebo-iris": {
+        "model": "gazebo",
         "waf_target": "bin/arducopter-quad",
         "default_params_filename": "default_params/gazebo-iris.parm",
     },
     "gazebo-zephyr": {
+        "model": "gazebo",
         "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/gazebo-zephyr.parm",
     },

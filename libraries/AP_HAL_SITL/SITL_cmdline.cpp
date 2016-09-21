@@ -42,21 +42,24 @@ static void _sig_fpe(int signum)
 void SITL_State::_usage(void)
 {
     printf("Options:\n"
-           "\t--home HOME        set home location (lat,lng,alt,yaw)\n"
-           "\t--model MODEL      set simulation model\n"
-           "\t--wipe             wipe eeprom and dataflash\n"
-           "\t--unhide-groups    parameter enumeration ignores AP_PARAM_FLAG_ENABLE\n"
-           "\t--rate RATE        set SITL framerate\n"
-           "\t--console          use console instead of TCP ports\n"
-           "\t--instance N       set instance of SITL (adds 10*instance to all port numbers)\n"
-           "\t--speedup SPEEDUP  set simulation speedup\n"
-           "\t--gimbal           enable simulated MAVLink gimbal\n"
-           "\t--autotest-dir DIR set directory for additional files\n"
-           "\t--uartA device     set device string for UARTA\n"
-           "\t--uartB device     set device string for UARTB\n"
-           "\t--uartC device     set device string for UARTC\n"
-           "\t--uartD device     set device string for UARTD\n"
-           "\t--uartE device     set device string for UARTE\n"
+           "\t--home HOME              set home location (lat,lng,alt,yaw)\n"
+           "\t--model MODEL            set simulation model\n"
+           "\t--wipe                   wipe eeprom and dataflash\n"
+           "\t--unhide-groups          parameter enumeration ignores AP_PARAM_FLAG_ENABLE\n"
+           "\t--rate RATE              set SITL framerate\n"
+           "\t--console                use console instead of TCP ports\n"
+           "\t--instance N             set instance of SITL (adds 10*instance to all port numbers)\n"
+           "\t--speedup SPEEDUP        set simulation speedup\n"
+           "\t--gimbal                 enable simulated MAVLink gimbal\n"
+           "\t--autotest-dir DIR       set directory for additional files\n"
+           "\t--uartA device           set device string for UARTA\n"
+           "\t--uartB device           set device string for UARTB\n"
+           "\t--uartC device           set device string for UARTC\n"
+           "\t--uartD device           set device string for UARTD\n"
+           "\t--uartE device           set device string for UARTE\n"
+           "\t--gazebo-address ADDR    set address string for gazebo\n"
+           "\t--gazebo-port-in PORT    set port num for gazebo in\n"
+           "\t--gazebo-port-out PORT   set port num for gazebo out\n"
            "\t--defaults path    set path to defaults file\n"
         );
 }
@@ -134,6 +137,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _fdm_address = "127.0.0.1";
     _client_address = nullptr;
     _use_fg_view = true;
+    _gazebo_address = "127.0.0.1";
+    _gazebo_port_in = 9003;
+    _gazebo_port_out = 9002;
     _instance = 0;
 
     enum long_options {
@@ -148,6 +154,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTF,
         CMDLINE_RTSCTS,
         CMDLINE_FGVIEW,
+        CMDLINE_GAZEBO_ADDRESS,
+        CMDLINE_GAZEBO_PORT_IN,
+        CMDLINE_GAZEBO_PORT_OUT,
         CMDLINE_DEFAULTS
     };
 
@@ -174,6 +183,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
+        {"gazebo-address",  true,  0, CMDLINE_GAZEBO_ADDRESS},
+        {"gazebo-port-in",  true,  0, CMDLINE_GAZEBO_PORT_IN},
+        {"gazebo-port-out", true,  0, CMDLINE_GAZEBO_PORT_OUT},
         {0, false, 0, 0}
     };
 
@@ -201,6 +213,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _rcout_port += _instance * 10;
             _rcin_port  += _instance * 10;
             _fg_view_port += _instance * 10;
+            _gazebo_port_in += _instance * 10;
+            _gazebo_port_out += _instance * 10;
         }
         break;
         case 'P':
@@ -248,6 +262,15 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_FGVIEW:
             _use_fg_view = false;
             break;
+        case CMDLINE_GAZEBO_ADDRESS:
+            _gazebo_address = gopt.optarg;
+            break;
+        case CMDLINE_GAZEBO_PORT_IN:
+            _gazebo_port_in = atoi(gopt.optarg);
+            break;
+        case CMDLINE_GAZEBO_PORT_OUT:
+            _gazebo_port_out = atoi(gopt.optarg);
+            break;
         default:
             _usage();
             exit(1);
@@ -262,6 +285,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
         if (strncasecmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
             sitl_model = model_constructors[i].constructor(home_str, model_str);
+            if (strncasecmp("gazebo", model_str, strlen("gazebo")) == 0) {
+              sitl_model->set_interface_ports(_gazebo_address, _gazebo_port_in, _gazebo_port_out);
+            }
             sitl_model->set_speedup(speedup);
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
