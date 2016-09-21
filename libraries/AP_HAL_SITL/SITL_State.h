@@ -170,6 +170,9 @@ private:
     bool _use_fg_view;
     
     const char *_fdm_address;
+    const char *_gazebo_address;
+    int _gazebo_port_in;
+    int _gazebo_port_out;
 
     // delay buffer variables
     static const uint8_t mag_buffer_length = 250;
