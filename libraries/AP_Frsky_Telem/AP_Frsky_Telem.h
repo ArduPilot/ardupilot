@@ -21,8 +21,9 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
-#define MSG_BUFFER_LENGTH           5 // size of the message buffer queue (number of messages waiting to be sent)
+#define FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY          5 // size of the message buffer queue (max number of messages waiting to be sent)
 
 /* 
 for FrSky D protocol (D-receivers)
@@ -119,7 +120,7 @@ public:
     // init - perform required initialisation
     void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage = nullptr, AP_Float *fs_batt_mah = nullptr, uint32_t *ap_value = nullptr);
 
-    // add statustext message to FrSky lib queue.
+    // add statustext message to FrSky lib message queue
     void queue_message(MAV_SEVERITY severity, const char *text);
 
     // update flight control mode. The control mode is vehicle type specific
@@ -132,17 +133,10 @@ public:
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
+
     void update_sensor_status_flags(uint32_t error_mask) { _ap.sensor_status_flags = error_mask; }
-    
-    struct msg_t
-    {
-        struct {
-            const char *text;
-            uint8_t severity;
-        } data[MSG_BUFFER_LENGTH];
-        uint8_t queued_idx;
-        uint8_t sent_idx;
-    };
+        
+    static ObjectArray<mavlink_statustext_t> _statustext_queue;
     
 private:
     AP_AHRS &_ahrs;
@@ -224,8 +218,6 @@ private:
         uint8_t repeats; // send each message "chunk" 3 times to make sure the entire messsage gets through without getting cut
         uint8_t char_index; // index of which character to get in the message
     } _msg_chunk;
-
-    msg_t _msg;
     
     // main transmission function when protocol is FrSky SPort Passthrough (OpenTX)
     void send_SPort_Passthrough(void);

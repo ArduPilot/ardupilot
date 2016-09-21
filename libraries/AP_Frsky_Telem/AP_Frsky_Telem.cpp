@@ -23,6 +23,8 @@
 #include "AP_Frsky_Telem.h"
 extern const AP_HAL::HAL& hal;
 
+ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY);
+
 //constructor
 AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng) :
     _ahrs(ahrs),
@@ -95,7 +97,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
             // build mavlink message queue for sensor_status_flags
             check_sensor_status_flags();
             // if there's any message in the queue, start sending them chunk by chunk; three times each chunk
-            if (_msg.sent_idx != _msg.queued_idx) {
+            if (!_statustext_queue.empty()) {
                 send_uint32(DIY_FIRST_ID, get_next_msg_chunk());
                 return;
             }
@@ -417,16 +419,16 @@ uint32_t AP_Frsky_Telem::get_next_msg_chunk(void)
 {
     if (_msg_chunk.repeats == 0) {
         _msg_chunk.chunk = 0;
-        uint8_t character = _msg.data[_msg.sent_idx].text[_msg_chunk.char_index++];
+        uint8_t character = _statustext_queue[0]->text[_msg_chunk.char_index++];
         if (character) {
             _msg_chunk.chunk |= character<<24;
-            character = _msg.data[_msg.sent_idx].text[_msg_chunk.char_index++];
+            character = _statustext_queue[0]->text[_msg_chunk.char_index++];
             if (character) {
                 _msg_chunk.chunk |= character<<16;
-                character = _msg.data[_msg.sent_idx].text[_msg_chunk.char_index++];
+                character = _statustext_queue[0]->text[_msg_chunk.char_index++];
                 if (character) {
                     _msg_chunk.chunk |= character<<8;
-                    character = _msg.data[_msg.sent_idx].text[_msg_chunk.char_index++];
+                    character = _statustext_queue[0]->text[_msg_chunk.char_index++];
                     if (character) {
                         _msg_chunk.chunk |= character;
                     }
@@ -436,16 +438,16 @@ uint32_t AP_Frsky_Telem::get_next_msg_chunk(void)
         if (!character) { // we've reached the end of the message (string terminated by '\0')
             _msg_chunk.char_index = 0;
             // add severity which is sent as the MSB of the last three bytes of the last chunk (bits 24, 16, and 8) since a character is on 7 bits
-            _msg_chunk.chunk |= (_msg.data[_msg.sent_idx].severity & 0x4)<<21;
-            _msg_chunk.chunk |= (_msg.data[_msg.sent_idx].severity & 0x2)<<14;
-            _msg_chunk.chunk |= (_msg.data[_msg.sent_idx].severity & 0x1)<<7;
+            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x4)<<21;
+            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x2)<<14;
+            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x1)<<7;
         }
     }
     _msg_chunk.repeats++;
     if (_msg_chunk.repeats > 2) { // repeat each message chunk 3 times to ensure transmission
         _msg_chunk.repeats = 0;
         if (_msg_chunk.char_index == 0) { // if we're ready for the next message
-            _msg.sent_idx = (_msg.sent_idx + 1) % MSG_BUFFER_LENGTH; // flag the current message as sent
+            _statustext_queue.remove(0);
         }
     }
     return _msg_chunk.chunk;
@@ -457,9 +459,15 @@ uint32_t AP_Frsky_Telem::get_next_msg_chunk(void)
  */
 void AP_Frsky_Telem::queue_message(MAV_SEVERITY severity, const char *text)
 {
-    _msg.data[_msg.queued_idx].severity = severity;
-    _msg.data[_msg.queued_idx].text = text;
-    _msg.queued_idx = (_msg.queued_idx + 1) % MSG_BUFFER_LENGTH;
+    mavlink_statustext_t statustext{};
+
+    statustext.severity = severity;
+    strncpy(statustext.text, text, sizeof(statustext.text));
+
+    // The force push will ensure comm links do not block other comm links forever if they fail.
+    // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
+    // block but not until the buffer fills up.
+    _statustext_queue.push_force(statustext);
 }
 
 /*
