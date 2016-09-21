@@ -129,7 +129,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _synthetic_clock_mode = false;
     _base_port = 5760;
     _rcout_port = 5502;
-    _simin_port = 5501;
+    _rcin_port = 5501;
     _fdm_address = "127.0.0.1";
     _client_address = nullptr;
     _use_fg_view = false;
@@ -198,7 +198,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _instance = atoi(gopt.optarg);
             _base_port  += _instance * 10;
             _rcout_port += _instance * 10;
-            _simin_port += _instance * 10;
+            _rcin_port  += _instance * 10;
         }
         break;
         case 'P':
