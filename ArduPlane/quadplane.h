@@ -168,6 +168,7 @@ private:
 
     void init_hover(void);
     void control_hover(void);
+    void run_rate_controller(void);
 
     void init_loiter(void);
     void init_land(void);

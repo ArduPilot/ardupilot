@@ -1006,7 +1006,7 @@ void QuadPlane::update_transition(void)
         }
         assisted_flight = true;
         hold_hover(assist_climb_rate_cms());
-        attitude_control->rate_controller_run();
+        run_rate_controller();
         motors_output();
         last_throttle = motors->get_throttle();
         break;
@@ -1027,7 +1027,7 @@ void QuadPlane::update_transition(void)
         }
         assisted_flight = true;
         hold_stabilize(throttle_scaled);
-        attitude_control->rate_controller_run();
+        run_rate_controller();
         motors_output();
         break;
     }
@@ -1039,6 +1039,15 @@ void QuadPlane::update_transition(void)
         }
         break;
     }
+}
+
+/*
+  run multicopter rate controller
+ */
+void QuadPlane::run_rate_controller(void)
+{
+    attitude_control->set_throttle_mix_max();
+    attitude_control->rate_controller_run();
 }
 
 /*
@@ -1067,7 +1076,7 @@ void QuadPlane::update(void)
         assisted_flight = false;
         
         // run low level rate controllers
-        attitude_control->rate_controller_run();
+        run_rate_controller();
 
         // output to motors
         motors_output();
