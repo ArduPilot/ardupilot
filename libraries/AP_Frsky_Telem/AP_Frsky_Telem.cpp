@@ -550,7 +550,7 @@ void AP_Frsky_Telem::check_sensor_status_flags(void)
             queue_message(MAV_SEVERITY_CRITICAL, "Bad AHRS");
             check_sensor_status_timer = now;
         } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_RC_RECEIVER) > 0) {
-            queue_message(MAV_SEVERITY_CRITICAL, "NO RC Receiver");
+            queue_message(MAV_SEVERITY_CRITICAL, "No RC Receiver");
             check_sensor_status_timer = now;
         } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_LOGGING) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Logging");
