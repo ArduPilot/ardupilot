@@ -133,16 +133,21 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
 int8_t AP_RangeFinder_LeddarOne::send_request(void)
 {
     uint8_t data_buffer[10] = {0};
-    uint8_t i = 0;
+    uint8_t len = 0;
 
     uint32_t nbytes = uart->available();
 
-    // clear buffer
-    while (nbytes-- > 0) {
-        uart->read();
-        if (++i > 250) {
+    // clear buffer while available bytes is not zero
+    while (nbytes) {
+        len += nbytes;
+        if (len > 250) {
             return LEDDARONE_ERR_SERIAL_PORT;
         }
+        uint32_t read_nbytes = nbytes;
+        while (read_nbytes-- > 0) {
+            uart->read();
+        }
+        nbytes = uart->available();
     }
 
     // Modbus read input register (function code 0x04)
@@ -157,7 +162,7 @@ int8_t AP_RangeFinder_LeddarOne::send_request(void)
     CRC16(data_buffer, 6, false);
 
     // write buffer data with CRC16 bits
-    for (i=0; i<8; i++) {
+    for (uint8_t i=0; i<8; i++) {
         uart->write(data_buffer[i]);
     }
     uart->flush();
@@ -194,7 +199,7 @@ int8_t AP_RangeFinder_LeddarOne::parse_response(void)
     }
 
     if (len != 25) {
-    	return LEDDARONE_ERR_BAD_RESPONSE;
+        return LEDDARONE_ERR_BAD_RESPONSE;
     }
 
     // CRC16
