@@ -209,7 +209,7 @@ void Rover::send_extended_status1(mavlink_channel_t chan)
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry
-    uint32_t sensors_error_flags = (control_sensors_health ^ control_sensors_enabled) & control_sensors_present;
+    uint32_t sensors_error_flags = !control_sensors_health & control_sensors_enabled & control_sensors_present;
     frsky_telemetry.update_sensor_status_flags(sensors_error_flags);
 #endif    
 }
