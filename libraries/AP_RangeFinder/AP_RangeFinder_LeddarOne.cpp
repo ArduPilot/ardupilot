@@ -54,7 +54,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
     }
 
     // send a request message for Modbus function 4
-    if (send_request() < 0) {
+    if (send_request() != LEDDARONE_OK) {
         // TODO: handle LEDDARONE_ERR_SERIAL_PORT
         return false;
     }
@@ -162,7 +162,7 @@ int8_t AP_RangeFinder_LeddarOne::send_request(void)
     }
     uart->flush();
 
-    return 0;
+    return LEDDARONE_OK;
 }
 
  /*
