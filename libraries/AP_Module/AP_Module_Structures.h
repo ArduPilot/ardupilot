@@ -15,9 +15,9 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
-#define AHRS_state_version 1
+#define AHRS_state_version 3
 #define gyro_sample_version 1
-#define accel_sample_version 1
+#define accel_sample_version 2
 
 enum AHRS_status {
     AHRS_STATUS_INITIALISING    = 0,
@@ -81,6 +81,20 @@ struct AHRS_state {
     // current earth frame acceleration estimate, including
     // gravitational forces, m/s/s order is NED
     float accel_ef[3];
+
+    // the current primary accel instance
+    uint8_t primary_accel;
+
+    // the current primary gyro instance
+    uint8_t primary_gyro;
+    
+    // current gyro bias. This is relative to the gyro data in
+    // gyro_sample for primary_gyro. It should be added to a gyro
+    // sample to get the corrected gyro estimate
+    float gyro_bias[3];
+
+    // north-east-down velocity m/s
+    float velocity_ned[3];
 };
 
 
@@ -122,6 +136,9 @@ struct accel_sample {
 
     // body frame rates in m/s/s
     float accel[3];
+
+    // true if external frame sync is set
+    bool fsync_set;
 };
     
 /*

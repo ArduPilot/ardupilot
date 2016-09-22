@@ -193,6 +193,21 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
     state.accel_ef[0] = accel_ef[0];
     state.accel_ef[1] = accel_ef[0];
     state.accel_ef[2] = accel_ef[0];
+
+    state.primary_accel = ahrs.get_primary_accel_index();
+    state.primary_gyro = ahrs.get_primary_gyro_index();
+
+    const Vector3f &gyro_bias = ahrs.get_gyro_drift();
+    state.gyro_bias[0] = gyro_bias[0];
+    state.gyro_bias[1] = gyro_bias[1];
+    state.gyro_bias[2] = gyro_bias[2];
+
+    Vector3f vel;
+    if (ahrs.get_velocity_NED(vel)) {
+        state.velocity_ned[0] = vel.x;
+        state.velocity_ned[1] = vel.y;
+        state.velocity_ned[2] = vel.z;
+    }
     
     for (const struct hook_list *h=hooks[HOOK_AHRS_UPDATE]; h; h=h->next) {
         ap_hook_AHRS_update_fn_t fn = reinterpret_cast<ap_hook_AHRS_update_fn_t>(h->symbol);
@@ -235,7 +250,7 @@ void AP_Module::call_hook_gyro_sample(uint8_t instance, float dt, const Vector3f
 /*
   call any accel_sample hooks
 */
-void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3f &accel)
+void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3f &accel, bool fsync_set)
 {
 #if AP_MODULE_SUPPORTED
     if (hooks[HOOK_ACCEL_SAMPLE] == nullptr) {
@@ -254,6 +269,7 @@ void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3
     state.accel[0] = accel[0];
     state.accel[1] = accel[1];
     state.accel[2] = accel[2];
+    state.fsync_set = fsync_set;
 
     for (const struct hook_list *h=hooks[HOOK_ACCEL_SAMPLE]; h; h=h->next) {
         ap_hook_accel_sample_fn_t fn = reinterpret_cast<ap_hook_accel_sample_fn_t>(h->symbol);

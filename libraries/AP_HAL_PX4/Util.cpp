@@ -196,8 +196,12 @@ void PX4Util::set_imu_temp(float current)
     // experimentally tweaked for Pixhawk2
     const float kI = 0.3f;
     const float kP = 200.0f;
+    float target = (float)(*_heater.target);
+
+    // limit to 65 degrees to prevent damage
+    target = constrain_float(target, 0, 65);
     
-    float err = ((float)*_heater.target) - current;
+    float err = target - current;
 
     _heater.integrator += kI * err;
     _heater.integrator = constrain_float(_heater.integrator, 0, 70);

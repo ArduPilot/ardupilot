@@ -92,10 +92,10 @@ void Plane::calc_airspeed_errors()
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B || 
         control_mode == CRUISE) {
-        target_airspeed_cm = ((int32_t)(airspeed.get_airspeed_max() -
-                                        airspeed.get_airspeed_min()) *
+        target_airspeed_cm = ((int32_t)(aparm.airspeed_max -
+                                        aparm.airspeed_min) *
                               channel_throttle->get_control_in()) +
-                             ((int32_t)airspeed.get_airspeed_min() * 100);
+                             ((int32_t)aparm.airspeed_min * 100);
     }
 
     // Landing airspeed target
@@ -138,9 +138,8 @@ void Plane::calc_airspeed_errors()
     }
 
     // Apply airspeed limit
-    if (target_airspeed_cm > ((int32_t)airspeed.get_airspeed_max() * 100)) {
-        target_airspeed_cm = ((int32_t)airspeed.get_airspeed_max() * 100);
-    }
+    if (target_airspeed_cm > (aparm.airspeed_max * 100))
+        target_airspeed_cm = (aparm.airspeed_max * 100);
 
     // use the TECS view of the target airspeed for reporting, to take
     // account of the landing speed
@@ -199,7 +198,7 @@ void Plane::update_loiter(uint16_t radius)
             auto_state.wp_proportion > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
-            if (control_mode == GUIDED) {
+            if (control_mode == GUIDED || control_mode == AVOID_ADSB) {
                 // starting a loiter in GUIDED means we just reached the target point
                 gcs_send_mission_item_reached_message(0);
             }

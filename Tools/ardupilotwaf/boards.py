@@ -56,14 +56,15 @@ class Board:
 
         cfg.ap_common_checks()
 
+        cfg.env.prepend_value('INCLUDES', [
+            cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
+        ])
+
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the convetional list for definitions to
         # make easy to override them. Convert back to list before consumption.
         env.DEFINES = {}
-
-        env.prepend_value('INCLUDES', [
-            cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
-        ])
 
         env.CFLAGS += [
             '-ffunction-sections',
@@ -217,6 +218,8 @@ class sitl(Board):
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
+
+        cfg.find_toolchain_program('pkg-config', var='PKGCONFIG')
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
@@ -380,6 +383,14 @@ class pxfmini(linux):
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXFMINI',
+        )
+
+class aero(linux):
+    def configure_env(self, cfg, env):
+        super(aero, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_AERO',
         )
 
 class px4(Board):

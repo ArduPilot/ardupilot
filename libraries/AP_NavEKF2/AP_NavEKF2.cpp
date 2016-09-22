@@ -201,7 +201,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: ALT_SOURCE
     // @DisplayName: Primary height source
-    // @Description: This parameter controls which height sensor is used by the EKF. If the selected optionn cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS.
+    // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS. NOTE - the EK2_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
     // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF2, _altSource, 0),
@@ -476,6 +476,23 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: gauss/s
     AP_GROUPINFO("MAGB_P_NSE", 41, NavEKF2, _magBodyProcessNoise, MAGB_P_NSE_DEFAULT),
 
+    // @Param: RNG_USE_HGT
+    // @DisplayName: Range finder switch height percentage
+    // @Description: The range finder will be used as the primary height source when below a specified percentage of the sensor maximum as set by the RNGFND_MAX_CM parameter. Set to -1 to prevent range finder use.
+    // @Range: -1 70
+    // @Increment: 1
+    // @User: Advanced
+    // @Units: %
+    AP_GROUPINFO("RNG_USE_HGT", 42, NavEKF2, _useRngSwHgt, -1),
+
+    // @Param: TERR_GRAD
+    // @DisplayName: Maximum terrain gradient
+    // @Description: Specifies the maxium gradient of the terrain below the vehicle when it is using range finder as a height reference
+    // @Range: 0 0.2
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("TERR_GRAD", 43, NavEKF2, _terrGradMax, 0.1f),
+
     AP_GROUPEND
 };
 
@@ -671,6 +688,16 @@ int8_t NavEKF2::getPrimaryCoreIndex(void) const
         return -1;
     }
     return primary;
+}
+
+// returns the index of the IMU of the primary core
+// return -1 if no primary core selected
+int8_t NavEKF2::getPrimaryCoreIMUIndex(void) const
+{
+    if (!core) {
+        return -1;
+    }
+    return core[primary].getIMUIndex();
 }
 
 // Write the last calculated NE position relative to the reference point (m).
@@ -1025,6 +1052,19 @@ void NavEKF2::setTouchdownExpected(bool val)
     }
 }
 
+// Set to true if the terrain underneath is stable enough to be used as a height reference
+// in combination with a range finder. Set to false if the terrain underneath the vehicle
+// cannot be used as a height reference
+void NavEKF2::setTerrainHgtStable(bool val)
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].setTerrainHgtStable(val);
+        }
+    }
+
+}
+
 /*
   return the filter fault status as a bitmasked integer
   0 = quaternions are NaN
@@ -1112,14 +1152,59 @@ bool NavEKF2::getHeightControlLimit(float &height) const
     return core[primary].getHeightControlLimit(height);
 }
 
-// return the amount of yaw angle change due to the last yaw angle reset in radians
+// return the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t NavEKF2::getLastYawResetAngle(float &yawAng) const
+uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
 {
     if (!core) {
         return 0;
     }
-    return core[primary].getLastYawResetAngle(yawAng);
+
+    // check for an internal ekf yaw reset
+    float temp_yaw_delta;
+    uint32_t ekf_reset_ms = core[primary].getLastYawResetAngle(temp_yaw_delta);
+    if (ekf_reset_ms != yaw_step_data.last_ekf_reset_ms) {
+        // record the time of the ekf's internal yaw reset event
+        yaw_step_data.last_ekf_reset_ms = ekf_reset_ms;
+
+        // record the the ekf's internal yaw reset value
+        yaw_step_data.yaw_delta = temp_yaw_delta;
+
+        // record the yaw reset event time
+        yaw_step_data.yaw_reset_time_ms = imuSampleTime_us/1000;
+
+    }
+
+    // check for a core switch and if a switch has occurred, set the yaw reset delta
+    // to the difference in yaw angle between the current and last yaw angle
+    Vector3f eulers_primary;
+    core[primary].getEulerAngles(eulers_primary);
+    if (primary != yaw_step_data.prev_instance) {
+        // the delta is the difference between the current and previous yaw
+        // This overwrites any yaw reset value recorded from an internal ekf reset
+        // that has occured on the same time-step
+        yaw_step_data.yaw_delta = wrap_PI(eulers_primary.z - yaw_step_data.prev_yaw);
+
+        // record the time of the yaw reset event
+        yaw_step_data.yaw_reset_time_ms = imuSampleTime_us/1000;
+
+        // update the time recorded for the last ekf internal yaw reset forthe primary core to
+        // prevent a yaw ekf reset event being published on the next frame due to the change in time
+        yaw_step_data.last_ekf_reset_ms = ekf_reset_ms;
+
+    }
+
+    // record the yaw angle from the primary core
+    yaw_step_data.prev_yaw = eulers_primary.z;
+
+    // record the primary core
+    yaw_step_data.prev_instance = primary;
+
+    // return the yaw delta from the last event
+    yawAngDelta = yaw_step_data.yaw_delta;
+
+    // return the time of the last event
+    return yaw_step_data.yaw_reset_time_ms;
 }
 
 // return the amount of NE position change due to the last position reset in metres

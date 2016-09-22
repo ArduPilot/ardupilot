@@ -89,9 +89,10 @@ bool DataFlash_Backend::WriteBlockCheckStartupMessages()
     // caller hoping to write blocks out.  Push out log blocks - we
     // might end up clearing the buffer.....
     push_log_blocks();
-    if (_startup_messagewriter->fmt_done()) {
-        return true;
-    }
+
+    //  even if we did finish writing startup messages, we can't
+    //  permit any message to go in as its timestamp will be before
+    //  any we wrote in.  Time going backwards annoys log readers.
 
     // sorry!  currently busy writing out startup messages...
     return false;

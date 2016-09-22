@@ -80,7 +80,7 @@ echo "Updating APM"
 pushd APM
 git checkout -f master
 git fetch origin
-git submodule update
+git submodule update --recursive --force
 git reset --hard origin/master
 git pull || report_pull_failure
 git clean -f -f -x -d -d
@@ -91,9 +91,7 @@ popd
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 
 echo "Updating pymavlink"
-pushd mavlink/pymavlink
-git fetch origin
-git reset --hard origin/master
+pushd APM/mavlink/pymavlink
 git show
 python setup.py build install --user
 popd

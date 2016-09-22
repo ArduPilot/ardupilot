@@ -16,14 +16,14 @@ class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
     // constructor
-    Airspeed_Calibration(void);
+    Airspeed_Calibration();
 
     // initialise the calibration
     void init(float initial_ratio);
 
     // take current airspeed in m/s and ground speed vector and return
     // new scaling factor
-    float update(float airspeed, const Vector3f &vg);
+    float update(float airspeed, const Vector3f &vg, int16_t max_airspeed_allowed_during_cal);
 
 private:
     // state of kalman filter for airspeed ratio estimation
@@ -123,18 +123,8 @@ public:
         return _EAS2TAS;
     }
 
-    // get the min set airspeed
-    float get_airspeed_min(void) const {
-        return (float)(_airspeed_min);
-    }
-
-    // get the max set airspeed
-    float get_airspeed_max(void) const {
-        return (float)(_airspeed_max);
-    }
-
     // update airspeed ratio calibration
-    void update_calibration(const Vector3f &vground);
+    void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
 	// log data to MAVLink
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
@@ -165,8 +155,6 @@ private:
     AP_Int8         _autocal;
     AP_Int8         _tube_order;
     AP_Int8         _skip_cal;
-    AP_Int16        _airspeed_min;
-    AP_Int16        _airspeed_max;
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;

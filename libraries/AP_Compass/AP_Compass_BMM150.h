@@ -39,13 +39,17 @@ public:
 private:
     AP_Compass_BMM150(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
-    void _update();
+    /**
+     * Device periodic callback to read data from the sensor.
+     */
+    bool _update();
     bool _load_trim_values();
     int16_t _compensate_xy(int16_t xy, uint32_t rhall, int32_t txy1, int32_t txy2);
     int16_t _compensate_z(int16_t z, uint32_t rhall);
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
+    AP_HAL::Semaphore *_accum_sem;
     Vector3f _mag_accum = Vector3f();
     uint32_t _accum_count = 0;
     uint32_t _last_update_timestamp = 0;

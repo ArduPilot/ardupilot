@@ -162,6 +162,16 @@ public:
         return _baro;
     }
 
+    // get the index of the current primary accelerometer sensor
+    virtual uint8_t get_primary_accel_index(void) const {
+        return _ins.get_primary_accel();
+    }
+
+    // get the index of the current primary gyro sensor
+    virtual uint8_t get_primary_gyro_index(void) const {
+        return _ins.get_primary_gyro();
+    }
+    
     // accelerometer values in the earth frame in m/s/s
     virtual const Vector3f &get_accel_ef(uint8_t i) const {
         return _accel_ef[i];

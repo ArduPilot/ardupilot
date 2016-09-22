@@ -33,6 +33,7 @@ AC_PrecLand::AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav) :
     _ahrs(ahrs),
     _inav(inav),
     _last_update_ms(0),
+    _last_backend_los_meas_ms(0),
     _backend(NULL)
 {
     // set parameters to defaults

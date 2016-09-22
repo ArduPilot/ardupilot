@@ -51,6 +51,7 @@ public:
         k_param_num_resets,
         k_param_NavEKF2,
         k_param_g2,
+        k_param_avoidance_adsb,
 
         // Misc
         //
@@ -172,8 +173,8 @@ public:
 
         // 120: Fly-by-wire control
         //
-        k_param_airspeed_min = 120,     // unused
-        k_param_airspeed_max,           // unused
+        k_param_airspeed_min = 120,
+        k_param_airspeed_max,
         k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
         k_param_flybywire_elev_reverse,
         k_param_alt_control_algorithm,
@@ -321,7 +322,7 @@ public:
 
         // other objects
         k_param_sitl = 230,
-        k_param_obc,
+        k_param_afs,
         k_param_rollController,
         k_param_pitchController,
         k_param_yawController,

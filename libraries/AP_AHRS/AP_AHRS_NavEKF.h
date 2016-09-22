@@ -44,6 +44,8 @@
  */
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && (defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2))
 #define AP_AHRS_WITH_EKF1 0
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && !defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
+#define AP_AHRS_WITH_EKF1 0
 #else
 #define AP_AHRS_WITH_EKF1 1
 #endif
@@ -61,11 +63,11 @@ public:
                    NavEKF &_EKF1, NavEKF2 &_EKF2, Flags flags = FLAG_NONE);
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f &get_gyro(void) const;
-    const Matrix3f &get_rotation_body_to_ned(void) const;
+    const Vector3f &get_gyro(void) const override;
+    const Matrix3f &get_rotation_body_to_ned(void) const override;
 
     // return the current drift correction integrator value
-    const Vector3f &get_gyro_drift(void) const;
+    const Vector3f &get_gyro_drift(void) const override;
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
@@ -121,10 +123,8 @@ public:
     // EKF has a better ground speed vector estimate
     Vector2f groundspeed_vector(void);
 
-    const Vector3f &get_accel_ef(uint8_t i) const;
-    const Vector3f &get_accel_ef() const {
-        return get_accel_ef(_ins.get_primary_accel());
-    };
+    const Vector3f &get_accel_ef(uint8_t i) const override;
+    const Vector3f &get_accel_ef() const override;
 
     // blended accelerometer values in the earth frame in m/s/s
     const Vector3f &get_accel_ef_blended(void) const;
@@ -232,6 +232,12 @@ public:
 
     // is the EKF backend doing its own sensor logging?
     bool have_ekf_logging(void) const override;
+
+    // get the index of the current primary accelerometer sensor
+    uint8_t get_primary_accel_index(void) const override;
+
+    // get the index of the current primary gyro sensor
+    uint8_t get_primary_gyro_index(void) const override;
     
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
@@ -269,6 +275,9 @@ private:
     void update_EKF1(void);
     void update_EKF2(void);
 
+    // get the index of the current primary IMU
+    uint8_t get_primary_IMU_index(void) const;
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
     void update_SITL(void);

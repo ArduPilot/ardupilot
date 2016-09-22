@@ -323,7 +323,7 @@ void Copter::do_land(const AP_Mission::Mission_Command& cmd)
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         // set state to fly to location
-        land_state = LAND_STATE_FLY_TO_LOCATION;
+        land_state = LandStateType_FlyToLocation;
 
         // convert to location class
         Location_Class target_loc(cmd.content.location);
@@ -342,7 +342,7 @@ void Copter::do_land(const AP_Mission::Mission_Command& cmd)
         auto_wp_start(target_loc);
     }else{
         // set landing state
-        land_state = LAND_STATE_DESCENDING;
+        land_state = LandStateType_Descending;
 
         // initialise landing controller
         auto_land_start();
@@ -600,8 +600,8 @@ bool Copter::verify_land()
 {
     bool retval = false;
 
-    switch( land_state ) {
-        case LAND_STATE_FLY_TO_LOCATION:
+    switch (land_state) {
+        case LandStateType_FlyToLocation:
             // check if we've reached the location
             if (wp_nav.reached_wp_destination()) {
                 // get destination so we can use it for loiter target
@@ -611,11 +611,11 @@ bool Copter::verify_land()
                 auto_land_start(dest);
 
                 // advance to next state
-                land_state = LAND_STATE_DESCENDING;
+                land_state = LandStateType_Descending;
             }
             break;
 
-        case LAND_STATE_DESCENDING:
+        case LandStateType_Descending:
             // rely on THROTTLE_LAND mode to correctly update landing status
             retval = ap.land_complete;
             break;

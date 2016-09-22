@@ -360,6 +360,11 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         fdm.longitude = smoothing.location.lng * 1.0e-7;
         fdm.altitude  = smoothing.location.alt * 1.0e-2;
     }
+
+    if (last_speedup != sitl->speedup && sitl->speedup > 0) {
+        set_speedup(sitl->speedup);
+        last_speedup = sitl->speedup;
+    }
 }
 
 uint64_t Aircraft::get_wall_time_us() const
@@ -429,7 +434,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     position += velocity_ef * delta_time;
 
     // velocity relative to air mass, in earth frame
-    velocity_air_ef = velocity_ef - wind_ef;
+    velocity_air_ef = velocity_ef + wind_ef;
     
     // velocity relative to airmass in body frame
     velocity_air_bf = dcm.transposed() * velocity_air_ef;

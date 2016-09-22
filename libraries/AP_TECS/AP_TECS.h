@@ -29,8 +29,7 @@
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-    AP_TECS(AP_Airspeed &aspeed, AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
-        airspeed(aspeed),
+    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
         _ahrs(ahrs),
         aparm(parms)
     {
@@ -122,7 +121,6 @@ private:
     AP_AHRS &_ahrs;
 
     const AP_Vehicle::FixedWing &aparm;
-    const AP_Airspeed &airspeed;
 
     // TECS tuning parameters
     AP_Float _hgtCompFiltOmega;

@@ -142,6 +142,11 @@ float Copter::get_pilot_desired_throttle(int16_t throttle_control)
 
     int16_t mid_stick = channel_throttle->get_control_mid();
 
+    // protect against unlikely divide by zero
+    if (mid_stick <= 0) {
+        mid_stick = 500;
+    }
+
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
 

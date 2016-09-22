@@ -104,14 +104,14 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: SPIN_MIN
     // @DisplayName: Motor Spin minimum
-    // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range
+    // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
     // @Values: 0.0:Low, 0.15:Default, 0.3:High
     // @User: Advanced
     AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, _spin_min, AP_MOTORS_SPIN_MIN_DEFAULT),
 
     // @Param: SPIN_ARM
     // @DisplayName: Motor Spin armed
-    // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range
+    // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range.  Should be lower than MOT_SPIN_MIN.
     // @Values: 0.0:Low, 0.1:Default, 0.2:High
     // @User: Advanced
     AP_GROUPINFO("SPIN_ARM", 19, AP_MotorsMulticopter, _spin_arm, AP_MOTORS_SPIN_ARM_DEFAULT),
@@ -127,7 +127,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: THST_HOVER
     // @DisplayName: Thrust Hover Value
     // @Description: Motor thrust needed to hover expressed as a number from 0 to 1
-    // @Range: 0.25 0.8
+    // @Range: 0.2 0.8
     // @User: Advanced
     AP_GROUPINFO("THST_HOVER", 21, AP_MotorsMulticopter, _throttle_hover, AP_MOTORS_THST_HOVER_DEFAULT),
 
@@ -144,12 +144,15 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 // Constructor
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Motors(loop_rate, speed_hz),
+    _spool_mode(SHUT_DOWN),
+    _spin_up_ratio(0.0f),
     _batt_voltage_resting(0.0f),
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
     _batt_timer(0),
     _lift_max(1.0f),
-    _throttle_limit(1.0f)
+    _throttle_limit(1.0f),
+    _throttle_thrust_max(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 

@@ -319,7 +319,9 @@ void Copter::Log_Write_Control_Tuning()
     // get terrain altitude
     float terr_alt = 0.0f;
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    terrain.height_above_terrain(terr_alt, true);
+    if (terrain.height_above_terrain(terr_alt, true)) {
+        terr_alt = 0.0f;
+    }
 #endif
 
     struct log_Control_Tuning pkt = {
@@ -821,11 +823,15 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
 // start a new log
 void Copter::start_logging() 
 {
-    if (g.log_bitmask != 0) {
+    if (g.log_bitmask != 0 && !in_log_download) {
         if (!ap.logging_started) {
             ap.logging_started = true;
             DataFlash.set_mission(&mission);
             DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
+            DataFlash.StartNewLog();
+        } else if (!DataFlash.logging_started()) {
+            // dataflash may have stopped logging - when we get_log_data,
+            // for example.  Try to restart:
             DataFlash.StartNewLog();
         }
         // enable writes

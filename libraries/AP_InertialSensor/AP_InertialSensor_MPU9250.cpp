@@ -377,7 +377,7 @@ bool AP_InertialSensor_MPU9250::_data_ready(uint8_t int_status)
 }
 
 /*
- * Timer process to poll for new data from the MPU6000.
+ * Timer process to poll for new data from the MPU9250.
  */
 void AP_InertialSensor_MPU9250::_poll_data()
 {
@@ -456,7 +456,7 @@ void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
 bool AP_InertialSensor_MPU9250::_hardware_init(void)
 {
     if (!_dev->get_semaphore()->take(100)) {
-        AP_HAL::panic("MPU6000: Unable to get semaphore");
+        AP_HAL::panic("MPU9250: Unable to get semaphore");
     }
 
     // initially run the bus at low speed

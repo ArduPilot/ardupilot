@@ -488,6 +488,7 @@ void RCOutput_Bebop::_run_rcout()
         pthread_mutex_lock(&_mutex);
         ret = clock_gettime(CLOCK_MONOTONIC, &ts);
         if (ret != 0) {
+            pthread_mutex_unlock(&_mutex);
             continue;
         }
 

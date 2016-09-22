@@ -81,7 +81,6 @@
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
-#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_ADSB/AP_ADSB.h>
@@ -111,6 +110,13 @@
 #include <AC_PrecLand/AC_PrecLand.h>
 #include <AP_IRLock/AP_IRLock.h>
 #endif
+#if FRSKY_TELEM_ENABLED == ENABLED
+#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#endif
+
+#if ADVANCED_FAILSAFE == ENABLED
+#include "afs_copter.h"
+#endif
 
 // Local modules
 #include "Parameters.h"
@@ -120,12 +126,17 @@
 #include <SITL/SITL.h>
 #endif
 
+
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Copter;
     friend class AP_Rally_Copter;
     friend class Parameters;
+    friend class ParametersG2;
     friend class AP_Avoidance_Copter;
+#if ADVANCED_FAILSAFE == ENABLED
+    friend class AP_AdvancedFailsafe_Copter;
+#endif
 
     Copter(void);
 
@@ -312,6 +323,23 @@ private:
         uint8_t compass     : 1;    // true if compass is healthy
     } sensor_health;
 
+    // setup FRAME_MAV_TYPE
+#if (FRAME_CONFIG == QUAD_FRAME)
+ #define FRAME_MAV_TYPE MAV_TYPE_QUADROTOR
+#elif (FRAME_CONFIG == TRI_FRAME)
+ #define FRAME_MAV_TYPE MAV_TYPE_TRICOPTER
+#elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
+ #define FRAME_MAV_TYPE MAV_TYPE_HEXAROTOR
+#elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
+ #define FRAME_MAV_TYPE MAV_TYPE_OCTOROTOR
+#elif (FRAME_CONFIG == HELI_FRAME)
+ #define FRAME_MAV_TYPE MAV_TYPE_HELICOPTER
+#elif (FRAME_CONFIG == SINGLE_FRAME || FRAME_CONFIG == COAX_FRAME)  //because mavlink did not define a singlecopter, we use a quad
+ #define FRAME_MAV_TYPE MAV_TYPE_QUADROTOR
+#else
+ #error Unrecognised frame type
+#endif
+
     // Motor Output
 #if FRAME_CONFIG == QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsQuad
@@ -349,7 +377,7 @@ private:
     int32_t home_distance;
     // distance between plane and next waypoint in cm.
     uint32_t wp_distance;
-    uint8_t land_state;              // records state of land (flying to location, descending)
+    LandStateType land_state = LandStateType_FlyToLocation; // records state of land (flying to location, descending)
 
     // Auto
     AutoMode auto_mode;   // controls which auto controller is run
@@ -573,6 +601,9 @@ private:
     // true if we are out of time in our event timeslice
     bool gcs_out_of_time;
 
+    // last valid RC input time
+    uint32_t last_radio_update_ms;
+    
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
@@ -592,7 +623,6 @@ private:
     int16_t hover_roll_trim_scalar_slew;
 #endif
 
-#if GNDEFFECT_COMPENSATION == ENABLED
     // ground effect detector
     struct {
         bool takeoff_expected;
@@ -600,7 +630,6 @@ private:
         uint32_t takeoff_time_ms;
         float takeoff_alt_cm;
     } gndeffect_state;
-#endif // GNDEFFECT_COMPENSATION == ENABLED
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
@@ -637,6 +666,15 @@ private:
     void set_land_complete_maybe(bool b);
     void set_pre_arm_check(bool b);
     void set_pre_arm_rc_check(bool b);
+    bool rc_calibration_checks(bool display_failure);
+    bool gps_checks(bool display_failure);
+    bool fence_checks(bool display_failure);
+    bool compass_checks(bool display_failure);
+    bool ins_checks(bool display_failure);
+    bool board_voltage_checks(bool display_failure);
+    bool parameter_checks(bool display_failure);
+    bool pilot_throttle_checks(bool display_failure);
+    bool barometer_checks(bool display_failure);
     void update_using_interlock();
     void set_motor_emergency_stop(bool b);
     float get_smoothing_gain();
@@ -792,6 +830,9 @@ private:
     void autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
     void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
     void avoidance_adsb_update(void);
+#if ADVANCED_FAILSAFE == ENABLED
+    void afs_fs_check(void);
+#endif
     bool brake_init(bool ignore_checks);
     void brake_run();
     void brake_timeout_to_loiter_ms(uint32_t timeout_ms);
@@ -812,7 +853,7 @@ private:
     bool guided_set_destination(const Location_Class& dest_loc);
     void guided_set_velocity(const Vector3f& velocity);
     void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
-    void guided_set_angle(const Quaternion &q, float climb_rate_cms);
+    void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void guided_run();
     void guided_takeoff_run();
     void guided_pos_control_run();
@@ -830,6 +871,7 @@ private:
     void land_run();
     void land_gps_run();
     void land_nogps_run();
+    int32_t land_get_alt_above_ground(void);
     void land_run_vertical_control(bool pause_descent = false);
     void land_run_horizontal_control();
     void land_do_not_use_GPS();
@@ -868,7 +910,7 @@ private:
     void rtl_land_start();
     void rtl_land_run();
     void rtl_build_path(bool terrain_following_allowed);
-    void rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target, bool terrain_following_allowed);
+    void rtl_compute_return_target(bool terrain_following_allowed);
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);
@@ -927,9 +969,7 @@ private:
     void update_land_and_crash_detectors();
     void update_land_detector();
     void update_throttle_thr_mix();
-#if GNDEFFECT_COMPENSATION == ENABLED
     void update_ground_effect_detector(void);
-#endif // GNDEFFECT_COMPENSATION == ENABLED
     void landinggear_update();
     void update_notify();
     void motor_test_output();
@@ -1028,7 +1068,6 @@ private:
     bool optflow_position_ok();
     void update_auto_armed();
     void check_usb_mux(void);
-    void frsky_telemetry_send(void);
     bool should_log(uint32_t mask);
     bool current_mode_has_user_takeoff(bool must_navigate);
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);

@@ -414,6 +414,15 @@ void NavEKF2_core::setTouchdownExpected(bool val)
     expectGndEffectTouchdown = val;
 }
 
+// Set to true if the terrain underneath is stable enough to be used as a height reference
+// in combination with a range finder. Set to false if the terrain underneath the vehicle
+// cannot be used as a height reference
+void NavEKF2_core::setTerrainHgtStable(bool val)
+{
+    terrainHgtStableSet_ms = imuSampleTime_ms;
+    terrainHgtStable = val;
+}
+
 // Detect takeoff for optical flow navigation
 void NavEKF2_core::detectOptFlowTakeoff(void)
 {

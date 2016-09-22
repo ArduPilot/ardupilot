@@ -62,6 +62,10 @@ public:
     // return -1 if no primary core selected
     int8_t getPrimaryCoreIndex(void) const;
 
+    // returns the index of the IMU of the primary core
+    // return -1 if no primary core selected
+    int8_t getPrimaryCoreIMUIndex(void) const;
+    
     // Write the last calculated NE position relative to the reference point (m) for the specified instance.
     // An out of range instance (eg -1) returns data for the the primary instance
     // If a calculated solution is not available, use the best available data and return false
@@ -211,6 +215,11 @@ public:
     // causes the EKF to compensate for expected barometer errors due to ground effect
     void setTouchdownExpected(bool val);
 
+    // Set to true if the terrain underneath is stable enough to be used as a height reference
+    // in combination with a range finder. Set to false if the terrain underneath the vehicle
+    // cannot be used as a height reference
+    void setTerrainHgtStable(bool val);
+
     /*
     return the filter fault status as a bitmasked integer for the specified instance
     An out of range instance (eg -1) returns data for the the primary instance
@@ -261,7 +270,7 @@ public:
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAng) const;
+    uint32_t getLastYawResetAngle(float &yawAngDelta);
 
     // return the amount of NE position change due to the last position reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
@@ -330,6 +339,8 @@ private:
     AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
     AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
     AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
+    AP_Int8 _useRngSwHgt;           // Maximum valid range of the range finder in metres
+    AP_Float _terrGradMax;          // Maximum terrain gradient below the vehicle
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -369,4 +380,14 @@ private:
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;
+
+    // used to keep track of yaw angle steps due to change of primary instance or internal ekf yaw resets
+    struct {
+        uint8_t prev_instance;          // active core number from the previous time step
+        uint32_t last_ekf_reset_ms;     // last time the active ekf performed a yaw reset (msec)
+        uint32_t last_lane_switch_ms;   // last time there was a lane switch (msec)
+        uint32_t yaw_reset_time_ms;     // last time a yaw reset event was published
+        float yaw_delta;                // the amount of yaw change due to the last published yaw step (rad)
+        float prev_yaw;                 // yaw angle published by the active core from the previous time step (rad)
+    } yaw_step_data;
 };

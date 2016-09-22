@@ -43,7 +43,7 @@ enum aux_sw_func {
     AUXSW_CAMERA_TRIGGER =       9, // trigger camera servo or relay
     AUXSW_RANGEFINDER =         10, // allow enabling or disabling rangefinder in flight which helps avoid surface tracking when you are far above the ground
     AUXSW_FENCE =               11, // allow enabling or disabling fence in flight
-    AUXSW_RESETTOARMEDYAW =     12, // changes yaw to be same as when quad was armed
+    AUXSW_RESETTOARMEDYAW =     12, // deprecated.  changes yaw to be same as when quad was armed
     AUXSW_SUPERSIMPLE_MODE =    13, // change to simple mode in middle, super simple at top
     AUXSW_ACRO_TRAINER =        14, // low = disabled, middle = leveled, high = leveled and limited
     AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
@@ -271,9 +271,15 @@ enum ThrowModeType {
     ThrowType_Drop = 1
 };
 
-// LAND state
-#define LAND_STATE_FLY_TO_LOCATION  0
-#define LAND_STATE_DESCENDING       1
+enum LandStateType {
+    LandStateType_FlyToLocation = 0,
+    LandStateType_Descending = 1
+};
+
+// bit options for DEV_OPTIONS parameter
+enum DevOptions {
+    DevOptionADSBMAVLink = 1,
+};
 
 //  Logging parameters
 #define TYPE_AIRSTART_MSG               0x00

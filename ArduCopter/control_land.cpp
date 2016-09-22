@@ -146,6 +146,23 @@ void Copter::land_nogps_run()
     land_run_vertical_control(land_pause);
 }
 
+/*
+  get a height above ground estimate for landing
+ */
+int32_t Copter::land_get_alt_above_ground(void)
+{
+    int32_t alt_above_ground;
+    if (rangefinder_alt_ok()) {
+        alt_above_ground = rangefinder_state.alt_cm_filt.get();
+    } else {
+        bool navigating = pos_control.is_active_xy();
+        if (!navigating || !current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
+            alt_above_ground = current_loc.alt;
+        }
+    }
+    return alt_above_ground;
+}
+
 void Copter::land_run_vertical_control(bool pause_descent)
 {
     bool navigating = pos_control.is_active_xy();
@@ -159,19 +176,25 @@ void Copter::land_run_vertical_control(bool pause_descent)
     // compute desired velocity
     const float precland_acceptable_error = 25.0f;
     const float precland_min_descent_speed = -10.0f;
-    int32_t alt_above_ground;
-    if (rangefinder_alt_ok()) {
-        alt_above_ground = rangefinder_state.alt_cm_filt.get();
-    } else {
-        if (!navigating || !current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
-            current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_above_ground);
-        }
-    }
-
+    int32_t alt_above_ground = land_get_alt_above_ground();
+    
     float cmb_rate = 0;
     if (!pause_descent) {
+        float max_land_descent_velocity;
+        if (g.land_speed_high > 0) {
+            max_land_descent_velocity = -g.land_speed_high;
+        } else {
+            max_land_descent_velocity = pos_control.get_speed_down();
+        }
+
+        // Don't speed up for landing.
+        max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
+
+        // Compute a vertical velocity demand such that the vehicle approaches LAND_START_ALT. Without the below constraint, this would cause the vehicle to hover at LAND_START_ALT.
         cmb_rate = AC_AttitudeControl::sqrt_controller(LAND_START_ALT-alt_above_ground, g.p_alt_hold.kP(), pos_control.get_accel_z());
-        cmb_rate = constrain_float(cmb_rate, pos_control.get_speed_down(), -abs(g.land_speed));
+
+        // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
+        cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
         if (doing_precision_landing && alt_above_ground < 300.0f) {
             float land_slowdown = MAX(0.0f, pos_control.get_horizontal_error()*(abs(g.land_speed)/precland_acceptable_error));
@@ -245,8 +268,33 @@ void Copter::land_run_horizontal_control()
     // run loiter controller
     wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
+    int32_t nav_roll  = wp_nav.get_roll();
+    int32_t nav_pitch = wp_nav.get_pitch();
+
+    if (g2.wp_navalt_min > 0) {
+        // user has requested an altitude below which navigation
+        // attitude is limited. This is used to prevent commanded roll
+        // over on landing, which particularly affects helicopters if
+        // there is any position estimate drift after touchdown. We
+        // limit attitude to 7 degrees below this limit and linearly
+        // interpolate for 1m above that
+        int alt_above_ground = land_get_alt_above_ground();
+        float attitude_limit_cd = linear_interpolate(700, aparm.angle_max, alt_above_ground,
+                                                     g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
+        float total_angle_cd = norm(nav_roll, nav_pitch);
+        if (total_angle_cd > attitude_limit_cd) {
+            float ratio = attitude_limit_cd / total_angle_cd;
+            nav_roll *= ratio;
+            nav_pitch *= ratio;
+
+            // tell position controller we are applying an external limit
+            pos_control.set_limit_accel_xy();
+        }
+    }
+
+    
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate, get_smoothing_gain());
 }
 
 // land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch

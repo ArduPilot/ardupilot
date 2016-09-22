@@ -9,7 +9,8 @@ AC_PrecLand_Companion::AC_PrecLand_Companion(const AC_PrecLand& frontend, AC_Pre
     : AC_PrecLand_Backend(frontend, state),
       _timestamp_us(0),
       _distance_to_target(0.0f),
-      _have_los_meas(false)
+      _have_los_meas(false),
+      _los_meas_time_ms(0)
 {
 }
 

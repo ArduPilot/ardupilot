@@ -275,6 +275,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // FLY_BY_WIRE_B airspeed control
 //
+#ifndef AIRSPEED_FBW_MIN
+ # define AIRSPEED_FBW_MIN               9
+#endif
+#ifndef AIRSPEED_FBW_MAX
+ # define AIRSPEED_FBW_MAX               22
+#endif
+
 #ifndef ALT_HOLD_FBW
  # define ALT_HOLD_FBW 0
 #endif
@@ -398,11 +405,6 @@
  # define RESET_SWITCH_CHAN_PWM 1750
 #endif
 
-// OBC Failsafe enable
-#ifndef OBC_FAILSAFE
-#define OBC_FAILSAFE ENABLED
-#endif
-
 #define HIL_SUPPORT ENABLED
 
 //////////////////////////////////////////////////////////////////////////////
@@ -410,3 +412,10 @@
 #ifndef PARACHUTE
 #define PARACHUTE ENABLED
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+# define HAVE_PX4_MIXER 1
+#else
+# define HAVE_PX4_MIXER 0
+#endif
+

@@ -246,7 +246,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 		if (c == 'c') {
             break;
 
-		} else if (c == 0x03 || c == 0x63 || c == 'q') {
+		} else if (c == 0x03 || c == 'q') {
 			cliSerial->printf("ESC calibration exited\n");
 			return(0);
 		}
@@ -274,7 +274,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 
 			break;
 
-		} else if (c == 0x03 || c == 0x63 || c == 'q') {
+		} else if (c == 0x03 || c == 'q') {
 			cliSerial->printf("ESC calibration exited\n");
 			return(0);
 		}
@@ -502,7 +502,7 @@ void Copter::print_enabled(bool b)
 
 void Copter::report_version()
 {
-    cliSerial->printf("FW Ver: %d\n",(int)g.k_format_version);
+    cliSerial->printf("FW Ver: %d\n",(int)(g.k_format_version));
     print_divider();
     print_blanks(2);
 }

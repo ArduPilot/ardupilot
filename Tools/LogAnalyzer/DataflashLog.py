@@ -388,7 +388,13 @@ class DataflashLogHelper:
         if logdata.vehicleType == VehicleType.Copter:
             throttleThreshold = 200 # copter uses 0-1000, plane+rover use 0-100
         if "CTUN" in logdata.channels:
-            maxThrottle = logdata.channels["CTUN"]["ThrOut"].max()
+            try:
+                maxThrottle = logdata.channels["CTUN"]["ThrOut"].max()
+            except KeyError as e:
+                # ThrOut was shorted to ThO at some stage...
+                maxThrottle = logdata.channels["CTUN"]["ThO"].max()
+                # at roughly the same time ThO became a range from 0 to 1
+                throttleThreshold = 0.2
             if maxThrottle < throttleThreshold:
                 return "Throttle never above 20%"
         return None
@@ -422,7 +428,8 @@ class DataflashLog(object):
         self.durationSecs = 0
         self.lineCount    = 0
         self.skippedLines = 0
-        
+        self.backpatch_these_modechanges = []
+
         if logfile:
             self.read(logfile, format, ignoreBadlines)
 
@@ -511,6 +518,46 @@ class DataflashLog(object):
         self.vehicleType = ret
         self.vehicleTypeString = VehicleTypeString[ret]
 
+    def handleModeChange(self, lineNumber, e):
+        if self.vehicleType == VehicleType.Copter:
+            try:
+                modes = {0:'STABILIZE',
+                    1:'ACRO',
+                    2:'ALT_HOLD',
+                    3:'AUTO',
+                    4:'GUIDED',
+                    5:'LOITER',
+                    6:'RTL',
+                    7:'CIRCLE',
+                    9:'LAND',
+                    10:'OF_LOITER',
+                    11:'DRIFT',
+                    13:'SPORT',
+                    14:'FLIP',
+                    15:'AUTOTUNE',
+                    16:'HYBRID',}
+                if hasattr(e, 'ThrCrs'):
+                    self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ThrCrs)
+                else:
+                    # assume it has ModeNum:
+                    self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ModeNum)
+            except:
+                if hasattr(e, 'ThrCrs'):
+                    self.modeChanges[lineNumber] = (e.Mode, e.ThrCrs)
+                else:
+                    # assume it has ModeNum:
+                    self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
+        elif self.vehicleType in [VehicleType.Plane, VehicleType.Copter, VehicleType.Rover]:
+            self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
+        else:
+            # if you've gotten to here the chances are we don't
+            # know what vehicle you're flying...
+            raise Exception("Unknown log type for MODE line vehicletype=({}) line=({})".format(self.vehicleTypeString, repr(e)))
+
+    def backPatchModeChanges(self):
+        for (lineNumber, e) in self.backpatch_these_modechanges:
+            self.handleModeChange(lineNumber, e)
+
     def process(self, lineNumber, e):
         if e.NAME == 'FMT':
             cls = e.to_class()
@@ -525,44 +572,17 @@ class DataflashLog(object):
             if not self.vehicleType:
                 tokens = e.Message.split(' ')
                 self.set_vehicleType_from_MSG_vehicle(tokens[0]);
+                self.backPatchModeChanges()
                 self.firmwareVersion = tokens[1]
                 if len(tokens) == 3:
                     self.firmwareHash = tokens[2][1:-1]
             else:
                 self.messages[lineNumber] = e.Message
         elif e.NAME == "MODE":
-            if self.vehicleType == VehicleType.Copter:
-                try:
-                    modes = {0:'STABILIZE',
-                        1:'ACRO',
-                        2:'ALT_HOLD',
-                        3:'AUTO',
-                        4:'GUIDED',
-                        5:'LOITER',
-                        6:'RTL',
-                        7:'CIRCLE',
-                        9:'LAND',
-                        10:'OF_LOITER',
-                        11:'DRIFT',
-                        13:'SPORT',
-                        14:'FLIP',
-                        15:'AUTOTUNE',
-                        16:'HYBRID',}
-                    if hasattr(e, 'ThrCrs'):
-                        self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ThrCrs)
-                    else:
-                        # assume it has ModeNum:
-                        self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ModeNum)
-                except:
-                    if hasattr(e, 'ThrCrs'):
-                        self.modeChanges[lineNumber] = (e.Mode, e.ThrCrs)
-                    else:
-                        # assume it has ModeNum:
-                        self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
-            elif self.vehicleType in [VehicleType.Plane, VehicleType.Copter, VehicleType.Rover]:
-                self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
+            if self.vehicleType is None:
+                self.backpatch_these_modechanges.append( (lineNumber, e) )
             else:
-                raise Exception("Unknown log type for MODE line vehicletype=({}) linw=({})".format(self.vehicleTypeString, repr(e)))
+                self.handleModeChange(lineNumber, e)
         # anything else must be the log data
         else:
             groupName = e.NAME

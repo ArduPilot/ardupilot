@@ -5,10 +5,11 @@
 Waf tool for PX4 build
 """
 
-from waflib import Logs, Task, Utils
+from waflib import Errors, Logs, Task, Utils
 from waflib.TaskGen import after_method, before_method, feature
 
 import os
+import shutil
 import sys
 
 _dynamic_env_data = {}
@@ -17,7 +18,7 @@ def _load_dynamic_env_data(bld):
     for name in ('cxx_flags', 'include_dirs', 'definitions'):
         _dynamic_env_data[name] = bldnode.find_node(name).read().split(';')
 
-@feature('px4_ap_stlib', 'px4_ap_program')
+@feature('px4_ap_library', 'px4_ap_program')
 @before_method('process_source')
 def px4_dynamic_env(self):
     # The generated files from configuration possibly don't exist if it's just
@@ -39,7 +40,7 @@ def px4_dynamic_env(self):
 @after_method('apply_link')
 @before_method('process_use')
 def px4_import_objects_from_use(self):
-    queue = Utils.to_list(getattr(self, 'use', []))
+    queue = list(Utils.to_list(getattr(self, 'use', [])))
     names = set()
 
     while queue:
@@ -60,8 +61,10 @@ def px4_import_objects_from_use(self):
         queue.extend(Utils.to_list(getattr(tg, 'use', [])))
 
 class px4_copy(Task.Task):
-    run_str = '${CP} ${SRC} ${TGT}'
     color = 'CYAN'
+
+    def run(self):
+        shutil.copy2(self.inputs[0].abspath(), self.outputs[0].abspath())
 
     def keyword(self):
         return "PX4: Copying %s to" % self.inputs[0].name
@@ -123,6 +126,7 @@ def px4_firmware(self):
         'px4',
         'build_firmware_px4fmu-v%s' % version,
     )
+    fw_task.set_run_after(self.link_task)
 
     # we need to synchronize in order to avoid the output expected by the
     # previous ap_program being overwritten before used
@@ -209,13 +213,14 @@ def _process_romfs(self):
 def configure(cfg):
     cfg.env.CMAKE_MIN_VERSION = '3.2'
     cfg.load('cmake')
-    cfg.find_program('cp')
 
     bldnode = cfg.bldnode.make_node(cfg.variant)
     env = cfg.env
 
     env.AP_PROGRAM_FEATURES += ['px4_ap_program']
-    env.AP_STLIB_FEATURES += ['px4_ap_stlib']
+
+    kw = env.AP_LIBRARIES_OBJECTS_KW
+    kw['features'] = Utils.to_list(kw.get('features', [])) + ['px4_ap_library']
 
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()

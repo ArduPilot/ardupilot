@@ -133,7 +133,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (!disable_integrator && ki_rate > 0) {
 		//only integrate if gain and time step are positive and airspeed above min value.
-		if (dt > 0 && aspeed > airspeed.get_airspeed_min()) {
+		if (dt > 0 && aspeed > float(aparm.airspeed_min)) {
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
 			if (_last_out < -45) {
@@ -165,7 +165,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 
 	_last_out = _pid_info.FF + _pid_info.P + _pid_info.D;
 
-    if (autotune.running && aspeed > airspeed.get_airspeed_min()) {
+    if (autotune.running && aspeed > aparm.airspeed_min) {
         // let autotune have a go at the values 
         // Note that we don't pass the integrator component so we get
         // a better idea of how much the base PD controller

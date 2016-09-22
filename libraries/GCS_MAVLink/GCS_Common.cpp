@@ -24,6 +24,13 @@
 #include "ap_version.h"
 #include "GCS.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#include <drivers/drv_pwm_output.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
@@ -119,6 +126,8 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
             // if signing is off start by sending MAVLink1.
             status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
         }
+        // announce that we are MAVLink2 capable
+        hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_MAVLINK2);
     } else if (status) {
         // user has asked to only send MAVLink1
         status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
@@ -386,7 +395,7 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, mavlink_messag
 
     // set current command
     if (mission.set_current_cmd(packet.seq)) {
-        mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
+        mavlink_msg_mission_current_send(chan, packet.seq);
     }
 }
 
@@ -674,7 +683,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
     rate *= adjust_rate_for_stream_trigger(stream_num);
 
     if (rate <= 0) {
-        if (chan_is_streaming | (1U<<(chan-MAVLINK_COMM_0))) {
+        if (chan_is_streaming & (1U<<(chan-MAVLINK_COMM_0))) {
             // if currently streaming then check if all streams are disabled
             // to allow runtime detection of user disabling streaming
             bool is_streaming = false;
@@ -817,6 +826,14 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
         result = MAV_MISSION_INVALID_SEQUENCE;
         goto mission_ack;
     }
+
+    // sanity check for DO_JUMP command
+    if (cmd.id == MAV_CMD_DO_JUMP) {
+        if ((cmd.content.jump.target >= mission.num_commands() && cmd.content.jump.target >= waypoint_request_last) || cmd.content.jump.target == 0) {
+            result = MAV_MISSION_ERROR;
+            goto mission_ack;
+        }
+    }
     
     // if command index is within the existing list, replace the command
     if (seq < mission.num_commands()) {
@@ -919,7 +936,7 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     // this message id might already be deferred
     for (i=0, nextid = next_deferred_message; i < num_deferred_messages; i++) {
         if (deferred_messages[nextid] == id) {
-            // its already deferred, discard
+            // it's already deferred, discard
             return;
         }
         nextid++;
@@ -1719,4 +1736,46 @@ void GCS_MAVLINK::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_C
             }
         }
     }
+}
+
+/*
+  handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
+
+  Optionally disable PX4IO overrides. This is done for quadplanes to
+  prevent the mixer running while rebooting which can start the VTOL
+  motors. That can be dangerous when a preflight reboot is done with
+  the pilot close to the aircraft and can also damage the aircraft
+ */
+uint8_t GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides)
+{
+    if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
+        if (disable_overrides) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+            // disable overrides while rebooting
+            int px4io_fd = open("/dev/px4io", 0);
+            if (px4io_fd >= 0) {
+                // disable OVERRIDES so we don't run the mixer while
+                // rebooting
+                if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
+                    hal.console->printf("SET_OVERRIDE_OK failed\n");
+                }
+                if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 0) != 0) {
+                    hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
+                }
+                close(px4io_fd);
+            }
+#endif
+        }
+
+        // force safety on 
+        hal.rcout->force_safety_on();
+        hal.rcout->force_safety_no_wait();
+        hal.scheduler->delay(200);
+
+        // when packet.param1 == 3 we reboot to hold in bootloader
+        bool hold_in_bootloader = is_equal(packet.param1,3.0f);
+        hal.scheduler->reboot(hold_in_bootloader);
+        return MAV_RESULT_ACCEPTED;
+    }
+    return MAV_RESULT_UNSUPPORTED;
 }

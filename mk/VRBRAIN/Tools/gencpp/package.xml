@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package>
+  <name>gencpp</name>
+  <version>0.5.2</version>
+  <description>C++ ROS message and service generators.</description>
+  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url type="bugtracker">https://github.com/ros/gencpp/issues</url>
+  <url type="repository">https://github.com/ros/gencpp</url>
+
+  <author>Josh Faust</author>
+  <author>Troy Straszheim</author>
+  <author>Morgen Kjaergaard</author>
+
+  <buildtool_depend version_gte="0.5.78">catkin</buildtool_depend>
+
+  <build_depend>genmsg</build_depend>
+
+  <run_depend>genmsg</run_depend>
+
+  <export>
+    <message_generator>cpp</message_generator>
+    <rosdoc config="rosdoc.yaml"/>
+    <architecture_independent/>
+  </export>
+</package>

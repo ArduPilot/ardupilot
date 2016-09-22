@@ -190,10 +190,6 @@
  # define FS_GCS_TIMEOUT_MS             5000    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
 #endif
 
-#ifndef GNDEFFECT_COMPENSATION
- # define GNDEFFECT_COMPENSATION          DISABLED
-#endif
-
 // Radio failsafe while using RC_override
 #ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
  # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  1000    // RC Radio failsafe triggers after 1 second while using RC_override from ground station
@@ -278,7 +274,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  Crop Sprayer
 #ifndef SPRAYER
- # define SPRAYER  DISABLED
+ # define SPRAYER  ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -373,6 +369,9 @@
 #endif
 #ifndef LAND_CANCEL_TRIGGER_THR
  # define LAND_CANCEL_TRIGGER_THR   700     // land is cancelled by input throttle above 700
+#endif
+#ifndef LAND_RANGEFINDER_MIN_ALT_CM
+#define LAND_RANGEFINDER_MIN_ALT_CM 200
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -668,4 +667,8 @@
 //use this to completely disable FRSKY TELEM
 #ifndef FRSKY_TELEM_ENABLED
   #  define FRSKY_TELEM_ENABLED          ENABLED
+#endif
+
+#ifndef ADVANCED_FAILSAFE
+# define ADVANCED_FAILSAFE DISABLED
 #endif

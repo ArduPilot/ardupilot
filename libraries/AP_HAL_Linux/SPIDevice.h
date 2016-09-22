@@ -58,9 +58,6 @@ public:
     bool adjust_periodic_callback(
         AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
-    /* See AP_HAL::Device::get_fd() */
-    int get_fd() override;
-
 protected:
     SPIBus &_bus;
     SPIDesc &_desc;

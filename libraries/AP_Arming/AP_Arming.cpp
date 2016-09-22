@@ -18,7 +18,10 @@
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 
+#ifndef AP_ARMING_COMPASS_OFFSETS_MAX
+// this can also be overridden for specific boards in the HAL
 #define AP_ARMING_COMPASS_OFFSETS_MAX   600
+#endif
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
 #define AP_ARMING_BOARD_VOLTAGE_MIN     4.3f
@@ -236,7 +239,7 @@ bool AP_Arming::ins_checks(bool report)
                 // get next gyro vector
                 const Vector3f &gyro_vec = ins.get_gyro(i);
                 Vector3f vec_diff = gyro_vec - prime_gyro_vec;
-                // allow for up to 5 degrees/s difference. Pass if its
+                // allow for up to 5 degrees/s difference. Pass if it has
                 // been OK in last 10 seconds
                 if (vec_diff.length() <= radians(5)) {
                     last_gyro_pass_ms[i] = AP_HAL::millis();

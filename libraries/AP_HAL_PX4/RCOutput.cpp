@@ -278,19 +278,20 @@ void PX4RCOutput::force_safety_off(void)
 void PX4RCOutput::force_safety_pending_requests(void)
 {
     // check if there is a pending saftey_state change. If so (timer != 0) then set it.
+    uint32_t now = AP_HAL::millis();
     if (_safety_state_request_last_ms != 0 &&
-            AP_HAL::millis() - _safety_state_request_last_ms >= 100) {
-        if (hal.util->safety_switch_state() == _safety_state_request) {
-            // current switch state matches request, stop attempting
+        now - _safety_state_request_last_ms >= 100) {
+        if (hal.util->safety_switch_state() == _safety_state_request &&
+            _safety_state_request_last_ms != 1) {
             _safety_state_request_last_ms = 0;
         } else if (_safety_state_request == AP_HAL::Util::SAFETY_DISARMED) {
             // current != requested, set it
             ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_ON, 0);
-            _safety_state_request_last_ms = AP_HAL::millis();
+            _safety_state_request_last_ms = now;
         } else if (_safety_state_request == AP_HAL::Util::SAFETY_ARMED) {
             // current != requested, set it
             ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
-            _safety_state_request_last_ms = AP_HAL::millis();
+            _safety_state_request_last_ms = now;
         }
     }
 }

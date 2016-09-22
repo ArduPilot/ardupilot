@@ -21,6 +21,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 
+#include "AP_GPS_NOVA.h"
 #include "AP_GPS_ERB.h"
 #include "AP_GPS_GSOF.h"
 #include "AP_GPS_MTK.h"
@@ -42,7 +43,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN,10:SBF,11:GSOF
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
     // @RebootRequired: True
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
 
@@ -155,7 +156,7 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
 }
 
 // baudrates to try to detect GPSes with
-const uint32_t AP_GPS::_baudrates[] = {4800U, 38400U, 115200U, 57600U, 9600U, 230400U};
+const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9600U, 230400U};
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
@@ -244,6 +245,9 @@ AP_GPS::detect_instance(uint8_t instance)
 	} else if ((_type[instance] == GPS_TYPE_GSOF)) {
 		_broadcast_gps_type("GSOF", instance, -1); // baud rate isn't valid
 		new_gps = new AP_GPS_GSOF(*this, state[instance], _port[instance]);
+	} else if ((_type[instance] == GPS_TYPE_NOVA)) {
+		_broadcast_gps_type("NOVA", instance, -1); // baud rate isn't valid
+		new_gps = new AP_GPS_NOVA(*this, state[instance], _port[instance]);
 	}
 
     // record the time when we started detection. This is used to try
@@ -254,11 +258,11 @@ AP_GPS::detect_instance(uint8_t instance)
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
         // try the next baud rate
-		dstate->last_baud++;
 		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
 			dstate->last_baud = 0;
 		}
 		uint32_t baudrate = _baudrates[dstate->last_baud];
+		dstate->last_baud++;
 		_port[instance]->begin(baudrate);
 		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 		dstate->last_baud_change_ms = now;
@@ -267,10 +271,14 @@ AP_GPS::detect_instance(uint8_t instance)
         send_blob_start(instance, _initialisation_raw_blob, sizeof(_initialisation_raw_blob));
     else
 #endif
-        send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+        if(_auto_config == 1){
+            send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+        }
     }
 
-    send_blob_update(instance);
+    if(_auto_config == 1){
+        send_blob_update(instance);
+    }
 
     while (initblob_state[instance].remaining == 0 && _port[instance]->available() > 0
             && new_gps == NULL) {
@@ -315,7 +323,7 @@ AP_GPS::detect_instance(uint8_t instance)
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
         }
         // user has to explicitly set the MAV type, do not use AUTO
-        // Do not try to detect the MAV type, assume its there
+        // Do not try to detect the MAV type, assume it's there
         else if (_type[instance] == GPS_TYPE_MAV) {
             _broadcast_gps_type("MAV", instance, dstate->last_baud);
             new_gps = new AP_GPS_MAV(*this, state[instance], NULL);
@@ -386,7 +394,9 @@ AP_GPS::update_instance(uint8_t instance)
         return;
     }
 
-    send_blob_update(instance);
+    if(_auto_config == 1){
+        send_blob_update(instance);
+    }
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();

@@ -40,6 +40,25 @@ const struct LogStructure *DataFlash_Class::structure(uint16_t num) const
     return &_structures[num];
 }
 
+bool DataFlash_Class::logging_present() const
+{
+    return _next_backend != 0;
+}
+bool DataFlash_Class::logging_enabled() const
+{
+    if (_next_backend == 0) {
+        return false;
+    }
+    return backends[0]->logging_enabled();
+}
+bool DataFlash_Class::logging_failed() const
+{
+    if (_next_backend < 1) {
+        // we should not have been called!
+        return true;
+    }
+    return backends[0]->logging_failed();
+}
 
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \

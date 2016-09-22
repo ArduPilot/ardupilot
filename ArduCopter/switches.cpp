@@ -224,7 +224,6 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_SIMPLE_MODE:
         case AUXSW_RANGEFINDER:
         case AUXSW_FENCE:
-        case AUXSW_RESETTOARMEDYAW:
         case AUXSW_SUPERSIMPLE_MODE:
         case AUXSW_ACRO_TRAINER:
         case AUXSW_EPM:
@@ -368,14 +367,6 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
 #endif
-        // To-Do: add back support for this feature
-        //case AUXSW_RESETTOARMEDYAW:
-        //    if (ch_flag == AUX_SWITCH_HIGH) {
-        //        set_yaw_mode(YAW_RESETTOARMEDYAW);
-        //    }else{
-        //        set_yaw_mode(YAW_HOLD);
-        //    }
-        //    break;
 
         case AUXSW_ACRO_TRAINER:
             switch(ch_flag) {

@@ -45,7 +45,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
 
     // see if we are waiting for disk read
     if (gcache.state == GRID_CACHE_DISKWAIT) {
-        // don't request data from the GCS till we know its not on disk
+        // don't request data from the GCS till we know it's not on disk
         return false;
     }
 

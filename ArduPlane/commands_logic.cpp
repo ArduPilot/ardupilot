@@ -81,7 +81,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        set_mode(RTL);
+        set_mode(RTL, MODE_REASON_UNKNOWN);
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
@@ -548,15 +548,7 @@ bool Plane::verify_takeoff()
         auto_state.takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;
 
-#if GEOFENCE_ENABLED == ENABLED
-        if (g.fence_autoenable > 0) {
-            if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
-            } else {
-                gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");
-            }
-        }
-#endif
+        plane.complete_auto_takeoff();
 
         // don't cross-track on completion of takeoff, as otherwise we
         // can end up doing too sharp a turn
@@ -989,7 +981,7 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 void Plane::exit_mission_callback()
 {
     if (control_mode == AUTO) {
-        set_mode(RTL);
+        set_mode(RTL, MODE_REASON_MISSION_END);
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
 }
