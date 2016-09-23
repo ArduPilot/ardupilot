@@ -37,8 +37,6 @@
  *      i) increases stab P until the maximum angle becomes greater than 110% of the requested angle (20deg)
  *      j) decreases stab P by 25%
  *
- * Notes: AUTOTUNE should not be set-up as a flight mode, it should be invoked only from the ch7/ch8 switch.
- *
  */
 
 #define AUTOTUNE_AXIS_BITMASK_ROLL            1
