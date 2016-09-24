@@ -258,18 +258,20 @@ AP_GPS::detect_instance(uint8_t instance)
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
         // try the next baud rate
-		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
-			dstate->last_baud = 0;
-		}
-		uint32_t baudrate = _baudrates[dstate->last_baud];
-		dstate->last_baud++;
-		_port[instance]->begin(baudrate);
-		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-		dstate->last_baud_change_ms = now;
+        // incrementing like this will skip the first element in array of bauds
+        // this is okay, and relied upon
+        dstate->current_baud++;
+        if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
+            dstate->current_baud = 0;
+        }
+        uint32_t baudrate = _baudrates[dstate->current_baud];
+        _port[instance]->begin(baudrate);
+        _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        dstate->last_baud_change_ms = now;
 #if UBLOX_RXM_RAW_LOGGING
-    if(_raw_data != 0)
-        send_blob_start(instance, _initialisation_raw_blob, sizeof(_initialisation_raw_blob));
-    else
+        if(_raw_data != 0)
+            send_blob_start(instance, _initialisation_raw_blob, sizeof(_initialisation_raw_blob));
+        else
 #endif
         if(_auto_config == 1){
             send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
@@ -291,41 +293,41 @@ AP_GPS::detect_instance(uint8_t instance)
           for.
         */
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_UBLOX) &&
-            _baudrates[dstate->last_baud] >= 38400 &&
+            _baudrates[dstate->current_baud] >= 38400 &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
-            _broadcast_gps_type("u-blox", instance, dstate->last_baud);
+            _broadcast_gps_type("u-blox", instance, dstate->current_baud);
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
         } 
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
                  AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
-			_broadcast_gps_type("MTK19", instance, dstate->last_baud);
+			_broadcast_gps_type("MTK19", instance, dstate->current_baud);
 			new_gps = new AP_GPS_MTK19(*this, state[instance], _port[instance]);
 		} 
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK) &&
                  AP_GPS_MTK::_detect(dstate->mtk_detect_state, data)) {
-			_broadcast_gps_type("MTK", instance, dstate->last_baud);
+			_broadcast_gps_type("MTK", instance, dstate->current_baud);
 			new_gps = new AP_GPS_MTK(*this, state[instance], _port[instance]);
 		}
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
-            _broadcast_gps_type("SBP", instance, dstate->last_baud);
+            _broadcast_gps_type("SBP", instance, dstate->current_baud);
             new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
 		// save a bit of code space on a 1280
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
-			_broadcast_gps_type("SIRF", instance, dstate->last_baud);
+			_broadcast_gps_type("SIRF", instance, dstate->current_baud);
 			new_gps = new AP_GPS_SIRF(*this, state[instance], _port[instance]);
 		}
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
-            _broadcast_gps_type("ERB", instance, dstate->last_baud);
+            _broadcast_gps_type("ERB", instance, dstate->current_baud);
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
         }
         // user has to explicitly set the MAV type, do not use AUTO
         // Do not try to detect the MAV type, assume it's there
         else if (_type[instance] == GPS_TYPE_MAV) {
-            _broadcast_gps_type("MAV", instance, dstate->last_baud);
+            _broadcast_gps_type("MAV", instance, dstate->current_baud);
             new_gps = new AP_GPS_MAV(*this, state[instance], NULL);
         }
 		else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
@@ -333,7 +335,7 @@ AP_GPS::detect_instance(uint8_t instance)
 			// a MTK or UBLOX which has booted in NMEA mode
 			if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
                 AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
-				_broadcast_gps_type("NMEA", instance, dstate->last_baud);
+				_broadcast_gps_type("NMEA", instance, dstate->current_baud);
 				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
 			}
 		}
