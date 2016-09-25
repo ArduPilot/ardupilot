@@ -42,27 +42,21 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort; // FrSky SPort protocol (X-receivers)
     } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough; // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
-        // add firmware and frame info to message queue
-        queue_message(MAV_SEVERITY_INFO, firmware_str);
+
         // save main parameters locally
         _params.mav_type = mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
-        if (fs_batt_voltage != nullptr) {
-            _params.fs_batt_voltage = fs_batt_voltage; // failsafe battery voltage in volts
-        }
-        if (fs_batt_mah != nullptr) {
-            _params.fs_batt_mah = fs_batt_mah; // failsafe reserve capacity in mAh
-        }
-        if (ap_value != nullptr) {
-            _ap.value = ap_value; // ap bit-field
-        } else {
-            *_ap.value = 0;
-        }
+        _params.fs_batt_voltage = fs_batt_voltage; // failsafe battery voltage in volts
+        _params.fs_batt_mah = fs_batt_mah; // failsafe reserve capacity in mAh
+        _ap.value = ap_value; // ap bit-field
     }
     
     if (_port != NULL) {
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::tick, void));
         // we don't want flow control for either protocol
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+
+        // add firmware and frame info to message queue
+        queue_message(MAV_SEVERITY_INFO, firmware_str);
     }
 }
 
@@ -536,10 +530,14 @@ uint32_t AP_Frsky_Telem::calc_param(void)
         param = _params.mav_type;                                    // frame type (see MAV_TYPE in Mavlink definition file common.h)
         break;
     case 2:
-        param = (uint32_t)roundf(*_params.fs_batt_voltage * 100.0f); // battery failsafe voltage in centivolts
+        if (_params.fs_batt_voltage != nullptr) {
+            param = (uint32_t)roundf(*_params.fs_batt_voltage * 100.0f); // battery failsafe voltage in centivolts
+        }
         break;
     case 3:
-        param = (uint32_t)roundf(*_params.fs_batt_mah);              // battery failsafe capacity in mAh
+        if (_params.fs_batt_mah != nullptr) {
+            param = (uint32_t)roundf(*_params.fs_batt_mah);              // battery failsafe capacity in mAh
+        }
         break;
     case 4:
         param = (uint32_t)roundf(_battery.pack_capacity_mah());      // battery pack capacity in mAh as configured by user
@@ -628,10 +626,12 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
 
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
     ap_status = (uint8_t)((_ap.control_mode+1) & AP_CONTROL_MODE_LIMIT);
-    // simple/super simple modes flags
-    ap_status |= (uint8_t)(*_ap.value & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
-    // is_flying flag
-    ap_status |= (uint8_t)((*_ap.value & AP_ISFLYING_FLAG) ^ AP_ISFLYING_FLAG);
+    if (_ap.value != nullptr) {
+        // simple/super simple modes flags
+        ap_status |= (uint8_t)(*_ap.value & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
+        // is_flying flag
+        ap_status |= (uint8_t)((*_ap.value & AP_ISFLYING_FLAG) ^ AP_ISFLYING_FLAG);
+    }
     // armed flag
     ap_status |= (uint8_t)(AP_Notify::flags.armed)<<AP_ARMED_OFFSET;
     // battery failsafe flag
