@@ -162,7 +162,7 @@ void Plane::init_ardupilot()
     // setup frsky, and pass a number of parameters to the library
     frsky_telemetry.init(serial_manager, FIRMWARE_STRING,
                          MAV_TYPE_FIXED_WING,
-                         &g.fs_batt_voltage, &g.fs_batt_mah, nullptr);
+                         &g.fs_batt_voltage, &g.fs_batt_mah);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
