@@ -423,39 +423,39 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
 {
     if (_statustext_queue.empty()) {
         return false;
-    } else {
-        if (_msg_chunk.repeats == 0) {
-            _msg_chunk.chunk = 0;
-            uint8_t character = _statustext_queue[0]->text[_msg_chunk.char_index++];
+    }
+
+    if (_msg_chunk.repeats == 0) {
+        _msg_chunk.chunk = 0;
+        uint8_t character = _statustext_queue[0]->text[_msg_chunk.char_index++];
+        if (character) {
+            _msg_chunk.chunk |= character<<24;
+            character = _statustext_queue[0]->text[_msg_chunk.char_index++];
             if (character) {
-                _msg_chunk.chunk |= character<<24;
+                _msg_chunk.chunk |= character<<16;
                 character = _statustext_queue[0]->text[_msg_chunk.char_index++];
                 if (character) {
-                    _msg_chunk.chunk |= character<<16;
+                    _msg_chunk.chunk |= character<<8;
                     character = _statustext_queue[0]->text[_msg_chunk.char_index++];
                     if (character) {
-                        _msg_chunk.chunk |= character<<8;
-                        character = _statustext_queue[0]->text[_msg_chunk.char_index++];
-                        if (character) {
-                            _msg_chunk.chunk |= character;
-                        }
+                        _msg_chunk.chunk |= character;
                     }
                 }
             }
-            if (!character) { // we've reached the end of the message (string terminated by '\0')
-                _msg_chunk.char_index = 0;
-                // add severity which is sent as the MSB of the last three bytes of the last chunk (bits 24, 16, and 8) since a character is on 7 bits
-                _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x4)<<21;
-                _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x2)<<14;
-                _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x1)<<7;
-            }
         }
-        _msg_chunk.repeats++;
-        if (_msg_chunk.repeats > 2) { // repeat each message chunk 3 times to ensure transmission
-            _msg_chunk.repeats = 0;
-            if (_msg_chunk.char_index == 0) { // if we're ready for the next message
-                _statustext_queue.remove(0);
-            }
+        if (!character) { // we've reached the end of the message (string terminated by '\0')
+            _msg_chunk.char_index = 0;
+            // add severity which is sent as the MSB of the last three bytes of the last chunk (bits 24, 16, and 8) since a character is on 7 bits
+            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x4)<<21;
+            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x2)<<14;
+            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x1)<<7;
+        }
+    }
+    _msg_chunk.repeats++;
+    if (_msg_chunk.repeats > 2) { // repeat each message chunk 3 times to ensure transmission
+        _msg_chunk.repeats = 0;
+        if (_msg_chunk.char_index == 0) { // if we're ready for the next message
+            _statustext_queue.remove(0);
         }
     }
     return true;
