@@ -215,7 +215,7 @@ private:
     
     struct
     {
-        uint32_t chunk; // a "chunk" (four characters/bytes) at a time of the mavlink message to be sent
+        uint32_t chunk; // a "chunk" (four characters/bytes) at a time of the queued message to be sent
         uint8_t repeats; // send each message "chunk" 3 times to make sure the entire messsage gets through without getting cut
         uint8_t char_index; // index of which character to get in the message
     } _msg_chunk;
@@ -237,7 +237,7 @@ private:
     void send_uint16(uint16_t id, uint16_t data);
 
     // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format
-    uint32_t get_next_msg_chunk(void);
+    bool get_next_msg_chunk(void);
     void check_sensor_status_flags(void);
     uint32_t calc_param(void);
     uint32_t calc_gps_latlng(bool *send_latitude);
