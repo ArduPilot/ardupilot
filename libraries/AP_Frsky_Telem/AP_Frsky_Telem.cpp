@@ -101,8 +101,8 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
             // build mavlink message queue for sensor_status_flags
             check_sensor_status_flags();
             // if there's any message in the queue, start sending them chunk by chunk; three times each chunk
-            if (!_statustext_queue.empty()) {
-                send_uint32(DIY_FIRST_ID, get_next_msg_chunk());
+            if (get_next_msg_chunk()) {
+                send_uint32(DIY_FIRST_ID, _msg_chunk.chunk);
                 return;
             }
             // send other sensor data if it's time for them, and reset the corresponding timer if sent
@@ -416,45 +416,49 @@ void  AP_Frsky_Telem::send_uint16(uint16_t id, uint16_t data)
 }
 
 /*
- * grabs one "chunk" (4 bytes) of the mavlink statustext message to be transmitted
+ * grabs one "chunk" (4 bytes) of the queued message to be transmitted
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::get_next_msg_chunk(void)
+bool AP_Frsky_Telem::get_next_msg_chunk(void)
 {
-    if (_msg_chunk.repeats == 0) {
-        _msg_chunk.chunk = 0;
-        uint8_t character = _statustext_queue[0]->text[_msg_chunk.char_index++];
-        if (character) {
-            _msg_chunk.chunk |= character<<24;
-            character = _statustext_queue[0]->text[_msg_chunk.char_index++];
+    if (_statustext_queue.empty()) {
+        return false;
+    } else {
+        if (_msg_chunk.repeats == 0) {
+            _msg_chunk.chunk = 0;
+            uint8_t character = _statustext_queue[0]->text[_msg_chunk.char_index++];
             if (character) {
-                _msg_chunk.chunk |= character<<16;
+                _msg_chunk.chunk |= character<<24;
                 character = _statustext_queue[0]->text[_msg_chunk.char_index++];
                 if (character) {
-                    _msg_chunk.chunk |= character<<8;
+                    _msg_chunk.chunk |= character<<16;
                     character = _statustext_queue[0]->text[_msg_chunk.char_index++];
                     if (character) {
-                        _msg_chunk.chunk |= character;
+                        _msg_chunk.chunk |= character<<8;
+                        character = _statustext_queue[0]->text[_msg_chunk.char_index++];
+                        if (character) {
+                            _msg_chunk.chunk |= character;
+                        }
                     }
                 }
             }
+            if (!character) { // we've reached the end of the message (string terminated by '\0')
+                _msg_chunk.char_index = 0;
+                // add severity which is sent as the MSB of the last three bytes of the last chunk (bits 24, 16, and 8) since a character is on 7 bits
+                _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x4)<<21;
+                _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x2)<<14;
+                _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x1)<<7;
+            }
         }
-        if (!character) { // we've reached the end of the message (string terminated by '\0')
-            _msg_chunk.char_index = 0;
-            // add severity which is sent as the MSB of the last three bytes of the last chunk (bits 24, 16, and 8) since a character is on 7 bits
-            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x4)<<21;
-            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x2)<<14;
-            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x1)<<7;
+        _msg_chunk.repeats++;
+        if (_msg_chunk.repeats > 2) { // repeat each message chunk 3 times to ensure transmission
+            _msg_chunk.repeats = 0;
+            if (_msg_chunk.char_index == 0) { // if we're ready for the next message
+                _statustext_queue.remove(0);
+            }
         }
     }
-    _msg_chunk.repeats++;
-    if (_msg_chunk.repeats > 2) { // repeat each message chunk 3 times to ensure transmission
-        _msg_chunk.repeats = 0;
-        if (_msg_chunk.char_index == 0) { // if we're ready for the next message
-            _statustext_queue.remove(0);
-        }
-    }
-    return _msg_chunk.chunk;
+    return true;
 }
 
 /*
