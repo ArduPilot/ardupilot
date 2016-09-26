@@ -961,7 +961,8 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (is_equal(packet.param1,1.0f)) {
                 // attempt to arm and return success or failure
-                if (copter.init_arm_motors(true)) {
+                const bool do_arming_checks = !is_equal(packet.param2,2989.0f);
+                if (copter.init_arm_motors(true, do_arming_checks)) {
                     result = MAV_RESULT_ACCEPTED;
                 }
             } else if (is_zero(packet.param1))  {
