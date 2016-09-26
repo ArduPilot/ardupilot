@@ -964,10 +964,14 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 if (copter.init_arm_motors(true)) {
                     result = MAV_RESULT_ACCEPTED;
                 }
-            } else if (is_zero(packet.param1) && (copter.ap.land_complete || is_equal(packet.param2,21196.0f)))  {
-                // force disarming by setting param2 = 21196 is deprecated
-                copter.init_disarm_motors();
-                result = MAV_RESULT_ACCEPTED;
+            } else if (is_zero(packet.param1))  {
+                if (copter.ap.land_complete || is_equal(packet.param2,21196.0f)) {
+                    // force disarming by setting param2 = 21196 is deprecated
+                    copter.init_disarm_motors();
+                    result = MAV_RESULT_ACCEPTED;
+                } else {
+                    result = MAV_RESULT_FAILED;
+                }
             } else {
                 result = MAV_RESULT_UNSUPPORTED;
             }
