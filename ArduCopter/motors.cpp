@@ -127,7 +127,7 @@ void Copter::auto_disarm_check()
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-bool Copter::init_arm_motors(bool arming_from_gcs)
+bool Copter::init_arm_motors(const bool arming_from_gcs, const bool do_arming_checks)
 {
     static bool in_arm_motors = false;
 
@@ -144,7 +144,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     }
 
     // run pre-arm-checks and display failures
-    if (!arming.all_checks_passing(arming_from_gcs)) {
+    if (do_arming_checks && !arming.all_checks_passing(arming_from_gcs)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;
