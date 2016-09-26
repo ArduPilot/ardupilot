@@ -729,9 +729,9 @@ void Plane::change_arm_state(void)
 /*
   arm motors
  */
-bool Plane::arm_motors(AP_Arming::ArmingMethod method)
+bool Plane::arm_motors(const AP_Arming::ArmingMethod method, const bool do_arming_checks)
 {
-    if (!arming.arm(method)) {
+    if (!arming.arm(method, do_arming_checks)) {
         return false;
     }
 
