@@ -35,7 +35,7 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, con
 /*
  * init - perform required initialisation
  */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value)
+void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_valuep)
 {
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
@@ -49,7 +49,11 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
         _params.mav_type = mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
         _params.fs_batt_voltage = fs_batt_voltage; // failsafe battery voltage in volts
         _params.fs_batt_mah = fs_batt_mah; // failsafe reserve capacity in mAh
-        _ap.value = ap_value; // ap bit-field
+        if (ap_valuep == nullptr) { // ap bit-field
+            _ap.valuep = &_ap.value;
+        } else {
+            _ap.valuep = ap_valuep;
+        }
     }
     
     if (_port != NULL) {
@@ -634,12 +638,10 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
 
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
     ap_status = (uint8_t)((_ap.control_mode+1) & AP_CONTROL_MODE_LIMIT);
-    if (_ap.value != nullptr) {
-        // simple/super simple modes flags
-        ap_status |= (uint8_t)(*_ap.value & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
-        // is_flying flag
-        ap_status |= (uint8_t)((*_ap.value & AP_ISFLYING_FLAG) ^ AP_ISFLYING_FLAG);
-    }
+    // simple/super simple modes flags
+    ap_status |= (uint8_t)(*_ap.valuep & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
+    // is_flying flag
+    ap_status |= (uint8_t)((*_ap.valuep & AP_ISFLYING_FLAG) ^ AP_ISFLYING_FLAG);
     // armed flag
     ap_status |= (uint8_t)(AP_Notify::flags.armed)<<AP_ARMED_OFFSET;
     // battery failsafe flag
