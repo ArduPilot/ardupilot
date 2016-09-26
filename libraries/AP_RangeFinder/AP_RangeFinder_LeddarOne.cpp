@@ -136,13 +136,13 @@ int8_t AP_RangeFinder_LeddarOne::send_request(void)
     uint8_t i = 0;
 
     uint32_t nbytes = uart->available();
+    if(nbytes > 250) {
+        return LEDDARONE_ERR_SERIAL_PORT;
+    }
 
     // clear buffer
     while (nbytes-- > 0) {
         uart->read();
-        if (++i > 250) {
-            return LEDDARONE_ERR_SERIAL_PORT;
-        }
     }
 
     // Modbus read input register (function code 0x04)
