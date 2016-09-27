@@ -463,6 +463,11 @@
 #define HAL_BARO_MS5611_I2C_BUS 1
 #define HAL_BARO_MS5611_I2C_ADDR 0x77
 #define HAL_BARO_MS5611_USE_TIMER false
+#define HAL_GPIO_A_LED_PIN        24
+#define HAL_GPIO_B_LED_PIN        25
+#define HAL_GPIO_C_LED_PIN        16
+#define HAL_GPIO_LED_ON           LOW
+#define HAL_GPIO_LED_OFF          HIGH
 #else
 #error "no Linux board subtype set"
 #endif
