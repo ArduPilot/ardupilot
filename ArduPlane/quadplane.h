@@ -345,6 +345,8 @@ private:
     void tiltrotor_slew(float tilt);
     void tiltrotor_update(void);
     void tilt_compensate(float *thrust, uint8_t num_motors);
+
+    void afs_terminate(void);
     
 public:
     void motor_test_output();
