@@ -40,7 +40,7 @@ public:
 
     // these functions should not be used by Copter which holds the armed state in the motors library
     ArmingRequired arming_required();
-    virtual bool arm(uint8_t method);
+    virtual bool arm(uint8_t method, bool do_arming_checks=true);
     bool disarm();
     bool is_armed();
 
