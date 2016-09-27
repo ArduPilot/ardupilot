@@ -43,6 +43,11 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
     ch_yaw->output();
     ch_throttle->output();
     RC_Channel_aux::output_ch_all();
+
+    plane.quadplane.afs_terminate();
+    
+    // also disarm to ensure that ignition is cut
+    plane.disarm_motors();
 }
 
 void AP_AdvancedFailsafe_Plane::setup_IO_failsafe(void)
