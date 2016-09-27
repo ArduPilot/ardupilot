@@ -32,8 +32,9 @@ void Rover::read_receiver_rssi(void)
     receiver_rssi = rssi.read_receiver_rssi_uint8();
 }
 
-//Calibrate compass
-void Rover::compass_cal_update() {
+// Calibrate compass
+void Rover::compass_cal_update()
+{
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
     }
@@ -41,14 +42,15 @@ void Rover::compass_cal_update() {
 
 // Accel calibration
 
-void Rover::accel_cal_update() {
+void Rover::accel_cal_update()
+{
     if (hal.util->get_soft_armed()) {
         return;
     }
     ins.acal_update();
     // check if new trim values, and set them    float trim_roll, trim_pitch;
-    float trim_roll,trim_pitch;
-    if(ins.get_new_trim(trim_roll, trim_pitch)) {
+    float trim_roll, trim_pitch;
+    if (ins.get_new_trim(trim_roll, trim_pitch)) {
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
 }
@@ -96,7 +98,7 @@ void Rover::read_sonars(void)
         obstacle.sonar1_distance_cm = sonar.distance_cm(0);
         obstacle.sonar2_distance_cm = 0;
         if (obstacle.sonar1_distance_cm < (uint16_t)g.sonar_trigger_cm)  {
-            // obstacle detected in front 
+            // obstacle detected in front
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
@@ -113,7 +115,7 @@ void Rover::read_sonars(void)
 
     // no object detected - reset after the turn time
     if (obstacle.detected_count >= g.sonar_debounce &&
-        AP_HAL::millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
+        AP_HAL::millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Obstacle passed");
         obstacle.detected_count = 0;
         obstacle.turn_angle = 0;

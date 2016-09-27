@@ -2,8 +2,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 
-class GCS_MAVLINK_Rover : public GCS_MAVLINK
-{
+class GCS_MAVLINK_Rover : public GCS_MAVLINK {
 
 public:
 

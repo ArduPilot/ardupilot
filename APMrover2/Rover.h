@@ -32,7 +32,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
+#include <AP_InertialSensor/AP_InertialSensor.h>  // Inertial Sensor (uncalibated IMU) Library
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <AP_NavEKF/AP_NavEKF.h>
@@ -42,23 +42,22 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <PID/PID.h>            // PID library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
-#include <AP_RangeFinder/AP_RangeFinder.h>	// Range finder library
-#include <Filter/Filter.h>			// Filter library
-#include <Filter/Butter.h>			// Filter library - butterworth filter
+#include <AP_RangeFinder/AP_RangeFinder.h>  // Range finder library
+#include <Filter/Filter.h>            // Filter library
+#include <Filter/Butter.h>            // Filter library - butterworth filter
 #include <AP_Buffer/AP_Buffer.h>      // FIFO buffer library
-#include <Filter/ModeFilter.h>		// Mode Filter from Filter library
-#include <Filter/AverageFilter.h>	// Mode Filter from Filter library
+#include <Filter/ModeFilter.h>        // Mode Filter from Filter library
+#include <Filter/AverageFilter.h>    // Mode Filter from Filter library
 #include <AP_Relay/AP_Relay.h>       // APM relay
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Mount/AP_Mount.h>		// Camera/Antenna mount
-#include <AP_Camera/AP_Camera.h>		// Camera triggering
+#include <AP_Mount/AP_Mount.h>        // Camera/Antenna mount
+#include <AP_Camera/AP_Camera.h>        // Camera triggering
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Airspeed/AP_Airspeed.h>    // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>     // needed for AHRS build
 #include <DataFlash/DataFlash.h>
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
-#include <stdarg.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <APM_Control/APM_Control.h>
 #include <AP_L1_Control/AP_L1_Control.h>
@@ -69,7 +68,7 @@
 #include "compat.h"
 
 #include <AP_Notify/AP_Notify.h>      // Notify library
-#include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
+#include <AP_BattMonitor/AP_BattMonitor.h>  // Battery monitor library
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <AP_Button/AP_Button.h>
@@ -82,7 +81,7 @@
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
 
-#include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_Declination/AP_Declination.h>  // ArduPilot Mega Declination Helper Library
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -138,11 +137,11 @@ private:
     AP_Button button;
 
     // flight modes convenience array
-    AP_Int8	*modes;
+    AP_Int8 *modes;
 
-// Inertial Navigation EKF
+    // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF EKF{&ahrs, barometer, sonar};
+    NavEKF EKF {&ahrs, barometer, sonar};
     NavEKF2 EKF2{&ahrs, barometer, sonar};
     AP_AHRS_NavEKF ahrs {ins, barometer, gps, sonar, EKF, EKF2};
 #else
@@ -164,11 +163,11 @@ private:
     AP_Mission mission;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow {ahrs};
 #endif
-    
-    // RSSI 
-    AP_RSSI rssi;          
+
+    // RSSI
+    AP_RSSI rssi;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
@@ -219,7 +218,7 @@ private:
 
     // Failsafe
     // A tracking variable for type of failsafe active
-    // Used for failsafe based on loss of RC signal or GCS signal. See 
+    // Used for failsafe based on loss of RC signal or GCS signal. See
     // FAILSAFE_EVENT_*
     struct {
         uint8_t bits;
@@ -245,7 +244,7 @@ private:
     int32_t next_navigation_leg_cd;
 
     // ground speed error in m/s
-    float groundspeed_error;	
+    float groundspeed_error;
 
     // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
     int16_t     throttle_nudge;
@@ -263,7 +262,7 @@ private:
         float turn_angle;
         uint16_t sonar1_distance_cm;
         uint16_t sonar2_distance_cm;
-        
+
         // time when we last detected an obstacle, in milliseconds
         uint32_t detected_time_ms;
     } obstacle;
@@ -273,7 +272,7 @@ private:
 
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
-    float 	ground_speed;
+    float ground_speed;
     int16_t throttle_last;
     int16_t throttle;
 
@@ -307,7 +306,7 @@ private:
     int32_t condition_value;
     // A starting value used to check the status of a conditional command.
     // For example in a delay command the condition_start records that start time for the delay
-    int32_t	condition_start;
+    int32_t condition_start;
 
     // 3D Location vectors
     // Location structure defined in AP_Common
@@ -327,16 +326,16 @@ private:
     // IMU variables
     // The main loop execution time.  Seconds
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
-    float G_Dt;		
+    float G_Dt;
 
     // Performance monitoring
     // Timer used to accrue data and trigger recording of the performanc monitoring log message
-    int32_t	perf_mon_timer;
+    int32_t perf_mon_timer;
     // The maximum main loop execution time recorded in the current performance monitoring interval
     uint32_t G_Dt_max;
 
     // System Timers
-    // Time in microseconds of start of main control loop. 
+    // Time in microseconds of start of main control loop.
     uint32_t fast_loopTimer_us;
     // Number of milliseconds used in last main loop cycle
     uint32_t delta_us_fast_loop;
@@ -358,9 +357,9 @@ private:
     static const LogStructure log_structure[];
 
     // Loiter control
-    uint16_t loiter_time_max; // How long we should loiter at the nav_waypoint (time in seconds)
+    uint16_t loiter_time_max;  // How long we should loiter at the nav_waypoint (time in seconds)
     uint32_t loiter_time;     // How long have we been loitering - The start time in millis
-    float distance_past_wp; // record the distance we have gone past the wp
+    float distance_past_wp;  // record the distance we have gone past the wp
 
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
@@ -370,13 +369,13 @@ private:
     bool auto_throttle_mode;
 
     // Store the time the last GPS message was received.
-    uint32_t last_gps_msg_ms{0}; 
+    uint32_t last_gps_msg_ms{0};
 
 private:
     // private member functions
     void ahrs_update();
     void mount_update(void);
-    void update_trigger(void);    
+    void update_trigger(void);
     void update_alt();
     void gcs_failsafe_check(void);
     void compass_accumulate(void);
@@ -425,7 +424,7 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
-    void start_logging() ;
+    void start_logging();
     void Log_Arm_Disarm();
 
     void load_parameters(void);
@@ -496,7 +495,7 @@ private:
     void check_usb_mux(void);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
-    void print_hit_enter();    
+    void print_hit_enter();
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);

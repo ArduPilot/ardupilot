@@ -5,7 +5,8 @@
 /*****************************************
     Throttle slew limit
 *****************************************/
-void Rover::throttle_slew_limit(int16_t last_throttle) {
+void Rover::throttle_slew_limit(int16_t last_throttle)
+{
     // if slew limit rate is set to zero then do not slew limit
     if (g.throttle_slewrate && last_throttle != 0) {
         // limit throttle change by the given percentage per second
@@ -14,14 +15,15 @@ void Rover::throttle_slew_limit(int16_t last_throttle) {
         if (temp < 1) {
             temp = 1;
         }
-        channel_throttle->set_radio_out (constrain_int16(channel_throttle->get_radio_out(), last_throttle - temp, last_throttle + temp));
+        channel_throttle->set_radio_out(constrain_int16(channel_throttle->get_radio_out(), last_throttle - temp, last_throttle + temp));
     }
 }
 
 /*
     check for triggering of start of auto mode
 */
-bool Rover::auto_check_trigger(void) {
+bool Rover::auto_check_trigger(void)
+{
     // only applies to AUTO mode
     if (control_mode != AUTO) {
         return true;
@@ -55,7 +57,7 @@ bool Rover::auto_check_trigger(void) {
     if (!is_zero(g.auto_kickstart)) {
         float xaccel = ins.get_accel().x;
         if (xaccel >= g.auto_kickstart) {
-            gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Triggered AUTO xaccel=%.1f", (double)xaccel);
+            gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Triggered AUTO xaccel=%.1f", static_cast<double>(xaccel));
             auto_triggered = true;
             return true;
         }
@@ -67,7 +69,8 @@ bool Rover::auto_check_trigger(void) {
 /*
     work out if we are going to use pivot steering
 */
-bool Rover::use_pivot_steering(void) {
+bool Rover::use_pivot_steering(void)
+{
     if (control_mode >= AUTO && g.skid_steer_out && g.pivot_turn_angle != 0) {
         int16_t bearing_error = wrap_180_cd(nav_controller->target_bearing_cd() - ahrs.yaw_sensor) / 100;
         if (abs(bearing_error) > g.pivot_turn_angle) {
@@ -81,7 +84,8 @@ bool Rover::use_pivot_steering(void) {
 /*
     calculate the throtte for auto-throttle modes
 */
-void Rover::calc_throttle(float target_speed) {
+void Rover::calc_throttle(float target_speed)
+{
     // If not autostarting OR we are loitering at a waypoint
     // then set the throttle to minimum
     if (!auto_check_trigger() || ((loiter_time > 0) && (control_mode == AUTO))) {
@@ -162,7 +166,8 @@ void Rover::calc_throttle(float target_speed) {
     Calculate desired turn angles (in medium freq loop)
  *****************************************/
 
-void Rover::calc_lateral_acceleration() {
+void Rover::calc_lateral_acceleration()
+{
     switch (control_mode) {
     case AUTO:
         nav_controller->update_waypoint(prev_WP, next_WP);
@@ -195,7 +200,8 @@ void Rover::calc_lateral_acceleration() {
 /*
     calculate steering angle given lateral_acceleration
 */
-void Rover::calc_nav_steer() {
+void Rover::calc_nav_steer()
+{
     // check to see if the rover is loitering
     if ((loiter_time > 0) && (control_mode == AUTO)) {
         channel_steer->set_servo_out(0);
@@ -216,7 +222,8 @@ void Rover::calc_nav_steer() {
 /*****************************************
     Set the flight control servos based on the current calculated values
 *****************************************/
-void Rover::set_servos(void) {
+void Rover::set_servos(void)
+{
     static int16_t last_throttle;
 
     // support a separate steering channel
@@ -238,12 +245,12 @@ void Rover::set_servos(void) {
         channel_steer->calc_pwm();
         if (in_reverse) {
             channel_throttle->set_servo_out(constrain_int16(channel_throttle->get_servo_out(),
-                                          -g.throttle_max,
-                                          -g.throttle_min));
+                                            -g.throttle_max,
+                                            -g.throttle_min));
         } else {
             channel_throttle->set_servo_out(constrain_int16(channel_throttle->get_servo_out(),
-                                          g.throttle_min.get(),
-                                          g.throttle_max.get()));
+                                            g.throttle_min.get(),
+                                            g.throttle_max.get()));
         }
 
         if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) && control_mode < AUTO) {
@@ -293,12 +300,12 @@ void Rover::set_servos(void) {
     }
 
     if (!arming.is_armed()) {
-        //Some ESCs get noisy (beep error msgs) if PWM == 0.
-        //This little segment aims to avoid this.
+        // Some ESCs get noisy (beep error msgs) if PWM == 0.
+        // This little segment aims to avoid this.
         switch (arming.arming_required()) {
         case AP_Arming::NO:
-            //keep existing behavior: do nothing to radio_out
-            //(don't disarm throttle channel even if AP_Arming class is)
+            // keep existing behavior: do nothing to radio_out
+            // (don't disarm throttle channel even if AP_Arming class is)
             break;
 
         case AP_Arming::YES_ZERO_PWM:
