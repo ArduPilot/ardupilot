@@ -590,7 +590,7 @@ bool AP_Arming::arm_checks(uint8_t method)
 }
 
 //returns true if arming occurred successfully
-bool AP_Arming::arm(uint8_t method)
+bool AP_Arming::arm(uint8_t method, const bool do_arming_checks)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     // Copter should never use this function
@@ -601,7 +601,7 @@ bool AP_Arming::arm(uint8_t method)
     }
 
     //are arming checks disabled?
-    if (checks_to_perform == ARMING_CHECK_NONE) {
+    if (!do_arming_checks || checks_to_perform == ARMING_CHECK_NONE) {
         armed = true;
         arming_method = NONE;
         gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
