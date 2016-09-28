@@ -98,6 +98,9 @@ class CalController(object):
 
         self.general_state = 'angvel'
 
+    def autonomous_magcal(self):
+        self.mpstate.functions.process_stdin('servo set 5 1250')
+
     def handle_simstate(self, m):
         if self.general_state == 'attitude':
             q = quaternion.Quaternion((m.roll, m.pitch, m.yaw))
@@ -363,6 +366,13 @@ class SitlCalibrationModule(mp_module.MPModule):
             'actuate on the simulator vehicle for magnetometer calibration',
         )
         self.add_command(
+            'sitl_autonomous_magcal',
+            self.cmd_sitl_autonomous_magcal,
+            'let the simulating program do the rotations for magnetometer ' +
+            'calibration - basically, continuous rotations over six ' +
+            'calibration poses',
+        )
+        self.add_command(
             'sitl_stop',
             self.cmd_sitl_stop,
             'stop the current calibration control',
@@ -426,6 +436,10 @@ class SitlCalibrationModule(mp_module.MPModule):
 
     def cmd_sitl_magcal(self, args):
         self.set_controller('magcal_controller')
+
+    def cmd_sitl_autonomous_magcal(self, args):
+        self.set_controller('generic_controller')
+        self.current_controller.autonomous_magcal()
 
     def mavlink_packet(self, m):
         for c in self.controllers.values():
