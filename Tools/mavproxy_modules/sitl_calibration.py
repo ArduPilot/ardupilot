@@ -89,7 +89,7 @@ class CalController(object):
             theta = 0
         elif theta > max_theta:
             theta = max_theta
-        theta_pwm = 1200 + round((theta / max_theta) * 800)
+        theta_pwm = 1300 + round((theta / max_theta) * 700)
 
         self.mpstate.functions.process_stdin('servo set 5 %d' % theta_pwm)
         self.mpstate.functions.process_stdin('servo set 6 %d' % x_pwm)
