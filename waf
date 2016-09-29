@@ -12,7 +12,7 @@ try:
     subprocess.check_call(['python', waf_light] + sys.argv[1:])
 except subprocess.CalledProcessError as e:
     if e.returncode != 2 or p.isfile(waf_light):
-        raise e
+        sys.exit(1)
 
     print('Missing waf submodule. Trying to get it')
 
