@@ -391,6 +391,11 @@
 #define HAL_FLOW_PX4_MAX_FLOW_PIXEL 4
 #define HAL_FLOW_PX4_BOTTOM_FLOW_FEATURE_THRESHOLD 30
 #define HAL_FLOW_PX4_BOTTOM_FLOW_VALUE_THRESHOLD 5000
+#define HAL_GPIO_A_LED_PIN        69
+#define HAL_GPIO_B_LED_PIN        68
+#define HAL_GPIO_C_LED_PIN        45
+#define HAL_GPIO_LED_ON           LOW
+#define HAL_GPIO_LED_OFF          HIGH
 /* ELP-USBFHD01M-L21
  * focal length 2.1 mm, pixel size 3 um
  * 240x240 crop rescaled to 64x64 */
