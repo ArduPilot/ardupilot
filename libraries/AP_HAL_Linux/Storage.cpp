@@ -24,6 +24,8 @@ using namespace Linux;
 #define STORAGE_DIR "/data/ftp/internal_000/APM"
 #elif APM_BUILD_TYPE(APM_BUILD_Replay)
 #define STORAGE_DIR "."
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
+#define STORAGE_DIR "/var/lib/ardupilot"
 #else
 #define STORAGE_DIR "/var/APM"
 #endif
