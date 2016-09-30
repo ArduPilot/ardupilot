@@ -347,6 +347,7 @@ private:
     void tilt_compensate(float *thrust, uint8_t num_motors);
 
     void afs_terminate(void);
+    bool guided_mode_enabled(void);
     
 public:
     void motor_test_output();

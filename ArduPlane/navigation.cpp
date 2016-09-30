@@ -173,8 +173,7 @@ void Plane::update_loiter(uint16_t radius)
     }
 
     if (loiter.start_time_ms != 0 &&
-        quadplane.available() &&
-        quadplane.guided_mode != 0) {
+        quadplane.guided_mode_enabled()) {
         if (!auto_state.vtol_loiter) {
             auto_state.vtol_loiter = true;
             // reset loiter start time, so we don't consider the point
@@ -202,8 +201,7 @@ void Plane::update_loiter(uint16_t radius)
                 // starting a loiter in GUIDED means we just reached the target point
                 gcs_send_mission_item_reached_message(0);
             }
-            if (quadplane.available() &&
-                quadplane.guided_mode != 0) {
+            if (quadplane.guided_mode_enabled()) {
                 quadplane.guided_start();
             }
         }
