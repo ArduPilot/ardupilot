@@ -4,11 +4,13 @@
 #include "Display_OLED_I2C.h"
 #include <AP_HAL/I2CDevice.h>
 
-#define SSD1306_COLUMNS 128		// display columns
-#define SSD1306_ROWS 64		    // display rows
-#define SSD1306_ROWS_PER_PAGE 8
+#define SH1106_COLUMNS 132		// display columns
+#define SH1106_ROWS 64		    // display rows
+#define SH1106_ROWS_PER_PAGE 8
 
-class Display_SSD1306_I2C: public Display_OLED_I2C {
+class Display_SH1106_I2C: public Display_OLED_I2C {
+public:
+    static bool hw_autodetect() { return true; }
 
 protected:
     virtual bool hw_init();
@@ -21,6 +23,6 @@ protected:
 
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
-    uint8_t _displaybuffer[SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE];
+    uint8_t _displaybuffer[SH1106_COLUMNS * SH1106_ROWS_PER_PAGE];
     bool _need_hw_update;
 };

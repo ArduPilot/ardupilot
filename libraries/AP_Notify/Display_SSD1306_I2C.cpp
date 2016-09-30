@@ -19,7 +19,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 
-#define SSD1306_I2C_BUS 2
 #define SSD1306_I2C_ADDR 0x3C    // default I2C bus address
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -30,15 +29,38 @@ bool Display_SSD1306_I2C::hw_init()
     struct {
         uint8_t reg;
         uint8_t seq[31];
-    } init_seq = { 0x0,  {0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3,
-                          0x00, 0x40, 0x8D, 0x14, 0x20, 0x00,
-                          0xA1, 0xC8, 0xDA, 0x12, 0x81, 0xCF,
-                          0xD9, 0xF1, 0xDB, 0x40, 0xA4, 0xA6,
-                          0xAF, 0x21, 0, 127, 0x22, 0, 7 } };
+    } init_seq = { 0x0,  {
+                          // LEGEND:
+                          //    *** is out of sequence for init steps recommended in datasheet
+                          //    +++ not listed in sequence for init steps recommended in datasheet
 
-    _dev = std::move(hal.i2c_mgr->get_device(SSD1306_I2C_BUS, SSD1306_I2C_ADDR));
+            0xAE,         // Display OFF
+            0xD5, 0x80,   // *** Set Display Clock Divide Ratio and Oscillator Frequency
+                          //    Clock Divide Ratio: 0b (== 1)
+                          //    Oscillator Frequency: 1000b (== +0%)
+            0xA8, 0x3F,   // MUX Ratio: 111111b (== 64MUX)
+            0xD3, 0x00,   // Display Offset: 0b (== 0)
+            0x40,         // Display Start Line: 0b (== 0)
+            0x8D, 0x14,   // *** Enable charge pump regulator: 1b (== Enable)
+            0x20, 0x00,   // *** Memory Addressing Mode: 00b (== Horizontal Addressing Mode)
+            0xA1,         // Segment re-map: 1b (== column address 127 is mapped to SEG0)
+            0xC8,         // COM Output Scan Direction: 1b (== remapped mode. Scan from COM[N-1] to COM0)
+            0xDA, 0x12,   // COM Pins hardware configuration: 01b (POR)
+                          //    (== Alternative COM pin configuration + Disable COM Left/Right remap)
+            0x81, 0xCF,   // Contrast Control: 0xCF (== 207 decimal, range 0..255)
+            0xD9, 0xF1,   // +++ Pre-charge Period: 0xF1 (== 1 DCLK P1 + 15 DCLK P2)
+            0xDB, 0x40,   // +++ VCOMH Deselect Level: 100b (INVALID?!) (== ?!)
+            0xA4,         // Entire Display ON (ignoring RAM): (== OFF)
+            0xA6,         // Normal/Inverse Display: 0b (== Normal)
+            0xAF,         // Display ON: 1b (== ON)
+            0x21, 0, 127, // +++ Column Address: (== start:0, end:127)
+            0x22, 0, 7    // +++ Page Address: (== start:0, end:7)
+    } };
 
-    // take i2c bus sempahore
+    _dev = std::move(hal.i2c_mgr->get_device(OLED_I2C_BUS, SSD1306_I2C_ADDR));
+    memset(_displaybuffer, 0, SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE);
+
+    // take i2c bus semaphore
     if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
@@ -51,7 +73,7 @@ bool Display_SSD1306_I2C::hw_init()
 
     _need_hw_update = true;
 
-    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&Display_SSD1306_I2C::_timer, bool));
+    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&Display_SSD1306_I2C::_update_timer, bool));
 
     return true;
 }
@@ -62,13 +84,13 @@ bool Display_SSD1306_I2C::hw_update()
     return true;
 }
 
-bool Display_SSD1306_I2C::_timer()
+bool Display_SSD1306_I2C::_update_timer()
 {
     if (!_need_hw_update) {
         return true;
     }
     _need_hw_update = false;
-    
+
     struct PACKED {
         uint8_t reg;
         uint8_t cmd[6];
@@ -76,17 +98,19 @@ bool Display_SSD1306_I2C::_timer()
 
     struct PACKED {
         uint8_t reg;
-        uint8_t db[SSD1306_ROWS];
+        uint8_t db[SSD1306_COLUMNS/2];
     } display_buffer = { 0x40, {} };
 
     // write buffer to display
-    for (uint8_t i = 0; i < (SSD1306_COLUMNS / SSD1306_COLUMNS_PER_PAGE); i++) {
+    for (uint8_t i = 0; i < (SSD1306_ROWS / SSD1306_ROWS_PER_PAGE); i++) {
         command.cmd[4] = i;
-
         _dev->transfer((uint8_t *)&command, sizeof(command), nullptr, 0);
 
-        memcpy(&display_buffer.db[0], &_displaybuffer[i * SSD1306_ROWS], SSD1306_ROWS);
-        _dev->transfer((uint8_t *)&display_buffer, sizeof(display_buffer), nullptr, 0);
+        memcpy(&display_buffer.db[0], &_displaybuffer[i * SSD1306_COLUMNS], SSD1306_COLUMNS/2);
+        _dev->transfer((uint8_t *)&display_buffer, SSD1306_COLUMNS/2 + 1, nullptr, 0);
+
+        memcpy(&display_buffer.db[0], &_displaybuffer[i * SSD1306_COLUMNS + SSD1306_COLUMNS/2 ], SSD1306_COLUMNS/2);
+        _dev->transfer((uint8_t *)&display_buffer, SSD1306_COLUMNS/2 + 1, nullptr, 0);
     }
 
     return true;
@@ -95,11 +119,11 @@ bool Display_SSD1306_I2C::_timer()
 bool Display_SSD1306_I2C::set_pixel(uint16_t x, uint16_t y)
 {
     // check x, y range
-    if ((x >= SSD1306_ROWS) || (y >= SSD1306_COLUMNS)) {
+    if ((x >= SSD1306_COLUMNS) || (y >= SSD1306_ROWS)) {
         return false;
     }
     // set pixel in buffer
-    _displaybuffer[x + (y / 8 * SSD1306_ROWS)] |= 1 << (y % 8);
+    _displaybuffer[x + (y / 8 * SSD1306_COLUMNS)] |= 1 << (y % 8);
 
     return true;
 }
@@ -107,11 +131,16 @@ bool Display_SSD1306_I2C::set_pixel(uint16_t x, uint16_t y)
 bool Display_SSD1306_I2C::clear_pixel(uint16_t x, uint16_t y)
 {
     // check x, y range
-    if ((x >= SSD1306_ROWS) || (y >= SSD1306_COLUMNS)) {
+    if ((x >= SSD1306_COLUMNS) || (y >= SSD1306_ROWS)) {
         return false;
     }
     // clear pixel in buffer
-    _displaybuffer[x + (y / 8 * SSD1306_ROWS)] &= ~(1 << (y % 8));
+    _displaybuffer[x + (y / 8 * SSD1306_COLUMNS)] &= ~(1 << (y % 8));
 
     return true;
+}
+bool Display_SSD1306_I2C::clear_screen()
+{
+     memset(_displaybuffer, 0, SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE);
+     return true;
 }

@@ -37,18 +37,28 @@
 #define BUZZER_ON       1
 #define BUZZER_OFF      0
 
+#define NOTIFY_TEXT_BUFFER_SIZE 51
+
+//Type of on-board display
+#define DISPLAY_OFF     0
+#define DISPLAY_SSD1306 1
+#define DISPLAY_SH1106  2
+
 class AP_Notify
 {
-    friend class RGBLed;    // RGBLed needs access to notify parameters
+    friend class RGBLed;            // RGBLed needs access to notify parameters
+    friend class Display_OLED_I2C;  // Display_OLED_I2C needs access to notify parameters
 public:
     // Constructor
     AP_Notify();
 
     /// notify_flags_type - bitmask of notification flags
-    struct notify_flags_type {
+    struct notify_flags_and_values_type {
         uint32_t initialising       : 1;    // 1 if initialising and copter should not be moved
         uint32_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
         uint32_t gps_num_sats       : 6;    // number of sats
+        float    battery_voltage       ;    // battery voltage
+        uint32_t flight_mode        : 8;    // flight mode
         uint32_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint32_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
         uint32_t pre_arm_gps_check  : 1;    // 0 = failing pre-arm GPS checks, 1 = passed
@@ -91,9 +101,9 @@ public:
         uint32_t tune_error             : 1;    // tuning controller error
     };
 
-    // the notify flags are static to allow direct class access
-    // without declaring the object
-    static struct notify_flags_type flags;
+    // The notify flags and values are static to allow direct class access
+    // without declaring the object.
+    static struct notify_flags_and_values_type flags;
     static struct notify_events_type events;
 
     // initialisation
@@ -111,10 +121,17 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     bool buzzer_enabled() const { return _buzzer_enable; }
+
+    static void send_text(const char *str);
+    static char* get_text() { return _send_text; }
+
 private:
     static NotifyDevice* _devices[];
 
+    static char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
+    AP_Int8 _display_type;
+
 };
