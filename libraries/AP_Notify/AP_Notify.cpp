@@ -86,6 +86,15 @@ struct AP_Notify::notify_events_type AP_Notify::events;
     NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm};
 #endif
 
+
+#elif  CONFIG_HAL_BOARD == HAL_BOARD_F4BY
+    AP_BoardLED boardled;
+    ToshibaLED_PX4 toshibaled;
+    ToneAlarm_PX4 tonealarm;
+    Display_SSD1306_I2C display;
+	NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &display};
+
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ToneAlarm_PX4 tonealarm;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
