@@ -707,7 +707,7 @@ uint16_t CompassCalibrator::get_random(void)
 //////////// CompassSample public interface //////////////
 //////////////////////////////////////////////////////////
 
-#define COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(__X) ((int16_t)constrain_float(roundf(__X*8.0f), INT16_MIN, INT16_MAX))
+#define COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(__X) ((int16_t)constrain_float(roundf(__X*8.0f), -0x7fff-1, 0x7fff))
 #define COMPASS_CAL_SAMPLE_SCALE_TO_FLOAT(__X) (__X/8.0f)
 
 Vector3f CompassCalibrator::CompassSample::get() const {
