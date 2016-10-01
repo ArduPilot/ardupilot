@@ -338,6 +338,7 @@ public:
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
     AP_Int8 _gnss_mode[2];
+    AP_Int16 _rate_ms[2];
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
     
