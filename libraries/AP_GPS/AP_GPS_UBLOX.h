@@ -49,7 +49,7 @@
 #define UBX_MSG_TYPES 2
 
 #define UBLOX_MAX_PORTS 6
-#define MEASURE_RATE 200
+#define MINIMUM_MEASURE_RATE_MS 200
 
 #define RATE_POSLLH 1
 #define RATE_STATUS 1

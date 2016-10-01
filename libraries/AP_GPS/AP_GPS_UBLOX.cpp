@@ -608,7 +608,9 @@ AP_GPS_UBLOX::_parse_gps(void)
                     _unconfigured_messages &= ~CONFIG_NAV_SETTINGS;
                     break;
                 case MSG_CFG_RATE:
-                    _unconfigured_messages &= ~CONFIG_RATE_NAV;
+                    // The GPS will ACK a update rate that is invalid. in order to detect this
+                    // only accept the rate as configured by reading the settings back and
+                   //  validating that they all match the target values
                     break;
                 case MSG_CFG_SBAS:
                     _unconfigured_messages &= ~CONFIG_SBAS;
@@ -760,7 +762,7 @@ AP_GPS_UBLOX::_parse_gps(void)
            _ublox_port = _buffer.prt.portID;
            return false;
         case MSG_CFG_RATE:
-            if(_buffer.nav_rate.measure_rate_ms != MEASURE_RATE ||
+            if(_buffer.nav_rate.measure_rate_ms != gps._rate_ms[state.instance] ||
                _buffer.nav_rate.nav_rate != 1 ||
                _buffer.nav_rate.timeref != 0) {
                _configure_rate();
@@ -1069,7 +1071,7 @@ AP_GPS_UBLOX::_save_cfg()
     _num_cfg_save_tries++;
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
                                      "GPS: u-blox %d saving config",
-                                     state.instance);
+                                     state.instance + 1);
 }
 
 /*
@@ -1144,7 +1146,8 @@ void
 AP_GPS_UBLOX::_configure_rate(void)
 {
     struct ubx_cfg_nav_rate msg;
-    msg.measure_rate_ms = MEASURE_RATE;
+    // require a minimum measurement rate of 5Hz
+    msg.measure_rate_ms = MIN(gps._rate_ms[state.instance], MINIMUM_MEASURE_RATE_MS);
     msg.nav_rate        = 1;
     msg.timeref         = 0;     // UTC time
     _send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));
