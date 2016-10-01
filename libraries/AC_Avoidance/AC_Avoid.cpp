@@ -89,8 +89,16 @@ void AC_Avoid::adjust_velocity_circle(const float kP, const float accel_cmss, Ve
 
 /*
  * Adjusts the desired velocity for the polygon fence.
+ *
+ * This function is supposed to solve the following optimization problem.
+ * Find the vector safe_vel that is closest to desired_vel,
+ * subject to the following constraints for each edge:
+ * Let P be the closest point to the current position of the vehicle.
+ * Let U be the unit vector in the direction of P from the current position.
+ * Let D be the distance from the current position to P.
+ *
+ *    safe_vel must satisfy safe_vel * P <= max_speed(D)
  */
-
 void AC_Avoid::adjust_velocity_poly(const float kP, const float accel_cmss, Vector2f &desired_vel)
 {
     // exit if the polygon fence is not enabled
@@ -120,10 +128,11 @@ void AC_Avoid::adjust_velocity_poly(const float kP, const float accel_cmss, Vect
         return;
     }
 
-    // Safe_vel will be adjusted to remain within fence.
-    // We need a separate vector in case adjustment fails,
-    // e.g. if we are exactly on the boundary.
-    Vector2f safe_vel(desired_vel);
+    // Two arrays giving constraints induced by the current position and fence
+    // The ith constraint is:
+    //    velocity * constraint_directions[i] <= max_speeds[i]
+    Vector2f constraint_directions[num_points - 1];
+    float max_speeds[num_points - 1];
 
     uint16_t i, j;
     for (i = 1, j = num_points-1; i < num_points; j = i++) {
@@ -138,7 +147,8 @@ void AC_Avoid::adjust_velocity_poly(const float kP, const float accel_cmss, Vect
             // We are strictly inside the given edge.
             // Adjust velocity to not violate this edge.
             limit_direction /= limit_distance;
-            limit_velocity(kP, accel_cmss, safe_vel, limit_direction, limit_distance);
+            constraint_directions[i - 1] = limit_direction;
+            max_speeds[i - 1] = get_max_speed(kP, accel_cmss, limit_distance - get_margin());
         } else {
             // We are exactly on the edge - treat this as a fence breach.
             // i.e. do not adjust velocity.
@@ -146,24 +156,69 @@ void AC_Avoid::adjust_velocity_poly(const float kP, const float accel_cmss, Vect
         }
     }
 
-    desired_vel = safe_vel;
+    adjust_velocity_constraints(kP, accel_cmss, constraint_directions, max_speeds, num_points - 1, desired_vel);
+}
+
+/*
+ * Adjusts the velocity to satisfy the given set of constraints. The ith constraint is
+ *    desired_vel * constraint_directions[i] <= max_speeds[i]
+ */
+void AC_Avoid::adjust_velocity_constraints(const float kP, const float accel_cmss, const Vector2f* constraint_directions, const float* max_speeds, const uint16_t num_constraints, Vector2f& desired_vel)
+{
+    for (uint16_t i = 0; i < num_constraints; i++) {
+        if (limit_velocity(kP, accel_cmss, desired_vel, constraint_directions[i], max_speeds[i])) {
+            // If velocity was adjusted, iterate through all prior constraints to check for
+            // violations
+            for (uint16_t j = 0; j < i; j++) {
+                if (desired_vel * constraint_directions[j] > max_speeds[j]) {
+                    // New velocity violates previous constraint
+                    // Adjust velocity to intersection of the two constraints.
+                    // This should be the closest point that satisfies both constraints.
+                    // The following will do nothing if there is no intersection,
+                    // but this should never happen.
+                    intersection(constraint_directions[j], max_speeds[j], constraint_directions[i], max_speeds[i], desired_vel);
+                }
+            }
+        }
+    }
+}
+
+/*
+ * Compute the intersection of the following two lines:
+ *   vec1.x * x + vec1.y * y = c1
+ *   vec2.x * x + vec2.y * y = c2
+ *
+ * Stores the result in out. Leaves out unchanged if there
+ * is no intersection.
+ */
+void AC_Avoid::intersection(const Vector2f vec1, const float c1, const Vector2f vec2, const float c2, Vector2f& out)
+{
+    float det = vec1 % vec2;
+    if (!is_zero(det)) {
+        out.x = (c1 * vec2.y - c2 * vec1.y) / det;
+        out.y = (c2 * vec1.x - c1 * vec2.x) / det;
+    }
 }
 
 /*
  * Limits the component of desired_vel in the direction of the unit vector
  * limit_direction to be at most the maximum speed permitted by the limit_distance.
  *
+ * Return true iff the velocity was actually changed.
+ *
  * Uses velocity adjustment idea from Randy's second email on this thread:
  * https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
  */
-void AC_Avoid::limit_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel, const Vector2f limit_direction, const float limit_distance) const
+bool AC_Avoid::limit_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel, const Vector2f limit_direction, const float max_speed) const
 {
-    const float max_speed = get_max_speed(kP, accel_cmss, limit_distance - get_margin());
     // project onto limit direction
     const float speed = desired_vel * limit_direction;
     if (speed > max_speed) {
         // subtract difference between desired speed and maximum acceptable speed
         desired_vel += limit_direction*(max_speed - speed);
+        return true;
+    } else {
+        return false;
     }
 }
 
