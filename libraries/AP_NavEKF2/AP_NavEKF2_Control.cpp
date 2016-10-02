@@ -178,7 +178,11 @@ void NavEKF2_core::setAidingMode()
          bool flowSensorTimeout = ((imuSampleTime_ms - flowValidMeaTime_ms) > 5000);
          // Check if the fusion has timed out (flow measurements have been rejected for too long)
          bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
-         if (flowSensorTimeout || flowFusionTimeout) {
+         // Enable switch to absolute position mode if GPS is available
+         // If GPS is not available and flow fusion has timed out, then fall-back to no-aiding
+         if((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && !gpsInhibit) {
+             PV_AidingMode = AID_ABSOLUTE;
+         } else if (flowSensorTimeout || flowFusionTimeout) {
              PV_AidingMode = AID_NONE;
          }
      } else if (PV_AidingMode == AID_ABSOLUTE) {
