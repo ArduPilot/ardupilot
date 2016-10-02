@@ -775,7 +775,7 @@ private:
     bool verify_yaw();
     void do_take_picture();
     void log_picture();
-    uint8_t mavlink_compassmot(mavlink_channel_t chan);
+    MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
     void delay(uint32_t ms);
     bool acro_init(bool ignore_checks);
     void acro_run();

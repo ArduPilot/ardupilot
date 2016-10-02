@@ -7,11 +7,11 @@
  */
 
 // setup_compassmot - sets compass's motor interference parameters
-uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
+MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
 {
 #if FRAME_CONFIG == HELI_FRAME
     // compassmot not implemented for tradheli
-    return 1;
+    return MAV_RESULT_TEMPORARILY_REJECTED;
 #else
     int8_t   comp_type;                 // throttle or current based compensation
     Vector3f compass_base[COMPASS_MAX_INSTANCES];           // compass vector when throttle is zero
@@ -30,7 +30,7 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
     // exit immediately if we are already in compassmot
     if (ap.compass_mot) {
         // ignore restart messages
-        return 1;
+        return MAV_RESULT_TEMPORARILY_REJECTED;
     }else{
         ap.compass_mot = true;
     }
@@ -44,7 +44,7 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
     if (!g.compass_enabled) {
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Compass disabled");
         ap.compass_mot = false;
-        return 1;
+        return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
     // check compass health
@@ -53,7 +53,7 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
         if (!compass.healthy(i)) {
             gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Check compass");
             ap.compass_mot = false;
-            return 1;
+            return MAV_RESULT_TEMPORARILY_REJECTED;
         }
     }
 
@@ -62,7 +62,7 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
     if (!ap.pre_arm_rc_check) {
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "RC not calibrated");
         ap.compass_mot = false;
-        return 1;
+        return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
     // check throttle is at zero
@@ -70,14 +70,14 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
     if (channel_throttle->get_control_in() != 0) {
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Throttle not zero");
         ap.compass_mot = false;
-        return 1;
+        return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
     // check we are landed
     if (!ap.land_complete) {
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Not landed");
         ap.compass_mot = false;
-        return 1;
+        return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
     // disable cpu failsafe
@@ -273,7 +273,7 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
     // flag we have completed
     ap.compass_mot = false;
 
-    return 0;
+    return MAV_RESULT_ACCEPTED;
 #endif  // FRAME_CONFIG != HELI_FRAME
 }
 
