@@ -59,8 +59,8 @@ void NavEKF2_core::SelectFlowFusion()
         EstimateTerrainOffset();
     }
 
-    // Fuse optical flow data into the main filter if not excessively tilted and we are in the correct mode
-    if (flowDataToFuse && tiltOK && PV_AidingMode == AID_RELATIVE)
+    // Fuse optical flow data into the main filter
+    if (flowDataToFuse && tiltOK)
     {
         // Set the flow noise used by the fusion processes
         R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
