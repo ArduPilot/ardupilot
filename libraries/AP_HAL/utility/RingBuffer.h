@@ -50,6 +50,9 @@ public:
     // read bytes from ringbuffer. Returns number of bytes read
     uint32_t read(uint8_t *data, uint32_t len);
 
+    // read a byte from ring buffer. Returns true on success, false otherwise
+    bool read_byte(uint8_t *data);
+
     /*
       update bytes at the read pointer. Used to update an object without
       popping it

@@ -196,6 +196,22 @@ uint32_t ByteBuffer::read(uint8_t *data, uint32_t len)
     return ret;
 }
 
+bool ByteBuffer::read_byte(uint8_t *data)
+{
+    if (!data) {
+        return false;
+    }
+
+    int16_t ret = peek(0);
+    if (ret < 0) {
+        return false;
+    }
+
+    *data = ret;
+
+    return advance(1);
+}
+
 /*
  * Returns the pointer and size to a contiguous read in the buffer
  */
