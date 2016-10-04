@@ -63,7 +63,7 @@ void Plane::navigate()
         return;
     }
 
-    if (next_WP_loc.lat == 0) {
+    if (next_WP_loc.lat == 0 && next_WP_loc.lng == 0) {
         return;
     }
 
