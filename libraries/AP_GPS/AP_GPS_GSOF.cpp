@@ -345,7 +345,7 @@ AP_GPS_GSOF::process_message(void)
 }
 
 void
-AP_GPS_GSOF::inject_data(uint8_t *data, uint8_t len)
+AP_GPS_GSOF::inject_data(const uint8_t *data, uint16_t len)
 {
 
     if (port->txspace() > len) {
