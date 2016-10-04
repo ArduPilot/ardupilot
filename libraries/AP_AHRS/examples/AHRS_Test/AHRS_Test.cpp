@@ -7,6 +7,7 @@
 #include <AP_ADC/AP_ADC.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -29,6 +30,8 @@ AP_AHRS_DCM  ahrs(ins, baro, gps);
 
 void setup(void)
 {
+    AP_BoardConfig{}.init();
+
     ins.init(100);
     ahrs.init();
     serial_manager.init();

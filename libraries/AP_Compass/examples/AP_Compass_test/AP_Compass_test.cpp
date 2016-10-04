@@ -5,6 +5,7 @@
 
 #include <AP_Compass/AP_Compass.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -12,8 +13,11 @@ static Compass compass;
 
 uint32_t timer;
 
-void setup() {
+static void setup()
+{
     hal.console->println("Compass library test");
+
+    AP_BoardConfig{}.init(); // initialise the board drivers
 
     if (!compass.init()) {
         AP_HAL::panic("compass initialisation failed!");
@@ -29,7 +33,7 @@ void setup() {
     timer = AP_HAL::micros();
 }
 
-void loop()
+static void loop()
 {
     static const uint8_t compass_count = compass.get_count();
     static float min[COMPASS_MAX_INSTANCES][3];
