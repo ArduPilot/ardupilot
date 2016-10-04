@@ -32,6 +32,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -50,6 +51,8 @@ AP_SerialManager serial_manager;
 void setup()
 {
     hal.console->println("GPS AUTO library test");
+
+    AP_BoardConfig{}.init();
 
     // Initialise the leds
     board_led.init();

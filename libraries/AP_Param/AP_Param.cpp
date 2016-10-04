@@ -1168,20 +1168,24 @@ void AP_Param::setup_object_defaults(const void *object_pointer, const struct Gr
 
 // set a value directly in an object. This should only be used by
 // example code, not by mainline vehicle code
-void AP_Param::set_object_value(const void *object_pointer, 
+bool AP_Param::set_object_value(const void *object_pointer, 
                                 const struct GroupInfo *group_info, 
                                 const char *name, float value)
 {
     ptrdiff_t base = (ptrdiff_t)object_pointer;
     uint8_t type;
+    bool found = false;
     for (uint8_t i=0;
          (type=group_info[i].type) != AP_PARAM_NONE;
          i++) {
         if (strcmp(name, group_info[i].name) == 0 && type <= AP_PARAM_FLOAT) {
             void *ptr = (void *)(base + group_info[i].offset);
             set_value((enum ap_var_type)type, ptr, value);
+            // return true here ?
+            found = true;
         }
     }
+    return found;
 }
 
 
