@@ -449,7 +449,7 @@ void Plane::update_GPS_10Hz(void)
             // We countdown N number of good GPS fixes
             // so that the altitude is more accurate
             // -------------------------------------
-            if (current_loc.lat == 0) {
+            if (current_loc.lat == 0 && current_loc.lng == 0) {
                 ground_start_count = 5;
 
             } else {
