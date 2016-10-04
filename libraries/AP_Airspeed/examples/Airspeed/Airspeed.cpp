@@ -22,6 +22,7 @@
 #include <AP_ADC/AP_ADC.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -29,13 +30,29 @@ float temperature;
 
 AP_Airspeed airspeed;
 
+namespace {
+
+   // try set the object value but provide diagnostic if it failed
+   void set_object_value(const void *object_pointer, 
+                                 const struct AP_Param::GroupInfo *group_info, 
+                                 const char *name, float value)
+   {
+      if(!AP_Param::set_object_value(object_pointer, group_info, name, value)){
+         hal.console->printf("WARNING: AP_Param::set object value \"%s::%s\" Failed.\n",group_info->name,name);
+      }
+   }
+
+}
+
 void setup()
 {
     hal.console->println("ArduPilot Airspeed library test");
 
-    AP_Param::set_object_value(&airspeed, airspeed.var_info, "_PIN", 65);
-    AP_Param::set_object_value(&airspeed, airspeed.var_info, "_ENABLE", 1);
-    AP_Param::set_object_value(&airspeed, airspeed.var_info, "_USE", 1);
+    set_object_value(&airspeed, airspeed.var_info, "PIN", 65);
+    set_object_value(&airspeed, airspeed.var_info, "ENABLE", 1);
+    set_object_value(&airspeed, airspeed.var_info, "USE", 1);
+
+    AP_BoardConfig{}.init();
 
     airspeed.init();
     airspeed.calibrate(false);

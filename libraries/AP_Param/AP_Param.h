@@ -278,9 +278,10 @@ public:
     // load default values for scalars in a group
     static void         setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info);
 
-    // set a value directly in an object. This should only be used by
-    // example code, not by mainline vehicle code
-    static void set_object_value(const void *object_pointer, 
+    // set a value directly in an object.
+    // return true if the name was found and set, else false.
+    // This should only be used by example code, not by mainline vehicle code
+    static bool set_object_value(const void *object_pointer, 
                                  const struct GroupInfo *group_info, 
                                  const char *name, float value);
 
