@@ -130,7 +130,7 @@ public:
     };
 
     // Pass mavlink data to message handlers (for MAV type)
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t *msg);
 
     // Accessor functions
 
@@ -412,6 +412,32 @@ private:
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
     void _broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index);
+
+    /*
+      buffer for re-assembling RTCM data for GPS injection. 
+      The 8 bit flags field in GPS_RTCM_DATA is interpreted as:
+              1 bit for "is fragmented"
+              2 bits for fragment number
+              5 bits for sequence number
+
+      The rtcm_buffer is allocated on first use. Once a block of data
+      is successfully reassembled it is injected into all active GPS
+      backends. This assumes we don't want more than 4*180=720 bytes
+      in a RTCM data block
+     */
+    struct rtcm_buffer {
+        uint8_t fragments_received:4;
+        uint8_t sequence:5;
+        uint8_t fragment_count;
+        uint16_t total_length;
+        uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
+    } *rtcm_buffer;
+
+    // re-assemble GPS_RTCM_DATA message
+    void handle_gps_rtcm_data(const mavlink_message_t *msg);
+
+    // ibject data into all backends
+    void inject_data_all(const uint8_t *data, uint16_t len);
 };
 
 #define GPS_BAUD_TIME_MS 1200
