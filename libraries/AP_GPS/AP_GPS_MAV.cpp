@@ -41,7 +41,7 @@ bool AP_GPS_MAV::read(void)
 
 // handles an incoming mavlink message (HIL_GPS) and sets
 // corresponding gps data appropriately;
-void AP_GPS_MAV::handle_msg(mavlink_message_t *msg)
+void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
 {
     mavlink_gps_input_t packet;
     mavlink_msg_gps_input_decode(msg, &packet);

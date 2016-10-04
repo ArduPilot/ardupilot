@@ -85,7 +85,7 @@ AP_GPS_SBP::read(void)
 }
 
 void 
-AP_GPS_SBP::inject_data(uint8_t *data, uint8_t len)
+AP_GPS_SBP::inject_data(const uint8_t *data, uint16_t len)
 {
 
     if (port->txspace() > len) {

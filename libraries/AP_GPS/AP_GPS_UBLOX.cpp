@@ -1154,7 +1154,7 @@ AP_GPS_UBLOX::_configure_rate(void)
 }
 
 void
-AP_GPS_UBLOX::inject_data(uint8_t *data, uint8_t len)
+AP_GPS_UBLOX::inject_data(const uint8_t *data, uint16_t len)
 {
     if (port->txspace() > len) {
         port->write(data, len);
