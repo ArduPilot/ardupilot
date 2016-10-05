@@ -361,29 +361,9 @@ int VRBRAINUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 
     if (AP_HAL::micros64() - _last_write_time > 2000 &&
         _flow_control == FLOW_CONTROL_DISABLE) {
-#if 0
-        // this trick is disabled for now, as it sometimes blocks on
-        // re-opening the ttyACM0 port, which would cause a crash
-        if (AP_HAL::micros64() - _last_write_time > 2000000) {
-            // we haven't done a successful write for 2 seconds - try
-            // reopening the port        
-            _initialised = false;
-            ::close(_fd);
-            _fd = ::open(_devpath, O_RDWR);
-            if (_fd == -1) {
-                fprintf(stdout, "Failed to reopen UART device %s - %s\n",
-                        _devpath, strerror(errno));
-                // leave it uninitialised
-                return n;
-            }
-            
-            _last_write_time = AP_HAL::micros64();
-            _initialised = true;
-        }
-#else
         _last_write_time = AP_HAL::micros64();
-#endif
-        // we haven't done a successful write for 2ms, which means the 
+
+        // we haven't done a successful write for 2ms, which means the
         // port is running at less than 500 bytes/sec. Start
         // discarding bytes, even if this is a blocking port. This
         // prevents the ttyACM0 port blocking startup if the endpoint
@@ -421,7 +401,7 @@ int VRBRAINUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 /*
   push any pending bytes to/from the serial port. This is called at
   1kHz in the timer thread. Doing it this way reduces the system call
-  overhead in the main task enormously. 
+  overhead in the main task enormously.
  */
 void VRBRAINUARTDriver::_timer_tick(void)
 {
@@ -480,5 +460,4 @@ void VRBRAINUARTDriver::_timer_tick(void)
     _in_timer = false;
 }
 
-#endif // CONFIG_HAL_BOARD
-
+#endif
