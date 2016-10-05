@@ -111,10 +111,10 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
     return ret;
 }
 
-static uint8_t ff_stub[300] = {0xff};
-
 int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
+    static uint8_t ff_stub[100] = {0xff};
+
     if (_external) {
         return UARTDriver::_read_fd(buf, n);
     }
