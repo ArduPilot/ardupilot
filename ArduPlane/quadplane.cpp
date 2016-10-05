@@ -993,6 +993,12 @@ void QuadPlane::update_transition(void)
     } else if (transition_state < TRANSITION_DONE) {
         plane.TECS_controller.set_pitch_max_limit((transition_pitch_max+1)*2);
     }
+    if (transition_state < TRANSITION_DONE) {
+        // during transition we ask TECS to use a synthetic
+        // airspeed. Otherwise the pitch limits will throw off the
+        // throttle calculation which is driven by pitch
+        plane.TECS_controller.use_synthetic_airspeed();
+    }
     
     switch (transition_state) {
     case TRANSITION_AIRSPEED_WAIT: {
