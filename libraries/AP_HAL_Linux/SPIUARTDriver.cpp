@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -123,9 +124,7 @@ int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
      * doesn't like to be waiting. Making transactions more frequent but shorter
      * is a win.
      */
-    if (n > 100) {
-        n = 100;
-    }
+    n = MIN(n, 100);
 
     if (!_dev->get_semaphore()->take_nonblocking()) {
         return 0;

@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 #include "px4io_protocol.h"
 
@@ -162,19 +163,11 @@ void RPIOUARTDriver::_timer_tick(void)
     struct IOPacket _dma_packet_tx = {0}, _dma_packet_rx = {0};
 
     /* get write_buf bytes */
-    uint32_t n = _writebuf.available();
-
-    if (n > PKT_MAX_REGS * 2) {
-        n = PKT_MAX_REGS * 2;
-    }
-
-    uint16_t _max_size = _baudrate / 10 / (1000000 / RPIOUART_POLL_TIME_INTERVAL);
-    if (n > _max_size) {
-        n = _max_size;
-    }
+    uint32_t max_size = MIN(PKT_MAX_REGS * 2,
+                            _baudrate / 10 / (1000000 / RPIOUART_POLL_TIME_INTERVAL));
+    uint32_t n = MIN(_writebuf.available(), max_size);
 
     _writebuf.read(&((uint8_t *)_dma_packet_tx.regs)[0], n);
-
     _dma_packet_tx.count_code = PKT_MAX_REGS | PKT_CODE_SPIUART;
     _dma_packet_tx.page = PX4IO_PAGE_UART_BUFFER;
     _dma_packet_tx.offset = n;
@@ -203,18 +196,10 @@ void RPIOUARTDriver::_timer_tick(void)
     /* release sem */
     _dev->get_semaphore()->give();
 
-    /* add bytes to read buf */
-    n = _readbuf.space();
-
     if (_dma_packet_rx.page == PX4IO_PAGE_UART_BUFFER) {
-
-        if (n > _dma_packet_rx.offset) {
-            n = _dma_packet_rx.offset;
-        }
-
-        if (n > PKT_MAX_REGS * 2) {
-            n = PKT_MAX_REGS * 2;
-        }
+        /* add bytes to read buf */
+        max_size = MIN(_dma_packet_rx.offset, PKT_MAX_REGS * 2);
+        n = MIN(_readbuf.space(), max_size);
 
         _readbuf.write(&((uint8_t *)_dma_packet_rx.regs)[0], n);
     }
