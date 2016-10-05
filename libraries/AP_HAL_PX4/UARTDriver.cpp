@@ -90,7 +90,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         while (_in_timer) {
             hal.scheduler->delay(1);
         }
-        _writebuf.set_size(txS+16);
+        _writebuf.set_size(txS);
     }
 
 	if (_fd == -1) {
