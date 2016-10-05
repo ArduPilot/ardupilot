@@ -17,7 +17,7 @@
 #include "Display.h"
 
 #include "AP_Notify.h"
-
+#include <stdio.h>  // for sprintf
 #include <AP_GPS/AP_GPS.h>
 
 static const uint8_t _font[] = {
@@ -338,6 +338,7 @@ void Display::update()
         _flags.ekf_bad = AP_Notify::flags.ekf_bad;
     }
 
+    update_battery(1);
     // if somethings has changed, update display
     if (_need_update) {
         hw_update();
@@ -446,4 +447,10 @@ void Display::update_ekf()
         draw_text(COLUMN(0), ROW(5), "EKF:    ok  ");
     }
 }
-
+void Display::update_battery(uint8_t r)
+{
+	char msg [16];
+	float batvolt = AP_Notify::get_voltage();
+	sprintf(msg, "BAT1 Volt: %4.2f", batvolt	) ;
+	draw_text(COLUMN(0), ROW(r), msg);
+ }

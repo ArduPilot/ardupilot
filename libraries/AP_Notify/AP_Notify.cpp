@@ -68,6 +68,7 @@ AP_Notify::AP_Notify()
 // static flags, to allow for direct class update from device drivers
 struct AP_Notify::notify_flags_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
+float AP_Notify::_voltage = 0.0f;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_BoardLED boardled;
@@ -191,4 +192,10 @@ void AP_Notify::handle_play_tune(mavlink_message_t *msg)
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->handle_play_tune(msg);
     }
+}
+void AP_Notify::set_voltage(float voltage){
+		_voltage = voltage;
+}
+float AP_Notify::get_voltage(){
+		return _voltage;
 }

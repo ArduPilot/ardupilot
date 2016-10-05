@@ -25,6 +25,7 @@ private:
     void update_gps();
     void update_gps_sats();
     void update_ekf();
+    void update_battery(uint8_t r);
 
     bool _healthy;
     bool _need_update;

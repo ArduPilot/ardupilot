@@ -109,11 +109,12 @@ public:
     static void handle_play_tune(mavlink_message_t* msg);
     
     static const struct AP_Param::GroupInfo var_info[];
-
+    static float get_voltage();
+    static void set_voltage(float voltage);
     bool buzzer_enabled() const { return _buzzer_enable; }
 private:
     static NotifyDevice* _devices[];
-
+    static float _voltage;
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
