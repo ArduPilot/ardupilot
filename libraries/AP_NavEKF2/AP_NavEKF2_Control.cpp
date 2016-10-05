@@ -170,7 +170,7 @@ void NavEKF2_core::setAidingMode()
         // GPS aiding is the perferred option unless excluded by the user
         if((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit) {
             PV_AidingMode = AID_ABSOLUTE;
-        } else if ((frontend->_fusionModeGPS == 3) && optFlowDataPresent()) {
+        } else if (optFlowDataPresent() && filterIsStable) {
             PV_AidingMode = AID_RELATIVE;
         }
     } else if (PV_AidingMode == AID_RELATIVE) {
