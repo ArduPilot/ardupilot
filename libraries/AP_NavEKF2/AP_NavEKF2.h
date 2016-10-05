@@ -356,11 +356,12 @@ private:
     AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
     AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
     AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
-    AP_Int8 _useRngSwHgt;           // Maximum valid range of the range finder in metres
+    AP_Int8 _useRngSwHgt;           // Maximum valid range of the range finder as a percentage of the maximum range specified by the sensor driver
     AP_Float _terrGradMax;          // Maximum terrain gradient below the vehicle
     AP_Float _rngBcnNoise;          // Range beacon measurement noise (m)
     AP_Int16 _rngBcnInnovGate;      // Percentage number of standard deviations applied to range beacon innovation consistency check
     AP_Int8  _rngBcnDelay_ms;       // effective average delay of range beacon measurements rel to IMU (msec)
+    AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
