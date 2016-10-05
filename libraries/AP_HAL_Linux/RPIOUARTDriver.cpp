@@ -117,9 +117,7 @@ void RPIOUARTDriver::_timer_tick(void)
 
     /* set the baudrate of raspilotio */
     if (_need_set_baud) {
-
         if (_baudrate != 0) {
-
             if (!_dev->get_semaphore()->take_nonblocking()) {
                 return;
             }
@@ -128,10 +126,8 @@ void RPIOUARTDriver::_timer_tick(void)
 
             _dma_packet_tx.count_code = 2 | PKT_CODE_WRITE;
             _dma_packet_tx.page = PX4IO_PAGE_UART_BUFFER;
-            _dma_packet_tx.offset = 0;
             _dma_packet_tx.regs[0] = _baudrate & 0xffff;
             _dma_packet_tx.regs[1] = _baudrate >> 16;
-            _dma_packet_tx.crc = 0;
             _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
 
             _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
@@ -171,10 +167,9 @@ void RPIOUARTDriver::_timer_tick(void)
     _dma_packet_tx.count_code = PKT_MAX_REGS | PKT_CODE_SPIUART;
     _dma_packet_tx.page = PX4IO_PAGE_UART_BUFFER;
     _dma_packet_tx.offset = n;
+    _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
     /* end get write_buf bytes */
 
-    _dma_packet_tx.crc = 0;
-    _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
     /* set raspilotio to read uart data */
     _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
                    (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
@@ -182,11 +177,8 @@ void RPIOUARTDriver::_timer_tick(void)
     hal.scheduler->delay_microseconds(100);
 
     /* get uart data from raspilotio */
-    _dma_packet_tx.count_code = 0 | PKT_CODE_READ;
-    _dma_packet_tx.page = 0;
-    _dma_packet_tx.offset = 0;
-    memset( &_dma_packet_tx.regs[0], 0, PKT_MAX_REGS*sizeof(uint16_t) );
-    _dma_packet_tx.crc = 0;
+    memset(&_dma_packet_tx, 0, sizeof(_dma_packet_tx));
+    _dma_packet_tx.count_code = PKT_CODE_READ;
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
     _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
                    (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
