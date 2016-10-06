@@ -43,8 +43,10 @@ void NavEKF2_core::SelectFlowFusion()
     gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
     // Perform tilt check
     bool tiltOK = (prevTnb.c.z > frontend->DCM33FlowMin);
-    // Constrain measurements to zero if we are on the ground
-    if (frontend->_fusionModeGPS == 3 && !takeOffDetected) {
+    // Constrain measurements to zero if takeoff is not detected and the height above ground
+    // is insuffient to achieve acceptable focus. This allows the vehicle to be picked up
+    // and carried to test optical flow operation
+    if (!takeOffDetected && ((terrainState - stateStruct.position.z) < 0.5f)) {
         ofDataDelayed.flowRadXYcomp.zero();
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
