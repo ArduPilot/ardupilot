@@ -415,15 +415,16 @@ bool QuadPlane::setup(void)
         goto failed;
     }
 #endif // AP_MOTORS_CLASS
+    const static char *strUnableToAllocate = "Unable to allocate";
     if (!motors) {
-        hal.console->printf("Unable to allocate motors\n");
+        hal.console->printf("%s motors\n", strUnableToAllocate);
         goto failed;
     }
     
     AP_Param::load_object_from_eeprom(motors, motors->var_info);
     attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
-        hal.console->printf("Unable to allocate attitude_control\n");
+        hal.console->printf("%s attitude_control\n", strUnableToAllocate);
         goto failed;
     }
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
@@ -431,13 +432,13 @@ bool QuadPlane::setup(void)
                                     p_alt_hold, p_vel_z, pid_accel_z,
                                     p_pos_xy, pi_vel_xy);
     if (!pos_control) {
-        hal.console->printf("Unable to allocate pos_control\n");
+        hal.console->printf("%s pos_control\n", strUnableToAllocate);
         goto failed;
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
     wp_nav = new AC_WPNav(inertial_nav, ahrs, *pos_control, *attitude_control);
     if (!pos_control) {
-        hal.console->printf("Unable to allocate wp_nav\n");
+        hal.console->printf("%s wp_nav\n", strUnableToAllocate);
         goto failed;
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
