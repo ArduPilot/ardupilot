@@ -343,6 +343,8 @@ bool Copter::mode_allows_arming(control_mode_t mode, bool arming_from_gcs)
 // notify_flight_mode - sets notify object based on flight mode.  Only used for OreoLED notify device
 void Copter::notify_flight_mode(control_mode_t mode)
 {
+    AP_Notify::set_control_mode(mode); //for onboard ssd1306 oled display
+
     switch (mode) {
         case AUTO:
         case GUIDED:

@@ -69,6 +69,7 @@ AP_Notify::AP_Notify()
 struct AP_Notify::notify_flags_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
 float AP_Notify::_voltage = 0.0f;
+uint8_t AP_Notify::_control_mode = 0;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_BoardLED boardled;
@@ -198,4 +199,10 @@ void AP_Notify::set_voltage(float voltage){
 }
 float AP_Notify::get_voltage(){
 		return _voltage;
+}
+void AP_Notify::set_control_mode(uint8_t mode){
+		_control_mode = mode;
+}
+uint8_t AP_Notify::get_control_mode(){
+		return _control_mode;
 }

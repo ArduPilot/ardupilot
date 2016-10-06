@@ -43,7 +43,7 @@ bool Display_SSD1306_I2C::hw_init()
 
 
     _dev = std::move(hal.i2c_mgr->get_device(SSD1306_I2C_BUS, SSD1306_I2C_ADDR));
-    //memset(_displaybuffer, 0, SSD1306_ROWS * SSD1306_COLUMNS_PER_PAGE);
+    memset(_displaybuffer, 0, SSD1306_ROWS * SSD1306_COLUMNS_PER_PAGE);
 
     // take i2c bus sempahore
     if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
@@ -121,3 +121,9 @@ bool Display_SSD1306_I2C::clear_pixel(uint16_t x, uint16_t y)
 
     return true;
 }
+bool Display_SSD1306_I2C::clear_screen()
+{
+     memset(_displaybuffer, 0, SSD1306_ROWS * SSD1306_COLUMNS_PER_PAGE);
+     return true;
+}
+

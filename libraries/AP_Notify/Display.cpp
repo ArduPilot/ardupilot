@@ -279,6 +279,58 @@ static const uint8_t _font[] = {
     0x00, 0x00, 0x00, 0x00, 0x00
 };
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+static const char * _modename[] = {
+		"STAB", //   STABILIZE =     0,  // manual airframe angle with manual throttle
+		"ACRO", //   ACRO =          1,  // manual body-frame angular rate with manual throttle
+		"ALTH", //   ALT_HOLD =      2,  // manual airframe angle with automatic throttle
+		"AUTO", //   AUTO =          3,  // fully automatic waypoint control using mission commands
+		"GUID", //   GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+		"LOIT", //   LOITER =        5,  // automatic horizontal acceleration with automatic throttle
+		"RTL ", //   RTL =           6,  // automatic return to launching point
+		"CIRC", //   CIRCLE =        7,  // automatic circular flight with automatic throttle
+		"----", //8 no mode for copter
+		"LAND", //   LAND =          9,  // automatic landing with horizontal position control
+		"----", //10 no mode for copter
+		"DRIF", //    DRIFT =        11,  // semi-automous position, yaw and throttle control
+		"----", //12 no mode for copter
+		"SPRT", //    SPORT =        13,  // manual earth-frame angular rate control with manual throttle
+		"FLIP", //    FLIP =         14,  // automatically flip the vehicle on the roll axis
+		"ATUN", //    AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
+		"PHLD", //    POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
+		"BRAK", //    BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
+		"THRW", //    THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
+		"AVOI", //    AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
+		"GNGP" //     GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
+
+};
+#else
+static const char * _modename[] = {
+
+"MANU", //  = 0,
+"CIRC", //  = 1,
+"STAB", //  = 2,
+"TRAN", //  = 3,
+"ACRO", //  = 4,
+"FBWA", //  = 5,
+"FBWB", //  = 6,
+"CRUS", //  = 7,
+"ATUN", //  = 8,
+"AUTO", //  = 10,
+"RTL ", //  = 11,
+"LOIT", //  = 12,
+"----", //13 no mode for plane
+"----", //14 no mode for plane
+"GUID", //  = 15,
+"INIT", //  = 16,
+"QSTB", //  = 17,
+"QHVR", //  = 18,
+"QLIT", //  = 19,
+"QLND", //  = 20,
+"QRTL" //   = 21
+};
+#endif
+
 bool Display::init(void)
 {
     memset(&_flags, 0, sizeof(_flags));
@@ -299,6 +351,7 @@ bool Display::init(void)
 void Display::update()
 {
     static uint8_t timer = 0;
+    static uint8_t screenpage =0;
 
     // return immediately if not enabled
     if (!_healthy) {
@@ -312,47 +365,38 @@ void Display::update()
 
     timer = 0;
 
-    // check if status has changed
-    if (_flags.armed != AP_Notify::flags.armed) {
-        update_arm();
-        _flags.armed = AP_Notify::flags.armed;
-    }
+	if (AP_Notify::flags.armed)
+	 	{
+		if (screenpage != 1)
+			{
+				clear_screen();
+				update_arm(3);
+				screenpage=1;
+				hw_update(); //update hw once , do not transmition to display in fly
+			}
+		return;
+		}
 
-    if (_flags.pre_arm_check != AP_Notify::flags.pre_arm_check) {
-        update_prearm();
-        _flags.pre_arm_check = AP_Notify::flags.pre_arm_check;
-    }
 
-    if (_flags.gps_status != AP_Notify::flags.gps_status) {
-        update_gps();
-        _flags.gps_status = AP_Notify::flags.gps_status;
-    }
+	if (screenpage != 2)
+		{
+			clear_screen(); //once clear screen when page changed
+			screenpage=2;
+		}
 
-    if (_flags.gps_num_sats != AP_Notify::flags.gps_num_sats) {
-        update_gps_sats();
-        _flags.gps_num_sats = AP_Notify::flags.gps_num_sats;
-    }
+    update_all();
+    hw_update(); //update at 2 Hz in disarmed mode
 
-    if (_flags.ekf_bad != AP_Notify::flags.ekf_bad) {
-        update_ekf();
-        _flags.ekf_bad = AP_Notify::flags.ekf_bad;
-    }
-
-    update_battery(1);
-    // if somethings has changed, update display
-    if (_need_update) {
-        hw_update();
-        _need_update = false;
-    }
 }
 
 void Display::update_all()
 {
-    update_arm();
-    update_prearm();
-    update_gps();
-    update_gps_sats();
-    update_ekf();
+    update_mode(1);
+    update_battery(2);
+    update_gps(3);
+    //update_gps_sats(4);
+    update_prearm(4);
+    update_ekf(5);
 }
 
 void Display::draw_text(uint16_t x, uint16_t y, const char* c)
@@ -386,71 +430,62 @@ void Display::draw_char(uint16_t x, uint16_t y, const char c)
         }
     }
 
-    // update display
-    _need_update = true;
+
 }
 
-void Display::update_arm()
+void Display::update_arm(uint8_t r)
 {
     if (AP_Notify::flags.armed) {
-        draw_text(COLUMN(0), ROW(0), ">>>>> ARMED! <<<<<");
+        draw_text(COLUMN(0), ROW(r), ">>>>> ARMED! <<<<<");
     } else {
-        draw_text(COLUMN(0), ROW(0), "     disarmed     ");
+        draw_text(COLUMN(0), ROW(r), "     disarmed     ");
     }
 }
 
-void Display::update_prearm()
+void Display::update_prearm(uint8_t r)
 {
     if (AP_Notify::flags.pre_arm_check) {
-        draw_text(COLUMN(0), ROW(2), "Prearm: passed    ");
+        draw_text(COLUMN(0), ROW(r), "Prearm: passed    ");
     } else {
-        draw_text(COLUMN(0), ROW(2), "Prearm: failed    ");
+        draw_text(COLUMN(0), ROW(r), "Prearm: failed    ");
     }
 }
 
-void Display::update_gps()
+void Display::update_gps(uint8_t r)
 {
-    switch (AP_Notify::flags.gps_status) {
-    case AP_GPS::NO_GPS:
-        draw_text(COLUMN(0), ROW(3), "GPS:    no GPS");
-        break;
-    case AP_GPS::NO_FIX:
-        draw_text(COLUMN(0), ROW(3), "GPS:    no fix");
-        break;
-    case AP_GPS::GPS_OK_FIX_2D:
-        draw_text(COLUMN(0), ROW(3), "GPS:    2D    ");
-        break;
-    case AP_GPS::GPS_OK_FIX_3D:
-        draw_text(COLUMN(0), ROW(3), "GPS:    3D    ");
-        break;
-    case AP_GPS::GPS_OK_FIX_3D_DGPS:
-        draw_text(COLUMN(0), ROW(3), "GPS:    DGPS  ");
-        break;
-    case AP_GPS::GPS_OK_FIX_3D_RTK:
-        draw_text(COLUMN(0), ROW(3), "GPS:    RTK   ");
-        break;
-    }
+	static const char * gpsfixname[] = {"NoGPS","NoFix","2D   ","3D   ","DGPS " ,"RTK "};
+	char msg [18];
+	sprintf(msg, "GPS:%s Sats:%u", gpsfixname[AP_Notify::flags.gps_status], AP_Notify::flags.gps_num_sats) ;
+	draw_text(COLUMN(0), ROW(r), msg);
+
+
 }
 
-void Display::update_gps_sats()
+void Display::update_gps_sats(uint8_t r)
 {
-    draw_text(COLUMN(0), ROW(4), "Sats:");
-    draw_char(COLUMN(8), ROW(4), (AP_Notify::flags.gps_num_sats / 10) + 48);
-    draw_char(COLUMN(9), ROW(4), (AP_Notify::flags.gps_num_sats % 10) + 48);
+    draw_text(COLUMN(0), ROW(r), "Sats:");
+    draw_char(COLUMN(8), ROW(r), (AP_Notify::flags.gps_num_sats / 10) + 48);
+    draw_char(COLUMN(9), ROW(r), (AP_Notify::flags.gps_num_sats % 10) + 48);
 }
 
-void Display::update_ekf()
+void Display::update_ekf(uint8_t r)
 {
     if (AP_Notify::flags.ekf_bad) {
-        draw_text(COLUMN(0), ROW(5), "EKF:    fail");
+        draw_text(COLUMN(0), ROW(r), "EKF:    fail");
     } else {
-        draw_text(COLUMN(0), ROW(5), "EKF:    ok  ");
+        draw_text(COLUMN(0), ROW(r), "EKF:    ok  ");
     }
 }
 void Display::update_battery(uint8_t r)
 {
-	char msg [16];
+	char msg [18];
 	float batvolt = AP_Notify::get_voltage();
-	sprintf(msg, "BAT1 Volt: %4.2f", batvolt	) ;
+	sprintf(msg, "BAT1: %4.2fV", batvolt	) ;
+	draw_text(COLUMN(0), ROW(r), msg);
+ }
+void Display::update_mode(uint8_t r)
+{
+	char msg [18];
+	sprintf(msg, "Mode: %s", _modename[AP_Notify::get_control_mode()]) ;
 	draw_text(COLUMN(0), ROW(r), msg);
  }

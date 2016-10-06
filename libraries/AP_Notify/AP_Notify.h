@@ -61,7 +61,6 @@ public:
         uint32_t autopilot_mode     : 1;    // 1 if vehicle is in an autopilot flight mode (only used by OreoLEDs)
         uint32_t firmware_update    : 1;    // 1 just before vehicle firmware is updated
         uint32_t compass_cal_running: 1;    // 1 if a compass calibration is running
-
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
         uint32_t vehicle_lost       : 1;    // 1 when lost copter tone is requested (normally only used for copter)
@@ -111,10 +110,13 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
     static float get_voltage();
     static void set_voltage(float voltage);
+    static uint8_t get_control_mode();
+    static void set_control_mode(uint8_t mode);
     bool buzzer_enabled() const { return _buzzer_enable; }
 private:
     static NotifyDevice* _devices[];
     static float _voltage;
+    static uint8_t _control_mode;
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
