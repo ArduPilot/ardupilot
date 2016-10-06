@@ -2,21 +2,37 @@
 set -e
 
 OPT="/opt"
-BASE_PKGS="gawk make git arduino-core curl"
+BASE_PKGS="arduino-core build-essential ccache curl g++ gawk git make"
 PYTHON_PKGS="pymavlink MAVProxy droneapi catkin_pkg"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
-          autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
+          autoconf texinfo  libftdi-dev libtool zlib1g-dev \
           zip genromfs python-empy libc6-i386"
 BEBOP_PKGS="g++-arm-linux-gnueabihf"
-SITL_PKGS="g++ python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing ccache realpath"
+SITL_PKGS="python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing realpath"
 ASSUME_YES=false
 
-read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
+UBUNTU_YEAR="15" # Ubuntu Year were changes append
+UBUNTU_MONTH="10" # Ubuntu Month were changes append
 
-if [ "$UBUNTU_CODENAME" = "xenial" ]; then
-    SITL_PKGS+=" python-wxgtk3.0"
+version=$(lsb_release -r -s)
+
+yrelease=$( echo "$version" | cut -d. -f1 )
+mrelease=$( echo "$version" | cut -d. -f2 )
+
+if [ "$yrelease" -eq "$UBUNTU_YEAR" ]; then
+    if [ "$mrelease" -ge "$UBUNTU_MONTH" ]; then
+        SITL_PKGS+=" python-wxgtk3.0"
+        PX4_PKGS+=" libtool-bin"
+    else
+        SITL_PKGS+=" python-wxgtk2.8"
+    fi
 else
-    SITL_PKGS+=" python-wxgtk2.8"
+    if [ "$yrelease" -gt "$UBUNTU_YEAR" ]; then
+        SITL_PKGS+=" python-wxgtk3.0"
+        PX4_PKGS+=" libtool-bin"
+    else
+        SITL_PKGS+=" python-wxgtk2.8"
+    fi
 fi
 
 # GNU Tools for ARM Embedded Processors
