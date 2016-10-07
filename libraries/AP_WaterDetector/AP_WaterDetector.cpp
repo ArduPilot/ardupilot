@@ -20,34 +20,21 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 	// @User: Standard
 	AP_GROUPINFO("1_DEFAULT", 1, AP_WaterDetector, _default_reading[0], 1),
 
-	// @Param: TYPE
-	// @DisplayName: Water detector instance type
-	// @Description:
-	// @Values: 0:None, 1:Digital, 2:Analog, 3:Mavlink
-	// @User: Standard
-	AP_GROUPINFO("1_TYPE", 2, AP_WaterDetector, _type[0], WATERDETECTOR_TYPE_NONE),
-
 #if WATERDETECTOR_MAX_INSTANCES > 1
 	// @Param: PIN
 	// @DisplayName: Pin that water detector is connected to
 	// @Description:
     // @Values: -1:Disabled, 50:Pixhawk Aux1, 51:Pixhawk Aux2, 52:Pixhawk Aux3, 53:Pixhawk Aux4, 54:Pixhawk Aux5, 55:Pixhawk Aux6, 13:Pixhawk 3.3ADC1, 14:Pixhawk 3.3ADC2, 15:Pixhawk 6.6ADC
 	// @User: Standard
-    AP_GROUPINFO("2_PIN", 3, AP_WaterDetector, _pin[1], -1),
+    AP_GROUPINFO("2_PIN", 2, AP_WaterDetector, _pin[1], -1),
 
 	// @Param: DEFAULT
 	// @DisplayName: Default reading of water detector when dry
 	// @Description:
 	// @Values: 0:Low, 1:High
 	// @User: Standard
-	AP_GROUPINFO("2_DEFAULT", 4, AP_WaterDetector, _default_reading[1], 1),
+	AP_GROUPINFO("2_DEFAULT", 3, AP_WaterDetector, _default_reading[1], 1),
 
-	// @Param: TYPE
-	// @DisplayName: Water detector instance type
-	// @Description:
-	// @Values: 0:None, 1:Digital, 2:Analog, 3:Mavlink
-	// @User: Standard
-	AP_GROUPINFO("2_TYPE", 5, AP_WaterDetector, _type[1], WATERDETECTOR_TYPE_NONE),
 #endif
 
 #if WATERDETECTOR_MAX_INSTANCES > 2
@@ -56,21 +43,15 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 	// @Description:
     // @Values: -1:Disabled, 50:Pixhawk Aux1, 51:Pixhawk Aux2, 52:Pixhawk Aux3, 53:Pixhawk Aux4, 54:Pixhawk Aux5, 55:Pixhawk Aux6, 13:Pixhawk 3.3ADC1, 14:Pixhawk 3.3ADC2, 15:Pixhawk 6.6ADC
 	// @User: Standard
-    AP_GROUPINFO("3_PIN", 6, AP_WaterDetector, _pin[2], -1),
+    AP_GROUPINFO("3_PIN", 4, AP_WaterDetector, _pin[2], -1),
 
 	// @Param: DEFAULT
 	// @DisplayName: Default reading of water detector when dry
 	// @Description:
 	// @Values: 0:Low, 1:High
 	// @User: Standard
-	AP_GROUPINFO("3_DEFAULT", 7, AP_WaterDetector, _default_reading[2], 1),
+	AP_GROUPINFO("3_DEFAULT", 5, AP_WaterDetector, _default_reading[2], 1),
 
-	// @Param: TYPE
-	// @DisplayName: Water detector instance type
-	// @Description:
-	// @Values: 0:None, 1:Digital, 2:Analog, 3:Mavlink
-	// @User: Standard
-	AP_GROUPINFO("3_TYPE", 8, AP_WaterDetector, _type[2], WATERDETECTOR_TYPE_NONE),
 #endif
 
     AP_GROUPEND
@@ -89,16 +70,15 @@ AP_WaterDetector::AP_WaterDetector() :
 void AP_WaterDetector::init()
 {
 	for(int i = 0; i < WATERDETECTOR_MAX_INSTANCES; i++) {
-		switch (_type[i]) {
-		case WATERDETECTOR_TYPE_DIGITAL:
+		switch (_pin[i]) {
+		case 50 ... 55:
 			state[i].instance = i;
 			drivers[i] = new AP_WaterDetector_Digital(*this, state[i]);
 			break;
-		case WATERDETECTOR_TYPE_ANALOG:
+		case 13 ... 15:
 			state[i].instance = i;
 			drivers[i] = new AP_WaterDetector_Analog(*this, state[i]);
 			break;
-		case WATERDETECTOR_TYPE_NONE:
 		default:
 			drivers[i] = NULL;
 			break;
