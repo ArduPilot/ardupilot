@@ -316,6 +316,7 @@ static const char * _modename[] = {
 "FBWB", //  = 6,
 "CRUS", //  = 7,
 "ATUN", //  = 8,
+"----", //9 no mode for plane
 "AUTO", //  = 10,
 "RTL ", //  = 11,
 "LOIT", //  = 12,
