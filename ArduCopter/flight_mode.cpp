@@ -317,8 +317,6 @@ bool Copter::mode_requires_GPS(control_mode_t mode) {
         default:
             return false;
     }
-
-    return false;
 }
 
 // mode_has_manual_throttle - returns true if the flight mode has a manual throttle (i.e. pilot directly controls throttle)
@@ -330,8 +328,6 @@ bool Copter::mode_has_manual_throttle(control_mode_t mode) {
         default:
             return false;
     }
-
-    return false;
 }
 
 // mode_allows_arming - returns true if vehicle can be armed in the specified mode
