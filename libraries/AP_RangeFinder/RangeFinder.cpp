@@ -130,7 +130,26 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_ADDR", 23, RangeFinder, _address[0], 0),
 
-#if RANGEFINDER_MAX_INSTANCES > 1
+    // @Param: 1_POS_X
+    // @DisplayName:  X position offset
+    // @Description: X position of the first rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: 1_POS_Y
+    // @DisplayName: Y position offset
+    // @Description: Y position of the first rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: 1_POS_Z
+    // @DisplayName: Z position offset
+    // @Description: Z position of the first rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("1_POS", 49, RangeFinder, _pos_offset[0], 0.0f),
+
+    #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
@@ -223,6 +242,25 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("2_ADDR", 24, RangeFinder, _address[1], 0),
 
+    // @Param: 2_POS_X
+    // @DisplayName:  X position offset
+    // @Description: X position of the second rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: 2_POS_Y
+    // @DisplayName: Y position offset
+    // @Description: Y position of the second rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: 2_POS_Z
+    // @DisplayName: Z position offset
+    // @Description: Z position of the second rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("2_POS", 50, RangeFinder, _pos_offset[1], 0.0f),
+
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -309,6 +347,25 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("3_ADDR", 36, RangeFinder, _address[2], 0),
 
+    // @Param: 3_POS_X
+    // @DisplayName:  X position offset
+    // @Description: X position of the third rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: 3_POS_Y
+    // @DisplayName: Y position offset
+    // @Description: Y position of the third rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: 3_POS_Z
+    // @DisplayName: Z position offset
+    // @Description: Z position of the third rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("3_POS", 51, RangeFinder, _pos_offset[2], 0.0f),
+
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -394,6 +451,25 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("4_ADDR", 48, RangeFinder, _address[3], 0),
+
+    // @Param: 4_POS_X
+    // @DisplayName:  X position offset
+    // @Description: X position of the fourth rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: 4_POS_Y
+    // @DisplayName: Y position offset
+    // @Description: Y position of the fourth rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: 4_POS_Z
+    // @DisplayName: Z position offset
+    // @Description: Z position of the fourth rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("4_POS", 52, RangeFinder, _pos_offset[3], 0.0f),
 #endif
     
     AP_GROUPEND
