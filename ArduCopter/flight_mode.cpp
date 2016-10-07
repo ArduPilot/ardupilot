@@ -315,7 +315,7 @@ bool Copter::mode_requires_GPS(control_mode_t mode) {
         case THROW:
             return true;
         default:
-            return false;
+            break;
     }
 
     return false;
@@ -328,7 +328,7 @@ bool Copter::mode_has_manual_throttle(control_mode_t mode) {
         case STABILIZE:
             return true;
         default:
-            return false;
+            break;
     }
 
     return false;
