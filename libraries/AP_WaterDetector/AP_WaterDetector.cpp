@@ -26,14 +26,14 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 	// @Description:
     // @Values: -1:Disabled, 50:Pixhawk Aux1, 51:Pixhawk Aux2, 52:Pixhawk Aux3, 53:Pixhawk Aux4, 54:Pixhawk Aux5, 55:Pixhawk Aux6, 13:Pixhawk 3.3ADC1, 14:Pixhawk 3.3ADC2, 15:Pixhawk 6.6ADC
 	// @User: Standard
-    AP_GROUPINFO("2_PIN", 2, AP_WaterDetector, _pin[1], -1),
+    AP_GROUPINFO("2_PIN", 3, AP_WaterDetector, _pin[1], -1),
 
 	// @Param: DEFAULT
 	// @DisplayName: Default reading of water detector when dry
 	// @Description:
 	// @Values: 0:Low, 1:High
 	// @User: Standard
-	AP_GROUPINFO("2_DEFAULT", 3, AP_WaterDetector, _default_reading[1], 1),
+	AP_GROUPINFO("2_DEFAULT", 4, AP_WaterDetector, _default_reading[1], 1),
 
 #endif
 
@@ -43,14 +43,14 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 	// @Description:
     // @Values: -1:Disabled, 50:Pixhawk Aux1, 51:Pixhawk Aux2, 52:Pixhawk Aux3, 53:Pixhawk Aux4, 54:Pixhawk Aux5, 55:Pixhawk Aux6, 13:Pixhawk 3.3ADC1, 14:Pixhawk 3.3ADC2, 15:Pixhawk 6.6ADC
 	// @User: Standard
-    AP_GROUPINFO("3_PIN", 4, AP_WaterDetector, _pin[2], -1),
+    AP_GROUPINFO("3_PIN", 6, AP_WaterDetector, _pin[2], -1),
 
 	// @Param: DEFAULT
 	// @DisplayName: Default reading of water detector when dry
 	// @Description:
 	// @Values: 0:Low, 1:High
 	// @User: Standard
-	AP_GROUPINFO("3_DEFAULT", 5, AP_WaterDetector, _default_reading[2], 1),
+	AP_GROUPINFO("3_DEFAULT", 7, AP_WaterDetector, _default_reading[2], 1),
 
 #endif
 
