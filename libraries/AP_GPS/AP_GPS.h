@@ -312,6 +312,14 @@ public:
     // the expected lag (in seconds) in the position and velocity readings from the gps
     float get_lag() const { return 0.2f; }
 
+    // return a 3D vector defining the offset of the GPS antenna in metres relative to the body frame origin
+    const Vector3f get_antenna_offset(uint8_t instance) const {
+        return _antenna_offset[instance];
+    }
+    const Vector3f get_antenna_offset(void) const {
+        return _antenna_offset[primary_instance];
+    }
+
     // set position for HIL
     void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
                 const Location &location, const Vector3f &velocity, uint8_t num_sats,
@@ -340,7 +348,8 @@ public:
     AP_Int16 _rate_ms[2];
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
-    
+    AP_Vector3f _antenna_offset[2];
+
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
     void send_blob_update(uint8_t instance);

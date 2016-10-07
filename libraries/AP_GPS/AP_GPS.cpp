@@ -153,6 +153,44 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RATE_MS2", 15, AP_GPS, _rate_ms[1], 200),
 
+    // @Param: POS1_X
+    // @DisplayName: Antenna X position offset
+    // @Description: X position of the first GPS antenna in body frame. Use antenna phase centroid location if provided by the manufacturer.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: POS1_Y
+    // @DisplayName: Antenna Y position offset
+    // @Description: Y position of the first GPS antenna in body frame. Use antenna phase centroid location if provided by the manufacturer.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: POS1_Z
+    // @DisplayName: Antenna Z position offset
+    // @Description: Z position of the first GPS antenna in body frame. Use antenna phase centroid location if provided by the manufacturer.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("POS1", 16, AP_GPS, _antenna_offset[0], 0.0f),
+
+    // @Param: POS2_X
+    // @DisplayName: Antenna X position offset
+    // @Description: X position of the second GPS antenna in body frame. Use antenna phase centroid location if provided by the manufacturer.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: POS2_Y
+    // @DisplayName: Antenna Y position offset
+    // @Description: Y position of the second GPS antenna in body frame. Use antenna phase centroid location if provided by the manufacturer.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: POS2_Z
+    // @DisplayName: Antenna Z position offset
+    // @Description: Z position of the second GPS antenna in body frame. Use antenna phase centroid location if provided by the manufacturer.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("POS2", 17, AP_GPS, _antenna_offset[1], 0.0f),
+
     AP_GROUPEND
 };
 
