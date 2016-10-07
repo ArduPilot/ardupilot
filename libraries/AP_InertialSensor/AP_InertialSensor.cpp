@@ -318,6 +318,64 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Values: 1:IMU 1,2:IMU 2,3:IMU 3
     AP_GROUPINFO("ACC_BODYFIX", 26, AP_InertialSensor, _acc_body_aligned, 2),
+
+    // @Param: POS1_X
+    // @DisplayName: IMU accelerometer X position
+    // @Description: X position of the first IMU Accelerometer in body frame.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: POS1_Y
+    // @DisplayName: IMU accelerometer Y position
+    // @Description: Y position of the first IMU accelerometer in body frame.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: POS1_Z
+    // @DisplayName: IMU accelerometer Z position
+    // @Description: Z position of the first IMU accelerometer in body frame.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("POS1", 27, AP_InertialSensor, _accel_pos[0], 0.0f),
+
+    // @Param: POS2_X
+    // @DisplayName: IMU accelerometer X position
+    // @Description: X position of the second IMU accelerometer in body frame.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: POS2_Y
+    // @DisplayName: IMU accelerometer Y position
+    // @Description: Y position of the second IMU accelerometer in body frame.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: POS2_Z
+    // @DisplayName: IMU accelerometer Z position
+    // @Description: Z position of the second IMU accelerometer in body frame.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("POS2", 28, AP_InertialSensor, _accel_pos[1], 0.0f),
+
+    // @Param: POS3_X
+    // @DisplayName: IMU accelerometer X position
+    // @Description: X position of the third IMU accelerometer in body frame.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: POS3_Y
+    // @DisplayName: IMU accelerometer Y position
+    // @Description: Y position of the third IMU accelerometer in body frame.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: POS3_Z
+    // @DisplayName: IMU accelerometer Z position
+    // @Description: Z position of the third IMU accelerometer in body frame.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("POS3", 29, AP_InertialSensor, _accel_pos[2], 0.0f),
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
