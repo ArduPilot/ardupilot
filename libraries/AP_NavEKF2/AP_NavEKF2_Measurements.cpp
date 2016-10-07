@@ -127,11 +127,10 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         delAngBodyOF.zero();
         delTimeOF = 0.0f;
     }
-    // check for takeoff if relying on optical flow and zero measurements until takeoff detected
-    // if we haven't taken off - constrain position and velocity states
-    if (frontend->_fusionModeGPS == 3) {
-        detectOptFlowTakeoff();
-    }
+    // by definition if this function is called, then flow measurements have been provided so we
+    // need to run the optical flow takeoff detection
+    detectOptFlowTakeoff();
+
     // calculate rotation matrices at mid sample time for flow observations
     stateStruct.quat.rotation_matrix(Tbn_flow);
     // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
