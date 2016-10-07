@@ -35,6 +35,25 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_ORIENT_YAW", 3,  OpticalFlow,    _yawAngle_cd,   0),
 
+    // @Param: _POS_X
+    // @DisplayName:  X position offset
+    // @Description: X position of the optical flow sensor focal point in body frame.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: _POS_Y
+    // @DisplayName: Y position offset
+    // @Description: Y position of the optical flow sensor focal point in body frame.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: _POS_Z
+    // @DisplayName: Z position offset
+    // @Description: Z position of the optical flow sensor focal point in body frame.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("_POS", 4, OpticalFlow, _pos_offset, 0.0f),
+
     AP_GROUPEND
 };
 
