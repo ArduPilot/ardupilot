@@ -535,6 +535,20 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
         return true;
     }
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    // check GPS configuration has completed
+    uint8_t first_unconfigured = gps.first_unconfigured_gps();
+    if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
+        if (display_failure) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,
+                                             "PreArm: GPS %d failing configuration checks",
+                                              first_unconfigured + 1);
+            gps.broadcast_first_configuration_failure_reason();
+        }
+        return false;
+    }
+#endif
+
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (gps.get_hdop() > g.gps_hdop_good) {
         if (display_failure) {
