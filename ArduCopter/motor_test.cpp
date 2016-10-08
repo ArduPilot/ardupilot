@@ -58,7 +58,6 @@ void Copter::motor_test_output()
             default:
                 motor_test_stop();
                 return;
-                break;
         }
 
         // sanity check throttle values

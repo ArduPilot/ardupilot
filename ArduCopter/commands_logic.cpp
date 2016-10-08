@@ -869,18 +869,15 @@ bool Copter::do_guided(const AP_Mission::Mission_Command& cmd)
             // set wp_nav's destination
             Location_Class dest(cmd.content.location);
             return guided_set_destination(dest);
-            break;
         }
 
         case MAV_CMD_CONDITION_YAW:
             do_yaw(cmd);
             return true;
-            break;
 
         default:
             // reject unrecognised command
             return false;
-            break;
     }
 
     return true;
