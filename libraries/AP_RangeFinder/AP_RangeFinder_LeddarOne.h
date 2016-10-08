@@ -10,14 +10,16 @@
 // default slave address
 #define LEDDARONE_DEFAULT_ADDRESS 0x01
 
-// error codes
-#define LEDDARONE_OK 0
-#define LEDDARONE_ERR_BAD_CRC -1
-#define LEDDARONE_ERR_NO_RESPONSES -2
-#define LEDDARONE_ERR_BAD_RESPONSE -3
-#define LEDDARONE_ERR_SHORT_RESPONSE -4
-#define LEDDARONE_ERR_SERIAL_PORT -5
-#define LEDDARONE_ERR_NUMBER_DETECTIONS -6
+// LeddarOne status
+enum LeddarOne_Status {
+    LEDDARONE_OK = 0,
+    LEDDARONE_ERR_BAD_CRC = -1,
+    LEDDARONE_ERR_NO_RESPONSES = -2,
+    LEDDARONE_ERR_BAD_RESPONSE = -3,
+    LEDDARONE_ERR_SHORT_RESPONSE = -4,
+    LEDDARONE_ERR_SERIAL_PORT = -5,
+    LEDDARONE_ERR_NUMBER_DETECTIONS = -6
+};
 
 class AP_RangeFinder_LeddarOne : public AP_RangeFinder_Backend
 {
@@ -41,14 +43,15 @@ private:
     bool CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck);
 
     // send a request message to execute ModBus function
-    int8_t send_request(void);
+    LeddarOne_Status send_request(void);
 
     // parse a response message from ModBus
-    int8_t parse_response(void);
+    LeddarOne_Status parse_response(void);
 
     AP_HAL::UARTDriver *uart = nullptr;
     uint32_t last_reading_ms;
 
     uint16_t detections[LEDDARONE_DETECTIONS_MAX];
     uint32_t sum_distance;
+    uint8_t number_detections;
 };

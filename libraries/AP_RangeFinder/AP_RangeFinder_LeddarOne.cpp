@@ -67,17 +67,15 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
         }
     }
 
-    // parse a response message, set detections and sum_distance
+    // parse a response message, set number_detectins, detections and sum_distance
     // must be signed to handle errors
-    int8_t number_detections = parse_response();
-
-    if (number_detections <= 0) {
+    if (parse_response() != LEDDARONE_OK) {
         // TODO: when (number_detections < 0) handle LEDDARONE_ERR_
         return false;
     }
 
     // calculate average distance
-    reading_cm = sum_distance / (uint8_t)number_detections;
+    reading_cm = sum_distance / number_detections;
 
     return true;
 }
@@ -130,7 +128,7 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
 /*
    send a request message to execute ModBus function 0x04
  */
-int8_t AP_RangeFinder_LeddarOne::send_request(void)
+LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
 {
     uint8_t data_buffer[10] = {0};
     uint8_t i = 0;
@@ -168,7 +166,7 @@ int8_t AP_RangeFinder_LeddarOne::send_request(void)
  /*
     parse a response message from Modbus
   */
-int8_t AP_RangeFinder_LeddarOne::parse_response(void)
+LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(void)
 {
     uint8_t data_buffer[25] = {0};
     uint32_t start_ms = AP_HAL::millis();
@@ -203,10 +201,10 @@ int8_t AP_RangeFinder_LeddarOne::parse_response(void)
     }
 
     // number of detections
-    uint8_t number_detections = data_buffer[10];
+    number_detections = data_buffer[10];
 
-    // if the number of detection is over , it is false
-    if (number_detections > LEDDARONE_DETECTIONS_MAX) {
+    // if the number of detection is over or zero , it is false
+    if (number_detections > LEDDARONE_DETECTIONS_MAX || number_detections <= 0) {
         return LEDDARONE_ERR_NUMBER_DETECTIONS;
     }
 
@@ -219,5 +217,5 @@ int8_t AP_RangeFinder_LeddarOne::parse_response(void)
         index_offset += 4;
     }
 
-    return (int8_t)number_detections;
+    return LEDDARONE_OK;
 }
