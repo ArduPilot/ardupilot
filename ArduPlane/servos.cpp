@@ -526,58 +526,11 @@ void Plane::set_servos_controlled(void)
     }
 }
 
-/*****************************************
-* Set the flight control servos based on the current calculated values
-*****************************************/
-void Plane::set_servos(void)
+/*
+  setup flap outputs
+ */
+void Plane::set_servos_flaps(void)
 {
-    // this is to allow the failsafe module to deliberately crash 
-    // the plane. Only used in extreme circumstances to meet the
-    // OBC rules
-    if (afs.should_crash_vehicle()) {
-        afs.terminate_vehicle();
-        return;
-    }
-
-    int16_t last_throttle = channel_throttle->get_radio_out();
-
-    // do any transition updates for quadplane
-    quadplane.update();    
-
-    if (control_mode == AUTO && auto_state.idle_mode) {
-        // special handling for balloon launch
-        set_servos_idle();
-        return;
-    }
-
-    /*
-      see if we are doing ground steering.
-     */
-    if (!steering_control.ground_steering) {
-        // we are not at an altitude for ground steering. Set the nose
-        // wheel to the rudder just in case the barometer has drifted
-        // a lot
-        steering_control.steering = steering_control.rudder;
-    } else if (!RC_Channel_aux::function_assigned(RC_Channel_aux::k_steering)) {
-        // we are within the ground steering altitude but don't have a
-        // dedicated steering channel. Set the rudder to the ground
-        // steering output
-        steering_control.rudder = steering_control.steering;
-    }
-    channel_rudder->set_servo_out(steering_control.rudder);
-
-    // clear ground_steering to ensure manual control if the yaw stabilizer doesn't run
-    steering_control.ground_steering = false;
-
-    RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_rudder, steering_control.rudder);
-    RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_steering, steering_control.steering);
-
-    if (control_mode == MANUAL) {
-        set_servos_manual_passthrough();
-    } else {
-        set_servos_controlled();
-    }
-
     // Auto flap deployment
     int8_t auto_flap_percent = 0;
     int8_t manual_flap_percent = 0;
@@ -647,6 +600,67 @@ void Plane::set_servos(void)
     RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_flap_auto, auto_flap_percent);
     RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_flap, manual_flap_percent);
 
+    if (g.flaperon_output != MIXING_DISABLED && g.elevon_output == MIXING_DISABLED && g.mix_mode == 0) {
+        flaperon_update(auto_flap_percent);
+    }
+}
+
+
+/*****************************************
+* Set the flight control servos based on the current calculated values
+*****************************************/
+void Plane::set_servos(void)
+{
+    // this is to allow the failsafe module to deliberately crash 
+    // the plane. Only used in extreme circumstances to meet the
+    // OBC rules
+    if (afs.should_crash_vehicle()) {
+        afs.terminate_vehicle();
+        return;
+    }
+
+    int16_t last_throttle = channel_throttle->get_radio_out();
+
+    // do any transition updates for quadplane
+    quadplane.update();    
+
+    if (control_mode == AUTO && auto_state.idle_mode) {
+        // special handling for balloon launch
+        set_servos_idle();
+        return;
+    }
+
+    /*
+      see if we are doing ground steering.
+     */
+    if (!steering_control.ground_steering) {
+        // we are not at an altitude for ground steering. Set the nose
+        // wheel to the rudder just in case the barometer has drifted
+        // a lot
+        steering_control.steering = steering_control.rudder;
+    } else if (!RC_Channel_aux::function_assigned(RC_Channel_aux::k_steering)) {
+        // we are within the ground steering altitude but don't have a
+        // dedicated steering channel. Set the rudder to the ground
+        // steering output
+        steering_control.rudder = steering_control.steering;
+    }
+    channel_rudder->set_servo_out(steering_control.rudder);
+
+    // clear ground_steering to ensure manual control if the yaw stabilizer doesn't run
+    steering_control.ground_steering = false;
+
+    RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_rudder, steering_control.rudder);
+    RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_steering, steering_control.steering);
+
+    if (control_mode == MANUAL) {
+        set_servos_manual_passthrough();
+    } else {
+        set_servos_controlled();
+    }
+
+    // setup flap outputs
+    set_servos_flaps();
+    
     if (control_mode >= FLY_BY_WIRE_B ||
         quadplane.in_assisted_flight() ||
         quadplane.in_vtol_mode()) {
@@ -660,9 +674,6 @@ void Plane::set_servos(void)
         channel_rudder->set_radio_out(channel_rudder->get_radio_in());
     }
 
-    if (g.flaperon_output != MIXING_DISABLED && g.elevon_output == MIXING_DISABLED && g.mix_mode == 0) {
-        flaperon_update(auto_flap_percent);
-    }
     if (g.vtail_output != MIXING_DISABLED) {
         channel_output_mixer(g.vtail_output, channel_pitch, channel_rudder);
     } else if (g.elevon_output != MIXING_DISABLED) {
