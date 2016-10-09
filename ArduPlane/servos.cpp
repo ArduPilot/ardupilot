@@ -460,9 +460,6 @@ void Plane::set_servos_controlled(void)
 
     channel_rudder->calc_pwm();
     
-#if THROTTLE_OUT == 0
-    channel_throttle->set_servo_out(0);
-#else
     // convert 0 to 100% (or -100 to +100) into PWM
     int8_t min_throttle = aparm.throttle_min.get();
     int8_t max_throttle = aparm.throttle_max.get();
@@ -527,7 +524,6 @@ void Plane::set_servos_controlled(void)
         // normal throttle calculation based on servo_out
         channel_throttle->calc_pwm();
     }
-#endif
 }
 
 /*****************************************
