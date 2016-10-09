@@ -615,10 +615,12 @@ def start_mavproxy(opts, stuff):
             cmd.extend(["--sitl", simout_port])
 
     # If running inside of a vagrant guest, then we probably want to forward our mavlink out to the containing host OS
-    if getpass.getuser() == "vagrant":
-        cmd.extend(["--out", "10.0.2.2:14550"])
-    for port in [14550, 14551]:
-        cmd.extend(["--out", "127.0.0.1:" + str(port)])
+    ports = [p + 10 * cmd_opts.instance for p in [14550,14551]]
+    for port in ports:
+        if getpass.getuser() == "vagrant":
+            cmd.extend(["--out", "10.0.2.2:" + str(port)])
+        else:
+            cmd.extend(["--out", "127.0.0.1:" + str(port)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
