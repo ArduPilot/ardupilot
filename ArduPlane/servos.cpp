@@ -318,6 +318,218 @@ uint16_t Plane::throttle_min(void) const
 };
 
 
+/*
+  pass through channels in manual mode
+ */
+void Plane::set_servos_manual_passthrough(void)
+{
+    // do a direct pass through of radio values
+    if (g.mix_mode == 0 || g.elevon_output != MIXING_DISABLED) {
+        channel_roll->set_radio_out(channel_roll->get_radio_in());
+        channel_pitch->set_radio_out(channel_pitch->get_radio_in());
+    } else {
+        channel_roll->set_radio_out(channel_roll->read());
+        channel_pitch->set_radio_out(channel_pitch->read());
+    }
+    channel_throttle->set_radio_out(channel_throttle->get_radio_in());
+    channel_rudder->set_radio_out(channel_rudder->get_radio_in());
+    
+    // setup extra channels. We want this to come from the
+    // main input channel, but using the 2nd channels dead
+    // zone, reverse and min/max settings. We need to use
+    // pwm_to_angle_dz() to ensure we don't trim the value for the
+    // deadzone of the main aileron channel, otherwise the 2nd
+    // aileron won't quite follow the first one
+    RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_aileron, channel_roll->pwm_to_angle_dz(0));
+    RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_elevator, channel_pitch->pwm_to_angle_dz(0));
+    
+    // this variant assumes you have the corresponding
+    // input channel setup in your transmitter for manual control
+    // of the 2nd aileron
+    RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input);
+    RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input);
+}
+
+/*
+  old (deprecated) elevon support
+ */
+void Plane::set_servos_old_elevons(void)
+{
+    /*Elevon mode*/
+    float ch1;
+    float ch2;
+    ch1 = channel_pitch->get_servo_out() - (BOOL_TO_SIGN(g.reverse_elevons) * channel_roll->get_servo_out());
+    ch2 = channel_pitch->get_servo_out() + (BOOL_TO_SIGN(g.reverse_elevons) * channel_roll->get_servo_out());
+    
+    /* Differential Spoilers
+       If differential spoilers are setup, then we translate
+       rudder control into splitting of the two ailerons on
+       the side of the aircraft where we want to induce
+       additional drag.
+    */
+    if (RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) && RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
+        float ch3 = ch1;
+        float ch4 = ch2;
+        if ( BOOL_TO_SIGN(g.reverse_elevons) * channel_rudder->get_servo_out() < 0) {
+            ch1 += abs(channel_rudder->get_servo_out());
+            ch3 -= abs(channel_rudder->get_servo_out());
+        } else {
+            ch2 += abs(channel_rudder->get_servo_out());
+            ch4 -= abs(channel_rudder->get_servo_out());
+        }
+        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_dspoiler1, ch3);
+        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_dspoiler2, ch4);
+    }
+    
+    // directly set the radio_out values for elevon mode
+    channel_roll->set_radio_out(elevon.trim1 + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0f/ SERVO_MAX)));
+    channel_pitch->set_radio_out(elevon.trim2 + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0f/ SERVO_MAX)));
+}
+
+
+/*
+  calculate any throttle limits based on the watt limiter
+ */
+void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
+{
+    uint32_t now = millis();
+    if (battery.overpower_detected()) {
+        // overpower detected, cut back on the throttle if we're maxing it out by calculating a limiter value
+        // throttle limit will attack by 10% per second
+        
+        if (channel_throttle->get_servo_out() > 0 && // demanding too much positive thrust
+            throttle_watt_limit_max < max_throttle - 25 &&
+            now - throttle_watt_limit_timer_ms >= 1) {
+            // always allow for 25% throttle available regardless of battery status
+            throttle_watt_limit_timer_ms = now;
+            throttle_watt_limit_max++;
+            
+        } else if (channel_throttle->get_servo_out() < 0 &&
+                   min_throttle < 0 && // reverse thrust is available
+                   throttle_watt_limit_min < -(min_throttle) - 25 &&
+                   now - throttle_watt_limit_timer_ms >= 1) {
+            // always allow for 25% throttle available regardless of battery status
+            throttle_watt_limit_timer_ms = now;
+            throttle_watt_limit_min++;
+        }
+        
+    } else if (now - throttle_watt_limit_timer_ms >= 1000) {
+        // it has been 1 second since last over-current, check if we can resume higher throttle.
+        // this throttle release is needed to allow raising the max_throttle as the battery voltage drains down
+        // throttle limit will release by 1% per second
+        if (channel_throttle->get_servo_out() > throttle_watt_limit_max && // demanding max forward thrust
+            throttle_watt_limit_max > 0) { // and we're currently limiting it
+            throttle_watt_limit_timer_ms = now;
+            throttle_watt_limit_max--;
+            
+        } else if (channel_throttle->get_servo_out() < throttle_watt_limit_min && // demanding max negative thrust
+                   throttle_watt_limit_min > 0) { // and we're limiting it
+            throttle_watt_limit_timer_ms = now;
+            throttle_watt_limit_min--;
+        }
+    }
+    
+    max_throttle = constrain_int16(max_throttle, 0, max_throttle - throttle_watt_limit_max);
+    if (min_throttle < 0) {
+        min_throttle = constrain_int16(min_throttle, min_throttle + throttle_watt_limit_min, 0);
+    }
+}
+    
+
+
+/*
+  setup output channels all non-manual modes
+ */
+void Plane::set_servos_controlled(void)
+{
+    if (g.mix_mode != 0) {
+        set_servos_old_elevons();
+    } else {
+        // both types of secondary aileron are slaved to the roll servo out
+        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_aileron, channel_roll->get_servo_out());
+        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_aileron_with_input, channel_roll->get_servo_out());
+        
+        // both types of secondary elevator are slaved to the pitch servo out
+        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_elevator, channel_pitch->get_servo_out());
+        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_elevator_with_input, channel_pitch->get_servo_out());
+
+        // push out the PWM values
+        channel_roll->calc_pwm();
+        channel_pitch->calc_pwm();
+    }
+
+    channel_rudder->calc_pwm();
+    
+#if THROTTLE_OUT == 0
+    channel_throttle->set_servo_out(0);
+#else
+    // convert 0 to 100% (or -100 to +100) into PWM
+    int8_t min_throttle = aparm.throttle_min.get();
+    int8_t max_throttle = aparm.throttle_max.get();
+    
+    if (min_throttle < 0 && !allow_reverse_thrust()) {
+        // reverse thrust is available but inhibited.
+        min_throttle = 0;
+    }
+    
+    if (control_mode == AUTO) {
+        if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+            min_throttle = 0;
+        }
+        
+        if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
+            if(aparm.takeoff_throttle_max != 0) {
+                max_throttle = aparm.takeoff_throttle_max;
+            } else {
+                max_throttle = aparm.throttle_max;
+            }
+        }
+    }
+
+    // apply watt limiter
+    throttle_watt_limiter(min_throttle, max_throttle);
+
+    channel_throttle->set_servo_out(constrain_int16(channel_throttle->get_servo_out(), 
+                                                    min_throttle,
+                                                    max_throttle));
+    
+    if (!hal.util->get_soft_armed()) {
+        channel_throttle->set_servo_out(0);
+        channel_throttle->calc_pwm();                
+    } else if (suppress_throttle()) {
+        // throttle is suppressed in auto mode
+        channel_throttle->set_servo_out(0);
+        if (g.throttle_suppress_manual) {
+            // manual pass through of throttle while throttle is suppressed
+            channel_throttle->set_radio_out(channel_throttle->get_radio_in());
+        } else {
+            channel_throttle->calc_pwm();                
+        }
+    } else if (g.throttle_passthru_stabilize && 
+               (control_mode == STABILIZE || 
+                control_mode == TRAINING ||
+                control_mode == ACRO ||
+                control_mode == FLY_BY_WIRE_A ||
+                control_mode == AUTOTUNE) &&
+               !failsafe.ch3_counter) {
+        // manual pass through of throttle while in FBWA or
+        // STABILIZE mode with THR_PASS_STAB set
+        channel_throttle->set_radio_out(channel_throttle->get_radio_in());
+    } else if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
+               guided_throttle_passthru) {
+        // manual pass through of throttle while in GUIDED
+        channel_throttle->set_radio_out(channel_throttle->get_radio_in());
+    } else if (quadplane.in_vtol_mode()) {
+        // ask quadplane code for forward throttle
+        channel_throttle->set_servo_out(quadplane.forward_throttle_pct());
+        channel_throttle->calc_pwm();
+    } else {
+        // normal throttle calculation based on servo_out
+        channel_throttle->calc_pwm();
+    }
+#endif
+}
+
 /*****************************************
 * Set the flight control servos based on the current calculated values
 *****************************************/
@@ -365,187 +577,9 @@ void Plane::set_servos(void)
     RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_steering, steering_control.steering);
 
     if (control_mode == MANUAL) {
-        // do a direct pass through of radio values
-        if (g.mix_mode == 0 || g.elevon_output != MIXING_DISABLED) {
-            channel_roll->set_radio_out(channel_roll->get_radio_in());
-            channel_pitch->set_radio_out(channel_pitch->get_radio_in());
-        } else {
-            channel_roll->set_radio_out(channel_roll->read());
-            channel_pitch->set_radio_out(channel_pitch->read());
-        }
-        channel_throttle->set_radio_out(channel_throttle->get_radio_in());
-        channel_rudder->set_radio_out(channel_rudder->get_radio_in());
-
-        // setup extra channels. We want this to come from the
-        // main input channel, but using the 2nd channels dead
-        // zone, reverse and min/max settings. We need to use
-        // pwm_to_angle_dz() to ensure we don't trim the value for the
-        // deadzone of the main aileron channel, otherwise the 2nd
-        // aileron won't quite follow the first one
-        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_aileron, channel_roll->pwm_to_angle_dz(0));
-        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_elevator, channel_pitch->pwm_to_angle_dz(0));
-
-        // this variant assumes you have the corresponding
-        // input channel setup in your transmitter for manual control
-        // of the 2nd aileron
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input);
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input);
-
+        set_servos_manual_passthrough();
     } else {
-        if (g.mix_mode == 0) {
-            // both types of secondary aileron are slaved to the roll servo out
-            RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_aileron, channel_roll->get_servo_out());
-            RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_aileron_with_input, channel_roll->get_servo_out());
-
-            // both types of secondary elevator are slaved to the pitch servo out
-            RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_elevator, channel_pitch->get_servo_out());
-            RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_elevator_with_input, channel_pitch->get_servo_out());
-        }else{
-            /*Elevon mode*/
-            float ch1;
-            float ch2;
-            ch1 = channel_pitch->get_servo_out() - (BOOL_TO_SIGN(g.reverse_elevons) * channel_roll->get_servo_out());
-            ch2 = channel_pitch->get_servo_out() + (BOOL_TO_SIGN(g.reverse_elevons) * channel_roll->get_servo_out());
-
-			/* Differential Spoilers
-               If differential spoilers are setup, then we translate
-               rudder control into splitting of the two ailerons on
-               the side of the aircraft where we want to induce
-               additional drag.
-             */
-			if (RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) && RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
-				float ch3 = ch1;
-				float ch4 = ch2;
-				if ( BOOL_TO_SIGN(g.reverse_elevons) * channel_rudder->get_servo_out() < 0) {
-				    ch1 += abs(channel_rudder->get_servo_out());
-				    ch3 -= abs(channel_rudder->get_servo_out());
-				} else {
-					ch2 += abs(channel_rudder->get_servo_out());
-				    ch4 -= abs(channel_rudder->get_servo_out());
-				}
-				RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_dspoiler1, ch3);
-				RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_dspoiler2, ch4);
-			}
-
-            // directly set the radio_out values for elevon mode
-            channel_roll->set_radio_out(elevon.trim1 + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0f/ SERVO_MAX)));
-            channel_pitch->set_radio_out(elevon.trim2 + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0f/ SERVO_MAX)));
-        }
-
-        // push out the PWM values
-        if (g.mix_mode == 0) {
-            channel_roll->calc_pwm();
-            channel_pitch->calc_pwm();
-        }
-        channel_rudder->calc_pwm();
-
-#if THROTTLE_OUT == 0
-        channel_throttle->set_servo_out(0);
-#else
-        // convert 0 to 100% (or -100 to +100) into PWM
-        int8_t min_throttle = aparm.throttle_min.get();
-        int8_t max_throttle = aparm.throttle_max.get();
-
-        if (min_throttle < 0 && !allow_reverse_thrust()) {
-           // reverse thrust is available but inhibited.
-           min_throttle = 0;
-        }
-
-        if (control_mode == AUTO) {
-            if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
-                min_throttle = 0;
-            }
-
-            if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
-                if(aparm.takeoff_throttle_max != 0) {
-                    max_throttle = aparm.takeoff_throttle_max;
-                } else {
-                    max_throttle = aparm.throttle_max;
-                }
-            }
-        }
-
-        uint32_t now = millis();
-        if (battery.overpower_detected()) {
-            // overpower detected, cut back on the throttle if we're maxing it out by calculating a limiter value
-            // throttle limit will attack by 10% per second
-
-            if (channel_throttle->get_servo_out() > 0 && // demanding too much positive thrust
-                throttle_watt_limit_max < max_throttle - 25 &&
-                now - throttle_watt_limit_timer_ms >= 1) {
-                // always allow for 25% throttle available regardless of battery status
-                throttle_watt_limit_timer_ms = now;
-                throttle_watt_limit_max++;
-
-            } else if (channel_throttle->get_servo_out() < 0 &&
-                min_throttle < 0 && // reverse thrust is available
-                throttle_watt_limit_min < -(min_throttle) - 25 &&
-                now - throttle_watt_limit_timer_ms >= 1) {
-                // always allow for 25% throttle available regardless of battery status
-                throttle_watt_limit_timer_ms = now;
-                throttle_watt_limit_min++;
-            }
-
-        } else if (now - throttle_watt_limit_timer_ms >= 1000) {
-            // it has been 1 second since last over-current, check if we can resume higher throttle.
-            // this throttle release is needed to allow raising the max_throttle as the battery voltage drains down
-            // throttle limit will release by 1% per second
-            if (channel_throttle->get_servo_out() > throttle_watt_limit_max && // demanding max forward thrust
-                throttle_watt_limit_max > 0) { // and we're currently limiting it
-                throttle_watt_limit_timer_ms = now;
-                throttle_watt_limit_max--;
-
-            } else if (channel_throttle->get_servo_out() < throttle_watt_limit_min && // demanding max negative thrust
-                throttle_watt_limit_min > 0) { // and we're limiting it
-                throttle_watt_limit_timer_ms = now;
-                throttle_watt_limit_min--;
-            }
-        }
-
-        max_throttle = constrain_int16(max_throttle, 0, max_throttle - throttle_watt_limit_max);
-        if (min_throttle < 0) {
-            min_throttle = constrain_int16(min_throttle, min_throttle + throttle_watt_limit_min, 0);
-        }
-
-        channel_throttle->set_servo_out(constrain_int16(channel_throttle->get_servo_out(), 
-                                                      min_throttle,
-                                                      max_throttle));
-
-        if (!hal.util->get_soft_armed()) {
-            channel_throttle->set_servo_out(0);
-            channel_throttle->calc_pwm();                
-        } else if (suppress_throttle()) {
-            // throttle is suppressed in auto mode
-            channel_throttle->set_servo_out(0);
-            if (g.throttle_suppress_manual) {
-                // manual pass through of throttle while throttle is suppressed
-                channel_throttle->set_radio_out(channel_throttle->get_radio_in());
-            } else {
-                channel_throttle->calc_pwm();                
-            }
-        } else if (g.throttle_passthru_stabilize && 
-                   (control_mode == STABILIZE || 
-                    control_mode == TRAINING ||
-                    control_mode == ACRO ||
-                    control_mode == FLY_BY_WIRE_A ||
-                    control_mode == AUTOTUNE) &&
-                   !failsafe.ch3_counter) {
-            // manual pass through of throttle while in FBWA or
-            // STABILIZE mode with THR_PASS_STAB set
-            channel_throttle->set_radio_out(channel_throttle->get_radio_in());
-        } else if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
-                   guided_throttle_passthru) {
-            // manual pass through of throttle while in GUIDED
-            channel_throttle->set_radio_out(channel_throttle->get_radio_in());
-        } else if (quadplane.in_vtol_mode()) {
-            // ask quadplane code for forward throttle
-            channel_throttle->set_servo_out(quadplane.forward_throttle_pct());
-            channel_throttle->calc_pwm();
-        } else {
-            // normal throttle calculation based on servo_out
-            channel_throttle->calc_pwm();
-        }
-#endif
+        set_servos_controlled();
     }
 
     // Auto flap deployment
