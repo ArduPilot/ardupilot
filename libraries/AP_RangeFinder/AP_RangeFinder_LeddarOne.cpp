@@ -67,7 +67,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
         }
     }
 
-    // parse a response message, set number_detectins, detections and sum_distance
+    // parse a response message, set number_detections, detections and sum_distance
     // must be signed to handle errors
     if (parse_response() != LEDDARONE_OK) {
         // TODO: when (number_detections < 0) handle LEDDARONE_ERR_
@@ -212,7 +212,7 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(void)
     sum_distance = 0;
     for (i=0; i<number_detections; i++) {
         // construct data word from two bytes and convert mm to cm
-        detections[i] =  (((uint16_t)data_buffer[index_offset])*256 + data_buffer[index_offset+1]) / 10;
+        detections[i] =  (static_cast<uint16_t>(data_buffer[index_offset])*256 + data_buffer[index_offset+1]) / 10;
         sum_distance += detections[i];
         index_offset += 4;
     }
