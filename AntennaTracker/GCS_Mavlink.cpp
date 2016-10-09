@@ -865,6 +865,11 @@ mission_failed:
         handle_gps_inject(msg, tracker.gps);
         break;
 
+    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
+    case MAVLINK_MSG_ID_GPS_INPUT:
+        tracker.gps.handle_msg(msg);
+        break;
+
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         send_autopilot_version(FIRMWARE_VERSION);
         break;
