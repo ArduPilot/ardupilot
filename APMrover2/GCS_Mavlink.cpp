@@ -1396,6 +1396,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
     case MAVLINK_MSG_ID_GPS_INPUT:
         {
             rover.gps.handle_msg(msg);
