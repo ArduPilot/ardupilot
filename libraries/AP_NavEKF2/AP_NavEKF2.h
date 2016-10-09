@@ -274,7 +274,7 @@ public:
 
     // return the amount of NE position change due to the last position reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) const;
+    uint32_t getLastPosNorthEastReset(Vector2f &posDelta);
 
     // return the amount of NE velocity change due to the last velocity reset in metres/sec
     // returns the time of the last reset or 0 if no reset has ever occurred
@@ -385,6 +385,25 @@ private:
         uint32_t last_function_call;  // last time getLastYawYawResetAngle was called
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
         uint32_t last_primary_change; // last time a primary has changed
-        float core_delta;             // the ammount of yaw change between cores when a change happened
+        float core_delta;             // the amount of yaw change between cores when a change happened
     } yaw_reset_data;
+
+    struct {
+        uint32_t last_function_call;  // last time getLastPosNorthEastReset was called
+        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
+        uint32_t last_primary_change; // last time a primary has changed
+        Vector2f core_delta;          // the amount of NE position change between cores when a change happened
+    } pos_reset_data;
+
+    // update the yaw reset data to capture changes due to a lane switch
+    // has_switched - true if the primary instance has already been changed during this filter update cycle
+    // new_primary - index of the ekf instance that we are about to switch to as the primary
+    // old_primary - index of the ekf instance that we are currently using as the primary
+    void updateLaneSwitchYawResetData(bool has_switched, uint8_t new_primary, uint8_t old_primary);
+
+    // update the position reset data to capture changes due to a lane switch
+    // has_switched - true if the primary instance has already been changed during this filter update cycle
+    // new_primary - index of the ekf instance that we are about to switch to as the primary
+    // old_primary - index of the ekf instance that we are currently using as the primary
+    void updateLaneSwitchPosResetData(bool has_switched, uint8_t new_primary, uint8_t old_primary);
 };
