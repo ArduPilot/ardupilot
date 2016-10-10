@@ -69,8 +69,9 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 
     // parse a response message, set number_detections, detections and sum_distance
     // must be signed to handle errors
-    if (parse_response() != LEDDARONE_OK) {
-        // TODO: when (number_detections < 0) handle LEDDARONE_ERR_
+    uint8_t number_detections;
+    if (parse_response(number_detections) != LEDDARONE_OK) {
+        // TODO: when (not LEDDARONE_OK) handle LEDDARONE_ERR_
         return false;
     }
 
@@ -166,7 +167,7 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
  /*
     parse a response message from Modbus
   */
-LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(void)
+LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detections)
 {
     uint8_t data_buffer[25] = {0};
     uint32_t start_ms = AP_HAL::millis();
@@ -204,7 +205,7 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(void)
     number_detections = data_buffer[10];
 
     // if the number of detection is over or zero , it is false
-    if (number_detections > LEDDARONE_DETECTIONS_MAX || number_detections <= 0) {
+    if (number_detections > LEDDARONE_DETECTIONS_MAX || number_detections == 0) {
         return LEDDARONE_ERR_NUMBER_DETECTIONS;
     }
 
