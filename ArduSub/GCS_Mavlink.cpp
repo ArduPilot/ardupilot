@@ -2019,7 +2019,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     	mavlink_sys_status_t packet;
     	mavlink_msg_sys_status_decode(msg, &packet);
     	if((packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) && !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER))
-    		sub.water_detector.set_detect();
+    		sub.leak_detector.set_detect();
     	break;
 
     }     // end switch

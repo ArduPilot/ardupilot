@@ -916,10 +916,10 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS_", AP_GPS),
 
-    // Water driver
-    // @Group: WD_
-    // @Path: ../libraries/AP_WaterDetector/AP_WaterDetector.cpp
-	GOBJECT(water_detector, "WD_", AP_WaterDetector),
+    // Leak detector
+    // @Group: LEAK_
+    // @Path: ../libraries/AP_LeakDetector/AP_LeakDetector.cpp
+	GOBJECT(leak_detector, "LEAK", AP_LeakDetector),
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp

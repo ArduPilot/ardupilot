@@ -1,63 +1,63 @@
-#include "AP_WaterDetector.h"
-#include "AP_WaterDetector_Digital.h"
-#include "AP_WaterDetector_Analog.h"
+#include "AP_LeakDetector.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include "AP_LeakDetector_Analog.h"
+#include "AP_LeakDetector_Digital.h"
 
-const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
+const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
 
 	// @Param: PIN
 	// @DisplayName: Pin that water detector is connected to
 	// @Description:
     // @Values: -1:Disabled, 50:Pixhawk Aux1, 51:Pixhawk Aux2, 52:Pixhawk Aux3, 53:Pixhawk Aux4, 54:Pixhawk Aux5, 55:Pixhawk Aux6, 13:Pixhawk 3.3ADC1, 14:Pixhawk 3.3ADC2, 15:Pixhawk 6.6ADC
 	// @User: Standard
-    AP_GROUPINFO("1_PIN", 0, AP_WaterDetector, _pin[0], -1),
+    AP_GROUPINFO("1_PIN", 0, AP_LeakDetector, _pin[0], -1),
 
 	// @Param: DEFAULT
 	// @DisplayName: Default reading of water detector when dry
 	// @Description:
 	// @Values: 0:Low, 1:High
 	// @User: Standard
-	AP_GROUPINFO("1_DEFAULT", 1, AP_WaterDetector, _default_reading[0], 1),
+	AP_GROUPINFO("1_DEFAULT", 1, AP_LeakDetector, _default_reading[0], 1),
 
-#if WATERDETECTOR_MAX_INSTANCES > 1
+#if LEAKDETECTOR_MAX_INSTANCES > 1
 	// @Param: PIN
 	// @DisplayName: Pin that water detector is connected to
 	// @Description:
     // @Values: -1:Disabled, 50:Pixhawk Aux1, 51:Pixhawk Aux2, 52:Pixhawk Aux3, 53:Pixhawk Aux4, 54:Pixhawk Aux5, 55:Pixhawk Aux6, 13:Pixhawk 3.3ADC1, 14:Pixhawk 3.3ADC2, 15:Pixhawk 6.6ADC
 	// @User: Standard
-    AP_GROUPINFO("2_PIN", 3, AP_WaterDetector, _pin[1], -1),
+    AP_GROUPINFO("2_PIN", 3, AP_LeakDetector, _pin[1], -1),
 
 	// @Param: DEFAULT
 	// @DisplayName: Default reading of water detector when dry
 	// @Description:
 	// @Values: 0:Low, 1:High
 	// @User: Standard
-	AP_GROUPINFO("2_DEFAULT", 4, AP_WaterDetector, _default_reading[1], 1),
+	AP_GROUPINFO("2_DEFAULT", 4, AP_LeakDetector, _default_reading[1], 1),
 
 #endif
 
-#if WATERDETECTOR_MAX_INSTANCES > 2
+#if LEAKDETECTOR_MAX_INSTANCES > 2
 	// @Param: PIN
 	// @DisplayName: Pin that water detector is connected to
 	// @Description:
     // @Values: -1:Disabled, 50:Pixhawk Aux1, 51:Pixhawk Aux2, 52:Pixhawk Aux3, 53:Pixhawk Aux4, 54:Pixhawk Aux5, 55:Pixhawk Aux6, 13:Pixhawk 3.3ADC1, 14:Pixhawk 3.3ADC2, 15:Pixhawk 6.6ADC
 	// @User: Standard
-    AP_GROUPINFO("3_PIN", 6, AP_WaterDetector, _pin[2], -1),
+    AP_GROUPINFO("3_PIN", 6, AP_LeakDetector, _pin[2], -1),
 
 	// @Param: DEFAULT
 	// @DisplayName: Default reading of water detector when dry
 	// @Description:
 	// @Values: 0:Low, 1:High
 	// @User: Standard
-	AP_GROUPINFO("3_DEFAULT", 7, AP_WaterDetector, _default_reading[2], 1),
+	AP_GROUPINFO("3_DEFAULT", 7, AP_LeakDetector, _default_reading[2], 1),
 
 #endif
 
     AP_GROUPEND
 };
 
-AP_WaterDetector::AP_WaterDetector() :
+AP_LeakDetector::AP_LeakDetector() :
 	_status(false),
 	_last_detect_ms(0)
 {
@@ -67,17 +67,17 @@ AP_WaterDetector::AP_WaterDetector() :
     memset(drivers,0,sizeof(drivers));
 };
 
-void AP_WaterDetector::init()
+void AP_LeakDetector::init()
 {
-	for(int i = 0; i < WATERDETECTOR_MAX_INSTANCES; i++) {
+	for(int i = 0; i < LEAKDETECTOR_MAX_INSTANCES; i++) {
 		switch (_pin[i]) {
 		case 50 ... 55:
 			state[i].instance = i;
-			drivers[i] = new AP_WaterDetector_Digital(*this, state[i]);
+			drivers[i] = new AP_LeakDetector_Digital(*this, state[i]);
 			break;
 		case 13 ... 15:
 			state[i].instance = i;
-			drivers[i] = new AP_WaterDetector_Analog(*this, state[i]);
+			drivers[i] = new AP_LeakDetector_Analog(*this, state[i]);
 			break;
 		default:
 			drivers[i] = NULL;
@@ -86,11 +86,11 @@ void AP_WaterDetector::init()
 	}
 }
 
-bool AP_WaterDetector::update()
+bool AP_LeakDetector::update()
 {
 	uint32_t tnow = AP_HAL::millis();
 
-	for(int i = 0; i < WATERDETECTOR_MAX_INSTANCES; i++) {
+	for(int i = 0; i < LEAKDETECTOR_MAX_INSTANCES; i++) {
 		if(drivers[i] != NULL) {
 			drivers[i]->read();
 			if(state[i].status) {
@@ -99,12 +99,12 @@ bool AP_WaterDetector::update()
 		}
 	}
 
-	_status = tnow < _last_detect_ms + WATERDETECTOR_COOLDOWN_MS;
+	_status = tnow < _last_detect_ms + LEAKDETECTOR_COOLDOWN_MS;
 
 	return _status;
 }
 
-void AP_WaterDetector::set_detect()
+void AP_LeakDetector::set_detect()
 {
 	_last_detect_ms = AP_HAL::millis();
 }
