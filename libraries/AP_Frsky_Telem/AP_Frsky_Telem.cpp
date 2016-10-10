@@ -742,7 +742,7 @@ uint32_t AP_Frsky_Telem::calc_velandyaw(void)
     // horizontal velocity in dm/s (use airspeed if available, otherwise use groundspeed)
     float airspeed;
     if (_ahrs.airspeed_estimate_true(&airspeed)) {
-        velandyaw |= prep_number(roundf(airspeed * 0.1f), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
+        velandyaw |= prep_number(roundf(airspeed * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
     } else {
         velandyaw |= prep_number(roundf(_ahrs.groundspeed_vector().length() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
     }
