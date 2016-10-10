@@ -15,7 +15,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
 
 	// @Param: 1_LOGIC
 	// @DisplayName: Default reading of leak detector when dry
-	// @Description:
+	// @Description: Default reading of leak detector when dry
 	// @Values: 0:Low,1:High
 	// @User: Standard
 	AP_GROUPINFO("1_LOGIC", 1, AP_LeakDetector, _default_reading[0], 0),
@@ -30,7 +30,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
 
 	// @Param: 2_LOGIC
 	// @DisplayName: Default reading of leak detector when dry
-	// @Description:
+	// @Description: Default reading of leak detector when dry
 	// @Values: 0:Low,1:High
 	// @User: Standard
 	AP_GROUPINFO("2_LOGIC", 4, AP_LeakDetector, _default_reading[1], 0),
@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
 
 	// @Param: 3_LOGIC
 	// @DisplayName: Default reading of leak detector when dry
-	// @Description:
+	// @Description: Default reading of leak detector when dry
 	// @Values: 0:Low,1:High
 	// @User: Standard
 	AP_GROUPINFO("3_LOGIC", 7, AP_LeakDetector, _default_reading[2], 0),

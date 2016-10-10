@@ -917,7 +917,7 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(gps, "GPS_", AP_GPS),
 
     // Leak detector
-    // @Group: LEAK_
+    // @Group: LEAK
     // @Path: ../libraries/AP_LeakDetector/AP_LeakDetector.cpp
 	GOBJECT(leak_detector, "LEAK", AP_LeakDetector),
 
