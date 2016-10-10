@@ -142,6 +142,12 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 				}
 			}
 			break;
+		case JSButton::button_function_t::k_mount_pan_right:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_mount_pan_left:
+			// Not implemented
+			break;
 		case JSButton::button_function_t::k_lights1_cycle:
 			if ( !held ) {
 				static bool increasing = true;
@@ -231,6 +237,42 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 				yTrim = y_last;
 				gcs_send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
 			}
+			break;
+		case JSButton::button_function_t::k_relay_1_on:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_relay_1_off:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_relay_1_toggle:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_relay_2_on:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_relay_2_off:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_relay_2_toggle:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_custom_1:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_custom_2:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_custom_3:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_custom_4:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_custom_5:
+			// Not implemented
+			break;
+		case JSButton::button_function_t::k_custom_6:
+			// Not implemented
 			break;
 	}
 }
