@@ -223,6 +223,7 @@ private:
 
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms = 0;
+    uint8_t ekf_primary_core;
 
     // GCS selection
     AP_SerialManager serial_manager;
