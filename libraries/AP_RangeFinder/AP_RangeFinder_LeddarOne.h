@@ -46,12 +46,11 @@ private:
     LeddarOne_Status send_request(void);
 
     // parse a response message from ModBus
-    LeddarOne_Status parse_response(void);
+    LeddarOne_Status parse_response(uint8_t &number_detections);
 
     AP_HAL::UARTDriver *uart = nullptr;
     uint32_t last_reading_ms;
 
     uint16_t detections[LEDDARONE_DETECTIONS_MAX];
     uint32_t sum_distance;
-    uint8_t number_detections;
 };
