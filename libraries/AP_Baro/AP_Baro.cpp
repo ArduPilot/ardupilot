@@ -216,6 +216,10 @@ void AP_Baro::update_calibration()
             _EAS2TAS = 0;
         }
     }
+
+    // update and save base pressure (persistent between boots) with primary baro ground calibration (not persistent)
+    _base_pressure.set_and_save(get_ground_pressure());
+    _base_pressure.notify();
 }
 
 // return altitude difference in meters between current pressure and a

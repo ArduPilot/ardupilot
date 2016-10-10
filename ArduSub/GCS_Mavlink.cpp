@@ -1394,7 +1394,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                     sub.compass.set_and_save_offsets(compassNumber, packet.param2, packet.param3, packet.param4);
                     result = MAV_RESULT_ACCEPTED;
                     break;
-
                 }
 
                 if (is_equal(packet.param1, 3.0f)) { // depth sensor, set zero depth
