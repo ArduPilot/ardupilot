@@ -181,4 +181,12 @@ void Copter::check_ekf_reset()
         Log_Write_Event(DATA_EKF_YAW_RESET);
     }
 
+#if AP_AHRS_NAVEKF_AVAILABLE
+    // check for change in primary EKF (log only, AC_WPNav handles position target adjustment)
+    if (EKF2.getPrimaryCoreIndex() != ekf_primary_core) {
+        ekf_primary_core = EKF2.getPrimaryCoreIndex();
+        Log_Write_Error(ERROR_SUBSYSTEM_EKF_PRIMARY, ekf_primary_core);
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "EKF primary changed:%u\n", (unsigned)ekf_primary_core);
+    }
+#endif
 }
