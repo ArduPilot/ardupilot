@@ -28,6 +28,7 @@ private:
     void update_ekf(uint8_t r);
     void update_battery(uint8_t r);
     void update_mode(uint8_t r);
+    void update_text(uint8_t r);
 
     bool _healthy;
     bool _need_update;

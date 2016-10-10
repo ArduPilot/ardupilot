@@ -70,6 +70,7 @@ struct AP_Notify::notify_flags_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
 float AP_Notify::_voltage = 0.0f;
 uint8_t AP_Notify::_control_mode = 0;
+char AP_Notify::_send_text[51] {};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_BoardLED boardled;

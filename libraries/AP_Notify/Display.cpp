@@ -392,6 +392,8 @@ void Display::update()
 
 void Display::update_all()
 {
+
+    update_text(0);
     update_mode(1);
     update_battery(2);
     update_gps(3);
@@ -489,4 +491,41 @@ void Display::update_mode(uint8_t r)
 	char msg [18];
 	sprintf(msg, "Mode: %s", _modename[AP_Notify::get_control_mode()]) ;
 	draw_text(COLUMN(0), ROW(r), msg);
+ }
+void Display::update_text(uint8_t r)
+{
+	static uint8_t mstartpos = 0;
+    static uint8_t movedelay = 4;
+    static char* lastmsg ;
+		char msg [18];
+		char txt [51];
+
+	if (AP_Notify::get_text() != lastmsg)
+	{
+		mstartpos = 0;	//shift position
+		movedelay = 4; //delay before shifting after new message displayed
+		lastmsg = AP_Notify::get_text();
+	}
+
+		sprintf(txt, "%s", lastmsg) ;
+		mstartpos++;
+		for (uint8_t i = 0; i <  sizeof(msg); i++)
+			if(txt[i + mstartpos-1] !=0)
+			{
+		        msg[i] = txt[i + mstartpos-1];
+			}
+			else
+			{
+				msg[i] = ' ';
+				movedelay = 4;
+				mstartpos = 0;
+			}
+
+		if (mstartpos > sizeof(txt) - sizeof(msg)) mstartpos = 0;
+		if (movedelay > 0)
+		{
+			movedelay--;
+			mstartpos = 0;
+		}
+		draw_text(COLUMN(0), ROW(0), msg);
  }

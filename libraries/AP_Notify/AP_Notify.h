@@ -17,7 +17,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-
+#include <stdio.h>  // for sprintf
 #include "NotifyDevice.h"
 
 
@@ -112,11 +112,17 @@ public:
     static void set_voltage(float voltage);
     static uint8_t get_control_mode();
     static void set_control_mode(uint8_t mode);
+
     bool buzzer_enabled() const { return _buzzer_enable; }
+    static void send_text( const char *str){
+
+    	sprintf(_send_text, "%s", str) ;}
+    static char* get_text(){ return _send_text ;}
 private:
     static NotifyDevice* _devices[];
     static float _voltage;
     static uint8_t _control_mode;
+    static char _send_text[51];
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
