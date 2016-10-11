@@ -192,10 +192,28 @@ void NavEKF2_core::SelectVelPosFusion()
         // Don't fuse velocity data if GPS doesn't support it
         if (frontend->_fusionModeGPS <= 1) {
             fuseVelData = true;
+
         } else {
             fuseVelData = false;
         }
         fusePosData = true;
+
+        // correct GPS velocity data for position offset relative to the IMU
+        // TOTO use a filtered angular rate with a group delay that matches the GPS delay
+        Vector3f posOffsetBody = gpsDataDelayed.body_offset - accelPosOffset;
+        if (fuseVelData) {
+            Vector3f angRate = imuDataDelayed.delAng * (1.0f/imuDataDelayed.delAngDT);
+            Vector3f velOffsetBody = angRate % posOffsetBody;
+            Vector3f velOffsetEarth = prevTnb.mul_transpose(velOffsetBody);
+            gpsDataDelayed.vel -= velOffsetEarth;
+        }
+
+        // correct GPS position data for position offset relative to the IMU
+        Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+        gpsDataDelayed.pos.x -= posOffsetEarth.x;
+        gpsDataDelayed.pos.y -= posOffsetEarth.y;
+        gpsDataDelayed.hgt += posOffsetEarth.z;
+
     } else {
         fuseVelData = false;
         fusePosData = false;
