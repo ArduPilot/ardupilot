@@ -60,43 +60,31 @@ void Sub::poshold_run()
 	// run loiter controller
 	wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-	// get pilot's desired yaw rate
-	float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-
-	// get pilot desired climb rate
-	float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-	target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-
-	int16_t pilot_lateral = channel_lateral->get_control_in();
-	int16_t pilot_forward = channel_forward->get_control_in();
-
-	// get poshold forward and lateral outputs from wp_nav pitch and roll (from copter code)
-	int32_t poshold_lateral = wp_nav.get_roll();
-	int32_t poshold_forward = -wp_nav.get_pitch(); // output is reversed
-
-	// constrain target forward/lateral values
-	poshold_lateral = constrain_int16(poshold_lateral, -aparm.angle_max, aparm.angle_max);
-	poshold_forward = constrain_int16(poshold_forward, -aparm.angle_max, aparm.angle_max);
+	///////////////////////
+	// update xy outputs //
+	int16_t pilot_lateral = channel_lateral->norm_input();
+	int16_t pilot_forward = channel_forward->norm_input();
 
 	float lateral_out = 0;
 	float forward_out = 0;
 
 	// Allow pilot to reposition the sub
-	if(pilot_lateral > 1000 || pilot_lateral < -1000 || pilot_forward > 1000 || pilot_forward < -1000) {
-		lateral_out = (float)pilot_lateral/(float)aparm.angle_max;
-		forward_out = (float)pilot_forward/(float)aparm.angle_max;
+	if(pilot_lateral != 0 || pilot_forward != 0) {
+		lateral_out = pilot_lateral;
+		forward_out = pilot_forward;
 		wp_nav.init_loiter_target(); // initialize target to current position after repositioning
 	} else {
-		lateral_out = (float)poshold_lateral/(float)aparm.angle_max;
-		forward_out = (float)poshold_forward/(float)aparm.angle_max;
+		translate_wpnav_rp(lateral_out, forward_out);
 	}
 
 	motors.set_lateral(lateral_out);
 	motors.set_forward(forward_out);
 
-	//////////
-	// Get real roll/pitch inputs and apply them
-	//////////
+	/////////////////////
+	// Update attitude //
+
+	// get pilot's desired yaw rate
+	float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
 	// convert pilot input to lean angles
 	// To-Do: convert get_pilot_desired_lean_angles to return angles as floats
@@ -124,8 +112,13 @@ void Sub::poshold_run()
 			attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, last_pilot_heading, true, get_smoothing_gain());
 		}
 	}
-	/////////
-	/////////
+
+	///////////////////
+	// Update z axis //
+
+	// get pilot desired climb rate
+	float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+	target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
 	// adjust climb rate using rangefinder
 	if (rangefinder_alt_ok()) {
