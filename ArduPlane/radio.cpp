@@ -351,6 +351,8 @@ void Plane::trim_control_surfaces()
     channel_roll->save_eeprom();
     channel_pitch->save_eeprom();
     channel_rudder->save_eeprom();
+
+    g2.servo_channels.set_trim();
 }
 
 void Plane::trim_radio()
