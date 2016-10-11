@@ -129,7 +129,7 @@ void Copter::failsafe_ekf_event()
     }
 
     // do nothing if not in GPS flight mode and ekf-action is not land-even-stabilize
-    if (!mode_requires_GPS(control_mode) && (control_mode != LAND) && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
+    if ((control_mode != LAND) && !mode_requires_GPS(control_mode) && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
         return;
     }
 
