@@ -28,6 +28,8 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
     ch_yaw->set_radio_out(ch_yaw->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
     ch_throttle->set_radio_out(ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
 
+    plane.servos_output();
+
     // and all aux channels
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_flap_auto, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_flap, RC_Channel::RC_CHANNEL_LIMIT_MAX);
@@ -37,12 +39,6 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_manual, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_none, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
-
-    ch_roll->output();
-    ch_pitch->output();
-    ch_yaw->output();
-    ch_throttle->output();
-    RC_Channel_aux::output_ch_all();
 
     plane.quadplane.afs_terminate();
     

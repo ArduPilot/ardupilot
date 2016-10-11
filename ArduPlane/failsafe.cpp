@@ -87,15 +87,6 @@ void Plane::failsafe_check(void)
             return;
         }
 
-        if (!demoing_servos) {
-            channel_roll->output();
-            channel_pitch->output();
-        }
-        channel_throttle->output();
-        if (g.rudder_only == 0) {
-            channel_rudder->output();
-        }
-
         // setup secondary output channels that do have
         // corresponding input channels
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);
@@ -104,6 +95,8 @@ void Plane::failsafe_check(void)
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_flap, 0);
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_flap_auto, 0);
 
+        servos_output();
+        
         // setup flaperons
         flaperon_update(0);
     }
