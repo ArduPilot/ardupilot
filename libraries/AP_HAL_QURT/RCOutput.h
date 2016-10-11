@@ -24,6 +24,8 @@ public:
     void write(uint8_t ch, uint16_t period_us);
     uint16_t read(uint8_t ch);
     void read(uint16_t *period_us, uint8_t len);
+    void cork(void) override;
+    void push(void) override;
 
     void timer_update(void);
     
@@ -36,6 +38,7 @@ private:
     uint16_t enable_mask;
     uint16_t period[channel_count];
     volatile bool need_write;
+    bool corked;
 };
 
 #endif // CONFIG_HAL_BOARD
