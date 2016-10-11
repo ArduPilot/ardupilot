@@ -374,6 +374,7 @@ private:
         float       hgt;         // 2
         Vector3f    vel;         // 3..5
         uint32_t    time_ms;     // 6
+        Vector3f    body_offset; // 7..9
     };
 
     struct mag_elements {
