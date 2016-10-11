@@ -16,6 +16,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+#include "RC_Channel.h"
 
 #define NUM_SERVO_RANGE_CHANNELS 4
 
@@ -32,6 +33,9 @@ public:
     // take current radio_out for first 4 channels and remap using
     // servo ranges if enabled
     void remap_servo_output(void);
+
+    // set and save trim values from current RC input trim
+    void set_trim(void);
     
 private:
     AP_Int8 enable;
@@ -43,4 +47,7 @@ private:
 
     // reversal, following convention that < 0 means reversed, >= 0 means normal
     AP_Int8 reverse[NUM_SERVO_RANGE_CHANNELS];
+
+    // remap a PWM value from a channel in value
+    uint16_t remap_pwm(uint8_t ch, uint16_t pwm) const;
 };

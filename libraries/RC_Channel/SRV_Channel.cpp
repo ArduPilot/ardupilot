@@ -179,6 +179,33 @@ SRV_Channels::SRV_Channels(void)
 }
 
 
+// remap a PWM value from a channel in value
+uint16_t SRV_Channels::remap_pwm(uint8_t i, uint16_t pwm) const
+{
+    const RC_Channel *ch = RC_Channel::rc_channel(i);
+    if (ch == nullptr) {
+        return 0;
+    }
+    float v = ch->get_radio_out_normalised(pwm);
+    uint16_t radio_out;
+    if (ch->get_type_out() == RC_CHANNEL_TYPE_RANGE) {
+        if (reverse[i] == -1) {
+            v = 1 - v;
+        }
+        radio_out = servo_min[i] + v * (servo_max[i] - servo_min[i]);
+    } else {
+        if (reverse[i] == -1) {
+            v = -v;
+        }
+        if (v > 0) {
+            radio_out = servo_trim[i] + v * (servo_max[i] - servo_trim[i]);
+        } else {
+            radio_out = servo_trim[i] + v * (servo_trim[i] - servo_min[i]);
+        }
+    }
+    return radio_out;
+}
+
 /*
   remap radio_out values for first 4 servos using SERVO* parameters, if enabled
   This should be called with cork enabled in hal.rcout
@@ -193,24 +220,31 @@ void SRV_Channels::remap_servo_output(void)
         if (ch == nullptr) {
             continue;
         }
-        float v = ch->get_radio_out_normalised();
-        uint16_t radio_out;
-        if (ch->get_type_out() == RC_CHANNEL_TYPE_RANGE) {
-            if (reverse[i] == -1) {
-                v = 1 - v;
-            }
-            radio_out = servo_min[i] + v * (servo_max[i] - servo_min[i]);
-        } else {
-            if (reverse[i] == -1) {
-                v = -v;
-            }
-            if (v > 0) {
-                radio_out = servo_trim[i] + v * (servo_max[i] - servo_trim[i]);
-            } else {
-                radio_out = servo_trim[i] + v * (servo_trim[i] - servo_min[i]);
-            }
-        }
+        uint16_t radio_out = remap_pwm(i, ch->get_radio_out());
         ch->set_radio_out(radio_out);
         ch->output();
+    }
+}
+
+
+/*
+  set trim values for output channels
+ */
+void SRV_Channels::set_trim(void)
+{
+    if (!enable) {
+        return;
+    }
+    for (uint8_t i=0; i<NUM_SERVO_RANGE_CHANNELS; i++) {
+        const RC_Channel *ch = RC_Channel::rc_channel(i);
+        if (ch == nullptr) {
+            continue;
+        }
+        if (ch->get_type_out() == RC_CHANNEL_TYPE_RANGE) {
+            // we don't trim range channels (like throttle)
+            continue;
+        }
+        uint16_t new_trim = remap_pwm(i, ch->get_radio_trim());
+        servo_trim[i].set_and_save(new_trim);
     }
 }

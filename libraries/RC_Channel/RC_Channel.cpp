@@ -582,28 +582,28 @@ bool RC_Channel::in_trim_dz()
 
   For range outputs the returned value is from 0 to 1
  */
-float RC_Channel::get_radio_out_normalised(void) const
+float RC_Channel::get_radio_out_normalised(uint16_t pwm) const
 {
     if (_radio_max <= _radio_min) {
         return 0;
     }
     float ret;
     if (_type_out == RC_CHANNEL_TYPE_RANGE) {
-        if (_radio_out <= _radio_min) {
+        if (pwm <= _radio_min) {
             ret = 0;
-        } else if (_radio_out >= _radio_max) {
+        } else if (pwm >= _radio_max) {
             ret = 1;
         } else {
-            ret = (_radio_out - _radio_min) / float(_radio_max - _radio_min);
+            ret = (pwm - _radio_min) / float(_radio_max - _radio_min);
         }
         if (_reverse == -1) {
             ret = 1 - ret;
         }
     } else {
-        if (_radio_out < _radio_trim) {
-            ret = -(_radio_trim - _radio_out) / float(_radio_trim - _radio_min);
+        if (pwm < _radio_trim) {
+            ret = -(_radio_trim - pwm) / float(_radio_trim - _radio_min);
         } else {
-            ret = (_radio_out - _radio_trim) / float(_radio_max - _radio_trim);
+            ret = (pwm - _radio_trim) / float(_radio_max - _radio_trim);
         }
         if (_reverse == -1) {
             ret = -ret;
