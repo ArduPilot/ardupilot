@@ -402,6 +402,7 @@ private:
         Vector2f    flowRadXY;      // 0..1
         Vector2f    flowRadXYcomp;  // 2..3
         uint32_t    time_ms;        // 4
+        Vector3f    body_offset;    // 5..7
     };
 
     // update the navigation filter status
