@@ -222,6 +222,7 @@ void Sub::failsafe_terrain_check()
     // check for clearing of event
     if (trigger_event != failsafe.terrain) {
         if (trigger_event) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Failsafe terrain triggered");
             failsafe_terrain_on_event();
         } else {
             Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_ERROR_RESOLVED);
@@ -230,6 +231,8 @@ void Sub::failsafe_terrain_check()
     }
 }
 
+// This gets called if mission items are in ALT_ABOVE_TERRAIN frame
+// Terrain failure occurs when terrain data is not found, or rangefinder is not enabled or healthy
 // set terrain data status (found or not found)
 void Sub::failsafe_terrain_set_status(bool data_ok)
 {
@@ -254,30 +257,35 @@ void Sub::failsafe_terrain_set_status(bool data_ok)
 void Sub::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
-    gcs_send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_FAILSAFE_OCCURRED);
 
-    if (should_disarm_on_failsafe()) {
-        init_disarm_motors();
-    } else if (control_mode == RTL) {
-        rtl_restart_without_terrain();
-    } else {
-        set_mode_RTL_or_land_with_pause(MODE_REASON_TERRAIN_FAILSAFE);
+    // If rangefinder is enabled, we can recover from this failsafe
+    if(!rangefinder_state.enabled || !auto_terrain_recover_start()) {
+    	failsafe_terrain_act();
     }
+
+
 }
 
-// set_mode_RTL_or_land_with_pause - sets mode to RTL if possible or LAND with 4 second delay before descent starts
-//  this is always called from a failsafe so we trigger notification to pilot
-void Sub::set_mode_RTL_or_land_with_pause(mode_reason_t reason)
-{
-//    // attempt to switch to RTL, if this fails then switch to Land
-//    if (!set_mode(RTL, reason)) {
-//        // set mode to land will trigger mode change notification to pilot
-//        set_mode_land_with_pause(reason);
-//    } else {
-//        // alert pilot to mode change
-//        AP_Notify::events.failsafe_mode_change = 1;
-//    }
+// Recovery failed, take action
+void Sub::failsafe_terrain_act() {
+    switch (g.failsafe_terrain) {
+    case FS_TERRAIN_HOLD:
+		if(!set_mode(POSHOLD, MODE_REASON_TERRAIN_FAILSAFE)) {
+			set_mode(ALT_HOLD, MODE_REASON_TERRAIN_FAILSAFE);
+		}
+		AP_Notify::events.failsafe_mode_change = 1;
+		break;
+
+    case FS_TERRAIN_SURFACE:
+		set_mode(SURFACE, MODE_REASON_TERRAIN_FAILSAFE);
+    	AP_Notify::events.failsafe_mode_change = 1;
+		break;
+
+    case FS_TERRAIN_DISARM:
+    default:
+		init_disarm_motors();
+    }
 }
 
 bool Sub::should_disarm_on_failsafe() {
