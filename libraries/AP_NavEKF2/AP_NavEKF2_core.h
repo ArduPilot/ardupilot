@@ -390,6 +390,7 @@ private:
     struct range_elements {
         float       rng;         // 0
         uint32_t    time_ms;     // 1
+        Vector3f    body_offset; // 2..4
     };
 
     struct tas_elements {
