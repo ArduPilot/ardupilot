@@ -403,6 +403,7 @@ private:
         Vector2f    flowRadXYcomp;  // 2..3
         uint32_t    time_ms;        // 4
         Vector3f    body_offset;    // 5..7
+        Vector3f    bodyRadXYZ;     //8..10
     };
 
     // update the navigation filter status
@@ -875,7 +876,6 @@ private:
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
-    Vector3f omegaAcrossFlowTime;   // body angular rates averaged across the optical flow sample period
     Matrix3f Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
     Vector2 varInnovOptFlow;        // optical flow innovations variances (rad/sec)^2
     Vector2 innovOptFlow;           // optical flow LOS innovations (rad/sec)
