@@ -160,8 +160,8 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
                 if (!target_acquired()) {
                     // reset filter state
                     if (_inav.get_filter_status().flags.horiz_pos_rel) {
-                        _ekf_x.init(targetPosRelMeasNED.x, xy_pos_var, -vehicleVelocityNED.x, sq(1.0f));
-                        _ekf_y.init(targetPosRelMeasNED.y, xy_pos_var, -vehicleVelocityNED.y, sq(1.0f));
+                        _ekf_x.init(targetPosRelMeasNED.x, xy_pos_var, -vehicleVelocityNED.x, sq(2.0f));
+                        _ekf_y.init(targetPosRelMeasNED.y, xy_pos_var, -vehicleVelocityNED.y, sq(2.0f));
                     } else {
                         _ekf_x.init(targetPosRelMeasNED.x, xy_pos_var, 0.0f, sq(10.0f));
                         _ekf_y.init(targetPosRelMeasNED.y, xy_pos_var, 0.0f, sq(10.0f));
