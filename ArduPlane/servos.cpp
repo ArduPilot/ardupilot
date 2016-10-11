@@ -616,6 +616,11 @@ void Plane::set_servos_flaps(void)
 */
 void Plane::set_servos(void)
 {
+    // start with output corked. the cork is released when we run
+    // servos_output(), which is run from all code paths in this
+    // function
+    hal.rcout->cork();
+    
     // this is to allow the failsafe module to deliberately crash 
     // the plane. Only used in extreme circumstances to meet the
     // OBC rules

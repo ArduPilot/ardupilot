@@ -94,9 +94,13 @@ void Plane::init_rc_out_aux()
     update_aux();
     RC_Channel_aux::enable_aux_servos();
 
+    hal.rcout->cork();
+    
     // Initialization of servo outputs
     RC_Channel::output_trim_all();
 
+    servos_output();
+    
     // setup PWM values to send if the FMU firmware dies
     RC_Channel::setup_failsafe_trim_all();  
 }
