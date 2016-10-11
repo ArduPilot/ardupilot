@@ -958,6 +958,7 @@ void QuadPlane::update_transition(void)
             motors->output();
         }
         transition_state = TRANSITION_DONE;
+        assisted_flight = false;
         return;
     }
 
