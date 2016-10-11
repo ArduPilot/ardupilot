@@ -129,11 +129,6 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 
             _ekf_x.predict(dt, targetDelVel.x, 0.5f*dt);
             _ekf_y.predict(dt, targetDelVel.y, 0.5f*dt);
-
-            if (_inav.get_filter_status().flags.horiz_pos_rel) {
-                _ekf_x.fuseVel(-vehicleVelocityNED.x, sq(1.0f));
-                _ekf_y.fuseVel(-vehicleVelocityNED.y, sq(1.0f));
-            }
         }
 
         if (_backend->have_los_meas() && _backend->los_meas_time_ms() != _last_backend_los_meas_ms) {
