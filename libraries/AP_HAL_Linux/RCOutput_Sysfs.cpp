@@ -28,6 +28,7 @@ RCOutput_Sysfs::RCOutput_Sysfs(uint8_t chip, uint8_t channel_base, uint8_t chann
     , _channel_base(channel_base)
     , _channel_count(channel_count)
     , _pwm_channels(new PWM_Sysfs_Base *[_channel_count])
+    , _pending(new uint16_t[_channel_count])
 {
 }
 
@@ -101,8 +102,12 @@ void RCOutput_Sysfs::write(uint8_t ch, uint16_t period_us)
     if (ch >= _channel_count) {
         return;
     }
-
-    _pwm_channels[ch]->set_duty_cycle(usec_to_nsec(period_us));
+    if (_corked) {
+        _pending[ch] = period_us;
+        _pending_mask |= (1U<<ch);
+    } else {
+        _pwm_channels[ch]->set_duty_cycle(usec_to_nsec(period_us));
+    }
 }
 
 uint16_t RCOutput_Sysfs::read(uint8_t ch)
@@ -123,4 +128,22 @@ void RCOutput_Sysfs::read(uint16_t *period_us, uint8_t len)
         period_us[i] = 1000;
     }
 }
+
+void RCOutput_Sysfs::cork(void)
+{
+    _corked = true;
 }
+
+void RCOutput_Sysfs::push(void)
+{
+    for (uint8_t i=0; i<_channel_count; i++) {
+        if ((1U<<i) & _pending_mask) {
+            _pwm_channels[i]->set_duty_cycle(usec_to_nsec(_pending[i]));
+        }
+    }
+    _pending_mask = 0;
+    _corked = false;
+}
+    
+}
+    
