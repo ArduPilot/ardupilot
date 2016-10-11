@@ -95,7 +95,7 @@ void RCOutput_Raspilot::_update(void)
 {
     int i;
 
-    if (AP_HAL::micros() - _last_update_timestamp < 10000) {
+    if (_corked || AP_HAL::micros() - _last_update_timestamp < 10000) {
         return;
     }
 
@@ -139,6 +139,16 @@ void RCOutput_Raspilot::_update(void)
                    (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
 
     _dev->get_semaphore()->give();
+}
+
+void RCOutput_Raspilot::cork(void)
+{
+    _corked = true;
+}
+
+void RCOutput_Raspilot::push(void)
+{
+    _corked = false;
 }
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
