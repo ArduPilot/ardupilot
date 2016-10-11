@@ -798,6 +798,11 @@ void Plane::set_servos(void)
  */
 void Plane::servos_output(void)
 {
+    hal.rcout->cork();
+    
+    // remap servo output to SERVO* ranges if enabled
+    g2.servo_channels.remap_servo_output();
+
     if (g.rudder_only == 0) {
         // when in RUDDER_ONLY mode we don't send the channel_roll
         // output and instead rely on KFF_RDDRMIX. That allows the yaw
@@ -808,5 +813,8 @@ void Plane::servos_output(void)
     channel_pitch->output();
     channel_throttle->output();
     channel_rudder->output();
+
     RC_Channel_aux::output_ch_all();
+    
+    hal.rcout->push();
 }

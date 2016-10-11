@@ -1378,6 +1378,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: ICE_
     // @Path: ../libraries/AP_ICEngine/AP_ICEngine.cpp
     AP_SUBGROUPINFO(ice_control, "ICE_", 2, ParametersG2, AP_ICEngine),
+
+    // @Group: SERVO_
+    // @Path: ../libraries/RC_Channel/SRV_Channel.cpp
+    AP_SUBGROUPINFO(servo_channels, "SERVO", 3, ParametersG2, SRV_Channels),
     
     AP_GROUPEND
 };
