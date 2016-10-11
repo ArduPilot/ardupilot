@@ -482,9 +482,10 @@ void RC_Channel::output() const
     hal.rcout->write(_ch_out, _radio_out);
 }
 
-void RC_Channel::output_trim() const
+void RC_Channel::output_trim()
 {
-    hal.rcout->write(_ch_out, _radio_trim);
+    _radio_out = _radio_trim;
+    output();
 }
 
 void RC_Channel::output_trim_all()

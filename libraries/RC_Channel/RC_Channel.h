@@ -106,7 +106,7 @@ public:
     int16_t     pwm_to_range_dz(uint16_t dead_zone);
     int16_t     range_to_pwm();
     void        output() const;
-    void        output_trim() const;
+    void        output_trim();
     static void output_trim_all();
     static void setup_failsafe_trim_mask(uint16_t chmask);
     static void setup_failsafe_trim_all();
