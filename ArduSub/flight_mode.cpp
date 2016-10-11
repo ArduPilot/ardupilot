@@ -67,9 +67,11 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
             success = drift_init(ignore_checks);
             break;
 
+#if TRANSECT_ENABLED == ENABLED
         case TRANSECT:
             success = transect_init(ignore_checks);
             break;
+#endif
 
         case FLIP:
             success = flip_init(ignore_checks);
@@ -184,9 +186,11 @@ void Sub::update_flight_mode()
             drift_run();
             break;
 
+#if TRANSECT_ENABLED == ENABLED
         case TRANSECT:
             transect_run();
             break;
+#endif
 
         case FLIP:
             flip_run();
