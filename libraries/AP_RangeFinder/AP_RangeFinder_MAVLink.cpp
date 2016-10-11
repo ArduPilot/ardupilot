@@ -69,7 +69,7 @@ void AP_RangeFinder_MAVLink::update(void)
         set_status(RangeFinder::RangeFinder_NoData);
         state.distance_cm = 0;
     } else {
-        set_status(RangeFinder::RangeFinder_Good);
         state.distance_cm = distance_cm;
+        update_status();
     }
 }
