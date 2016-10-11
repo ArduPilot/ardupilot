@@ -402,6 +402,9 @@ void NavEKF2_core::readGpsData()
             // Prevent time delay exceeding age of oldest IMU data in the buffer
             gpsDataNew.time_ms = MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms);
 
+            // Get the GPS position offset in body frame
+            gpsDataNew.body_offset = _ahrs->get_gps().get_antenna_offset();
+
             // read the NED velocity from the GPS
             gpsDataNew.vel = _ahrs->get_gps().velocity();
 
@@ -480,6 +483,7 @@ void NavEKF2_core::readGpsData()
             }
 
             // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
+            // correct for position offset of antenna in body frame
             if (validOrigin) {
                 gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
                 gpsDataNew.hgt = 0.01f * (gpsloc.alt - EKF_origin.alt);
