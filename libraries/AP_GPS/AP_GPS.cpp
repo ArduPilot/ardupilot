@@ -140,6 +140,20 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("AUTO_CONFIG", 13, AP_GPS, _auto_config, 1),
 
+    // @Param: RATE_MS
+    // @DisplayName: GPS update rate in milliseconds
+    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
+    // @Values: 100:10Hz,125:8Hz,200:5Hz
+    // @User: Advanced
+    AP_GROUPINFO("RATE_MS", 14, AP_GPS, _rate_ms[0], 200),
+
+    // @Param: RATE_MS2
+    // @DisplayName: GPS 2 update rate in milliseconds
+    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
+    // @Values: 100:10Hz,125:8Hz,200:5Hz
+    // @User: Advanced
+    AP_GROUPINFO("RATE_MS2", 15, AP_GPS, _rate_ms[1], 200),
+
     AP_GROUPEND
 };
 
@@ -161,7 +175,6 @@ const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
 const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
-const char AP_GPS::_initialisation_raw_blob[] = UBLOX_SET_BINARY_RAW_BAUD MTK_SET_BINARY SIRF_SET_BINARY;
 
 /*
   send some more initialisation string bytes if there is room in the
@@ -268,11 +281,7 @@ AP_GPS::detect_instance(uint8_t instance)
         _port[instance]->begin(baudrate);
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
-#if UBLOX_RXM_RAW_LOGGING
-        if(_raw_data != 0)
-            send_blob_start(instance, _initialisation_raw_blob, sizeof(_initialisation_raw_blob));
-        else
-#endif
+
         if(_auto_config == 1){
             send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
         }
@@ -484,8 +493,13 @@ AP_GPS::update(void)
   pass along a mavlink message (for MAV type)
  */
 void
-AP_GPS::handle_msg(mavlink_message_t *msg)
+AP_GPS::handle_msg(const mavlink_message_t *msg)
 {
+    if (msg->msgid == MAVLINK_MSG_ID_GPS_RTCM_DATA) {
+        // pass data to de-fragmenter
+        handle_gps_rtcm_data(msg);
+        return;
+    }
     uint8_t i;
     for (i=0; i<num_instances; i++) {
         if ((drivers[i] != NULL) && (_type[i] != GPS_TYPE_NONE)) {
@@ -699,4 +713,89 @@ AP_GPS::_broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_inde
                  type);
     }
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, buffer);
+}
+
+
+/* 
+   re-assemble GPS_RTCM_DATA message
+ */
+void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
+{
+    mavlink_gps_rtcm_data_t packet;
+    mavlink_msg_gps_rtcm_data_decode(msg, &packet);
+
+    if (packet.len > MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN) {
+        // invalid packet
+        return;
+    }
+    
+    if ((packet.flags & 1) == 0) {
+        // it is not fragmented, pass direct
+        inject_data_all(packet.data, packet.len);
+        return;
+    }
+
+    // see if we need to allocate re-assembly buffer
+    if (rtcm_buffer == nullptr) {
+        rtcm_buffer = (struct rtcm_buffer *)calloc(1, sizeof(*rtcm_buffer));
+        if (rtcm_buffer == nullptr) {
+            // nothing to do but discard the data
+            return;
+        }
+    }
+
+    uint8_t fragment = (packet.flags >> 1U) & 0x03;
+    uint8_t sequence = (packet.flags >> 3U) & 0x1F;
+
+    // see if this fragment is consistent with existing fragments
+    if (rtcm_buffer->fragments_received &&
+        (rtcm_buffer->sequence != sequence ||
+         rtcm_buffer->fragments_received & (1U<<fragment))) {
+        // we have one or more partial fragments already received
+        // which conflict with the new fragment, discard previous fragments
+        memset(rtcm_buffer, 0, sizeof(*rtcm_buffer));
+    }
+
+    // add this fragment
+    rtcm_buffer->sequence = sequence;
+    rtcm_buffer->fragments_received |= (1U << fragment);
+
+    // copy the data
+    memcpy(&rtcm_buffer->buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*(uint16_t)fragment], packet.data, packet.len);
+
+    // when we get a fragment of less than max size then we know the
+    // number of fragments. Note that this means if you want to send a
+    // block of RTCM data of an exact multiple of the buffer size you
+    // need to send a final packet of zero length
+    if (packet.len < MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN) {
+        rtcm_buffer->fragment_count = fragment+1;
+        rtcm_buffer->total_length = (MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*fragment) + packet.len;
+    } else if (rtcm_buffer->fragments_received == 0x0F) {
+        // special case of 4 full fragments
+        rtcm_buffer->fragment_count = 4;
+        rtcm_buffer->total_length = MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4;
+    }
+
+
+    // see if we have all fragments
+    if (rtcm_buffer->fragment_count != 0 &&
+        rtcm_buffer->fragments_received == (1U << rtcm_buffer->fragment_count) - 1) {
+        // we have them all, inject
+        inject_data_all(rtcm_buffer->buffer, rtcm_buffer->total_length);
+        memset(rtcm_buffer, 0, sizeof(*rtcm_buffer));
+    }
+}
+
+/*
+  inject data into all backends
+*/
+void AP_GPS::inject_data_all(const uint8_t *data, uint16_t len)
+{
+    uint8_t i;
+    for (i=0; i<num_instances; i++) {
+        if ((drivers[i] != NULL) && (_type[i] != GPS_TYPE_NONE)) {
+            drivers[i]->inject_data(data, len);
+        }
+    }
+    
 }

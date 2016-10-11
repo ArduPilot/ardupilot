@@ -826,8 +826,8 @@ void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainSc
             _vel_target.y = vel_sqrt * _pos_error.y/_distance_to_target;
         }else{
             // velocity response grows linearly with the distance
-            _vel_target.x = _p_pos_xy.kP() * _pos_error.x;
-            _vel_target.y = _p_pos_xy.kP() * _pos_error.y;
+            _vel_target.x = kP * _pos_error.x;
+            _vel_target.y = kP * _pos_error.y;
         }
 
         if (mode == XY_MODE_POS_LIMITED_AND_VEL_FF) {
