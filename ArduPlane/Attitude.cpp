@@ -699,6 +699,7 @@ bool Plane::suppress_throttle(void)
 
     if (quadplane.is_flying()) {
         throttle_suppressed = false;
+        return false;
     }
 
     // throttle remains suppressed
