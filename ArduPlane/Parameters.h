@@ -585,6 +585,9 @@ public:
 
     // internal combustion engine control
     AP_ICEngine ice_control;
+
+    // control over servo output ranges
+    SRV_Channels servo_channels;
 };
 
 extern const AP_Param::Info var_info[];
