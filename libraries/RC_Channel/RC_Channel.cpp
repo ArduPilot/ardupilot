@@ -571,3 +571,43 @@ bool RC_Channel::in_trim_dz()
 {
     return is_bounded_int32(_radio_in, _radio_trim - _dead_zone, _radio_trim + _dead_zone);
 }
+
+
+/*
+  return the current radio_out value normalised as a float with 1.0
+  being full output and 0.0 being zero output, taking into account
+  output type and reversals
+
+  For angle outputs the returned value is from -1 to 1
+
+  For range outputs the returned value is from 0 to 1
+ */
+float RC_Channel::get_radio_out_normalised(void) const
+{
+    if (_radio_max <= _radio_min) {
+        return 0;
+    }
+    float ret;
+    if (_type_out == RC_CHANNEL_TYPE_RANGE) {
+        if (_radio_out <= _radio_min) {
+            ret = 0;
+        } else if (_radio_out >= _radio_max) {
+            ret = 1;
+        } else {
+            ret = (_radio_out - _radio_min) / float(_radio_max - _radio_min);
+        }
+        if (_reverse == -1) {
+            ret = 1 - ret;
+        }
+    } else {
+        if (_radio_out < _radio_trim) {
+            ret = -(_radio_trim - _radio_out) / float(_radio_trim - _radio_min);
+        } else {
+            ret = (_radio_out - _radio_trim) / float(_radio_max - _radio_trim);
+        }
+        if (_reverse == -1) {
+            ret = -ret;
+        }
+    }
+    return ret;
+}

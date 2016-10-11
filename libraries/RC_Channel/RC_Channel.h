@@ -149,6 +149,13 @@ public:
     int16_t    get_radio_trim() const { return _radio_trim.get();}
     void       set_radio_trim(int16_t val) { _radio_trim.set(val);}
     void       save_radio_trim() { _radio_trim.save();}
+
+    // return output type RC_CHANNEL_TYPE_*
+    uint8_t    get_type_out(void) const { return _type_out; }
+    
+    // get the current radio_out value as a floating point number
+    // normalised so that 1.0 is full output
+    float      get_radio_out_normalised() const;
     
     bool min_max_configured()
     {
