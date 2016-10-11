@@ -196,17 +196,17 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
     	return LEDDARONE_ERR_BAD_RESPONSE;
     }
 
-    // CRC16
-    if (!CRC16(data_buffer, len-2, true)) {
-        return LEDDARONE_ERR_BAD_CRC;
-    }
-
     // number of detections
     number_detections = data_buffer[10];
 
     // if the number of detection is over or zero , it is false
     if (number_detections > LEDDARONE_DETECTIONS_MAX || number_detections == 0) {
         return LEDDARONE_ERR_NUMBER_DETECTIONS;
+    }
+
+    // CRC16
+    if (!CRC16(data_buffer, len-2, true)) {
+        return LEDDARONE_ERR_BAD_CRC;
     }
 
     memset(detections, 0, sizeof(detections));
