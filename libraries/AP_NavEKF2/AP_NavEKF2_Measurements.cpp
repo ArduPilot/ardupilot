@@ -276,8 +276,10 @@ void NavEKF2_core::readIMUData()
     // use the nominated imu or primary if not available
     if (ins.use_accel(imu_index)) {
         readDeltaVelocity(imu_index, imuDataNew.delVel, imuDataNew.delVelDT);
+        accelPosOffset = ins.get_imu_pos_offset(imu_index);
     } else {
         readDeltaVelocity(ins.get_primary_accel(), imuDataNew.delVel, imuDataNew.delVelDT);
+        accelPosOffset = ins.get_imu_pos_offset(ins.get_primary_accel());
     }
 
     // Get delta angle data from primary gyro or primary if not available
