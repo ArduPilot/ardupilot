@@ -299,10 +299,6 @@ void Plane::set_servos_idle(void)
     channel_roll->calc_pwm();
     channel_pitch->calc_pwm();
     channel_rudder->calc_pwm();
-    channel_roll->output();
-    channel_pitch->output();
-    channel_throttle->output();
-    channel_rudder->output();
     channel_throttle->output_trim();
 }
 
@@ -492,7 +488,7 @@ void Plane::set_servos_controlled(void)
     
     if (!hal.util->get_soft_armed()) {
         channel_throttle->set_servo_out(0);
-        channel_throttle->calc_pwm();                
+        channel_throttle->calc_pwm();
     } else if (suppress_throttle()) {
         // throttle is suppressed in auto mode
         channel_throttle->set_servo_out(0);
@@ -500,7 +496,7 @@ void Plane::set_servos_controlled(void)
             // manual pass through of throttle while throttle is suppressed
             channel_throttle->set_radio_out(channel_throttle->get_radio_in());
         } else {
-            channel_throttle->calc_pwm();                
+            channel_throttle->calc_pwm();
         }
     } else if (g.throttle_passthru_stabilize && 
                (control_mode == STABILIZE || 
@@ -606,9 +602,18 @@ void Plane::set_servos_flaps(void)
 }
 
 
-/*****************************************
-* Set the flight control servos based on the current calculated values
-*****************************************/
+/*
+  Set the flight control servos based on the current calculated values
+
+  This function operates by first building up output values for
+  channels using set_servo() and set_radio_out(). Using
+  set_radio_out() is for when a raw PWM value of output is given which
+  does not depend on any output scaling. Using set_servo() is for when
+  scaling and mixing will be needed.
+
+  Finally servos_output() is called to push the final PWM values
+  for output channels
+*/
 void Plane::set_servos(void)
 {
     // this is to allow the failsafe module to deliberately crash 
@@ -627,6 +632,7 @@ void Plane::set_servos(void)
     if (control_mode == AUTO && auto_state.idle_mode) {
         // special handling for balloon launch
         set_servos_idle();
+        servos_output();
         return;
     }
 
@@ -746,6 +752,7 @@ void Plane::set_servos(void)
             send_servo_out(MAVLINK_COMM_0);
         }
         if (!g.hil_servos) {
+            // we don't run the output mixer
             return;
         }
     }
@@ -779,14 +786,25 @@ void Plane::set_servos(void)
     // allow for secondary throttle
     RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_throttle, channel_throttle->get_servo_out());
     
-    // send values to the PWM timers for output
-    // ----------------------------------------
+    // run output mixer and send values to the hal for output
+    servos_output();
+}
+
+
+/*
+  run configured output mixer. This takes calculated servo_out values
+  for each channel and calculates PWM values, then pushes them to
+  hal.rcout
+ */
+void Plane::servos_output(void)
+{
     if (g.rudder_only == 0) {
-        // when we RUDDER_ONLY mode we don't send the channel_roll
+        // when in RUDDER_ONLY mode we don't send the channel_roll
         // output and instead rely on KFF_RDDRMIX. That allows the yaw
         // damper to operate.
         channel_roll->output();
     }
+
     channel_pitch->output();
     channel_throttle->output();
     channel_rudder->output();
