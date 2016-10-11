@@ -314,3 +314,19 @@ void Sub::lost_vehicle_check()
         }
     }
 }
+
+// translate wpnav roll/pitch outputs to lateral/forward
+void Sub::translate_wpnav_rp(float &lateral_out, float &forward_out) {
+	   // get roll and pitch targets in centidegrees
+		int32_t lateral = wp_nav.get_roll();
+		int32_t forward = -wp_nav.get_pitch(); // output is reversed
+
+		// constrain target forward/lateral values
+		// The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
+		lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);
+		forward = constrain_int16(forward, -aparm.angle_max, aparm.angle_max);
+
+		// Normalize
+		lateral_out = (float)lateral/(float)aparm.angle_max;
+		forward_out = (float)forward/(float)aparm.angle_max;
+}
