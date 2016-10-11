@@ -155,7 +155,7 @@ public:
     
     // get the current radio_out value as a floating point number
     // normalised so that 1.0 is full output
-    float      get_radio_out_normalised() const;
+    float      get_radio_out_normalised(uint16_t pwm) const;
     
     bool min_max_configured()
     {
