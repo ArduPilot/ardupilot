@@ -8,10 +8,10 @@
 #include "version.h"
 #include "GCS_Mavlink.h"
 
-#if POSHOLD_ENABLED == ENABLED
+#if TRANSECT_ENABLED == ENABLED
 
 namespace {
-	static uint32_t last_sport_message_ms = 0;
+	static uint32_t last_transect_message_ms = 0;
 
 	float des_velx = 0; // inav earth-frame desired velocity +/- = north/south
 	float des_vely = 0; // inav earth-frame desired velocity +/- = east/west
@@ -62,7 +62,6 @@ bool Sub::transect_init(bool ignore_checks)
     return true;
 }
 
-// poshold_run - runs the PosHold controller
 // should be called at 100hz or more
 void Sub::transect_run()
 {
@@ -227,8 +226,8 @@ void Sub::transect_run()
 
 	pos_control.update_z_controller();
 
-	if(tnow > last_sport_message_ms + 200) {
-		last_sport_message_ms = tnow;
+	if(tnow > last_transect_message_ms + 200) {
+		last_transect_message_ms = tnow;
 		mavlink_msg_command_long_send(
 				(mavlink_channel_t)0, //channel
 				0, //target system
@@ -248,4 +247,4 @@ void Sub::transect_run()
 		//gcs_send_text_fmt(MAV_SEVERITY_INFO, "%f, %ld, %ld, %f, %d", vel_fw, ahrs.yaw_sensor, last_pilot_heading, des_velf, gps.crosstrack_error());
 	}
 }
-#endif  // POSHOLD_ENABLED == ENABLED
+#endif
