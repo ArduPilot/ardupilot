@@ -46,7 +46,11 @@ void RCOutput::disable_ch(uint8_t ch)
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
     if (ch < SITL_NUM_CHANNELS) {
-        _sitlState->pwm_output[ch] = period_us;
+        if (_corked) {
+            _pending[ch] = period_us;
+        } else {
+            _sitlState->pwm_output[ch] = period_us;
+        }
     }
 }
 
@@ -61,6 +65,18 @@ uint16_t RCOutput::read(uint8_t ch)
 void RCOutput::read(uint16_t* period_us, uint8_t len)
 {
     memcpy(period_us, _sitlState->pwm_output, len*sizeof(uint16_t));
+}
+
+void RCOutput::cork(void)
+{
+    memcpy(_pending, _sitlState->pwm_output, SITL_NUM_CHANNELS*sizeof(uint16_t));
+    _corked = true;
+}
+
+void RCOutput::push(void)
+{
+    memcpy(_sitlState->pwm_output, _pending, SITL_NUM_CHANNELS*sizeof(uint16_t));
+    _corked = false;
 }
 
 #endif
