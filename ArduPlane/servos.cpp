@@ -603,6 +603,57 @@ void Plane::set_servos_flaps(void)
 
 
 /*
+  apply vtail and elevon mixers
+  the rewrites radio_out for the corresponding channels
+ */
+void Plane::servo_output_mixers(void)
+{
+    if (g.vtail_output != MIXING_DISABLED) {
+        channel_output_mixer(g.vtail_output, channel_pitch, channel_rudder);
+    } else if (g.elevon_output != MIXING_DISABLED) {
+        channel_output_mixer(g.elevon_output, channel_pitch, channel_roll);
+        // if (both) differential spoilers setup then apply rudder
+        //  control into splitting the two elevons on the side of
+        //  the aircraft where we want to induce additional drag:
+        if (RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) &&
+            RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
+            int16_t ch3 = channel_roll->get_radio_out();    //diff spoiler 1
+            int16_t ch4 = channel_pitch->get_radio_out();   //diff spoiler 2
+            // convert rudder-servo output (-4500 to 4500) to PWM offset
+            //  value (-500 to 500) and multiply by DSPOILR_RUD_RATE/100
+            //  (rudder->servo_out * 500 / SERVO_MAX * dspoiler_rud_rate/100):
+            int16_t ruddVal = (int16_t)((int32_t)(channel_rudder->get_servo_out()) *
+                                        g.dspoiler_rud_rate / (SERVO_MAX/5));
+            if (ruddVal != 0) {   //if nonzero rudder then apply to spoilers
+                int16_t ch1 = ch3;          //elevon 1
+                int16_t ch2 = ch4;          //elevon 2
+                if (ruddVal > 0) {     //apply rudder to right or left side
+                    ch1 += ruddVal;
+                    ch3 -= ruddVal;
+                } else {
+                    ch2 += ruddVal;
+                    ch4 -= ruddVal;
+                }
+                // change elevon 1 & 2 positions; constrain min/max:
+                channel_roll->set_radio_out(constrain_int16(ch1, 900, 2100));
+                channel_pitch->set_radio_out(constrain_int16(ch2, 900, 2100));
+                // constrain min/max for intermediate dspoiler positions:
+                ch3 = constrain_int16(ch3, 900, 2100);
+                ch4 = constrain_int16(ch4, 900, 2100);
+            }
+            // set positions of differential spoilers (convert PWM
+            //  900-2100 range to servo output (-4500 to 4500)
+            //  and use function that supports rev/min/max/trim):
+            RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_dspoiler1,
+                                              (ch3-(int16_t)1500) * (int16_t)(SERVO_MAX/300) / (int16_t)2);
+            RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_dspoiler2,
+                                              (ch4-(int16_t)1500) * (int16_t)(SERVO_MAX/300) / (int16_t)2);
+        }
+    }
+}
+
+
+/*
   Set the flight control servos based on the current calculated values
 
   This function operates by first building up output values for
@@ -685,49 +736,6 @@ void Plane::set_servos(void)
         channel_rudder->set_radio_out(channel_rudder->get_radio_in());
     }
 
-    if (g.vtail_output != MIXING_DISABLED) {
-        channel_output_mixer(g.vtail_output, channel_pitch, channel_rudder);
-    } else if (g.elevon_output != MIXING_DISABLED) {
-        channel_output_mixer(g.elevon_output, channel_pitch, channel_roll);
-        // if (both) differential spoilers setup then apply rudder
-        //  control into splitting the two elevons on the side of
-        //  the aircraft where we want to induce additional drag:
-        if (RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) &&
-            RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
-            int16_t ch3 = channel_roll->get_radio_out();    //diff spoiler 1
-            int16_t ch4 = channel_pitch->get_radio_out();   //diff spoiler 2
-            // convert rudder-servo output (-4500 to 4500) to PWM offset
-            //  value (-500 to 500) and multiply by DSPOILR_RUD_RATE/100
-            //  (rudder->servo_out * 500 / SERVO_MAX * dspoiler_rud_rate/100):
-            int16_t ruddVal = (int16_t)((int32_t)(channel_rudder->get_servo_out()) *
-                                        g.dspoiler_rud_rate / (SERVO_MAX/5));
-            if (ruddVal != 0) {   //if nonzero rudder then apply to spoilers
-                int16_t ch1 = ch3;          //elevon 1
-                int16_t ch2 = ch4;          //elevon 2
-                if (ruddVal > 0) {     //apply rudder to right or left side
-                    ch1 += ruddVal;
-                    ch3 -= ruddVal;
-                } else {
-                    ch2 += ruddVal;
-                    ch4 -= ruddVal;
-                }
-                // change elevon 1 & 2 positions; constrain min/max:
-                channel_roll->set_radio_out(constrain_int16(ch1, 900, 2100));
-                channel_pitch->set_radio_out(constrain_int16(ch2, 900, 2100));
-                // constrain min/max for intermediate dspoiler positions:
-                ch3 = constrain_int16(ch3, 900, 2100);
-                ch4 = constrain_int16(ch4, 900, 2100);
-            }
-            // set positions of differential spoilers (convert PWM
-            //  900-2100 range to servo output (-4500 to 4500)
-            //  and use function that supports rev/min/max/trim):
-            RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_dspoiler1,
-                                              (ch3-(int16_t)1500) * (int16_t)(SERVO_MAX/300) / (int16_t)2);
-            RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_dspoiler2,
-                                              (ch4-(int16_t)1500) * (int16_t)(SERVO_MAX/300) / (int16_t)2);
-        }
-    }
-
     if (!arming.is_armed()) {
         //Some ESCs get noisy (beep error msgs) if PWM == 0.
         //This little segment aims to avoid this.
@@ -804,17 +812,18 @@ void Plane::set_servos(void)
 void Plane::servos_output(void)
 {
     hal.rcout->cork();
-    
+
+    if (g.rudder_only != 0) {
+        channel_roll->set_radio_out(channel_roll->get_radio_trim());
+    }
+
     // remap servo output to SERVO* ranges if enabled
     g2.servo_channels.remap_servo_output();
 
-    if (g.rudder_only == 0) {
-        // when in RUDDER_ONLY mode we don't send the channel_roll
-        // output and instead rely on KFF_RDDRMIX. That allows the yaw
-        // damper to operate.
-        channel_roll->output();
-    }
+    // run vtail and elevon mixers
+    servo_output_mixers();
 
+    channel_roll->output();
     channel_pitch->output();
     channel_throttle->output();
     channel_rudder->output();
