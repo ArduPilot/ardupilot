@@ -43,6 +43,9 @@ public:
 private:
     AP_Int8 enable;
 
+    int8_t esc_cal_chan;
+    bool last_enable;
+
     // PWM values for min/max and trim
     AP_Int16 servo_min[NUM_SERVO_RANGE_CHANNELS];
     AP_Int16 servo_max[NUM_SERVO_RANGE_CHANNELS];
