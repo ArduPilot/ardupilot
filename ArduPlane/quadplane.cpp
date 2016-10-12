@@ -415,15 +415,16 @@ bool QuadPlane::setup(void)
         goto failed;
     }
 #endif // AP_MOTORS_CLASS
+    const static char *strUnableToAllocate = "Unable to allocate";
     if (!motors) {
-        hal.console->printf("Unable to allocate motors\n");
+        hal.console->printf("%s motors\n", strUnableToAllocate);
         goto failed;
     }
     
     AP_Param::load_object_from_eeprom(motors, motors->var_info);
     attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
-        hal.console->printf("Unable to allocate attitude_control\n");
+        hal.console->printf("%s attitude_control\n", strUnableToAllocate);
         goto failed;
     }
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
@@ -431,13 +432,13 @@ bool QuadPlane::setup(void)
                                     p_alt_hold, p_vel_z, pid_accel_z,
                                     p_pos_xy, pi_vel_xy);
     if (!pos_control) {
-        hal.console->printf("Unable to allocate pos_control\n");
+        hal.console->printf("%s pos_control\n", strUnableToAllocate);
         goto failed;
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
     wp_nav = new AC_WPNav(inertial_nav, ahrs, *pos_control, *attitude_control);
     if (!pos_control) {
-        hal.console->printf("Unable to allocate wp_nav\n");
+        hal.console->printf("%s wp_nav\n", strUnableToAllocate);
         goto failed;
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
@@ -759,6 +760,10 @@ void QuadPlane::control_loiter()
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         if (height_above_ground < land_final_alt && poscontrol.state < QPOS_LAND_FINAL) {
             poscontrol.state = QPOS_LAND_FINAL;
+            // cut IC engine if enabled
+            if (land_icengine_cut != 0) {
+                plane.g2.ice_control.engine_control(0, 0, 0);
+            }
         }
         float descent_rate = (poscontrol.state == QPOS_LAND_FINAL)? land_speed_cms:landing_descent_rate_cms(height_above_ground);
         pos_control->set_alt_target_from_climb_rate(-descent_rate, plane.G_Dt, true);
@@ -953,6 +958,7 @@ void QuadPlane::update_transition(void)
             motors->output();
         }
         transition_state = TRANSITION_DONE;
+        assisted_flight = false;
         return;
     }
 
@@ -988,6 +994,12 @@ void QuadPlane::update_transition(void)
         }
     } else if (transition_state < TRANSITION_DONE) {
         plane.TECS_controller.set_pitch_max_limit((transition_pitch_max+1)*2);
+    }
+    if (transition_state < TRANSITION_DONE) {
+        // during transition we ask TECS to use a synthetic
+        // airspeed. Otherwise the pitch limits will throw off the
+        // throttle calculation which is driven by pitch
+        plane.TECS_controller.use_synthetic_airspeed();
     }
     
     switch (transition_state) {
@@ -2024,4 +2036,27 @@ void QuadPlane::guided_update(void)
 {
     // run VTOL position controller
     vtol_position_controller();
+}
+
+void QuadPlane::afs_terminate(void)
+{
+    if (available()) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        motors->output();
+    }
+}
+
+/*
+  return true if we should do guided mode loitering using VTOL motors
+ */
+bool QuadPlane::guided_mode_enabled(void)
+{
+    if (!available()) {
+        return false;
+    }
+    // only use quadplane guided when in AUTO or GUIDED mode
+    if (plane.control_mode != GUIDED && plane.control_mode != AUTO) {
+        return false;
+    }
+    return guided_mode != 0;
 }

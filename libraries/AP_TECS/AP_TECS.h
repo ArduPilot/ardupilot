@@ -103,6 +103,11 @@ public:
     void set_pitch_max_limit(int8_t pitch_limit) {
         _pitch_max_limit = pitch_limit;
     }
+
+    // force use of synthetic airspeed for one loop
+    void use_synthetic_airspeed(void) {
+        _use_synthetic_airspeed = true;
+    }
     
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -305,6 +310,9 @@ private:
         float SKE_error;
         float SEB_delta;
     } logging;
+
+    // use synthetic airspeed for next loop
+    bool _use_synthetic_airspeed;
     
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(float load_factor);

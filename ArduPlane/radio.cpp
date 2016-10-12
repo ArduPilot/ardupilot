@@ -119,8 +119,10 @@ void Plane::rudder_arm_disarm_check()
         return;
     }
 
-    // if not in a manual throttle mode then disallow rudder arming/disarming
-    if (auto_throttle_mode ) {
+    // if not in a manual throttle mode and not in CRUISE or FBWB
+    // modes then disallow rudder arming/disarming
+    if (auto_throttle_mode &&
+        (control_mode != CRUISE && control_mode != FLY_BY_WIRE_B)) {
         rudder_arm_timer = 0;
         return;      
     }

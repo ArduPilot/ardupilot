@@ -199,14 +199,12 @@ float AC_Avoid::get_stopping_distance(const float kP, const float accel_cmss, co
         return 0.0f;
     }
 
-    // calculate point at which velocity switches from linear to sqrt
-    float linear_speed = accel_cmss/kP;
-
     // calculate distance within which we can stop
-    if (speed < linear_speed) {
+    // accel_cmss/kP is the point at which velocity switches from linear to sqrt
+    if (speed < accel_cmss/kP) {
         return speed/kP;
     } else {
-        float linear_distance = accel_cmss/(2.0f*kP*kP);
-        return linear_distance + (speed*speed)/(2.0f*accel_cmss);
+        // accel_cmss/(2.0f*kP*kP) is the distance at which we switch from linear to sqrt response
+        return accel_cmss/(2.0f*kP*kP) + (speed*speed)/(2.0f*accel_cmss);
     }
 }

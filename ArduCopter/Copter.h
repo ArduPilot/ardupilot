@@ -223,6 +223,7 @@ private:
 
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms = 0;
+    uint8_t ekf_primary_core;
 
     // GCS selection
     AP_SerialManager serial_manager;
@@ -680,7 +681,7 @@ private:
     float get_smoothing_gain();
     void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
-    void check_ekf_yaw_reset();
+    void check_ekf_reset();
     float get_roi_yaw();
     float get_look_ahead_yaw();
     void update_throttle_hover();
@@ -775,7 +776,7 @@ private:
     bool verify_yaw();
     void do_take_picture();
     void log_picture();
-    uint8_t mavlink_compassmot(mavlink_channel_t chan);
+    MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
     void delay(uint32_t ms);
     bool acro_init(bool ignore_checks);
     void acro_run();

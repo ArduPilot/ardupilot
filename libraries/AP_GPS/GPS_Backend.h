@@ -42,7 +42,7 @@ public:
 
     virtual bool is_configured(void) { return true; }
 
-    virtual void inject_data(uint8_t *data, uint8_t len) { return; }
+    virtual void inject_data(const uint8_t *data, uint16_t len) { return; }
 
     //MAVLink methods
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan) { return ; }
@@ -51,7 +51,7 @@ public:
 
     virtual void broadcast_configuration_failure_reason(void) const { return ; }
 
-    virtual void handle_msg(mavlink_message_t *msg) { return ; }
+    virtual void handle_msg(const mavlink_message_t *msg) { return ; }
 
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to

@@ -3,7 +3,7 @@ set -e
 
 OPT="/opt"
 BASE_PKGS="gawk make git arduino-core curl"
-PYTHON_PKGS="pymavlink MAVProxy droneapi catkin_pkg"
+PYTHON_PKGS="pymavlink MAVProxy droneapi catkin_pkg lxml future"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
           zip genromfs python-empy libc6-i386"

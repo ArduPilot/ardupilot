@@ -442,6 +442,14 @@ public:
         return false;
     }
     
+    // get_variances - provides the innovations normalised using the innovation variance where a value of 0
+    // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
+    // inconsistency that will be accpeted by the filter
+    // boolean false is returned if variances are not available
+    virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const {
+        return false;
+    }
+    
     // time that the AHRS has been up
     virtual uint32_t uptime_ms(void) const = 0;
 

@@ -131,8 +131,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: GPS_TYPE
     // @DisplayName: GPS mode control
-    // @Description: This controls use of GPS measurements : 0 = use 3D velocity & 2D position, 1 = use 2D velocity and 2D position, 2 = use 2D position, 3 = use no GPS (optical flow will be used if available)
-    // @Values: 0:GPS 3D Vel and 2D Pos, 1:GPS 2D vel and 2D pos, 2:GPS 2D pos, 3:No GPS use optical flow
+    // @Description: This controls use of GPS measurements : 0 = use 3D velocity & 2D position, 1 = use 2D velocity and 2D position, 2 = use 2D position, 3 = Inhibit GPS use - this can be useful when flying with an optical flow sensor in an environment where GPS quality is poor and subject to large multipath errors.
+    // @Values: 0:GPS 3D Vel and 2D Pos, 1:GPS 2D vel and 2D pos, 2:GPS 2D pos, 3:No GPS
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE", 1, NavEKF2, _fusionModeGPS, 0),
 
@@ -657,10 +657,16 @@ void NavEKF2::UpdateFilter(void)
     // If the current core selected has a bad fault score or is unhealthy, switch to a healthy core with the lowest fault score
     if (core[primary].faultScore() > 0.0f || !core[primary].healthy()) {
         float score = 1e9f;
+        bool has_switched = false; // true if a switch has occurred this frame
         for (uint8_t i=0; i<num_cores; i++) {
             if (core[i].healthy()) {
                 float tempScore = core[i].faultScore();
                 if (tempScore < score) {
+                    // update the yaw and position reset data to capture changes due to the lane switch
+                    updateLaneSwitchYawResetData(has_switched, i, primary);
+                    updateLaneSwitchPosResetData(has_switched, i, primary);
+
+                    has_switched = true;
                     primary = i;
                     score = tempScore;
                 }
@@ -1160,6 +1166,7 @@ uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
         return 0;
     }
 
+<<<<<<< HEAD
     // check for an internal ekf yaw reset
     float temp_yaw_delta;
     uint32_t ekf_reset_ms = core[primary].getLastYawResetAngle(temp_yaw_delta);
@@ -1205,16 +1212,60 @@ uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
 
     // return the time of the last event
     return yaw_step_data.yaw_reset_time_ms;
+=======
+    // Record last time controller got the yaw reset
+    yaw_reset_data.last_function_call = imuSampleTime_us / 1000;
+    yawAngDelta = 0;
+    uint32_t lastYawReset_ms = 0;
+    float temp_yawAng;
+    uint32_t lastCoreYawReset_ms = core[primary].getLastYawResetAngle(temp_yawAng);
+
+    // If core has changed (and data not consumed yet) or if the core change was the last yaw reset, return its data
+    if (yaw_reset_data.core_changed || lastCoreYawReset_ms <= yaw_reset_data.last_primary_change) {
+        yawAngDelta = yaw_reset_data.core_delta;
+        lastYawReset_ms = yaw_reset_data.last_primary_change;
+        yaw_reset_data.core_changed = false;
+    }
+
+    // If current core yaw reset event was the last one, add it to the delta
+    if (lastCoreYawReset_ms > lastYawReset_ms) {
+        yawAngDelta = wrap_PI(yawAngDelta + temp_yawAng);
+        lastYawReset_ms = lastCoreYawReset_ms;
+    }
+
+    return lastYawReset_ms;
+>>>>>>> ArduPilot/master
 }
 
 // return the amount of NE position change due to the last position reset in metres
 // returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF2::getLastPosNorthEastReset(Vector2f &pos) const
+uint32_t NavEKF2::getLastPosNorthEastReset(Vector2f &posDelta)
 {
     if (!core) {
         return 0;
     }
-    return core[primary].getLastPosNorthEastReset(pos);
+
+    // Record last time controller got the position reset
+    pos_reset_data.last_function_call = imuSampleTime_us / 1000;
+    posDelta.zero();
+    uint32_t lastPosReset_ms = 0;
+    Vector2f tempPosDelta;
+    uint32_t lastCorePosReset_ms = core[primary].getLastPosNorthEastReset(tempPosDelta);
+
+    // If core has changed (and data not consumed yet) or if the core change was the last position reset, return its data
+    if (pos_reset_data.core_changed || lastCorePosReset_ms <= pos_reset_data.last_primary_change) {
+        posDelta = pos_reset_data.core_delta;
+        lastPosReset_ms = pos_reset_data.last_primary_change;
+        pos_reset_data.core_changed = false;
+    }
+
+    // If current core position reset event was the last one, add it to the delta
+    if (lastCorePosReset_ms > lastPosReset_ms) {
+        posDelta = posDelta + tempPosDelta;
+        lastPosReset_ms = lastCorePosReset_ms;
+    }
+
+    return lastPosReset_ms;
 }
 
 // return the amount of NE velocity change due to the last velocity reset in metres/sec
@@ -1234,6 +1285,58 @@ const char *NavEKF2::prearm_failure_reason(void) const
         return nullptr;
     }
     return core[primary].prearm_failure_reason();
+}
+
+// update the yaw reset data to capture changes due to a lane switch
+void NavEKF2::updateLaneSwitchYawResetData(bool has_switched, uint8_t new_primary, uint8_t old_primary)
+{
+    Vector3f eulers_old_primary, eulers_new_primary;
+    float old_yaw_delta;
+
+    // If core yaw reset data has been consumed reset delta to zero
+    if (!yaw_reset_data.core_changed) {
+        yaw_reset_data.core_delta = 0;
+    }
+
+    // If current primary has reset yaw after controller got it, add it to the delta
+    // Prevent adding the delta if we have already changed primary in this filter update
+    if (!has_switched && core[old_primary].getLastYawResetAngle(old_yaw_delta) > yaw_reset_data.last_function_call) {
+        yaw_reset_data.core_delta += old_yaw_delta;
+    }
+
+    // Record the yaw delta between current core and new primary core and the timestamp of the core change
+    // Add current delta in case it hasn't been consumed yet
+    core[old_primary].getEulerAngles(eulers_old_primary);
+    core[new_primary].getEulerAngles(eulers_new_primary);
+    yaw_reset_data.core_delta = wrap_PI(eulers_new_primary.z - eulers_old_primary.z + yaw_reset_data.core_delta);
+    yaw_reset_data.last_primary_change = imuSampleTime_us / 1000;
+    yaw_reset_data.core_changed = true;
+
+}
+
+// update the position reset data to capture changes due to a lane switch
+void NavEKF2::updateLaneSwitchPosResetData(bool has_switched, uint8_t new_primary, uint8_t old_primary)
+{
+    Vector2f pos_old_primary, pos_new_primary, old_pos_delta;
+
+    // If core position reset data has been consumed reset delta to zero
+    if (!pos_reset_data.core_changed) {
+        pos_reset_data.core_delta.zero();
+    }
+
+    // If current primary has reset position after controller got it, add it to the delta
+    // Prevent adding the delta if we have already changed primary in this filter update
+    if (!has_switched && core[old_primary].getLastPosNorthEastReset(old_pos_delta) > pos_reset_data.last_function_call) {
+        pos_reset_data.core_delta += old_pos_delta;
+    }
+
+    // Record the position delta between current core and new primary core and the timestamp of the core change
+    // Add current delta in case it hasn't been consumed yet
+    core[old_primary].getLastPosNorthEastReset(pos_old_primary);
+    core[new_primary].getLastPosNorthEastReset(pos_new_primary);
+    pos_reset_data.core_delta = pos_new_primary - pos_old_primary + pos_reset_data.core_delta;
+    pos_reset_data.last_primary_change = imuSampleTime_us / 1000;
+    pos_reset_data.core_changed = true;
 }
 
 #endif //HAL_CPU_CLASS

@@ -188,15 +188,34 @@ void Copter::read_receiver_rssi(void)
 
 void Copter::compass_cal_update()
 {
+    static uint32_t compass_cal_stick_gesture_begin = 0;
+
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
     }
+
 #ifdef CAL_ALWAYS_REBOOT
     if (compass.compass_cal_requires_reboot()) {
         hal.scheduler->delay(1000);
         hal.scheduler->reboot(false);
+        return;
     }
 #endif
+
+    if (compass.is_calibrating()) {
+        if (channel_yaw->get_control_in() < -4000 && channel_throttle->get_control_in() > 900) {
+            compass.cancel_calibration_all();
+        }
+    } else {
+        bool stick_gesture_detected = compass_cal_stick_gesture_begin != 0 && !motors.armed() && channel_yaw->get_control_in() > 4000 && channel_throttle->get_control_in() > 900;
+        uint32_t tnow = millis();
+
+        if (!stick_gesture_detected) {
+            compass_cal_stick_gesture_begin = tnow;
+        } else if (tnow-compass_cal_stick_gesture_begin > 1000*COMPASS_CAL_STICK_GESTURE_TIME) {
+            compass.start_calibration_all(true,true,COMPASS_CAL_STICK_DELAY,false);
+        }
+    }
 }
 
 void Copter::accel_cal_update()

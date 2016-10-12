@@ -812,7 +812,7 @@ Format characters in the format string for binary log messages
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
       "EKF4","QcccccccbbHBHH","TimeUS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,OFE,FS,TS,SS,GPS" }, \
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
-      "EKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr" }, \
+      "EKF5","QBhhhcccCC","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr" }, \
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
       "NKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
     { LOG_NKF2_MSG, sizeof(log_NKF2), \

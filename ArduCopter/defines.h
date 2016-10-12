@@ -69,6 +69,7 @@ enum aux_sw_func {
     AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
     AUXSW_THROW =               37,  // change to THROW flight mode
     AUXSW_AVOID_ADSB =          38,  // enable AP_Avoidance library
+    AUXSW_SWITCH_MAX,
 };
 
 // Frame types
@@ -406,6 +407,7 @@ enum DevOptions {
 #define ERROR_SUBSYSTEM_TERRAIN             21
 #define ERROR_SUBSYSTEM_NAVIGATION          22
 #define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
+#define ERROR_SUBSYSTEM_EKF_PRIMARY         24
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1

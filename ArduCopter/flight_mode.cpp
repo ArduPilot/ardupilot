@@ -26,7 +26,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return true;
     }
 
-    switch(mode) {
+    switch (mode) {
         case ACRO:
             #if FRAME_CONFIG == HELI_FRAME
                 success = heli_acro_init(ignore_checks);
@@ -141,7 +141,11 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         frsky_telemetry.update_control_mode(control_mode);
 #endif
         
+<<<<<<< HEAD
     }else{
+=======
+    } else {
+>>>>>>> ArduPilot/master
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
     }
@@ -301,8 +305,9 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
 }
 
 // returns true or false whether mode requires GPS
-bool Copter::mode_requires_GPS(control_mode_t mode) {
-    switch(mode) {
+bool Copter::mode_requires_GPS(control_mode_t mode)
+{
+    switch (mode) {
         case AUTO:
         case GUIDED:
         case LOITER:
@@ -317,26 +322,24 @@ bool Copter::mode_requires_GPS(control_mode_t mode) {
         default:
             return false;
     }
-
-    return false;
 }
 
 // mode_has_manual_throttle - returns true if the flight mode has a manual throttle (i.e. pilot directly controls throttle)
-bool Copter::mode_has_manual_throttle(control_mode_t mode) {
-    switch(mode) {
+bool Copter::mode_has_manual_throttle(control_mode_t mode)
+{
+    switch (mode) {
         case ACRO:
         case STABILIZE:
             return true;
         default:
             return false;
     }
-
-    return false;
 }
 
 // mode_allows_arming - returns true if vehicle can be armed in the specified mode
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
-bool Copter::mode_allows_arming(control_mode_t mode, bool arming_from_gcs) {
+bool Copter::mode_allows_arming(control_mode_t mode, bool arming_from_gcs)
+{
     if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == DRIFT || mode == SPORT || mode == THROW || (arming_from_gcs && (mode == GUIDED || mode == GUIDED_NOGPS))) {
         return true;
     }
@@ -344,8 +347,9 @@ bool Copter::mode_allows_arming(control_mode_t mode, bool arming_from_gcs) {
 }
 
 // notify_flight_mode - sets notify object based on flight mode.  Only used for OreoLED notify device
-void Copter::notify_flight_mode(control_mode_t mode) {
-    switch(mode) {
+void Copter::notify_flight_mode(control_mode_t mode)
+{
+    switch (mode) {
         case AUTO:
         case GUIDED:
         case RTL:

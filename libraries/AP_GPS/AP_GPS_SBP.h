@@ -35,7 +35,7 @@ public:
     // Methods
     bool read();
 
-    void inject_data(uint8_t *data, uint8_t len);
+    void inject_data(const uint8_t *data, uint16_t len) override;
 
     static bool _detect(struct SBP_detect_state &state, uint8_t data);
 
