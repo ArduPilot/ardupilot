@@ -42,7 +42,7 @@ void SITL::Calibration::update(const struct sitl_input& input)
     } else if (switcher_pwm < 1300) {
         _calibration_poses(rot_accel);
     } else {
-        _attitude_control(input, rot_accel);
+        _angular_velocity_control(input, rot_accel);
     }
 
     accel_body(0, 0, 0);
