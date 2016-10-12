@@ -224,7 +224,6 @@ void SRV_Channels::remap_servo_output(void)
         }
         uint16_t radio_out = remap_pwm(i, ch->get_radio_out());
         ch->set_radio_out(radio_out);
-        ch->output();
     }
 }
 
