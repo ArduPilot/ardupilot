@@ -28,6 +28,8 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
     ch_yaw->set_radio_out(ch_yaw->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
     ch_throttle->set_radio_out(ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
 
+    RC_Channel_aux::disable_passthrough(true);
+    
     plane.servos_output();
 
     // and all aux channels
