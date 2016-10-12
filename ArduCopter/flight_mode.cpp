@@ -141,11 +141,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         frsky_telemetry.update_control_mode(control_mode);
 #endif
         
-<<<<<<< HEAD
-    }else{
-=======
     } else {
->>>>>>> ArduPilot/master
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
     }

@@ -34,14 +34,8 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, con
 
 /*
  * init - perform required initialisation
-<<<<<<< HEAD
- * for Copter
- */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value)
-=======
  */
 void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_valuep)
->>>>>>> ArduPilot/master
 {
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
@@ -50,25 +44,16 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort; // FrSky SPort protocol (X-receivers)
     } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough; // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
-<<<<<<< HEAD
-        // add firmware and frame info to message queue
-        queue_message(MAV_SEVERITY_INFO, firmware_str);
-=======
 
->>>>>>> ArduPilot/master
         // save main parameters locally
         _params.mav_type = mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
         _params.fs_batt_voltage = fs_batt_voltage; // failsafe battery voltage in volts
         _params.fs_batt_mah = fs_batt_mah; // failsafe reserve capacity in mAh
-<<<<<<< HEAD
-        _ap.value = ap_value; // ap bit-field
-=======
         if (ap_valuep == nullptr) { // ap bit-field
             _ap.valuep = &_ap.value;
         } else {
             _ap.valuep = ap_valuep;
         }
->>>>>>> ArduPilot/master
     }
     
     if (_port != NULL) {
@@ -76,61 +61,11 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
         // we don't want flow control for either protocol
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 
-<<<<<<< HEAD
-/*
- * init - perform required initialisation
- * for Plane
- */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah)
-{
-    // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
-    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
-        _protocol = AP_SerialManager::SerialProtocol_FrSky_D; // FrSky D protocol (D-receivers)
-    } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort, 0))) {
-        _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort; // FrSky SPort protocol (X-receivers)
-    } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
-        _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough; // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
         // add firmware and frame info to message queue
         queue_message(MAV_SEVERITY_INFO, firmware_str);
-        // save main parameters locally
-        _params.mav_type = mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
-        _params.fs_batt_voltage = fs_batt_voltage; // failsafe battery voltage in volts
-        _params.fs_batt_mah = fs_batt_mah; // failsafe reserve capacity in mAh
-        *_ap.value = 0; // ap bit-field
-    }
-
-    if (_port != NULL) {
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::tick, void));
-        // we don't want flow control for either protocol
-        _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-=======
-        // add firmware and frame info to message queue
-        queue_message(MAV_SEVERITY_INFO, firmware_str);
->>>>>>> ArduPilot/master
     }
 }
 
-
-/*
-<<<<<<< HEAD
- * init - perform required initialisation
- * for Rover
- */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager)
-{
-    // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
-    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
-        _protocol = AP_SerialManager::SerialProtocol_FrSky_D; // FrSky D protocol (D-receivers)
-    } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort, 0))) {
-        _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort; // FrSky SPort protocol (X-receivers)
-    }
-
-    if (_port != NULL) {
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::tick, void));
-        // we don't want flow control for either protocol
-        _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    }
-}
 
 /*
  * send telemetry data
@@ -158,45 +93,11 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
         _passthrough.new_byte = _port->read();
     }
 
-=======
- * send telemetry data
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-void AP_Frsky_Telem::send_SPort_Passthrough(void)
-{
-    int16_t numc;
-    numc = _port->available();
-
-    // check if available is negative
-    if (numc < 0) {
-        return;
-    }
-
-    // this is the constant for hub data frame
-    if (_port->txspace() < 19) {
-        return;
-    }
-
-    // keep only the last two bytes of the data found in the serial buffer, as we shouldn't respond to old poll requests
-    uint8_t prev_byte = 0;
-    for (int16_t i = 0; i < numc; i++) {
-        prev_byte = _passthrough.new_byte;
-        _passthrough.new_byte = _port->read();
-    }
-
->>>>>>> ArduPilot/master
     if ((prev_byte == START_STOP_SPORT) && (_passthrough.new_byte == SENSOR_ID_28)) { // byte 0x7E is the header of each poll request
         if (_passthrough.send_attiandrng) { // skip other data, send attitude (roll, pitch) and range only this iteration
             _passthrough.send_attiandrng = false; // next iteration, check if we should send something other
         } else { // check if there's other data to send
             _passthrough.send_attiandrng = true; // next iteration, send attitude b/c it needs frequent updates to remain smooth
-<<<<<<< HEAD
-            // build mavlink message queue for sensor_status_flags
-            check_sensor_status_flags();
-            // if there's any message in the queue, start sending them chunk by chunk; three times each chunk
-            if (_msg.sent_idx != _msg.queued_idx) {
-                send_uint32(DIY_FIRST_ID, get_next_msg_chunk());
-=======
             // build message queue for sensor_status_flags
             check_sensor_status_flags();
             // build message queue for ekf_status
@@ -204,7 +105,6 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
             // if there's any message in the queue, start sending them chunk by chunk; three times each chunk
             if (get_next_msg_chunk()) {
                 send_uint32(DIY_FIRST_ID, _msg_chunk.chunk);
->>>>>>> ArduPilot/master
                 return;
             }
             // send other sensor data if it's time for them, and reset the corresponding timer if sent
@@ -366,7 +266,6 @@ void AP_Frsky_Telem::send_SPort(void)
                     break;
             }
             _SPort.sport_status = false;
-<<<<<<< HEAD
         }
     }
 }
@@ -408,57 +307,11 @@ void AP_Frsky_Telem::send_D(void)
             send_uint16(DATA_ID_GPS_SPEED_AP, _gps.speed_in_centimeter); // send gps speed decimal part
             send_uint16(DATA_ID_GPS_ALT_BP, _gps.alt_gps_meters); // send gps altitude integer part
             send_uint16(DATA_ID_GPS_ALT_AP, _gps.alt_gps_cm); // send gps altitude decimal part
-=======
->>>>>>> ArduPilot/master
         }
     }
 }
 
 /*
-<<<<<<< HEAD
-=======
- * send frame1 and frame2 telemetry data
- * one frame (frame1) is sent every 200ms with baro alt, nb sats, batt volts and amp, control_mode
- * a second frame (frame2) is sent every second (1000ms) with gps position data, and ahrs.yaw_sensor heading (instead of GPS heading)
- * for FrSky D protocol (D-receivers)
- */
-void AP_Frsky_Telem::send_D(void)
-{
-    uint32_t now = AP_HAL::millis();
-    // send frame1 every 200ms
-    if (now - _D.last_200ms_frame > 200) {
-        _D.last_200ms_frame = now;
-        send_uint16(DATA_ID_TEMP2, (uint16_t)(_ahrs.get_gps().num_sats() * 10 + _ahrs.get_gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
-        send_uint16(DATA_ID_TEMP1, _ap.control_mode); // send flight mode
-        send_uint16(DATA_ID_FUEL, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining
-        send_uint16(DATA_ID_VFAS, (uint16_t)roundf(_battery.voltage() * 10.0f)); // send battery voltage
-        send_uint16(DATA_ID_CURRENT, (uint16_t)roundf(_battery.current_amps() * 10.0f)); // send current consumption
-        calc_nav_alt();
-        send_uint16(DATA_ID_BARO_ALT_BP, _gps.alt_nav_meters); // send nav altitude integer part
-        send_uint16(DATA_ID_BARO_ALT_AP, _gps.alt_nav_cm); // send nav altitude decimal part
-    }
-    // send frame2 every second
-    if (now - _D.last_1000ms_frame > 1000) {
-        _D.last_1000ms_frame = now;
-        send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)((_ahrs.yaw_sensor / 100) % 360)); // send heading in degree based on AHRS and not GPS
-        calc_gps_position();
-        if (_ahrs.get_gps().status() >= 3) {
-            send_uint16(DATA_ID_GPS_LAT_BP, _gps.latdddmm); // send gps lattitude degree and minute integer part
-            send_uint16(DATA_ID_GPS_LAT_AP, _gps.latmmmm); // send gps lattitude minutes decimal part
-            send_uint16(DATA_ID_GPS_LAT_NS, _gps.lat_ns); // send gps North / South information
-            send_uint16(DATA_ID_GPS_LONG_BP, _gps.londddmm); // send gps longitude degree and minute integer part
-            send_uint16(DATA_ID_GPS_LONG_AP, _gps.lonmmmm); // send gps longitude minutes decimal part
-            send_uint16(DATA_ID_GPS_LONG_EW, _gps.lon_ew); // send gps East / West information
-            send_uint16(DATA_ID_GPS_SPEED_BP, _gps.speed_in_meter); // send gps speed integer part
-            send_uint16(DATA_ID_GPS_SPEED_AP, _gps.speed_in_centimeter); // send gps speed decimal part
-            send_uint16(DATA_ID_GPS_ALT_BP, _gps.alt_gps_meters); // send gps altitude integer part
-            send_uint16(DATA_ID_GPS_ALT_AP, _gps.alt_gps_cm); // send gps altitude decimal part
-        }
-    }
-}
-
-/*
->>>>>>> ArduPilot/master
  * tick - main call to send data to the receiver (called by scheduler at 1kHz)
  */
 void AP_Frsky_Telem::tick(void)
@@ -553,37 +406,6 @@ void  AP_Frsky_Telem::send_uint32(uint16_t id, uint32_t data)
 
 /*
  * send one uint16 frame of FrSky data - for FrSky D protocol (D-receivers)
-<<<<<<< HEAD
- */
-void  AP_Frsky_Telem::send_uint16(uint16_t id, uint16_t data)
-{
-    _port->write(START_STOP_D);    // send a 0x5E start byte
-    uint8_t *bytes = (uint8_t*)&id;
-    send_byte(bytes[0]);
-    bytes = (uint8_t*)&data;
-    send_byte(bytes[0]); // LSB
-    send_byte(bytes[1]); // MSB
-}
-
-/*
- * grabs one "chunk" (4 bytes) of the mavlink statustext message to be transmitted
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint32_t AP_Frsky_Telem::get_next_msg_chunk(void)
-{
-    if (_msg_chunk.repeats == 0) {
-        _msg_chunk.chunk = 0;
-        uint8_t character = _msg.data[_msg.sent_idx].text[_msg_chunk.char_index++];
-        if (character) {
-            _msg_chunk.chunk |= character<<24;
-            character = _msg.data[_msg.sent_idx].text[_msg_chunk.char_index++];
-            if (character) {
-                _msg_chunk.chunk |= character<<16;
-                character = _msg.data[_msg.sent_idx].text[_msg_chunk.char_index++];
-                if (character) {
-                    _msg_chunk.chunk |= character<<8;
-                    character = _msg.data[_msg.sent_idx].text[_msg_chunk.char_index++];
-=======
  */
 void  AP_Frsky_Telem::send_uint16(uint16_t id, uint16_t data)
 {
@@ -617,7 +439,6 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
                 if (character) {
                     _msg_chunk.chunk |= character<<8;
                     character = _statustext_queue[0]->text[_msg_chunk.char_index++];
->>>>>>> ArduPilot/master
                     if (character) {
                         _msg_chunk.chunk |= character;
                     }
@@ -627,32 +448,19 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
         if (!character) { // we've reached the end of the message (string terminated by '\0')
             _msg_chunk.char_index = 0;
             // add severity which is sent as the MSB of the last three bytes of the last chunk (bits 24, 16, and 8) since a character is on 7 bits
-<<<<<<< HEAD
-            _msg_chunk.chunk |= (_msg.data[_msg.sent_idx].severity & 0x4)<<21;
-            _msg_chunk.chunk |= (_msg.data[_msg.sent_idx].severity & 0x2)<<14;
-            _msg_chunk.chunk |= (_msg.data[_msg.sent_idx].severity & 0x1)<<7;
-=======
             _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x4)<<21;
             _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x2)<<14;
             _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x1)<<7;
->>>>>>> ArduPilot/master
         }
     }
     _msg_chunk.repeats++;
     if (_msg_chunk.repeats > 2) { // repeat each message chunk 3 times to ensure transmission
         _msg_chunk.repeats = 0;
         if (_msg_chunk.char_index == 0) { // if we're ready for the next message
-<<<<<<< HEAD
-            _msg.sent_idx = (_msg.sent_idx + 1) % MSG_BUFFER_LENGTH; // flag the current message as sent
-        }
-    }
-    return _msg_chunk.chunk;
-=======
             _statustext_queue.remove(0);
         }
     }
     return true;
->>>>>>> ArduPilot/master
 }
 
 /*
@@ -661,15 +469,6 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
  */
 void AP_Frsky_Telem::queue_message(MAV_SEVERITY severity, const char *text)
 {
-<<<<<<< HEAD
-    _msg.data[_msg.queued_idx].severity = severity;
-    _msg.data[_msg.queued_idx].text = text;
-    _msg.queued_idx = (_msg.queued_idx + 1) % MSG_BUFFER_LENGTH;
-}
-
-/*
- * add control_sensors information to message cue, normally passed as sys_status mavlink messages to the GCS, for transmission through FrSky link
-=======
     mavlink_statustext_t statustext{};
 
     statustext.severity = severity;
@@ -683,7 +482,6 @@ void AP_Frsky_Telem::queue_message(MAV_SEVERITY severity, const char *text)
 
 /*
  * add sensor_status_flags information to message cue, normally passed as sys_status mavlink messages to the GCS, for transmission through FrSky link
->>>>>>> ArduPilot/master
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
 void AP_Frsky_Telem::check_sensor_status_flags(void)
@@ -733,311 +531,6 @@ void AP_Frsky_Telem::check_sensor_status_flags(void)
 }
 
 /*
-<<<<<<< HEAD
- * prepare parameter data
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint32_t AP_Frsky_Telem::calc_param(void)
-{
-    uint32_t param = 0;
-
-    // cycle through paramIDs
-    if (_paramID >= 4) {
-        _paramID = 0;
-    }
-    _paramID++;
-    switch(_paramID) {
-    case 1:
-        param = _params.mav_type;                                    // frame type (see MAV_TYPE in Mavlink definition file common.h)
-        break;
-    case 2:
-        param = (uint32_t)roundf(*_params.fs_batt_voltage * 100.0f); // battery failsafe voltage in centivolts
-        break;
-    case 3:
-        param = (uint32_t)roundf(*_params.fs_batt_mah);              // battery failsafe capacity in mAh
-        break;
-    case 4:
-        param = (uint32_t)roundf(_battery.pack_capacity_mah());      // battery pack capacity in mAh as configured by user
-        break;
-    }
-    //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
-    param = (_paramID << 24) | (param & 0xFFFFFF);
-    
-    return param;
-}
-
-/*
- * prepare gps latitude/longitude data
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint32_t AP_Frsky_Telem::calc_gps_latlng(bool *send_latitude)
-{
-    uint32_t latlng;
-    const Location &loc = _ahrs.get_gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
-
-    // alternate between latitude and longitude
-    if (*send_latitude == true) {
-        if (loc.lat < 0) {
-            latlng = ((abs(loc.lat)/100)*6) | 0x40000000;
-        } else {
-            latlng = ((abs(loc.lat)/100)*6);
-        }
-        *send_latitude = false;
-    } else {
-        if (loc.lng < 0) {
-            latlng = ((abs(loc.lng)/100)*6) | 0xC0000000;
-        } else {
-            latlng = ((abs(loc.lng)/100)*6) | 0x80000000;
-        }
-        *send_latitude = true;
-    }
-    return latlng;
-}
-
-/*
- * prepare gps status data
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint32_t AP_Frsky_Telem::calc_gps_status(void)
-{
-    uint32_t gps_status;
-
-    // number of GPS satellites visible (limit to 15 (0xF) since the value is stored on 4 bits)
-    gps_status = (_ahrs.get_gps().num_sats() < GPS_SATS_LIMIT) ? _ahrs.get_gps().num_sats() : GPS_SATS_LIMIT;
-    // GPS receiver status (limit to 3 (0x3) since the value is stored on 2 bits: NO_GPS = 0, NO_FIX = 1, GPS_OK_FIX_2D = 2, GPS_OK_FIX_3D or GPS_OK_FIX_3D_DGPS or GPS_OK_FIX_3D_RTK = 3)
-    gps_status |= ((_ahrs.get_gps().status() < GPS_STATUS_LIMIT) ? _ahrs.get_gps().status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
-    // GPS horizontal dilution of precision in dm
-    gps_status |= prep_number(roundf(_ahrs.get_gps().get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET; 
-    // GPS vertical dilution of precision in dm
-    gps_status |= prep_number(roundf(_ahrs.get_gps().get_vdop() * 0.1f),2,1)<<GPS_VDOP_OFFSET; 
-    // Altitude MSL in dm
-    const Location &loc = _ahrs.get_gps().location();
-    gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET; 
-    return gps_status;
-}
-
-/*
- * prepare battery data
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint32_t AP_Frsky_Telem::calc_batt(void)
-{
-    uint32_t batt;
-    
-    // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
-    batt = (((uint16_t)roundf(_battery.voltage() * 10.0f)) & BATT_VOLTAGE_LIMIT);
-    // battery current draw in deciamps
-    batt |= prep_number(roundf(_battery.current_amps() * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET; 
-    // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
-    batt |= ((_battery.current_total_mah() < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.current_total_mah()) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
-    return batt;
-}
-
-/*
- * prepare various autopilot status data
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint32_t AP_Frsky_Telem::calc_ap_status(void)
-{
-    uint32_t ap_status;
-
-    // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
-    ap_status = (uint8_t)((_ap.control_mode+1) & AP_CONTROL_MODE_LIMIT);
-    // simple/super simple modes flags
-    ap_status |= (uint8_t)(*_ap.value & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
-    // is_flying flag
-    ap_status |= (uint8_t)((*_ap.value & AP_ISFLYING_FLAG) ^ AP_ISFLYING_FLAG);
-    // armed flag
-    ap_status |= (uint8_t)(AP_Notify::flags.armed)<<AP_ARMED_OFFSET;
-    // battery failsafe flag
-    ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery)<<AP_BATT_FS_OFFSET;
-    // bad ekf flag
-    ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
-    return ap_status;
-}
-
-/*
- * prepare home position related data
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint32_t AP_Frsky_Telem::calc_home(void)
-{
-    uint32_t home = 0;
-    Location loc;
-    if (_ahrs.get_position(loc)) {            
-        // check home_loc is valid
-        const Location &home_loc = _ahrs.get_home();
-        if (home_loc.lat != 0 || home_loc.lng != 0) {
-            // distance between vehicle and home_loc in meters
-            home = prep_number(roundf(get_distance(home_loc, loc)), 3, 2);
-            // angle from front of vehicle to the direction of home_loc in 3 degree increments (just in case, limit to 127 (0x7F) since the value is stored on 7 bits)
-            home |= (((uint8_t)roundf(get_bearing_cd(loc,home_loc) * 0.00333f)) & HOME_BEARING_LIMIT)<<HOME_BEARING_OFFSET;
-        }
-        // altitude between vehicle and home_loc
-        _relative_home_altitude = loc.alt;
-        if (!loc.flags.relative_alt) {
-            // loc.alt has home altitude added, remove it
-            _relative_home_altitude -= _ahrs.get_home().alt;
-        }
-    } else {
-        _relative_home_altitude = 0;
-    }
-    home |= prep_number(roundf(_relative_home_altitude * 0.1f), 3, 2)<<HOME_ALT_OFFSET;
-    return home;
-}
-
-/*
- * prepare velocity and yaw data
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint32_t AP_Frsky_Telem::calc_velandyaw(void)
-{
-    uint32_t velandyaw;
-    Vector3f velNED {};
-
-    // if we can't get velocity then we use zero for vertical velocity
-    _ahrs.get_velocity_NED(velNED);
-
-    // vertical velocity in dm/s
-    velandyaw = prep_number(roundf(velNED.z * 10), 2, 1);
-    // horizontal velocity in dm/s (use airspeed if available, otherwise use groundspeed)
-    float airspeed;
-    if (_ahrs.airspeed_estimate_true(&airspeed)) {
-        velandyaw |= prep_number(roundf(airspeed * 0.1f), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
-    } else {
-        velandyaw |= prep_number(roundf(_ahrs.groundspeed_vector().length() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
-    }
-    // yaw from [0;36000] centidegrees to .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
-    velandyaw |= ((uint16_t)roundf(_ahrs.yaw_sensor * 0.05f) & VELANDYAW_YAW_LIMIT)<<VELANDYAW_YAW_OFFSET;
-    return velandyaw;
-}
-
-/*
- * prepare attitude (roll, pitch) and range data
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint32_t AP_Frsky_Telem::calc_attiandrng(void)
-{
-    uint32_t attiandrng;
-
-    // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
-    attiandrng = ((uint16_t)roundf((_ahrs.roll_sensor + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
-    // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
-    attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
-    // rangefinder measurement in cm
-    attiandrng |= prep_number(_rng.distance_cm(), 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
-    return attiandrng;
-}
-
-/*
- * prepare value for transmission through FrSky link
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint16_t AP_Frsky_Telem::prep_number(int32_t number, uint8_t digits, uint8_t power)
-{
-    uint16_t res = 0;
-    uint32_t abs_number = abs(number);
-
-    if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
-        if (abs_number < 100) {
-            res = abs_number<<1;
-        } else if (abs_number < 1270) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x7F x 10^1 = 1270)
-            res = 0xFF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<8;
-        }
-    } else if ((digits == 2) && (power == 2)) { // number encoded on 9 bits: 7 bits for digits + 2 for 10^power
-        if (abs_number < 100) {
-            res = abs_number<<2;
-        } else if (abs_number < 1000) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<2)|0x1;
-        } else if (abs_number < 10000) {
-            res = ((uint8_t)roundf(abs_number * 0.01f)<<2)|0x2;
-        } else if (abs_number < 127000) {
-            res = ((uint8_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x7F x 10^3 = 127000)
-            res = 0x1FF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<9;
-        }
-    } else if ((digits == 3) && (power == 1)) { // number encoded on 11 bits: 10 bits for digits + 1 for 10^power
-        if (abs_number < 1000) {
-            res = abs_number<<1;
-        } else if (abs_number < 10240) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x3FF x 10^1 = 10240)
-            res = 0x7FF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<11;
-        }
-    } else if ((digits == 3) && (power == 2)) { // number encoded on 12 bits: 10 bits for digits + 2 for 10^power
-        if (abs_number < 1000) {
-            res = abs_number<<2;
-        } else if (abs_number < 10000) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<2)|0x1;
-        } else if (abs_number < 100000) {
-            res = ((uint16_t)roundf(abs_number * 0.01f)<<2)|0x2;
-        } else if (abs_number < 1024000) {
-            res = ((uint16_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x3FF x 10^3 = 127000)
-            res = 0xFFF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<12;
-        }
-    }
-    return res;
-}
-
-/*
- * prepare altitude between vehicle and home location data
- * for FrSky D and SPort protocols
- */
-void AP_Frsky_Telem::calc_nav_alt(void)
-{
-    Location loc;
-    float current_height; // in centimeters above home
-    if (_ahrs.get_position(loc)) {
-        current_height = loc.alt*0.01f;
-        if (!loc.flags.relative_alt) {
-            // loc.alt has home altitude added, remove it
-            current_height -= _ahrs.get_home().alt*0.01f;
-        }
-    } else {
-        current_height = 0;
-    }
-    
-    _gps.alt_nav_meters = (int16_t)current_height;
-    _gps.alt_nav_cm = (current_height - _gps.alt_nav_meters) * 100;
-} 
-
-/*
- * format the decimal latitude/longitude to the required degrees/minutes
- * for FrSky D and SPort protocols
- */
-float AP_Frsky_Telem::format_gps(float dec)
-{
-    uint8_t dm_deg = (uint8_t) dec;
-    return (dm_deg * 100.0f) + (dec - dm_deg) * 60;
-}
-
-/*
- * prepare gps data
- * for FrSky D and SPort protocols
- */
-void AP_Frsky_Telem::calc_gps_position(void)
-{
-    float lat;
-    float lon;
-    float alt;
-    float speed;
-
-=======
  * add innovation variance information to message cue, normally passed as ekf_status_report mavlink messages to the GCS, for transmission through FrSky link
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
@@ -1383,7 +876,6 @@ void AP_Frsky_Telem::calc_gps_position(void)
     float alt;
     float speed;
 
->>>>>>> ArduPilot/master
     if (_ahrs.get_gps().status() >= 3) {
         const Location &loc = _ahrs.get_gps().location(); //get gps instance 0
         lat = format_gps(fabsf(loc.lat/10000000.0f));

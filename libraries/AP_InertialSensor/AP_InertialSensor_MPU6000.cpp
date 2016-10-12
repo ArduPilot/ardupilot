@@ -20,22 +20,9 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_DRDY_PIN RPI_GPIO_24
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #define MPU6000_DRDY_PIN MINNOW_GPIO_I2S_CLK
-<<<<<<< HEAD
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-#define MPU6000_EXT_SYNC_ENABLE 1
-#endif
-=======
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #define MPU6000_EXT_SYNC_ENABLE 1
->>>>>>> ArduPilot/master
 #endif
-
-/*
-  EXT_SYNC allows for frame synchronisation with an external device
-  such as a camera. When enabled the LSB of AccelZ holds the FSYNC bit
- */
-#ifndef MPU6000_EXT_SYNC_ENABLE
-#define MPU6000_EXT_SYNC_ENABLE 0
 #endif
 
 /*

@@ -279,11 +279,7 @@ AP_GPS_NOVA::process_message(void)
 }
 
 void
-<<<<<<< HEAD
-AP_GPS_NOVA::inject_data(uint8_t *data, uint8_t len)
-=======
 AP_GPS_NOVA::inject_data(const uint8_t *data, uint16_t len)
->>>>>>> ArduPilot/master
 {
     if (port->txspace() > len) {
         last_injected_data_ms = AP_HAL::millis();

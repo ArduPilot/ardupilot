@@ -380,18 +380,6 @@ private:
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;
-<<<<<<< HEAD
-
-    // used to keep track of yaw angle steps due to change of primary instance or internal ekf yaw resets
-    struct {
-        uint8_t prev_instance;          // active core number from the previous time step
-        uint32_t last_ekf_reset_ms;     // last time the active ekf performed a yaw reset (msec)
-        uint32_t last_lane_switch_ms;   // last time there was a lane switch (msec)
-        uint32_t yaw_reset_time_ms;     // last time a yaw reset event was published
-        float yaw_delta;                // the amount of yaw change due to the last published yaw step (rad)
-        float prev_yaw;                 // yaw angle published by the active core from the previous time step (rad)
-    } yaw_step_data;
-=======
     
     struct {
         uint32_t last_function_call;  // last time getLastYawYawResetAngle was called
@@ -418,5 +406,4 @@ private:
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosResetData(bool has_switched, uint8_t new_primary, uint8_t old_primary);
->>>>>>> ArduPilot/master
 };

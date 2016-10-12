@@ -249,11 +249,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
             break;
 
 		} else if (c == 0x03 || c == 'q') {
-<<<<<<< HEAD
-			cliSerial->printf("ESC calibration exited\n");
-=======
 			cliSerial->printf("%s exited\n", strEscCalib);
->>>>>>> ArduPilot/master
 			return(0);
 		}
         
@@ -281,11 +277,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 			break;
 
 		} else if (c == 0x03 || c == 'q') {
-<<<<<<< HEAD
-			cliSerial->printf("ESC calibration exited\n");
-=======
 			cliSerial->printf("%s exited\n", strEscCalib);
->>>>>>> ArduPilot/master
 			return(0);
 		}
 		

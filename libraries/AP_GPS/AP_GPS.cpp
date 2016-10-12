@@ -271,21 +271,6 @@ AP_GPS::detect_instance(uint8_t instance)
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
         // try the next baud rate
-<<<<<<< HEAD
-		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
-			dstate->last_baud = 0;
-		}
-		uint32_t baudrate = _baudrates[dstate->last_baud];
-		dstate->last_baud++;
-		_port[instance]->begin(baudrate);
-		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-		dstate->last_baud_change_ms = now;
-#if UBLOX_RXM_RAW_LOGGING
-    if(_raw_data != 0)
-        send_blob_start(instance, _initialisation_raw_blob, sizeof(_initialisation_raw_blob));
-    else
-#endif
-=======
         // incrementing like this will skip the first element in array of bauds
         // this is okay, and relied upon
         dstate->current_baud++;
@@ -297,7 +282,6 @@ AP_GPS::detect_instance(uint8_t instance)
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
->>>>>>> ArduPilot/master
         if(_auto_config == 1){
             send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
         }

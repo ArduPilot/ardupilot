@@ -54,11 +54,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
     }
 
     // send a request message for Modbus function 4
-<<<<<<< HEAD
-    if (send_request() < 0) {
-=======
     if (send_request() != LEDDARONE_OK) {
->>>>>>> ArduPilot/master
         // TODO: handle LEDDARONE_ERR_SERIAL_PORT
         return false;
     }
@@ -71,29 +67,16 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
         }
     }
 
-<<<<<<< HEAD
-    // parse a response message, set detections and sum_distance
-    // must be signed to handle errors
-    int8_t number_detections = parse_response();
-
-    if (number_detections <= 0) {
-        // TODO: when (number_detections < 0) handle LEDDARONE_ERR_
-=======
     // parse a response message, set number_detections, detections and sum_distance
     // must be signed to handle errors
     uint8_t number_detections;
     if (parse_response(number_detections) != LEDDARONE_OK) {
         // TODO: when (not LEDDARONE_OK) handle LEDDARONE_ERR_
->>>>>>> ArduPilot/master
         return false;
     }
 
     // calculate average distance
-<<<<<<< HEAD
-    reading_cm = sum_distance / (uint8_t)number_detections;
-=======
     reading_cm = sum_distance / number_detections;
->>>>>>> ArduPilot/master
 
     return true;
 }
@@ -146,11 +129,7 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
 /*
    send a request message to execute ModBus function 0x04
  */
-<<<<<<< HEAD
-int8_t AP_RangeFinder_LeddarOne::send_request(void)
-=======
 LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
->>>>>>> ArduPilot/master
 {
     uint8_t data_buffer[10] = {0};
     uint8_t i = 0;
@@ -182,21 +161,13 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
     }
     uart->flush();
 
-<<<<<<< HEAD
-    return 0;
-=======
     return LEDDARONE_OK;
->>>>>>> ArduPilot/master
 }
 
  /*
     parse a response message from Modbus
   */
-<<<<<<< HEAD
-int8_t AP_RangeFinder_LeddarOne::parse_response(void)
-=======
 LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detections)
->>>>>>> ArduPilot/master
 {
     uint8_t data_buffer[25] = {0};
     uint32_t start_ms = AP_HAL::millis();
@@ -231,17 +202,10 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
     }
 
     // number of detections
-<<<<<<< HEAD
-    uint8_t number_detections = data_buffer[10];
-
-    // if the number of detection is over , it is false
-    if (number_detections > LEDDARONE_DETECTIONS_MAX) {
-=======
     number_detections = data_buffer[10];
 
     // if the number of detection is over or zero , it is false
     if (number_detections > LEDDARONE_DETECTIONS_MAX || number_detections == 0) {
->>>>>>> ArduPilot/master
         return LEDDARONE_ERR_NUMBER_DETECTIONS;
     }
 
@@ -249,18 +213,10 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
     sum_distance = 0;
     for (i=0; i<number_detections; i++) {
         // construct data word from two bytes and convert mm to cm
-<<<<<<< HEAD
-        detections[i] =  (((uint16_t)data_buffer[index_offset])*256 + data_buffer[index_offset+1]) / 10;
-=======
         detections[i] =  (static_cast<uint16_t>(data_buffer[index_offset])*256 + data_buffer[index_offset+1]) / 10;
->>>>>>> ArduPilot/master
         sum_distance += detections[i];
         index_offset += 4;
     }
 
-<<<<<<< HEAD
-    return (int8_t)number_detections;
-=======
     return LEDDARONE_OK;
->>>>>>> ArduPilot/master
 }

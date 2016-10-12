@@ -209,11 +209,7 @@ void Rover::send_extended_status1(mavlink_channel_t chan)
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry
-<<<<<<< HEAD
-    uint32_t sensors_error_flags = (control_sensors_health ^ control_sensors_enabled) & control_sensors_present;
-=======
     uint32_t sensors_error_flags = (~control_sensors_health) & control_sensors_enabled & control_sensors_present;
->>>>>>> ArduPilot/master
     frsky_telemetry.update_sensor_status_flags(sensors_error_flags);
 #endif    
 }
@@ -826,8 +822,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-<<<<<<< HEAD
-=======
     case MAVLINK_MSG_ID_STATUSTEXT:
     {
         // ignore any statustext messages not from our GCS:
@@ -842,7 +836,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         break;
     }
 
->>>>>>> ArduPilot/master
     case MAVLINK_MSG_ID_COMMAND_INT: {
         // decode packet
         mavlink_command_int_t packet;
@@ -1403,10 +1396,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-<<<<<<< HEAD
-=======
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
->>>>>>> ArduPilot/master
     case MAVLINK_MSG_ID_GPS_INPUT:
         {
             rover.gps.handle_msg(msg);
