@@ -68,7 +68,12 @@ void RCOutput_PRU::disable_ch(uint8_t ch)
 
 void RCOutput_PRU::write(uint8_t ch, uint16_t period_us)
 {
-    sharedMem_cmd->periodhi[chan_pru_map[ch]][1] = TICK_PER_US*period_us;
+    if (corked) {
+        pending[ch] = period_us;
+        pending_mask |= (1U << ch);
+    } else {
+        sharedMem_cmd->periodhi[chan_pru_map[ch]][1] = TICK_PER_US*period_us;
+    }
 }
 
 uint16_t RCOutput_PRU::read(uint8_t ch)
@@ -85,4 +90,20 @@ void RCOutput_PRU::read(uint16_t* period_us, uint8_t len)
     for(i=0;i<len;i++){
         period_us[i] = sharedMem_cmd->hilo_read[chan_pru_map[i]][1]/TICK_PER_US;
     }
+}
+
+void RCOutput_PRU::cork(void)
+{
+    corked = true;
+}
+
+void RCOutput_PRU::push(void)
+{
+    corked = false;
+    for (uint8_t i=0; i<ARRAY_SIZE(pending); i++) {
+        if (pending_mask & (1U << i)) {
+            write(i, pending[i]);
+        }
+    }
+    pending_mask = 0;
 }
