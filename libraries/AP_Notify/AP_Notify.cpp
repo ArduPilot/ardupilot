@@ -56,6 +56,13 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LED_OVERRIDE", 2, AP_Notify, _rgb_led_override, 0),
     
+    // @Param: Display Enable
+    // @DisplayName: Setup for notify display
+    // @Description: This sets up the board display
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("DISPLAY_ENABLE", 2, AP_Notify, _display_enable, 1),
+
     AP_GROUPEND
 };
 
@@ -92,11 +99,11 @@ char AP_Notify::_send_text[51] {};
 
 #elif  CONFIG_HAL_BOARD == HAL_BOARD_F4BY
     AP_BoardLED boardled;
-    ToshibaLED_PX4 toshibaled;
+//    ToshibaLED_PX4 toshibaled;
     ToneAlarm_PX4 tonealarm;
     Display_SSD1306_I2C display;
-	NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &display};
-
+//	NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &display};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &tonealarm};
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ToneAlarm_PX4 tonealarm;
@@ -207,3 +214,4 @@ void AP_Notify::set_control_mode(uint8_t mode){
 uint8_t AP_Notify::get_control_mode(){
 		return _control_mode;
 }
+

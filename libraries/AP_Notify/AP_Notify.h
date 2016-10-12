@@ -113,11 +113,15 @@ public:
     static uint8_t get_control_mode();
     static void set_control_mode(uint8_t mode);
 
+
     bool buzzer_enabled() const { return _buzzer_enable; }
+
     static void send_text( const char *str){
 
     	sprintf(_send_text, "%s", str) ;}
     static char* get_text(){ return _send_text ;}
+
+    AP_Int8 _display_enable;
 private:
     static NotifyDevice* _devices[];
     static float _voltage;
@@ -126,4 +130,5 @@ private:
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
+
 };

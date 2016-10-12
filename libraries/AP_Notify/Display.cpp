@@ -334,7 +334,12 @@ static const char * _modename[] = {
 
 bool Display::init(void)
 {
-    memset(&_flags, 0, sizeof(_flags));
+    if (!pNotify->_display_enable) {
+        return false;
+    }
+
+
+	memset(&_flags, 0, sizeof(_flags));
 
     _healthy = hw_init();
 
