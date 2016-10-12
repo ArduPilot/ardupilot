@@ -216,6 +216,13 @@ uint16_t SRV_Channels::remap_pwm(uint8_t i, uint16_t pwm) const
  */
 void SRV_Channels::remap_servo_output(void)
 {
+    // cope with SERVO_RNG_ENABLE being changed at runtime. If we
+    // don't change the ESC scaling immediately then some ESCs will
+    // fire up for one second
+    if (last_enable != enable && esc_cal_chan != -1) {
+        last_enable = enable;
+        set_esc_scaling(esc_cal_chan);
+    }
     if (!enable) {
         return;
     }
@@ -254,6 +261,7 @@ void SRV_Channels::set_trim(void)
 
 void SRV_Channels::set_esc_scaling(uint8_t chnum)
 {
+    esc_cal_chan = chnum;
     if (!enable || chnum >= NUM_SERVO_RANGE_CHANNELS) {
         const RC_Channel *ch = RC_Channel::rc_channel(chnum);
         hal.rcout->set_esc_scaling(ch->get_radio_min(), ch->get_radio_max());
