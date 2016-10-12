@@ -26,6 +26,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+// return the input parameter as a string (e.g. numbers or function names)
+#define XSTRING(s) STRINGIFY(s)
+#define STRINGIFY(s) #s
+
 // used to pack structures
 #define PACKED __attribute__((__packed__))
 
