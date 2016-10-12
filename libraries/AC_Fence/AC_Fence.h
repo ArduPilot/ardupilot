@@ -27,6 +27,7 @@
 #define AC_FENCE_ALT_MAX_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further up
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
 #define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
+#define AC_FENCE_NUM_PTS_CIRCLE_DEFAULT             8       // default number of points of the polygon fence inscribed in the circular fence
 
 // give up distance
 #define AC_FENCE_GIVE_UP_DISTANCE                   100.0f  // distance outside the fence at which we should give up and just land.  Note: this is not used by library directly but is intended to be used by the main code
@@ -83,6 +84,10 @@ public:
     /// get_radius - returns the fence radius in meters
     float get_radius() const { return _circle_radius.get(); }
 
+    /// get_num_pts_circle - returns number of points of the polygon fence
+    ///    inscribed in the circular fence
+    float get_num_pts_circle() const { return _num_pts_circle.get(); }
+
     /// get_margin - returns the fence margin in meters
     float get_margin() const { return _margin.get(); }
 
@@ -136,6 +141,7 @@ private:
     AP_Float        _circle_radius;         // circle fence radius in meters
     AP_Float        _margin;                // distance in meters that autopilot's should maintain from the fence to avoid a breach
     AP_Int8         _total;                 // number of polygon points saved in eeprom
+    AP_Int8         _num_pts_circle;        // number of polygon points on the circular fence
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
