@@ -77,6 +77,11 @@ bhat: TOOLCHAIN = RPI
 bhat: BUILDSYS_DEPRECATED  = 1
 bhat: all
 
+dark: HAL_BOARD = HAL_BOARD_LINUX
+dark: TOOLCHAIN = RPI
+dark: BUILDSYS_DEPRECATED  = 1
+dark: all
+
 pxfmini: HAL_BOARD = HAL_BOARD_LINUX
 pxfmini: TOOLCHAIN = RPI
 pxfmini: BUILDSYS_DEPRECATED  = 1
@@ -113,11 +118,12 @@ qurt: all
 
 # cope with copter and hil targets
 FRAMES = quad tri hexa y6 octa octa-quad heli single coax obc nologging
-BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 px4-v4 sitl flymaple linux erle pxf navio navio2 raspilot bbbmini minlure erlebrain2 bhat qflight pxfmini
+BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 px4-v4 sitl flymaple linux erle pxf navio navio2 raspilot bbbmini minlure erlebrain2 bhat dark qflight pxfmini
 BOARDS += vrbrain
 BOARDS += vrbrain-v51 vrbrain-v52 vrbrain-v54
 BOARDS += vrcore-v10
 BOARDS += vrubrain-v51 vrubrain-v52
+
 
 define frame_template
 $(1)-$(2) : EXTRAFLAGS += "-DFRAME_CONFIG=$(shell echo $(2) | tr a-z A-Z | sed s/-/_/g)_FRAME "
