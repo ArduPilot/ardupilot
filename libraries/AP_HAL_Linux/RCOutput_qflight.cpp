@@ -76,7 +76,9 @@ void RCOutput_QFLIGHT::write(uint8_t ch, uint16_t period_us)
         return;
     }
     period[ch] = period_us;
-    need_write = true;
+    if (!corked) {
+        need_write = true;
+    }
 }
 
 uint16_t RCOutput_QFLIGHT::read(uint8_t ch)
@@ -170,6 +172,17 @@ void RCOutput_QFLIGHT::check_rc_in(void)
         }
         nrcin_bytes = 0;
     }
+}
+
+void RCOutput_QFLIGHT::cork(void)
+{
+    corked = true;
+}
+
+void RCOutput_QFLIGHT::push(void)
+{
+    corked = false;
+    need_write = true;
 }
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE
