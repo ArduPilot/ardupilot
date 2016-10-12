@@ -10,7 +10,7 @@ BASE_PKGS="wget curl base-devel git-core tk gsfonts"
 SITL_PKGS="python2-pip python-pip wxpython2.8 opencv python2-numpy python2-scipy ccache"
 PX4_PKGS="lib32-glibc zip zlib ncurses"
 
-PYTHON2_PKGS="pymavlink MAVProxy droneapi argparse matplotlib pyparsing catkin_pkg"
+PYTHON2_PKGS="pymavlink MAVProxy droneapi argparse matplotlib pyparsing catkin_pkg lxml future"
 PYTHON3_PKGS="pyserial empy"
 ARCH_AUR_PKGS="genromfs"
 
