@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Description: This sets up the board display
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
-    AP_GROUPINFO("DISPLAY_ENABLE", 2, AP_Notify, _display_enable, 1),
+    AP_GROUPINFO("DISPLAY_ENABLE", 3, AP_Notify, _display_enable, 1),
 
     AP_GROUPEND
 };
