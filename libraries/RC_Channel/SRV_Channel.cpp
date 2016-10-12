@@ -22,6 +22,8 @@
 #include "SRV_Channel.h"
 #include "RC_Channel.h"
 
+extern const AP_HAL::HAL& hal;
+
 const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: RNG_ENABLE
     // @DisplayName: Enable servo output ranges
@@ -246,5 +248,15 @@ void SRV_Channels::set_trim(void)
         }
         uint16_t new_trim = remap_pwm(i, ch->get_radio_trim());
         servo_trim[i].set_and_save(new_trim);
+    }
+}
+
+void SRV_Channels::set_esc_scaling(uint8_t chnum)
+{
+    if (!enable || chnum >= NUM_SERVO_RANGE_CHANNELS) {
+        const RC_Channel *ch = RC_Channel::rc_channel(chnum);
+        hal.rcout->set_esc_scaling(ch->get_radio_min(), ch->get_radio_max());
+    } else {
+        hal.rcout->set_esc_scaling(servo_min[chnum], servo_max[chnum]);
     }
 }

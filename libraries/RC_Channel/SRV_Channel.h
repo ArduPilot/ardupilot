@@ -36,6 +36,9 @@ public:
 
     // set and save trim values from current RC input trim
     void set_trim(void);
+
+    // setup output ESC scaling for a channel
+    void set_esc_scaling(uint8_t chnum);
     
 private:
     AP_Int8 enable;
