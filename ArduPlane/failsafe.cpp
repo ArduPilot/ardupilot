@@ -59,6 +59,9 @@ void Plane::failsafe_check(void)
         channel_pitch->set_radio_out(channel_pitch->read());
         if (hal.util->get_soft_armed()) {
             channel_throttle->set_radio_out(channel_throttle->read());
+        } else {
+            channel_throttle->set_servo_out(0);
+            channel_throttle->calc_pwm();
         }
         channel_rudder->set_radio_out(channel_rudder->read());
 
