@@ -39,7 +39,7 @@ void Plane::set_control_channels(void)
 
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
     // take a proportion of speed
-    hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+    g2.servo_channels.set_esc_scaling(channel_throttle->get_ch_out());
 }
 
 /*
