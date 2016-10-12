@@ -12,11 +12,7 @@ try:
     subprocess.check_call(['python', waf_light] + sys.argv[1:])
 except subprocess.CalledProcessError as e:
     if e.returncode != 2 or p.isfile(waf_light):
-<<<<<<< HEAD
-        raise e
-=======
         sys.exit(1)
->>>>>>> ArduPilot/master
 
     print('Missing waf submodule. Trying to get it')
 
