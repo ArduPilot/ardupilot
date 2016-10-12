@@ -19,6 +19,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include "SRV_Channel.h"
 #include "RC_Channel.h"
 
@@ -205,6 +206,7 @@ uint16_t SRV_Channels::remap_pwm(uint8_t i, uint16_t pwm) const
             radio_out = servo_trim[i] + v * (servo_trim[i] - servo_min[i]);
         }
     }
+    radio_out = constrain_int16(radio_out, servo_min[i], servo_max[i]);
     return radio_out;
 }
 
