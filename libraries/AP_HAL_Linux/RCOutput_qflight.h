@@ -18,6 +18,8 @@ public:
     uint16_t read(uint8_t ch);
     void read(uint16_t *period_us, uint8_t len);
     void set_device_path(const char *device);
+    void cork(void) override;
+    void push(void) override;
 
 private:
     const char *device = nullptr;
@@ -44,6 +46,7 @@ private:
         uint8_t bytes[19];
     } rcu;
     uint8_t nrcin_bytes;
+    bool corked;
 };
 
 }
