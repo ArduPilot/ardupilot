@@ -76,12 +76,6 @@ void Plane::failsafe_check(void)
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_rudder, rudder);
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_steering, rudder);
 
-        if (g.vtail_output != MIXING_DISABLED) {
-            channel_output_mixer(g.vtail_output, channel_pitch, channel_rudder);
-        } else if (g.elevon_output != MIXING_DISABLED) {
-            channel_output_mixer(g.elevon_output, channel_pitch, channel_roll);
-        }
-
         // this is to allow the failsafe module to deliberately crash 
         // the plane. Only used in extreme circumstances to meet the
         // OBC rules
