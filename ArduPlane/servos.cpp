@@ -819,7 +819,9 @@ void Plane::servos_output(void)
     channel_throttle->output();
     channel_rudder->output();
 
-    RC_Channel_aux::output_ch_all();
+    if (!afs.should_crash_vehicle()) {
+        RC_Channel_aux::output_ch_all();
+    }
     
     hal.rcout->push();
 }
