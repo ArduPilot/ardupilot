@@ -1394,7 +1394,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     ahrs.get_NavEKF2().getFilterGpsStatus(0,gpsStatus);
     float tiltError;
     ahrs.get_NavEKF2().getTiltError(0,tiltError);
-    uint8_t primaryIndex = ahrs.get_NavEKF2().getPrimaryCoreIndex();
+    int8_t primaryIndex = ahrs.get_NavEKF2().getPrimaryCoreIndex();
     struct log_NKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
         time_us : time_us,
