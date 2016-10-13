@@ -24,6 +24,7 @@ addons:
       - libc6-i386
       - python-pip
       - python-dev
+      - python-numpy
       - zlib1g-dev
       - gcc-4.9
       - g++-4.9
