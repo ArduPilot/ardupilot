@@ -12,6 +12,13 @@ public:
 
     void init();
 
+    // copy state into underlying parameters:
+    void flush();
+
+    // periodic update function (e.g. put our values to permanent storage):
+    // call at least 1Hz
+    void update();
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -20,4 +27,6 @@ private:
         AP_Int16 bootcount;
     } params;
 
+    uint64_t last_flush_ms; // in terms of system uptime
+    const uint16_t flush_interval_ms = 30000;
 };

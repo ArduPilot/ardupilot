@@ -16,3 +16,16 @@ void AP_Stats::init()
 {
     params.bootcount.set_and_save(params.bootcount+1);
 }
+
+void AP_Stats::flush()
+{
+}
+
+void AP_Stats::update()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms -  last_flush_ms > flush_interval_ms) {
+        flush();
+        last_flush_ms = now_ms;
+    }
+}
