@@ -27,10 +27,10 @@ void Sub::manual_run()
 
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    motors.set_roll(channel_roll->norm_input()*0.67f);
-    motors.set_pitch(channel_pitch->norm_input()*0.67f);
-    motors.set_yaw(channel_yaw->norm_input()*0.67f);
+    motors.set_roll(channel_roll->norm_input_dz()*0.67f);
+    motors.set_pitch(channel_pitch->norm_input_dz()*0.67f);
+    motors.set_yaw(channel_yaw->norm_input_dz()*0.67f);
     motors.set_throttle(channel_throttle->norm_input());
-    motors.set_forward(channel_forward->norm_input()*0.67f);
-    motors.set_lateral(channel_lateral->norm_input()*0.67f);
+    motors.set_forward(channel_forward->norm_input_dz()*0.67f);
+    motors.set_lateral(channel_lateral->norm_input_dz()*0.67f);
 }
