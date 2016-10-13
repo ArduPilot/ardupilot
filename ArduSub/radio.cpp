@@ -120,7 +120,7 @@ void Sub::read_radio()
         RC_Channel::set_pwm_all();
 
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
-        set_throttle_zero_flag(channel_throttle->get_control_in());
+        set_throttle_zero_flag(get_throttle_control_dz());
 
         // flag we must have an rc receiver attached
         if (!failsafe.rc_override_active) {
@@ -213,5 +213,5 @@ void Sub::set_throttle_zero_flag(int16_t throttle_control)
 // pass pilot's inputs to motors library (used to allow wiggling servos while disarmed on heli, single, coax copters)
 void Sub::radio_passthrough_to_motors()
 {
-    motors.set_radio_passthrough(channel_roll->get_control_in()/1000.0f, channel_pitch->get_control_in()/1000.0f, channel_throttle->get_control_in()/1000.0f, channel_yaw->get_control_in()/1000.0f);
+    motors.set_radio_passthrough(channel_roll->get_control_in()/1000.0f, channel_pitch->get_control_in()/1000.0f, get_throttle_control_dz()/1000.0f, channel_yaw->get_control_in()/1000.0f);
 }

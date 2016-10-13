@@ -47,7 +47,7 @@ void Sub::stabilize_run()
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
+    pilot_throttle_scaled = get_pilot_desired_throttle(get_throttle_control_dz());
 
     // call attitude controller
 	// update attitude controller targets
