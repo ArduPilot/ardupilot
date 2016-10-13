@@ -239,6 +239,18 @@ void AP_Tuning_Plane::set_value(uint8_t parm, float value)
     default:
         AP_Float *f = get_param_pointer(parm);
         if (f != nullptr) {
+            uint64_t param_bit = (1ULL << parm);
+            if (!(param_bit & have_set)) {
+                // first time this param has been set by tuning. We
+                // need to see if a reversion value is available in
+                // FRAM, and if not then save one
+                float current_value = f->get();
+                if (!f->load()) {
+                    // there is no value in FRAM, set one
+                    f->set_and_save(current_value);
+                }
+                have_set |= param_bit;
+            }
             f->set_and_notify(value);
         }
         break;

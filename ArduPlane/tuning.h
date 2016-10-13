@@ -97,4 +97,7 @@ private:
     static const uint8_t tuning_set_ang_roll_pitch[];
     static const uint8_t tuning_set_vxy[];
     static const uint8_t tuning_set_az[];
+
+    // mask of what params have been set
+    uint64_t have_set;
 };
