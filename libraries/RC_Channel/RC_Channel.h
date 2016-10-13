@@ -115,6 +115,8 @@ public:
     void        enable_out();
     void        disable_out();
 
+    static void scale_dead_zones(float scalar);
+
     static const struct AP_Param::GroupInfo         var_info[];
 
     static RC_Channel *rc_channel(uint8_t i);
