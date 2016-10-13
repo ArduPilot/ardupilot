@@ -267,6 +267,8 @@ void NavEKF2_core::InitialiseVariables()
     memset(&storedRngMeas, 0, sizeof(storedRngMeas));
     terrainHgtStable = true;
     ekfOriginHgtVar = 0.0f;
+    velOffsetNED.zero();
+    posOffsetNED.zero();
 
     // zero data buffers
     storedIMU.reset();
@@ -603,6 +605,18 @@ void NavEKF2_core::calcOutputStates()
 
     // apply a trapezoidal integration to velocities to calculate position
     outputDataNew.position += (outputDataNew.velocity + lastVelocity) * (imuDataNew.delVelDT*0.5f);
+
+    // calculate the average angular rate across the last IMU update
+    // note delAngDT is prevented from being zero in readIMUData()
+    Vector3f angRate = imuDataNew.delAng * (1.0f/imuDataNew.delAngDT);
+
+    // Calculate the velocity of the body frame origin relative to the IMU in body frame
+    // and rotate into earth frame. Note % operator has been overloaded to perform a cross product
+    Vector3f velBodyRelIMU = angRate % (- accelPosOffset);
+    velOffsetNED = Tbn_temp * velBodyRelIMU;
+
+    // calculate the earth frame position of the body frame origin relative to the IMU
+    posOffsetNED = Tbn_temp * (- accelPosOffset);
 
     // store INS states in a ring buffer that with the same length and time coordinates as the IMU data buffer
     if (runUpdates) {
