@@ -832,8 +832,7 @@ private:
     nav_filter_status filterStatus; // contains the status of various filter outputs
     float ekfOriginHgtVar;          // Variance of the the EKF WGS-84 origin height estimate (m^2)
     uint32_t lastOriginHgtTime_ms;  // last time the ekf's WGS-84 origin height was corrected
-
-    Vector3f outputTrackError;
+    Vector3f outputTrackError;      // attitude (rad), velocity (m/s) and position (m) tracking error magnitudes from the output observer
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
