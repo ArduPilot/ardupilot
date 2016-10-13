@@ -21,7 +21,7 @@ namespace {
 	int16_t video_switch = 1100;
 	int16_t x_last, y_last, z_last;
 	uint16_t buttons_prev;
-	float gain = 0.5;
+	float gain = JOYSTICK_INITIAL_GAIN;
 	float maxGain = 1.0;
 	float minGain = 0.25;
 	int8_t numGainSettings = 4;
