@@ -151,6 +151,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(userhook_SuperSlowLoop, 1,   75),
 #endif
     SCHED_TASK(button_update,          5,    100),
+    SCHED_TASK(stats_update,           1,    100),
 };
 
 
@@ -205,6 +206,14 @@ void Copter::perf_update(void)
     }
     perf_info_reset();
     pmTest1 = 0;
+}
+
+/*
+  update AP_Stats
+ */
+void Copter::stats_update(void)
+{
+    g2.stats.update();
 }
 
 void Copter::loop()
