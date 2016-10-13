@@ -30,7 +30,8 @@ def build(bld):
             'AP_ServoRelayEvents',
             'AP_Avoidance',
             'AP_AdvancedFailsafe',
-            'AP_Proximity'
+            'AP_Proximity',
+            'AP_Stats',
         ],
     )
 
