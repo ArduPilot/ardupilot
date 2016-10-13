@@ -253,3 +253,20 @@ void Copter::button_update(void)
 {
     g2.button.update();
 }
+
+// initialise proximity sensor
+void Copter::init_proximity(void)
+{
+#if PROXIMITY_ENABLED == ENABLED
+    proximity.init();
+#endif
+}
+
+// update proximity sensor
+void Copter::update_proximity(void)
+{
+#if PROXIMITY_ENABLED == ENABLED
+    proximity.update();
+#endif
+}
+

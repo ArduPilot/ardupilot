@@ -57,4 +57,5 @@ LIBRARIES += AP_InertialNav
 LIBRARIES += AC_WPNav
 LIBRARIES += AC_Fence
 LIBRARIES += AC_Avoidance
+LIBRARIES += AP_Proximity
 LIBRARIES += AP_Tuning
