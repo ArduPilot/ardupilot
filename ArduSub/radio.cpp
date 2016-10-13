@@ -48,9 +48,13 @@ void Sub::init_rc_in()
 =======
 >>>>>>> Changed to ArduCopter as the base code.
 
-    // force throttle trim to 1100
-    channel_throttle->set_radio_trim(1100);
-    channel_throttle->save_eeprom();
+    for(int i = 0; i < 7; i++) {
+    	RC_Channel *ch = RC_Channel::rc_channel(i);
+    	ch->set_radio_max(1900);
+    	ch->set_radio_min(1100);
+    	ch->set_radio_trim(1500);
+    	ch->save_eeprom();
+    }
 
     //set auxiliary servo ranges
 //    g.rc_5.set_range(0,1000);
