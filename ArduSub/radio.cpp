@@ -56,6 +56,8 @@ void Sub::init_rc_in()
     	ch->save_eeprom();
     }
 
+    RC_Channel::scale_dead_zones(JOYSTICK_INITIAL_GAIN);
+
     //set auxiliary servo ranges
 //    g.rc_5.set_range(0,1000);
 //    g.rc_6.set_range(0,1000);
