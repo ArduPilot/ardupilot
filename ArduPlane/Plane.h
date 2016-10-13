@@ -778,6 +778,9 @@ private:
         uint32_t last_trim_check;
         uint32_t last_trim_save;
     } auto_trim;
+
+    // last time home was updated while disarmed
+    uint32_t last_home_update_ms;
     
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
