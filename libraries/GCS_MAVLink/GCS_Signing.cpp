@@ -119,7 +119,6 @@ void GCS_MAVLINK::load_signing_key(void)
 {
     struct SigningKey key;
     if (!signing_key_load(key)) {
-        hal.console->printf("Failed to load signing key");
         return;
     }
     mavlink_status_t *status = mavlink_get_channel_status(chan);
