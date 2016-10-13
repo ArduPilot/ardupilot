@@ -15,7 +15,6 @@ static union {
         uint8_t CH11_flag           : 2; // 10,11   // ch11 aux switch : 0 is low or false, 1 is center or true, 2 is high
         uint8_t CH12_flag           : 2; // 12,13   // ch12 aux switch : 0 is low or false, 1 is center or true, 2 is high
     };
-    uint32_t value;
 } aux_con;
 
 void Copter::read_control_switch()
