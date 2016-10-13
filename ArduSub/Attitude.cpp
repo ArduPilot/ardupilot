@@ -128,6 +128,11 @@ void Sub::set_throttle_takeoff()
     pos_control.init_takeoff();
 }
 
+int16_t Sub::get_throttle_control_dz()
+{
+	return (channel_throttle->pwm_to_angle() + 1000)/2;
+}
+
 // get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
 // used only for manual throttle modes
 // returns throttle output 0 to 1000
