@@ -75,18 +75,15 @@ bool Copter::pre_arm_checks(bool display_failure)
         return true;
     }
 
-    bool ret = true;
-    ret &= barometer_checks(display_failure);
-    ret &= rc_calibration_checks(display_failure);
-    ret &= compass_checks(display_failure);
-    ret &= gps_checks(display_failure);
-    ret &= fence_checks(display_failure);
-    ret &= ins_checks(display_failure);
-    ret &= board_voltage_checks(display_failure);
-    ret &= parameter_checks(display_failure);
-    ret &= pilot_throttle_checks(display_failure);
-
-    return ret;
+    return barometer_checks(display_failure)
+        & rc_calibration_checks(display_failure)
+        & compass_checks(display_failure)
+        & gps_checks(display_failure)
+        & fence_checks(display_failure)
+        & ins_checks(display_failure)
+        & board_voltage_checks(display_failure)
+        & parameter_checks(display_failure)
+        & pilot_throttle_checks(display_failure);
 }
 
 bool Copter::rc_calibration_checks(bool display_failure)
