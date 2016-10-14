@@ -606,17 +606,26 @@ void NavEKF2_core::calcOutputStates()
     // apply a trapezoidal integration to velocities to calculate position
     outputDataNew.position += (outputDataNew.velocity + lastVelocity) * (imuDataNew.delVelDT*0.5f);
 
-    // calculate the average angular rate across the last IMU update
-    // note delAngDT is prevented from being zero in readIMUData()
-    Vector3f angRate = imuDataNew.delAng * (1.0f/imuDataNew.delAngDT);
+    // If the IMU accelerometer is offset from the body frame origin, then calculate corrections
+    // that can be added to the EKF velocity and position outputs so that they represent the velocity
+    // and position of the body frame origin.
+    // Note the * operator has been overloaded to operate as a dot product
+    if (!accelPosOffset.is_zero()) {
+        // calculate the average angular rate across the last IMU update
+        // note delAngDT is prevented from being zero in readIMUData()
+        Vector3f angRate = imuDataNew.delAng * (1.0f/imuDataNew.delAngDT);
 
-    // Calculate the velocity of the body frame origin relative to the IMU in body frame
-    // and rotate into earth frame. Note % operator has been overloaded to perform a cross product
-    Vector3f velBodyRelIMU = angRate % (- accelPosOffset);
-    velOffsetNED = Tbn_temp * velBodyRelIMU;
+        // Calculate the velocity of the body frame origin relative to the IMU in body frame
+        // and rotate into earth frame. Note % operator has been overloaded to perform a cross product
+        Vector3f velBodyRelIMU = angRate % (- accelPosOffset);
+        velOffsetNED = Tbn_temp * velBodyRelIMU;
 
-    // calculate the earth frame position of the body frame origin relative to the IMU
-    posOffsetNED = Tbn_temp * (- accelPosOffset);
+        // calculate the earth frame position of the body frame origin relative to the IMU
+        posOffsetNED = Tbn_temp * (- accelPosOffset);
+    } else {
+        velOffsetNED.zero();
+        posOffsetNED.zero();
+    }
 
     // store INS states in a ring buffer that with the same length and time coordinates as the IMU data buffer
     if (runUpdates) {
