@@ -1096,7 +1096,7 @@ void GCS_MAVLINK::send_system_time(AP_GPS &gps)
 
 
 /*
-  send RC_CHANNELS_RAW, and RC_CHANNELS messages
+  send RC_CHANNELS messages
  */
 void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
 {
