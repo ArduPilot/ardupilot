@@ -60,7 +60,9 @@ uint64_t AP_HAL::Util::get_system_clock_ms() const
 #else
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
-    return ((long long)(ts.tv_sec * 1000 + ts.tv_nsec/1000000));
+    const uint64_t seconds = ts.tv_sec;
+    const uint64_t nanoseconds = ts.tv_nsec;
+    return (seconds * 1000UL + nanoseconds/1000000UL);
 #endif
 }
 
