@@ -361,8 +361,10 @@ void Copter::auto_land_start(const Vector3f& destination)
     wp_nav.init_loiter_target(destination);
 
     // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    if (!pos_control.is_active_z()) {
+        pos_control.set_alt_target(inertial_nav.get_altitude());
+        pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    }
 
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
