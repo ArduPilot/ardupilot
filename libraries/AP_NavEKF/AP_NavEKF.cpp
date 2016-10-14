@@ -727,6 +727,7 @@ bool NavEKF::use_compass(void) const
 // rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
 // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
 // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
+// NOTE: AP_NavEKF does not use the posOffset data
 void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, Vector3f &posOffset)
 {
     if (core) {
