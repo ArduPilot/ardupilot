@@ -127,6 +127,12 @@ public:
     AP_Vector3f mag_anomaly_ned; // NED anomaly vector at ground level (mGauss)
     AP_Float mag_anomaly_hgt; // height above ground where anomally strength has decayed to 1/8 of the ground level value (m)
 
+    // Body frame sensor position offsets
+    AP_Vector3f imu_pos_offset;     // XYZ position of the IMU accelerometer relative to the body frame origin (m)
+    AP_Vector3f gps_pos_offset;     // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
+    AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
+    AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
+
     void simstate_send(mavlink_channel_t chan);
 
     void Log_Write_SIMSTATE(DataFlash_Class *dataflash);

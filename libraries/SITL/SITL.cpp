@@ -83,6 +83,10 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("PIN_MASK",      50, SITL,  pin_mask, 0),
     AP_GROUPINFO("ADSB_TX",       51, SITL,  adsb_tx, 0),
     AP_GROUPINFO("SPEEDUP",       52, SITL,  speedup, -1),
+    AP_GROUPINFO("IMU_POS",       53, SITL,  imu_pos_offset, 0),
+    AP_GROUPINFO("GPS_POS",       54, SITL,  gps_pos_offset, 0),
+    AP_GROUPINFO("SONAR_POS",     55, SITL,  rngfnd_pos_offset, 0),
+    AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
     AP_GROUPEND
 };
 
