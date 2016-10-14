@@ -655,8 +655,10 @@ void NavEKF2_core::selectHeightForFusion()
     // co-located with the IMU
     if (rangeDataToFuse) {
         Vector3f posOffsetBody = rangeDataDelayed.body_offset - accelPosOffset;
-        Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
-        rangeDataDelayed.rng += posOffsetEarth.z / prevTnb.c.z;
+        if (!posOffsetBody.is_zero()) {
+            Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+            rangeDataDelayed.rng += posOffsetEarth.z / prevTnb.c.z;
+        }
     }
 
     // read baro height data from the sensor and check for new data in the buffer
