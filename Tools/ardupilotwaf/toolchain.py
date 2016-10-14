@@ -104,12 +104,12 @@ _set_clang_crosscompilation_wrapper(clangxx)
 def _filter_supported_c_compilers(*compilers):
     for k in compiler_c.c_compiler:
         l = compiler_c.c_compiler[k]
-        compiler_c.c_compiler[k] = [c for c in l if c in compilers]
+        compiler_c.c_compiler[k] = [c for c in compilers if c in l]
 
 def _filter_supported_cxx_compilers(*compilers):
     for k in compiler_cxx.cxx_compiler:
         l = compiler_cxx.cxx_compiler[k]
-        compiler_cxx.cxx_compiler[k] = [c for c in l if c in compilers]
+        compiler_cxx.cxx_compiler[k] = [c for c in compilers if c in l]
 
 @conf
 def find_toolchain_program(cfg, filename, **kw):
