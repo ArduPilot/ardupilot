@@ -130,24 +130,24 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_ADDR", 23, RangeFinder, _address[0], 0),
 
-    // @Param: 1_POS_X
+    // @Param: _POS_X
     // @DisplayName:  X position offset
     // @Description: X position of the first rangefinder in body frame. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
 
-    // @Param: 1_POS_Y
+    // @Param: _POS_Y
     // @DisplayName: Y position offset
     // @Description: Y position of the first rangefinder in body frame. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
 
-    // @Param: 1_POS_Z
+    // @Param: _POS_Z
     // @DisplayName: Z position offset
     // @Description: Z position of the first rangefinder in body frame. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("1_POS", 49, RangeFinder, _pos_offset[0], 0.0f),
+    AP_GROUPINFO("_POS", 49, RangeFinder, _pos_offset[0], 0.0f),
 
     #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
