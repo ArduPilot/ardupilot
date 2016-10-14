@@ -258,7 +258,7 @@ void Copter::button_update(void)
 void Copter::init_proximity(void)
 {
 #if PROXIMITY_ENABLED == ENABLED
-    proximity.init();
+    g2.proximity.init();
 #endif
 }
 
@@ -266,7 +266,7 @@ void Copter::init_proximity(void)
 void Copter::update_proximity(void)
 {
 #if PROXIMITY_ENABLED == ENABLED
-    proximity.update();
+    g2.proximity.update();
 #endif
 }
 

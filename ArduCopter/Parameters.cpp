@@ -911,12 +911,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_Avoidance/AP_Avoidance.cpp
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Copter),
 
-#if PROXIMITY_ENABLED == ENABLED
-    // @Group: PRX_
-    // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
-    GOBJECT(proximity, "PRX_", AP_Proximity),
-#endif
-
     // @Param: AUTOTUNE_AXES
     // @DisplayName: Autotune axis bitmask
     // @Description: 1-byte bitmap of axes to autotune
@@ -1013,7 +1007,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 0:ADSBMavlinkProcessing
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
-    
+
+#if PROXIMITY_ENABLED == ENABLED
+    // @Group: PRX_
+    // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
+    AP_SUBGROUPINFO(proximity, "PRX_", 8, ParametersG2, AP_Proximity),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1022,8 +1022,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
   constructor for g2 object
  */
 ParametersG2::ParametersG2(void)
+    : proximity(copter.serial_manager)
 #if ADVANCED_FAILSAFE == ENABLED
-    : afs(copter.mission, copter.barometer, copter.gps, copter.rcmap)
+     ,afs(copter.mission, copter.barometer, copter.gps, copter.rcmap)
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
