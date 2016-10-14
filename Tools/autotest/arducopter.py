@@ -162,7 +162,7 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
         print("Failed to reach heading")
         success = False
     mavproxy.send('rc 4 1500\n')
-    mav.recv_match(condition='RC_CHANNELS_RAW.chan4_raw==1500', blocking=True)
+    mav.recv_match(condition='RC_CHANNELS.chan4_raw==1500', blocking=True)
 
     # save bottom left corner of box as waypoint
     print("Save WP 1 & 2")
