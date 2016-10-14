@@ -31,9 +31,6 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <termios.h>
-#include <AP_HAL/utility/sumd.h>
-#include <AP_HAL/utility/st24.h>
-#include <AP_HAL/utility/dsm.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -104,6 +101,9 @@ void RCInput_115200::_timer_tick(void)
     if (nread <= 0) {
         return;
     }
+
+    // process as srxl
+    add_srxl_input(bytes, nread);
 
     // process as DSM
     add_dsm_input(bytes, nread);

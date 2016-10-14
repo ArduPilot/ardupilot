@@ -39,6 +39,9 @@ public:
 
     // add some st24 input bytes, for RCInput over a serial port
     void add_st24_input(const uint8_t *bytes, size_t nbytes);
+
+    // add some srxl input bytes, for RCInput over a serial port
+    void add_srxl_input(const uint8_t *bytes, size_t nbytes);
     
 protected:
     void _process_rc_pulse(uint16_t width_s0, uint16_t width_s1);

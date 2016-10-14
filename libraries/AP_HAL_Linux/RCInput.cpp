@@ -14,6 +14,7 @@
 #include <AP_HAL/utility/dsm.h>
 #include <AP_HAL/utility/sumd.h>
 #include <AP_HAL/utility/st24.h>
+#include <AP_HAL/utility/srxl.h>
 
 #include "RCInput.h"
 #include "sbus.h"
@@ -456,6 +457,30 @@ void RCInput::add_st24_input(const uint8_t *bytes, size_t nbytes)
                 if (values[i] != 0) {
                     _pwm_values[i] = values[i];
                 }
+            }
+            _num_channels = channel_count;
+            new_rc_input = true;
+        }
+        nbytes--;
+    }
+}
+
+/*
+  add some bytes of input in SRXL serial stream format, coping with partial packets
+ */
+void RCInput::add_srxl_input(const uint8_t *bytes, size_t nbytes)
+{
+    uint16_t values[LINUX_RC_INPUT_NUM_CHANNELS];
+    uint8_t channel_count;
+    uint64_t now = AP_HAL::micros64();
+    
+    while (nbytes > 0) {
+        if (srxl_decode(now, *bytes++, &channel_count, values, LINUX_RC_INPUT_NUM_CHANNELS) == 0) {
+            if (channel_count > LINUX_RC_INPUT_NUM_CHANNELS) {
+                return;
+            }
+            for (uint8_t i=0; i<channel_count; i++) {
+                _pwm_values[i] = values[i];
             }
             _num_channels = channel_count;
             new_rc_input = true;
