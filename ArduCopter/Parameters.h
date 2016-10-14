@@ -362,7 +362,6 @@ public:
         k_param_rtl_climb_min,
         k_param_rpm_sensor,
         k_param_autotune_min_d, // 251
-        k_param_proximity,
         k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
@@ -558,6 +557,11 @@ public:
 
     // ground effect compensation enable/disable
     AP_Int8 gndeffect_comp_enabled;
+
+#if PROXIMITY_ENABLED == ENABLED
+    // proximity (aka object avoidance) library
+    AP_Proximity proximity;
+#endif
 
 #if ADVANCED_FAILSAFE == ENABLED
     // advanced failsafe library

@@ -197,10 +197,6 @@ private:
         LowPassFilterFloat alt_cm_filt; // altitude filter
     } rangefinder_state = { false, false, 0, 0 };
 
-#if PROXIMITY_ENABLED == ENABLED
-    AP_Proximity proximity {serial_manager};
-#endif
-
     AP_RPM rpm_sensor;
 
     // Inertial Navigation EKF

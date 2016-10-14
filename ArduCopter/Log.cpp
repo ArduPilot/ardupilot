@@ -770,19 +770,19 @@ void Copter::Log_Write_Proximity()
 {
 #if PROXIMITY_ENABLED == ENABLED
     float sector_distance[8] = {0,0,0,0,0,0,0,0};
-    proximity.get_horizontal_distance(0, sector_distance[0]);
-    proximity.get_horizontal_distance(45, sector_distance[1]);
-    proximity.get_horizontal_distance(90, sector_distance[2]);
-    proximity.get_horizontal_distance(135, sector_distance[3]);
-    proximity.get_horizontal_distance(180, sector_distance[4]);
-    proximity.get_horizontal_distance(225, sector_distance[5]);
-    proximity.get_horizontal_distance(270, sector_distance[6]);
-    proximity.get_horizontal_distance(315, sector_distance[7]);
+    g2.proximity.get_horizontal_distance(0, sector_distance[0]);
+    g2.proximity.get_horizontal_distance(45, sector_distance[1]);
+    g2.proximity.get_horizontal_distance(90, sector_distance[2]);
+    g2.proximity.get_horizontal_distance(135, sector_distance[3]);
+    g2.proximity.get_horizontal_distance(180, sector_distance[4]);
+    g2.proximity.get_horizontal_distance(225, sector_distance[5]);
+    g2.proximity.get_horizontal_distance(270, sector_distance[6]);
+    g2.proximity.get_horizontal_distance(315, sector_distance[7]);
 
     struct log_Proximity pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
         time_us         : AP_HAL::micros64(),
-        health          : (uint8_t)proximity.get_status(),
+        health          : (uint8_t)g2.proximity.get_status(),
         dist0           : sector_distance[0],
         dist45          : sector_distance[1],
         dist90          : sector_distance[2],

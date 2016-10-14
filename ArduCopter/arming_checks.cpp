@@ -380,7 +380,7 @@ bool Copter::parameter_checks(bool display_failure)
 
         #if PROXIMITY_ENABLED == ENABLED
         // check proximity sensor if enabled
-        if (copter.proximity.get_status() == AP_Proximity::Proximity_NoData) {
+        if (copter.g2.proximity.get_status() == AP_Proximity::Proximity_NoData) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
             }
