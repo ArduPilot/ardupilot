@@ -1,5 +1,9 @@
 #include "AP_Stats.h"
 
+#include <AP_Math/AP_Math.h>
+
+const extern AP_HAL::HAL& hal;
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Stats::var_info[] = {
 
@@ -21,16 +25,28 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_RUNTIME",    2, AP_Stats, params.runtime, 0),
 
+    // @Param: _RESET
+    // @DisplayName: Reset time
+    // @Description: Seconds since epoch since reset (set to 0 to reset)
+    // @User: Standard
+    AP_GROUPINFO("_RESET",    3, AP_Stats, params.reset, 1),
+
     AP_GROUPEND
 };
+
+void AP_Stats::copy_variables_from_parameters()
+{
+    flttime = params.flttime;
+    runtime = params.runtime;
+    reset = params.reset;
+}
 
 void AP_Stats::init()
 {
     params.bootcount.set_and_save(params.bootcount+1);
 
     // initialise our variables from parameters:
-    flttime = params.flttime;
-    runtime = params.runtime;
+    copy_variables_from_parameters();
 }
 
 
@@ -67,6 +83,16 @@ void AP_Stats::update()
         flush();
         last_flush_ms = now_ms;
     }
+
+    const uint32_t params_reset = params.reset;
+    if (params_reset != reset || params_reset == 0) {
+        params.bootcount.set_and_save(params_reset == 0 ? 1 : 0);
+        params.flttime.set_and_save(0);
+        params.runtime.set_and_save(0);
+        params.reset.set_and_save(hal.util->get_system_clock_ms() / 1000);
+        copy_variables_from_parameters();
+    }
+
 }
 
 void AP_Stats::set_flying(const bool is_flying)
