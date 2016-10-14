@@ -1,0 +1,217 @@
+// -*- tab-width: 8; Mode: C++; c-basic-offset: 8; indent-tabs-mode: -*- t -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/*
+  SRXL protocol decoder, tested against AR7700 SRXL port
+  Andrew Tridgell, September 2016
+ */
+
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include "srxl.h"
+
+/*
+  there are other SRXL varients, but we need some sample data before accepting them
+ */
+#define SRXL_MAX_CHANNELS 16
+#define SRXL_HEAD_MARKER  0xA5
+
+#define SRXL_NUM_BYTES 18
+
+static uint8_t buffer[SRXL_NUM_BYTES];
+static uint8_t buflen;
+static uint64_t last_data_us;
+static uint16_t channels[SRXL_MAX_CHANNELS];
+static uint16_t max_channels;
+
+/*
+  get SRXL crc16 for a set of bytes
+ */
+static uint16_t srxl_crc16(const uint8_t *bytes, uint8_t nbytes)
+{
+    uint16_t crc = 0;
+    while (nbytes--) {
+        int i;
+	crc ^= (uint16_t)(*bytes++) << 8;
+
+	for (i = 0; i < 8; i++) {
+		crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+	}
+    }
+    return crc;
+}
+
+
+/*
+  decode a SRXL packet
+ */
+int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16_t *values, uint16_t max_values)
+{
+    if (timestamp_us - last_data_us > 5000U || buflen == SRXL_NUM_BYTES) {
+        // we've seen a frame gap
+        if (buflen != 0) {
+            buflen = 0;
+        }
+    }
+    last_data_us = timestamp_us;
+    buffer[buflen++] = byte;
+
+    switch (buffer[0]) {
+    case SRXL_HEAD_MARKER:
+        break;
+
+    default:
+        // invalid packet, we don't support this format yet
+        return 2;
+    }
+
+    uint8_t expected_bytes = SRXL_NUM_BYTES;
+    if (buflen < expected_bytes) {
+        // more bytes pending
+        return 1;
+    }
+
+    uint16_t crc = srxl_crc16(buffer, buflen-2);
+    uint64_t crc2 = buffer[buflen-1] | (buffer[buflen-2]<<8);
+    if (crc != crc2) {
+        // bad CRC
+        return 4;
+    }
+
+    // up to 7 channel values per packet. Each channel value is 16
+    // bits, with 11 bits of data and 4 bits of channel number. The
+    // top bit indicates a special X-Plus channel
+    for (uint8_t i=0; i<7; i++) {
+        uint16_t b = buffer[i*2+2] << 8 | buffer[i*2+3];
+        uint16_t c = b >> 11; // channel number
+        int32_t v = b & 0x7FF;
+
+        // if channel number if greater than 16 then it is a X-Plus
+        // channel. We don't yet know how to decode those. There is some information here:
+        // http://www.deviationtx.com/forum/protocol-development/2088-18-channels-for-dsm2-dsmx?start=40
+        // but we really need some sample data to confirm
+        if (c < SRXL_MAX_CHANNELS) {
+            v = (((v - 0x400) * 500) / 876) + 1500;
+            channels[c] = v;
+            if (c >= max_channels) {
+                max_channels = c+1;
+            }
+        }
+        //printf("%u:%u ", (unsigned)c, (unsigned)v);
+    }
+    //printf("\n");
+
+    *num_values = max_channels;
+    if (*num_values > max_values) {
+        *num_values = max_values;
+    }
+    memcpy(values, channels, (*num_values)*2);
+
+#if 0
+    for (uint8_t i=0; i<buflen; i++) {
+        printf("%02x ", (unsigned)buffer[i]);
+    }
+    printf("\n");
+#endif
+
+    buflen = 0;
+
+    // success
+    return 0;
+}
+
+
+#ifdef TEST_MAIN_PROGRAM
+/*
+  test harness for use under Linux with USB serial adapter
+ */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <time.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <termios.h>
+
+static uint64_t micros64(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)));
+}
+
+int main(int argc, const char *argv[])
+{
+    int fd = open(argv[1], O_RDONLY);
+    if (fd == -1) {
+        perror(argv[1]);
+        exit(1);
+    }
+
+    struct termios options;
+
+    tcgetattr(fd, &options);
+
+    cfsetispeed(&options, B115200);
+    cfsetospeed(&options, B115200);
+
+    options.c_cflag &= ~(PARENB|CSTOPB|CSIZE);
+    options.c_cflag |= CS8;
+
+    options.c_lflag &= ~(ICANON|ECHO|ECHOE|ISIG);
+    options.c_iflag &= ~(IXON|IXOFF|IXANY);
+    options.c_oflag &= ~OPOST;
+
+    if (tcsetattr(fd, TCSANOW, &options) != 0) {
+        perror("tcsetattr");
+        exit(1);
+    }
+    tcflush(fd, TCIOFLUSH);
+    
+    while (true) {
+        uint8_t b;
+        uint8_t num_values = 0;
+        uint16_t values[18];
+        fd_set fds;
+        struct timeval tv;
+    
+        FD_ZERO(&fds);
+        FD_SET(fd, &fds);
+
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
+        // check if any bytes are available
+        if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
+            break;
+        }
+        
+        if (read(fd, &b, 1) != 1) {
+            break;
+        }
+
+        if (srxl_decode(micros64(), b, &num_values, values, 18) == 0) {
+#if 1
+            printf("%u: ", num_values);
+            for (uint8_t i=0; i<num_values; i++) {
+                printf("%u:%4u ", i+1, values[i]);
+            }
+            printf("\n");
+#endif
+        }
+    }
+}
+#endif
