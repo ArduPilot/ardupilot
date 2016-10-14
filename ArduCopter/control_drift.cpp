@@ -64,7 +64,7 @@ void Copter::drift_run()
     get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in(), 0.0f);
+    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     // Grab inertial velocity
     const Vector3f& vel = inertial_nav.get_velocity();
