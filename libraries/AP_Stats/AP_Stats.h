@@ -14,6 +14,7 @@ public:
     // parameters.  If you add a variable here, make sure to update
     // init() to set initial values from the parameters!
     uint32_t flttime; // seconds in flight (or driving)
+    uint32_t runtime; // total wallclock time spent running ArduPilot (seconds)
 
     void init();
 
@@ -33,13 +34,16 @@ private:
     struct {
         AP_Int16 bootcount;
         AP_Int32 flttime;
+        AP_Int32 runtime;
     } params;
 
     uint64_t last_flush_ms; // in terms of system uptime
     const uint16_t flush_interval_ms = 30000;
 
     uint64_t _flying_ms;
+    uint64_t _last_runtime_ms;
 
     void update_flighttime();
+    void update_runtime();
 
 };
