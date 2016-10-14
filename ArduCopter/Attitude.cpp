@@ -243,8 +243,10 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 }
 
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
-void Copter::set_accel_throttle_I_from_pilot_throttle(float pilot_throttle)
+void Copter::set_accel_throttle_I_from_pilot_throttle()
 {
+    // get last throttle input sent to attitude controller
+    float pilot_throttle = constrain_float(attitude_control.get_throttle_in(), 0.0f, 1.0f);
     // shift difference between pilot's throttle and hover throttle into accelerometer I
     g.pid_accel_z.set_integrator((pilot_throttle-motors.get_throttle_hover()) * 1000.0f);
 }

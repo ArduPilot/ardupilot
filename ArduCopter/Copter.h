@@ -691,7 +691,7 @@ private:
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     void auto_takeoff_set_start_alt(void);
     void auto_takeoff_attitude_run(float target_yaw_rate);
-    void set_accel_throttle_I_from_pilot_throttle(float pilot_throttle);
+    void set_accel_throttle_I_from_pilot_throttle();
     void update_poscon_alt_max();
     void rotate_body_frame_to_NE(float &x, float &y);
     void gcs_send_heartbeat(void);
