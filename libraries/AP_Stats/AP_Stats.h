@@ -15,6 +15,7 @@ public:
     // init() to set initial values from the parameters!
     uint32_t flttime; // seconds in flight (or driving)
     uint32_t runtime; // total wallclock time spent running ArduPilot (seconds)
+    uint32_t reset; // last time parameters were reset
 
     void init();
 
@@ -35,7 +36,10 @@ private:
         AP_Int16 bootcount;
         AP_Int32 flttime;
         AP_Int32 runtime;
+        AP_Int32 reset;
     } params;
+
+    void copy_variables_from_parameters();
 
     uint64_t last_flush_ms; // in terms of system uptime
     const uint16_t flush_interval_ms = 30000;
