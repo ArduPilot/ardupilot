@@ -773,7 +773,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
     // @Param: RC_CHAN
     // @DisplayName: RC Channel stream rate to ground station
-    // @Description: Stream rate of SERVO_OUTPUT_RAW and RC_CHANNELS_RAW to ground station
+    // @Description: Stream rate of SERVO_OUTPUT_RAW and RC_CHANNELS to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
