@@ -101,18 +101,63 @@ void RCInput_115200::_timer_tick(void)
     if (nread <= 0) {
         return;
     }
+    bool got_frame = false;
+    
+    if (decoder == DECODER_SYNC ||
+        decoder == DECODER_SRXL) {
+        // try srxl first as it has a 16 bit CRC
+        if (add_srxl_input(bytes, nread)) {
+            // lock immediately
+            decoder = DECODER_SRXL;
+            got_frame = true;
+        }
+    }
 
-    // process as srxl
-    add_srxl_input(bytes, nread);
+    if (decoder == DECODER_SYNC ||
+        decoder == DECODER_SUMD) {
+        // SUMD also has a 16 bit CRC
+        if (add_sumd_input(bytes, nread)) {
+            // lock immediately
+            decoder = DECODER_SUMD;
+            got_frame = true;
+        }
+    }
 
-    // process as DSM
-    add_dsm_input(bytes, nread);
+    if (decoder == DECODER_SYNC ||
+        decoder == DECODER_DSM) {
+        // process as DSM
+        if (add_dsm_input(bytes, nread)) {
+            dsm_count++;
+            if (dsm_count == 10) {
+                // we're confident
+                decoder = DECODER_DSM;
+            }
+            got_frame = true;
+        }
+    }
 
-    // process as SUMD
-    add_sumd_input(bytes, nread);
+    if (decoder == DECODER_SYNC ||
+        decoder == DECODER_ST24) {
+        // process as st24
+        if (add_st24_input(bytes, nread)) {
+            st24_count++;
+            if (st24_count == 10) {
+                // we're confident
+                decoder = DECODER_ST24;
+            }
+            got_frame = true;
+        }
+    }
 
-    // process as st24
-    add_st24_input(bytes, nread);
+    uint32_t now = AP_HAL::millis();
+    if (got_frame) {
+        last_input_ms = now;
+    } else if (now - last_input_ms > 1000 && decoder != DECODER_SYNC) {
+        // start search again
+        decoder = DECODER_SYNC;
+        dsm_count = 0;
+        st24_count = 0;
+    }
 }
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE

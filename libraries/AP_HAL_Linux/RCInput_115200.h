@@ -34,6 +34,19 @@ public:
 private:
     const char *device_path;
     int32_t fd = -1;
+
+    enum Decoders {
+        DECODER_DSM=0,
+        DECODER_ST24,
+        DECODER_SUMD,
+        DECODER_SRXL,
+        DECODER_SYNC
+    };
+    enum Decoders decoder;
+
+    uint8_t dsm_count;
+    uint8_t st24_count;
+    uint32_t last_input_ms;
 };
 
 }
