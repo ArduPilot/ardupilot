@@ -817,6 +817,10 @@ void Plane::servos_output(void)
         channel_roll->set_radio_out(channel_roll->get_radio_trim());
     }
 
+    // to enable the throttle slew rate to work we need to remember
+    // and restore the throttle radio_out
+    uint16_t thr_radio_out_saved = channel_throttle->get_radio_out();
+    
     // remap servo output to SERVO* ranges if enabled
     g2.servo_channels.remap_servo_output();
 
@@ -833,4 +837,8 @@ void Plane::servos_output(void)
     }
     
     hal.rcout->push();
+
+    // restore throttle radio out
+    channel_throttle->set_radio_out(thr_radio_out_saved);
+    
 }
