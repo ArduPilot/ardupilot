@@ -963,15 +963,50 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     d.longitude = longitude + glitch_offsets.y;
     d.altitude = altitude + glitch_offsets.z;
 
-    if (_sitl->gps_drift_alt > 0) {
-        // slow altitude drift
-        d.altitude += _sitl->gps_drift_alt*sinf(AP_HAL::millis()*0.001f*0.02f);
-    }
-
+    // Add offet to c.g. velocity to get velocity at antenna
     d.speedN = speedN;
     d.speedE = speedE;
     d.speedD = speedD;
     d.have_lock = have_lock;
+
+    // correct the latitude, longitude, hiehgt and NED velocity for the offset between
+    // the vehicle c.g. and GPs antenna
+    Vector3f posRelOffsetBF = _sitl->gps_pos_offset;
+    if (!posRelOffsetBF.is_zero()) {
+        // get a rotation matrix following DCM conventions (body to earth)
+        Matrix3f rotmat;
+        rotmat.from_euler(radians(_sitl->state.rollDeg),
+                          radians(_sitl->state.pitchDeg),
+                          radians(_sitl->state.yawDeg));
+
+        // rotate the antenna offset into the earth frame
+        Vector3f posRelOffsetEF = rotmat * posRelOffsetBF;
+
+        // Add the offset to the latitude, longitude and height using a spherical earth approximation
+        double const earth_rad_inv = 1.569612305760477e-7; // use Authalic/Volumetric radius
+        double lng_scale_factor = earth_rad_inv / cos(radians(d.latitude));
+        d.latitude += degrees(posRelOffsetEF.x * earth_rad_inv);
+        d.longitude += degrees(posRelOffsetEF.y * lng_scale_factor);
+        d.altitude -= posRelOffsetEF.z;
+
+        // calculate a velocity offset due to the antenna position offset and body rotation rate
+        // note: % operator is overloaded for cross product
+        Vector3f gyro(radians(_sitl->state.rollRate),
+             radians(_sitl->state.pitchRate),
+             radians(_sitl->state.yawRate));
+        Vector3f velRelOffsetBF = gyro % posRelOffsetBF;
+
+        // rotate the velocity offset into earth frame and add to the c.g. velocity
+        Vector3f velRelOffsetEF = rotmat * velRelOffsetBF;
+        d.speedN += velRelOffsetEF.x;
+        d.speedE += velRelOffsetEF.y;
+        d.speedD += velRelOffsetEF.z;
+    }
+
+    if (_sitl->gps_drift_alt > 0) {
+        // slow altitude drift
+        d.altitude += _sitl->gps_drift_alt*sinf(AP_HAL::millis()*0.001f*0.02f);
+    }
 
     // add in some GPS lag
     _gps_data[next_gps_index++] = d;
