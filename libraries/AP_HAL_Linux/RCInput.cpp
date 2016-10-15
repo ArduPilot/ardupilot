@@ -483,9 +483,11 @@ bool RCInput::add_srxl_input(const uint8_t *bytes, size_t nbytes)
     uint8_t channel_count;
     uint64_t now = AP_HAL::micros64();
     bool ret = false;
+    bool failsafe_state;
     
     while (nbytes > 0) {
-        if (srxl_decode(now, *bytes++, &channel_count, values, LINUX_RC_INPUT_NUM_CHANNELS) == 0) {
+        if (srxl_decode(now, *bytes++, &channel_count, values, LINUX_RC_INPUT_NUM_CHANNELS, &failsafe_state) == 0 &&
+            failsafe_state == false) {
             if (channel_count > LINUX_RC_INPUT_NUM_CHANNELS) {
                 continue;
             }
