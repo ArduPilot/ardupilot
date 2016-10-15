@@ -774,6 +774,11 @@ private:
         uint32_t last_log_dropped;
     } perf;
 
+    struct {
+        uint32_t last_trim_check;
+        uint32_t last_trim_save;
+    } auto_trim;
+    
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
@@ -1044,6 +1049,7 @@ private:
     void set_servos_flaps(void);
     void servo_output_mixers(void);
     void servos_output(void);
+    void servos_auto_trim(void);
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     bool allow_reverse_thrust(void);
     void update_aux();

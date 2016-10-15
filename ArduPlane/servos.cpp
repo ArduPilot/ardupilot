@@ -841,4 +841,59 @@ void Plane::servos_output(void)
     // restore throttle radio out
     channel_throttle->set_radio_out(thr_radio_out_saved);
     
+    if (g2.servo_channels.auto_trim_enabled()) {
+        servos_auto_trim();
+    }
+}
+
+/*
+  implement automatic persistent trim of control surfaces with
+  AUTO_TRIM=2, only available when SERVO_RNG_ENABLE=1 as otherwise it
+  would impact R/C transmitter calibration
+ */
+void Plane::servos_auto_trim(void)
+{
+    if (!g2.servo_channels.enabled()) {
+        // only possible with SERVO_RNG_ENABLE=1
+        return;
+    }
+    // only in auto modes and FBWA
+    if (!auto_throttle_mode && control_mode != FLY_BY_WIRE_A) {
+        return;
+    }
+    if (!hal.util->get_soft_armed()) {
+        return;
+    }
+    if (!is_flying()) {
+        return;
+    }
+    if (quadplane.in_assisted_flight() || quadplane.in_vtol_mode()) {
+        // can't auto-trim with quadplane motors running
+        return;
+    }
+    if (abs(nav_roll_cd) > 700 || abs(nav_pitch_cd) > 700) {
+        // only when close to level
+        return;
+    }
+    uint32_t now = AP_HAL::millis();
+    if (now - auto_trim.last_trim_check < 500) {
+        // check twice a second. We want slow trim update
+        return;
+    }
+    if (ahrs.groundspeed() < 8 || smoothed_airspeed < 8) {
+        // only when definately moving
+        return;
+    }
+
+    // adjust trim on channels by a small amount according to I value
+    g2.servo_channels.adjust_trim(channel_roll->get_ch_out(), rollController.get_pid_info().I);
+    g2.servo_channels.adjust_trim(channel_pitch->get_ch_out(), pitchController.get_pid_info().I);
+
+    auto_trim.last_trim_check = now;
+
+    if (now - auto_trim.last_trim_save > 10000) {
+        auto_trim.last_trim_save = now;
+        g2.servo_channels.save_trim();
+    }
+    
 }
