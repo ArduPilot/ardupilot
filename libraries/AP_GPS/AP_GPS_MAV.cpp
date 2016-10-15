@@ -46,14 +46,15 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
     mavlink_gps_input_t packet;
     mavlink_msg_gps_input_decode(msg, &packet);
 
-    bool have_alt    = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_ALT) == 0);
-    bool have_hdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_HDOP) == 0);
-    bool have_vdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VDOP) == 0);
-    bool have_vel_h  = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VEL_HORIZ) == 0);
-    bool have_vel_v  = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VEL_VERT) == 0);
-    bool have_sa     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_SPEED_ACCURACY) == 0);
-    bool have_ha     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_HORIZONTAL_ACCURACY) == 0);
-    bool have_va     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VERTICAL_ACCURACY) == 0);
+    uint16_t consider_flags = packet.ignore_flags ^ 0xffff;
+    uint16_t have_alt    = consider_flags & GPS_INPUT_IGNORE_FLAG_ALT;
+    uint16_t have_hdop   = consider_flags & GPS_INPUT_IGNORE_FLAG_HDOP;
+    uint16_t have_vdop   = consider_flags & GPS_INPUT_IGNORE_FLAG_VDOP;
+    uint16_t have_vel_h  = consider_flags & GPS_INPUT_IGNORE_FLAG_VEL_HORIZ;
+    uint16_t have_vel_v  = consider_flags & GPS_INPUT_IGNORE_FLAG_VEL_VERT;
+    uint16_t have_sa     = consider_flags & GPS_INPUT_IGNORE_FLAG_SPEED_ACCURACY;
+    uint16_t have_ha     = consider_flags & GPS_INPUT_IGNORE_FLAG_HORIZONTAL_ACCURACY;
+    uint16_t have_va     = consider_flags & GPS_INPUT_IGNORE_FLAG_VERTICAL_ACCURACY;
 
     state.time_week     = packet.time_week;
     state.time_week_ms  = packet.time_week_ms;
