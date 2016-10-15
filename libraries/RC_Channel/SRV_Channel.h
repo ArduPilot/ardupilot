@@ -39,12 +39,25 @@ public:
 
     // setup output ESC scaling for a channel
     void set_esc_scaling(uint8_t chnum);
+
+    // return true when enabled
+    bool enabled(void) const { return enable; }
+
+    // return true when auto_trim enabled
+    bool auto_trim_enabled(void) const { return auto_trim; }
+    
+    // adjust trim of a channel by a small increment
+    void adjust_trim(uint8_t ch, float v);
+
+    // save trims
+    void save_trim(void);
     
 private:
     AP_Int8 enable;
 
     int8_t esc_cal_chan;
     bool last_enable;
+    uint8_t trimmed_mask;
 
     // PWM values for min/max and trim
     AP_Int16 servo_min[NUM_SERVO_RANGE_CHANNELS];
@@ -53,6 +66,8 @@ private:
 
     // reversal, following convention that < 0 means reversed, >= 0 means normal
     AP_Int8 reverse[NUM_SERVO_RANGE_CHANNELS];
+
+    AP_Int8 auto_trim;
 
     // remap a PWM value from a channel in value
     uint16_t remap_pwm(uint8_t ch, uint16_t pwm) const;
