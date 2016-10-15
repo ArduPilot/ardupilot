@@ -168,6 +168,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Values: -1:Reversed,1:Normal
     // @User: Advanced
     AP_GROUPINFO("4_REV",  17, SRV_Channels, reverse[3], 1),
+
+    // @Param: _AUTO_TRIM
+    // @DisplayName: Automatic servo trim
+    // @Description: This enables automatic servo trim in flight. Servos will be trimed in stabilized flight modes when the aircraft is close to level. Changes to servo trim will be saved every 10 seconds and will persist between flights.
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("_AUTO_TRIM",  18, SRV_Channels, auto_trim, 0),
     
     AP_GROUPEND
 };
@@ -268,4 +275,40 @@ void SRV_Channels::set_esc_scaling(uint8_t chnum)
     } else {
         hal.rcout->set_esc_scaling(servo_min[chnum], servo_max[chnum]);
     }
+}
+
+/*
+  auto-adjust channel trim from an integrator value. Positive v means
+  adjust trim up. Negative means decrease
+ */
+void SRV_Channels::adjust_trim(uint8_t chnum, float v)
+{
+    if (reverse[chnum] == -1) {
+        v = -v;
+    }
+    uint16_t new_trim = servo_trim[chnum];
+    float trim_scaled = float(servo_trim[chnum] - servo_min[chnum]) / (servo_max[chnum] - servo_min[chnum]);
+    if (v > 0 && trim_scaled < 0.6f) {
+        new_trim++;
+    } else if (v < 0  && trim_scaled > 0.4f) {
+        new_trim--;
+    } else {
+        return;
+    }
+    servo_trim[chnum].set(new_trim);
+
+    trimmed_mask |= 1U<<chnum;
+}
+
+/*
+  save adjusted trims
+ */
+void SRV_Channels::save_trim(void)
+{
+    for (uint8_t i=0; i<NUM_SERVO_RANGE_CHANNELS; i++) {
+        if (trimmed_mask & (1U<<i)) {
+            servo_trim[i].set_and_save(servo_trim[i].get());
+        }
+    }
+    trimmed_mask = 0;
 }
