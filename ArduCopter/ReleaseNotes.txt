@@ -1,5 +1,20 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.0-rc6 15-Oct-2016
+Changes from 3.4.0-rc5
+1) Object Avoidance with SF40c 360 lidar
+2) ACRO_Y_EXPO parameter allows exponential yaw in ACRO mode (slow yaw at mid stick but fast response at full stick)
+3) ACRO_THR_MID parameter allows custom mid throttle for ACRO mode
+4) Precision Landing reliability and accuracy improvements using mini EKF and adding IRLock lens distortion correction 
+5) Bug fixes, minor improvements:
+    a) fix DSM binding on Pixracer
+    b) resolved position jump caused by EKF core change (also added logging and reporting to GCS)
+    c) EKF failsafe while in LAND triggers non-GPS LAND
+    d) small throttle jump removed when switching between AltHold, Loiter
+6) Safety:
+    a) EKF falls back to optical flow if GPS fails
+    b) pre-arm check that GPS configuration has completed
+------------------------------------------------------------------
 Copter 3.4.0-rc5 14-Sep-2016
 Changes from 3.4.0-rc4
 1) Sprayer enabled by default
