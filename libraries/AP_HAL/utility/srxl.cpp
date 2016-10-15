@@ -26,7 +26,7 @@
 /*
   there are other SRXL varients, but we need some sample data before accepting them
  */
-#define SRXL_MAX_CHANNELS 16
+#define SRXL_MAX_CHANNELS 20
 #define SRXL_HEAD_MARKER  0xA5
 
 #define SRXL_NUM_BYTES 18
@@ -58,7 +58,7 @@ static uint16_t srxl_crc16(const uint8_t *bytes, uint8_t nbytes)
 /*
   decode a SRXL packet
  */
-int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16_t *values, uint16_t max_values)
+int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16_t *values, uint16_t max_values, bool *failsafe_state)
 {
     if (timestamp_us - last_data_us > 5000U || buflen == SRXL_NUM_BYTES) {
         // we've seen a frame gap
@@ -98,10 +98,21 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
         uint16_t b = buffer[i*2+2] << 8 | buffer[i*2+3];
         uint16_t c = b >> 11; // channel number
         int32_t v = b & 0x7FF;
+        if (b & 0x8000) {
+            //printf("bad data 0x%04x\n", b);
+            // bad data
+            return 2;
+        } 
+        if (c == 12) {
+            // special handling for channel 12
+            // see http://www.deviationtx.com/forum/protocol-development/2088-18-channels-for-dsm2-dsmx?start=40
+            //printf("c12: 0x%x %02x %02x\n", (unsigned)(b>>9), (unsigned)buffer[0], (unsigned)buffer[1]);
+            v = (b & 0x1FF) * 4;
+            c = 12 + (((b >> 9) & 0x3) | ((buffer[1]&1)<<2));
+        }
 
         // if channel number if greater than 16 then it is a X-Plus
         // channel. We don't yet know how to decode those. There is some information here:
-        // http://www.deviationtx.com/forum/protocol-development/2088-18-channels-for-dsm2-dsmx?start=40
         // but we really need some sample data to confirm
         if (c < SRXL_MAX_CHANNELS) {
             v = (((v - 0x400) * 500) / 876) + 1500;
@@ -110,6 +121,7 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
                 max_channels = c+1;
             }
         }
+        
         //printf("%u:%u ", (unsigned)c, (unsigned)v);
     }
     //printf("\n");
@@ -120,6 +132,10 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
     }
     memcpy(values, channels, (*num_values)*2);
 
+    // check failsafe bit, this goes low when connection to the
+    // transmitter is lost
+    *failsafe_state = ((buffer[1] & 2) == 0);
+    
 #if 0
     for (uint8_t i=0; i<buflen; i++) {
         printf("%02x ", (unsigned)buffer[i]);
@@ -185,6 +201,7 @@ int main(int argc, const char *argv[])
         uint8_t b;
         uint8_t num_values = 0;
         uint16_t values[18];
+        bool failsafe_state;
         fd_set fds;
         struct timeval tv;
     
@@ -203,13 +220,13 @@ int main(int argc, const char *argv[])
             break;
         }
 
-        if (srxl_decode(micros64(), b, &num_values, values, 18) == 0) {
+        if (srxl_decode(micros64(), b, &num_values, values, 18, &failsafe_state) == 0) {
 #if 1
             printf("%u: ", num_values);
             for (uint8_t i=0; i<num_values; i++) {
                 printf("%u:%4u ", i+1, values[i]);
             }
-            printf("\n");
+            printf("%s\n", failsafe_state?"FAIL":"OK");
 #endif
         }
     }
