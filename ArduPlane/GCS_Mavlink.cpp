@@ -1278,12 +1278,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_START_RX_PAIR:
-            // initiate bind procedure
-            if (!hal.rcin->rc_bind(packet.param1)) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
-            }
+            result = handle_rc_bind(packet);
             break;
 
         case MAV_CMD_NAV_LOITER_UNLIM:
