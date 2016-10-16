@@ -43,17 +43,23 @@ bool AP_GPS_MAV::read(void)
 // corresponding gps data appropriately;
 void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
 {
+    union {
+        struct {
+            bool alt   : 1; // 0  // altitude field
+            bool hdop  : 1; // 1  // hdop field
+            bool vdop  : 1; // 2  // vdop field
+            bool vel_h : 1; // 3  // horizontal velocity field
+            bool vel_v : 1; // 4  // vertical velocity field
+            bool sa    : 1; // 5  // speed accuracy
+            bool ha    : 1; // 6  // horizontal accuracy field
+            bool va    : 1; // 7  // vertical accuracy field
+        };
+        uint16_t flags;
+    } have;
     mavlink_gps_input_t packet;
     mavlink_msg_gps_input_decode(msg, &packet);
 
-    bool have_alt    = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_ALT) == 0);
-    bool have_hdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_HDOP) == 0);
-    bool have_vdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VDOP) == 0);
-    bool have_vel_h  = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VEL_HORIZ) == 0);
-    bool have_vel_v  = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VEL_VERT) == 0);
-    bool have_sa     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_SPEED_ACCURACY) == 0);
-    bool have_ha     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_HORIZONTAL_ACCURACY) == 0);
-    bool have_va     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VERTICAL_ACCURACY) == 0);
+    have.flags = packet.ignore_flags ^ 0xffff;  // ignore to have.
 
     state.time_week     = packet.time_week;
     state.time_week_ms  = packet.time_week_ms;
@@ -62,41 +68,42 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
     Location loc = {};
     loc.lat = packet.lat;
     loc.lng = packet.lon;
-    if (have_alt) {
+    if (have.alt) {
         loc.alt = packet.alt;
     }
     state.location = loc;
     state.location.options = 0;
 
-    if (have_hdop) {
+    if (have.hdop) {
         state.hdop = packet.hdop * 10; //In centimeters
     }
 
-    if (have_vdop) {
+    if (have.vdop) {
         state.vdop = packet.vdop * 10; //In centimeters
     }
 
-    if (have_vel_h) {
+    if (have.vel_h) {
         Vector3f vel(packet.vn, packet.ve, 0);
-        if (have_vel_v)
+        if (have.vel_v) {
             vel.z = packet.vd;
+        }
 
         state.velocity = vel;
         state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
         state.ground_speed = norm(vel.x, vel.y);
     }
 
-    if (have_sa) {
+    if (have.sa) {
         state.speed_accuracy = packet.speed_accuracy;
         state.have_speed_accuracy = 1;
     }
 
-    if (have_ha) {
+    if (have.ha) {
         state.horizontal_accuracy = packet.horiz_accuracy;
         state.have_horizontal_accuracy = 1;
     }
 
-    if (have_va) {
+    if (have.va) {
         state.vertical_accuracy = packet.vert_accuracy;
         state.have_vertical_accuracy = 1;
     }
