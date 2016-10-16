@@ -22,6 +22,8 @@ addons:
       - ccache
       - genromfs
       - libc6-i386
+      - libxml2-dev
+      - libxslt1-dev
       - python-pip
       - python-dev
       - zlib1g-dev
