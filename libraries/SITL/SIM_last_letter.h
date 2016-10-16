@@ -41,7 +41,7 @@ public:
     }
 
 private:
-    static const uint16_t fdm_port = 9002;
+    static const uint16_t fdm_port = 5002;
 
     /*
       packet sent to last_letter
