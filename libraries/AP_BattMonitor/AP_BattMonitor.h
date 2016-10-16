@@ -44,6 +44,13 @@ public:
         BattMonitor_TYPE_BEBOP                      = 6
     };
 
+        // Battery monitor driver types
+    enum BattMonitor_Status {
+        BattMonitor_STATUS_NORMAL,
+        BattMonitor_STATUS_LOW,
+        BattMonitor_STATUS_CRITICAL,
+    };
+
     // The BattMonitor_State structure is filled in by the backend driver
     struct BattMonitor_State {
         uint8_t     instance;           // the instance number of this monitor
@@ -54,6 +61,7 @@ public:
         float       current_total_mah;  // total current draw since start-up
         uint32_t    last_time_micros;   // time when voltage and current was last read
         uint32_t    low_voltage_start_ms;  // time when voltage dropped below the minimum
+        uint32_t    critical_voltage_start_ms;  // time when voltage dropped below the minimum
     };
 
     // Return the number of battery monitor instances
@@ -98,9 +106,14 @@ public:
     int32_t pack_capacity_mah(uint8_t instance) const;
     int32_t pack_capacity_mah() const { return pack_capacity_mah(AP_BATT_PRIMARY_INSTANCE); }
  
-    /// exhausted - returns true if the battery's voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity
-    bool exhausted(uint8_t instance, float low_voltage, float min_capacity_mah);
-    bool exhausted(float low_voltage, float min_capacity_mah) { return exhausted(AP_BATT_PRIMARY_INSTANCE, low_voltage, min_capacity_mah); }
+    /// status - returns BattMonitor_STATUS_CRITICAL if the voltage remains below the critical_voltage
+    ///                  for 10 seconds or remaining capacity falls below critical_capacity_mah.
+    ///          returns BattMonitor_STATUS_LOW if the voltage remains below the low_voltage for 10 
+    ///                  seconds or remaining capacity falls below min_capacity_mah.
+    ///          returns BattMonitor_STATUS_NORMAL otherwise.
+    enum BattMonitor_Status status(uint8_t instance, float low_voltage, float critical_voltage, float min_capacity_mah, float critical_capacity_mah);
+    enum BattMonitor_Status status(float low_voltage, float critical_voltage, float min_capacity_mah, float critical_capacity_mah) { 
+        return status(AP_BATT_PRIMARY_INSTANCE, low_voltage, critical_voltage, min_capacity_mah, critical_capacity_mah); }
 
     /// get_type - returns battery monitor type
     enum BattMonitor_Type get_type() { return get_type(AP_BATT_PRIMARY_INSTANCE); }
