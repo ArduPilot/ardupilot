@@ -146,12 +146,37 @@ void Plane::low_battery_event(void)
     if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
         flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
         flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-    	set_mode(RTL, MODE_REASON_BATTERY_FAILSAFE);
-    	aparm.throttle_cruise.load();
+        set_mode(RTL, MODE_REASON_BATTERY_FAILSAFE);
+        aparm.throttle_cruise.load();
     }
     failsafe.low_battery = true;
     AP_Notify::flags.failsafe_battery = true;
 }
+
+void Plane::critical_battery_event(void)
+{
+    if (failsafe.critical_battery) {
+        return;
+    }
+    gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Critical battery %.2fV used %.0f mAh",
+                      (double)battery.voltage(), (double)battery.current_total_mah());
+    if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+        set_mode(RTL, MODE_REASON_BATTERY_FAILSAFE);
+        aparm.throttle_cruise.load();
+
+        // Go directly to the landing sequence
+        jump_to_landing_sequence();
+
+        // prevent running the expensive jump_to_landing_sequence
+        // on every loop
+        auto_state.checked_for_autoland = true;
+    }
+    failsafe.critical_battery = true;
+    AP_Notify::flags.failsafe_battery = true;
+}
+
 
 void Plane::update_events(void)
 {

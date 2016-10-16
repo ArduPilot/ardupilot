@@ -346,6 +346,8 @@ public:
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
 
+        k_param_fs_batt_critical_voltage = 251,
+        k_param_fs_batt_critical_mah = 252,
         k_param_DataFlash = 253, // Logging Group
 
         // 254,255: reserved
@@ -436,7 +438,9 @@ public:
     AP_Float long_fs_timeout;
     AP_Int8 gcs_heartbeat_fs_enabled;
     AP_Float fs_batt_voltage;
+    AP_Float fs_batt_critical_voltage;
     AP_Float fs_batt_mah;
+    AP_Float fs_batt_critical_mah;
 
     // Flight modes
     //

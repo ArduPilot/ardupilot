@@ -1362,6 +1362,22 @@ const AP_Param::Info Plane::var_info[] = {
     // @Group: 
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
+
+    // @Param: FS_BATT_CRT_VOLT
+    // @DisplayName: Failsafe battery critical voltage
+    // @Description: Battery voltage to trigger critcal failsafe. Set to 0 to disable critical battery failsafe. If the battery voltage drops below this level then the plane will switch to a preplanned landing if present, otherwise RTL.
+    // @Units: Volts
+    // @Increment: 0.1
+    // @User: Standard
+    GSCALAR(fs_batt_critical_voltage, "FS_BATT_CRT_VOLT", 0),
+
+    // @Param: FS_BATT_CRT_MAH
+    // @DisplayName: Failsafe battery critical mah
+    // @Description: Battery mAh to trigger critcal failsafe. Set to 0 to disable critical battery failsafe. If the remaining battery drops below this level then the plane will switch to a preplanned landing if present, otherwise RTL.
+    // @Units: mAh
+    // @Increment: 50
+    // @User: Standard
+    GSCALAR(fs_batt_critical_mah, "FS_BATT_CRT_MAH", 0),
     
     AP_VAREND
 };
