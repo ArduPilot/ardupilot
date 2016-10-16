@@ -107,8 +107,18 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
             // special handling for channel 12
             // see http://www.deviationtx.com/forum/protocol-development/2088-18-channels-for-dsm2-dsmx?start=40
             //printf("c12: 0x%x %02x %02x\n", (unsigned)(b>>9), (unsigned)buffer[0], (unsigned)buffer[1]);
-            v = (b & 0x1FF) * 4;
-            c = 12 + (((b >> 9) & 0x3) | ((buffer[1]&1)<<2));
+            v = (b & 0x1FF) << 2;
+            c = 10 + ((b >> 9) & 0x7);
+            if (buffer[1] & 1) {
+                c += 4;
+            }
+#if 0
+            printf("b=0x%04x v=%u c=%u b[1]=0x%02x\n",
+                   (unsigned)b, (unsigned)v, (unsigned)c, (unsigned)buffer[1]);
+#endif
+        } else if (c > 12) {
+            // invalid
+            v = 0;
         }
 
         // if channel number if greater than 16 then it is a X-Plus
@@ -200,7 +210,7 @@ int main(int argc, const char *argv[])
     while (true) {
         uint8_t b;
         uint8_t num_values = 0;
-        uint16_t values[18];
+        uint16_t values[20];
         bool failsafe_state;
         fd_set fds;
         struct timeval tv;
@@ -220,7 +230,7 @@ int main(int argc, const char *argv[])
             break;
         }
 
-        if (srxl_decode(micros64(), b, &num_values, values, 18, &failsafe_state) == 0) {
+        if (srxl_decode(micros64(), b, &num_values, values, sizeof(values)/sizeof(values[0]), &failsafe_state) == 0) {
 #if 1
             printf("%u: ", num_values);
             for (uint8_t i=0; i<num_values; i++) {
@@ -228,6 +238,59 @@ int main(int argc, const char *argv[])
             }
             printf("%s\n", failsafe_state?"FAIL":"OK");
 #endif
+        }
+    }
+}
+#endif
+
+
+#ifdef TEST_HEX_PROGRAM
+/*
+  test harness for use under Linux with hex dump in a file
+ */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <time.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <termios.h>
+
+int main(int argc, const char *argv[])
+{
+    FILE *f = fopen(argv[1], "r");
+    if (!f) {
+        perror(argv[1]);
+        exit(1);
+    }
+
+    uint64_t t=0;
+    while (true) {
+        uint8_t b;
+        uint8_t num_values = 0;
+        uint16_t values[20];
+        bool failsafe_state;
+
+        unsigned u[18];
+        if (fscanf(f, "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
+                   &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9], 
+                   &u[10], &u[11], &u[12], &u[13], &u[14], &u[15], &u[16], &u[17]) != 18) {
+            break;
+        }
+        t += 11000;
+
+        for (uint8_t i=0; i<18; i++) {
+            b = u[i];
+
+            if (srxl_decode(t, b, &num_values, values, sizeof(values)/sizeof(values[0]), &failsafe_state) == 0) {
+#if 1
+                printf("%u: ", num_values);
+                for (uint8_t i=0; i<num_values; i++) {
+                    printf("%u:%4u ", i+1, values[i]);
+                }
+                printf("%s\n", failsafe_state?"FAIL":"OK");
+#endif
+            }
         }
     }
 }
