@@ -47,7 +47,7 @@ void AP_Module::module_scan(const char *path)
         printf("dlopen(%s) -> %s\n", path, dlerror());
         return;
     }
-    bool found_hook = false;
+    uint8_t found_hooks = 0;
     for (uint16_t i=0; i<NUM_HOOKS; i++) {
         void *s = dlsym(m, hook_names[i]);
         if (s != nullptr) {
@@ -59,12 +59,14 @@ void AP_Module::module_scan(const char *path)
             h->next = hooks[i];
             h->symbol = s;
             hooks[i] = h;
-            found_hook = true;
+            found_hooks++;
         }
     }
-    if (!found_hook) {
+    if (found_hooks == 0) {
         // we don't need this module
         dlclose(m);
+    } else {
+        printf("AP_Module: Loaded %u hooks from %s\n", (unsigned)found_hooks, path);
     }
 #endif
 }
