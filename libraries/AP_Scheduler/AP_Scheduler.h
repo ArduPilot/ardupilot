@@ -101,7 +101,7 @@ private:
     AP_Int8 _debug;
 
     // overall scheduling rate in Hz
-    AP_Int16 _loop_rate_hz;
+    AP_Int16 _loop_rate_hz;  // The value of this variable can be changed with the non-initialization. (Ex. Tuning by GDB)
     
     // progmem list of tasks to run
     const struct Task *_tasks;
