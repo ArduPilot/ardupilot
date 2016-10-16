@@ -104,7 +104,7 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
             return 2;
         } 
         if (c == 12) {
-            // special handling for channel 12
+            // special handling for channel 12, this contains the XPlus channels
             // see http://www.deviationtx.com/forum/protocol-development/2088-18-channels-for-dsm2-dsmx?start=40
             //printf("c12: 0x%x %02x %02x\n", (unsigned)(b>>9), (unsigned)buffer[0], (unsigned)buffer[1]);
             v = (b & 0x1FF) << 2;
@@ -121,9 +121,6 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
             v = 0;
         }
 
-        // if channel number if greater than 16 then it is a X-Plus
-        // channel. We don't yet know how to decode those. There is some information here:
-        // but we really need some sample data to confirm
         if (c < SRXL_MAX_CHANNELS) {
             v = (((v - 0x400) * 500) / 876) + 1500;
             channels[c] = v;
