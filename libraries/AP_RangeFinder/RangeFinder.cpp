@@ -149,7 +149,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_POS", 49, RangeFinder, _pos_offset[0], 0.0f),
 
-    #if RANGEFINDER_MAX_INSTANCES > 1
+#if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
