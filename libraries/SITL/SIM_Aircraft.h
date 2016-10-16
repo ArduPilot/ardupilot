@@ -114,6 +114,8 @@ protected:
     float frame_height;
     Matrix3f dcm;  // rotation matrix, APM conventions, from body to earth
     Vector3f gyro; // rad/s
+    Vector3f gyro_prev; // rad/s
+    Vector3f ang_accel; // rad/s/s
     Vector3f velocity_ef; // m/s, earth frame
     Vector3f wind_ef; // m/s, earth frame
     Vector3f velocity_air_ef; // velocity relative to airmass, earth frame
