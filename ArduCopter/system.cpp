@@ -112,6 +112,9 @@ void Copter::init_ardupilot()
 
     GCS_MAVLINK::set_dataflash(&DataFlash);
 
+    // identify ourselves correctly with the ground station
+    mavlink_system.sysid = g.sysid_this_mav;
+    
     // initialise serial ports
     serial_manager.init();
 
@@ -157,9 +160,6 @@ void Copter::init_ardupilot()
                          FRAME_MAV_TYPE,
                          &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value);
 #endif
-
-    // identify ourselves correctly with the ground station
-    mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
