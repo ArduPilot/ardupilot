@@ -92,6 +92,8 @@ void Rover::init_ardupilot()
 
     GCS_MAVLINK::set_dataflash(&DataFlash);
 
+    mavlink_system.sysid = g.sysid_this_mav;
+
     // initialise serial ports
     serial_manager.init();
 
@@ -131,8 +133,6 @@ void Rover::init_ardupilot()
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.init(serial_manager, FIRMWARE_STRING, MAV_TYPE_GROUND_ROVER);
 #endif
-
-    mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
