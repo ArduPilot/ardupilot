@@ -86,6 +86,22 @@ uint16_t SITL_State::_ground_sonar(void)
 {
     float altitude = height_agl();
 
+    // sensor position offset in body frame
+    Vector3f relPosSensorBF = _sitl->rngfnd_pos_offset;
+
+    // adjust altitude for position of the sensor on the vehicle if position offset is non-zero
+    if (!relPosSensorBF.is_zero()) {
+        // get a rotation matrix following DCM conventions (body to earth)
+        Matrix3f rotmat;
+        rotmat.from_euler(radians(_sitl->state.rollDeg),
+                          radians(_sitl->state.pitchDeg),
+                          radians(_sitl->state.yawDeg));
+        // rotate the offset into earth frame
+        Vector3f relPosSensorEF = rotmat * relPosSensorBF;
+        // correct the altitude at the sensor
+        altitude -= relPosSensorEF.z;
+    }
+
     float voltage = 5.0f;
     if (fabsf(_sitl->state.rollDeg) < 90 &&
             fabsf(_sitl->state.pitchDeg) < 90) {
