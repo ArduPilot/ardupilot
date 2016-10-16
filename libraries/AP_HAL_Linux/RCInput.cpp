@@ -220,7 +220,9 @@ void RCInput::_process_sbus_pulse(uint16_t width_s0, uint16_t width_s1)
                 _pwm_values[i] = values[i];
             }
             _num_channels = num_values;
-            new_rc_input = true;
+            if (!sbus_failsafe) {
+                new_rc_input = true;
+            }
         }
         goto reset;
     } else if (bits_s1 > 12) {
@@ -561,11 +563,14 @@ void RCInput::add_sbus_input(const uint8_t *bytes, size_t nbytes)
                 if (num_values > _num_channels) {
                     _num_channels = num_values;
                 }
-                new_rc_input = true;
+                if (!sbus_failsafe) {
+                    new_rc_input = true;
+                }
 #if 0
-                printf("Decoded SBUS %u channels %u %u %u %u %u %u %u %u\n",
+                printf("Decoded SBUS %u channels %u %u %u %u %u %u %u %u %s\n",
                        (unsigned)num_values,
-                       values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
+                       values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7],
+                       sbus_failsafe?"FAIL":"OK");
 #endif
             }
         }
