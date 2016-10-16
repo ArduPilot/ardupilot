@@ -30,6 +30,8 @@ void Tracker::init_tracker()
 
     GCS_MAVLINK::set_dataflash(&DataFlash);
 
+    mavlink_system.sysid = g.sysid_this_mav;
+
     // initialise serial ports
     serial_manager.init();
 
@@ -55,8 +57,6 @@ void Tracker::init_tracker()
         gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
         gcs[i].set_snoop(mavlink_snoop_static);
     }
-
-    mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
