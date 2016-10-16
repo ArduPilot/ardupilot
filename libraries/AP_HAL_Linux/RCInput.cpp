@@ -385,8 +385,14 @@ bool RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
             dsm.partial_frame_count = 0;
             uint16_t values[16] {};
             uint16_t num_values=0;
+            /*
+              we only accept input when nbytes==0 as dsm is highly
+              sensitive to framing, and extra bytes may be an
+              indication this is really SRXL
+             */
             if (dsm_decode(AP_HAL::micros64(), dsm.frame, values, &num_values, 16) &&
-                num_values >= MIN_NUM_CHANNELS) {
+                num_values >= MIN_NUM_CHANNELS &&
+                nbytes == 0) {
                 for (uint8_t i=0; i<num_values; i++) {
                     if (values[i] != 0) {
                         _pwm_values[i] = values[i];
@@ -486,8 +492,7 @@ bool RCInput::add_srxl_input(const uint8_t *bytes, size_t nbytes)
     bool failsafe_state;
     
     while (nbytes > 0) {
-        if (srxl_decode(now, *bytes++, &channel_count, values, LINUX_RC_INPUT_NUM_CHANNELS, &failsafe_state) == 0 &&
-            failsafe_state == false) {
+        if (srxl_decode(now, *bytes++, &channel_count, values, LINUX_RC_INPUT_NUM_CHANNELS, &failsafe_state) == 0) {
             if (channel_count > LINUX_RC_INPUT_NUM_CHANNELS) {
                 continue;
             }
@@ -495,7 +500,9 @@ bool RCInput::add_srxl_input(const uint8_t *bytes, size_t nbytes)
                 _pwm_values[i] = values[i];
             }
             _num_channels = channel_count;
-            new_rc_input = true;
+            if (failsafe_state == false) {
+                new_rc_input = true;
+            }
             ret = true;
         }
         nbytes--;

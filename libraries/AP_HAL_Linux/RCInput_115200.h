@@ -42,7 +42,7 @@ private:
         DECODER_SRXL,
         DECODER_SYNC
     };
-    enum Decoders decoder;
+    enum Decoders decoder = DECODER_SYNC;
 
     uint8_t dsm_count;
     uint8_t st24_count;
