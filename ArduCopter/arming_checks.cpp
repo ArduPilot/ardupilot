@@ -317,7 +317,8 @@ bool Copter::board_voltage_checks(bool display_failure)
 
     // check battery voltage
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
-        if (failsafe.battery || (!ap.usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah))) {
+        if (failsafe.battery || (!ap.usb_connected && 
+            (battery.status(g.fs_batt_voltage, 0.0, g.fs_batt_mah,  0.0) != AP_BattMonitor::BattMonitor_STATUS_NORMAL))) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check Battery");
             }
@@ -752,7 +753,8 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     // check battery voltage
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
-        if (failsafe.battery || (!ap.usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah))) {
+        if (failsafe.battery || (!ap.usb_connected && 
+            (battery.status(g.fs_batt_voltage, 0.0, g.fs_batt_mah,  0.0) != AP_BattMonitor::BattMonitor_STATUS_NORMAL))) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Check Battery");
             }

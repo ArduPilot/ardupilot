@@ -169,7 +169,8 @@ void Copter::read_battery(void)
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
     // we only check when we're not powered by USB to avoid false alarms during bench tests
-    if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
+    if (!ap.usb_connected && !failsafe.battery && 
+        (battery.status(g.fs_batt_voltage, 0.0, g.fs_batt_mah, 0.0) != AP_BattMonitor::BattMonitor_STATUS_NORMAL)) {
         failsafe_battery_event();
     }
 
