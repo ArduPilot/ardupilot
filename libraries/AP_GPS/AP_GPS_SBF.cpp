@@ -260,19 +260,19 @@ AP_GPS_SBF::process_message(void)
                 state.status = AP_GPS::GPS_OK_FIX_3D;
                 break;
             case 4: // rtk fixed
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;
             case 5: // rtk float
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                 break;
             case 6: // sbas
-                state.status = AP_GPS::GPS_OK_FIX_3D;
+                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
                 break;
             case 7: // moving rtk fixed
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;
             case 8: // moving rtk float
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                 break;
         }
         

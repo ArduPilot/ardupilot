@@ -120,7 +120,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         } else {
             _unconfigured_messages &= ~CONFIG_SBAS;
         }
-	break;
+        break;
     case STEP_POLL_NAV:
         _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, nullptr, 0);
         break;
@@ -358,7 +358,7 @@ AP_GPS_UBLOX::read(void)
                 _delay_time = 750;
             }
         } else {
-            _delay_time = 4000;
+            _delay_time = 2000;
         }
     }
 
@@ -970,11 +970,13 @@ AP_GPS_UBLOX::_parse_gps(void)
                 if (_buffer.pvt.flags & 0b00000010)  // diffsoln
                     state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
                 if (_buffer.pvt.flags & 0b01000000)  // carrsoln - float
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                 if (_buffer.pvt.flags & 0b10000000)  // carrsoln - fixed
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;
             case 4:
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
+                                "Unexpected state %d", _buffer.pvt.flags);
                 state.status = AP_GPS::GPS_OK_FIX_3D;
                 break;
             case 5:
@@ -1010,10 +1012,6 @@ AP_GPS_UBLOX::_parse_gps(void)
         }
                     
         state.last_gps_time_ms = AP_HAL::millis();
-        if (state.time_week_ms + 220 > _buffer.pvt.itow) {
-            // we got a 5Hz update. 
-            _last_5hz_time = state.last_gps_time_ms;
-        }
         
         // time
         state.time_week_ms    = _buffer.pvt.itow;
@@ -1161,7 +1159,7 @@ AP_GPS_UBLOX::_configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t
     struct ubx_cfg_msg_rate msg;
     msg.msg_class = msg_class;
     msg.msg_id    = msg_id;
-    msg.rate          = rate;
+    msg.rate      = rate;
     _send_message(CLASS_CFG, MSG_CFG_MSG, &msg, sizeof(msg));
     return true;
 }
@@ -1287,7 +1285,8 @@ static const char *reasons[] = {"navigation rate",
                                 "version",
                                 "navigation settings",
                                 "GNSS settings",
-                                "SBAS settings"};
+                                "SBAS settings",
+                                "PVT rate"};
 
 
 void
