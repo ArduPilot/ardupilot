@@ -659,8 +659,10 @@ void Plane::rangefinder_height_update(void)
             rangefinder_state.correction = correction;
             rangefinder_state.initial_correction = correction;
             auto_state.initial_land_slope = auto_state.land_slope;
+            rangefinder_state.last_correction_time_ms = now;
         } else {
             rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
+            rangefinder_state.last_correction_time_ms = now;
             if (fabsf(rangefinder_state.correction - rangefinder_state.initial_correction) > 30) {
                 // the correction has changed by more than 30m, reset use of Lidar. We may have a bad lidar
                 if (rangefinder_state.in_use) {
@@ -669,7 +671,7 @@ void Plane::rangefinder_height_update(void)
                 memset(&rangefinder_state, 0, sizeof(rangefinder_state));
             }
         }
-        rangefinder_state.last_correction_time_ms = now;
+        
     }
 }
 #endif
