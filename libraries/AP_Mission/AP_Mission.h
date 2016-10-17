@@ -50,6 +50,13 @@ public:
         int16_t num_times;      // num times to repeat.  -1 = repeat forever
     };
 
+    // land into wind
+    struct PACKED Land_Wind_Command {
+        uint16_t angle_deg_start;
+        uint16_t angle_deg_stop;
+        uint16_t altitude;
+    };
+
     // condition delay command structure
     struct PACKED Conditional_Delay_Command {
         float seconds;          // period of delay in seconds
@@ -179,6 +186,9 @@ public:
     union PACKED Content {
         // jump structure
         Jump_Command jump;
+
+        // nav into wind
+        Land_Wind_Command wind;
 
         // conditional delay
         Conditional_Delay_Command delay;
