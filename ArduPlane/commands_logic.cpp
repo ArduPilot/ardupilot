@@ -56,6 +56,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_takeoff(cmd);
         break;
 
+   case MAV_CMD_NAV_INTO_WIND:
+        do_nav_into_wind(cmd);
+        break;
+
     case MAV_CMD_NAV_WAYPOINT:                  // Navigate to Waypoint
         do_nav_wp(cmd);
         break;
@@ -252,6 +256,9 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_TAKEOFF:
         return verify_takeoff();
 
+    case MAV_CMD_NAV_INTO_WIND:
+        return verify_nav_into_wind(cmd);
+
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
 
@@ -381,6 +388,58 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
+}
+
+inline int modulo(int a, int b) {
+    if (b < 0) {
+        return modulo(-a, -b);
+    }
+    const int result = a % b;
+    return result >= 0 ? result : result + b;
+}
+
+void Plane::do_nav_into_wind(const AP_Mission::Mission_Command& cmd)
+{
+    Vector3f wind = ahrs.wind_estimate();
+    float wind_to = M_PI_2 - atan2f(wind.y, wind.x);
+    if (wind_to < 0.0) {
+        wind_to += M_2PI;
+    }
+
+    //get the next waypoint position
+    AP_Mission::Mission_Command next_cmd;
+    const uint16_t current_index = mission.get_current_nav_index() + 1;
+    mission.get_next_nav_cmd(current_index, next_cmd);
+
+    gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Nav_into_wind: wind to %.1f", degrees(wind_to));
+
+    //verify the limits of the approach
+    if ( (cmd.content.wind.deg_start >= 360 && cmd.content.wind.deg_stop > 360) ||
+        (cmd.content.wind.deg_start >= cmd.content.wind.deg_stop) ) {
+        gcs_send_text(MAV_SEVERITY_WARNING, "Nav_into_wind: invalid limits, will not respect");
+    } else { //appply the limits (if needed)
+        //cartesian angle in radians to cardinal angle in degrees
+        uint16_t wind_from_deg = modulo((90 - degrees(wind_to)), 360);
+        if ( (wind_from_deg < cmd.content.wind.deg_start) || (wind_from_deg > cmd.content.wind.deg_stop) ) {
+            //choose the nearest angle inside the limits
+            uint16_t diff_low = 180.0 - fabs(fmod(fabs(wind_from_deg - cmd.content.wind.deg_start), 360.0) - 180.0);
+            uint16_t diff_high = 180.0 - fabs(fmod(fabs(wind_from_deg - cmd.content.wind.deg_stop), 360.0) - 180.0);
+            if (diff_low < diff_high) {
+                wind_to = radians(modulo((90 - (cmd.content.wind.deg_start)), 360));
+            } else {
+                wind_to = radians(modulo((90 - (cmd.content.wind.deg_stop)), 360));
+            }
+        }
+    }
+
+    //set a waypoint away from the wind, radius away and at altitude over the next wp
+    Location next_cmd_loc = next_cmd.content.location;
+    next_cmd_loc.alt += cmd.content.wind.altitude * 100;
+    next_cmd_loc.lng += cos(wind_to) * cmd.p1 * 100;
+    next_cmd_loc.lat += sin(wind_to) * cmd.p1 * 100;
+    location_sanitize(current_loc, next_cmd_loc);
+
+   set_next_WP(next_cmd_loc);
 }
 
 void Plane::do_land(const AP_Mission::Mission_Command& cmd)
@@ -585,6 +644,39 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         acceptance_distance = cmd.p1;
     }
     
+    if (auto_state.wp_distance <= acceptance_distance) {
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
+                          (unsigned)mission.get_current_nav_cmd().index,
+                          (unsigned)get_distance(current_loc, next_WP_loc));
+        return true;
+	}
+
+    // have we flown past the waypoint?
+    if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
+                          (unsigned)mission.get_current_nav_cmd().index,
+                          (unsigned)get_distance(current_loc, next_WP_loc));
+        return true;
+    }
+
+    return false;
+}
+
+/*
+  update navigation for the navigating into wind waypoints. Return true when the
+  waypoint is complete. Just like verify_nav_wp(), but without the custom distance checking.
+ */
+bool Plane::verify_nav_into_wind(const AP_Mission::Mission_Command& cmd)
+{
+    steer_state.hold_course_cd = -1;
+
+    if (auto_state.no_crosstrack) {
+        nav_controller->update_waypoint(current_loc, next_WP_loc);
+    } else {
+        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+    }
+
+    float acceptance_distance = nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle);
     if (auto_state.wp_distance <= acceptance_distance) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,

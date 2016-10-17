@@ -52,9 +52,9 @@ public:
 
     // land into wind
     struct PACKED Land_Wind_Command {
-        uint16_t angle_deg_start;
-        uint16_t angle_deg_stop;
-        uint16_t altitude;
+        uint16_t deg_start;     //allowed angle - start of interval (0=north, 90=east)
+        uint16_t deg_stop;      //allowed angle - stop of interval (0=north, 90=east)
+        uint16_t altitude;      //altitude over the next waypoint
     };
 
     // condition delay command structure
