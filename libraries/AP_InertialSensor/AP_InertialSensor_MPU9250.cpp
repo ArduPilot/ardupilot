@@ -215,6 +215,8 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
     , _default_rotation(ROTATION_NONE)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
     , _default_rotation(ROTATION_NONE)
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK
+    , _default_rotation(ROTATION_NONE)
 #else
     /* rotate for PXF (and default for other boards) */
     , _default_rotation(ROTATION_ROLL_180_YAW_90)
