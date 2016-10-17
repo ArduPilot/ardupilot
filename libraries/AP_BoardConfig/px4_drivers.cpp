@@ -138,9 +138,22 @@ void AP_BoardConfig::px4_setup_safety()
     // setup channels to ignore the armed state
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd != -1) {
-        if (ioctl(px4io_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)(0x0000FFFF & px4.ignore_safety_channels)) != 0) {
+        if (ioctl(px4io_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)px4.ignore_safety_channels) != 0) {
             hal.console->printf("IGNORE_SAFETY failed\n");
         }
+    }
+    int px4fmu_fd = open("/dev/px4fmu", 0);
+    if (px4fmu_fd != -1) {
+        uint16_t mask = px4.ignore_safety_channels;
+        if (px4io_fd != -1) {
+            mask >>= 8;
+        }
+        if (ioctl(px4io_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)mask) != 0) {
+            hal.console->printf("IGNORE_SAFETY failed\n");
+        }
+        close(px4fmu_fd);
+    }
+    if (px4io_fd != -1) {
         close(px4io_fd);
     }
 #endif
