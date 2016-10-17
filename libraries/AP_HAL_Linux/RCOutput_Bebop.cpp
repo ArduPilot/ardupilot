@@ -448,7 +448,7 @@ void RCOutput_Bebop::_run_rcout()
      * keep current order. The order changes from version 2 on bebop 1 and
      * remains the same as this for bebop 2
      */
-    if (info.version_maj == 1 || info.version_maj == 5) {
+    if (info.version_maj == 1) {
         bebop_bldc_right_front = BEBOP_BLDC_MOTOR_1;
         bebop_bldc_left_front  = BEBOP_BLDC_MOTOR_2;
         bebop_bldc_left_back   = BEBOP_BLDC_MOTOR_3;
