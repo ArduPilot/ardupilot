@@ -36,5 +36,6 @@ help:
 	@echo "  qflight - qualcomm flight board"
 	@echo "  erlebrain2 - the Erle-Brain 2 board"
 	@echo "  bhat - the RaspberryPi + BH HAT combination"
+	@echo "  dark - the RaspberryPi + Dark Control ESC HAT combination"
 	@echo "  pxfmini - the RaspberryPi Zero + PXFmini cape combination"
 	@echo "  navio2 - the RaspberryPi + NavIO2 cape combination"
