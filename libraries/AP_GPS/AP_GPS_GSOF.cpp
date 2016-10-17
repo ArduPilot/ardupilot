@@ -283,7 +283,7 @@ AP_GPS_GSOF::process_message(void)
                         state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
                         if ((posf2 & 4) == 4)
                         {
-                            state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                            state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                         }
                     }
                 }
