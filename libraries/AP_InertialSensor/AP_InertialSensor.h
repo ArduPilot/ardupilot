@@ -169,6 +169,11 @@ public:
         _board_orientation = orientation;
     }
 
+    // set overall board orientation
+    void set_board_orientation(const Vector3f &rotation) {
+        _board_rotation = rotation;
+    }
+    
     // return the selected sample rate
     uint16_t get_sample_rate(void) const { return _sample_rate; }
 
@@ -339,6 +344,7 @@ private:
 
     // board orientation from AHRS
     enum Rotation _board_orientation;
+    Vector3f      _board_rotation = Vector3f(0,0,0);;
 
     // calibrated_ok flags
     bool _gyro_cal_ok[INS_MAX_INSTANCES];

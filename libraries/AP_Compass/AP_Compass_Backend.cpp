@@ -19,6 +19,11 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
     if (!state.external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
         mag.rotate(_compass._board_orientation);
+        
+        // and add in AHRS_ORIENTATION setting if not an external compass (new parameters)
+        Matrix3f field = Matrix3f::matrix_from_euler(mag.x, mag.y, mag.z);
+        field.rotate(_compass._board_rotation);
+        field.to_euler(&mag.x, &mag.y, &mag.z);
     } else {
         // add user selectable orientation
         mag.rotate((enum Rotation)state.orientation.get());

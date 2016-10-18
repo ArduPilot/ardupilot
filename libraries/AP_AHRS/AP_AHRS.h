@@ -141,8 +141,11 @@ public:
     // this makes initial config easier
     void set_orientation() {
         _ins.set_board_orientation((enum Rotation)_board_orientation.get());
+        _ins.set_board_orientation(Vector3f(_roll_tilt, _pitch_tilt, _yaw_tilt));
+        
         if (_compass != NULL) {
             _compass->set_board_orientation((enum Rotation)_board_orientation.get());
+            _compass->set_board_orientation(Vector3f(_roll_tilt, _pitch_tilt, _yaw_tilt));
         }
     }
 
@@ -484,6 +487,11 @@ protected:
     AP_Int8 _gps_delay;
     AP_Int8 _ekf_type;
 
+    // should replace "_board_orientation"
+    AP_Int8 _pitch_tilt;
+    AP_Int8 _roll_tilt;
+    AP_Int8 _yaw_tilt;
+    
     // flags structure
     struct ahrs_flags {
         uint8_t have_initial_yaw        : 1;    // whether the yaw value has been intialised with a reference
