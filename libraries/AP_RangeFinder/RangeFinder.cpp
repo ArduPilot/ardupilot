@@ -132,19 +132,19 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Param: _POS_X
     // @DisplayName:  X position offset
-    // @Description: X position of the first rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Description: X position of the first rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
 
     // @Param: _POS_Y
     // @DisplayName: Y position offset
-    // @Description: Y position of the first rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Description: Y position of the first rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
 
     // @Param: _POS_Z
     // @DisplayName: Z position offset
-    // @Description: Z position of the first rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Description: Z position of the first rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("_POS", 49, RangeFinder, _pos_offset[0], 0.0f),
@@ -244,19 +244,19 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Param: 2_POS_X
     // @DisplayName:  X position offset
-    // @Description: X position of the second rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Description: X position of the second rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
 
     // @Param: 2_POS_Y
     // @DisplayName: Y position offset
-    // @Description: Y position of the second rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Description: Y position of the second rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
 
     // @Param: 2_POS_Z
     // @DisplayName: Z position offset
-    // @Description: Z position of the second rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Description: Z position of the second rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("2_POS", 50, RangeFinder, _pos_offset[1], 0.0f),
@@ -349,19 +349,19 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Param: 3_POS_X
     // @DisplayName:  X position offset
-    // @Description: X position of the third rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Description: X position of the third rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
 
     // @Param: 3_POS_Y
     // @DisplayName: Y position offset
-    // @Description: Y position of the third rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Description: Y position of the third rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
 
     // @Param: 3_POS_Z
     // @DisplayName: Z position offset
-    // @Description: Z position of the third rangefinder in body frame. Use the zero range datum point if supplied.
+    // @Description: Z position of the third rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("3_POS", 51, RangeFinder, _pos_offset[2], 0.0f),
