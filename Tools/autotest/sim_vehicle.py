@@ -686,7 +686,7 @@ group_build.add_option("-c", "--clean", action='store_true', default=False, help
 group_build.add_option("-j", "--jobs", default=None, type='int', help="number of processors to use during build (default for waf : number of processor, for make : 1)")
 group_build.add_option("-b", "--build-target", default=None, type='string', help="override SITL build target")
 group_build.add_option("-s", "--build-system", default="waf", type='choice', choices=["make", "waf"], help="build system to use")
-group_build.add_option("", "--no-rebuild-on-failure", dest="rebuild_on_failure", action='store_false', default=True, help="if build fails, do not clean and rebuild")
+group_build.add_option("", "--rebuild-on-failure", dest="rebuild_on_failure", action='store_true', default=False, help="if build fails, do not clean and rebuild")
 group_build.add_option("", "--waf-configure-arg", action="append", dest="waf_configure_args", type="string", default=[], help="extra arguments to pass to waf in its configure step")
 group_build.add_option("", "--waf-build-arg", action="append", dest="waf_build_args", type="string", default=[], help="extra arguments to pass to waf in its build step")
 parser.add_option_group(group_build)
