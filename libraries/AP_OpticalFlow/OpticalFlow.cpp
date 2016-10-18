@@ -37,19 +37,19 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
 
     // @Param: _POS_X
     // @DisplayName:  X position offset
-    // @Description: X position of the optical flow sensor focal point in body frame.
+    // @Description: X position of the optical flow sensor focal point in body frame. Positive X is forward of the origin.
     // @Units: m
     // @User: Advanced
 
     // @Param: _POS_Y
     // @DisplayName: Y position offset
-    // @Description: Y position of the optical flow sensor focal point in body frame.
+    // @Description: Y position of the optical flow sensor focal point in body frame. Positive Y is to the right of the origin.
     // @Units: m
     // @User: Advanced
 
     // @Param: _POS_Z
     // @DisplayName: Z position offset
-    // @Description: Z position of the optical flow sensor focal point in body frame.
+    // @Description: Z position of the optical flow sensor focal point in body frame. Positive Z is down from the origin.
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("_POS", 4, OpticalFlow, _pos_offset, 0.0f),
