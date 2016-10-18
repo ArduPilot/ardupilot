@@ -73,6 +73,26 @@ void AP_InertialSensor_SITL::timer_update(void)
     float yAccel2 = sitl->state.yAccel + accel2_noise * rand_float();
     float zAccel2 = sitl->state.zAccel + accel2_noise * rand_float();
 
+    // correct for the acceleration due to the IMU position offset and angular acceleration
+    // correct for the centripetal acceleration
+    // only apply corrections to first accelerometer
+    Vector3f pos_offset = sitl->imu_pos_offset;
+    if (!pos_offset.is_zero()) {
+        // calculate sensed acceleration due to lever arm effect
+        // Note: the % operator has been overloaded to provide a cross product
+        Vector3f angular_accel = Vector3f(radians(sitl->state.angAccel.x) , radians(sitl->state.angAccel.y) , radians(sitl->state.angAccel.z));
+        Vector3f lever_arm_accel = angular_accel % pos_offset;
+
+        // calculate sensed acceleration due to centripetal acceleration
+        Vector3f angular_rate = Vector3f(radians(sitl->state.rollRate), radians(sitl->state.pitchRate), radians(sitl->state.yawRate));
+        Vector3f centripetal_accel = angular_rate % (angular_rate % pos_offset);
+
+        // apply corrections
+        xAccel1 += lever_arm_accel.x + centripetal_accel.x;
+        yAccel1 += lever_arm_accel.y + centripetal_accel.y;
+        zAccel1 += lever_arm_accel.z + centripetal_accel.z;
+    }
+
     if (fabsf(sitl->accel_fail) > 1.0e-6f) {
         xAccel1 = sitl->accel_fail;
         yAccel1 = sitl->accel_fail;
