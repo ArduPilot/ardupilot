@@ -127,7 +127,7 @@ public:
     void update_control_mode(uint8_t mode) { _ap.control_mode = mode; }
 
     // update whether we're flying (used for Plane)
-    void set_is_flying(bool is_flying) { is_flying ? (_ap.value | AP_ISFLYING_FLAG) : (_ap.value & (~AP_ISFLYING_FLAG)); }
+    void set_is_flying(bool is_flying);
  
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
