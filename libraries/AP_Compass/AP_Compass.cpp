@@ -795,6 +795,12 @@ void Compass::setHIL(uint8_t instance, float roll, float pitch, float yaw)
     if (!_state[0].external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
         _hil.field[instance].rotate(_board_orientation);
+        /*
+        // and add in AHRS_ORIENTATION setting if not an external compass (new parameters)
+        Matrix3f field = Matrix3f::matrix_from_euler(_hil.field[instance].x, _hil.field[instance].y, _hil.field[instance].z);
+        field.rotate(_board_rotation);
+        field.to_euler(&_hil.field[instance].x, &_hil.field[instance].y, &_hil.field[instance].z);
+        */
     }
     _hil.healthy[instance] = true;
 }

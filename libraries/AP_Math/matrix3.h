@@ -47,7 +47,7 @@ public:
 
     // Vectors comprising the rows of the matrix
     Vector3<T>        a, b, c;
-
+    
     // trivial ctor
     // note that the Vector3 ctor will zero the vector elements
     constexpr Matrix3<T>() {}
@@ -66,6 +66,12 @@ public:
         , b(bx,by,bz)
         , c(cx,cy,cz) {}
 
+    static Matrix3<T> matrix_from_euler(const T roll, const T pitch, const T yaw) {
+        Matrix3<T> mat;
+        mat.from_euler(roll, pitch, yaw);
+        return mat;
+    }
+        
     // function call operator
     void operator        () (const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
     {

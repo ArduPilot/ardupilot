@@ -32,6 +32,11 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
 
     // rotate to body frame
     accel.rotate(_imu._board_orientation);
+    
+    // rotate to body frame (new parameters)
+    Matrix3f attitude = Matrix3f::matrix_from_euler(accel.x, accel.y, accel.z);
+    attitude.rotate(_imu._board_rotation);
+    attitude.to_euler(&accel.x, &accel.y, &accel.z);
 }
 
 void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) 
@@ -39,6 +44,11 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
     // gyro calibration is always assumed to have been done in sensor frame
     gyro -= _imu._gyro_offset[instance];
     gyro.rotate(_imu._board_orientation);
+    
+    // rotate to body frame (new parameters)
+    Matrix3f attitude = Matrix3f::matrix_from_euler(gyro.x, gyro.y, gyro.z);
+    attitude.rotate(_imu._board_rotation);
+    attitude.to_euler(&gyro.x, &gyro.y, &gyro.z);
 }
 
 /*
