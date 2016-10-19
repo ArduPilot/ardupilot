@@ -5137,8 +5137,8 @@ void NavEKF_core::readRangeFinder(void)
                 minIndex = 1;
                 maxIndex = 0;
             } else {
-                maxIndex = 0;
-                minIndex = 1;
+                minIndex = 0;
+                maxIndex = 1;
             }
             if (storedRngMeas[2] > storedRngMeas[maxIndex]) {
                 midIndex = maxIndex;
