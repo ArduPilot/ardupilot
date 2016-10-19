@@ -1010,11 +1010,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
 
 #if PROXIMITY_ENABLED == ENABLED
-    // @Group: PRX_
+    // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
-    AP_SUBGROUPINFO(proximity, "PRX_", 8, ParametersG2, AP_Proximity),
+    AP_SUBGROUPINFO(proximity, "PRX", 8, ParametersG2, AP_Proximity),
 #endif
-
 
     // @Param: ACRO_Y_EXPO
     // @DisplayName: Acro Yaw Expo
