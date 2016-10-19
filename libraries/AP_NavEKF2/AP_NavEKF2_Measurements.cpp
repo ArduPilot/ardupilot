@@ -60,8 +60,8 @@ void NavEKF2_core::readRangeFinder(void)
                     minIndex = 1;
                     maxIndex = 0;
                 } else {
-                    maxIndex = 0;
-                    minIndex = 1;
+                    minIndex = 0;
+                    maxIndex = 1;
                 }
                 if (storedRngMeas[sensorIndex][2] > storedRngMeas[sensorIndex][maxIndex]) {
                     midIndex = maxIndex;
