@@ -434,6 +434,8 @@ void PX4RCOutput::_publish_actuators(void)
     }
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
         _arm_actuators(true);
+    } else {
+        _arm_actuators(false);
     }
 }
 
