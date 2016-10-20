@@ -45,5 +45,4 @@ private:
     float _mag_z_accum = 0.0f;
     uint32_t _accum_count = 0;
     uint32_t _last_update_timestamp;
-    uint32_t _last_accum_time;
 };
