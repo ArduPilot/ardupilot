@@ -66,6 +66,14 @@ else
     APT_GET="sudo apt-get"
 fi
 
+# possibly grab a newer cmake for older ubuntu releases
+read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
+if [ "$UBUNTU_CODENAME" = "precise" ]; then
+    sudo add-apt-repository ppa:george-edison55/precise-backports -y
+elif [ "$UBUNTU_CODENAME" = "trusty" ]; then
+    sudo add-apt-repository ppa:george-edison55/cmake-3.x -y
+fi
+
 sudo usermod -a -G dialout $USER
 
 $APT_GET remove modemmanager
