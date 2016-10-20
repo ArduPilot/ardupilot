@@ -64,10 +64,8 @@ private:
         "log psrdopb\r\n" // poll message, as dop only changes when a sat is dropped/added to the visible list
     };
    
-    uint32_t last_hdop = 999;
     uint32_t crc_error_counter = 0;
     uint32_t last_injected_data_ms = 0;
-    bool validcommand = false;
 
     struct PACKED nova_header
     {
