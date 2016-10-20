@@ -776,8 +776,7 @@ bool AP_InertialSensor::use_accel(uint8_t instance) const
     return (get_accel_health(instance) && _use[instance]);
 }
 
-void
-AP_InertialSensor::_init_gyro()
+void AP_InertialSensor::_init_gyro()
 {
     uint8_t num_gyros = MIN(get_gyro_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES], best_avg[INS_MAX_INSTANCES];
@@ -804,7 +803,9 @@ AP_InertialSensor::_init_gyro()
       having to rotate readings during the calibration
     */
     enum Rotation saved_orientation = _board_orientation;
+    Matrix3f saved_rotation = _board_rotation;
     _board_orientation = ROTATION_NONE;
+    _board_rotation = Matrix3f();
 
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
@@ -907,6 +908,7 @@ AP_InertialSensor::_init_gyro()
 
     // restore orientation
     _board_orientation = saved_orientation;
+    _board_rotation = saved_rotation;
 
     // record calibration complete
     _calibrating = false;
@@ -1455,6 +1457,7 @@ bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vec
     }
     _accel_calibrator[_acc_body_aligned-1].get_sample_corrected(sample_num, ret);
     ret.rotate(_board_orientation);
+    ret = _board_rotation * ret;
     return true;
 }
 
@@ -1480,5 +1483,6 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
     avg /= count;
     ret = avg;
     ret.rotate(_board_orientation);
+    ret = _board_rotation * ret;
     return true;
 }

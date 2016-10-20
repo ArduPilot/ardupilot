@@ -32,6 +32,9 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
 
     // rotate to body frame
     accel.rotate(_imu._board_orientation);
+    
+    // rotate to body frame (new parameters)
+    accel = _imu._board_rotation * accel;
 }
 
 void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) 
@@ -39,6 +42,9 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
     // gyro calibration is always assumed to have been done in sensor frame
     gyro -= _imu._gyro_offset[instance];
     gyro.rotate(_imu._board_orientation);
+    
+    // rotate to body frame (new parameters)
+    gyro = _imu._board_rotation * gyro;
 }
 
 /*
@@ -141,6 +147,9 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
     if (_imu._accel_calibrator != NULL && _imu._accel_calibrator[instance].get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
         Vector3f cal_sample = _imu._delta_velocity[instance];
 
+        //remove rotation
+        cal_sample = Matrix3f::get_inverse(_imu._board_rotation) * cal_sample;
+        
         //remove rotation
         cal_sample.rotate_inverse(_imu._board_orientation);
 
