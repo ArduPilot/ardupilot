@@ -227,6 +227,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     AP_GROUPINFO("TKOFF_IGAIN", 25, AP_TECS, _integGain_takeoff, 0),
 
     // @Param: LAND_PDAMP
+    // @DisplayName: Pitch damping gain
     // @Description: This is the damping gain for the pitch demand loop. Increase to add damping  to correct for oscillations in speed and height. If set to 0 then TECS_PTCH_DAMP will be used instead.
     // @Range: 0.1 1.0
     // @Increment: 0.1
