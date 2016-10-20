@@ -41,8 +41,6 @@ public:
 private:
     float max_speed;
     float max_accel;
-    float wheelbase;
-    float wheeltrack;
     float max_wheel_turn;
     float turning_circle;
     float skid_turn_rate;
