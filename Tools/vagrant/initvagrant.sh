@@ -9,7 +9,7 @@ echo "Initial setup of SITL-vagrant instance."
 
 BASE_PKGS="gawk make git arduino-core curl"
 SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk3.0 python-scipy python-opencv python-numpy python-empy python-pyparsing ccache"
-PYTHON_PKGS="pymavlink MAVProxy droneapi"
+PYTHON_PKGS="pymavlink MAVProxy droneapi future"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
           zip genromfs cmake"
@@ -24,7 +24,9 @@ ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL"
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
 
-usermod -a -G dialout $USER
+VAGRANT_USER=ubuntu
+
+usermod -a -G dialout $VAGRANT_USER
 
 apt-get -y remove modemmanager
 apt-get -y update
@@ -37,7 +39,7 @@ easy_install catkin_pkg
 # ARM toolchain
 if [ ! -d /opt/$ARM_ROOT ]; then
     (
-        sudo -u vagrant wget -nv $ARM_TARBALL_URL
+        sudo -u $VAGRANT_USER wget -nv $ARM_TARBALL_URL
         pushd /opt
         tar xjf ${OLDPWD}/${ARM_TARBALL}
         popd
@@ -46,7 +48,7 @@ if [ ! -d /opt/$ARM_ROOT ]; then
 fi
 
 exportline="export PATH=/opt/$ARM_ROOT/bin:\$PATH"
-DOT_PROFILE=/home/vagrant/.profile
+DOT_PROFILE=/home/$VAGRANT_USER/.profile
 PROFILE_TEXT=""
 if grep -Fxq "$exportline" $DOT_PROFILE; then
     echo nothing to do
@@ -66,12 +68,12 @@ export PX4_WINTOOL=y
 export PATH=\$PATH:\$HOME/jsbsim/src
 "
 
-echo "$PROFILE_TEXT" | sudo -u vagrant dd conv=notrunc oflag=append of=$DOT_PROFILE
-sudo -u vagrant ln -fs /vagrant/Tools/vagrant/screenrc /home/vagrant/.screenrc
+echo "$PROFILE_TEXT" | sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DOT_PROFILE
+sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
 # build JSB sim
 apt-get install -y libtool libtool-bin automake autoconf libexpat1-dev
-sudo -u vagrant sh <<"EOF"
+sudo -u $VAGRANT_USER sh <<"EOF"
 cd $HOME
 rm -rf jsbsim
 git clone https://github.com/tridge/jsbsim.git
