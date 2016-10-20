@@ -123,6 +123,27 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, 2),
 #endif
 
+    // @Param: PIT_TLT
+    // @DisplayName: Board Orientation
+    // @Description: How many degrees is the board tilted along the pitch axis
+    // @Values: Angle in degrees: -90° to 90°
+    // @User: Advanced
+    AP_GROUPINFO("PIT_TLT", 15, AP_AHRS, _pitch_tilt, 0),
+
+    // @Param: ROL_TLT
+    // @DisplayName: Board Orientation
+    // @Description: How many degrees is the board tilted along the roll axis
+    // @Values: Angle in degrees: -90° to 90°
+    // @User: Advanced
+    AP_GROUPINFO("ROL_TLT", 16, AP_AHRS, _roll_tilt, 0),
+   
+    // @Param: YAW_TLT
+    // @DisplayName: Board Orientation
+    // @Description: How many degrees is the board tilted along the yaw axis
+    // @Values: Angle in degrees: -90° to 90°
+    // @User: Advanced
+    AP_GROUPINFO("YAW_TLT", 17, AP_AHRS, _yaw_tilt, 0),
+   
     AP_GROUPEND
 };
 
