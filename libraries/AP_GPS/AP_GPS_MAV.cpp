@@ -19,6 +19,8 @@
 //
 #include "AP_GPS_MAV.h"
 #include <stdint.h>
+#include <math.h>
+#include <bitset>
 
 AP_GPS_MAV::AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
@@ -45,15 +47,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
 {
     mavlink_gps_input_t packet;
     mavlink_msg_gps_input_decode(msg, &packet);
-
-    bool have_alt    = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_ALT) == 0);
-    bool have_hdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_HDOP) == 0);
-    bool have_vdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VDOP) == 0);
-    bool have_vel_h  = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VEL_HORIZ) == 0);
-    bool have_vel_v  = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VEL_VERT) == 0);
-    bool have_sa     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_SPEED_ACCURACY) == 0);
-    bool have_ha     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_HORIZONTAL_ACCURACY) == 0);
-    bool have_va     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VERTICAL_ACCURACY) == 0);
+    std::bitset<16u> flag(packet.ignore_flags);
 
     state.time_week     = packet.time_week;
     state.time_week_ms  = packet.time_week_ms;
@@ -62,23 +56,23 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
     Location loc = {};
     loc.lat = packet.lat;
     loc.lng = packet.lon;
-    if (have_alt) {
+    if (!flag[static_cast<uint8_t>(log2(GPS_INPUT_IGNORE_FLAG_ALT))]) {
         loc.alt = packet.alt;
     }
     state.location = loc;
     state.location.options = 0;
 
-    if (have_hdop) {
+    if (!flag[static_cast<uint8_t>(log2(GPS_INPUT_IGNORE_FLAG_HDOP))]) {
         state.hdop = packet.hdop * 100; // convert to centimeters
     }
 
-    if (have_vdop) {
+    if (!flag[static_cast<uint8_t>(log2(GPS_INPUT_IGNORE_FLAG_VDOP))]) {
         state.vdop = packet.vdop * 100; // convert to centimeters
     }
 
-    if (have_vel_h) {
+    if (!flag[static_cast<uint8_t>(log2(GPS_INPUT_IGNORE_FLAG_VEL_HORIZ))]) {
         Vector3f vel(packet.vn, packet.ve, 0);
-        if (have_vel_v)
+        if (!flag[static_cast<uint8_t>(log2(GPS_INPUT_IGNORE_FLAG_VEL_VERT))])
             vel.z = packet.vd;
 
         state.velocity = vel;
@@ -86,17 +80,17 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
         state.ground_speed = norm(vel.x, vel.y);
     }
 
-    if (have_sa) {
+    if (!flag[static_cast<uint8_t>(log2(GPS_INPUT_IGNORE_FLAG_SPEED_ACCURACY))]) {
         state.speed_accuracy = packet.speed_accuracy;
         state.have_speed_accuracy = 1;
     }
 
-    if (have_ha) {
+    if (!flag[static_cast<uint8_t>(log2(GPS_INPUT_IGNORE_FLAG_HORIZONTAL_ACCURACY))]) {
         state.horizontal_accuracy = packet.horiz_accuracy;
         state.have_horizontal_accuracy = 1;
     }
 
-    if (have_va) {
+    if (!flag[static_cast<uint8_t>(log2(GPS_INPUT_IGNORE_FLAG_VERTICAL_ACCURACY))]) {
         state.vertical_accuracy = packet.vert_accuracy;
         state.have_vertical_accuracy = 1;
     }
