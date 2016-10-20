@@ -302,7 +302,7 @@ bool XPlane::receive_data(void)
     accel_earth.z += GRAVITY_MSS;
     
     // the position may slowly deviate due to float accuracy and longitude scaling
-    if (get_distance(loc, location) > 4 || fabsf(loc.alt - location.alt)*0.01 > 2) {
+    if (get_distance(loc, location) > 4 || abs(loc.alt - location.alt)*0.01f > 2.0f) {
         printf("X-Plane home reset dist=%f alt=%.1f/%.1f\n",
                get_distance(loc, location), loc.alt*0.01f, location.alt*0.01f);
         // reset home location
