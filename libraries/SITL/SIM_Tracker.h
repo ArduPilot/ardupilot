@@ -45,7 +45,6 @@ private:
     const float yaw_range = 170;
     const float zero_yaw = 270;  // yaw direction at startup
     const float zero_pitch = 10; // pitch at startup
-    bool verbose = false;
     uint64_t last_debug_us = 0;
 
     float pitch_input;
