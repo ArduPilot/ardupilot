@@ -143,7 +143,7 @@ stack, including several new features. Some of the changes include:
  - added support for a 2nd throttle channel
  - fixed bug in crash detection during auto-land flare
  - lowered is_flying groundspeed threshold to 1.5m/s
- - added support for new FrSky telemetry protocol varient
+ - added support for new FrSky telemetry protocol variant
  - added support for fence auto-enable on takeoff in quadplanes
  - added Q_ASSIST_ANGLE for using quadplane to catch stalls in fixed wing flight
  - added BRD_SAFETY_MASK to allow for channel movement for selected channels with safety on

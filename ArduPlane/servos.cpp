@@ -878,7 +878,7 @@ void Plane::servos_auto_trim(void)
         return;
     }
     if (ahrs.groundspeed() < 8 || smoothed_airspeed < 8) {
-        // only when definately moving
+        // only when definitely moving
         return;
     }
 
