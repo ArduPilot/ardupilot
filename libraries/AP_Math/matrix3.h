@@ -47,7 +47,7 @@ public:
 
     // Vectors comprising the rows of the matrix
     Vector3<T>        a, b, c;
-
+    
     // trivial ctor
     // note that the Vector3 ctor will zero the vector elements
     constexpr Matrix3<T>() {}
@@ -66,6 +66,12 @@ public:
         , b(bx,by,bz)
         , c(cx,cy,cz) {}
 
+    static Matrix3<T> matrix_from_euler(const T roll, const T pitch, const T yaw) {
+        Matrix3<T> mat;
+        mat.from_euler(roll, pitch, yaw);
+        return mat;
+    }
+        
     // function call operator
     void operator        () (const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
     {
@@ -205,6 +211,20 @@ public:
      */
     bool inverse(Matrix3<T>& inv) const;
 
+    /**
+     * Calculate the inverse of this matrix.
+     *
+     * @param inv[in] Where to store the result.
+     *
+     * @return If this matrix is invertible, then true is returned. Otherwise,
+     * \p inv is unmodified and false is returned.
+     */
+    static Matrix3<T> get_inverse(Matrix3<T>& mat) {
+        Matrix3<T> inv = mat;
+        mat.inverse(inv);
+        return inv;
+    }
+    
     /**
      * Invert this matrix if it is invertible.
      *
