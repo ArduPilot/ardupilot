@@ -36,9 +36,7 @@ private:
     // the data fits within the page, otherwise it will wrap to the
     // start of the page
     bool 		    BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size);
-    
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+
 public:
     DataFlash_SITL(DataFlash_Class &front, DFMessageWriter_DFLogStart *writer) :
         DataFlash_Block(front, writer) { }
