@@ -148,7 +148,7 @@ void AP_BoardConfig::px4_setup_safety()
         if (px4io_fd != -1) {
             mask >>= 8;
         }
-        if (ioctl(px4io_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)mask) != 0) {
+        if (ioctl(px4fmu_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)mask) != 0) {
             hal.console->printf("IGNORE_SAFETY failed\n");
         }
         close(px4fmu_fd);
