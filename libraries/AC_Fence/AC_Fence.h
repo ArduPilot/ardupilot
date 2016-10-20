@@ -162,5 +162,4 @@ private:
     bool            _boundary_create_attempted = false; // true if we have attempted to create the boundary array
     bool            _boundary_loaded = false;       // true if boundary array has been loaded from eeprom
     bool            _boundary_valid = false;        // true if boundary forms a closed polygon
-    bool            _boundary_revalidate = false;   // set to true when we need to revalidate the boundary (required after a point is changed)
 };
