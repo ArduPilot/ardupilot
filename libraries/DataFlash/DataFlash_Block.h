@@ -15,8 +15,6 @@ public:
     DataFlash_Block(DataFlash_Class &front, DFMessageWriter_DFLogStart *writer) :
         DataFlash_Backend(front, writer) { }
 
-    // initialisation
-    virtual void Init(const struct LogStructure *structure, uint8_t num_types) = 0;
     virtual bool CardInserted(void) = 0;
 
     // erase handling
