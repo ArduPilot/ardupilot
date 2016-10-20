@@ -234,6 +234,13 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LAND_PDAMP", 26, AP_TECS, _land_pitch_damp, 0),
 
+    // @Param: SYNAIRSPEED
+    // @DisplayName: Enable the use of synthetic airspeed
+    // @Description: This enable the use of synthetic airspeed for aircraft that don't have a real airspeed sensor. This is useful for development testing where the user is aware of the considerable limitations of the synthetic airspeed system, such as very poor estimates when a wind estimate is not accurate. Do not enable this option unless you fully understand the limitations of a synthetic airspeed estimate.
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("SYNAIRSPEED", 27, AP_TECS, _use_synthetic_airspeed, 0),
+    
     AP_GROUPEND
 };
 
@@ -367,7 +374,8 @@ void AP_TECS::_update_speed(float load_factor)
 
     // Get airspeed or default to halfway between min and max if
     // airspeed is not being used and set speed rate to zero
-    if (!(_use_synthetic_airspeed || _ahrs.airspeed_sensor_enabled()) || !_ahrs.airspeed_estimate(&_EAS)) {
+    bool use_airspeed = _use_synthetic_airspeed_once || _use_synthetic_airspeed.get() || _ahrs.airspeed_sensor_enabled();
+    if (!use_airspeed || !_ahrs.airspeed_estimate(&_EAS)) {
         // If no airspeed available use average of min and max
         _EAS = 0.5f * (aparm.airspeed_min.get() + (float)aparm.airspeed_max.get());
     }
@@ -1040,9 +1048,9 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Note that caller can demand the use of
     // synthetic airspeed for one loop if needed. This is required
     // during QuadPlane transition when pitch is constrained
-    if (_ahrs.airspeed_sensor_enabled() || _use_synthetic_airspeed) {
+    if (_ahrs.airspeed_sensor_enabled() || _use_synthetic_airspeed || _use_synthetic_airspeed_once) {
         _update_throttle_with_airspeed();
-        _use_synthetic_airspeed = false;
+        _use_synthetic_airspeed_once = false;
     } else {
         _update_throttle_without_airspeed(throttle_nudge);
     }
