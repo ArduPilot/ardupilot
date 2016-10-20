@@ -795,6 +795,9 @@ void Compass::setHIL(uint8_t instance, float roll, float pitch, float yaw)
     if (!_state[0].external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
         _hil.field[instance].rotate(_board_orientation);
+        
+        // and add in AHRS_ORIENTATION setting if not an external compass (new parameters)
+        _hil.field[instance] = _board_rotation * _hil.field[instance];
     }
     _hil.healthy[instance] = true;
 }

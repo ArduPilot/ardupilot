@@ -208,6 +208,11 @@ public:
     void set_board_orientation(enum Rotation orientation) {
         _board_orientation = orientation;
     }
+    
+    // set overall board orientation
+    void set_board_orientation(const Matrix3f &rotation) {
+        _board_rotation = rotation;
+    }
 
     /// Set the motor compensation type
     ///
@@ -337,6 +342,7 @@ private:
 
     // board orientation from AHRS
     enum Rotation _board_orientation;
+    Matrix3f      _board_rotation;
 
     // primary instance
     AP_Int8     _primary;

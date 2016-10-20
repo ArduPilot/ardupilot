@@ -19,6 +19,9 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
     if (!state.external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
         mag.rotate(_compass._board_orientation);
+        
+        // and add in AHRS_ORIENTATION setting if not an external compass (new parameters)
+        mag = _compass._board_rotation * mag;
     } else {
         // add user selectable orientation
         mag.rotate((enum Rotation)state.orientation.get());
