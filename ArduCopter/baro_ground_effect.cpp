@@ -58,7 +58,7 @@ void Copter::update_ground_effect_detector(void)
 
     bool descent_demanded = pos_control.is_active_z() && des_climb_rate_cms < 0.0f;
     bool slow_descent_demanded = descent_demanded && des_climb_rate_cms >= -100.0f;
-    bool z_speed_low = abs(inertial_nav.get_velocity_z()) <= 60.0f;
+    bool z_speed_low = fabsf(inertial_nav.get_velocity_z()) <= 60.0f;
     bool slow_descent = (slow_descent_demanded || (z_speed_low && descent_demanded));
 
     gndeffect_state.touchdown_expected = slow_horizontal && slow_descent;
