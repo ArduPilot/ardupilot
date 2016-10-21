@@ -18,8 +18,8 @@
 //  MAVLINK GPS driver
 //
 #include "AP_GPS_MAV.h"
+#include "AP_Math/AP_Math.h"
 #include <stdint.h>
-#include <math.h>
 #include <bitset>
 
 AP_GPS_MAV::AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
