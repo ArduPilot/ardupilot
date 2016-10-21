@@ -85,7 +85,16 @@ void Copter::init_rc_out()
 
     // refresh auxiliary channel to function map
     RC_Channel_aux::update_aux_servo_function();
+
+#if FRAME_CONFIG != HELI_FRAME
+    /*
+      setup a default safety ignore mask, so that servo gimbals can be active while safety is on
+     */
+    uint16_t safety_ignore_mask = (~copter.motors.get_motor_mask()) & 0x3FFF;
+    BoardConfig.set_default_safety_ignore_mask(safety_ignore_mask);
+#endif
 }
+
 
 // enable_motor_output() - enable and output lowest possible value to motors
 void Copter::enable_motor_output()
