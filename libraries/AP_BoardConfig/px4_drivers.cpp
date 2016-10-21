@@ -132,7 +132,7 @@ void AP_BoardConfig::px4_setup_uart()
 /*
   setup safety switch
  */
-void AP_BoardConfig::px4_setup_safety()
+void AP_BoardConfig::px4_setup_safety_mask()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // setup channels to ignore the armed state
@@ -157,6 +157,14 @@ void AP_BoardConfig::px4_setup_safety()
         close(px4io_fd);
     }
 #endif
+}
+
+/*
+  setup safety switch
+ */
+void AP_BoardConfig::px4_setup_safety()
+{
+    px4_setup_safety_mask();
 
     if (px4.safety_enable.get() == 0) {
         hal.rcout->force_safety_off();

@@ -58,7 +58,10 @@ public:
 #endif
     };
 #endif
-        
+
+    // set default value for BRD_SAFETY_MASK
+    void set_default_safety_ignore_mask(uint16_t mask);
+    
 private:
     AP_Int16 vehicleSerialNumber;
 
@@ -81,6 +84,7 @@ private:
     void px4_setup(void);
     void px4_setup_pwm(void);
     void px4_setup_safety(void);
+    void px4_setup_safety_mask(void);
     void px4_setup_uart(void);
     void px4_setup_sbus(void);
     void px4_setup_canbus(void);

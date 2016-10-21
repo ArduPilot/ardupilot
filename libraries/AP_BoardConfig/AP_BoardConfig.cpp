@@ -168,3 +168,12 @@ void AP_BoardConfig::init()
     hal.util->set_imu_target_temp((int8_t *)&_imu_target_temperature);
 #endif
 }
+
+// set default value for BRD_SAFETY_MASK
+void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    px4.ignore_safety_channels.set_default(mask);
+    px4_setup_safety_mask();
+#endif
+}
