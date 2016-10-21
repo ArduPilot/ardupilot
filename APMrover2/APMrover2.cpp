@@ -77,6 +77,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,       10,    100),
     SCHED_TASK(dataflash_periodic,     50,    300),
     SCHED_TASK(button_update,          5,     100),
+#if ADVANCED_FAILSAFE == ENABLED
+    SCHED_TASK(afs_fs_check,          10,    100),
+#endif
 };
 
 /*

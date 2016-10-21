@@ -19,6 +19,7 @@ def build(bld):
             'AP_RSSI',
             'AP_Relay',
             'AP_ServoRelayEvents',
+            'AP_AdvancedFailsafe',
             'PID',
         ],
     )
