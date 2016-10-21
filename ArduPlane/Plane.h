@@ -773,6 +773,9 @@ private:
         uint32_t last_log_dropped;
     } perf;
 
+    // last time home was updated while disarmed
+    uint32_t last_home_update_ms;
+    
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
