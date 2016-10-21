@@ -1,3 +1,30 @@
+Release 3.7.1, 21st October 2016
+--------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.7.1 of APM:Plane. This is a minor bug fix release. A major
+release of 3.8.0 is also being prepared now and will be in beta soon.
+
+Changes in this release:
+
+ - fixed arming check error on FMUv4 (pixracer)
+ - fixed pilot throttle based motor test for quadplane
+ - fixed use of multicopter mix_max in quadplane
+ - fixed AFS termination bugs for quadplanes
+ - added automatic ICE engine cut in QLAND
+ - fixed loiter mode with Q_GUIDED_MODE=1
+ - fixed navigation at lattitude of exactly zero
+ - fixed quadplane transition without airspeed sensor
+ - fixed rudder arming in CRUISE and FBWB modes
+ - fixed throttle slew rate in MANUAL mode for quadplanes
+ - fixed multiple bugs in transmitter tuning for quadplane rates
+ - fixed mavlink system ID in early startup on USB
+ - slow down update of home position
+ - update Disco battery lookup table
+ - improved compass calibration code for larger offsets
+
+Many thanks to everyone who contributed to this release!
+
 Release 3.7.0, 9th September 2016
 ---------------------------------
 
