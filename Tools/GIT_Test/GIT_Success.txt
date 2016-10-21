@@ -48,3 +48,4 @@ steven test
 Fnoop hello :)
 
 Yuichiro Shibata
+Tsuyoshi Kawamura (GitHub:tajisoft)
