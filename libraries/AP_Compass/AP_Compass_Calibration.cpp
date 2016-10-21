@@ -185,6 +185,11 @@ Compass::send_mag_cal_progress(mavlink_channel_t chan)
     uint8_t cal_mask = get_cal_mask();
 
     for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
+        // ensure we don't try to send with no space available
+        if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_PROGRESS)) {
+            return;
+        }
+
         auto& calibrator = _calibrator[compass_id];
         uint8_t cal_status = calibrator.get_status();
 
@@ -195,11 +200,6 @@ Compass::send_mag_cal_progress(mavlink_channel_t chan)
             auto& completion_mask = calibrator.get_completion_mask();
             Vector3f direction(0.0f,0.0f,0.0f);
             uint8_t attempt = _calibrator[compass_id].get_attempt();
-
-            // ensure we don't try to send with no space available
-            if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_PROGRESS)) {
-                return;
-            }
 
             mavlink_msg_mag_cal_progress_send(
                 chan,
@@ -216,6 +216,10 @@ void Compass::send_mag_cal_report(mavlink_channel_t chan)
     uint8_t cal_mask = get_cal_mask();
 
     for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
+        // ensure we don't try to send with no space available
+        if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_REPORT)) {
+            return;
+        }
 
         uint8_t cal_status = _calibrator[compass_id].get_status();
 
@@ -226,11 +230,6 @@ void Compass::send_mag_cal_report(mavlink_channel_t chan)
             _calibrator[compass_id].get_calibration(ofs, diag, offdiag);
             uint8_t autosaved = _calibrator[compass_id].get_autosave();
 
-            // ensure we don't try to send with no space available
-            if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_REPORT)) {
-                return;
-            }
-            
             mavlink_msg_mag_cal_report_send(
                 chan,
                 compass_id, cal_mask,
