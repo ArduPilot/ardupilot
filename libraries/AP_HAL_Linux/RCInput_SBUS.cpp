@@ -34,11 +34,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-#ifndef B100000
-// disco uses 100000 for baud rate to give 100000 baud
-#define B100000 100000
-#endif
-
 #define SBUS_FRAME_SIZE 25
 
 void RCInput_SBUS::init()
@@ -59,10 +54,11 @@ void RCInput_SBUS::init()
         tio.c_iflag |= (INPCK | IGNPAR);
         tio.c_oflag &= ~OPOST;
         tio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-        tio.c_ispeed = B100000;
-        tio.c_ospeed = B100000;
         tio.c_cflag &= ~(CSIZE | CRTSCTS | PARODD | CBAUD);
+        // use BOTHER to specify speed directly in c_[io]speed member
         tio.c_cflag |= (CS8 | CSTOPB | CLOCAL | PARENB | BOTHER | CREAD);
+        tio.c_ispeed = 100000;
+        tio.c_ospeed = 100000;
         // see select() comment below
         tio.c_cc[VMIN] = SBUS_FRAME_SIZE;
         tio.c_cc[VTIME] = 0;
