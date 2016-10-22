@@ -311,7 +311,7 @@ void Plane::afs_fs_check(void)
  */
 void Plane::update_aux(void)
 {
-    RC_Channel_aux::enable_aux_servos();
+    SRV_Channels::enable_aux_servos();
 }
 
 void Plane::one_second_loop()
@@ -558,7 +558,7 @@ void Plane::handle_auto_mode(void)
 
             // we are in the final stage of a landing - force
             // zero throttle
-            channel_throttle->set_servo_out(0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
         } else {
             calc_throttle();
         }
@@ -685,7 +685,7 @@ void Plane::update_flight_mode(void)
             // FBWA failsafe glide
             nav_roll_cd = 0;
             nav_pitch_cd = 0;
-            channel_throttle->set_servo_out(0);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
         }
         if (g.fbwa_tdrag_chan > 0) {
             // check for the user enabling FBWA taildrag takeoff mode
@@ -748,10 +748,8 @@ void Plane::update_flight_mode(void)
         break;
 
     case MANUAL:
-        // servo_out is for Sim control only
-        // ---------------------------------
-        channel_roll->set_servo_out(channel_roll->pwm_to_angle());
-        channel_pitch->set_servo_out(channel_pitch->pwm_to_angle());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->pwm_to_angle());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->pwm_to_angle());
         steering_control.steering = steering_control.rudder = channel_rudder->pwm_to_angle();
         break;
         //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000

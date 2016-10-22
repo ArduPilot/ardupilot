@@ -354,7 +354,7 @@ QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
 void QuadPlane::setup_default_channels(uint8_t num_motors)
 {
     for (uint8_t i=0; i<num_motors; i++) {
-        RC_Channel_aux::set_aux_channel_default((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+i), CH_5+i);
+        SRV_Channels::set_aux_channel_default((SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+i), CH_5+i);
     }
 }
     
@@ -406,10 +406,10 @@ bool QuadPlane::setup(void)
     }
 
 #if FRAME_CONFIG == TRI_FRAME
-    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor1, CH_5);
-    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
-    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor4, CH_8);
-    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor7, CH_11);
+    SRV_Channels::set_default_function(CH_5, SRV_Channel::k_motor1);
+    SRV_Channels::set_default_function(CH_6, SRV_Channel::k_motor2);
+    SRV_Channels::set_default_function(CH_8, SRV_Channel::k_motor4);
+    SRV_Channels::set_default_function(CH_11, SRV_Channel::k_motor7);
     frame_class.set(AP_Motors::MOTOR_FRAME_TRI);
     motors = new AP_MOTORS_CLASS(plane.scheduler.get_loop_rate_hz());
 #else
@@ -477,12 +477,9 @@ bool QuadPlane::setup(void)
     // setup the trim of any motors used by AP_Motors so px4io
     // failsafe will disable motors
     for (uint8_t i=0; i<8; i++) {
-        RC_Channel_aux::Aux_servo_function_t func = (RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+i);
-        RC_Channel_aux::set_servo_failsafe_pwm(func, thr_min_pwm);
-        uint8_t chan;
-        if (RC_Channel_aux::find_channel(func, chan)) {
-            RC_Channel::rc_channel(chan)->set_radio_trim(thr_min_pwm);
-        }
+        SRV_Channel::Aux_servo_function_t func = (SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+i);
+        SRV_Channels::set_failsafe_pwm(func, thr_min_pwm);
+        SRV_Channels::set_trim_to_pwm_for(func, thr_min_pwm);
     }
 
 #if HAVE_PX4_MIXER
