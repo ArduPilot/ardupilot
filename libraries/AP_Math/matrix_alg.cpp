@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * matrix3.cpp
  * Copyright (C) Siddharth Bharat Purohit, 3DRobotics Inc. 2015

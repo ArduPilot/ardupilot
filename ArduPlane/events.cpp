@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t reason)

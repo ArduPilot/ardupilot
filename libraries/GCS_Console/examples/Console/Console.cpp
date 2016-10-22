@@ -1,5 +1,3 @@
-// -*- Mode: C++; c-basic-offset: 8; indent-tabs-mode: nil -*-
-
 // This code is placed into the public domain.
 
 #include <AP_Common/AP_Common.h>

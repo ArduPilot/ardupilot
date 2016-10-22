@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_TECS.h
 /// @brief   Combined Total Energy Speed & Height Control. This is a instance of an
 /// AP_SpdHgtControl class

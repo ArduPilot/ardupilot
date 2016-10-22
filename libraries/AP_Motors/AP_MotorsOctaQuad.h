@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	AP_MotorsOctaQuad.h
 /// @brief	Motor control class for OctaQuadcopters
 #pragma once

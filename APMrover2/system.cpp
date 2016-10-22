@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*****************************************************************************
 The init_ardupilot function processes everything we need for an in - air restart
     We will determine later if we are actually on the ground and process a
