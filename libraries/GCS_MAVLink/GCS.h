@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	GCS.h
 /// @brief	Interface definition for the various Ground Control System
 // protocols.

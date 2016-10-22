@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	AP_MotorsCoax.h
 /// @brief	Motor and Servo control class for Co-axial helicopters with two motors and two flaps
 #pragma once

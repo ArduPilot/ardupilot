@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 // EKF Buffer models
 
 // this buffer model is to be used for observation buffers,

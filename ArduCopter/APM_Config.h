@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 // User specific config file.  Any items listed in config.h can be overridden here.
 
 // If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer

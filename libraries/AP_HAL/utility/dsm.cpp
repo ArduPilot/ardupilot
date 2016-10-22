@@ -1,4 +1,3 @@
-// -*- tab-width: 8; Mode: C++; c-basic-offset: 8; indent-tabs-mode: -*- t -*-
 /*
   DSM decoder, based on src/modules/px4iofirmware/dsm.c from PX4Firmware
   modified for use in AP_HAL_* by Andrew Tridgell

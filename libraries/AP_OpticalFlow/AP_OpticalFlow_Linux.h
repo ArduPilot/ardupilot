@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
  * Portions of this driver were borrowed from the PX4Firmware px4flow driver which can be found here:
  *     https://github.com/PX4/Firmware/blob/master/src/drivers/px4flow/px4flow.cpp

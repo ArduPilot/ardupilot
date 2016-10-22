@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   control of servo output ranges, trim and servo reversal. This can
   optionally be used to provide separation of input and output channel
