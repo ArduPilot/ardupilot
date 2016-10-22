@@ -42,6 +42,8 @@ public:
     float get_fitness() const { return sqrtf(_fitness); }
     bool get_autosave() const { return _autosave; }
     uint8_t get_attempt() const { return _attempt; }
+    bool is_saved() const { return _saved; }
+    void set_saved(bool saved) { _saved = saved; }
 
 private:
     class param_t {
@@ -84,6 +86,7 @@ private:
     bool _retry;
     float _tolerance;
     uint8_t _attempt;
+    bool _saved;
 
     completion_mask_t _completion_mask;
 
