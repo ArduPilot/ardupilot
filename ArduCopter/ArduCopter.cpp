@@ -404,8 +404,7 @@ void Copter::ten_hz_logging_loop()
 #endif
 }
 
-// fifty_hz_logging_loop
-// should be run at 50hz
+// twentyfive_hz_logging - should be run at 25hz
 void Copter::twentyfive_hz_logging()
 {
 #if HIL_MODE != HIL_MODE_DISABLED
