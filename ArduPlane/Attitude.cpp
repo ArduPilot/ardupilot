@@ -19,8 +19,8 @@ float Plane::get_speed_scaler(void)
         }
         speed_scaler = constrain_float(speed_scaler, 0.5f, 2.0f);
     } else {
-        if (channel_throttle->get_servo_out() > 0) {
-            speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / channel_throttle->get_servo_out() / 2.0f);                 // First order taylor expansion of square root
+        if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 0) {
+            speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 2.0f);                 // First order taylor expansion of square root
             // Should maybe be to the 2/7 power, but we aren't going to implement that...
         }else{
             speed_scaler = 1.67f;
@@ -80,9 +80,9 @@ void Plane::stabilize_roll(float speed_scaler)
     if (control_mode == STABILIZE && channel_roll->get_control_in() != 0) {
         disable_integrator = true;
     }
-    channel_roll->set_servo_out(rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
-                                                           speed_scaler, 
-                                                           disable_integrator));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
+                                                                                         speed_scaler, 
+                                                                                         disable_integrator));
 }
 
 /*
@@ -96,17 +96,17 @@ void Plane::stabilize_pitch(float speed_scaler)
     if (force_elevator != 0) {
         // we are holding the tail down during takeoff. Just convert
         // from a percentage to a -4500..4500 centidegree angle
-        channel_pitch->set_servo_out(45*force_elevator);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, 45*force_elevator);
         return;
     }
-    int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + channel_throttle->get_servo_out() * g.kff_throttle_to_pitch;
+    int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * g.kff_throttle_to_pitch;
     bool disable_integrator = false;
     if (control_mode == STABILIZE && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
     }
-    channel_pitch->set_servo_out(pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
-                                                             speed_scaler, 
-                                                             disable_integrator));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
+                                                                                           speed_scaler, 
+                                                                                           disable_integrator));
 }
 
 /*
@@ -128,17 +128,6 @@ void Plane::stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
 }
 
 /*
-  One argument version for when the servo out in the rc channel 
-  is the target
- */
-void Plane::stick_mix_channel(RC_Channel * channel)
-{
-   int16_t servo_out = channel->get_servo_out();
-   stick_mix_channel(channel,servo_out);
-   channel->set_servo_out(servo_out);
-}
-
-/*
   this gives the user control of the aircraft in stabilization modes
  */
 void Plane::stabilize_stick_mixing_direct()
@@ -157,8 +146,13 @@ void Plane::stabilize_stick_mixing_direct()
         control_mode == TRAINING) {
         return;
     }
-    stick_mix_channel(channel_roll);
-    stick_mix_channel(channel_pitch);
+    int16_t aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    stick_mix_channel(channel_roll, aileron);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
+
+    int16_t elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+    stick_mix_channel(channel_pitch, elevator);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
 }
 
 /*
@@ -268,25 +262,25 @@ void Plane::stabilize_yaw(float speed_scaler)
 void Plane::stabilize_training(float speed_scaler)
 {
     if (training_manual_roll) {
-        channel_roll->set_servo_out(channel_roll->get_control_in());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->get_control_in());
     } else {
         // calculate what is needed to hold
         stabilize_roll(speed_scaler);
-        if ((nav_roll_cd > 0 && channel_roll->get_control_in() < channel_roll->get_servo_out()) ||
-            (nav_roll_cd < 0 && channel_roll->get_control_in() > channel_roll->get_servo_out())) {
+        if ((nav_roll_cd > 0 && channel_roll->get_control_in() < SRV_Channels::get_output_scaled(SRV_Channel::k_aileron)) ||
+            (nav_roll_cd < 0 && channel_roll->get_control_in() > SRV_Channels::get_output_scaled(SRV_Channel::k_aileron))) {
             // allow user to get out of the roll
-            channel_roll->set_servo_out(channel_roll->get_control_in());            
+            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->get_control_in());
         }
     }
 
     if (training_manual_pitch) {
-        channel_pitch->set_servo_out(channel_pitch->get_control_in());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in());
     } else {
         stabilize_pitch(speed_scaler);
-        if ((nav_pitch_cd > 0 && channel_pitch->get_control_in() < channel_pitch->get_servo_out()) ||
-            (nav_pitch_cd < 0 && channel_pitch->get_control_in() > channel_pitch->get_servo_out())) {
+        if ((nav_pitch_cd > 0 && channel_pitch->get_control_in() < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||
+            (nav_pitch_cd < 0 && channel_pitch->get_control_in() > SRV_Channels::get_output_scaled(SRV_Channel::k_elevator))) {
             // allow user to get back to level
-            channel_pitch->set_servo_out(channel_pitch->get_control_in());            
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in());
         }
     }
 
@@ -321,16 +315,16 @@ void Plane::stabilize_acro(float speed_scaler)
         nav_roll_cd = ahrs.roll_sensor + roll_error_cd;
         // try to reduce the integrated angular error to zero. We set
         // 'stabilze' to true, which disables the roll integrator
-        channel_roll->set_servo_out(rollController.get_servo_out(roll_error_cd,
-                                                                speed_scaler,
-                                                                true));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rollController.get_servo_out(roll_error_cd,
+                                                                                             speed_scaler,
+                                                                                             true));
     } else {
         /*
           aileron stick is non-zero, use pure rate control until the
           user releases the stick
          */
         acro_state.locked_roll = false;
-        channel_roll->set_servo_out(rollController.get_rate_out(roll_rate,  speed_scaler));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rollController.get_rate_out(roll_rate,  speed_scaler));
     }
 
     if (g.acro_locking && is_zero(pitch_rate)) {
@@ -345,15 +339,15 @@ void Plane::stabilize_acro(float speed_scaler)
         // try to hold the locked pitch. Note that we have the pitch
         // integrator enabled, which helps with inverted flight
         nav_pitch_cd = acro_state.locked_pitch_cd;
-        channel_pitch->set_servo_out(pitchController.get_servo_out(nav_pitch_cd - ahrs.pitch_sensor,
-                                                                  speed_scaler,
-                                                                  false));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(nav_pitch_cd - ahrs.pitch_sensor,
+                                                                                               speed_scaler,
+                                                                                               false));
     } else {
         /*
           user has non-zero pitch input, use a pure rate controller
          */
         acro_state.locked_pitch = false;
-        channel_pitch->set_servo_out( pitchController.get_rate_out(pitch_rate, speed_scaler));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(pitch_rate, speed_scaler));
     }
 
     /*
@@ -423,7 +417,7 @@ void Plane::calc_throttle()
         // user has asked for zero throttle - this may be done by a
         // mission which wants to turn off the engine for a parachute
         // landing
-        channel_throttle->set_servo_out(0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
         return;
     }
 
@@ -436,7 +430,7 @@ void Plane::calc_throttle()
         commanded_throttle = plane.guided_state.forced_throttle;
     }
 
-    channel_throttle->set_servo_out(commanded_throttle);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, commanded_throttle);
 }
 
 /*****************************************
@@ -464,7 +458,7 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
         commanded_rudder = yawController.get_servo_out(speed_scaler, disable_integrator);
 
         // add in rudder mixing from roll
-        commanded_rudder += channel_roll->get_servo_out() * g.kff_rudder_mix;
+        commanded_rudder += SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * g.kff_rudder_mix;
         commanded_rudder += rudder_input;
     }
 
