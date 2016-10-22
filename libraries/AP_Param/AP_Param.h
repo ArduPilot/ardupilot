@@ -168,7 +168,7 @@ public:
     // level of nesting, so the first level of nesting gets 6 bits the 2nd
     // level gets the next 6 bits, and the 3rd level gets the last 6
     // bits. This limits groups to having at most 64 elements.
-    static uint32_t group_id(const struct GroupInfo *grpinfo, uint8_t base, uint8_t i, uint8_t shift);
+    static uint32_t group_id(const struct GroupInfo *grpinfo, uint32_t base, uint8_t i, uint8_t shift);
     
     /// Copy the variable's name, prefixed by any containing group name, to a
     /// buffer.
@@ -418,7 +418,7 @@ private:
                                     struct Param_header phdr, void **ptr,
                                     uint16_t vindex,
                                     const struct GroupInfo *group_info,
-                                    uint8_t group_base,
+                                    uint32_t group_base,
                                     uint8_t group_shift,
                                     ptrdiff_t group_offset);
     static const struct Info *  find_by_header(
@@ -450,7 +450,7 @@ private:
                                     uint16_t vindex, 
                                     const struct GroupInfo *group_info,
                                     bool *found_current,
-                                    uint8_t group_base,
+                                    uint32_t group_base,
                                     uint8_t group_shift,
                                     ptrdiff_t group_offset,
                                     ParamToken *token,

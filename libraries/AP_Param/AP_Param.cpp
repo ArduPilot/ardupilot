@@ -113,7 +113,7 @@ void AP_Param::erase_all(void)
    level gets the next 6 bits, and the 3rd level gets the last 6
    bits. This limits groups to having at most 64 elements.
 */
-uint32_t AP_Param::group_id(const struct GroupInfo *grpinfo, uint8_t base, uint8_t i, uint8_t shift)
+uint32_t AP_Param::group_id(const struct GroupInfo *grpinfo, uint32_t base, uint8_t i, uint8_t shift)
 {
     if (grpinfo[i].idx == 0 && shift != 0 && !(grpinfo[i].flags & AP_PARAM_NO_SHIFT)) {
         /*
@@ -310,7 +310,7 @@ bool AP_Param::get_base(const struct Info &info, ptrdiff_t &base)
 const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header phdr, void **ptr,
                                                             uint16_t vindex,
                                                             const struct GroupInfo *group_info,
-                                                            uint8_t group_base,
+                                                            uint32_t group_base,
                                                             uint8_t group_shift,
                                                             ptrdiff_t group_offset)
 {
@@ -1329,7 +1329,7 @@ AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype)
 /// as needed
 AP_Param *AP_Param::next_group(uint16_t vindex, const struct GroupInfo *group_info,
                                bool *found_current,
-                               uint8_t group_base,
+                               uint32_t group_base,
                                uint8_t group_shift,
                                ptrdiff_t group_offset,
                                ParamToken *token,
