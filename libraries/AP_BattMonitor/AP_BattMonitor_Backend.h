@@ -39,6 +39,9 @@ public:
 
     /// set capacity for this instance
     void set_capacity(uint32_t capacity);
+    
+    /// get capacity for this instance
+    int32_t get_capacity() const;
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end

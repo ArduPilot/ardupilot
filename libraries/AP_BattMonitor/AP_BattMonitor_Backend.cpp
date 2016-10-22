@@ -45,3 +45,9 @@ void AP_BattMonitor_Backend::set_capacity(uint32_t capacity)
 {
     _mon._pack_capacity[_instance] = capacity;
 }
+
+/// get capacity for this instance
+int32_t AP_BattMonitor_Backend::get_capacity() const
+{
+    return _mon.pack_capacity_mah(_instance);
+}
