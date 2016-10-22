@@ -1047,72 +1047,6 @@ const AP_Param::Info Plane::var_info[] = {
       (const void *)&plane.quadplane.attitude_control,
       {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER },
     
-    // RC channel
-    //-----------
-    // @Group: RC1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_1,                    "RC1_", RC_Channel),
-
-    // @Group: RC2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_2,                    "RC2_", RC_Channel),
-
-    // @Group: RC3_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_3,                    "RC3_", RC_Channel),
-
-    // @Group: RC4_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_4,                    "RC4_", RC_Channel),
-
-    // @Group: RC5_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_5,                    "RC5_", RC_Channel_aux),
-
-    // @Group: RC6_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_6,                    "RC6_", RC_Channel_aux),
-
-    // @Group: RC7_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_7,                    "RC7_", RC_Channel_aux),
-
-    // @Group: RC8_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
-
-    // @Group: RC9_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
-
-    // @Group: RC10_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
-
-    // @Group: RC11_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
-
-    // @Group: RC12_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_12,                    "RC12_", RC_Channel_aux),
-
-    // @Group: RC13_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_13,                    "RC13_", RC_Channel_aux),
-
-    // @Group: RC14_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_14,                    "RC14_", RC_Channel_aux),
-
-    // @Group: RC15_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_15,                    "RC15_", RC_Channel_aux),
-
-    // @Group: RC16_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_16,                    "RC16_", RC_Channel_aux),
-    
     // @Group: RLL2SRV_
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
 	GOBJECT(rollController,         "RLL2SRV_",   AP_RollController),
@@ -1267,10 +1201,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_ICEngine/AP_ICEngine.cpp
     AP_SUBGROUPINFO(ice_control, "ICE_", 2, ParametersG2, AP_ICEngine),
 
-    // @Group: SERVO_
-    // @Path: ../libraries/RC_Channel/SRV_Channel.cpp
-    AP_SUBGROUPINFO(servo_channels, "SERVO", 3, ParametersG2, SRV_Channels),
-
+    // 3 was used by prototype for servo_channels
+    
     // @Group: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
     // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
@@ -1282,6 +1214,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_Stats/AP_Stats.cpp
     AP_SUBGROUPINFO(stats, "STAT", 5, ParametersG2, AP_Stats),
 
+    // @Group: SERVO
+    // @Path: ../libraries/SRV_Channel/SRV_Channel.cpp
+    AP_SUBGROUPINFO(servo_channels, "SERVO", 6, ParametersG2, SRV_Channels),
+
+    // @Group: RC
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels),
+    
     AP_GROUPEND
 };
 
@@ -1387,6 +1327,12 @@ void Plane::load_parameters(void)
         // quadplanes needs a higher loop rate
         AP_Param::set_default_by_name("SCHED_LOOP_RATE", 300);
     }
+
+    // setup defaults in SRV_Channels
+    g2.servo_channels.set_default_function(CH_1, SRV_Channel::k_aileron);
+    g2.servo_channels.set_default_function(CH_2, SRV_Channel::k_elevator);
+    g2.servo_channels.set_default_function(CH_3, SRV_Channel::k_throttle);
+    g2.servo_channels.set_default_function(CH_4, SRV_Channel::k_rudder);
     
     cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

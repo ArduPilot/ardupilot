@@ -15,7 +15,7 @@ void QuadPlane::tiltrotor_slew(float newtilt)
     tilt.current_tilt = constrain_float(newtilt, tilt.current_tilt-max_change, tilt.current_tilt+max_change);
 
     // translate to 0..1000 range and output
-    RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_motor_tilt, 1000 * tilt.current_tilt);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, 1000 * tilt.current_tilt);
 
     // setup tilt compensation
     motors->set_thrust_compensation_callback(FUNCTOR_BIND_MEMBER(&QuadPlane::tilt_compensate, void, float *, uint8_t));
@@ -42,7 +42,7 @@ void QuadPlane::tiltrotor_update(void)
         // a forward motor
         tiltrotor_slew(1);
 
-        float new_throttle = plane.channel_throttle->get_servo_out()*0.01f;
+        float new_throttle = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01, 0, 1);
         if (tilt.current_tilt < 1) {
             tilt.current_throttle = constrain_float(new_throttle,
                                                     tilt.current_throttle-max_change,
@@ -96,7 +96,7 @@ void QuadPlane::tiltrotor_update(void)
         // Q_TILT_MAX. Anything above 50% throttle gets
         // Q_TILT_MAX. Below 50% throttle we decrease linearly. This
         // relies heavily on Q_VFWD_GAIN being set appropriately.
-        float settilt = constrain_float(plane.channel_throttle->get_servo_out() / 50.0f, 0, 1);
+        float settilt = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 50.0f, 0, 1);
         tiltrotor_slew(settilt * tilt.max_angle_deg / 90.0f);
     }
 }

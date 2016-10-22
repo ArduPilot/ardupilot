@@ -71,7 +71,7 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
     for (uint8_t i=0; i<8; i++) {
         int32_t c1, c2, mix=0;
         bool rev = false;
-        RC_Channel_aux::Aux_servo_function_t function = RC_Channel_aux::channel_function(i);
+        SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(i);
         if (i == rcmap.pitch()-1 && g.vtail_output > MIXING_DISABLED && g.vtail_output <= MIXING_DNDN) {
             // first channel of VTAIL mix
             c1 = rcmap.yaw()-1;
@@ -98,27 +98,27 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             c2 = rcmap.roll()-1;
             rev = false;
             mix = mix_max*mixmul[g.elevon_output][0];
-        } else if (function == RC_Channel_aux::k_aileron || 
-                   function == RC_Channel_aux::k_flaperon1 || 
-                   function == RC_Channel_aux::k_flaperon2) {
+        } else if (function == SRV_Channel::k_aileron || 
+                   function == SRV_Channel::k_flaperon1 || 
+                   function == SRV_Channel::k_flaperon2) {
             // a secondary aileron. We don't mix flap input in yet for flaperons
             c1 = rcmap.roll()-1;
-        } else if (function == RC_Channel_aux::k_elevator) {
+        } else if (function == SRV_Channel::k_elevator) {
             // a secondary elevator
             c1 = rcmap.pitch()-1;
-        } else if (function == RC_Channel_aux::k_rudder || 
-                   function == RC_Channel_aux::k_steering) {
+        } else if (function == SRV_Channel::k_rudder || 
+                   function == SRV_Channel::k_steering) {
             // a secondary rudder or wheel
             c1 = rcmap.yaw()-1;
         } else if (g.flapin_channel > 0 &&
-                   (function == RC_Channel_aux::k_flap ||
-                    function == RC_Channel_aux::k_flap_auto)) {
+                   (function == SRV_Channel::k_flap ||
+                    function == SRV_Channel::k_flap_auto)) {
             // a flap output channel, and we have a manual flap input channel
             c1 = g.flapin_channel-1;
         } else if (i < 4 ||
-                   function == RC_Channel_aux::k_elevator_with_input ||
-                   function == RC_Channel_aux::k_aileron_with_input ||
-                   function == RC_Channel_aux::k_manual) {
+                   function == SRV_Channel::k_elevator_with_input ||
+                   function == SRV_Channel::k_aileron_with_input ||
+                   function == SRV_Channel::k_manual) {
             // a pass-thru channel
             c1 = i;
         } else {
@@ -132,8 +132,8 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             // pass through channel, possibly with reversal. We also
             // adjust the gain based on the range of input and output
             // channels and adjust for trims
-            const RC_Channel *chan1 = RC_Channel::rc_channel(i);
-            const RC_Channel *chan2 = RC_Channel::rc_channel(c1);
+            const RC_Channel *chan1 = RC_Channels::rc_channel(i);
+            const RC_Channel *chan2 = RC_Channels::rc_channel(c1);
             int16_t chan1_trim = (i==rcmap.throttle()-1?1500:chan1->get_radio_trim());
             int16_t chan2_trim = (c1==rcmap.throttle()-1?1500:chan2->get_radio_trim());
             chan1_trim = constrain_int16(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
@@ -171,8 +171,8 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
                 return 0;
             }
         } else {
-            const RC_Channel *chan1 = RC_Channel::rc_channel(c1);
-            const RC_Channel *chan2 = RC_Channel::rc_channel(c2);
+            const RC_Channel *chan1 = RC_Channels::rc_channel(c1);
+            const RC_Channel *chan2 = RC_Channels::rc_channel(c2);
             int16_t chan1_trim = (c1==rcmap.throttle()-1?1500:chan1->get_radio_trim());
             int16_t chan2_trim = (c2==rcmap.throttle()-1?1500:chan2->get_radio_trim());
             chan1_trim = constrain_int16(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
@@ -268,7 +268,7 @@ bool Plane::setup_failsafe_mixing(void)
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
         // make sure the throttle has a non-zero failsafe value before we
         // disable safety. This prevents sending zero PWM during switch over
-        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), throttle_min());
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, aparm.throttle_min<0?SRV_Channel::SRV_CHANNEL_LIMIT_TRIM:SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     }
 
     // we need to force safety on to allow us to load a mixer. We call
@@ -294,7 +294,7 @@ bool Plane::setup_failsafe_mixing(void)
     // mix/max/trim. We only do the first 8 channels due to 
     // a RC config limitation in px4io.c limiting to PX4IO_RC_MAPPED_CONTROL_CHANNELS
     for (uint8_t i=0; i<8; i++) {
-        RC_Channel *ch = RC_Channel::rc_channel(i);
+        RC_Channel *ch = RC_Channels::rc_channel(i);
         if (ch == nullptr) {
             continue;
         }
@@ -354,8 +354,8 @@ bool Plane::setup_failsafe_mixing(void)
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
-        if (RC_Channel_aux::channel_function(i) >= RC_Channel_aux::k_motor1 &&
-            RC_Channel_aux::channel_function(i) <= RC_Channel_aux::k_motor8) {
+        if (SRV_Channels::channel_function(i) >= SRV_Channel::k_motor1 &&
+            SRV_Channels::channel_function(i) <= SRV_Channel::k_motor8) {
             pwm_values.values[i] = quadplane.thr_min_pwm;
         } else {
             pwm_values.values[i] = 900;
@@ -367,8 +367,8 @@ bool Plane::setup_failsafe_mixing(void)
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
-        if (RC_Channel_aux::channel_function(i) >= RC_Channel_aux::k_motor1 &&
-            RC_Channel_aux::channel_function(i) <= RC_Channel_aux::k_motor8) {
+        if (SRV_Channels::channel_function(i) >= SRV_Channel::k_motor1 &&
+            SRV_Channels::channel_function(i) <= SRV_Channel::k_motor8) {
             hal.rcout->write(i, quadplane.thr_min_pwm);
             pwm_values.values[i] = quadplane.thr_min_pwm;
         } else {
