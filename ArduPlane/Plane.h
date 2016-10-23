@@ -230,6 +230,7 @@ private:
         uint32_t last_correction_time_ms;
         uint8_t in_range_count;
         float height_estimate;
+        float last_distance;
     } rangefinder_state;
 #endif
 
