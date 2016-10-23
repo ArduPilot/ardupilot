@@ -463,7 +463,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     }
 
     // set input to PID
-    _pid_accel_z.set_input_filter_d(_accel_error.z);
+    _pid_accel_z.set_input_filter_all(_accel_error.z);
     _pid_accel_z.set_desired_rate(accel_target_z);
 
     // separately calculate p, i, d values for logging
