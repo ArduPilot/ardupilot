@@ -401,6 +401,9 @@ private:
 
         // the time we got our last fix in system milliseconds
         uint32_t last_message_time_ms;
+
+        // estimate of the offset between GPS time and system clock
+        uint64_t gps_ms_offset;
     };
     // Note allowance for an additional instance to contain blended data
     GPS_timing timing[GPS_MAX_RECEIVERS+1];
@@ -483,4 +486,7 @@ private:
 
     // calculate the blended state
     void calc_blended_state(void);
+
+    // estimate last_fix_time_ms
+    void estimate_fix_time(uint8_t instance, uint32_t now);
 };
