@@ -516,6 +516,7 @@ private:
 
     uint32_t        _last_vel_time;
     uint32_t        _last_pos_time;
+    uint32_t        _last_sol_time;
     uint32_t        _last_cfg_sent_time;
     uint8_t         _num_cfg_save_tries;
     uint32_t        _last_config_time;
@@ -532,6 +533,8 @@ private:
     bool            _new_position:1;
     // do we have new speed information?
     bool            _new_speed:1;
+    // do we have a new GPS timestamp?
+    bool            _new_timestamp:1;
 
     uint8_t         _disable_counter;
 
