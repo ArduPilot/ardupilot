@@ -385,7 +385,11 @@ void PX4RCOutput::_arm_actuators(bool arm)
 
 	_armed.timestamp = hrt_absolute_time();
     _armed.armed = arm;
-    _armed.ready_to_arm = arm;
+    if (arm) {
+        // this latches ready_to_arm to true once set once. Otherwise
+        // we have a race condition with px4io safety switch update
+        _armed.ready_to_arm = true;
+    }
     _armed.lockdown = false;
     _armed.force_failsafe = false;
 
