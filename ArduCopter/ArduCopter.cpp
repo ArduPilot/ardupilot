@@ -94,6 +94,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(auto_trim,             10,     75),
     SCHED_TASK(read_rangefinder,      20,    100),
     SCHED_TASK(update_proximity,     100,     50),
+    SCHED_TASK(update_beacon,        100,     50),
     SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(update_throttle_hover,100,     90),
