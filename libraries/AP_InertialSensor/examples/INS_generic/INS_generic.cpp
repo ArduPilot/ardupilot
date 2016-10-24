@@ -5,6 +5,7 @@
 //
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
@@ -14,8 +15,14 @@ AP_InertialSensor ins;
 static void display_offsets_and_scaling();
 static void run_test();
 
+// board specific config
+AP_BoardConfig BoardConfig;
+
 void setup(void)
 {
+    // setup any board specific drivers
+    BoardConfig.init();
+
     hal.console->println("AP_InertialSensor startup...");
 
     ins.init(100);
