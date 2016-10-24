@@ -412,14 +412,15 @@ void NavEKF2_core::readGpsData()
             gpsCheckStatus.bad_fix = false;
 
             // store fix time from previous read
-            secondLastGpsTime_ms = lastTimeGpsReceived_ms;
+            secondLastGpsTime_ms = lastTimeGpsFix_ms;
 
             // get current fix time
             lastTimeGpsReceived_ms = _ahrs->get_gps().last_message_time_ms();
-
+            lastTimeGpsFix_ms = _ahrs->get_gps().last_fix_time_ms();
+            
             // estimate when the GPS fix was valid, allowing for GPS processing and other delays
             // ideally we should be using a timing signal from the GPS receiver to set this time
-            gpsDataNew.time_ms = lastTimeGpsReceived_ms - frontend->_gpsDelay_ms;
+            gpsDataNew.time_ms = lastTimeGpsFix_ms - frontend->_gpsDelay_ms;
 
             // Correct for the average intersampling delay due to the filter updaterate
             gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
@@ -435,7 +436,7 @@ void NavEKF2_core::readGpsData()
 
             // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
             // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
-            float alpha = constrain_float(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
+            float alpha = constrain_float(0.0002f * (lastTimeGpsFix_ms - secondLastGpsTime_ms),0.0f,1.0f);
             gpsSpdAccuracy *= (1.0f - alpha);
             float gpsSpdAccRaw;
             if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {

@@ -313,6 +313,12 @@ void NavEKF2_core::setAidingMode()
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffset);
             }
             // reset the last fusion accepted times to prevent unwanted activation of timeout logic
+            // we need to reset the GPS timers to prevent GPS timeout logic being invoked on entry into GPS aiding
+            // this is because the EKF can be interrupted for an arbitrary amount of time during vehicle arming checks
+            lastTimeGpsReceived_ms = imuSampleTime_ms;
+            lastTimeGpsFix_ms = imuSampleTime_ms;
+            secondLastGpsTime_ms = imuSampleTime_ms;
+            // reset the last valid position fix time to prevent unwanted activation of GPS glitch logic
             lastPosPassTime_ms = imuSampleTime_ms;
             lastVelPassTime_ms = imuSampleTime_ms;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
