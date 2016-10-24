@@ -51,3 +51,4 @@ Yuichiro Shibata
 Tsuyoshi Kawamura (retry)
 Natsuki Matsuda
 Isamu Tamura(retry 4)
+Sumiaki Takemoto
