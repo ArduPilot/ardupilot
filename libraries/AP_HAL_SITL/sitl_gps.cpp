@@ -41,6 +41,9 @@ static struct gps_state {
     /* pipe emulating UBLOX GPS serial stream */
     int gps_fd, client_fd;
     uint32_t last_update; // milliseconds
+    uint32_t last_gps_ms;
+    uint16_t time_week;
+    uint32_t time_week_ms;
 } gps_state, gps2_state;
 
 /*
@@ -277,12 +280,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     const uint8_t MSG_VELNED = 0x12;
     const uint8_t MSG_SOL = 0x6;
     const uint8_t MSG_PVT = 0x7;
-    uint16_t time_week;
-    uint32_t time_week_ms;
 
-    gps_time(&time_week, &time_week_ms);
-
-    pos.time = time_week_ms;
+    pos.time = gps_state.time_week_ms;
     pos.longitude = d->longitude * 1.0e7;
     pos.latitude  = d->latitude * 1.0e7;
     pos.altitude_ellipsoid = d->altitude * 1000.0f;
@@ -290,7 +289,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pos.horizontal_accuracy = 1500;
     pos.vertical_accuracy = 2000;
 
-    status.time = time_week_ms;
+    status.time = gps_state.time_week_ms;
     status.fix_type = d->have_lock?3:0;
     status.fix_status = d->have_lock?1:0;
     status.differential_status = 0;
@@ -298,7 +297,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     status.time_to_first_fix = 0;
     status.uptime = AP_HAL::millis();
 
-    velned.time = time_week_ms;
+    velned.time = gps_state.time_week_ms;
     velned.ned_north = 100.0f * d->speedN;
     velned.ned_east  = 100.0f * d->speedE;
     velned.ned_down  = 100.0f * d->speedD;
@@ -315,10 +314,10 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     sol.fix_type = d->have_lock?3:0;
     sol.fix_status = 221;
     sol.satellites = d->have_lock?_sitl->gps_numsats:3;
-    sol.time = time_week_ms;
-    sol.week = time_week;
+    sol.time = gps_state.time_week_ms;
+    sol.week = gps_state.time_week;
 
-    dop.time = time_week_ms;
+    dop.time = gps_state.time_week_ms;
     dop.gDOP = 65535;
     dop.pDOP = 65535;
     dop.tDOP = 65535;
@@ -732,13 +731,9 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, uint8_t instance)
     static const uint16_t SBP_DOPS_MSGTYPE = 0x0206;
     static const uint16_t SBP_POS_LLH_MSGTYPE = 0x0201;
     static const uint16_t SBP_VEL_NED_MSGTYPE = 0x0205;
-    uint16_t time_week;
-    uint32_t time_week_ms;
 
-    gps_time(&time_week, &time_week_ms);
-
-    t.wn = time_week;
-    t.tow = time_week_ms;
+    t.wn = gps_state.time_week;
+    t.tow = gps_state.time_week_ms;
     t.ns = 0;
     t.flags = 0;
     _sbp_send_message(SBP_GPS_TIME_MSGTYPE, 0x2222, sizeof(t), (uint8_t*)&t, instance);
@@ -747,7 +742,7 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, uint8_t instance)
         return;
     }
 
-    pos.tow = time_week_ms;
+    pos.tow = gps_state.time_week_ms;
     pos.lon = d->longitude;
     pos.lat= d->latitude;
     pos.height = d->altitude;
@@ -762,7 +757,7 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, uint8_t instance)
     pos.flags = 1;
     _sbp_send_message(SBP_POS_LLH_MSGTYPE, 0x2222, sizeof(pos), (uint8_t*)&pos, instance);
 
-    velned.tow = time_week_ms;
+    velned.tow = gps_state.time_week_ms;
     velned.n = 1e3 * d->speedN;
     velned.e = 1e3 * d->speedE;
     velned.d = 1e3 * d->speedD;
@@ -775,7 +770,7 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, uint8_t instance)
     static uint32_t do_every_count = 0;
     if (do_every_count % 5 == 0) {
 
-        dops.tow = time_week_ms;
+        dops.tow = gps_state.time_week_ms;
         dops.gdop = 1;
         dops.pdop = 1;
         dops.tdop = 1;
@@ -994,17 +989,12 @@ void SITL_State::_update_gps_nova(const struct gps_data *d, uint8_t instance)
         float resv;
     } bestvel;
     
-    uint16_t time_week;
-    uint32_t time_week_ms;
-    
-    gps_time(&time_week, &time_week_ms);
-    
     header.preamble[0] = 0xaa;
     header.preamble[1] = 0x44;
     header.preamble[2] = 0x12;
     header.headerlength = sizeof(header);
-    header.week = time_week;
-    header.tow = time_week_ms;
+    header.week = gps_state.time_week;
+    header.tow = gps_state.time_week_ms;
     
     header.messageid = 174;
     header.messagelength = sizeof(psrdop);
@@ -1137,9 +1127,16 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     }
 
     // run at configured GPS rate (default 5Hz)
-    if ((AP_HAL::millis() - gps_state.last_update) < (uint32_t)(1000/_sitl->gps_hertz)) {
+    uint32_t now = AP_HAL::millis();
+    if ((now - gps_state.last_update) < (uint32_t)(1000/_sitl->gps_hertz)) {
         return;
     }
+    gps_time(&gps_state.time_week, &gps_state.time_week_ms);
+    if (gps_state.time_week_ms == gps_state.last_gps_ms) {
+        // make sure we don't repeat samples
+        return;
+    }
+    gps_state.last_gps_ms = gps_state.time_week_ms;
 
     // swallow any config bytes
     if (gps_state.gps_fd != 0) {
@@ -1149,15 +1146,19 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
         read(gps2_state.gps_fd, &c, 1);
     }
 
-    gps_state.last_update = AP_HAL::millis();
-    gps2_state.last_update = AP_HAL::millis();
+    gps_state.last_update = now;
+    gps2_state.last_update = now;
 
     d.latitude = latitude;
     d.longitude = longitude;
     // add an altitude error controlled by a slow sine wave
     d.altitude = altitude + _sitl->gps_noise * sinf(AP_HAL::millis() * 0.0005f);
 
-    // Add offet to c.g. velocity to get velocity at antenna
+    if (_sitl->gps_drift_alt > 0) {
+        // slow altitude drift
+        d.altitude += _sitl->gps_drift_alt*sinf(now*0.001f*0.02f);
+    }
+
     d.speedN = speedN;
     d.speedE = speedE;
     d.speedD = speedD;
