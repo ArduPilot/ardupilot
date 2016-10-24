@@ -55,10 +55,12 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         /* gps */
         _connected = true;
         _fd = _sitlState->gps_pipe();
+        _jitter.enabled = true;
     } else if (strcmp(path, "GPS2") == 0) {
         /* 2nd gps */
         _connected = true;
         _fd = _sitlState->gps2_pipe();
+        _jitter.enabled = true;
     } else {
         /* parse type:args:flags string for path. 
            For example:
@@ -109,6 +111,23 @@ uint32_t UARTDriver::available(void)
         return 0;
     }
 
+    if (_jitter.enabled && _sitlState->_sitl->gps_timing_jitter > 0) {
+        if (_jitter.promised == 0 &&
+            _jitter.delay_till_us != 0 &&
+            AP_HAL::micros64() < _jitter.delay_till_us) {
+            return 0;
+        }
+
+        if (_jitter.promised == 0 &&
+            _jitter.delay_till_us == 0 &&
+            _readbuffer.available() > 0) {
+            _jitter.delay_till_us = AP_HAL::micros64() + (((unsigned)random()) % (_sitlState->_sitl->gps_timing_jitter * 1000UL));
+            return 0;
+        }
+        _jitter.promised = _readbuffer.available();
+    }
+
+    
     return _readbuffer.available();
 }
 
@@ -128,6 +147,14 @@ int16_t UARTDriver::read(void)
     }
     uint8_t c;
     _readbuffer.read(&c, 1);
+
+    // handle timing jitter
+    if (_jitter.enabled && _jitter.promised > 0) {
+        _jitter.promised--;
+        if (_jitter.promised == 0) {
+            _jitter.delay_till_us = 0;
+        }
+    }
     return c;
 }
 
