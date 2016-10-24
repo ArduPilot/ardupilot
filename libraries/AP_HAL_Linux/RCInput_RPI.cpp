@@ -3,6 +3,7 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO ||        \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 ||   \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH ||           \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK ||         \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 #include <assert.h>
 #include <errno.h>
@@ -52,7 +53,7 @@
 #define RCIN_RPI_TIMER_BASE      0x7e003004
 
 #define RCIN_RPI_DMA_SRC_INC     (1<<8)
-#define RCIN_RPI_DMA_DEST_INC    (1<<4) 
+#define RCIN_RPI_DMA_DEST_INC    (1<<4)
 #define RCIN_RPI_DMA_NO_WIDE_BURSTS  (1<<26)
 #define RCIN_RPI_DMA_WAIT_RESP   (1<<3)
 #define RCIN_RPI_DMA_D_DREQ      (1<<6)
@@ -106,7 +107,7 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     _virt_pages = (void**)malloc(page_count * sizeof(void*));
     _phys_pages = (void**)malloc(page_count * sizeof(void*));
     _page_count = page_count;
- 
+
     if ((fdMem = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
         fprintf(stderr,"Failed to open /dev/mem\n");
         exit(-1);
@@ -124,7 +125,7 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     //Get list of available cache coherent physical addresses
     for (i = 0; i < _page_count; i++) {
         _virt_pages[i]  =  mmap(0, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE|MAP_LOCKED,-1,0);
-        ::read(file, &pageInfo, 8); 
+        ::read(file, &pageInfo, 8);
         _phys_pages[i] = (void*)((uintptr_t)(pageInfo*PAGE_SIZE) | bus);
     }
 
@@ -148,7 +149,7 @@ Memory_table::~Memory_table()
 void* Memory_table::get_page(void** const pages, uint32_t addr) const
 {
     if (addr >= PAGE_SIZE * _page_count) {
-        return NULL;   
+        return NULL;
     }
     return (uint8_t*)pages[(uint32_t) addr / 4096] + addr % 4096;
 }
@@ -203,7 +204,7 @@ void RCInput_RPI::set_physical_addresses(int version)
         dma_base = RCIN_RPI_RPI1_DMA_BASE;
         clk_base = RCIN_RPI_RPI1_CLK_BASE;
         pcm_base = RCIN_RPI_RPI1_PCM_BASE;
-    }                                                                                                                                     
+    }
     else if (version == 2) {
         dma_base = RCIN_RPI_RPI2_DMA_BASE;
         clk_base = RCIN_RPI_RPI2_CLK_BASE;
@@ -262,14 +263,14 @@ void RCInput_RPI::init_ctrl_data()
     uint32_t cbp = 0;
     dma_cb_t* cbp_curr;
     //Set fifo addr (for delay)
-    phys_fifo_addr = ((pcm_base + 0x04) & 0x00FFFFFF) | 0x7e000000;  
-    
+    phys_fifo_addr = ((pcm_base + 0x04) & 0x00FFFFFF) | 0x7e000000;
+
     //Init dma control blocks.
-    /*We are transferring 1 byte of GPIO register. Every 56th iteration we are 
-      sampling TIMER register, which length is 8 bytes. So, for every 56 samples of GPIO we need 
-      56 * 1 + 8 = 64 bytes of buffer. Value 56 was selected specially to have a 64-byte "block" 
-      TIMER - GPIO. So, we have integer count of such "blocks" at one virtual page. (4096 / 64 = 64 
-      "blocks" per page. As minimum, we must have 2 virtual pages of buffer (to have integer count of 
+    /*We are transferring 1 byte of GPIO register. Every 56th iteration we are
+      sampling TIMER register, which length is 8 bytes. So, for every 56 samples of GPIO we need
+      56 * 1 + 8 = 64 bytes of buffer. Value 56 was selected specially to have a 64-byte "block"
+      TIMER - GPIO. So, we have integer count of such "blocks" at one virtual page. (4096 / 64 = 64
+      "blocks" per page. As minimum, we must have 2 virtual pages of buffer (to have integer count of
       vitual pages for control blocks): for every 56 iterations (64 bytes of buffer) we need 56 control blocks for GPIO
       sampling, 56 control blocks for setting frequency and 1 control block for sampling timer, so,
       we need 56 + 56 + 1 = 113 control blocks. For integer value, we need 113 pages of control blocks.
@@ -287,44 +288,44 @@ void RCInput_RPI::init_ctrl_data()
       if(i % 56 == 0) {
           cbp_curr = (dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp);
 
-          init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP | RCIN_RPI_DMA_DEST_INC | RCIN_RPI_DMA_SRC_INC, RCIN_RPI_TIMER_BASE, 
-		      (uintptr_t) circle_buffer->get_page(circle_buffer->_phys_pages, dest), 
-		      8, 
-		      0, 
-		      (uintptr_t) con_blocks->get_page(con_blocks->_phys_pages, 
+          init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP | RCIN_RPI_DMA_DEST_INC | RCIN_RPI_DMA_SRC_INC, RCIN_RPI_TIMER_BASE,
+		      (uintptr_t) circle_buffer->get_page(circle_buffer->_phys_pages, dest),
+		      8,
+		      0,
+		      (uintptr_t) con_blocks->get_page(con_blocks->_phys_pages,
 		      cbp + sizeof(dma_cb_t) ) );
-	  
+
           dest += 8;
           cbp += sizeof(dma_cb_t);
-      } 
+      }
 
 	    // Transfer GPIO (1 byte)
 	    cbp_curr = (dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp);
-	    init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP, RCIN_RPI_GPIO_LEV0_ADDR, 
-			(uintptr_t) circle_buffer->get_page(circle_buffer->_phys_pages, dest), 
-			1, 
-			0, 
-			(uintptr_t) con_blocks->get_page(con_blocks->_phys_pages, 
+	    init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP, RCIN_RPI_GPIO_LEV0_ADDR,
+			(uintptr_t) circle_buffer->get_page(circle_buffer->_phys_pages, dest),
+			1,
+			0,
+			(uintptr_t) con_blocks->get_page(con_blocks->_phys_pages,
 			cbp + sizeof(dma_cb_t) ) );
-	    
+
 	    dest += 1;
-	    cbp += sizeof(dma_cb_t);	  
+	    cbp += sizeof(dma_cb_t);
 
 	    // Delay (for setting sampling frequency)
 	    /* DMA is waiting data request signal (DREQ) from PCM. PCM is set for 1 MhZ freqency, so,
 	       each sample of GPIO is limited by writing to PCA queue.
 	    */
 	    cbp_curr = (dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp);
-	    init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP | RCIN_RPI_DMA_D_DREQ | RCIN_RPI_DMA_PER_MAP(2), 
-			RCIN_RPI_TIMER_BASE, phys_fifo_addr, 
-			4, 
-			0, 
-			(uintptr_t)con_blocks->get_page(con_blocks->_phys_pages, 
+	    init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP | RCIN_RPI_DMA_D_DREQ | RCIN_RPI_DMA_PER_MAP(2),
+			RCIN_RPI_TIMER_BASE, phys_fifo_addr,
+			4,
+			0,
+			(uintptr_t)con_blocks->get_page(con_blocks->_phys_pages,
 			cbp + sizeof(dma_cb_t) ) );
-	    
+
 	    cbp += sizeof(dma_cb_t);
 	}
-    //Make last control block point to the first (to make circle) 
+    //Make last control block point to the first (to make circle)
     cbp -= sizeof(dma_cb_t);
     ((dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp))->next = (uintptr_t) con_blocks->get_page(con_blocks->_phys_pages, 0);
 }
@@ -333,7 +334,7 @@ void RCInput_RPI::init_ctrl_data()
 /*Initialise PCM
   See BCM2835 documentation:
   http://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
-*/  
+*/
 void RCInput_RPI::init_PCM()
 {
     pcm_reg[RCIN_RPI_PCM_CS_A] = 1;                                          // Disable Rx+Tx, Enable PCM block
@@ -361,7 +362,7 @@ void RCInput_RPI::init_PCM()
 /*Initialise DMA
   See BCM2835 documentation:
   http://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
-*/  
+*/
 void RCInput_RPI::init_DMA()
 {
     dma_reg[RCIN_RPI_DMA_CS | RCIN_RPI_DMA_CHANNEL << 8] = RCIN_RPI_DMA_RESET;                 //Reset DMA
@@ -369,7 +370,7 @@ void RCInput_RPI::init_DMA()
     dma_reg[RCIN_RPI_DMA_CS | RCIN_RPI_DMA_CHANNEL << 8] = RCIN_RPI_DMA_INT | RCIN_RPI_DMA_END;
     dma_reg[RCIN_RPI_DMA_CONBLK_AD | RCIN_RPI_DMA_CHANNEL << 8] = reinterpret_cast<uintptr_t>(con_blocks->get_page(con_blocks->_phys_pages, 0));//Set first control block address
     dma_reg[RCIN_RPI_DMA_DEBUG | RCIN_RPI_DMA_CHANNEL << 8] = 7;                      // clear debug error flags
-    dma_reg[RCIN_RPI_DMA_CS | RCIN_RPI_DMA_CHANNEL << 8] = 0x10880001;                // go, mid priority, wait for outstanding writes    
+    dma_reg[RCIN_RPI_DMA_CS | RCIN_RPI_DMA_CHANNEL << 8] = 0x10880001;                // go, mid priority, wait for outstanding writes
 }
 
 
@@ -400,9 +401,9 @@ RCInput_RPI::RCInput_RPI():
     curr_signal(0),
     last_signal(228),
     state(RCIN_RPI_INITIAL_STATE)
-{    
+{
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
-    int version = 2;    
+    int version = 2;
 #else
     int version = UtilRPI::from(hal.util)->get_rpi_version();
 #endif
@@ -427,16 +428,16 @@ void RCInput_RPI::deinit()
 //Initializing necessary registers
 void RCInput_RPI::init_registers()
 {
-    dma_reg = (uint32_t*)map_peripheral(dma_base, RCIN_RPI_DMA_LEN);    
+    dma_reg = (uint32_t*)map_peripheral(dma_base, RCIN_RPI_DMA_LEN);
     pcm_reg = (uint32_t*)map_peripheral(pcm_base, RCIN_RPI_PCM_LEN);
     clk_reg = (uint32_t*)map_peripheral(clk_base, RCIN_RPI_CLK_LEN);
 }
 
 void RCInput_RPI::init()
 {
-    
+
     init_registers();
-    
+
     //Enable PPM input
     enable_pin = hal.gpio->channel(PPM_INPUT_RPI);
     enable_pin->mode(HAL_GPIO_INPUT);
@@ -473,7 +474,7 @@ void RCInput_RPI::_timer_tick()
     if(x != NULL) {
         break;}
     }
-    
+
     //How many bytes have DMA transferred (and we can process)?
     counter = circle_buffer->bytes_available(curr_pointer, circle_buffer->get_offset(circle_buffer->_virt_pages, (uintptr_t)x));
     //We can't stay in method for a long time, because it may lead to delays
@@ -505,7 +506,7 @@ void RCInput_RPI::_timer_tick()
                     state = RCIN_RPI_ONE_STATE;
                     break;
                 }
-                else 
+                else
                     break;
             case RCIN_RPI_ONE_STATE:
                 if (curr_signal == 1) {
@@ -514,7 +515,7 @@ void RCInput_RPI::_timer_tick()
                     _process_rc_pulse(width_s0, width_s1);
                     break;
                 }
-                else 
+                else
                     break;
             }
         }
