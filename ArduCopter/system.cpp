@@ -262,6 +262,9 @@ void Copter::init_ardupilot()
     // init proximity sensor
     init_proximity();
 
+    // init beacons used for non-gps position estimation
+    init_beacon();
+
     // initialise AP_RPM library
     rpm_sensor.init();
 

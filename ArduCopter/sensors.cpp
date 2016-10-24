@@ -434,3 +434,15 @@ void Copter::update_sensor_status_flags(void)
     frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
 #endif
 }
+
+// init beacons used for non-gps position estimates
+void Copter::init_beacon()
+{
+    g2.beacon.init();
+}
+
+// update beacons
+void Copter::update_beacon()
+{
+    g2.beacon.update();
+}
