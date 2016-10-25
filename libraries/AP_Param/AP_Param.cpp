@@ -78,6 +78,8 @@ void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
     _storage.write_block(ofs, ptr, size);
 }
 
+bool AP_Param::_hide_disabled_groups = true;
+
 // write a sentinal value at the given offset
 void AP_Param::write_sentinal(uint16_t ofs)
 {
@@ -1460,7 +1462,8 @@ AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
                                                                     ginfo, group_nesting, &idx);
         if (info && ginfo &&
             (ginfo->flags & AP_PARAM_FLAG_ENABLE) &&
-            ((AP_Int8 *)ap)->get() == 0) {
+            ((AP_Int8 *)ap)->get() == 0 &&
+            _hide_disabled_groups) {
             /*
               this is a disabled parameter tree, include this
               parameter but not others below it. We need to keep

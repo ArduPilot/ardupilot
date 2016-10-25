@@ -345,7 +345,9 @@ public:
 
     // count of parameters in tree
     static uint16_t count_parameters(void);
-    
+
+    static void set_hide_disabled_groups(bool value) { _hide_disabled_groups = value; }
+
 private:
     /// EEPROM header
     ///
@@ -493,6 +495,8 @@ private:
     static const uint8_t        k_EEPROM_magic0      = 0x50;
     static const uint8_t        k_EEPROM_magic1      = 0x41; ///< "AP"
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
+
+    static bool _hide_disabled_groups;
 };
 
 /// Template class for scalar variables.
