@@ -180,7 +180,7 @@ def make_safe_filename(text):
 
 class SITL(pexpect.spawn):
 
-    def __init__(self, binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
+    def __init__(self, binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None, unhide_parameters=False):
         self.binary = binary
         self.model = model
 
@@ -206,6 +206,8 @@ class SITL(pexpect.spawn):
             cmd.extend(['--speedup', str(speedup)])
         if defaults_file is not None:
             cmd.extend(['--defaults', defaults_file])
+        if unhide_parameters:
+            cmd.extend(['--unhide-groups'])
         print("Running: %s" % cmd_as_shell(cmd))
         first = cmd[0]
         rest = cmd[1:]

@@ -38,7 +38,7 @@ def get_default_params(atype, binary):
         frame = "+"
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=10)
+    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=10, unhide_parameters=True)
     mavproxy = util.start_MAVProxy_SITL(atype)
     print("Dumping defaults")
     idx = mavproxy.expect(['Please Run Setup', 'Saved [0-9]+ parameters to (\S+)'])
