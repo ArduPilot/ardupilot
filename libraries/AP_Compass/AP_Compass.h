@@ -50,8 +50,6 @@
 #define COMPASS_MAX_BACKEND   3
 
 //MAXIMUM COMPASS REPORTS
-#define MAX_CAL_REPORTS 10
-#define CONTINUOUS_REPORTS 0
 #define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(50.0f)
 #define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
 #define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
@@ -315,9 +313,6 @@ private:
     // load backend drivers
     bool _add_backend(AP_Compass_Backend *backend, const char *name, bool external);
     void _detect_backends(void);
-
-    //keep track of number of calibration reports sent
-    uint8_t _reports_sent[COMPASS_MAX_INSTANCES];
 
     //autoreboot after compass calibration
     bool _compass_cal_autoreboot;

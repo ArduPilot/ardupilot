@@ -84,6 +84,7 @@ _sample_buffer(NULL)
 
 void CompassCalibrator::clear() {
     set_status(COMPASS_CAL_NOT_STARTED);
+    _saved = false;
 }
 
 void CompassCalibrator::start(bool retry, bool autosave, float delay) {
@@ -96,6 +97,7 @@ void CompassCalibrator::start(bool retry, bool autosave, float delay) {
     _delay_start_sec = delay;
     _start_time_ms = AP_HAL::millis();
     set_status(COMPASS_CAL_WAITING_TO_START);
+    _saved = false;
 }
 
 void CompassCalibrator::get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals) {
@@ -258,7 +260,6 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
     if (status != COMPASS_CAL_NOT_STARTED && _status == status) {
         return true;
     }
-
     switch(status) {
         case COMPASS_CAL_NOT_STARTED:
             reset_state();
