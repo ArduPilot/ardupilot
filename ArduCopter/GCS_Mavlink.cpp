@@ -1907,36 +1907,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
       break;
     }
 
-// taken from: http://ziodraw.blogspot.nl/2015/05/injecting-fake-gps-data-into-apm-26.html
-#if GPS_PROTOCOL == GPS_CUSTOM
-	case MAVLINK_MSG_ID_GPS_RAW_INT:			// MAV ID: 24
-	{
-		mavlink_gps_raw_int_t packet;
-
-		mavlink_msg_gps_raw_int_decode(msg, &packet);
-
-		// set gps hil sensor
-		Location loc;
-		loc.lat = packet.lat;
-		loc.lng = packet.lon;
-		loc.alt = packet.alt;
-		// loc.alt = packet.alt/10;
-
-		// hardcode gps data to current location
-		current_loc = loc;
-
-		// current velocity ???
-		Vector3f vel(0, 0, 0);
-		vel *= 0.01f;
-
-		gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
-			packet.time_usec / 1000,
-			loc, vel, 10, 0, true);
-
-		break;
-	}
-#endif // GPS_PROTOCOL == GPS_CUSTOM
-
 #if HIL_MODE != HIL_MODE_DISABLED
     case MAVLINK_MSG_ID_HIL_STATE:          // MAV ID: 90
     {
@@ -2178,6 +2148,36 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         handle_setup_signing(msg);
         break;
         
+// taken from: http://ziodraw.blogspot.nl/2015/05/injecting-fake-gps-data-into-apm-26.html
+#if GPS_PROTOCOL == GPS_CUSTOM
+	case MAVLINK_MSG_ID_GPS_RAW_INT:			// MAV ID: 24
+	{
+		mavlink_gps_raw_int_t packet;
+
+		mavlink_msg_gps_raw_int_decode(msg, &packet);
+
+		// set gps hil sensor
+		Location loc;
+		loc.lat = packet.lat;
+		loc.lng = packet.lon;
+		loc.alt = packet.alt;
+		// loc.alt = packet.alt/10;
+
+		// hardcode gps data to current location
+		copter.current_loc = loc;
+
+		// current velocity ???
+		Vector3f vel(0, 0, 0);
+		vel *= 0.01f;
+
+		copter.gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
+			packet.time_usec / 1000,
+			loc, vel, 10, 0);
+
+		break;
+	}
+#endif // GPS_PROTOCOL == GPS_CUSTOM
+
     }     // end switch
 } // end handle mavlink
 
