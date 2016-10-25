@@ -166,12 +166,13 @@ addfwversion() {
     destdir="$1"
     src="$2"
     git log -1 > "$destdir/git-version.txt"
-    [ -f "$src/version.h" ] && {
+    versionfile="$src/version.h"
+    [ -f $versionfile ] && {
         shopt -s nullglob
-        version=$(grep 'define.THISFIRMWARE' version.h 2> /dev/null | cut -d'"' -f2)
+        version=$(grep 'define.THISFIRMWARE' $versionfile 2> /dev/null | cut -d'"' -f2)
         echo >> "$destdir/git-version.txt"
         echo "APMVERSION: $version" >> "$destdir/git-version.txt"
-        python $BASEDIR/Tools/PrintVersion.py >"$destdir/firmware-version.txt"
+        python $BASEDIR/Tools/PrintVersion.py $src >"$destdir/firmware-version.txt"
     }    
 }
 
