@@ -1,5 +1,14 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.0-rc7 25-Oct-2016
+Changes from 3.4.0-rc6
+1) Bug fixes, minor improvements:
+    a) more DSM binding fixes for pixracer
+    b) allow non-motor channels to move before safety switch is pressed
+    c) fix Bebop motor order
+    d) fix MAVLink system id for first few messages
+    e) fix throw mode throttle while rotating to level
+------------------------------------------------------------------
 Copter 3.4.0-rc6 15-Oct-2016
 Changes from 3.4.0-rc5
 1) Object Avoidance with SF40c 360 lidar
