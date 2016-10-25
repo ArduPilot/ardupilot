@@ -60,11 +60,23 @@ protected:
     int _fd = -1;
 };
 
+/*
+ * Internal class to be used inside Poller in order to keep track of requests
+ * to wake it up
+ */
+class WakeupPollable : public Pollable {
+    friend class Poller;
+public:
+    void on_can_read() override;
+};
+
 class Poller {
 public:
     Poller();
 
     ~Poller() {
+        unregister_pollable(&_wakeup);
+
         if (_epfd >= 0) {
             close(_epfd);
         }
@@ -99,9 +111,17 @@ public:
      */
     int poll() const;
 
+    /*
+     * Wake up the thread sleeping on a poll() call if it is in fact
+     * sleeping. Otherwise a nop event is generated and handled. This is
+     * usually called from a thread different from the one calling poll().
+     */
+    void wakeup() const;
+
 private:
 
     int _epfd = -1;
+    WakeupPollable _wakeup{};
 };
 
 }
