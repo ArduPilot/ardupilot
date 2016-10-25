@@ -295,6 +295,7 @@ def _build_recursion(bld):
     ]
 
     hal_dirs_patterns = [
+        'libraries/%s/tests',
         'libraries/%s/*/tests',
         'libraries/%s/*/benchmarks',
         'libraries/%s/examples/*',
