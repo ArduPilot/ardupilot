@@ -553,6 +553,9 @@ private:
     // check for new valid GPS data and update stored measurement if available
     void readGpsData();
 
+    // propogate GPS position data forward to the given time
+    void propogateGpsData(gps_elements &gpsData, uint32_t new_time_ms);
+    
     // check for new altitude measurement data and update stored measurement if available
     void readBaroData();
 
