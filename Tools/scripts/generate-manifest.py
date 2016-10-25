@@ -109,6 +109,8 @@ class ManifestGenerator():
                     continue
                 if file == "firmware-version.txt":
                     continue
+                if file == "files.html":
+                    continue
 
                 m = variant_firmware_regex.match(file)
                 if m:
@@ -198,10 +200,17 @@ class ManifestGenerator():
         for vehicletype in vehicletypes:
             vdir = os.listdir(os.path.join(basedir, vehicletype))
             for firstlevel in vdir:
+                if firstlevel == "files.html":
+                    # generated file which should be ignored
+                    continue
+                # skip any non-directories (e.g. "files.html"):
                 if year_month_regex.match(firstlevel):
                     # this is a dated directory e.g. binaries/Copter/2016-02
                     year_month_path = os.path.join(basedir, vehicletype, firstlevel)
                     for fulldate in os.listdir(year_month_path):
+                        if fulldate == "files.html":
+                            # generated file which should be ignored
+                            continue
                         self.add_firmware_data_from_dir(os.path.join(year_month_path, fulldate), xfirmwares, vehicletype)
                 else:
                     # assume this is a release directory such as
