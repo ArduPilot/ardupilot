@@ -83,7 +83,12 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedOF.init(OBS_BUFFER_LENGTH)) {
         return false;
     }
+    // Note: the use of dual range finders potentially doubles the amount of to be stored
     if(!storedRange.init(2*OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    // Note: range beacon data is read one beacon at a time and can arrive at a high rate
+    if(!storedRangeBeacon.init(imu_buffer_length)) {
         return false;
     }
     if(!storedIMU.init(imu_buffer_length)) {
@@ -116,10 +121,10 @@ void NavEKF2_core::InitialiseVariables()
     prevBetaStep_ms = imuSampleTime_ms;
     lastMagUpdate_us = 0;
     lastBaroReceived_ms = imuSampleTime_ms;
-    lastVelPassTime_ms = imuSampleTime_ms;
-    lastPosPassTime_ms = imuSampleTime_ms;
-    lastHgtPassTime_ms = imuSampleTime_ms;
-    lastTasPassTime_ms = imuSampleTime_ms;
+    lastVelPassTime_ms = 0;
+    lastPosPassTime_ms = 0;
+    lastHgtPassTime_ms = 0;
+    lastTasPassTime_ms = 0;
     lastSynthYawTime_ms = imuSampleTime_ms;
     lastTimeGpsReceived_ms = 0;
     secondLastGpsTime_ms = 0;
@@ -128,7 +133,7 @@ void NavEKF2_core::InitialiseVariables()
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = 0;
-    prevFlowFuseTime_ms = imuSampleTime_ms;
+    prevFlowFuseTime_ms = 0;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
@@ -270,6 +275,42 @@ void NavEKF2_core::InitialiseVariables()
     velOffsetNED.zero();
     posOffsetNED.zero();
 
+    // range beacon fusion variables
+    rngBcnStoreIndex = 0;
+    lastRngBcnPassTime_ms = 0;
+    rngBcnTestRatio = 0.0f;
+    rngBcnHealth = false;
+    rngBcnTimeout = true;
+    varInnovRngBcn = 0.0f;
+    innovRngBcn = 0.0f;
+    memset(&lastTimeRngBcn_ms, 0, sizeof(lastTimeRngBcn_ms));
+    rngBcnDataToFuse = false;
+    beaconVehiclePosNED.zero();
+    beaconVehiclePosErr = 1.0f;
+    rngBcnLast3DmeasTime_ms = 0;
+    rngBcnGoodToAlign = false;
+    lastRngBcnChecked = 0;
+    memset(&receiverPosCov, 0, sizeof(receiverPosCov));
+    receiverPos.zero();
+    rngBcnAlignmentStarted =  false;
+    rngBcnAlignmentCompleted = false;
+    lastBeaconIndex = 0;
+    rngBcnPosSum.zero();
+    numBcnMeas = 0;
+    rngSum = 0.0f;
+    memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
+    rngBcnFuseDataReportIndex = 0;
+    N_beacons = 0;
+    minBcnPosD = 0.0f;
+    maxBcnPosD = 0.0f;
+    bcnPosOffset = 0.0f;
+    bcnPosOffsetMax = 0.0f;
+    bcnPosOffsetMaxVar = 0.0f;
+    OffsetMaxInnovFilt = 0.0f;
+    bcnPosOffsetMin = 0.0f;
+    bcnPosOffsetMinVar = 0.0f;
+    OffsetMinInnovFilt = 0.0f;
+
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
@@ -278,6 +319,7 @@ void NavEKF2_core::InitialiseVariables()
     storedTAS.reset();
     storedRange.reset();
     storedOutput.reset();
+    storedRangeBeacon.reset();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -407,10 +449,8 @@ void NavEKF2_core::CovarianceInit()
     P[22][22] = 0.0f;
     P[23][23]  = P[22][22];
 
-
     // optical flow ground height covariance
     Popt = 0.25f;
-
 }
 
 /********************************************************
@@ -457,6 +497,9 @@ void NavEKF2_core::UpdateFilter(bool predict)
 
         // Update states using GPS and altimeter data
         SelectVelPosFusion();
+
+        // Update states using range beacon data
+        SelectRngBcnFusion();
 
         // Update states using optical flow data
         SelectFlowFusion();

@@ -207,6 +207,18 @@ public:
     // An out of range instance (eg -1) returns data for the the primary instance
     void getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr);
 
+    /*
+        Returns the following data for debugging range beacon fusion from the specified instance
+        An out of range instance (eg -1) returns data for the the primary instance
+        ID : beacon identifier
+        rng : measured range to beacon (m)
+        innov : range innovation (m)
+        innovVar : innovation variance (m^2)
+        testRatio : innovation consistency test ratio
+        beaconPosNED : beacon NED position (m)
+    */
+    void getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow);
+
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to ground effect
     void setTakeoffExpected(bool val);
@@ -302,7 +314,7 @@ private:
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
     AP_Float _gpsHorizPosNoise;     // GPS horizontal position measurement noise m
-    AP_Float _baroAltNoise;         // Baro height measurement noise : m^2
+    AP_Float _baroAltNoise;         // Baro height measurement noise : m
     AP_Float _magNoise;             // magnetometer measurement noise : gauss
     AP_Float _easNoise;             // equivalent airspeed measurement noise : m/s
     AP_Float _windVelProcessNoise;  // wind velocity state process noise : m/s^2
@@ -341,6 +353,9 @@ private:
     AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
     AP_Int8 _useRngSwHgt;           // Maximum valid range of the range finder in metres
     AP_Float _terrGradMax;          // Maximum terrain gradient below the vehicle
+    AP_Float _rngBcnNoise;          // Range beacon measurement noise (m)
+    AP_Int16 _rngBcnInnovGate;      // Percentage number of standard deviations applied to range beacon innovation consistency check
+    AP_Int8  _rngBcnDelay_ms;       // effective average delay of range beacon measurements rel to IMU (msec)
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -348,9 +363,9 @@ private:
     const float gpsPosVarAccScale;      // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     const uint16_t magDelay_ms;         // Magnetometer measurement delay (msec)
     const uint16_t tasDelay_ms;         // Airspeed measurement delay (msec)
-    const uint16_t gpsRetryTimeUseTAS_ms;  // GPS retry time with airspeed measurements (msec)
-    const uint16_t gpsRetryTimeNoTAS_ms;   // GPS retry time without airspeed measurements (msec)
-    const uint16_t gpsFailTimeWithFlow_ms; // If we have no GPs for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
+    const uint16_t tiltDriftTimeMax_ms;    // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
+    const uint16_t posRetryTimeUseVel_ms;  // Position aiding retry time with velocity measurements (msec)
+    const uint16_t posRetryTimeNoVel_ms;   // Position aiding retry time without velocity measurements (msec)
     const uint16_t hgtRetryTimeMode0_ms;   // Height retry time with vertical velocity measurement (msec)
     const uint16_t hgtRetryTimeMode12_ms;  // Height retry time without vertical velocity measurement (msec)
     const uint16_t tasRetryTime_ms;     // True airspeed timeout and retry interval (msec)

@@ -648,4 +648,108 @@ void NavEKF2_core::readAirSpdData()
     tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
 }
 
+/********************************************************
+*              Range Beacon Measurements                *
+********************************************************/
+
+// check for new airspeed data and update stored measurements if available
+void NavEKF2_core::readRngBcnData()
+{
+    // get the location of the beacon data
+    const AP_Beacon *beacon = _ahrs->get_beacon();
+
+    // get the number of beacons in use
+    N_beacons = beacon->count();
+
+    // search through all the beacons for new data and if we find it stop searching and push the data into the observation buffer
+    bool newDataToPush = false;
+    uint8_t numRngBcnsChecked = 0;
+    // start the search one index up from where we left it last time
+    uint8_t index = lastRngBcnChecked;
+    while (!newDataToPush && numRngBcnsChecked < N_beacons) {
+        // track the number of beacons checked
+        numRngBcnsChecked++;
+
+        // move to next beacon, wrap index if necessary
+        index++;
+        if (index >= N_beacons) {
+            index = 0;
+        }
+
+        // check that the beacon is healthy and has new data
+        if (beacon != nullptr &&
+                beacon->beacon_healthy(index) &&
+                beacon->beacon_last_update_ms(index) != lastTimeRngBcn_ms[index])
+        {
+            // set the timestamp, correcting for measurement delay and average intersampling delay due to the filter update rate
+            lastTimeRngBcn_ms[index] = beacon->beacon_last_update_ms(index);
+            rngBcnDataNew.time_ms = lastTimeRngBcn_ms[index] - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
+
+            // set the range noise
+            // TODO the range library should provide the noise/accuracy estimate for each beacon
+            rngBcnDataNew.rngErr = frontend->_rngBcnNoise;
+
+            // set the range measurement
+            rngBcnDataNew.rng = beacon->beacon_distance(index);
+
+            // set the beacon position
+            rngBcnDataNew.beacon_posNED = beacon->beacon_position(index);
+
+            // identify the beacon identifier
+            rngBcnDataNew.beacon_ID = index;
+
+            // indicate we have new data to push to the buffer
+            newDataToPush = true;
+
+            // update the last checked index
+            lastRngBcnChecked = index;
+        }
+    }
+
+    // Check if the beacon system has returned a 3D fix
+    if (beacon != nullptr && beacon->get_vehicle_position_ned(beaconVehiclePosNED, beaconVehiclePosErr)) {
+        rngBcnLast3DmeasTime_ms = imuSampleTime_ms;
+    }
+
+    // Check if the range beacon data can be used to align the vehicle position
+    if (imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250 && beaconVehiclePosErr < 1.0f && rngBcnAlignmentCompleted) {
+        // check for consistency between the position reported by the beacon and the position from the 3-State alignment filter
+        float posDiffSq = sq(receiverPos.x - beaconVehiclePosNED.x) + sq(receiverPos.y - beaconVehiclePosNED.y);
+        float posDiffVar = sq(beaconVehiclePosErr) + receiverPosCov[0][0] + receiverPosCov[1][1];
+        if (posDiffSq < 9.0f*posDiffVar) {
+            rngBcnGoodToAlign = true;
+            // Set the EKF origin and magnetic field declination if not previously set
+            if (!validOrigin && PV_AidingMode != AID_ABSOLUTE) {
+                // get origin from beacon system
+                Location origin_loc;
+                if (beacon->get_origin(origin_loc)) {
+                    setOriginLLH(origin_loc);
+
+                    // set the NE earth magnetic field states using the published declination
+                    // and set the corresponding variances and covariances
+                    alignMagStateDeclination();
+
+                    // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+                    EKF_origin.alt = origin_loc.alt - baroDataNew.hgt;
+
+                    // Set the uncertainty of the origin height
+                    ekfOriginHgtVar = sq(beaconVehiclePosErr);
+                }
+            }
+        } else {
+            rngBcnGoodToAlign = false;
+        }
+    } else {
+        rngBcnGoodToAlign = false;
+    }
+
+    // Save data into the buffer to be fused when the fusion time horizon catches up with it
+    if (newDataToPush) {
+        storedRangeBeacon.push(rngBcnDataNew);
+    }
+
+    // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
+    rngBcnDataToFuse = storedRangeBeacon.recall(rngBcnDataDelayed,imuDataDelayed.time_ms);
+
+}
 #endif // HAL_CPU_CLASS
