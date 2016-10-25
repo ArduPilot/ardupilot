@@ -49,9 +49,6 @@
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3
 
-//MAXIMUM COMPASS REPORTS
-#define MAX_CAL_REPORTS 10
-#define CONTINUOUS_REPORTS 0
 #define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(50.0f)
 #define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
 #define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
@@ -126,21 +123,11 @@ public:
     // compass calibrator interface
     void compass_cal_update();
 
-    bool start_calibration(uint8_t i, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
-    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
-    bool start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
+    void start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
 
-    void cancel_calibration(uint8_t i);
     void cancel_calibration_all();
-    void cancel_calibration_mask(uint8_t mask);
-
-    bool accept_calibration(uint8_t i);
-    bool accept_calibration_all();
-    bool accept_calibration_mask(uint8_t mask);
 
     bool compass_cal_requires_reboot() { return _cal_complete_requires_reboot; }
-    bool auto_reboot() { return _compass_cal_autoreboot; }
-    uint8_t get_cal_mask() const;
     bool is_calibrating() const;
 
     /*
@@ -316,8 +303,20 @@ private:
     bool _add_backend(AP_Compass_Backend *backend, const char *name, bool external);
     void _detect_backends(void);
 
-    //keep track of number of calibration reports sent
-    uint8_t _reports_sent[COMPASS_MAX_INSTANCES];
+    // compass cal
+    bool _accept_calibration(uint8_t i);
+    bool _accept_calibration_mask(uint8_t mask);
+    void _cancel_calibration(uint8_t i);
+    void _cancel_calibration_mask(uint8_t mask);
+    uint8_t _get_cal_mask() const;
+    bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
+    bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
+    bool _auto_reboot() { return _compass_cal_autoreboot; }
+
+
+    //keep track of which calibrators have been saved
+    bool _cal_saved[COMPASS_MAX_INSTANCES];
+    bool _cal_autosave;
 
     //autoreboot after compass calibration
     bool _compass_cal_autoreboot;

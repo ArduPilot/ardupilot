@@ -86,11 +86,10 @@ void CompassCalibrator::clear() {
     set_status(COMPASS_CAL_NOT_STARTED);
 }
 
-void CompassCalibrator::start(bool retry, bool autosave, float delay) {
+void CompassCalibrator::start(bool retry, float delay) {
     if(running()) {
         return;
     }
-    _autosave = autosave;
     _attempt = 1;
     _retry = retry;
     _delay_start_sec = delay;
