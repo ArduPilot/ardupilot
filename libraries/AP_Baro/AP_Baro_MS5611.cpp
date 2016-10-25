@@ -224,6 +224,10 @@ bool AP_Baro_MS56XX::_timer(void)
         return true;
     }
 
+    if (!_dev->get_semaphore()->take_nonblocking()) {
+        return true;
+    }
+    
     uint8_t next_cmd;
     uint8_t next_state;
     uint32_t adc_val = _read_adc();
@@ -246,10 +250,11 @@ bool AP_Baro_MS56XX::_timer(void)
 
     /* if we had a failed read we are all done */
     if (adc_val == 0) {
+        _dev->get_semaphore()->give();
         return true;
     }
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (_sem->take_nonblocking()) {
         if (_state == 0) {
             _update_and_wrap_accumulator(&_accum.s_D2, adc_val,
                                          &_accum.d2_count, 32);
@@ -260,6 +265,7 @@ bool AP_Baro_MS56XX::_timer(void)
         _sem->give();
         _state = next_state;
     }
+    _dev->get_semaphore()->give();
 
     return true;
 }
