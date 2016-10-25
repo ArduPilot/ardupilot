@@ -235,7 +235,7 @@ void NavEKF2_core::SelectBetaFusion()
     // set true when the fusion time interval has triggered
     bool f_timeTrigger = ((imuSampleTime_ms - prevBetaStep_ms) >= frontend->betaAvg_ms);
     // set true when use of synthetic sideslip fusion is necessary because we have limited sensor data or are dead reckoning position
-    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime_ms) < frontend->gpsRetryTimeNoTAS_ms));
+    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime_ms) < frontend->posRetryTimeNoVel_ms));
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
     bool f_feasible = (assume_zero_sideslip() && !inhibitWindStates);
     // use synthetic sideslip fusion if feasible, required and enough time has lapsed since the last fusion

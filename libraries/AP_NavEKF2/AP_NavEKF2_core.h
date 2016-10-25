@@ -43,6 +43,7 @@
 #define HGT_SOURCE_BARO 0
 #define HGT_SOURCE_RNG  1
 #define HGT_SOURCE_GPS  2
+#define HGT_SOURCE_BCN  3
 
 class AP_AHRS;
 
@@ -192,6 +193,17 @@ public:
 
     // return data for debugging optical flow fusion
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
+
+    /*
+        Returns the following data for debugging range beacon fusion
+        ID : beacon identifier
+        rng : measured range to beacon (m)
+        innov : range innovation (m)
+        innovVar : innovation variance (m^2)
+        testRatio : innovation consistency test ratio
+        beaconPosNED : beacon NED position (m)
+    */
+    void getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow);
 
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to ground effect
@@ -397,6 +409,14 @@ private:
         uint8_t     sensor_idx;  // 2
     };
 
+    struct rng_bcn_elements {
+        float       rng;                // range measurement to each beacon (m)
+        Vector3f    beacon_posNED;      // NED position of the beacon (m)
+        float       rngErr;             // range measurement error 1-std (m)
+        uint8_t     beacon_ID;          // beacon identification number
+        uint32_t    time_ms;            // measurement timestamp (msec)
+    };
+
     struct tas_elements {
         float       tas;         // 0
         uint32_t    time_ms;     // 1
@@ -433,6 +453,15 @@ private:
 
     // fuse selected position, velocity and height measurements
     void FuseVelPosNED();
+
+    // fuse range beacon measurements
+    void FuseRngBcn();
+
+    // use range beaon measurements to calculate a static position
+    void FuseRngBcnStatic();
+
+    // calculate the offset from EKF vetical position datum to the range beacon system datum
+    void CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehiclePosNED, bool aligning);
 
     // fuse magnetometer measurements
     void FuseMagnetometer();
@@ -525,8 +554,14 @@ private:
     // check for new airspeed data and update stored measurements if available
     void readAirSpdData();
 
+    // check for new range beacon data and update stored measurements if available
+    void readRngBcnData();
+
     // determine when to perform fusion of GPS position and  velocity measurements
     void SelectVelPosFusion();
+
+    // determine when to perform fusion of range measurements take realtive to a beacon at a known NED position
+    void SelectRngBcnFusion();
 
     // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
@@ -561,6 +596,9 @@ private:
 
     // return true if the vehicle code has requested the filter to be ready for flight
     bool readyToUseGPS(void) const;
+
+    // return true if the filter to be ready to use the beacon range measurements
+    bool readyToUseRangeBeacon(void) const;
 
     // Check for filter divergence
     void checkDivergence(void);
@@ -694,7 +732,7 @@ private:
     obs_ring_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer
     obs_ring_buffer_t<baro_elements> storedBaro;    // Baro data buffer
     obs_ring_buffer_t<tas_elements> storedTAS;      // TAS data buffer
-    obs_ring_buffer_t<range_elements> storedRange;
+    obs_ring_buffer_t<range_elements> storedRange;  // Range finder data buffer
     imu_ring_buffer_t<output_elements> storedOutput;// output state buffer
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
@@ -905,7 +943,7 @@ private:
     bool gpsDataToFuse;             // true when valid GPS data has arrived at the fusion time horizon.
     bool magDataToFuse;             // true when valid magnetometer data has arrived at the fusion time horizon
     Vector2f heldVelNE;             // velocity held when no aiding is available
-    enum AidingMode {AID_ABSOLUTE=0,    // GPS aiding is being used (optical flow may also be used) so position estimates are absolute.
+    enum AidingMode {AID_ABSOLUTE=0,    // GPS or some other form of absolute position reference aiding is being used (optical flow may also be used in parallel) so position estimates are absolute.
                      AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
                      AID_RELATIVE=2    // only optical flow aiding is being used so position estimates will be relative
                     };
@@ -927,6 +965,55 @@ private:
     uint8_t rngMeasIndex[2];                // Current range measurement ringbuffer index for dual range sensors
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
     uint32_t terrainHgtStableSet_ms;        // system time at which terrainHgtStable was set
+
+    // Range Beacon Sensor Fusion
+    obs_ring_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
+    rng_bcn_elements rngBcnDataNew;     // Range beacon data at the current time horizon
+    rng_bcn_elements rngBcnDataDelayed; // Range beacon data at the fusion time horizon
+    uint8_t rngBcnStoreIndex;           // Range beacon data storage index
+    uint32_t lastRngBcnPassTime_ms;     // time stamp when the range beacon measurement last passed innvovation consistency checks (msec)
+    float rngBcnTestRatio;              // Innovation test ratio for range beacon measurements
+    bool rngBcnHealth;                  // boolean true if range beacon measurements have passed innovation consistency check
+    bool rngBcnTimeout;                 // boolean true if range beacon measurements have faled innovation consistency checks for too long
+    float varInnovRngBcn;               // range beacon observation innovation variance (m^2)
+    float innovRngBcn;                  // range beacon observation innovation (m)
+    uint32_t lastTimeRngBcn_ms[10];     // last time we received a range beacon measurement (msec)
+    bool rngBcnDataToFuse;              // true when there is new range beacon data to fuse
+    Vector3f beaconVehiclePosNED;       // NED position estimate from the beacon system (NED)
+    float beaconVehiclePosErr;          // estimated position error from the beacon system (m)
+    uint32_t rngBcnLast3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
+    bool rngBcnGoodToAlign;             // true when the range beacon systems 3D fix can be used to align the filter
+    uint8_t lastRngBcnChecked;          // index of the last range beacon checked for data
+    Vector3f receiverPos;               // receiver NED position (m) - alignment 3 state filter
+    float receiverPosCov[3][3];         // Receiver position covariance (m^2) - alignment 3 state filter (
+    bool rngBcnAlignmentStarted;        // True when the initial position alignment using range measurements has started
+    bool rngBcnAlignmentCompleted;      // True when the initial position alignment using range measurements has finished
+    uint8_t lastBeaconIndex;            // Range beacon index last read -  used during initialisation of the 3-state filter
+    Vector3f rngBcnPosSum;              // Sum of range beacon NED position (m) - used during initialisation of the 3-state filter
+    uint8_t numBcnMeas;                 // Number of beacon measurements - used during initialisation of the 3-state filter
+    float rngSum;                       // Sum of range measurements (m) - used during initialisation of the 3-state filter
+    uint8_t N_beacons;                  // Number of range beacons in use
+    float maxBcnPosD;                   // maximum position of all beacons in the down direction (m)
+    float minBcnPosD;                   // minimum position of all beacons in the down direction (m)
+    float bcnPosOffset;                 // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
+
+    float bcnPosOffsetMax;             // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
+    float bcnPosOffsetMaxVar;          // Variance of the bcnPosOffsetHigh state (m)
+    float OffsetMaxInnovFilt;          // Filtered magnitude of the range innovations using bcnPosOffsetHigh
+
+    float bcnPosOffsetMin;              // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
+    float bcnPosOffsetMinVar;           // Variance of the bcnPosoffset state (m)
+    float OffsetMinInnovFilt;           // Filtered magnitude of the range innovations using bcnPosOffsetLow
+
+    // Range Beacon Fusion Debug Reporting
+    uint8_t rngBcnFuseDataReportIndex;// index of range beacon fusion data last reported
+    struct {
+        float rng;          // measured range to beacon (m)
+        float innov;        // range innovation (m)
+        float innovVar;     // innovation variance (m^2)
+        float testRatio;    // innovation consistency test ratio
+        Vector3f beaconPosNED; // beacon NED position
+    } rngBcnFusionReport[10];
 
     // height source selection logic
     uint8_t activeHgtSource;    // integer defining active height source
@@ -970,6 +1057,7 @@ private:
         bool bad_decl:1;
         bool bad_xflow:1;
         bool bad_yflow:1;
+        bool bad_rngbcn:1;
     } faultStatus;
 
     // flags indicating which GPS quality checks are failing
@@ -1006,7 +1094,6 @@ private:
         ftype R_MAG;
         Vector9 SH_MAG;
     } mag_state;
-
 
     // string representing last reason for prearm failure
     char prearm_fail_string[40];

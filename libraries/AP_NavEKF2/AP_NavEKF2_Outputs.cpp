@@ -70,6 +70,23 @@ void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
     gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
 }
 
+// return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
+void NavEKF2_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow)
+{
+    if (rngBcnFuseDataReportIndex >= N_beacons) {
+        rngBcnFuseDataReportIndex = 0;
+    }
+    ID = rngBcnFuseDataReportIndex;                                             // beacon identifier
+    rng = rngBcnFusionReport[rngBcnFuseDataReportIndex].rng;                    // measured range to beacon (m)
+    innov = rngBcnFusionReport[rngBcnFuseDataReportIndex].innov;                // range innovation (m)
+    innovVar = rngBcnFusionReport[rngBcnFuseDataReportIndex].innovVar;          // innovation variance (m^2)
+    testRatio = rngBcnFusionReport[rngBcnFuseDataReportIndex].testRatio;        // innovation consistency test ratio
+    beaconPosNED = rngBcnFusionReport[rngBcnFuseDataReportIndex].beaconPosNED;  // beacon NED position
+    offsetHigh = bcnPosOffsetMax;                                              // beacon system vertical pos offset upper estimate
+    offsetLow = bcnPosOffsetMin;                                                // beacon system vertical pos offset lower estimate
+    rngBcnFuseDataReportIndex++;
+}
+
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
 // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
@@ -231,6 +248,11 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
                 Vector2f tempPosNE = location_diff(EKF_origin, gpsloc);
                 posNE.x = tempPosNE.x;
                 posNE.y = tempPosNE.y;
+                return false;
+            } else if (rngBcnAlignmentStarted) {
+                // If we are attempting alignment using range beacon data, then report the position
+                posNE.x = receiverPos.x;
+                posNE.y = receiverPos.y;
                 return false;
             } else {
                 // If no GPS fix is available, all we can do is provide the last known position
