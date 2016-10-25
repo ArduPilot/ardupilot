@@ -312,32 +312,6 @@ void SITL_State::_fdm_input_local(void)
 #endif
 
 /*
-  apply servo rate filtering
-  This allows simulation of servo lag
- */
-void SITL_State::_apply_servo_filter(float deltat)
-{
-    if (_sitl == nullptr || _sitl->servo_rate < 1.0f) {
-        // no limit
-        return;
-    }
-    // 1000 usec == 90 degrees
-    uint16_t max_change = deltat * _sitl->servo_rate * 1000 / 90;
-    if (max_change == 0) {
-        max_change = 1;
-    }
-    for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
-        int16_t change = (int16_t)pwm_output[i] - (int16_t)last_pwm_output[i];
-        if (change > max_change) {
-            pwm_output[i] = last_pwm_output[i] + max_change;
-        } else if (change < -max_change) {
-            pwm_output[i] = last_pwm_output[i] - max_change;
-        }
-    }
-}
-
-
-/*
   create sitl_input structure for sending to FDM
  */
 void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
@@ -359,17 +333,11 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         if (_vehicle == APMrover2) {
             pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
         }
-        for (i=0; i<SITL_NUM_CHANNELS; i++) {
-            last_pwm_output[i] = pwm_output[i];
-        }
     }
 
     // output at chosen framerate
     uint32_t now = AP_HAL::micros();
-    float deltat = (now - last_update_usec) * 1.0e-6f;
     last_update_usec = now;
-
-    _apply_servo_filter(deltat);
 
     // pass wind into simulators, using a wind gradient below 60m
     float altitude = _barometer?_barometer->get_altitude():0;
@@ -398,7 +366,6 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         } else {
             input.servos[i] = pwm_output[i];
         }
-        last_pwm_output[i] = pwm_output[i];
     }
 
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
