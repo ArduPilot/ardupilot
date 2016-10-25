@@ -664,6 +664,42 @@ void Aircraft::smooth_sensors(void)
     smoothing.last_update_us = now;
     smoothing.enabled = true;
 }
+
+/*
+  return a filtered servo input as a value from -1 to 1
+  servo is assumed to be 1000 to 2000, trim at 1500
+ */
+float Aircraft::filtered_idx(float v, uint8_t idx)
+{
+    if (sitl->servo_speed <= 0) {
+        return v;
+    }
+    float cutoff = 1.0 / (2 * M_PI * sitl->servo_speed);
+    servo_filter[idx].set_cutoff_frequency(cutoff);
+    return servo_filter[idx].apply(v, frame_time_us*1.0e-6);
+}
+    
+
+/*
+  return a filtered servo input as a value from -1 to 1
+  servo is assumed to be 1000 to 2000, trim at 1500
+ */
+float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx)
+{
+    float v = (input.servos[idx]-1500)/500.0f;
+    return filtered_idx(v, idx);
+}
+
+/*
+  return a filtered servo input as a value from 0 to 1
+  servo is assumed to be 1000 to 2000
+ */
+float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx)
+{
+    float v = (input.servos[idx]-1000)/1000.0f;
+    return filtered_idx(v, idx);
+}
     
 } // namespace SITL
+
 

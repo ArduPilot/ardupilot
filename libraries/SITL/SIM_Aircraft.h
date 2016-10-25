@@ -204,6 +204,11 @@ protected:
      * Boolean returns false if latitude and longitude are outside the valid input range of +-60 latitude and +-180 longitude
     */
     bool get_mag_field_ef(float latitude_deg, float longitude_deg, float &intensity_gauss, float &declination_deg, float &inclination_deg);
+
+    // return filtered servo input as -1 to 1 range
+    float filtered_idx(float v, uint8_t idx);
+    float filtered_servo_angle(const struct sitl_input &input, uint8_t idx);
+    float filtered_servo_range(const struct sitl_input &input, uint8_t idx);
     
 private:
     uint64_t last_time_us = 0;
@@ -221,6 +226,8 @@ private:
         uint64_t last_update_us;
         Location location;
     } smoothing;
+
+    LowPassFilterFloat servo_filter[4];
     
     /* set this always to the sampling in degrees for the table below */
     #define SAMPLING_RES		10.0f

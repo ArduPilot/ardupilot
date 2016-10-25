@@ -46,7 +46,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("GPS_BYTELOSS",  13, SITL,  gps_byteloss,  0),
     AP_GROUPINFO("GPS_NUMSATS",   14, SITL,  gps_numsats,   10),
     AP_GROUPINFO("MAG_ERROR",     15, SITL,  mag_error,  0),
-    AP_GROUPINFO("SERVO_RATE",    16, SITL,  servo_rate,  0),
+    AP_GROUPINFO("SERVO_SPEED",   16, SITL,  servo_speed,  0.14),
     AP_GROUPINFO("GPS_GLITCH",    17, SITL,  gps_glitch,  0),
     AP_GROUPINFO("GPS_HZ",        18, SITL,  gps_hertz,  5),
     AP_GROUPINFO("BATT_VOLTAGE",  19, SITL,  batt_voltage,  12.6f),

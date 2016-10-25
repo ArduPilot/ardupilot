@@ -322,10 +322,10 @@ bool JSBSim::open_fdm_socket(void)
 void JSBSim::send_servos(const struct sitl_input &input)
 {
     char *buf = NULL;
-    float aileron  = (input.servos[0]-1500)/500.0f;
-    float elevator = (input.servos[1]-1500)/500.0f;
-    float throttle = (input.servos[2]-1000)/1000.0;
-    float rudder   = (input.servos[3]-1500)/500.0f;
+    float aileron  = filtered_servo_angle(input, 0);
+    float elevator = filtered_servo_angle(input, 1);
+    float throttle = filtered_servo_range(input, 2);
+    float rudder   = filtered_servo_angle(input, 3);
     if (frame == FRAME_ELEVON) {
         // fake an elevon plane
         float ch1 = aileron;

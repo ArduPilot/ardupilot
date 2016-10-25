@@ -20,6 +20,7 @@
 
 #include "SIM_Aircraft.h"
 #include "SIM_ICEngine.h"
+#include <Filter/LowPassFilter.h>
 
 namespace SITL {
 
