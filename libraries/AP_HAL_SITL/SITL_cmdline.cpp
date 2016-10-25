@@ -45,6 +45,7 @@ void SITL_State::_usage(void)
            "\t--home HOME        set home location (lat,lng,alt,yaw)\n"
            "\t--model MODEL      set simulation model\n"
            "\t--wipe             wipe eeprom and dataflash\n"
+           "\t--unhide-groups    parameter enumeration ignores AP_PARAM_FLAG_ENABLE\n"
            "\t--rate RATE        set SITL framerate\n"
            "\t--console          use console instead of TCP ports\n"
            "\t--instance N       set instance of SITL (adds 10*instance to all port numbers)\n"
@@ -150,6 +151,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const struct GetOptLong::option options[] = {
         {"help",            false,  0, 'h'},
         {"wipe",            false,  0, 'w'},
+        {"unhide-groups",   false,  0, 'u'},
         {"speedup",         true,   0, 's'},
         {"rate",            true,   0, 'r'},
         {"console",         false,  0, 'C'},
@@ -171,7 +173,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "hws:r:CI:P:SO:M:F:",
+    GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:",
                     options);
 
     while ((opt = gopt.getoption()) != -1) {
@@ -179,6 +181,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 'w':
             AP_Param::erase_all();
             unlink("dataflash.bin");
+            break;
+        case 'u':
+            AP_Param::set_hide_disabled_groups(false);
             break;
         case 'r':
             _framerate = (unsigned)atoi(gopt.optarg);
