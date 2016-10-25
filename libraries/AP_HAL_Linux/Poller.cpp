@@ -19,6 +19,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <sys/epoll.h>
+#include <sys/eventfd.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
@@ -29,12 +30,43 @@ extern const AP_HAL::HAL &hal;
 
 namespace Linux {
 
+void WakeupPollable::on_can_read()
+{
+    ssize_t r;
+    uint64_t val;
+
+    do {
+        r = read(_fd, &val, sizeof(val));
+    } while (!(r == -1 && errno == EAGAIN));
+}
+
 Poller::Poller()
 {
     _epfd = epoll_create1(EPOLL_CLOEXEC);
     if (_epfd == -1) {
         fprintf(stderr, "Failed to create epoll: %m\n");
+        return;
     }
+
+    _wakeup._fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    if (_wakeup._fd == -1) {
+        fprintf(stderr, "Failed to create wakeup fd: %m\n");
+        goto fail_eventfd;
+    }
+
+    if (!register_pollable(&_wakeup, EPOLLIN)) {
+        fprintf(stderr, "Failed to add wakeup fd\n");
+        goto fail_register;
+    }
+
+    return;
+
+fail_register:
+    close(_wakeup._fd);
+    _wakeup._fd = -1;
+fail_eventfd:
+    close(_epfd);
+    _epfd = -1;
 }
 
 bool Poller::register_pollable(Pollable *p, uint32_t events)
@@ -97,6 +129,20 @@ int Poller::poll() const
     }
 
     return r;
+}
+
+void Poller::wakeup() const
+{
+    ssize_t r;
+    uint64_t val = 1;
+
+    do {
+        r = write(_wakeup.get_fd(), &val, sizeof(val));
+    } while (r == -1 && errno == EINTR);
+
+    if (r == -1) {
+        fprintf(stderr, "Failed to wakeup poller: %m\n");
+    }
 }
 
 Pollable::~Pollable()
