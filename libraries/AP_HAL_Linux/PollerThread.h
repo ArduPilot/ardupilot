@@ -56,7 +56,7 @@ protected:
 
     PeriodicCb _cb;
     WrapperCb *_wrapper;
-    bool _removeme;
+    bool _removeme = false;
 };
 
 
@@ -76,7 +76,7 @@ protected:
     void _cleanup_timers();
 
     Poller _poller{};
-    std::vector<TimerPollable*> _timers;
+    std::vector<TimerPollable*> _timers{};
 };
 
 }

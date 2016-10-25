@@ -30,7 +30,7 @@ class Pollable {
     friend class Poller;
 public:
     Pollable(int fd) : _fd(fd) { }
-    Pollable() : _fd(-1) { }
+    Pollable() { }
 
     virtual ~Pollable();
 
@@ -42,7 +42,7 @@ public:
     virtual void on_hang_up() { }
 
 protected:
-    int _fd;
+    int _fd = -1;
 };
 
 class Poller {
