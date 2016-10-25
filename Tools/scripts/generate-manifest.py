@@ -83,9 +83,14 @@ class ManifestGenerator():
                 git_sha = self.git_sha_from_git_version(os.path.join(some_dir, "git-version.txt"))
             except Exception as e:
                 continue
+            firmware_version_file = os.path.join(some_dir, "firmware-version.txt")
             try:
-                firmware_version = open(os.path.join(some_dir, "firmware-version.txt")).read()
+                firmware_version = open(firmware_version_file).read()
                 firmware_version = firmware_version.strip()
+                (version_numbers,release_type) = firmware_version.split("-")
+            except ValueError as e:
+                # print("malformed firmware-version.txt at (%s)" % (firmware_version_file,))
+                firmware_version = None
             except Exception as e:
                 # this exception is swallowed.... the current archive
                 # is incomplete.
