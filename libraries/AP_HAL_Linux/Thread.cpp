@@ -229,6 +229,10 @@ bool Thread::set_stack_size(size_t stack_size)
 
 bool PeriodicThread::_run()
 {
+    if (_period_usec == 0) {
+        return false;
+    }
+
     uint64_t next_run_usec = AP_HAL::micros64() + _period_usec;
 
     while (true) {

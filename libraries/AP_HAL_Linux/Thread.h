@@ -58,15 +58,15 @@ protected:
     void _poison_stack();
 
     task_t _task;
-    bool _started;
-    pthread_t _ctx;
+    bool _started = false;
+    pthread_t _ctx = 0;
 
     struct stack_debug {
         uint32_t *start;
         uint32_t *end;
     } _stack_debug;
 
-    size_t _stack_size;
+    size_t _stack_size = 0;
 };
 
 class PeriodicThread : public Thread {
@@ -80,7 +80,7 @@ public:
 protected:
     bool _run() override;
 
-    uint64_t _period_usec;
+    uint64_t _period_usec = 0;
 };
 
 }
