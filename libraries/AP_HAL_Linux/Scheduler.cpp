@@ -456,3 +456,18 @@ bool Scheduler::SchedulerThread::_run()
 
     return PeriodicThread::_run();
 }
+
+void Scheduler::teardown()
+{
+    _timer_thread.stop();
+    _io_thread.stop();
+    _rcin_thread.stop();
+    _uart_thread.stop();
+    _tonealarm_thread.stop();
+
+    _timer_thread.join();
+    _io_thread.join();
+    _rcin_thread.join();
+    _uart_thread.join();
+    _tonealarm_thread.join();
+}

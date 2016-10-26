@@ -382,6 +382,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     rcin->teardown();
     I2CDeviceManager::from(i2c_mgr)->teardown();
     SPIDeviceManager::from(spi)->teardown();
+    Scheduler::from(scheduler)->teardown();
 }
 
 void HAL_Linux::setup_signal_handlers() const

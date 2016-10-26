@@ -50,6 +50,8 @@ public:
 
     void microsleep(uint32_t usec);
 
+    void teardown();
+
 private:
     class SchedulerThread : public PeriodicThread {
     public:
