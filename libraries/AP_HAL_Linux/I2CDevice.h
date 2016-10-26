@@ -105,6 +105,13 @@ public:
     /* AP_HAL::I2CDeviceManager implementation */
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) override;
 
+    /*
+     * Stop all I2C threads and block until they are finalized. This doesn't
+     * free memory because they can still be used by devices, however device
+     * drivers won't receive any new event
+     */
+    void teardown();
+
 protected:
     void _unregister(I2CBus &b);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _create_device(I2CBus &b, uint8_t address) const;
