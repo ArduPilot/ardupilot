@@ -1,6 +1,7 @@
 #include "HAL_Linux_Class.h"
 
 #include <assert.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -348,6 +349,8 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         }
     }
 
+    setup_signal_handlers();
+
     scheduler->init();
     gpio->init();
     rcout->init();
@@ -372,12 +375,33 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     callbacks->setup();
     AP_Module::call_hook_setup_complete();
 
-    for (;;) {
+    while (!_should_exit) {
         callbacks->loop();
     }
+
+    rcin->teardown();
+    I2CDeviceManager::from(i2c_mgr)->teardown();
+    SPIDeviceManager::from(spi)->teardown();
 }
 
-const AP_HAL::HAL& AP_HAL::get_HAL() {
-    static const HAL_Linux hal;
-    return hal;
+void HAL_Linux::setup_signal_handlers() const
+{
+    struct sigaction sa = { };
+
+    sa.sa_flags = SA_NOCLDSTOP;
+    sa.sa_handler = HAL_Linux::exit_signal_handler;
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+}
+
+static HAL_Linux halInstance;
+
+void HAL_Linux::exit_signal_handler(int signum)
+{
+    halInstance._should_exit = true;
+}
+
+const AP_HAL::HAL &AP_HAL::get_HAL()
+{
+    return halInstance;
 }
