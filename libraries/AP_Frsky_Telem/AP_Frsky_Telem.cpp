@@ -735,10 +735,10 @@ uint32_t AP_Frsky_Telem::calc_velandyaw(void)
     _ahrs.get_velocity_NED(velNED);
     // vertical velocity in dm/s
     velandyaw = prep_number(roundf(velNED.z * 10), 2, 1);
-    // horizontal velocity in dm/s (use airspeed if available, otherwise use groundspeed)
-    float aspeed;
-    if (_ahrs.airspeed_estimate(&aspeed)) { // send airspeed estimate from ahrs if available
-        velandyaw |= prep_number(roundf(aspeed * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
+    // horizontal velocity in dm/s (use airspeed if available and enabled - even if not used - otherwise use groundspeed)
+    const AP_Airspeed *aspeed = _ahrs.get_airspeed();
+    if (aspeed && aspeed->enabled()) {        
+        velandyaw |= prep_number(roundf(aspeed->get_airspeed() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
     } else { // otherwise send groundspeed estimate from ahrs
         velandyaw |= prep_number(roundf(_ahrs.groundspeed() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
     }
