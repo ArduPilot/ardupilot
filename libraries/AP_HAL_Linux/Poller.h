@@ -16,7 +16,6 @@
  */
 #pragma once
 
-#include <sys/epoll.h>
 #include <unistd.h>
 
 #include "AP_HAL/utility/RingBuffer.h"
@@ -63,9 +62,23 @@ protected:
 
 class Poller {
 public:
-    Poller() : _epfd(epoll_create1(EPOLL_CLOEXEC)) { }
-    ~Poller() { close(_epfd); }
+    Poller();
 
+    ~Poller() {
+        if (_epfd >= 0) {
+            close(_epfd);
+        }
+    }
+
+    /*
+     * Check if this Poller is not initialized
+     */
+    bool operator!() const { return _epfd == -1; }
+
+    /*
+     * Check if this Poller is succesfully initialized
+     */
+    explicit operator bool() const { return _epfd != -1; }
 
     /*
      * Register @p in this poller so calls to poll() will wait for
@@ -87,7 +100,8 @@ public:
     int poll() const;
 
 private:
-    int _epfd;
+
+    int _epfd = -1;
 };
 
 }
