@@ -331,6 +331,9 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
+    // vehicle statistics
+    AP_Stats stats;
+
 };
 
 

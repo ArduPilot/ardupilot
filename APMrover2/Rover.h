@@ -72,6 +72,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <AP_Button/AP_Button.h>
+#include <AP_Stats/AP_Stats.h>     // statistics library
 
 // Configuration
 #include "config.h"
@@ -472,6 +473,7 @@ private:
     void read_trim_switch();
     void update_events(void);
     void button_update(void);
+    void stats_update();
     void navigate();
     void set_control_channels(void);
     void init_rc_in();

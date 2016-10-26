@@ -566,6 +566,10 @@ const AP_Param::Info Rover::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
+    // @Group: STAT
+    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
+    AP_SUBGROUPINFO(stats, "STAT", 1, ParametersG2, AP_Stats),
+
     AP_GROUPEND
 };
 
