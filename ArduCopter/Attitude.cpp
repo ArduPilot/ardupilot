@@ -18,7 +18,7 @@ void Copter::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float 
     angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
 
     // scale roll_in, pitch_in to ANGLE_MAX parameter range
-    float scaler = aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
+    float scaler = aparm.angle_max/(float)ROLL_PITCH_YAW_INPUT_MAX;
     roll_in *= scaler;
     pitch_in *= scaler;
 
@@ -43,8 +43,28 @@ void Copter::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float 
 // returns desired yaw rate in centi-degrees per second
 float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
+    float yaw_request;
+
+    // calculate yaw rate request
+    if (g2.acro_y_expo <= 0) {
+        yaw_request = stick_angle * g.acro_yaw_p;
+    } else {
+        // expo variables
+        float y_in, y_in3, y_out;
+
+        // range check expo
+        if (g2.acro_y_expo > 1.0f || g2.acro_y_expo < 0.5f) {
+            g2.acro_y_expo = 1.0f;
+        }
+
+        // yaw expo
+        y_in = float(stick_angle)/ROLL_PITCH_YAW_INPUT_MAX;
+        y_in3 = y_in*y_in*y_in;
+        y_out = (g2.acro_y_expo * y_in3) + ((1.0f - g2.acro_y_expo) * y_in);
+        yaw_request = ROLL_PITCH_YAW_INPUT_MAX * y_out * g.acro_yaw_p;
+    }
     // convert pilot input to the desired yaw rate
-    return stick_angle * g.acro_yaw_p;
+    return yaw_request;
 }
 
 /*************************************************************

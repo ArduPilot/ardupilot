@@ -62,8 +62,8 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
     // apply circular limit to pitch and roll inputs
     float total_in = norm(pitch_in, roll_in);
 
-    if (total_in > ROLL_PITCH_INPUT_MAX) {
-        float ratio = (float)ROLL_PITCH_INPUT_MAX / total_in;
+    if (total_in > ROLL_PITCH_YAW_INPUT_MAX) {
+        float ratio = (float)ROLL_PITCH_YAW_INPUT_MAX / total_in;
         roll_in *= ratio;
         pitch_in *= ratio;
     }
@@ -82,36 +82,20 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
         }
 
         // roll expo
-        rp_in = float(roll_in)/ROLL_PITCH_INPUT_MAX;
+        rp_in = float(roll_in)/ROLL_PITCH_YAW_INPUT_MAX;
         rp_in3 = rp_in*rp_in*rp_in;
         rp_out = (g.acro_rp_expo * rp_in3) + ((1.0f - g.acro_rp_expo) * rp_in);
-        rate_bf_request.x = ROLL_PITCH_INPUT_MAX * rp_out * g.acro_rp_p;
+        rate_bf_request.x = ROLL_PITCH_YAW_INPUT_MAX * rp_out * g.acro_rp_p;
 
         // pitch expo
-        rp_in = float(pitch_in)/ROLL_PITCH_INPUT_MAX;
+        rp_in = float(pitch_in)/ROLL_PITCH_YAW_INPUT_MAX;
         rp_in3 = rp_in*rp_in*rp_in;
         rp_out = (g.acro_rp_expo * rp_in3) + ((1.0f - g.acro_rp_expo) * rp_in);
-        rate_bf_request.y = ROLL_PITCH_INPUT_MAX * rp_out * g.acro_rp_p;
+        rate_bf_request.y = ROLL_PITCH_YAW_INPUT_MAX * rp_out * g.acro_rp_p;
     }
 
     // calculate yaw rate request
-    if (g.acro_rp_expo <= 0) {
-        rate_bf_request.z = yaw_in * g.acro_yaw_p;
-    } else {
-        // expo variables
-        float y_in, y_in3, y_out;
-
-        // range check expo
-        if (g2.acro_y_expo > 1.0f || g2.acro_y_expo < 0.5f) {
-            g2.acro_y_expo = 1.0f;
-        }
-
-        // yaw expo
-        y_in = float(yaw_in)/ROLL_PITCH_INPUT_MAX;
-        y_in3 = y_in*y_in*y_in;
-        y_out = (g2.acro_y_expo * y_in3) + ((1.0f - g2.acro_y_expo) * y_in);
-        rate_bf_request.z = ROLL_PITCH_INPUT_MAX * y_out * g.acro_yaw_p;
-    }
+    rate_bf_request.z = get_pilot_desired_yaw_rate(yaw_in);
 
 
     // calculate earth frame rate corrections to pull the copter back to level while in ACRO mode

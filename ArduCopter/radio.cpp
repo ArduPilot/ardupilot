@@ -6,15 +6,15 @@
 
 void Copter::default_dead_zones()
 {
-    channel_roll->set_default_dead_zone(30);
-    channel_pitch->set_default_dead_zone(30);
+    channel_roll->set_default_dead_zone(10);
+    channel_pitch->set_default_dead_zone(10);
 #if FRAME_CONFIG == HELI_FRAME
     channel_throttle->set_default_dead_zone(10);
     channel_yaw->set_default_dead_zone(15);
     g.rc_8.set_default_dead_zone(10);
 #else
     channel_throttle->set_default_dead_zone(30);
-    channel_yaw->set_default_dead_zone(40);
+    channel_yaw->set_default_dead_zone(10);
 #endif
     g.rc_6.set_default_dead_zone(0);
 }
@@ -27,9 +27,9 @@ void Copter::init_rc_in()
     channel_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
 
     // set rc channel ranges
-    channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
-    channel_pitch->set_angle(ROLL_PITCH_INPUT_MAX);
-    channel_yaw->set_angle(4500);
+    channel_roll->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
+    channel_pitch->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
+    channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(0, 1000);
 
     channel_roll->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
