@@ -140,10 +140,25 @@ void PollerThread::mainloop()
         return;
     }
 
-    while (true) {
+    while (!_should_exit) {
         _poller.poll();
         _cleanup_timers();
     }
+
+    _started = false;
+    _should_exit = false;
+}
+
+bool PollerThread::stop()
+{
+    if (!is_started()) {
+        return false;
+    }
+
+    _should_exit = true;
+    _poller.wakeup();
+
+    return true;
 }
 
 }
