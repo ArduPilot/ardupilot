@@ -88,6 +88,9 @@ void Plane::init_ardupilot()
     //
     load_parameters();
 
+    // initialise stats module
+    g2.stats.init();
+
 #if HIL_SUPPORT
     if (g.hil_mode == 1) {
         // set sensors to HIL mode

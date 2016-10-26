@@ -82,7 +82,17 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(dataflash_periodic,     50,    400),
     SCHED_TASK(avoidance_adsb_update,  10,    100),
     SCHED_TASK(button_update,           5,    100),
+    SCHED_TASK(stats_update,            1,    100),
 };
+
+/*
+  update AP_Stats
+ */
+void Plane::stats_update(void)
+{
+    g2.stats.update();
+}
+
 
 void Plane::setup() 
 {

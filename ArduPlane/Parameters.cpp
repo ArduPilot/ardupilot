@@ -1386,7 +1386,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Values: 0:NotEnforced,1:Enforced
     // @User: Advanced
     AP_GROUPINFO("SYSID_ENFORCE", 4, ParametersG2, sysid_enforce, 0),
-    
+
+    // @Group: STAT
+    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
+    AP_SUBGROUPINFO(stats, "STAT", 5, ParametersG2, AP_Stats),
+
     AP_GROUPEND
 };
 

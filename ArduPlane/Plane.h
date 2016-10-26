@@ -52,6 +52,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AP_Stats/AP_Stats.h>     // statistics library
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <APM_Control/APM_Control.h>
@@ -983,6 +984,7 @@ private:
     void read_receiver_rssi(void);
     void rpm_update(void);
     void button_update(void);
+    void stats_update();
     void ice_update(void);
     void report_radio();
     void report_ins();

@@ -582,6 +582,9 @@ public:
     // button reporting library
     AP_Button button;
 
+    // vehicle statistics
+    AP_Stats stats;
+
     // internal combustion engine control
     AP_ICEngine ice_control;
 
