@@ -14,7 +14,7 @@ public:
      * in the C++ type system.)
      */
     virtual void init() = 0;
-    virtual void deinit() {};
+    virtual void teardown() {};
 
     /**
      * Return true if there has been new input since the last read()

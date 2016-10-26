@@ -421,7 +421,7 @@ RCInput_RPI::~RCInput_RPI()
     delete con_blocks;
 }
 
-void RCInput_RPI::deinit()
+void RCInput_RPI::teardown()
 {
     stop_dma();
 }
