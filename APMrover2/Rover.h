@@ -109,6 +109,7 @@ private:
 
     // all settable parameters
     Parameters g;
+    ParametersG2 g2;
 
     // main loop scheduler
     AP_Scheduler scheduler;
