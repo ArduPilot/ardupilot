@@ -235,7 +235,7 @@ bool PeriodicThread::_run()
 
     uint64_t next_run_usec = AP_HAL::micros64() + _period_usec;
 
-    while (true) {
+    while (!_should_exit) {
         uint64_t dt = next_run_usec - AP_HAL::micros64();
         if (dt > _period_usec) {
             // we've lost sync - restart
@@ -247,6 +247,20 @@ bool PeriodicThread::_run()
 
         _task();
     }
+
+    _started = false;
+    _should_exit = false;
+
+    return true;
+}
+
+bool PeriodicThread::stop()
+{
+    if (!is_started()) {
+        return false;
+    }
+
+    _should_exit = true;
 
     return true;
 }
