@@ -80,6 +80,8 @@ public:
 
     bool set_rate(uint32_t rate_hz);
 
+    bool stop() override;
+
 protected:
     bool _run() override;
 
