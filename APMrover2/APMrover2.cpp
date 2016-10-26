@@ -75,7 +75,17 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,       10,    100),
     SCHED_TASK(dataflash_periodic,     50,    300),
     SCHED_TASK(button_update,          5,     100),
+    SCHED_TASK(stats_update,           1,     100),
 };
+
+/*
+  update AP_Stats
+*/
+void Rover::stats_update(void)
+{
+    g2.stats.set_flying(motor_active());
+    g2.stats.update();
+}
 
 /*
   setup is called when the sketch starts

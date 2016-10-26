@@ -20,6 +20,7 @@ def build(bld):
             'AP_Relay',
             'AP_ServoRelayEvents',
             'PID',
+            'AP_Stats',
         ],
     )
 
