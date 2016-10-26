@@ -47,6 +47,8 @@ public:
 
     virtual bool stop() { return false; }
 
+    bool join();
+
 protected:
     static void *_run_trampoline(void *arg);
 

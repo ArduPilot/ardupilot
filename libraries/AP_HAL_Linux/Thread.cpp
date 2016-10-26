@@ -205,6 +205,23 @@ bool Thread::is_current_thread()
     return pthread_equal(pthread_self(), _ctx);
 }
 
+bool Thread::join()
+{
+    void *ret;
+
+    if (_ctx == 0) {
+        return false;
+    }
+
+    if (pthread_join(_ctx, &ret) != 0 ||
+        (intptr_t)ret != 0) {
+        return false;
+    }
+
+    return true;
+}
+
+
 bool PeriodicThread::set_rate(uint32_t rate_hz)
 {
     if (_started || rate_hz == 0) {
