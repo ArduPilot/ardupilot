@@ -1346,6 +1346,11 @@ void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, c
         dataflash_p->Log_Write_Message(text);
     }
 
+    // add statustext message to FrSky lib queue
+    if (frsky_telemetry_p != NULL) {
+        frsky_telemetry_p->queue_message(severity, text);
+    }
+
     // filter destination ports to only allow active ports.
     statustext_t statustext{};
     statustext.bitmask = (mavlink_active | chan_is_streaming) & dest_bitmask;

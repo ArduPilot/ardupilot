@@ -15,6 +15,7 @@
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_HAL/utility/RingBuffer.h>
+#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -211,6 +212,13 @@ public:
         dataflash_p = dataflash;
     }
 
+    /*
+      set a frsky_telem pointer for queueing
+     */
+    static void register_frsky_telemetry_callback(AP_Frsky_Telem *frsky_telemetry) {
+        frsky_telemetry_p = frsky_telemetry;
+    }
+
     // update signing timestamp on GPS lock
     static void update_signing_timestamp(uint64_t timestamp_usec);
 
@@ -371,6 +379,9 @@ private:
     // pointer to static dataflash for logging of text messages
     static DataFlash_Class *dataflash_p;
 
+    // pointer to static frsky_telem for queueing of text messages
+    static AP_Frsky_Telem *frsky_telemetry_p;
+ 
     static const AP_SerialManager *serialmanager_p;
 
     // a vehicle can optionally snoop on messages for other systems
