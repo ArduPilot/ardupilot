@@ -72,6 +72,8 @@ public:
 
     void mainloop();
 
+    bool stop() override;
+
 protected:
     void _cleanup_timers();
 

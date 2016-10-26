@@ -45,6 +45,8 @@ public:
 
     bool set_stack_size(size_t stack_size);
 
+    virtual bool stop() { return false; }
+
 protected:
     static void *_run_trampoline(void *arg);
 
@@ -59,6 +61,7 @@ protected:
 
     task_t _task;
     bool _started = false;
+    bool _should_exit = false;
     pthread_t _ctx = 0;
 
     struct stack_debug {
