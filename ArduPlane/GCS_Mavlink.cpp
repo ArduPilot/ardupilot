@@ -238,7 +238,7 @@ void Plane::send_vfr_hud(mavlink_channel_t chan)
     mavlink_msg_vfr_hud_send(
         chan,
         aspeed,
-        gps.ground_speed(),
+        ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
         abs(throttle_percentage()),
         current_loc.alt / 100.0f,
