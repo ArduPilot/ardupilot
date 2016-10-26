@@ -180,9 +180,13 @@ Complete Parameter List
             rows.append(v)
         return self.tablify(rows, headings=render_info["headings"])
 
-    def emit(self, g):
-        tag = '%s Parameters' % self.escape(g.name)
-        reference = "parameters_" + g.name
+    def emit_node(self, g):
+        if g.name is None: # root node
+            tag = '%s Parameters' % self.escape(g.vehicle())
+            reference = "parameters_" + g.vehicle()
+        else:
+            tag = '%s Parameters' % self.escape(g.name)
+            reference = "parameters_" + g.name
 
         field_table_info = {
             "Values": {
@@ -206,18 +210,17 @@ Complete Parameter List
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue
             d = param.__dict__
+            print("annotate_with_vehicle=%s" % self.annotate_with_vehicle)
             if self.annotate_with_vehicle:
-                name = param.name
+                name = g.vehicle() + ":" + param.name
             else:
-                name = param.name.split(':')[-1]
+                name = param.name
             tag = '%s: %s' % (self.escape(name), self.escape(param.DisplayName),)
             tag = tag.strip()
-            reference = param.name
-            # remove e.g. "ArduPlane:" from start of parameter name:
             if self.annotate_with_vehicle:
-                reference = g.name + "_" + reference.split(":")[-1]
+                reference = g.vehicle() + "_" + param.name
             else:
-                reference = reference.split(":")[-1]
+                reference = param.name
 
             ret += """
 

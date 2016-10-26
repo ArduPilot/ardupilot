@@ -40,8 +40,11 @@ class WikiEmit(Emit):
     def start_libraries(self):
         self.emit_comment("Libraries")
 
-    def emit(self, g):
-        t = "\n\n== %s Parameters ==\n" % (self.camelcase_escape(g.name))
+    def emit_node(self, g):
+        name = g.name
+        if name is None:
+            name = g.vehicle()
+        t = "\n\n== %s Parameters ==\n" % (self.camelcase_escape(name))
 
         for param in g.params:
             if hasattr(param, 'DisplayName'):

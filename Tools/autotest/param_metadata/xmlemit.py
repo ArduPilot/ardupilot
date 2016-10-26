@@ -31,8 +31,11 @@ class XmlEmit(Emit):
         self.f.write('</vehicles>')
         self.f.write('<libraries>')
 
-    def emit(self, g):
-        t = '''<parameters name=%s>\n''' % quoteattr(g.name)  # i.e. ArduPlane
+    def emit_node(self, g):
+        name = g.name
+        if name is None:
+            name = g.vehicle();
+        t = '''<parameters name=%s>\n''' % quoteattr(name)  # e.g. ArduPlane
 
         for param in g.params:
             # Begin our parameter node

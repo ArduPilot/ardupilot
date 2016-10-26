@@ -47,8 +47,11 @@ DO NOT EDIT
     def start_libraries(self):
         pass
 
-    def emit(self, g):
-        tag = '%s Parameters' % g.name
+    def emit_node(self, g):
+        name = g.name
+        if name is None:
+            name = g.vehicle()
+        tag = '%s Parameters' % name
         t = '\n\n<h1>%s</h1>\n' % tag
 
         for param in g.params:
