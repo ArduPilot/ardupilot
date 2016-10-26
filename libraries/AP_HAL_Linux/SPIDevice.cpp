@@ -481,4 +481,17 @@ void SPIDeviceManager::_unregister(SPIBus &b)
     }
 }
 
+void SPIDeviceManager::teardown()
+{
+    for (auto it = _buses.begin(); it != _buses.end(); it++) {
+        /* Try to stop thread - it may not even be started yet */
+        (*it)->thread.stop();
+    }
+
+    for (auto it = _buses.begin(); it != _buses.end(); it++) {
+        /* Try to join thread - failing is normal if thread was not started */
+        (*it)->thread.join();
+    }
+}
+
 }
