@@ -127,7 +127,7 @@ private:
     static void termination_handler(int signum);
     void set_sigaction();
     void set_physical_addresses(int version);
-    void deinit() override;
+    void teardown() override;
 };
 
 }
