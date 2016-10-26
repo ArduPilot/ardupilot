@@ -379,7 +379,9 @@ void RCInput_RPI::init_DMA()
 void RCInput_RPI::set_sigaction()
 {
     for (int i = 0; i < NSIG; i++) {
-        //catch all signals (like ctrl+c, ctrl+z, ...) to ensure DMA is disabled
+        // catch all signals to ensure DMA is disabled - some of them may
+        // already be handled elsewhere in cases we consider normal
+        // termination. In those cases the teardown() method must be called.
         struct sigaction sa, sa_old;
         memset(&sa, 0, sizeof(sa));
         sigaction(i, nullptr, &sa_old);
