@@ -13,7 +13,6 @@ def build(bld):
             'AP_Avoidance',
             'AP_Arming',
             'AP_Camera',
-            'AP_Frsky_Telem',
             'AP_L1_Control',
             'AP_Menu',
             'AP_Navigation',
