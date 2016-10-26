@@ -18,10 +18,10 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
-#if  CONFIG_HAL_BOARD == HAL_BOARD_F4BY
-#define SSD1306_I2C_BUS 1
-#else
+#if  CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 #define SSD1306_I2C_BUS 2
+#else
+#define SSD1306_I2C_BUS 1
 #endif
 #define SSD1306_I2C_ADDR 0x3C    // default I2C bus address
 
