@@ -85,6 +85,7 @@ public:
         k_param_mission, // mission library
         k_param_NavEKF2_old, // deprecated
         k_param_NavEKF2,
+        k_param_g2, // 2nd block of parameters
 
         // 140: battery controls
         k_param_battery_monitoring = 140,   // deprecated, can be deleted
@@ -319,5 +320,18 @@ public:
         pidSpeedThrottle    (0.7,             0.2,             0.2,             4000)
         {}
 };
+
+/*
+  2nd block of parameters, to avoid going past 256 top level keys
+ */
+class ParametersG2 {
+public:
+    ParametersG2(void) { AP_Param::setup_object_defaults(this, var_info); }
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
+};
+
 
 extern const AP_Param::Info var_info[];
