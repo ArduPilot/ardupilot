@@ -36,9 +36,25 @@ public:
 
     int get_fd() const { return _fd; }
 
+    /* Called whenever the underlying file descriptor has data to be read. */
     virtual void on_can_read() { }
+
+    /*
+     * Called whenever the underlying file descriptor is ready to receive new
+     * data, i.e. its buffer is not full.
+     */
     virtual void on_can_write() { }
+
+    /*
+     * Called when an error occurred and is signaled by the OS - its meaning
+     * depends on the file descriptor being used.
+     */
     virtual void on_error() { }
+
+    /*
+     * Called when the other side closes its end - the exact meaning
+     * depends on the file descriptor being used.
+     */
     virtual void on_hang_up() { }
 
 protected:
@@ -50,9 +66,24 @@ public:
     Poller() : _epfd(epoll_create1(EPOLL_CLOEXEC)) { }
     ~Poller() { close(_epfd); }
 
-    bool register_pollable(Pollable*, uint32_t events);
-    void unregister_pollable(const Pollable*);
 
+    /*
+     * Register @p in this poller so calls to poll() will wait for
+     * events specified in @events argument.
+     */
+    bool register_pollable(Pollable *p, uint32_t events);
+
+    /*
+     * Unregister @p from this Poller so it doesn't generate any more
+     * event. Note that this doesn't destroy @p.
+     */
+    void unregister_pollable(const Pollable *p);
+
+    /*
+     * Wait for events on all Pollable objects registered with
+     * register_pollable(). New Pollable objects can be registered at any
+     * time, including when a thread is sleeping on a poll() call.
+     */
     int poll() const;
 
 private:
