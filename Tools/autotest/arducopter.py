@@ -83,7 +83,7 @@ def loiter(mavproxy, mav, holdtime=10, maxaltchange=5, maxdistchange=5):
 
     # first aim south east
     print("turn south east")
-    mavproxy.send('rc 4 1580\n')
+    mavproxy.send('rc 4 1790\n')
     if not wait_heading(mav, 170):
         return False
     mavproxy.send('rc 4 1500\n')
@@ -157,7 +157,7 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
 
     # first aim north
     print("turn right towards north")
-    mavproxy.send('rc 4 1580\n')
+    mavproxy.send('rc 4 1790\n')
     if not wait_heading(mav, 10):
         print("Failed to reach heading")
         success = False
@@ -262,7 +262,7 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
 
     # first aim east
     print("turn east")
-    mavproxy.send('rc 4 1580\n')
+    mavproxy.send('rc 4 1790\n')
     if not wait_heading(mav, 135):
         return False
     mavproxy.send('rc 4 1500\n')
@@ -355,7 +355,7 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
 
     # first south
     print("turn south")
-    mavproxy.send('rc 4 1580\n')
+    mavproxy.send('rc 4 1790\n')
     if not wait_heading(mav, 180):
         return False
     mavproxy.send('rc 4 1500\n')
@@ -418,7 +418,7 @@ def fly_fence_test(mavproxy, mav, timeout=180):
 
     # first east
     print("turn east")
-    mavproxy.send('rc 4 1580\n')
+    mavproxy.send('rc 4 1790\n')
     if not wait_heading(mav, 160):
         return False
     mavproxy.send('rc 4 1500\n')
@@ -500,7 +500,7 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, use_map=False, timeout=30, max_dis
 
     # turn south east
     print("turn south east")
-    mavproxy.send('rc 4 1580\n')
+    mavproxy.send('rc 4 1790\n')
     if not wait_heading(mav, 150):
         if (use_map):
             show_gps_and_sim_positions(mavproxy, False)
@@ -752,7 +752,7 @@ def fly_super_simple(mavproxy, mav, timeout=45):
     mavproxy.send('rc 3 1500\n')
 
     # start copter yawing slowly
-    mavproxy.send('rc 4 1550\n')
+    mavproxy.send('rc 4 1720\n')
 
     # roll left for timeout seconds
     print("# rolling left from pilot's point of view for %u seconds" % timeout)
@@ -783,7 +783,7 @@ def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=36):
 
     # face west
     print("turn west")
-    mavproxy.send('rc 4 1580\n')
+    mavproxy.send('rc 4 1790\n')
     if not wait_heading(mav, 270):
         return False
     mavproxy.send('rc 4 1500\n')
