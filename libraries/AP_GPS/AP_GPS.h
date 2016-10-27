@@ -313,10 +313,10 @@ public:
     float get_lag() const { return 0.2f; }
 
     // return a 3D vector defining the offset of the GPS antenna in metres relative to the body frame origin
-    const Vector3f get_antenna_offset(uint8_t instance) const {
+    const Vector3f &get_antenna_offset(uint8_t instance) const {
         return _antenna_offset[instance];
     }
-    const Vector3f get_antenna_offset(void) const {
+    const Vector3f &get_antenna_offset(void) const {
         return _antenna_offset[primary_instance];
     }
 
