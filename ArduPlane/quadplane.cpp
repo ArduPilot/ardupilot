@@ -435,7 +435,7 @@ bool QuadPlane::setup(void)
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
     wp_nav = new AC_WPNav(inertial_nav, ahrs, *pos_control, *attitude_control);
-    if (!pos_control) {
+    if (!wp_nav) {
         hal.console->printf("%s wp_nav\n", strUnableToAllocate);
         goto failed;
     }
