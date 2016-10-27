@@ -142,10 +142,10 @@ public:
     const Vector3f &get_accel_scale(void) const { return get_accel_scale(_primary_accel); }
 
     // return a 3D vector defining the position offset of the IMU accelerometer in metres relative to the body frame origin
-    const Vector3f get_imu_pos_offset(uint8_t instance) const {
+    const Vector3f &get_imu_pos_offset(uint8_t instance) const {
         return _accel_pos[instance];
     }
-    const Vector3f get_imu_pos_offset(void) const {
+    const Vector3f &get_imu_pos_offset(void) const {
         return _accel_pos[_primary_accel];
     }
 
