@@ -51,7 +51,6 @@
 #include <signal.h>
 #include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 class ReplayVehicle {
 public:
