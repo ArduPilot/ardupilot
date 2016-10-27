@@ -132,7 +132,7 @@ float AP_Mount_Backend::angle_input_rad(RC_Channel* rc, int16_t angle_min, int16
 }
 
 // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan)
+void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan)
 {
     float GPS_vector_x = (target.lng-_frontend._current_loc.lng)*cosf(ToRad((_frontend._current_loc.lat+target.lat)*0.00000005f))*0.01113195f;
     float GPS_vector_y = (target.lat-_frontend._current_loc.lat)*0.01113195f;
@@ -150,6 +150,10 @@ void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
     // pan calcs
     if (calc_pan) {
         // calc absolute heading and then onvert to vehicle relative yaw
-        angles_to_target_rad.z = wrap_PI(atan2f(GPS_vector_x, GPS_vector_y) - _frontend._ahrs.yaw);
+        angles_to_target_rad.z = atan2f(GPS_vector_x, GPS_vector_y);
+        if (relative_pan)
+        {
+            angles_to_target_rad.z = wrap_PI(angles_to_target_rad.z - _frontend._ahrs.yaw);
+        }
     }
 }
