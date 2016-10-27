@@ -308,6 +308,7 @@ enum DevOptions {
 #define LOG_GUIDEDTARGET_MSG            0x22
 #define LOG_THROW_MSG                   0x23
 #define LOG_PROXIMITY_MSG               0x24
+#define LOG_BEACON_MSG                  0x25
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
