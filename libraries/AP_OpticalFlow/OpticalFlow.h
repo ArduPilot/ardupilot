@@ -74,7 +74,7 @@ public:
     void setHIL(const struct OpticalFlow_state &state);
 
     // return a 3D vector defining the position offset of the sensors focal point in metres relative to the body frame origin
-    const Vector3f get_pos_offset(void) const {
+    const Vector3f &get_pos_offset(void) const {
         return _pos_offset;
     }
 
