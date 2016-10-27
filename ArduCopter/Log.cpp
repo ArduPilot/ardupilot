@@ -799,6 +799,50 @@ void Copter::Log_Write_Proximity()
 #endif
 }
 
+// beacon sensor logging
+struct PACKED log_Beacon {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t health;
+    uint8_t count;
+    float dist0;
+    float dist1;
+    float dist2;
+    float dist3;
+    float posx;
+    float posy;
+    float posz;
+};
+
+// Write beacon position and distances
+void Copter::Log_Write_Beacon()
+{
+    // exit immediately if feature is disabled
+    if (!g2.beacon.enabled()) {
+        return;
+    }
+
+    // position
+    Vector3f pos;
+    float accuracy = 0.0f;
+    g2.beacon.get_vehicle_position_ned(pos, accuracy);
+
+    struct log_Beacon pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_BEACON_MSG),
+        time_us         : AP_HAL::micros64(),
+        health          : (uint8_t)g2.beacon.healthy(),
+        count           : (uint8_t)g2.beacon.count(),
+        dist0           : g2.beacon.beacon_distance(0),
+        dist1           : g2.beacon.beacon_distance(1),
+        dist2           : g2.beacon.beacon_distance(2),
+        dist3           : g2.beacon.beacon_distance(3),
+        posx            : pos.x,
+        posy            : pos.y,
+        posz            : pos.z
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 const struct LogStructure Copter::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
@@ -843,6 +887,8 @@ const struct LogStructure Copter::log_structure[] = {
       "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk" },
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity),
       "PRX",   "QBffffffff",  "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315" },
+    { LOG_BEACON_MSG, sizeof(log_Beacon),
+      "BCN",   "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ" },
 };
 
 #if CLI_ENABLED == ENABLED
