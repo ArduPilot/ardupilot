@@ -66,6 +66,9 @@ void MultiCopter::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    // update sprayer
+    sprayer.update(input);
 }
 
 
