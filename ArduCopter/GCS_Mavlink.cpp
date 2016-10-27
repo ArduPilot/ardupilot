@@ -116,6 +116,8 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
         battery_current = battery.current_amps() * 100;
     }
 
+    update_sensor_status_flags();
+    
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
