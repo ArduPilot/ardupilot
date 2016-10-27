@@ -38,6 +38,20 @@ PWM_Sysfs_Base::PWM_Sysfs_Base(char* export_path, char* polarity_path,
     , _enable_path(enable_path)
     , _duty_path(duty_path)
     , _period_path(period_path)
+    , _channel(channel)
+{
+}
+
+PWM_Sysfs_Base::~PWM_Sysfs_Base()
+{
+    ::close(_duty_cycle_fd);
+
+    free(_polarity_path);
+    free(_enable_path);
+    free(_period_path);
+}
+
+void PWM_Sysfs_Base::init()
 {
     if (_export_path == nullptr || _enable_path == nullptr ||
         _period_path == nullptr || _duty_path == nullptr) {
@@ -48,7 +62,7 @@ PWM_Sysfs_Base::PWM_Sysfs_Base(char* export_path, char* polarity_path,
     /* Not checking the return of write_file since it will fail if
      * the pwm has already been exported
      */
-    Util::from(hal.util)->write_file(_export_path, "%u", channel);
+    Util::from(hal.util)->write_file(_export_path, "%u", _channel);
     free(_export_path);
 
     _duty_cycle_fd = ::open(_duty_path, O_RDWR | O_CLOEXEC);
@@ -57,15 +71,6 @@ PWM_Sysfs_Base::PWM_Sysfs_Base(char* export_path, char* polarity_path,
                       _duty_path, strerror(errno));
     }
     free(_duty_path);
-}
-
-PWM_Sysfs_Base::~PWM_Sysfs_Base()
-{
-    ::close(_duty_cycle_fd);
-
-    free(_polarity_path);
-    free(_enable_path);
-    free(_period_path);
 }
 
 void PWM_Sysfs_Base::enable(bool value)
