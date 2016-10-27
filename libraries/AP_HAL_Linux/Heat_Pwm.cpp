@@ -38,6 +38,7 @@ HeatPwm::HeatPwm(uint8_t pwm_num, float Kp, float Ki, uint32_t period_ns) :
     _period_ns(period_ns)
 {
     _pwm = new PWM_Sysfs_Bebop(pwm_num);
+    _pwm->init();
     _pwm->set_period(_period_ns);
     _pwm->set_duty_cycle(0);
     _pwm->enable(true);

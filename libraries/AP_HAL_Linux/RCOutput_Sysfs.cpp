@@ -51,6 +51,7 @@ void RCOutput_Sysfs::init()
         if (!_pwm_channels[i]) {
             AP_HAL::panic("RCOutput_Sysfs_PWM: Unable to setup PWM pin.");
         }
+        _pwm_channels[i]->init();
         _pwm_channels[i]->enable(false);
 
         /* Set the initial frequency */

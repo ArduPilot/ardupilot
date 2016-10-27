@@ -76,6 +76,7 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     _pwm = new PWM_Sysfs_Bebop(BEBOP_CAMV_PWM);
+    _pwm->init();
     _pwm->set_freq(BEBOP_CAMV_PWM_FREQ);
     _pwm->enable(true);
 
