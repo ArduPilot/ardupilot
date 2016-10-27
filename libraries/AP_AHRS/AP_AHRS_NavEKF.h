@@ -155,7 +155,7 @@ public:
     bool get_vert_pos_rate(float &velocity);
 
     // write optical flow measurements to EKF
-    void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas);
+    void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, Vector3f &posOffset);
 
     // inibit GPS usage
     uint8_t setInhibitGPS(void);

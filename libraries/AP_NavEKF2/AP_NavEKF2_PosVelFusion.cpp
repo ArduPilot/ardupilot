@@ -196,6 +196,22 @@ void NavEKF2_core::SelectVelPosFusion()
             fuseVelData = false;
         }
         fusePosData = true;
+
+        // correct GPS data for position offset of antenna phase centre relative to the IMU
+        Vector3f posOffsetBody = gpsDataDelayed.body_offset - accelPosOffset;
+        if (!posOffsetBody.is_zero()) {
+            if (fuseVelData) {
+                // TODO use a filtered angular rate with a group delay that matches the GPS delay
+                Vector3f angRate = imuDataDelayed.delAng * (1.0f/imuDataDelayed.delAngDT);
+                Vector3f velOffsetBody = angRate % posOffsetBody;
+                Vector3f velOffsetEarth = prevTnb.mul_transpose(velOffsetBody);
+                gpsDataDelayed.vel -= velOffsetEarth;
+            }
+            Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+            gpsDataDelayed.pos.x -= posOffsetEarth.x;
+            gpsDataDelayed.pos.y -= posOffsetEarth.y;
+            gpsDataDelayed.hgt += posOffsetEarth.z;
+        }
     } else {
         fuseVelData = false;
         fusePosData = false;
@@ -631,6 +647,17 @@ void NavEKF2_core::selectHeightForFusion()
     // This data is used by both height and optical flow fusion processing
     readRangeFinder();
     rangeDataToFuse = storedRange.recall(rangeDataDelayed,imuDataDelayed.time_ms);
+
+    // correct range data for the body frame position offset relative to the IMU
+    // the corrected reading is the reading that would have been taken if the sensor was
+    // co-located with the IMU
+    if (rangeDataToFuse) {
+        Vector3f posOffsetBody = rangeDataDelayed.body_offset - accelPosOffset;
+        if (!posOffsetBody.is_zero()) {
+            Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+            rangeDataDelayed.rng += posOffsetEarth.z / prevTnb.c.z;
+        }
+    }
 
     // read baro height data from the sensor and check for new data in the buffer
     readBaroData();

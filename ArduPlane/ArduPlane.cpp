@@ -1016,7 +1016,8 @@ void Plane::update_optical_flow(void)
         uint8_t flowQuality = optflow.quality();
         Vector2f flowRate = optflow.flowRate();
         Vector2f bodyRate = optflow.bodyRate();
-        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update);
+        Vector3f posOffset = optflow.get_pos_offset();
+        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, posOffset);
         Log_Write_Optflow();
     }
 }

@@ -42,6 +42,8 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     frame_height(0),
     dcm(),
     gyro(),
+    gyro_prev(),
+    ang_accel(),
     velocity_ef(),
     mass(0),
     accel_body(0, 0, -GRAVITY_MSS),
@@ -331,6 +333,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.rollRate  = degrees(gyro.x);
     fdm.pitchRate = degrees(gyro.y);
     fdm.yawRate   = degrees(gyro.z);
+    fdm.angAccel.x = degrees(ang_accel.x);
+    fdm.angAccel.y = degrees(ang_accel.y);
+    fdm.angAccel.z = degrees(ang_accel.z);
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
     fdm.rollDeg  = degrees(r);
@@ -407,6 +412,11 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     gyro.x = constrain_float(gyro.x, -radians(2000), radians(2000));
     gyro.y = constrain_float(gyro.y, -radians(2000), radians(2000));
     gyro.z = constrain_float(gyro.z, -radians(2000), radians(2000));
+
+    // estimate angular acceleration using a first order difference calculation
+    // TODO the simulator interface should provide the angular acceleration
+    ang_accel = (gyro - gyro_prev) / delta_time;
+    gyro_prev = gyro;
     
     // update attitude
     dcm.rotate(gyro * delta_time);

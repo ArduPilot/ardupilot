@@ -69,16 +69,32 @@ void SITL_State::_update_flow(void)
     state.device_id = 1;
     state.surface_quality = 51;
 
+    // sensor position offset in body frame
+    Vector3f posRelSensorBF = _sitl->optflow_pos_offset;
+
+    // for effiency only do offset correction if offset is non-zero
+    bool correctForOffset = !posRelSensorBF.is_zero();
+
     // estimate range to centre of image
     float range;
     if (rotmat.c.z > 0.05f && height_agl() > 0) {
-        range = height_agl() / rotmat.c.z;
+        if (!correctForOffset) {
+            range = height_agl() / rotmat.c.z;
+        } else {
+            Vector3f relPosSensorEF = rotmat * posRelSensorBF;
+            range = (height_agl() - relPosSensorEF.z) / rotmat.c.z;
+        }
     } else {
         range = 1e38f;
     }
 
     // Calculate relative velocity in sensor frame assuming no misalignment between sensor and vehicle body axes
     Vector3f relVelSensor = rotmat.mul_transpose(velocity);
+
+    // correct relative velocity for rotation rates and sensor offset
+    if (correctForOffset) {
+        relVelSensor += gyro % posRelSensorBF;
+    }
 
     // Divide velocity by range and add body rates to get predicted sensed angular
     // optical rates relative to X and Y sensor axes assuming no misalignment or scale

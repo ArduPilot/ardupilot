@@ -24,6 +24,7 @@ struct sitl_fdm {
     uint8_t rcin_chan_count;
     float  rcin[8];         // RC input 0..1
     Vector3f bodyMagField;  // Truth XYZ magnetic field vector in body-frame. Includes motor interference. Units are milli-Gauss.
+    Vector3f angAccel; // Angular acceleration in degrees/s/s about the XYZ body axes
 };
 
 // number of rc output channels
@@ -126,6 +127,12 @@ public:
     // Earth magnetic field anomaly
     AP_Vector3f mag_anomaly_ned; // NED anomaly vector at ground level (mGauss)
     AP_Float mag_anomaly_hgt; // height above ground where anomally strength has decayed to 1/8 of the ground level value (m)
+
+    // Body frame sensor position offsets
+    AP_Vector3f imu_pos_offset;     // XYZ position of the IMU accelerometer relative to the body frame origin (m)
+    AP_Vector3f gps_pos_offset;     // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
+    AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
+    AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
 
     void simstate_send(mavlink_channel_t chan);
 
