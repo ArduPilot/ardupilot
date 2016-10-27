@@ -28,9 +28,9 @@ public:
     bool hw_init(void);
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b);
 private:
-    Linux::PWM_Sysfs_Bebop *red_pwm;
-    Linux::PWM_Sysfs_Bebop *green_pwm;
-    Linux::PWM_Sysfs_Bebop *blue_pwm;
+    Linux::PWM_Sysfs_Bebop red_pwm;
+    Linux::PWM_Sysfs_Bebop green_pwm;
+    Linux::PWM_Sysfs_Bebop blue_pwm;
 
     uint32_t red_pwm_period;
     uint32_t green_pwm_period;

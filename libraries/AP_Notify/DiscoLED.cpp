@@ -30,32 +30,35 @@
 #define DISCO_LED_OFF    0x00
 
 DiscoLED::DiscoLED():
-    RGBLed(DISCO_LED_OFF, DISCO_LED_HIGH, DISCO_LED_MEDIUM, DISCO_LED_LOW)
+    RGBLed(DISCO_LED_OFF, DISCO_LED_HIGH, DISCO_LED_MEDIUM, DISCO_LED_LOW),
+    red_pwm(RED_PWM_INDEX),
+    green_pwm(GREEN_PWM_INDEX),
+    blue_pwm(BLUE_PWM_INDEX)
 {
 }
 
 bool DiscoLED::hw_init()
 {
-    red_pwm = new Linux::PWM_Sysfs_Bebop(RED_PWM_INDEX);
-    green_pwm = new Linux::PWM_Sysfs_Bebop(GREEN_PWM_INDEX);
-    blue_pwm = new Linux::PWM_Sysfs_Bebop(BLUE_PWM_INDEX);
+    red_pwm_period = red_pwm.get_period();
+    green_pwm_period = green_pwm.get_period();
+    blue_pwm_period = blue_pwm.get_period();
 
-    red_pwm_period = red_pwm->get_period();
-    green_pwm_period = green_pwm->get_period();
-    blue_pwm_period = blue_pwm->get_period();
+    red_pwm.init();
+    green_pwm.init();
+    blue_pwm.init();
 
-    red_pwm->enable(true);
-    green_pwm->enable(true);
-    blue_pwm->enable(true);
+    red_pwm.enable(true);
+    green_pwm.enable(true);
+    blue_pwm.enable(true);
 
     return true;
 }
 
 bool DiscoLED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    red_pwm->set_duty_cycle(red / UINT8_MAX * red_pwm_period);
-    green_pwm->set_duty_cycle(green / UINT8_MAX * green_pwm_period);
-    blue_pwm->set_duty_cycle(blue / UINT8_MAX * blue_pwm_period);
+    red_pwm.set_duty_cycle(red / UINT8_MAX * red_pwm_period);
+    green_pwm.set_duty_cycle(green / UINT8_MAX * green_pwm_period);
+    blue_pwm.set_duty_cycle(blue / UINT8_MAX * blue_pwm_period);
 
     return true;
 }
