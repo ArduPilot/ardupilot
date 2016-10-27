@@ -183,10 +183,10 @@ public:
     bool pre_arm_check() const;
 
     // return a 3D vector defining the position offset of the sensor in metres relative to the body frame origin
-    const Vector3f get_pos_offset(uint8_t instance) const {
+    const Vector3f &get_pos_offset(uint8_t instance) const {
         return _pos_offset[instance];
     }
-    const Vector3f get_pos_offset(void) const {
+    const Vector3f &get_pos_offset(void) const {
         return _pos_offset[primary_instance];
     }
 
