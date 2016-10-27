@@ -113,6 +113,10 @@ public:
 
 #define _RangeFinder_STATE(instance) state[instance]
 
+    uint8_t get_primary(void) const {
+        return primary_instance;
+    }
+    
     uint16_t distance_cm(uint8_t instance) const {
         return (instance<num_instances? _RangeFinder_STATE(instance).distance_cm : 0);
     }
