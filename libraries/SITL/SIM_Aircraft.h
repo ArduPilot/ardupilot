@@ -103,7 +103,9 @@ public:
     const Vector3f &get_mag_field_bf(void) const {
         return mag_bf;
     }
-    
+
+    virtual float gross_mass() const { return mass; }
+
 protected:
     SITL *sitl;
     Location home;

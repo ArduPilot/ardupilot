@@ -49,6 +49,7 @@ protected:
     // (generally output-servo-number-1 e.g. 2 for throttle)
     Sprayer sprayer{6, 7};
 
+    float gross_mass() const override;
 };
 
 }

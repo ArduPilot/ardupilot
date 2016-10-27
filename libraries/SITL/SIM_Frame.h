@@ -54,7 +54,6 @@ public:
     float terminal_velocity;
     float terminal_rotation_rate;
     float thrust_scale;
-    float mass;
     uint8_t motor_offset;
 };
 }
