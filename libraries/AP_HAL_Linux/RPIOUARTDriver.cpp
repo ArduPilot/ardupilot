@@ -122,16 +122,16 @@ void RPIOUARTDriver::_timer_tick(void)
                 return;
             }
 
-            struct IOPacket _dma_packet_tx = {0}, _dma_packet_rx = {0};
+            struct IOPacket _packet_tx = {0}, _packet_rx = {0};
 
-            _dma_packet_tx.count_code = 2 | PKT_CODE_WRITE;
-            _dma_packet_tx.page = PX4IO_PAGE_UART_BUFFER;
-            _dma_packet_tx.regs[0] = _baudrate & 0xffff;
-            _dma_packet_tx.regs[1] = _baudrate >> 16;
-            _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
+            _packet_tx.count_code = 2 | PKT_CODE_WRITE;
+            _packet_tx.page = PX4IO_PAGE_UART_BUFFER;
+            _packet_tx.regs[0] = _baudrate & 0xffff;
+            _packet_tx.regs[1] = _baudrate >> 16;
+            _packet_tx.crc = crc_packet(&_packet_tx);
 
-            _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
-                           (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
+            _dev->transfer((uint8_t *)&_packet_tx, sizeof(_packet_tx),
+                           (uint8_t *)&_packet_rx, sizeof(_packet_rx));
 
             hal.scheduler->delay(1);
 
@@ -156,44 +156,44 @@ void RPIOUARTDriver::_timer_tick(void)
         return;
     }
 
-    struct IOPacket _dma_packet_tx = {0}, _dma_packet_rx = {0};
+    struct IOPacket _packet_tx = {0}, _packet_rx = {0};
 
     /* get write_buf bytes */
     uint32_t max_size = MIN(PKT_MAX_REGS * 2,
                             _baudrate / 10 / (1000000 / RPIOUART_POLL_TIME_INTERVAL));
     uint32_t n = MIN(_writebuf.available(), max_size);
 
-    _writebuf.read(&((uint8_t *)_dma_packet_tx.regs)[0], n);
-    _dma_packet_tx.count_code = PKT_MAX_REGS | PKT_CODE_SPIUART;
-    _dma_packet_tx.page = PX4IO_PAGE_UART_BUFFER;
-    _dma_packet_tx.offset = n;
-    _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
+    _writebuf.read(&((uint8_t *)_packet_tx.regs)[0], n);
+    _packet_tx.count_code = PKT_MAX_REGS | PKT_CODE_SPIUART;
+    _packet_tx.page = PX4IO_PAGE_UART_BUFFER;
+    _packet_tx.offset = n;
+    _packet_tx.crc = crc_packet(&_packet_tx);
     /* end get write_buf bytes */
 
     /* set raspilotio to read uart data */
-    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
-                   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
+    _dev->transfer((uint8_t *)&_packet_tx, sizeof(_packet_tx),
+                   (uint8_t *)&_packet_rx, sizeof(_packet_rx));
 
     hal.scheduler->delay_microseconds(100);
 
     /* get uart data from raspilotio */
-    memset(&_dma_packet_tx, 0, sizeof(_dma_packet_tx));
-    _dma_packet_tx.count_code = PKT_CODE_READ;
-    _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
-    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
-                   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
+    memset(&_packet_tx, 0, sizeof(_packet_tx));
+    _packet_tx.count_code = PKT_CODE_READ;
+    _packet_tx.crc = crc_packet(&_packet_tx);
+    _dev->transfer((uint8_t *)&_packet_tx, sizeof(_packet_tx),
+                   (uint8_t *)&_packet_rx, sizeof(_packet_rx));
 
     hal.scheduler->delay_microseconds(100);
 
     /* release sem */
     _dev->get_semaphore()->give();
 
-    if (_dma_packet_rx.page == PX4IO_PAGE_UART_BUFFER) {
+    if (_packet_rx.page == PX4IO_PAGE_UART_BUFFER) {
         /* add bytes to read buf */
-        max_size = MIN(_dma_packet_rx.offset, PKT_MAX_REGS * 2);
+        max_size = MIN(_packet_rx.offset, PKT_MAX_REGS * 2);
         n = MIN(_readbuf.space(), max_size);
 
-        _readbuf.write(&((uint8_t *)_dma_packet_rx.regs)[0], n);
+        _readbuf.write(&((uint8_t *)_packet_rx.regs)[0], n);
     }
 
     _in_timer = false;
