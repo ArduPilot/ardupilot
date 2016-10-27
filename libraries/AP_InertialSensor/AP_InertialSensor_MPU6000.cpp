@@ -297,9 +297,18 @@ bool AP_InertialSensor_MPU6000::_init()
 
 void AP_InertialSensor_MPU6000::_fifo_reset()
 {
-    _register_write(MPUREG_USER_CTRL, 0);
-    _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_RESET);
-    _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN);
+    /* We read first the user control register status to
+       prevent a reset to I2C Master if it was enabled.
+       We need to do it here because it's obvious the FIFO was enabled
+       previously.
+    */
+    uint8_t user_ctrl = _register_read(MPUREG_USER_CTRL);
+
+    /* Reset the FIFO buffer */
+    user_ctrl &= ~BIT_USER_CTRL_FIFO_EN;
+    _register_write(MPUREG_USER_CTRL, user_ctrl);
+    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_RESET);
+    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_EN);
 }
 
 void AP_InertialSensor_MPU6000::_fifo_enable()
