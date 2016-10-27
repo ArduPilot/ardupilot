@@ -239,12 +239,10 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         tracker.send_hwstatus(chan);
         break;
     case MSG_MAG_CAL_PROGRESS:
-        CHECK_PAYLOAD_SIZE(MAG_CAL_PROGRESS);
         tracker.compass.send_mag_cal_progress(chan);
         break;
 
     case MSG_MAG_CAL_REPORT:
-        CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
         tracker.compass.send_mag_cal_report(chan);
         break;
 

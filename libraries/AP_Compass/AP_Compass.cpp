@@ -383,7 +383,6 @@ Compass::Compass(void) :
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         _backends[i] = NULL;
         _state[i].last_update_usec = 0;
-        _reports_sent[i] = 0;
     }
 
     // default device ids to zero.  init() method will overwrite with the actual device ids
