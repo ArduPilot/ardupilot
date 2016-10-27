@@ -188,7 +188,7 @@ public:
     // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
-    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, Vector3f &posOffset);
+    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
 
     // return data for debugging optical flow fusion
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
@@ -374,7 +374,7 @@ private:
         float       hgt;         // 2
         Vector3f    vel;         // 3..5
         uint32_t    time_ms;     // 6
-        Vector3f    body_offset; // 7..9
+        uint8_t     sensor_idx;  // 7..9
     };
 
     struct mag_elements {
@@ -390,7 +390,7 @@ private:
     struct range_elements {
         float       rng;         // 0
         uint32_t    time_ms;     // 1
-        Vector3f    body_offset; // 2..4
+        uint8_t     sensor_idx;  // 2
     };
 
     struct tas_elements {
@@ -402,8 +402,8 @@ private:
         Vector2f    flowRadXY;      // 0..1
         Vector2f    flowRadXYcomp;  // 2..3
         uint32_t    time_ms;        // 4
-        Vector3f    body_offset;    // 5..7
         Vector3f    bodyRadXYZ;     //8..10
+        const Vector3f *body_offset;// 5..7
     };
 
     // update the navigation filter status

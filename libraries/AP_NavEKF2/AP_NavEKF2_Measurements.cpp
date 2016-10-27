@@ -78,7 +78,7 @@ void NavEKF2_core::readRangeFinder(void)
                 rangeDataNew.rng = MAX(storedRngMeas[sensorIndex][midIndex],rngOnGnd);
 
                 // get position in body frame for the current sensor
-                rangeDataNew.body_offset = frontend->_rng.get_pos_offset(sensorIndex);
+                rangeDataNew.sensor_idx = sensorIndex;
 
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
@@ -110,7 +110,7 @@ void NavEKF2_core::readRangeFinder(void)
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, Vector3f &posOffset)
+void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset)
 {
     // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
     // The PX4Flow sensor outputs flow rates with the following axis and sign conventions:
@@ -154,7 +154,7 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         // note correction for different axis and sign conventions used by the px4flow sensor
         ofDataNew.flowRadXY = - rawFlowRates; // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
         // write the flow sensor position in body frame
-        ofDataNew.body_offset = posOffset;
+        ofDataNew.body_offset = &posOffset;
         // write flow rate measurements corrected for body rates
         ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + ofDataNew.bodyRadXYZ.x;
         ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + ofDataNew.bodyRadXYZ.y;
@@ -418,8 +418,8 @@ void NavEKF2_core::readGpsData()
             // Prevent time delay exceeding age of oldest IMU data in the buffer
             gpsDataNew.time_ms = MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms);
 
-            // Get the GPS position offset in body frame
-            gpsDataNew.body_offset = _ahrs->get_gps().get_antenna_offset();
+            // Get which GPS we are using for position information
+            gpsDataNew.sensor_idx = _ahrs->get_gps().primary_sensor();
 
             // read the NED velocity from the GPS
             gpsDataNew.vel = _ahrs->get_gps().velocity();

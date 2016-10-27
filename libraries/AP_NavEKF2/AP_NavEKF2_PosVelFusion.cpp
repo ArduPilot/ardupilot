@@ -198,7 +198,7 @@ void NavEKF2_core::SelectVelPosFusion()
         fusePosData = true;
 
         // correct GPS data for position offset of antenna phase centre relative to the IMU
-        Vector3f posOffsetBody = gpsDataDelayed.body_offset - accelPosOffset;
+        Vector3f posOffsetBody = _ahrs->get_gps().get_antenna_offset(gpsDataDelayed.sensor_idx) - accelPosOffset;
         if (!posOffsetBody.is_zero()) {
             if (fuseVelData) {
                 // TODO use a filtered angular rate with a group delay that matches the GPS delay
@@ -652,7 +652,7 @@ void NavEKF2_core::selectHeightForFusion()
     // the corrected reading is the reading that would have been taken if the sensor was
     // co-located with the IMU
     if (rangeDataToFuse) {
-        Vector3f posOffsetBody = rangeDataDelayed.body_offset - accelPosOffset;
+        Vector3f posOffsetBody = frontend->_rng.get_pos_offset(rangeDataDelayed.sensor_idx) - accelPosOffset;
         if (!posOffsetBody.is_zero()) {
             Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
             rangeDataDelayed.rng += posOffsetEarth.z / prevTnb.c.z;
