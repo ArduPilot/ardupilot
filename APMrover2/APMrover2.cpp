@@ -233,7 +233,7 @@ void Rover::update_compass(void)
             DataFlash.Log_Write_Compass(compass);
         }
     } else {
-        ahrs.set_compass(NULL);
+        ahrs.set_compass(nullptr);
     }
 }
 

@@ -48,10 +48,10 @@ int8_t Rover::reboot_board(uint8_t argc, const Menu::arg *argv)
 void Rover::run_cli(AP_HAL::UARTDriver *port)
 {
     // disable the failsafe code in the CLI
-    hal.scheduler->register_timer_failsafe(NULL,1);
+    hal.scheduler->register_timer_failsafe(nullptr,1);
 
     // disable the mavlink delay callback
-    hal.scheduler->register_delay_callback(NULL, 5);
+    hal.scheduler->register_delay_callback(nullptr, 5);
 
     cliSerial = port;
     Menu::set_port(port);
@@ -185,10 +185,10 @@ void Rover::init_ardupilot()
     if (g.cli_enabled == 1) {
         const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
         cliSerial->println(msg);
-        if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
+        if (gcs[1].initialised && (gcs[1].get_uart() != nullptr)) {
             gcs[1].get_uart()->println(msg);
         }
-        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
+        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != nullptr)) {
             gcs[2].get_uart()->println(msg);
         }
     }
