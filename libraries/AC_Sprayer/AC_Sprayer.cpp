@@ -66,34 +66,41 @@ AC_Sprayer::AC_Sprayer(const AP_InertialNav* inav) :
     // To-Do: ensure that the pump and spinner servo channels are enabled
 }
 
-void AC_Sprayer::enable(bool true_false)
+void AC_Sprayer::run(const bool true_false)
 {
     // return immediately if no change
-    if (true_false == _enabled) {
+    if (true_false == _flags.running) {
         return;
     }
 
-    // set enabled/disabled parameter (in memory only)
-    _enabled = true_false;
+    // set flag indicate whether spraying is permitted:
+    // do not allow running to be set to true if we are currently not enabled
+    _flags.running = true_false && _enabled;
 
     // turn off the pump and spinner servos if necessary
-    if (!_enabled) {
-        // send output to pump channel
-        // To-Do: change 0 below to radio_min of pump servo
-        RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_sprayer_pump);
-
-        // send output to spinner channel
-        // To-Do: change 0 below to radio_min of spinner servo
-        RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_sprayer_spinner);
+    if (!_flags.running) {
+        stop_spraying();
     }
+}
+
+void AC_Sprayer::stop_spraying()
+{
+    // send output to pump channel
+    RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_sprayer_pump);
+
+    // send output to spinner channel
+    RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_sprayer_spinner);
+
+    _flags.spraying = false;
 }
 
 /// update - adjust pwm of servo controlling pump speed according to the desired quantity and our horizontal speed
 void
 AC_Sprayer::update()
 {
-    // exit immediately if we are disabled (perhaps set pwm values back to defaults)
-    if (!_enabled) {
+    // exit immediately if we are disabled or shouldn't be running
+    if (!_enabled || !running()) {
+        run(false);
         return;
     }
 
@@ -109,6 +116,7 @@ AC_Sprayer::update()
     // get the current time
     const uint32_t now = AP_HAL::millis();
 
+    bool should_be_spraying = _flags.spraying;
     // check our speed vs the minimum
     if (ground_speed >= _speed_min) {
         // if we are not already spraying
@@ -119,7 +127,7 @@ AC_Sprayer::update()
             }else{
                 // check if we've been over the speed long enough to engage the sprayer
                 if((now - _speed_over_min_time) > AC_SPRAYER_DEFAULT_TURN_ON_DELAY) {
-                    _flags.spraying = true;
+                    should_be_spraying = true;
                     _speed_over_min_time = 0;
                 }
             }
@@ -135,7 +143,7 @@ AC_Sprayer::update()
             }else{
                 // check if we've been over the speed long enough to engage the sprayer
                 if((now - _speed_under_min_time) > AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY) {
-                    _flags.spraying = false;
+                    should_be_spraying = false;
                     _speed_under_min_time = 0;
                 }
             }
@@ -147,15 +155,18 @@ AC_Sprayer::update()
     // if testing pump output speed as if travelling at 1m/s
     if (_flags.testing) {
         ground_speed = 100.0f;
+        should_be_spraying = true;
     }
 
     // if spraying or testing update the pump servo position
-    if (_flags.spraying || _flags.testing) {        
-        RC_Channel_aux::move_servo(RC_Channel_aux::k_sprayer_pump, MIN(MAX(ground_speed * _pump_pct_1ms, 100 *_pump_min_pct),10000),0,10000);
+    if (should_be_spraying) {
+        float pos = ground_speed * _pump_pct_1ms;
+        pos = MAX(pos, 100 *_pump_min_pct); // ensure min pump speed
+        pos = MIN(pos,10000); // clamp to range
+        RC_Channel_aux::move_servo(RC_Channel_aux::k_sprayer_pump, pos, 0, 10000);
         RC_Channel_aux::set_radio(RC_Channel_aux::k_sprayer_spinner, _spinner_pwm);
+        _flags.spraying = true;
     }else{
-        // ensure sprayer and spinner are off
-        RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_sprayer_pump);
-        RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_sprayer_spinner);
+        stop_spraying();
     }
 }
