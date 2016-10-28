@@ -5,6 +5,9 @@
 #define ROW(Y) ((Y * 11) + 2)
 #define COLUMN(X) ((X * 7) + 1)
 
+#define DISPLAY_MESSAGE_SIZE 18
+#define DISPLAY_TEXT_SIZE 51
+
 class Display: public NotifyDevice {
 public:
     bool init(void);

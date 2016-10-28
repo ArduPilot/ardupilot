@@ -17,7 +17,7 @@
 #include "Display.h"
 
 #include "AP_Notify.h"
-#include <stdio.h>  // for sprintf
+#include <stdio.h>  // for snprintf
 #include <AP_GPS/AP_GPS.h>
 
 static const uint8_t _font[] = {
@@ -462,8 +462,8 @@ void Display::update_prearm(uint8_t r)
 void Display::update_gps(uint8_t r)
 {
 	static const char * gpsfixname[] = {"NoGPS","NoFix","2D   ","3D   ","DGPS " ,"RTK "};
-	char msg [18];
-	sprintf(msg, "GPS:%s Sats:%u", gpsfixname[AP_Notify::flags.gps_status], AP_Notify::flags.gps_num_sats) ;
+	char msg [DISPLAY_MESSAGE_SIZE];
+	snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%s Sats:%u", gpsfixname[AP_Notify::flags.gps_status], AP_Notify::flags.gps_num_sats) ;
 	draw_text(COLUMN(0), ROW(r), msg);
 
 
@@ -486,15 +486,15 @@ void Display::update_ekf(uint8_t r)
 }
 void Display::update_battery(uint8_t r)
 {
-	char msg [18];
+	char msg [DISPLAY_MESSAGE_SIZE];
 	float batvolt = AP_Notify::get_voltage();
-	sprintf(msg, "BAT1: %4.2fV", batvolt	) ;
+	snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", batvolt	) ;
 	draw_text(COLUMN(0), ROW(r), msg);
  }
 void Display::update_mode(uint8_t r)
 {
-	char msg [18];
-	sprintf(msg, "Mode: %s", _modename[AP_Notify::get_control_mode()]) ;
+	char msg [DISPLAY_MESSAGE_SIZE];
+	snprintf(msg, DISPLAY_MESSAGE_SIZE, "Mode: %s", _modename[AP_Notify::get_control_mode()]) ;
 	draw_text(COLUMN(0), ROW(r), msg);
  }
 void Display::update_text(uint8_t r)
@@ -502,35 +502,33 @@ void Display::update_text(uint8_t r)
 	static uint8_t mstartpos = 0;
     static uint8_t movedelay = 4;
     static char* lastmsg ;
-		char msg [18];
-		char txt [51];
+    char msg [DISPLAY_MESSAGE_SIZE];
+    char txt [DISPLAY_TEXT_SIZE];
 
-	if (AP_Notify::get_text() != lastmsg)
-	{
+	if (AP_Notify::get_text() != lastmsg) {
 		mstartpos = 0;	//shift position
 		movedelay = 4; //delay before shifting after new message displayed
 		lastmsg = AP_Notify::get_text();
 	}
 
-		sprintf(txt, "%s", lastmsg) ;
-		mstartpos++;
-		for (uint8_t i = 0; i <  sizeof(msg); i++)
-			if(txt[i + mstartpos-1] !=0)
-			{
-		        msg[i] = txt[i + mstartpos-1];
-			}
-			else
-			{
-				msg[i] = ' ';
-				movedelay = 4;
-				mstartpos = 0;
-			}
+    snprintf(txt, DISPLAY_TEXT_SIZE, "%s", lastmsg);
+    mstartpos++;
+    for (uint8_t i = 0; i < sizeof(msg); i++) {
+        if (txt[i + mstartpos - 1] != 0) {
+            msg[i] = txt[i + mstartpos - 1];
+        } else {
+            msg[i] = ' ';
+            movedelay = 4;
+            mstartpos = 0;
+        }
+    }
 
-		if (mstartpos > sizeof(txt) - sizeof(msg)) mstartpos = 0;
-		if (movedelay > 0)
-		{
-			movedelay--;
-			mstartpos = 0;
-		}
-		draw_text(COLUMN(0), ROW(0), msg);
+    if (mstartpos > sizeof(txt) - sizeof(msg)) {
+        mstartpos = 0;
+    }
+    if (movedelay > 0) {
+        movedelay--;
+        mstartpos = 0;
+    }
+    draw_text(COLUMN(0), ROW(0), msg);
  }

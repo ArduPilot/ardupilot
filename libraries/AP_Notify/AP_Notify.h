@@ -108,11 +108,11 @@ public:
     static void handle_play_tune(mavlink_message_t* msg);
     
     static const struct AP_Param::GroupInfo var_info[];
-    static float get_voltage();
-    static void set_voltage(float voltage);
-    static uint8_t get_control_mode();
-    static void set_control_mode(uint8_t mode);
 
+    static float   get_voltage() { return _voltage; }
+    static void    set_voltage(float voltage) { _voltage = voltage; }
+    static uint8_t get_control_mode() { return _control_mode; }
+    static void    set_control_mode(uint8_t mode) { _control_mode = mode; }
 
     bool buzzer_enabled() const { return _buzzer_enable; }
 

@@ -56,12 +56,12 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LED_OVERRIDE", 2, AP_Notify, _rgb_led_override, 0),
     
-    // @Param: Display Enable
-    // @DisplayName: Setup for notify display
-    // @Description: This sets up the board display
+    // @Param: DISPLAY_USE
+    // @DisplayName: Display enable
+    // @Description: This sets up the display support. It is enabled by default.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
-    AP_GROUPINFO("DISPLAY_EN", 3, AP_Notify, _display_enable, 1),
+    AP_GROUPINFO("DISPLAY_USE", 3, AP_Notify, _display_enable, 1),
 
     AP_GROUPEND
 };
@@ -193,17 +193,5 @@ void AP_Notify::handle_play_tune(mavlink_message_t *msg)
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->handle_play_tune(msg);
     }
-}
-void AP_Notify::set_voltage(float voltage){
-		_voltage = voltage;
-}
-float AP_Notify::get_voltage(){
-		return _voltage;
-}
-void AP_Notify::set_control_mode(uint8_t mode){
-		_control_mode = mode;
-}
-uint8_t AP_Notify::get_control_mode(){
-		return _control_mode;
 }
 
