@@ -231,7 +231,7 @@ bool Plane::setup_failsafe_mixing(void)
 {
     const char *mixer_filename = "/fs/microsd/APM/MIXER.MIX";
     bool ret = false;
-    char *buf = NULL;
+    char *buf = nullptr;
     const uint16_t buf_size = 2048;
     uint16_t fileSize, new_crc;
     int px4io_fd = -1;
@@ -240,7 +240,7 @@ bool Plane::setup_failsafe_mixing(void)
     unsigned mixer_status = 0;
 
     buf = (char *)malloc(buf_size);
-    if (buf == NULL) {
+    if (buf == nullptr) {
         goto failed;
     }
 
@@ -295,7 +295,7 @@ bool Plane::setup_failsafe_mixing(void)
     // a RC config limitation in px4io.c limiting to PX4IO_RC_MAPPED_CONTROL_CHANNELS
     for (uint8_t i=0; i<8; i++) {
         RC_Channel *ch = RC_Channel::rc_channel(i);
-        if (ch == NULL) {
+        if (ch == nullptr) {
             continue;
         }
         struct pwm_output_rc_config config;
@@ -398,7 +398,7 @@ bool Plane::setup_failsafe_mixing(void)
     ret = true;
 
 failed:
-    if (buf != NULL) {
+    if (buf != nullptr) {
         free(buf);
     }
     if (px4io_fd != -1) {

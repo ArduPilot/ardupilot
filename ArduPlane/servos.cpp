@@ -535,7 +535,7 @@ void Plane::set_servos_flaps(void)
 
     // work out any manual flap input
     RC_Channel *flapin = RC_Channel::rc_channel(g.flapin_channel-1);
-    if (flapin != NULL && !failsafe.ch3_failsafe && failsafe.ch3_counter == 0) {
+    if (flapin != nullptr && !failsafe.ch3_failsafe && failsafe.ch3_counter == 0) {
         flapin->input();
         manual_flap_percent = flapin->percent_input();
     }
