@@ -586,7 +586,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         handle_log_send(rover.DataFlash);
     }
 
-    if (_queued_parameter != NULL) {
+    if (_queued_parameter != nullptr) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
             streamRates[STREAM_PARAMS].set(10);
         }
@@ -1526,9 +1526,9 @@ void Rover::gcs_update(void)
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
 #if CLI_ENABLED == ENABLED
-            gcs[i].update(g.cli_enabled == 1 ? FUNCTOR_BIND_MEMBER(&Rover::run_cli, void, AP_HAL::UARTDriver *) : NULL);
+            gcs[i].update(g.cli_enabled == 1 ? FUNCTOR_BIND_MEMBER(&Rover::run_cli, void, AP_HAL::UARTDriver *) : nullptr);
 #else
-            gcs[i].update(NULL);
+            gcs[i].update(nullptr);
 #endif
         }
     }
