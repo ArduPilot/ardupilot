@@ -22,6 +22,7 @@
 #include "SIM_Motor.h"
 #include "SIM_Frame.h"
 #include "SIM_Sprayer.h"
+#include "SIM_Gripper_Servo.h"
 
 namespace SITL {
 
@@ -48,8 +49,11 @@ protected:
     // The numbers here are offsets into the input servos array
     // (generally output-servo-number-1 e.g. 2 for throttle)
     Sprayer sprayer{6, 7};
+    Gripper_Servo gripper{6};
+
 
     float gross_mass() const override;
+
 };
 
 }
