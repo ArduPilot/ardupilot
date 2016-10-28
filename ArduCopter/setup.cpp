@@ -176,7 +176,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
     
 
 	
-    set_mask = strtol (argv[1].str, NULL, 2);
+    set_mask = strtol (argv[1].str, nullptr, 2);
 	if (set_mask == 0)
 		cliSerial->printf("no channels chosen");
     //cliSerial->printf("\n%d\n",set_mask);

@@ -50,7 +50,7 @@ void Copter::run_cli(AP_HAL::UARTDriver *port)
     port->set_blocking_writes(true);
 
     // disable the mavlink delay callback
-    hal.scheduler->register_delay_callback(NULL, 5);
+    hal.scheduler->register_delay_callback(nullptr, 5);
 
     // disable main_loop failsafe
     failsafe_disable();
@@ -228,10 +228,10 @@ void Copter::init_ardupilot()
     if (g.cli_enabled) {
         const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
         cliSerial->println(msg);
-        if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
+        if (gcs[1].initialised && (gcs[1].get_uart() != nullptr)) {
             gcs[1].get_uart()->println(msg);
         }
-        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
+        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != nullptr)) {
             gcs[2].get_uart()->println(msg);
         }
     }
