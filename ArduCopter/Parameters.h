@@ -553,6 +553,10 @@ public:
     // vehicle statistics
     AP_Stats stats;
 
+#if GRIPPER_ENABLED
+    AP_Gripper gripper;
+#endif
+
     // Throw mode parameters
     AP_Int8 throw_nextmode;
     AP_Int8 throw_type;

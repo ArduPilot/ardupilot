@@ -133,6 +133,11 @@ void Copter::init_ardupilot()
     epm.init();
 #endif
 
+    // init cargo gripper
+#if GRIPPER_ENABLED == ENABLED
+    g2.gripper.init();
+#endif
+
     // initialise notify system
     // disable external leds if epm is enabled because of pin conflict on the APM
     notify.init(true);
