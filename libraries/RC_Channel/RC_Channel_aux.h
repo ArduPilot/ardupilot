@@ -60,6 +60,7 @@ public:
         k_steering              = 26,            ///< ground steering, used to separate from rudder
         k_parachute_release     = 27,            ///< parachute release
         k_epm                   = 28,            ///< epm gripper
+        k_gripper               = 28,            ///< gripper
         k_landing_gear_control  = 29,            ///< landing gear controller
         k_engine_run_enable     = 30,            ///< engine kill switch, used for gas airplanes and helicopters
         k_heli_rsc              = 31,            ///< helicopter RSC output
