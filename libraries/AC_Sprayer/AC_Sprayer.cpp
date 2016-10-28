@@ -63,10 +63,6 @@ AC_Sprayer::AC_Sprayer(const AP_InertialNav* inav) :
         _spinner_pwm.set_and_save(AC_SPRAYER_DEFAULT_SPINNER_PWM);
     }
 
-    // initialise flags
-    _flags.spraying = false;
-    _flags.testing = false;
-
     // To-Do: ensure that the pump and spinner servo channels are enabled
 }
 
@@ -96,9 +92,6 @@ void AC_Sprayer::enable(bool true_false)
 void
 AC_Sprayer::update()
 {
-    uint32_t now;
-    float ground_speed;
-
     // exit immediately if we are disabled (perhaps set pwm values back to defaults)
     if (!_enabled) {
         return;
@@ -111,10 +104,10 @@ AC_Sprayer::update()
 
     // get horizontal velocity
     const Vector3f &velocity = _inav->get_velocity();
-    ground_speed = norm(velocity.x,velocity.y);
+    float ground_speed = norm(velocity.x,velocity.y);
 
     // get the current time
-    now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     // check our speed vs the minimum
     if (ground_speed >= _speed_min) {
@@ -134,7 +127,7 @@ AC_Sprayer::update()
         // reset the speed under timer
         _speed_under_min_time = 0;
     }else{
-        // we are under the min speed.  If we are spraying
+        // we are under the min speed.
         if (_flags.spraying) {
             // set the timer if this is the first time we've dropped below the min speed
             if (_speed_under_min_time == 0) {
