@@ -366,7 +366,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 void
 GCS_MAVLINK_Tracker::data_stream_send(void)
 {
-    if (_queued_parameter != NULL) {
+    if (_queued_parameter != nullptr) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
             streamRates[STREAM_PARAMS].set(10);
         }
@@ -541,7 +541,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_SET:
     {
-        handle_param_set(msg, NULL);
+        handle_param_set(msg, nullptr);
         break;
     }
 
@@ -940,7 +940,7 @@ void Tracker::gcs_update(void)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
-            gcs[i].update(NULL);
+            gcs[i].update(nullptr);
         }
     }
 }
