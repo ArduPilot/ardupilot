@@ -383,10 +383,12 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_EPM:
             switch(ch_flag) {
                 case AUX_SWITCH_LOW:
+                    g2.gripper.release();
                     epm.release();
                     Log_Write_Event(DATA_EPM_RELEASE);
                     break;
                 case AUX_SWITCH_HIGH:
+                    g2.gripper.grab();
                     epm.grab();
                     Log_Write_Event(DATA_EPM_GRAB);
                     break;

@@ -241,6 +241,14 @@ void Copter::epm_update()
 }
 #endif
 
+#if GRIPPER_ENABLED == ENABLED
+// gripper update
+void Copter::gripper_update()
+{
+    g2.gripper.update();
+}
+#endif
+
 /*
   update AP_Button
  */

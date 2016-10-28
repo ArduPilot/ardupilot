@@ -63,3 +63,4 @@ LIBRARIES += AP_ADSB
 LIBRARIES += AP_Avoidance
 LIBRARIES += AP_Proximity
 LIBRARIES += AP_Stats
+LIBRARIES += AP_Gripper

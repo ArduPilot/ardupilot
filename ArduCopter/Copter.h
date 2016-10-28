@@ -104,6 +104,9 @@
 #if EPM_ENABLED == ENABLED
 #include <AP_EPM/AP_EPM.h>             // EPM cargo gripper stuff
 #endif
+#if GRIPPER_ENABLED == ENABLED
+#include <AP_Gripper/AP_Gripper.h>             // gripper stuff
+#endif
 #if PARACHUTE == ENABLED
 #include <AP_Parachute/AP_Parachute.h>       // Parachute release library
 #endif
@@ -1041,6 +1044,7 @@ private:
     void read_battery(void);
     void read_receiver_rssi(void);
     void epm_update();
+    void gripper_update();
     void terrain_update();
     void terrain_logging();
     bool terrain_use();

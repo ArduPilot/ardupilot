@@ -32,6 +32,7 @@ def build(bld):
             'AP_AdvancedFailsafe',
             'AP_Proximity',
             'AP_Stats',
+            'AP_Gripper',
         ],
     )
 
