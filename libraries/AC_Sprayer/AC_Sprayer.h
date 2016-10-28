@@ -37,11 +37,14 @@ public:
     /// Constructor
     AC_Sprayer(const AP_InertialNav* inav);
 
-    /// enable - allows sprayer to be enabled/disabled.  Note: this does not update the eeprom saved value
-    void enable(bool true_false);
+    /// run - allow or disallow spraying to occur
+    void run(bool true_false);
 
-    /// enabled - returns true if sprayer is enabled
-    bool enabled() const { return _enabled; }
+    /// running - returns true if spraying is currently permitted
+    bool running() const { return _flags.running; }
+
+    /// spraying - returns true if spraying is actually happening
+    bool spraying() const { return _flags.spraying; }
 
     /// test_pump - set to true to turn on pump as if travelling at 1m/s as a test
     void test_pump(bool true_false) { _flags.testing = true_false; }
@@ -70,9 +73,12 @@ private:
     struct sprayer_flags_type {
         uint8_t spraying    : 1;            ///< 1 if we are currently spraying
         uint8_t testing     : 1;            ///< 1 if we are testing the sprayer and should output a minimum value
+        uint8_t running     : 1;            ///< 1 if we are permitted to run sprayer
     } _flags;
 
     // internal variables
     uint32_t        _speed_over_min_time;   ///< time at which we reached speed minimum
     uint32_t        _speed_under_min_time;  ///< time at which we fell below speed minimum
+
+    void stop_spraying();
 };
