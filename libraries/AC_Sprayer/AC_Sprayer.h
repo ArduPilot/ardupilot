@@ -3,16 +3,14 @@
 
 /**
     The crop spraying functionality can be enabled in ArduCopter by doing the following:
-        1. add this line to APM_Config.h
-            #define SPRAYER ENABLED
-        2. set CH7_OPT or CH8_OPT parameter to 15 to allow turning the sprayer on/off from one of these channels
-        3. set RC10_FUNCTION to 22 to enable the servo output controlling the pump speed on RC10
-        4. set RC11_FUNCTION to 23 to enable the spervo output controlling the spinner on RC11
-        5. ensure the RC10_MIN, RC10_MAX, RC11_MIN, RC11_MAX accurately hold the min and maximum servo values you could possibly output to the pump and spinner
-        6. set the SPRAY_SPINNER to the pwm value the spinner should spin at when on
-        7. set the SPRAY_PUMP_RATE to the value the pump should servo should move to when the vehicle is travelling 1m/s expressed as a percentage (i.e. 0 ~ 100) of the full servo range.  I.e. 0 = the pump will not operate, 100 = maximum speed at 1m/s.  50 = 1/2 speed at 1m/s, full speed at 2m/s
-        8. set the SPRAY_PUMP_MIN to the minimum value that the pump servo should move to while engaged expressed as a percentage (i.e. 0 ~ 100) of the full servo range
-        9. set the SPRAY_SPEED_MIN to the minimum speed (in cm/s) the vehicle should be moving at before the pump and sprayer are turned on.  0 will mean the pump and spinner will always be on when the system is enabled with ch7/ch8 switch
+        - set CH7_OPT or CH8_OPT parameter to 15 to allow turning the sprayer on/off from one of these channels
+        - set RC10_FUNCTION to 22 to enable the servo output controlling the pump speed on servo-out 10
+        - set RC11_FUNCTION to 23 to enable the servo output controlling the spinner on servo-out 11
+        - ensure the RC10_MIN, RC10_MAX, RC11_MIN, RC11_MAX accurately hold the min and maximum servo values you could possibly output to the pump and spinner
+        - set the SPRAY_SPINNER to the pwm value the spinner should spin at when on
+        - set the SPRAY_PUMP_RATE to the value the pump servo should move to when the vehicle is travelling 1m/s expressed as a percentage (i.e. 0 ~ 100) of the full servo range.  I.e. 0 = the pump will not operate, 100 = maximum speed at 1m/s.  50 = 1/2 speed at 1m/s, full speed at 2m/s
+        - set the SPRAY_PUMP_MIN to the minimum value that the pump servo should move to while engaged expressed as a percentage (i.e. 0 ~ 100) of the full servo range
+        - set the SPRAY_SPEED_MIN to the minimum speed (in cm/s) the vehicle should be moving at before the pump and sprayer are turned on.  0 will mean the pump and spinner will always be on when the system is enabled with ch7/ch8 switch
 **/
 #pragma once
 
