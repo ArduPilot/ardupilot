@@ -23,6 +23,9 @@ class AP_Gripper {
 public:
     AP_Gripper();
 
+    // indicate whether this module is enabled or not
+    bool enabled() const { return _enabled; }
+
     // initialise the gripper
     void init();
 
@@ -40,10 +43,22 @@ public:
     // parameters
     AP_Int8     _enabled;               // grabber enable/disable
 
+    typedef enum {
+        STATE_GRABBING,
+        STATE_RELEASING,
+        STATE_GRABBED,
+        STATE_RELEASED,
+    }  gripper_state;
+
     struct Backend_Config {
         AP_Int8     type;                  // grabber type (e.g. EPM or servo)
         AP_Int16    grab_pwm;              // PWM value sent to Gripper to initiate grabbing the cargo
         AP_Int16    release_pwm;           // PWM value sent to Gripper to release the cargo
+        AP_Int16    neutral_pwm;           // PWM value sent to gripper when not grabbing or releasing
+        AP_Int8     regrab_interval;       // Time in seconds that gripper will regrab the cargo to ensure grip has not weakend
+        AP_Int16    uavcan_hardpoint_id;
+
+        gripper_state state = STATE_RELEASED;
     } config;
 
 private:
