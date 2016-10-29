@@ -283,6 +283,40 @@ void RCOutput_Bebop::_play_sound(uint8_t sound)
     _dev->get_semaphore()->give();
 }
 
+/*
+ * pwm is the pwm power used for the note.
+ *  It has to be >= 3, otherwise it refers to a predefined song
+ * (see _play_sound function)
+ * period is in us and duration in ms.
+ */
+void RCOutput_Bebop::play_note(uint8_t pwm,
+                               uint16_t period_us,
+                               uint16_t duration_ms)
+{
+    struct PACKED {
+        uint8_t header;
+        uint8_t pwm;
+        be16_t period;
+        be16_t duration;
+    } msg;
+
+    if (pwm < 3) {
+        return;
+    }
+
+    msg.header = BEBOP_BLDC_PLAY_SOUND;
+    msg.pwm = pwm;
+    msg.period = htobe16(period_us);
+    msg.duration = htobe16(duration_ms);
+
+    if (!_dev->get_semaphore()->take(0)) {
+        return;
+    }
+
+    _dev->transfer((uint8_t *)&msg, sizeof(msg), nullptr, 0);
+    _dev->get_semaphore()->give();
+}
+
 uint16_t RCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
 {
     period_us = constrain_int16(period_us, _min_pwm, _max_pwm);

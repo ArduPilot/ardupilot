@@ -127,7 +127,8 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         NotifyDevice *AP_Notify::_devices[] = {&boardled, &bhled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
         DiscoLED discoled;
-        NotifyDevice *AP_Notify::_devices[] = {&discoled};
+        ToneAlarm_Linux tonealarm;
+        NotifyDevice *AP_Notify::_devices[] = {&discoled, &tonealarm};
     #else
         AP_BoardLED boardled;
         ToshibaLED_I2C toshibaled;
