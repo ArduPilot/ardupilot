@@ -305,6 +305,14 @@ AP_GPS::detect_instance(uint8_t instance)
 		new_gps = new AP_GPS_NOVA(*this, state[instance], _port[instance]);
 	}
 
+    // user has to explicitly set the MAV type, do not use AUTO
+    // Do not try to detect the MAV type, assume it's there
+    if (_type[instance] == GPS_TYPE_MAV) {
+        _broadcast_gps_type("MAV", instance, -1);
+        new_gps = new AP_GPS_MAV(*this, state[instance], NULL);
+        goto found_gps;
+    }
+
     // record the time when we started detection. This is used to try
     // to avoid initialising a uBlox as a NMEA GPS
     if (dstate->detect_started_ms == 0) {
@@ -374,12 +382,6 @@ AP_GPS::detect_instance(uint8_t instance)
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
             _broadcast_gps_type("ERB", instance, dstate->current_baud);
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
-        }
-        // user has to explicitly set the MAV type, do not use AUTO
-        // Do not try to detect the MAV type, assume it's there
-        else if (_type[instance] == GPS_TYPE_MAV) {
-            _broadcast_gps_type("MAV", instance, dstate->current_baud);
-            new_gps = new AP_GPS_MAV(*this, state[instance], NULL);
         }
 		else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
 			// prevent false detection of NMEA mode in
