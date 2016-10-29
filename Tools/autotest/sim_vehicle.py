@@ -135,6 +135,7 @@ def kill_tasks():
             'lt-JSBSim',
             'ArduPlane.elf',
             'ArduCopter.elf',
+            'ArduSub.elf',
             'APMrover2.elf',
             'AntennaTracker.elf',
             'JSBSIm.exe',
@@ -203,7 +204,7 @@ parser = CompatOptionParser("sim_vehicle.py", epilog='''
     eeprom.bin in the starting directory contains the parameters for your simulated vehicle. Always start from the same directory. It is recommended that you start in the main vehicle directory for the vehicle you are simulating, for example, start in the ArduPlane directory to simulate ArduPlane
 ''')
 
-parser.add_option("-v", "--vehicle", type='string', default=None, help='vehicle type (ArduPlane, ArduCopter or APMrover2)')
+parser.add_option("-v", "--vehicle", type='string', default=None, help='vehicle type (ArduPlane, ArduCopter, APMrover2 or ArduSub)')
 parser.add_option("-f", "--frame", type='string', default=None, help='''set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail''')
@@ -288,6 +289,7 @@ default_frame_for_vehicle = {
     "APMrover2": "rover",
     "ArduPlane": "jsbsim",
     "ArduCopter": "quad",
+    "ArduSub": "BlueROV",
     "AntennaTracker": "tracker"
 }
 
@@ -430,6 +432,12 @@ _options_for_frame = {
         "waf_target": "bin/ardurover",
         "default_params_filename": "Rover-skid.parm",
     },
+    # SUB
+    "BlueROV": {
+        "model": "quad",
+        "waf_target": "bin/ardusub",
+        "default_params_filename": "Sub.parm",
+    },
     # SIM
     "Gazebo": {
         "waf_target": "bin/arducopter-quad",
@@ -450,6 +458,7 @@ _options_for_frame = {
 _default_waf_target = {
     "ArduPlane": "bin/arduplane",
     "ArduCopter": "bin/arducopter-quad",
+    "Ardusub": "bin/ardusub",
     "APMrover2": "bin/ardurover",
     "AntennaTracker": "bin/antennatracker",
 }
