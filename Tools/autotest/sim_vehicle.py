@@ -150,6 +150,7 @@ def kill_tasks():
             'lt-JSBSim',
             'ArduPlane.elf',
             'ArduCopter.elf',
+            'ArduSub.elf',
             'APMrover2.elf',
             'AntennaTracker.elf',
             'JSBSIm.exe',
@@ -352,6 +353,12 @@ _options_for_frame = {
         "waf_target": "bin/ardurover",
         "default_params_filename": "default_params/rover-skid.parm",
     },
+    # SUB
+    "sub": {
+        "model": "vectored",
+        "waf_target": "bin/ardusub",
+        "default_params_filename": "default_params/sub.parm",
+    },
     # SIM
     "gazebo-iris": {
         "waf_target": "bin/arducopter",
@@ -376,6 +383,7 @@ _options_for_frame = {
 _default_waf_target = {
     "ArduPlane": "bin/arduplane",
     "ArduCopter": "bin/arducopter",
+    "ArduSub": "bin/ardusub",
     "APMrover2": "bin/ardurover",
     "AntennaTracker": "bin/antennatracker",
 }
@@ -723,7 +731,7 @@ parser = CompatOptionParser("sim_vehicle.py",
                "you are simulating, for example, start in the ArduPlane directory to " \
                "simulate ArduPlane")
 
-parser.add_option("-v", "--vehicle", type='string', default=None, help="vehicle type (ArduPlane, ArduCopter or APMrover2)")
+parser.add_option("-v", "--vehicle", type='string', default=None, help="vehicle type (ArduPlane, ArduCopter, APMrover2 or ArduSub)")
 parser.add_option("-f", "--frame", type='string', default=None, help="""set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail""")
@@ -818,6 +826,7 @@ default_frame_for_vehicle = {
     "APMrover2": "rover",
     "ArduPlane": "jsbsim",
     "ArduCopter": "quad",
+    "ArduSub": "vectored",
     "AntennaTracker": "tracker",
 }
 
