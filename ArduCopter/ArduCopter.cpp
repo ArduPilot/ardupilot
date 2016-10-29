@@ -132,9 +132,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(afs_fs_check,          10,    100),
 #endif
     SCHED_TASK(terrain_update,        10,    100),
-#if EPM_ENABLED == ENABLED
-    SCHED_TASK(epm_update,            10,     75),
-#endif
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK(gripper_update,        10,     75),
 #endif

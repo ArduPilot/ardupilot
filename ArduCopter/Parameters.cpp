@@ -707,12 +707,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                  "RELAY_", AP_Relay),
 
-#if EPM_ENABLED == ENABLED
-	// @Group: EPM_
-    // @Path: ../libraries/AP_EPM/AP_EPM.cpp
-    GOBJECT(epm,            "EPM_", AP_EPM),
-#endif
-
 #if PARACHUTE == ENABLED
 	// @Group: CHUTE_
     // @Path: ../libraries/AP_Parachute/AP_Parachute.cpp

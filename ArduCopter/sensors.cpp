@@ -233,14 +233,6 @@ void Copter::accel_cal_update()
 #endif
 }
 
-#if EPM_ENABLED == ENABLED
-// epm update - moves epm pwm output back to neutral after grab or release is completed
-void Copter::epm_update()
-{
-    epm.update();
-}
-#endif
-
 #if GRIPPER_ENABLED == ENABLED
 // gripper update
 void Copter::gripper_update()

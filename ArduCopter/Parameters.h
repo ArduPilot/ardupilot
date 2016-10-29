@@ -67,8 +67,8 @@ public:
         // relay object
         k_param_relay,
 
-        // EPM object
-        k_param_epm,
+        // (old) EPM object
+        k_param_epm_unused,
 
         // BoardConfig object
         k_param_BoardConfig,
