@@ -226,6 +226,6 @@ void Rover::update_sensor_status_flags(void)
     
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry
-    frsky_telemetry.update_sensor_status_flags(!control_sensors_health & control_sensors_enabled & control_sensors_present);
+    frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
 #endif
 }
