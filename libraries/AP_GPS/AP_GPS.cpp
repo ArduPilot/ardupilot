@@ -283,7 +283,15 @@ AP_GPS::detect_instance(uint8_t instance)
         goto found_gps;
     }
 #endif
-    
+
+    // user has to explicitly set the MAV type, do not use AUTO
+    // do not try to detect the MAV type, assume it's there
+    if (_type[instance] == GPS_TYPE_MAV) {
+        _broadcast_gps_type("MAV", instance, -1);
+        new_gps = new AP_GPS_MAV(*this, state[instance], NULL);
+        goto found_gps;
+    }
+
     if (_port[instance] == NULL) {
         // UART not available
         return;
@@ -304,14 +312,6 @@ AP_GPS::detect_instance(uint8_t instance)
 		_broadcast_gps_type("NOVA", instance, -1); // baud rate isn't valid
 		new_gps = new AP_GPS_NOVA(*this, state[instance], _port[instance]);
 	}
-
-    // user has to explicitly set the MAV type, do not use AUTO
-    // Do not try to detect the MAV type, assume it's there
-    if (_type[instance] == GPS_TYPE_MAV) {
-        _broadcast_gps_type("MAV", instance, -1);
-        new_gps = new AP_GPS_MAV(*this, state[instance], NULL);
-        goto found_gps;
-    }
 
     // record the time when we started detection. This is used to try
     // to avoid initialising a uBlox as a NMEA GPS
@@ -394,9 +394,7 @@ AP_GPS::detect_instance(uint8_t instance)
 		}
 	}
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_QURT
 found_gps:
-#endif
 	if (new_gps != NULL) {
         state[instance].status = NO_FIX;
         drivers[instance] = new_gps;
