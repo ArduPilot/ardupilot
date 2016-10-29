@@ -289,7 +289,7 @@ default_frame_for_vehicle = {
     "APMrover2": "rover",
     "ArduPlane": "jsbsim",
     "ArduCopter": "quad",
-    "ArduSub": "BlueROV",
+    "ArduSub": "vectored",
     "AntennaTracker": "tracker"
 }
 
@@ -433,9 +433,9 @@ _options_for_frame = {
         "default_params_filename": "Rover-skid.parm",
     },
     # SUB
-    "BlueROV": {
+    "vectored": {
         "model": "quad",
-        "waf_target": "bin/ardusub",
+        "waf_target": "bin/ardusub-vectored",
         "default_params_filename": "Sub.parm",
     },
     # SIM
