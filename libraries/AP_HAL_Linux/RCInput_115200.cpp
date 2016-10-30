@@ -87,7 +87,7 @@ void RCInput_115200::_timer_tick(void)
     tv.tv_usec = 0;
 
     // check if any bytes are available
-    if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
+    if (select(fd+1, &fds, nullptr, nullptr, &tv) != 1) {
         return;
     }
 

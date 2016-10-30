@@ -61,14 +61,14 @@ float AnalogIn_Raspilot::board_voltage(void)
 AP_HAL::AnalogSource* AnalogIn_Raspilot::channel(int16_t pin)
 {
     for (uint8_t j = 0; j < _channels_number; j++) {
-        if (_channels[j] == NULL) {
+        if (_channels[j] == nullptr) {
             _channels[j] = new AnalogSource_Raspilot(pin);
             return _channels[j];
         }
     }
 
     hal.console->println("Out of analog channels");
-    return NULL;
+    return nullptr;
 }
 
 void AnalogIn_Raspilot::init()
@@ -125,7 +125,7 @@ void AnalogIn_Raspilot::_update()
         for (int16_t j=0; j < RASPILOT_ADC_MAX_CHANNELS; j++) {
             AnalogSource_Raspilot *source = _channels[j];
 
-            if (source != NULL && i == source->_pin) {
+            if (source != nullptr && i == source->_pin) {
                 source->_value = rx.regs[i] * 3.3 / 4096.0;
             }
         }

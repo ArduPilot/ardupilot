@@ -133,7 +133,7 @@ void VRBRAINScheduler::delay_microseconds_boost(uint16_t usec)
     sem_init(&wait_semaphore, 0, 0);
     hrt_call_after(&wait_call, usec, (hrt_callout)sem_post_boost, &wait_semaphore);
     sem_wait(&wait_semaphore);
-    hrt_call_after(&wait_call, APM_MAIN_PRIORITY_BOOST_USEC, (hrt_callout)set_normal_priority, NULL);
+    hrt_call_after(&wait_call, APM_MAIN_PRIORITY_BOOST_USEC, (hrt_callout)set_normal_priority, nullptr);
 }
 
 void VRBRAINScheduler::delay(uint16_t ms)
@@ -249,7 +249,7 @@ void VRBRAINScheduler::_run_timers(bool called_from_timer_thread)
     }
 
     // and the failsafe, if one is setup
-    if (_failsafe != NULL) {
+    if (_failsafe != nullptr) {
         _failsafe();
     }
 
@@ -267,7 +267,7 @@ void *VRBRAINScheduler::_timer_thread(void *arg)
     uint32_t last_ran_overtime = 0;
 
     while (!sched->_hal_initialized) {
-        poll(NULL, 0, 1);        
+        poll(nullptr, 0, 1);
     }
     while (!_vrbrain_thread_should_exit) {
         sched->delay_microseconds_semaphore(1000);
@@ -291,7 +291,7 @@ void *VRBRAINScheduler::_timer_thread(void *arg)
 #endif
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 void VRBRAINScheduler::_run_io(void)
@@ -318,7 +318,7 @@ void *VRBRAINScheduler::_uart_thread(void *arg)
     VRBRAINScheduler *sched = (VRBRAINScheduler *)arg;
 
     while (!sched->_hal_initialized) {
-        poll(NULL, 0, 1);
+        poll(nullptr, 0, 1);
     }
     while (!_vrbrain_thread_should_exit) {
         sched->delay_microseconds_semaphore(1000);
@@ -331,7 +331,7 @@ void *VRBRAINScheduler::_uart_thread(void *arg)
         ((VRBRAINUARTDriver *)hal.uartE)->_timer_tick();
         ((VRBRAINUARTDriver *)hal.uartF)->_timer_tick();
     }
-    return NULL;
+    return nullptr;
 }
 
 void *VRBRAINScheduler::_io_thread(void *arg)
@@ -339,17 +339,17 @@ void *VRBRAINScheduler::_io_thread(void *arg)
     VRBRAINScheduler *sched = (VRBRAINScheduler *)arg;
 
     while (!sched->_hal_initialized) {
-        poll(NULL, 0, 1);
+        poll(nullptr, 0, 1);
     }
     while (!_vrbrain_thread_should_exit) {
-        poll(NULL, 0, 1);
+        poll(nullptr, 0, 1);
 
         // run registered IO processes
         perf_begin(sched->_perf_io_timers);
         sched->_run_io();
         perf_end(sched->_perf_io_timers);
     }
-    return NULL;
+    return nullptr;
 }
 
 void *VRBRAINScheduler::_storage_thread(void *arg)
@@ -357,17 +357,17 @@ void *VRBRAINScheduler::_storage_thread(void *arg)
     VRBRAINScheduler *sched = (VRBRAINScheduler *)arg;
 
     while (!sched->_hal_initialized) {
-        poll(NULL, 0, 1);
+        poll(nullptr, 0, 1);
     }
     while (!_vrbrain_thread_should_exit) {
-        poll(NULL, 0, 10);
+        poll(nullptr, 0, 10);
 
         // process any pending storage writes
         perf_begin(sched->_perf_storage_timer);
         ((VRBRAINStorage *)hal.storage)->_timer_tick();
         perf_end(sched->_perf_storage_timer);
     }
-    return NULL;
+    return nullptr;
 }
 
 bool VRBRAINScheduler::in_timerprocess()

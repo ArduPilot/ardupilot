@@ -19,12 +19,12 @@ AP_InertialSensor_QFLIGHT::AP_InertialSensor_QFLIGHT(AP_InertialSensor &imu) :
 AP_InertialSensor_Backend *AP_InertialSensor_QFLIGHT::detect(AP_InertialSensor &_imu)
 {
     AP_InertialSensor_QFLIGHT *sensor = new AP_InertialSensor_QFLIGHT(_imu);
-    if (sensor == NULL) {
-        return NULL;
+    if (sensor == nullptr) {
+        return nullptr;
     }
     if (!sensor->init_sensor()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
     return sensor;
 }

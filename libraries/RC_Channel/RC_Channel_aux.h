@@ -21,7 +21,7 @@ public:
         RC_Channel(ch_out)
     {
         for (uint8_t i=0; i<RC_AUX_MAX_CHANNELS; i++) {
-            if (_aux_channels[i] == NULL) {
+            if (_aux_channels[i] == nullptr) {
                 _aux_channels[i] = this;
                 break;
             }

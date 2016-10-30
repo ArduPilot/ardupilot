@@ -45,7 +45,7 @@ void AP_AccelCal::update()
         }
         if(_start_collect_sample) {
             collect_sample();
-            _gcs->set_snoop(NULL);
+            _gcs->set_snoop(nullptr);
             _start_collect_sample = false;
         }
         switch(_status) {
@@ -55,7 +55,7 @@ void AP_AccelCal::update()
             case ACCEL_CAL_WAITING_FOR_ORIENTATION: {
                 // if we're waiting for orientation, first ensure that all calibrators are on the same step
                 uint8_t step;
-                if ((cal = get_calibrator(0)) == NULL) {
+                if ((cal = get_calibrator(0)) == nullptr) {
                     fail();
                     return;
                 }
@@ -153,7 +153,7 @@ void AP_AccelCal::update()
 
 void AP_AccelCal::start(GCS_MAVLINK *gcs)
 {
-    if (gcs == NULL || _started) {
+    if (gcs == nullptr || _started) {
         return;
     }
     _start_collect_sample = false;
@@ -218,7 +218,7 @@ void AP_AccelCal::clear()
         cal->clear();
     }
 
-    _gcs = NULL;
+    _gcs = nullptr;
 
     _step = 0;
     _started = false;
@@ -245,12 +245,12 @@ void AP_AccelCal::collect_sample()
         cal->collect_sample();
     }
     // setup snooping of packets so we can see the COMMAND_ACK
-    _gcs->set_snoop(NULL);
+    _gcs->set_snoop(nullptr);
     update_status();
 }
 
 void AP_AccelCal::register_client(AP_AccelCal_Client* client) {
-    if (client == NULL || _num_clients >= AP_ACCELCAL_MAX_NUM_CLIENTS) {
+    if (client == nullptr || _num_clients >= AP_ACCELCAL_MAX_NUM_CLIENTS) {
         return;
     }
 
@@ -274,7 +274,7 @@ AccelCalibrator* AP_AccelCal::get_calibrator(uint8_t index) {
             index--;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 void AP_AccelCal::update_status() {

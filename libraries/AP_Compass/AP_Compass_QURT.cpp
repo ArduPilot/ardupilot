@@ -34,12 +34,12 @@ AP_Compass_QURT::AP_Compass_QURT(Compass &compass):
 AP_Compass_Backend *AP_Compass_QURT::detect(Compass &compass)
 {
     AP_Compass_QURT *sensor = new AP_Compass_QURT(compass);
-    if (sensor == NULL) {
-        return NULL;
+    if (sensor == nullptr) {
+        return nullptr;
     }
     if (!sensor->init()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
     return sensor;
 }

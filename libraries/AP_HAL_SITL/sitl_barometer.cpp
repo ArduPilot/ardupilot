@@ -33,7 +33,7 @@ void SITL_State::_update_barometer(float altitude)
 
     float sim_alt = altitude;
 
-    if (_barometer == NULL) {
+    if (_barometer == nullptr) {
         // this sketch doesn't use a barometer
         return;
     }

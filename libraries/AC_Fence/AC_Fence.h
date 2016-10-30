@@ -156,7 +156,7 @@ private:
 
     // polygon fence variables
     AC_PolyFence_loader _poly_loader;               // helper for loading/saving polygon points
-    Vector2f        *_boundary = NULL;              // array of boundary points.  Note: point 0 is the return point
+    Vector2f        *_boundary = nullptr;           // array of boundary points.  Note: point 0 is the return point
     uint8_t         _boundary_num_points = 0;       // number of points in the boundary array (should equal _total parameter after load has completed)
     bool            _boundary_create_attempted = false; // true if we have attempted to create the boundary array
     bool            _boundary_loaded = false;       // true if boundary array has been loaded from eeprom

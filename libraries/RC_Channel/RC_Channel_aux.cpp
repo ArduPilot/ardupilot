@@ -88,7 +88,7 @@ void RC_Channel_aux::disable_aux_channel(uint8_t channel)
 {
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->_ch_out == channel) {
-            _aux_channels[i] = NULL;
+            _aux_channels[i] = nullptr;
         }
     }    
 }
@@ -165,7 +165,7 @@ void RC_Channel_aux::update_aux_servo_function(void)
 
     // set auxiliary ranges
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
-        if (_aux_channels[i] == NULL) continue;
+        if (_aux_channels[i] == nullptr) continue;
         _aux_channels[i]->aux_servo_function_setup();
 	}
     _initialised = true;

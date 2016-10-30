@@ -412,7 +412,7 @@ private:
     // grid spacing during rally check
     uint16_t last_rally_spacing;
 
-    char *file_path = NULL;    
+    char *file_path = nullptr;
 
     // status
     enum TerrainStatus system_status = TerrainStatusDisabled;

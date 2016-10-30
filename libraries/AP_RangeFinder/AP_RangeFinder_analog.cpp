@@ -35,7 +35,7 @@ AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder &_ranger, uint8_t insta
     AP_RangeFinder_Backend(_ranger, instance, _state)
 {
     source = hal.analogin->channel(ranger._pin[instance]);
-    if (source == NULL) {
+    if (source == nullptr) {
         // failed to allocate a ADC channel? This shouldn't happen
         set_status(RangeFinder::RangeFinder_NotConnected);
         return;
@@ -64,7 +64,7 @@ bool AP_RangeFinder_analog::detect(RangeFinder &_ranger, uint8_t instance)
  */
 void AP_RangeFinder_analog::update_voltage(void)
 {
-   if (source == NULL) {
+   if (source == nullptr) {
        state.voltage_mv = 0;
        return;
    }

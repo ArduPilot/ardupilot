@@ -31,7 +31,7 @@ void NSHShellStream::shell_thread(void *arg)
     dup2(nsh->child.out, 1);
     dup2(nsh->child.out, 2);
 
-    nsh_consolemain(0, NULL);    
+    nsh_consolemain(0, nullptr);
 
     nsh->shell_stdin  = -1;
     nsh->shell_stdout = -1;

@@ -278,7 +278,7 @@ public:
     }
 
     // allow array indexing, based on current head. Returns a pointer
-    // to the object or NULL
+    // to the object or nullptr
     T * operator[](uint16_t i) {
         if (i >= count) {
             return nullptr;

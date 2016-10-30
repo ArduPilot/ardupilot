@@ -87,7 +87,7 @@ void OpticalFlow::init(void)
 #endif
     }
 
-    if (backend != NULL) {
+    if (backend != nullptr) {
         backend->init();
     } else {
         _enabled = 0;
@@ -96,7 +96,7 @@ void OpticalFlow::init(void)
 
 void OpticalFlow::update(void)
 {
-    if (backend != NULL) {
+    if (backend != nullptr) {
         backend->update();
     }
     // only healthy if the data is less than 0.5s old

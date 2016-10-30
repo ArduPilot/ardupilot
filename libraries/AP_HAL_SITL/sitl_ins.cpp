@@ -154,7 +154,7 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
                              double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
                              float airspeed,	float altitude)
 {
-    if (_ins == NULL) {
+    if (_ins == nullptr) {
         // no inertial sensor in this sketch
         return;
     }

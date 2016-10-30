@@ -143,7 +143,7 @@ void DFMessageWriter_WriteEntireMission::process() {
     switch(stage) {
 
     case em_blockwriter_stage_init:
-        if (_mission == NULL) {
+        if (_mission == nullptr) {
             stage = em_blockwriter_stage_done;
             break;
         } else {

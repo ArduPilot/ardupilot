@@ -125,10 +125,10 @@ AP_Avoidance::AP_Avoidance(AP_AHRS &ahrs, AP_ADSB &adsb) :
 void AP_Avoidance::init(void)
 {
     debug("ADSB initialisation: %d obstacles", _obstacles_max.get());
-    if (_obstacles == NULL) {
+    if (_obstacles == nullptr) {
         _obstacles = new AP_Avoidance::Obstacle[_obstacles_max];
 
-        if (_obstacles == NULL) {
+        if (_obstacles == nullptr) {
             // dynamic RAM allocation of _obstacles[] failed, disable gracefully
             hal.console->printf("Unable to initialize Avoidance obstacle list\n");
             // disable ourselves to avoid repeated allocation attempts

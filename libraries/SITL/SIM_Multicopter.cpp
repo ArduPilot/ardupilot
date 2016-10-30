@@ -25,12 +25,12 @@ using namespace SITL;
 
 MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
-    frame(NULL)
+    frame(nullptr)
 {
     mass = 1.5f;
 
     frame = Frame::find_frame(frame_str);
-    if (frame == NULL) {
+    if (frame == nullptr) {
         printf("Frame '%s' not found", frame_str);
         exit(1);
     }

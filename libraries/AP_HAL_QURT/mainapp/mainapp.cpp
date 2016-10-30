@@ -84,7 +84,7 @@ static void get_storage(void)
  */
 static void socket_check(void)
 {
-    static const char *bcast = NULL;
+    static const char *bcast = nullptr;
     uint8_t buf[300];
     ssize_t ret = sock.recv(buf, sizeof(buf), 0);
     if (ret > 0) {
@@ -102,9 +102,9 @@ static void socket_check(void)
         }
     }
     uint32_t nbytes;
-    if (bcast == NULL) {
+    if (bcast == nullptr) {
         bcast = get_ipv4_broadcast();
-        if (bcast == NULL) {
+        if (bcast == nullptr) {
             bcast = "255.255.255.255";
         }
         printf("Broadcasting to %s\n", bcast);

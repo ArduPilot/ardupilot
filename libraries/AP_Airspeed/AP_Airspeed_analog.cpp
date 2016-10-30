@@ -37,7 +37,7 @@ bool AP_Airspeed_Analog::init()
 // read the airspeed sensor
 bool AP_Airspeed_Analog::get_differential_pressure(float &pressure)
 {
-    if (_source == NULL) {
+    if (_source == nullptr) {
         return false;
     }
     _source->set_pin(_pin);

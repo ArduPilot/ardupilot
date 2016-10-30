@@ -29,7 +29,7 @@ const extern AP_HAL::HAL& hal;
 
 AccelCalibrator::AccelCalibrator() :
 _conf_tolerance(ACCEL_CAL_TOLERANCE),
-_sample_buffer(NULL)
+_sample_buffer(nullptr)
 {
     clear();
 }
@@ -239,7 +239,7 @@ void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag, Vector3f
  */
 bool AccelCalibrator::accept_sample(const Vector3f& sample)
 {
-    if (_sample_buffer == NULL) {
+    if (_sample_buffer == nullptr) {
         return false;
     }
 
@@ -262,9 +262,9 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
             _status = ACCEL_CAL_NOT_STARTED;
 
             _samples_collected = 0;
-            if (_sample_buffer != NULL) {
+            if (_sample_buffer != nullptr) {
                 free(_sample_buffer);
-                _sample_buffer = NULL;
+                _sample_buffer = nullptr;
             }
 
             break;
@@ -273,9 +273,9 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
             //Callibrator has been started and is waiting for user to ack after orientation setting
             if (!running()) {
                 _samples_collected = 0;
-                if (_sample_buffer == NULL) {
+                if (_sample_buffer == nullptr) {
                     _sample_buffer = (struct AccelSample*)calloc(_conf_num_samples,sizeof(struct AccelSample));
-                    if (_sample_buffer == NULL) {
+                    if (_sample_buffer == nullptr) {
                         set_status(ACCEL_CAL_FAILED);
                         break;
                     }
@@ -325,7 +325,7 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
 */
 void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
 {
-    if (_sample_buffer == NULL) {
+    if (_sample_buffer == nullptr) {
         return;
     }
     fitness = calc_mean_squared_residuals(_param.s);
@@ -407,7 +407,7 @@ float AccelCalibrator::calc_mean_squared_residuals() const
 // supplied
 float AccelCalibrator::calc_mean_squared_residuals(const struct param_t& params) const
 {
-    if (_sample_buffer == NULL || _samples_collected == 0) {
+    if (_sample_buffer == nullptr || _samples_collected == 0) {
         return 1.0e30f;
     }
     float sum = 0.0f;

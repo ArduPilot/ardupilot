@@ -51,7 +51,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     gyro_noise(radians(0.1f)),
     accel_noise(0.3),
     rate_hz(1200),
-    autotest_dir(NULL),
+    autotest_dir(nullptr),
     frame(frame_str),
 #ifdef __CYGWIN__
     min_sleep_time(20000)
@@ -81,7 +81,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
  */
 bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degrees)
 {
-    char *saveptr=NULL;
+    char *saveptr=nullptr;
     char *s = strdup(home_str);
     if (!s) {
         return false;
@@ -91,28 +91,28 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
         free(s);
         return false;
     }
-    char *lon_s = strtok_r(NULL, ",", &saveptr);
+    char *lon_s = strtok_r(nullptr, ",", &saveptr);
     if (!lon_s) {
         free(s);
         return false;
     }
-    char *alt_s = strtok_r(NULL, ",", &saveptr);
+    char *alt_s = strtok_r(nullptr, ",", &saveptr);
     if (!alt_s) {
         free(s);
         return false;
     }
-    char *yaw_s = strtok_r(NULL, ",", &saveptr);
+    char *yaw_s = strtok_r(nullptr, ",", &saveptr);
     if (!yaw_s) {
         free(s);
         return false;
     }
 
     memset(&loc, 0, sizeof(loc));
-    loc.lat = strtof(lat_s, NULL) * 1.0e7;
-    loc.lng = strtof(lon_s, NULL) * 1.0e7;
-    loc.alt = strtof(alt_s, NULL) * 1.0e2;
+    loc.lat = strtof(lat_s, nullptr) * 1.0e7;
+    loc.lng = strtof(lon_s, nullptr) * 1.0e7;
+    loc.alt = strtof(alt_s, nullptr) * 1.0e2;
 
-    yaw_degrees = strtof(yaw_s, NULL);
+    yaw_degrees = strtof(yaw_s, nullptr);
     free(s);
 
     return true;
@@ -386,7 +386,7 @@ uint64_t Aircraft::get_wall_time_us() const
     return last_ret_us;
 #else
     struct timeval tp;
-    gettimeofday(&tp,NULL);
+    gettimeofday(&tp,nullptr);
     return tp.tv_sec*1.0e6 + tp.tv_usec;
 #endif
 }

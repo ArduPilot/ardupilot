@@ -14,12 +14,12 @@ AP_InertialSensor_HIL::AP_InertialSensor_HIL(AP_InertialSensor &imu) :
 AP_InertialSensor_Backend *AP_InertialSensor_HIL::detect(AP_InertialSensor &_imu)
 {
     AP_InertialSensor_HIL *sensor = new AP_InertialSensor_HIL(_imu);
-    if (sensor == NULL) {
-        return NULL;
+    if (sensor == nullptr) {
+        return nullptr;
     }
     if (!sensor->_init_sensor()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
     return sensor;
 }

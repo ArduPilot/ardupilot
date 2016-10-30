@@ -147,7 +147,7 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
     // stack-allocate a buffer so we can WriteBlock(); this could be
     // 255 bytes!  If we were willing to lose the WriteBlock
     // abstraction we could do WriteBytes() here instead?
-    const char *fmt  = NULL;
+    const char *fmt  = nullptr;
     uint8_t msg_len;
     DataFlash_Class::log_write_fmt *f;
     for (f = _front.log_write_fmts; f; f=f->next) {
@@ -157,7 +157,7 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
             break;
         }
     }
-    if (fmt == NULL) {
+    if (fmt == nullptr) {
         // this is a bug.
         internal_error();
         return false;

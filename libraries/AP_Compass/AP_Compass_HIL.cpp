@@ -36,12 +36,12 @@ AP_Compass_HIL::AP_Compass_HIL(Compass &compass):
 AP_Compass_Backend *AP_Compass_HIL::detect(Compass &compass)
 {
     AP_Compass_HIL *sensor = new AP_Compass_HIL(compass);
-    if (sensor == NULL) {
-        return NULL;
+    if (sensor == nullptr) {
+        return nullptr;
     }
     if (!sensor->init()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
     return sensor;
 }

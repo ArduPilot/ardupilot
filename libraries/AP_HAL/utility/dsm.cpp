@@ -506,7 +506,7 @@ int main(int argc, const char *argv[])
         tv.tv_usec = 0;
 
         // check if any bytes are available
-        if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
+        if (select(fd+1, &fds, nullptr, nullptr, &tv) != 1) {
             break;
         }
 

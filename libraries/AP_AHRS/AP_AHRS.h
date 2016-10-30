@@ -54,9 +54,9 @@ public:
         pitch_sensor(0),
         yaw_sensor(0),
         _vehicle_class(AHRS_VEHICLE_UNKNOWN),
-        _compass(NULL),
-        _optflow(NULL),
-        _airspeed(NULL),
+        _compass(nullptr),
+        _optflow(nullptr),
+        _airspeed(nullptr),
         _compass_last_update(0),
         _ins(ins),
         _baro(baro),
@@ -140,7 +140,7 @@ public:
     // this makes initial config easier
     void set_orientation() {
         _ins.set_board_orientation((enum Rotation)_board_orientation.get());
-        if (_compass != NULL) {
+        if (_compass != nullptr) {
             _compass->set_board_orientation((enum Rotation)_board_orientation.get());
         }
     }
@@ -278,7 +278,7 @@ public:
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const {
-        return _airspeed != NULL && _airspeed->use() && _airspeed->healthy();
+        return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
     }
 
     // return a ground vector estimate in meters/second, in North/East order

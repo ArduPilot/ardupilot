@@ -324,7 +324,7 @@ void AP_Baro::init(void)
     _num_drivers = 1;
 #endif
 
-    if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == NULL) {
+    if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_HAL::panic("Baro: unable to initialise driver");
     }
 }

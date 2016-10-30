@@ -39,8 +39,8 @@ PWM_Sysfs_Base::PWM_Sysfs_Base(char* export_path, char* polarity_path,
     , _duty_path(duty_path)
     , _period_path(period_path)
 {
-    if (_export_path == NULL || _enable_path == NULL ||
-        _period_path == NULL || _duty_path == NULL) {
+    if (_export_path == nullptr || _enable_path == nullptr ||
+        _period_path == nullptr || _duty_path == nullptr) {
         AP_HAL::panic("PWM_Sysfs: export=%p enable=%p period=%p duty=%p"
                       " required path is NULL", _export_path, _enable_path,
                       _period_path, _duty_path);
@@ -269,7 +269,7 @@ char *PWM_Sysfs_Bebop::_generate_period_path(uint8_t channel)
 
 PWM_Sysfs_Bebop::PWM_Sysfs_Bebop(uint8_t channel) :
     PWM_Sysfs_Base(_generate_export_path(),
-                   NULL,
+                   nullptr,
                    _generate_enable_path(channel),
                    _generate_duty_path(channel),
                    _generate_period_path(channel),

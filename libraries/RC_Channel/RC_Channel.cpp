@@ -198,7 +198,7 @@ void
 RC_Channel::set_pwm_all(void)
 {
     for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
-        if (_rc_ch[i] != NULL) {
+        if (_rc_ch[i] != nullptr) {
             _rc_ch[i]->set_pwm(_rc_ch[i]->read());
         }
     }
@@ -490,7 +490,7 @@ void RC_Channel::output_trim()
 void RC_Channel::output_trim_all()
 {
     for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
-        if (_rc_ch[i] != NULL) {
+        if (_rc_ch[i] != nullptr) {
             _rc_ch[i]->output_trim();
         }
     }
@@ -502,7 +502,7 @@ void RC_Channel::output_trim_all()
 void RC_Channel::setup_failsafe_trim_mask(uint16_t chmask)
 {
     for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
-        if (_rc_ch[i] != NULL && ((1U<<i)&chmask)) {
+        if (_rc_ch[i] != nullptr && ((1U<<i)&chmask)) {
             hal.rcout->set_failsafe_pwm(1U<<i, _rc_ch[i]->_radio_trim);
         }
     }
@@ -543,7 +543,7 @@ RC_Channel::disable_out()
 RC_Channel *RC_Channel::rc_channel(uint8_t i)
 {
     if (i >= RC_MAX_CHANNELS) {
-        return NULL;
+        return nullptr;
     }
     return _rc_ch[i];
 }

@@ -41,8 +41,8 @@ JSBSim::JSBSim(const char *home_str, const char *frame_str) :
     sock_control(false),
     sock_fgfdm(true),
     initialised(false),
-    jsbsim_script(NULL),
-    jsbsim_fgout(NULL),
+    jsbsim_script(nullptr),
+    jsbsim_fgout(nullptr),
     created_templates(false),
     started_jsbsim(false),
     opened_control_socket(false),
@@ -57,7 +57,7 @@ JSBSim::JSBSim(const char *home_str, const char *frame_str) :
         frame = FRAME_NORMAL;
     }
     const char *model_name = strchr(frame_str, ':');
-    if (model_name != NULL) {
+    if (model_name != nullptr) {
         jsbsim_model = model_name + 1;
     }
 }
@@ -77,7 +77,7 @@ bool JSBSim::create_templates(void)
     asprintf(&jsbsim_fgout,  "%s/jsbsim_fgout_%u.xml", autotest_dir, instance);
 
     FILE *f = fopen(jsbsim_script, "w");
-    if (f == NULL) {
+    if (f == nullptr) {
         AP_HAL::panic("Unable to create jsbsim script %s", jsbsim_script);
     }
     fprintf(f,
@@ -122,7 +122,7 @@ bool JSBSim::create_templates(void)
     fclose(f);
 
     f = fopen(jsbsim_fgout, "w");
-    if (f == NULL) {
+    if (f == nullptr) {
         AP_HAL::panic("Unable to create jsbsim fgout script %s", jsbsim_fgout);
     }
     fprintf(f, "<?xml version=\"1.0\"?>\n"
@@ -133,7 +133,7 @@ bool JSBSim::create_templates(void)
     char *jsbsim_reset;
     asprintf(&jsbsim_reset, "%s/aircraft/%s/reset.xml", autotest_dir, jsbsim_model);
     f = fopen(jsbsim_reset, "w");
-    if (f == NULL) {
+    if (f == nullptr) {
         AP_HAL::panic("Unable to create jsbsim reset script %s", jsbsim_reset);
     }
     float r, p, y;
@@ -206,7 +206,7 @@ bool JSBSim::start_JSBSim(void)
                          "--simulation-rate=1000",
                          logdirective,
                          script,
-                         NULL);
+                         nullptr);
         if (ret != 0) {
             perror("JSBSim");
         }
@@ -321,7 +321,7 @@ bool JSBSim::open_fdm_socket(void)
 */
 void JSBSim::send_servos(const struct sitl_input &input)
 {
-    char *buf = NULL;
+    char *buf = nullptr;
     float aileron  = filtered_servo_angle(input, 0);
     float elevator = filtered_servo_angle(input, 1);
     float throttle = filtered_servo_range(input, 2);

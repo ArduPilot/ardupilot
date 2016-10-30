@@ -323,7 +323,7 @@ void Scheduler::_timer_task()
     _timer_semaphore.give();
 
     // and the failsafe, if one is setup
-    if (_failsafe != NULL) {
+    if (_failsafe != nullptr) {
         _failsafe();
     }
 

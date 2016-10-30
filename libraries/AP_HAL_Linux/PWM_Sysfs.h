@@ -46,11 +46,11 @@ protected:
 private:
     uint32_t _nsec_duty_cycle_value = 0;
     int _duty_cycle_fd = -1;
-    char *_export_path = NULL;
-    char *_polarity_path = NULL;
-    char *_enable_path = NULL;
-    char *_duty_path = NULL;
-    char *_period_path = NULL;
+    char *_export_path = nullptr;
+    char *_polarity_path = nullptr;
+    char *_enable_path = nullptr;
+    char *_duty_path = nullptr;
+    char *_period_path = nullptr;
 };
 
 class PWM_Sysfs : public PWM_Sysfs_Base {

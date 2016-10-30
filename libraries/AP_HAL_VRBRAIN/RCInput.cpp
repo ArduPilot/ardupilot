@@ -20,7 +20,7 @@ void VRBRAINRCInput::init()
 		AP_HAL::panic("Unable to subscribe to input_rc");
 	}
 	clear_overrides();
-        pthread_mutex_init(&rcin_mutex, NULL);
+        pthread_mutex_init(&rcin_mutex, nullptr);
 }
 
 bool VRBRAINRCInput::new_input() 

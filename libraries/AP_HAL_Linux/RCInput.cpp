@@ -320,7 +320,7 @@ void RCInput::_process_rc_pulse(uint16_t width_s0, uint16_t width_s1)
 #if 0
     // useful for debugging
     static FILE *rclog;
-    if (rclog == NULL) {
+    if (rclog == nullptr) {
         rclog = fopen("/tmp/rcin.log", "w");
     }
     if (rclog) {
