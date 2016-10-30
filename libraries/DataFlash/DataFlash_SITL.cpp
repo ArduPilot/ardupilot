@@ -31,11 +31,11 @@ void DataFlash_SITL::Init()
 {
     DataFlash_Backend::Init();
 	if (flash_fd == 0) {
-		flash_fd = open("dataflash.bin", O_RDWR, 0777);
+		flash_fd = open("dataflash.bin", O_RDWR|O_CLOEXEC, 0777);
 		if (flash_fd == -1) {
 			uint8_t *fill;
 			fill = (uint8_t *)malloc(DF_PAGE_SIZE*DF_NUM_PAGES);
-			flash_fd = open("dataflash.bin", O_RDWR | O_CREAT, 0777);
+			flash_fd = open("dataflash.bin", O_RDWR | O_CREAT | O_CLOEXEC, 0777);
 			memset(fill, 0xFF, DF_PAGE_SIZE*DF_NUM_PAGES);
 			write(flash_fd, fill, DF_PAGE_SIZE*DF_NUM_PAGES);
 			free(fill);
