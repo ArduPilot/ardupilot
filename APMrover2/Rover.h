@@ -363,9 +363,11 @@ private:
     static const LogStructure log_structure[];
 
     // Loiter control
-    uint16_t loiter_time_max; // How long we should loiter at the nav_waypoint (time in seconds)
-    uint32_t loiter_time;     // How long have we been loitering - The start time in millis
+    uint16_t loiter_duration; // How long we should loiter at the nav_waypoint (time in seconds)
+    uint32_t loiter_start_time;     // How long have we been loitering - The start time in millis
+    bool active_loiter; // TRUE if we actively return to the loitering waypoint if we drift off
     float distance_past_wp; // record the distance we have gone past the wp
+    bool previously_reached_wp;  // set to true if we have EVER reached the waypoint
 
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
@@ -522,8 +524,10 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_loiter_unlim();
+    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
@@ -540,6 +544,9 @@ private:
     void update_home();
     void accel_cal_update(void);
     void nav_set_yaw_speed();
+    bool in_stationary_loiter(void);
+    void set_loiter_active(const AP_Mission::Mission_Command& cmd);
+
 public:
     bool print_log_menu(void);
     int8_t dump_log(uint8_t argc, const Menu::arg *argv);

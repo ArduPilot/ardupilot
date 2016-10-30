@@ -271,7 +271,7 @@ void Rover::set_mode(enum mode mode)
 
     // If we are changing out of AUTO mode reset the loiter timer
     if (control_mode == AUTO) {
-        loiter_time = 0;
+        loiter_start_time = 0;
     }
 
     control_mode = mode;
