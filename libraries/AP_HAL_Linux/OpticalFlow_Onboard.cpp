@@ -342,7 +342,7 @@ void OpticalFlow_Onboard::_run_optflow()
         gyro_rate.z = rate_z;
 
 #ifdef OPTICALFLOW_ONBOARD_RECORD_VIDEO
-        int fd = open(OPTICALFLOW_ONBOARD_VIDEO_FILE, O_CREAT | O_WRONLY
+        int fd = open(OPTICALFLOW_ONBOARD_VIDEO_FILE, O_CLOEXEC | O_CREAT | O_WRONLY
                 | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP |
                 S_IWGRP | S_IROTH | S_IWOTH);
 	    if (fd != -1) {

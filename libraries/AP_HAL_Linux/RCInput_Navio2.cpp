@@ -65,7 +65,7 @@ int RCInput_Navio2::open_channel(int channel)
         AP_HAL::panic("[RCInput_Navio2]: not enough memory\n");
     }
 
-    int fd = ::open(channel_path, O_RDONLY);
+    int fd = ::open(channel_path, O_RDONLY|O_CLOEXEC);
 
     free(channel_path);
 

@@ -68,7 +68,7 @@ bool VideoIn::open_device(const char *device_path, uint32_t memtype)
 
     _fd = -1;
     _buffers = nullptr;
-    _fd = open(device_path, O_RDWR);
+    _fd = open(device_path, O_RDWR|O_CLOEXEC);
     _memtype = memtype;
     if (_fd < 0) {
         hal.console->printf("Error opening device %s: %s (%d).\n",

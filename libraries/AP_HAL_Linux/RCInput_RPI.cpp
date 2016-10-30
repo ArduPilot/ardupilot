@@ -109,12 +109,12 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     _phys_pages = (void**)malloc(page_count * sizeof(void*));
     _page_count = page_count;
  
-    if ((fdMem = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
+    if ((fdMem = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC)) < 0) {
         fprintf(stderr,"Failed to open /dev/mem\n");
         exit(-1);
     }
 
-    if ((file = open("/proc/self/pagemap", O_RDWR | O_SYNC)) < 0) {
+    if ((file = open("/proc/self/pagemap", O_RDWR | O_SYNC | O_CLOEXEC)) < 0) {
         fprintf(stderr,"Failed to open /proc/self/pagemap\n");
         exit(-1);
     }
@@ -216,7 +216,7 @@ void RCInput_RPI::set_physical_addresses(int version)
 //Map peripheral to virtual memory
 void* RCInput_RPI::map_peripheral(uint32_t base, uint32_t len)
 {
-    int fd = open("/dev/mem", O_RDWR);
+    int fd = open("/dev/mem", O_RDWR | O_CLOEXEC);
     void * vaddr;
 
     if (fd < 0) {

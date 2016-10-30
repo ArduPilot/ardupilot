@@ -35,7 +35,7 @@ void AnalogSource_IIO::init_pins(void)
         strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
         strncat(buf, AnalogSource_IIO::analog_sources[i], sizeof(buf) - strlen(buf) - 1);
 
-        fd_analog_sources[i] = open(buf, O_RDONLY | O_NONBLOCK);
+        fd_analog_sources[i] = open(buf, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     }
 }
 

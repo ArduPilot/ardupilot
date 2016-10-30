@@ -38,7 +38,7 @@ using namespace Linux;
 
 void RCInput_SBUS::init()
 {
-    fd = open(device_path, O_RDWR | O_NONBLOCK);
+    fd = open(device_path, O_RDWR | O_NONBLOCK | O_CLOEXEC);
     if (fd != -1) {
         printf("Opened SBUS input %s fd=%d\n", device_path, (int)fd);
         fflush(stdout);
@@ -107,7 +107,7 @@ void RCInput_SBUS::_timer_tick(void)
 #if SBUS_DEBUG_LOG
     static int logfd = -1;
     if (logfd == -1) {
-        logfd = open("sbus.log", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        logfd = open("sbus.log", O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0644);
     }
 #endif
 

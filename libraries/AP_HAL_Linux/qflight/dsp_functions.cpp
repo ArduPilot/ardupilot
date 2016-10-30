@@ -275,7 +275,7 @@ int qflight_UART_open(const char *device, int32_t *_fd)
         return -1;
     }
     struct uartbuf &b = uarts[num_open_uarts];
-    int fd = open(device, O_RDWR | O_NONBLOCK);
+    int fd = open(device, O_RDWR | O_NONBLOCK|O_CLOEXEC);
     if (fd == -1) {
         return -1;
     }
