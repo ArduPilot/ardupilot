@@ -156,7 +156,7 @@ uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,
 	const uint8_t  DescriptorType   = (wValue >> 8);
 	const uint8_t  DescriptorNumber = (wValue & 0xFF);
 
-	void*    Address = nullptr;
+	void*    Address = NULL;
 	uint16_t Size    = NO_DESCRIPTOR;
 
 	switch (DescriptorType)

@@ -43,7 +43,7 @@ main(int argc, char *argv[])
     if (argc != 2) {
         fail("missing EEPROM file name");
     }
-    if (nullptr == (fp = fopen(argv[1], "rb"))) {
+    if (NULL == (fp = fopen(argv[1], "rb"))) {
         fail("can't open EEPROM file");
     }
     if (1 != fread(eeprom, sizeof(eeprom), 1, fp)) {
