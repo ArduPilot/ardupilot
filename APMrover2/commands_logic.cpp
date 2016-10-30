@@ -20,102 +20,102 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
     // remember the course of our next navigation leg
     next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
 
-	switch(cmd.id){
-		case MAV_CMD_NAV_WAYPOINT:	// Navigate to Waypoint
-			do_nav_wp(cmd);
-			break;
+    switch (cmd.id) {
+    case MAV_CMD_NAV_WAYPOINT:	// Navigate to Waypoint
+        do_nav_wp(cmd);
+        break;
 
-		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-			do_RTL();
-			break;
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        do_RTL();
+        break;
 
-        case MAV_CMD_NAV_LOITER_UNLIM:              // Loiter indefinitely
-            do_loiter_unlimited(cmd);
-            break;
+    case MAV_CMD_NAV_LOITER_UNLIM:              // Loiter indefinitely
+        do_loiter_unlimited(cmd);
+        break;
 
-        // Conditional commands
-		case MAV_CMD_CONDITION_DELAY:
-			do_wait_delay(cmd);
-			break;
+    // Conditional commands
+    case MAV_CMD_CONDITION_DELAY:
+        do_wait_delay(cmd);
+        break;
 
-		case MAV_CMD_CONDITION_DISTANCE:
-			do_within_distance(cmd);
-			break;
+    case MAV_CMD_CONDITION_DISTANCE:
+        do_within_distance(cmd);
+        break;
 
-        // Do commands
-		case MAV_CMD_DO_CHANGE_SPEED:
-			do_change_speed(cmd);
-			break;
+    // Do commands
+    case MAV_CMD_DO_CHANGE_SPEED:
+        do_change_speed(cmd);
+        break;
 
-		case MAV_CMD_DO_SET_HOME:
-			do_set_home(cmd);
-			break;
+    case MAV_CMD_DO_SET_HOME:
+        do_set_home(cmd);
+        break;
 
-    	case MAV_CMD_DO_SET_SERVO:
-            ServoRelayEvents.do_set_servo(cmd.content.servo.channel, cmd.content.servo.pwm);
-            break;
+    case MAV_CMD_DO_SET_SERVO:
+        ServoRelayEvents.do_set_servo(cmd.content.servo.channel, cmd.content.servo.pwm);
+        break;
 
-    	case MAV_CMD_DO_SET_RELAY:
-            ServoRelayEvents.do_set_relay(cmd.content.relay.num, cmd.content.relay.state);
-            break;
+    case MAV_CMD_DO_SET_RELAY:
+        ServoRelayEvents.do_set_relay(cmd.content.relay.num, cmd.content.relay.state);
+        break;
 
-    	case MAV_CMD_DO_REPEAT_SERVO:
-            ServoRelayEvents.do_repeat_servo(cmd.content.repeat_servo.channel, cmd.content.repeat_servo.pwm,
-                                             cmd.content.repeat_servo.repeat_count, cmd.content.repeat_servo.cycle_time * 1000.0f);
-            break;
+    case MAV_CMD_DO_REPEAT_SERVO:
+        ServoRelayEvents.do_repeat_servo(cmd.content.repeat_servo.channel, cmd.content.repeat_servo.pwm,
+                                         cmd.content.repeat_servo.repeat_count, cmd.content.repeat_servo.cycle_time * 1000.0f);
+        break;
 
-    	case MAV_CMD_DO_REPEAT_RELAY:
-            ServoRelayEvents.do_repeat_relay(cmd.content.repeat_relay.num, cmd.content.repeat_relay.repeat_count,
-                                             cmd.content.repeat_relay.cycle_time * 1000.0f);
-            break;
+    case MAV_CMD_DO_REPEAT_RELAY:
+        ServoRelayEvents.do_repeat_relay(cmd.content.repeat_relay.num, cmd.content.repeat_relay.repeat_count,
+                                         cmd.content.repeat_relay.cycle_time * 1000.0f);
+        break;
 
 #if CAMERA == ENABLED
-        case MAV_CMD_DO_CONTROL_VIDEO:                      // Control on-board camera capturing. |Camera ID (-1 for all)| Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw| Transmission mode: 0: video stream, >0: single images every n seconds (decimal)| Recording: 0: disabled, 1: enabled compressed, 2: enabled raw| Empty| Empty| Empty|
-            break;
+    case MAV_CMD_DO_CONTROL_VIDEO:                      // Control on-board camera capturing. |Camera ID (-1 for all)| Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw| Transmission mode: 0: video stream, >0: single images every n seconds (decimal)| Recording: 0: disabled, 1: enabled compressed, 2: enabled raw| Empty| Empty| Empty|
+        break;
 
-        case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // Mission command to configure an on-board camera controller system. |Modes: P, TV, AV, M, Etc| Shutter speed: Divisor number for one second| Aperture: F stop number| ISO number e.g. 80, 100, 200, Etc| Exposure type enumerator| Command Identity| Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)|
-            do_digicam_configure(cmd);
-            break;
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // Mission command to configure an on-board camera controller system. |Modes: P, TV, AV, M, Etc| Shutter speed: Divisor number for one second| Aperture: F stop number| ISO number e.g. 80, 100, 200, Etc| Exposure type enumerator| Command Identity| Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)|
+        do_digicam_configure(cmd);
+        break;
 
-        case MAV_CMD_DO_DIGICAM_CONTROL:                    // Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
-            do_digicam_control(cmd);
-            break;
+    case MAV_CMD_DO_DIGICAM_CONTROL:                    // Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
+        do_digicam_control(cmd);
+        break;
 
-        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-            camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
-            break;
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
+        break;
 #endif
 
 #if MOUNT == ENABLED
-		// Sets the region of interest (ROI) for a sensor set or the
-		// vehicle itself. This can then be used by the vehicles control
-		// system to control the vehicle attitude and the attitude of various
-		// devices such as cameras.
-		//    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
-        case MAV_CMD_DO_SET_ROI:
-            if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
-                // switch off the camera tracking if enabled
-                if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                    camera_mount.set_mode_to_default();
-                }
-            } else {
-                // send the command to the camera mount
-                camera_mount.set_roi_target(cmd.content.location);
+    // Sets the region of interest (ROI) for a sensor set or the
+    // vehicle itself. This can then be used by the vehicles control
+    // system to control the vehicle attitude and the attitude of various
+    // devices such as cameras.
+    //    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
+    case MAV_CMD_DO_SET_ROI:
+        if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
+            // switch off the camera tracking if enabled
+            if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+                camera_mount.set_mode_to_default();
             }
-            break;
+        } else {
+            // send the command to the camera mount
+            camera_mount.set_roi_target(cmd.content.location);
+        }
+        break;
 #endif
 
-        case MAV_CMD_DO_SET_REVERSE:
-            do_set_reverse(cmd);
-            break;
+    case MAV_CMD_DO_SET_REVERSE:
+        do_set_reverse(cmd);
+        break;
 
-		default:
-		    // return false for unhandled commands
-		    return false;
-	}
+    default:
+        // return false for unhandled commands
+        return false;
+    }
 
-	// if we got this far we must have been successful
-	return true;
+    // if we got this far we must have been successful
+    return true;
 }
 
 // exit_mission - callback function called from ap-mission when the mission has completed
@@ -156,44 +156,44 @@ Return true if we do not recognize the command so that we move on to the next co
 
 bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 {
-	switch(cmd.id) {
+    switch (cmd.id) {
 
-		case MAV_CMD_NAV_WAYPOINT:
-			return verify_nav_wp(cmd);
+    case MAV_CMD_NAV_WAYPOINT:
+        return verify_nav_wp(cmd);
 
-		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-			return verify_RTL();
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        return verify_RTL();
 
-        case MAV_CMD_NAV_LOITER_UNLIM:
-            return verify_loiter_unlim();
+    case MAV_CMD_NAV_LOITER_UNLIM:
+        return verify_loiter_unlim();
 
-        case MAV_CMD_CONDITION_DELAY:
-            return verify_wait_delay();
+    case MAV_CMD_CONDITION_DELAY:
+        return verify_wait_delay();
 
-        case MAV_CMD_CONDITION_DISTANCE:
-            return verify_within_distance();
+    case MAV_CMD_CONDITION_DISTANCE:
+        return verify_within_distance();
 
-        // do commands (always return true)
-        case MAV_CMD_DO_CHANGE_SPEED:
-        case MAV_CMD_DO_SET_HOME:
-        case MAV_CMD_DO_SET_SERVO:
-        case MAV_CMD_DO_SET_RELAY:
-        case MAV_CMD_DO_REPEAT_SERVO:
-        case MAV_CMD_DO_REPEAT_RELAY:
-        case MAV_CMD_DO_CONTROL_VIDEO:
-        case MAV_CMD_DO_DIGICAM_CONFIGURE:
-        case MAV_CMD_DO_DIGICAM_CONTROL:
-        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-        case MAV_CMD_DO_SET_ROI:
-        case MAV_CMD_DO_SET_REVERSE:
-            return true;
+    // do commands (always return true)
+    case MAV_CMD_DO_CHANGE_SPEED:
+    case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_REPEAT_RELAY:
+    case MAV_CMD_DO_CONTROL_VIDEO:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_DO_SET_REVERSE:
+        return true;
 
-        default:
-            // error message
-            gcs_send_text_fmt(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
-            // return true if we do not recognize the command so that we move on to the next command
-            return true;
-	}
+    default:
+        // error message
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
+        // return true if we do not recognize the command so that we move on to the next command
+        return true;
+    }
 
 }
 
@@ -204,8 +204,8 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 void Rover::do_RTL(void)
 {
     prev_WP = current_loc;
-	control_mode 	= RTL;
-	next_WP = home;
+    control_mode 	= RTL;
+    next_WP = home;
 }
 
 void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
@@ -218,7 +218,7 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this is the distance we travel past the waypoint - not there yet so 0 initially
     distance_past_wp = 0;
 
-	set_next_WP(cmd.content.location);
+    set_next_WP(cmd.content.location);
 }
 
 void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
@@ -283,11 +283,11 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Rover::verify_RTL()
 {
-	if (wp_distance <= g.waypoint_radius) {
-		gcs_send_text(MAV_SEVERITY_INFO,"Reached destination");
-                rtl_complete = true;
-		return true;
-	}
+    if (wp_distance <= g.waypoint_radius) {
+        gcs_send_text(MAV_SEVERITY_INFO,"Reached destination");
+        rtl_complete = true;
+        return true;
+    }
 
     // have we gone past the waypoint?
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
@@ -310,8 +310,7 @@ bool Rover::verify_loiter_unlim()
 void Rover::nav_set_yaw_speed()
 {
     // if we haven't received a MAV_CMD_NAV_SET_YAW_SPEED message within the last 3 seconds bring the rover to a halt
-    if ((millis() - guided_yaw_speed.msg_time_ms) > 3000)
-    {
+    if ((millis() - guided_yaw_speed.msg_time_ms) > 3000) {
         gcs_send_text(MAV_SEVERITY_WARNING, "NAV_SET_YAW_SPEED not recvd last 3secs, stopping");
         channel_throttle->set_servo_out(g.throttle_min.get());
         channel_steer->set_servo_out(0);
@@ -336,13 +335,13 @@ void Rover::nav_set_yaw_speed()
 
 void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
-	condition_start = millis();
-	condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
+    condition_start = millis();
+    condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
 }
 
 void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
-	condition_value  = cmd.content.distance.meters;
+    condition_value  = cmd.content.distance.meters;
 }
 
 /********************************************************************************/
@@ -351,20 +350,20 @@ void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 
 bool Rover::verify_wait_delay()
 {
-	if ((uint32_t)(millis() - condition_start) > (uint32_t)condition_value){
-		condition_value 	= 0;
-		return true;
-	}
-	return false;
+    if ((uint32_t)(millis() - condition_start) > (uint32_t)condition_value) {
+        condition_value 	= 0;
+        return true;
+    }
+    return false;
 }
 
 bool Rover::verify_within_distance()
 {
-	if (wp_distance < condition_value){
-		condition_value = 0;
-		return true;
-	}
-	return false;
+    if (wp_distance < condition_value) {
+        condition_value = 0;
+        return true;
+    }
+    return false;
 }
 
 /********************************************************************************/
@@ -378,22 +377,22 @@ void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise speed: %.1f m/s", (double)g.speed_cruise.get());
     }
 
-	if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {
-		g.throttle_cruise.set(cmd.content.speed.throttle_pct);
+    if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {
+        g.throttle_cruise.set(cmd.content.speed.throttle_pct);
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise throttle: %.1f", g.throttle_cruise.get());
     }
 }
 
 void Rover::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-	if(cmd.p1 == 1 && have_position) {
-		init_home();
-	} else {
+    if (cmd.p1 == 1 && have_position) {
+        init_home();
+    } else {
         ahrs.set_home(cmd.content.location);
-		home_is_set = HOME_SET_NOT_LOCKED;
-		Log_Write_Home_And_Origin();
+        home_is_set = HOME_SET_NOT_LOCKED;
+        Log_Write_Home_And_Origin();
         GCS_MAVLINK::send_home_all(cmd.content.location);
-	}
+    }
 }
 
 // do_digicam_configure Send Digicam Configure message with the camera library
@@ -420,7 +419,7 @@ void Rover::do_digicam_control(const AP_Mission::Mission_Command& cmd)
                        cmd.content.digicam_control.focus_lock,
                        cmd.content.digicam_control.shooting_cmd,
                        cmd.content.digicam_control.cmd_id)) {
-            log_picture();
+        log_picture();
     }
 #endif
 }
@@ -445,15 +444,15 @@ void Rover::log_picture()
     } else {
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
-        }      
+        }
     }
 }
 
 void Rover::do_set_reverse(const AP_Mission::Mission_Command& cmd)
 {
-	if (cmd.p1 == 1) {
+    if (cmd.p1 == 1) {
         set_reverse(true);
-	} else {
+    } else {
         set_reverse(false);
     }
 }
