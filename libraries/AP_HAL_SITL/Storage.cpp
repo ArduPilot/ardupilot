@@ -13,7 +13,7 @@ using namespace HALSITL;
 void EEPROMStorage::_eeprom_open(void)
 {
     if (_eeprom_fd == -1) {
-        _eeprom_fd = open("eeprom.bin", O_RDWR|O_CREAT, 0777);
+        _eeprom_fd = open("eeprom.bin", O_RDWR|O_CREAT|O_CLOEXEC, 0777);
         assert(ftruncate(_eeprom_fd, HAL_STORAGE_SIZE) == 0);
     }
 }

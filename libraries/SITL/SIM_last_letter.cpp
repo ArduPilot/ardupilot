@@ -55,7 +55,7 @@ void last_letter::start_last_letter(void)
     if (child_pid == 0) {
       // in child
       close(0);
-      open("/dev/null", O_RDONLY);
+      open("/dev/null", O_RDONLY|O_CLOEXEC);
       for (uint8_t i=3; i<100; i++) {
           close(i);
       }

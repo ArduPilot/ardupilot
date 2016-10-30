@@ -902,7 +902,7 @@ void SITL_State::_update_gps_file(const struct gps_data *d)
 {
     static int fd = -1;
     if (fd == -1) {
-        fd = open("/tmp/gps.dat", O_RDONLY);
+        fd = open("/tmp/gps.dat", O_RDONLY|O_CLOEXEC);
     }
     if (fd == -1) {
         return;
