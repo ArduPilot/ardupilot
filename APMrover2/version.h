@@ -2,7 +2,7 @@
 
 #include "ap_version.h"
 
-#define THISFIRMWARE "APM:Rover v3.1.0beta4"
+#define THISFIRMWARE "APM:Rover v3.1.0beta5"
 #define FIRMWARE_VERSION 3,1,0,FIRMWARE_VERSION_TYPE_BETA
 
 #ifndef GIT_VERSION
