@@ -37,7 +37,7 @@ using namespace Linux;
 
 void RCInput_115200::init()
 {
-    fd = open(device_path, O_RDWR | O_NONBLOCK);
+    fd = open(device_path, O_RDWR | O_NONBLOCK | O_CLOEXEC);
     if (fd != -1) {
         struct termios options;
 

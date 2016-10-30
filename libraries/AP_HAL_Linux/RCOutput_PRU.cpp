@@ -29,7 +29,7 @@ void RCOutput_PRU::init()
 {
     uint32_t mem_fd;
     signal(SIGBUS,catch_sigbus);
-    mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
     sharedMem_cmd = (struct pwm_cmd *) mmap(0, 0x1000, PROT_READ|PROT_WRITE,
                                             MAP_SHARED, mem_fd, RCOUT_PRUSS_SHAREDRAM_BASE);
     close(mem_fd);

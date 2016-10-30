@@ -27,7 +27,7 @@ void AnalogSource_Navio2::set_channel(uint8_t pin)
         ::close(_fd);
     }
 
-    _fd = ::open(channel_path, O_RDONLY);
+    _fd = ::open(channel_path, O_RDONLY|O_CLOEXEC);
 
     if (_fd < 0) {
         hal.console->printf("%s not opened: %s\n", channel_path, strerror(errno));

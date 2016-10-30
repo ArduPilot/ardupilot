@@ -48,7 +48,7 @@ void GPIO_RPI::init()
     int rpi_version = UtilRPI::from(hal.util)->get_rpi_version();
     uint32_t gpio_address = rpi_version == 1 ? GPIO_BASE(BCM2708_PERI_BASE)   : GPIO_BASE(BCM2709_PERI_BASE);
 
-    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
     if (mem_fd < 0) {
         AP_HAL::panic("Can't open /dev/mem");
     }

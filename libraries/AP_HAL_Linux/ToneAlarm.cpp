@@ -38,9 +38,9 @@ bool ToneAlarm::tune_repeat[TONE_NUMBER_OF_TUNES] = {false,true,false,false,fals
 
 ToneAlarm::ToneAlarm()
 {
-    period_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/period",O_WRONLY);
-    duty_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/duty",O_WRONLY);
-    run_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/run",O_WRONLY);
+    period_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/period",O_WRONLY|O_CLOEXEC);
+    duty_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/duty",O_WRONLY|O_CLOEXEC);
+    run_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/run",O_WRONLY|O_CLOEXEC);
 
     tune_num = -1;                    //initialy no tune to play
     tune_pos = 0;

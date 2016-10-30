@@ -36,7 +36,7 @@ void RCOutput_AioPRU::init()
 
    signal(SIGBUS,catch_sigbus);
 
-   mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+   mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
 
    pwm = (struct pwm*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, RCOUT_PRUSS_RAM_BASE);
    iram = (uint32_t*)mmap(0, 0x2000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, RCOUT_PRUSS_IRAM_BASE);

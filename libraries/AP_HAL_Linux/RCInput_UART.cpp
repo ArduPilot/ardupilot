@@ -17,7 +17,7 @@ using namespace Linux;
 
 RCInput_UART::RCInput_UART(const char *path)
 {
-    _fd = open(path, O_RDONLY|O_NOCTTY|O_NONBLOCK|O_NDELAY);
+    _fd = open(path, O_RDONLY|O_NOCTTY|O_NONBLOCK|O_NDELAY|O_CLOEXEC);
     if (_fd < 0) {
         AP_HAL::panic("RCInput_UART: Error opening '%s': %s",
                              path, strerror(errno));
