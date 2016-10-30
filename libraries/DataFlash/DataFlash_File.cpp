@@ -154,7 +154,7 @@ void DataFlash_File::Init()
 bool DataFlash_File::file_exists(const char *filename) const
 {
 #if DATAFLASH_FILE_MINIMAL
-    int fd = open(filename, O_RDONLY);
+    int fd = open(filename, O_RDONLY|O_CLOEXEC);
     if (fd == -1) {
         return false;
     }
@@ -536,7 +536,7 @@ uint16_t DataFlash_File::find_last_log()
     if (fname == nullptr) {
         return ret;
     }
-    int fd = open(fname, O_RDONLY);
+    int fd = open(fname, O_RDONLY|O_CLOEXEC);
     free(fname);
     if (fd != -1) {
         char buf[10];
@@ -651,7 +651,7 @@ int16_t DataFlash_File::get_log_data(const uint16_t list_entry, const uint16_t p
             return -1;
         }
         stop_logging();
-        _read_fd = ::open(fname, O_RDONLY);
+        _read_fd = ::open(fname, O_RDONLY|O_CLOEXEC);
         if (_read_fd == -1) {
             _open_error = true;
             int saved_errno = errno;
@@ -804,7 +804,7 @@ uint16_t DataFlash_File::start_new_log(void)
     if (fname == nullptr) {
         return 0xFFFF;
     }
-    _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+    _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
@@ -828,7 +828,7 @@ uint16_t DataFlash_File::start_new_log(void)
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write (specifically the QURT RTOS)
-    int fd = open(fname, O_WRONLY|O_CREAT, 0644);
+    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
     free(fname);
     if (fd == -1) {
         return 0xFFFF;
@@ -873,7 +873,7 @@ void DataFlash_File::LogReadProcess(const uint16_t list_entry,
     if (fname == nullptr) {
         return;
     }
-    _read_fd = ::open(fname, O_RDONLY);
+    _read_fd = ::open(fname, O_RDONLY|O_CLOEXEC);
     free(fname);
     if (_read_fd == -1) {
         return;
