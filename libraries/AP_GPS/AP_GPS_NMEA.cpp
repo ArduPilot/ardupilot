@@ -118,11 +118,11 @@ bool AP_GPS_NMEA::read(void)
     while (numc--) {
         char c = port->read();
 #ifdef NMEA_LOG_PATH
-        static FILE *logf = NULL;
-        if (logf == NULL) {
+        static FILE *logf = nullptr;
+        if (logf == nullptr) {
             logf = fopen(NMEA_LOG_PATH, "wb");
         }
-        if (logf != NULL) {
+        if (logf != nullptr) {
             ::fwrite(&c, 1, 1, logf);
         }
 #endif

@@ -71,10 +71,10 @@ void PX4RCOutput::init()
     }
 
     // publish actuator vaules on demand
-    _actuator_direct_pub = NULL;
+    _actuator_direct_pub = nullptr;
 
     // and armed state
-    _actuator_armed_pub = NULL;
+    _actuator_armed_pub = nullptr;
 }
 
 
@@ -391,7 +391,7 @@ void PX4RCOutput::_arm_actuators(bool arm)
     _armed.lockdown = false;
     _armed.force_failsafe = false;
 
-    if (_actuator_armed_pub == NULL) {
+    if (_actuator_armed_pub == nullptr) {
         _actuator_armed_pub = orb_advertise(ORB_ID(actuator_armed), &_armed);
     } else {
         orb_publish(ORB_ID(actuator_armed), _actuator_armed_pub, &_armed);
@@ -433,7 +433,7 @@ void PX4RCOutput::_publish_actuators(void)
         actuators.values[i] = actuators.values[i]*2 - 1;
     }
 
-    if (_actuator_direct_pub == NULL) {
+    if (_actuator_direct_pub == nullptr) {
         _actuator_direct_pub = orb_advertise(ORB_ID(actuator_direct), &actuators);
     } else {
         orb_publish(ORB_ID(actuator_direct), _actuator_direct_pub, &actuators);

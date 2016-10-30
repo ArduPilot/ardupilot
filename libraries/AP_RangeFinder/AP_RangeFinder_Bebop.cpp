@@ -83,9 +83,9 @@ AP_RangeFinder_Bebop::AP_RangeFinder_Bebop(RangeFinder &_ranger,
 AP_RangeFinder_Bebop::~AP_RangeFinder_Bebop()
 {
     iio_buffer_destroy(_adc.buffer);
-    _adc.buffer = NULL;
+    _adc.buffer = nullptr;
     iio_context_destroy(_iio);
-    _iio = NULL;
+    _iio = nullptr;
 }
 
 bool AP_RangeFinder_Bebop::detect(RangeFinder &_ranger, uint8_t instance)
@@ -378,9 +378,9 @@ int AP_RangeFinder_Bebop::_configure_capture()
 
 error_destroy_context:
     iio_buffer_destroy(_adc.buffer);
-    _adc.buffer = NULL;
+    _adc.buffer = nullptr;
     iio_context_destroy(_iio);
-    _iio = NULL;
+    _iio = nullptr;
     return -1;
 }
 
@@ -389,7 +389,7 @@ void AP_RangeFinder_Bebop::_init()
     _spi = std::move(hal.spi->get_device("bebop"));
 
     _gpio = AP_HAL::get_HAL().gpio;
-    if (_gpio == NULL) {
+    if (_gpio == nullptr) {
         AP_HAL::panic("Could not find GPIO device for Bebop ultrasound");
     }
 

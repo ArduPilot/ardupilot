@@ -163,7 +163,7 @@ Frame *Frame::find_frame(const char *name)
             return &supported_frames[i];
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 // calculate rotational and linear accelerations

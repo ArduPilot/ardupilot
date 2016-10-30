@@ -35,14 +35,14 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
         DFMessageWriter_DFLogStart *message_writer =
             new DFMessageWriter_DFLogStart(_firmware_string);
-        if (message_writer != NULL)  {
+        if (message_writer != nullptr)  {
 #if HAL_OS_POSIX_IO
             backends[_next_backend] = new DataFlash_File(*this,
                                                          message_writer,
                                                          HAL_BOARD_LOG_DIRECTORY);
 #endif
         }
-        if (backends[_next_backend] == NULL) {
+        if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open DataFlash_File");
         } else {
             _next_backend++;
@@ -59,11 +59,11 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
         }
         DFMessageWriter_DFLogStart *message_writer =
             new DFMessageWriter_DFLogStart(_firmware_string);
-        if (message_writer != NULL)  {
+        if (message_writer != nullptr)  {
             backends[_next_backend] = new DataFlash_MAVLink(*this,
                                                             message_writer);
         }
-        if (backends[_next_backend] == NULL) {
+        if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open DataFlash_MAVLink");
         } else {
             _next_backend++;

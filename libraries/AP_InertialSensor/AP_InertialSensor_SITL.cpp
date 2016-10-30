@@ -17,12 +17,12 @@ AP_InertialSensor_SITL::AP_InertialSensor_SITL(AP_InertialSensor &imu) :
 AP_InertialSensor_Backend *AP_InertialSensor_SITL::detect(AP_InertialSensor &_imu)
 {
     AP_InertialSensor_SITL *sensor = new AP_InertialSensor_SITL(_imu);
-    if (sensor == NULL) {
-        return NULL;
+    if (sensor == nullptr) {
+        return nullptr;
     }
     if (!sensor->init_sensor()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
     return sensor;
 }

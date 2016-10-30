@@ -87,7 +87,7 @@ void AP_Proximity::init(void)
     }
     for (uint8_t i=0; i<PROXIMITY_MAX_INSTANCES; i++) {
         detect_instance(i);
-        if (drivers[i] != NULL) {
+        if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
             num_instances = i+1;
@@ -102,7 +102,7 @@ void AP_Proximity::init(void)
 void AP_Proximity::update(void)
 {
     for (uint8_t i=0; i<num_instances; i++) {
-        if (drivers[i] != NULL) {
+        if (drivers[i] != nullptr) {
             if (_type[i] == Proximity_Type_None) {
                 // allow user to disable a proximity sensor at runtime
                 state[i].status = Proximity_NotConnected;
@@ -114,7 +114,7 @@ void AP_Proximity::update(void)
 
     // work out primary instance - first sensor returning good data
     for (int8_t i=num_instances-1; i>=0; i--) {
-        if (drivers[i] != NULL && (state[i].status == Proximity_Good)) {
+        if (drivers[i] != nullptr && (state[i].status == Proximity_Good)) {
             primary_instance = i;
         }
     }
@@ -173,7 +173,7 @@ void AP_Proximity::detect_instance(uint8_t instance)
 // returns true on successful read and places distance in distance
 bool AP_Proximity::get_horizontal_distance(uint8_t instance, float angle_deg, float &distance) const
 {
-    if ((drivers[instance] == NULL) || (_type[instance] == Proximity_Type_None)) {
+    if ((drivers[instance] == nullptr) || (_type[instance] == Proximity_Type_None)) {
         return false;
     }
     // get distance from backend

@@ -149,18 +149,18 @@ void AP_Terrain::open_file(void)
         // already open on right file
         return;
     }
-    if (file_path == NULL) {
+    if (file_path == nullptr) {
         const char* terrain_dir = hal.util->get_custom_terrain_directory();
-        if (terrain_dir == NULL) {
+        if (terrain_dir == nullptr) {
             terrain_dir = HAL_BOARD_TERRAIN_DIRECTORY;
         }
         if (asprintf(&file_path, "%s/NxxExxx.DAT", terrain_dir) <= 0) {
             io_failure = true;
-            file_path = NULL;
+            file_path = nullptr;
             return;
         }
     }
-    if (file_path == NULL) {
+    if (file_path == nullptr) {
         io_failure = true;
         return;
     }

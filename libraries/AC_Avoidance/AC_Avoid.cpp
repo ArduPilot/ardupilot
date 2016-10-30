@@ -115,7 +115,7 @@ void AC_Avoid::adjust_velocity_poly(const float kP, const float accel_cmss, Vect
     Vector2f* boundary = _fence.get_polygon_points(num_points);
 
     // exit if there are no points
-    if (boundary == NULL || num_points == 0) {
+    if (boundary == nullptr || num_points == 0) {
         return;
     }
 

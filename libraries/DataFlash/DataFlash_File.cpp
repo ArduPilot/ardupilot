@@ -100,7 +100,7 @@ void DataFlash_File::Init()
     // try to cope with an existing lowercase log directory
     // name. NuttX does not handle case insensitive VFAT well
     DIR *d = opendir("/fs/microsd/APM");
-    if (d != NULL) {
+    if (d != nullptr) {
         for (struct dirent *de=readdir(d); de; de=readdir(d)) {
             if (strcmp(de->d_name, "logs") == 0) {
                 rename("/fs/microsd/APM/logs", "/fs/microsd/APM/OLDLOGS");
@@ -112,7 +112,7 @@ void DataFlash_File::Init()
 #endif
 
     const char* custom_dir = hal.util->get_custom_log_directory();
-    if (custom_dir != NULL){
+    if (custom_dir != nullptr){
         _log_directory = custom_dir;
     }
 
@@ -173,7 +173,7 @@ bool DataFlash_File::file_exists(const char *filename) const
 bool DataFlash_File::log_exists(const uint16_t lognum) const
 {
     char *filename = _log_file_name(lognum);
-    if (filename == NULL) {
+    if (filename == nullptr) {
         // internal_error();
         return false; // ?!
     }
@@ -272,7 +272,7 @@ uint16_t DataFlash_File::find_oldest_log()
     // relying on the min_avail_space_percent feature we could end up
     // doing a *lot* of asprintf()s and stat()s
     DIR *d = opendir(_log_directory);
-    if (d == NULL) {
+    if (d == nullptr) {
         // internal_error();
         return 0;
     }
@@ -289,7 +289,7 @@ uint16_t DataFlash_File::find_oldest_log()
             continue;
         }
 
-        uint16_t thisnum = strtoul(de->d_name, NULL, 10);
+        uint16_t thisnum = strtoul(de->d_name, nullptr, 10);
         if (thisnum > MAX_LOG_FILES) {
             // ignore files above our official maximum...
             continue;
@@ -348,7 +348,7 @@ void DataFlash_File::Prep_MinSpace()
             break;
         }
         char *filename_to_remove = _log_file_name(log_to_remove);
-        if (filename_to_remove == NULL) {
+        if (filename_to_remove == nullptr) {
             // internal_error();
             break;
         }
@@ -408,9 +408,9 @@ bool DataFlash_File::NeedPrep()
  */
 char *DataFlash_File::_log_file_name(const uint16_t log_num) const
 {
-    char *buf = NULL;
+    char *buf = nullptr;
     if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == 0) {
-        return NULL;
+        return nullptr;
     }
     return buf;
 }
@@ -421,9 +421,9 @@ char *DataFlash_File::_log_file_name(const uint16_t log_num) const
  */
 char *DataFlash_File::_lastlog_file_name(void) const
 {
-    char *buf = NULL;
+    char *buf = nullptr;
     if (asprintf(&buf, "%s/LASTLOG.TXT", _log_directory) == 0) {
-        return NULL;
+        return nullptr;
     }
     return buf;
 }
@@ -438,14 +438,14 @@ void DataFlash_File::EraseAll()
 #if !DATAFLASH_FILE_MINIMAL
     for (log_num=1; log_num<=MAX_LOG_FILES; log_num++) {
         char *fname = _log_file_name(log_num);
-        if (fname == NULL) {
+        if (fname == nullptr) {
             break;
         }
         unlink(fname);
         free(fname);
     }
     char *fname = _lastlog_file_name();
-    if (fname != NULL) {
+    if (fname != nullptr) {
         unlink(fname);
         free(fname);
     }
@@ -533,7 +533,7 @@ uint16_t DataFlash_File::find_last_log()
 {
     unsigned ret = 0;
     char *fname = _lastlog_file_name();
-    if (fname == NULL) {
+    if (fname == nullptr) {
         return ret;
     }
     int fd = open(fname, O_RDONLY);
@@ -555,7 +555,7 @@ uint32_t DataFlash_File::_get_log_size(const uint16_t log_num) const
     return 1;
 #else
     char *fname = _log_file_name(log_num);
-    if (fname == NULL) {
+    if (fname == nullptr) {
         return 0;
     }
     struct stat st;
@@ -574,7 +574,7 @@ uint32_t DataFlash_File::_get_log_time(const uint16_t log_num) const
     return 0;
 #else
     char *fname = _log_file_name(log_num);
-    if (fname == NULL) {
+    if (fname == nullptr) {
         return 0;
     }
     struct stat st;
@@ -647,7 +647,7 @@ int16_t DataFlash_File::get_log_data(const uint16_t list_entry, const uint16_t p
     }
     if (_read_fd == -1) {
         char *fname = _log_file_name(log_num);
-        if (fname == NULL) {
+        if (fname == nullptr) {
             return -1;
         }
         stop_logging();
@@ -801,7 +801,7 @@ uint16_t DataFlash_File::start_new_log(void)
         log_num = 1;
     }
     char *fname = _log_file_name(log_num);
-    if (fname == NULL) {
+    if (fname == nullptr) {
         return 0xFFFF;
     }
     _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
@@ -870,7 +870,7 @@ void DataFlash_File::LogReadProcess(const uint16_t list_entry,
         _read_fd = -1;
     }
     char *fname = _log_file_name(log_num);
-    if (fname == NULL) {
+    if (fname == nullptr) {
         return;
     }
     _read_fd = ::open(fname, O_RDONLY);
@@ -974,7 +974,7 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
     for (uint16_t i=1; i<=num_logs; i++) {
         uint16_t log_num = _log_num_from_list_entry(i);
         char *filename = _log_file_name(log_num);
-        if (filename != NULL) {
+        if (filename != nullptr) {
                 struct stat st;
                 if (stat(filename, &st) == 0) {
                     struct tm *tm = gmtime(&st.st_mtime);

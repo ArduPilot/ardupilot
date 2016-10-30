@@ -186,16 +186,16 @@ int Util::get_hw_arm32()
 {
     char buffer[MAX_SIZE_LINE] = { 0 };
     FILE *f = fopen("/proc/cpuinfo", "r");
-    if (f == NULL) {
+    if (f == nullptr) {
         return -errno;
     }
 
-    while (fgets(buffer, MAX_SIZE_LINE, f) != NULL) {
-        if (strstr(buffer, "Hardware") == NULL) {
+    while (fgets(buffer, MAX_SIZE_LINE, f) != nullptr) {
+        if (strstr(buffer, "Hardware") == nullptr) {
             continue;
         }
         for (uint8_t i = 0; i < UTIL_NUM_HARDWARES; i++) {
-            if (strstr(buffer, _hw_names[i]) == NULL) {
+            if (strstr(buffer, _hw_names[i]) == nullptr) {
                 continue;
             }
             fclose(f);

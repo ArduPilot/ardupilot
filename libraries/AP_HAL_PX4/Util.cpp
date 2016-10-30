@@ -61,7 +61,7 @@ bool PX4Util::run_debug_shell(AP_HAL::BetterStream *stream)
     dup2(fd, 1);
     dup2(fd, 2);
     
-    nsh_consolemain(0, NULL);
+    nsh_consolemain(0, nullptr);
     
     // this shouldn't happen
     hal.console->printf("shell exited\n");
@@ -152,7 +152,7 @@ PX4Util::perf_counter_t PX4Util::perf_alloc(PX4Util::perf_counter_type t, const 
         px4_t = ::PC_INTERVAL;
         break;
     default:
-        return NULL;
+        return nullptr;
     }
     return (perf_counter_t)::perf_alloc(px4_t, name);
 }

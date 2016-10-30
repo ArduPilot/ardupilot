@@ -27,15 +27,15 @@ void SITL_State::_set_param_default(const char *parm)
 {
     char *pdup = strdup(parm);
     char *p = strchr(pdup, '=');
-    if (p == NULL) {
+    if (p == nullptr) {
         printf("Please specify parameter as NAME=VALUE");
         exit(1);
     }
-    float value = strtof(p+1, NULL);
+    float value = strtof(p+1, nullptr);
     *p = 0;
     enum ap_var_type var_type;
     AP_Param *vp = AP_Param::find(pdup, &var_type);
-    if (vp == NULL) {
+    if (vp == nullptr) {
         printf("Unknown parameter %s\n", pdup);
         exit(1);
     }
@@ -85,7 +85,7 @@ void SITL_State::_sitl_setup(const char *home_str)
 #endif
     _optical_flow = (OpticalFlow *)AP_Param::find_object("FLOW");
 
-    if (_sitl != NULL) {
+    if (_sitl != nullptr) {
         // setup some initial values
 #ifndef HIL_MODE
         _update_barometer(100);
@@ -137,7 +137,7 @@ void SITL_State::_fdm_input_step(void)
         exit(1);
     }
 
-    if (_scheduler->interrupts_are_blocked() || _sitl == NULL) {
+    if (_scheduler->interrupts_are_blocked() || _sitl == nullptr) {
         return;
     }
 
@@ -149,7 +149,7 @@ void SITL_State::_fdm_input_step(void)
 
     _scheduler->sitl_begin_atomic();
 
-    if (_update_count == 0 && _sitl != NULL) {
+    if (_update_count == 0 && _sitl != nullptr) {
         _update_gps(0, 0, 0, 0, 0, 0, false);
         _update_barometer(0);
         _scheduler->timer_event();
@@ -157,7 +157,7 @@ void SITL_State::_fdm_input_step(void)
         return;
     }
 
-    if (_sitl != NULL) {
+    if (_sitl != nullptr) {
         _update_gps(_sitl->state.latitude, _sitl->state.longitude,
                     _sitl->state.altitude,
                     _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
@@ -288,10 +288,10 @@ void SITL_State::_fdm_input_local(void)
         }
     }
 
-    if (gimbal != NULL) {
+    if (gimbal != nullptr) {
         gimbal->update();
     }
-    if (adsb != NULL) {
+    if (adsb != nullptr) {
         adsb->update();
     }
 

@@ -68,7 +68,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     noReceivedHdop(true)
 {
     // stop any config strings that are pending
-    gps.send_blob_start(state.instance, NULL, 0);
+    gps.send_blob_start(state.instance, nullptr, 0);
 
     // start the process of updating the GPS rates
     _request_next_config();
@@ -114,16 +114,16 @@ AP_GPS_UBLOX::_request_next_config(void)
         }
         break;
     case STEP_POLL_SBAS:
-        _send_message(CLASS_CFG, MSG_CFG_SBAS, NULL, 0);
+        _send_message(CLASS_CFG, MSG_CFG_SBAS, nullptr, 0);
 	break;
     case STEP_POLL_NAV:
-        _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
+        _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, nullptr, 0);
         break;
     case STEP_POLL_GNSS:
-        _send_message(CLASS_CFG, MSG_CFG_GNSS, NULL, 0);
+        _send_message(CLASS_CFG, MSG_CFG_GNSS, nullptr, 0);
         break;
     case STEP_NAV_RATE:
-        _send_message(CLASS_CFG, MSG_CFG_RATE, NULL, 0);
+        _send_message(CLASS_CFG, MSG_CFG_RATE, nullptr, 0);
         break;
     case STEP_POSLLH:
         if(!_request_message_rate(CLASS_NAV, MSG_POSLLH)) {
@@ -307,7 +307,7 @@ AP_GPS_UBLOX::_request_port(void)
         // not enough space - do it next time
         return;
     }
-    _send_message(CLASS_CFG, MSG_CFG_PRT, NULL, 0);
+    _send_message(CLASS_CFG, MSG_CFG_PRT, nullptr, 0);
 }
     // Ensure there is enough space for the largest possible outgoing message
 // Process bytes available from the stream
@@ -462,7 +462,7 @@ AP_GPS_UBLOX::read(void)
 // Private Methods /////////////////////////////////////////////////////////////
 void AP_GPS_UBLOX::log_mon_hw(void)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
     struct log_Ubx1 pkt = {
@@ -485,7 +485,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
 
 void AP_GPS_UBLOX::log_mon_hw2(void)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
 
@@ -504,7 +504,7 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
 #if UBLOX_RXM_RAW_LOGGING
 void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
     uint64_t now = AP_HAL::micros64();
@@ -529,7 +529,7 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 
 void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
     uint64_t now = AP_HAL::micros64();
@@ -1138,7 +1138,7 @@ reset:
 void
 AP_GPS_UBLOX::_request_version(void)
 {
-    _send_message(CLASS_MON, MSG_MON_VER, NULL, 0);
+    _send_message(CLASS_MON, MSG_MON_VER, nullptr, 0);
 }
 
 void

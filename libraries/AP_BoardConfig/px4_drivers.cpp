@@ -122,7 +122,7 @@ void AP_BoardConfig::px4_setup_uart()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser1_rtscts.get());
-    if (hal.uartD != NULL) {
+    if (hal.uartD != nullptr) {
         hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser2_rtscts.get());
     }
 #endif

@@ -387,7 +387,7 @@ void
 AP_GPS_SBP::logging_log_full_update()
 {
 
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
       return;
     }
 
@@ -408,7 +408,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         uint8_t msg_len, 
         uint8_t *msg_buff) {
 
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
       return;
     }
 

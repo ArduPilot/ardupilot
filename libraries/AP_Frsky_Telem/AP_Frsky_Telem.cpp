@@ -57,7 +57,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
         }
     }
     
-    if (_port != NULL) {
+    if (_port != nullptr) {
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::tick, void));
         // we don't want flow control for either protocol
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);

@@ -18,12 +18,12 @@ AP_InertialSensor_QURT::AP_InertialSensor_QURT(AP_InertialSensor &imu) :
 AP_InertialSensor_Backend *AP_InertialSensor_QURT::detect(AP_InertialSensor &_imu)
 {
     AP_InertialSensor_QURT *sensor = new AP_InertialSensor_QURT(_imu);
-    if (sensor == NULL) {
-        return NULL;
+    if (sensor == nullptr) {
+        return nullptr;
     }
     if (!sensor->init_sensor()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
     return sensor;
 }
@@ -50,7 +50,7 @@ extern "C" {
 static void *mpu_data_ready_trampoline(void *ctx)
 {
     ((AP_InertialSensor_QURT *)ctx)->data_ready();
-    return NULL;
+    return nullptr;
 }
 
 void AP_InertialSensor_QURT::init_mpu9250(void) 

@@ -420,7 +420,7 @@ Compass::Compass(void) :
 {
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
-        _backends[i] = NULL;
+        _backends[i] = nullptr;
         _state[i].last_update_usec = 0;
     }
 

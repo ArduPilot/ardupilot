@@ -27,7 +27,7 @@ private:
     // write size bytes of data to a page. The caller must ensure that
     // the data fits within the page, otherwise it will wrap to the
     // start of the page
-    // If pHeader is not NULL then write the header bytes before the data
+    // If pHeader is not nullptr then write the header bytes before the data
     void		    BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr, 
 				       const void *pHeader, uint8_t hdr_size,
 				       const void *pBuffer, uint16_t size);

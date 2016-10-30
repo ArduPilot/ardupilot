@@ -119,7 +119,7 @@ void AP_Mount_SoloGimbal::handle_gimbal_report(mavlink_channel_t chan, mavlink_m
     _gimbal.update_target(_angle_ef_target_rad);
     _gimbal.receive_feedback(chan,msg);
 
-    if(!_params_saved && _frontend._dataflash != NULL && _frontend._dataflash->logging_started()) {
+    if(!_params_saved && _frontend._dataflash != nullptr && _frontend._dataflash->logging_started()) {
         _gimbal.fetch_params();       //last parameter save might not be stored in dataflash so retry
         _params_saved = true;
     }

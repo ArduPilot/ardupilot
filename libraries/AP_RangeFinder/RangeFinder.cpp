@@ -521,7 +521,7 @@ void RangeFinder::init(void)
     }
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         detect_instance(i);
-        if (drivers[i] != NULL) {
+        if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
             num_instances = i+1;
@@ -544,7 +544,7 @@ void RangeFinder::init(void)
 void RangeFinder::update(void)
 {
     for (uint8_t i=0; i<num_instances; i++) {
-        if (drivers[i] != NULL) {
+        if (drivers[i] != nullptr) {
             if (_type[i] == RangeFinder_TYPE_NONE) {
                 // allow user to disable a rangefinder at runtime
                 state[i].status = RangeFinder_NotConnected;
@@ -558,7 +558,7 @@ void RangeFinder::update(void)
 
     // work out primary instance - first sensor returning good data
     for (int8_t i=num_instances-1; i>=0; i--) {
-        if (drivers[i] != NULL && (state[i].status == RangeFinder_Good)) {
+        if (drivers[i] != nullptr && (state[i].status == RangeFinder_Good)) {
             primary_instance = i;
         }
     }
@@ -680,7 +680,7 @@ RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
         return RangeFinder_NotConnected;
     }
 
-    if (drivers[instance] == NULL || _type[instance] == RangeFinder_TYPE_NONE) {
+    if (drivers[instance] == nullptr || _type[instance] == RangeFinder_TYPE_NONE) {
         return RangeFinder_NotConnected;
     }
 
@@ -690,7 +690,7 @@ RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
 void RangeFinder::handle_msg(mavlink_message_t *msg) {
   uint8_t i;
   for (i=0; i<num_instances; i++) {
-      if ((drivers[i] != NULL) && (_type[i] != RangeFinder_TYPE_NONE)) {
+      if ((drivers[i] != nullptr) && (_type[i] != RangeFinder_TYPE_NONE)) {
           drivers[i]->handle_msg(msg);
       }
   }
@@ -715,7 +715,7 @@ bool RangeFinder::pre_arm_check() const
 {
     for (uint8_t i=0; i<num_instances; i++) {
         // if driver is valid but pre_arm_check is false, return false
-        if ((drivers[i] != NULL) && (_type[i] != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
+        if ((drivers[i] != nullptr) && (_type[i] != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
             return false;
         }
     }

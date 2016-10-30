@@ -48,13 +48,13 @@ void Matrix3<T>::from_euler(float roll, float pitch, float yaw)
 template <typename T>
 void Matrix3<T>::to_euler(float *roll, float *pitch, float *yaw) const
 {
-    if (pitch != NULL) {
+    if (pitch != nullptr) {
         *pitch = -safe_asin(c.x);
     }
-    if (roll != NULL) {
+    if (roll != nullptr) {
         *roll = atan2f(c.y, c.z);
     }
-    if (yaw != NULL) {
+    if (yaw != nullptr) {
         *yaw = atan2f(b.x, a.x);
     }
 }

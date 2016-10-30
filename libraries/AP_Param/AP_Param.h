@@ -73,8 +73,8 @@
 // declare a pointer subgroup entry in a group var_info
 #define AP_SUBGROUPPTR(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_POINTER }
 
-#define AP_GROUPEND     { AP_PARAM_NONE, 0xFF, "", 0, { group_info : NULL } }
-#define AP_VAREND       { AP_PARAM_NONE, "", 0, NULL, { group_info : NULL } }
+#define AP_GROUPEND     { AP_PARAM_NONE, 0xFF, "", 0, { group_info : nullptr } }
+#define AP_VAREND       { AP_PARAM_NONE, "", 0, nullptr, { group_info : nullptr } }
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
@@ -197,7 +197,7 @@ public:
     /// If the variable has no name, it cannot be found by this interface.
     ///
     /// @param  name            The full name of the variable to be found.
-    /// @return                 A pointer to the variable, or NULL if
+    /// @return                 A pointer to the variable, or nullptr if
     ///                         it does not exist.
     ///
     static AP_Param * find(const char *name, enum ap_var_type *ptype);
@@ -213,7 +213,7 @@ public:
     ///
     ///
     /// @param  idx             The index of the variable
-    /// @return                 A pointer to the variable, or NULL if
+    /// @return                 A pointer to the variable, or nullptr if
     ///                         it does not exist.
     ///
     static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token);
@@ -315,7 +315,7 @@ public:
 
     /// Returns the first variable
     ///
-    /// @return             The first variable in _var_info, or NULL if
+    /// @return             The first variable in _var_info, or nullptr if
     ///                     there are none.
     ///
     static AP_Param *      first(ParamToken *token, enum ap_var_type *ptype);

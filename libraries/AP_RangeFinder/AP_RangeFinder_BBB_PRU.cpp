@@ -65,7 +65,7 @@ bool AP_RangeFinder_BBB_PRU::detect(RangeFinder &_ranger, uint8_t instance)
 
     // Load firmware (.text)
     FILE *file = fopen("/lib/firmware/rangefinderprutext.bin", "rb");
-    if(file == NULL)
+    if(file == nullptr)
     {
         result = false;
     }
@@ -83,7 +83,7 @@ bool AP_RangeFinder_BBB_PRU::detect(RangeFinder &_ranger, uint8_t instance)
 
     // Load firmware (.data)
     file = fopen("/lib/firmware/rangefinderprudata.bin", "rb");
-    if(file == NULL)
+    if(file == nullptr)
     {
         result = false;
     }

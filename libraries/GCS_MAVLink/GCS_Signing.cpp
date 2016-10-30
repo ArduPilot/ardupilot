@@ -120,7 +120,7 @@ void GCS_MAVLINK::load_signing_key(void)
         return;
     }
     mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status == NULL) {
+    if (status == nullptr) {
         hal.console->printf("Failed to load signing key - no status");
         return;        
     }
@@ -144,11 +144,11 @@ void GCS_MAVLINK::load_signing_key(void)
     // enable signing on all channels
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         mavlink_status_t *cstatus = mavlink_get_channel_status((mavlink_channel_t)(MAVLINK_COMM_0 + i));
-        if (cstatus != NULL) {
+        if (cstatus != nullptr) {
             if (all_zero) {
                 // disable signing
-                cstatus->signing = NULL;
-                cstatus->signing_streams = NULL;
+                cstatus->signing = nullptr;
+                cstatus->signing_streams = nullptr;
             } else {
                 cstatus->signing = &signing;
                 cstatus->signing_streams = &signing_streams;

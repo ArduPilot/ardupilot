@@ -235,7 +235,7 @@ void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size)
 void AP_GPS::send_blob_update(uint8_t instance)
 {
     // exit immediately if no uart for this instance
-    if (_port[instance] == NULL) {
+    if (_port[instance] == nullptr) {
         return;
     }
 
@@ -262,7 +262,7 @@ void AP_GPS::send_blob_update(uint8_t instance)
 void
 AP_GPS::detect_instance(uint8_t instance)
 {
-    AP_GPS_Backend *new_gps = NULL;
+    AP_GPS_Backend *new_gps = nullptr;
     struct detect_state *dstate = &detect_state[instance];
     uint32_t now = AP_HAL::millis();
 
@@ -288,11 +288,11 @@ AP_GPS::detect_instance(uint8_t instance)
     // do not try to detect the MAV type, assume it's there
     if (_type[instance] == GPS_TYPE_MAV) {
         _broadcast_gps_type("MAV", instance, -1);
-        new_gps = new AP_GPS_MAV(*this, state[instance], NULL);
+        new_gps = new AP_GPS_MAV(*this, state[instance], nullptr);
         goto found_gps;
     }
 
-    if (_port[instance] == NULL) {
+    if (_port[instance] == nullptr) {
         // UART not available
         return;
     }
@@ -342,7 +342,7 @@ AP_GPS::detect_instance(uint8_t instance)
     }
 
     while (initblob_state[instance].remaining == 0 && _port[instance]->available() > 0
-            && new_gps == NULL) {
+            && new_gps == nullptr) {
         uint8_t data = _port[instance]->read();
         /*
           running a uBlox at less than 38400 will lead to packet
@@ -395,7 +395,7 @@ AP_GPS::detect_instance(uint8_t instance)
 	}
 
 found_gps:
-	if (new_gps != NULL) {
+	if (new_gps != nullptr) {
         state[instance].status = NO_FIX;
         drivers[instance] = new_gps;
         timing[instance].last_message_time_ms = now;
@@ -405,7 +405,7 @@ found_gps:
 AP_GPS::GPS_Status 
 AP_GPS::highest_supported_status(uint8_t instance) const
 {
-    if (drivers[instance] != NULL)
+    if (drivers[instance] != nullptr)
         return drivers[instance]->highest_supported_status();
     return AP_GPS::GPS_OK_FIX_3D;
 }
@@ -413,7 +413,7 @@ AP_GPS::highest_supported_status(uint8_t instance) const
 AP_GPS::GPS_Status 
 AP_GPS::highest_supported_status(void) const
 {
-    if (drivers[primary_instance] != NULL)
+    if (drivers[primary_instance] != nullptr)
         return drivers[primary_instance]->highest_supported_status();
     return AP_GPS::GPS_OK_FIX_3D;
 }
@@ -440,7 +440,7 @@ AP_GPS::update_instance(uint8_t instance)
         return;
     }
 
-    if (drivers[instance] == NULL || state[instance].status == NO_GPS) {
+    if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
         // we don't yet know the GPS type of this one, or it has timed
         // out and needs to be re-initialised
         detect_instance(instance);
@@ -463,7 +463,7 @@ AP_GPS::update_instance(uint8_t instance)
             // free the driver before we run the next detection, so we
             // don't end up with two allocated at any time
             delete drivers[instance];
-            drivers[instance] = NULL;
+            drivers[instance] = nullptr;
             memset(&state[instance], 0, sizeof(state[instance]));
             state[instance].instance = instance;
             state[instance].status = NO_GPS;
@@ -544,7 +544,7 @@ AP_GPS::handle_msg(const mavlink_message_t *msg)
     }
     uint8_t i;
     for (i=0; i<num_instances; i++) {
-        if ((drivers[i] != NULL) && (_type[i] != GPS_TYPE_NONE)) {
+        if ((drivers[i] != nullptr) && (_type[i] != GPS_TYPE_NONE)) {
             drivers[i]->handle_msg(msg);
         }
     }
@@ -634,7 +634,7 @@ AP_GPS::inject_data(uint8_t *data, uint8_t len)
 void 
 AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint8_t len)
 {
-    if (instance < GPS_MAX_INSTANCES && drivers[instance] != NULL)
+    if (instance < GPS_MAX_INSTANCES && drivers[instance] != nullptr)
         drivers[instance]->inject_data(data, len);
 }  
 
@@ -704,7 +704,7 @@ AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 void 
 AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan)
 {
-    if (drivers[0] != NULL && drivers[0]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
+    if (drivers[0] != nullptr && drivers[0]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
         drivers[0]->send_mavlink_gps_rtk(chan);
     }
 }
@@ -712,7 +712,7 @@ AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan)
 void 
 AP_GPS::send_mavlink_gps2_rtk(mavlink_channel_t chan)
 {
-    if (drivers[1] != NULL && drivers[1]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
+    if (drivers[1] != nullptr && drivers[1]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
         drivers[1]->send_mavlink_gps_rtk(chan);
     }
 }
@@ -721,7 +721,7 @@ uint8_t
 AP_GPS::first_unconfigured_gps(void) const
 {
     for(int i = 0; i < GPS_MAX_INSTANCES; i++) {
-        if(_type[i] != GPS_TYPE_NONE && (drivers[i] == NULL || !drivers[i]->is_configured())) {
+        if(_type[i] != GPS_TYPE_NONE && (drivers[i] == nullptr || !drivers[i]->is_configured())) {
             return i;
         }
     }
@@ -731,7 +731,7 @@ AP_GPS::first_unconfigured_gps(void) const
 void
 AP_GPS::broadcast_first_configuration_failure_reason(void) const {
     uint8_t unconfigured = first_unconfigured_gps();
-    if (drivers[unconfigured] == NULL) {
+    if (drivers[unconfigured] == nullptr) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
     } else {
         drivers[unconfigured]->broadcast_configuration_failure_reason();
@@ -835,7 +835,7 @@ void AP_GPS::inject_data_all(const uint8_t *data, uint16_t len)
 {
     uint8_t i;
     for (i=0; i<num_instances; i++) {
-        if ((drivers[i] != NULL) && (_type[i] != GPS_TYPE_NONE)) {
+        if ((drivers[i] != nullptr) && (_type[i] != GPS_TYPE_NONE)) {
             drivers[i]->inject_data(data, len);
         }
     }

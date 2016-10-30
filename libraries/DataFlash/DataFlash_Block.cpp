@@ -72,7 +72,7 @@ bool DataFlash_Block::WritePrioritisedBlock(const void *pBuffer, uint16_t size,
             BlockWrite(df_BufferNum, df_BufferIdx, &ph, sizeof(ph), pBuffer, n);
             df_BufferIdx += n + sizeof(ph);
         } else {
-            BlockWrite(df_BufferNum, df_BufferIdx, NULL, 0, pBuffer, n);
+            BlockWrite(df_BufferNum, df_BufferIdx, nullptr, 0, pBuffer, n);
             df_BufferIdx += n;
         }
 

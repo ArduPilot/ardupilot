@@ -109,7 +109,7 @@ void AP_RPM::init(void)
         state[instance].instance = instance;
         drivers[instance] = new AP_RPM_SITL(*this, instance, state[instance]);
 #endif
-        if (drivers[i] != NULL) {
+        if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
             num_instances = i+1;
@@ -123,7 +123,7 @@ void AP_RPM::init(void)
 void AP_RPM::update(void)
 {
     for (uint8_t i=0; i<num_instances; i++) {
-        if (drivers[i] != NULL) {
+        if (drivers[i] != nullptr) {
             if (_type[i] == RPM_TYPE_NONE) {
                 // allow user to disable a RPM sensor at runtime
                 continue;

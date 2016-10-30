@@ -135,7 +135,7 @@ protected:
 
     // access to frontend dataflash
     DataFlash_Class *get_dataflash(void) const {
-        return _imu._log_raw_data? _imu._dataflash : NULL;
+        return _imu._log_raw_data? _imu._dataflash : nullptr;
     }
 
     // common gyro update function for all backends

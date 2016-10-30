@@ -399,7 +399,7 @@ AP_InertialSensor::AP_InertialSensor() :
     _calibrating(false),
     _log_raw_data(false),
     _backends_detected(false),
-    _dataflash(NULL),
+    _dataflash(nullptr),
     _accel_cal_requires_reboot(false),
     _startup_error_counts_set(false),
     _startup_ms(0)
@@ -410,7 +410,7 @@ AP_InertialSensor::AP_InertialSensor() :
     _s_instance = this;
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
-        _backends[i] = NULL;
+        _backends[i] = nullptr;
     }
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _accel_error_count[i] = 0;
@@ -1325,8 +1325,8 @@ AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id, uint8_t i
     detect_backends();
 
     AP_InertialSensor_Backend *backend = _find_backend(backend_id, instance);
-    if (backend == NULL)
-        return NULL;
+    if (backend == nullptr)
+        return nullptr;
 
     return backend->get_auxiliary_bus();
 }
@@ -1399,10 +1399,10 @@ bool AP_InertialSensor::is_still()
 void AP_InertialSensor::acal_init()
 {
     // NOTE: these objects are never deallocated because the pre-arm checks force a reboot
-    if (_acal == NULL) {
+    if (_acal == nullptr) {
         _acal = new AP_AccelCal;
     }
-    if (_accel_calibrator == NULL) {
+    if (_accel_calibrator == nullptr) {
         _accel_calibrator = new AccelCalibrator[INS_MAX_INSTANCES];
     }
 }
@@ -1410,7 +1410,7 @@ void AP_InertialSensor::acal_init()
 // update accel calibrator
 void AP_InertialSensor::acal_update()
 {
-    if(_acal == NULL) {
+    if(_acal == nullptr) {
         return;
     }
 

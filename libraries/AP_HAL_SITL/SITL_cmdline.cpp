@@ -113,8 +113,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     int opt;
     // default to CMAC
     const char *home_str = "-35.363261,149.165230,584,353";
-    const char *model_str = NULL;
-    char *autotest_dir = NULL;
+    const char *model_str = nullptr;
+    char *autotest_dir = nullptr;
     float speedup = 1.0f;
 
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
@@ -131,7 +131,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _rcout_port = 5502;
     _simin_port = 5501;
     _fdm_address = "127.0.0.1";
-    _client_address = NULL;
+    _client_address = nullptr;
     _instance = 0;
 
     enum long_options {
@@ -211,7 +211,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             model_str = gopt.optarg;
             break;
         case 's':
-            speedup = strtof(gopt.optarg, NULL);
+            speedup = strtof(gopt.optarg, nullptr);
             break;
         case 'F':
             _fdm_address = gopt.optarg;

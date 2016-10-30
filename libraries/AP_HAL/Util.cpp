@@ -55,7 +55,7 @@ uint64_t AP_HAL::Util::get_system_clock_ms() const
 {
 #if defined(__APPLE__) && defined(__MACH__)
     struct timeval ts;
-    gettimeofday(&ts, NULL);
+    gettimeofday(&ts, nullptr);
     return ((long long)((ts.tv_sec * 1000) + (ts.tv_usec / 1000)));
 #else
     struct timespec ts;

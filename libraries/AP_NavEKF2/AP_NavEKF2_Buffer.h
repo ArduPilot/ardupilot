@@ -15,7 +15,7 @@ public:
     bool init(uint32_t size)
     {
         buffer = new element_t[size];
-        if(buffer == NULL)
+        if(buffer == nullptr)
         {
             return false;
         }
@@ -126,7 +126,7 @@ public:
     bool init(uint32_t size)
     {
         buffer = new element_t[size];
-        if(buffer == NULL)
+        if(buffer == nullptr)
         {
             return false;
         }

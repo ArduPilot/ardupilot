@@ -51,12 +51,12 @@ AP_Compass_PX4::AP_Compass_PX4(Compass &compass):
 AP_Compass_Backend *AP_Compass_PX4::detect(Compass &compass)
 {
     AP_Compass_PX4 *sensor = new AP_Compass_PX4(compass);
-    if (sensor == NULL) {
-        return NULL;
+    if (sensor == nullptr) {
+        return nullptr;
     }
     if (!sensor->init()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
     return sensor;
 }

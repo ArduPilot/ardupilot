@@ -28,12 +28,12 @@ bool AP_InertialSensor_UserInteract_MAVLink::blocking_read(void)
     while (AP_HAL::millis() - start_ms < 30000U) {
         hal.scheduler->delay(10);
         if (_got_ack) {
-            _gcs->set_snoop(NULL);
+            _gcs->set_snoop(nullptr);
             return true;    
         }
     }
     hal.console->println("Timed out waiting for user response");
-    _gcs->set_snoop(NULL);
+    _gcs->set_snoop(nullptr);
     return false;
 }
 

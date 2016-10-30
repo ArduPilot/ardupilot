@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
 using namespace Linux;
 
 UARTDriver::UARTDriver(bool default_console) :
-    device_path(NULL),
+    device_path(nullptr),
     _packetise(false),
     _device{new ConsoleDevice()}
 {
@@ -60,10 +60,10 @@ void UARTDriver::begin(uint32_t b)
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (!_initialised) {
-        if (device_path == NULL && _console) {
+        if (device_path == nullptr && _console) {
             _device = new ConsoleDevice();
         } else {
-            if (device_path == NULL) {
+            if (device_path == nullptr) {
                 return;
             }
 
@@ -139,38 +139,38 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
 
     char *devstr = strdup(arg);
 
-    if (devstr == NULL) {
+    if (devstr == nullptr) {
         return nullptr;
     }
 
-    char *saveptr = NULL;
+    char *saveptr = nullptr;
     char *protocol, *ip, *port, *flag;
 
     protocol = strtok_r(devstr, ":", &saveptr);
-    ip = strtok_r(NULL, ":", &saveptr);
-    port = strtok_r(NULL, ":", &saveptr);
-    flag = strtok_r(NULL, ":", &saveptr);
+    ip = strtok_r(nullptr, ":", &saveptr);
+    port = strtok_r(nullptr, ":", &saveptr);
+    flag = strtok_r(nullptr, ":", &saveptr);
 
-    if (ip == NULL || port == NULL) {
+    if (ip == nullptr || port == nullptr) {
         free(devstr);
         return nullptr;
     }
 
     if (_ip) {
         free(_ip);
-        _ip = NULL;
+        _ip = nullptr;
     }
 
     if (_flag) {
         free(_flag);
-        _flag = NULL;
+        _flag = nullptr;
     }
 
     _base_port = (uint16_t) atoi(port);
     _ip = strdup(ip);
 
     /* Optional flag for TCP */
-    if (flag != NULL) {
+    if (flag != nullptr) {
         _flag = strdup(flag);
     }
 

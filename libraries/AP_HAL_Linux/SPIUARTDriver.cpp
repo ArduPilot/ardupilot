@@ -27,7 +27,7 @@ SPIUARTDriver::SPIUARTDriver()
 
 void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    if (device_path != NULL) {
+    if (device_path != nullptr) {
         UARTDriver::begin(b, rxS, txS);
         if (is_initialized()) {
             _external = true;
@@ -52,10 +52,10 @@ void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     _readbuf.set_size(rxS);
     _writebuf.set_size(txS);
 
-    if (_buffer == NULL) {
+    if (_buffer == nullptr) {
         /* Do not allocate new buffer, if we're just changing speed */
         _buffer = new uint8_t[rxS];
-        if (_buffer == NULL) {
+        if (_buffer == nullptr) {
             hal.console->printf("Not enough memory\n");
             AP_HAL::panic("Not enough memory\n");
         }

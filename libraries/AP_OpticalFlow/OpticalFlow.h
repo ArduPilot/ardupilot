@@ -40,7 +40,7 @@ public:
     bool enabled() const { return _enabled; }
 
     // healthy - return true if the sensor is healthy
-    bool healthy() const { return backend != NULL && _flags.healthy; }
+    bool healthy() const { return backend != nullptr && _flags.healthy; }
 
     // read latest values from sensor and fill in x,y and totals.
     void update(void);

@@ -64,7 +64,7 @@ void last_letter::start_last_letter(void)
                        "last_letter",
                        "gazebo.launch",
                        "ArduPlane:=true",
-                       NULL);
+                       nullptr);
       if (ret != 0) {
           perror("roslaunch");
       }

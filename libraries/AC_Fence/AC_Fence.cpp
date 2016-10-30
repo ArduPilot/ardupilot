@@ -345,7 +345,7 @@ bool AC_Fence::boundary_breached(const Vector2f& location, uint16_t num_points, 
 void AC_Fence::handle_msg(mavlink_channel_t chan, mavlink_message_t* msg)
 {
     // exit immediately if null message
-    if (msg == NULL) {
+    if (msg == nullptr) {
         return;
     }
 
@@ -405,7 +405,7 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
     }
 
     // exit if we could not allocate RAM for the boundary
-    if (_boundary == NULL) {
+    if (_boundary == nullptr) {
         return false;
     }
 

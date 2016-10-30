@@ -34,12 +34,12 @@ AP_Compass_QFLIGHT::AP_Compass_QFLIGHT(Compass &compass):
 AP_Compass_Backend *AP_Compass_QFLIGHT::detect(Compass &compass)
 {
     AP_Compass_QFLIGHT *sensor = new AP_Compass_QFLIGHT(compass);
-    if (sensor == NULL) {
-        return NULL;
+    if (sensor == nullptr) {
+        return nullptr;
     }
     if (!sensor->init()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
     return sensor;
 }

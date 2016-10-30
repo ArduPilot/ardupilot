@@ -105,8 +105,8 @@ private:
     Heat *_heat;
     int saved_argc;
     char* const *saved_argv;
-    const char* custom_log_directory = NULL;
-    const char* custom_terrain_directory = NULL;
+    const char* custom_log_directory = nullptr;
+    const char* custom_terrain_directory = nullptr;
     static const char *_hw_names[UTIL_NUM_HARDWARES];
 };
 

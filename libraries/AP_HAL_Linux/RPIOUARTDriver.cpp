@@ -55,7 +55,7 @@ void RPIOUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     //hal.console->printf("[RPIOUARTDriver]: begin \n");
 
-    if (device_path != NULL) {
+    if (device_path != nullptr) {
         UARTDriver::begin(b,rxS,txS);
         if ( is_initialized()) {
             _external = true;

@@ -125,7 +125,7 @@ bool AP_Arming::airspeed_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_AIRSPEED)) {
         const AP_Airspeed *airspeed = ahrs.get_airspeed();
-        if (airspeed == NULL) {
+        if (airspeed == nullptr) {
             // not an airspeed capable vehicle
             return true;
         }

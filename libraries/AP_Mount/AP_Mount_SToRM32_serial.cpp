@@ -8,7 +8,7 @@ extern const AP_HAL::HAL& hal;
 
 AP_Mount_SToRM32_serial::AP_Mount_SToRM32_serial(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
-    _port(NULL),
+    _port(nullptr),
     _initialised(false),
     _last_send(0),
     _reply_length(0),

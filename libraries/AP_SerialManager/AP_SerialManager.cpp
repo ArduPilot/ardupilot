@@ -157,7 +157,7 @@ void AP_SerialManager::init()
     
     // initialise serial ports
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if (state[i].uart != NULL) {
+        if (state[i].uart != nullptr) {
             switch (state[i].protocol) {
                 case SerialProtocol_None:
                     break;
@@ -206,7 +206,7 @@ void AP_SerialManager::init()
 
 // find_serial - searches available serial ports for the first instance that allows the given protocol
 //  instance should be zero if searching for the first instance, 1 for the second, etc
-//  returns uart on success, NULL if a serial port cannot be found
+//  returns uart on success, nullptr if a serial port cannot be found
 AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, uint8_t instance) const
 {
     uint8_t found_instance = 0;
@@ -222,7 +222,7 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
     }
 
     // if we got this far we did not find the uart
-    return NULL;
+    return nullptr;
 }
 
 // find_baudrate - searches available serial ports for the first instance that allows the given protocol
@@ -286,7 +286,7 @@ void AP_SerialManager::set_blocking_writes_all(bool blocking)
 {
     // set block_writes for all initialised serial ports
     for (uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if (state[i].uart != NULL) {
+        if (state[i].uart != nullptr) {
             state[i].uart->set_blocking_writes(blocking);
         }
     }

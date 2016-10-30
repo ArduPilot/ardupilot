@@ -301,7 +301,7 @@ void RCOutput_Bebop::init()
     pthread_condattr_t cond_attr;
 
     /* Initialize thread, cond, and mutex */
-    ret = pthread_mutex_init(&_mutex, NULL);
+    ret = pthread_mutex_init(&_mutex, nullptr);
     if (ret != 0) {
         perror("RCout_Bebop: failed to init mutex\n");
         return;
@@ -419,7 +419,7 @@ void* RCOutput_Bebop::_control_thread(void *arg) {
     RCOutput_Bebop* rcout = (RCOutput_Bebop *) arg;
 
     rcout->_run_rcout();
-    return NULL;
+    return nullptr;
 }
 
 void RCOutput_Bebop::_run_rcout()

@@ -49,7 +49,7 @@ const AP_SerialManager *GCS_MAVLINK::serialmanager_p;
 
 // snoop function for vehicle types that want to see messages for
 // other targets
-void (*GCS_MAVLINK::msg_snoop)(const mavlink_message_t* msg) = NULL;
+void (*GCS_MAVLINK::msg_snoop)(const mavlink_message_t* msg) = nullptr;
 
 /*
   lock a channel, preventing use by MAVLink
@@ -155,5 +155,5 @@ extern const AP_HAL::HAL& hal;
 bool comm_is_idle(mavlink_channel_t chan)
 {
 	mavlink_status_t *status = mavlink_get_channel_status(chan);
-	return status == NULL || status->parse_state <= MAVLINK_PARSE_STATE_IDLE;
+	return status == nullptr || status->parse_state <= MAVLINK_PARSE_STATE_IDLE;
 }
