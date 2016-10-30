@@ -464,7 +464,7 @@ static uint64_t micros64(void)
 
 int main(int argc, const char *argv[])
 {
-    int fd = open(argv[1], O_RDONLY);
+    int fd = open(argv[1], O_RDONLY|O_CLOEXEC);
     if (fd == -1) {
         perror(argv[1]);
         exit(1);
