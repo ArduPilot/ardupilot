@@ -122,6 +122,8 @@ void AC_PosControl::set_accel_z(float accel_cmss)
 void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 {
     float alt_change = alt_cm-_pos_target.z;
+    
+    _vel_desired.z = constrain_float(alt_change * dt, _speed_down_cms, _speed_up_cms);
 
     // adjust desired alt if motors have not hit their limits
     if ((alt_change<0 && !_motors.limit.throttle_lower) || (alt_change>0 && !_motors.limit.throttle_upper)) {
@@ -140,10 +142,18 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend)
 {
     // adjust desired alt if motors have not hit their limits
-    // To-Do: add check of _limit.pos_up and _limit.pos_down?
-    if ((climb_rate_cms<0 && (!_motors.limit.throttle_lower || force_descend)) || (climb_rate_cms>0 && !_motors.limit.throttle_upper)) {
+    // To-Do: add check of _limit.pos_down?
+    if ((climb_rate_cms<0 && (!_motors.limit.throttle_lower || force_descend)) || (climb_rate_cms>0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
         _pos_target.z += climb_rate_cms * dt;
     }
+
+    // do not let target alt get above limit
+    if (_alt_max > 0 && _pos_target.z > _alt_max) {
+        _pos_target.z = _alt_max;
+        _limit.pos_up = true;
+    }
+
+    _vel_desired.z = climb_rate_cms;
 }
 
 // get_alt_error - returns altitude error in cm
@@ -252,12 +262,6 @@ void AC_PosControl::pos_to_rate_z()
     // clear position limit flags
     _limit.pos_up = false;
     _limit.pos_down = false;
-
-    // do not let target alt get above limit
-    if (_alt_max > 0 && _pos_target.z > _alt_max) {
-        _pos_target.z = _alt_max;
-        _limit.pos_up = true;
-    }
 
     // calculate altitude error
     _pos_error.z = _pos_target.z - curr_alt;

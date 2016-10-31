@@ -14,12 +14,20 @@ void EmptyScheduler::init(void* machtnichts)
 void EmptyScheduler::delay(uint16_t ms)
 {}
 
-uint32_t EmptyScheduler::millis() {
+uint64_t EmptyScheduler::millis64() {
     return 10000;
 }
 
-uint32_t EmptyScheduler::micros() {
+uint64_t EmptyScheduler::micros64() {
     return 200000;
+}
+
+uint32_t EmptyScheduler::millis() {
+    return millis64();
+}
+
+uint32_t EmptyScheduler::micros() {
+    return micros64();
 }
 
 void EmptyScheduler::delay_microseconds(uint16_t us)

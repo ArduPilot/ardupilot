@@ -964,7 +964,8 @@ bool AP_Mission::advance_current_nav_cmd()
     }
 
     // search until we find next nav command or reach end of command list
-    while (!_flags.nav_cmd_loaded) {
+    uint8_t max_loops = 64;
+    while (!_flags.nav_cmd_loaded && --max_loops) {
         // get next command
         if (!get_next_cmd(cmd_index, cmd, true)) {
             return false;
@@ -988,6 +989,11 @@ bool AP_Mission::advance_current_nav_cmd()
         }
         // move onto next command
         cmd_index = cmd.index+1;
+    }
+
+    if (max_loops == 0) {
+        // the mission is looping
+        return false;
     }
 
     // if we got this far we must have successfully advanced the nav command
@@ -1045,6 +1051,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
     uint16_t jump_index = AP_MISSION_CMD_INDEX_NONE;
 
     // search until the end of the mission command list
+    uint8_t max_loops = 64;
     while(cmd_index < (unsigned)_cmd_total) {
         // load the next command
         if (!read_cmd_from_storage(cmd_index, temp_cmd)) {
@@ -1054,6 +1061,10 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
 
         // check for do-jump command
         if (temp_cmd.id == MAV_CMD_DO_JUMP) {
+
+            if (max_loops-- == 0) {
+                return false;
+            }
 
             // check for invalid target
             if (temp_cmd.content.jump.target >= (unsigned)_cmd_total) {

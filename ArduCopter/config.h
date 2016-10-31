@@ -302,7 +302,7 @@
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
 #endif
 #ifndef GPS_HDOP_GOOD_DEFAULT
- # define GPS_HDOP_GOOD_DEFAULT         200     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
+ # define GPS_HDOP_GOOD_DEFAULT         230     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
 #endif
 
 // GCS failsafe
@@ -502,6 +502,9 @@
 #endif
 #ifndef LAND_DETECTOR_BARO_CLIMBRATE_MAX
 # define LAND_DETECTOR_BARO_CLIMBRATE_MAX   150  // barometer climb rate must be between -150cm/s ~ +150cm/s
+#endif
+#ifndef LAND_DETECTOR_DESIRED_CLIMBRATE_MAX
+# define LAND_DETECTOR_DESIRED_CLIMBRATE_MAX    -20    // vehicle desired climb rate must be below -20cm/s
 #endif
 #ifndef LAND_DETECTOR_ROTATION_MAX
  # define LAND_DETECTOR_ROTATION_MAX    0.50f   // vehicle rotation must be below 0.5 rad/sec (=30deg/sec for) vehicle to consider itself landed

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.2"
+#define THISFIRMWARE "ArduCopter V3.2.1"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -291,25 +291,7 @@ static AP_Compass_HIL compass;
 AP_ADC_ADS7844 apm1_adc;
 #endif
 
-#if CONFIG_INS_TYPE == HAL_INS_MPU6000
-AP_InertialSensor_MPU6000 ins;
-#elif CONFIG_INS_TYPE == HAL_INS_PX4
-AP_InertialSensor_PX4 ins;
-#elif CONFIG_INS_TYPE == HAL_INS_VRBRAIN
-AP_InertialSensor_VRBRAIN ins;
-#elif CONFIG_INS_TYPE == HAL_INS_HIL
-AP_InertialSensor_HIL ins;
-#elif CONFIG_INS_TYPE == HAL_INS_OILPAN
-AP_InertialSensor_Oilpan ins( &apm1_adc );
-#elif CONFIG_INS_TYPE == HAL_INS_FLYMAPLE
-AP_InertialSensor_Flymaple ins;
-#elif CONFIG_INS_TYPE == HAL_INS_L3G4200D
-AP_InertialSensor_L3G4200D ins;
-#elif CONFIG_INS_TYPE == HAL_INS_MPU9250
-AP_InertialSensor_MPU9250 ins;
-#else
-  #error Unrecognised CONFIG_INS_TYPE setting.
-#endif // CONFIG_INS_TYPE
+AP_InertialSensor ins;
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -963,10 +945,7 @@ static void perf_update(void)
 void loop()
 {
     // wait for an INS sample
-    if (!ins.wait_for_sample(1000)) {
-        Log_Write_Error(ERROR_SUBSYSTEM_MAIN, ERROR_CODE_MAIN_INS_DELAY);
-        return;
-    }
+    ins.wait_for_sample();
     uint32_t timer = micros();
 
     // check loop time
@@ -1211,6 +1190,13 @@ static void one_hz_loop()
 
 #if AP_TERRAIN_AVAILABLE
     terrain.update();
+#endif
+
+#if AC_FENCE == ENABLED
+    // set fence altitude limit in position controller
+    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+        pos_control.set_alt_max(fence.get_safe_alt()*100.0f);
+    }
 #endif
 }
 

@@ -124,6 +124,7 @@ endif
 
 # The ELF file
 SKETCHELF		=	$(BUILDROOT)/$(SKETCH).elf
+BUILDELF                =       $(notdir $(SKETCHELF))
 
 # HEX file
 SKETCHHEX		=	$(BUILDROOT)/$(SKETCH).hex
@@ -174,6 +175,8 @@ jtag-program:
 $(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
 	$(RULEHDR)
 	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(v)cp $(SKETCHELF) $(BUILDELF)
+	@echo "Firmware is in $(BUILDELF)"
 
 # Create the hex file
 $(SKETCHHEX):	$(SKETCHELF)
