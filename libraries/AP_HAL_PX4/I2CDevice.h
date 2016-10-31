@@ -21,8 +21,7 @@
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/OwnPtr.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include "Semaphores.h"
 #include "I2CWrapper.h"
 
 namespace PX4 {
@@ -41,7 +40,7 @@ public:
     void set_address(uint8_t address) override { _address = address; }
 
     /* See AP_HAL::I2CDevice::set_retries() */
-    void set_retries(uint8_t retries) override { _retries = retries; }
+    void set_retries(uint8_t retries) override { _px4dev.set_retries(retries); }
 
     /* See AP_HAL::Device::set_speed(): Empty implementation, not supported. */
     bool set_speed(enum Device::Speed speed) override { return true; }
@@ -55,27 +54,43 @@ public:
 
     /* See AP_HAL::Device::register_periodic_callback() */
     AP_HAL::Device::PeriodicHandle register_periodic_callback(
-        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override
-    {
-        /* Not implemented yet */
-        return nullptr;
-    }
+        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
 
     /* See AP_HAL::Device::adjust_periodic_callback() */
-    bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override
-    {
-        /* Not implemented yet */
-        return false;
+    bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
+
+    AP_HAL::Semaphore* get_semaphore() override {
+        // if asking for invalid bus number use bus 0 semaphore
+        return &businfo[_busnum<num_buses?_busnum:0].semaphore;
     }
 
-    AP_HAL::Semaphore* get_semaphore() override { return &semaphore; }
+    struct callback_info {
+        struct callback_info *next;
+        AP_HAL::Device::PeriodicCb cb;
+        uint32_t period_usec;
+        uint64_t next_usec;
+    };
 
+    struct bus_info {
+        struct callback_info *callbacks;
+        Semaphore semaphore;
+        pthread_t thread_ctx;
+        bool thread_started;
+        uint8_t bus;
+    };
+    
 private:
-    // we use an empty semaphore as the underlying I2C class already has a semaphore
-    Empty::Semaphore semaphore;
-    PX4_I2C _bus;
+    static const uint8_t num_buses = 2;
+    static struct bus_info businfo[num_buses];
+    
+    // find or create thread for this bus
+    struct bus_info *find_thread(void);
+
+    static void *i2c_thread(void *arg);
+    
+    uint8_t _busnum;
+    PX4_I2C _px4dev;
     uint8_t _address;
-    uint8_t _retries = 0;
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
