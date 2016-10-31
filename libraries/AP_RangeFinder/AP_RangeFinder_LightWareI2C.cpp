@@ -30,6 +30,9 @@ AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder &_ranger, u
     : AP_RangeFinder_Backend(_ranger, instance, _state)
     , _dev(std::move(dev))
 {
+    // call timer() at 20Hz
+    _dev->register_periodic_callback(50000,
+                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_LightWareI2C::timer, bool));
 }
 
 /*
@@ -42,11 +45,19 @@ AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder &_ranger
     AP_RangeFinder_LightWareI2C *sensor
         = new AP_RangeFinder_LightWareI2C(_ranger, instance, _state, std::move(dev));
 
-    uint16_t reading_cm;
-
-    if (!sensor || !sensor->get_reading(reading_cm)) {
+    if (!sensor) {
         delete sensor;
         return nullptr;
+    }
+
+    if (sensor->_dev->get_semaphore()->take(0)) {
+        uint16_t reading_cm;
+        if (!sensor->get_reading(reading_cm)) {
+            sensor->_dev->get_semaphore()->give();
+            delete sensor;
+            return nullptr;
+        }
+        sensor->_dev->get_semaphore()->give();
     }
 
     return sensor;
@@ -61,20 +72,12 @@ bool AP_RangeFinder_LightWareI2C::get_reading(uint16_t &reading_cm)
         return false;
     }
 
-
-    // exit immediately if we can't take the semaphore
-    if (!_dev || !_dev->get_semaphore()->take(1)) {
-        return false;
-    }
-
     // read the high and low byte distance registers
     bool ret = _dev->read((uint8_t *) &val, sizeof(val));
     if (ret) {
         // combine results into distance
         reading_cm = be16toh(val);
     }
-
-    _dev->get_semaphore()->give();
 
     return ret;
 }
@@ -84,10 +87,16 @@ bool AP_RangeFinder_LightWareI2C::get_reading(uint16_t &reading_cm)
 */
 void AP_RangeFinder_LightWareI2C::update(void)
 {
+    // nothing to do - its all done in the timer()
+}
+
+bool AP_RangeFinder_LightWareI2C::timer(void)
+{
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
         update_status();
     } else {
         set_status(RangeFinder::RangeFinder_NoData);
-    }
+    }    
+    return true;
 }
