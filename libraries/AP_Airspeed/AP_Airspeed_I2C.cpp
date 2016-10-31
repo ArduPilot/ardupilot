@@ -50,13 +50,20 @@ bool AP_Airspeed_I2C::init()
         return false;
     }
 
+    // lots of retries during probe
+    _dev->set_retries(5);
+    
     _measure();
     hal.scheduler->delay(10);
     _collect();
     _dev->get_semaphore()->give();
 
+    // drop to 2 retries for runtime
+    _dev->set_retries(2);
+    
     if (_last_sample_time_ms != 0) {
-        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Airspeed_I2C::_timer, void));
+        _dev->register_periodic_callback(20000,
+                                         FUNCTOR_BIND_MEMBER(&AP_Airspeed_I2C::_timer, bool));
         return true;
     }
     return false;
@@ -110,27 +117,47 @@ void AP_Airspeed_I2C::_collect()
     _pressure = diff_press_PSI * PSI_to_Pa;
     _temperature = ((200.0f * dT_raw) / 2047) - 50;
 
+    _voltage_correction(_pressure, _temperature);
+    
     _last_sample_time_ms = AP_HAL::millis();
 }
 
-// 1kHz timer
-void AP_Airspeed_I2C::_timer()
-{
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
+/**
+   correct for 5V rail voltage if the system_power ORB topic is
+   available
 
+   See http://uav.tridgell.net/MS4525/MS4525-offset.png for a graph of
+   offset versus voltage for 3 sensors
+ */
+void AP_Airspeed_I2C::_voltage_correction(float &diff_press_pa, float &temperature)
+{
+	const float slope = 65.0f;
+	const float temp_slope = 0.887f;
+
+	/*
+	  apply a piecewise linear correction within range given by above graph
+	 */
+	float voltage_diff = hal.analogin->board_voltage() - 5.0f;
+
+    voltage_diff = constrain_float(voltage_diff, -0.7f, 0.5f);
+
+	diff_press_pa -= voltage_diff * slope;
+	temperature -= voltage_diff * temp_slope;
+}
+
+// 50Hz timer
+bool AP_Airspeed_I2C::_timer()
+{
     if (_measurement_started_ms == 0) {
         _measure();
-        _dev->get_semaphore()->give();
-        return;
+        return true;
     }
     if ((AP_HAL::millis() - _measurement_started_ms) > 10) {
         _collect();
         // start a new measurement
         _measure();
     }
-    _dev->get_semaphore()->give();
+    return true;
 }
 
 // return the current differential_pressure in Pascal
