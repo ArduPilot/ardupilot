@@ -173,7 +173,7 @@ opts, args = parser.parse_args()
 
 steps = [
     'prerequisites',
-    'build.All',
+    #'build.All',
     'build.Binaries',
     # 'build.DevRelease',
     'build.Examples',
