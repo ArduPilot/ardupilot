@@ -50,6 +50,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
         _params.fs_batt_voltage = fs_batt_voltage; // failsafe battery voltage in volts
         _params.fs_batt_mah = fs_batt_mah; // failsafe reserve capacity in mAh
         if (ap_valuep == nullptr) { // ap bit-field
+            _ap.value = 0x2000; // set "initialised" to 1 for rover and plane
             _ap.valuep = &_ap.value;
         } else {
             _ap.valuep = ap_valuep;
@@ -111,8 +112,10 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 _passthrough.params_timer = AP_HAL::millis();
                 return;
             } else if ((now - _passthrough.ap_status_timer) > 500) {
-                send_uint32(DIY_FIRST_ID+1, calc_ap_status());
-                _passthrough.ap_status_timer = AP_HAL::millis();
+                if ((*_ap.valuep & AP_INITIALIZED_FLAG) > 0) {  // send ap status only once vehicle has been initialised
+                    send_uint32(DIY_FIRST_ID+1, calc_ap_status());
+                    _passthrough.ap_status_timer = AP_HAL::millis();
+                }
                 return;
             } else if ((now - _passthrough.batt_timer) > 1000) {
                 send_uint32(DIY_FIRST_ID+3, calc_batt());
