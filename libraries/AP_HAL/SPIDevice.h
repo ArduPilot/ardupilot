@@ -63,6 +63,12 @@ public:
     {
         return nullptr;
     }
+
+    /* Return possible spi device count number. */
+    virtual uint8_t get_count() { return 0; }
+
+    /* Get spi device name with @ref */
+    virtual const char* get_device_name(uint8_t n) { return 0; }
 };
 
 }
