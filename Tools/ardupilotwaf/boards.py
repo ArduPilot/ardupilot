@@ -423,6 +423,7 @@ class px4(Board):
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_PX4',
+            HAVE_OCLOEXEC = 0,
             HAVE_STD_NULLPTR_T = 0,
         )
         env.CXXFLAGS += [
