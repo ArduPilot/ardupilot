@@ -1,5 +1,9 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.0 31-Oct-2016
+Changes from 3.4.0-rc7
+1) Disabled LeddarOne driver (will be fixed in AC3.4.1 within a couple of weeks)
+------------------------------------------------------------------
 Copter 3.4.0-rc7 25-Oct-2016
 Changes from 3.4.0-rc6
 1) Bug fixes, minor improvements:
