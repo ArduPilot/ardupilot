@@ -45,7 +45,9 @@ public:
 private:
     void _measure();
     void _collect();
-    void _timer();
+    bool _timer();
+    void _voltage_correction(float &diff_press_pa, float &temperature);
+    
     float _temperature;
     float _pressure;
     uint32_t _last_sample_time_ms;
