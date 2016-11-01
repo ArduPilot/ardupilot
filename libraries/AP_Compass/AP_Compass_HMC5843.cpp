@@ -27,6 +27,7 @@
 
 #include <assert.h>
 #include <utility>
+#include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
@@ -177,6 +178,8 @@ bool AP_Compass_HMC5843::init()
     bus_sem->give();
     hal.scheduler->resume_timer_procs();
 
+    _accum_sem = hal.util->new_semaphore();    
+
     // perform an initial read
     read();
 
@@ -187,6 +190,10 @@ bool AP_Compass_HMC5843::init()
         set_external(_compass_instance, true);
     }
 
+    // read from sensor at 75Hz
+    _bus->register_periodic_callback(13333,
+                                     FUNCTOR_BIND_MEMBER(&AP_Compass_HMC5843::_timer, bool));
+    
     return true;
 
 errout:
@@ -199,73 +206,59 @@ fail_sem:
 }
 
 /*
- * Accumulate a reading from the magnetometer
+ * take a reading from the magnetometer
  *
- * bus semaphore must not be taken
+ * bus semaphore has been taken already by HAL
  */
-void AP_Compass_HMC5843::accumulate()
+bool AP_Compass_HMC5843::_timer()
 {
-    if (!_initialised) {
-        // someone has tried to enable a compass for the first time
-        // mid-flight .... we can't do that yet (especially as we won't
-        // have the right orientation!)
-        return;
+    bool result = _read_sample();
+    if (!result) {
+        return true;
     }
 
-   uint32_t tnow = AP_HAL::micros();
-   if (_accum_count != 0 && (tnow - _last_accum_time) < 13333) {
-	  // the compass gets new data at 75Hz
-	  return;
-   }
+    uint32_t tnow = AP_HAL::micros();
 
-   if (!_bus->get_semaphore()->take(1)) {
-       // the bus is busy - try again later
-       return;
-   }
+    // the _mag_N values are in the range -2048 to 2047, so we can
+    // accumulate up to 15 of them in an int16_t. Let's make it 14
+    // for ease of calculation. We expect to do reads at 10Hz, and
+    // we get new data at most 75Hz, so we don't expect to
+    // accumulate more than 8 before a read
+    // get raw_field - sensor frame, uncorrected
+    Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
+    raw_field *= _gain_scale;
+    
+    // rotate to the desired orientation
+    if (is_external(_compass_instance) &&
+        _product_id == AP_COMPASS_TYPE_HMC5883L) {
+        raw_field.rotate(ROTATION_YAW_90);
+    }
 
-   bool result = _read_sample();
-
-   _bus->get_semaphore()->give();
-
-   if (!result) {
-       return;
-   }
-
-   // the _mag_N values are in the range -2048 to 2047, so we can
-   // accumulate up to 15 of them in an int16_t. Let's make it 14
-   // for ease of calculation. We expect to do reads at 10Hz, and
-   // we get new data at most 75Hz, so we don't expect to
-   // accumulate more than 8 before a read
-   // get raw_field - sensor frame, uncorrected
-   Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
-   raw_field *= _gain_scale;
-
-   // rotate to the desired orientation
-   if (is_external(_compass_instance) &&
-       _product_id == AP_COMPASS_TYPE_HMC5883L) {
-       raw_field.rotate(ROTATION_YAW_90);
-   }
-
-   // rotate raw_field from sensor frame to body frame
-   rotate_field(raw_field, _compass_instance);
-
-   // publish raw_field (uncorrected point sample) for calibration use
-   publish_raw_field(raw_field, tnow, _compass_instance);
-
-   // correct raw_field for known errors
-   correct_field(raw_field, _compass_instance);
-
-   _mag_x_accum += raw_field.x;
-   _mag_y_accum += raw_field.y;
-   _mag_z_accum += raw_field.z;
-   _accum_count++;
-   if (_accum_count == 14) {
-       _mag_x_accum /= 2;
-       _mag_y_accum /= 2;
-       _mag_z_accum /= 2;
-       _accum_count = 7;
-   }
-   _last_accum_time = tnow;
+    // rotate raw_field from sensor frame to body frame
+    rotate_field(raw_field, _compass_instance);
+    
+    // publish raw_field (uncorrected point sample) for calibration use
+    publish_raw_field(raw_field, tnow, _compass_instance);
+    
+    // correct raw_field for known errors
+    correct_field(raw_field, _compass_instance);
+    
+    if (_accum_sem->take(0)) {
+        _mag_x_accum += raw_field.x;
+        _mag_y_accum += raw_field.y;
+        _mag_z_accum += raw_field.z;
+        _accum_count++;
+        if (_accum_count == 14) {
+            _mag_x_accum /= 2;
+            _mag_y_accum /= 2;
+            _mag_z_accum /= 2;
+            _accum_count = 7;
+        }
+        _last_accum_time = tnow;
+        _accum_sem->give();
+    }
+    
+    return true;
 }
 
 /*
@@ -283,11 +276,13 @@ void AP_Compass_HMC5843::read()
         return;
     }
 
+    if (!_accum_sem->take_nonblocking()) {
+        return;
+    }
+    
     if (_accum_count == 0) {
-       accumulate();
-       if (_retry_time != 0) {
-          return;
-       }
+        _accum_sem->give();
+        return;
     }
 
     Vector3f field(_mag_x_accum * _scaling[0],
@@ -298,6 +293,8 @@ void AP_Compass_HMC5843::read()
     _accum_count = 0;
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
+    _accum_sem->give();
+    
     publish_filtered_field(field, _compass_instance);
 }
 
@@ -512,6 +509,12 @@ AP_HAL::Semaphore *AP_HMC5843_BusDriver_HALDevice::get_semaphore()
     return _dev->get_semaphore();
 }
 
+AP_HAL::Device::PeriodicHandle AP_HMC5843_BusDriver_HALDevice::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    return _dev->register_periodic_callback(period_usec, cb);
+}
+
+
 /* HMC5843 on an auxiliary bus of IMU driver */
 AP_HMC5843_BusDriver_Auxiliary::AP_HMC5843_BusDriver_Auxiliary(AP_InertialSensor &ins, uint8_t backend_id,
                                                                uint8_t addr)
@@ -587,6 +590,11 @@ bool AP_HMC5843_BusDriver_Auxiliary::start_measurements()
     _started = true;
 
     return true;
+}
+
+AP_HAL::Device::PeriodicHandle AP_HMC5843_BusDriver_Auxiliary::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    return _bus->register_periodic_callback(period_usec, cb);
 }
 
 #endif
