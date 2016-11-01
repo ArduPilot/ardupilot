@@ -3,6 +3,7 @@
 #include <AP_HAL_Linux/I2CDevice.h>
 #endif
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
@@ -491,6 +492,14 @@ void Compass::_detect_backends(void)
 #if HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
     _add_backend(AP_Compass_HIL::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V1 ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2 ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V4) {
+        // use in-tree driver
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR), true),
+                         AP_Compass_HMC5843::name, true);
+    }
+    // also add any px4 level drivers (for canbus magnetometers)
     _add_backend(AP_Compass_PX4::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QURT
     _add_backend(AP_Compass_QURT::detect(*this), nullptr, false);
