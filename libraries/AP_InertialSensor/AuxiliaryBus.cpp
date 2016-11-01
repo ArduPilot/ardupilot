@@ -99,3 +99,12 @@ int AuxiliaryBus::register_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg,
 
     return 0;
 }
+
+/*
+  add a periodic callback. This is added to a list which the backend needs to then process
+ */
+AP_HAL::Device::PeriodicHandle AuxiliaryBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    // not implemented yet
+    return nullptr;
+}
