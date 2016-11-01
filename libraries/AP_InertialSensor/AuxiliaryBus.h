@@ -18,6 +18,7 @@
 #pragma once
 
 #include <inttypes.h>
+#include <AP_HAL/Device.h>
 
 class AuxiliaryBus;
 class AP_InertialSensor_Backend;
@@ -101,6 +102,9 @@ public:
     AuxiliaryBusSlave *request_next_slave(uint8_t addr);
     int register_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg, uint8_t size);
 
+    /* See AP_HAL::Device::register_periodic_callback() */
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t, AP_HAL::Device::PeriodicCb);
+    
     /*
      * Get the semaphore needed to call methods on the bus this sensor is on.
      * Internally no locks are taken and it's the caller's duty to lock and
