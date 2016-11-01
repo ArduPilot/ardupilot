@@ -14,5 +14,6 @@ namespace PX4 {
         class NSHShellStream;
         class PX4I2CDriver;
         class PX4_I2C;
+        class PX4_SPI;
         class Semaphore;
 }
