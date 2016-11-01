@@ -112,7 +112,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 _passthrough.params_timer = AP_HAL::millis();
                 return;
             } else if ((now - _passthrough.ap_status_timer) > 500) {
-                if ((*_ap.valuep & AP_INITIALIZED_FLAG) > 0) {  // send ap status only once vehicle has been initialised
+                if (((*_ap.valuep) & AP_INITIALIZED_FLAG) > 0) {  // send ap status only once vehicle has been initialised
                     send_uint32(DIY_FIRST_ID+1, calc_ap_status());
                     _passthrough.ap_status_timer = AP_HAL::millis();
                 }
@@ -572,12 +572,12 @@ uint32_t AP_Frsky_Telem::calc_param(void)
         break;
     case 2:
         if (_params.fs_batt_voltage != nullptr) {
-            param = (uint32_t)roundf(*_params.fs_batt_voltage * 100.0f); // battery failsafe voltage in centivolts
+            param = (uint32_t)roundf((*_params.fs_batt_voltage) * 100.0f); // battery failsafe voltage in centivolts
         }
         break;
     case 3:
         if (_params.fs_batt_mah != nullptr) {
-            param = (uint32_t)roundf(*_params.fs_batt_mah);              // battery failsafe capacity in mAh
+            param = (uint32_t)roundf((*_params.fs_batt_mah));              // battery failsafe capacity in mAh
         }
         break;
     case 4:
@@ -600,20 +600,20 @@ uint32_t AP_Frsky_Telem::calc_gps_latlng(bool *send_latitude)
     const Location &loc = _ahrs.get_gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
 
     // alternate between latitude and longitude
-    if (*send_latitude == true) {
+    if ((*send_latitude) == true) {
         if (loc.lat < 0) {
             latlng = ((abs(loc.lat)/100)*6) | 0x40000000;
         } else {
             latlng = ((abs(loc.lat)/100)*6);
         }
-        *send_latitude = false;
+        (*send_latitude) = false;
     } else {
         if (loc.lng < 0) {
             latlng = ((abs(loc.lng)/100)*6) | 0xC0000000;
         } else {
             latlng = ((abs(loc.lng)/100)*6) | 0x80000000;
         }
-        *send_latitude = true;
+        (*send_latitude) = true;
     }
     return latlng;
 }
@@ -668,9 +668,9 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
     ap_status = (uint8_t)((_ap.control_mode+1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
-    ap_status |= (uint8_t)(*_ap.valuep & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
-    // is_flying flag which is the inverse of the land_complete flag
-    ap_status |= (uint8_t)((*_ap.valuep & AP_LANDCOMPLETE_FLAG) ^ AP_LANDCOMPLETE_FLAG);
+    ap_status |= (uint8_t)((*_ap.valuep) & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
+    // is_flying flag
+    ap_status |= (uint8_t)(((*_ap.valuep) & AP_LANDCOMPLETE_FLAG) ^ AP_LANDCOMPLETE_FLAG);
     // armed flag
     ap_status |= (uint8_t)(AP_Notify::flags.armed)<<AP_ARMED_OFFSET;
     // battery failsafe flag
