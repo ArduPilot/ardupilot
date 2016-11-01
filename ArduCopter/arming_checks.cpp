@@ -656,6 +656,14 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
 
+    // check compass health
+    if (!compass.healthy()) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Compass not healthy");
+        }
+        return false;
+    }
+
     if (compass.is_calibrating()) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Compass calibration running");
