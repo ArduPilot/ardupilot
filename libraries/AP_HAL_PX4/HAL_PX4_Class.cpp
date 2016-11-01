@@ -14,6 +14,7 @@
 #include "Util.h"
 #include "GPIO.h"
 #include "I2CDevice.h"
+#include "SPIDevice.h"
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
@@ -29,7 +30,6 @@
 
 using namespace PX4;
 
-static Empty::SPIDeviceManager spiDeviceManager;
 //static Empty::GPIO gpioDriver;
 
 static PX4Scheduler schedulerInstance;
@@ -41,6 +41,7 @@ static PX4Util utilInstance;
 static PX4GPIO gpioDriver;
 
 static PX4::I2CDeviceManager i2c_mgr_instance;
+static PX4::SPIDeviceManager spi_mgr_instance;
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
@@ -82,7 +83,7 @@ HAL_PX4::HAL_PX4() :
         &uartEDriver,  /* uartE */
         &uartFDriver,  /* uartF */
         &i2c_mgr_instance,
-        &spiDeviceManager, /* spi */
+        &spi_mgr_instance,
         &analogIn, /* analogin */
         &storageDriver, /* storage */
         &uartADriver, /* console */
