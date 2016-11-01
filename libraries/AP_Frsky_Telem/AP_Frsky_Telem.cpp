@@ -684,8 +684,8 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
     ap_status = (uint8_t)((_ap.control_mode+1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
     ap_status |= (uint8_t)(*_ap.valuep & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
-    // is_flying flag
-    ap_status |= (uint8_t)((*_ap.valuep & AP_ISFLYING_FLAG) ^ AP_ISFLYING_FLAG);
+    // is_flying flag which is the inverse of the land_complete flag
+    ap_status |= (uint8_t)((*_ap.valuep & AP_LANDCOMPLETE_FLAG) ^ AP_LANDCOMPLETE_FLAG);
     // armed flag
     ap_status |= (uint8_t)(AP_Notify::flags.armed)<<AP_ARMED_OFFSET;
     // battery failsafe flag
@@ -910,8 +910,8 @@ void AP_Frsky_Telem::calc_gps_position(void)
 void AP_Frsky_Telem::set_is_flying(bool is_flying)
 {
     if (is_flying) {
-        _ap.value |= AP_ISFLYING_FLAG;
+        _ap.value &= ~AP_LANDCOMPLETE_FLAG; // set land_complete flag to 0
     } else {
-        _ap.value &= ~AP_ISFLYING_FLAG;
+        _ap.value |= AP_LANDCOMPLETE_FLAG; // set land_complete flag to 1
     }
 }
