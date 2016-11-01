@@ -24,6 +24,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "AP_Baro_BMP085.h"
 #include "AP_Baro_HIL.h"
@@ -291,7 +292,16 @@ void AP_Baro::init(void)
     }
 
 #if HAL_BARO_DEFAULT == HAL_BARO_PX4 || HAL_BARO_DEFAULT == HAL_BARO_VRBRAIN
-    drivers[0] = new AP_Baro_PX4(*this);
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V1 ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2) {
+        drivers[0] = new AP_Baro_MS5611(*this,
+                                        std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
+    } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V4) {
+        drivers[0] = new AP_Baro_MS5611(*this,
+                                        std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME)));
+    } else {
+        drivers[0] = new AP_Baro_PX4(*this);
+    }
     _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_HIL
     drivers[0] = new AP_Baro_HIL(*this);
