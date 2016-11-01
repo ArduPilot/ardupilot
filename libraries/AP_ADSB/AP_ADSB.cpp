@@ -641,8 +641,6 @@ void AP_ADSB::set_callsign(const char* str, const bool append_icao)
     if (append_icao) {
         sprintf(&out_state.cfg.callsign[4], "%04X", out_state.cfg.ICAO_id % 0x10000);
     }
-
-    out_state.cfg.callsign[sizeof(out_state.cfg.callsign)-1] = 0; // always null terminate just to be sure
 }
 
 
