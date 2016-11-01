@@ -1,5 +1,9 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.1 01-Nov-2016
+Changes from 3.4.0
+1) Pixracer PPM RC input fix
+------------------------------------------------------------------
 Copter 3.4.0 31-Oct-2016
 Changes from 3.4.0-rc7
 1) Disabled LeddarOne driver (will be fixed in AC3.4.1 within a couple of weeks)
