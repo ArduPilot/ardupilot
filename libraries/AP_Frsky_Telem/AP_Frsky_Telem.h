@@ -90,7 +90,7 @@ for FrSky SPort Passthrough
 #define AP_CONTROL_MODE_LIMIT       0x1F
 #define AP_SSIMPLE_FLAGS            0x6
 #define AP_SSIMPLE_OFFSET           4
-#define AP_ISFLYING_FLAG            0x80
+#define AP_LANDCOMPLETE_FLAG        0x80
 #define AP_INITIALIZED_FLAG         0x2000
 #define AP_ARMED_OFFSET             8
 #define AP_BATT_FS_OFFSET           9
