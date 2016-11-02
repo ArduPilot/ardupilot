@@ -1195,21 +1195,19 @@ void MissionTest::setup(void)
     // display basic info about command sizes
     hal.console->printf("Max Num Commands: %d\n",(int)mission.num_commands_max());
     hal.console->printf("Command size: %d bytes\n",(int)AP_MISSION_EEPROM_COMMAND_SIZE);
-}
 
-// loop
-void MissionTest::loop(void)
-{
     // uncomment line below to run one of the mission tests
     run_mission_test();
 
     // uncomment line below to run the mission pause/resume test
     //run_resume_test();
+}
 
-    // wait forever
-    while(true) {
-        hal.scheduler->delay(1000);
-    }
+// loop
+void MissionTest::loop(void)
+{
+    // loop forever
+    hal.scheduler->delay(1000);
 }
 
 void setup(void);
