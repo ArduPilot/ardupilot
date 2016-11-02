@@ -33,7 +33,7 @@ static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 #define KHZ (1000U)
 
 SPIDesc SPIDeviceManager::device_table[] = {
-    SPIDesc("mpu6000",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 500*KHZ, 20*MHZ),
+    SPIDesc("mpu6000",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 500*KHZ, 11*MHZ),
     SPIDesc("ms5611",    PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 10*MHZ, 10*MHZ),
     SPIDesc("lsm9ds0_a", PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ACCEL_MAG, SPIDEV_MODE3, 10*MHZ, 10*MHZ),
     SPIDesc("lsm9ds0_g", PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_GYRO, SPIDEV_MODE3, 10*MHZ, 10*MHZ),
