@@ -202,10 +202,8 @@ void DataFlashTest_AllTypes::setup(void)
 
 void DataFlashTest_AllTypes::loop(void)
 {
-    while (true) {
-        hal.console->printf("all done\n");
-        hal.scheduler->delay(1000);
-    }
+    hal.console->printf("all done\n");
+    hal.scheduler->delay(1000);
 }
 
 static DataFlashTest_AllTypes dataflashtest;
