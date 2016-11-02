@@ -8,7 +8,7 @@
 
 bool DataFlashFileReader::open_log(const char *logfile)
 {
-    fd = ::open(logfile, O_RDONLY);
+    fd = ::open(logfile, O_RDONLY|O_CLOEXEC);
     if (fd == -1) {
         return false;
     }
