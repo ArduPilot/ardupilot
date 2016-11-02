@@ -388,7 +388,10 @@ void AP_InertialSensor_MPU6000::start()
     hal.scheduler->resume_timer_procs();
 
     // start the timer process to read samples
-    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, bool));
+    if (_dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, bool)) == nullptr) {
+        // cope with AuxiliaryBus which does not support register_periodic_callback yet
+        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data_timer, void));
+    }
 }
 
 /*
@@ -443,6 +446,18 @@ bool AP_InertialSensor_MPU6000::_poll_data()
         _read_sample();
     }
     return true;
+}
+
+/*
+  varient of _poll_data for systems where register_periodic_callback
+  fails. We need to handle the semaphore ourselves.
+ */
+void AP_InertialSensor_MPU6000::_poll_data_timer()
+{
+    if (_dev->get_semaphore()->take_nonblocking()) {
+        _poll_data();
+        _dev->get_semaphore()->give();
+    }
 }
 
 void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
