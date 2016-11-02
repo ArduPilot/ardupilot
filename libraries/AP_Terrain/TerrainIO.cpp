@@ -186,7 +186,7 @@ void AP_Terrain::open_file(void)
     if (fd != -1) {
         ::close(fd);
     }
-    fd = ::open(file_path, O_RDWR|O_CREAT, 0644);
+    fd = ::open(file_path, O_RDWR|O_CREAT|O_CLOEXEC, 0644);
     if (fd == -1) {
 #if TERRAIN_DEBUG
         hal.console->printf("Open %s failed - %s\n",
