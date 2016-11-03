@@ -490,14 +490,6 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
 
     _spi_sem->give();
 
-    _gyro_instance = _imu.register_gyro(760);
-    _accel_instance = _imu.register_accel(800);
-
-    _set_accel_max_abs_offset(_accel_instance, 5.0f);
-
-    /* start the timer process to read samples */
-    _dev_gyro->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS0::_poll_data, bool));
-
     return true;
 
 fail_tries:
@@ -505,6 +497,22 @@ fail_whoami:
     _spi_sem->give();
     return false;
 }
+
+
+/*
+  start the sensor going
+ */
+void AP_InertialSensor_LSM9DS0::start(void)
+{
+    _gyro_instance = _imu.register_gyro(760);
+    _accel_instance = _imu.register_accel(800);
+    
+    _set_accel_max_abs_offset(_accel_instance, 5.0f);
+
+    /* start the timer process to read samples */
+    _dev_gyro->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS0::_poll_data, bool));
+}
+
 
 uint8_t AP_InertialSensor_LSM9DS0::_register_read_xm(uint8_t reg)
 {
