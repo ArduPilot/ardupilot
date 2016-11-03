@@ -38,5 +38,5 @@
 
 #define HAL_INS_MPU60x0_NAME "mpu6000"
 #define HAL_INS_LSM9DS0_G_NAME "lsm9ds0_g"
-#define HAL_INS_LSM9DS0_A_NAME "lsm9ds0_a"
+#define HAL_INS_LSM9DS0_A_NAME "lsm9ds0_am"
 
