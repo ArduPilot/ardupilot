@@ -17,13 +17,15 @@ public:
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel);
+                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                            enum Rotation rotation = ROTATION_NONE);
 
 private:
     AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
                               AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
-                              int drdy_pin_num_a, int drdy_pin_num_b);
+                              int drdy_pin_num_a, int drdy_pin_num_b,
+                              enum Rotation rotation);
 
     struct PACKED sensor_raw_data {
         int16_t x;
@@ -92,4 +94,6 @@ private:
     int _drdy_pin_num_g;
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
+
+    enum Rotation _rotation;
 };
