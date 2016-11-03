@@ -45,8 +45,6 @@ extern "C" {
     int l3gd20_main(int , char **);
     int lsm303d_main(int , char **);
     int hmc5883_main(int , char **);
-    int ets_airspeed_main(int, char **);
-    int meas_airspeed_main(int, char **);
     int ll40ls_main(int, char **);
     int trone_main(int, char **);
     int mb12xx_main(int, char **);
@@ -520,16 +518,6 @@ void AP_BoardConfig::px4_start_common_sensors(void)
  */
 void AP_BoardConfig::px4_start_optional_sensors(void)
 {
-    if (px4_start_driver(ets_airspeed_main, "ets_airspeed", "start")) {
-        printf("Found ETS airspeed sensor\n");
-    }
-
-    if (px4_start_driver(meas_airspeed_main, "meas_airspeed", "start")) {
-        printf("Found MEAS airspeed sensor\n");
-    } else if (px4_start_driver(meas_airspeed_main, "meas_airspeed", "start -b 2")) {
-        printf("Found MEAS airspeed sensor (bus2)\n");
-    }
-
     if (px4_start_driver(ll40ls_main, "ll40ls", "-X start")) {
         printf("Found external ll40ls sensor\n");
     }
@@ -660,18 +648,6 @@ void AP_BoardConfig::vrx_start_common_sensors(void)
  */
 void AP_BoardConfig::vrx_start_optional_sensors(void)
 {
-    if (px4_start_driver(ets_airspeed_main, "ets_airspeed", "start")) {
-        printf("Found ETS airspeed sensor\n");
-    } else if (px4_start_driver(ets_airspeed_main, "meas_airspeed", "start -b 2")) {
-        printf("Found ETS airspeed sensor (bus2)\n");
-    }
-
-    if (px4_start_driver(meas_airspeed_main, "meas_airspeed", "start")) {
-        printf("Found MEAS airspeed sensor\n");
-    } else if (px4_start_driver(meas_airspeed_main, "meas_airspeed", "start -b 2")) {
-        printf("Found MEAS airspeed sensor (bus2)\n");
-    }
-
     if (px4_start_driver(ll40ls_main, "ll40ls", "-X start")) {
         printf("Found external ll40ls sensor\n");
     }
