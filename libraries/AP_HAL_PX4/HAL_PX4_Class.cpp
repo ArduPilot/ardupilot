@@ -134,11 +134,6 @@ static int main_loop(int argc, char **argv)
     hal.uartD->begin(57600);
     hal.uartE->begin(57600);
     hal.scheduler->init();
-    hal.rcin->init();
-    hal.rcout->init();
-    hal.analogin->init();
-    hal.gpio->init();
-
 
     /*
       run setup() at low priority to ensure CLI doesn't hang the
