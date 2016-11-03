@@ -499,6 +499,10 @@ void Compass::_detect_backends(void)
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR), true),
                          AP_Compass_HMC5843::name, true);
     }
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2) {
+        _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)),
+                     AP_Compass_LSM303D::name, false);
+    }
     // also add any px4 level drivers (for canbus magnetometers)
     _add_backend(AP_Compass_PX4::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QURT
