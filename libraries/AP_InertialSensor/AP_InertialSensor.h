@@ -350,6 +350,10 @@ private:
     // board orientation from AHRS
     enum Rotation _board_orientation;
 
+    // per-sensor orientation to allow for board type defaults at runtime
+    enum Rotation _gyro_orientation[INS_MAX_INSTANCES];
+    enum Rotation _accel_orientation[INS_MAX_INSTANCES];
+
     // calibrated_ok flags
     bool _gyro_cal_ok[INS_MAX_INSTANCES];
 

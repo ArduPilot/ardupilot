@@ -19,6 +19,9 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
       offsets and scaling.
      */
 
+    // rotate for sensor orientation
+    accel.rotate(_imu._accel_orientation[instance]);
+    
     // apply offsets
     accel -= _imu._accel_offset[instance];
 
@@ -34,8 +37,12 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
 
 void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) 
 {
+    // rotate for sensor orientation
+    gyro.rotate(_imu._gyro_orientation[instance]);
+    
     // gyro calibration is always assumed to have been done in sensor frame
     gyro -= _imu._gyro_offset[instance];
+
     gyro.rotate(_imu._board_orientation);
 }
 
@@ -147,7 +154,7 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
         cal_sample.x /= accel_scale.x;
         cal_sample.y /= accel_scale.y;
         cal_sample.z /= accel_scale.z;
-
+        
         //remove offsets
         cal_sample += _imu._accel_offset[instance].get() * _imu._delta_velocity_dt[instance] ;
 

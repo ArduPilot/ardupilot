@@ -148,6 +148,14 @@ protected:
     int8_t _last_accel_filter_hz[INS_MAX_INSTANCES];
     int8_t _last_gyro_filter_hz[INS_MAX_INSTANCES];
 
+    void set_gyro_orientation(uint8_t instance, enum Rotation rotation) {
+        _imu._gyro_orientation[instance] = rotation;
+    }
+
+    void set_accel_orientation(uint8_t instance, enum Rotation rotation) {
+        _imu._accel_orientation[instance] = rotation;
+    }
+    
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available

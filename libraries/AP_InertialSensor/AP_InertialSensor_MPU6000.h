@@ -34,10 +34,12 @@ public:
     }
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                            enum Rotation rotation = ROTATION_NONE);
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev);
+                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                            enum Rotation rotation = ROTATION_NONE);
 
     /* update accel and gyro state */
     bool update();
@@ -52,7 +54,8 @@ public:
 private:
     AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                              bool use_fifo);
+                              bool use_fifo,
+                              enum Rotation rotation);
 
 #if MPU6000_DEBUG
     void _dump_registers();
@@ -98,6 +101,8 @@ private:
 
     float _temp_filtered;
     LowPassFilter2pFloat _temp_filter;
+
+    enum Rotation _rotation;
 
     AP_HAL::DigitalSource *_drdy_pin;
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;

@@ -232,11 +232,13 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                                                      AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                                     bool use_fifo)
+                                                     bool use_fifo,
+                                                     enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
     , _use_fifo(use_fifo)
     , _temp_filter(1000, 1)
     , _dev(std::move(dev))
+    , _rotation(rotation)
 {
 }
 
@@ -246,10 +248,11 @@ AP_InertialSensor_MPU6000::~AP_InertialSensor_MPU6000()
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                                            enum Rotation rotation)
 {
     AP_InertialSensor_MPU6000 *sensor =
-        new AP_InertialSensor_MPU6000(imu, std::move(dev), true);
+        new AP_InertialSensor_MPU6000(imu, std::move(dev), true, rotation);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -261,13 +264,14 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &i
 
 
 AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
+                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                                            enum Rotation rotation)
 {
     AP_InertialSensor_MPU6000 *sensor;
 
     dev->set_read_flag(0x80);
 
-    sensor = new AP_InertialSensor_MPU6000(imu, std::move(dev), false);
+    sensor = new AP_InertialSensor_MPU6000(imu, std::move(dev), false, rotation);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -385,6 +389,10 @@ void AP_InertialSensor_MPU6000::start()
     _gyro_instance = _imu.register_gyro(1000);
     _accel_instance = _imu.register_accel(1000);
 
+    // setup sensor rotations from probe()
+    set_gyro_orientation(_gyro_instance, _rotation);
+    set_accel_orientation(_accel_instance, _rotation);
+    
     hal.scheduler->resume_timer_procs();
 
     // start the timer process to read samples
