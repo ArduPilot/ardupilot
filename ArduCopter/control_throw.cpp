@@ -252,8 +252,7 @@ bool Copter::throw_attitude_good()
 {
     // Check that we have uprighted the copter
     const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
-    bool is_upright = (rotMat.c.z > 0.866f);
-    return is_upright;
+    return (rotMat.c.z > 0.866f); // is_upright
 }
 
 bool Copter::throw_height_good()
