@@ -381,23 +381,27 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
                                                      AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
                                                      AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
                                                      int drdy_pin_num_a,
-                                                     int drdy_pin_num_g)
+                                                     int drdy_pin_num_g,
+                                                     enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
     , _dev_gyro(std::move(dev_gyro))
     , _dev_accel(std::move(dev_accel))
     , _drdy_pin_num_a(drdy_pin_num_a)
     , _drdy_pin_num_g(drdy_pin_num_g)
+    , _rotation(rotation)
 {
     _product_id = AP_PRODUCT_ID_NONE;
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_imu,
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel)
+                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                                            enum Rotation rotation)
 {
     AP_InertialSensor_LSM9DS0 *sensor =
         new AP_InertialSensor_LSM9DS0(_imu, std::move(dev_gyro), std::move(dev_accel),
-                                      LSM9DS0_DRY_X_PIN, LSM9DS0_DRY_G_PIN);
+                                      LSM9DS0_DRY_X_PIN, LSM9DS0_DRY_G_PIN,
+                                      rotation);
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;
@@ -506,6 +510,9 @@ void AP_InertialSensor_LSM9DS0::start(void)
 {
     _gyro_instance = _imu.register_gyro(760);
     _accel_instance = _imu.register_accel(800);
+
+    set_gyro_orientation(_gyro_instance, _rotation);
+    set_accel_orientation(_accel_instance, _rotation);
     
     _set_accel_max_abs_offset(_accel_instance, 5.0f);
 
