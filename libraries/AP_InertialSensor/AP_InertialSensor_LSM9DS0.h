@@ -12,7 +12,8 @@ class AP_InertialSensor_LSM9DS0 : public AP_InertialSensor_Backend
 {
 public:
     virtual ~AP_InertialSensor_LSM9DS0() { }
-    bool update();
+    void start(void) override;
+    bool update() override;
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
