@@ -41,7 +41,7 @@ SPIDesc SPIDeviceManager::device_table[] = {
     SPIDesc("ms5611_int",   PX4_SPI_BUS_BARO, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 10*MHZ, 10*MHZ),
 #endif
     SPIDesc("ms5611",       PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 10*MHZ, 10*MHZ),
-    SPIDesc("lsm9ds0_a",    PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ACCEL_MAG, SPIDEV_MODE3, 10*MHZ, 10*MHZ),
+    SPIDesc("lsm9ds0_am",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ACCEL_MAG, SPIDEV_MODE3, 10*MHZ, 10*MHZ),
     SPIDesc("lsm9ds0_g",    PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_GYRO, SPIDEV_MODE3, 10*MHZ, 10*MHZ),
 
     SPIDesc(nullptr, 0, (spi_dev_e)0, (spi_mode_e)0, 0, 0),
