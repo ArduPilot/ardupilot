@@ -55,11 +55,20 @@ public:
         VRX_BOARD_CORE10   = 11,
         VRX_BOARD_BRAIN54  = 12,
 #endif
+        PX4_BOARD_TEST_V1 = 101,
+        PX4_BOARD_TEST_V2 = 102,
+        PX4_BOARD_TEST_V4 = 104,
     };
 #endif
 
     // set default value for BRD_SAFETY_MASK
     void set_default_safety_ignore_mask(uint16_t mask);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    static enum px4_board_type get_board_type(void) {
+        return px4_configured_board;
+    }
+#endif
     
 private:
     AP_Int16 vehicleSerialNumber;
@@ -79,6 +88,9 @@ private:
 #endif
         AP_Int8 board_type;
     } px4;
+
+    static enum px4_board_type px4_configured_board;
+    
     void px4_drivers_start(void);
     void px4_setup(void);
     void px4_setup_pwm(void);
