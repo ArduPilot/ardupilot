@@ -67,6 +67,7 @@ Scheduler::Scheduler()
 
 void Scheduler::init()
 {
+    int ret;
     const struct sched_table {
         const char *name;
         SchedulerThread *thread;
@@ -88,11 +89,19 @@ void Scheduler::init()
     }
 
     struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
-    sched_setscheduler(0, SCHED_FIFO, &param);
+    ret = sched_setscheduler(0, SCHED_FIFO, &param);
+    if (ret == -1) {
+        AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
+                      strerror(errno));
+    }
 
     /* set barrier to N + 1 threads: worker threads + main */
     unsigned n_threads = ARRAY_SIZE(sched_table) + 1;
-    pthread_barrier_init(&_initialized_barrier, nullptr, n_threads);
+    ret = pthread_barrier_init(&_initialized_barrier, nullptr, n_threads);
+    if (ret) {
+        AP_HAL::panic("Scheduler: Failed to initialise barrier object: %s",
+                      strerror(ret));
+    }
 
     for (size_t i = 0; i < ARRAY_SIZE(sched_table); i++) {
         const struct sched_table *t = &sched_table[i];
