@@ -50,7 +50,7 @@ SPIDesc SPIDeviceManager::device_table[] = {
 SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     : bus(_bus)
     , device_desc(_device_desc)
-    , px4dev(device_desc.bus, device_desc.name, device_desc.devname, device_desc.device, device_desc.mode, device_desc.lowspeed)
+    , px4dev(device_desc.bus, device_desc.device, device_desc.mode, device_desc.lowspeed)
 {
 }
 
