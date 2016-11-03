@@ -51,6 +51,8 @@ extern "C" {
     int pwm_input_main(int, char **);
     int uavcan_main(int, char **);
     int fmu_main(int, char **);
+    int px4io_main(int, char **);
+    int adc_main(int, char **);
 };
 
 
@@ -740,6 +742,43 @@ void AP_BoardConfig::px4_setup_drivers(void)
 }
 
 /*
+  setup required peripherals like adc, rcinput and rcoutput
+ */
+void AP_BoardConfig::px4_setup_peripherals(void)
+{
+    // always start adc
+    if (px4_start_driver(adc_main, "adc", "start")) {
+        hal.analogin->init();
+        printf("ADC started OK\n");
+    } else {
+        px4_sensor_error("no ADC found");
+    }
+
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V4
+    if (px4_start_driver(px4io_main, "px4io", "start norc")) {
+        printf("px4io started OK\n");
+    } else {
+        px4_sensor_error("px4io start failed found");
+    }
+#endif
+
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+    const char *fmu_mode = "mode_serial";
+#else
+    const char *fmu_mode = "mode_pwm4";
+#endif
+    if (px4_start_driver(fmu_main, "fmu", fmu_mode)) {
+        printf("fmu %s started OK\n", fmu_mode);
+    } else {
+        px4_sensor_error("fmu start failed");
+    }
+
+    hal.gpio->init();
+    hal.rcin->init();
+    hal.rcout->init();
+}
+
+/*
   fail startup of a required sensor
  */
 void AP_BoardConfig::px4_sensor_error(const char *reason)
@@ -762,6 +801,7 @@ void AP_BoardConfig::px4_sensor_error(const char *reason)
  */
 void AP_BoardConfig::px4_setup()
 {
+    px4_setup_peripherals();
     px4_setup_pwm();
     px4_setup_safety();
     px4_setup_uart();
