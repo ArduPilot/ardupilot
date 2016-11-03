@@ -53,6 +53,7 @@ extern "C" {
     int fmu_main(int, char **);
     int px4io_main(int, char **);
     int adc_main(int, char **);
+    int tone_alarm_main(int, char **);
 };
 
 
@@ -742,6 +743,72 @@ void AP_BoardConfig::px4_setup_drivers(void)
 }
 
 /*
+  play a tune
+ */
+void AP_BoardConfig::px4_tone_alarm(const char *tone_string)
+{
+    px4_start_driver(tone_alarm_main, "tone_alarm", tone_string);
+}
+
+/*
+  setup px4io, possibly updating firmware
+ */
+void AP_BoardConfig::px4_setup_px4io(void)
+{
+    if (px4_start_driver(px4io_main, "px4io", "start norc")) {
+        printf("px4io started OK\n");
+    } else {
+        // might be in bootloader mode if user held down safety switch
+        // at power on
+        printf("Loading /etc/px4io/px4io.bin\n");
+        px4_tone_alarm("MBABGP");
+        if (px4_start_driver(px4io_main, "px4io", "update /etc/px4io/px4io.bin")) {
+            printf("upgraded PX4IO firmware OK\n");
+            px4_tone_alarm("MSPAA");
+        } else {
+            printf("Failed to upgrade PX4IO firmware\n");
+            px4_tone_alarm("MNGGG");
+        }
+        hal.scheduler->delay(1000);
+        if (px4_start_driver(px4io_main, "px4io", "start norc")) {
+            printf("px4io started OK\n");
+        } else {
+            px4_sensor_error("px4io start failed");
+        }
+    }
+
+    /*
+      see if we need to update px4io firmware
+     */
+    if (px4_start_driver(px4io_main, "px4io", "checkcrc /etc/px4io/px4io.bin")) {
+        printf("PX4IO CRC OK\n");
+    } else {
+        printf("PX4IO CRC failure\n");
+        px4_tone_alarm("MBABGP");
+        if (px4_start_driver(px4io_main, "px4io", "safety_on")) {
+            printf("PX4IO disarm OK\n");
+        } else {
+            printf("PX4IO disarm failed\n");
+        }
+        hal.scheduler->delay(1000);
+
+        if (px4_start_driver(px4io_main, "px4io", "forceupdate 14662 /etc/px4io/px4io.bin")) {
+            hal.scheduler->delay(1000);
+            if (px4_start_driver(px4io_main, "px4io", "start norc")) {
+                printf("px4io restart OK\n");
+                px4_tone_alarm("MSPAA");
+            } else {
+                px4_tone_alarm("MNGGG");
+                px4_sensor_error("PX4IO restart failed");
+            }
+        } else {
+            printf("PX4IO update failed\n");
+            px4_tone_alarm("MNGGG");
+        }
+    }
+}
+
+/*
   setup required peripherals like adc, rcinput and rcoutput
  */
 void AP_BoardConfig::px4_setup_peripherals(void)
@@ -755,11 +822,7 @@ void AP_BoardConfig::px4_setup_peripherals(void)
     }
 
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V4
-    if (px4_start_driver(px4io_main, "px4io", "start norc")) {
-        printf("px4io started OK\n");
-    } else {
-        px4_sensor_error("px4io start failed found");
-    }
+    px4_setup_px4io();
 #endif
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1

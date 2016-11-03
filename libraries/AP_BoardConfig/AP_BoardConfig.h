@@ -101,6 +101,8 @@ private:
     void px4_setup_canbus(void);
     void px4_setup_drivers(void);
     void px4_setup_peripherals(void);
+    void px4_setup_px4io(void);
+    void px4_tone_alarm(const char *tone_string);
     void px4_sensor_error(const char *reason);
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
