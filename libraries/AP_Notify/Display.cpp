@@ -304,7 +304,7 @@ static const char * _modename[] = {
     "GNGP" //     GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
 
 };
-#else if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 static const char * _modename[] = {
     "MANU", //  = 0,
     "CIRC", //  = 1,
