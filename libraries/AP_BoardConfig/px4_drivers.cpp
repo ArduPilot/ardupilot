@@ -33,6 +33,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
+
 /* 
    declare driver main entry points
  */
@@ -692,6 +694,15 @@ void AP_BoardConfig::vrx_start_optional_sensors(void)
 
 void AP_BoardConfig::px4_setup_drivers(void)
 {
+    if (px4.board_type == PX4_BOARD_TEST_V1 ||
+        px4.board_type == PX4_BOARD_TEST_V2 ||
+        px4.board_type == PX4_BOARD_TEST_V4) {
+        // use in-tree drivers
+        printf("Using in-tree drivers\n");
+        px4_configured_board = (enum px4_board_type)px4.board_type.get();
+        return;
+    }
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     px4_start_common_sensors();
     switch ((px4_board_type)px4.board_type.get()) {
@@ -746,6 +757,8 @@ void AP_BoardConfig::px4_setup_drivers(void)
 
 #endif // HAL_BOARD_PX4
 
+    px4_configured_board = (enum px4_board_type)px4.board_type.get();
+    
     // delay for 1 second to give time for drivers to initialise
     hal.scheduler->delay(1000);
 }
