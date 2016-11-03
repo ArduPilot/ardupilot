@@ -33,7 +33,7 @@ private:
 
     bool _data_ready();
     bool _hardware_init();
-    void _update();
+    bool _update();
     void _disable_i2c();
     bool _mag_set_range(uint8_t max_ga);
     bool _mag_set_samplerate(uint16_t frequency);
@@ -45,7 +45,6 @@ private:
     float _mag_x_accum;
     float _mag_y_accum;
     float _mag_z_accum;
-    uint32_t _last_update_timestamp;
     int16_t _mag_x;
     int16_t _mag_y;
     int16_t _mag_z;
@@ -57,4 +56,5 @@ private:
     uint8_t _mag_range_ga;
     uint8_t _mag_samplerate;
     uint8_t _reg7_expected;
+    AP_HAL::Semaphore *_accum_sem;
 };
