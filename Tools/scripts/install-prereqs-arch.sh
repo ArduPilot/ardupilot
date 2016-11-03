@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 command -v yaourt >/dev/null 2>&1 || { echo >&2 "Please install yaourt first. Aborting."; exit 1; }
 
