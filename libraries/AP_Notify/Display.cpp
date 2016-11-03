@@ -475,12 +475,33 @@ void Display::update_prearm(uint8_t r)
 
 void Display::update_gps(uint8_t r)
 {
-	static const char * gpsfixname[] = {"NoGPS","NoFix","2D   ","3D   ","DGPS " ,"RTK "};
+	static const char * gpsfixname[] = {"Other", "NoGPS","NoFix","2D   ","3D   ","DGPS " ,"RTK "};
 	char msg [DISPLAY_MESSAGE_SIZE];
-	snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%s Sats:%u", gpsfixname[AP_Notify::flags.gps_status], AP_Notify::flags.gps_num_sats) ;
+    const char * fixname;
+    switch  (AP_Notify::flags.gps_status) {
+        case AP_GPS::NO_GPS:
+            fixname = gpsfixname[1];
+            break;
+        case AP_GPS::NO_FIX:
+            fixname = gpsfixname[2];
+            break;
+        case AP_GPS::GPS_OK_FIX_2D:
+            fixname = gpsfixname[3];
+            break;
+        case AP_GPS::GPS_OK_FIX_3D:
+            fixname = gpsfixname[4];
+            break;
+        case AP_GPS::GPS_OK_FIX_3D_DGPS:
+            fixname = gpsfixname[5];
+            break;
+        case AP_GPS::GPS_OK_FIX_3D_RTK:
+            fixname = gpsfixname[6];
+            break;
+        default:
+            fixname = gpsfixname[0];
+    }
+    snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%s Sats:%u", fixname, AP_Notify::flags.gps_num_sats) ;
 	draw_text(COLUMN(0), ROW(r), msg);
-
-
 }
 
 void Display::update_gps_sats(uint8_t r)
