@@ -536,20 +536,13 @@ void Display::update_mode(uint8_t r)
 
 void Display::update_text(uint8_t r)
 {
-    static char* lastmsg;
     char msg [DISPLAY_MESSAGE_SIZE];
     char txt [DISPLAY_TEXT_SIZE];
 
-    mstartpos = 0;
-    movedelay = 4;
+    mstartpos = 0; //shift position
+    movedelay = 4; //delay before shifting after new message displayed
 
-	if (AP_Notify::get_text() != lastmsg) {
-		mstartpos = 0;	//shift position
-		movedelay = 4; //delay before shifting after new message displayed
-		lastmsg = AP_Notify::get_text();
-	}
-
-    snprintf(txt, DISPLAY_TEXT_SIZE, "%s", lastmsg);
+    snprintf(txt, DISPLAY_TEXT_SIZE, "%s", AP_Notify::get_text());
     mstartpos++;
     for (uint8_t i = 0; i < sizeof(msg); i++) {
         if (txt[i + mstartpos - 1] != 0) {
