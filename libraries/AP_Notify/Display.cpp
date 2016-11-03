@@ -281,54 +281,73 @@ static const uint8_t _font[] = {
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 static const char * _modename[] = {
-		"STAB", //   STABILIZE =     0,  // manual airframe angle with manual throttle
-		"ACRO", //   ACRO =          1,  // manual body-frame angular rate with manual throttle
-		"ALTH", //   ALT_HOLD =      2,  // manual airframe angle with automatic throttle
-		"AUTO", //   AUTO =          3,  // fully automatic waypoint control using mission commands
-		"GUID", //   GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-		"LOIT", //   LOITER =        5,  // automatic horizontal acceleration with automatic throttle
-		"RTL ", //   RTL =           6,  // automatic return to launching point
-		"CIRC", //   CIRCLE =        7,  // automatic circular flight with automatic throttle
-		"----", //8 no mode for copter
-		"LAND", //   LAND =          9,  // automatic landing with horizontal position control
-		"----", //10 no mode for copter
-		"DRIF", //    DRIFT =        11,  // semi-automous position, yaw and throttle control
-		"----", //12 no mode for copter
-		"SPRT", //    SPORT =        13,  // manual earth-frame angular rate control with manual throttle
-		"FLIP", //    FLIP =         14,  // automatically flip the vehicle on the roll axis
-		"ATUN", //    AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
-		"PHLD", //    POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-		"BRAK", //    BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
-		"THRW", //    THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
-		"AVOI", //    AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
-		"GNGP" //     GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
+    "STAB", //   STABILIZE =     0,  // manual airframe angle with manual throttle
+    "ACRO", //   ACRO =          1,  // manual body-frame angular rate with manual throttle
+    "ALTH", //   ALT_HOLD =      2,  // manual airframe angle with automatic throttle
+    "AUTO", //   AUTO =          3,  // fully automatic waypoint control using mission commands
+    "GUID", //   GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+    "LOIT", //   LOITER =        5,  // automatic horizontal acceleration with automatic throttle
+    "RTL ", //   RTL =           6,  // automatic return to launching point
+    "CIRC", //   CIRCLE =        7,  // automatic circular flight with automatic throttle
+    "----", //8 no mode for copter
+    "LAND", //   LAND =          9,  // automatic landing with horizontal position control
+    "----", //10 no mode for copter
+    "DRIF", //    DRIFT =        11,  // semi-automous position, yaw and throttle control
+    "----", //12 no mode for copter
+    "SPRT", //    SPORT =        13,  // manual earth-frame angular rate control with manual throttle
+    "FLIP", //    FLIP =         14,  // automatically flip the vehicle on the roll axis
+    "ATUN", //    AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
+    "PHLD", //    POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
+    "BRAK", //    BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
+    "THRW", //    THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
+    "AVOI", //    AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
+    "GNGP" //     GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
 
 };
-#else
+#else if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 static const char * _modename[] = {
-
-"MANU", //  = 0,
-"CIRC", //  = 1,
-"STAB", //  = 2,
-"TRAN", //  = 3,
-"ACRO", //  = 4,
-"FBWA", //  = 5,
-"FBWB", //  = 6,
-"CRUS", //  = 7,
-"ATUN", //  = 8,
-"----", //9 no mode for plane
-"AUTO", //  = 10,
-"RTL ", //  = 11,
-"LOIT", //  = 12,
-"----", //13 no mode for plane
-"----", //14 no mode for plane
-"GUID", //  = 15,
-"INIT", //  = 16,
-"QSTB", //  = 17,
-"QHVR", //  = 18,
-"QLIT", //  = 19,
-"QLND", //  = 20,
-"QRTL" //   = 21
+    "MANU", //  = 0,
+    "CIRC", //  = 1,
+    "STAB", //  = 2,
+    "TRAN", //  = 3,
+    "ACRO", //  = 4,
+    "FBWA", //  = 5,
+    "FBWB", //  = 6,
+    "CRUS", //  = 7,
+    "ATUN", //  = 8,
+    "----", //9 no mode for plane
+    "AUTO", //  = 10,
+    "RTL ", //  = 11,
+    "LOIT", //  = 12,
+    "----", //13 no mode for plane
+    "----", //14 no mode for plane
+    "GUID", //  = 15,
+    "INIT", //  = 16,
+    "QSTB", //  = 17,
+    "QHVR", //  = 18,
+    "QLIT", //  = 19,
+    "QLND", //  = 20,
+    "QRTL" //   = 21
+};
+#else  //rover
+static const char * _modename[] = {
+    "MANU",
+    "----",
+    "LERN",
+    "STER",
+    "HOLD",
+    "----",
+    "----",
+    "----",
+    "----",
+    "----",
+    "AUTO",
+    "RTL",
+    "----",
+    "----",
+    "----",
+    "GUID",
+    "INIT"
 };
 #endif
 
