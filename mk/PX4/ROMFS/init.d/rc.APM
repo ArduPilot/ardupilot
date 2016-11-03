@@ -6,9 +6,6 @@
 # To enable mkblctrl startup add a /fs/microsd/APM/mkblctrl file
 # To enable mkblctrl_+ startup add a /fs/microsd/APM/mkblctrl_+ file
 # To enable mkblctrl_x startup add a /fs/microsd/APM/mkblctrl_x file
-# To enable PWM on FMUv1 on ttyS1 add a /fs/microsd/APM/AUXPWM.en file
-
-set deviceA /dev/ttyACM0
 
 # check for an old file called APM, caused by 
 # a bug in an earlier firmware release
@@ -56,35 +53,6 @@ then
     echo "Created APM directory"
 fi
 
-if [ -f /bin/px4io ]
-then
-    if [ -f /bin/lsm303d ]
-    then
-        echo "Detected FMUv2 board"
-        set BOARD FMUv2
-    else
-        echo "Detected FMUv1 board"
-        set BOARD FMUv1
-    fi
-else
-    echo "Detected FMUv4 board"
-    set BOARD FMUv4
-fi
-
-if [ $BOARD == FMUv1 ]
-then
-    set deviceC /dev/ttyS2
-    if [ -f /fs/microsd/APM/AUXPWM.en ]
-    then
-        set deviceD /dev/null
-    else
-        set deviceD /dev/ttyS1
-    fi
-else
-    set deviceC /dev/ttyS1
-    set deviceD /dev/ttyS2
-fi
-
 if uorb start
 then
     echo "uorb started OK"
@@ -114,108 +82,6 @@ then
     mkblctrl -mkmode x -d /dev/pwm_output
 fi
 
-if [ -f /bin/px4io ]
-then
-    echo "Trying PX4IO board"
-
-    # try the px4io start twice. Some FMUv2 board don't
-    # come up the first time
-    set HAVE_PX4IO false
-    if px4io start norc
-    then
-        set HAVE_PX4IO true
-    else
-        # it may be in bootloader mode
-        echo Loading /etc/px4io/px4io.bin
-        tone_alarm MBABGP
-        if px4io update /etc/px4io/px4io.bin
-        then
-            echo "upgraded PX4IO firmware OK"
-            tone_alarm MSPAA
-        else
-            echo "Failed to upgrade PX4IO firmware"
-            tone_alarm MNGGG
-        fi
-        sleep 1
-        if px4io start norc
-        then
-            set HAVE_PX4IO true
-            # play happy tune again
-            if [ -f /etc/tones/startup ]
-            then
-                tone_alarm /etc/tones/startup
-            else
-                tone_alarm 1
-            fi
-        fi
-    fi
-else
-    set HAVE_PX4IO false
-    echo "No PX4IO support"
-fi
-
-if [ $HAVE_PX4IO == true ]
-then
-    echo "PX4IO board OK"
-    if px4io checkcrc /etc/px4io/px4io.bin
-    then
-        echo "PX4IO CRC OK"
-    else
-        echo "PX4IO CRC failure"
-        echo "PX4IO CRC failure" >> $logfile
-        tone_alarm MBABGP
-
-        if px4io safety_on
-        then
-            echo "PX4IO disarm OK"
-        else
-            echo "PX4IO disarm failed"
-        fi
-
-        sleep 1
-
-        if px4io forceupdate 14662 /etc/px4io/px4io.bin
-        then
-            sleep 1
-            if px4io start norc
-            then
-                echo "PX4IO restart OK"
-                echo "PX4IO restart OK" >> $logfile
-                tone_alarm MSPAA
-            else
-                echo "PX4IO restart failed"
-                echo "PX4IO restart failed" >> $logfile
-                tone_alarm MNGGG
-                sh /etc/init.d/rc.error
-            fi
-        else
-            echo "PX4IO update failed"
-            echo "PX4IO update failed" >> $logfile
-            tone_alarm MNGGG
-        fi
-    fi
-else
-    echo "No PX4IO board found"
-    echo "No PX4IO board found" >> $logfile
-
-    if [ $BOARD == FMUv2 ]
-    then
-        sh /etc/init.d/rc.error
-    fi
-fi
-
-if [ $BOARD == FMUv1 -a $deviceD == /dev/ttyS1 ]
-then
-    echo "Setting FMU mode_serial"
-    fmu mode_serial
-else
-    if fmu mode_pwm4
-    then
-        echo "Set FMU mode_pwm4"
-    fi
-fi
-
-
 if mtd start /fs/mtd
 then
     echo "started mtd driver OK"
@@ -234,32 +100,8 @@ else
     sh /etc/init.d/rc.error           
 fi
 
-if [ $BOARD == FMUv2 -o $BOARD == FMUv4 ]
-then
-  # the ramtron on FMUv2 is very fast and can handle trillions of
-  # writes. This full rw test on each boot ensures it is working
-  # properly. We have one board that failed this, so
-  # the test is arguably worth having
-  if mtd rwtest /fs/mtd
-  then
-    echo "mtd rwtest OK"
-  else
-    echo "failed to test mtd"
-    echo "failed to test mtd" >> $logfile
-    sh /etc/init.d/rc.error           
-  fi
-fi
-
-if adc start
-then
-    echo "adc started OK"
-else
-    echo "No adc" >> $logfile
-    sh /etc/init.d/rc.error
-fi
-
-echo Starting ArduPilot $deviceA $deviceC $deviceD
-if ArduPilot -d $deviceA -d2 $deviceC -d3 $deviceD start
+echo Starting ArduPilot
+if ArduPilot start
 then
     echo ArduPilot started OK
 else
@@ -267,4 +109,3 @@ else
 fi
 
 echo "rc.APM finished"
-
