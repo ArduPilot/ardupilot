@@ -36,6 +36,9 @@ private:
     bool _healthy;
     bool _need_update;
 
+    uint8_t mstartpos;
+    uint8_t movedelay;
+
     struct display_state {
         uint32_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
         uint32_t gps_num_sats       : 6;    // number of sats

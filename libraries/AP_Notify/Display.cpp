@@ -519,6 +519,7 @@ void Display::update_ekf(uint8_t r)
         draw_text(COLUMN(0), ROW(r), "EKF:    ok  ");
     }
 }
+
 void Display::update_battery(uint8_t r)
 {
 	char msg [DISPLAY_MESSAGE_SIZE];
@@ -531,14 +532,16 @@ void Display::update_mode(uint8_t r)
 	char msg [DISPLAY_MESSAGE_SIZE];
 	snprintf(msg, DISPLAY_MESSAGE_SIZE, "Mode: %s", _modename[AP_Notify::get_control_mode()]) ;
 	draw_text(COLUMN(0), ROW(r), msg);
- }
+}
+
 void Display::update_text(uint8_t r)
 {
-	static uint8_t mstartpos = 0;
-    static uint8_t movedelay = 4;
-    static char* lastmsg ;
+    static char* lastmsg;
     char msg [DISPLAY_MESSAGE_SIZE];
     char txt [DISPLAY_TEXT_SIZE];
+
+    mstartpos = 0;
+    movedelay = 4;
 
 	if (AP_Notify::get_text() != lastmsg) {
 		mstartpos = 0;	//shift position
