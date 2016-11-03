@@ -56,13 +56,6 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LED_OVERRIDE", 2, AP_Notify, _rgb_led_override, 0),
     
-    // @Param: DISPLAY_USE
-    // @DisplayName: Display enable
-    // @Description: This sets up the display support. It is enabled by default.
-    // @Values: 0:Disable,1:Enable
-    // @User: Advanced
-    AP_GROUPINFO("DISPLAY_USE", 3, AP_Notify, _display_enable, 1),
-
     AP_GROUPEND
 };
 

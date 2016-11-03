@@ -121,7 +121,6 @@ public:
     	sprintf(_send_text, "%s", str) ;}
     static char* get_text(){ return _send_text ;}
 
-    AP_Int8 _display_enable;
 private:
     static NotifyDevice* _devices[];
     static float _voltage;
