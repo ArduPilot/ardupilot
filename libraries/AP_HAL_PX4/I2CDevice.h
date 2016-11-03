@@ -23,6 +23,7 @@
 #include <AP_HAL/utility/OwnPtr.h>
 #include "Semaphores.h"
 #include "I2CWrapper.h"
+#include "Device.h"
 
 namespace PX4 {
 
@@ -64,29 +65,9 @@ public:
         return &businfo[_busnum<num_buses?_busnum:0].semaphore;
     }
 
-    struct callback_info {
-        struct callback_info *next;
-        AP_HAL::Device::PeriodicCb cb;
-        uint32_t period_usec;
-        uint64_t next_usec;
-    };
-
-    struct bus_info {
-        struct callback_info *callbacks;
-        Semaphore semaphore;
-        pthread_t thread_ctx;
-        bool thread_started;
-        uint8_t bus;
-    };
-    
 private:
     static const uint8_t num_buses = 2;
-    static struct bus_info businfo[num_buses];
-    
-    // find or create thread for this bus
-    struct bus_info *find_thread(void);
-
-    static void *i2c_thread(void *arg);
+    DeviceBus businfo[num_buses];
     
     uint8_t _busnum;
     PX4_I2C _px4dev;

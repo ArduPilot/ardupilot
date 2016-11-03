@@ -19,23 +19,18 @@
 #include <AP_HAL/SPIDevice.h>
 #include <drivers/device/spi.h>
 #include "Semaphores.h"
-#include "SPIWrapper.h"
+#include "Device.h"
+#include "Scheduler.h"
 
 namespace PX4 {
 
 class SPIDesc;
-
-struct SPIBus {
-    struct SPIBus *next;
-    struct callback_info {
-        struct callback_info *next;
-        AP_HAL::Device::PeriodicCb cb;
-        uint32_t period_usec;
-        uint64_t next_usec;        
-    } *callbacks;
-    Semaphore semaphore;
-    pthread_t thread_ctx;
-    bool thread_started;
+    
+class SPIBus : public DeviceBus {
+public:
+    SPIBus(void) :
+        DeviceBus(APM_SPI_PRIORITY) {}
+    struct spi_dev_s *dev;
     uint8_t bus;
 };
 
@@ -68,6 +63,9 @@ public:
     /* See AP_HAL::Device::set_speed() */
     bool set_speed(AP_HAL::Device::Speed speed) override;
 
+    // low level transfer function
+    void do_transfer(uint8_t *send, uint8_t *recv, uint32_t len);
+    
     /* See AP_HAL::Device::transfer() */
     bool transfer(const uint8_t *send, uint32_t send_len,
                   uint8_t *recv, uint32_t recv_len) override;
@@ -89,8 +87,8 @@ public:
 private:
     SPIBus &bus;
     SPIDesc &device_desc;
-    PX4_SPI px4dev;
-
+    uint32_t frequency;
+    
     static void *spi_thread(void *arg);
 };
 
@@ -107,7 +105,7 @@ public:
 
 private:
     static SPIDesc device_table[];
-    struct SPIBus *buses;
+    SPIBus *buses;
 };
 
 }
