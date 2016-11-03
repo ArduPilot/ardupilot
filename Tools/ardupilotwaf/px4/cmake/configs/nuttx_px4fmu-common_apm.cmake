@@ -23,9 +23,6 @@ set(config_module_list
     drivers/mb12xx
     drivers/ll40ls
     drivers/trone
-    drivers/airspeed
-    drivers/ets_airspeed
-    drivers/meas_airspeed
     drivers/mkblctrl
     drivers/batt_smbus
     drivers/irlock
