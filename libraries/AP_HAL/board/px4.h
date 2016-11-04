@@ -40,3 +40,5 @@
 #define HAL_INS_LSM9DS0_G_NAME "lsm9ds0_g"
 #define HAL_INS_LSM9DS0_A_NAME "lsm9ds0_am"
 
+#define HAL_INS_MPU9250_NAME "mpu9250"
+#define HAL_INS_MPU9250_EXT_NAME "mpu9250_ext"
