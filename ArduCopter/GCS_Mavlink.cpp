@@ -1377,20 +1377,20 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             result = copter.mavlink_motor_test_start(chan, (uint8_t)packet.param1, (uint8_t)packet.param2, (uint16_t)packet.param3, packet.param4);
             break;
 
-#if EPM_ENABLED == ENABLED
+#if GRIPPER_ENABLED == ENABLED
         case MAV_CMD_DO_GRIPPER:
             // param1 : gripper number (ignored)
             // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
-            if(!copter.epm.enabled()) {
+            if(!copter.g2.gripper.enabled()) {
                 result = MAV_RESULT_FAILED;
             } else {
                 result = MAV_RESULT_ACCEPTED;
                 switch ((uint8_t)packet.param2) {
                     case GRIPPER_ACTION_RELEASE:
-                        copter.epm.release();
+                        copter.g2.gripper.release();
                         break;
                     case GRIPPER_ACTION_GRAB:
-                        copter.epm.grab();
+                        copter.g2.gripper.grab();
                         break;
                     default:
                         result = MAV_RESULT_FAILED;

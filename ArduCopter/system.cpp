@@ -128,9 +128,9 @@ void Copter::init_ardupilot()
     
     BoardConfig.init();
 
-    // init EPM cargo gripper
-#if EPM_ENABLED == ENABLED
-    epm.init();
+    // init cargo gripper
+#if GRIPPER_ENABLED == ENABLED
+    g2.gripper.init();
 #endif
 
     // initialise notify system

@@ -101,8 +101,8 @@
 #if SPRAYER == ENABLED
 #include <AC_Sprayer/AC_Sprayer.h>         // crop sprayer library
 #endif
-#if EPM_ENABLED == ENABLED
-#include <AP_EPM/AP_EPM.h>             // EPM cargo gripper stuff
+#if GRIPPER_ENABLED == ENABLED
+#include <AP_Gripper/AP_Gripper.h>             // gripper stuff
 #endif
 #if PARACHUTE == ENABLED
 #include <AP_Parachute/AP_Parachute.h>       // Parachute release library
@@ -563,11 +563,6 @@ private:
     // Crop Sprayer
 #if SPRAYER == ENABLED
     AC_Sprayer sprayer;
-#endif
-
-    // EPM Cargo Griper
-#if EPM_ENABLED == ENABLED
-    AP_EPM epm;
 #endif
 
     // Parachute release
@@ -1041,6 +1036,7 @@ private:
     void read_battery(void);
     void read_receiver_rssi(void);
     void epm_update();
+    void gripper_update();
     void terrain_update();
     void terrain_logging();
     bool terrain_use();
@@ -1118,7 +1114,7 @@ private:
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
-#if EPM_ENABLED == ENABLED
+#if GRIPPER_ENABLED == ENABLED
     void do_gripper(const AP_Mission::Mission_Command& cmd);
 #endif
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);

@@ -67,8 +67,8 @@ public:
         // relay object
         k_param_relay,
 
-        // EPM object
-        k_param_epm,
+        // (old) EPM object
+        k_param_epm_unused,
 
         // BoardConfig object
         k_param_BoardConfig,
@@ -552,6 +552,10 @@ public:
 
     // vehicle statistics
     AP_Stats stats;
+
+#if GRIPPER_ENABLED
+    AP_Gripper gripper;
+#endif
 
     // Throw mode parameters
     AP_Int8 throw_nextmode;
