@@ -38,11 +38,7 @@ public:
 
     /* AP_HAL::I2CDevice implementation */
 
-    I2CDevice(I2CBus &bus, uint8_t address)
-        : _bus(bus)
-        , _address(address)
-    {
-    }
+    I2CDevice(I2CBus &bus, uint8_t address);
 
     ~I2CDevice();
 
