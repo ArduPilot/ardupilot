@@ -75,6 +75,9 @@ protected:
     // access to frontend
     AP_InertialSensor &_imu;
 
+    // semaphore for access to shared frontend data
+    AP_HAL::Semaphore *_sem;
+
     void _rotate_and_correct_accel(uint8_t instance, Vector3f &accel);
     void _rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro);
 
