@@ -76,10 +76,11 @@ private:
     // request the sensor produce a measurement, returns true on success
     bool request_measurement();
 
-    // read from sensor, returns true if successful
-    bool read(optical_flow_s* report);
+    bool timer(void);
+    
+    bool initialised;
+    uint16_t num_errors;
 
-    bool initialised = false;
-    uint16_t num_errors = 0;
-    uint32_t last_read_ms = 0;
+    optical_flow_s report;
+    bool new_report;
 };

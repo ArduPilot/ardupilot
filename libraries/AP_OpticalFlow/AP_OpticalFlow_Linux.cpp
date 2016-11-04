@@ -41,7 +41,8 @@ extern const AP_HAL::HAL& hal;
 AP_OpticalFlow_Linux::AP_OpticalFlow_Linux(OpticalFlow &_frontend, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : OpticalFlow_backend(_frontend)
     , _dev(std::move(dev))
-{}
+{
+}
 
 void AP_OpticalFlow_Linux::init(void)
 {
@@ -65,6 +66,8 @@ void AP_OpticalFlow_Linux::init(void)
     // success
     initialised = true;
 
+    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Linux::timer, bool));
+
 fail:
     _dev->get_semaphore()->give();
 }
@@ -75,13 +78,8 @@ bool AP_OpticalFlow_Linux::request_measurement()
     return _dev->write_register(PX4FLOW_REG, 0);
 }
 
-bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
+bool AP_OpticalFlow_Linux::timer(void)
 {
-    // take i2c bus sempahore (non blocking)
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return false;
-    }
-
     // request measurement
     request_measurement();
 
@@ -103,56 +101,52 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
         memcpy(&f_integral, val, I2C_INTEGRAL_FRAME_SIZE);
     }
 
-    _dev->get_semaphore()->give();
-
     // reduce error count
     if (num_errors > 0) {
         num_errors--;
     }
 
-    report->pixel_flow_x_integral = static_cast<float>(f_integral.pixel_flow_x_integral) / 10000.0f;    //convert to radians
-    report->pixel_flow_y_integral = static_cast<float>(f_integral.pixel_flow_y_integral) / 10000.0f;    //convert to radians
-    report->frame_count_since_last_readout = f_integral.frame_count_since_last_readout;
-    report->ground_distance_m = static_cast<float>(f_integral.ground_distance) / 1000.0f;               // convert to meters
-    report->quality = f_integral.qual;                                                                  // 0:bad, 255 max quality
-    report->gyro_x_rate_integral = static_cast<float>(f_integral.gyro_x_rate_integral) / 10000.0f;      // convert to radians
-    report->gyro_y_rate_integral = static_cast<float>(f_integral.gyro_y_rate_integral) / 10000.0f;      // convert to radians
-    report->gyro_z_rate_integral = static_cast<float>(f_integral.gyro_z_rate_integral) / 10000.0f;      // convert to radians
-    report->integration_timespan = f_integral.integration_timespan;     // microseconds
-    report->time_since_last_sonar_update = f_integral.sonar_timestamp;  // microseconds
-    report->gyro_temperature = f_integral.gyro_temperature;             // Temperature * 100 in centi-degrees Celsius
-    report->sensor_id = 0;
+    if (_sem->take(0)) {
+        report.pixel_flow_x_integral = static_cast<float>(f_integral.pixel_flow_x_integral) / 10000.0f;    //convert to radians
+        report.pixel_flow_y_integral = static_cast<float>(f_integral.pixel_flow_y_integral) / 10000.0f;    //convert to radians
+        report.frame_count_since_last_readout = f_integral.frame_count_since_last_readout;
+        report.ground_distance_m = static_cast<float>(f_integral.ground_distance) / 1000.0f;               // convert to meters
+        report.quality = f_integral.qual;                                                                  // 0:bad, 255 max quality
+        report.gyro_x_rate_integral = static_cast<float>(f_integral.gyro_x_rate_integral) / 10000.0f;      // convert to radians
+        report.gyro_y_rate_integral = static_cast<float>(f_integral.gyro_y_rate_integral) / 10000.0f;      // convert to radians
+        report.gyro_z_rate_integral = static_cast<float>(f_integral.gyro_z_rate_integral) / 10000.0f;      // convert to radians
+        report.integration_timespan = f_integral.integration_timespan;     // microseconds
+        report.time_since_last_sonar_update = f_integral.sonar_timestamp;  // microseconds
+        report.gyro_temperature = f_integral.gyro_temperature;             // Temperature * 100 in centi-degrees Celsius
+        report.sensor_id = 0;
+        new_report = true;
+        _sem->give();
+    }
 
     return true;
 
 fail_transfer:
     num_errors++;
-    _dev->get_semaphore()->give();
-    return false;
+    return true;
 }
 
 // update - read latest values from sensor and fill in x,y and totals.
 void AP_OpticalFlow_Linux::update(void)
 {
-    optical_flow_s report;
-
     // return immediately if not initialised or more than half of last 40 reads have failed
     if (!initialised || num_errors >= 20) {
         return;
     }
 
-    // throttle reads to no more than 10hz
-    uint32_t now = AP_HAL::millis();
-    if (now - last_read_ms < 100) {
-        return;
-    }
-    last_read_ms = now;
-
-    // read the report from the sensor
-    if (!read(&report)) {
+    if (!_sem->take_nonblocking()) {
         return;
     }
 
+    if (!new_report) {
+        _sem->give();
+        return;
+    }
+    
     // process
     struct OpticalFlow::OpticalFlow_state state;
     state.device_id = report.sensor_id;
@@ -173,6 +167,8 @@ void AP_OpticalFlow_Linux::update(void)
 
     // copy results to front end
     _update_frontend(state);
+
+    _sem->give();
 
 #if PX4FLOW_DEBUG
     hal.console->printf("PX4FLOW id:%u qual:%u FlowRateX:%4.2f Y:%4.2f BodyRateX:%4.2f y:%4.2f\n",
