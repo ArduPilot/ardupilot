@@ -436,9 +436,7 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
         _drdy_pin_g->mode(HAL_GPIO_INPUT);
     }
 
-    hal.scheduler->suspend_timer_procs();
     bool success = _hardware_init();
-    hal.scheduler->resume_timer_procs();
 
 #if LSM9DS0_DEBUG
     _dump_registers();

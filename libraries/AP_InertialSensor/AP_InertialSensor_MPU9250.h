@@ -62,14 +62,11 @@ private:
     bool _has_auxiliary_bus();
 
     /* Read a single sample */
-    void _read_sample();
+    bool _read_sample();
 
     /* Check if there's data available by reading register */
     bool _data_ready();
     bool _data_ready(uint8_t int_status);
-
-    /* Poll for new data (non-blocking) */
-    void _poll_data();
 
     /* Read and write functions taking the differences between buses into
      * account */

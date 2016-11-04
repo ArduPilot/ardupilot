@@ -288,9 +288,7 @@ bool AP_InertialSensor_MPU6000::_init()
     _drdy_pin->mode(HAL_GPIO_INPUT);
 #endif
 
-    hal.scheduler->suspend_timer_procs();
     bool success = _hardware_init();
-    hal.scheduler->resume_timer_procs();
 
 #if MPU6000_DEBUG
     _dump_registers();
@@ -321,8 +319,6 @@ bool AP_InertialSensor_MPU6000::_has_auxiliary_bus()
 
 void AP_InertialSensor_MPU6000::start()
 {
-    hal.scheduler->suspend_timer_procs();
-
     if (!_dev->get_semaphore()->take(100)) {
         AP_HAL::panic("MPU6000: Unable to get semaphore");
     }
@@ -393,8 +389,6 @@ void AP_InertialSensor_MPU6000::start()
     set_gyro_orientation(_gyro_instance, _rotation);
     set_accel_orientation(_accel_instance, _rotation);
     
-    hal.scheduler->resume_timer_procs();
-
     // start the timer process to read samples
     if (_dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, bool)) == nullptr) {
         // cope with AuxiliaryBus which does not support register_periodic_callback yet

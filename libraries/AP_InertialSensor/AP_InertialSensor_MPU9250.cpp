@@ -14,13 +14,12 @@
 */
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AP_InertialSensor_MPU9250.h"
 
 #include <assert.h>
 #include <utility>
 
-#include <AP_HAL_Linux/GPIO.h>
+#include <AP_HAL/GPIO.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -264,9 +263,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
 
 bool AP_InertialSensor_MPU9250::_init()
 {
-    hal.scheduler->suspend_timer_procs();
     bool success = _hardware_init();
-    hal.scheduler->resume_timer_procs();
 
 #if MPU9250_DEBUG
     _dump_registers();
@@ -282,8 +279,6 @@ bool AP_InertialSensor_MPU9250::_has_auxiliary_bus()
 
 void AP_InertialSensor_MPU9250::start()
 {
-    hal.scheduler->suspend_timer_procs();
-
     if (!_dev->get_semaphore()->take(100)) {
         AP_HAL::panic("MPU92500: Unable to get semaphore");
     }
@@ -330,11 +325,8 @@ void AP_InertialSensor_MPU9250::start()
     _gyro_instance = _imu.register_gyro(DEFAULT_SAMPLE_RATE);
     _accel_instance = _imu.register_accel(DEFAULT_SAMPLE_RATE);
 
-    hal.scheduler->resume_timer_procs();
-
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(
-        FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_poll_data, void));
+    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_read_sample, bool));
 }
 
 /*
@@ -375,20 +367,6 @@ bool AP_InertialSensor_MPU9250::_data_ready(uint8_t int_status)
     return (int_status & BIT_RAW_RDY_INT) != 0;
 }
 
-/*
- * Timer process to poll for new data from the MPU9250.
- */
-void AP_InertialSensor_MPU9250::_poll_data()
-{
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
-
-    _read_sample();
-
-    _dev->get_semaphore()->give();
-}
-
 void AP_InertialSensor_MPU9250::_accumulate(uint8_t *rx)
 {
     Vector3f accel, gyro;
@@ -414,7 +392,7 @@ void AP_InertialSensor_MPU9250::_accumulate(uint8_t *rx)
 /*
  * read from the data registers and update filtered data
  */
-void AP_InertialSensor_MPU9250::_read_sample()
+bool AP_InertialSensor_MPU9250::_read_sample()
 {
     /* one register address followed by seven 2-byte registers */
     struct PACKED {
@@ -424,14 +402,15 @@ void AP_InertialSensor_MPU9250::_read_sample()
 
     if (!_block_read(MPUREG_INT_STATUS, (uint8_t *) &rx, sizeof(rx))) {
         hal.console->printf("MPU9250: error reading sample\n");
-        return;
+        return true;
     }
 
     if (!_data_ready(rx.int_status)) {
-        return;
+        return true;
     }
 
     _accumulate(rx.d);
+    return true;
 }
 
 bool AP_InertialSensor_MPU9250::_block_read(uint8_t reg, uint8_t *buf,
@@ -700,4 +679,4 @@ int AP_MPU9250_AuxiliaryBus::_configure_periodic_read(AuxiliaryBusSlave *slave,
 
     return 0;
 }
-#endif
+
