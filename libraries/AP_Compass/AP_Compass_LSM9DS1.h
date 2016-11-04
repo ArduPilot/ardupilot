@@ -26,7 +26,7 @@ private:
     bool _check_id(void);
     bool _configure(void);
     bool _set_scale(void);
-    void _update(void);
+    bool _update(void);
     void _reset_filter(void);
     Vector3f _get_filtered_field() const;
 
@@ -36,13 +36,12 @@ private:
     bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
     void _dump_registers();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev = nullptr;
-    uint32_t _dev_id = 0;
-    uint8_t _compass_instance = 0;
-    float _scaling = 0.0f;
-    float _mag_x_accum = 0.0f;
-    float _mag_y_accum = 0.0f;
-    float _mag_z_accum = 0.0f;
-    uint32_t _accum_count = 0;
-    uint32_t _last_update_timestamp;
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    uint32_t _dev_id;
+    uint8_t _compass_instance;
+    float _scaling;
+    float _mag_x_accum;
+    float _mag_y_accum;
+    float _mag_z_accum;
+    uint32_t _accum_count;
 };

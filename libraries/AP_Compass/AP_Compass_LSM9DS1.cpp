@@ -71,14 +71,11 @@ AP_Compass_Backend *AP_Compass_LSM9DS1::probe(Compass &compass,
 
 bool AP_Compass_LSM9DS1::init()
 {
-    _last_update_timestamp = AP_HAL::micros();
-
-    hal.scheduler->suspend_timer_procs();
     AP_HAL::Semaphore *bus_sem = _dev->get_semaphore();
 
     if (!bus_sem || !bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.console->printf("LSM9DS1: Unable to get bus semaphore\n");
-        goto fail_sem;
+        return false;
     }
 
     if (!_check_id()) {
@@ -99,19 +96,14 @@ bool AP_Compass_LSM9DS1::init()
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _dev_id);
 
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_LSM9DS1::_update, void));
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM9DS1::_update, bool));
 
-    hal.scheduler->resume_timer_procs();
     bus_sem->give();
 
     return true;
 
 errout:
     bus_sem->give();
-
-fail_sem:
-    hal.scheduler->resume_timer_procs();
-
     return false;
 }
 
@@ -128,19 +120,11 @@ void AP_Compass_LSM9DS1::_dump_registers()
     hal.console->println();
 }
 
-void AP_Compass_LSM9DS1::_update(void)
+bool AP_Compass_LSM9DS1::_update(void)
 {
     struct sample_regs regs;
     Vector3f raw_field;
     uint32_t time_us = AP_HAL::micros();
-
-    if (AP_HAL::micros() - _last_update_timestamp < 10000) {
-        goto end;
-    }
-
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        goto end;
-    }
 
     if (!_block_read(LSM9DS1M_STATUS_REG_M, (uint8_t *) &regs, sizeof(regs))) {
         goto fail;
@@ -178,12 +162,8 @@ void AP_Compass_LSM9DS1::_update(void)
         _accum_count = 5;
     }
 
-    _last_update_timestamp = AP_HAL::micros();
-
 fail:
-    _dev->get_semaphore()->give();
-end:
-    return;
+    return true;
 }
 
 void AP_Compass_LSM9DS1::read()
@@ -193,12 +173,8 @@ void AP_Compass_LSM9DS1::read()
         return;
     }
 
-    hal.scheduler->suspend_timer_procs();
-
     auto field = _get_filtered_field();
     _reset_filter();
-
-    hal.scheduler->resume_timer_procs();
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
     field.rotate(ROTATION_ROLL_180);
