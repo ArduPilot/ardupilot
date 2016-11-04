@@ -97,7 +97,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
         } else { // send other sensor data if it's time for them, and reset the corresponding timer if sent
             _passthrough.send_attiandrng = true; // next iteration, send attitude b/c it needs frequent updates to remain smooth
             uint32_t now = AP_HAL::millis();
-            if (((now - _passthrough.params_timer) > 1000) && (!AP_Notify::flags.armed)) {
+            if (((now - _passthrough.params_timer) >= 1000) && (!AP_Notify::flags.armed)) {
                 send_uint32(DIY_FIRST_ID+7, calc_param());
                 _passthrough.params_timer = AP_HAL::millis();
                 return;
@@ -111,34 +111,34 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 send_uint32(DIY_FIRST_ID, _msg_chunk.chunk);
                 return;
             }
-            if ((now - _passthrough.ap_status_timer) > 500) {
+            if ((now - _passthrough.ap_status_timer) >= 500) {
                 if (((*_ap.valuep) & AP_INITIALIZED_FLAG) > 0) {  // send ap status only once vehicle has been initialised
                     send_uint32(DIY_FIRST_ID+1, calc_ap_status());
                     _passthrough.ap_status_timer = AP_HAL::millis();
                 }
                 return;
             }
-            if ((now - _passthrough.batt_timer) > 1000) {
+            if ((now - _passthrough.batt_timer) >= 1000) {
                 send_uint32(DIY_FIRST_ID+3, calc_batt());
                 _passthrough.batt_timer = AP_HAL::millis();
                 return;
             }
-            if ((now - _passthrough.gps_status_timer) > 1000) {
+            if ((now - _passthrough.gps_status_timer) >= 1000) {
                 send_uint32(DIY_FIRST_ID+2, calc_gps_status());
                 _passthrough.gps_status_timer = AP_HAL::millis();
                 return;
             }
-            if ((now - _passthrough.home_timer) > 500) {
+            if ((now - _passthrough.home_timer) >= 500) {
                 send_uint32(DIY_FIRST_ID+4, calc_home());
                 _passthrough.home_timer = AP_HAL::millis();
                 return;
             }
-            if ((now - _passthrough.velandyaw_timer) > 500) {
+            if ((now - _passthrough.velandyaw_timer) >= 500) {
                 send_uint32(DIY_FIRST_ID+5, calc_velandyaw());
                 _passthrough.velandyaw_timer = AP_HAL::millis();
                 return;
             }
-            if ((now - _passthrough.gps_latlng_timer) > 1000) {
+            if ((now - _passthrough.gps_latlng_timer) >= 1000) {
                 send_uint32(GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
                 if (!_passthrough.send_latitude) { // we've cycled and sent one each of longitude then latitude, so reset the timer
                     _passthrough.gps_latlng_timer = AP_HAL::millis();
@@ -270,7 +270,7 @@ void AP_Frsky_Telem::send_D(void)
 {
     uint32_t now = AP_HAL::millis();
     // send frame1 every 200ms
-    if (now - _D.last_200ms_frame > 200) {
+    if (now - _D.last_200ms_frame >= 200) {
         _D.last_200ms_frame = now;
         send_uint16(DATA_ID_TEMP2, (uint16_t)(_ahrs.get_gps().num_sats() * 10 + _ahrs.get_gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
         send_uint16(DATA_ID_TEMP1, _ap.control_mode); // send flight mode
@@ -282,7 +282,7 @@ void AP_Frsky_Telem::send_D(void)
         send_uint16(DATA_ID_BARO_ALT_AP, _gps.alt_nav_cm); // send nav altitude decimal part
     }
     // send frame2 every second
-    if (now - _D.last_1000ms_frame > 1000) {
+    if (now - _D.last_1000ms_frame >= 1000) {
         _D.last_1000ms_frame = now;
         send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)((_ahrs.yaw_sensor / 100) % 360)); // send heading in degree based on AHRS and not GPS
         calc_gps_position();
@@ -478,7 +478,7 @@ void AP_Frsky_Telem::check_sensor_status_flags(void)
 {
     uint32_t now = AP_HAL::millis();
 
-    if ((now - check_sensor_status_timer) > 5000) { // prevent repeating any system_status messages unless 5 seconds have passed
+    if ((now - check_sensor_status_timer) >= 5000) { // prevent repeating any system_status messages unless 5 seconds have passed
         // only one error is reported at a time (in order of preference). Same setup and displayed messages as Mission Planner.
         if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_GPS) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad GPS Health");
@@ -532,7 +532,7 @@ void AP_Frsky_Telem::check_ekf_status(void)
     Vector2f offset;
     if (_ahrs.get_variances(velVar, posVar, hgtVar, magVar, tasVar, offset)) {
         uint32_t now = AP_HAL::millis();
-        if ((now - check_ekf_status_timer) > 10000) { // prevent repeating any ekf_status message unless 10 seconds have passed
+        if ((now - check_ekf_status_timer) >= 10000) { // prevent repeating any ekf_status message unless 10 seconds have passed
             // multiple errors can be reported at a time. Same setup as Mission Planner.
             if (velVar >= 1) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error velocity variance");
