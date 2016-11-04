@@ -34,7 +34,7 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, con
 /*
  * init - perform required initialisation
  */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_valuep)
+void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, const AP_Float *fs_batt_voltage, const AP_Float *fs_batt_mah, const uint32_t *ap_valuep)
 {
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
