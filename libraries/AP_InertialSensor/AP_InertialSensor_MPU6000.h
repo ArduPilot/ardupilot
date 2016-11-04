@@ -140,7 +140,7 @@ public:
     AP_HAL::Semaphore *get_semaphore() override;
 
 protected:
-    AP_MPU6000_AuxiliaryBus(AP_InertialSensor_MPU6000 &backend);
+    AP_MPU6000_AuxiliaryBus(AP_InertialSensor_MPU6000 &backend, uint32_t devid);
 
     AuxiliaryBusSlave *_instantiate_slave(uint8_t addr, uint8_t instance) override;
     int _configure_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg,

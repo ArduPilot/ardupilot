@@ -314,7 +314,7 @@ void AP_InertialSensor_MPU6000::_fifo_enable()
 
 bool AP_InertialSensor_MPU6000::_has_auxiliary_bus()
 {
-    return _dev->bus_type != AP_HAL::Device::BUS_TYPE_I2C;
+    return _dev->bus_type() != AP_HAL::Device::BUS_TYPE_I2C;
 }
 
 void AP_InertialSensor_MPU6000::start()
@@ -416,7 +416,7 @@ AuxiliaryBus *AP_InertialSensor_MPU6000::get_auxiliary_bus()
     }
 
     if (_has_auxiliary_bus()) {
-        _auxiliary_bus = new AP_MPU6000_AuxiliaryBus(*this);
+        _auxiliary_bus = new AP_MPU6000_AuxiliaryBus(*this, _dev->get_bus_id());
     }
 
     return _auxiliary_bus;
@@ -647,7 +647,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         hal.scheduler->delay(100);
 
         /* bus-dependent initialization */
-        if (_dev->bus_type == AP_HAL::Device::BUS_TYPE_SPI) {
+        if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
             /* Disable I2C bus if SPI selected (Recommended in Datasheet to be
              * done just after the device is reset) */
             _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
@@ -809,8 +809,8 @@ int AP_MPU6000_AuxiliaryBusSlave::read(uint8_t *buf)
 
 /* MPU6000 provides up to 5 slave devices, but the 5th is way too different to
  * configure and is seldom used */
-AP_MPU6000_AuxiliaryBus::AP_MPU6000_AuxiliaryBus(AP_InertialSensor_MPU6000 &backend)
-    : AuxiliaryBus(backend, 4)
+AP_MPU6000_AuxiliaryBus::AP_MPU6000_AuxiliaryBus(AP_InertialSensor_MPU6000 &backend, uint32_t devid)
+    : AuxiliaryBus(backend, 4, devid)
 {
 }
 
