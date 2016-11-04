@@ -57,11 +57,14 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 
     switch (modbus_status) {
 
-        case LEDDARONE_MODBUS_PRE_SEND_REQUEST:
+        case LEDDARONE_MODBUS_INIT:
             // clear buffer and buffer_len
             memset(read_buffer, 0, sizeof(read_buffer));
             read_len = 0;
+            modbus_status = LEDDARONE_MODBUS_PRE_SEND_REQUEST;
+            break;
 
+        case LEDDARONE_MODBUS_PRE_SEND_REQUEST:
             // send a request message for Modbus function 4
             if (send_request() != LEDDARONE_OK) {
                 // TODO: handle LEDDARONE_ERR_SERIAL_PORT
@@ -78,7 +81,8 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
             } else {
                 if (AP_HAL::millis() - last_sending_request_ms > 200) {
                     // reset mod_bus status to read new buffer
-                    modbus_status = LEDDARONE_MODBUS_PRE_SEND_REQUEST;
+                    // if read_len is zero, send request without initialize
+                    modbus_status = read_len == 0 ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
                 }
             }
             break;
@@ -91,19 +95,14 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
                 reading_cm = sum_distance / number_detections;
 
                 // reset mod_bus status to read new buffer
-                modbus_status = LEDDARONE_MODBUS_PRE_SEND_REQUEST;
+                modbus_status = LEDDARONE_MODBUS_INIT;
 
                 return true;
             }
-            // keep reading next buffer
-            else if (leddarone_status == LEDDARONE_READING_BUFFER) {
-                // not change mod_bus status, keep reading
-                break;
-            }
-            // leddarone_status is LEDDARONE_ERR_*
-            else {
-                // reset mod_bus status to read new buffer
-                modbus_status = LEDDARONE_MODBUS_PRE_SEND_REQUEST;
+            // if status is not reading buffer, reset mod_bus status to read new buffer
+            else if (leddarone_status != LEDDARONE_READING_BUFFER) {
+                // if read_len is zero, send request without initialize
+                modbus_status = read_len == 0 ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
             }
             break;
     }
@@ -161,7 +160,7 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
  */
 LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
 {
-    uint8_t send_buffer[10] = {0};
+    uint8_t send_buffer[8] = {0};
     uint8_t index = 0;
 
     uint32_t nbytes = uart->available();
@@ -175,14 +174,12 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
     }
 
     // Modbus read input register (function code 0x04)
-    // send_buffer[3] = 20: Address of first register to read
-    // send_buffer[5] = 10: The number of consecutive registers to read
     send_buffer[0] = LEDDARONE_DEFAULT_ADDRESS;
     send_buffer[1] = 0x04;
     send_buffer[2] = 0;
-    send_buffer[3] = 20;
+    send_buffer[3] = 20; // Address of first register to read
     send_buffer[4] = 0;
-    send_buffer[5] = 10;
+    send_buffer[5] = 10; // The number of consecutive registers to read
 
     // CRC16
     CRC16(send_buffer, 6, false);
@@ -198,6 +195,25 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
 
  /*
     parse a response message from Modbus
+    -----------------------------------------------
+    [ read buffer packet ]
+    -----------------------------------------------
+      0: slave address (LEDDARONE_DEFAULT_ADDRESS)
+      1: functions code
+      2: ?
+3-4-5-6: timestamp
+    7-8: internal temperature
+      9: ?
+     10: number of detections
+  11-12: first distance
+  13-14: first amplitude
+  15-16: second distance
+  17-18: second amplitude
+  19-20: third distances
+  21-22: third amplitude
+     23: CRC Low
+     24: CRC High
+    -----------------------------------------------
   */
 LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detections)
 {
