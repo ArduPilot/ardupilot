@@ -22,7 +22,7 @@ public:
     virtual ~AP_Compass_LSM9DS1() {}
 
 private:
-    AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev, uint32_t dev_id);
+    AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev);
     bool _check_id(void);
     bool _configure(void);
     bool _set_scale(void);
@@ -35,7 +35,6 @@ private:
     void _dump_registers();
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
-    uint32_t _dev_id;
     uint8_t _compass_instance;
     float _scaling;
     float _mag_x_accum;

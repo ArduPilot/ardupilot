@@ -36,8 +36,7 @@ public:
     void read() override;
 
 private:
-    AP_Compass_AK8963(Compass &compass, AP_AK8963_BusDriver *bus,
-                      uint32_t dev_id);
+    AP_Compass_AK8963(Compass &compass, AP_AK8963_BusDriver *bus);
 
     void _make_factory_sensitivity_adjustment(Vector3f &field) const;
     void _make_adc_sensitivity_adjustment(Vector3f &field) const;
@@ -58,7 +57,6 @@ private:
     float _mag_z_accum;
     uint32_t _accum_count;
     uint32_t _last_update_timestamp;
-    uint32_t _dev_id;
 
     uint8_t _compass_instance;
     bool _initialized;
@@ -79,6 +77,12 @@ public:
     virtual bool configure() { return true; }
     virtual bool start_measurements() { return true; }
     virtual AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t, AP_HAL::Device::PeriodicCb) = 0;
+
+    // set device type within a device class
+    virtual void set_device_type(uint8_t devtype) = 0;
+
+    // return 24 bit bus identifier
+    virtual uint32_t get_bus_id(void) const = 0;
 };
 
 class AP_AK8963_BusDriver_HALDevice: public AP_AK8963_BusDriver
@@ -93,6 +97,16 @@ public:
     virtual AP_HAL::Semaphore  *get_semaphore() override;
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
 
+    // set device type within a device class
+    void set_device_type(uint8_t devtype) override {
+        _dev->set_device_type(devtype);
+    }
+
+    // return 24 bit bus identifier
+    uint32_t get_bus_id(void) const override {
+        return _dev->get_bus_id();
+    }
+    
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
@@ -115,6 +129,12 @@ public:
     bool configure();
     bool start_measurements();
 
+    // set device type within a device class
+    void set_device_type(uint8_t devtype) override;
+
+    // return 24 bit bus identifier
+    uint32_t get_bus_id(void) const override;
+    
 private:
     AuxiliaryBus *_bus;
     AuxiliaryBusSlave *_slave;
