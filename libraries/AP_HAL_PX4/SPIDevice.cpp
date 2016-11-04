@@ -64,6 +64,8 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     : bus(_bus)
     , device_desc(_device_desc)
 {
+    set_device_bus(_bus.bus);
+    set_device_address(_device_desc.device);
 }
 
 SPIDevice::~SPIDevice()

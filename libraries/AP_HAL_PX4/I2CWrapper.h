@@ -19,9 +19,10 @@ public:
     void set_retries(uint8_t retries) {
         _retries = retries;
     }
+
+    uint8_t map_bus_number(uint8_t bus) const;
     
 private:
-    uint8_t map_bus_number(uint8_t bus) const;
     static uint8_t instance;
     bool init_done;
     bool init_ok;
