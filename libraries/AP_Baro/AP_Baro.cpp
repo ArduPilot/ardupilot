@@ -296,13 +296,21 @@ void AP_Baro::init(void)
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2) {
         drivers[0] = new AP_Baro_MS5611(*this,
                                         std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
+        _num_drivers = 1;
+    } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V3) {
+        drivers[0] = new AP_Baro_MS5611(*this,
+                                        std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME)));
+        drivers[1] = new AP_Baro_MS5611(*this,
+                                        std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
+        _num_drivers = 2;
     } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V4) {
         drivers[0] = new AP_Baro_MS5611(*this,
                                         std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME)));
+        _num_drivers = 1;
     } else {
         drivers[0] = new AP_Baro_PX4(*this);
+        _num_drivers = 1;
     }
-    _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_HIL
     drivers[0] = new AP_Baro_HIL(*this);
     _num_drivers = 1;
