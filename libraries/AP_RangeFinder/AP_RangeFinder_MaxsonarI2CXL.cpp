@@ -51,16 +51,11 @@ AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder &_range
 {
     AP_RangeFinder_MaxsonarI2CXL *sensor
         = new AP_RangeFinder_MaxsonarI2CXL(_ranger, instance, _state);
-    if (!sensor || !sensor->start_reading()) {
-        delete sensor;
+    if (!sensor) {
         return nullptr;
     }
 
-    // give time for the sensor to process the request
-    hal.scheduler->delay(50);
-
-    uint16_t reading_cm;
-    if (!sensor->get_reading(reading_cm)) {
+    if (!sensor->_init()) {
         delete sensor;
         return nullptr;
     }
@@ -68,21 +63,45 @@ AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder &_range
     return sensor;
 }
 
-// start_reading() - ask sensor to make a range reading
-bool AP_RangeFinder_MaxsonarI2CXL::start_reading()
+/*
+  initialise sensor
+ */
+bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
 {
-    if (!_dev || !_dev->get_semaphore()->take(1)) {
+    if (!_dev->get_semaphore()->take(0)) {
+        return false;
+    }
+    
+
+    if (!start_reading()) {
+        _dev->get_semaphore()->give();
         return false;
     }
 
+    // give time for the sensor to process the request
+    hal.scheduler->delay(50);
+
+    uint16_t reading_cm;
+    if (!get_reading(reading_cm)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
+
+    _dev->get_semaphore()->give();
+    
+    _dev->register_periodic_callback(50000,
+                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_MaxsonarI2CXL::_timer, bool));
+    
+    return true;
+}
+
+// start_reading() - ask sensor to make a range reading
+bool AP_RangeFinder_MaxsonarI2CXL::start_reading()
+{
     uint8_t cmd = AP_RANGE_FINDER_MAXSONARI2CXL_COMMAND_TAKE_RANGE_READING;
 
     // send command to take reading
-    bool ret = _dev->transfer(&cmd, sizeof(cmd), nullptr, 0);
-
-    _dev->get_semaphore()->give();
-
-    return ret;
+    return _dev->transfer(&cmd, sizeof(cmd), nullptr, 0);
 }
 
 // read - return last value measured by sensor
@@ -90,14 +109,8 @@ bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
 {
     be16_t val;
 
-    // exit immediately if we can't take the semaphore
-    if (!_dev->get_semaphore()->take(1)) {
-        return false;
-    }
-
     // take range reading and read back results
     bool ret = _dev->transfer(nullptr, 0, (uint8_t *) &val, sizeof(val));
-    _dev->get_semaphore()->give();
 
     if (ret) {
         // combine results into distance
@@ -110,16 +123,36 @@ bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
     return ret;
 }
 
+/*
+  timer called at 20Hz
+*/
+bool AP_RangeFinder_MaxsonarI2CXL::_timer(void)
+{
+    uint16_t d;
+    if (get_reading(d)) {
+        if (_sem->take(0)) {
+            distance = d;
+            new_distance = true;
+            _sem->give();
+        }
+    }
+    return true;
+}
+    
 
 /*
    update the state of the sensor
 */
 void AP_RangeFinder_MaxsonarI2CXL::update(void)
 {
-    if (get_reading(state.distance_cm)) {
-        // update range_valid state based on distance measured
-        update_status();
-    } else {
-        set_status(RangeFinder::RangeFinder_NoData);
+    if (_sem->take_nonblocking()) {
+        if (new_distance) {
+            state.distance_cm = distance;
+            new_distance = false;
+            update_status();
+        } else {
+            set_status(RangeFinder::RangeFinder_NoData);
+        }
+         _sem->give();
     }
 }
