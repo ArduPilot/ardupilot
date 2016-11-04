@@ -40,27 +40,35 @@ void AP_Baro_QFLIGHT::timer_update(void)
         return;
     }
 
+    if (!_sem->take(0)) {
+        return;
+    }
+
     for (uint16_t i=0; i<barobuf->num_samples; i++) {
         DSPBuffer::BARO::BUF &b = barobuf->buf[i];
         pressure_sum += b.pressure_pa;
         temperature_sum += b.temperature_C;
         sum_count++;
     }
+
+    _sem->give();
 }
 
 // Read the sensor
 void AP_Baro_QFLIGHT::update(void)
 {
+    if (!_sem->take_nonblocking()) {
+        return;
+    }
     if (sum_count > 0) {
-        hal.scheduler->suspend_timer_procs();
         _copy_to_frontend(instance,
                           pressure_sum/sum_count,
                           temperature_sum/sum_count);
         sum_count = 0;
         pressure_sum = 0;
         temperature_sum = 0;
-        hal.scheduler->resume_timer_procs();
     }
+    _sem->give();
 }
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE
