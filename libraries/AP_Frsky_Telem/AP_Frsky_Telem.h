@@ -61,9 +61,6 @@ for FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
 #define SENSOR_ID_28                0x1B // Sensor ID 28
 
 // FrSky data IDs
-#define ALT_FIRST_ID                0x0100
-#define VARIO_FIRST_ID              0x0110
-#define VFAS_FIRST_ID               0x0210
 #define GPS_LONG_LATI_FIRST_ID      0x0800
 #define DIY_FIRST_ID                0x5000
 
@@ -133,9 +130,8 @@ public:
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-
     void update_sensor_status_flags(uint32_t error_mask) { _ap.sensor_status_flags = error_mask; }
-        
+
     static ObjectArray<mavlink_statustext_t> _statustext_queue;
     
 private:
@@ -161,8 +157,7 @@ private:
         uint32_t *valuep;
         uint32_t sensor_status_flags;
     } _ap;
-    
-    float _relative_home_altitude; // altitude in centimeters above home
+
     uint32_t check_sensor_status_timer;
     uint32_t check_ekf_status_timer;
     uint8_t _paramID;
@@ -194,9 +189,6 @@ private:
         uint32_t home_timer;
         uint32_t velandyaw_timer;
         uint32_t gps_latlng_timer;
-        uint32_t vario_timer;
-        uint32_t alt_timer;
-        uint32_t vfas_timer;
     } _passthrough;
     
     struct
