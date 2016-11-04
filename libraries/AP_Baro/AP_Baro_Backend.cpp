@@ -5,7 +5,9 @@ extern const AP_HAL::HAL& hal;
 // constructor
 AP_Baro_Backend::AP_Baro_Backend(AP_Baro &baro) : 
     _frontend(baro) 
-{}
+{
+    _sem = hal.util->new_semaphore();    
+}
 
 /*
   copy latest data to the frontend from a backend

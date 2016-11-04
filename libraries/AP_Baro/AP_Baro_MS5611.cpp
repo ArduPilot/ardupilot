@@ -69,11 +69,6 @@ void AP_Baro_MS56XX::_init()
         AP_HAL::panic("AP_Baro_MS56XX: failed to use device");
     }
 
-    _sem = hal.util->new_semaphore();
-    if (!_sem) {
-        AP_HAL::panic("AP_Baro_MS56XX: failed to create semaphore");
-    }
-
     _instance = _frontend.register_sensor();
 
     if (!_dev->get_semaphore()->take(10)) {
@@ -280,7 +275,7 @@ void AP_Baro_MS56XX::update()
     uint32_t sD1, sD2;
     uint8_t d1count, d2count;
 
-    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_sem->take_nonblocking()) {
         return;
     }
 

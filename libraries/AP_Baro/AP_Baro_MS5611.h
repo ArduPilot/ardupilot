@@ -33,12 +33,6 @@ protected:
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
-    /*
-     * Synchronize access to _accum between thread sampling the HW and main
-     * thread using the values
-     */
-    AP_HAL::Semaphore *_sem;
-
     /* Shared values between thread sampling the HW and main thread */
     struct {
         uint32_t s_D1;
