@@ -43,7 +43,6 @@ protected:
 
     uint8_t _state;
     uint8_t _instance;
-    uint32_t _last_cmd_usec;
 
     /* Last compensated values from accumulated sample */
     float _D1, _D2;

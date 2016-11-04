@@ -40,11 +40,6 @@ static const uint8_t CMD_MS56XX_PROM = 0xA0;
 #define ADDR_CMD_CONVERT_D2_OSR2048 0x56
 #define ADDR_CMD_CONVERT_D2_OSR4096 0x58
 
-#define CONVERSION_TIME_OSR_4096   9.04 * USEC_PER_MSEC
-#define CONVERSION_TIME_OSR_2048   4.54 * USEC_PER_MSEC
-#define CONVERSION_TIME_OSR_1024   2.28 * USEC_PER_MSEC
-#define CONVERSION_TIME_OSR_0512   1.17 * USEC_PER_MSEC
-#define CONVERSION_TIME_OSR_0256   0.60 * USEC_PER_MSEC
 /*
   use an OSR of 1024 to reduce the self-heating effect of the
   sensor. Information from MS tells us that some individual sensors
@@ -53,7 +48,7 @@ static const uint8_t CMD_MS56XX_PROM = 0xA0;
  */
 static const uint8_t ADDR_CMD_CONVERT_PRESSURE = ADDR_CMD_CONVERT_D1_OSR1024;
 static const uint8_t ADDR_CMD_CONVERT_TEMPERATURE = ADDR_CMD_CONVERT_D2_OSR1024;
-static const uint32_t CONVERSION_TIME = CONVERSION_TIME_OSR_1024;
+
 /*
   constructor
  */
@@ -93,7 +88,6 @@ void AP_Baro_MS56XX::_init()
 
     // Send a command to read temperature first
     _dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0);
-    _last_cmd_usec = AP_HAL::micros();
     _state = 0;
 
     memset(&_accum, 0, sizeof(_accum));
@@ -211,14 +205,6 @@ bool AP_Baro_MS5637::_read_prom(uint16_t prom[8])
 */
 bool AP_Baro_MS56XX::_timer(void)
 {
-    /*
-     * transfer is taking longer than it should or we got stuck by other
-     * sensors: skip one sample
-     */
-    if (AP_HAL::micros() - _last_cmd_usec < CONVERSION_TIME) {
-        return true;
-    }
-
     uint8_t next_cmd;
     uint8_t next_state;
     uint32_t adc_val = _read_adc();
@@ -236,8 +222,6 @@ bool AP_Baro_MS56XX::_timer(void)
     next_cmd = next_state == 0 ? ADDR_CMD_CONVERT_TEMPERATURE
                                : ADDR_CMD_CONVERT_PRESSURE;
     _dev->transfer(&next_cmd, 1, nullptr, 0);
-
-    _last_cmd_usec = AP_HAL::micros();
 
     /* if we had a failed read we are all done */
     if (adc_val == 0) {
