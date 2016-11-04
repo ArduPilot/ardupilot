@@ -141,12 +141,11 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(Compass &compass)
 
 bool AP_Compass_HMC5843::init()
 {
-    hal.scheduler->suspend_timer_procs();
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
     if (!bus_sem || !bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.console->printf("HMC5843: Unable to get bus semaphore\n");
-        goto fail_sem;
+        return false;
     }
 
     if (!_bus->configure()) {
@@ -176,7 +175,6 @@ bool AP_Compass_HMC5843::init()
     _initialised = true;
 
     bus_sem->give();
-    hal.scheduler->resume_timer_procs();
 
     _accum_sem = hal.util->new_semaphore();    
 
@@ -198,10 +196,6 @@ bool AP_Compass_HMC5843::init()
 
 errout:
     bus_sem->give();
-
-fail_sem:
-    hal.scheduler->resume_timer_procs();
-
     return false;
 }
 

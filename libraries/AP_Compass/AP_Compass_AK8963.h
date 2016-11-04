@@ -49,7 +49,8 @@ private:
     bool _check_id();
     bool _calibrate();
 
-    void _update();
+    bool _update();
+    void _update_timer();
 
     AP_AK8963_BusDriver *_bus;
 
@@ -79,6 +80,7 @@ public:
 
     virtual bool configure() { return true; }
     virtual bool start_measurements() { return true; }
+    virtual AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t, AP_HAL::Device::PeriodicCb) = 0;
 };
 
 class AP_AK8963_BusDriver_HALDevice: public AP_AK8963_BusDriver
@@ -91,6 +93,7 @@ public:
     virtual bool register_write(uint8_t reg, uint8_t val) override;
 
     virtual AP_HAL::Semaphore  *get_semaphore() override;
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
 
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
@@ -107,6 +110,8 @@ public:
     bool register_read(uint8_t reg, uint8_t *val) override;
     bool register_write(uint8_t reg, uint8_t val) override;
 
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
+    
     AP_HAL::Semaphore  *get_semaphore() override;
 
     bool configure();

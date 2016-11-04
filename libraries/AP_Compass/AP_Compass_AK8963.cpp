@@ -115,7 +115,6 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(Compass &compass, uint8_t m
 
 bool AP_Compass_AK8963::init()
 {
-    hal.scheduler->suspend_timer_procs();
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
     if (!bus_sem || !_bus->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
@@ -155,17 +154,18 @@ bool AP_Compass_AK8963::init()
     set_dev_id(_compass_instance, _dev_id);
 
     /* timer needs to be called every 10ms so set the freq_div to 10 */
-    _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void), 10);
+    if (!_bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, bool))) {
+        // fallback to timer
+        _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update_timer, void), 10);
+    }
 
     bus_sem->give();
-    hal.scheduler->resume_timer_procs();
 
     return true;
 
 fail:
     bus_sem->give();
 fail_sem:
-    hal.scheduler->resume_timer_procs();
 
     return false;
 }
@@ -181,11 +181,9 @@ void AP_Compass_AK8963::read()
         return;
     }
 
-    hal.scheduler->suspend_timer_procs();
     auto field = _get_filtered_field();
 
     _reset_filter();
-    hal.scheduler->resume_timer_procs();
     publish_filtered_field(field, _compass_instance);
 }
 
@@ -217,20 +215,11 @@ void AP_Compass_AK8963::_make_factory_sensitivity_adjustment(Vector3f& field) co
     field.z *= _magnetometer_ASA[2];
 }
 
-void AP_Compass_AK8963::_update()
+bool AP_Compass_AK8963::_update()
 {
     struct sample_regs regs;
     Vector3f raw_field;
     uint32_t time_us = AP_HAL::micros();
-
-    if (!_timesliced &&
-        AP_HAL::micros() - _last_update_timestamp < 10000) {
-        goto end;
-    }
-
-    if (!_bus->get_semaphore()->take_nonblocking()) {
-        goto end;
-    }
 
     if (!_bus->block_read(AK8963_HXL, (uint8_t *) &regs, sizeof(regs))) {
         goto fail;
@@ -272,12 +261,30 @@ void AP_Compass_AK8963::_update()
         _accum_count = 5;
     }
 
-    _last_update_timestamp = AP_HAL::micros();
-
 fail:
+    return true;
+}
+
+/*
+  update from timer callback
+ */
+void AP_Compass_AK8963::_update_timer()
+{
+    uint32_t now = AP_HAL::micros();
+
+    if (!_timesliced && now - _last_update_timestamp < 10000) {
+        return;
+    }
+
+    if (!_bus->get_semaphore()->take_nonblocking()) {
+        return;
+    }
+
+    _update();
+    
+    _last_update_timestamp = now;
+    
     _bus->get_semaphore()->give();
-end:
-    return;
 }
 
 bool AP_Compass_AK8963::_check_id()
@@ -346,6 +353,11 @@ bool AP_AK8963_BusDriver_HALDevice::register_write(uint8_t reg, uint8_t val)
 AP_HAL::Semaphore *AP_AK8963_BusDriver_HALDevice::get_semaphore()
 {
     return _dev->get_semaphore();
+}
+
+AP_HAL::Device::PeriodicHandle AP_AK8963_BusDriver_HALDevice::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    return _dev->register_periodic_callback(period_usec, cb);
 }
 
 /* AK8963 on an auxiliary bus of IMU driver */
@@ -422,5 +434,10 @@ bool AP_AK8963_BusDriver_Auxiliary::start_measurements()
     _started = true;
 
     return true;
+}
+
+AP_HAL::Device::PeriodicHandle AP_AK8963_BusDriver_Auxiliary::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    return _bus->register_periodic_callback(period_usec, cb);
 }
 

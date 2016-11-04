@@ -56,11 +56,9 @@ bool AP_Compass_QFLIGHT::init(void)
 void AP_Compass_QFLIGHT::read(void)
 {
     if (count > 0) {
-        hal.scheduler->suspend_timer_procs();
         publish_filtered_field(sum/count, instance);
         sum.zero();
         count = 0;
-        hal.scheduler->resume_timer_procs();
     }
 }
 
