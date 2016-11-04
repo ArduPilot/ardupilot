@@ -18,8 +18,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "AP_Compass_AK8963.h"
 #include <AP_InertialSensor/AP_InertialSensor_MPU9250.h>
 
@@ -426,4 +424,3 @@ bool AP_AK8963_BusDriver_Auxiliary::start_measurements()
     return true;
 }
 
-#endif // CONFIG_HAL_BOARD
