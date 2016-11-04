@@ -151,15 +151,18 @@ bool AP_Compass_LSM9DS1::_update(void)
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
 
-    _mag_x_accum += raw_field.x;
-    _mag_y_accum += raw_field.y;
-    _mag_z_accum += raw_field.z;
-    _accum_count++;
-    if (_accum_count == 10) {
-        _mag_x_accum /= 2;
-        _mag_y_accum /= 2;
-        _mag_z_accum /= 2;
-        _accum_count = 5;
+    if (_sem->take(0)) {
+        _mag_x_accum += raw_field.x;
+        _mag_y_accum += raw_field.y;
+        _mag_z_accum += raw_field.z;
+        _accum_count++;
+        if (_accum_count == 10) {
+            _mag_x_accum /= 2;
+            _mag_y_accum /= 2;
+            _mag_z_accum /= 2;
+            _accum_count = 5;
+        }
+        _sem->give();
     }
 
 fail:
@@ -168,36 +171,28 @@ fail:
 
 void AP_Compass_LSM9DS1::read()
 {
+    if (!_sem->take_nonblocking()) {
+        return;
+    }
     if (_accum_count == 0) {
         /* We're not ready to publish*/
+        _sem->give();
         return;
     }
 
-    auto field = _get_filtered_field();
-    _reset_filter();
+    Vector3f field(_mag_x_accum, _mag_y_accum, _mag_z_accum);
+    field /= _accum_count;
+    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
+    _accum_count = 0;
 
+    _sem->give();
+        
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
     field.rotate(ROTATION_ROLL_180);
 #endif
 
     publish_filtered_field(field, _compass_instance);
-
 }
-
-void AP_Compass_LSM9DS1::_reset_filter()
-{
-    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-    _accum_count = 0;
-}
-
-Vector3f AP_Compass_LSM9DS1::_get_filtered_field() const
-{
-    Vector3f field(_mag_x_accum, _mag_y_accum, _mag_z_accum);
-    field /= _accum_count;
-
-    return field;
-}
-
 
 bool AP_Compass_LSM9DS1::_check_id(void)
 {
@@ -240,7 +235,6 @@ AP_Compass_LSM9DS1::AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::
     , _dev(std::move(dev))
     , _dev_id(dev_id)
 {
-    _reset_filter();
 }
 
 uint8_t AP_Compass_LSM9DS1::_register_read(uint8_t reg)

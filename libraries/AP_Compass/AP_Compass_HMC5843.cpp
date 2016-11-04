@@ -176,8 +176,6 @@ bool AP_Compass_HMC5843::init()
 
     bus_sem->give();
 
-    _accum_sem = hal.util->new_semaphore();    
-
     // perform an initial read
     read();
 
@@ -237,7 +235,7 @@ bool AP_Compass_HMC5843::_timer()
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
     
-    if (_accum_sem->take(0)) {
+    if (_sem->take(0)) {
         _mag_x_accum += raw_field.x;
         _mag_y_accum += raw_field.y;
         _mag_z_accum += raw_field.z;
@@ -249,7 +247,7 @@ bool AP_Compass_HMC5843::_timer()
             _accum_count = 7;
         }
         _last_accum_time = tnow;
-        _accum_sem->give();
+        _sem->give();
     }
     
     return true;
@@ -270,12 +268,12 @@ void AP_Compass_HMC5843::read()
         return;
     }
 
-    if (!_accum_sem->take_nonblocking()) {
+    if (!_sem->take_nonblocking()) {
         return;
     }
     
     if (_accum_count == 0) {
-        _accum_sem->give();
+        _sem->give();
         return;
     }
 
@@ -287,7 +285,7 @@ void AP_Compass_HMC5843::read()
     _accum_count = 0;
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
-    _accum_sem->give();
+    _sem->give();
     
     publish_filtered_field(field, _compass_instance);
 }

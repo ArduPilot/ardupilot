@@ -18,8 +18,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include <utility>
 
 #include <AP_HAL/utility/sparse-endian.h>
@@ -125,12 +123,6 @@ bool AP_Compass_BMM150::init()
 {
     uint8_t val = 0;
     bool ret;
-
-    _accum_sem = hal.util->new_semaphore();
-    if (!_accum_sem) {
-        hal.console->printf("BMM150: Unable to create semaphore\n");
-        return false;
-    }
 
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.console->printf("BMM150: Unable to get bus semaphore\n");
@@ -244,10 +236,6 @@ bool AP_Compass_BMM150::_update()
 {
     const uint32_t time_usec = AP_HAL::micros();
 
-    if (time_usec - _last_update_timestamp < MEASURE_TIME_USEC) {
-        return true;
-    }
-
     le16_t data[4];
     bool ret = _dev->read_registers(DATA_X_LSB_REG, (uint8_t *) &data, sizeof(data));
 
@@ -279,7 +267,7 @@ bool AP_Compass_BMM150::_update()
     /* correct raw_field for known errors */
     correct_field(raw_field, _compass_instance);
 
-    if (!_accum_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return true;
     }
     _mag_accum += raw_field;
@@ -288,18 +276,17 @@ bool AP_Compass_BMM150::_update()
         _mag_accum /= 2;
         _accum_count = 5;
     }
-    _last_update_timestamp = time_usec;
-    _accum_sem->give();
+    _sem->give();
     return true;
 }
 
 void AP_Compass_BMM150::read()
 {
-    if (!_accum_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_sem->take_nonblocking()) {
         return;
     }
     if (_accum_count == 0) {
-        _accum_sem->give();
+        _sem->give();
         return;
     }
 
@@ -307,9 +294,8 @@ void AP_Compass_BMM150::read()
     field /= _accum_count;
     _mag_accum.zero();
     _accum_count = 0;
-    _accum_sem->give();
+    _sem->give();
 
     publish_filtered_field(field, _compass_instance);
 }
 
-#endif

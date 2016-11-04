@@ -58,7 +58,6 @@ AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_BusDriver *bus,
     , _bus(bus)
     , _dev_id(dev_id)
 {
-    _reset_filter();
 }
 
 AP_Compass_AK8963::~AP_Compass_AK8963()
@@ -119,7 +118,7 @@ bool AP_Compass_AK8963::init()
 
     if (!bus_sem || !_bus->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.console->printf("AK8963: Unable to get bus semaphore\n");
-        goto fail_sem;
+        return false;
     }
 
     if (!_bus->configure()) {
@@ -153,20 +152,18 @@ bool AP_Compass_AK8963::init()
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _dev_id);
 
+    bus_sem->give();
+
     /* timer needs to be called every 10ms so set the freq_div to 10 */
     if (!_bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, bool))) {
         // fallback to timer
         _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update_timer, void), 10);
     }
 
-    bus_sem->give();
-
     return true;
 
 fail:
     bus_sem->give();
-fail_sem:
-
     return false;
 }
 
@@ -176,29 +173,19 @@ void AP_Compass_AK8963::read()
         return;
     }
 
-    if (_accum_count == 0) {
-        /* We're not ready to publish*/
-        return;
+    if (_sem->take_nonblocking()) {
+        if (_accum_count == 0) {
+            /* We're not ready to publish */
+            _sem->give();
+            return;
+        }
+
+        Vector3f field = Vector3f(_mag_x_accum, _mag_y_accum, _mag_z_accum) / _accum_count;
+        _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
+        _accum_count = 0;
+        _sem->give();
+        publish_filtered_field(field, _compass_instance);
     }
-
-    auto field = _get_filtered_field();
-
-    _reset_filter();
-    publish_filtered_field(field, _compass_instance);
-}
-
-Vector3f AP_Compass_AK8963::_get_filtered_field() const
-{
-    Vector3f field(_mag_x_accum, _mag_y_accum, _mag_z_accum);
-    field /= _accum_count;
-
-    return field;
-}
-
-void AP_Compass_AK8963::_reset_filter()
-{
-    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-    _accum_count = 0;
 }
 
 void AP_Compass_AK8963::_make_adc_sensitivity_adjustment(Vector3f& field) const
@@ -250,15 +237,18 @@ bool AP_Compass_AK8963::_update()
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
 
-    _mag_x_accum += raw_field.x;
-    _mag_y_accum += raw_field.y;
-    _mag_z_accum += raw_field.z;
-    _accum_count++;
-    if (_accum_count == 10) {
-        _mag_x_accum /= 2;
-        _mag_y_accum /= 2;
-        _mag_z_accum /= 2;
+    if (_sem->take(0)) {
+        _mag_x_accum += raw_field.x;
+        _mag_y_accum += raw_field.y;
+        _mag_z_accum += raw_field.z;
+        _accum_count++;
+        if (_accum_count == 10) {
+            _mag_x_accum /= 2;
+            _mag_y_accum /= 2;
+            _mag_z_accum /= 2;
         _accum_count = 5;
+        }
+        _sem->give();
     }
 
 fail:

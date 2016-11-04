@@ -66,7 +66,6 @@ private:
 
     bool _initialised;
     bool _force_external;
-    AP_HAL::Semaphore *_accum_sem;
 };
 
 class AP_HMC5843_BusDriver
