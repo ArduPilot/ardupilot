@@ -192,6 +192,13 @@ public:
         d.devid_s.devtype = devtype;
         return d.devid;
     }
+
+    /**
+     * return bus ID with a new devtype
+     */
+    uint32_t get_bus_id_devtype(uint8_t devtype) {
+        return change_bus_id(get_bus_id(), devtype);
+    }
     
 protected:
     uint8_t _read_flag = 0;
