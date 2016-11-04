@@ -6,10 +6,10 @@
 
 const extern AP_HAL::HAL& hal;
 
-AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
-    _imu(imu),
-    _product_id(AP_PRODUCT_ID_NONE)
-{}
+AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu)
+    : _imu(imu)
+{
+}
 
 void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vector3f &accel) 
 {

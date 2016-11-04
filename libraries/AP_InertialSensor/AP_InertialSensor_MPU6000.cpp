@@ -7,9 +7,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// MPU6000 accelerometer scaling
-#define MPU6000_ACCEL_SCALE_1G    (GRAVITY_MSS / 4096.0f)
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/GPIO.h>
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
@@ -213,6 +210,9 @@ extern const AP_HAL::HAL& hal;
 #endif
 #define MAX_DATA_READ (MPU6000_MAX_FIFO_SAMPLES * MPU6000_SAMPLE_SIZE)
 
+#define MPU6000_DRIVER_VERSION_ACCEL 1U
+#define MPU6000_DRIVER_VERSION_GYRO 0U
+
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
 
@@ -350,21 +350,21 @@ void AP_InertialSensor_MPU6000::start()
     hal.scheduler->delay(1);
 
     // read the product ID rev c has 1/2 the sensitivity of rev d
-    _product_id = _register_read(MPUREG_PRODUCT_ID);
+    uint8_t product_id = _register_read(MPUREG_PRODUCT_ID);
     //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
 
-    // TODO: should be changed to 16G once we have a way to override the
-    // previous offsets
-    if ((_product_id == MPU6000ES_REV_C4) ||
-        (_product_id == MPU6000ES_REV_C5) ||
-        (_product_id == MPU6000_REV_C4)   ||
-        (_product_id == MPU6000_REV_C5)) {
+    if ((product_id == MPU6000ES_REV_C4) ||
+        (product_id == MPU6000ES_REV_C5) ||
+        (product_id == MPU6000_REV_C4)   ||
+        (product_id == MPU6000_REV_C5)) {
         // Accel scale 8g (4096 LSB/g)
         // Rev C has different scaling than rev D
         _register_write(MPUREG_ACCEL_CONFIG,1<<3);
+        _accel_scale = GRAVITY_MSS / 4096.f;
     } else {
-        // Accel scale 8g (4096 LSB/g)
-        _register_write(MPUREG_ACCEL_CONFIG,2<<3);
+        // Accel scale 16g (2048 LSB/g)
+        _register_write(MPUREG_ACCEL_CONFIG,3<<3);
+        _accel_scale = GRAVITY_MSS / 2048.f;
     }
     hal.scheduler->delay(1);
 
@@ -382,8 +382,10 @@ void AP_InertialSensor_MPU6000::start()
     _dev->get_semaphore()->give();
 
     // grab the used instances
-    _gyro_instance = _imu.register_gyro(1000);
-    _accel_instance = _imu.register_accel(1000);
+    _gyro_instance = _imu.register_gyro(1000, _dev->get_id() |
+                                        (MPU6000_DRIVER_VERSION_GYRO << 16));
+    _accel_instance = _imu.register_accel(1000, _dev->get_id() |
+                                          (MPU6000_DRIVER_VERSION_ACCEL << 16));
 
     hal.scheduler->resume_timer_procs();
 
@@ -466,7 +468,7 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
         accel = Vector3f(int16_val(data, 1),
                          int16_val(data, 0),
                          -int16_val(data, 2));
-        accel *= MPU6000_ACCEL_SCALE_1G;
+        accel *= _accel_scale;
 
         gyro = Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
@@ -550,7 +552,6 @@ void AP_InertialSensor_MPU6000::_read_sample()
 
     if (!_block_read(MPUREG_INT_STATUS, (uint8_t *) &rx, sizeof(rx))) {
         if (++_error_count > 4) {
-            // TODO: set bus speed low for this (and only this) device
             hal.console->printf("MPU60x0: error reading sample\n");
             return;
         }

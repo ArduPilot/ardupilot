@@ -412,6 +412,27 @@ bool SPIDevice::adjust_periodic_callback(
     return _bus.thread.adjust_timer(static_cast<TimerPollable*>(h), period_usec);
 }
 
+uint16_t SPIDevice::get_id()
+{
+    /*
+     * Instance number of this device on the device[] array: this is used in
+     * place of the gpio number because those may be too big to fit into the
+     * 16-bit we have for uniquely identifying the device.
+     *
+     * Since all of our SPIDevice's come from the _device[] array, this
+     * already uniquely identify a device, but we still use the bus number and
+     * kernel cs to be able to decode the ID.
+     */
+    unsigned n_desc = &_desc - SPIDeviceManager::from(hal.spi)->_device;
+    if (n_desc >= (1U << 5)) {
+        AP_HAL::panic("SPI: too many SPI devices or indexes wrong");
+    }
+
+    return (_desc.bus << 12) |
+           (_desc.subdev << 8 ) |
+           (n_desc << 3) |
+           bus_type;
+}
 
 AP_HAL::OwnPtr<AP_HAL::SPIDevice>
 SPIDeviceManager::get_device(const char *name)

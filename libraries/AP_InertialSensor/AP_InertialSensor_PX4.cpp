@@ -112,7 +112,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         if (samplerate < 100 || samplerate > 10000) {
             AP_HAL::panic("Invalid gyro sample rate");
         }
-        _gyro_instance[i] = _imu.register_gyro(samplerate);
+        _gyro_instance[i] = _imu.register_gyro(samplerate, ioctl(fd, DEVIOCGDEVICEID, 0));
         _gyro_sample_time[i] = 1.0f / samplerate;
     }
 
@@ -152,21 +152,10 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         if (samplerate < 100 || samplerate > 10000) {
             AP_HAL::panic("Invalid accel sample rate");
         }
-        _accel_instance[i] = _imu.register_accel(samplerate);
+        _accel_instance[i] = _imu.register_accel(samplerate, ioctl(fd, DEVIOCGDEVICEID, 0));
         _accel_sample_time[i] = 1.0f / samplerate;
     }
 
-#if  CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    _product_id = AP_PRODUCT_ID_VRBRAIN;
-#else
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    _product_id = AP_PRODUCT_ID_PX4_V2;
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    _product_id = AP_PRODUCT_ID_PX4_V4;
-#else
-    _product_id = AP_PRODUCT_ID_PX4;
-#endif
-#endif
     return true;
 }
 
