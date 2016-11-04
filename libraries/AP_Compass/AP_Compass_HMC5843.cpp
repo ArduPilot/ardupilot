@@ -102,7 +102,7 @@ AP_Compass_HMC5843::~AP_Compass_HMC5843()
 }
 
 AP_Compass_Backend *AP_Compass_HMC5843::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external)
 {
     AP_HMC5843_BusDriver *bus = new AP_HMC5843_BusDriver_HALDevice(std::move(dev));
@@ -475,8 +475,8 @@ bool AP_Compass_HMC5843::_calibrate()
     return success;
 }
 
-/* AP_HAL::I2CDevice implementation of the HMC5843 */
-AP_HMC5843_BusDriver_HALDevice::AP_HMC5843_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+/* AP_HAL::Device implementation of the HMC5843 */
+AP_HMC5843_BusDriver_HALDevice::AP_HMC5843_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : _dev(std::move(dev))
 {
 }
