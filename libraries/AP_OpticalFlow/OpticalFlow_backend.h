@@ -20,17 +20,13 @@
 
 #include "OpticalFlow.h"
 
-extern const AP_HAL::HAL& hal;
-
 class OpticalFlow_backend
 {
     friend class OpticalFlow;
 
 public:
     // constructor
-    OpticalFlow_backend(OpticalFlow &_frontend) : frontend(_frontend) {
-        _sem = hal.util->new_semaphore();    
-    }
+    OpticalFlow_backend(OpticalFlow &_frontend);
 
     // init - initialise sensor
     virtual void init() = 0;
