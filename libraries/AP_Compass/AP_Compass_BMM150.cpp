@@ -182,7 +182,9 @@ bool AP_Compass_BMM150::init()
 
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
-    set_dev_id(_compass_instance, AP_COMPASS_TYPE_BMM150);
+
+    _dev->set_device_type(AP_COMPASS_TYPE_BMM150);
+    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     _dev->register_periodic_callback(MEASURE_TIME_USEC,
             FUNCTOR_BIND_MEMBER(&AP_Compass_BMM150::_update, bool));

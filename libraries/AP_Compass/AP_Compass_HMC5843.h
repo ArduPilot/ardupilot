@@ -46,7 +46,6 @@ private:
 
     float _scaling[3];
     float _gain_scale;
-    uint32_t _last_accum_time;
 
     // when unhealthy the millis() value to retry at
     uint32_t _retry_time;
@@ -62,10 +61,10 @@ private:
     uint8_t _base_config;
     uint8_t _compass_instance;
     uint8_t _gain_config;
-    uint8_t _product_id;
 
-    bool _initialised;
-    bool _force_external;
+    bool _is_hmc5883L:1;
+    bool _initialised:1;
+    bool _force_external:1;
 };
 
 class AP_HMC5843_BusDriver
@@ -83,6 +82,12 @@ public:
     virtual bool start_measurements() { return true; }
 
     virtual AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t, AP_HAL::Device::PeriodicCb) = 0;
+
+    // set device type within a device class
+    virtual void set_device_type(uint8_t devtype) = 0;
+
+    // return 24 bit bus identifier
+    virtual uint32_t get_bus_id(void) const = 0;
 };
 
 class AP_HMC5843_BusDriver_HALDevice : public AP_HMC5843_BusDriver
@@ -97,6 +102,16 @@ public:
     AP_HAL::Semaphore *get_semaphore() override;
 
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
+
+    // set device type within a device class
+    void set_device_type(uint8_t devtype) override {
+        _dev->set_device_type(devtype);
+    }
+
+    // return 24 bit bus identifier
+    uint32_t get_bus_id(void) const override {
+        return _dev->get_bus_id();
+    }
     
 private:
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
@@ -119,6 +134,12 @@ public:
     bool start_measurements() override;
 
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
+
+    // set device type within a device class
+    void set_device_type(uint8_t devtype) override;
+
+    // return 24 bit bus identifier
+    uint32_t get_bus_id(void) const override;
     
 private:
     AuxiliaryBus *_bus;

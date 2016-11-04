@@ -60,7 +60,7 @@ extern const AP_HAL::HAL &hal;
 AP_Compass_Backend *AP_Compass_LSM9DS1::probe(Compass &compass,
                                               AP_HAL::OwnPtr<AP_HAL::Device> dev)
 {
-    AP_Compass_LSM9DS1 *sensor = new AP_Compass_LSM9DS1(compass, std::move(dev), AP_COMPASS_TYPE_LSM9DS1);
+    AP_Compass_LSM9DS1 *sensor = new AP_Compass_LSM9DS1(compass, std::move(dev));
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -94,7 +94,9 @@ bool AP_Compass_LSM9DS1::init()
     }
 
     _compass_instance = register_compass();
-    set_dev_id(_compass_instance, _dev_id);
+
+    _dev->set_device_type(AP_COMPASS_TYPE_LSM9DS1);
+    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM9DS1::_update, bool));
 
@@ -230,10 +232,9 @@ bool AP_Compass_LSM9DS1::_set_scale(void)
     return true;
 }
 
-AP_Compass_LSM9DS1::AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev, uint32_t dev_id)
+AP_Compass_LSM9DS1::AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : AP_Compass_Backend(compass)
     , _dev(std::move(dev))
-    , _dev_id(dev_id)
 {
 }
 

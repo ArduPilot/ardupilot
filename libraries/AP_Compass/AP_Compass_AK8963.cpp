@@ -52,11 +52,9 @@ struct PACKED sample_regs {
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_BusDriver *bus,
-                                     uint32_t dev_id)
+AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_BusDriver *bus)
     : AP_Compass_Backend(compass)
     , _bus(bus)
-    , _dev_id(dev_id)
 {
 }
 
@@ -73,7 +71,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe(Compass &compass,
         return nullptr;
     }
 
-    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass, bus, AP_COMPASS_TYPE_AK8963_I2C);
+    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass, bus);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -103,7 +101,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(Compass &compass, uint8_t m
         return nullptr;
     }
 
-    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass, bus, AP_COMPASS_TYPE_AK8963_MPU9250);
+    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass, bus);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -150,7 +148,9 @@ bool AP_Compass_AK8963::init()
 
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
-    set_dev_id(_compass_instance, _dev_id);
+
+    _bus->set_device_type(AP_COMPASS_TYPE_AK8963);
+    set_dev_id(_compass_instance, _bus->get_bus_id());
 
     bus_sem->give();
 
@@ -431,3 +431,14 @@ AP_HAL::Device::PeriodicHandle AP_AK8963_BusDriver_Auxiliary::register_periodic_
     return _bus->register_periodic_callback(period_usec, cb);
 }
 
+// set device type within a device class
+void AP_AK8963_BusDriver_Auxiliary::set_device_type(uint8_t devtype)
+{
+    _bus->set_device_type(devtype);
+}
+
+// return 24 bit bus identifier
+uint32_t AP_AK8963_BusDriver_Auxiliary::get_bus_id(void) const
+{
+    return _bus->get_bus_id();
+}

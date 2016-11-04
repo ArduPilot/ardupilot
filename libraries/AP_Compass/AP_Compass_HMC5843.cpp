@@ -180,7 +180,9 @@ bool AP_Compass_HMC5843::init()
     read();
 
     _compass_instance = register_compass();
-    set_dev_id(_compass_instance, _product_id);
+
+    _bus->set_device_type(AP_COMPASS_TYPE_HMC5843);
+    set_dev_id(_compass_instance, _bus->get_bus_id());
 
     if (_force_external) {
         set_external(_compass_instance, true);
@@ -209,7 +211,7 @@ bool AP_Compass_HMC5843::_timer()
         return true;
     }
 
-    uint32_t tnow = AP_HAL::micros();
+    uint32_t tnow = AP_HAL::micros();    
 
     // the _mag_N values are in the range -2048 to 2047, so we can
     // accumulate up to 15 of them in an int16_t. Let's make it 14
@@ -221,8 +223,7 @@ bool AP_Compass_HMC5843::_timer()
     raw_field *= _gain_scale;
     
     // rotate to the desired orientation
-    if (is_external(_compass_instance) &&
-        _product_id == AP_COMPASS_TYPE_HMC5883L) {
+    if (is_external(_compass_instance) && _is_hmc5883L) {
         raw_field.rotate(ROTATION_YAW_90);
     }
 
@@ -246,7 +247,6 @@ bool AP_Compass_HMC5843::_timer()
             _mag_z_accum /= 2;
             _accum_count = 7;
         }
-        _last_accum_time = tnow;
         _sem->give();
     }
     
@@ -325,7 +325,7 @@ bool AP_Compass_HMC5843::_read_sample()
     ry = be16toh(val.ry);
     rz = be16toh(val.rz);
 
-    if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
+    if (_is_hmc5883L) {
         std::swap(ry, rz);
     }
 
@@ -355,11 +355,11 @@ bool AP_Compass_HMC5843::_detect_version()
 
     if (_base_config == try_config) {
         /* a 5883L supports the sample averaging config */
-        _product_id = AP_COMPASS_TYPE_HMC5883L;
+        _is_hmc5883L = true;
         _gain_config = HMC5883L_GAIN_1_30_GA;
         _gain_scale = (1.0f / 1090) * 1000;
     } else if (_base_config == (HMC5843_OPMODE_NORMAL | HMC5843_OSR_75HZ)) {
-        _product_id = AP_COMPASS_TYPE_HMC5843;
+        _is_hmc5883L = false;
         _gain_config = HMC5843_GAIN_1_00_GA;
         _gain_scale = (1.0f / 1300) * 1000;
     } else {
@@ -378,7 +378,7 @@ bool AP_Compass_HMC5843::_calibrate()
     int numAttempts = 0, good_count = 0;
     bool success = false;
 
-    if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
+    if (_is_hmc5883L) {
         calibration_gain = HMC5883L_GAIN_2_50_GA;
         /*
          * note that the HMC5883 datasheet gives the x and y expected
@@ -587,6 +587,18 @@ bool AP_HMC5843_BusDriver_Auxiliary::start_measurements()
 AP_HAL::Device::PeriodicHandle AP_HMC5843_BusDriver_Auxiliary::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
     return _bus->register_periodic_callback(period_usec, cb);
+}
+
+// set device type within a device class
+void AP_HMC5843_BusDriver_Auxiliary::set_device_type(uint8_t devtype)
+{
+    _bus->set_device_type(devtype);
+}
+
+// return 24 bit bus identifier
+uint32_t AP_HMC5843_BusDriver_Auxiliary::get_bus_id(void) const
+{
+    return _bus->get_bus_id();
 }
 
 #endif
