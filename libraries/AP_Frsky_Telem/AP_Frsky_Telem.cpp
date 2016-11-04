@@ -889,12 +889,3 @@ void AP_Frsky_Telem::calc_gps_position(void)
         _gps.speed_in_centimeter = 0;
     }
 }
-
-void AP_Frsky_Telem::set_is_flying(bool is_flying)
-{
-    if (is_flying) {
-        _ap.value &= ~AP_LANDCOMPLETE_FLAG; // set land_complete flag to 0
-    } else {
-        _ap.value |= AP_LANDCOMPLETE_FLAG; // set land_complete flag to 1
-    }
-}
