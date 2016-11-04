@@ -36,7 +36,7 @@ private:
     int                 _channel_to_read;
     adc_report_s        *_samples;
 
-    void _update();
+    bool _update();
     bool _start_conversion(uint8_t channel);
 
     float _convert_register_data_to_mv(int16_t word) const;
