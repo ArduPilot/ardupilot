@@ -62,7 +62,6 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
             memset(read_buffer, 0, sizeof(read_buffer));
             read_len = 0;
             modbus_status = LEDDARONE_MODBUS_PRE_SEND_REQUEST;
-            break;
 
         case LEDDARONE_MODBUS_PRE_SEND_REQUEST:
             // send a request message for Modbus function 4
@@ -82,7 +81,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
                 if (AP_HAL::millis() - last_sending_request_ms > 200) {
                     // reset mod_bus status to read new buffer
                     // if read_len is zero, send request without initialize
-                    modbus_status = read_len == 0 ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
+                    modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
                 }
             }
             break;
@@ -102,7 +101,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
             // if status is not reading buffer, reset mod_bus status to read new buffer
             else if (leddarone_status != LEDDARONE_READING_BUFFER) {
                 // if read_len is zero, send request without initialize
-                modbus_status = read_len == 0 ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
+                modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
             }
             break;
     }
