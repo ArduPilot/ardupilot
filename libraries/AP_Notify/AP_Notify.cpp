@@ -68,10 +68,14 @@ AP_Notify::AP_Notify()
 // static flags, to allow for direct class update from device drivers
 struct AP_Notify::notify_flags_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
+float AP_Notify::_voltage = 0.0f;
+uint8_t AP_Notify::_control_mode = 0;
+char AP_Notify::_send_text[51] {};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_BoardLED boardled;
     ToshibaLED_PX4 toshibaled;
+    Display_SSD1306_I2C display;
 
 #if AP_NOTIFY_SOLO_TONES == 1
     ToneAlarm_PX4_Solo tonealarm;
@@ -81,9 +85,9 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 
 #if AP_NOTIFY_OREOLED == 1
     OreoLED_PX4 oreoled;
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled, &display};
 #else
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &display};
 #endif
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -183,3 +187,4 @@ void AP_Notify::handle_play_tune(mavlink_message_t *msg)
         _devices[i]->handle_play_tune(msg);
     }
 }
+

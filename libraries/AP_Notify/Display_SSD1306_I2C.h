@@ -13,6 +13,7 @@ public:
     virtual bool hw_update();
     virtual bool set_pixel(uint16_t x, uint16_t y);
     virtual bool clear_pixel(uint16_t x, uint16_t y);
+    virtual bool clear_screen();
 
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
