@@ -117,9 +117,19 @@ public:
      */
     virtual AP_HAL::Semaphore *get_semaphore() = 0;
 
+    // set device type within a device class
+    void set_device_type(uint8_t devtype) {
+        _devid = AP_HAL::Device::change_bus_id(_devid, devtype);
+    }
+
+    // return 24 bit bus identifier
+    uint32_t get_bus_id(void) const {
+        return _devid;
+    }
+        
 protected:
     /* Only AP_InertialSensor_Backend is able to create a bus */
-    AuxiliaryBus(AP_InertialSensor_Backend &backend, uint8_t max_slaves);
+    AuxiliaryBus(AP_InertialSensor_Backend &backend, uint8_t max_slaves, uint32_t devid);
     virtual ~AuxiliaryBus();
 
     virtual AuxiliaryBusSlave *_instantiate_slave(uint8_t addr, uint8_t instance) = 0;
@@ -130,4 +140,5 @@ protected:
     const uint8_t _max_slaves;
     AuxiliaryBusSlave **_slaves;
     AP_InertialSensor_Backend &_ins_backend;
+    uint32_t _devid;
 };
