@@ -137,6 +137,14 @@ int I2CBus::open(uint8_t n)
     return fd;
 }
 
+I2CDevice::I2CDevice(I2CBus &bus, uint8_t address)
+    : _bus(bus)
+    , _address(address)
+{
+    set_device_bus(bus.bus);
+    set_device_address(address);
+}
+    
 I2CDevice::~I2CDevice()
 {
     // Unregister itself from the I2CDeviceManager
