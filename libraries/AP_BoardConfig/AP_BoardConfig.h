@@ -57,6 +57,7 @@ public:
 #endif
         PX4_BOARD_TEST_V1 = 101,
         PX4_BOARD_TEST_V2 = 102,
+        PX4_BOARD_TEST_V3 = 103,
         PX4_BOARD_TEST_V4 = 104,
     };
 #endif

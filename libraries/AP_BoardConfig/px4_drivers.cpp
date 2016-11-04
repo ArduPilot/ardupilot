@@ -492,17 +492,6 @@ void AP_BoardConfig::px4_start_fmuv4_sensors(void)
  */
 void AP_BoardConfig::px4_start_common_sensors(void)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    /*
-      this works around an issue with some FMUv4 hardware (eg. copies
-      of the Pixracer) which have incorrect components leading to
-      sensor brownout on boot
-     */
-    if (px4_start_driver(fmu_main, "fmu", "sensor_reset 20")) {
-        printf("FMUv4 sensor reset complete\n");        
-    }
-#endif
-
     if (px4_start_driver(ms5611_main, "ms5611", "start")) {
         printf("ms5611 started OK\n");
     } else {
@@ -673,8 +662,20 @@ void AP_BoardConfig::vrx_start_optional_sensors(void)
 
 void AP_BoardConfig::px4_setup_drivers(void)
 {
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+    /*
+      this works around an issue with some FMUv4 hardware (eg. copies
+      of the Pixracer) which have incorrect components leading to
+      sensor brownout on boot
+     */
+    if (px4_start_driver(fmu_main, "fmu", "sensor_reset 20")) {
+        printf("FMUv4 sensor reset complete\n");        
+    }
+#endif
+
     if (px4.board_type == PX4_BOARD_TEST_V1 ||
         px4.board_type == PX4_BOARD_TEST_V2 ||
+        px4.board_type == PX4_BOARD_TEST_V3 ||
         px4.board_type == PX4_BOARD_TEST_V4) {
         // use in-tree drivers
         printf("Using in-tree drivers\n");
