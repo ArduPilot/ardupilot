@@ -48,4 +48,7 @@ protected:
 
     RangeFinder &ranger;
     RangeFinder::RangeFinder_State &state;
+
+    // semaphore for access to shared frontend data
+    AP_HAL::Semaphore *_sem;    
 };
