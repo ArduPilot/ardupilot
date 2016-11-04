@@ -279,6 +279,7 @@ bool AP_InertialSensor_L3G4200D::_accumulate(void)
             }
         }
     }
+    return true;
 }
 
 #endif
