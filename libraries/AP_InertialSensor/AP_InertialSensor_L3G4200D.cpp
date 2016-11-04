@@ -194,8 +194,6 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
                          L3G4200D_REG_FIFO_CTL_STREAM);
     hal.scheduler->delay(1);
 
-    _product_id = AP_PRODUCT_ID_L3G4200D;
-    
     _dev->get_semaphore()->give();
 
     return true;
@@ -206,8 +204,8 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
  */
 void AP_InertialSensor_L3G4200D::start(void)
 {
-    _gyro_instance = _imu.register_gyro(800, _dev->get_id());
-    _accel_instance = _imu.register_accel(800, _dev->get_id());
+    _gyro_instance = _imu.register_gyro(800, _dev->get_bus_id());
+    _accel_instance = _imu.register_accel(800, _dev->get_bus_id());
 
     // start the timer process to read samples
     _dev->register_periodic_callback(1250, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_L3G4200D::_accumulate, bool));
