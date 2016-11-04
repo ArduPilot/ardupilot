@@ -178,9 +178,9 @@ void AP_InertialSensor_BMI160::start()
     _dev->get_semaphore()->give();
 
     _accel_instance = _imu.register_accel(BMI160_ODR_TO_HZ(BMI160_ODR),
-                                          _dev->get_id());
+                                          _dev->get_bus_id());
     _gyro_instance = _imu.register_gyro(BMI160_ODR_TO_HZ(BMI160_ODR),
-                                        _dev->get_id());
+                                        _dev->get_bus_id());
 
     /* Call _poll_data() at 1kHz */
     _dev->register_periodic_callback(1000,
