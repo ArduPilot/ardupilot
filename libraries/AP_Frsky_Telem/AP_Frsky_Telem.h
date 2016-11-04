@@ -115,7 +115,7 @@ public:
     AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
 
     // init - perform required initialisation
-    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage = nullptr, AP_Float *fs_batt_mah = nullptr, uint32_t *ap_valuep = nullptr);
+    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, const AP_Float *fs_batt_voltage = nullptr, const AP_Float *fs_batt_mah = nullptr, const uint32_t *ap_valuep = nullptr);
 
     // add statustext message to FrSky lib message queue
     void queue_message(MAV_SEVERITY severity, const char *text);
@@ -146,15 +146,15 @@ private:
     struct
     {
         uint8_t mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
-        AP_Float *fs_batt_voltage; // failsafe battery voltage in volts
-        AP_Float *fs_batt_mah; // failsafe reserve capacity in mAh
+        const AP_Float *fs_batt_voltage; // failsafe battery voltage in volts
+        const AP_Float *fs_batt_mah; // failsafe reserve capacity in mAh
     } _params;
     
     struct
     {
         uint8_t control_mode;
         uint32_t value;
-        uint32_t *valuep;
+        const uint32_t *valuep;
         uint32_t sensor_status_flags;
     } _ap;
 
