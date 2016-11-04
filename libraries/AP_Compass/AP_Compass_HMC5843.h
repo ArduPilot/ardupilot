@@ -2,7 +2,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/Device.h>
 #include <AP_Math/AP_Math.h>
 
 #include "AP_Compass.h"
@@ -17,7 +17,7 @@ class AP_Compass_HMC5843 : public AP_Compass_Backend
 {
 public:
     static AP_Compass_Backend *probe(Compass &compass,
-                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                     AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                      bool force_external = false);
 
     static AP_Compass_Backend *probe_mpu6000(Compass &compass);
@@ -88,7 +88,7 @@ public:
 class AP_HMC5843_BusDriver_HALDevice : public AP_HMC5843_BusDriver
 {
 public:
-    AP_HMC5843_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    AP_HMC5843_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     bool block_read(uint8_t reg, uint8_t *buf, uint32_t size) override;
     bool register_read(uint8_t reg, uint8_t *val) override;
@@ -99,7 +99,7 @@ public:
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
     
 private:
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 };
 
 class AP_HMC5843_BusDriver_Auxiliary : public AP_HMC5843_BusDriver

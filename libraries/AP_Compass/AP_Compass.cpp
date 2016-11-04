@@ -494,14 +494,29 @@ void Compass::_detect_backends(void)
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V1 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2 ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V3 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V4) {
-        // use in-tree driver
+        // external i2c bus
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR), true),
                          AP_Compass_HMC5843::name, true);
+        // internal i2c bus
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR), false),
+                         AP_Compass_HMC5843::name, false);
+        // try for SPI device too
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME), false),
+                     AP_Compass_HMC5843::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2) {
         _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)),
                      AP_Compass_LSM303D::name, false);
+    }
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V3) {
+        _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_EXT_A_NAME)),
+                     AP_Compass_LSM303D::name, false);
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+                     AP_Compass_AK8963::name, false);
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 1),
+                     AP_Compass_AK8963::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V4) {
         _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
