@@ -23,6 +23,8 @@ public:
 
 private:
 
+    bool timer(void);
+
     // read word from register
     // returns true if read was successful, false if failed
     bool read_word(uint8_t reg, uint16_t& data) const;
