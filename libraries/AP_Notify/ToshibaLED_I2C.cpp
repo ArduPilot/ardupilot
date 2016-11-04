@@ -53,22 +53,29 @@ bool ToshibaLED_I2C::hw_init()
     // give back i2c semaphore
     _dev->get_semaphore()->give();
 
+    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&ToshibaLED_I2C::_timer, bool));
+    
     return ret;
 }
 
 // set_rgb - set color as a combination of red, green and blue values
 bool ToshibaLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    if (!_dev || !_dev->get_semaphore()->take(5)) {
-        return false;
+    _need_update = true;
+    return true;
+}
+
+bool ToshibaLED_I2C::_timer(void)
+{
+    if (!_need_update) {
+        return true;
     }
-
+    _need_update = false;
+    
     /* 4-bit for each color */
-    uint8_t val[4] = { TOSHIBA_LED_PWM0, (uint8_t)(blue >> 4),
-                       (uint8_t)(green / 16), (uint8_t)(red / 16) };
-    bool ret = _dev->transfer(val, sizeof(val), nullptr, 0);
+    uint8_t val[4] = { TOSHIBA_LED_PWM0, (uint8_t)(rgb.b >> 4),
+                       (uint8_t)(rgb.g / 16), (uint8_t)(rgb.r / 16) };
 
-    _dev->get_semaphore()->give();
-
-    return ret;
+    _dev->transfer(val, sizeof(val), nullptr, 0);
+    return true;
 }
