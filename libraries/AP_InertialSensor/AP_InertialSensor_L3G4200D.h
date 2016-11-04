@@ -24,9 +24,6 @@ public:
     /* update accel and gyro state */
     bool update() override;
 
-    // return product ID
-    int16_t product_id() const override { return AP_PRODUCT_ID_L3G4200D; }
-
     void start(void) override;
 
 private:
