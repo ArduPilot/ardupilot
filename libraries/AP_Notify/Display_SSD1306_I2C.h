@@ -17,4 +17,6 @@ public:
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     uint8_t _displaybuffer[SSD1306_ROWS * SSD1306_COLUMNS_PER_PAGE];
+    bool _need_hw_update;
+    bool _timer(void);
 };
