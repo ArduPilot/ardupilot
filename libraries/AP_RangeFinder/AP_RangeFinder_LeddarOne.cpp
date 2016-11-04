@@ -20,13 +20,6 @@
 extern const AP_HAL::HAL& hal;
 
 /*
-   The based on Arduino LeddarOne sample
-   --------------------------------------------------------
-       http://playground.arduino.cc/Code/Leddar
-   --------------------------------------------------------
- */
-
-/*
    The constructor also initialises the rangefinder. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
@@ -169,14 +162,14 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
 LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
 {
     uint8_t send_buffer[10] = {0};
-    uint8_t i = 0;
+    uint8_t index = 0;
 
     uint32_t nbytes = uart->available();
 
     // clear buffer
     while (nbytes-- > 0) {
         uart->read();
-        if (++i > 250) {
+        if (++index > 250) {
             return LEDDARONE_ERR_SERIAL_PORT;
         }
     }
@@ -195,8 +188,8 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
     CRC16(send_buffer, 6, false);
 
     // write buffer data with CRC16 bits
-    for (i=0; i<8; i++) {
-        uart->write(send_buffer[i]);
+    for (index=0; index<8; index++) {
+        uart->write(send_buffer[index]);
     }
     uart->flush();
 
@@ -208,18 +201,18 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
   */
 LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detections)
 {
-    uint8_t i;
+    uint8_t index;
     uint8_t index_offset = LEDDARONE_DATA_INDEX_OFFSET;
 
     // read serial
     uint32_t nbytes = uart->available();
 
     if (nbytes != 0)  {
-        for (i=read_len; i<nbytes+read_len; i++) {
-            if (i >= 25) {
+        for (index=read_len; index<nbytes+read_len; index++) {
+            if (index >= 25) {
                 return LEDDARONE_ERR_BAD_RESPONSE;
             }
-            read_buffer[i] = uart->read();
+            read_buffer[index] = uart->read();
         }
 
         read_len += nbytes;
@@ -248,10 +241,10 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
 
     memset(detections, 0, sizeof(detections));
     sum_distance = 0;
-    for (i=0; i<number_detections; i++) {
+    for (index=0; index<number_detections; index++) {
         // construct data word from two bytes and convert mm to cm
-        detections[i] =  (static_cast<uint16_t>(read_buffer[index_offset])*256 + read_buffer[index_offset+1]) / 10;
-        sum_distance += detections[i];
+        detections[index] =  (static_cast<uint16_t>(read_buffer[index_offset])*256 + read_buffer[index_offset+1]) / 10;
+        sum_distance += detections[index];
         index_offset += 4;
     }
 
