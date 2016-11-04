@@ -275,7 +275,7 @@ bool AP_Compass_LSM303D::init()
     set_external(_compass_instance, false);
 #endif
 
-    _accum_sem = hal.util->new_semaphore();
+    _sem = hal.util->new_semaphore();
     
     // read at 100Hz
     _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, bool));
@@ -354,7 +354,7 @@ bool AP_Compass_LSM303D::_update()
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
 
-    if (_accum_sem->take(0)) {
+    if (_sem->take(0)) {
         _mag_x_accum += raw_field.x;
         _mag_y_accum += raw_field.y;
         _mag_z_accum += raw_field.z;
@@ -365,7 +365,7 @@ bool AP_Compass_LSM303D::_update()
             _mag_z_accum /= 2;
             _accum_count = 5;
         }
-        _accum_sem->give();
+        _sem->give();
     }
     return true;
 }
@@ -377,13 +377,13 @@ void AP_Compass_LSM303D::read()
         return;
     }
 
-    if (!_accum_sem->take_nonblocking()) {
+    if (!_sem->take_nonblocking()) {
         return;
     }
     
     if (_accum_count == 0) {
         /* We're not ready to publish*/
-        _accum_sem->give();
+        _sem->give();
         return;
     }
 
@@ -393,7 +393,7 @@ void AP_Compass_LSM303D::read()
     _accum_count = 0;
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
-    _accum_sem->give();    
+    _sem->give();    
 
     publish_filtered_field(field, _compass_instance);
 }

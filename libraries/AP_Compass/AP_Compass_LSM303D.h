@@ -56,5 +56,4 @@ private:
     uint8_t _mag_range_ga;
     uint8_t _mag_samplerate;
     uint8_t _reg7_expected;
-    AP_HAL::Semaphore *_accum_sem;
 };

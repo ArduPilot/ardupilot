@@ -48,10 +48,8 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
-    AP_HAL::Semaphore *_accum_sem;
-    Vector3f _mag_accum = Vector3f();
-    uint32_t _accum_count = 0;
-    uint32_t _last_update_timestamp = 0;
+    Vector3f _mag_accum;
+    uint32_t _accum_count;
 
     uint8_t _compass_instance;
 

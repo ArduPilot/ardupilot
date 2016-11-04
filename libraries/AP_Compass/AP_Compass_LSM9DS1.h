@@ -27,8 +27,6 @@ private:
     bool _configure(void);
     bool _set_scale(void);
     bool _update(void);
-    void _reset_filter(void);
-    Vector3f _get_filtered_field() const;
 
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val);

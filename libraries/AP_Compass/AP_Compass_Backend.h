@@ -77,6 +77,9 @@ protected:
     // access to frontend
     Compass &_compass;
 
+    // semaphore for access to shared frontend data
+    AP_HAL::Semaphore *_sem;    
+    
 private:
     void apply_corrections(Vector3f &mag, uint8_t i);
 };
