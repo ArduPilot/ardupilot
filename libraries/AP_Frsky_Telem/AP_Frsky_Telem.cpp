@@ -139,21 +139,6 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                     _passthrough.gps_latlng_timer = AP_HAL::millis();
                 }
                 return;
-            } else if ((now - _passthrough.vario_timer) > 500) {
-                Vector3f velNED;
-                if (_ahrs.get_velocity_NED(velNED)) {
-                    send_uint32(VARIO_FIRST_ID, (int32_t)roundf(-velNED.z*100)); // vertical velocity in cm/s, +ve up
-                }
-                _passthrough.vario_timer = AP_HAL::millis();
-                return;
-            } else if ((now - _passthrough.alt_timer) > 1000) {
-                send_uint32(ALT_FIRST_ID, (int32_t)_relative_home_altitude); // altitude in cm above home position
-                _passthrough.alt_timer = AP_HAL::millis();
-                return;
-            } else if ((now - _passthrough.vfas_timer) > 1000) {
-                send_uint32(VFAS_FIRST_ID, (uint32_t)roundf(_battery.voltage() * 100.0f)); // battery pack voltage in volts
-                _passthrough.vfas_timer = AP_HAL::millis();
-                return;
             }
         }
         // if nothing else needed to be sent, send attitude (roll, pitch) and range data
@@ -703,6 +688,7 @@ uint32_t AP_Frsky_Telem::calc_home(void)
 {
     uint32_t home = 0;
     Location loc;
+    float _relative_home_altitude = 0;
     if (_ahrs.get_position(loc)) {            
         // check home_loc is valid
         const Location &home_loc = _ahrs.get_home();
@@ -718,9 +704,8 @@ uint32_t AP_Frsky_Telem::calc_home(void)
             // loc.alt has home altitude added, remove it
             _relative_home_altitude -= _ahrs.get_home().alt;
         }
-    } else {
-        _relative_home_altitude = 0;
     }
+    // altitude above home in decimeters
     home |= prep_number(roundf(_relative_home_altitude * 0.1f), 3, 2)<<HOME_ALT_OFFSET;
     return home;
 }
@@ -839,15 +824,13 @@ uint16_t AP_Frsky_Telem::prep_number(int32_t number, uint8_t digits, uint8_t pow
 void AP_Frsky_Telem::calc_nav_alt(void)
 {
     Location loc;
-    float current_height; // in centimeters above home
+    float current_height = 0; // in centimeters above home
     if (_ahrs.get_position(loc)) {
         current_height = loc.alt*0.01f;
         if (!loc.flags.relative_alt) {
             // loc.alt has home altitude added, remove it
             current_height -= _ahrs.get_home().alt*0.01f;
         }
-    } else {
-        current_height = 0;
     }
     
     _gps.alt_nav_meters = (int16_t)current_height;
