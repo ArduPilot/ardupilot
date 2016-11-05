@@ -56,54 +56,53 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
     }
 
     switch (modbus_status) {
+    case LEDDARONE_MODBUS_INIT:
+        // clear buffer and buffer_len
+        memset(read_buffer, 0, sizeof(read_buffer));
+        read_len = 0;
+        modbus_status = LEDDARONE_MODBUS_PRE_SEND_REQUEST;
 
-        case LEDDARONE_MODBUS_INIT:
-            // clear buffer and buffer_len
-            memset(read_buffer, 0, sizeof(read_buffer));
-            read_len = 0;
-            modbus_status = LEDDARONE_MODBUS_PRE_SEND_REQUEST;
-
-        case LEDDARONE_MODBUS_PRE_SEND_REQUEST:
-            // send a request message for Modbus function 4
-            if (send_request() != LEDDARONE_OK) {
-                // TODO: handle LEDDARONE_ERR_SERIAL_PORT
-                break;
-            }
-            modbus_status = LEDDARONE_MODBUS_SENT_REQUEST;
-            last_sending_request_ms = AP_HAL::millis();
+    case LEDDARONE_MODBUS_PRE_SEND_REQUEST:
+        // send a request message for Modbus function 4
+        if (send_request() != LEDDARONE_OK) {
+            // TODO: handle LEDDARONE_ERR_SERIAL_PORT
             break;
+        }
+        modbus_status = LEDDARONE_MODBUS_SENT_REQUEST;
+        last_sending_request_ms = AP_HAL::millis();
+        break;
 
-        case LEDDARONE_MODBUS_SENT_REQUEST:
-            if (uart->available()) {
-                // change mod_bus status to read available buffer
-                modbus_status = LEDDARONE_MODBUS_AVAILABLE;
-            } else {
-                if (AP_HAL::millis() - last_sending_request_ms > 200) {
-                    // reset mod_bus status to read new buffer
-                    // if read_len is zero, send request without initialize
-                    modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
-                }
-            }
-            break;
-
-        case LEDDARONE_MODBUS_AVAILABLE:
-            // parse a response message, set number_detections, detections and sum_distance
-            leddarone_status = parse_response(number_detections);
-
-            if (leddarone_status == LEDDARONE_OK) {
-                reading_cm = sum_distance / number_detections;
-
+    case LEDDARONE_MODBUS_SENT_REQUEST:
+        if (uart->available()) {
+            // change mod_bus status to read available buffer
+            modbus_status = LEDDARONE_MODBUS_AVAILABLE;
+        } else {
+            if (AP_HAL::millis() - last_sending_request_ms > 200) {
                 // reset mod_bus status to read new buffer
-                modbus_status = LEDDARONE_MODBUS_INIT;
-
-                return true;
-            }
-            // if status is not reading buffer, reset mod_bus status to read new buffer
-            else if (leddarone_status != LEDDARONE_READING_BUFFER) {
                 // if read_len is zero, send request without initialize
                 modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
             }
-            break;
+        }
+        break;
+
+    case LEDDARONE_MODBUS_AVAILABLE:
+        // parse a response message, set number_detections, detections and sum_distance
+        leddarone_status = parse_response(number_detections);
+
+        if (leddarone_status == LEDDARONE_OK) {
+            reading_cm = sum_distance / number_detections;
+
+            // reset mod_bus status to read new buffer
+            modbus_status = LEDDARONE_MODBUS_INIT;
+
+            return true;
+        }
+        // if status is not reading buffer, reset mod_bus status to read new buffer
+        else if (leddarone_status != LEDDARONE_READING_BUFFER) {
+            // if read_len is zero, send request without initialize
+            modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
+        }
+        break;
     }
 
     return false;
