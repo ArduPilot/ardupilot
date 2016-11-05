@@ -172,6 +172,19 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_FIFO_R_W                             0x74
 #define MPUREG_WHOAMI                               0x75
 
+// ICM2608 specific registers
+
+/* this is an undocumented register which
+   if set incorrectly results in getting a 2.7m/s/s offset
+   on the Y axis of the accelerometer
+*/
+#define MPUREG_ICM_UNDOC1       0x11
+#define MPUREG_ICM_UNDOC1_VALUE 0xc9
+
+// WHOAMI values
+#define MPU_WHOAMI_6000			0x68
+#define ICM_WHOAMI_20608		0xaf
+
 #define BIT_READ_FLAG                           0x80
 #define BIT_I2C_SLVX_EN                         0x80
 
@@ -350,10 +363,11 @@ void AP_InertialSensor_MPU6000::start()
     uint8_t product_id = _register_read(MPUREG_PRODUCT_ID);
     //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
 
-    if ((product_id == MPU6000ES_REV_C4) ||
-        (product_id == MPU6000ES_REV_C5) ||
-        (product_id == MPU6000_REV_C4)   ||
-        (product_id == MPU6000_REV_C5)) {
+    if (!_is_icm_device &&
+        ((product_id == MPU6000ES_REV_C4) ||
+         (product_id == MPU6000ES_REV_C5) ||
+         (product_id == MPU6000_REV_C4)   ||
+         (product_id == MPU6000_REV_C5))) {
         // Accel scale 8g (4096 LSB/g)
         // Rev C has different scaling than rev D
         _register_write(MPUREG_ACCEL_CONFIG,1<<3);
@@ -365,6 +379,11 @@ void AP_InertialSensor_MPU6000::start()
     }
     hal.scheduler->delay(1);
 
+	if (_is_icm_device) {
+        // this avoids a sensor bug, see description above
+		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE);
+	}
+    
     // configure interrupt to fire when new data arrives
     _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
     hal.scheduler->delay(1);
@@ -615,6 +634,24 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
     _register_write(MPUREG_CONFIG, filter);
 }
 
+/*
+  check whoami for MPU6000 or ICM-20608
+ */
+bool AP_InertialSensor_MPU6000::_check_whoami(void)
+{
+    uint8_t whoami = _register_read(MPUREG_WHOAMI);
+    switch (whoami) {
+    case MPU_WHOAMI_6000:
+        _is_icm_device = false;
+        return true;
+    case ICM_WHOAMI_20608:
+        _is_icm_device = true;
+        return true;
+    }
+    // not a value WHOAMI result
+    return false;
+}
+
 
 bool AP_InertialSensor_MPU6000::_hardware_init(void)
 {
@@ -625,6 +662,11 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
+    if (!_check_whoami()) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
+    
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries < 5; tries++) {
@@ -678,6 +720,11 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         return false;
     }
 
+	if (_is_icm_device) {
+        // this avoids a sensor bug, see description above
+		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE);
+	}
+    
     return true;
 }
 

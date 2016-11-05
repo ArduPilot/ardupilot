@@ -64,6 +64,7 @@ private:
     /* Initialize sensor*/
     bool _init();
     bool _hardware_init();
+    bool _check_whoami();
 
     void _set_filter_register(uint16_t filter_hz);
     void _fifo_reset();
@@ -108,6 +109,9 @@ private:
     AP_HAL::DigitalSource *_drdy_pin;
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     AP_MPU6000_AuxiliaryBus *_auxiliary_bus;
+
+    // is this an ICM-20608?
+    bool _is_icm_device;
 };
 
 class AP_MPU6000_AuxiliaryBusSlave : public AuxiliaryBusSlave
