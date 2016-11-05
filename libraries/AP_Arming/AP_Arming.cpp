@@ -82,7 +82,6 @@ AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &comp
     _battery(battery),
     home_is_set(home_set),
     armed(false),
-    logging_available(false),
     arming_method(NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -144,9 +143,15 @@ bool AP_Arming::logging_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        if (!logging_available) {
+        if (DataFlash_Class::instance()->logging_failed()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Logging not available");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Logging failed");
+                return false;
+            }
+        }
+        if (!DataFlash_Class::instance()->CardInserted()) {
+            if (report) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: No SD card");
             }
             return false;
         }
