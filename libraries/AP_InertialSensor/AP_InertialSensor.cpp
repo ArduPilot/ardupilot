@@ -802,6 +802,12 @@ bool AP_InertialSensor::gyro_calibrated_ok_all() const
             return false;
         }
     }
+    for (uint8_t i=get_gyro_count(); i<INS_MAX_INSTANCES; i++) {
+        if (_gyro_id[i] != 0) {
+            // missing gyro
+            return false;
+        }
+    }
     return (get_gyro_count() > 0);
 }
 
@@ -909,7 +915,13 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
             return false;
         }
     }
-
+    for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
+        if (_accel_id[i] != 0) {
+            // missing accel
+            return false;
+        }
+    }
+    
     // check calibrated accels matches number of accels (no unused accels should have offsets or scaling)
     if (get_accel_count() < INS_MAX_INSTANCES) {
         for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
@@ -1078,9 +1090,13 @@ AP_InertialSensor::_init_gyro()
 // save parameters to eeprom
 void AP_InertialSensor::_save_gyro_calibration()
 {
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<_gyro_count; i++) {
         _gyro_offset[i].save();
         _gyro_id[i].save();
+    }
+    for (uint8_t i=_gyro_count; i<INS_MAX_INSTANCES; i++) {
+        _gyro_offset[i].set_and_save(Vector3f());
+        _gyro_id[i].set_and_save(0);
     }
 }
 
@@ -1537,11 +1553,18 @@ void AP_InertialSensor::_acal_save_calibrations()
             _accel_id[i].save();
             _accel_id_ok[i] = true;
         } else {
-            _accel_offset[i].set_and_save(Vector3f(0,0,0));
-            _accel_scale[i].set_and_save(Vector3f(0,0,0));
+            _accel_offset[i].set_and_save(Vector3f());
+            _accel_scale[i].set_and_save(Vector3f());
         }
     }
 
+    // clear any unused accels
+    for (uint8_t i=_accel_count; i<INS_MAX_INSTANCES; i++) {
+        _accel_id[i].set_and_save(0);
+        _accel_offset[i].set_and_save(Vector3f());
+        _accel_scale[i].set_and_save(Vector3f());
+    }
+    
     Vector3f aligned_sample;
     Vector3f misaligned_sample;
     switch(_trim_option) {
