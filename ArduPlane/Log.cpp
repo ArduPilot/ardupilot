@@ -538,7 +538,6 @@ void Plane::log_init(void)
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
         gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
-        g.log_bitmask.set(0);
     } else if (DataFlash.NeedPrep()) {
         gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
         DataFlash.Prep();
