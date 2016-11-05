@@ -1,3 +1,4 @@
+dist: trusty
 language: cpp
 sudo: required
 
@@ -21,7 +22,7 @@ env:
     #   via the "travis encrypt" command using the project repo's public key
     - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
   matrix:
-    - TRAVIS_BUILD_TARGET="sitl linux apm2 navio"
+    - TRAVIS_BUILD_TARGET="sitl apm2 apm1"
 
 addons:
   coverity_scan:
