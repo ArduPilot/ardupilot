@@ -146,8 +146,8 @@ bool AP_Arming::logging_checks(bool report)
         if (DataFlash_Class::instance()->logging_failed()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Logging failed");
-                return false;
             }
+            return false;
         }
         if (!DataFlash_Class::instance()->CardInserted()) {
             if (report) {
@@ -465,6 +465,18 @@ bool AP_Arming::pre_arm_checks(bool report)
     return ret;
 }
 
+bool AP_Arming::arm_checks(uint8_t method)
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_LOGGING)) {
+        if (!DataFlash_Class::instance()->logging_started()) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Arm: Logging not started");
+            return false;
+        }
+    }
+    return true;
+}
+
 //returns true if arming occurred successfully
 bool AP_Arming::arm(uint8_t method)
 {
@@ -480,7 +492,7 @@ bool AP_Arming::arm(uint8_t method)
         return true;
     }
 
-    if (pre_arm_checks(true)) {
+    if (pre_arm_checks(true) && arm_checks(method)) {
         armed = true;
         arming_method = method;
 
