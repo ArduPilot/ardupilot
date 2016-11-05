@@ -47,7 +47,7 @@ public:
               const AP_BattMonitor &battery, const enum HomeState &home_set);
 
     ArmingRequired arming_required();
-    bool arm(uint8_t method);
+    virtual bool arm(uint8_t method);
     bool disarm();
     bool is_armed();
     ArmingRudder rudder_arming() const { return (ArmingRudder)rudder_arming_value.get(); }
@@ -58,6 +58,10 @@ public:
       in a vehicle specific subclass
     */
     virtual bool pre_arm_checks(bool report);
+    // some arming checks have side-effects, or require some form of state
+    // change to have occured, and thus should not be done as pre-arm
+    // checks.  Those go here:
+    bool arm_checks(uint8_t method);
 
     static const struct AP_Param::GroupInfo        var_info[];
 
