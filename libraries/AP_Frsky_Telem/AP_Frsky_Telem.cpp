@@ -97,7 +97,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
         } else { // send other sensor data if it's time for them, and reset the corresponding timer if sent
             _passthrough.send_attiandrng = true; // next iteration, send attitude b/c it needs frequent updates to remain smooth
             uint32_t now = AP_HAL::millis();
-            if (((now - _passthrough.params_timer) >= 1000) && (!AP_Notify::flags.armed)) {
+            if ((now - _passthrough.params_timer) >= 1000) {
                 send_uint32(DIY_FIRST_ID+7, calc_param());
                 _passthrough.params_timer = AP_HAL::millis();
                 return;
