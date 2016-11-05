@@ -456,8 +456,6 @@ void Rover::log_init(void)
 	if (g.log_bitmask != 0) {
 		start_logging();
 	}
-
-    arming.set_logging_available(DataFlash.CardInserted());
 }
 
 #if CLI_ENABLED == ENABLED
