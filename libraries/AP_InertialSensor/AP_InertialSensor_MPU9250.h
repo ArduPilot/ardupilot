@@ -32,10 +32,12 @@ public:
     }
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                            enum Rotation rotation = ROTATION_NONE);
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev);
+                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                            enum Rotation rotation = ROTATION_NONE);
 
     /* update accel and gyro state */
     bool update();
@@ -49,7 +51,8 @@ public:
 
 private:
     AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
-                              AP_HAL::OwnPtr<AP_HAL::Device> dev);
+                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                              enum Rotation rotation);
 
 #if MPU9250_DEBUG
     static void _dump_registers();
@@ -80,12 +83,10 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    // The default rotation for the IMU, its value depends on how the IMU is
-    // placed by default on the system
-    enum Rotation _default_rotation;
-
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     AP_MPU9250_AuxiliaryBus *_auxiliary_bus;
+
+    enum Rotation _rotation;
 };
 
 class AP_MPU9250_AuxiliaryBusSlave : public AuxiliaryBusSlave

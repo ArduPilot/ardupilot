@@ -200,26 +200,10 @@ static const float GYRO_SCALE = 0.0174532f / 16.4f;
  */
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
-                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev)
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                                     enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
-    , _default_rotation(ROTATION_ROLL_180_YAW_270)
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    , _default_rotation(ROTATION_NONE)
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
-    , _default_rotation(ROTATION_YAW_270)
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-    , _default_rotation(ROTATION_NONE)
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-    , _default_rotation(ROTATION_NONE)
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK
-    , _default_rotation(ROTATION_NONE)
-#else
-    /* rotate for PXF (and default for other boards) */
-    , _default_rotation(ROTATION_ROLL_180_YAW_90)
-#endif
+    , _rotation(rotation)
     , _dev(std::move(dev))
 {
 }
@@ -230,10 +214,11 @@ AP_InertialSensor_MPU9250::~AP_InertialSensor_MPU9250()
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                                            enum Rotation rotation)
 {
     AP_InertialSensor_MPU9250 *sensor =
-        new AP_InertialSensor_MPU9250(imu, std::move(dev));
+        new AP_InertialSensor_MPU9250(imu, std::move(dev), rotation);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -245,13 +230,14 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
 
 
 AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
+                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                                            enum Rotation rotation)
 {
     AP_InertialSensor_MPU9250 *sensor;
 
     dev->set_read_flag(0x80);
 
-    sensor = new AP_InertialSensor_MPU9250(imu, std::move(dev));
+    sensor = new AP_InertialSensor_MPU9250(imu, std::move(dev), rotation);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -323,6 +309,9 @@ void AP_InertialSensor_MPU9250::start()
     _gyro_instance = _imu.register_gyro(DEFAULT_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_GYR_MPU9250));
     _accel_instance = _imu.register_accel(DEFAULT_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_ACC_MPU9250));
 
+    set_gyro_orientation(_gyro_instance, _rotation);
+    set_accel_orientation(_accel_instance, _rotation);
+
     // start the timer process to read samples
     _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_read_sample, bool));
 }
@@ -373,7 +362,6 @@ void AP_InertialSensor_MPU9250::_accumulate(uint8_t *rx)
                      int16_val(rx, 0),
                      -int16_val(rx, 2));
     accel *= MPU9250_ACCEL_SCALE_1G;
-    accel.rotate(_default_rotation);
     _rotate_and_correct_accel(_accel_instance, accel);
     _notify_new_accel_raw_sample(_accel_instance, accel);
 
@@ -381,7 +369,6 @@ void AP_InertialSensor_MPU9250::_accumulate(uint8_t *rx)
                     int16_val(rx, 4),
                     -int16_val(rx, 6));
     gyro *= GYRO_SCALE;
-    gyro.rotate(_default_rotation);
     _rotate_and_correct_gyro(_gyro_instance, gyro);
     _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 }
