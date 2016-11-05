@@ -59,8 +59,6 @@ public:
     */
     virtual bool pre_arm_checks(bool report);
 
-    void set_logging_available(bool set) { logging_available = set; }
-
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
