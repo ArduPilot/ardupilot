@@ -546,8 +546,6 @@ void Plane::log_init(void)
             gcs[i].reset_cli_timeout();
         }
     }
-
-    arming.set_logging_available(DataFlash.CardInserted());
 }
 
 #else // LOGGING_ENABLED
