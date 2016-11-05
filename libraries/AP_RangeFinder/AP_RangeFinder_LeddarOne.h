@@ -3,11 +3,19 @@
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
 
-#define LEDDARONE_DETECTIONS_MAX 3
-
-// default slave address
+// defines
 #define LEDDARONE_DEFAULT_ADDRESS 0x01
-#define LEDDARONE_DATA_INDEX_OFFSET 11
+#define LEDDARONE_MODOBUS_FUNCTION_CODE 0x04
+#define LEDDARONE_MODOBUS_FUNCTION_REGISTER_ADDRESS 20
+#define LEDDARONE_MODOBUS_FUNCTION_READ_NUMBER 10
+
+#define LEDDARONE_SERIAL_PORT_MAX 250
+#define LEDDARONE_READ_BUFFER_SIZE 25
+
+#define LEDDARONE_DETECTIONS_MAX 3
+#define LEDDARONE_DETECTION_DATA_NUMBER_INDEX 10
+#define LEDDARONE_DETECTION_DATA_INDEX_OFFSET 11
+#define LEDDARONE_DETECTION_DATA_OFFSET 4
 
 // LeddarOne status
 enum LeddarOne_Status {
@@ -64,6 +72,6 @@ private:
     uint32_t sum_distance;
 
     LeddarOne_ModbusStatus modbus_status = LEDDARONE_MODBUS_INIT;
-    uint8_t read_buffer[25];
+    uint8_t read_buffer[LEDDARONE_READ_BUFFER_SIZE];
     uint32_t read_len;
 };
