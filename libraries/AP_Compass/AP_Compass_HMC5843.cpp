@@ -181,7 +181,7 @@ bool AP_Compass_HMC5843::init()
 
     _compass_instance = register_compass();
 
-    _bus->set_device_type(AP_COMPASS_TYPE_HMC5843);
+    _bus->set_device_type(DEVTYPE_HMC5883);
     set_dev_id(_compass_instance, _bus->get_bus_id());
 
     if (_force_external) {

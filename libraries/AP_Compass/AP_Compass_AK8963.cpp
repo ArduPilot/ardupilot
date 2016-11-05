@@ -149,7 +149,7 @@ bool AP_Compass_AK8963::init()
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
 
-    _bus->set_device_type(AP_COMPASS_TYPE_AK8963);
+    _bus->set_device_type(DEVTYPE_AK8963);
     set_dev_id(_compass_instance, _bus->get_bus_id());
 
     bus_sem->give();
