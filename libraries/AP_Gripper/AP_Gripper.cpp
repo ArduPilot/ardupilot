@@ -52,6 +52,7 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
     // @Description: Time in seconds that gripper will regrab the cargo to ensure grip has not weakened; 0 to disable
     // @User: Advanced
     // @Values: 0 255
+    // @Units: seconds
     AP_GROUPINFO("REGRAB",  5, AP_Gripper, config.regrab_interval, GRIPPER_REGRAB_DEFAULT),
 
     // @Param: UAVCAN_ID

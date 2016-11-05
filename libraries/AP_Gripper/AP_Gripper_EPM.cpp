@@ -48,7 +48,6 @@ void AP_Gripper_EPM::grab()
 
 #ifdef UAVCAN_IOCS_HARDPOINT_SET
     if (should_use_uavcan()) {
-        ::printf("EPM: UAVCAN GRAB\n");
         const UAVCANCommand cmd = make_uavcan_command(1);
         (void)ioctl(_uavcan_fd, UAVCAN_IOCS_HARDPOINT_SET, reinterpret_cast<unsigned long>(&cmd));
     }
@@ -71,7 +70,6 @@ void AP_Gripper_EPM::release()
 
 #ifdef UAVCAN_IOCS_HARDPOINT_SET
     if (should_use_uavcan()) {
-        ::printf("EPM: UAVCAN RELEASE\n");
         const UAVCANCommand cmd = make_uavcan_command(0);
         (void)ioctl(_uavcan_fd, UAVCAN_IOCS_HARDPOINT_SET, reinterpret_cast<unsigned long>(&cmd));
     }
