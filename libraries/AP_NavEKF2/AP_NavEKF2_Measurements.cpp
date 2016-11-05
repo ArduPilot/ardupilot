@@ -435,9 +435,6 @@ void NavEKF2_core::readGpsData()
             // ideally we should be using a timing signal from the GPS receiver to set this time
             gpsDataNew.time_ms = lastTimeGpsFix_ms - frontend->_gpsDelay_ms;
 
-            // Correct for the average intersampling delay due to the filter updaterate
-            gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
-
             // Get which GPS we are using for position information
             gpsDataNew.sensor_idx = _ahrs->get_gps().primary_sensor();
 
