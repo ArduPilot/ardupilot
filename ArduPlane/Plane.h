@@ -122,6 +122,7 @@ public:
             AP_Param::setup_object_defaults(this, var_info);
     }
     bool pre_arm_checks(bool report);
+    bool arm(uint8_t method) override;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
