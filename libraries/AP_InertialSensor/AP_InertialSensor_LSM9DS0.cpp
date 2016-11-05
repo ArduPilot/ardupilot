@@ -505,8 +505,8 @@ fail_whoami:
  */
 void AP_InertialSensor_LSM9DS0::start(void)
 {
-    _gyro_instance = _imu.register_gyro(760, _dev_gyro->get_bus_id());
-    _accel_instance = _imu.register_accel(800, _dev_accel->get_bus_id());
+    _gyro_instance = _imu.register_gyro(760, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_L3GD20));
+    _accel_instance = _imu.register_accel(800, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D));
 
     set_gyro_orientation(_gyro_instance, _rotation);
     set_accel_orientation(_accel_instance, _rotation);

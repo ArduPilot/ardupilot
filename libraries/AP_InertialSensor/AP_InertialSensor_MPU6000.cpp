@@ -210,9 +210,6 @@ extern const AP_HAL::HAL& hal;
 #endif
 #define MAX_DATA_READ (MPU6000_MAX_FIFO_SAMPLES * MPU6000_SAMPLE_SIZE)
 
-#define MPU6000_DRIVER_VERSION_ACCEL 1U
-#define MPU6000_DRIVER_VERSION_GYRO 0U
-
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
 
@@ -382,8 +379,8 @@ void AP_InertialSensor_MPU6000::start()
     _dev->get_semaphore()->give();
 
     // grab the used instances
-    _gyro_instance = _imu.register_gyro(1000, _dev->get_bus_id_devtype(MPU6000_DRIVER_VERSION_GYRO));
-    _accel_instance = _imu.register_accel(1000, _dev->get_bus_id_devtype(MPU6000_DRIVER_VERSION_ACCEL));
+    _gyro_instance = _imu.register_gyro(1000, _dev->get_bus_id_devtype(DEVTYPE_GYR_MPU6000));
+    _accel_instance = _imu.register_accel(1000, _dev->get_bus_id_devtype(DEVTYPE_ACC_MPU6000));
 
     // setup sensor rotations from probe()
     set_gyro_orientation(_gyro_instance, _rotation);
