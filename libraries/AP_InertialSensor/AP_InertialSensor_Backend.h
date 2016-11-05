@@ -70,6 +70,26 @@ public:
      */
     int16_t get_id() const { return _id; }
 
+    /*
+      device driver IDs. These are used to fill in the devtype field
+      of the device ID, which shows up as INS*ID* parameters to
+      users. The values are chosen for compatibility with existing PX4
+      drivers.
+      If a change is made to a driver that would make existing
+      calibration values invalid then this number must be changed.
+     */
+    enum DevTypes {
+        DEVTYPE_BMI160       = 0x09,
+        DEVTYPE_L3G4200D     = 0x10,
+        DEVTYPE_ACC_LSM303D  = 0x11,
+        DEVTYPE_ACC_BMA180   = 0x12,
+        DEVTYPE_ACC_MPU6000  = 0x13,
+        DEVTYPE_ACC_MPU9250  = 0x16,
+        DEVTYPE_GYR_MPU6000  = 0x21,
+        DEVTYPE_GYR_L3GD20   = 0x22,
+        DEVTYPE_GYR_MPU9250  = 0x24
+    };
+        
 protected:
     // access to frontend
     AP_InertialSensor &_imu;

@@ -320,8 +320,8 @@ void AP_InertialSensor_MPU9250::start()
     _dev->get_semaphore()->give();
 
     // grab the used instances
-    _gyro_instance = _imu.register_gyro(DEFAULT_SAMPLE_RATE, _dev->get_bus_id());
-    _accel_instance = _imu.register_accel(DEFAULT_SAMPLE_RATE, _dev->get_bus_id());
+    _gyro_instance = _imu.register_gyro(DEFAULT_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_GYR_MPU9250));
+    _accel_instance = _imu.register_accel(DEFAULT_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_ACC_MPU9250));
 
     // start the timer process to read samples
     _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_read_sample, bool));
