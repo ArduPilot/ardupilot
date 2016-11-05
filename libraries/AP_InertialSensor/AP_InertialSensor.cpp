@@ -624,7 +624,7 @@ AP_InertialSensor::init(uint16_t sample_rate)
 
     // calibrate gyros unless gyro calibration has been disabled
     if (gyro_calibration_timing() != GYRO_CAL_NEVER) {
-        _init_gyro();
+        init_gyro();
     }
 
     _sample_period_usec = 1000*1000UL / _sample_rate;
