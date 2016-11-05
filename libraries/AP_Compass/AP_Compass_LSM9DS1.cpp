@@ -95,7 +95,7 @@ bool AP_Compass_LSM9DS1::init()
 
     _compass_instance = register_compass();
 
-    _dev->set_device_type(AP_COMPASS_TYPE_LSM9DS1);
+    _dev->set_device_type(DEVTYPE_LSM9DS1);
     set_dev_id(_compass_instance, _dev->get_bus_id());
 
     _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM9DS1::_update, bool));

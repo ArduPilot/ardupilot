@@ -41,6 +41,23 @@ public:
     // backends
     virtual void accumulate(void) {};
 
+    /*
+      device driver IDs. These are used to fill in the devtype field
+      of the device ID, which shows up as COMPASS*ID* parameters to
+      users. The values are chosen for compatibility with existing PX4
+      drivers.
+      If a change is made to a driver that would make existing
+      calibration values invalid then this number must be changed.
+     */
+    enum DevTypes {
+        DEVTYPE_HMC5883 = 0x01,
+        DEVTYPE_LSM303D = 0x02,
+        DEVTYPE_AK8963  = 0x04,
+        DEVTYPE_BMM150  = 0x05,
+        DEVTYPE_LSM9DS1 = 0x06,
+    };
+    
+    
 protected:
 
     /*
