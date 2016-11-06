@@ -520,7 +520,7 @@ void Compass::_detect_backends(void)
                      AP_Compass_AK8963::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V4) {
-        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                      AP_Compass_AK8963::name, false);
     }
     // also add any px4 level drivers (for canbus magnetometers)
