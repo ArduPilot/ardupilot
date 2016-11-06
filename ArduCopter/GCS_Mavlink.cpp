@@ -129,7 +129,8 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
         battery_remaining,      // in %
         0, // comm drops %,
         0, // comm drops in pkts,
-        0, 0, 0, 0);
+	motor_limits,
+        0, 0, 0);
 }
 
 void NOINLINE Copter::send_location(mavlink_channel_t chan)

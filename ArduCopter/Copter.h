@@ -441,6 +441,7 @@ private:
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
+    uint16_t motor_limits;
     
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
