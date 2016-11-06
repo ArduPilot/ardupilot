@@ -37,6 +37,11 @@ AP_GPS_PX4::AP_GPS_PX4(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriv
     _gps_sub = orb_subscribe(ORB_ID(vehicle_gps_position));
 }
 
+AP_GPS_PX4::~AP_GPS_PX4()
+{
+	orb_unsubscribe(_gps_sub);
+}
+
 
 const uint64_t MS_PER_WEEK            = ((uint64_t)7)*24*3600*1000;
 const uint64_t DELTA_POSIX_GPS_EPOCH  = ((uint64_t)3657)*24*3600*1000;
