@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <dirent.h>
+#include <GCS_MAVLink/GCS.h>
 #if defined(__APPLE__) && defined(__MACH__)
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -180,6 +181,18 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
     bool ret = file_exists(filename);
     free(filename);
     return ret;
+}
+
+void DataFlash_File::periodic_1Hz(const uint32_t now)
+{
+    if (!io_thread_alive()) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
+        // If you try to close the file here then it will almost
+        // certainly block.  Since this is the main thread, this is
+        // likely to cause a crash.
+        _write_fd = -1;
+        _initialised = false;
+    }
 }
 
 void DataFlash_File::periodic_fullrate(const uint32_t now)
@@ -1017,6 +1030,8 @@ void DataFlash_File::flush(void)
 
 void DataFlash_File::_io_timer(void)
 {
+    uint32_t tnow = AP_HAL::millis();
+    _io_timer_heartbeat = tnow;
     if (_write_fd == -1 || !_initialised || _open_error) {
         return;
     }
@@ -1025,7 +1040,6 @@ void DataFlash_File::_io_timer(void)
     if (nbytes == 0) {
         return;
     }
-    uint32_t tnow = AP_HAL::millis();
     if (nbytes < _writebuf_chunk && 
         tnow - _last_write_time < 2000UL) {
         // write in _writebuf_chunk-sized chunks, but always write at
@@ -1094,6 +1108,13 @@ bool DataFlash_File::logging_enabled() const
     return false;
 }
 
+bool DataFlash_File::io_thread_alive() const
+{
+    uint32_t tnow = AP_HAL::millis();
+    // if the io thread hasn't had a heartbeat in a full second then it is dead
+    return _io_timer_heartbeat + 1000 > tnow;
+}
+
 bool DataFlash_File::logging_failed() const
 {
     if (_write_fd == -1 &&
@@ -1104,6 +1125,12 @@ bool DataFlash_File::logging_failed() const
     if (_open_error) {
         return true;
     }
+    if (!io_thread_alive()) {
+        // No heartbeat in a second.  IO thread is dead?! Very Not
+        // Good.
+        return true;
+    }
+
     return false;
 }
 
