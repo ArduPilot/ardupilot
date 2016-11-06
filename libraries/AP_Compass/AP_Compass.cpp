@@ -503,7 +503,8 @@ void Compass::_detect_backends(void)
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR), false),
                          AP_Compass_HMC5843::name, false);
         // try for SPI device too
-        _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME), false),
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
+                                               false, ROTATION_PITCH_180),
                      AP_Compass_HMC5843::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2) {

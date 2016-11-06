@@ -18,9 +18,11 @@ class AP_Compass_HMC5843 : public AP_Compass_Backend
 public:
     static AP_Compass_Backend *probe(Compass &compass,
                                      AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                     bool force_external = false);
+                                     bool force_external = false,
+                                     enum Rotation rotation = ROTATION_NONE);
 
-    static AP_Compass_Backend *probe_mpu6000(Compass &compass);
+    static AP_Compass_Backend *probe_mpu6000(Compass &compass,
+                                             enum Rotation rotation = ROTATION_NONE);
 
     static constexpr const char *name = "HMC5843";
 
@@ -31,7 +33,7 @@ public:
 
 private:
     AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
-                       bool force_external);
+                       bool force_external, enum Rotation rotation);
 
     bool _detect_version();
     bool _calibrate();
@@ -62,6 +64,8 @@ private:
     uint8_t _compass_instance;
     uint8_t _gain_config;
 
+    enum Rotation _rotation;
+    
     bool _is_hmc5883L:1;
     bool _initialised:1;
     bool _force_external:1;
