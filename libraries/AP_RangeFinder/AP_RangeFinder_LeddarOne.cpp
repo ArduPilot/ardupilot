@@ -62,6 +62,9 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
         read_len = 0;
         modbus_status = LEDDARONE_MODBUS_PRE_SEND_REQUEST;
 
+        // no "break;"
+        // to fall through to next state LEDDARONE_MODBUS_PRE_SEND_REQUEST immediately
+
     case LEDDARONE_MODBUS_PRE_SEND_REQUEST:
         // send a request message for Modbus function 4
         if (send_request() != LEDDARONE_OK) {
