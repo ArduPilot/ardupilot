@@ -41,11 +41,9 @@ struct SPIDesc {
         : name(_name), bus(_bus), device(_device), mode(_mode),
           lowspeed(_lowspeed), highspeed(_highspeed)
     {
-        snprintf(devname, sizeof(devname), "/dev/%s", name);
     }
 
     const char *name;
-    char devname[20];
     uint8_t bus;
     enum spi_dev_e device;
     enum spi_mode_e mode;
