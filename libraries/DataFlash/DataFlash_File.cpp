@@ -998,13 +998,13 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 void DataFlash_File::flush(void)
 {
-    uint32_t tnow = AP_HAL::micros();
+    uint32_t tnow = AP_HAL::millis();
     hal.scheduler->suspend_timer_procs();
     while (_write_fd != -1 && _initialised && !_open_error && _writebuf.available()) {
         // convince the IO timer that it really is OK to write out
         // less than _writebuf_chunk bytes:
-        if (tnow > 2000001) { // avoid resetting _last_write_time to 0
-            _last_write_time = tnow - 2000001;
+        if (tnow > 2001) { // avoid resetting _last_write_time to 0
+            _last_write_time = tnow - 2001;
         }
         _io_timer();
     }
@@ -1025,9 +1025,9 @@ void DataFlash_File::_io_timer(void)
     if (nbytes == 0) {
         return;
     }
-    uint32_t tnow = AP_HAL::micros();
+    uint32_t tnow = AP_HAL::millis();
     if (nbytes < _writebuf_chunk && 
-        tnow - _last_write_time < 2000000UL) {
+        tnow - _last_write_time < 2000UL) {
         // write in _writebuf_chunk-sized chunks, but always write at
         // least once per 2 seconds if data is available
         return;
