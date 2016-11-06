@@ -479,6 +479,10 @@ bool AP_Compass_HMC5843::_calibrate()
 AP_HMC5843_BusDriver_HALDevice::AP_HMC5843_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : _dev(std::move(dev))
 {
+    // set read and auto-increment flags on SPI
+    if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+        _dev->set_read_flag(0xC0);
+    }
 }
 
 bool AP_HMC5843_BusDriver_HALDevice::block_read(uint8_t reg, uint8_t *buf, uint32_t size)
