@@ -69,10 +69,18 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
 {
     set_device_bus(_bus.bus);
     set_device_address(_device_desc.device);
+    set_speed(AP_HAL::Device::SPEED_LOW);
+    SPI_SELECT(bus.dev, device_desc.device, false);
+    printf("SPI device %s on %u:%u at speed %u mode %u\n",
+           device_desc.name,
+           (unsigned)bus.bus, (unsigned)device_desc.device,
+           (unsigned)frequency, (unsigned)device_desc.mode);
 }
 
 SPIDevice::~SPIDevice()
 {
+    printf("SPI device %s on %u:%u closed\n", device_desc.name,
+           (unsigned)bus.bus, (unsigned)device_desc.device);
 }
 
 bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
