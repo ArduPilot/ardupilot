@@ -56,54 +56,54 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
     }
 
     switch (modbus_status) {
-    case LEDDARONE_MODBUS_INIT:
+    case LEDDARONE_MODBUS_STATE_INIT:
         // clear buffer and buffer_len
         memset(read_buffer, 0, sizeof(read_buffer));
         read_len = 0;
-        modbus_status = LEDDARONE_MODBUS_PRE_SEND_REQUEST;
+        modbus_status = LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST;
 
         // FALL THROUGH
-        // no break to fall through to next state LEDDARONE_MODBUS_PRE_SEND_REQUEST immediately
+        // no break to fall through to next state LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST immediately
 
-    case LEDDARONE_MODBUS_PRE_SEND_REQUEST:
+    case LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST:
         // send a request message for Modbus function 4
-        if (send_request() != LEDDARONE_OK) {
+        if (send_request() != LEDDARONE_STATE_OK) {
             // TODO: handle LEDDARONE_ERR_SERIAL_PORT
             break;
         }
-        modbus_status = LEDDARONE_MODBUS_SENT_REQUEST;
+        modbus_status = LEDDARONE_MODBUS_STATE_SENT_REQUEST;
         last_sending_request_ms = AP_HAL::millis();
         break;
 
-    case LEDDARONE_MODBUS_SENT_REQUEST:
+    case LEDDARONE_MODBUS_STATE_SENT_REQUEST:
         if (uart->available()) {
             // change mod_bus status to read available buffer
-            modbus_status = LEDDARONE_MODBUS_AVAILABLE;
+            modbus_status = LEDDARONE_MODBUS_STATE_AVAILABLE;
         } else {
             if (AP_HAL::millis() - last_sending_request_ms > 200) {
                 // reset mod_bus status to read new buffer
                 // if read_len is zero, send request without initialize
-                modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
+                modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST : LEDDARONE_MODBUS_STATE_INIT;
             }
         }
         break;
 
-    case LEDDARONE_MODBUS_AVAILABLE:
+    case LEDDARONE_MODBUS_STATE_AVAILABLE:
         // parse a response message, set number_detections, detections and sum_distance
         leddarone_status = parse_response(number_detections);
 
-        if (leddarone_status == LEDDARONE_OK) {
+        if (leddarone_status == LEDDARONE_STATE_OK) {
             reading_cm = sum_distance / number_detections;
 
             // reset mod_bus status to read new buffer
-            modbus_status = LEDDARONE_MODBUS_INIT;
+            modbus_status = LEDDARONE_MODBUS_STATE_INIT;
 
             return true;
         }
         // if status is not reading buffer, reset mod_bus status to read new buffer
-        else if (leddarone_status != LEDDARONE_READING_BUFFER) {
+        else if (leddarone_status != LEDDARONE_STATE_READING_BUFFER) {
             // if read_len is zero, send request without initialize
-            modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_PRE_SEND_REQUEST : LEDDARONE_MODBUS_INIT;
+            modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST : LEDDARONE_MODBUS_STATE_INIT;
         }
         break;
     }
@@ -170,7 +170,7 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
     while (nbytes-- > 0) {
         uart->read();
         if (++index > LEDDARONE_SERIAL_PORT_MAX) {
-            return LEDDARONE_ERR_SERIAL_PORT;
+            return LEDDARONE_STATE_ERR_SERIAL_PORT;
         }
     }
 
@@ -191,7 +191,7 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
     }
     uart->flush();
 
-    return LEDDARONE_OK;
+    return LEDDARONE_STATE_OK;
 }
 
  /*
@@ -227,7 +227,7 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
     if (nbytes != 0)  {
         for (index=read_len; index<nbytes+read_len; index++) {
             if (index >= LEDDARONE_READ_BUFFER_SIZE) {
-                return LEDDARONE_ERR_BAD_RESPONSE;
+                return LEDDARONE_STATE_ERR_BAD_RESPONSE;
             }
             read_buffer[index] = uart->read();
         }
@@ -235,18 +235,18 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
         read_len += nbytes;
 
         if (read_len < LEDDARONE_READ_BUFFER_SIZE) {
-            return LEDDARONE_READING_BUFFER;
+            return LEDDARONE_STATE_READING_BUFFER;
         }
     }
 
     // lead_len is not 25 byte or function code is not 0x04
     if (read_len != LEDDARONE_READ_BUFFER_SIZE || read_buffer[1] != LEDDARONE_MODOBUS_FUNCTION_CODE) {
-        return LEDDARONE_ERR_BAD_RESPONSE;
+        return LEDDARONE_STATE_ERR_BAD_RESPONSE;
     }
 
     // CRC16
     if (!CRC16(read_buffer, read_len-2, true)) {
-        return LEDDARONE_ERR_BAD_CRC;
+        return LEDDARONE_STATE_ERR_BAD_CRC;
     }
 
     // number of detections (index:10)
@@ -254,7 +254,7 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
 
     // if the number of detection is over or zero , it is false
     if (number_detections > LEDDARONE_DETECTIONS_MAX || number_detections == 0) {
-        return LEDDARONE_ERR_NUMBER_DETECTIONS;
+        return LEDDARONE_STATE_ERR_NUMBER_DETECTIONS;
     }
 
     memset(detections, 0, sizeof(detections));
@@ -268,5 +268,5 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
         index_offset += LEDDARONE_DETECTION_DATA_OFFSET;
     }
 
-    return LEDDARONE_OK;
+    return LEDDARONE_STATE_OK;
 }
