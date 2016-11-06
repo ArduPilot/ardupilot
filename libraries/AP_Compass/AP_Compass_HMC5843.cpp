@@ -89,10 +89,11 @@ extern const AP_HAL::HAL& hal;
 #define HMC5843_REG_DATA_OUTPUT_X_MSB 0x03
 
 AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
-                                       bool force_external)
+                                       bool force_external, enum Rotation rotation)
     : AP_Compass_Backend(compass)
     , _bus(bus)
     , _force_external(force_external)
+    , _rotation(rotation)
 {
 }
 
@@ -103,14 +104,15 @@ AP_Compass_HMC5843::~AP_Compass_HMC5843()
 
 AP_Compass_Backend *AP_Compass_HMC5843::probe(Compass &compass,
                                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                              bool force_external)
+                                              bool force_external,
+                                              enum Rotation rotation)
 {
     AP_HMC5843_BusDriver *bus = new AP_HMC5843_BusDriver_HALDevice(std::move(dev));
     if (!bus) {
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus, force_external);
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus, force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -119,7 +121,7 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe(Compass &compass,
     return sensor;
 }
 
-AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(Compass &compass)
+AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(Compass &compass, enum Rotation rotation)
 {
     AP_InertialSensor &ins = *AP_InertialSensor::get_instance();
 
@@ -130,7 +132,7 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(Compass &compass)
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus, false);
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus, false, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -181,6 +183,8 @@ bool AP_Compass_HMC5843::init()
 
     _compass_instance = register_compass();
 
+    set_rotation(_compass_instance, _rotation);
+    
     _bus->set_device_type(DEVTYPE_HMC5883);
     set_dev_id(_compass_instance, _bus->get_bus_id());
 

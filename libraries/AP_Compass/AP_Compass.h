@@ -375,6 +375,9 @@ private:
         // when we last got data
         uint32_t    last_update_ms;
         uint32_t    last_update_usec;
+
+        // board specific orientation
+        enum Rotation rotation;
     } _state[COMPASS_MAX_INSTANCES];
 
     CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];

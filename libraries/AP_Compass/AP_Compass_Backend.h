@@ -91,6 +91,9 @@ protected:
     // tell if instance is an external compass
     bool is_external(uint8_t instance);
 
+    // set rotation of an instance
+    void set_rotation(uint8_t instance, enum Rotation rotation);
+    
     // access to frontend
     Compass &_compass;
 
