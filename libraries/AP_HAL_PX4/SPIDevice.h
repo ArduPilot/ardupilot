@@ -86,7 +86,8 @@ private:
     SPIBus &bus;
     SPIDesc &device_desc;
     uint32_t frequency;
-    
+    perf_counter_t perf;
+    char *pname;
     static void *spi_thread(void *arg);
 };
 

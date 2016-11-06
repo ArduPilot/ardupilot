@@ -71,6 +71,10 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     set_device_address(_device_desc.device);
     set_speed(AP_HAL::Device::SPEED_LOW);
     SPI_SELECT(bus.dev, device_desc.device, false);
+    asprintf(&pname, "SPI:%s:%u:%u",
+             device_desc.name,
+             (unsigned)bus.bus, (unsigned)device_desc.device);
+    perf = perf_alloc(PC_ELAPSED, pname);
     printf("SPI device %s on %u:%u at speed %u mode %u\n",
            device_desc.name,
            (unsigned)bus.bus, (unsigned)device_desc.device,
@@ -81,6 +85,8 @@ SPIDevice::~SPIDevice()
 {
     printf("SPI device %s on %u:%u closed\n", device_desc.name,
            (unsigned)bus.bus, (unsigned)device_desc.device);
+    perf_free(perf);
+    free(pname);
 }
 
 bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
@@ -102,12 +108,14 @@ bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
 void SPIDevice::do_transfer(uint8_t *send, uint8_t *recv, uint32_t len)
 {
     irqstate_t state = irqsave();
+    perf_begin(perf);
     SPI_SETFREQUENCY(bus.dev, frequency);
     SPI_SETMODE(bus.dev, device_desc.mode);
     SPI_SETBITS(bus.dev, 8);
     SPI_SELECT(bus.dev, device_desc.device, true);
     SPI_EXCHANGE(bus.dev, send, recv, len);
     SPI_SELECT(bus.dev, device_desc.device, false);
+    perf_end(perf);
     irqrestore(state);
 }
 
