@@ -22,7 +22,7 @@ AP_Gripper_EPM::AP_Gripper_EPM(struct AP_Gripper::Backend_Config &_config) :
 void AP_Gripper_EPM::init_gripper()
 {
 #ifdef UAVCAN_NODE_FILE
-    _uavcan_fd = ::open(UAVCAN_NODE_FILE, 0);
+    _uavcan_fd = ::open(UAVCAN_NODE_FILE, O_CLOEXEC);
     // http://ardupilot.org/dev/docs/learning-ardupilot-uarts-and-the-console.html
     ::printf("EPM: UAVCAN fd %d\n", _uavcan_fd);
 #endif
