@@ -277,8 +277,6 @@ bool AP_Compass_LSM303D::init()
     set_external(_compass_instance, false);
 #endif
 
-    _sem = hal.util->new_semaphore();
-    
     // read at 100Hz
     _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, bool));
 
