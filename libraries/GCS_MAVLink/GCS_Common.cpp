@@ -1816,5 +1816,11 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
         handle_param_request_read(msg);
         break;
+    case MAVLINK_MSG_ID_DEVICE_OP_READ:
+        handle_device_op_read(msg);
+        break;
+    case MAVLINK_MSG_ID_DEVICE_OP_WRITE:
+        handle_device_op_write(msg);
+        break;
     }
 }
