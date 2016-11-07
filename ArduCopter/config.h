@@ -447,7 +447,7 @@
 #endif
 
 #ifndef ACRO_Y_EXPO_DEFAULT
- #define ACRO_Y_EXPO_DEFAULT        0.3f
+ #define ACRO_Y_EXPO_DEFAULT        0.0f
 #endif
 
 #ifndef ACRO_THR_MID_DEFAULT
