@@ -83,4 +83,5 @@ fi
 
 . ~/.profile
 
-pip install --user -U argparse empy pyserial pexpect future lxml mavproxy
+pip install --user -U argparse empy pyserial pexpect future lxml
+pip install --user -U mavproxy
