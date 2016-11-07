@@ -272,11 +272,12 @@ protected:
 
     void handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps);
 
+    void handle_common_message(mavlink_message_t *msg);
     void handle_log_message(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_setup_signing(const mavlink_message_t *msg);
     uint8_t handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
     uint8_t handle_rc_bind(const mavlink_command_long_t &packet);
-
+    
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
