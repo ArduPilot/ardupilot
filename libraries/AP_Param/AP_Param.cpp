@@ -1751,7 +1751,8 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value)
     return true;
 }
 
-uint16_t AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults, bool panic_on_error)
+// increments num_defaults for each default found in filename
+bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults, bool panic_on_error)
 {
     FILE *f = fopen(filename, "r");
     if (f == nullptr) {
@@ -1832,10 +1833,22 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
         return false;
     }
 
-    uint16_t num_defaults = 0;
-    if (!count_defaults_in_file(filename, num_defaults, panic_on_error)) {
-        return false;
+    char *mutable_filename = strdup(filename);
+    if (mutable_filename == nullptr) {
+        AP_HAL::panic("AP_Param: Failed to allocate mutable string");
     }
+
+    uint16_t num_defaults = 0;
+    char *saveptr = nullptr;
+    for (char *pname = strtok_r(mutable_filename, ",", &saveptr);
+         pname != nullptr;
+         pname = strtok_r(nullptr, ",", &saveptr)) {
+        if (!count_defaults_in_file(pname, num_defaults, panic_on_error)) {
+            free(mutable_filename);
+            return false;
+        }
+    }
+    free(mutable_filename);
 
     if (param_overrides != nullptr) {
         free(param_overrides);
@@ -1848,9 +1861,20 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
         return false;
     }
 
-    if (! read_param_defaults_file(filename)) {
-        return false;
+    saveptr = nullptr;
+    mutable_filename = strdup(filename);
+    if (mutable_filename == nullptr) {
+        AP_HAL::panic("AP_Param: Failed to allocate mutable string");
     }
+    for (char *pname = strtok_r(mutable_filename, ",", &saveptr);
+         pname != nullptr;
+         pname = strtok_r(nullptr, ",", &saveptr)) {
+        if (!read_param_defaults_file(pname)) {
+            free(mutable_filename);
+            return false;
+        }
+    }
+    free(mutable_filename);
 
     num_param_overrides = num_defaults;
 
