@@ -49,6 +49,9 @@ extern const AP_HAL::HAL& hal;
 #define HMC5843_SAMPLE_AVERAGING_2 (0x01 << 5)
 #define HMC5843_SAMPLE_AVERAGING_4 (0x02 << 5)
 #define HMC5843_SAMPLE_AVERAGING_8 (0x03 << 5)
+
+#define HMC5843_CONF_TEMP_ENABLE   (0x80)
+
 // Valid data output rates for 5883L
 #define HMC5843_OSR_0_75HZ (0x00 << 2)
 #define HMC5843_OSR_1_5HZ  (0x01 << 2)
@@ -87,6 +90,9 @@ extern const AP_HAL::HAL& hal;
 #define HMC5843_MODE_SINGLE     0x01
 
 #define HMC5843_REG_DATA_OUTPUT_X_MSB 0x03
+
+#define HMC5843_REG_ID_A 0x0A
+
 
 AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
                                        bool force_external, enum Rotation rotation)
@@ -155,8 +161,8 @@ bool AP_Compass_HMC5843::init()
         goto errout;
     }
 
-    if (!_detect_version()) {
-        hal.console->printf("HMC5843: Could not detect version\n");
+    if (!_check_whoami()) {
+        hal.console->printf("HMC5843: not a HMC device\n");
         goto errout;
     }
 
@@ -211,6 +217,10 @@ errout:
 bool AP_Compass_HMC5843::_timer()
 {
     bool result = _read_sample();
+
+    // always ask for a new sample
+    _take_sample();
+    
     if (!result) {
         return true;
     }
@@ -227,7 +237,7 @@ bool AP_Compass_HMC5843::_timer()
     raw_field *= _gain_scale;
     
     // rotate to the desired orientation
-    if (is_external(_compass_instance) && _is_hmc5883L) {
+    if (is_external(_compass_instance)) {
         raw_field.rotate(ROTATION_YAW_90);
     }
 
@@ -296,9 +306,15 @@ void AP_Compass_HMC5843::read()
 
 bool AP_Compass_HMC5843::_setup_sampling_mode()
 {
-    if (!_bus->register_write(HMC5843_REG_CONFIG_A, _base_config) ||
-        !_bus->register_write(HMC5843_REG_CONFIG_B, _gain_config) ||
-        !_bus->register_write(HMC5843_REG_MODE, HMC5843_MODE_CONTINUOUS)) {
+    _gain_scale = (1.0f / 1090) * 1000;
+    if (!_bus->register_write(HMC5843_REG_CONFIG_A,
+                              HMC5843_CONF_TEMP_ENABLE |
+                              HMC5843_OSR_75HZ |
+                              HMC5843_SAMPLE_AVERAGING_1) ||
+        !_bus->register_write(HMC5843_REG_CONFIG_B,
+                              HMC5883L_GAIN_1_30_GA) ||
+        !_bus->register_write(HMC5843_REG_MODE,
+                              HMC5843_MODE_SINGLE)) {
         return false;
     }
     return true;
@@ -316,22 +332,13 @@ bool AP_Compass_HMC5843::_read_sample()
     } val;
     int16_t rx, ry, rz;
 
-    if (_retry_time > AP_HAL::millis()) {
-        return false;
-    }
-
     if (!_bus->block_read(HMC5843_REG_DATA_OUTPUT_X_MSB, (uint8_t *) &val, sizeof(val))){
-        _retry_time = AP_HAL::millis() + 1000;
         return false;
     }
 
     rx = be16toh(val.rx);
-    ry = be16toh(val.ry);
-    rz = be16toh(val.rz);
-
-    if (_is_hmc5883L) {
-        std::swap(ry, rz);
-    }
+    ry = be16toh(val.rz);
+    rz = be16toh(val.ry);
 
     if (rx == -4096 || ry == -4096 || rz == -4096) {
         // no valid data available
@@ -342,32 +349,30 @@ bool AP_Compass_HMC5843::_read_sample()
     _mag_y =  ry;
     _mag_z = -rz;
 
-    _retry_time = 0;
-
     return true;
 }
 
-bool AP_Compass_HMC5843::_detect_version()
+
+/*
+  ask for a new oneshot sample
+ */
+void AP_Compass_HMC5843::_take_sample()
 {
-    _base_config = 0x0;
+    _bus->register_write(HMC5843_REG_MODE,
+                         HMC5843_MODE_SINGLE);
+}
 
-    uint8_t try_config = HMC5843_SAMPLE_AVERAGING_8 | HMC5843_OSR_75HZ | HMC5843_OPMODE_NORMAL;
-    if (!_bus->register_write(HMC5843_REG_CONFIG_A, try_config) ||
-        !_bus->register_read(HMC5843_REG_CONFIG_A, &_base_config)) {
-        return false;
+bool AP_Compass_HMC5843::_check_whoami()
+{
+    uint8_t id[3];
+    if (!_bus->block_read(HMC5843_REG_ID_A, id, 3)) {
+        // can't talk on bus
+        return false;        
     }
-
-    if (_base_config == try_config) {
-        /* a 5883L supports the sample averaging config */
-        _is_hmc5883L = true;
-        _gain_config = HMC5883L_GAIN_1_30_GA;
-        _gain_scale = (1.0f / 1090) * 1000;
-    } else if (_base_config == (HMC5843_OPMODE_NORMAL | HMC5843_OSR_75HZ)) {
-        _is_hmc5883L = false;
-        _gain_config = HMC5843_GAIN_1_00_GA;
-        _gain_scale = (1.0f / 1300) * 1000;
-    } else {
-        /* not behaving like either supported compass type */
+    if (id[0] != 'H' ||
+        id[1] != '4' ||
+        id[2] != '3') {
+        // not a HMC5x83 device
         return false;
     }
 
@@ -377,28 +382,22 @@ bool AP_Compass_HMC5843::_detect_version()
 bool AP_Compass_HMC5843::_calibrate()
 {
     uint8_t calibration_gain;
-    uint16_t expected_x;
-    uint16_t expected_yz;
     int numAttempts = 0, good_count = 0;
     bool success = false;
 
-    if (_is_hmc5883L) {
-        calibration_gain = HMC5883L_GAIN_2_50_GA;
-        /*
-         * note that the HMC5883 datasheet gives the x and y expected
-         * values as 766 and the z as 713. Experiments have shown the x
-         * axis is around 766, and the y and z closer to 713.
-         */
-        expected_x = 766;
-        expected_yz  = 713;
-    } else {
-        calibration_gain = HMC5843_GAIN_1_00_GA;
-        expected_x = 715;
-        expected_yz = 715;
+    calibration_gain = HMC5883L_GAIN_2_50_GA;
+
+    /*
+     * the expected values are based on observation of real sensors
+     */
+	float expected[3] = { 1.16*600, 1.08*600, 1.16*600 };
+
+    uint8_t old_config;
+    if (!_bus->register_read(HMC5843_REG_CONFIG_A,
+                             &old_config)) {
+        return false;
     }
-
-    uint8_t old_config = _base_config & ~(HMC5843_OPMODE_MASK);
-
+    
     while (success == 0 && numAttempts < 25 && good_count < 5) {
         numAttempts++;
 
@@ -428,9 +427,9 @@ bool AP_Compass_HMC5843::_calibrate()
 
         // hal.console->printf("mag %d %d %d\n", _mag_x, _mag_y, _mag_z);
 
-        cal[0] = fabsf(expected_x / (float)_mag_x);
-        cal[1] = fabsf(expected_yz / (float)_mag_y);
-        cal[2] = fabsf(expected_yz / (float)_mag_z);
+        cal[0] = fabsf(expected[0] / _mag_x);
+        cal[1] = fabsf(expected[1] / _mag_y);
+        cal[2] = fabsf(expected[2] / _mag_z);
 
         // hal.console->printf("cal=%.2f %.2f %.2f\n", cal[0], cal[1], cal[2]);
 
@@ -459,8 +458,8 @@ bool AP_Compass_HMC5843::_calibrate()
 
 #if 0
         /* useful for debugging */
-        hal.console->printf("MagX: %d MagY: %d MagZ: %d\n", (int)_mag_x, (int)_mag_y, (int)_mag_z);
-        hal.console->printf("CalX: %.2f CalY: %.2f CalZ: %.2f\n", cal[0], cal[1], cal[2]);
+        printf("MagX: %d MagY: %d MagZ: %d\n", (int)_mag_x, (int)_mag_y, (int)_mag_z);
+        printf("CalX: %.2f CalY: %.2f CalZ: %.2f\n", cal[0], cal[1], cal[2]);
 #endif
     }
 
@@ -476,6 +475,11 @@ bool AP_Compass_HMC5843::_calibrate()
         _scaling[2] = 1.0;
     }
 
+#if 0
+    printf("scaling: %.2f %.2f %.2f\n",
+           _scaling[0], _scaling[1], _scaling[2]);
+#endif
+    
     return success;
 }
 
