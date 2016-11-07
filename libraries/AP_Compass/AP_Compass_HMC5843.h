@@ -35,7 +35,7 @@ private:
     AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
                        bool force_external, enum Rotation rotation);
 
-    bool _detect_version();
+    bool _check_whoami();
     bool _calibrate();
     bool _setup_sampling_mode();
 
@@ -44,13 +44,13 @@ private:
     /* Read a single sample */
     bool _read_sample();
 
+    // ask for a new sample
+    void _take_sample();
+
     AP_HMC5843_BusDriver *_bus;
 
     float _scaling[3];
     float _gain_scale;
-
-    // when unhealthy the millis() value to retry at
-    uint32_t _retry_time;
 
     int16_t _mag_x;
     int16_t _mag_y;
@@ -60,13 +60,10 @@ private:
     int16_t _mag_z_accum;
     uint8_t _accum_count;
 
-    uint8_t _base_config;
     uint8_t _compass_instance;
-    uint8_t _gain_config;
 
     enum Rotation _rotation;
     
-    bool _is_hmc5883L:1;
     bool _initialised:1;
     bool _force_external:1;
 };

@@ -50,7 +50,7 @@ public:
       calibration values invalid then this number must be changed.
      */
     enum DevTypes {
-        DEVTYPE_HMC5883 = 0x01,
+        DEVTYPE_HMC5883 = 0x07,
         DEVTYPE_LSM303D = 0x02,
         DEVTYPE_AK8963  = 0x04,
         DEVTYPE_BMM150  = 0x05,
