@@ -590,7 +590,12 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         cmd.extend(opts.sitl_instance_args.split(" "))  # this could be a lot better..
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
-    if "default_params_filename" in stuff:
+    # Choose where to grab the default parameter file from
+    if opts.user_default_parm_file:
+        path = opts.user_default_parm_file
+        progress("Using the user defined defaults from (%s)" % (path,))
+        cmd.extend(["--defaults", path])
+    elif "default_params_filename" in stuff:
         path = os.path.join(autotest, stuff["default_params_filename"])
         progress("Using defaults from (%s)" % (path,))
         cmd.extend(["--defaults", path])
@@ -710,6 +715,7 @@ group_sim.add_option("-w", "--wipe-eeprom", action='store_true', default=False, 
 group_sim.add_option("-m", "--mavproxy-args", default=None, type='string', help="additional arguments to pass to mavproxy.py")
 group_sim.add_option("", "--strace", action='store_true', default=False, help="strace the ArduPilot binary")
 group_sim.add_option("", "--model", type='string', default=None, help="Override simulation model to use")
+group_sim.add_option("", "--user-default-parm-file", type='string', default=None, help="Set a new default parameter to use")
 parser.add_option_group(group_sim)
 
 
