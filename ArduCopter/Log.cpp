@@ -767,6 +767,11 @@ struct PACKED log_Proximity {
 void Copter::Log_Write_Proximity()
 {
 #if PROXIMITY_ENABLED == ENABLED
+    // exit immediately if not enabled
+    if (g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+        return;
+    }
+
     float sector_distance[8] = {0,0,0,0,0,0,0,0};
     g2.proximity.get_horizontal_distance(0, sector_distance[0]);
     g2.proximity.get_horizontal_distance(45, sector_distance[1]);
