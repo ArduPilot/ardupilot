@@ -533,12 +533,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
-    {
-        handle_param_request_read(msg);
-        break;
-    }
-
     case MAVLINK_MSG_ID_PARAM_SET:
     {
         handle_param_set(msg, nullptr);
@@ -870,8 +864,8 @@ mission_failed:
         send_autopilot_version(FIRMWARE_VERSION);
         break;
 
-    case MAVLINK_MSG_ID_SETUP_SIGNING:
-        handle_setup_signing(msg);
+    default:
+        handle_common_message(msg);
         break;
     } // end switch
 } // end handle mavlink
