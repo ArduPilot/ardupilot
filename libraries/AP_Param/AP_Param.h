@@ -485,6 +485,8 @@ private:
       load a parameter defaults file. This happens as part of load_all()
      */
     static bool parse_param_line(char *line, char **vname, float &value);
+    static uint16_t count_defaults_in_file(const char *filename, uint16_t &num_defaults, bool panic_on_error);
+    static bool read_param_defaults_file(const char *filename);
     static bool load_defaults_file(const char *filename, bool panic_on_error);
 #endif
     
