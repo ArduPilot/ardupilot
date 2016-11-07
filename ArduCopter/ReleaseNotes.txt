@@ -1,5 +1,17 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.2-rc1 07-Nov-2016
+Changes from 3.4.1
+1) Minor Improvements:
+    a) ACRO_Y_EXPO applies to all flight modes (but is defaulted to zero)
+    b) Autotune timeout increased (helps with large copters)
+    c) AltHold filter applied to P (was previously only for D)
+    d) arming check for compass health (was previously only a pre-arm check)
+2) Bug Fixes:
+    a) LeddarOne driver busy-wait fix 
+    b) SBF GPS altitude fix
+    c) MAV GPS uses existing configured baud rate instead of auto detecting
+------------------------------------------------------------------
 Copter 3.4.1 01-Nov-2016
 Changes from 3.4.0
 1) Pixracer PPM RC input fix
