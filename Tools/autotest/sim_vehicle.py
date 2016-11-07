@@ -626,7 +626,11 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
     if "default_params_filename" in stuff:
-        path = os.path.join(autotest, stuff["default_params_filename"])
+        paths = stuff["default_params_filename"]
+        if not isinstance(paths,list):
+            paths = [paths]
+        paths =  [ os.path.join(autotest, x) for x in paths ]
+        path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
         cmd.extend(["--defaults", path])
 
