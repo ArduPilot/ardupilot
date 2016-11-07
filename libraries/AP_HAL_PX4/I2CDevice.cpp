@@ -91,6 +91,8 @@ I2CDevice::I2CDevice(uint8_t bus, uint8_t address) :
     
 I2CDevice::~I2CDevice()
 {
+    printf("I2C device bus %u address 0x%02x closed\n", 
+           (unsigned)_busnum, (unsigned)_address);
 }
 
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
