@@ -277,6 +277,9 @@ protected:
     void handle_setup_signing(const mavlink_message_t *msg);
     uint8_t handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
     uint8_t handle_rc_bind(const mavlink_command_long_t &packet);
+
+    void handle_device_op_read(mavlink_message_t *msg);
+    void handle_device_op_write(mavlink_message_t *msg);
     
 private:
 
