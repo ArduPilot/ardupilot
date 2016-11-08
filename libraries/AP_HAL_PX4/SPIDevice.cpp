@@ -62,6 +62,22 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #ifdef PX4_SPIDEV_HMC
     SPIDesc("hmc5843",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_HMC, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
 #endif
+
+#ifdef PX4_SPI_BUS_EXT
+#ifdef PX4_SPIDEV_EXT0
+    SPIDesc("external0",    PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT0, SPIDEV_MODE3, 5*MHZ, 5*MHZ),
+#endif
+#ifdef PX4_SPIDEV_EXT1
+    SPIDesc("external1",    PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT1, SPIDEV_MODE3, 5*MHZ, 5*MHZ),
+#endif
+#ifdef PX4_SPIDEV_EXT2
+    SPIDesc("external2",    PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT2, SPIDEV_MODE3, 5*MHZ, 5*MHZ),
+#endif
+#ifdef PX4_SPIDEV_EXT3
+    SPIDesc("external3",    PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT3, SPIDEV_MODE3, 5*MHZ, 5*MHZ),
+#endif
+#endif
+
     SPIDesc(nullptr, 0, (spi_dev_e)0, (spi_mode_e)0, 0, 0),
 };
 
