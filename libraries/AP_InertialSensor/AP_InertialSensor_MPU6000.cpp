@@ -261,6 +261,9 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                                             enum Rotation rotation)
 {
+    if (!dev) {
+        return nullptr;
+    }
     AP_InertialSensor_MPU6000 *sensor =
         new AP_InertialSensor_MPU6000(imu, std::move(dev), true, rotation);
     if (!sensor || !sensor->_init()) {

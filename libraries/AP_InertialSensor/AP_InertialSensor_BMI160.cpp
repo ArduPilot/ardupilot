@@ -131,6 +131,9 @@ AP_InertialSensor_Backend *
 AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
                                 AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
 {
+    if (!dev) {
+        return nullptr;
+    }
     auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev));
 
     if (!sensor) {

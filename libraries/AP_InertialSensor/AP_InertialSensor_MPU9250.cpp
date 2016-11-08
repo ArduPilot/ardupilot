@@ -217,6 +217,9 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                                             enum Rotation rotation)
 {
+    if (!dev) {
+        return nullptr;
+    }
     AP_InertialSensor_MPU9250 *sensor =
         new AP_InertialSensor_MPU9250(imu, std::move(dev), rotation);
     if (!sensor || !sensor->_init()) {
@@ -233,6 +236,9 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
                                                             enum Rotation rotation)
 {
+    if (!dev) {
+        return nullptr;
+    }
     AP_InertialSensor_MPU9250 *sensor;
 
     dev->set_read_flag(0x80);

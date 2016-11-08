@@ -107,6 +107,9 @@ AP_InertialSensor_L3G4200D::~AP_InertialSensor_L3G4200D()
 AP_InertialSensor_Backend *AP_InertialSensor_L3G4200D::probe(AP_InertialSensor &imu,
                                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
+    if (!dev) {
+        return nullptr;
+    }
     AP_InertialSensor_L3G4200D *sensor
         = new AP_InertialSensor_L3G4200D(imu, std::move(dev));
     if (!sensor || !sensor->_init_sensor()) {

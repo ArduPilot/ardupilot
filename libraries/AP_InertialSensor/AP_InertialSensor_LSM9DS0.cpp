@@ -397,6 +397,9 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
                                                             enum Rotation rotation)
 {
+    if (!dev_gyro || !dev_accel) {
+        return nullptr;
+    }
     AP_InertialSensor_LSM9DS0 *sensor =
         new AP_InertialSensor_LSM9DS0(_imu, std::move(dev_gyro), std::move(dev_accel),
                                       LSM9DS0_DRY_X_PIN, LSM9DS0_DRY_G_PIN,
