@@ -47,7 +47,7 @@ private:
     /*
      * Adjusts the desired velocity for the polygon fence.
      */
-    void adjust_velocity_poly(const float kP, const float accel_cmss, Vector2f &desired_vel);
+    void adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2f &desired_vel);
 
     /*
      * Adjusts the desired velocity based on output from the proximity sensor

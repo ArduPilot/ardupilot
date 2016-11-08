@@ -34,8 +34,8 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel
     float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
     if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
-        adjust_velocity_poly(kP, accel_cmss_limited, desired_vel);
         adjust_velocity_circle_fence(kP, accel_cmss_limited, desired_vel);
+        adjust_velocity_polygon_fence(kP, accel_cmss_limited, desired_vel);
     }
 
     if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0) {
@@ -96,8 +96,7 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
 /*
  * Adjusts the desired velocity for the polygon fence.
  */
-
-void AC_Avoid::adjust_velocity_poly(const float kP, const float accel_cmss, Vector2f &desired_vel)
+void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2f &desired_vel)
 {
     // exit if the polygon fence is not enabled
     if ((_fence.get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
