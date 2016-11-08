@@ -620,7 +620,7 @@ void AP_InertialSensor_LSM9DS0::_accel_init()
     hal.scheduler->delay(1);
 
     _register_write_xm(CTRL_REG1_XM,
-                       CTRL_REG1_XM_AODR_800Hz |
+                       CTRL_REG1_XM_AODR_1600Hz |
                        CTRL_REG1_XM_BDU |
                        CTRL_REG1_XM_AZEN |
                        CTRL_REG1_XM_AYEN |
@@ -628,7 +628,7 @@ void AP_InertialSensor_LSM9DS0::_accel_init()
     hal.scheduler->delay(1);
 
     _register_write_xm(CTRL_REG2_XM,
-                       CTRL_REG2_XM_ABW_50Hz |
+                       CTRL_REG2_XM_ABW_194Hz |
                        CTRL_REG2_XM_AFS_16G);
     _set_accel_scale(A_SCALE_16G);
     hal.scheduler->delay(1);
