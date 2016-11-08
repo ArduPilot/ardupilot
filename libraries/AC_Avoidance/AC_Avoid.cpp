@@ -23,7 +23,7 @@ AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fen
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void AC_Avoid::adjust_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel)
+void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel)
 {
     // exit immediately if disabled
     if (_enabled == AC_AVOID_DISABLED) {
@@ -44,7 +44,7 @@ void AC_Avoid::adjust_velocity(const float kP, const float accel_cmss, Vector2f 
 }
 
 // convenience function to accept Vector3f.  Only x and y are adjusted
-void AC_Avoid::adjust_velocity(const float kP, const float accel_cmss, Vector3f &desired_vel)
+void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel)
 {
     Vector2f des_vel_xy(desired_vel.x, desired_vel.y);
     adjust_velocity(kP, accel_cmss, des_vel_xy);
@@ -193,7 +193,7 @@ void AC_Avoid::adjust_velocity_proximity(const float kP, const float accel_cmss,
  * Uses velocity adjustment idea from Randy's second email on this thread:
  * https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
  */
-void AC_Avoid::limit_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel, const Vector2f limit_direction, const float limit_distance) const
+void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance) const
 {
     const float max_speed = get_max_speed(kP, accel_cmss, limit_distance);
     // project onto limit direction
@@ -219,7 +219,7 @@ Vector2f AC_Avoid::get_position()
  * Computes the speed such that the stopping distance
  * of the vehicle will be exactly the input distance.
  */
-float AC_Avoid::get_max_speed(const float kP, const float accel_cmss, const float distance) const
+float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance) const
 {
     return AC_AttitudeControl::sqrt_controller(distance, kP, accel_cmss);
 }
@@ -229,7 +229,7 @@ float AC_Avoid::get_max_speed(const float kP, const float accel_cmss, const floa
  *
  * Implementation copied from AC_PosControl.
  */
-float AC_Avoid::get_stopping_distance(const float kP, const float accel_cmss, const float speed) const
+float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed) const
 {
     // avoid divide by zero by using current position if the velocity is below 10cm/s, kP is very low or acceleration is zero
     if (kP <= 0.0f || accel_cmss <= 0.0f || is_zero(speed)) {

@@ -32,8 +32,8 @@ public:
      * before the fence/object.
      * Note: Vector3f version is for convenience and only adjusts x and y axis
      */
-    void adjust_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel);
-    void adjust_velocity(const float kP, const float accel_cmss, Vector3f &desired_vel);
+    void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel);
+    void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -52,7 +52,7 @@ private:
     /*
      * Adjusts the desired velocity based on output from the proximity sensor
      */
-    void adjust_velocity_proximity(const float kP, const float accel_cmss, Vector2f &desired_vel);
+    void adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &desired_vel);
 
     /*
      * Limits the component of desired_vel in the direction of the unit vector
@@ -61,7 +61,7 @@ private:
      * Uses velocity adjustment idea from Randy's second email on this thread:
      * https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
      */
-    void limit_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel, const Vector2f limit_direction, const float limit_distance) const;
+    void limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance) const;
 
     /*
      * Gets the current position, relative to home (not relative to EKF origin)
@@ -72,12 +72,12 @@ private:
      * Computes the speed such that the stopping distance
      * of the vehicle will be exactly the input distance.
      */
-    float get_max_speed(const float kP, const float accel_cmss, const float distance) const;
+    float get_max_speed(float kP, float accel_cmss, float distance) const;
 
     /*
      * Computes distance required to stop, given current speed.
      */
-    float get_stopping_distance(const float kP, const float accel_cmss, const float speed) const;
+    float get_stopping_distance(float kP, float accel_cmss, float speed) const;
 
     /*
      * Gets the fence margin in cm
