@@ -995,6 +995,7 @@ private:
     bool pre_arm_gps_checks(bool display_failure);
     bool pre_arm_ekf_attitude_check();
     bool pre_arm_terrain_check(bool display_failure);
+    bool pre_arm_proximity_check(bool display_failure);
     bool arm_checks(bool display_failure, bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
