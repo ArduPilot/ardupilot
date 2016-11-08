@@ -430,7 +430,8 @@ SPIDeviceManager::get_device(const char *name)
     }
 
     if (!desc) {
-        AP_HAL::panic("SPI: invalid device name");
+        printf("SPI: Invalid device name: %s\n", name);
+        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
     }
 
     /* Find if bus is already open */
