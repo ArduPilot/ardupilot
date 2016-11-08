@@ -72,6 +72,8 @@ private:
     uint8_t _busnum;
     PX4_I2C _px4dev;
     uint8_t _address;
+    perf_counter_t perf;
+    char *pname;
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
