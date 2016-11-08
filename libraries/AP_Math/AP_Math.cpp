@@ -120,6 +120,33 @@ template auto wrap_360_cd<short>(const short angle) -> decltype(wrap_360(angle, 
 template auto wrap_360_cd<double>(const double angle) -> decltype(wrap_360(angle, 100.f));
 
 template <class T>
+float wrap_2x720(const T angle, float unit_mod = 1)
+{
+    const float ang_1440 = 4.f * 360.f * unit_mod;
+    const float ang_720 = 2.f * 360.f * unit_mod;
+    float res = fmodf(static_cast<float>(angle), ang_1440);
+    if (res >= ang_720) { res -= ang_1440; }
+    if (res < -ang_720) { res += ang_1440; }
+    return res;   
+}
+
+template float wrap_2x720<int>(const int angle, float unit_mod);
+template float wrap_2x720<short>(const short angle, float unit_mod);
+template float wrap_2x720<float>(const float angle, float unit_mod);
+template float wrap_2x720<double>(const double angle, float unit_mod);
+
+template <class T>
+auto wrap_2x720_cd(const T angle) -> decltype(wrap_2x720(angle, 100.f))
+{
+    return wrap_2x720(angle, 100.f);
+}
+
+template auto wrap_2x720_cd<int>(const int angle) -> decltype(wrap_2x720(angle, 100.f));
+template auto wrap_2x720_cd<short>(const short angle) -> decltype(wrap_2x720(angle, 100.f));
+template auto wrap_2x720_cd<float>(const float angle) -> decltype(wrap_2x720(angle, 100.f));
+template auto wrap_2x720_cd<double>(const double angle) -> decltype(wrap_2x720(angle, 100.f));
+
+template <class T>
 float wrap_PI(const T radian)
 {
     auto res = wrap_2PI(radian);
@@ -148,6 +175,22 @@ template float wrap_2PI<int>(const int radian);
 template float wrap_2PI<short>(const short radian);
 template float wrap_2PI<float>(const float radian);
 template float wrap_2PI<double>(const double radian);
+
+template <class T>
+float wrap_2x4PI(const T radian)
+{
+    const float rad_8PI = 4.f * M_2PI;
+    const float rad_4PI = 2.f * M_2PI;
+    float res = fmodf(static_cast<float>(radian), rad_8PI);
+    if (res >= rad_4PI) { res -= rad_8PI; }
+    if (res < -rad_4PI) { res += rad_8PI; }
+    return res;
+}
+
+template float wrap_2x4PI<int>(const int radian);
+template float wrap_2x4PI<short>(const short radian);
+template float wrap_2x4PI<float>(const float radian);
+template float wrap_2x4PI<double>(const double radian);
 
 template <class T>
 T constrain_value(const T amt, const T low, const T high)
