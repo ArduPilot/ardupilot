@@ -119,7 +119,7 @@ void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2
     Vector2f* boundary = _fence.get_polygon_points(num_points);
 
     // adjust velocity using polygon
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points);
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, true);
 }
 
 /*
@@ -140,13 +140,13 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &d
     // get boundary from proximity sensor
     uint16_t num_points;
     const Vector2f *boundary = _proximity.get_boundary_points(num_points);
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points);
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, false);
 }
 
 /*
  * Adjusts the desired velocity for the polygon fence.
  */
-void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points)
+void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame)
 {
     // exit if there are no points
     if (boundary == nullptr || num_points == 0) {
@@ -154,7 +154,10 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     }
 
     // do not adjust velocity if vehicle is outside the polygon fence
-    const Vector3f& position = _inav.get_position();
+    Vector3f position;
+    if (earth_frame) {
+        position = _inav.get_position();
+    }
     Vector2f position_xy(position.x, position.y);
     if (_fence.boundary_breached(position_xy, num_points, boundary)) {
         return;
@@ -164,6 +167,12 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     // We need a separate vector in case adjustment fails,
     // e.g. if we are exactly on the boundary.
     Vector2f safe_vel(desired_vel);
+
+    // if boundary points are in body-frame, rotate velocity vector from earth frame to body-frame
+    if (!earth_frame) {
+        safe_vel.x = desired_vel.y * _ahrs.sin_yaw() + desired_vel.x * _ahrs.cos_yaw(); // right
+        safe_vel.y = desired_vel.y * _ahrs.cos_yaw() - desired_vel.x * _ahrs.sin_yaw(); // forward
+    }
 
     uint16_t i, j;
     for (i = 1, j = num_points-1; i < num_points; j = i++) {
@@ -186,7 +195,14 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         }
     }
 
-    desired_vel = safe_vel;
+    // set modified desired velocity vector
+    if (earth_frame) {
+        desired_vel = safe_vel;
+    } else {
+        // if points were in body-frame, rotate resulting vector back to earth-frame
+        desired_vel.x = safe_vel.x * _ahrs.cos_yaw() - safe_vel.y * _ahrs.sin_yaw();
+        desired_vel.y = safe_vel.x * _ahrs.sin_yaw() + safe_vel.y * _ahrs.cos_yaw();
+    }
 }
 
 /*
