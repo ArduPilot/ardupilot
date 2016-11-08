@@ -56,8 +56,9 @@ private:
 
     /*
      * Adjusts the desired velocity given an array of boundary points
+     *   earth_frame should be true if boundary is in earth-frame, false for body-frame
      */
-    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points);
+    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame);
 
     /*
      * Limits the component of desired_vel in the direction of the unit vector
