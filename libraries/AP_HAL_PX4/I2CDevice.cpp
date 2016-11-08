@@ -87,18 +87,26 @@ I2CDevice::I2CDevice(uint8_t bus, uint8_t address) :
 {
     set_device_bus(_px4dev.map_bus_number(bus));
     set_device_address(address);
+    asprintf(&pname, "I2C:%u:%02x",
+             (unsigned)bus, (unsigned)address);
+    perf = perf_alloc(PC_ELAPSED, pname);
 }
     
 I2CDevice::~I2CDevice()
 {
     printf("I2C device bus %u address 0x%02x closed\n", 
            (unsigned)_busnum, (unsigned)_address);
+    perf_free(perf);
+    free(pname);
 }
 
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-    return _px4dev.do_transfer(_address, send, send_len, recv, recv_len);
+    perf_begin(perf);
+    bool ret = _px4dev.do_transfer(_address, send, send_len, recv, recv_len);
+    perf_end(perf);
+    return ret;
 }
 
 bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
