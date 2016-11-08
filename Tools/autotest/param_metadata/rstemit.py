@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from __future__ import print_function
 import re
 from param import known_param_fields
 from emit import Emit
@@ -254,7 +254,7 @@ def table_test():
     print(e.tablify([["A", "B"], ["C", "D"]]))
 
     print("Test 2")
-    print e.tablify([["A", "B"], ["CD\nE", "FG"]])
+    print(e.tablify([["A", "B"], ["CD\nE", "FG"]]))
 
     print("Test 3")
     print(e.tablify([["A", "B"], ["CD\nEF", "GH"]], rowheadings=["r1", "row2"]))

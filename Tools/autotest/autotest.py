@@ -3,7 +3,7 @@
  APM automatic test suite
  Andrew Tridgell, October 2011
 """
-
+from __future__ import print_function
 import atexit
 import fnmatch
 import glob

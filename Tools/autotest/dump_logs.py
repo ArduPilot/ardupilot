@@ -3,7 +3,7 @@
  dump flash logs from SITL
  Andrew Tridgell, April 2013
 """
-
+from __future__ import print_function
 import optparse
 import os
 import sys
