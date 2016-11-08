@@ -181,7 +181,9 @@ Complete Parameter List
         return self.tablify(rows, headings=render_info["headings"])
 
     def emit_node(self, g):
+        print("node: %s" % g.name)
         if g.name is None: # root node
+            print("Emitting root node for vehicle (%s)" % g.vehicle())
             tag = '%s Parameters' % self.escape(g.vehicle())
             reference = "parameters_" + g.vehicle()
         else:
@@ -210,7 +212,7 @@ Complete Parameter List
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue
             d = param.__dict__
-            print("annotate_with_vehicle=%s" % self.annotate_with_vehicle)
+#            print("annotate_with_vehicle=%s" % self.annotate_with_vehicle)
             if self.annotate_with_vehicle:
                 name = g.vehicle() + ":" + param.name
             else:

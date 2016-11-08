@@ -2,7 +2,8 @@
 class Parameter(object):
     def __init__(self, name):
         self.name = name
-
+    def __repr__(self):
+        return repr(self.name)
 
 class Vehicle(object):
     def __init__(self, name, path):
@@ -16,6 +17,9 @@ class ParamNode(object):
         self.name = name
         self.params = []
         self.children = []
+
+    def __repr__(self):
+        return "ParamNode { name=%s, params=%s children=%s}" % (repr(self.name), repr(self.params), repr(self.children))
 
     def add_child(self, child):
         self.children.append(child)

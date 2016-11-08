@@ -118,15 +118,19 @@ def fill_node(node, parent=None, prefix=""):
         fill_node(child)
 
 def do_emit(emit, root_nodes, flattened_nodes):
-    emit.set_annotate_with_vehicle(len(vehicle_paths) > 1)
-    for node in root_nodes:
-        emit.emit(node)
-
+    print("vehicle_path count is %d" % len(vehicle_paths))
     # emit a libraries section to attempt to keep old links working:
     emit.set_annotate_with_vehicle(False)
-    emit.start_libraries()
-    for flat_node in flattened_nodes:
-        emit.emit(flat_node)
+    print("vehicle_paths=%s" % vehicle_paths)
+    if len(vehicle_paths) > 1:
+        emit.set_annotate_with_vehicle(True)
+        for flat_node in flattened_nodes:
+            print("**** %s" % flat_node.name)
+            emit.emit(flat_node)
+    else:
+        for node in root_nodes:
+            print("node is %s" % node.name)
+            emit.emit(node)
 
     emit.close()
 
@@ -155,10 +159,6 @@ def flatten_nodes(root_nodes):
 
         my_copy = copy.deepcopy(node)
         if my_copy.name is None:
-            my_copy.name = None
-        else:
-            my_copy.name = re.sub('.*:','',my_copy.name)
-        if my_copy.name == "":
             # these are the root nodes
             continue
         have_node = None
@@ -196,9 +196,10 @@ def flatten_nodes(root_nodes):
 
 flattened_nodes = flatten_nodes(root_nodes)
 
-do_emit(XmlEmit(), root_nodes, flattened_nodes)
-do_emit(WikiEmit(), root_nodes, flattened_nodes)
-do_emit(HtmlEmit(), root_nodes, flattened_nodes)
+#do_emit(XmlEmit(), root_nodes, flattened_nodes)
+#do_emit(WikiEmit(), root_nodes, flattened_nodes)
+#do_emit(HtmlEmit(), root_nodes, flattened_nodes)
+print("Emitting " + repr(root_nodes))
 do_emit(RSTEmit(), root_nodes, flattened_nodes)
 
 sys.exit(error_count)

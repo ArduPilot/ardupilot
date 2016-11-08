@@ -19,7 +19,7 @@ class Emit:
         pass
 
     def emit(self, g):
-	self.emit_node(g)
+        self.emit_node(g)
         for child in g.children:
             self.emit(child)
 
