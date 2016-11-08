@@ -13,10 +13,6 @@ extern const AP_HAL::HAL& hal;
 const AP_AHRS_NavEKF *Location_Class::_ahrs = nullptr;
 AP_Terrain *Location_Class::_terrain = nullptr;
 
-// scalers to convert latitude and longitude to meters.  Duplicated from location.cpp
-#define LOCATION_SCALING_FACTOR 0.011131884502145034f
-#define LOCATION_SCALING_FACTOR_INV 89.83204953368922f
-
 /// constructors
 Location_Class::Location_Class()
 {

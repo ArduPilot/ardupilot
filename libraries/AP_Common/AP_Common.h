@@ -167,4 +167,3 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 #else
 #define SITL_printf(fmt, args ...)
 #endif
-
