@@ -42,7 +42,7 @@ private:
     /*
      * Adjusts the desired velocity for the circular fence.
      */
-    void adjust_velocity_circle(const float kP, const float accel_cmss, Vector2f &desired_vel);
+    void adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f &desired_vel);
 
     /*
      * Adjusts the desired velocity for the polygon fence.
