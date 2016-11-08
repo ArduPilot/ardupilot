@@ -497,8 +497,9 @@ void Compass::_detect_backends(void)
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V3 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V4) {
         // external i2c bus
-        _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR), true),
-                         AP_Compass_HMC5843::name, true);
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                               true, ROTATION_ROLL_180),
+                     AP_Compass_HMC5843::name, true);
         // internal i2c bus
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR), false),
                          AP_Compass_HMC5843::name, false);
