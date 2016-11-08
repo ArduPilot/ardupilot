@@ -6,6 +6,7 @@ Framework to start a simulated vehicle and connect it to MAVProxy.
 Peter Barker, April 2016
 based on sim_vehicle.sh by Andrew Tridgell, October 2011
 """
+from __future__ import print_function
 
 import atexit
 import getpass
@@ -184,7 +185,7 @@ def check_jsbsim_version():
                                 # check below and produce a reasonable
                                 # error message
     try:
-        jsbsim_version.index("ArduPilot")
+        jsbsim_version.index(b"ArduPilot")
     except ValueError:
         print(r"""
 =========================================================
