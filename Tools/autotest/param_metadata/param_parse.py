@@ -117,7 +117,7 @@ def fill_node(node, parent=None, prefix=""):
     for child in node.children:
         fill_node(child)
 
-def do_emit(emit, root_nodes, flattened_nodes):
+def do_emit_single(emit, root_nodes, flattened_nodes):
     print("vehicle_path count is %d" % len(vehicle_paths))
     # emit a libraries section to attempt to keep old links working:
     emit.set_annotate_with_vehicle(False)
@@ -151,8 +151,9 @@ for vehicle_path in vehicle_paths:
 
 
 def flatten_nodes(root_nodes):
-    flattened_nodes = []
     todo = root_nodes[:]
+    flattened_nodes = []
+    library_nodes = []
     while len(todo):
         node = todo.pop()
         todo.extend(node.children)
@@ -194,12 +195,15 @@ def flatten_nodes(root_nodes):
         flattened_nodes.append(my_copy)
     return sorted(flattened_nodes, key=lambda x : x.name)
 
-flattened_nodes = flatten_nodes(root_nodes)
+if len(vehicle_paths) == 1:
+    emit.set_annotate_with_vehicle(False)
+else:
+    nodes_to_emit = flatten_nodes(root_nodes)
+    emit.set_annotate_with_vehicle(True)
 
-#do_emit(XmlEmit(), root_nodes, flattened_nodes)
-#do_emit(WikiEmit(), root_nodes, flattened_nodes)
-#do_emit(HtmlEmit(), root_nodes, flattened_nodes)
-print("Emitting " + repr(root_nodes))
-do_emit(RSTEmit(), root_nodes, flattened_nodes)
+do_emit(XmlEmit(), nodes_to_emit)
+do_emit(WikiEmit(), nodes_to_emit)
+do_emit(HtmlEmit(), nodes_to_emit)
+do_emit(RSTEmit(), nodes_to_emit)
 
 sys.exit(error_count)
