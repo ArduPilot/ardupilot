@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
+import copy
 import glob
 import os
 import re
 import sys
 from optparse import OptionParser
 
-from param import (Library, Parameter, Vehicle, known_group_fields,
+from param import (ParamNode, Parameter, Vehicle, known_group_fields,
                    known_param_fields, required_param_fields)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
@@ -38,7 +39,6 @@ if len(vehicle_paths) == 0:
 vehicle_paths.sort(reverse=True)
 
 vehicles = []
-libraries = []
 
 error_count = 0
 
@@ -55,36 +55,45 @@ def error(str_to_print):
     error_count += 1
     print(str_to_print)
 
-for vehicle_path in vehicle_paths:
-    name = os.path.basename(os.path.dirname(vehicle_path))
-    path = os.path.normpath(os.path.dirname(vehicle_path))
-    vehicles.append(Vehicle(name, path))
-    debug('Found vehicle type %s' % name)
-
-for vehicle in vehicles:
-    debug("===\n\n\nProcessing %s" % vehicle.name)
-
-    f = open(vehicle.path+'/Parameters.' + extension)
-    p_text = f.read()
-    f.close()
+def fill_node(node, parent=None, prefix=""):
+    p_text = ""
+    debug("===\n\n\nProcessing %s" % node.Path)
+    for path in node.Path.split(","):
+        p_text += open(path).read()
 
     param_matches = prog_param.findall(p_text)
     group_matches = prog_groups.findall(p_text)
 
     debug(group_matches)
     for group_match in group_matches:
-        l = Library(group_match[0])
+        if node.name is None:
+            childname = group_match[0]
+        else:
+            childname = node.name + group_match[0]
+        l = ParamNode(childname)
         fields = prog_param_fields.findall(group_match[1])
         for field in fields:
             if field[0] in known_group_fields:
                 setattr(l, field[0], field[1])
             else:
                 error("unknown parameter metadata field '%s'" % field[0])
-        if not any(l.name == parsed_l.name for parsed_l in libraries):
-            libraries.append(l)
+        if hasattr(l, 'Path'):
+            # make this path relative to the file it was found
+            # in.  This is required when e.g. ArduCopter's
+            # Parameters.cpp uses the Motors library and the
+            # Motors library uses the RC_Channel library, as
+            # Motors references RC_Channel relative to the Motors
+            # directory
+            l.Path = ','.join([ os.path.join(os.path.dirname(node.Path),x) for x in l.Path.split(',') ])
+
+        node.add_child(l)
 
     for param_match in param_matches:
-        p = Parameter(vehicle.name+":"+param_match[0])
+        if node.name is None:
+            paramname = param_match[0]
+        else:
+            paramname = node.name + param_match[0]
+        p = Parameter(paramname)
         debug(p.name + ' ')
         field_text = param_match[1]
         fields = prog_param_fields.findall(field_text)
@@ -92,111 +101,104 @@ for vehicle in vehicles:
         for field in fields:
             field_list.append(field[0])
             if field[0] in known_param_fields:
+                if getattr(p, field[0], None) is not None:
+                    error("parameter metadata field '%s' specified twice for (%s) (file=%s)" % (field[0], p.name,os.path.realpath(node.Path)))
                 setattr(p, field[0], field[1])
             else:
                 error("unknown parameter metadata field '%s'" % field[0])
         for req_field in required_param_fields:
             if req_field not in field_list:
                 error("missing parameter metadata field '%s' in %s" % (req_field, field_text))
+        debug("Appending parameter (%s)" % p.name)
+        node.params.append(p)
 
-        vehicle.params.append(p)
+    debug("Found (%u) params and (%u) children" % (len(node.params),len(node.children)))
 
-    debug("Processed %u params" % len(vehicle.params))
+    for child in node.children:
+        fill_node(child)
 
-debug("Found %u documented libraries" % len(libraries))
+def do_emit(emit, root_nodes, flattened_nodes):
+    emit.set_annotate_with_vehicle(len(vehicle_paths) > 1)
+    for node in root_nodes:
+        emit.emit(node)
 
-for library in libraries:
-    debug("===\n\n\nProcessing library %s" % library.name)
+    # emit a libraries section to attempt to keep old links working:
+    emit.set_annotate_with_vehicle(False)
+    emit.start_libraries()
+    for flat_node in flattened_nodes:
+        emit.emit(flat_node)
 
-    if hasattr(library, 'Path'):
-        paths = library.Path.split(',')
-        for path in paths:
-            path = path.strip()
-            debug("\n Processing file '%s'" % path)
-            if path.endswith('.pde') or path.find('/') == -1:
-                if len(vehicles) != 1:
-                    print("Unable to handle multiple vehicles with .pde library")
-                    continue
-                libraryfname = os.path.join(vehicles[0].path, path)
-            else:
-                libraryfname = os.path.normpath(os.path.join(apm_path + '/libraries/' + path))
-            if path and os.path.exists(libraryfname):
-                f = open(libraryfname)
-                p_text = f.read()
-                f.close()
-            else:
-                error("Path %s not found for library %s" % (path, library.name))
-                continue
+    emit.close()
 
-            param_matches = prog_group_param.findall(p_text)
-            debug("Found %u documented parameters" % len(param_matches))
-            for param_match in param_matches:
-                p = Parameter(library.name+param_match[0])
-                debug(p.name + ' ')
-                field_text = param_match[1]
-                fields = prog_param_fields.findall(field_text)
-                for field in fields:
-                    if field[0] in known_param_fields:
-                        setattr(p, field[0], field[1])
-                    else:
-                        error("unknown parameter metadata field %s" % field[0])
+root_nodes = []
 
-                library.params.append(p)
-    else:
-        error("Skipped: no Path found")
+for vehicle_path in vehicle_paths:
+    name = os.path.basename(os.path.dirname(vehicle_path))
+#    path = os.path.normpath(os.path.dirname(vehicle_path))
+#    vehicles.append(Vehicle(name, path))
+#    debug('Found vehicle type %s' % name)
 
-    debug("Processed %u documented parameters" % len(library.params))
+    root = ParamNode()
+    root._vehicle = name
+    root.Path = vehicle_path
+    fill_node(root)
+    root.validate()
+    root_nodes.append(root)
 
-    def is_number(numberString):
-        try:
-            float(numberString)
-            return True
-        except ValueError:
-            return False
 
-    def validate(param):
-        """
-        Validates the parameter meta data.
-        """
-        # Validate values
-        if (hasattr(param, "Range")):
-            rangeValues = param.__dict__["Range"].split(" ")
-            if (len(rangeValues) != 2):
-                error("Invalid Range values for %s" % (param.name))
-                return
-            min_value = rangeValues[0]
-            max_value = rangeValues[1]
-            if not is_number(min_value):
-                error("Min value not number: %s %s" % (param.name, min_value))
-                return
-            if not is_number(max_value):
-                error("Max value not number: %s %s" % (param.name, max_value))
-                return
+def flatten_nodes(root_nodes):
+    flattened_nodes = []
+    todo = root_nodes[:]
+    while len(todo):
+        node = todo.pop()
+        todo.extend(node.children)
 
-    for vehicle in vehicles:
-        for param in vehicle.params:
-            validate(param)
+        my_copy = copy.deepcopy(node)
+        if my_copy.name is None:
+            my_copy.name = None
+        else:
+            my_copy.name = re.sub('.*:','',my_copy.name)
+        if my_copy.name == "":
+            # these are the root nodes
+            continue
+        have_node = None
+        for flat_node in flattened_nodes:
+            if flat_node.name == my_copy.name:
+                have_node = flat_node
+        if have_node is not None:
+            print("Already have a a node called %s" % my_copy.name)
+            # do some quick checks to warn of absolute insanity
+            in_both = True
+            for param in node.params:
+                trimmed = re.sub('.*:','',param.name)
+                if trimmed not in [ x.name for x in have_node.params ]:
+                    print("  Parameter %s present in %s but not in %s" % (param.name, node.vehicle(), have_node.vehicle(),))
+                    # try to merge this parameter into the libraries
+                    print("   Merging parameter in")
+                    x = copy.deepcopy(param)
+                    x.name = re.sub('.*:','',x.name)
+                    have_node.params.append(x)
+                    in_both = False
+            for param in have_node.params:
+                trimmed_names = [ re.sub('.*:','',x.name) for x in node.params ]
+                if param.name not in trimmed_names:
+                    print("  Parameter %s present in %s but not in %s" % (param.name, have_node.name,node.name))
+                    in_both = False;
+            if in_both:
+                # could make sanity checks here....
+                pass
+            continue
+        my_copy.children = []
+        for param in my_copy.params:
+            param.name = re.sub('.*:','',param.name)
+        flattened_nodes.append(my_copy)
+    return sorted(flattened_nodes, key=lambda x : x.name)
 
-    for library in libraries:
-        for param in library.params:
-            validate(param)
+flattened_nodes = flatten_nodes(root_nodes)
 
-    def do_emit(emit):
-        emit.set_annotate_with_vehicle(len(vehicles) > 1)
-        for vehicle in vehicles:
-            emit.emit(vehicle, f)
-
-        emit.start_libraries()
-
-        for library in libraries:
-            if library.params:
-                emit.emit(library, f)
-
-        emit.close()
-
-    do_emit(XmlEmit())
-    do_emit(WikiEmit())
-    do_emit(HtmlEmit())
-    do_emit(RSTEmit())
+do_emit(XmlEmit(), root_nodes, flattened_nodes)
+do_emit(WikiEmit(), root_nodes, flattened_nodes)
+do_emit(HtmlEmit(), root_nodes, flattened_nodes)
+do_emit(RSTEmit(), root_nodes, flattened_nodes)
 
 sys.exit(error_count)

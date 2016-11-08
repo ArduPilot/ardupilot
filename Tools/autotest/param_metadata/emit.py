@@ -18,8 +18,10 @@ class Emit:
     def start_libraries(self):
         pass
 
-    def emit(self, g, f):
-        pass
+    def emit(self, g):
+	self.emit_node(g)
+        for child in g.children:
+            self.emit(child)
 
     def set_annotate_with_vehicle(self, value):
         self.annotate_with_vehicle = value
