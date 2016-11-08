@@ -55,6 +55,11 @@ private:
     void adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &desired_vel);
 
     /*
+     * Adjusts the desired velocity given an array of boundary points
+     */
+    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points);
+
+    /*
      * Limits the component of desired_vel in the direction of the unit vector
      * limit_direction to be at most the maximum speed permitted by the limit_distance.
      *
