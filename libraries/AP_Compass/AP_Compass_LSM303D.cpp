@@ -162,6 +162,9 @@ AP_Compass_LSM303D::AP_Compass_LSM303D(Compass &compass, AP_HAL::OwnPtr<AP_HAL::
 AP_Compass_Backend *AP_Compass_LSM303D::probe(Compass &compass,
                                               AP_HAL::OwnPtr<AP_HAL::Device> dev)
 {
+    if (!dev) {
+        return nullptr;
+    }
     AP_Compass_LSM303D *sensor = new AP_Compass_LSM303D(compass, std::move(dev));
     if (!sensor || !sensor->init()) {
         delete sensor;

@@ -60,6 +60,9 @@ extern const AP_HAL::HAL &hal;
 AP_Compass_Backend *AP_Compass_LSM9DS1::probe(Compass &compass,
                                               AP_HAL::OwnPtr<AP_HAL::Device> dev)
 {
+    if (!dev) {
+        return nullptr;
+    }
     AP_Compass_LSM9DS1 *sensor = new AP_Compass_LSM9DS1(compass, std::move(dev));
     if (!sensor || !sensor->init()) {
         delete sensor;

@@ -113,6 +113,9 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe(Compass &compass,
                                               bool force_external,
                                               enum Rotation rotation)
 {
+    if (!dev) {
+        return nullptr;
+    }
     AP_HMC5843_BusDriver *bus = new AP_HMC5843_BusDriver_HALDevice(std::move(dev));
     if (!bus) {
         return nullptr;
