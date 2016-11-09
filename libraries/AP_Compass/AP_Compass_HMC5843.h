@@ -28,7 +28,6 @@ public:
 
     bool init() override;
     void read() override;
-    void accumulate() override;
 
 private:
     AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
@@ -38,6 +37,8 @@ private:
     bool _calibrate();
     bool _setup_sampling_mode();
 
+    bool _timer();
+    
     /* Read a single sample */
     bool _read_sample();
 
@@ -65,6 +66,7 @@ private:
 
     bool _initialised;
     bool _force_external;
+    AP_HAL::Semaphore *_accum_sem;
 };
 
 class AP_HMC5843_BusDriver
@@ -80,6 +82,8 @@ public:
 
     virtual bool configure() { return true; }
     virtual bool start_measurements() { return true; }
+
+    virtual AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t, AP_HAL::Device::PeriodicCb) = 0;
 };
 
 class AP_HMC5843_BusDriver_HALDevice : public AP_HMC5843_BusDriver
@@ -93,6 +97,8 @@ public:
 
     AP_HAL::Semaphore *get_semaphore() override;
 
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
+    
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
@@ -113,6 +119,8 @@ public:
     bool configure() override;
     bool start_measurements() override;
 
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
+    
 private:
     AuxiliaryBus *_bus;
     AuxiliaryBusSlave *_slave;

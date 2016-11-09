@@ -14,11 +14,16 @@
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V1
 #define HAL_STORAGE_SIZE            8192
-#else
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V2
 #define HAL_STORAGE_SIZE            16384
 #define HAL_HAVE_IMU_HEATER         1 // for Pixhawk2
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V4
+#define HAL_STORAGE_SIZE            16384
+#else
+#error "Unknown PX4 board type"
 #endif
 
 #define HAL_GPIO_A_LED_PIN        27
@@ -26,4 +31,12 @@
 #define HAL_GPIO_C_LED_PIN        25
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH
+
+#define HAL_BARO_MS5611_NAME "ms5611"
+#define HAL_BARO_MS5611_SPI_INT_NAME "ms5611_int"
+#define HAL_BARO_MS5611_SPI_EXT_NAME "ms5611_ext"
+
+#define HAL_INS_MPU60x0_NAME "mpu6000"
+#define HAL_INS_LSM9DS0_G_NAME "lsm9ds0_g"
+#define HAL_INS_LSM9DS0_A_NAME "lsm9ds0_am"
 

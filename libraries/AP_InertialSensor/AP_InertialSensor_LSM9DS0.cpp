@@ -15,7 +15,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AP_InertialSensor_LSM9DS0.h"
 
 #include <utility>
@@ -497,7 +496,7 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
     _set_accel_max_abs_offset(_accel_instance, 5.0f);
 
     /* start the timer process to read samples */
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS0::_poll_data, void));
+    _dev_gyro->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS0::_poll_data, bool));
 
     return true;
 
@@ -664,35 +663,15 @@ void AP_InertialSensor_LSM9DS0::_set_accel_scale(accel_scale scale)
 /**
  * Timer process to poll for new data from the LSM9DS0.
  */
-void AP_InertialSensor_LSM9DS0::_poll_data()
+bool AP_InertialSensor_LSM9DS0::_poll_data()
 {
-    bool drdy_is_from_reg = _drdy_pin_num_a < 0 || _drdy_pin_num_g < 0;
-    bool gyro_ready;
-    bool accel_ready;
-
-    if (drdy_is_from_reg && !_spi_sem->take_nonblocking()) {
-        return;
+    if (_gyro_data_ready()) {
+        _read_data_transaction_g();
     }
-
-    gyro_ready = _gyro_data_ready();
-    accel_ready = _accel_data_ready();
-
-    if (gyro_ready || accel_ready) {
-        if (!drdy_is_from_reg && !_spi_sem->take_nonblocking()) {
-            return;
-        }
-
-        if (gyro_ready) {
-            _read_data_transaction_g();
-        }
-        if (accel_ready) {
-            _read_data_transaction_a();
-        }
-
-        _spi_sem->give();
-    } else if(drdy_is_from_reg) {
-        _spi_sem->give();
+    if (_accel_data_ready()) {
+        _read_data_transaction_a();
     }
+    return true;
 }
 
 bool AP_InertialSensor_LSM9DS0::_accel_data_ready()
@@ -797,4 +776,3 @@ void AP_InertialSensor_LSM9DS0::_dump_registers(void)
 }
 #endif
 
-#endif

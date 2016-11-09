@@ -47,7 +47,7 @@ private:
     bool _accel_data_ready();
     bool _gyro_data_ready();
 
-    void _poll_data();
+    bool _poll_data();
 
     bool _init_sensor();
     bool _hardware_init();

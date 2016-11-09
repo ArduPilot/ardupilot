@@ -40,6 +40,7 @@
 /* HAL PX4 sub-types, starting at 2000 */
 #define HAL_BOARD_SUBTYPE_PX4_V1           2000
 #define HAL_BOARD_SUBTYPE_PX4_V2           2001
+#define HAL_BOARD_SUBTYPE_PX4_V4           2002
 
 /* HAL VRBRAIN sub-types, starting at 4000 */
 #define HAL_BOARD_SUBTYPE_VRBRAIN_V45      4000
@@ -162,3 +163,8 @@
 #ifndef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 1
 #endif
+
+#ifndef HAL_COMPASS_HMC5843_I2C_ADDR
+#define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+#endif
+
