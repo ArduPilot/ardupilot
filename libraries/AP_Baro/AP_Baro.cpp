@@ -292,8 +292,14 @@ void AP_Baro::init(void)
     }
 
 #if HAL_BARO_DEFAULT == HAL_BARO_PX4 || HAL_BARO_DEFAULT == HAL_BARO_VRBRAIN
-    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V1 ||
-        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2) {
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V1) {
+#ifdef HAL_BARO_MS5611_I2C_BUS
+        drivers[0] = new AP_Baro_MS5611(*this,
+                                        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR)));
+        _num_drivers = 1;
+#endif
+    } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2 ||
+               AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI) {
         drivers[0] = new AP_Baro_MS5611(*this,
                                         std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
         _num_drivers = 1;
