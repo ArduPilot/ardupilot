@@ -31,9 +31,6 @@ public:
     // override with a custom destructor if need be.
     virtual ~AP_Compass_Backend(void) {}
 
-    // initialize the magnetometers
-    virtual bool init(void) = 0;
-
     // read sensor data
     virtual void read(void) = 0;
 

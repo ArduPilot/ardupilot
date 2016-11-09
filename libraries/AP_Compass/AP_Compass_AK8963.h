@@ -35,13 +35,13 @@ public:
 
     virtual ~AP_Compass_AK8963();
 
-    bool init() override;
     void read() override;
 
 private:
     AP_Compass_AK8963(Compass &compass, AP_AK8963_BusDriver *bus,
                       enum Rotation rotation = ROTATION_NONE);
 
+    bool init();
     void _make_factory_sensitivity_adjustment(Vector3f &field) const;
     void _make_adc_sensitivity_adjustment(Vector3f &field) const;
 

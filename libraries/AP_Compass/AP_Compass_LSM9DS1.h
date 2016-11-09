@@ -16,13 +16,13 @@ public:
 
     static constexpr const char *name = "LSM9DS1";
 
-    bool init() override;
     void read() override;
 
     virtual ~AP_Compass_LSM9DS1() {}
 
 private:
     AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    bool init();
     bool _check_id(void);
     bool _configure(void);
     bool _set_scale(void);
