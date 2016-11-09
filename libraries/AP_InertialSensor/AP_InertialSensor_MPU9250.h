@@ -100,6 +100,9 @@ private:
 
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
+
+    // has master i2c been enabled?
+    bool _master_i2c_enable;
     
     // last temperature reading, used to detect FIFO errors
     float _last_temp;

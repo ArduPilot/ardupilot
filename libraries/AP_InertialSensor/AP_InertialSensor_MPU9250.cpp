@@ -276,9 +276,10 @@ bool AP_InertialSensor_MPU9250::_init()
 
 void AP_InertialSensor_MPU9250::_fifo_reset()
 {
-    _register_write(MPUREG_USER_CTRL, 0);
-    _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_RESET);
-    _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN);
+    uint8_t user_ctrl = _master_i2c_enable?BIT_USER_CTRL_I2C_MST_EN:0;
+    _register_write(MPUREG_USER_CTRL, user_ctrl);
+    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_RESET);
+    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_EN);
 }
 
 void AP_InertialSensor_MPU9250::_fifo_enable()
@@ -780,6 +781,8 @@ void AP_MPU9250_AuxiliaryBus::_configure_slaves()
     /* Enable the I2C master to slaves on the auxiliary I2C bus*/
     uint8_t user_ctrl = backend._register_read(MPUREG_USER_CTRL);
     backend._register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_I2C_MST_EN);
+
+    backend._master_i2c_enable = true;
 
     /* stop condition between reads; clock at 400kHz */
     backend._register_write(MPUREG_I2C_MST_CTRL,
