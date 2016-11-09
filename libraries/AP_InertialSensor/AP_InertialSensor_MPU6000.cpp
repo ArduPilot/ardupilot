@@ -226,7 +226,7 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_REV_D9                          0x59    // 0101			1001
 
 #define MPU6000_SAMPLE_SIZE 12
-#define MPU6000_MAX_FIFO_SAMPLES 16
+#define MPU6000_MAX_FIFO_SAMPLES 20
 #define MAX_DATA_READ (MPU6000_MAX_FIFO_SAMPLES * MPU6000_SAMPLE_SIZE)
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
@@ -523,22 +523,23 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 
 void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples)
 {
-    Vector3f accel;
-    Vector3f gyro;
-    
+    Vector3l asum, gsum;
+        
     for (uint8_t i = 0; i < n_samples; i++) {
         uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
-        accel += Vector3f(int16_val(data, 1),
+        asum += Vector3l(int16_val(data, 1),
                           int16_val(data, 0),
-                          -int16_val(data, 2));
-
-        gyro += Vector3f(int16_val(data, 4),
+                         -int16_val(data, 2));
+        gsum += Vector3l(int16_val(data, 4),
                          int16_val(data, 3),
                          -int16_val(data, 5));
     }
 
-    accel *= (_accel_scale / n_samples);
-    gyro *= GYRO_SCALE / n_samples;
+    float ascale = _accel_scale / n_samples;
+    Vector3f accel(asum.x*ascale, asum.y*ascale, asum.z*ascale);
+
+    float gscale = GYRO_SCALE / n_samples;
+    Vector3f gyro(gsum.x*gscale, gsum.y*gscale, gsum.z*gscale);
     
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     accel.rotate(ROTATION_PITCH_180_YAW_90);
@@ -662,7 +663,7 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
         filter = BITS_DLPF_CFG_256HZ_NOLPF2;
         if (_is_icm_device) {
             if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
-                // this gives us 8kHz sampling
+                // this gives us 8kHz sampling on gyros and 4kHz on accels
                 _fast_sampling = true;
             } else {
                 // limit to 1kHz if not on SPI
