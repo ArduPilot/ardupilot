@@ -54,7 +54,6 @@ public:
 private:
     AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                              bool use_fifo,
                               enum Rotation rotation);
 
 #if MPU6000_DEBUG
@@ -74,9 +73,9 @@ private:
     /* Read samples from FIFO (FIFO enabled) */
     void _read_fifo();
 
-    /* Read a single sample (FIFO disabled) */
-    void _read_sample();
-
+    // read temperature data
+    void _read_temperature();
+    
     /* Check if there's data available by either reading DRDY pin or register */
     bool _data_ready();
 
@@ -90,12 +89,11 @@ private:
     void _register_write(uint8_t reg, uint8_t val );
 
     void _accumulate(uint8_t *samples, uint8_t n_samples);
+    void _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
 
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
-
-    const bool _use_fifo;
 
     uint16_t _error_count;
 
@@ -110,7 +108,16 @@ private:
     AP_MPU6000_AuxiliaryBus *_auxiliary_bus;
 
     // is this an ICM-20608?
-    bool _is_icm_device;
+    bool _is_icm_device:1;
+
+    // are we doing more than 1kHz sampling?
+    bool _fast_sampling:1;
+    
+    // last time we read temperature
+    uint32_t _last_temp_read_ms;
+
+    // buffer for fifo read
+    uint8_t *_fifo_buffer;
 };
 
 class AP_MPU6000_AuxiliaryBusSlave : public AuxiliaryBusSlave

@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <utility>
+#include <stdio.h>
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -173,6 +174,16 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_WHOAMI                               0x75
 
 // ICM2608 specific registers
+#define ICMREG_ACCEL_CONFIG2          0x1D
+#define ICM_ACC_DLPF_CFG_1046HZ_NOLPF 0x00
+#define ICM_ACC_DLPF_CFG_218HZ        0x01
+#define ICM_ACC_DLPF_CFG_99HZ         0x02
+#define ICM_ACC_DLPF_CFG_44HZ         0x03
+#define ICM_ACC_DLPF_CFG_21HZ         0x04
+#define ICM_ACC_DLPF_CFG_10HZ         0x05
+#define ICM_ACC_DLPF_CFG_5HZ          0x06
+#define ICM_ACC_DLPF_CFG_420HZ        0x07
+#define ICM_ACC_FCHOICE_B             0x08
 
 /* this is an undocumented register which
    if set incorrectly results in getting a 2.7m/s/s offset
@@ -214,13 +225,8 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_REV_D8                          0x58    // 0101			1000
 #define MPU6000_REV_D9                          0x59    // 0101			1001
 
-#define MPU6000_SAMPLE_SIZE 14
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-#define MPU6000_MAX_FIFO_SAMPLES 6
-#else
-#define MPU6000_MAX_FIFO_SAMPLES 3
-#endif
+#define MPU6000_SAMPLE_SIZE 12
+#define MPU6000_MAX_FIFO_SAMPLES 16
 #define MAX_DATA_READ (MPU6000_MAX_FIFO_SAMPLES * MPU6000_SAMPLE_SIZE)
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
@@ -242,11 +248,9 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                                                      AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                                     bool use_fifo,
                                                      enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
-    , _use_fifo(use_fifo)
-    , _temp_filter(1000, 1)
+    , _temp_filter(10, 1)
     , _dev(std::move(dev))
     , _rotation(rotation)
 {
@@ -254,6 +258,9 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
 
 AP_InertialSensor_MPU6000::~AP_InertialSensor_MPU6000()
 {
+    if (_fifo_buffer != nullptr) {
+        delete[] _fifo_buffer;
+    }
     delete _auxiliary_bus;
 }
 
@@ -265,7 +272,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &i
         return nullptr;
     }
     AP_InertialSensor_MPU6000 *sensor =
-        new AP_InertialSensor_MPU6000(imu, std::move(dev), true, rotation);
+        new AP_InertialSensor_MPU6000(imu, std::move(dev), rotation);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -287,7 +294,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &i
 
     dev->set_read_flag(0x80);
 
-    sensor = new AP_InertialSensor_MPU6000(imu, std::move(dev), false, rotation);
+    sensor = new AP_InertialSensor_MPU6000(imu, std::move(dev), rotation);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -323,7 +330,7 @@ void AP_InertialSensor_MPU6000::_fifo_reset()
 void AP_InertialSensor_MPU6000::_fifo_enable()
 {
     _register_write(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
-                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN);
+                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN);
     _fifo_reset();
     hal.scheduler->delay(1);
 }
@@ -346,9 +353,8 @@ void AP_InertialSensor_MPU6000::start()
     _register_write(MPUREG_PWR_MGMT_2, 0x00);
     hal.scheduler->delay(1);
 
-    if (_use_fifo) {
-        _fifo_enable();
-    }
+    // always use FIFO
+    _fifo_enable();
 
     // disable sensor filtering
     _set_filter_register(256);
@@ -410,6 +416,12 @@ void AP_InertialSensor_MPU6000::start()
     // setup sensor rotations from probe()
     set_gyro_orientation(_gyro_instance, _rotation);
     set_accel_orientation(_accel_instance, _rotation);
+
+    // allocate fifo buffer
+    _fifo_buffer = new uint8_t[MAX_DATA_READ];
+    if (_fifo_buffer == nullptr) {
+        AP_HAL::panic("MPU6000: Unable to allocate FIFO buffer");
+    }
     
     // start the timer process to read samples
     _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, bool));
@@ -461,11 +473,8 @@ bool AP_InertialSensor_MPU6000::_data_ready()
  */
 bool AP_InertialSensor_MPU6000::_poll_data()
 {
-    if (_use_fifo) {
-        _read_fifo();
-    } else if (_data_ready()) {
-        _read_sample();
-    }
+    _read_fifo();
+    _read_temperature();
     return true;
 }
 
@@ -474,7 +483,6 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
     for (uint8_t i = 0; i < n_samples; i++) {
         uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
         Vector3f accel, gyro;
-        float temp;
         bool fsync_set = false;
 
 #if MPU6000_EXT_SYNC_ENABLE
@@ -486,14 +494,10 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
                          -int16_val(data, 2));
         accel *= _accel_scale;
 
-        gyro = Vector3f(int16_val(data, 5),
-                        int16_val(data, 4),
-                        -int16_val(data, 6));
+        gyro = Vector3f(int16_val(data, 4),
+                        int16_val(data, 3),
+                        -int16_val(data, 5));
         gyro *= GYRO_SCALE;
-
-        temp = int16_val(data, 3);
-        /* scaling/offset values from the datasheet */
-        temp = temp/340 + 36.53;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
         accel.rotate(ROTATION_PITCH_180_YAW_90);
@@ -514,18 +518,56 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 
         _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), fsync_set);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
-
-        _temp_filtered = _temp_filter.apply(temp);
     }
+}
+
+void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples)
+{
+    Vector3f accel;
+    Vector3f gyro;
+    
+    for (uint8_t i = 0; i < n_samples; i++) {
+        uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
+        accel += Vector3f(int16_val(data, 1),
+                          int16_val(data, 0),
+                          -int16_val(data, 2));
+
+        gyro += Vector3f(int16_val(data, 4),
+                         int16_val(data, 3),
+                         -int16_val(data, 5));
+    }
+
+    accel *= (_accel_scale / n_samples);
+    gyro *= GYRO_SCALE / n_samples;
+    
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
+    accel.rotate(ROTATION_PITCH_180_YAW_90);
+    gyro.rotate(ROTATION_PITCH_180_YAW_90);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    accel.rotate(ROTATION_YAW_270);
+    gyro.rotate(ROTATION_YAW_270);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+    accel.rotate(ROTATION_PITCH_180_YAW_90);
+    gyro.rotate(ROTATION_PITCH_180_YAW_90);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+    accel.rotate(ROTATION_YAW_90);
+    gyro.rotate(ROTATION_YAW_90);
+#endif
+    
+    _rotate_and_correct_accel(_accel_instance, accel);
+    _rotate_and_correct_gyro(_gyro_instance, gyro);
+    
+    _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), false);
+    _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 }
 
 void AP_InertialSensor_MPU6000::_read_fifo()
 {
     uint8_t n_samples;
     uint16_t bytes_read;
-    uint8_t rx[MAX_DATA_READ];
+    uint8_t *rx = _fifo_buffer;
 
-    static_assert(MAX_DATA_READ <= 100, "Too big to keep on stack");
+    //static_assert(MAX_DATA_READ <= 100, "Too big to keep on stack");
 
     if (!_block_read(MPUREG_FIFO_COUNTH, rx, 2)) {
         hal.console->printf("MPU60x0: error in fifo read\n");
@@ -541,8 +583,8 @@ void AP_InertialSensor_MPU6000::_read_fifo()
     }
 
     if (n_samples > MPU6000_MAX_FIFO_SAMPLES) {
-        hal.console->printf("bytes_read = %u, n_samples %u > %u, dropping samples\n",
-                            bytes_read, n_samples, MPU6000_MAX_FIFO_SAMPLES);
+        printf("bytes_read = %u, n_samples %u > %u, dropping samples\n",
+               bytes_read, n_samples, MPU6000_MAX_FIFO_SAMPLES);
 
         /* Too many samples, do a FIFO RESET */
         _fifo_reset();
@@ -550,30 +592,33 @@ void AP_InertialSensor_MPU6000::_read_fifo()
     }
 
     if (!_block_read(MPUREG_FIFO_R_W, rx, n_samples * MPU6000_SAMPLE_SIZE)) {
-        hal.console->printf("MPU60x0: error in fifo read %u bytes\n",
-                            n_samples * MPU6000_SAMPLE_SIZE);
+        printf("MPU60x0: error in fifo read %u bytes\n",
+               n_samples * MPU6000_SAMPLE_SIZE);
         return;
     }
 
-    _accumulate(rx, n_samples);
+    if (_fast_sampling) {
+        _accumulate_fast_sampling(rx, n_samples);
+    } else {
+        _accumulate(rx, n_samples);
+    }
 }
 
-void AP_InertialSensor_MPU6000::_read_sample()
+void AP_InertialSensor_MPU6000::_read_temperature()
 {
-    /* one register address followed by seven 2-byte registers */
-    struct PACKED {
-        uint8_t int_status;
-        uint8_t d[14];
-    } rx;
-
-    if (!_block_read(MPUREG_INT_STATUS, (uint8_t *) &rx, sizeof(rx))) {
-        if (++_error_count > 4) {
-            hal.console->printf("MPU60x0: error reading sample\n");
-            return;
-        }
+    uint32_t now = AP_HAL::millis();
+    if (now - _last_temp_read_ms < 100) {
+        // read at 10Hz
+        return;
     }
-
-    _accumulate(rx.d, 1);
+    uint8_t d[2];
+    
+    if (_block_read(MPUREG_TEMP_OUT_H, d, 2)) {
+        float temp = int16_val(d, 0);
+        temp = temp/340 + 36.53;
+        _temp_filtered = _temp_filter.apply(temp);
+        _last_temp_read_ms = now;
+    }
 }
 
 bool AP_InertialSensor_MPU6000::_block_read(uint8_t reg, uint8_t *buf,
@@ -615,6 +660,15 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
         filter = BITS_DLPF_CFG_98HZ;
     } else {
         filter = BITS_DLPF_CFG_256HZ_NOLPF2;
+        if (_is_icm_device) {
+            if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+                // this gives us 8kHz sampling
+                _fast_sampling = true;
+            } else {
+                // limit to 1kHz if not on SPI
+                filter = BITS_DLPF_CFG_188HZ;
+            }
+        }
     }
 
 #if MPU6000_EXT_SYNC_ENABLE
@@ -623,6 +677,38 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
 #endif
 
     _register_write(MPUREG_CONFIG, filter);
+
+	if (!_is_icm_device) {
+        return;
+    }
+
+    if (_fast_sampling) {
+        // setup for 4kHz accels
+        _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_FCHOICE_B);
+        return;
+    }
+    
+	if (filter_hz == 0) {
+		filter = ICM_ACC_DLPF_CFG_1046HZ_NOLPF;
+	} else if (filter_hz <= 5) {
+		filter = ICM_ACC_DLPF_CFG_5HZ;
+	} else if (filter_hz <= 10) {
+		filter = ICM_ACC_DLPF_CFG_10HZ;
+	} else if (filter_hz <= 21) {
+		filter = ICM_ACC_DLPF_CFG_21HZ;
+	} else if (filter_hz <= 44) {
+		filter = ICM_ACC_DLPF_CFG_44HZ;
+	} else if (filter_hz <= 99) {
+		filter = ICM_ACC_DLPF_CFG_99HZ;
+	} else if (filter_hz <= 218) {
+		filter = ICM_ACC_DLPF_CFG_218HZ;
+	} else if (filter_hz <= 420) {
+		filter = ICM_ACC_DLPF_CFG_420HZ;
+	} else {
+		filter = ICM_ACC_DLPF_CFG_1046HZ_NOLPF;
+	}
+
+	_register_write(ICMREG_ACCEL_CONFIG2, filter);
 }
 
 /*
