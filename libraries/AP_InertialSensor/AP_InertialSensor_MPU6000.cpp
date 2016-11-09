@@ -225,7 +225,7 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_REV_D8                          0x58    // 0101			1000
 #define MPU6000_REV_D9                          0x59    // 0101			1001
 
-#define MPU6000_SAMPLE_SIZE 12
+#define MPU6000_SAMPLE_SIZE 14
 #define MPU6000_MAX_FIFO_SAMPLES 20
 #define MAX_DATA_READ (MPU6000_MAX_FIFO_SAMPLES * MPU6000_SAMPLE_SIZE)
 
@@ -250,7 +250,7 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                                                      AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                                      enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
-    , _temp_filter(10, 1)
+    , _temp_filter(1000, 1)
     , _dev(std::move(dev))
     , _rotation(rotation)
 {
@@ -330,7 +330,7 @@ void AP_InertialSensor_MPU6000::_fifo_reset()
 void AP_InertialSensor_MPU6000::_fifo_enable()
 {
     _register_write(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
-                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN);
+                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN);
     _fifo_reset();
     hal.scheduler->delay(1);
 }
@@ -471,7 +471,6 @@ bool AP_InertialSensor_MPU6000::_data_ready()
 bool AP_InertialSensor_MPU6000::_poll_data()
 {
     _read_fifo();
-    _read_temperature();
     return true;
 }
 
@@ -491,9 +490,21 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
                          -int16_val(data, 2));
         accel *= _accel_scale;
 
-        gyro = Vector3f(int16_val(data, 4),
-                        int16_val(data, 3),
-                        -int16_val(data, 5));
+        float temp = int16_val(data, 3);
+        temp = temp/340 + 36.53;
+
+        if (fabsf(_last_temp - temp) > 10 && !is_zero(_last_temp)) {
+            // a 10 degree change in one sample is a highly likely
+            // sign of a FIFO alignment error
+            _last_temp = 0;
+            _fifo_reset();
+            return;
+        }
+        _last_temp = temp;
+        
+        gyro = Vector3f(int16_val(data, 5),
+                        int16_val(data, 4),
+                        -int16_val(data, 6));
         gyro *= GYRO_SCALE;
 
         _rotate_and_correct_accel(_accel_instance, accel);
@@ -501,6 +512,8 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 
         _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), fsync_set);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+
+        _temp_filtered = _temp_filter.apply(temp);
     }
 }
 
@@ -513,9 +526,21 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
         asum += Vector3l(int16_val(data, 1),
                           int16_val(data, 0),
                          -int16_val(data, 2));
-        gsum += Vector3l(int16_val(data, 4),
-                         int16_val(data, 3),
-                         -int16_val(data, 5));
+        gsum += Vector3l(int16_val(data, 5),
+                         int16_val(data, 4),
+                         -int16_val(data, 6));
+
+        float temp = int16_val(data, 3);
+        temp = temp/340 + 36.53;
+
+        if (fabsf(_last_temp - temp) > 10 && !is_zero(_last_temp)) {
+            // a 10 degree change in one sample is a highly likely
+            // sign of a FIFO alignment error
+            _last_temp = 0;
+            _fifo_reset();
+            return;
+        }
+        _last_temp = temp;
     }
 
     float ascale = _accel_scale / n_samples;
@@ -569,23 +594,6 @@ void AP_InertialSensor_MPU6000::_read_fifo()
         _accumulate_fast_sampling(rx, n_samples);
     } else {
         _accumulate(rx, n_samples);
-    }
-}
-
-void AP_InertialSensor_MPU6000::_read_temperature()
-{
-    uint32_t now = AP_HAL::millis();
-    if (now - _last_temp_read_ms < 100) {
-        // read at 10Hz
-        return;
-    }
-    uint8_t d[2];
-    
-    if (_block_read(MPUREG_TEMP_OUT_H, d, 2)) {
-        float temp = int16_val(d, 0);
-        temp = temp/340 + 36.53;
-        _temp_filtered = _temp_filter.apply(temp);
-        _last_temp_read_ms = now;
     }
 }
 

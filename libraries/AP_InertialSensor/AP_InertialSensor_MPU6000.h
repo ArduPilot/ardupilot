@@ -73,9 +73,6 @@ private:
     /* Read samples from FIFO (FIFO enabled) */
     void _read_fifo();
 
-    // read temperature data
-    void _read_temperature();
-    
     /* Check if there's data available by either reading DRDY pin or register */
     bool _data_ready();
 
@@ -113,8 +110,8 @@ private:
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
     
-    // last time we read temperature
-    uint32_t _last_temp_read_ms;
+    // last temperature reading, used to detect FIFO errors
+    float _last_temp;
 
     // buffer for fifo read
     uint8_t *_fifo_buffer;
