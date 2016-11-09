@@ -513,6 +513,7 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples)
 {
     Vector3l asum, gsum;
+    float tsum = 0;
         
     for (uint8_t i = 0; i < n_samples; i++) {
         uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
@@ -525,6 +526,7 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
 
         float temp = int16_val(data, 3);
         temp = temp/340 + 36.53;
+        tsum += temp;
         _last_temp = temp;
     }
 
@@ -539,6 +541,8 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
     
     _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), false);
     _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+
+    _temp_filtered = _temp_filter.apply(tsum / n_samples);
 }
 
 /*
