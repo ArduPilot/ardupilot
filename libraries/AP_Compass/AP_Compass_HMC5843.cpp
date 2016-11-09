@@ -204,6 +204,8 @@ bool AP_Compass_HMC5843::init()
     // read from sensor at 75Hz
     _bus->register_periodic_callback(13333,
                                      FUNCTOR_BIND_MEMBER(&AP_Compass_HMC5843::_timer, bool));
+
+    hal.console->printf("HMC5843 found on bus 0x%x\n", _bus->get_bus_id());
     
     return true;
 
@@ -395,18 +397,15 @@ bool AP_Compass_HMC5843::_calibrate()
      */
 	float expected[3] = { 1.16*600, 1.08*600, 1.16*600 };
 
-    uint8_t old_config;
-    if (!_bus->register_read(HMC5843_REG_CONFIG_A,
-                             &old_config)) {
-        return false;
-    }
+    uint8_t base_config = HMC5843_OSR_15HZ;
+    uint8_t num_samples = 0;
     
     while (success == 0 && numAttempts < 25 && good_count < 5) {
         numAttempts++;
 
         // force positiveBias (compass should return 715 for all channels)
         if (!_bus->register_write(HMC5843_REG_CONFIG_A,
-                                  old_config | HMC5843_OPMODE_POSITIVE_BIAS)) {
+                                  base_config | HMC5843_OPMODE_POSITIVE_BIAS)) {
             // compass not responding on the bus
             continue;
         }
@@ -425,6 +424,8 @@ bool AP_Compass_HMC5843::_calibrate()
             // we didn't read valid values
             continue;
         }
+
+        num_samples++;
 
         float cal[3];
 
@@ -461,11 +462,13 @@ bool AP_Compass_HMC5843::_calibrate()
 
 #if 0
         /* useful for debugging */
-        printf("MagX: %d MagY: %d MagZ: %d\n", (int)_mag_x, (int)_mag_y, (int)_mag_z);
-        printf("CalX: %.2f CalY: %.2f CalZ: %.2f\n", cal[0], cal[1], cal[2]);
+        hal.console->printf("MagX: %d MagY: %d MagZ: %d\n", (int)_mag_x, (int)_mag_y, (int)_mag_z);
+        hal.console->printf("CalX: %.2f CalY: %.2f CalZ: %.2f\n", cal[0], cal[1], cal[2]);
 #endif
     }
 
+    _bus->register_write(HMC5843_REG_CONFIG_A, base_config);
+    
     if (good_count >= 5) {
         _scaling[0] = _scaling[0] / good_count;
         _scaling[1] = _scaling[1] / good_count;
@@ -476,6 +479,11 @@ bool AP_Compass_HMC5843::_calibrate()
         _scaling[0] = 1.0;
         _scaling[1] = 1.0;
         _scaling[2] = 1.0;
+        if (num_samples > 5) {
+            // a sensor can be broken for calibration but still
+            // otherwise workable, accept it if we are reading samples
+            success = true;
+        }
     }
 
 #if 0
