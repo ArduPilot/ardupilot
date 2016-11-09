@@ -65,7 +65,7 @@ private:
     bool _hardware_init();
     bool _check_whoami();
 
-    void _set_filter_register(uint16_t filter_hz);
+    void _set_filter_register(void);
     void _fifo_reset();
     void _fifo_enable();
     bool _has_auxiliary_bus();
