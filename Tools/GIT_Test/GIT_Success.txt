@@ -1,4 +1,4 @@
-This file is for new developers to try their first git commit on!
+﻿This file is for new developers to try their first git commit on!
 
 Follow the instructions in the APM wiki to get your name added to the
 list below
@@ -62,3 +62,4 @@ Shinya Fujimura
 Hiroyuki Kuratsune
 Noriyoshi Tanaka
 Takeshi Matsumoto
+Makito Seki
