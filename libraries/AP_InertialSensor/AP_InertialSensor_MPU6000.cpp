@@ -492,14 +492,6 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 
         float temp = int16_val(data, 3);
         temp = temp/340 + 36.53;
-
-        if (fabsf(_last_temp - temp) > 10 && !is_zero(_last_temp)) {
-            // a 10 degree change in one sample is a highly likely
-            // sign of a FIFO alignment error
-            _last_temp = 0;
-            _fifo_reset();
-            return;
-        }
         _last_temp = temp;
         
         gyro = Vector3f(int16_val(data, 5),
@@ -532,14 +524,6 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
 
         float temp = int16_val(data, 3);
         temp = temp/340 + 36.53;
-
-        if (fabsf(_last_temp - temp) > 10 && !is_zero(_last_temp)) {
-            // a 10 degree change in one sample is a highly likely
-            // sign of a FIFO alignment error
-            _last_temp = 0;
-            _fifo_reset();
-            return;
-        }
         _last_temp = temp;
     }
 
@@ -554,6 +538,29 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
     
     _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), false);
     _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+}
+
+/*
+ * check the FIFO integrity by cross-checking the temperature against
+ * the last FIFO reading
+ */
+void AP_InertialSensor_MPU6000::_check_temperature(void)
+{
+    uint8_t rx[2];
+    
+    if (!_block_read(MPUREG_TEMP_OUT_H, rx, 2)) {
+        return;
+    }
+    float temp = int16_val(rx, 0) / 340 + 36.53;
+
+    if (fabsf(_last_temp - temp) > 2 && !is_zero(_last_temp)) {
+        // a 2 degree change in one sample is a highly likely
+        // sign of a FIFO alignment error
+        printf("FIFO temperature reset: %.2f %.2f\n",
+               (double)temp, (double)_last_temp);
+        _last_temp = temp;
+        _fifo_reset();
+    }
 }
 
 void AP_InertialSensor_MPU6000::_read_fifo()
@@ -594,6 +601,11 @@ void AP_InertialSensor_MPU6000::_read_fifo()
         _accumulate_fast_sampling(rx, n_samples);
     } else {
         _accumulate(rx, n_samples);
+    }
+
+    if (_temp_counter++ == 255) {
+        // check FIFO integrity every 0.25s
+        _check_temperature();
     }
 }
 

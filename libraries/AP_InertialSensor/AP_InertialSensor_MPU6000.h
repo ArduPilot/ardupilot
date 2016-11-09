@@ -87,6 +87,7 @@ private:
 
     void _accumulate(uint8_t *samples, uint8_t n_samples);
     void _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
+    void _check_temperature(void);
 
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
@@ -112,6 +113,7 @@ private:
     
     // last temperature reading, used to detect FIFO errors
     float _last_temp;
+    uint8_t _temp_counter;
 
     // buffer for fifo read
     uint8_t *_fifo_buffer;

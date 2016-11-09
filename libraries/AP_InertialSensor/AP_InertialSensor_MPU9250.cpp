@@ -487,7 +487,7 @@ void AP_InertialSensor_MPU9250::_check_temperature(void)
         // a 2 degree change in one sample is a highly likely
         // sign of a FIFO alignment error
         printf("FIFO temperature reset: %.2f %.2f\n",
-               temp, _last_temp);
+               (double)temp, (double)_last_temp);
         _last_temp = temp;
         _fifo_reset();
     }
