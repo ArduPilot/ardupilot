@@ -15,6 +15,7 @@
 #include "AP_Baro_MS5611.h"
 
 #include <utility>
+#include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
 
@@ -61,22 +62,23 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev
 void AP_Baro_MS56XX::_init()
 {
     if (!_dev) {
-        AP_HAL::panic("AP_Baro_MS56XX: failed to use device");
+        printf("MS5611: no device available");
+        return;
     }
-
-    _instance = _frontend.register_sensor();
 
     if (!_dev->get_semaphore()->take(10)) {
         AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
     }
 
-    _dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0);
-    hal.scheduler->delay(4);
-
     uint16_t prom[8];
     if (!_read_prom(prom)) {
-        AP_HAL::panic("Can't read PROM");
+        printf("MS5611: Can't read PROM on bus %d", _dev->get_bus_id());
+        _dev->get_semaphore()->give();
+        return;
     }
+
+    _dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0);
+    hal.scheduler->delay(4);
 
     // Save factory calibration coefficients
     _cal_reg.c1 = prom[1];
@@ -91,6 +93,8 @@ void AP_Baro_MS56XX::_init()
     _state = 0;
 
     memset(&_accum, 0, sizeof(_accum));
+
+    _instance = _frontend.register_sensor();
 
     _dev->get_semaphore()->give();
 
