@@ -659,11 +659,15 @@ void AP_BoardConfig::px4_setup_drivers(void)
     }
 #endif
 
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
+#endif
+    
     if (px4.board_type == PX4_BOARD_TEST_V1 ||
         px4.board_type == PX4_BOARD_TEST_V2 ||
         px4.board_type == PX4_BOARD_TEST_V3 ||
-        px4.board_type == PX4_BOARD_TEST_V4 ||
-        px4.board_type == PX4_BOARD_PHMINI) {
+        px4.board_type == PX4_BOARD_PHMINI ||
+        px4.board_type == PX4_BOARD_PIXRACER) {
         // use in-tree drivers
         printf("Using in-tree drivers\n");
         px4_configured_board = (enum px4_board_type)px4.board_type.get();
