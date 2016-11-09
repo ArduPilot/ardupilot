@@ -698,6 +698,8 @@ AP_InertialSensor::detect_backends(void)
         // PHMINI uses ICM20608 on the ACCEL_MAG device and a MPU9250 on the old MPU6000 CS line
         _add_backend(AP_InertialSensor_MPU6000::probe(*this, hal.spi->get_device(HAL_INS_ICM20608_AM_NAME), ROTATION_ROLL_180));
         _add_backend(AP_InertialSensor_MPU9250::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), false, ROTATION_ROLL_180));
+    } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM) {
+        _add_backend(AP_InertialSensor_MPU9250::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), true, ROTATION_YAW_270));        
     }
     // also add any PX4 backends (eg. canbus sensors)
     _add_backend(AP_InertialSensor_PX4::detect(*this));
