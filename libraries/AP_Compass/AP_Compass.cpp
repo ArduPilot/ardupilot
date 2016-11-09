@@ -495,8 +495,8 @@ void Compass::_detect_backends(void)
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V1 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V3 ||
-        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V4 ||
-        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI) {
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
         // external i2c bus
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
                                                true, ROTATION_ROLL_180),
@@ -521,7 +521,7 @@ void Compass::_detect_backends(void)
         _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 1),
                      AP_Compass_AK8963::name, false);
     }
-    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V4) {
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
         _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                      AP_Compass_AK8963::name, false);
     }
