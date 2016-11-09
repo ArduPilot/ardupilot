@@ -514,14 +514,11 @@ void Compass::_detect_backends(void)
                      AP_Compass_LSM303D::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V3) {
-        _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
-                                               false, ROTATION_PITCH_180),
-                     AP_Compass_HMC5843::name, false);
-        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_PITCH_180),
                      AP_Compass_AK8963::name, false);
-        _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_EXT_A_NAME)),
+        _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_EXT_A_NAME), ROTATION_YAW_270),
                      AP_Compass_LSM303D::name, false);
-        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 1),
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 1, ROTATION_YAW_270),
                      AP_Compass_AK8963::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {

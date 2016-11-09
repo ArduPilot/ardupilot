@@ -160,13 +160,14 @@ AP_Compass_LSM303D::AP_Compass_LSM303D(Compass &compass, AP_HAL::OwnPtr<AP_HAL::
 }
 
 AP_Compass_Backend *AP_Compass_LSM303D::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::Device> dev)
+                                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                              enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
     AP_Compass_LSM303D *sensor = new AP_Compass_LSM303D(compass, std::move(dev));
-    if (!sensor || !sensor->init()) {
+    if (!sensor || !sensor->init(rotation)) {
         delete sensor;
         return nullptr;
     }
@@ -254,7 +255,7 @@ bool AP_Compass_LSM303D::_read_sample()
     return true;
 }
 
-bool AP_Compass_LSM303D::init()
+bool AP_Compass_LSM303D::init(enum Rotation rotation)
 {
     if (LSM303D_DRDY_M_PIN >= 0) {
         _drdy_pin_m = hal.gpio->channel(LSM303D_DRDY_M_PIN);
@@ -271,6 +272,8 @@ bool AP_Compass_LSM303D::init()
 
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
+
+    set_rotation(_compass_instance, rotation);
 
     _dev->set_device_type(DEVTYPE_LSM303D);
     set_dev_id(_compass_instance, _dev->get_bus_id());
