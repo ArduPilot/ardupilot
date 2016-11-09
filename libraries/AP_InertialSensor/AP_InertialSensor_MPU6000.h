@@ -108,10 +108,10 @@ private:
     AP_MPU6000_AuxiliaryBus *_auxiliary_bus;
 
     // is this an ICM-20608?
-    bool _is_icm_device:1;
+    bool _is_icm_device;
 
     // are we doing more than 1kHz sampling?
-    bool _fast_sampling:1;
+    bool _fast_sampling;
     
     // last time we read temperature
     uint32_t _last_temp_read_ms;
