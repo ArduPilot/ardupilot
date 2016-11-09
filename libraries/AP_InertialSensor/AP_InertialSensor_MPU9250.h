@@ -37,6 +37,7 @@ public:
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                            bool fast_sampling = false,
                                             enum Rotation rotation = ROTATION_NONE);
 
     /* update accel and gyro state */
@@ -52,6 +53,7 @@ public:
 private:
     AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                              bool fast_sampling,
                               enum Rotation rotation);
 
 #if MPU9250_DEBUG
@@ -67,6 +69,9 @@ private:
     /* Read a single sample */
     bool _read_sample();
 
+    void _fifo_reset();
+    void _fifo_enable();
+    
     /* Check if there's data available by reading register */
     bool _data_ready();
     bool _data_ready(uint8_t int_status);
@@ -77,16 +82,31 @@ private:
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val);
 
-    void _accumulate(uint8_t *sample);
+    void _accumulate(uint8_t *samples, uint8_t n_samples);
+    void _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
+    void _check_temperature(void);
 
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
+    float _temp_filtered;
+    LowPassFilter2pFloat _temp_filter;
+    
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     AP_MPU9250_AuxiliaryBus *_auxiliary_bus;
 
     enum Rotation _rotation;
+
+    // are we doing more than 1kHz sampling?
+    bool _fast_sampling;
+    
+    // last temperature reading, used to detect FIFO errors
+    float _last_temp;
+    uint8_t _temp_counter;
+
+    // buffer for fifo read
+    uint8_t *_fifo_buffer;
 };
 
 class AP_MPU9250_AuxiliaryBusSlave : public AuxiliaryBusSlave
