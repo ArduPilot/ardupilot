@@ -49,6 +49,7 @@
 #define HAL_INS_MPU9250_EXT_NAME "mpu9250_ext"
 
 #define HAL_INS_ICM20608_NAME "icm20608"
+#define HAL_INS_ICM20608_AM_NAME "icm20608-am"
 
 #define HAL_COMPASS_HMC5843_NAME "hmc5843"
 
