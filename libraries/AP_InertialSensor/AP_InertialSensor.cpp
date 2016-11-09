@@ -664,8 +664,14 @@ AP_InertialSensor::detect_backends(void)
     _add_backend(AP_InertialSensor_SITL::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_HIL
     _add_backend(AP_InertialSensor_HIL::detect(*this));
+#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI && defined(HAL_INS_DEFAULT_ROTATION)
+    _add_backend(AP_InertialSensor_MPU6000::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME),
+                                                  HAL_INS_DEFAULT_ROTATION);
 #elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI
     _add_backend(AP_InertialSensor_MPU6000::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME)));
+#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C && defined(HAL_INS_DEFAULT_ROTATION)
+    _add_backend(AP_InertialSensor_MPU6000::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU60x0_I2C_BUS, HAL_INS_MPU60x0_I2C_ADDR),
+                                                  HAL_INS_DEFAULT_ROTATION);
 #elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C
     _add_backend(AP_InertialSensor_MPU6000::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU60x0_I2C_BUS, HAL_INS_MPU60x0_I2C_ADDR)));
 #elif HAL_INS_DEFAULT == HAL_INS_BH

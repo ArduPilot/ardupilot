@@ -499,20 +499,6 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
                         -int16_val(data, 5));
         gyro *= GYRO_SCALE;
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
-        accel.rotate(ROTATION_PITCH_180_YAW_90);
-        gyro.rotate(ROTATION_PITCH_180_YAW_90);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-        accel.rotate(ROTATION_YAW_270);
-        gyro.rotate(ROTATION_YAW_270);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-        accel.rotate(ROTATION_PITCH_180_YAW_90);
-        gyro.rotate(ROTATION_PITCH_180_YAW_90);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-        accel.rotate(ROTATION_YAW_90);
-        gyro.rotate(ROTATION_YAW_90);
-#endif
-
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
 
@@ -540,20 +526,6 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
 
     float gscale = GYRO_SCALE / n_samples;
     Vector3f gyro(gsum.x*gscale, gsum.y*gscale, gsum.z*gscale);
-    
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
-    accel.rotate(ROTATION_PITCH_180_YAW_90);
-    gyro.rotate(ROTATION_PITCH_180_YAW_90);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-    accel.rotate(ROTATION_YAW_270);
-    gyro.rotate(ROTATION_YAW_270);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-    accel.rotate(ROTATION_PITCH_180_YAW_90);
-    gyro.rotate(ROTATION_PITCH_180_YAW_90);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-    accel.rotate(ROTATION_YAW_90);
-    gyro.rotate(ROTATION_YAW_90);
-#endif
     
     _rotate_and_correct_accel(_accel_instance, accel);
     _rotate_and_correct_gyro(_gyro_instance, gyro);
