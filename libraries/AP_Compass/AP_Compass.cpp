@@ -496,6 +496,7 @@ void Compass::_detect_backends(void)
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V3 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
         // external i2c bus
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
@@ -504,16 +505,18 @@ void Compass::_detect_backends(void)
         // internal i2c bus
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR), false),
                          AP_Compass_HMC5843::name, false);
-        // try for SPI device too
+    }
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2) {
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
                                                false, ROTATION_PITCH_180),
                      AP_Compass_HMC5843::name, false);
-    }
-    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2) {
         _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)),
                      AP_Compass_LSM303D::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V3) {
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
+                                               false, ROTATION_PITCH_180),
+                     AP_Compass_HMC5843::name, false);
         _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
                      AP_Compass_AK8963::name, false);
         _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_EXT_A_NAME)),
@@ -522,11 +525,18 @@ void Compass::_detect_backends(void)
                      AP_Compass_AK8963::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
+                                               false, ROTATION_PITCH_180),
+                     AP_Compass_HMC5843::name, false);
         _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                      AP_Compass_AK8963::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI) {
         _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180),
+                     AP_Compass_AK8963::name, false);
+    }
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM) {
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_YAW_270),
                      AP_Compass_AK8963::name, false);
     }
     // also add any px4 level drivers (for canbus magnetometers)
