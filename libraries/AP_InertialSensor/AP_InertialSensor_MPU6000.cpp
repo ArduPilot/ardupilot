@@ -356,15 +356,12 @@ void AP_InertialSensor_MPU6000::start()
     // always use FIFO
     _fifo_enable();
 
-    // disable sensor filtering
-    _set_filter_register(256);
+    // setup ODR and on-sensor filtering
+    _set_filter_register();
 
     // set sample rate to 1000Hz and apply a software filter
     // In this configuration, the gyro sample rate is 8kHz
-    // Therefore the sample rate value is 8kHz/(SMPLRT_DIV + 1)
-    // So we have to set it to 7 to have a 1kHz sampling
-    // rate on the gyro
-    _register_write(MPUREG_SMPLRT_DIV, 7);
+    _register_write(MPUREG_SMPLRT_DIV, 0);
     hal.scheduler->delay(1);
 
     // Gyro scale 2000º/s
@@ -613,73 +610,35 @@ void AP_InertialSensor_MPU6000::_register_write(uint8_t reg, uint8_t val)
 /*
   set the DLPF filter frequency. Assumes caller has taken semaphore
  */
-void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
+void AP_InertialSensor_MPU6000::_set_filter_register(void)
 {
-    uint8_t filter;
-    // choose filtering frequency
-    if (filter_hz == 0) {
-        filter = BITS_DLPF_CFG_256HZ_NOLPF2;
-    } else if (filter_hz <= 5) {
-        filter = BITS_DLPF_CFG_5HZ;
-    } else if (filter_hz <= 10) {
-        filter = BITS_DLPF_CFG_10HZ;
-    } else if (filter_hz <= 20) {
-        filter = BITS_DLPF_CFG_20HZ;
-    } else if (filter_hz <= 42) {
-        filter = BITS_DLPF_CFG_42HZ;
-    } else if (filter_hz <= 98) {
-        filter = BITS_DLPF_CFG_98HZ;
-    } else {
-        filter = BITS_DLPF_CFG_256HZ_NOLPF2;
-        if (_is_icm_device) {
-            if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
-                // this gives us 8kHz sampling on gyros and 4kHz on accels
-                _fast_sampling = true;
-            } else {
-                // limit to 1kHz if not on SPI
-                filter = BITS_DLPF_CFG_188HZ;
-            }
-        }
-    }
+    uint8_t config;
 
 #if MPU6000_EXT_SYNC_ENABLE
     // add in EXT_SYNC bit if enabled
-    filter |= (MPUREG_CONFIG_EXT_SYNC_AZ << MPUREG_CONFIG_EXT_SYNC_SHIFT);
+    config = (MPUREG_CONFIG_EXT_SYNC_AZ << MPUREG_CONFIG_EXT_SYNC_SHIFT);
+#else
+    config = 0;
 #endif
 
-    _register_write(MPUREG_CONFIG, filter);
-
-	if (!_is_icm_device) {
-        return;
+    if (_is_icm_device && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+        // this gives us 8kHz sampling on gyros and 4kHz on accels
+        config |= BITS_DLPF_CFG_256HZ_NOLPF2;
+        _fast_sampling = true;
+    } else {
+        // limit to 1kHz if not on SPI
+        config |= BITS_DLPF_CFG_188HZ;
     }
+    _register_write(MPUREG_CONFIG, config);
 
-    if (_fast_sampling) {
-        // setup for 4kHz accels
-        _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_FCHOICE_B);
-        return;
+	if (_is_icm_device) {
+        if (_fast_sampling) {
+            // setup for 4kHz accels
+            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_FCHOICE_B);
+        } else {
+            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_DLPF_CFG_218HZ);
+        }
     }
-    
-	if (filter_hz == 0) {
-		filter = ICM_ACC_DLPF_CFG_1046HZ_NOLPF;
-	} else if (filter_hz <= 5) {
-		filter = ICM_ACC_DLPF_CFG_5HZ;
-	} else if (filter_hz <= 10) {
-		filter = ICM_ACC_DLPF_CFG_10HZ;
-	} else if (filter_hz <= 21) {
-		filter = ICM_ACC_DLPF_CFG_21HZ;
-	} else if (filter_hz <= 44) {
-		filter = ICM_ACC_DLPF_CFG_44HZ;
-	} else if (filter_hz <= 99) {
-		filter = ICM_ACC_DLPF_CFG_99HZ;
-	} else if (filter_hz <= 218) {
-		filter = ICM_ACC_DLPF_CFG_218HZ;
-	} else if (filter_hz <= 420) {
-		filter = ICM_ACC_DLPF_CFG_420HZ;
-	} else {
-		filter = ICM_ACC_DLPF_CFG_1046HZ_NOLPF;
-	}
-
-	_register_write(ICMREG_ACCEL_CONFIG2, filter);
 }
 
 /*
