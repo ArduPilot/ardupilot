@@ -423,22 +423,8 @@ void AP_BoardConfig::px4_start_pixhawk2slim_sensors(void)
 void AP_BoardConfig::px4_start_phmini_sensors(void)
 {
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    printf("Starting PHMINI sensors\n");
-
-    // ICM20608 on SPI
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-S 2 -T 20608 start")) {
-        printf("Found ICM20608 internal\n");
-    } else {
-        px4_sensor_error("No ICM20608 found");
-    }
-
-    if (px4_start_driver(mpu9250_main, "mpu9250", "start")) {
-        printf("Found mpu9260\n");
-    } else {
-        px4_sensor_error("No MPU9250 found");
-    }
-
-    printf("PHMINI sensors started\n");
+    // we will use the internal sensor drivers for the mini, so nothing to do here
+    printf("PHMINI: using in-tree IMU drivers\n");
 #endif // CONFIG_ARCH_BOARD_PX4FMU_V2
 }
 
@@ -676,7 +662,8 @@ void AP_BoardConfig::px4_setup_drivers(void)
     if (px4.board_type == PX4_BOARD_TEST_V1 ||
         px4.board_type == PX4_BOARD_TEST_V2 ||
         px4.board_type == PX4_BOARD_TEST_V3 ||
-        px4.board_type == PX4_BOARD_TEST_V4) {
+        px4.board_type == PX4_BOARD_TEST_V4 ||
+        px4.board_type == PX4_BOARD_PHMINI) {
         // use in-tree drivers
         printf("Using in-tree drivers\n");
         px4_configured_board = (enum px4_board_type)px4.board_type.get();
