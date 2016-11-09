@@ -568,8 +568,6 @@ void AP_InertialSensor_MPU6000::_read_fifo()
     uint16_t bytes_read;
     uint8_t *rx = _fifo_buffer;
 
-    //static_assert(MAX_DATA_READ <= 100, "Too big to keep on stack");
-
     if (!_block_read(MPUREG_FIFO_COUNTH, rx, 2)) {
         hal.console->printf("MPU60x0: error in fifo read\n");
         return;
