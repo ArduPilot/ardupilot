@@ -292,7 +292,7 @@ void AP_InertialSensor_MPU9250::_fifo_enable()
 
 bool AP_InertialSensor_MPU9250::_has_auxiliary_bus()
 {
-    return _dev->bus_type() != AP_HAL::Device::BUS_TYPE_I2C && !_fast_sampling;
+    return _dev->bus_type() != AP_HAL::Device::BUS_TYPE_I2C;
 }
 
 void AP_InertialSensor_MPU9250::start()
