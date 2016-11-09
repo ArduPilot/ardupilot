@@ -23,9 +23,9 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-void SITL_State::_set_param_default(const char *parm)
+void SITL_State::_set_param_default()
 {
-    char *pdup = strdup(parm);
+    char *pdup = strdup(_parm_to_default);
     char *p = strchr(pdup, '=');
     if (p == nullptr) {
         printf("Please specify parameter as NAME=VALUE");

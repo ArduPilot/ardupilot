@@ -199,7 +199,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
         break;
         case 'P':
-            _set_param_default(gopt.optarg);
+            _parm_to_default = gopt.optarg;
             break;
         case 'S':
             _synthetic_clock_mode = true;

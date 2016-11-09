@@ -73,10 +73,11 @@ public:
         "GPS2",
         "tcp:4",
     };
-    
+    void _set_param_default();
+
 private:
     void _parse_command_line(int argc, char * const argv[]);
-    void _set_param_default(const char *parm);
+
     void _usage(void);
     void _sitl_setup(const char *home_str);
     void _setup_fdm(void);
@@ -169,7 +170,7 @@ private:
     bool _synthetic_clock_mode;
 
     bool _use_rtscts;
-    
+    const char *_parm_to_default;
     const char *_fdm_address;
 
     // delay buffer variables
