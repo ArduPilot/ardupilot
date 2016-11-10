@@ -62,7 +62,11 @@ public:
     }
     
     
-    virtual ~Device() { }
+    virtual ~Device() {
+        if (_checked.regs != nullptr) {
+            delete[] _checked.regs;
+        }
+    }
 
     /*
      * Set the speed of future transfers. Depending on the bus the speed may
@@ -102,12 +106,31 @@ public:
      *
      * Return: true on a successful transfer, false on failure.
      */
-    bool write_register(uint8_t reg, uint8_t val)
+    bool write_register(uint8_t reg, uint8_t val, bool checked=false)
     {
         uint8_t buf[2] = { reg, val };
+        if (checked) {
+            set_checked_register(reg, val);
+        }
         return transfer(buf, sizeof(buf), nullptr, 0);
     }
 
+    /**
+     * set a value for a checked register
+     */
+    void set_checked_register(uint8_t reg, uint8_t val);
+
+    /**
+     * setup for register value checking
+     */
+    bool setup_checked_registers(uint8_t num_regs);
+
+    /**
+     * check next register value for correctness. Return false if value is incorrect
+     * or register checking has not been setup
+     */
+    bool check_next_register(void);
+    
     /**
      * Wrapper function over #transfer() to read a sequence of bytes from
      * device. No value is written, differently from the #read_registers()
@@ -232,4 +255,17 @@ protected:
     void set_device_bus(uint8_t bus) {
         _bus_id.devid_s.bus = bus;
     }
+
+private:
+    // checked registers
+    struct checkreg {
+        uint8_t regnum;
+        uint8_t value;
+    };
+    struct {
+        uint8_t n_allocated;
+        uint8_t n_set;
+        uint8_t next;
+        struct checkreg *regs;
+    } _checked;
 };
