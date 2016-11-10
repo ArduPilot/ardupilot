@@ -285,7 +285,8 @@ void AP_InertialSensor_MPU9250::_fifo_reset()
 void AP_InertialSensor_MPU9250::_fifo_enable()
 {
     _register_write(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
-                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN);
+                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN,
+                    true);
     _fifo_reset();
     hal.scheduler->delay(1);
 }
@@ -313,28 +314,28 @@ void AP_InertialSensor_MPU9250::start()
 
     if (_fast_sampling) {
         // setup for fast sampling
-        _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_256HZ_NOLPF2);
+        _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_256HZ_NOLPF2, true);
     } else {
-        _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_188HZ);
+        _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_188HZ, true);
     }
     
     // set sample rate to 1kHz, and use the 2 pole filter to give the
     // desired rate
-    _register_write(MPUREG_SMPLRT_DIV, 0);
+    _register_write(MPUREG_SMPLRT_DIV, 0, true);
     hal.scheduler->delay(1);
 
     // Gyro scale 2000º/s
-    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);
+    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS, true);
     hal.scheduler->delay(1);
 
     // RM-MPU-9250A-00.pdf, pg. 15, select accel full scale 16g
-    _register_write(MPUREG_ACCEL_CONFIG,3<<3);
+    _register_write(MPUREG_ACCEL_CONFIG,3<<3, true);
 
     if (_fast_sampling) {
         // setup ACCEL_FCHOICE for 4kHz sampling
-        _register_write(MPUREG_ACCEL_CONFIG2, 0x08);
+        _register_write(MPUREG_ACCEL_CONFIG2, 0x08, true);
     } else {
-        _register_write(MPUREG_ACCEL_CONFIG2, 0x00);
+        _register_write(MPUREG_ACCEL_CONFIG2, 0x00, true);
     }
     
     // configure interrupt to fire when new data arrives
@@ -518,7 +519,7 @@ bool AP_InertialSensor_MPU9250::_read_sample()
     uint8_t n_samples;
     uint16_t bytes_read;
     uint8_t *rx = _fifo_buffer;
-
+    
     if (!_block_read(MPUREG_FIFO_COUNTH, rx, 2)) {
         hal.console->printf("MPU9250: error in fifo read\n");
         return true;
@@ -529,7 +530,7 @@ bool AP_InertialSensor_MPU9250::_read_sample()
 
     if (n_samples == 0) {
         /* Not enough data in FIFO */
-        return true;
+        goto check_registers;
     }
 
     if (n_samples > MPU9250_MAX_FIFO_SAMPLES) {
@@ -538,13 +539,13 @@ bool AP_InertialSensor_MPU9250::_read_sample()
 
         /* Too many samples, do a FIFO RESET */
         _fifo_reset();
-        return true;
+        goto check_registers;
     }
 
     if (!_block_read(MPUREG_FIFO_R_W, rx, n_samples * MPU9250_SAMPLE_SIZE)) {
         printf("MPU60x0: error in fifo read %u bytes\n",
                n_samples * MPU9250_SAMPLE_SIZE);
-        return true;
+        goto check_registers;
     }
 
     if (_fast_sampling) {
@@ -556,6 +557,16 @@ bool AP_InertialSensor_MPU9250::_read_sample()
     if (_temp_counter++ == 255) {
         // check FIFO integrity every 0.25s
         _check_temperature();
+    }
+
+check_registers:
+    if (_reg_check_counter++ == 10) {
+        _reg_check_counter = 0;
+        // check next register value for correctness
+        if (!_dev->check_next_register()) {
+            _inc_gyro_error_count(_gyro_instance);
+            _inc_accel_error_count(_accel_instance);
+        }
     }
     
     return true;
@@ -574,9 +585,9 @@ uint8_t AP_InertialSensor_MPU9250::_register_read(uint8_t reg)
     return val;
 }
 
-void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
+void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val, bool checked)
 {
-    _dev->write_register(reg, val);
+    _dev->write_register(reg, val, checked);
 }
 
 bool AP_InertialSensor_MPU9250::_hardware_init(void)
@@ -584,6 +595,9 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     if (!_dev->get_semaphore()->take(100)) {
         AP_HAL::panic("MPU9250: Unable to get semaphore");
     }
+
+    // setup for register checking
+    _dev->setup_checked_registers(6);
 
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
