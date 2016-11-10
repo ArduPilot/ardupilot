@@ -83,7 +83,7 @@ private:
      * account */
     bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
     uint8_t _register_read(uint8_t reg);
-    void _register_write(uint8_t reg, uint8_t val );
+    void _register_write(uint8_t reg, uint8_t val, bool checked=false);
 
     void _accumulate(uint8_t *samples, uint8_t n_samples);
     void _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
@@ -120,6 +120,8 @@ private:
     
     // buffer for fifo read
     uint8_t *_fifo_buffer;
+
+    uint8_t _reg_check_counter;
 };
 
 class AP_MPU6000_AuxiliaryBusSlave : public AuxiliaryBusSlave
