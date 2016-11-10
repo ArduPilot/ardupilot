@@ -259,7 +259,7 @@ public:
 private:
 
     // load backend drivers
-    void _add_backend(AP_InertialSensor_Backend *backend);
+    bool _add_backend(AP_InertialSensor_Backend *backend);
     void _start_backends();
     AP_InertialSensor_Backend *_find_backend(int16_t backend_id, uint8_t instance);
 
