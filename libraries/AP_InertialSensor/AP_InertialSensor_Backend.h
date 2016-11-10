@@ -174,6 +174,12 @@ protected:
     void set_accel_orientation(uint8_t instance, enum Rotation rotation) {
         _imu._accel_orientation[instance] = rotation;
     }
+
+    // increment clipping counted. Used by drivers that do decimation before supplying
+    // samples to the frontend
+    void increment_clip_count(uint8_t instance) {
+        _imu._accel_clip_count[instance]++;
+    }
     
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor

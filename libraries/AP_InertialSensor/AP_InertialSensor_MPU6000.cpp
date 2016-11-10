@@ -514,12 +514,20 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
 {
     Vector3l asum, gsum;
     float tsum = 0;
-        
+    const int32_t clip_limit = AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS / _accel_scale;
+    bool clipped = false;
+    
     for (uint8_t i = 0; i < n_samples; i++) {
         uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
-        asum += Vector3l(int16_val(data, 1),
-                          int16_val(data, 0),
-                         -int16_val(data, 2));
+        Vector3l a(int16_val(data, 1),
+                   int16_val(data, 0),
+                   -int16_val(data, 2));
+        if (abs(a.x) > clip_limit ||
+            abs(a.y) > clip_limit ||
+            abs(a.z) > clip_limit) {
+            clipped = true;
+        }
+        asum += a;
         gsum += Vector3l(int16_val(data, 5),
                          int16_val(data, 4),
                          -int16_val(data, 6));
@@ -530,6 +538,10 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
         _last_temp = temp;
     }
 
+    if (clipped) {
+        increment_clip_count(_accel_instance);
+    }
+    
     float ascale = _accel_scale / n_samples;
     Vector3f accel(asum.x*ascale, asum.y*ascale, asum.z*ascale);
 
