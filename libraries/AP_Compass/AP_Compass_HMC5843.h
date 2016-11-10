@@ -28,13 +28,13 @@ public:
 
     virtual ~AP_Compass_HMC5843();
 
-    bool init() override;
     void read() override;
 
 private:
     AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
                        bool force_external, enum Rotation rotation);
 
+    bool init();
     bool _check_whoami();
     bool _calibrate();
     bool _setup_sampling_mode();

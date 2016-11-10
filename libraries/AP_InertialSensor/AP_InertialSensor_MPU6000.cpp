@@ -322,9 +322,10 @@ bool AP_InertialSensor_MPU6000::_init()
 
 void AP_InertialSensor_MPU6000::_fifo_reset()
 {
-    _register_write(MPUREG_USER_CTRL, 0);
-    _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_RESET);
-    _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN);
+    uint8_t user_ctrl = _master_i2c_enable?BIT_USER_CTRL_I2C_MST_EN:0;
+    _register_write(MPUREG_USER_CTRL, user_ctrl);
+    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_RESET);
+    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_EN);
 }
 
 void AP_InertialSensor_MPU6000::_fifo_enable()
@@ -492,14 +493,6 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 
         float temp = int16_val(data, 3);
         temp = temp/340 + 36.53;
-
-        if (fabsf(_last_temp - temp) > 10 && !is_zero(_last_temp)) {
-            // a 10 degree change in one sample is a highly likely
-            // sign of a FIFO alignment error
-            _last_temp = 0;
-            _fifo_reset();
-            return;
-        }
         _last_temp = temp;
         
         gyro = Vector3f(int16_val(data, 5),
@@ -520,29 +513,35 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples)
 {
     Vector3l asum, gsum;
-        
+    float tsum = 0;
+    const int32_t clip_limit = AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS / _accel_scale;
+    bool clipped = false;
+    
     for (uint8_t i = 0; i < n_samples; i++) {
         uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
-        asum += Vector3l(int16_val(data, 1),
-                          int16_val(data, 0),
-                         -int16_val(data, 2));
+        Vector3l a(int16_val(data, 1),
+                   int16_val(data, 0),
+                   -int16_val(data, 2));
+        if (abs(a.x) > clip_limit ||
+            abs(a.y) > clip_limit ||
+            abs(a.z) > clip_limit) {
+            clipped = true;
+        }
+        asum += a;
         gsum += Vector3l(int16_val(data, 5),
                          int16_val(data, 4),
                          -int16_val(data, 6));
 
         float temp = int16_val(data, 3);
         temp = temp/340 + 36.53;
-
-        if (fabsf(_last_temp - temp) > 10 && !is_zero(_last_temp)) {
-            // a 10 degree change in one sample is a highly likely
-            // sign of a FIFO alignment error
-            _last_temp = 0;
-            _fifo_reset();
-            return;
-        }
+        tsum += temp;
         _last_temp = temp;
     }
 
+    if (clipped) {
+        increment_clip_count(_accel_instance);
+    }
+    
     float ascale = _accel_scale / n_samples;
     Vector3f accel(asum.x*ascale, asum.y*ascale, asum.z*ascale);
 
@@ -554,6 +553,31 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
     
     _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), false);
     _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+
+    _temp_filtered = _temp_filter.apply(tsum / n_samples);
+}
+
+/*
+ * check the FIFO integrity by cross-checking the temperature against
+ * the last FIFO reading
+ */
+void AP_InertialSensor_MPU6000::_check_temperature(void)
+{
+    uint8_t rx[2];
+    
+    if (!_block_read(MPUREG_TEMP_OUT_H, rx, 2)) {
+        return;
+    }
+    float temp = int16_val(rx, 0) / 340 + 36.53;
+
+    if (fabsf(_last_temp - temp) > 2 && !is_zero(_last_temp)) {
+        // a 2 degree change in one sample is a highly likely
+        // sign of a FIFO alignment error
+        printf("FIFO temperature reset: %.2f %.2f\n",
+               (double)temp, (double)_last_temp);
+        _last_temp = temp;
+        _fifo_reset();
+    }
 }
 
 void AP_InertialSensor_MPU6000::_read_fifo()
@@ -594,6 +618,11 @@ void AP_InertialSensor_MPU6000::_read_fifo()
         _accumulate_fast_sampling(rx, n_samples);
     } else {
         _accumulate(rx, n_samples);
+    }
+
+    if (_temp_counter++ == 255) {
+        // check FIFO integrity every 0.25s
+        _check_temperature();
     }
 }
 
@@ -895,6 +924,8 @@ void AP_MPU6000_AuxiliaryBus::_configure_slaves()
     uint8_t user_ctrl = backend._register_read(MPUREG_USER_CTRL);
     backend._register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_I2C_MST_EN);
 
+    backend._master_i2c_enable = true;
+    
     /* stop condition between reads; clock at 400kHz */
     backend._register_write(MPUREG_I2C_MST_CTRL,
                             BIT_I2C_MST_P_NSR | BIT_I2C_MST_CLK_400KHZ);

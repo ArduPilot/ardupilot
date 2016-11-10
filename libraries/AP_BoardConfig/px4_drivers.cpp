@@ -387,48 +387,6 @@ void AP_BoardConfig::px4_start_fmuv2_sensors(void)
 
 
 /*
-  setup sensors for Pixhawk2-slim
- */
-void AP_BoardConfig::px4_start_pixhawk2slim_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    printf("Starting PH2SLIM sensors\n");
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -I -R 4 start")) {
-        printf("Have internal hmc5883\n");
-    } else {
-        printf("No internal hmc5883\n");
-    }
-
-    if (px4_start_driver(mpu9250_main, "mpu9250", "-R 14 start")) {
-        printf("Found MPU9250 internal\n");
-    } else if (px4_start_driver(mpu6000_main, "mpu6000", "-R 14 -T 20608 start")) {
-        printf("Found ICM20608 internal\n");
-    } else if (px4_start_driver(mpu6000_main, "mpu6000", "-R 14 start")) {
-        printf("Found MPU6000 internal\n");
-    } else {
-        px4_sensor_error("No MPU9250 or ICM20608 or MPU6000");
-    }
-
-    // on Pixhawk2 default IMU temperature to 60
-    _imu_target_temperature.set_default(60);
-    
-    printf("PH2SLIM sensors started\n");
-#endif // CONFIG_ARCH_BOARD_PX4FMU_V2
-}
-
-
-/*
-  setup sensors for PHMINI
- */
-void AP_BoardConfig::px4_start_phmini_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    // we will use the internal sensor drivers for the mini, so nothing to do here
-    printf("PHMINI: using in-tree IMU drivers\n");
-#endif // CONFIG_ARCH_BOARD_PX4FMU_V2
-}
-
-/*
   setup sensors for PX4v1
  */
 void AP_BoardConfig::px4_start_fmuv1_sensors(void)
@@ -450,34 +408,11 @@ void AP_BoardConfig::px4_start_fmuv1_sensors(void)
 }
 
 /*
-  setup sensors for FMUv4
- */
-void AP_BoardConfig::px4_start_fmuv4_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    printf("Starting FMUv4 sensors\n");
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -S -R 2 start")) {
-        printf("Have SPI hmc5883\n");
-    } else {
-        printf("No SPI hmc5883\n");
-    }
-
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 2 -T 20608 start")) {
-        printf("Found ICM-20608 internal\n");
-    }
-
-    if (px4_start_driver(mpu9250_main, "mpu9250", "-R 2 start")) {
-        printf("Found mpu9250 internal\n");
-    }
-    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
-#endif // CONFIG_ARCH_BOARD_PX4FMU_V4
-}
-
-/*
   setup common sensors
  */
 void AP_BoardConfig::px4_start_common_sensors(void)
 {
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V4
     if (px4_start_driver(ms5611_main, "ms5611", "start")) {
         printf("ms5611 started OK\n");
     } else {
@@ -488,6 +423,7 @@ void AP_BoardConfig::px4_start_common_sensors(void)
     } else {
         printf("No external hmc5883\n");
     }
+#endif
 }
 
 
@@ -662,11 +598,16 @@ void AP_BoardConfig::px4_setup_drivers(void)
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
 #endif
+
+    if (px4.board_type == PX4_BOARD_PH2SLIM) {
+        _imu_target_temperature.set_default(60);
+    }
     
     if (px4.board_type == PX4_BOARD_TEST_V1 ||
         px4.board_type == PX4_BOARD_TEST_V2 ||
         px4.board_type == PX4_BOARD_TEST_V3 ||
         px4.board_type == PX4_BOARD_PHMINI ||
+        px4.board_type == PX4_BOARD_PH2SLIM ||
         px4.board_type == PX4_BOARD_PIXRACER) {
         // use in-tree drivers
         printf("Using in-tree drivers\n");
@@ -677,19 +618,10 @@ void AP_BoardConfig::px4_setup_drivers(void)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     px4_start_common_sensors();
     switch ((px4_board_type)px4.board_type.get()) {
-    case PX4_BOARD_PH2SLIM:
-        px4_start_pixhawk2slim_sensors();
-        break;
-
-    case PX4_BOARD_PHMINI:
-        px4_start_phmini_sensors();
-        break;
-
     case PX4_BOARD_AUTO:
     default:
         px4_start_fmuv1_sensors();
         px4_start_fmuv2_sensors();
-        px4_start_fmuv4_sensors();
         break;
     }
     px4_start_optional_sensors();

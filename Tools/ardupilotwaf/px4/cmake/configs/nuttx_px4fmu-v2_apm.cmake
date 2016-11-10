@@ -4,6 +4,9 @@ list(APPEND config_module_list
     drivers/lsm303d
     drivers/l3gd20
     drivers/mpu9250
+    drivers/mpu6000
+    drivers/hmc5883
+    drivers/ms5611
     drivers/boards/px4fmu-v2
     drivers/pwm_input
     modules/uavcan
