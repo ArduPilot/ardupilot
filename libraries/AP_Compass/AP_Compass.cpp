@@ -492,11 +492,11 @@ void Compass::_detect_backends(void)
 #if HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
     _add_backend(AP_Compass_HIL::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
-    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V1 ||
-        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2 ||
-        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V3 ||
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PX4V1 ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
         // external i2c bus
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
@@ -506,14 +506,14 @@ void Compass::_detect_backends(void)
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR), false),
                          AP_Compass_HMC5843::name, false);
     }
-    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V2) {
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK) {
         _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
                                                false, ROTATION_PITCH_180),
                      AP_Compass_HMC5843::name, false);
         _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)),
                      AP_Compass_LSM303D::name, false);
     }
-    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_TEST_V3) {
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
         _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_EXT_A_NAME), ROTATION_YAW_270),
                      AP_Compass_LSM303D::name, false);
         // we run the AK8963 only on the 2nd MPU9250, which leaves the
