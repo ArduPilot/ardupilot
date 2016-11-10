@@ -232,6 +232,18 @@ void AP_InertialSensor_Backend::_set_gyro_error_count(uint8_t instance, uint32_t
     _imu._gyro_error_count[instance] = error_count;
 }
 
+// increment accelerometer error_count
+void AP_InertialSensor_Backend::_inc_accel_error_count(uint8_t instance)
+{
+    _imu._accel_error_count[instance]++;
+}
+
+// increment gyro error_count
+void AP_InertialSensor_Backend::_inc_gyro_error_count(uint8_t instance)
+{
+    _imu._gyro_error_count[instance]++;
+}
+
 // return the requested sample rate in Hz
 uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
 {
