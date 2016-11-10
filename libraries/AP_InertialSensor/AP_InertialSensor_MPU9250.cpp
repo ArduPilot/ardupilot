@@ -522,7 +522,7 @@ bool AP_InertialSensor_MPU9250::_read_sample()
     
     if (!_block_read(MPUREG_FIFO_COUNTH, rx, 2)) {
         hal.console->printf("MPU9250: error in fifo read\n");
-        return true;
+        goto check_registers;
     }
 
     bytes_read = uint16_val(rx, 0);
