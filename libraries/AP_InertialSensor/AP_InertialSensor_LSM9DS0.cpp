@@ -456,6 +456,10 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
     uint8_t whoami;
     uint8_t tries;
 
+    // set flag for reading registers
+    _dev_gyro->set_read_flag(0x80);
+    _dev_accel->set_read_flag(0x80);
+    
     whoami = _register_read_g(WHO_AM_I_G);
     if (whoami != LSM9DS0_G_WHOAMI) {
         hal.console->printf("LSM9DS0: unexpected gyro WHOAMI 0x%x\n", (unsigned)whoami);
@@ -468,6 +472,10 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
         goto fail_whoami;
     }
 
+    // setup for register checking
+    _dev_gyro->setup_checked_registers(6);
+    _dev_accel->setup_checked_registers(5);
+        
     for (tries = 0; tries < 5; tries++) {
         _dev_gyro->set_speed(AP_HAL::Device::SPEED_LOW);
         _dev_accel->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -525,8 +533,6 @@ uint8_t AP_InertialSensor_LSM9DS0::_register_read_xm(uint8_t reg)
 {
     uint8_t val = 0;
 
-    /* set read bit */
-    reg |= 0x80;
     _dev_accel->read_registers(reg, &val, 1);
 
     return val;
@@ -536,21 +542,19 @@ uint8_t AP_InertialSensor_LSM9DS0::_register_read_g(uint8_t reg)
 {
     uint8_t val = 0;
 
-    /* set read bit */
-    reg |= 0x80;
     _dev_gyro->read_registers(reg, &val, 1);
 
     return val;
 }
 
-void AP_InertialSensor_LSM9DS0::_register_write_xm(uint8_t reg, uint8_t val)
+void AP_InertialSensor_LSM9DS0::_register_write_xm(uint8_t reg, uint8_t val, bool checked)
 {
-    _dev_accel->write_register(reg, val);
+    _dev_accel->write_register(reg, val, checked);
 }
 
-void AP_InertialSensor_LSM9DS0::_register_write_g(uint8_t reg, uint8_t val)
+void AP_InertialSensor_LSM9DS0::_register_write_g(uint8_t reg, uint8_t val, bool checked)
 {
-    _dev_gyro->write_register(reg, val);
+    _dev_gyro->write_register(reg, val, checked);
 }
 
 void AP_InertialSensor_LSM9DS0::_gyro_disable_i2c()
@@ -589,25 +593,25 @@ void AP_InertialSensor_LSM9DS0::_gyro_init()
                       CTRL_REG1_G_PD |
                       CTRL_REG1_G_ZEN |
                       CTRL_REG1_G_YEN |
-                      CTRL_REG1_G_XEN);
+                      CTRL_REG1_G_XEN, true);
     hal.scheduler->delay(1);
 
-    _register_write_g(CTRL_REG2_G, 0x00);
+    _register_write_g(CTRL_REG2_G, 0x00, true);
     hal.scheduler->delay(1);
 
     /*
      * Gyro data ready on DRDY_G
      */
-    _register_write_g(CTRL_REG3_G, CTRL_REG3_G_I2_DRDY);
+    _register_write_g(CTRL_REG3_G, CTRL_REG3_G_I2_DRDY, true);
     hal.scheduler->delay(1);
 
     _register_write_g(CTRL_REG4_G,
                       CTRL_REG4_G_BDU |
-                      CTRL_REG4_G_FS_2000DPS);
+                      CTRL_REG4_G_FS_2000DPS, true);
     _set_gyro_scale(G_SCALE_2000DPS);
     hal.scheduler->delay(1);
 
-    _register_write_g(CTRL_REG5_G, 0x00);
+    _register_write_g(CTRL_REG5_G, 0x00, true);
     hal.scheduler->delay(1);
 }
 
@@ -616,7 +620,7 @@ void AP_InertialSensor_LSM9DS0::_accel_init()
     _accel_disable_i2c();
     hal.scheduler->delay(1);
 
-    _register_write_xm(CTRL_REG0_XM, 0x00);
+    _register_write_xm(CTRL_REG0_XM, 0x00, true);
     hal.scheduler->delay(1);
 
     _register_write_xm(CTRL_REG1_XM,
@@ -624,17 +628,17 @@ void AP_InertialSensor_LSM9DS0::_accel_init()
                        CTRL_REG1_XM_BDU |
                        CTRL_REG1_XM_AZEN |
                        CTRL_REG1_XM_AYEN |
-                       CTRL_REG1_XM_AXEN);
+                       CTRL_REG1_XM_AXEN, true);
     hal.scheduler->delay(1);
 
     _register_write_xm(CTRL_REG2_XM,
                        CTRL_REG2_XM_ABW_194Hz |
-                       CTRL_REG2_XM_AFS_16G);
+                       CTRL_REG2_XM_AFS_16G, true);
     _set_accel_scale(A_SCALE_16G);
     hal.scheduler->delay(1);
 
     /* Accel data ready on INT1 */
-    _register_write_xm(CTRL_REG3_XM, CTRL_REG3_XM_P1_DRDYA);
+    _register_write_xm(CTRL_REG3_XM, CTRL_REG3_XM_P1_DRDYA, true);
     hal.scheduler->delay(1);
 }
 
@@ -686,6 +690,18 @@ bool AP_InertialSensor_LSM9DS0::_poll_data()
     if (_accel_data_ready()) {
         _read_data_transaction_a();
     }
+
+    if (_reg_check_counter++ == 10) {
+        _reg_check_counter = 0;
+        // check next register value for correctness
+        if (!_dev_gyro->check_next_register()) {
+            _inc_gyro_error_count(_gyro_instance);
+        }
+        if (!_dev_accel->check_next_register()) {
+            _inc_accel_error_count(_accel_instance);
+        }
+    }
+    
     return true;
 }
 
