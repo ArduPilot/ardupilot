@@ -179,11 +179,19 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(fs_batt_mah,            "FS_BATT_MAH", FS_BATT_MAH_DEFAULT),
 
     // @Param: FS_GCS_ENABLE
-    // @DisplayName: Ground Station Failsafe Enable
-    // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least 5 seconds. NB. The GCS Failsafe is only active when RC_OVERRIDE is being used to control the vehicle.
-    // @Values: 0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode
+    // @DisplayName: Ground Control Station (GCS) Failsafe Enable
+    // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least FS_GCS_TIMEOUT seconds. NB. The GCS Failsafe is active when RC_OVERRIDE is being used to control the vehicle OR when the value is set to "Enabled always RTL" or "Enabled only in GUIDED" or "Enable only in GUIDED and AUTO".
+    // @Values: 0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode, 3: Enabled and RTL only from GUIDED mode, 4: Enabled and RTL only fom GUIDED or AUTO mode.
     // @User: Standard
     GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_ENABLED_ALWAYS_RTL),
+    
+    // @Param: FS_GCS_TIMEOUT
+    // @DisplayName: Ground Control Station (GCS) Failsafe Timeout
+    // @Description: Controls how long the autopilot waits after losing contact with the GCS before engaging the GCS_FAILSAFE.  Note that the failsafe will only engage if it is enabled (see FS_GCS_ENABLE parameter).
+    // @Units: Seconds
+    // @Increment: 1
+    // @User: Standard    
+    GSCALAR(failsafe_gcs_timeout, "FS_GCS_TIMEOUT", 5),
 
     // @Param: GPS_HDOP_GOOD
     // @DisplayName: GPS Hdop Good

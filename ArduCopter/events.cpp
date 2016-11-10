@@ -76,22 +76,22 @@ void Copter::failsafe_gcs_check()
 {
     uint32_t last_gcs_update_ms;
 
-    // return immediately if gcs failsafe is disabled, gcs has never been connected or we are not overriding rc controls from the gcs and we are not in guided mode
-    // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
-    if ((!failsafe.gcs)&&(g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || (!failsafe.rc_override_active && control_mode != GUIDED))) {
+    // return immediately return immediately if the failsafe isn't active and: is disabled or never connected to the GCS
+    if ((!failsafe.gcs) && (g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0)) { 
         return;
     }
 
     // calc time since last gcs update
-    // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
+    // note: only looks at heartbeat from the device id set by g.sysid_my_gcs
     last_gcs_update_ms = millis() - failsafe.last_heartbeat_ms;
-
+       
     // check if all is well
-    if (last_gcs_update_ms < FS_GCS_TIMEOUT_MS) {
+    if (last_gcs_update_ms < (uint32_t) g.failsafe_gcs_timeout * 1000) {
         // check for recovery from gcs failsafe
         if (failsafe.gcs) {
             failsafe_gcs_off_event();
             set_failsafe_gcs(false);
+            gcs_send_text(MAV_SEVERITY_INFO,"Regained contact with GCS");
         }
         return;
     }
@@ -105,6 +105,7 @@ void Copter::failsafe_gcs_check()
     // update state, log to dataflash
     set_failsafe_gcs(true);
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);
+    gcs_send_text(MAV_SEVERITY_WARNING,"Lost contact with GCS!");
 
     // clear overrides so that RC control can be regained with radio.
     hal.rcin->clear_overrides();
@@ -112,11 +113,30 @@ void Copter::failsafe_gcs_check()
 
     if (should_disarm_on_failsafe()) {
         init_disarm_motors();
-    } else {
-        if (control_mode == AUTO && g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
-            // continue mission
-        } else if (g.failsafe_gcs != FS_GCS_DISABLED) {
-            set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
+    } else {        
+        switch (g.failsafe_gcs) {
+            case FS_GCS_ENABLED_CONTINUE_MISSION:
+                if (control_mode != AUTO) {
+                    set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
+                }
+                break;
+            case FS_GCS_ENABLED_GUIDED:
+                if (control_mode != GUIDED) {
+                    break;
+                }
+            case FS_GCS_ENABLED_GUIDED_AUTO:
+                if (control_mode != GUIDED && control_mode != AUTO) {
+                    break;
+                }
+            case FS_GCS_ENABLED_ALWAYS_RTL: 
+                set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
+                break;
+
+            default:
+                gcs_send_text(MAV_SEVERITY_WARNING,
+                    "Unrecognized GCS failsafe num: check FS_GCS_ENABLE param");
+                set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
+                break;
         }
     }
 }
