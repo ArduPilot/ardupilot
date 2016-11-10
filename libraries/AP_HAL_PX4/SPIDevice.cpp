@@ -32,9 +32,6 @@ static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 SPIDesc SPIDeviceManager::device_table[] = {
     SPIDesc("mpu6000",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 500*KHZ, 11*MHZ),
-#ifdef PX4_SPIDEV_EXT_MPU
-    SPIDesc("mpu6000_ext",  PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 500*KHZ, 11*MHZ),    
-#endif
 #if defined(PX4_SPIDEV_EXT_BARO)
     SPIDesc("ms5611_ext",   PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
 #endif
@@ -59,7 +56,9 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #endif
     SPIDesc("mpu9250",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 1*MHZ, 11*MHZ),
 #ifdef PX4_SPIDEV_EXT_MPU
+    SPIDesc("mpu6000_ext",  PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 500*KHZ, 11*MHZ),    
     SPIDesc("mpu9250_ext",  PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 1*MHZ, 11*MHZ),
+    SPIDesc("icm20608_ext", PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 1*MHZ, 11*MHZ),
 #endif
 #ifdef PX4_SPIDEV_HMC
     SPIDesc("hmc5843",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_HMC, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
