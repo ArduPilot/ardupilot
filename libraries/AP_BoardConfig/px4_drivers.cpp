@@ -408,34 +408,11 @@ void AP_BoardConfig::px4_start_fmuv1_sensors(void)
 }
 
 /*
-  setup sensors for FMUv4
- */
-void AP_BoardConfig::px4_start_fmuv4_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    printf("Starting FMUv4 sensors\n");
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -S -R 2 start")) {
-        printf("Have SPI hmc5883\n");
-    } else {
-        printf("No SPI hmc5883\n");
-    }
-
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 2 -T 20608 start")) {
-        printf("Found ICM-20608 internal\n");
-    }
-
-    if (px4_start_driver(mpu9250_main, "mpu9250", "-R 2 start")) {
-        printf("Found mpu9250 internal\n");
-    }
-    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
-#endif // CONFIG_ARCH_BOARD_PX4FMU_V4
-}
-
-/*
   setup common sensors
  */
 void AP_BoardConfig::px4_start_common_sensors(void)
 {
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V4
     if (px4_start_driver(ms5611_main, "ms5611", "start")) {
         printf("ms5611 started OK\n");
     } else {
@@ -446,6 +423,7 @@ void AP_BoardConfig::px4_start_common_sensors(void)
     } else {
         printf("No external hmc5883\n");
     }
+#endif
 }
 
 
@@ -644,7 +622,6 @@ void AP_BoardConfig::px4_setup_drivers(void)
     default:
         px4_start_fmuv1_sensors();
         px4_start_fmuv2_sensors();
-        px4_start_fmuv4_sensors();
         break;
     }
     px4_start_optional_sensors();

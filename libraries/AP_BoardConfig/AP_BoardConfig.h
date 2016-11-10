@@ -109,7 +109,6 @@ private:
     void px4_start_common_sensors(void);
     void px4_start_fmuv1_sensors(void);
     void px4_start_fmuv2_sensors(void);
-    void px4_start_fmuv4_sensors(void);
     void px4_start_optional_sensors(void);
 #endif
 
