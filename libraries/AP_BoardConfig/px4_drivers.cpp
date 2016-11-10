@@ -595,20 +595,19 @@ void AP_BoardConfig::px4_setup_drivers(void)
     }
 #endif
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
-#endif
+    // run board auto-detection
+    px4_autodetect();
 
-    if (px4.board_type == PX4_BOARD_PH2SLIM) {
+    if (px4.board_type == PX4_BOARD_PH2SLIM ||
+        px4.board_type == PX4_BOARD_PIXHAWK2) {
         _imu_target_temperature.set_default(60);
     }
     
-    if (px4.board_type == PX4_BOARD_TEST_V1 ||
-        px4.board_type == PX4_BOARD_TEST_V2 ||
-        px4.board_type == PX4_BOARD_TEST_V3 ||
-        px4.board_type == PX4_BOARD_PHMINI ||
+    if (px4.board_type == PX4_BOARD_PHMINI ||
         px4.board_type == PX4_BOARD_PH2SLIM ||
-        px4.board_type == PX4_BOARD_PIXRACER) {
+        px4.board_type == PX4_BOARD_PIXRACER ||
+        px4.board_type == PX4_BOARD_PIXHAWK ||
+        px4.board_type == PX4_BOARD_PIXHAWK2) {
         // use in-tree drivers
         printf("Using in-tree drivers\n");
         px4_configured_board = (enum px4_board_type)px4.board_type.get();
@@ -763,6 +762,87 @@ void AP_BoardConfig::px4_setup_peripherals(void)
     hal.gpio->init();
     hal.rcin->init();
     hal.rcout->init();
+}
+
+/*
+  check a SPI device for a register value
+ */
+bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag)
+{
+    auto dev = hal.spi->get_device(devname);
+    if (!dev) {
+        printf("%s: no device\n", devname);
+        return false;
+    }
+    dev->set_read_flag(read_flag);
+    uint8_t v;
+    if (!dev->read_registers(regnum, &v, 1)) {
+        printf("%s: reg %02x read fail\n", devname, (unsigned)regnum);
+        return false;
+    }
+    printf("%s: reg %02x %02x %02x\n", devname, (unsigned)regnum, (unsigned)value, (unsigned)v);
+    return v == value;
+}
+
+#define MPUREG_WHOAMI 0x75
+#define MPU_WHOAMI_MPU60X0  0x68
+#define MPU_WHOAMI_MPU9250  0x71
+#define MPU_WHOAMI_ICM20608 0xaf
+
+#define LSMREG_WHOAMI 0x0f
+#define LSM_WHOAMI_LSM303D 0x49
+
+/*
+  auto-detect board type
+ */
+void AP_BoardConfig::px4_autodetect(void)
+{
+    if (px4.board_type == PX4_BOARD_TEST_V1 ||
+        px4.board_type == PX4_BOARD_TEST_V2 ||
+        px4.board_type == PX4_BOARD_TEST_V3) {
+        // these were old test values
+        px4.board_type.set(0);
+    }
+    
+    if (px4.board_type != PX4_BOARD_AUTO) {
+        // user has chosen a board type
+        return;
+    }
+    
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    // only one choice
+    px4.board_type.set(PX4_BOARD_PX4V1);
+    hal.console->printf("Detected PX4v1\n");
+
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    if ((spi_check_register(HAL_INS_MPU60x0_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
+         spi_check_register(HAL_INS_MPU9250_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
+         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608)) &&
+        spi_check_register(HAL_INS_LSM9DS0_EXT_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
+        // Pixhawk2 has LSM303D and MPUxxxx on external bus
+        px4.board_type.set(PX4_BOARD_PIXHAWK2);
+        hal.console->printf("Detected PIXHAWK2\n");
+    } else if (spi_check_register(HAL_INS_ICM20608_AM_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) &&
+               spi_check_register(HAL_INS_MPU9250_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) {
+        // PHMINI has an ICM20608 and MPU9250 on sensor bus
+        px4.board_type.set(PX4_BOARD_PHMINI);
+        hal.console->printf("Detected PixhawkMini\n");
+    } else if (spi_check_register(HAL_INS_LSM9DS0_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) &&
+               (spi_check_register(HAL_INS_MPU60x0_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
+                spi_check_register(HAL_INS_ICM20608_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
+                spi_check_register(HAL_INS_MPU9250_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250))) {
+        // classic or upgraded Pixhawk1
+        px4.board_type.set(PX4_BOARD_PIXHAWK);
+        hal.console->printf("Detected Pixhawk\n");
+    } else {
+        px4_sensor_error("Unable to detect board type");
+    }
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+    // only one choice
+    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);    
+    hal.console->printf("Detected Pixracer\n");
+#endif
+    
 }
 
 /*
