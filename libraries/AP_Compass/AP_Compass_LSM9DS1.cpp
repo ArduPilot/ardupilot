@@ -203,10 +203,6 @@ void AP_Compass_LSM9DS1::read()
     _accum_count = 0;
 
     _sem->give();
-        
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    field.rotate(ROTATION_ROLL_180);
-#endif
 
     publish_filtered_field(field, _compass_instance);
 }
