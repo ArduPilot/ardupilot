@@ -565,16 +565,17 @@ void RangeFinder::update(void)
     }
 }
 
-void RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
+bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
 {
     if (!backend) {
-        return;
+        return false;
     }
     if (num_instances == RANGEFINDER_MAX_INSTANCES) {
         AP_HAL::panic("Too many RANGERS backends");
     }
 
     drivers[num_instances++] = backend;
+    return true;
 }
 
 /*
@@ -584,7 +585,9 @@ void RangeFinder::detect_instance(uint8_t instance)
 {
     uint8_t type = _type[instance];
     if (type == RangeFinder_TYPE_PLI2C) {
-        _add_backend(AP_RangeFinder_PulsedLightLRF::detect(*this, instance, state[instance]));
+        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, *this, instance, state[instance]))) {
+            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, *this, instance, state[instance]));
+        }
     }
     if (type == RangeFinder_TYPE_MBI2C) {
         _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance]));
