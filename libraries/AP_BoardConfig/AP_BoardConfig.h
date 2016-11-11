@@ -46,6 +46,7 @@ public:
         PX4_BOARD_PIXRACER = 4,
         PX4_BOARD_PHMINI   = 5,
         PX4_BOARD_PH2SLIM  = 6,
+        PX4_BOARD_OLDDRIVERS = 100,
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         VRX_BOARD_BRAIN51  = 7,
@@ -55,9 +56,6 @@ public:
         VRX_BOARD_CORE10   = 11,
         VRX_BOARD_BRAIN54  = 12,
 #endif
-        PX4_BOARD_TEST_V1 = 101,
-        PX4_BOARD_TEST_V2 = 102,
-        PX4_BOARD_TEST_V3 = 103
     };
 #endif
 
@@ -111,7 +109,6 @@ private:
     void px4_start_common_sensors(void);
     void px4_start_fmuv1_sensors(void);
     void px4_start_fmuv2_sensors(void);
-    void px4_start_optional_sensors(void);
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -122,7 +119,6 @@ private:
     void vrx_start_ubrain52_sensors(void);
     void vrx_start_core10_sensors(void);
     void vrx_start_brain54_sensors(void);
-    void vrx_start_optional_sensors(void);
 #endif
 
 #endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
