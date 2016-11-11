@@ -80,7 +80,6 @@ extern "C" {
     int ll40ls_main(int, char **);
     int trone_main(int, char **);
     int mb12xx_main(int, char **);
-    int pwm_input_main(int, char **);
 };
 
 /* 
