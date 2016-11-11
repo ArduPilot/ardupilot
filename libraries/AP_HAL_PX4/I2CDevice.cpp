@@ -76,8 +76,22 @@ bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_le
     if (!init_ok) {
         return false;
     }
-    bool ret = (transfer(send, send_len, recv, recv_len) == OK);
-    return ret;
+    /*
+      splitting the transfer() into two pieces avoids a stop condition
+      with SCL low which is not supported on some devices (such as
+      LidarLite blue label)
+     */
+    if (send && send_len) {
+        if (transfer(send, send_len, nullptr, 0) != OK) {
+            return false;
+        }
+    }
+    if (recv && recv_len) {
+        if (transfer(nullptr, 0, recv, recv_len) != OK) {
+            return false;
+        }
+    }
+    return true;
 }
 
 I2CDevice::I2CDevice(uint8_t bus, uint8_t address) :
