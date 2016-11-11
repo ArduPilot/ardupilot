@@ -57,6 +57,11 @@ waf=modules/waf/waf-light
 # get list of boards supported by the waf build
 for board in $($waf list_boards | head -n1); do waf_supported_boards[$board]=1; done
 
+# Temporarily disable waf build of PX4 boards until Travis fixes space issues
+waf_supported_boards[px4-v1]=""
+waf_supported_boards[px4-v2]=""
+waf_supported_boards[px4-v4]=""
+
 function get_time {
     date -u "+%s"
 }
