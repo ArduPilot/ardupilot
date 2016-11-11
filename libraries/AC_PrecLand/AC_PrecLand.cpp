@@ -4,6 +4,7 @@
 #include "AC_PrecLand_Companion.h"
 #include "AC_PrecLand_IRLock.h"
 #include "AC_PrecLand_SITL_Gazebo.h"
+#include "AC_PrecLand_SITL.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -18,7 +19,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Precision Land Type
     // @Description: Precision Land Type
-    // @Values: 0:None, 1:CompanionComputer, 2:IRLock, 3:SITL_Gazebo
+    // @Values: 0:None, 1:CompanionComputer, 2:IRLock, 3:SITL_Gazebo, 4:SITL
     // @User: Advanced
     AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
 
@@ -102,6 +103,9 @@ void AC_PrecLand::init()
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         case PRECLAND_TYPE_SITL_GAZEBO:
             _backend = new AC_PrecLand_SITL_Gazebo(*this, _backend_state);
+            break;
+        case PRECLAND_TYPE_SITL:
+            _backend = new AC_PrecLand_SITL(*this, _backend_state);
             break;
 #endif
     }

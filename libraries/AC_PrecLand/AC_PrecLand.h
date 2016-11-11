@@ -13,6 +13,7 @@ class AC_PrecLand_Backend;
 class AC_PrecLand_Companion;
 class AC_PrecLand_IRLock;
 class AC_PrecLand_SITL_Gazebo;
+class AC_PrecLand_SITL;
 
 class AC_PrecLand
 {
@@ -21,6 +22,7 @@ class AC_PrecLand
     friend class AC_PrecLand_Companion;
     friend class AC_PrecLand_IRLock;
     friend class AC_PrecLand_SITL_Gazebo;
+    friend class AC_PrecLand_SITL;
 
 public:
 
@@ -37,6 +39,7 @@ public:
         PRECLAND_TYPE_COMPANION,
         PRECLAND_TYPE_IRLOCK,
         PRECLAND_TYPE_SITL_GAZEBO,
+        PRECLAND_TYPE_SITL,
     };
 
     // constructor
