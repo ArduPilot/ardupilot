@@ -12,7 +12,8 @@ class AP_Compass_LSM9DS1 : public AP_Compass_Backend
 {
 public:
     static AP_Compass_Backend *probe(Compass &compass,
-                                     AP_HAL::OwnPtr<AP_HAL::Device> dev);
+                                     AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                     enum Rotation rotation = ROTATION_NONE);
 
     static constexpr const char *name = "LSM9DS1";
 
@@ -21,7 +22,8 @@ public:
     virtual ~AP_Compass_LSM9DS1() {}
 
 private:
-    AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                       enum Rotation rotation = ROTATION_NONE);
     bool init();
     bool _check_id(void);
     bool _configure(void);
@@ -41,4 +43,5 @@ private:
     float _mag_y_accum;
     float _mag_z_accum;
     uint32_t _accum_count;
+    enum Rotation _rotation;
 };
