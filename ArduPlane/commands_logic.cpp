@@ -158,7 +158,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
             }
         } else { //commanding to only disable floor
             if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unabled to disable fence floor");
+                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to disable fence floor");
             } else {
                 gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Fence floor disabled");
             }
