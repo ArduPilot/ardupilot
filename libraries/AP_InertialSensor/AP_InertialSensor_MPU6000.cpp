@@ -331,7 +331,8 @@ void AP_InertialSensor_MPU6000::_fifo_reset()
 void AP_InertialSensor_MPU6000::_fifo_enable()
 {
     _register_write(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
-                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN);
+                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN,
+                    true);
     _fifo_reset();
     hal.scheduler->delay(1);
 }
@@ -362,11 +363,11 @@ void AP_InertialSensor_MPU6000::start()
 
     // set sample rate to 1000Hz and apply a software filter
     // In this configuration, the gyro sample rate is 8kHz
-    _register_write(MPUREG_SMPLRT_DIV, 0);
+    _register_write(MPUREG_SMPLRT_DIV, 0, true);
     hal.scheduler->delay(1);
 
     // Gyro scale 2000º/s
-    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);
+    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS, true);
     hal.scheduler->delay(1);
 
     // read the product ID rev c has 1/2 the sensitivity of rev d
@@ -380,18 +381,18 @@ void AP_InertialSensor_MPU6000::start()
          (product_id == MPU6000_REV_C5))) {
         // Accel scale 8g (4096 LSB/g)
         // Rev C has different scaling than rev D
-        _register_write(MPUREG_ACCEL_CONFIG,1<<3);
+        _register_write(MPUREG_ACCEL_CONFIG,1<<3, true);
         _accel_scale = GRAVITY_MSS / 4096.f;
     } else {
         // Accel scale 16g (2048 LSB/g)
-        _register_write(MPUREG_ACCEL_CONFIG,3<<3);
+        _register_write(MPUREG_ACCEL_CONFIG,3<<3, true);
         _accel_scale = GRAVITY_MSS / 2048.f;
     }
     hal.scheduler->delay(1);
 
 	if (_is_icm_device) {
         // this avoids a sensor bug, see description above
-		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE);
+		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
 	}
     
     // configure interrupt to fire when new data arrives
@@ -588,7 +589,7 @@ void AP_InertialSensor_MPU6000::_read_fifo()
 
     if (!_block_read(MPUREG_FIFO_COUNTH, rx, 2)) {
         hal.console->printf("MPU60x0: error in fifo read\n");
-        return;
+        goto check_registers;
     }
 
     bytes_read = uint16_val(rx, 0);
@@ -596,7 +597,7 @@ void AP_InertialSensor_MPU6000::_read_fifo()
 
     if (n_samples == 0) {
         /* Not enough data in FIFO */
-        return;
+        goto check_registers;
     }
 
     if (n_samples > MPU6000_MAX_FIFO_SAMPLES) {
@@ -605,13 +606,13 @@ void AP_InertialSensor_MPU6000::_read_fifo()
 
         /* Too many samples, do a FIFO RESET */
         _fifo_reset();
-        return;
+        goto check_registers;
     }
 
     if (!_block_read(MPUREG_FIFO_R_W, rx, n_samples * MPU6000_SAMPLE_SIZE)) {
         printf("MPU60x0: error in fifo read %u bytes\n",
                n_samples * MPU6000_SAMPLE_SIZE);
-        return;
+        goto check_registers;
     }
 
     if (_fast_sampling) {
@@ -623,6 +624,16 @@ void AP_InertialSensor_MPU6000::_read_fifo()
     if (_temp_counter++ == 255) {
         // check FIFO integrity every 0.25s
         _check_temperature();
+    }
+
+check_registers:
+    if (_reg_check_counter++ == 10) {
+        _reg_check_counter = 0;
+        // check next register value for correctness
+        if (!_dev->check_next_register()) {
+            _inc_gyro_error_count(_gyro_instance);
+            _inc_accel_error_count(_accel_instance);
+        }
     }
 }
 
@@ -639,9 +650,9 @@ uint8_t AP_InertialSensor_MPU6000::_register_read(uint8_t reg)
     return val;
 }
 
-void AP_InertialSensor_MPU6000::_register_write(uint8_t reg, uint8_t val)
+void AP_InertialSensor_MPU6000::_register_write(uint8_t reg, uint8_t val, bool checked)
 {
-    _dev->write_register(reg, val);
+    _dev->write_register(reg, val, checked);
 }
 
 /*
@@ -666,14 +677,14 @@ void AP_InertialSensor_MPU6000::_set_filter_register(void)
         // limit to 1kHz if not on SPI
         config |= BITS_DLPF_CFG_188HZ;
     }
-    _register_write(MPUREG_CONFIG, config);
+    _register_write(MPUREG_CONFIG, config, true);
 
 	if (_is_icm_device) {
         if (_fast_sampling) {
             // setup for 4kHz accels
-            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_FCHOICE_B);
+            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_FCHOICE_B, true);
         } else {
-            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_DLPF_CFG_218HZ);
+            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_DLPF_CFG_218HZ, true);
         }
     }
 }
@@ -703,6 +714,9 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         AP_HAL::panic("MPU6000: Unable to get semaphore");
     }
 
+    // setup for register checking
+    _dev->setup_checked_registers(7);
+    
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
@@ -766,7 +780,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
 
 	if (_is_icm_device) {
         // this avoids a sensor bug, see description above
-		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE);
+		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
 	}
     
     return true;

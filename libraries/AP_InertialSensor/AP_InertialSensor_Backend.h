@@ -140,6 +140,12 @@ protected:
     // set gyro error_count
     void _set_gyro_error_count(uint8_t instance, uint32_t error_count);
 
+    // increment accelerometer error_count
+    void _inc_accel_error_count(uint8_t instance);
+
+    // increment gyro error_count
+    void _inc_gyro_error_count(uint8_t instance);
+    
     // backend unique identifier or -1 if backend doesn't identify itself
     int16_t _id = -1;
 
