@@ -14,39 +14,34 @@
  *        ------------------------------------------------------------------------------------
  */
 
-// i2c address
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR   0x62
-
-// min and max distances
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_MIN_DISTANCE 0
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_MAX_DISTANCE 1400
-
-// registers
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_MEASURE_REG           0x00
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG          0x8f    // high byte of distance measurement
-
-// command register values
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE        0x04    // Varies based on sensor revision, 0x04 is newest, 0x61 is older
-
 class AP_RangeFinder_PulsedLightLRF : public AP_RangeFinder_Backend
 {
 
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(RangeFinder &ranger, uint8_t instance,
+    static AP_RangeFinder_Backend *detect(uint8_t bus, RangeFinder &ranger, uint8_t instance,
                                           RangeFinder::RangeFinder_State &_state);
 
     // update state
-    void update(void);
+    void update(void) override {}
 
 
 private:
     // constructor
-    AP_RangeFinder_PulsedLightLRF(RangeFinder &ranger, uint8_t instance,
+    AP_RangeFinder_PulsedLightLRF(uint8_t bus, RangeFinder &ranger, uint8_t instance,
                                   RangeFinder::RangeFinder_State &_state);
 
     // start a reading
-    bool start_reading(void);
-    bool get_reading(uint16_t &reading_cm);
+    bool init(void);
+    bool timer(void);
+    bool lidar_transfer(const uint8_t *send, unsigned send_len, uint8_t *recv, unsigned recv_len);
+    
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+
+    uint8_t sw_version;
+    uint8_t hw_version;
+    uint8_t check_reg_counter;
+    bool v2_hardware;
+
+    enum { PHASE_MEASURE, PHASE_COLLECT } phase;
 };
