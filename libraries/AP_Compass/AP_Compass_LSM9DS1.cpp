@@ -57,13 +57,23 @@ struct PACKED sample_regs {
 
 extern const AP_HAL::HAL &hal;
 
+AP_Compass_LSM9DS1::AP_Compass_LSM9DS1(Compass &compass,
+                                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                       enum Rotation rotation)
+    : AP_Compass_Backend(compass)
+    , _dev(std::move(dev))
+    , _rotation(rotation)
+{
+}
+
 AP_Compass_Backend *AP_Compass_LSM9DS1::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::Device> dev)
+                                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                              enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_LSM9DS1 *sensor = new AP_Compass_LSM9DS1(compass, std::move(dev));
+    AP_Compass_LSM9DS1 *sensor = new AP_Compass_LSM9DS1(compass, std::move(dev), rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -97,6 +107,8 @@ bool AP_Compass_LSM9DS1::init()
     }
 
     _compass_instance = register_compass();
+
+    set_rotation(_compass_instance, _rotation);
 
     _dev->set_device_type(DEVTYPE_LSM9DS1);
     set_dev_id(_compass_instance, _dev->get_bus_id());
@@ -233,12 +245,6 @@ bool AP_Compass_LSM9DS1::_set_scale(void)
     _scaling = 0.58f;
 
     return true;
-}
-
-AP_Compass_LSM9DS1::AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev)
-    : AP_Compass_Backend(compass)
-    , _dev(std::move(dev))
-{
 }
 
 uint8_t AP_Compass_LSM9DS1::_register_read(uint8_t reg)
