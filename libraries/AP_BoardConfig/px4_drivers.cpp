@@ -45,10 +45,6 @@ extern "C" {
     int l3gd20_main(int , char **);
     int lsm303d_main(int , char **);
     int hmc5883_main(int , char **);
-    int ll40ls_main(int, char **);
-    int trone_main(int, char **);
-    int mb12xx_main(int, char **);
-    int pwm_input_main(int, char **);
     int uavcan_main(int, char **);
     int fmu_main(int, char **);
     int px4io_main(int, char **);
@@ -376,9 +372,6 @@ void AP_BoardConfig::px4_start_fmuv2_sensors(void)
     if (have_FMUV3) {
         // on Pixhawk2 default IMU temperature to 60
         _imu_target_temperature.set_default(60);
-        px4.board_type.set_and_notify(PX4_BOARD_PIXHAWK2);
-    } else {
-        px4.board_type.set_and_notify(PX4_BOARD_PIXHAWK);
     }
     
     printf("FMUv2 sensors started\n");
@@ -403,7 +396,6 @@ void AP_BoardConfig::px4_start_fmuv1_sensors(void)
     } else {
         px4_sensor_error("mpu6000");
     }
-    px4.board_type.set_and_notify(PX4_BOARD_PX4V1);
 #endif // CONFIG_ARCH_BOARD_PX4FMU_V1
 }
 
@@ -426,32 +418,7 @@ void AP_BoardConfig::px4_start_common_sensors(void)
 #endif
 }
 
-
-/*
-  setup optional sensors
- */
-void AP_BoardConfig::px4_start_optional_sensors(void)
-{
-    if (px4_start_driver(ll40ls_main, "ll40ls", "-X start")) {
-        printf("Found external ll40ls sensor\n");
-    }
-    if (px4_start_driver(ll40ls_main, "ll40ls", "-I start")) {
-        printf("Found internal ll40ls sensor\n");
-    }
-    if (px4_start_driver(trone_main, "trone", "start")) {
-        printf("Found trone sensor\n");
-    }
-    if (px4_start_driver(mb12xx_main, "mb12xx", "start")) {
-        printf("Found mb12xx sensor\n");
-    }
-
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    if (px4_start_driver(pwm_input_main, "pwm_input", "start")) {
-        printf("started pwm_input driver\n");
-    }
-#endif
-}
-#endif
+#endif // CONFIG_HAL_BOARD
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 void AP_BoardConfig::vrx_start_brain51_sensors(void)
@@ -556,31 +523,7 @@ void AP_BoardConfig::vrx_start_common_sensors(void)
     }
 }
 
-
-/*
-  setup optional sensors
- */
-void AP_BoardConfig::vrx_start_optional_sensors(void)
-{
-    if (px4_start_driver(ll40ls_main, "ll40ls", "-X start")) {
-        printf("Found external ll40ls sensor\n");
-    }
-    if (px4_start_driver(ll40ls_main, "ll40ls", "-I start")) {
-        printf("Found internal ll40ls sensor\n");
-    }
-
-    if (px4_start_driver(trone_main, "trone", "start")) {
-        printf("Found trone sensor\n");
-    }
-    if (px4_start_driver(mb12xx_main, "mb12xx", "start")) {
-        printf("Found mb12xx sensor\n");
-    }
-
-    if (px4_start_driver(pwm_input_main, "pwm_input", "start")) {
-        printf("started pwm_input driver\n");
-    }
-}
-#endif
+#endif // CONFIG_HAL_BOARD
 
 void AP_BoardConfig::px4_setup_drivers(void)
 {
@@ -623,8 +566,6 @@ void AP_BoardConfig::px4_setup_drivers(void)
         px4_start_fmuv2_sensors();
         break;
     }
-    px4_start_optional_sensors();
-
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     vrx_start_common_sensors();
     switch ((px4_board_type)px4.board_type.get()) {
@@ -655,8 +596,6 @@ void AP_BoardConfig::px4_setup_drivers(void)
     default:
         break;
     }
-    vrx_start_optional_sensors();
-
 #endif // HAL_BOARD_PX4
 
     px4_configured_board = (enum px4_board_type)px4.board_type.get();
@@ -797,13 +736,6 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
  */
 void AP_BoardConfig::px4_autodetect(void)
 {
-    if (px4.board_type == PX4_BOARD_TEST_V1 ||
-        px4.board_type == PX4_BOARD_TEST_V2 ||
-        px4.board_type == PX4_BOARD_TEST_V3) {
-        // these were old test values
-        px4.board_type.set(0);
-    }
-    
     if (px4.board_type != PX4_BOARD_AUTO) {
         // user has chosen a board type
         return;
