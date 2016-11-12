@@ -169,7 +169,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
         return verify_RTL();
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        return verify_loiter_unlim();
+        return verify_loiter_unlimited(cmd);
 
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time(cmd);
@@ -229,17 +229,16 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this is the distance we travel past the waypoint - not there yet so 0 initially
     distance_past_wp = 0;
 
-    set_next_WP(cmd.content.location);
+    Location cmdloc = cmd.content.location;
+    location_sanitize(current_loc, cmdloc);
+    set_next_WP(cmdloc);
 }
 
 void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
-    previously_reached_wp = false;
-    Location cmdloc = cmd.content.location;
-    location_sanitize(current_loc, cmdloc);
-    set_next_WP(cmdloc);
+    active_loiter = true;
+    do_nav_wp(cmd);
     loiter_duration = 100; // an arbitrary large loiter time
-    distance_past_wp = 0;
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
@@ -290,6 +289,8 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // We should always go through the waypoint i.e. the above code
     // first before we go past it but sometimes we don't.
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
+        // As we have passed the waypoint navigation needs to be done from current location
+        prev_WP = current_loc;
         // Check if this is the first time we have reached the waypoint even though we have gone past it
         if (!previously_reached_wp) {
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i. Loiter for %i seconds",
@@ -343,10 +344,11 @@ bool Rover::verify_RTL()
     return false;
 }
 
-bool Rover::verify_loiter_unlim()
+bool Rover::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
-    // Continually increase the loiter time so it never finishes
-    loiter_start_time += loiter_duration;
+    // Continually set loiter start time to now so it never finishes
+    loiter_start_time += millis();
+    verify_nav_wp(cmd);
     return false;
 }
 

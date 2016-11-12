@@ -526,7 +526,7 @@ private:
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-    bool verify_loiter_unlim();
+    bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
