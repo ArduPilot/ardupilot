@@ -1747,6 +1747,20 @@ void GCS_MAVLINK::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_C
     }
 }
 
+void GCS_MAVLINK::send_accelcal_vehicle_position(uint8_t position)
+{
+    if (HAVE_PAYLOAD_SPACE(chan, COMMAND_LONG)) {
+        mavlink_msg_command_long_send(
+            chan,
+            0,
+            0,
+            MAV_CMD_ACCELCAL_VEHICLE_POS,
+            0,
+            (float) position,
+            0, 0, 0, 0, 0, 0);
+    }
+}
+
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 
