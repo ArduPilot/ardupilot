@@ -680,6 +680,14 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 result = tracker.compass.handle_mag_cal_command(packet);
                 break;
 
+            case MAV_CMD_ACCELCAL_VEHICLE_POS:
+                result = MAV_RESULT_FAILED;
+
+                if (tracker.ins.get_acal()->gcs_vehicle_position(packet.param1)) {
+                    result = MAV_RESULT_ACCEPTED;
+                }
+                break;
+
             default:
                 break;
         }
