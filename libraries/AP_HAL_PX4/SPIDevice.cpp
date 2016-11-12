@@ -25,8 +25,6 @@
 
 namespace PX4 {
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
-
 #define MHZ (1000U*1000U)
 #define KHZ (1000U)
 
