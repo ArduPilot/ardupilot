@@ -71,22 +71,22 @@ void AP_AccelCal::update()
 
                     const char *msg;
                     switch (step) {
-                        case 1:
+                        case ACCELCAL_VEHICLE_POS_LEVEL:
                             msg = "level";
                             break;
-                        case 2:
+                        case ACCELCAL_VEHICLE_POS_LEFT:
                             msg = "on its LEFT side";
                             break;
-                        case 3:
+                        case ACCELCAL_VEHICLE_POS_RIGHT:
                             msg = "on its RIGHT side";
                             break;
-                        case 4:
+                        case ACCELCAL_VEHICLE_POS_NOSEDOWN:
                             msg = "nose DOWN";
                             break;
-                        case 5:
+                        case ACCELCAL_VEHICLE_POS_NOSEUP:
                             msg = "nose UP";
                             break;
-                        case 6:
+                        case ACCELCAL_VEHICLE_POS_BACK:
                             msg = "on its BACK";
                             break;
                         default:
