@@ -10,6 +10,7 @@ class AP_AccelCal_Client;
 class AP_AccelCal {
 public:
     AP_AccelCal():
+    _use_gcs_snoop(true),
     _started(false),
     _saving(false)
     { update_status(); }
@@ -25,12 +26,17 @@ public:
 
     // get the status of the calibrator server as a whole
     accel_cal_status_t get_status() { return _status; }
+    
+    // Set vehicle position sent by the GCS
+    bool gcs_vehicle_position(float position);
 
     // interface to the clients for registration
     static void register_client(AP_AccelCal_Client* client);
 
 private:
     GCS_MAVLINK *_gcs;
+    bool _use_gcs_snoop;
+    uint32_t _last_position_request_ms;
     uint8_t _step;
     accel_cal_status_t _status;
 
