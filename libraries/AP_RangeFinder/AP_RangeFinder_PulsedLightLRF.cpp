@@ -23,18 +23,18 @@
 extern const AP_HAL::HAL& hal;
 
 /* LL40LS Registers addresses */
-#define LL40LS_MEASURE_REG	0x00        /* Measure range register */
-#define LL40LS_DISTHIGH_REG	0x0F        /* High byte of distance register, auto increment */
-#define LL40LS_COUNT		0x11
-#define LL40LS_HW_VERSION	0x41
-#define LL40LS_INTERVAL		0x45
-#define LL40LS_SW_VERSION	0x4f
+#define LL40LS_MEASURE_REG    0x00        /* Measure range register */
+#define LL40LS_DISTHIGH_REG    0x0F        /* High byte of distance register, auto increment */
+#define LL40LS_COUNT        0x11
+#define LL40LS_HW_VERSION    0x41
+#define LL40LS_INTERVAL        0x45
+#define LL40LS_SW_VERSION    0x4f
 
 // bit values
-#define LL40LS_MSRREG_RESET	0x00        /* reset to power on defaults */
-#define LL40LS_AUTO_INCREMENT	0x80
-#define LL40LS_COUNT_CONTINUOUS	0xff
-#define LL40LS_MSRREG_ACQUIRE	0x04        /* Value to initiate a measurement, varies based on sensor revision */
+#define LL40LS_MSRREG_RESET    0x00        /* reset to power on defaults */
+#define LL40LS_AUTO_INCREMENT    0x80
+#define LL40LS_COUNT_CONTINUOUS    0xff
+#define LL40LS_MSRREG_ACQUIRE    0x04        /* Value to initiate a measurement, varies based on sensor revision */
 
 // i2c address
 #define LL40LS_ADDR   0x62
@@ -113,24 +113,24 @@ bool AP_RangeFinder_PulsedLightLRF::timer(void)
   a table of settings for a lidar
  */
 struct settings_table {
-	uint8_t reg;
-	uint8_t value;
+    uint8_t reg;
+    uint8_t value;
 };
 
 /*
   register setup table for V1 Lidar
  */
 static const struct settings_table settings_v1[] = {
-	{ LL40LS_MEASURE_REG, LL40LS_MSRREG_RESET },
+    { LL40LS_MEASURE_REG, LL40LS_MSRREG_RESET },
 };
 
 /*
   register setup table for V2 Lidar
  */
 static const struct settings_table settings_v2[] = {
-	{ LL40LS_INTERVAL, 0x28 }, // 0x28 == 50Hz
-	{ LL40LS_COUNT, LL40LS_COUNT_CONTINUOUS },
-	{ LL40LS_MEASURE_REG, LL40LS_MSRREG_ACQUIRE },
+    { LL40LS_INTERVAL, 0x28 }, // 0x28 == 50Hz
+    { LL40LS_COUNT, LL40LS_COUNT_CONTINUOUS },
+    { LL40LS_MEASURE_REG, LL40LS_MSRREG_ACQUIRE },
 };
 
 /*
@@ -141,7 +141,7 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
     if (!_dev || !_dev->get_semaphore()->take(0)) {
         return false;
     }
-	_dev->set_retries(3);
+    _dev->set_retries(3);
 
     if (!(_dev->read_registers(LL40LS_HW_VERSION, &hw_version, 1) &&
           hw_version > 0 &&
@@ -154,24 +154,24 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
     }
     _dev->get_semaphore()->give();
 
-	v2_hardware = (hw_version >= 0x15);
+    v2_hardware = (hw_version >= 0x15);
     
-	const struct settings_table *table;
-	uint8_t num_settings;
+    const struct settings_table *table;
+    uint8_t num_settings;
 
-	if (v2_hardware) {
-		table = settings_v2;
-		num_settings = sizeof(settings_v2) / sizeof(settings_table);
+    if (v2_hardware) {
+        table = settings_v2;
+        num_settings = sizeof(settings_v2) / sizeof(settings_table);
         phase = PHASE_COLLECT;
-	} else {
-		table = settings_v1;
-		num_settings = sizeof(settings_v1) / sizeof(settings_table);
+    } else {
+        table = settings_v1;
+        num_settings = sizeof(settings_v1) / sizeof(settings_table);
         phase = PHASE_MEASURE;    
-	}
+    }
 
     _dev->setup_checked_registers(num_settings);
 
-	for (uint8_t i = 0; i < num_settings; i++) {
+    for (uint8_t i = 0; i < num_settings; i++) {
         _dev->write_register(table[i].reg, table[i].value, true);
     }
 
