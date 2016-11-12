@@ -45,8 +45,6 @@ void AP_AccelCal::update()
         }
         if(_start_collect_sample) {
             collect_sample();
-            _gcs->set_snoop(nullptr);
-            _start_collect_sample = false;
         }
         switch(_status) {
             case ACCEL_CAL_NOT_STARTED:
@@ -96,9 +94,9 @@ void AP_AccelCal::update()
                             return;
                     }
                     _printf("Place vehicle %s and press any key.", msg);
+                    // setup snooping of packets so we can see the COMMAND_ACK
+                    _gcs->set_snoop(_snoop);
                 }
-                // setup snooping of packets so we can see the COMMAND_ACK
-                _gcs->set_snoop(_snoop);
                 break;
             }
             case ACCEL_CAL_COLLECTING_SAMPLE:
@@ -246,6 +244,7 @@ void AP_AccelCal::collect_sample()
     }
     // setup snooping of packets so we can see the COMMAND_ACK
     _gcs->set_snoop(nullptr);
+    _start_collect_sample = false;
     update_status();
 }
 
