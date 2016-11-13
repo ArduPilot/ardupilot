@@ -226,7 +226,7 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_REV_D9                          0x59    // 0101			1001
 
 #define MPU6000_SAMPLE_SIZE 14
-#define MPU6000_MAX_FIFO_SAMPLES 20
+#define MPU6000_MAX_FIFO_SAMPLES 8
 #define MAX_DATA_READ (MPU6000_MAX_FIFO_SAMPLES * MPU6000_SAMPLE_SIZE)
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
@@ -600,25 +600,19 @@ void AP_InertialSensor_MPU6000::_read_fifo()
         goto check_registers;
     }
 
-    if (n_samples > MPU6000_MAX_FIFO_SAMPLES) {
-        printf("bytes_read = %u, n_samples %u > %u, dropping samples\n",
-               bytes_read, n_samples, MPU6000_MAX_FIFO_SAMPLES);
+    while (n_samples > 0) {
+        uint8_t n = MIN(n_samples, MPU6000_MAX_FIFO_SAMPLES);
+        if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU6000_SAMPLE_SIZE)) {
+            printf("MPU60x0: error in fifo read %u bytes\n", n * MPU6000_SAMPLE_SIZE);
+            goto check_registers;
+        }
 
-        /* Too many samples, do a FIFO RESET */
-        _fifo_reset();
-        goto check_registers;
-    }
-
-    if (!_block_read(MPUREG_FIFO_R_W, rx, n_samples * MPU6000_SAMPLE_SIZE)) {
-        printf("MPU60x0: error in fifo read %u bytes\n",
-               n_samples * MPU6000_SAMPLE_SIZE);
-        goto check_registers;
-    }
-
-    if (_fast_sampling) {
-        _accumulate_fast_sampling(rx, n_samples);
-    } else {
-        _accumulate(rx, n_samples);
+        if (_fast_sampling) {
+            _accumulate_fast_sampling(rx, n);
+        } else {
+            _accumulate(rx, n);
+        }
+        n_samples -= n;
     }
 
     if (_temp_counter++ == 255) {

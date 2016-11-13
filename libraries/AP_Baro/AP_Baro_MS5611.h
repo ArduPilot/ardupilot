@@ -51,6 +51,8 @@ protected:
     struct {
         uint16_t c1, c2, c3, c4, c5, c6;
     } _cal_reg;
+
+    bool _discard_next;
 };
 
 class AP_Baro_MS5611 : public AP_Baro_MS56XX
