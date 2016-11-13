@@ -59,7 +59,6 @@ void loop(void)
     if (now - last_compass > 100*1000UL &&
         compass.read()) {
         heading = compass.calculate_heading(ahrs.get_rotation_body_to_ned());
-	hal.console->printf("compass %.01f\n",heading);
         // read compass at 10Hz
         last_compass = now;
     }

@@ -31,7 +31,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/OwnPtr.h>
 
-#include "mraa.h"
 #include "GPIO.h"
 #include "PollerThread.h"
 #include "Scheduler.h"
