@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
 
     // @Param: _RESET
     // @DisplayName: Reset time
-    // @Description: Seconds since epoch since reset (set to 0 to reset)
+    // @Description: Seconds since January 1st 2016 (Unix epoch+1451606400) since reset (set to 0 to reset statistics)
     // @User: Standard
     AP_GROUPINFO("_RESET",    3, AP_Stats, params.reset, 1),
 
@@ -89,7 +89,11 @@ void AP_Stats::update()
         params.bootcount.set_and_save(params_reset == 0 ? 1 : 0);
         params.flttime.set_and_save(0);
         params.runtime.set_and_save(0);
-        params.reset.set_and_save(hal.util->get_system_clock_ms() / 1000);
+        uint32_t system_clock = hal.util->get_system_clock_ms() / 1000;
+        // can't store Unix seconds in a 32-bit float.  Change the
+        // time base to Jan 1st 2016:
+        system_clock -= 1451606400;
+        params.reset.set_and_save(system_clock);
         copy_variables_from_parameters();
     }
 
