@@ -101,7 +101,6 @@ void Plane::init_ardupilot()
 #endif
 
     set_control_channels();
-    init_rc_out_main();
     
 #if HAVE_PX4_MIXER
     if (!quadplane.enable) {
@@ -132,6 +131,8 @@ void Plane::init_ardupilot()
     // setup any board specific drivers
     BoardConfig.init();
 
+    init_rc_out_main();
+    
     // allow servo set on all channels except first 4
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
