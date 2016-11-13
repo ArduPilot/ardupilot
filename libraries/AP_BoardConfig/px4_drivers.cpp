@@ -546,7 +546,8 @@ void AP_BoardConfig::px4_setup_drivers(void)
         _imu_target_temperature.set_default(60);
     }
     
-    if (px4.board_type == PX4_BOARD_PHMINI ||
+    if (px4.board_type == PX4_BOARD_PX4V1 ||
+        px4.board_type == PX4_BOARD_PHMINI ||
         px4.board_type == PX4_BOARD_PH2SLIM ||
         px4.board_type == PX4_BOARD_PIXRACER ||
         px4.board_type == PX4_BOARD_PIXHAWK ||
