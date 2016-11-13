@@ -225,10 +225,21 @@ bool AP_Baro_MS56XX::_timer(void)
 
     next_cmd = next_state == 0 ? ADDR_CMD_CONVERT_TEMPERATURE
                                : ADDR_CMD_CONVERT_PRESSURE;
-    _dev->transfer(&next_cmd, 1, nullptr, 0);
+    if (!_dev->transfer(&next_cmd, 1, nullptr, 0)) {
+        return true;
+    }
 
     /* if we had a failed read we are all done */
     if (adc_val == 0) {
+        // a failed read can mean the returned value is corrupt, we
+        // must discard it
+        _discard_next = true;
+        return true;
+    }
+
+    if (_discard_next) {
+        _discard_next = false;
+        _state = next_state;
         return true;
     }
 
