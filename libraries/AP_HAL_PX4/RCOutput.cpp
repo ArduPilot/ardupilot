@@ -65,7 +65,6 @@ void PX4RCOutput::init()
 #endif
 
     // ensure not to write zeros to disabled channels
-    _enabled_channels = 0;
     for (uint8_t i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
         _period[i] = PWM_IGNORE_THIS_CHANNEL;
     }
