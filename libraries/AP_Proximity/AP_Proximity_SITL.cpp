@@ -44,9 +44,11 @@ AP_Proximity_SITL::AP_Proximity_SITL(AP_Proximity &_frontend,
 bool AP_Proximity_SITL::get_horizontal_distance(float angle_deg, float &distance) const
 {
     if (!fence_loader.boundary_valid(fence_count->get(), fence, true)) {
-        printf("no boundary\n");
         return false;
     }
+
+    // convert to earth frame
+    angle_deg = wrap_360(sitl->state.yawDeg + angle_deg);
 
     /*
       simple bisection search to find distance. Not really efficient,
