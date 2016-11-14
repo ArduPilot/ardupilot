@@ -663,10 +663,14 @@ void AP_InertialSensor_MPU6000::_set_filter_register(void)
     config = 0;
 #endif
 
-    if (_is_icm_device && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+#if 0
+    // temporarily disable fast sampling
+    _fast_sampling = (_is_icm_device && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
+#endif
+    
+    if (_fast_sampling) {
         // this gives us 8kHz sampling on gyros and 4kHz on accels
         config |= BITS_DLPF_CFG_256HZ_NOLPF2;
-        _fast_sampling = true;
     } else {
         // limit to 1kHz if not on SPI
         config |= BITS_DLPF_CFG_188HZ;
