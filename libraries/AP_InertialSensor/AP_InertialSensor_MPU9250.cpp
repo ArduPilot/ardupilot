@@ -443,7 +443,6 @@ void AP_InertialSensor_MPU9250::_accumulate(uint8_t *samples, uint8_t n_samples)
 
 void AP_InertialSensor_MPU9250::_accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples)
 {
-    Vector3l asum, gsum;
     float tsum = 0;
     const int32_t clip_limit = AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS / MPU9250_ACCEL_SCALE_1G;
     bool clipped = false;
