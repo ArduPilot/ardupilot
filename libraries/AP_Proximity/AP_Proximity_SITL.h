@@ -13,10 +13,6 @@ public:
     // constructor
     AP_Proximity_SITL(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
 
-    // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
-    // returns true on successful read and places distance in distance
-    bool get_horizontal_distance(float angle_deg, float &distance) const override;
-
     // update state
     void update(void) override;
 
@@ -27,7 +23,14 @@ private:
     uint32_t last_load_ms;
     AC_PolyFence_loader fence_loader;
     Location current_loc;
-    
+
+    // latest sector updated
+    uint8_t last_sector;
+
     void load_fence(void);
+
+    // get distance in meters to fence in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
+    bool get_distance_to_fence(float angle_deg, float &distance) const;
+
 };
 #endif // CONFIG_HAL_BOARD
