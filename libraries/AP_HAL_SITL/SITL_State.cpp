@@ -97,7 +97,7 @@ void SITL_State::_sitl_setup(const char *home_str)
             gimbal = new SITL::Gimbal(_sitl->state);
         }
 
-        fg_socket.connect("127.0.0.1", 5503);
+        fg_socket.connect("127.0.0.1", 5503 + _instance*10);
     }
 
     if (_synthetic_clock_mode) {
