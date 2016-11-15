@@ -63,6 +63,15 @@ ZYNQ_LD      :=  arm-xilinx-linux-gnueabi-g++
 ZYNQ_GDB     :=  arm-xilinx-linux-gnueabi-gdb
 ZYNQ_OBJCOPY :=  arm-xilinx-linux-gnueabi-objcopy
 
+#toolchain for altera
+ALTERA_CXX     :=  arm-linux-gnueabihf-g++
+ALTERA_CC      :=  arm-linux-gnueabihf-gcc
+ALTERA_AS      :=  arm-linux-gnueabihf-gcc
+ALTERA_AR      :=  arm-linux-gnueabihf-ar
+ALTERA_LD      :=  arm-linux-gnueabihf-g++
+ALTERA_GDB     :=  arm-linux-gnueabihf-gdb
+ALTERA_OBJCOPY :=  arm-linux-gnueabihf-objcopy
+
 # enable ccache if installed
 CCACHE :=  $(call FIND_TOOL,ccache)
 export CCACHE

@@ -25,6 +25,10 @@ erleboard: TOOLCHAIN = BBONE
 erleboard: BUILDSYS_DEPRECATED = 1
 erleboard: all
 
+altera: HAL_BOARD = HAL_BOARD_LINUX
+altera: TOOLCHAIN = ALTERA
+altera: all 
+
 zynq: HAL_BOARD = HAL_BOARD_LINUX
 zynq: TOOLCHAIN = ZYNQ
 zynq: all
