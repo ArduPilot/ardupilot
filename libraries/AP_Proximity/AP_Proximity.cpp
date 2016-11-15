@@ -194,3 +194,14 @@ bool AP_Proximity::get_horizontal_distance(float angle_deg, float &distance) con
 {
     return get_horizontal_distance(primary_instance, angle_deg, distance);
 }
+
+// get distance and angle to closest object (used for pre-arm check)
+//   returns true on success, false if no valid readings
+bool AP_Proximity::get_closest_object(float& angle_deg, float &distance) const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return false;
+    }
+    // get closest object from backend
+    return drivers[primary_instance]->get_closest_object(angle_deg, distance);
+}

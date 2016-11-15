@@ -70,6 +70,10 @@ public:
     bool get_horizontal_distance(uint8_t instance, float angle_deg, float &distance) const;
     bool get_horizontal_distance(float angle_deg, float &distance) const;
 
+    // get distance and angle to closest object (used for pre-arm check)
+    //   returns true on success, false if no valid readings
+    bool get_closest_object(float& angle_deg, float &distance) const;
+
     // The Proximity_State structure is filled in by the backend driver
     struct Proximity_State {
         uint8_t                 instance;   // the instance number of this proximity sensor

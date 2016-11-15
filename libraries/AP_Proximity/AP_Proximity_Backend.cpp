@@ -41,6 +41,30 @@ bool AP_Proximity_Backend::get_horizontal_distance(float angle_deg, float &dista
     return false;
 }
 
+// get distance and angle to closest object (used for pre-arm check)
+//   returns true on success, false if no valid readings
+bool AP_Proximity_Backend::get_closest_object(float& angle_deg, float &distance) const
+{
+    bool sector_found = false;
+    uint8_t sector = 0;
+
+    // check all sectors for shorter distance
+    for (uint8_t i=0; i<_num_sectors; i++) {
+        if (_distance_valid[i]) {
+            if (!sector_found || (_distance[i] < _distance[sector])) {
+                sector = i;
+                sector_found = true;
+            }
+        }
+    }
+
+    if (sector_found) {
+        angle_deg = _angle[sector];
+        distance = _distance[sector];
+    }
+    return sector_found;
+}
+
 // set status and update valid count
 void AP_Proximity_Backend::set_status(AP_Proximity::Proximity_Status status)
 {

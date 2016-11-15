@@ -37,6 +37,10 @@ public:
     // returns true on successful read and places distance in distance
     bool get_horizontal_distance(float angle_deg, float &distance) const;
 
+    // get distance and angle to closest object (used for pre-arm check)
+    //   returns true on success, false if no valid readings
+    bool get_closest_object(float& angle_deg, float &distance) const;
+
 protected:
 
     // set status and update valid_count
