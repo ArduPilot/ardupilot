@@ -213,7 +213,8 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
     , _temp_filter(1000, 1)
     , _rotation(rotation)
     , _dev(std::move(dev))
-    , _fast_sampling(fast_sampling)
+    // fast sampling disabled for now
+    , _fast_sampling(false)
 {
 }
 

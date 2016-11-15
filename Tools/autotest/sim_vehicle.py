@@ -13,6 +13,7 @@ import getpass
 import optparse
 import os
 import os.path
+import re
 import signal
 import subprocess
 import sys
@@ -488,8 +489,12 @@ def do_build(vehicledir, opts, frame_options):
 def find_location_by_name(autotest, locname):
     """Search locations.txt for locname, return GPS coords"""
     locations_filepath = os.path.join(autotest, "locations.txt")
+    comment_regex = re.compile("\s*#.*")
     for line in open(locations_filepath, 'r'):
         line = line.rstrip("\n")
+        line = re.sub(comment_regex, "", line)
+        if len(line) == 0:
+            continue
         (name, loc) = line.split("=")
         if name == locname:
             return loc
