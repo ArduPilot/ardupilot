@@ -112,3 +112,54 @@ bool AP_Proximity_Backend::convert_angle_to_sector(float angle_degrees, uint8_t 
 
     return false;
 }
+
+// get ignore area info
+uint8_t AP_Proximity_Backend::get_ignore_area_count() const
+{
+    // count number of ignore sectors
+    uint8_t count = 0;
+    for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
+        if (frontend._ignore_width_deg[i] != 0) {
+            count++;
+        }
+    }
+    return count;
+}
+
+// get next ignore angle
+bool AP_Proximity_Backend::get_ignore_area(uint8_t index, uint16_t &angle_deg, uint8_t &width_deg) const
+{
+    if (index >= PROXIMITY_MAX_IGNORE) {
+        return false;
+    }
+    angle_deg = frontend._ignore_angle_deg[index];
+    width_deg = frontend._ignore_width_deg[index];
+    return true;
+}
+
+// retrieve start or end angle of next ignore area (i.e. closest ignore area higher than the start_angle)
+// start_or_end = 0 to get start, 1 to retrieve end
+bool AP_Proximity_Backend::get_next_ignore_start_or_end(uint8_t start_or_end, int16_t start_angle, int16_t &ignore_start) const
+{
+    bool found = false;
+    int16_t smallest_angle_diff = 0;
+    int16_t smallest_angle_start = 0;
+
+    for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
+        if (frontend._ignore_width_deg[i] != 0) {
+            int16_t offset = start_or_end == 0 ? -frontend._ignore_width_deg[i] : +frontend._ignore_width_deg[i];
+            int16_t ignore_start_angle = wrap_360(frontend._ignore_angle_deg[i] + offset/2.0f);
+            int16_t ang_diff = wrap_360(ignore_start_angle - start_angle);
+            if (!found || ang_diff < smallest_angle_diff) {
+                smallest_angle_diff = ang_diff;
+                smallest_angle_start = ignore_start_angle;
+                found = true;
+            }
+        }
+    }
+
+    if (found) {
+        ignore_start = smallest_angle_start;
+    }
+    return found;
+}
