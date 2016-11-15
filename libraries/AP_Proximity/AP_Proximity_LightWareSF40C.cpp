@@ -43,19 +43,6 @@ bool AP_Proximity_LightWareSF40C::detect(AP_SerialManager &serial_manager)
     return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0) != nullptr;
 }
 
-// get distance in meters in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
-bool AP_Proximity_LightWareSF40C::get_horizontal_distance(float angle_deg, float &distance) const
-{
-    uint8_t sector;
-    if (convert_angle_to_sector(angle_deg, sector)) {
-        if (_distance_valid[sector]) {
-            distance = _distance[sector];
-            return true;
-        }
-    }
-    return false;
-}
-
 // update the state of the sensor
 void AP_Proximity_LightWareSF40C::update(void)
 {
@@ -375,46 +362,4 @@ void AP_Proximity_LightWareSF40C::clear_buffers()
     element_len[1] = 0;
     element_num = 0;
     memset(element_buf, 0, sizeof(element_buf));
-}
-
-bool AP_Proximity_LightWareSF40C::convert_angle_to_sector(float angle_degrees, uint8_t &sector) const
-{
-    // sanity check angle
-    if (angle_degrees > 360.0f || angle_degrees < -180.0f) {
-        return false;
-    }
-
-    // convert to 0 ~ 360
-    if (angle_degrees < 0.0f) {
-        angle_degrees += 360.0f;
-    }
-
-    bool closest_found = false;
-    uint8_t closest_sector;
-    float closest_angle;
-
-    // search for which sector angle_degrees falls into
-    for (uint8_t i = 0; i < _num_sectors; i++) {
-        float angle_diff = fabsf(wrap_180(_sector_middle_deg[i] - angle_degrees));
-
-        // record if closest
-        if (!closest_found || angle_diff < closest_angle) {
-            closest_found = true;
-            closest_sector = i;
-            closest_angle = angle_diff;
-        }
-
-        if (fabsf(angle_diff) <= _sector_width_deg[i] / 2.0f) {
-            sector = i;
-            return true;
-        }
-    }
-
-    // angle_degrees might have been within a gap between sectors
-    if (closest_found) {
-        sector = closest_sector;
-        return true;
-    }
-
-    return false;
 }
