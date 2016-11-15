@@ -16,7 +16,7 @@
 
 //
 // Driver to read VectorNAV protocol
-// Swee Balachandran swee.balachandran@nianet.org
+// Swee Warman sweewarman@gmail.com
 // ***
 
 #include "AP_GPS.h"
