@@ -3,8 +3,6 @@
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
 
-#define PROXIMITY_SF40C_SECTORS_MAX           8                                 // maximum number of sectors
-#define PROXIMITY_SF40C_SECTOR_WIDTH_DEG      (360/PROXIMITY_SF40C_SECTORS_MAX) // angular width of each sector
 #define PROXIMITY_SF40C_TIMEOUT_MS            200                               // requests timeout after 0.2 seconds
 
 class AP_Proximity_LightWareSF40C : public AP_Proximity_Backend
@@ -16,10 +14,6 @@ public:
 
     // static detection function
     static bool detect(AP_SerialManager &serial_manager);
-
-    // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
-    // returns true on successful read and places distance in distance
-    bool get_horizontal_distance(float angle_deg, float &distance) const;
 
     // update state
     void update(void);
@@ -50,7 +44,6 @@ private:
     bool check_for_reply();
     bool process_reply();
     void clear_buffers();
-    bool convert_angle_to_sector(float angle_degrees, uint8_t &sector) const;
 
     // reply related variables
     AP_HAL::UARTDriver *uart = nullptr;
@@ -90,14 +83,8 @@ private:
         uint16_t value;
     } _sensor_status;
 
-    // sensor data
+    // sensor config
     uint8_t _motor_speed;               // motor speed as reported by lidar
     uint8_t _motor_direction = 99;      // motor direction as reported by lidar
     int16_t _forward_direction = 999;   // forward direction as reported by lidar
-    uint8_t _num_sectors = PROXIMITY_SF40C_SECTORS_MAX;     // number of sectors we will search
-    uint16_t _sector_middle_deg[PROXIMITY_SF40C_SECTORS_MAX] = {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
-    uint8_t _sector_width_deg[PROXIMITY_SF40C_SECTORS_MAX] = {45, 45, 45, 45, 45, 45, 45, 45};          // width (in degrees) of each sector
-    float _angle[PROXIMITY_SF40C_SECTORS_MAX];              // angle to closest object within each sector
-    float _distance[PROXIMITY_SF40C_SECTORS_MAX];           // distance to closest object within each sector
-    bool _distance_valid[PROXIMITY_SF40C_SECTORS_MAX];      // true if a valid distance received for each sector
 };

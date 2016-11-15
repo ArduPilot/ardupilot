@@ -18,6 +18,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity.h"
 
+#define PROXIMITY_SECTORS_MAX   12  // maximum number of sectors
+
 class AP_Proximity_Backend
 {
 public:
@@ -33,13 +35,26 @@ public:
 
     // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
     // returns true on successful read and places distance in distance
-    virtual bool get_horizontal_distance(float angle_deg, float &distance) const = 0;
+    bool get_horizontal_distance(float angle_deg, float &distance) const;
 
 protected:
 
     // set status and update valid_count
     void set_status(AP_Proximity::Proximity_Status status);
 
+    // find which sector a given angle falls into
+    bool convert_angle_to_sector(float angle_degrees, uint8_t &sector) const;
+
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
+
+    // sectors
+    uint8_t _num_sectors = 8;
+    uint16_t _sector_middle_deg[PROXIMITY_SECTORS_MAX] = {0, 45, 90, 135, 180, 225, 270, 315, 0, 0, 0, 0};  // middle angle of each sector
+    uint8_t _sector_width_deg[PROXIMITY_SECTORS_MAX] = {45, 45, 45, 45, 45, 45, 45, 45, 0, 0, 0, 0};        // width (in degrees) of each sector
+
+    // sensor data
+    float _angle[PROXIMITY_SECTORS_MAX];            // angle to closest object within each sector
+    float _distance[PROXIMITY_SECTORS_MAX];         // distance to closest object within each sector
+    bool _distance_valid[PROXIMITY_SECTORS_MAX];    // true if a valid distance received for each sector
 };
