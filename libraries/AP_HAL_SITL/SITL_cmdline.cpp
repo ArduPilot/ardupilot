@@ -132,7 +132,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _rcin_port = 5501;
     _fdm_address = "127.0.0.1";
     _client_address = nullptr;
-    _use_fg_view = false;
+    _use_fg_view = true;
     _instance = 0;
 
     enum long_options {
@@ -172,7 +172,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
-        {"fgview",          false,  0, CMDLINE_FGVIEW},
+        {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
         {0, false, 0, 0}
     };
 
@@ -244,7 +244,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _uart_path[opt - CMDLINE_UARTA] = gopt.optarg;
             break;
         case CMDLINE_FGVIEW:
-            _use_fg_view = true;
+            _use_fg_view = false;
         default:
             _usage();
             exit(1);
