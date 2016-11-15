@@ -65,6 +65,66 @@ bool AP_Proximity_Backend::get_closest_object(float& angle_deg, float &distance)
     return sector_found;
 }
 
+// get boundary points around vehicle for use by avoidance
+//   returns nullptr and sets num_points to zero if no boundary can be returned
+const Vector2f* AP_Proximity_Backend::get_boundary_points(uint16_t& num_points) const
+{
+    // high-level status check
+    if (state.status != AP_Proximity::Proximity_Good) {
+        num_points = 0;
+        return nullptr;
+    }
+
+    // check all sectors have valid data, if not, exit
+    for (uint8_t i=0; i<_num_sectors; i++) {
+        if (!_distance_valid[i]) {
+            num_points = 0;
+            return nullptr;
+        }
+    }
+
+    // return boundary points
+    num_points = _num_sectors;
+    return _boundary_point;
+}
+
+// update boundary points used for object avoidance based on a single sector's distance changing
+//   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
+//   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
+void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
+{
+    // sanity check
+    if (sector >= _num_sectors) {
+        return;
+    }
+
+    // initialise sector_edge_vector if necessary
+    if (_sector_edge_vector[sector].is_zero()) {
+        float angle_rad = radians((float)_sector_middle_deg[sector]+(float)_sector_width_deg[sector]/2.0f);
+        _sector_edge_vector[sector].x = cosf(angle_rad) * 100.0f;
+        _sector_edge_vector[sector].y = sinf(angle_rad) * 100.0f;
+    }
+
+    // find adjacent sector (clockwise)
+    uint8_t next_sector = sector + 1;
+    if (next_sector >= _num_sectors) {
+        next_sector = 0;
+    }
+
+    // boundary point lies on the line between the two sectors at the shorter distance found in the two sectors
+    if (_distance_valid[sector] && _distance_valid[next_sector]) {
+        float shortest_distance = MIN(_distance[sector], _distance[next_sector]);
+        _boundary_point[sector] = _sector_edge_vector[sector] * shortest_distance;
+    }
+
+    // repeat for edge between sector and previous sector
+    uint8_t prev_sector = (sector == 0) ? _num_sectors-1 : sector-1;
+    if (_distance_valid[prev_sector] && _distance_valid[sector]) {
+        float shortest_distance = MIN(_distance[prev_sector], _distance[sector]);
+        _boundary_point[prev_sector] = _sector_edge_vector[prev_sector] * shortest_distance;
+    }
+}
+
 // set status and update valid count
 void AP_Proximity_Backend::set_status(AP_Proximity::Proximity_Status status)
 {

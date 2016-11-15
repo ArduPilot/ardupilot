@@ -71,6 +71,11 @@ public:
     bool get_horizontal_distance(uint8_t instance, float angle_deg, float &distance) const;
     bool get_horizontal_distance(float angle_deg, float &distance) const;
 
+    // get boundary points around vehicle for use by avoidance
+    //   returns nullptr and sets num_points to zero if no boundary can be returned
+    const Vector2f* get_boundary_points(uint8_t instance, uint16_t& num_points) const;
+    const Vector2f* get_boundary_points(uint16_t& num_points) const;
+
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings
     bool get_closest_object(float& angle_deg, float &distance) const;
