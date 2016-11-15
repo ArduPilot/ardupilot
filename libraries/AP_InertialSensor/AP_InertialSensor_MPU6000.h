@@ -122,6 +122,13 @@ private:
     uint8_t *_fifo_buffer;
 
     uint8_t _reg_check_counter;
+
+    // accumulators for fast sampling
+    struct {
+        Vector3l accel;
+        Vector3l gyro;
+        uint8_t count;
+    } _accum;
 };
 
 class AP_MPU6000_AuxiliaryBusSlave : public AuxiliaryBusSlave
