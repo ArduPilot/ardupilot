@@ -98,7 +98,7 @@ void SITL_State::_sitl_setup(const char *home_str)
         }
 
         if (_use_fg_view) {
-            fg_socket.connect("127.0.0.1", 5503);
+            fg_socket.connect("127.0.0.1", _fg_view_port);
         }
 
     }
