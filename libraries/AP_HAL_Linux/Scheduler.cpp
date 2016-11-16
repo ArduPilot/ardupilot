@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "RCInput.h"
 #include "RPIOUARTDriver.h"
@@ -65,6 +66,20 @@ extern const AP_HAL::HAL& hal;
 Scheduler::Scheduler()
 { }
 
+
+void Scheduler::init_realtime()
+{
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+  // we don't run Replay in real-time...
+#else
+    struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
+    if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+        AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
+                      strerror(errno));
+    }
+#endif
+}
+
 void Scheduler::init()
 {
     int ret;
@@ -84,16 +99,7 @@ void Scheduler::init()
 
     mlockall(MCL_CURRENT|MCL_FUTURE);
 
-    if (geteuid() == 0) {
-        struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
-        ret = sched_setscheduler(0, SCHED_FIFO, &param);
-        if (ret == -1) {
-            AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
-                          strerror(errno));
-        }
-    } else {
-        printf("WARNING: running as non-root. Will not use realtime scheduling\n");
-    }
+    init_realtime();
 
     /* set barrier to N + 1 threads: worker threads + main */
     unsigned n_threads = ARRAY_SIZE(sched_table) + 1;
