@@ -159,7 +159,7 @@ void RPIOUARTDriver::_timer_tick(void)
     struct IOPacket _packet_tx = {0}, _packet_rx = {0};
 
     /* get write_buf bytes */
-    uint32_t max_size = MIN(PKT_MAX_REGS * 2,
+    uint32_t max_size = MIN((uint32_t) PKT_MAX_REGS * 2,
                             _baudrate / 10 / (1000000 / RPIOUART_POLL_TIME_INTERVAL));
     uint32_t n = MIN(_writebuf.available(), max_size);
 
