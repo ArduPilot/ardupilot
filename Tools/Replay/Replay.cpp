@@ -482,6 +482,16 @@ static void _replay_sig_fpe(int signum)
     abort();
 }
 
+FILE *Replay::xfopen(const char *filename, const char *mode)
+{
+    FILE *ret = fopen(filename, mode);
+    if (ret == nullptr) {
+        ::fprintf(stderr, "Failed to open (%s): %m\n", filename);
+        abort();
+    }
+    return ret;
+}
+
 void Replay::setup()
 {
     ::printf("Starting\n");
@@ -532,12 +542,12 @@ void Replay::setup()
     
     set_ins_update_rate(log_info.update_rate);
 
-    plotf = fopen("plot.dat", "w");
-    plotf2 = fopen("plot2.dat", "w");
-    ekf1f = fopen("EKF1.dat", "w");
-    ekf2f = fopen("EKF2.dat", "w");
-    ekf3f = fopen("EKF3.dat", "w");
-    ekf4f = fopen("EKF4.dat", "w");
+    plotf = xfopen("plot.dat", "w");
+    plotf2 = xfopen("plot2.dat", "w");
+    ekf1f = xfopen("EKF1.dat", "w");
+    ekf2f = xfopen("EKF2.dat", "w");
+    ekf3f = xfopen("EKF3.dat", "w");
+    ekf4f = xfopen("EKF4.dat", "w");
 
     fprintf(plotf, "time SIM.Roll SIM.Pitch SIM.Yaw BAR.Alt FLIGHT.Roll FLIGHT.Pitch FLIGHT.Yaw FLIGHT.dN FLIGHT.dE AHR2.Roll AHR2.Pitch AHR2.Yaw DCM.Roll DCM.Pitch DCM.Yaw EKF.Roll EKF.Pitch EKF.Yaw INAV.dN INAV.dE INAV.Alt EKF.dN EKF.dE EKF.Alt\n");
     fprintf(plotf2, "time E1 E2 E3 VN VE VD PN PE PD GX GY GZ WN WE MN ME MD MX MY MZ E1ref E2ref E3ref\n");
