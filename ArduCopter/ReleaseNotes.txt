@@ -1,6 +1,6 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.4.2-rc1/rc2 07-Nov-2016
+Copter 3.4.2 16-Nov-2016 / Copter 3.4.2-rc1/rc2 07-Nov-2016
 Changes from 3.4.1
 1) Minor Improvements:
     a) ACRO_Y_EXPO applies to all flight modes (but is defaulted to zero)
@@ -10,7 +10,7 @@ Changes from 3.4.1
 2) Bug Fixes:
     a) compass calibration (onboard) fix to return completion status
     b) LeddarOne driver busy-wait fix 
-    c) SBF GPS altitude fix
+    c) SBF GPS altitude and accuracy reporting fix 
     d) MAV GPS uses existing configured baud rate instead of auto detecting 
 ------------------------------------------------------------------
 Copter 3.4.1 01-Nov-2016
