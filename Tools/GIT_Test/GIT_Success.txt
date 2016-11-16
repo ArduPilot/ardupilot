@@ -43,7 +43,7 @@ Yuta Yoshinuma
 Yasuyuki Suzuki
 Koji Hosaka
 Mitsuhiro Komiya
-Eduardo Cáceres (eduherminio)
+Eduardo Caceres (eduherminio)
 steven test
 Fnoop hello :)
 
@@ -67,3 +67,4 @@ Kamia Umefune
 Ryunosuke Kuninobu
 Kenta Asaishi
 LZM
+Isamu Ishiguro
