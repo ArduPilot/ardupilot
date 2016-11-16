@@ -382,20 +382,23 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
                                                      AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
                                                      int drdy_pin_num_a,
                                                      int drdy_pin_num_g,
-                                                     enum Rotation rotation)
+                                                     enum Rotation rotation_a,
+                                                     enum Rotation rotation_g)
     : AP_InertialSensor_Backend(imu)
     , _dev_gyro(std::move(dev_gyro))
     , _dev_accel(std::move(dev_accel))
     , _drdy_pin_num_a(drdy_pin_num_a)
     , _drdy_pin_num_g(drdy_pin_num_g)
-    , _rotation(rotation)
+    , _rotation_a(rotation_a)
+    , _rotation_g(rotation_g)
 {
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_imu,
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
-                                                            enum Rotation rotation)
+                                                            enum Rotation rotation_a,
+                                                            enum Rotation rotation_g)
 {
     if (!dev_gyro || !dev_accel) {
         return nullptr;
@@ -403,7 +406,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_
     AP_InertialSensor_LSM9DS0 *sensor =
         new AP_InertialSensor_LSM9DS0(_imu, std::move(dev_gyro), std::move(dev_accel),
                                       LSM9DS0_DRY_X_PIN, LSM9DS0_DRY_G_PIN,
-                                      rotation);
+                                      rotation_a, rotation_g);
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;
@@ -519,8 +522,8 @@ void AP_InertialSensor_LSM9DS0::start(void)
     _gyro_instance = _imu.register_gyro(760, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_L3GD20));
     _accel_instance = _imu.register_accel(800, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D));
 
-    set_gyro_orientation(_gyro_instance, _rotation);
-    set_accel_orientation(_accel_instance, _rotation);
+    set_gyro_orientation(_gyro_instance, _rotation_g);
+    set_accel_orientation(_accel_instance, _rotation_a);
     
     _set_accel_max_abs_offset(_accel_instance, 5.0f);
 
@@ -756,12 +759,6 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     }
 
     Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    // LSM303D on RasPilot
-    // FIXME: wrong way to provide rotation per-board
-    gyro_data.rotate(ROTATION_YAW_90);
-#endif
 
     gyro_data *= _gyro_scale;
 
