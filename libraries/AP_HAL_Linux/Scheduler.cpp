@@ -56,6 +56,23 @@ extern const AP_HAL::HAL& hal;
 Scheduler::Scheduler()
 { }
 
+
+void Scheduler::init_realtime()
+{
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    // we don't run Replay in real-time...
+    return;
+#endif
+
+    mlockall(MCL_CURRENT|MCL_FUTURE);
+
+    struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
+    if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+        AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
+                      strerror(errno));
+    }
+}
+
 void Scheduler::init()
 {
     int ret;
@@ -74,16 +91,7 @@ void Scheduler::init()
 
     _main_ctx = pthread_self();
 
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
-    // we don't run Replay in real-time...
-    mlockall(MCL_CURRENT|MCL_FUTURE);
-
-    struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
-    if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
-        AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
-                      strerror(errno));
-    }
-#endif
+    init_realtime();
 
     /* set barrier to N + 1 threads: worker threads + main */
     unsigned n_threads = ARRAY_SIZE(sched_table) + 1;
