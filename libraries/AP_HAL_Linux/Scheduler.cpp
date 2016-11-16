@@ -84,15 +84,15 @@ void Scheduler::init()
 
     mlockall(MCL_CURRENT|MCL_FUTURE);
 
-    if (geteuid() != 0) {
+    if (geteuid() == 0) {
+        struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
+        ret = sched_setscheduler(0, SCHED_FIFO, &param);
+        if (ret == -1) {
+            AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
+                          strerror(errno));
+        }
+    } else {
         printf("WARNING: running as non-root. Will not use realtime scheduling\n");
-    }
-
-    struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
-    ret = sched_setscheduler(0, SCHED_FIFO, &param);
-    if (ret == -1) {
-        AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
-                      strerror(errno));
     }
 
     /* set barrier to N + 1 threads: worker threads + main */
