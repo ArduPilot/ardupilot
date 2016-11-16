@@ -66,6 +66,8 @@ private:
         Scheduler &_sched;
     };
 
+    void     init_realtime();
+
     void _wait_all_threads();
 
     void     _debug_stack();
