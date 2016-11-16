@@ -43,7 +43,7 @@ Yuta Yoshinuma
 Yasuyuki Suzuki
 Koji Hosaka
 Mitsuhiro Komiya
-Eduardo Caceres (eduherminio)
+Eduardo Cáceres (eduherminio)
 steven test
 Fnoop hello :)
 
@@ -61,4 +61,3 @@ Hiro test
 Shinya Fujimura
 Hiroyuki Kuratsune
 Noriyoshi Tanaka
-Isamu Ishiguro
