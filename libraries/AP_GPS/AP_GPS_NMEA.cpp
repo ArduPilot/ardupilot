@@ -102,6 +102,7 @@ AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDr
     _sentence_type(0),
     _term_number(0),
     _term_offset(0),
+    _gps_status(0),
     _gps_data_good(false)
 {
     gps.send_blob_start(state.instance, _initialisation_blob, sizeof(_initialisation_blob));
@@ -306,7 +307,15 @@ bool AP_GPS_NMEA::_term_complete()
                     make_gps_time(_new_date, _new_time * 10);
                     state.last_gps_time_ms = now;
                     // To-Do: add support for proper reporting of 2D and 3D fix
-                    state.status           = AP_GPS::GPS_OK_FIX_3D;
+                    if (_gps_status != 5) {
+                    state.status        = AP_GPS::GPS_OK_FIX_3D_FLOAT;
+                    } else if (_gps_status != 4) {
+                    state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    } else {                  
+                    state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    }
+                    //
+                    //state.status        = AP_GPS::GPS_OK_FIX_3D;
                     fill_3d_velocity();
                     break;
                 case _GPS_SENTENCE_GGA:
@@ -317,7 +326,15 @@ bool AP_GPS_NMEA::_term_complete()
                     state.num_sats      = _new_satellite_count;
                     state.hdop          = _new_hdop;
                     // To-Do: add support for proper reporting of 2D and 3D fix
+                    if (_gps_status != 5) {
+                    state.status        = AP_GPS::GPS_OK_FIX_3D_FLOAT;
+                    } else if (_gps_status != 4) {
+                    state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    } else {                  
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    }
+                    //
+                    //state.status        = AP_GPS::GPS_OK_FIX_3D;
                     break;
                 case _GPS_SENTENCE_VTG:
                     _last_VTG_ms = now;
