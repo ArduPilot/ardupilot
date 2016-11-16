@@ -39,9 +39,6 @@ public:
     
     // return true if there is a valid los measurement available
     bool have_los_meas();
-    
-    // parses a mavlink message from the companion computer
-    void handle_msg(mavlink_message_t* msg) {};
 
 private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
