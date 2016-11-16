@@ -1,2 +1,3 @@
-scp build/linux/examples/* root@192.168.1.119:/root/build
+scp build/linux/examples/* root@192.168.1.119:/home/root/build
+scp build/linux-debug/examples/* root@192.168.1.119:/home/root/build/debug
 
