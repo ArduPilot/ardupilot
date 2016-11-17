@@ -140,6 +140,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _gazebo_address = "127.0.0.1";
     _gazebo_port_in = 9003;
     _gazebo_port_out = 9002;
+    _irlock_port = 9005;
     _instance = 0;
 
     enum long_options {
@@ -215,6 +216,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _fg_view_port += _instance * 10;
             _gazebo_port_in += _instance * 10;
             _gazebo_port_out += _instance * 10;
+            _irlock_port += _instance * 10;
         }
         break;
         case 'P':
