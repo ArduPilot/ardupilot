@@ -30,9 +30,6 @@ private:
     Bitmask _dirty_mask{PX4_STORAGE_NUM_LINES};
     perf_counter_t  _perf_storage;
     perf_counter_t  _perf_errors;
-    void _upgrade_to_mtd(void);
-    uint32_t _mtd_signature(void);
-    void _mtd_write_signature(void);
 
 #if defined (CONFIG_ARCH_BOARD_PX4FMU_V4)
     irqstate_t irq_state;
