@@ -140,7 +140,8 @@ void Sub::update_optical_flow(void)
         uint8_t flowQuality = optflow.quality();
         Vector2f flowRate = optflow.flowRate();
         Vector2f bodyRate = optflow.bodyRate();
-        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update);
+        const Vector3f &posOffset = optflow.get_pos_offset();
+        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, posOffset);
         if (g.log_bitmask & MASK_LOG_OPTFLOW) {
             Log_Write_Optflow();
         }
@@ -206,10 +207,10 @@ void Sub::accel_cal_update()
     }
 }
 
-#if EPM_ENABLED == ENABLED
-// epm update - moves epm pwm output back to neutral after grab or release is completed
-void Sub::epm_update()
+#if GRIPPER_ENABLED == ENABLED
+// gripper update
+void Sub::gripper_update()
 {
-    epm.update();
+    g2.gripper.update();
 }
 #endif

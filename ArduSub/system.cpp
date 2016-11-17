@@ -111,9 +111,9 @@ void Sub::init_ardupilot()
     // initialise serial port
     serial_manager.init();
 
-    // init EPM cargo gripper
-#if EPM_ENABLED == ENABLED
-    epm.init();
+    // init cargo gripper
+#if GRIPPER_ENABLED == ENABLED
+    g2.gripper.init();
 #endif
 
     // initialise notify system
@@ -142,11 +142,6 @@ void Sub::init_ardupilot()
     for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
-
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // setup frsky
-    frsky_telemetry.init(serial_manager);
-#endif
 
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
@@ -419,15 +414,6 @@ void Sub::check_usb_mux(void)
     // the user has switched to/from the telemetry port
     ap.usb_connected = usb_check;
 }
-
-// frsky_telemetry_send - sends telemetry data using frsky telemetry
-//  should be called at 5Hz by scheduler
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Sub::frsky_telemetry_send(void)
-{
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
-#endif
 
 /*
   should we log a message type now?

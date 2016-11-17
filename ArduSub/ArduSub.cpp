@@ -129,12 +129,9 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(rpm_update,            10,    200),
     SCHED_TASK(compass_cal_update,   100,    100),
     SCHED_TASK(accel_cal_update,      10,    100),
-#if FRSKY_TELEM_ENABLED == ENABLED
-    SCHED_TASK(frsky_telemetry_send,   5,     75),
-#endif
 	SCHED_TASK(terrain_update,        10,    100),
-#if EPM_ENABLED == ENABLED
-    SCHED_TASK(epm_update,            10,     75),
+#if GRIPPER_ENABLED == ENABLED
+    SCHED_TASK(gripper_update,            10,     75),
 #endif
 #ifdef USERHOOK_FASTLOOP
     SCHED_TASK(userhook_FastLoop,    100,     75),

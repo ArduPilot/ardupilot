@@ -134,8 +134,8 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-#if EPM_ENABLED == ENABLED
-    case MAV_CMD_DO_GRIPPER:                            // Mission command to control EPM gripper
+#if GRIPPER_ENABLED == ENABLED
+    case MAV_CMD_DO_GRIPPER:                            // Mission command to control gripper
         do_gripper(cmd);
         break;
 #endif
@@ -231,11 +231,27 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_CONDITION_YAW:
         return verify_yaw();
 
-    case MAV_CMD_DO_PARACHUTE:
-        // assume parachute was released successfully
+    // do commands (always return true)
+    case MAV_CMD_DO_CHANGE_SPEED:
+    case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_REPEAT_RELAY:
+    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_DO_MOUNT_CONTROL:
+    case MAV_CMD_DO_CONTROL_VIDEO:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_DO_PARACHUTE:  // assume parachute was released successfully
+    case MAV_CMD_DO_GRIPPER:
+    case MAV_CMD_DO_GUIDED_LIMITS:
         return true;
 
     default:
+        // error message
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
@@ -554,19 +570,19 @@ void Sub::do_parachute(const AP_Mission::Mission_Command& cmd)
 }
 #endif
 
-#if EPM_ENABLED == ENABLED
-// do_gripper - control EPM gripper
+#if GRIPPER_ENABLED == ENABLED
+// do_gripper - control gripper
 void Sub::do_gripper(const AP_Mission::Mission_Command& cmd)
 {
     // Note: we ignore the gripper num parameter because we only support one gripper
     switch (cmd.content.gripper.action) {
         case GRIPPER_ACTION_RELEASE:
-            epm.release();
-            Log_Write_Event(DATA_EPM_RELEASE);
+            g2.gripper.release();
+            Log_Write_Event(DATA_GRIPPER_RELEASE);
             break;
         case GRIPPER_ACTION_GRAB:
-            epm.grab();
-            Log_Write_Event(DATA_EPM_GRAB);
+            g2.gripper.grab();
+            Log_Write_Event(DATA_GRIPPER_GRAB);
             break;
         default:
             // do nothing

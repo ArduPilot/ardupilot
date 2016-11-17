@@ -835,12 +835,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                  "RELAY_", AP_Relay),
 
-#if EPM_ENABLED == ENABLED
-	// @Group: EPM_
-    // @Path: ../libraries/AP_EPM/AP_EPM.cpp
-    GOBJECT(epm,            "EPM_", AP_EPM),
-#endif
-
 #if PARACHUTE == ENABLED
 	// @Group: CHUTE_
     // @Path: ../libraries/AP_Parachute/AP_Parachute.cpp
@@ -1072,15 +1066,36 @@ const AP_Param::Info Sub::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
-    // @Param: TKOFF_NAV_ALT
-    // @DisplayName: Takeoff navigation altitude
-    // @Description: This is the altitude in meters above the takeoff point that attitude changes for navigation can begin
-    // @Range: 0 5
-    // @User: Standard
-    AP_GROUPINFO("WP_TKOFF_NAV_ALT", 1, ParametersG2, takeoff_nav_alt, 0),
+	// @Param: WP_NAVALT_MIN
+	// @DisplayName: Minimum navigation altitude
+	// @Description: This is the altitude in meters above which for navigation can begin. This applies in auto takeoff and auto landing.
+	// @Range: 0 5
+	// @User: Standard
+	AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
+
+#if PROXIMITY_ENABLED == ENABLED
+    // @Group: PRX
+    // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
+    AP_SUBGROUPINFO(proximity, "PRX", 2, ParametersG2, AP_Proximity),
+#endif
+
+#if GRIPPER_ENABLED == ENABLED
+	// @Group: GRIP_
+    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
+    AP_SUBGROUPINFO(gripper, "GRIP_", 3, ParametersG2, AP_Gripper),
+#endif
 
     AP_GROUPEND
 };
+
+/*
+  constructor for g2 object
+ */
+ParametersG2::ParametersG2(void)
+    : proximity(sub.serial_manager)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
 
 /*
   This is a conversion table from old parameter values to new
