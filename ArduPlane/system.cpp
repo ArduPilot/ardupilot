@@ -335,13 +335,13 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     auto_state.next_wp_no_crosstrack = true;
 
     // reset landing check
-    auto_state.checked_for_autoland = false;
+    landing.checked_for_autoland = false;
 
     // reset go around command
     auto_state.commanded_go_around = false;
 
     // not in pre-flare
-    auto_state.land_pre_flare = false;
+    landing.pre_flare = false;
     
     // zero locked course
     steer_state.locked_course_err = 0;

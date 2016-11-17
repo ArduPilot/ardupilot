@@ -16,8 +16,8 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
         // set land_complete to false to stop us zeroing the throttle
-        auto_state.land_complete = false;
-        auto_state.land_pre_flare = false;
+        landing.complete = false;
+        landing.pre_flare = false;
         auto_state.sink_rate = 0;
 
         // set takeoff_complete to true so we don't add extra elevator
@@ -31,7 +31,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         auto_state.idle_mode = false;
         
         // once landed, post some landing statistics to the GCS
-        auto_state.post_landing_stats = false;
+        landing.post_stats = false;
 
         nav_controller->set_data_is_stale();
 
@@ -399,7 +399,7 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         auto_state.takeoff_pitch_cd = 1000;
     }
 
-    auto_state.land_slope = 0;
+    landing.slope = 0;
 
     // zero rangefinder state, start to accumulate good samples now
     memset(&rangefinder_state, 0, sizeof(rangefinder_state));

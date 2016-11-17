@@ -32,6 +32,31 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // Flag to indicate if we have landed.
+    // Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
+    bool complete;
+
+    // Flag to indicate if we have triggered pre-flare. This occurs when we have reached LAND_PF_ALT
+    bool pre_flare;
+
+    // are we in auto and flight mode is approach || pre-flare || final (flare)
+    bool in_progress;
+
+    // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - aparm.land_flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
+    float slope;
+
+    // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
+    float initial_slope;
+
+    // landing altitude offset (meters)
+    float alt_offset;
+
+    // once landed, post some landing statistics to the GCS
+    bool post_stats;
+
+    // have we checked for an auto-land?
+    bool checked_for_autoland;
+
 private:
 
     AP_Mission &mission;

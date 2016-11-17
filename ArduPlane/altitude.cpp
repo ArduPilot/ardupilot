@@ -473,10 +473,10 @@ float Plane::mission_alt_offset(void)
 {
     float ret = g.alt_offset;
     if (control_mode == AUTO &&
-            (auto_state.land_in_progress || auto_state.wp_is_land_approach)) {
+            (landing.in_progress || auto_state.wp_is_land_approach)) {
         // when landing after an aborted landing due to too high glide
         // slope we use an offset from the last landing attempt
-        ret += auto_state.land_alt_offset;
+        ret += landing.alt_offset;
     }
     return ret;
 }
@@ -657,7 +657,7 @@ void Plane::rangefinder_height_update(void)
         if (now - rangefinder_state.last_correction_time_ms > 5000) {
             rangefinder_state.correction = correction;
             rangefinder_state.initial_correction = correction;
-            auto_state.initial_land_slope = auto_state.land_slope;
+            landing.initial_slope = landing.slope;
             rangefinder_state.last_correction_time_ms = now;
         } else {
             rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
