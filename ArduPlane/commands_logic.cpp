@@ -401,10 +401,8 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 
     auto_state.land_slope = 0;
 
-#if RANGEFINDER_ENABLED == ENABLED
     // zero rangefinder state, start to accumulate good samples now
     memset(&rangefinder_state, 0, sizeof(rangefinder_state));
-#endif
 }
 
 void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)

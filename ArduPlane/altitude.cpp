@@ -139,11 +139,9 @@ int32_t Plane::relative_altitude_abs_cm(void)
  */
 float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 {
-#if RANGEFINDER_ENABLED == ENABLED
    if (use_rangefinder_if_available && rangefinder_state.in_range) {
         return rangefinder_state.height_estimate;
     }
-#endif
 
 #if AP_TERRAIN_AVAILABLE
     float altitude;
@@ -571,7 +569,6 @@ float Plane::lookahead_adjustment(void)
  */
 float Plane::rangefinder_correction(void)
 {
-#if RANGEFINDER_ENABLED == ENABLED
     if (millis() - rangefinder_state.last_correction_time_ms > 5000) {
         // we haven't had any rangefinder data for 5s - don't use it
         return 0;
@@ -588,12 +585,8 @@ float Plane::rangefinder_correction(void)
     }
 
     return rangefinder_state.correction;
-#else
-    return 0;
-#endif
 }
 
-#if RANGEFINDER_ENABLED == ENABLED
 /*
   update the offset between rangefinder height and terrain height
  */
@@ -680,4 +673,3 @@ void Plane::rangefinder_height_update(void)
         
     }
 }
-#endif
