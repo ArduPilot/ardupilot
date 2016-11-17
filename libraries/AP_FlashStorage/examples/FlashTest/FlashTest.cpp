@@ -16,7 +16,7 @@ public:
     void loop() override;
 
 private:
-    static const uint32_t flash_sector_size = 128U * 1024U;
+    static const uint32_t flash_sector_size = 32U * 1024U;
 
     uint8_t mem_buffer[AP_FlashStorage::storage_size];
     uint8_t mem_mirror[AP_FlashStorage::storage_size];
