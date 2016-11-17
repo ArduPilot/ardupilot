@@ -613,13 +613,23 @@ public:
 */
 class ParametersG2 {
 public:
-    ParametersG2(void) { AP_Param::setup_object_defaults(this, var_info); }
+    ParametersG2(void);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
     // altitude at which nav control can start in takeoff
-    AP_Float takeoff_nav_alt;
+    AP_Float wp_navalt_min;
+
+#if GRIPPER_ENABLED
+    AP_Gripper gripper;
+#endif
+
+#if PROXIMITY_ENABLED == ENABLED
+    // proximity (aka object avoidance) library
+    AP_Proximity proximity;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];

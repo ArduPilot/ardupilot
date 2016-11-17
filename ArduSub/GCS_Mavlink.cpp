@@ -338,7 +338,7 @@ void NOINLINE Sub::send_hwstatus(mavlink_channel_t chan)
     mavlink_msg_hwstatus_send(
         chan,
         hal.analogin->board_voltage()*1000,
-        hal.i2c->lockup_count());
+        0);
 }
 
 void NOINLINE Sub::send_servo_out(mavlink_channel_t chan)
@@ -392,7 +392,15 @@ void NOINLINE Sub::send_radio_out(mavlink_channel_t chan)
         hal.rcout->read(4),
         hal.rcout->read(5),
         hal.rcout->read(6),
-        hal.rcout->read(7));
+        hal.rcout->read(7),
+        hal.rcout->read(8),
+        hal.rcout->read(9),
+        hal.rcout->read(10),
+        hal.rcout->read(11),
+        hal.rcout->read(12),
+        hal.rcout->read(13),
+        hal.rcout->read(14),
+        hal.rcout->read(15));
 }
 
 void NOINLINE Sub::send_vfr_hud(mavlink_channel_t chan)
@@ -1587,20 +1595,20 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             result = sub.mavlink_motor_test_start(chan, (uint8_t)packet.param1, (uint8_t)packet.param2, (uint16_t)packet.param3, packet.param4);
             break;
 
-#if EPM_ENABLED == ENABLED
+#if GRIPPER_ENABLED == ENABLED
         case MAV_CMD_DO_GRIPPER:
             // param1 : gripper number (ignored)
             // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
-            if(!sub.epm.enabled()) {
+            if(!sub.g2.gripper.enabled()) {
                 result = MAV_RESULT_FAILED;
             } else {
                 result = MAV_RESULT_ACCEPTED;
                 switch ((uint8_t)packet.param2) {
                     case GRIPPER_ACTION_RELEASE:
-                        sub.epm.release();
+                        sub.g2.gripper.release();
                         break;
                     case GRIPPER_ACTION_GRAB:
-                        sub.epm.grab();
+                        sub.g2.gripper.grab();
                         break;
                     default:
                         result = MAV_RESULT_FAILED;

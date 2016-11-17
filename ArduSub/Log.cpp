@@ -362,7 +362,7 @@ void Sub::Log_Write_Performance()
         num_loops        : perf_info_get_num_loops(),
         max_time         : perf_info_get_max_time(),
         pm_test          : pmTest1,
-        i2c_lockup_count : hal.i2c->lockup_count(),
+        i2c_lockup_count : 0,
         ins_error_count  : ins.error_count(),
 		log_dropped      : DataFlash.num_dropped() - perf_info_get_num_dropped(),
     };

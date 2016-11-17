@@ -17,8 +17,6 @@ def build(bld):
             'AC_Sprayer',
             'AC_WPNav',
             'AP_Camera',
-            'AP_EPM',
-            'AP_Frsky_Telem',
             'AP_IRLock',
             'AP_InertialNav',
             'AP_JSButton',
@@ -33,6 +31,8 @@ def build(bld):
             'AP_RSSI',
             'AP_Relay',
             'AP_ServoRelayEvents',
+            'AP_Proximity',
+            'AP_Gripper',
         ],
         use='mavlink',
     )

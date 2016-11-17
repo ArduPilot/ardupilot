@@ -64,6 +64,7 @@
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
+#include <AP_Proximity/AP_Proximity.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <Filter/Filter.h>             // Filter library
@@ -85,7 +86,6 @@
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
-#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_ADSB/AP_ADSB.h>
@@ -102,8 +102,8 @@
 #if SPRAYER == ENABLED
 #include <AC_Sprayer/AC_Sprayer.h>         // crop sprayer library
 #endif
-#if EPM_ENABLED == ENABLED
-#include <AP_EPM/AP_EPM.h>             // EPM cargo gripper stuff
+#if GRIPPER_ENABLED == ENABLED
+#include <AP_Gripper/AP_Gripper.h>             // gripper stuff
 #endif
 #if PARACHUTE == ENABLED
 #include <AP_Parachute/AP_Parachute.h>       // Parachute release library
@@ -124,6 +124,7 @@ class Sub : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Sub;
     friend class Parameters;
+    friend class ParametersG2;
 
     Sub(void);
 
@@ -413,11 +414,6 @@ private:
     // Battery Sensors
     AP_BattMonitor battery;
 
-    // FrSky telemetry support
-#if FRSKY_TELEM_ENABLED == ENABLED
-    AP_Frsky_Telem frsky_telemetry;
-#endif
-
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
@@ -527,11 +523,6 @@ private:
     // Crop Sprayer
 #if SPRAYER == ENABLED
     AC_Sprayer sprayer;
-#endif
-
-    // EPM Cargo Griper
-#if EPM_ENABLED == ENABLED
-    AP_EPM epm;
 #endif
 
     // Parachute release
@@ -949,7 +940,7 @@ private:
     void update_precland();
     void read_battery(void);
     void read_receiver_rssi(void);
-    void epm_update();
+    void gripper_update();
     void terrain_update();
     void terrain_logging();
     bool terrain_use();
@@ -987,7 +978,6 @@ private:
     bool optflow_position_ok();
     void update_auto_armed();
     void check_usb_mux(void);
-    void frsky_telemetry_send(void);
     bool should_log(uint32_t mask);
     bool current_mode_has_user_takeoff(bool must_navigate);
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
@@ -1028,7 +1018,7 @@ private:
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
-#if EPM_ENABLED == ENABLED
+#if GRIPPER_ENABLED == ENABLED
     void do_gripper(const AP_Mission::Mission_Command& cmd);
 #endif
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
