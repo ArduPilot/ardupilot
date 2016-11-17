@@ -482,11 +482,11 @@ static void _replay_sig_fpe(int signum)
     abort();
 }
 
-FILE *Replay::xfopen(const char *filename, const char *mode)
+FILE *Replay::xfopen(const char *f, const char *mode)
 {
-    FILE *ret = fopen(filename, mode);
+    FILE *ret = fopen(f, mode);
     if (ret == nullptr) {
-        ::fprintf(stderr, "Failed to open (%s): %m\n", filename);
+        ::fprintf(stderr, "Failed to open (%s): %m\n", f);
         abort();
     }
     return ret;
