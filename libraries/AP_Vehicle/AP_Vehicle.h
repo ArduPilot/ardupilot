@@ -43,6 +43,20 @@ public:
         AP_Float land_flare_sec;
         AP_Float land_pre_flare_airspeed;
         AP_Int8  stall_prevention;
+
+        struct Rangefinder_State {
+            bool in_range:1;
+            bool have_initial_reading:1;
+            bool in_use:1;
+            float initial_range;
+            float correction;
+            float initial_correction;
+            float last_stable_correction;
+            uint32_t last_correction_time_ms;
+            uint8_t in_range_count;
+            float height_estimate;
+            float last_distance;
+        };
     };
 
     /*
