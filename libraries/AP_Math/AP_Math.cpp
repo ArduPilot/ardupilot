@@ -174,3 +174,17 @@ template int constrain_value<int>(const int amt, const int low, const int high);
 template short constrain_value<short>(const short amt, const short low, const short high);
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
+
+
+/*
+  simple 16 bit random number generator
+ */
+uint16_t get_random16(void)
+{
+    static uint32_t m_z = 1234;
+    static uint32_t m_w = 76542;
+    m_z = 36969 * (m_z & 65535) + (m_z >> 16);
+    m_w = 18000 * (m_w & 65535) + (m_w >> 16);
+    return ((m_z << 16) + m_w) & 0xFFFF;
+}
+
