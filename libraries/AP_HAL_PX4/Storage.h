@@ -21,7 +21,6 @@ public:
     void _timer_tick(void);
 
 private:
-    int _fd;
     volatile bool _initialised;
     void _storage_create(void);
     void _storage_open(void);
@@ -31,6 +30,10 @@ private:
     perf_counter_t  _perf_storage;
     perf_counter_t  _perf_errors;
 
+    int _fd = -1;
+    void _mtd_load(void);
+    void _mtd_write(uint16_t line);
+    
 #if defined (CONFIG_ARCH_BOARD_PX4FMU_V4)
     irqstate_t irq_state;
 #endif
