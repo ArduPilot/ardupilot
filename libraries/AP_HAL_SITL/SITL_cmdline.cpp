@@ -247,6 +247,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case CMDLINE_FGVIEW:
             _use_fg_view = false;
+            break;
         default:
             _usage();
             exit(1);
