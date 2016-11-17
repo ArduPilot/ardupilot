@@ -55,7 +55,7 @@ enum aux_sw_func {
     AUXSW_AUTO =                16, // change to auto flight mode
     AUXSW_AUTOTUNE =            17, // auto tune
     AUXSW_LAND =                18, // change to LAND flight mode
-    AUXSW_EPM =                 19, // Operate the EPM cargo gripper low=off, middle=neutral, high=on
+    AUXSW_GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
     AUXSW_PARACHUTE_ENABLE  =   21, // Parachute enable/disable
     AUXSW_PARACHUTE_RELEASE =   22, // Parachute release
     AUXSW_PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
@@ -297,6 +297,7 @@ enum ThrowModeState {
 #define LOG_HELI_MSG                    0x20
 #define LOG_PRECLAND_MSG                0x21
 #define LOG_GUIDEDTARGET_MSG 			0x22
+#define LOG_PROXIMITY_MSG               0x24
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -352,8 +353,8 @@ enum ThrowModeState {
 #define DATA_ACRO_TRAINER_DISABLED          43
 #define DATA_ACRO_TRAINER_LEVELING          44
 #define DATA_ACRO_TRAINER_LIMITED           45
-#define DATA_EPM_GRAB                       46
-#define DATA_EPM_RELEASE                    47
+#define DATA_GRIPPER_GRAB                   46
+#define DATA_GRIPPER_RELEASE                47
 #define DATA_PARACHUTE_DISABLED             49
 #define DATA_PARACHUTE_ENABLED              50
 #define DATA_PARACHUTE_RELEASED             51
