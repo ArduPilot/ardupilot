@@ -100,6 +100,7 @@ void SITL_State::_sitl_setup(const char *home_str)
             fg_socket.connect("127.0.0.1", _fg_view_port);
         }
 
+        _sitl->irlock_port = _irlock_port;
     }
 
     if (_synthetic_clock_mode) {
