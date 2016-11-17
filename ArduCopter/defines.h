@@ -68,6 +68,7 @@ enum aux_sw_func {
     AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
     AUXSW_THROW =               37,  // change to THROW flight mode
     AUXSW_AVOID_ADSB =          38,  // enable AP_Avoidance library
+    AUXSW_PRECISION_LOITER =    39,  // enable precision loiter
     AUXSW_SWITCH_MAX,
 };
 

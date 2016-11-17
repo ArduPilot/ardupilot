@@ -40,6 +40,9 @@ bool Copter::do_precision_loiter() const
 #if PRECISION_LANDING != ENABLED
     return false;
 #else
+    if (!_precision_loiter_enabled) {
+        return false;
+    }
     if (ap.land_complete_maybe) {
         return false;        // don't move on the ground
     }
