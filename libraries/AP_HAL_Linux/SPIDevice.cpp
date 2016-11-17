@@ -106,7 +106,7 @@ SPIDesc SPIDeviceManager::_device[] = {
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 SPIDesc SPIDeviceManager::_device[] = {
     /* MPU9250 is restricted to 1MHz for non-data and interrupt registers */
-    SPIDesc("mpu6000",    0, 0, SPI_MODE_3, 8, RPI_GPIO_25,  1*MHZ, 20*MHZ),
+    SPIDesc("mpu6000",    0, 0, SPI_MODE_3, 8, RPI_GPIO_25,  1*MHZ,  11*MHZ),
     SPIDesc("ms5611",     0, 0, SPI_MODE_3, 8, RPI_GPIO_23,  10*MHZ, 10*MHZ),
     SPIDesc("lsm9ds0_am", 0, 0, SPI_MODE_3, 8, RPI_GPIO_22,  10*MHZ, 10*MHZ),
     SPIDesc("lsm9ds0_g",  0, 0, SPI_MODE_3, 8, RPI_GPIO_12,  10*MHZ, 10*MHZ),
