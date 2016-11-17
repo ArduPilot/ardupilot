@@ -47,7 +47,7 @@ void Sub::poshold_run()
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         wp_nav.init_loiter_target();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(get_throttle_control_dz())-motors.get_throttle_hover());
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
         return;
     }
 
@@ -117,7 +117,7 @@ void Sub::poshold_run()
 	// Update z axis //
 
 	// get pilot desired climb rate
-	float target_climb_rate = get_pilot_desired_climb_rate(get_throttle_control_dz());
+	float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
 	target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
 	// adjust climb rate using rangefinder

@@ -39,7 +39,7 @@ void Sub::acro_run()
     get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(get_throttle_control_dz());
+    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     // run attitude controller
     attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
@@ -49,8 +49,8 @@ void Sub::acro_run()
 
     //control_in is range 0-1000
     //radio_in is raw pwm value
-    motors.set_forward(channel_forward->norm_input_dz());
-    motors.set_lateral(channel_lateral->norm_input_dz());
+    motors.set_forward(channel_forward->norm_input());
+    motors.set_lateral(channel_lateral->norm_input());
 }
 
 

@@ -39,15 +39,9 @@ void Sub::init_rc_in()
     channel_forward->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_lateral->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
-    for(int i = 0; i < 7; i++) {
-    	RC_Channel *ch = RC_Channel::rc_channel(i);
-    	ch->set_radio_max(1900);
-    	ch->set_radio_min(1100);
-    	ch->set_radio_trim(1500);
-    	ch->save_eeprom();
-    }
-
-    RC_Channel::scale_dead_zones(JOYSTICK_INITIAL_GAIN);
+    // force throttle trim to 1100
+    channel_throttle->set_radio_trim(1100);
+    channel_throttle->save_eeprom();
 
     //set auxiliary servo ranges
 //    g.rc_5.set_range(0,1000);
@@ -122,7 +116,7 @@ void Sub::read_radio()
         RC_Channel::set_pwm_all();
 
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
-        set_throttle_zero_flag(get_throttle_control_dz());
+        set_throttle_zero_flag(channel_throttle->get_control_in());
 
         // flag we must have an rc receiver attached
         if (!failsafe.rc_override_active) {
@@ -215,5 +209,5 @@ void Sub::set_throttle_zero_flag(int16_t throttle_control)
 // pass pilot's inputs to motors library (used to allow wiggling servos while disarmed on heli, single, coax copters)
 void Sub::radio_passthrough_to_motors()
 {
-    motors.set_radio_passthrough(channel_roll->get_control_in()/1000.0f, channel_pitch->get_control_in()/1000.0f, get_throttle_control_dz()/1000.0f, channel_yaw->get_control_in()/1000.0f);
+    motors.set_radio_passthrough(channel_roll->get_control_in()/1000.0f, channel_pitch->get_control_in()/1000.0f, channel_throttle->get_control_in()/1000.0f, channel_yaw->get_control_in()/1000.0f);
 }
