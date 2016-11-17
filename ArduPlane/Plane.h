@@ -457,16 +457,6 @@ private:
         // Flag for using gps ground course instead of INS yaw.  Set false when takeoff command in process.
         bool takeoff_complete:1;
 
-        // Flag to indicate if we have landed.
-        // Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
-        bool land_complete:1;
-
-        // Flag to indicate if we have triggered pre-flare. This occurs when we have reached LAND_PF_ALT
-        bool land_pre_flare:1;
-
-        // are we in auto and flight mode is approach || pre-flare || final (flare)
-        bool land_in_progress:1;
-
         // are we headed to the land approach waypoint? Works for any nav type
         bool wp_is_land_approach:1;
 
@@ -481,9 +471,6 @@ private:
 
         // in FBWA taildragger takeoff mode
         bool fbwa_tdrag_takeoff_mode:1;
-
-        // have we checked for an auto-land?
-        bool checked_for_autoland:1;
 
         // denotes if a go-around has been commanded for landing
         bool commanded_go_around:1;
@@ -532,17 +519,8 @@ private:
         // last time is_flying() returned true in milliseconds
         uint32_t last_flying_ms;
 
-        // once landed, post some landing statistics to the GCS
-        bool post_landing_stats;
-
         // time stamp of when we start flying while in auto mode in milliseconds
         uint32_t started_flying_in_auto_ms;
-
-        // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - aparm.land_flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
-        float land_slope;
-
-        // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
-        float initial_land_slope;
 
         // barometric altitude at start of takeoff
         float baro_takeoff_alt;
@@ -552,9 +530,6 @@ private:
 
         // are we doing loiter mode as a VTOL?
         bool vtol_loiter:1;
-
-        // landing altitude offset (meters)
-        float land_alt_offset;
     } auto_state;
 
     struct {
