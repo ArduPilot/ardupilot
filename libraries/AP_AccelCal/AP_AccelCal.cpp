@@ -17,6 +17,8 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/AP_HAL.h>
 
+#define AP_ACCELCAL_POSITION_REQUEST_INTERVAL_MS 1000
+
 const extern AP_HAL::HAL& hal;
 static bool _start_collect_sample;
 static void _snoop(const mavlink_message_t* msg);
@@ -45,8 +47,6 @@ void AP_AccelCal::update()
         }
         if(_start_collect_sample) {
             collect_sample();
-            _gcs->set_snoop(nullptr);
-            _start_collect_sample = false;
         }
         switch(_status) {
             case ACCEL_CAL_NOT_STARTED:
@@ -71,34 +71,42 @@ void AP_AccelCal::update()
                 if (step != _step) {
                     _step = step;
 
-                    const char *msg;
-                    switch (step) {
-                        case 1:
-                            msg = "level";
-                            break;
-                        case 2:
-                            msg = "on its LEFT side";
-                            break;
-                        case 3:
-                            msg = "on its RIGHT side";
-                            break;
-                        case 4:
-                            msg = "nose DOWN";
-                            break;
-                        case 5:
-                            msg = "nose UP";
-                            break;
-                        case 6:
-                            msg = "on its BACK";
-                            break;
-                        default:
-                            fail();
-                            return;
+                    if(_use_gcs_snoop) {
+                        const char *msg;
+                        switch (step) {
+                            case ACCELCAL_VEHICLE_POS_LEVEL:
+                                msg = "level";
+                                break;
+                            case ACCELCAL_VEHICLE_POS_LEFT:
+                                msg = "on its LEFT side";
+                                break;
+                            case ACCELCAL_VEHICLE_POS_RIGHT:
+                                msg = "on its RIGHT side";
+                                break;
+                            case ACCELCAL_VEHICLE_POS_NOSEDOWN:
+                                msg = "nose DOWN";
+                                break;
+                            case ACCELCAL_VEHICLE_POS_NOSEUP:
+                                msg = "nose UP";
+                                break;
+                            case ACCELCAL_VEHICLE_POS_BACK:
+                                msg = "on its BACK";
+                                break;
+                            default:
+                                fail();
+                                return;
+                        }
+                        _printf("Place vehicle %s and press any key.", msg);
+                        // setup snooping of packets so we can see the COMMAND_ACK
+                        _gcs->set_snoop(_snoop);
                     }
-                    _printf("Place vehicle %s and press any key.", msg);
                 }
-                // setup snooping of packets so we can see the COMMAND_ACK
-                _gcs->set_snoop(_snoop);
+
+                uint32_t now = AP_HAL::millis();
+                if (now - _last_position_request_ms > AP_ACCELCAL_POSITION_REQUEST_INTERVAL_MS) {
+                    _last_position_request_ms = now;
+                    _gcs->send_accelcal_vehicle_position(step);
+                }
                 break;
             }
             case ACCEL_CAL_COLLECTING_SAMPLE:
@@ -169,6 +177,8 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
     _started = true;
     _saving = false;
     _gcs = gcs;
+    _use_gcs_snoop = true;
+    _last_position_request_ms = 0;
     _step = 0;
 
     update_status();
@@ -246,6 +256,7 @@ void AP_AccelCal::collect_sample()
     }
     // setup snooping of packets so we can see the COMMAND_ACK
     _gcs->set_snoop(nullptr);
+    _start_collect_sample = false;
     update_status();
 }
 
@@ -328,6 +339,18 @@ static void _snoop(const mavlink_message_t* msg)
     if (msg->msgid == MAVLINK_MSG_ID_COMMAND_ACK) {
         _start_collect_sample = true;
     }
+}
+
+bool AP_AccelCal::gcs_vehicle_position(float position)
+{
+    _use_gcs_snoop = false;
+
+    if (_status == ACCEL_CAL_WAITING_FOR_ORIENTATION && is_equal((float) _step, position)) {
+        _start_collect_sample = true;
+        return true;
+    }
+
+    return false;
 }
 
 void AP_AccelCal::_printf(const char* fmt, ...)

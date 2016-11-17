@@ -129,9 +129,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _synthetic_clock_mode = false;
     _base_port = 5760;
     _rcout_port = 5502;
-    _simin_port = 5501;
+    _rcin_port = 5501;
+    _fg_view_port = 5503;
     _fdm_address = "127.0.0.1";
     _client_address = nullptr;
+    _use_fg_view = true;
     _instance = 0;
 
     enum long_options {
@@ -145,6 +147,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTE,
         CMDLINE_UARTF,
         CMDLINE_RTSCTS,
+        CMDLINE_FGVIEW,
         CMDLINE_DEFAULTS
     };
 
@@ -170,6 +173,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
+        {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
         {0, false, 0, 0}
     };
 
@@ -195,7 +199,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _instance = atoi(gopt.optarg);
             _base_port  += _instance * 10;
             _rcout_port += _instance * 10;
-            _simin_port += _instance * 10;
+            _rcin_port  += _instance * 10;
+            _fg_view_port += _instance * 10;
         }
         break;
         case 'P':
@@ -240,7 +245,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_UARTF:
             _uart_path[opt - CMDLINE_UARTA] = gopt.optarg;
             break;
-            
+        case CMDLINE_FGVIEW:
+            _use_fg_view = false;
         default:
             _usage();
             exit(1);

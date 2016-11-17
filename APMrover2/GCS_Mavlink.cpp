@@ -1082,6 +1082,15 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        case MAV_CMD_ACCELCAL_VEHICLE_POS:
+            result = MAV_RESULT_FAILED;
+
+            if (rover.ins.get_acal()->gcs_vehicle_position(packet.param1)) {
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+
+
         default:
                 break;
             }
