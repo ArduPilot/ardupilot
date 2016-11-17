@@ -217,19 +217,7 @@ private:
 
     RangeFinder rangefinder {serial_manager};
 
-    struct {
-        bool in_range:1;
-        bool have_initial_reading:1;
-        bool in_use:1;
-        float initial_range;
-        float correction;
-        float initial_correction;
-        float last_stable_correction;
-        uint32_t last_correction_time_ms;
-        uint8_t in_range_count;
-        float height_estimate;
-        float last_distance;
-    } rangefinder_state;
+    AP_Vehicle::FixedWing::Rangefinder_State rangefinder_state;
 
     AP_RPM rpm_sensor;
     
