@@ -243,7 +243,6 @@ void Copter::Mode::update_navigation()
     run_autopilot();
 }
 
-
 bool Copter::Mode::takeoff_triggered(const float target_climb_rate) const
 {
     if (!ap.land_complete) {
@@ -261,4 +260,17 @@ bool Copter::Mode::takeoff_triggered(const float target_climb_rate) const
     }
 #endif
     return true;
+}
+
+void Copter::Mode::zero_throttle_and_relax_ac()
+{
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control->set_throttle_out(0,false,g.throttle_filt);
+#else
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
+        attitude_control->set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
 }
