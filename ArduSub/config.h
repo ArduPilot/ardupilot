@@ -118,6 +118,11 @@
  # define RANGEFINDER_TILT_CORRECTION ENABLED
 #endif
 
+// Proximity sensor
+//
+#ifndef PROXIMITY_ENABLED
+ # define PROXIMITY_ENABLED ENABLED
+#endif
 
 #ifndef MAV_SYSTEM_ID
  # define MAV_SYSTEM_ID          1
@@ -254,9 +259,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//	EPM cargo gripper
-#ifndef EPM_ENABLED
- # define EPM_ENABLED ENABLED
+//	gripper
+#ifndef GRIPPER_ENABLED
+ # define GRIPPER_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -616,11 +621,6 @@
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
   #  define CLI_ENABLED           ENABLED
-#endif
-
-//use this to completely disable FRSKY TELEM
-#ifndef FRSKY_TELEM_ENABLED
-  #  define FRSKY_TELEM_ENABLED          ENABLED
 #endif
 
 #ifndef XTRACK_P

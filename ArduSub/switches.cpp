@@ -233,7 +233,7 @@ void Sub::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_RESETTOARMEDYAW:
         case AUXSW_SUPERSIMPLE_MODE:
         case AUXSW_ACRO_TRAINER:
-        case AUXSW_EPM:
+        case AUXSW_GRIPPER:
         case AUXSW_SPRAYER:
         case AUXSW_PARACHUTE_ENABLE:
         case AUXSW_PARACHUTE_3POS:      // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
@@ -400,16 +400,16 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     break;
             }
             break;
-#if EPM_ENABLED == ENABLED
-        case AUXSW_EPM:
+#if GRIPPER_ENABLED == ENABLED
+        case AUXSW_GRIPPER:
             switch(ch_flag) {
                 case AUX_SWITCH_LOW:
-                    epm.release();
-                    Log_Write_Event(DATA_EPM_RELEASE);
+                    g2.gripper.release();
+                    Log_Write_Event(DATA_GRIPPER_RELEASE);
                     break;
                 case AUX_SWITCH_HIGH:
-                    epm.grab();
-                    Log_Write_Event(DATA_EPM_GRAB);
+                    g2.gripper.grab();
+                    Log_Write_Event(DATA_GRIPPER_GRAB);
                     break;
             }
             break;
