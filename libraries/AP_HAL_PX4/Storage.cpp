@@ -16,7 +16,7 @@ using namespace PX4;
 /*
   This stores eeprom data in the PX4 MTD interface with a 4k size, and
   a in-memory buffer. This keeps the latency and devices IOs down.
- */
+*/
 
 // name the storage file after the sketch so you can use the same sd
 // card for ArduCopter and ArduPlane
@@ -41,7 +41,7 @@ PX4Storage::PX4Storage(void) :
 
 /*
   get signature from bytes at offset MTD_SIGNATURE_OFFSET
- */
+*/
 uint32_t PX4Storage::_mtd_signature(void)
 {
     int mtd_fd = open(MTD_PARAMS_FILE, O_RDONLY);
@@ -63,7 +63,7 @@ uint32_t PX4Storage::_mtd_signature(void)
 
 /*
   put signature bytes at offset MTD_SIGNATURE_OFFSET
- */
+*/
 void PX4Storage::_mtd_write_signature(void)
 {
     int mtd_fd = open(MTD_PARAMS_FILE, O_WRONLY);
@@ -84,7 +84,7 @@ void PX4Storage::_mtd_write_signature(void)
 
 /*
   upgrade from microSD to MTD (FRAM)
- */
+*/
 void PX4Storage::_upgrade_to_mtd(void)
 {
     // the MTD is completely uninitialised - try to get a
@@ -104,7 +104,7 @@ void PX4Storage::_upgrade_to_mtd(void)
         close(old_fd);
         close(mtd_fd);
         ::printf("Failed to read %s\n", OLD_STORAGE_FILE);
-        return;        
+        return;
     }
     close(old_fd);
     ssize_t ret;
@@ -120,69 +120,69 @@ void PX4Storage::_upgrade_to_mtd(void)
 #endif
     ::printf("Upgraded MTD from %s\n", OLD_STORAGE_FILE);
 }
-            
+
 
 void PX4Storage::_storage_open(void)
 {
-	if (_initialised) {
-		return;
-	}
+    if (_initialised) {
+        return;
+    }
 
-        struct stat st;
-        _have_mtd = (stat(MTD_PARAMS_FILE, &st) == 0);
+    struct stat st;
+    _have_mtd = (stat(MTD_PARAMS_FILE, &st) == 0);
 
-        // PX4 should always have /fs/mtd_params
-        if (!_have_mtd) {
-            AP_HAL::panic("Failed to find " MTD_PARAMS_FILE);
-        }
+    // PX4 should always have /fs/mtd_params
+    if (!_have_mtd) {
+        AP_HAL::panic("Failed to find " MTD_PARAMS_FILE);
+    }
 
-        /*
-          cope with upgrading from OLD_STORAGE_FILE to MTD
-         */
-        bool good_signature = (_mtd_signature() == MTD_SIGNATURE);
-        if (stat(OLD_STORAGE_FILE, &st) == 0) {
-            if (good_signature) {
+    /*
+      cope with upgrading from OLD_STORAGE_FILE to MTD
+    */
+    bool good_signature = (_mtd_signature() == MTD_SIGNATURE);
+    if (stat(OLD_STORAGE_FILE, &st) == 0) {
+        if (good_signature) {
 #if STORAGE_RENAME_OLD_FILE
-                rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
+            rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
 #endif
-            } else {
-                _upgrade_to_mtd();
-            }
+        } else {
+            _upgrade_to_mtd();
         }
+    }
 
-        // we write the signature every time, even if it already is
-        // good, as this gives us a way to detect if the MTD device is
-        // functional. It is better to panic now than to fail to save
-        // parameters in flight
-        _mtd_write_signature();
+    // we write the signature every time, even if it already is
+    // good, as this gives us a way to detect if the MTD device is
+    // functional. It is better to panic now than to fail to save
+    // parameters in flight
+    _mtd_write_signature();
 
-	_dirty_mask = 0;
-	int fd = open(MTD_PARAMS_FILE, O_RDONLY);
-	if (fd == -1) {
-            AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
-	}
-        const uint16_t chunk_size = 128;
-        for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
-            bus_lock(true);
-            ssize_t ret = read(fd, &_buffer[ofs], chunk_size);
-            bus_lock(false);
-            if (ret != chunk_size) {
-                ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
-                         (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
-                AP_HAL::panic("Failed to read " MTD_PARAMS_FILE);
-            }
-	}
-	close(fd);
+    _dirty_mask = 0;
+    int fd = open(MTD_PARAMS_FILE, O_RDONLY);
+    if (fd == -1) {
+        AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
+    }
+    const uint16_t chunk_size = 128;
+    for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
+        bus_lock(true);
+        ssize_t ret = read(fd, &_buffer[ofs], chunk_size);
+        bus_lock(false);
+        if (ret != chunk_size) {
+            ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
+                     (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
+            AP_HAL::panic("Failed to read " MTD_PARAMS_FILE);
+        }
+    }
+    close(fd);
 
 #ifdef SAVE_STORAGE_FILE
-        fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-        if (fd != -1) {
-            write(fd, _buffer, sizeof(_buffer));
-            close(fd);
-            ::printf("Saved storage file %s\n", SAVE_STORAGE_FILE);
-        }
+    fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if (fd != -1) {
+        write(fd, _buffer, sizeof(_buffer));
+        close(fd);
+        ::printf("Saved storage file %s\n", SAVE_STORAGE_FILE);
+    }
 #endif
-	_initialised = true;
+    _initialised = true;
 }
 
 /*
@@ -191,7 +191,7 @@ void PX4Storage::_storage_open(void)
   below, which both update _dirty_mask. If we lose the race then the
   result is that a line is written more than once, but it won't result
   in a line not being written.
- */
+*/
 void PX4Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
     uint16_t end = loc + length;
@@ -202,25 +202,25 @@ void PX4Storage::_mark_dirty(uint16_t loc, uint16_t length)
     }
 }
 
-void PX4Storage::read_block(void *dst, uint16_t loc, size_t n) 
+void PX4Storage::read_block(void *dst, uint16_t loc, size_t n)
 {
-	if (loc >= sizeof(_buffer)-(n-1)) {
-		return;
-	}
-	_storage_open();
-	memcpy(dst, &_buffer[loc], n);
+    if (loc >= sizeof(_buffer)-(n-1)) {
+        return;
+    }
+    _storage_open();
+    memcpy(dst, &_buffer[loc], n);
 }
 
-void PX4Storage::write_block(uint16_t loc, const void *src, size_t n) 
+void PX4Storage::write_block(uint16_t loc, const void *src, size_t n)
 {
-	if (loc >= sizeof(_buffer)-(n-1)) {
-		return;
-	}
-	if (memcmp(src, &_buffer[loc], n) != 0) {
-		_storage_open();
-		memcpy(&_buffer[loc], src, n);
-		_mark_dirty(loc, n);
-	}
+    if (loc >= sizeof(_buffer)-(n-1)) {
+        return;
+    }
+    if (memcmp(src, &_buffer[loc], n) != 0) {
+        _storage_open();
+        memcpy(&_buffer[loc], src, n);
+        _mark_dirty(loc, n);
+    }
 }
 
 void PX4Storage::bus_lock(bool lock)
@@ -234,7 +234,7 @@ void PX4Storage::bus_lock(bool lock)
       interrupt context from interfering with the FRAM operations. As
       the px4 spi bus abstraction just uses interrupt blocking as the
       locking mechanism we need to block interrupts here as well.
-     */
+    */
     if (lock) {
         irq_state = irqsave();
     } else {
@@ -245,65 +245,65 @@ void PX4Storage::bus_lock(bool lock)
 
 void PX4Storage::_timer_tick(void)
 {
-	if (!_initialised || _dirty_mask == 0) {
-		return;
-	}
-	perf_begin(_perf_storage);
+    if (!_initialised || _dirty_mask == 0) {
+        return;
+    }
+    perf_begin(_perf_storage);
 
-	if (_fd == -1) {
-		_fd = open(MTD_PARAMS_FILE, O_WRONLY);
-		if (_fd == -1) {
-			perf_end(_perf_storage);
-			perf_count(_perf_errors);
-			return;	
-		}
-	}
+    if (_fd == -1) {
+        _fd = open(MTD_PARAMS_FILE, O_WRONLY);
+        if (_fd == -1) {
+            perf_end(_perf_storage);
+            perf_count(_perf_errors);
+            return;
+        }
+    }
 
-	// write out the first dirty set of lines. We don't write more
-	// than one to keep the latency of this call to a minimum
-	uint8_t i, n;
-	for (i=0; i<PX4_STORAGE_NUM_LINES; i++) {
-		if (_dirty_mask & (1<<i)) {
-			break;
-		}
-	}
-	if (i == PX4_STORAGE_NUM_LINES) {
-		// this shouldn't be possible
-		perf_end(_perf_storage);
-		perf_count(_perf_errors);
-		return;
-	}
-	uint32_t write_mask = (1U<<i);
-	// see how many lines to write
-	for (n=1; (i+n) < PX4_STORAGE_NUM_LINES && 
-		     n < (PX4_STORAGE_MAX_WRITE>>PX4_STORAGE_LINE_SHIFT); n++) {
-		if (!(_dirty_mask & (1<<(n+i)))) {
-			break;
-		}		
-		// mark that line clean
-		write_mask |= (1<<(n+i));
-	}
+    // write out the first dirty set of lines. We don't write more
+    // than one to keep the latency of this call to a minimum
+    uint8_t i, n;
+    for (i=0; i<PX4_STORAGE_NUM_LINES; i++) {
+        if (_dirty_mask & (1<<i)) {
+            break;
+        }
+    }
+    if (i == PX4_STORAGE_NUM_LINES) {
+        // this shouldn't be possible
+        perf_end(_perf_storage);
+        perf_count(_perf_errors);
+        return;
+    }
+    uint32_t write_mask = (1U<<i);
+    // see how many lines to write
+    for (n=1; (i+n) < PX4_STORAGE_NUM_LINES &&
+             n < (PX4_STORAGE_MAX_WRITE>>PX4_STORAGE_LINE_SHIFT); n++) {
+        if (!(_dirty_mask & (1<<(n+i)))) {
+            break;
+        }
+        // mark that line clean
+        write_mask |= (1<<(n+i));
+    }
 
-	/*
-	  write the lines. This also updates _dirty_mask. Note that
-	  because this is a SCHED_FIFO thread it will not be preempted
-	  by the main task except during blocking calls. This means we
-	  don't need a semaphore around the _dirty_mask updates.
-	 */
-	if (lseek(_fd, i<<PX4_STORAGE_LINE_SHIFT, SEEK_SET) == (i<<PX4_STORAGE_LINE_SHIFT)) {
-		_dirty_mask &= ~write_mask;
-                bus_lock(true);
-		ssize_t ret = write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], n<<PX4_STORAGE_LINE_SHIFT);
-                bus_lock(false);
-                if (ret != n<<PX4_STORAGE_LINE_SHIFT) {
-                    // write error - likely EINTR
-                    _dirty_mask |= write_mask;
-                    close(_fd);
-                    _fd = -1;
-                    perf_count(_perf_errors);
-		}
-	}
-	perf_end(_perf_storage);
+    /*
+      write the lines. This also updates _dirty_mask. Note that
+      because this is a SCHED_FIFO thread it will not be preempted
+      by the main task except during blocking calls. This means we
+      don't need a semaphore around the _dirty_mask updates.
+    */
+    if (lseek(_fd, i<<PX4_STORAGE_LINE_SHIFT, SEEK_SET) == (i<<PX4_STORAGE_LINE_SHIFT)) {
+        _dirty_mask &= ~write_mask;
+        bus_lock(true);
+        ssize_t ret = write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], n<<PX4_STORAGE_LINE_SHIFT);
+        bus_lock(false);
+        if (ret != n<<PX4_STORAGE_LINE_SHIFT) {
+            // write error - likely EINTR
+            _dirty_mask |= write_mask;
+            close(_fd);
+            _fd = -1;
+            perf_count(_perf_errors);
+        }
+    }
+    perf_end(_perf_storage);
 }
 
 #endif // CONFIG_HAL_BOARD
