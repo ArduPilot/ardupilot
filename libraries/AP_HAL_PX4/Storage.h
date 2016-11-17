@@ -3,9 +3,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_PX4_Namespace.h"
 #include <systemlib/perf_counter.h>
+#include <AP_Common/Bitmask.h>
 
 #define PX4_STORAGE_SIZE HAL_STORAGE_SIZE
-#define PX4_STORAGE_MAX_WRITE 512
 #define PX4_STORAGE_LINE_SHIFT 9
 #define PX4_STORAGE_LINE_SIZE (1<<PX4_STORAGE_LINE_SHIFT)
 #define PX4_STORAGE_NUM_LINES (PX4_STORAGE_SIZE/PX4_STORAGE_LINE_SIZE)
@@ -27,10 +27,9 @@ private:
     void _storage_open(void);
     void _mark_dirty(uint16_t loc, uint16_t length);
     uint8_t _buffer[PX4_STORAGE_SIZE] __attribute__((aligned(4)));
-    volatile uint32_t _dirty_mask;
+    Bitmask _dirty_mask{PX4_STORAGE_NUM_LINES};
     perf_counter_t  _perf_storage;
     perf_counter_t  _perf_errors;
-    bool _have_mtd;
     void _upgrade_to_mtd(void);
     uint32_t _mtd_signature(void);
     void _mtd_write_signature(void);

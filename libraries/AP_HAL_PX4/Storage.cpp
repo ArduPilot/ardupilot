@@ -33,7 +33,6 @@ extern const AP_HAL::HAL& hal;
 
 PX4Storage::PX4Storage(void) :
     _fd(-1),
-    _dirty_mask(0),
     _perf_storage(perf_alloc(PC_ELAPSED, "APM_storage")),
     _perf_errors(perf_alloc(PC_COUNT, "APM_storage_errors"))
 {
@@ -129,10 +128,10 @@ void PX4Storage::_storage_open(void)
     }
 
     struct stat st;
-    _have_mtd = (stat(MTD_PARAMS_FILE, &st) == 0);
+    bool have_mtd = (stat(MTD_PARAMS_FILE, &st) == 0);
 
     // PX4 should always have /fs/mtd_params
-    if (!_have_mtd) {
+    if (!have_mtd) {
         AP_HAL::panic("Failed to find " MTD_PARAMS_FILE);
     }
 
@@ -156,7 +155,8 @@ void PX4Storage::_storage_open(void)
     // parameters in flight
     _mtd_write_signature();
 
-    _dirty_mask = 0;
+    _dirty_mask.clearall();
+    
     int fd = open(MTD_PARAMS_FILE, O_RDONLY);
     if (fd == -1) {
         AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
@@ -198,7 +198,7 @@ void PX4Storage::_mark_dirty(uint16_t loc, uint16_t length)
     for (uint8_t line=loc>>PX4_STORAGE_LINE_SHIFT;
          line <= end>>PX4_STORAGE_LINE_SHIFT;
          line++) {
-        _dirty_mask |= 1U << line;
+        _dirty_mask.set(line);
     }
 }
 
@@ -245,7 +245,7 @@ void PX4Storage::bus_lock(bool lock)
 
 void PX4Storage::_timer_tick(void)
 {
-    if (!_initialised || _dirty_mask == 0) {
+    if (!_initialised || _dirty_mask.empty()) {
         return;
     }
     perf_begin(_perf_storage);
@@ -259,11 +259,11 @@ void PX4Storage::_timer_tick(void)
         }
     }
 
-    // write out the first dirty set of lines. We don't write more
+    // write out the first dirty line. We don't write more
     // than one to keep the latency of this call to a minimum
-    uint8_t i, n;
+    uint16_t i;
     for (i=0; i<PX4_STORAGE_NUM_LINES; i++) {
-        if (_dirty_mask & (1<<i)) {
+        if (_dirty_mask.get(i)) {
             break;
         }
     }
@@ -273,16 +273,7 @@ void PX4Storage::_timer_tick(void)
         perf_count(_perf_errors);
         return;
     }
-    uint32_t write_mask = (1U<<i);
-    // see how many lines to write
-    for (n=1; (i+n) < PX4_STORAGE_NUM_LINES &&
-             n < (PX4_STORAGE_MAX_WRITE>>PX4_STORAGE_LINE_SHIFT); n++) {
-        if (!(_dirty_mask & (1<<(n+i)))) {
-            break;
-        }
-        // mark that line clean
-        write_mask |= (1<<(n+i));
-    }
+
 
     /*
       write the lines. This also updates _dirty_mask. Note that
@@ -291,13 +282,14 @@ void PX4Storage::_timer_tick(void)
       don't need a semaphore around the _dirty_mask updates.
     */
     if (lseek(_fd, i<<PX4_STORAGE_LINE_SHIFT, SEEK_SET) == (i<<PX4_STORAGE_LINE_SHIFT)) {
-        _dirty_mask &= ~write_mask;
+        // mark the line clean
+        _dirty_mask.clear(i);
         bus_lock(true);
-        ssize_t ret = write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], n<<PX4_STORAGE_LINE_SHIFT);
+        ssize_t ret = write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], PX4_STORAGE_LINE_SIZE);
         bus_lock(false);
-        if (ret != n<<PX4_STORAGE_LINE_SHIFT) {
+        if (ret != PX4_STORAGE_LINE_SIZE) {
             // write error - likely EINTR
-            _dirty_mask |= write_mask;
+            _dirty_mask.set(i);
             close(_fd);
             _fd = -1;
             perf_count(_perf_errors);
