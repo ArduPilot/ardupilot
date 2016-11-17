@@ -918,7 +918,6 @@ private:
     void disarm_if_autoland_complete();
     void setup_landing_glide_slope(void);
     void adjust_landing_slope_for_rangefinder_bump(void);
-    bool jump_to_landing_sequence(void);
     float tecs_hgt_afe(void);
     void set_nav_controller(void);
     void loiter_angle_reset(void);
@@ -1084,7 +1083,6 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void run_cli(AP_HAL::UARTDriver *port);
-    bool restart_landing_sequence();
     void log_init();
     void init_capabilities(void);
     void dataflash_periodic(void);
