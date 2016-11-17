@@ -21,7 +21,7 @@ namespace {
 	int16_t video_switch = 1100;
 	int16_t x_last, y_last, z_last;
 	uint16_t buttons_prev;
-	float gain = JOYSTICK_INITIAL_GAIN;
+	float gain = 0.5;
 	float maxGain = 1.0;
 	float minGain = 0.25;
 	int8_t numGainSettings = 4;
@@ -203,21 +203,18 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 				} else {
 					gain = 1.0f;
 				}
-				RC_Channel::scale_dead_zones(gain);
 				gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain: %2.0f%%",gain*100);
 			}
 			break;
 		case JSButton::button_function_t::k_gain_inc:
 			if ( !held ) {
 				gain = constrain_float(gain + (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
-				RC_Channel::scale_dead_zones(gain);
 				gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",gain*100);
 			}
 			break;
 		case JSButton::button_function_t::k_gain_dec:
 			if ( !held ) {
 				gain = constrain_float(gain - (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
-				RC_Channel::scale_dead_zones(gain);
 				gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",gain*100);
 			}
 			break;

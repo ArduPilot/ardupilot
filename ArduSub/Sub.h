@@ -1056,7 +1056,6 @@ private:
     void auto_terrain_recover_run(void);
 
     void translate_wpnav_rp(float &lateral_out, float &forward_out);
-    int16_t get_throttle_control_dz();
 
     bool surface_init(bool ignore_flags);
     void surface_run();
