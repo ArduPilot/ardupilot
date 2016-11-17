@@ -91,6 +91,10 @@ void Copter::auto_run()
     case Auto_Loiter:
         auto_loiter_run();
         break;
+
+    case Auto_NavPayloadPlace:
+        auto_payload_place_run();
+        break;
     }
 }
 
@@ -746,3 +750,119 @@ float Copter::get_auto_heading(void)
     }
 }
 
+// auto_payload_place_start - initialises controller to implement a placing
+void Copter::auto_payload_place_start()
+{
+    // set target to stopping point
+    Vector3f stopping_point;
+    wp_nav.get_loiter_stopping_point_xy(stopping_point);
+
+    // call location specific place start function
+    auto_payload_place_start(stopping_point);
+
+}
+
+// auto_payload_place_start - initialises controller to implement placement of a load
+void Copter::auto_payload_place_start(const Vector3f& destination)
+{
+    auto_mode = Auto_NavPayloadPlace;
+    nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
+
+    // initialise loiter target destination
+    wp_nav.init_loiter_target(destination);
+
+    // initialise position and desired velocity
+    if (!pos_control.is_active_z()) {
+        pos_control.set_alt_target(inertial_nav.get_altitude());
+        pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    }
+
+    // initialise yaw
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
+}
+
+bool Copter::auto_payload_place_run_should_run()
+{
+    // muts be armed
+    if (!motors.armed()) {
+        return false;
+    }
+    // muts be auto-armed
+    if (!ap.auto_armed) {
+        return false;
+    }
+    // must not be landed
+    if (ap.land_complete) {
+        return false;
+    }
+    // interlock must be enabled (i.e. unsafe)
+    if (!motors.get_interlock()) {
+        return false;
+    }
+
+    return true;
+}
+
+// auto_payload_place_run - places an object in auto mode
+//      called by auto_run at 100hz or more
+void Copter::auto_payload_place_run()
+{
+    if (!auto_payload_place_run_should_run()) {
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
+        // set target to current position
+        wp_nav.init_loiter_target();
+        return;
+    }
+
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+    switch (nav_payload_place.state) {
+    case PayloadPlaceStateType_FlyToLocation:
+    case PayloadPlaceStateType_Calibrating_Hover_Start:
+    case PayloadPlaceStateType_Calibrating_Hover:
+        return auto_payload_place_run_loiter();
+    case PayloadPlaceStateType_Descending_Start:
+    case PayloadPlaceStateType_Descending:
+        return auto_payload_place_run_descend();
+    case PayloadPlaceStateType_Releasing_Start:
+    case PayloadPlaceStateType_Releasing:
+    case PayloadPlaceStateType_Released:
+    case PayloadPlaceStateType_Ascending_Start:
+    case PayloadPlaceStateType_Ascending:
+    case PayloadPlaceStateType_Done:
+        return auto_payload_place_run_loiter();
+    }
+}
+
+void Copter::auto_payload_place_run_loiter()
+{
+    // loiter...
+    land_run_horizontal_control();
+
+    // run loiter controller
+    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+
+    // call attitude controller
+    const float target_yaw_rate = 0;
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+
+    // update altitude target and call position controller
+    // const float target_climb_rate = 0;
+    // pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+    pos_control.update_z_controller();
+}
+
+void Copter::auto_payload_place_run_descend()
+{
+    land_run_horizontal_control();
+    land_run_vertical_control();
+}

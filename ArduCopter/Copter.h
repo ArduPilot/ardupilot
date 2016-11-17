@@ -381,6 +381,17 @@ private:
     uint32_t wp_distance;
     LandStateType land_state = LandStateType_FlyToLocation; // records state of land (flying to location, descending)
 
+    struct {
+        PayloadPlaceStateType state = PayloadPlaceStateType_Calibrating_Hover_Start; // records state of place (descending, releasing, released, ...)
+        uint32_t hover_start_timestamp; // milliseconds
+        float hover_throttle_level;
+        uint32_t descend_start_timestamp; // milliseconds
+        uint32_t place_start_timestamp; // milliseconds
+        float descend_throttle_level;
+        float descend_start_altitude;
+        float descend_max; // centimetres
+    } nav_payload_place;
+
     // Auto
     AutoMode auto_mode;   // controls which auto controller is run
 
@@ -777,6 +788,7 @@ private:
     void do_RTL(void);
     bool verify_takeoff();
     bool verify_land();
+    bool verify_payload_place();
     bool verify_loiter_unlimited();
     bool verify_loiter_time();
     bool verify_RTL();
@@ -803,6 +815,14 @@ private:
     void auto_land_start();
     void auto_land_start(const Vector3f& destination);
     void auto_land_run();
+    void do_payload_place(const AP_Mission::Mission_Command& cmd);
+    void auto_payload_place_start();
+    void auto_payload_place_start(const Vector3f& destination);
+    void auto_payload_place_run();
+    bool auto_payload_place_run_should_run();
+    void auto_payload_place_run_loiter();
+    void auto_payload_place_run_descend();
+    void auto_payload_place_run_release();
     void auto_rtl_start();
     void auto_rtl_run();
     void auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
@@ -1097,6 +1117,8 @@ private:
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
+
+    Location_Class terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
 
     bool do_guided(const AP_Mission::Mission_Command& cmd);
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
