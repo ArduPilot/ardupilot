@@ -548,6 +548,18 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 Log_Write_Event(DATA_AVOIDANCE_ADSB_DISABLE);
             }
             break;
+
+        case AUXSW_PRECISION_LOITER:
+            switch (ch_flag) {
+                case AUX_SWITCH_HIGH:
+                    set_precision_loiter_enabled(true);
+                    break;
+                case AUX_SWITCH_LOW:
+                    set_precision_loiter_enabled(false);
+                    break;
+            }
+            break;
+
     }
 }
 
