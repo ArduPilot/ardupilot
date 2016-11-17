@@ -27,7 +27,6 @@ using namespace PX4;
 extern const AP_HAL::HAL& hal;
 
 PX4Storage::PX4Storage(void) :
-    _fd(-1),
     _perf_storage(perf_alloc(PC_ELAPSED, "APM_storage")),
     _perf_errors(perf_alloc(PC_COUNT, "APM_storage_errors"))
 {
@@ -39,32 +38,10 @@ void PX4Storage::_storage_open(void)
         return;
     }
 
-    struct stat st;
-    bool have_mtd = (stat(MTD_PARAMS_FILE, &st) == 0);
-
-    // PX4 should always have /fs/mtd_params
-    if (!have_mtd) {
-        AP_HAL::panic("Failed to find " MTD_PARAMS_FILE);
-    }
-
     _dirty_mask.clearall();
-    
-    int fd = open(MTD_PARAMS_FILE, O_RDONLY);
-    if (fd == -1) {
-        AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
-    }
-    const uint16_t chunk_size = 128;
-    for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
-        bus_lock(true);
-        ssize_t ret = read(fd, &_buffer[ofs], chunk_size);
-        bus_lock(false);
-        if (ret != chunk_size) {
-            ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
-                     (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
-            AP_HAL::panic("Failed to read " MTD_PARAMS_FILE);
-        }
-    }
-    close(fd);
+
+    // load from mtd
+    _mtd_load();
 
 #ifdef SAVE_STORAGE_FILE
     fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
@@ -87,7 +64,7 @@ void PX4Storage::_storage_open(void)
 void PX4Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
     uint16_t end = loc + length;
-    for (uint8_t line=loc>>PX4_STORAGE_LINE_SHIFT;
+    for (uint16_t line=loc>>PX4_STORAGE_LINE_SHIFT;
          line <= end>>PX4_STORAGE_LINE_SHIFT;
          line++) {
         _dirty_mask.set(line);
@@ -166,28 +143,59 @@ void PX4Storage::_timer_tick(void)
         return;
     }
 
+    // write the line
+    _mtd_write(i);
+    
+    perf_end(_perf_storage);
+}
 
-    /*
-      write the lines. This also updates _dirty_mask. Note that
-      because this is a SCHED_FIFO thread it will not be preempted
-      by the main task except during blocking calls. This means we
-      don't need a semaphore around the _dirty_mask updates.
-    */
-    if (lseek(_fd, i<<PX4_STORAGE_LINE_SHIFT, SEEK_SET) == (i<<PX4_STORAGE_LINE_SHIFT)) {
-        // mark the line clean
-        _dirty_mask.clear(i);
+/*
+  write one storage line. This also updates _dirty_mask. 
+*/
+void PX4Storage::_mtd_write(uint16_t line)
+{
+    uint16_t ofs = line * PX4_STORAGE_LINE_SIZE;
+    if (lseek(_fd, ofs, SEEK_SET) != ofs) {
+        return;
+    }
+
+    // mark the line clean
+    _dirty_mask.clear(line);
+    
+    bus_lock(true);
+    ssize_t ret = write(_fd, &_buffer[ofs], PX4_STORAGE_LINE_SIZE);
+    bus_lock(false);
+
+    if (ret != PX4_STORAGE_LINE_SIZE) {
+        // write error - likely EINTR
+        _dirty_mask.set(line);
+        close(_fd);
+        _fd = -1;
+        perf_count(_perf_errors);
+    }
+}
+
+/*
+  load all data from mtd
+ */
+void PX4Storage::_mtd_load(void)
+{
+    int fd = open(MTD_PARAMS_FILE, O_RDONLY);
+    if (fd == -1) {
+        AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
+    }
+    const uint16_t chunk_size = 128;
+    for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
         bus_lock(true);
-        ssize_t ret = write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], PX4_STORAGE_LINE_SIZE);
+        ssize_t ret = read(fd, &_buffer[ofs], chunk_size);
         bus_lock(false);
-        if (ret != PX4_STORAGE_LINE_SIZE) {
-            // write error - likely EINTR
-            _dirty_mask.set(i);
-            close(_fd);
-            _fd = -1;
-            perf_count(_perf_errors);
+        if (ret != chunk_size) {
+            ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
+                     (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
+            AP_HAL::panic("Failed to read " MTD_PARAMS_FILE);
         }
     }
-    perf_end(_perf_storage);
+    close(fd);
 }
 
 #endif // CONFIG_HAL_BOARD
