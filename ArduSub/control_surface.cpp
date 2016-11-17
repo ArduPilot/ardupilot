@@ -59,6 +59,6 @@ void Sub::surface_run()
     pos_control.update_z_controller();
 
     // pilot has control for repositioning
-    motors.set_forward(channel_forward->norm_input_dz());
-    motors.set_lateral(channel_lateral->norm_input_dz());
+    motors.set_forward(channel_forward->norm_input());
+    motors.set_lateral(channel_lateral->norm_input());
 }

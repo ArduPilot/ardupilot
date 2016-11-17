@@ -570,12 +570,3 @@ bool RC_Channel::in_trim_dz()
 {
     return is_bounded_int32(_radio_in, _radio_trim - _dead_zone, _radio_trim + _dead_zone);
 }
-
-void RC_Channel::scale_dead_zones(float scalar) {
-    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
-        if (_rc_ch[i] != NULL) {
-            _rc_ch[i]->_dead_zone.load();
-            _rc_ch[i]->_dead_zone = _rc_ch[i]->_dead_zone * scalar;
-        }
-    }
-}

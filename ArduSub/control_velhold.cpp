@@ -81,7 +81,7 @@ void Sub::velhold_run()
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
         // Reset position controller
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(get_throttle_control_dz())-motors.get_throttle_hover());
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
         pos_control.set_pos_target(inertial_nav.get_position());
         pos_control.set_desired_velocity(Vector3f(0,0,0));
         return;
@@ -97,7 +97,7 @@ void Sub::velhold_run()
 	float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
 	// get pilot desired climb rate
-	float target_climb_rate = get_pilot_desired_climb_rate(get_throttle_control_dz());
+	float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
 	target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
 	int16_t pilot_lateral = channel_lateral->get_control_in();
