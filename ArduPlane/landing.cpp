@@ -19,8 +19,8 @@ bool Plane::verify_land()
     if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
 
         throttle_suppressed = false;
-        auto_state.land_complete = false;
-        auto_state.land_pre_flare = false;
+        landing.complete = false;
+        landing.pre_flare = false;
         nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
 
         // see if we have reached abort altitude
@@ -71,8 +71,8 @@ bool Plane::verify_land()
         (!rangefinder_in_range && auto_state.wp_proportion >= 1) ||
         probably_crashed) {
 
-        if (!auto_state.land_complete) {
-            auto_state.post_landing_stats = true;
+        if (!landing.complete) {
+            landing.post_stats = true;
             if (!is_flying() && (millis()-auto_state.last_flying_ms) > 3000) {
                 gcs_send_text_fmt(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)gps.ground_speed());
             } else {
@@ -81,7 +81,7 @@ bool Plane::verify_land()
                                   (double)gps.ground_speed(),
                                   (double)get_distance(current_loc, next_WP_loc));
             }
-            auto_state.land_complete = true;
+            landing.complete = true;
             update_flight_stage();
         }
 
@@ -95,11 +95,11 @@ bool Plane::verify_land()
             g.min_gndspeed_cm.load();
             aparm.throttle_cruise.load();
         }
-    } else if (!auto_state.land_complete && !auto_state.land_pre_flare && aparm.land_pre_flare_airspeed > 0) {
+    } else if (!landing.complete && !landing.pre_flare && aparm.land_pre_flare_airspeed > 0) {
         bool reached_pre_flare_alt = g.land_pre_flare_alt > 0 && (height <= g.land_pre_flare_alt);
         bool reached_pre_flare_sec = g.land_pre_flare_sec > 0 && (height <= auto_state.sink_rate * g.land_pre_flare_sec);
         if (reached_pre_flare_alt || reached_pre_flare_sec) {
-            auto_state.land_pre_flare = true;
+            landing.pre_flare = true;
             update_flight_stage();
         }
     }
@@ -117,8 +117,8 @@ bool Plane::verify_land()
 
     // once landed and stationary, post some statistics
     // this is done before disarm_if_autoland_complete() so that it happens on the next loop after the disarm
-    if (auto_state.post_landing_stats && !arming.is_armed()) {
-        auto_state.post_landing_stats = false;
+    if (landing.post_stats && !arming.is_armed()) {
+        landing.post_stats = false;
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Distance from LAND point=%.2fm", (double)get_distance(current_loc, next_WP_loc));
     }
 
@@ -188,15 +188,15 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
         // offset and "perfect" slope.
 
         // calculate projected slope with projected alt
-        float new_slope_deg = degrees(atan(auto_state.land_slope));
-        float initial_slope_deg = degrees(atan(auto_state.initial_land_slope));
+        float new_slope_deg = degrees(atan(landing.slope));
+        float initial_slope_deg = degrees(atan(landing.initial_slope));
 
         // is projected slope too steep?
         if (new_slope_deg - initial_slope_deg > g.land_slope_recalc_steep_threshold_to_abort) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Steep landing slope (%.0fm %.1fdeg)",
                                              (double)rangefinder_state.correction, (double)(new_slope_deg - initial_slope_deg));
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "aborting landing!");
-            auto_state.land_alt_offset = rangefinder_state.correction;
+            landing.alt_offset = rangefinder_state.correction;
             auto_state.commanded_go_around = 1;
             g.land_slope_recalc_steep_threshold_to_abort = 0; // disable this feature so we only perform it once
         }
@@ -251,10 +251,10 @@ void Plane::setup_landing_glide_slope(void)
         }
 
         // calculate slope to landing point
-        bool is_first_calc = is_zero(auto_state.land_slope);
-        auto_state.land_slope = (sink_height - aim_height) / total_distance;
+        bool is_first_calc = is_zero(landing.slope);
+        landing.slope = (sink_height - aim_height) / total_distance;
         if (is_first_calc) {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing glide slope %.1f degrees", (double)degrees(atanf(auto_state.land_slope)));
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing glide slope %.1f degrees", (double)degrees(atanf(landing.slope)));
         }
 
 
@@ -283,7 +283,7 @@ void Plane::setup_landing_glide_slope(void)
 
         // calculate point along that slope 500m ahead
         location_update(loc, land_bearing_cd*0.01f, land_projection);
-        loc.alt -= auto_state.land_slope * land_projection * 100;
+        loc.alt -= landing.slope * land_projection * 100;
 
         // setup the offset_cm for set_target_altitude_proportion()
         target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;

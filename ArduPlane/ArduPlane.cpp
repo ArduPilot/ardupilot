@@ -355,7 +355,7 @@ void Plane::one_second_loop()
             update_home();
             
             // reset the landing altitude correction
-            auto_state.land_alt_offset = 0;
+            landing.alt_offset = 0;
     }
     
     // update error mask of sensors and subsystems. The mask uses the
@@ -544,14 +544,14 @@ void Plane::handle_auto_mode(void)
         calc_nav_roll();
         calc_nav_pitch();
         
-        if (auto_state.land_complete) {
+        if (landing.complete) {
             // during final approach constrain roll to the range
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
         }
         calc_throttle();
         
-        if (auto_state.land_complete) {
+        if (landing.complete) {
             // we are in the final stage of a landing - force
             // zero throttle
             channel_throttle->set_servo_out(0);
@@ -562,8 +562,8 @@ void Plane::handle_auto_mode(void)
         if (nav_cmd_id != MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT) {
             steer_state.hold_course_cd = -1;
         }
-        auto_state.land_complete = false;
-        auto_state.land_pre_flare = false;
+        landing.complete = false;
+        landing.pre_flare = false;
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();
@@ -798,7 +798,7 @@ void Plane::update_navigation()
             set_mode(QRTL, MODE_REASON_UNKNOWN);
             break;
         } else if (g.rtl_autoland == 1 &&
-            !auto_state.checked_for_autoland &&
+            !landing.checked_for_autoland &&
             reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {
             // we've reached the RTL point, see if we have a landing sequence
@@ -806,16 +806,16 @@ void Plane::update_navigation()
 
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
-            auto_state.checked_for_autoland = true;
+            landing.checked_for_autoland = true;
         }
         else if (g.rtl_autoland == 2 &&
-            !auto_state.checked_for_autoland) {
+            !landing.checked_for_autoland) {
             // Go directly to the landing sequence
             jump_to_landing_sequence();
 
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
-            auto_state.checked_for_autoland = true;
+            landing.checked_for_autoland = true;
         }
         radius = abs(g.rtl_radius);
         if (radius > 0) {
@@ -864,7 +864,7 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
     switch (fs) {
     case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude());
-        auto_state.land_in_progress = true;
+        landing.in_progress = true;
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
@@ -884,18 +884,18 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 
     case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
         gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
-        auto_state.land_in_progress = false;
+        landing.in_progress = false;
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
     case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-        auto_state.land_in_progress = true;
+        landing.in_progress = true;
         break;
 
     case AP_SpdHgtControl::FLIGHT_NORMAL:
     case AP_SpdHgtControl::FLIGHT_VTOL:
     case AP_SpdHgtControl::FLIGHT_TAKEOFF:
-        auto_state.land_in_progress = false;
+        landing.in_progress = false;
         break;
     }
     
@@ -935,14 +935,14 @@ void Plane::update_alt()
     if (auto_throttle_mode && !throttle_suppressed) {        
 
         float distance_beyond_land_wp = 0;
-        if (auto_state.land_in_progress && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+        if (landing.in_progress && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
             distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
         }
 
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
                                                  flight_stage,
-                                                 auto_state.land_in_progress,
+                                                 landing.in_progress,
                                                  distance_beyond_land_wp,
                                                  get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
@@ -970,9 +970,9 @@ void Plane::update_flight_stage(void)
                         flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT){
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
-                } else if (auto_state.land_complete == true) {
+                } else if (landing.complete == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
-                } else if (auto_state.land_pre_flare == true) {
+                } else if (landing.pre_flare == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
                 } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
                     bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
