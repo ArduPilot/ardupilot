@@ -309,7 +309,7 @@ bool AP_GPS_NMEA::_term_complete()
                     // To-Do: add support for proper reporting of 2D and 3D fix
                     if (_gps_status != 5) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_FLOAT;
-                    } else if (_gps_status != 4) {
+                    } if (_gps_status != 4) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
                     } else {                  
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
@@ -328,7 +328,7 @@ bool AP_GPS_NMEA::_term_complete()
                     // To-Do: add support for proper reporting of 2D and 3D fix
                     if (_gps_status != 5) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_FLOAT;
-                    } else if (_gps_status != 4) {
+                    } if (_gps_status != 4) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
                     } else {                  
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
