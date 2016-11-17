@@ -1,12 +1,23 @@
 #pragma once
 
+#define USE_FLASH_STORAGE 1
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_PX4_Namespace.h"
 #include <systemlib/perf_counter.h>
 #include <AP_Common/Bitmask.h>
+#include <AP_FlashStorage/AP_FlashStorage.h>
 
 #define PX4_STORAGE_SIZE HAL_STORAGE_SIZE
+
+#if USE_FLASH_STORAGE
+// when using flash storage we use a small line size to make storage
+// compact and minimise the number of erase cycles needed
+#define PX4_STORAGE_LINE_SHIFT 3
+#else
 #define PX4_STORAGE_LINE_SHIFT 9
+#endif
+
 #define PX4_STORAGE_LINE_SIZE (1<<PX4_STORAGE_LINE_SHIFT)
 #define PX4_STORAGE_NUM_LINES (PX4_STORAGE_SIZE/PX4_STORAGE_LINE_SIZE)
 
@@ -33,9 +44,22 @@ private:
     int _fd = -1;
     void _mtd_load(void);
     void _mtd_write(uint16_t line);
-    
 #if defined (CONFIG_ARCH_BOARD_PX4FMU_V4)
     irqstate_t irq_state;
 #endif
     void bus_lock(bool lock);
+
+    bool _flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length);
+    bool _flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length);
+    bool _flash_erase_sector(uint8_t sector);
+    uint8_t _flash_page;
+    
+    AP_FlashStorage _flash{_buffer,
+            128*1024U, 
+            FUNCTOR_BIND_MEMBER(&PX4Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
+            FUNCTOR_BIND_MEMBER(&PX4Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
+            FUNCTOR_BIND_MEMBER(&PX4Storage::_flash_erase_sector, bool, uint8_t)};
+    
+    void _flash_load(void);
+    void _flash_write(uint16_t line);
 };

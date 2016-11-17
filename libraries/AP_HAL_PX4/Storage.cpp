@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <nuttx/progmem.h>
 
 #include "Storage.h"
 using namespace PX4;
@@ -40,8 +41,12 @@ void PX4Storage::_storage_open(void)
 
     _dirty_mask.clearall();
 
-    // load from mtd
+    // load from storage backend
+#if USE_FLASH_STORAGE
+    _flash_load();
+#else
     _mtd_load();
+#endif
 
 #ifdef SAVE_STORAGE_FILE
     fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
@@ -143,8 +148,12 @@ void PX4Storage::_timer_tick(void)
         return;
     }
 
-    // write the line
+    // save to storage backend
+#if USE_FLASH_STORAGE
+    _flash_write(i);
+#else
     _mtd_write(i);
+#endif
     
     perf_end(_perf_storage);
 }
@@ -196,6 +205,67 @@ void PX4Storage::_mtd_load(void)
         }
     }
     close(fd);
+}
+
+/*
+  load all data from flash
+ */
+void PX4Storage::_flash_load(void)
+{
+    _flash_page = up_progmem_npages() - 2;
+    if (up_progmem_pagesize(_flash_page) != 128*1024U ||
+        up_progmem_pagesize(_flash_page+1) != 128*1024U) {
+        AP_HAL::panic("Bad flash page sizes %u %u",
+                      up_progmem_pagesize(_flash_page),
+                      up_progmem_pagesize(_flash_page+1));
+    }
+        
+    printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
+    
+    if (!_flash.init()) {
+        AP_HAL::panic("unable to init flash storage");
+    }
+}
+
+/*
+  write one storage line. This also updates _dirty_mask. 
+*/
+void PX4Storage::_flash_write(uint16_t line)
+{
+    if (_flash.write(line*PX4_STORAGE_LINE_SIZE, PX4_STORAGE_LINE_SIZE)) {
+        // mark the line clean
+        _dirty_mask.clear(line);        
+    } else {
+        perf_count(_perf_errors);
+    }
+}
+
+/*
+  callback to write data to flash
+ */
+bool PX4Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
+{
+    size_t base_address = up_progmem_getaddress(_flash_page+sector);
+    return up_progmem_write(base_address+offset, data, length) == length;
+}
+
+/*
+  callback to read data from flash
+ */
+bool PX4Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
+{
+    size_t base_address = up_progmem_getaddress(_flash_page+sector);
+    const uint8_t *b = ((const uint8_t *)base_address)+offset;
+    memcpy(data, b, length);
+    return true;
+}
+
+/*
+  callback to erase flash sector
+ */
+bool PX4Storage::_flash_erase_sector(uint8_t sector)
+{
+    return up_progmem_erasepage(_flash_page+sector) > 0;
 }
 
 #endif // CONFIG_HAL_BOARD
