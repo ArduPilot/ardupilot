@@ -342,6 +342,11 @@ _options_for_frame = {
         "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/gazebo-zephyr.parm",
     },
+    "gazebo-rover": {
+        "model": "gazebo",
+        "waf_target": "bin/ardurover",
+        "default_params_filename": "default_params/rover-skid.parm",
+    },
     "last_letter": {
         "waf_target": "bin/arduplane",
     },
