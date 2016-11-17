@@ -30,6 +30,9 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     }
 
+    bool restart_landing_sequence();
+    bool jump_to_landing_sequence(void);
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // Flag to indicate if we have landed.
