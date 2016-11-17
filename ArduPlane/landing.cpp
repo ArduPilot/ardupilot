@@ -48,7 +48,7 @@ bool Plane::verify_land()
        2) we are within LAND_FLARE_SEC of the landing point vertically
           by the calculated sink rate (if LAND_FLARE_SEC != 0)
        3) we have gone past the landing point and don't have
-          rangefinder data (to prevent us keeping throttle on 
+          rangefinder data (to prevent us keeping throttle on
           after landing if we've had positive baro drift)
     */
     bool rangefinder_in_range = rangefinder_state.in_range;
@@ -109,9 +109,9 @@ bool Plane::verify_land()
       prevents sudden turns if we overshoot the landing point
      */
     struct Location land_WP_loc = next_WP_loc;
-	int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+    int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
     location_update(land_WP_loc,
-                    land_bearing_cd*0.01f, 
+                    land_bearing_cd*0.01f,
                     get_distance(prev_WP_loc, current_loc) + 200);
     nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
 
@@ -135,25 +135,6 @@ bool Plane::verify_land()
     return false;
 }
 
-/*
-    If land_DisarmDelay is enabled (non-zero), check for a landing then auto-disarm after time expires
- */
-void Plane::disarm_if_autoland_complete()
-{
-    if (g.land_disarm_delay > 0 && 
-        auto_state.land_complete && 
-        !is_flying() && 
-        arming.arming_required() != AP_Arming::NO &&
-        arming.is_armed()) {
-        /* we have auto disarm enabled. See if enough time has passed */
-        if (millis() - auto_state.last_flying_ms >= g.land_disarm_delay*1000UL) {
-            if (disarm_motors()) {
-                gcs_send_text(MAV_SEVERITY_INFO,"Auto disarmed");
-            }
-        }
-    }
-}
-
 void Plane::adjust_landing_slope_for_rangefinder_bump(void)
 {
     // check the rangefinder correction for a large change. When found, recalculate the glide slope. This is done by
@@ -175,7 +156,7 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
 
     // re-calculate auto_state.land_slope with updated prev_WP_loc
     setup_landing_glide_slope();
-    
+
     if (rangefinder_state.correction >= 0) { // we're too low or object is below us
         // correction positive means we're too low so we should continue on with
         // the newly computed shallower slope instead of pitching/throttling up
@@ -243,8 +224,8 @@ void Plane::setup_landing_glide_slope(void)
         float aim_height = aparm.land_flare_sec * sink_rate;
         if (aim_height <= 0) {
             aim_height = g.land_flare_alt;
-        } 
-            
+        }
+
         // don't allow the aim height to be too far above LAND_FLARE_ALT
         if (g.land_flare_alt > 0 && aim_height > g.land_flare_alt*2) {
             aim_height = g.land_flare_alt*2;
@@ -264,7 +245,7 @@ void Plane::setup_landing_glide_slope(void)
         // distance to flare is based on ground speed, adjusted as we
         // get closer. This takes into account the wind
         float flare_distance = groundspeed * flare_time;
-        
+
         // don't allow the flare before half way along the final leg
         if (flare_distance > total_distance/2) {
             flare_distance = total_distance/2;
@@ -300,27 +281,3 @@ void Plane::setup_landing_glide_slope(void)
 
 
 
-/*
-  the height above field elevation that we pass to TECS
- */
-float Plane::tecs_hgt_afe(void)
-{
-    /*
-      pass the height above field elevation as the height above
-      the ground when in landing, which means that TECS gets the
-      rangefinder information and thus can know when the flare is
-      coming.
-    */
-    float hgt_afe;
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-        hgt_afe = height_above_target();
-        hgt_afe -= rangefinder_correction();
-    } else {
-        // when in normal flight we pass the hgt_afe as relative
-        // altitude to home
-        hgt_afe = relative_altitude();
-    }
-    return hgt_afe;
-}
