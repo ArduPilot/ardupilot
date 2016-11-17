@@ -1045,4 +1045,51 @@ void Plane::update_optical_flow(void)
 }
 #endif
 
+
+/*
+    If land_DisarmDelay is enabled (non-zero), check for a landing then auto-disarm after time expires
+ */
+void Plane::disarm_if_autoland_complete()
+{
+    if (g.land_disarm_delay > 0 &&
+        landing.complete &&
+        !is_flying() &&
+        arming.arming_required() != AP_Arming::NO &&
+        arming.is_armed()) {
+        /* we have auto disarm enabled. See if enough time has passed */
+        if (millis() - auto_state.last_flying_ms >= g.land_disarm_delay*1000UL) {
+            if (disarm_motors()) {
+                gcs_send_text(MAV_SEVERITY_INFO,"Auto disarmed");
+            }
+        }
+    }
+}
+
+
+
+/*
+  the height above field elevation that we pass to TECS
+ */
+float Plane::tecs_hgt_afe(void)
+{
+    /*
+      pass the height above field elevation as the height above
+      the ground when in landing, which means that TECS gets the
+      rangefinder information and thus can know when the flare is
+      coming.
+    */
+    float hgt_afe;
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+        hgt_afe = height_above_target();
+        hgt_afe -= rangefinder_correction();
+    } else {
+        // when in normal flight we pass the hgt_afe as relative
+        // altitude to home
+        hgt_afe = relative_altitude();
+    }
+    return hgt_afe;
+}
+
 AP_HAL_MAIN_CALLBACKS(&plane);
