@@ -21,7 +21,9 @@
 #include "ExternalLED.h"
 #include "NavioLED_I2C.h"
 #include "OreoLED_PX4.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
 #include "PixRacerLED.h"
+#endif
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm_Linux.h"
 #include "ToneAlarm_PX4.h"

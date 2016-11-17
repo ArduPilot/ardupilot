@@ -16,6 +16,8 @@
  */
 #pragma once
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
@@ -38,3 +40,5 @@ private:
     uint8_t _counter;
     uint8_t step = 0;
 };
+
+#endif // CONFIG_HAL_BOARD

@@ -14,6 +14,8 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+
 #include "PixRacerLED.h"
 #include <AP_GPS/AP_GPS.h>
 #include "AP_Notify.h"
@@ -259,3 +261,5 @@ void PixRacerLED::update(void)
         }
     }
 }
+
+#endif // CONFIG_HAL_BOARD
