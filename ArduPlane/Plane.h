@@ -215,8 +215,6 @@ private:
 
     AP_InertialSensor ins;
 
-#if RANGEFINDER_ENABLED == ENABLED
-    // rangefinder
     RangeFinder rangefinder {serial_manager};
 
     struct {
@@ -232,7 +230,6 @@ private:
         float height_estimate;
         float last_distance;
     } rangefinder_state;
-#endif
 
     AP_RPM rpm_sensor;
     

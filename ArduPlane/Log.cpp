@@ -342,7 +342,6 @@ struct PACKED log_Sonar {
 // Write a sonar packet
 void Plane::Log_Write_Sonar()
 {
-#if RANGEFINDER_ENABLED == ENABLED
     uint16_t distance = 0;
     if (rangefinder.status() == RangeFinder::RangeFinder_Good) {
         distance = rangefinder.distance_cm();
@@ -359,7 +358,6 @@ void Plane::Log_Write_Sonar()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
     DataFlash.Log_Write_RFND(rangefinder);
-#endif
 }
 
 struct PACKED log_Optflow {

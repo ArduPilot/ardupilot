@@ -51,11 +51,7 @@ bool Plane::verify_land()
           rangefinder data (to prevent us keeping throttle on 
           after landing if we've had positive baro drift)
     */
-#if RANGEFINDER_ENABLED == ENABLED
     bool rangefinder_in_range = rangefinder_state.in_range;
-#else
-    bool rangefinder_in_range = false;
-#endif
 
     // flare check:
     // 1) below flare alt/sec requires approach stage check because if sec/alt are set too
@@ -160,7 +156,6 @@ void Plane::disarm_if_autoland_complete()
 
 void Plane::adjust_landing_slope_for_rangefinder_bump(void)
 {
-#if RANGEFINDER_ENABLED == ENABLED
     // check the rangefinder correction for a large change. When found, recalculate the glide slope. This is done by
     // determining the slope from your current location to the land point then following that back up to the approach
     // altitude and moving the prev_wp to that location. From there
@@ -206,7 +201,6 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
             g.land_slope_recalc_steep_threshold_to_abort = 0; // disable this feature so we only perform it once
         }
     }
-#endif
 }
 
 /*
