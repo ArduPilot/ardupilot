@@ -158,6 +158,10 @@ void AP_Compass_LSM9DS1::_update(void)
 
     raw_field *= _scaling;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
+    raw_field.rotate(ROTATION_ROLL_180);
+#endif
+
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _compass_instance);
 
@@ -199,10 +203,6 @@ void AP_Compass_LSM9DS1::read()
     _reset_filter();
 
     hal.scheduler->resume_timer_procs();
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    field.rotate(ROTATION_ROLL_180);
-#endif
 
     publish_filtered_field(field, _compass_instance);
 
