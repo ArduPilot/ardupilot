@@ -19,6 +19,7 @@
 #include "SIM_Gazebo.h"
 
 #include <stdio.h>
+#include <errno.h>
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -115,6 +116,26 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
     */
 }
 
+void Gazebo::drain_sockets()
+{
+    const uint16_t buflen = 1024;
+    char buf[buflen];
+    ssize_t received;
+    errno = 0;
+    do {
+        received = socket_in.recv(buf, buflen, 0);
+        if (received < 0) {
+            if (errno != EAGAIN && errno != EWOULDBLOCK && errno != 0) {
+                fprintf(stderr, "error recv on socket in: %s \n",
+                        strerror(errno));
+            }
+        } else {
+            // fprintf(stderr, "received from control socket: %s\n", buf);
+        }
+    } while (received > 0);
+
+}
+
 /*
   update the Gazebo simulation by one time step
  */
@@ -126,6 +147,7 @@ void Gazebo::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+    drain_sockets();
 }
 
 } // namespace SITL
