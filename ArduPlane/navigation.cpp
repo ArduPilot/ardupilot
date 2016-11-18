@@ -85,7 +85,7 @@ void Plane::calc_airspeed_errors()
     float airspeed_measured_cm = airspeed.get_airspeed_cm();
 
     // Normal airspeed target
-    target_airspeed_cm = g.airspeed_cruise_cm;
+    target_airspeed_cm = aparm.airspeed_cruise_cm;
 
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B || 
@@ -124,7 +124,7 @@ void Plane::calc_airspeed_errors()
     // Set target to current airspeed + ground speed undershoot,
     // but only when this is faster than the target airspeed commanded
     // above.
-    if (control_mode >= FLY_BY_WIRE_B && (g.min_gndspeed_cm > 0)) {
+    if (control_mode >= FLY_BY_WIRE_B && (aparm.min_gndspeed_cm > 0)) {
         int32_t min_gnd_target_airspeed = airspeed_measured_cm + groundspeed_undershoot;
         if (min_gnd_target_airspeed > target_airspeed_cm)
             target_airspeed_cm = min_gnd_target_airspeed;
@@ -154,7 +154,7 @@ void Plane::calc_gndspeed_undershoot()
 		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
 		yawVect.normalize();
 		float gndSpdFwd = yawVect * gndVel;
-        groundspeed_undershoot = (g.min_gndspeed_cm > 0) ? (g.min_gndspeed_cm - gndSpdFwd*100) : 0;
+        groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
     }
 }
 

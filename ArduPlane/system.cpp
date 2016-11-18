@@ -862,7 +862,7 @@ bool Plane::disarm_motors(void)
     change_arm_state();
 
     // reload target airspeed which could have been modified by a mission
-    plane.g.airspeed_cruise_cm.load();
+    plane.aparm.airspeed_cruise_cm.load();
     
     return true;
 }

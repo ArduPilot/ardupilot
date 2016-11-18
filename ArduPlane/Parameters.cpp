@@ -244,7 +244,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: meters
     // @Increment: 0.5
     // @User: Advanced
-    GSCALAR(land_slope_recalc_shallow_threshold,          "LAND_SLOPE_RCALC",  2.0f),
+    ASCALAR(land_slope_recalc_shallow_threshold,          "LAND_SLOPE_RCALC",  2.0f),
 
     // @Param: LAND_ABORT_DEG
     // @DisplayName: Landing auto-abort slope threshold
@@ -253,7 +253,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: degrees
     // @Increment: 0.1
     // @User: Advanced
-    GSCALAR(land_slope_recalc_steep_threshold_to_abort,          "LAND_ABORT_DEG", 0),
+    ASCALAR(land_slope_recalc_steep_threshold_to_abort,          "LAND_ABORT_DEG", 0),
 
     // @Param: LAND_PITCH_CD
     // @DisplayName: Landing Pitch
@@ -268,7 +268,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: meters
     // @Increment: 0.1
     // @User: Advanced
-    GSCALAR(land_flare_alt,          "LAND_FLARE_ALT",  3.0),
+    ASCALAR(land_flare_alt,          "LAND_FLARE_ALT",  3.0),
 
     // @Param: LAND_FLARE_SEC
     // @DisplayName: Landing flare time
@@ -285,7 +285,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Range: 0 30
     // @Increment: 0.1
     // @User: Advanced
-    GSCALAR(land_pre_flare_alt     , "LAND_PF_ALT",  10.0),
+    ASCALAR(land_pre_flare_alt     , "LAND_PF_ALT",  10.0),
 
     // @Param: LAND_PF_SEC
     // @DisplayName: Landing pre-flare time
@@ -294,7 +294,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Range: 0 10
     // @Increment: 0.1
     // @User: Advanced
-    GSCALAR(land_pre_flare_sec     , "LAND_PF_SEC",  6.0),
+    ASCALAR(land_pre_flare_sec     , "LAND_PF_SEC",  6.0),
 
     // @Param: LAND_PF_ARSPD
     // @DisplayName: Landing pre-flare airspeed
@@ -905,7 +905,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Airspeed in cm/s to aim for when airspeed is enabled in auto mode. This is a calibrated (apparent) airspeed.
     // @Units: cm/s
     // @User: User
-    GSCALAR(airspeed_cruise_cm,     "TRIM_ARSPD_CM",  AIRSPEED_CRUISE_CM),
+    ASCALAR(airspeed_cruise_cm,     "TRIM_ARSPD_CM",  AIRSPEED_CRUISE_CM),
 
     // @Param: SCALING_SPEED
     // @DisplayName: speed used for speed scaling calculations
@@ -919,7 +919,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Minimum ground speed in cm/s when under airspeed control
     // @Units: cm/s
     // @User: Advanced
-    GSCALAR(min_gndspeed_cm,      "MIN_GNDSPD_CM",  MIN_GNDSPEED_CM),
+    ASCALAR(min_gndspeed_cm,      "MIN_GNDSPD_CM",  MIN_GNDSPEED_CM),
 
     // @Param: TRIM_PITCH_CD
     // @DisplayName: Pitch angle offset
@@ -1077,7 +1077,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Automatically detect a crash during AUTO flight and perform the bitmask selected action(s). Disarm will turn off motor for safety and to help against burning out ESC and motor. Setting the mode to manual will help save the servos from burning out by overexerting if the aircraft crashed in an odd orientation such as upsidedown. Set to 0 to disable crash detection.
     // @Bitmask: 0:Disarm
     // @User: Advanced
-    GSCALAR(crash_detection_enable,         "CRASH_DETECT",   0),
+    ASCALAR(crash_detection_enable,         "CRASH_DETECT",   0),
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane

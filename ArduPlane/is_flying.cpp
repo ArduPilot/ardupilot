@@ -18,7 +18,7 @@ void Plane::update_is_flying_5Hz(void)
     bool is_flying_bool;
     uint32_t now_ms = AP_HAL::millis();
 
-    uint32_t ground_speed_thresh_cm = (g.min_gndspeed_cm > 0) ? ((uint32_t)(g.min_gndspeed_cm*0.9f)) : GPS_IS_FLYING_SPEED_CMS;
+    uint32_t ground_speed_thresh_cm = (aparm.min_gndspeed_cm > 0) ? ((uint32_t)(aparm.min_gndspeed_cm*0.9f)) : GPS_IS_FLYING_SPEED_CMS;
     bool gps_confirmed_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
                                     (gps.ground_speed_cm() >= ground_speed_thresh_cm);
 
@@ -189,7 +189,7 @@ bool Plane::is_flying(void)
  */
 void Plane::crash_detection_update(void)
 {
-    if (control_mode != AUTO || !g.crash_detection_enable)
+    if (control_mode != AUTO || !aparm.crash_detection_enable)
     {
         // crash detection is only available in AUTO mode
         crash_state.debounce_timer_ms = 0;
@@ -284,7 +284,7 @@ void Plane::crash_detection_update(void)
     } else if ((now_ms - crash_state.debounce_timer_ms >= crash_state.debounce_time_total_ms) && !crash_state.is_crashed) {
         crash_state.is_crashed = true;
 
-        if (g.crash_detection_enable == CRASH_DETECT_ACTION_BITMASK_DISABLED) {
+        if (aparm.crash_detection_enable == CRASH_DETECT_ACTION_BITMASK_DISABLED) {
             if (crashed_near_land_waypoint) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected. No action taken");
             } else {
@@ -292,7 +292,7 @@ void Plane::crash_detection_update(void)
             }
         }
         else {
-            if (g.crash_detection_enable & CRASH_DETECT_ACTION_BITMASK_DISARM) {
+            if (aparm.crash_detection_enable & CRASH_DETECT_ACTION_BITMASK_DISARM) {
                 disarm_motors();
             }
             landing.complete = true;
