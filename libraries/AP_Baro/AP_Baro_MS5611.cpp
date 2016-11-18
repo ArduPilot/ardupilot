@@ -66,7 +66,7 @@ void AP_Baro_MS56XX::_init()
         return;
     }
 
-    if (!_dev->get_semaphore()->take(10)) {
+    if (!_dev->get_semaphore()->take(0)) {
         AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
     }
 
