@@ -379,9 +379,6 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
         }
 
         num_iterations++;
-        if (fitness - last_fitness < 1.0e-9f) {
-            break;
-        }
     }
 }
 
