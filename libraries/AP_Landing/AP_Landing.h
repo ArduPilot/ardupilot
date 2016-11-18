@@ -17,6 +17,8 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 
 /// @class  AP_Landing
 /// @brief  Class managing ArduPlane landing methods
@@ -25,13 +27,18 @@ class AP_Landing
 public:
 
     // constructor
-    AP_Landing(AP_Mission &_mission) :
-            mission(_mission) {
+    AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_SpdHgt_Controller, const AP_Vehicle::FixedWing &_aparm) :
+            mission(_mission),
+            ahrs(_ahrs),
+            SpdHgt_Controller(_SpdHgt_Controller),
+            aparm(_aparm) {
         AP_Param::setup_object_defaults(this, var_info);
     }
 
     bool restart_landing_sequence();
     bool jump_to_landing_sequence(void);
+
+    Location setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -63,4 +70,9 @@ public:
 private:
 
     AP_Mission &mission;
+    AP_AHRS &ahrs;
+    AP_SpdHgtControl *SpdHgt_Controller;
+
+    const AP_Vehicle::FixedWing &aparm;
+
 };
