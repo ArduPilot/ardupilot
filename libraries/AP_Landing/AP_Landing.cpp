@@ -187,4 +187,31 @@ Location AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, cons
     return loc;
 }
 
+void AP_Landing::check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state)
+{
+    if (rangefinder_state.correction >= 0) { // we're too low or object is below us
+        // correction positive means we're too low so we should continue on with
+        // the newly computed shallower slope instead of pitching/throttling up
 
+    } else if (aparm.land_slope_recalc_steep_threshold_to_abort > 0 && !has_aborted_due_to_slope_recalc) {
+        // correction negative means we're too high and need to point down (and speed up) to re-align
+        // to land on target. A large negative correction means we would have to dive down a lot and will
+        // generating way too much speed that we can not bleed off in time. It is better to remember
+        // the large baro altitude offset and abort the landing to come around again with the correct altitude
+        // offset and "perfect" slope.
+
+        // calculate projected slope with projected alt
+        float new_slope_deg = degrees(atan(slope));
+        float initial_slope_deg = degrees(atan(initial_slope));
+
+        // is projected slope too steep?
+        if (new_slope_deg - initial_slope_deg > aparm.land_slope_recalc_steep_threshold_to_abort) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Steep landing slope (%.0fm %.1fdeg)",
+                                             (double)rangefinder_state.correction, (double)(new_slope_deg - initial_slope_deg));
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "aborting landing!");
+            alt_offset = rangefinder_state.correction;
+            commanded_go_around = true;
+            has_aborted_due_to_slope_recalc = true; // only allow this once.
+        }
+    }
+}

@@ -25,7 +25,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         auto_state.takeoff_complete = true;
 
         // if a go around had been commanded, clear it now.
-        auto_state.commanded_go_around = false;
+        landing.commanded_go_around = false;
 
         // start non-idle
         auto_state.idle_mode = false;
@@ -145,7 +145,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_LAND_START:
         //ensure go around hasn't been set
-        auto_state.commanded_go_around = false;
+        landing.commanded_go_around = false;
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:
@@ -383,7 +383,7 @@ void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 {
-    auto_state.commanded_go_around = false;
+    landing.commanded_go_around = false;
     set_next_WP(cmd.content.location);
 
     // configure abort altitude and pitch
