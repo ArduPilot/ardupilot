@@ -24,22 +24,11 @@ void RCInput_Raspilot::init()
     _dev = hal.spi->get_device("raspio");
 
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&RCInput_Raspilot::_poll_data, void));
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&RCInput_Raspilot::_poll_data, bool));
 }
 
-void RCInput_Raspilot::_poll_data(void)
+bool RCInput_Raspilot::_poll_data(void)
 {
-    // Throttle read rate to 100hz maximum.
-    if (AP_HAL::micros() - _last_timer < 10000) {
-        return;
-    }
-
-    _last_timer = AP_HAL::micros();
-
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
-
     struct IOPacket _dma_packet_tx, _dma_packet_rx;
     uint16_t count = LINUX_RC_INPUT_NUM_CHANNELS;
     _dma_packet_tx.count_code = count | PKT_CODE_READ;
@@ -64,7 +53,7 @@ void RCInput_Raspilot::_poll_data(void)
       _update_periods(&_dma_packet_rx.regs[6], (uint8_t)num_values);
     }
 
-    _dev->get_semaphore()->give();
+    return true;
 }
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE
