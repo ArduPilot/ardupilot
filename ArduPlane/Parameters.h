@@ -368,7 +368,6 @@ public:
 
     AP_Int8  trim_rc_at_start;
     AP_Int8  crash_accel_threshold;
-    AP_Int8  crash_detection_enable;
 
     // Feed-forward gains
     //
@@ -472,17 +471,10 @@ public:
     AP_Int32 log_bitmask;
     AP_Int8 reset_switch_chan;
     AP_Int8 reset_mission_chan;
-    AP_Int32 airspeed_cruise_cm;
     AP_Int32 RTL_altitude_cm;
-    AP_Float land_flare_alt;
     AP_Int8 land_disarm_delay;
     AP_Int8 land_then_servos_neutral;
     AP_Int8 land_abort_throttle_enable;
-    AP_Float land_pre_flare_alt;
-    AP_Float land_pre_flare_sec;
-    AP_Float land_slope_recalc_shallow_threshold;
-    AP_Float land_slope_recalc_steep_threshold_to_abort;
-    AP_Int32 min_gndspeed_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
     AP_Int8  hil_servos;
