@@ -1822,7 +1822,7 @@ void QuadPlane::check_land_complete(void)
     poscontrol.state = QPOS_LAND_COMPLETE;
     plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
     // reload target airspeed which could have been modified by the mission
-    plane.g.airspeed_cruise_cm.load();
+    plane.aparm.airspeed_cruise_cm.load();
 }
 
 /*

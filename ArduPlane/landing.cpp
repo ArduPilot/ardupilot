@@ -62,9 +62,9 @@ bool Plane::verify_land()
 
     bool on_approach_stage = (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
-    bool below_flare_alt = (height <= g.land_flare_alt);
+    bool below_flare_alt = (height <= aparm.land_flare_alt);
     bool below_flare_sec = (aparm.land_flare_sec > 0 && height <= auto_state.sink_rate * aparm.land_flare_sec);
-    bool probably_crashed = (g.crash_detection_enable && fabsf(auto_state.sink_rate) < 0.2f && !is_flying());
+    bool probably_crashed = (aparm.crash_detection_enable && fabsf(auto_state.sink_rate) < 0.2f && !is_flying());
 
     if ((on_approach_stage && below_flare_alt) ||
         (on_approach_stage && below_flare_sec && (auto_state.wp_proportion > 0.5)) ||
@@ -91,13 +91,13 @@ bool Plane::verify_land()
             // been set for landing. We don't do this till ground
             // speed drops below 3.0 m/s as otherwise we will change
             // target speeds too early.
-            g.airspeed_cruise_cm.load();
-            g.min_gndspeed_cm.load();
+            aparm.airspeed_cruise_cm.load();
+            aparm.min_gndspeed_cm.load();
             aparm.throttle_cruise.load();
         }
     } else if (!landing.complete && !landing.pre_flare && aparm.land_pre_flare_airspeed > 0) {
-        bool reached_pre_flare_alt = g.land_pre_flare_alt > 0 && (height <= g.land_pre_flare_alt);
-        bool reached_pre_flare_sec = g.land_pre_flare_sec > 0 && (height <= auto_state.sink_rate * g.land_pre_flare_sec);
+        bool reached_pre_flare_alt = aparm.land_pre_flare_alt > 0 && (height <= aparm.land_pre_flare_alt);
+        bool reached_pre_flare_sec = aparm.land_pre_flare_sec > 0 && (height <= auto_state.sink_rate * aparm.land_pre_flare_sec);
         if (reached_pre_flare_alt || reached_pre_flare_sec) {
             landing.pre_flare = true;
             update_flight_stage();
@@ -142,8 +142,8 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
     // altitude and moving the prev_wp to that location. From there
     float correction_delta = fabsf(rangefinder_state.last_stable_correction) - fabsf(rangefinder_state.correction);
 
-    if (g.land_slope_recalc_shallow_threshold <= 0 ||
-            fabsf(correction_delta) < g.land_slope_recalc_shallow_threshold) {
+    if (aparm.land_slope_recalc_shallow_threshold <= 0 ||
+            fabsf(correction_delta) < aparm.land_slope_recalc_shallow_threshold) {
         return;
     }
 
@@ -161,7 +161,7 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
         // correction positive means we're too low so we should continue on with
         // the newly computed shallower slope instead of pitching/throttling up
 
-    } else if (g.land_slope_recalc_steep_threshold_to_abort > 0) {
+    } else if (aparm.land_slope_recalc_steep_threshold_to_abort > 0) {
         // correction negative means we're too high and need to point down (and speed up) to re-align
         // to land on target. A large negative correction means we would have to dive down a lot and will
         // generating way too much speed that we can not bleed off in time. It is better to remember
@@ -173,13 +173,13 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
         float initial_slope_deg = degrees(atan(landing.initial_slope));
 
         // is projected slope too steep?
-        if (new_slope_deg - initial_slope_deg > g.land_slope_recalc_steep_threshold_to_abort) {
+        if (new_slope_deg - initial_slope_deg > aparm.land_slope_recalc_steep_threshold_to_abort) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Steep landing slope (%.0fm %.1fdeg)",
                                              (double)rangefinder_state.correction, (double)(new_slope_deg - initial_slope_deg));
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "aborting landing!");
             landing.alt_offset = rangefinder_state.correction;
             auto_state.commanded_go_around = 1;
-            g.land_slope_recalc_steep_threshold_to_abort = 0; // disable this feature so we only perform it once
+            aparm.land_slope_recalc_steep_threshold_to_abort = 0; // disable this feature so we only perform it once
         }
     }
 }
@@ -223,12 +223,12 @@ void Plane::setup_landing_glide_slope(void)
         // the height we aim for is the one to give us the right flare point
         float aim_height = aparm.land_flare_sec * sink_rate;
         if (aim_height <= 0) {
-            aim_height = g.land_flare_alt;
+            aim_height = aparm.land_flare_alt;
         }
 
         // don't allow the aim height to be too far above LAND_FLARE_ALT
-        if (g.land_flare_alt > 0 && aim_height > g.land_flare_alt*2) {
-            aim_height = g.land_flare_alt*2;
+        if (aparm.land_flare_alt > 0 && aim_height > aparm.land_flare_alt*2) {
+            aim_height = aparm.land_flare_alt*2;
         }
 
         // calculate slope to landing point

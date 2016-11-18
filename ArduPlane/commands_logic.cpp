@@ -837,13 +837,13 @@ void Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
     {
     case 0:             // Airspeed
         if (cmd.content.speed.target_ms > 0) {
-            g.airspeed_cruise_cm.set(cmd.content.speed.target_ms * 100);
+            aparm.airspeed_cruise_cm.set(cmd.content.speed.target_ms * 100);
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set airspeed %u m/s", (unsigned)cmd.content.speed.target_ms);
         }
         break;
     case 1:             // Ground speed
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)cmd.content.speed.target_ms);
-        g.min_gndspeed_cm.set(cmd.content.speed.target_ms * 100);
+        aparm.min_gndspeed_cm.set(cmd.content.speed.target_ms * 100);
         break;
     }
 
