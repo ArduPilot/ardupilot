@@ -60,6 +60,7 @@ private:
 
     void recv_fdm(const struct sitl_input &input);
     void send_servos(const struct sitl_input &input);
+    void drain_sockets();
 
     double last_timestamp;
 
