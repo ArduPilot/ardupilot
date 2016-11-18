@@ -181,6 +181,13 @@ public:
      */
     virtual bool unregister_callback(PeriodicHandle h) { return false; }
 
+    /*
+     * support for direct control of SPI chip select. Needed for
+     * devices with unusual SPI transfer patterns that include
+     * specific delays
+     */
+    virtual bool set_chip_select(bool set) { return false; }
+    
     /**
      * Some devices connected on the I2C or SPI bus require a bit to be set on
      * the register address in order to perform a read operation. This sets a
