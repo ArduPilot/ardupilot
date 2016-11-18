@@ -625,7 +625,7 @@ private:
     AP_Terrain terrain {ahrs, mission, rally};
 #endif
 
-    AP_Landing landing {mission};
+    AP_Landing landing {mission,ahrs,SpdHgt_Controller,aparm};
 
     AP_ADSB adsb {ahrs};
 

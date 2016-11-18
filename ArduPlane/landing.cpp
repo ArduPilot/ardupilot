@@ -194,89 +194,19 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
  */
 void Plane::setup_landing_glide_slope(void)
 {
-        float total_distance = get_distance(prev_WP_loc, next_WP_loc);
+    Location loc = landing.setup_landing_glide_slope(prev_WP_loc, next_WP_loc);
 
-        // If someone mistakenly puts all 0's in their LAND command then total_distance
-        // will be calculated as 0 and cause a divide by 0 error below.  Lets avoid that.
-        if (total_distance < 1) {
-            total_distance = 1;
-        }
+    // setup the offset_cm for set_target_altitude_proportion()
+    target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;
 
-        // height we need to sink for this WP
-        float sink_height = (prev_WP_loc.alt - next_WP_loc.alt)*0.01f;
+    // calculate the proportion we are to the target
+    float land_proportion = location_path_proportion(current_loc, prev_WP_loc, loc);
 
-        // current ground speed
-        float groundspeed = ahrs.groundspeed();
-        if (groundspeed < 0.5f) {
-            groundspeed = 0.5f;
-        }
+    // now setup the glide slope for landing
+    set_target_altitude_proportion(loc, 1.0f - land_proportion);
 
-        // calculate time to lose the needed altitude
-        float sink_time = total_distance / groundspeed;
-        if (sink_time < 0.5f) {
-            sink_time = 0.5f;
-        }
-
-        // find the sink rate needed for the target location
-        float sink_rate = sink_height / sink_time;
-
-        // the height we aim for is the one to give us the right flare point
-        float aim_height = aparm.land_flare_sec * sink_rate;
-        if (aim_height <= 0) {
-            aim_height = aparm.land_flare_alt;
-        }
-
-        // don't allow the aim height to be too far above LAND_FLARE_ALT
-        if (aparm.land_flare_alt > 0 && aim_height > aparm.land_flare_alt*2) {
-            aim_height = aparm.land_flare_alt*2;
-        }
-
-        // calculate slope to landing point
-        bool is_first_calc = is_zero(landing.slope);
-        landing.slope = (sink_height - aim_height) / total_distance;
-        if (is_first_calc) {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing glide slope %.1f degrees", (double)degrees(atanf(landing.slope)));
-        }
-
-
-        // time before landing that we will flare
-        float flare_time = aim_height / SpdHgt_Controller->get_land_sinkrate();
-
-        // distance to flare is based on ground speed, adjusted as we
-        // get closer. This takes into account the wind
-        float flare_distance = groundspeed * flare_time;
-
-        // don't allow the flare before half way along the final leg
-        if (flare_distance > total_distance/2) {
-            flare_distance = total_distance/2;
-        }
-
-        // project a point 500 meters past the landing point, passing
-        // through the landing point
-        const float land_projection = 500;
-        int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
-
-        // now calculate our aim point, which is before the landing
-        // point and above it
-        Location loc = next_WP_loc;
-        location_update(loc, land_bearing_cd*0.01f, -flare_distance);
-        loc.alt += aim_height*100;
-
-        // calculate point along that slope 500m ahead
-        location_update(loc, land_bearing_cd*0.01f, land_projection);
-        loc.alt -= landing.slope * land_projection * 100;
-
-        // setup the offset_cm for set_target_altitude_proportion()
-        target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;
-
-        // calculate the proportion we are to the target
-        float land_proportion = location_path_proportion(current_loc, prev_WP_loc, loc);
-
-        // now setup the glide slope for landing
-        set_target_altitude_proportion(loc, 1.0f - land_proportion);
-
-        // stay within the range of the start and end locations in altitude
-        constrain_target_altitude_location(loc, prev_WP_loc);
+    // stay within the range of the start and end locations in altitude
+    constrain_target_altitude_location(loc, prev_WP_loc);
 }
 
 
