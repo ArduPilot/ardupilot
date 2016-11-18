@@ -395,6 +395,8 @@ void RCInput_RPI::set_sigaction()
 
 //Initial setup of variables
 RCInput_RPI::RCInput_RPI():
+    circle_buffer{nullptr},
+    con_blocks{nullptr},
     prev_tick(0),
     delta_time(0),
     curr_tick_inc(1000/RCIN_RPI_SAMPLE_FREQ),
@@ -404,17 +406,7 @@ RCInput_RPI::RCInput_RPI():
     curr_signal(0),
     last_signal(228),
     state(RCIN_RPI_INITIAL_STATE)
-{    
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
-    int version = 2;    
-#else
-    int version = UtilRPI::from(hal.util)->get_rpi_version();
-#endif
-    set_physical_addresses(version);
-
-    //Init memory for buffer and for DMA control blocks. See comments in "init_ctrl_data()" to understand values "2" and "113"
-    circle_buffer = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 2, version);
-    con_blocks = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 113, version);
+{
 }
 
 RCInput_RPI::~RCInput_RPI()
@@ -438,7 +430,15 @@ void RCInput_RPI::init_registers()
 
 void RCInput_RPI::init()
 {
-    
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+    int version = 2;
+#else
+    int version = UtilRPI::from(hal.util)->get_rpi_version();
+#endif
+    set_physical_addresses(version);
+    circle_buffer = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 2, version);
+    con_blocks = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 113, version);
+
     init_registers();
     
     //Enable PPM input
@@ -461,6 +461,8 @@ void RCInput_RPI::init()
     curr_signal = *((uint8_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer)) & 0x10 ? 1 : 0;
     last_signal = curr_signal;
     curr_pointer++;
+
+    _initialized = true;
 }
 
 
@@ -469,6 +471,10 @@ void RCInput_RPI::_timer_tick()
 {
     int j;
     void* x;
+
+    if (!_initialized) {
+        return;
+    }
 
     //Now we are getting address in which DMAC is writing at current moment
     dma_cb_t* ad = (dma_cb_t*) con_blocks->get_virt_addr(dma_reg[RCIN_RPI_DMA_CONBLK_AD | RCIN_RPI_DMA_CHANNEL << 8]);
