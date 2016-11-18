@@ -32,12 +32,14 @@ AP_FlashStorage::AP_FlashStorage(uint8_t *_mem_buffer,
                                  uint32_t _flash_sector_size,
                                  FlashWrite _flash_write,
                                  FlashRead _flash_read,
-                                 FlashErase _flash_erase) :
+                                 FlashErase _flash_erase,
+                                 FlashEraseOK _flash_erase_ok) :
     mem_buffer(_mem_buffer),
     flash_sector_size(_flash_sector_size),
     flash_write(_flash_write),
     flash_read(_flash_read),
-    flash_erase(_flash_erase) {}
+    flash_erase(_flash_erase),
+    flash_erase_ok(_flash_erase_ok) {}
 
 // initialise storage
 bool AP_FlashStorage::init(void)
@@ -59,8 +61,7 @@ bool AP_FlashStorage::init(void)
         enum SectorState state = (enum SectorState)header[i].state;
         if (state != SECTOR_STATE_AVAILABLE &&
             state != SECTOR_STATE_IN_USE &&
-            state != SECTOR_STATE_FULL &&
-            state != SECTOR_STATE_FREE) {
+            state != SECTOR_STATE_FULL) {
             bad_header = true;
         }
 
@@ -115,10 +116,9 @@ bool AP_FlashStorage::init(void)
         }
     }
 
-    // erase any sectors marked full or free
+    // erase any sectors marked full
     for (uint8_t i=0; i<2; i++) {
-        if (states[i] == SECTOR_STATE_FULL ||
-            states[i] == SECTOR_STATE_FREE) {
+        if (states[i] == SECTOR_STATE_FULL) {
             if (!erase_sector(i)) {
                 return false;
             }
@@ -129,6 +129,29 @@ bool AP_FlashStorage::init(void)
     
     // ready to use
     return true;
+}
+
+
+
+// switch full sector - should only be called when safe to have CPU
+// offline for considerable periods as an erase will be needed
+bool AP_FlashStorage::switch_full_sector(void)
+{
+    debug("running switch_full_sector()\n");
+    
+    // clear any write error
+    write_error = false;
+    reserved_space = 0;
+    
+    if (!write_all()) {
+        return false;
+    }
+
+    if (!erase_sector(current_sector ^ 1)) {
+        return false;
+    }
+
+    return switch_sectors();
 }
 
 // write some data to virtual EEPROM
@@ -147,7 +170,12 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
 
         if (write_offset > flash_sector_size - (sizeof(struct block_header) + max_write + reserved_space)) {
             if (!switch_sectors()) {
-                return false;
+                if (!flash_erase_ok()) {
+                    return false;
+                }
+                if (!switch_full_sector()) {
+                    return false;                    
+                }
             }
         }
         
@@ -303,21 +331,14 @@ bool AP_FlashStorage::switch_sectors(void)
         return false;
     }
 
-    // mark current sector as full
     struct sector_header header;
     header.signature = signature;
-    header.state = SECTOR_STATE_FULL;
-    if (!flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header))) {
-        return false;
-    }
 
-    // switch sectors
-    current_sector ^= 1;
-
-    debug("switching to sector %u\n", current_sector);
+    uint8_t new_sector = current_sector ^ 1;
+    debug("switching to sector %u\n", new_sector);
     
     // check sector is available
-    if (!flash_read(current_sector, 0, (uint8_t *)&header, sizeof(header))) {
+    if (!flash_read(new_sector, 0, (uint8_t *)&header, sizeof(header))) {
         return false;
     }
     if (header.signature != signature) {
@@ -332,10 +353,20 @@ bool AP_FlashStorage::switch_sectors(void)
 
     // mark it in-use
     header.state = SECTOR_STATE_IN_USE;
+    if (!flash_write(new_sector, 0, (const uint8_t *)&header, sizeof(header))) {
+        return false;
+    }
+
+
+    // mark current sector as full
+    header.state = SECTOR_STATE_FULL;
     if (!flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header))) {
         return false;
     }
 
+    // switch sectors
+    current_sector = new_sector;
+        
     // we need to reserve some space in next sector to ensure we can successfully do a
     // full write out on init()
     reserved_space = reserve_size;

@@ -27,15 +27,19 @@ private:
     bool flash_write(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length);
     bool flash_read(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length);
     bool flash_erase(uint8_t sector);
+    bool flash_erase_ok(void);
     
     AP_FlashStorage storage{mem_buffer,
             flash_sector_size,
             FUNCTOR_BIND_MEMBER(&FlashTest::flash_write, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&FlashTest::flash_read, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
-            FUNCTOR_BIND_MEMBER(&FlashTest::flash_erase, bool, uint8_t)};
+            FUNCTOR_BIND_MEMBER(&FlashTest::flash_erase, bool, uint8_t),
+            FUNCTOR_BIND_MEMBER(&FlashTest::flash_erase_ok, bool)};
 
     // write to storage and mem_mirror
     void write(uint16_t offset, const uint8_t *data, uint16_t length);
+
+    bool erase_ok;
 };
 
 bool FlashTest::flash_write(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
@@ -80,20 +84,19 @@ bool FlashTest::flash_erase(uint8_t sector)
     return true;
 }
 
+bool FlashTest::flash_erase_ok(void)
+{
+    return erase_ok;
+}
+
 void FlashTest::write(uint16_t offset, const uint8_t *data, uint16_t length)
 {
     memcpy(&mem_mirror[offset], data, length);
     memcpy(&mem_buffer[offset], data, length);
     if (!storage.write(offset, length)) {
-        printf("Failed to write at %u for %u\n", offset, length);
-        if (!storage.init()) {
-            AP_HAL::panic("Failed to re-init");
+        if (erase_ok) {
+            printf("Failed to write at %u for %u\n", offset, length);
         }
-        memcpy(&mem_buffer[offset], data, length);
-        if (!storage.write(offset, length)) {
-            AP_HAL::panic("Failed 2nd write at %u for %u", offset, length);
-        }
-        printf("re-init OK\n");
     }
 }
 
@@ -111,7 +114,7 @@ void FlashTest::setup(void)
     }
 
     // fill with 10k random writes
-    for (uint32_t i=0; i<50000000; i++) {
+    for (uint32_t i=0; i<5000000; i++) {
         uint16_t ofs = get_random16() % sizeof(mem_buffer);
         uint16_t length = get_random16() & 0x1F;
         length = MIN(length, sizeof(mem_buffer) - ofs);
@@ -119,15 +122,22 @@ void FlashTest::setup(void)
         for (uint8_t j=0; j<length; j++) {
             data[j] = get_random16() & 0xFF;
         }
+
+        erase_ok = (i % 1000 == 0);
         write(ofs, data, length);
 
-        if (i % 1000 == 0) {
+        if (erase_ok) {
             if (memcmp(mem_buffer, mem_mirror, sizeof(mem_buffer)) != 0) {
                 AP_HAL::panic("FATAL: data mis-match at i=%u", i);
             }
         }
     }
 
+    // force final write to allow for flush with erase_ok
+    erase_ok = true;
+    uint8_t b = 42;
+    write(37, &b, 1);
+    
     if (memcmp(mem_buffer, mem_mirror, sizeof(mem_buffer)) != 0) {
         AP_HAL::panic("FATAL: data mis-match before re-init");
     }
