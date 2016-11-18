@@ -104,7 +104,6 @@ private:
     uint32_t curr_tick_inc;
     uint32_t curr_pointer;
     uint32_t curr_channel;
-    uint32_t counter;
 
     uint16_t width_s0;
     uint16_t width_s1;
