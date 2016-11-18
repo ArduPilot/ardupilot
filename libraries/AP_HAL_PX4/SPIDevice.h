@@ -82,12 +82,15 @@ public:
     /* See AP_HAL::Device::adjust_periodic_callback() */
     bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
+    bool set_chip_select(bool set) override;
+    
 private:
     SPIBus &bus;
     SPIDesc &device_desc;
     uint32_t frequency;
     perf_counter_t perf;
     char *pname;
+    bool cs_forced;
     static void *spi_thread(void *arg);
 };
 

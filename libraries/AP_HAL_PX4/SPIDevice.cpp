@@ -174,7 +174,9 @@ void SPIDevice::do_transfer(uint8_t *send, uint8_t *recv, uint32_t len)
     SPI_SETBITS(bus.dev, 8);
     SPI_SELECT(bus.dev, device_desc.device, true);
     SPI_EXCHANGE(bus.dev, send, recv, len);
-    SPI_SELECT(bus.dev, device_desc.device, false);
+    if (!cs_forced) {
+        SPI_SELECT(bus.dev, device_desc.device, false);
+    }
     SPI_LOCK(bus.dev, false);
     perf_end(perf);
     if (use_irq_save) {
@@ -224,6 +226,16 @@ bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
     return false;
 }
 
+/*
+  allow for control of SPI chip select pin
+ */
+bool SPIDevice::set_chip_select(bool set)
+{
+    cs_forced = set;
+    SPI_SELECT(bus.dev, device_desc.device, set);
+    return true;
+}
+    
 
 /*
   return a SPIDevice given a string device name
