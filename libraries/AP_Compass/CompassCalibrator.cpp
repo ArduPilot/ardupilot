@@ -508,9 +508,9 @@ void CompassCalibrator::run_sphere_fit()
     float JTJ2[COMPASS_CAL_NUM_SPHERE_PARAMS*COMPASS_CAL_NUM_SPHERE_PARAMS];
     float JTFI[COMPASS_CAL_NUM_SPHERE_PARAMS];
 
-    memset(&JTJ,0,sizeof(JTJ));
-    memset(&JTJ2,0,sizeof(JTJ2));
-    memset(&JTFI,0,sizeof(JTFI));
+    memset(JTJ,0,sizeof(JTJ));
+    memset(JTJ2,0,sizeof(JTJ2));
+    memset(JTFI,0,sizeof(JTFI));
     // Gauss Newton Part common for all kind of extensions including LM
     for(uint16_t k = 0; k<_samples_collected; k++) {
         Vector3f sample = _sample_buffer[k].get();
@@ -624,9 +624,9 @@ void CompassCalibrator::run_ellipsoid_fit()
     float JTJ2[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
     float JTFI[COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
 
-    memset(&JTJ,0,sizeof(JTJ));
-    memset(&JTJ2,0,sizeof(JTJ2));
-    memset(&JTFI,0,sizeof(JTFI));
+    memset(JTJ,0,sizeof(JTJ));
+    memset(JTJ2,0,sizeof(JTJ2));
+    memset(JTFI,0,sizeof(JTFI));
     // Gauss Newton Part common for all kind of extensions including LM
     for(uint16_t k = 0; k<_samples_collected; k++) {
         Vector3f sample = _sample_buffer[k].get();
