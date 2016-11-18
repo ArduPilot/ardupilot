@@ -338,7 +338,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     landing.checked_for_autoland = false;
 
     // reset go around command
-    auto_state.commanded_go_around = false;
+    landing.commanded_go_around = false;
 
     // not in pre-flare
     landing.pre_flare = false;
