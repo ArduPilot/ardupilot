@@ -34,6 +34,12 @@ public:
     // release - move the servo output to the release position
     virtual void release() = 0;
 
+    // released - returns true if currently in released position
+    virtual bool released() const = 0;
+
+    // grabbed - returns true if currently in grabbed position
+    virtual bool grabbed() const = 0;
+
     // type-specific intiailisations:
     virtual void init_gripper() = 0;
 

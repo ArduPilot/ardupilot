@@ -35,6 +35,12 @@ public:
     // release - move the servo output to the release position
     void release();
 
+    // released - returns true if currently in released position
+    bool released() const;
+
+    // grabbed - returns true if currently in grabbed position
+    bool grabbed() const;
+
     // update - should be called at at least 10hz
     void update();
 

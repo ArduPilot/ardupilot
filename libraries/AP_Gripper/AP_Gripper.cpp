@@ -111,3 +111,21 @@ PASS_TO_BACKEND(release)
 PASS_TO_BACKEND(update)
 
 #undef PASS_TO_BACKEND
+
+
+#define PASS_TO_BACKEND(function_name)        \
+    bool AP_Gripper::function_name() const    \
+    {                                         \
+        if (!enabled()) {                     \
+            return false;                     \
+        }                                     \
+        if (backend != nullptr) {             \
+            return backend->function_name();  \
+        }                                     \
+        return false;                         \
+    }
+
+PASS_TO_BACKEND(released)
+PASS_TO_BACKEND(grabbed)
+
+#undef PASS_TO_BACKEND
