@@ -109,7 +109,7 @@ static const uint16_t mux_table[ADS1115_CHANNELS_COUNT] = {
 
 
 AP_ADC_ADS1115::AP_ADC_ADS1115()
-    : _dev(hal.i2c_mgr->get_device(ADS1115_I2C_BUS, ADS1115_I2C_ADDR))
+    : _dev{}
     , _gain(ADS1115_PGA_4P096)
     , _channel_to_read(0)
 {
@@ -123,6 +123,11 @@ AP_ADC_ADS1115::~AP_ADC_ADS1115()
 
 bool AP_ADC_ADS1115::init()
 {
+    _dev = hal.i2c_mgr->get_device(ADS1115_I2C_BUS, ADS1115_I2C_ADDR);
+    if (!_dev) {
+        return false;
+    }
+
     _gain = ADS1115_PGA_4P096;
 
     _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_ADC_ADS1115::_update, bool));
