@@ -58,15 +58,23 @@ public:
     // caller provided function to erase a flash sector. Only called from init()
     FUNCTOR_TYPEDEF(FlashErase, bool, uint8_t );
 
+    // caller provided function to indicate if erasing is allowed
+    FUNCTOR_TYPEDEF(FlashEraseOK, bool);
+    
     // constructor. 
     AP_FlashStorage(uint8_t *mem_buffer,        // buffer of storage_size bytes
                     uint32_t flash_sector_size, // size of each flash sector in bytes
                     FlashWrite flash_write,     // function to write to flash
                     FlashRead flash_read,       // function to read from flash
-                    FlashErase flash_erase);    // function to erase flash
+                    FlashErase flash_erase,     // function to erase flash
+                    FlashEraseOK flash_erase_ok); // function to check if erasing allowed
 
     // initialise storage, filling mem_buffer with current contents
     bool init(void);
+
+    // switch full sector - should only be called when safe to have CPU
+    // offline for considerable periods as an erase will be needed
+    bool switch_full_sector(void);
     
     // write some data to storage from mem_buffer
     bool write(uint16_t offset, uint16_t length);
@@ -80,6 +88,7 @@ private:
     FlashWrite flash_write;
     FlashRead flash_read;
     FlashErase flash_erase;
+    FlashEraseOK flash_erase_ok;
 
     uint8_t current_sector;
     uint32_t write_offset;
@@ -93,8 +102,7 @@ private:
     enum SectorState {
         SECTOR_STATE_AVAILABLE = 0xFF,
         SECTOR_STATE_IN_USE    = 0xFE,
-        SECTOR_STATE_FULL      = 0xFC,
-        SECTOR_STATE_FREE      = 0xF8,
+        SECTOR_STATE_FULL      = 0xFC
     };
 
     // header in first word of each sector
