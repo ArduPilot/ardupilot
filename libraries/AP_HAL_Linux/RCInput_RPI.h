@@ -112,6 +112,8 @@ private:
     uint8_t curr_signal;
     uint8_t last_signal;
 
+    bool _initialized = false;
+
     state_t state;
 
     AP_HAL::DigitalSource *enable_pin;
