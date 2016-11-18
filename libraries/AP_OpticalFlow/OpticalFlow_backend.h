@@ -27,7 +27,8 @@ class OpticalFlow_backend
 public:
     // constructor
     OpticalFlow_backend(OpticalFlow &_frontend);
-
+    virtual ~OpticalFlow_backend(void);
+    
     // init - initialise sensor
     virtual void init() = 0;
 

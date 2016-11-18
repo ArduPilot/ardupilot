@@ -1,3 +1,4 @@
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include "OpticalFlow.h"
 #include "AP_OpticalFlow_Onboard.h"
 
@@ -74,7 +75,13 @@ void OpticalFlow::init(void)
 {
     if (!backend) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-        backend = new AP_OpticalFlow_PX4(*this);
+        if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK) {
+            // possibly have pixhart on external SPI
+            backend = AP_OpticalFlow_Pixart::detect(*this);
+        }
+        if (backend == nullptr) {
+            backend = new AP_OpticalFlow_PX4(*this);
+        }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
         backend = new AP_OpticalFlow_HIL(*this);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\

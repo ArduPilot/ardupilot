@@ -103,3 +103,4 @@ private:
 #include "AP_OpticalFlow_HIL.h"
 #include "AP_OpticalFlow_PX4.h"
 #include "AP_OpticalFlow_Linux.h"
+#include "AP_OpticalFlow_Pixart.h"
