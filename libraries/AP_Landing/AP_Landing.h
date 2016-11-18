@@ -19,6 +19,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 /// @class  AP_Landing
 /// @brief  Class managing ArduPlane landing methods
@@ -39,6 +40,7 @@ public:
     bool jump_to_landing_sequence(void);
 
     Location setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc);
+    void check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -67,7 +69,13 @@ public:
     // have we checked for an auto-land?
     bool checked_for_autoland;
 
+    // denotes if a go-around has been commanded for landing
+    bool commanded_go_around;
+
+
 private:
+
+    bool has_aborted_due_to_slope_recalc;
 
     AP_Mission &mission;
     AP_AHRS &ahrs;

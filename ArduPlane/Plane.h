@@ -472,9 +472,6 @@ private:
         // in FBWA taildragger takeoff mode
         bool fbwa_tdrag_takeoff_mode:1;
 
-        // denotes if a go-around has been commanded for landing
-        bool commanded_go_around:1;
-
         // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
         // are we in idle mode? used for balloon launch to stop servo
         // movement until altitude is reached

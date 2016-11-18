@@ -972,7 +972,7 @@ void Plane::update_flight_stage(void)
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
                 if ((g.land_abort_throttle_enable && channel_throttle->get_control_in() >= 90) ||
-                        auto_state.commanded_go_around ||
+                        landing.commanded_go_around ||
                         flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT){
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
