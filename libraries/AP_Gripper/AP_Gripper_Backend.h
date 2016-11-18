@@ -34,6 +34,9 @@ public:
     // release - move the servo output to the release position
     virtual void release() = 0;
 
+    // valid - returns true if the backend should be working
+    bool valid() const { return true; };
+
     // released - returns true if currently in released position
     virtual bool released() const = 0;
 

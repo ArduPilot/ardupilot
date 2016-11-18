@@ -125,6 +125,7 @@ PASS_TO_BACKEND(update)
         return false;                         \
     }
 
+PASS_TO_BACKEND(valid)
 PASS_TO_BACKEND(released)
 PASS_TO_BACKEND(grabbed)
 

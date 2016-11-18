@@ -44,6 +44,9 @@ public:
     // update - should be called at at least 10hz
     void update();
 
+    // valid - returns true if we have a gripper and it should work
+    bool valid() const;
+
     static const struct AP_Param::GroupInfo        var_info[];
 
     // parameters
