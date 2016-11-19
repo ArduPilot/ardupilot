@@ -234,7 +234,7 @@ void PX4Storage::_flash_write(uint16_t line)
 {
     if (_flash.write(line*PX4_STORAGE_LINE_SIZE, PX4_STORAGE_LINE_SIZE)) {
         // mark the line clean
-        _dirty_mask.clear(line);        
+        _dirty_mask.clear(line);
     } else {
         perf_count(_perf_errors);
     }
@@ -266,6 +266,15 @@ bool PX4Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data
 bool PX4Storage::_flash_erase_sector(uint8_t sector)
 {
     return up_progmem_erasepage(_flash_page+sector) > 0;
+}
+
+/*
+  callback to check if erase is allowed
+ */
+bool PX4Storage::_flash_erase_ok(void)
+{
+    // only allow erase while disarmed
+    return !hal.util->get_soft_armed();
 }
 
 #endif // CONFIG_HAL_BOARD
