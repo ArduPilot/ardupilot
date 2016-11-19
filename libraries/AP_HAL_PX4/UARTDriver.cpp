@@ -21,7 +21,7 @@ using namespace PX4;
 extern const AP_HAL::HAL& hal;
 
 PX4UARTDriver::PX4UARTDriver(const char *devpath, const char *perf_name) :
-	_devpath(devpath),
+    _devpath(devpath),
     _fd(-1),
     _baudrate(57600),
     _initialised(false),
@@ -93,30 +93,30 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         _writebuf.set_size(txS);
     }
 
-	if (_fd == -1) {
+    if (_fd == -1) {
         _fd = open(_devpath, O_RDWR);
-		if (_fd == -1) {
-			return;
-		}
-	}
+        if (_fd == -1) {
+            return;
+        }
+    }
 
-	if (_baudrate != 0) {
-		// set the baud rate
-		struct termios t;
-		tcgetattr(_fd, &t);
-		cfsetspeed(&t, _baudrate);
-		// disable LF -> CR/LF
-		t.c_oflag &= ~ONLCR;
-		tcsetattr(_fd, TCSANOW, &t);
+    if (_baudrate != 0) {
+        // set the baud rate
+        struct termios t;
+        tcgetattr(_fd, &t);
+        cfsetspeed(&t, _baudrate);
+        // disable LF -> CR/LF
+        t.c_oflag &= ~ONLCR;
+        tcsetattr(_fd, TCSANOW, &t);
 
         // separately setup IFLOW if we can. We do this as a 2nd call
         // as if the port has no RTS pin then the tcsetattr() call
         // will fail, and if done as one call then it would fail to
         // set the baudrate.
-		tcgetattr(_fd, &t);
-		t.c_cflag |= CRTS_IFLOW;
-		tcsetattr(_fd, TCSANOW, &t);
-	}
+        tcgetattr(_fd, &t);
+        t.c_cflag |= CRTS_IFLOW;
+        tcsetattr(_fd, TCSANOW, &t);
+    }
 
     if (_writebuf.get_size() && _readbuf.get_size() && _fd != -1) {
         if (!_initialised) {
@@ -133,7 +133,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
 void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
 {
-	if (_fd == -1) {
+    if (_fd == -1) {
         return;
     }
     struct termios t;
@@ -155,7 +155,7 @@ void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
 
 void PX4UARTDriver::begin(uint32_t b)
 {
-	begin(b, 0, 0);
+    begin(b, 0, 0);
 }
 
 
@@ -285,10 +285,10 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
     if (_uart_owner_pid != getpid()){
         return 0;
     }
-	if (!_initialised) {
+    if (!_initialised) {
         try_initialise();
-		return 0;
-	}
+        return 0;
+    }
 
     if (!_nonblocking_writes) {
         /*

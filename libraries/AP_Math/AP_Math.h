@@ -27,7 +27,7 @@ AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 template <class FloatOne, class FloatTwo>
 bool is_equal(const FloatOne, const FloatTwo);
 
-/* 
+/*
  * @brief: Check whether a float is zero
  */
 template <class T>

@@ -37,7 +37,7 @@ _sample_buffer(nullptr)
     Select options, initialise variables and initiate accel calibration
     Options:
     Fit Type:       Will assume that if accelerometer static samples around all possible orientatio
-                    are spread in space will cover a surface of AXIS_ALIGNED_ELLIPSOID or any general 
+                    are spread in space will cover a surface of AXIS_ALIGNED_ELLIPSOID or any general
                     ELLIPSOID as chosen
 
     Num Samples:    Number of samples user should will be gathering, please note that with type of surface
@@ -225,15 +225,15 @@ void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag, Vector3f
   The sample acceptance distance is determined as follows:
   For any regular polyhedron with triangular faces, the angle theta subtended
   by two closest points is defined as
- 
+
        theta = arccos(cos(A)/(1-cos(A)))
- 
+
   Where:
        A = (4pi/F + pi)/3
   and
        F = 2V - 4 is the number of faces for the polyhedron in consideration,
        which depends on the number of vertices V
- 
+
   The above equation was proved after solving for spherical triangular excess
   and related equations.
  */
@@ -257,7 +257,7 @@ bool AccelCalibrator::accept_sample(const Vector3f& sample)
 // sets status of calibrator and takes appropriate actions
 void AccelCalibrator::set_status(enum accel_cal_status_t status) {
     switch (status) {
-        case ACCEL_CAL_NOT_STARTED:                 
+        case ACCEL_CAL_NOT_STARTED:
             //Calibrator not started
             _status = ACCEL_CAL_NOT_STARTED;
 
@@ -269,7 +269,7 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
 
             break;
 
-        case ACCEL_CAL_WAITING_FOR_ORIENTATION:     
+        case ACCEL_CAL_WAITING_FOR_ORIENTATION:
             //Callibrator has been started and is waiting for user to ack after orientation setting
             if (!running()) {
                 _samples_collected = 0;
@@ -288,7 +288,7 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
             break;
 
         case ACCEL_CAL_COLLECTING_SAMPLE:
-            // Calibrator is waiting on collecting samples from acceleromter for amount of 
+            // Calibrator is waiting on collecting samples from acceleromter for amount of
             // time as requested by user/GCS
             if (_status != ACCEL_CAL_WAITING_FOR_ORIENTATION) {
                 break;
@@ -298,7 +298,7 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
             break;
 
         case ACCEL_CAL_SUCCESS:
-            // Calibrator has successfully fitted the samples to user requested surface model 
+            // Calibrator has successfully fitted the samples to user requested surface model
             // and has passed tolerance test
             if (_status != ACCEL_CAL_COLLECTING_SAMPLE) {
                 break;
@@ -308,7 +308,7 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
             break;
 
         case ACCEL_CAL_FAILED:
-            // Calibration has failed with reasons that can range from 
+            // Calibration has failed with reasons that can range from
             // bad sample data leading to faillure in tolerance test to lack of distinct samples
             if (_status == ACCEL_CAL_NOT_STARTED) {
                 break;

@@ -957,7 +957,7 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
             return false;
         }
     }
-    
+
     // check calibrated accels matches number of accels (no unused accels should have offsets or scaling)
     if (get_accel_count() < INS_MAX_INSTANCES) {
         for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
@@ -1600,7 +1600,7 @@ void AP_InertialSensor::_acal_save_calibrations()
         _accel_offset[i].set_and_save(Vector3f());
         _accel_scale[i].set_and_save(Vector3f());
     }
-    
+
     Vector3f aligned_sample;
     Vector3f misaligned_sample;
     switch(_trim_option) {

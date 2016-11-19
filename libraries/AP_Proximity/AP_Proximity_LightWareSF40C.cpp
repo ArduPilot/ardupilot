@@ -21,7 +21,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-/* 
+/*
    The constructor also initialises the proximity sensor. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the proximity sensor

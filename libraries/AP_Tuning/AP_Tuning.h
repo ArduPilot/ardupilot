@@ -27,7 +27,7 @@ public:
         tuning_names(names) {
         AP_Param::setup_object_defaults(this, var_info);
     }
-    
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -36,7 +36,7 @@ public:
 
     // base parameter number for tuning sets of parameters in one flight
     const uint8_t set_base = 100;
-    
+
 private:
     AP_Int8 channel;
     AP_Int16 channel_min;
@@ -54,14 +54,14 @@ private:
 
     // last input from tuning channel
     float last_channel_value;
-    
+
     // mid-value for current parameter
     float center_value;
 
     uint32_t last_check_ms;
 
     void Log_Write_Parameter_Tuning(float value);
-    
+
     // the parameter we are tuning
     uint8_t current_parm;
 
@@ -76,16 +76,16 @@ private:
 
     // mask of params in set that need reverting
     uint32_t need_revert;
-    
+
     // last flight mode we were tuning in
     uint8_t last_flightmode;
 
     // last time we reported controller error
     uint32_t last_controller_error_ms;
-    
+
     const tuning_set *tuning_sets;
     const tuning_name *tuning_names;
-    
+
     void check_selector_switch(void);
     void re_center(void);
     void next_parameter(void);

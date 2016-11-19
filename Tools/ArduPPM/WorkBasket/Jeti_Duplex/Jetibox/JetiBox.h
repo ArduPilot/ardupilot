@@ -36,7 +36,7 @@ struct jeti_box;
 class JetiBox : public Print
 {
   public:
-	JetiBox();
+    JetiBox();
     void begin();
     void refresh();
     uint8_t keys(void);

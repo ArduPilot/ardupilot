@@ -1,7 +1,7 @@
 /*
              LUFA Library
      Copyright (C) Dean Camera, 2010.
-              
+
   dean [at] fourwalledcubicle [dot] com
       www.fourwalledcubicle.com
 */
@@ -9,13 +9,13 @@
 /*
   Copyright 2010  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
-  Permission to use, copy, modify, distribute, and sell this 
+  Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
-  without fee, provided that the above copyright notice appear in 
+  without fee, provided that the above copyright notice appear in
   all copies and that both that the copyright notice and this
-  permission notice and warranty disclaimer appear in supporting 
-  documentation, and that the name of the author not be used in 
-  advertising or publicity pertaining to distribution of the 
+  permission notice and warranty disclaimer appear in supporting
+  documentation, and that the name of the author not be used in
+  advertising or publicity pertaining to distribution of the
   software without specific, written prior permission.
 
   The author disclaim all warranties with regard to this
@@ -35,37 +35,37 @@
 uint8_t USB_Host_GetDeviceConfigDescriptor(uint8_t ConfigNumber, uint16_t* const ConfigSizePtr,
                                            void* BufferPtr, uint16_t BufferSize)
 {
-	uint8_t ErrorCode;
-	uint8_t ConfigHeader[sizeof(USB_Descriptor_Configuration_Header_t)];
+    uint8_t ErrorCode;
+    uint8_t ConfigHeader[sizeof(USB_Descriptor_Configuration_Header_t)];
 
-	USB_ControlRequest = (USB_Request_Header_t)
-		{
-			.bmRequestType = (REQDIR_DEVICETOHOST | REQTYPE_STANDARD | REQREC_DEVICE),
-			.bRequest      = REQ_GetDescriptor,
-			.wValue        = ((DTYPE_Configuration << 8) | (ConfigNumber - 1)),
-			.wIndex        = 0,
-			.wLength       = sizeof(USB_Descriptor_Configuration_Header_t),
-		};
-	
-	Pipe_SelectPipe(PIPE_CONTROLPIPE);
+    USB_ControlRequest = (USB_Request_Header_t)
+        {
+            .bmRequestType = (REQDIR_DEVICETOHOST | REQTYPE_STANDARD | REQREC_DEVICE),
+            .bRequest      = REQ_GetDescriptor,
+            .wValue        = ((DTYPE_Configuration << 8) | (ConfigNumber - 1)),
+            .wIndex        = 0,
+            .wLength       = sizeof(USB_Descriptor_Configuration_Header_t),
+        };
 
-	if ((ErrorCode = USB_Host_SendControlRequest(ConfigHeader)) != HOST_SENDCONTROL_Successful)
-	  return ErrorCode;
+    Pipe_SelectPipe(PIPE_CONTROLPIPE);
 
-	*ConfigSizePtr = DESCRIPTOR_CAST(ConfigHeader, USB_Descriptor_Configuration_Header_t).TotalConfigurationSize;
+    if ((ErrorCode = USB_Host_SendControlRequest(ConfigHeader)) != HOST_SENDCONTROL_Successful)
+    return ErrorCode;
 
-	if (*ConfigSizePtr > BufferSize)
-	  return HOST_GETCONFIG_BuffOverflow;
-	  
-	USB_ControlRequest.wLength = *ConfigSizePtr;
-	
-	if ((ErrorCode = USB_Host_SendControlRequest(BufferPtr)) != HOST_SENDCONTROL_Successful)
-	  return ErrorCode;
+    *ConfigSizePtr = DESCRIPTOR_CAST(ConfigHeader, USB_Descriptor_Configuration_Header_t).TotalConfigurationSize;
 
-	if (DESCRIPTOR_TYPE(BufferPtr) != DTYPE_Configuration)
-	  return HOST_GETCONFIG_InvalidData;
-	
-	return HOST_GETCONFIG_Successful;
+    if (*ConfigSizePtr > BufferSize)
+    return HOST_GETCONFIG_BuffOverflow;
+
+    USB_ControlRequest.wLength = *ConfigSizePtr;
+
+    if ((ErrorCode = USB_Host_SendControlRequest(BufferPtr)) != HOST_SENDCONTROL_Successful)
+    return ErrorCode;
+
+    if (DESCRIPTOR_TYPE(BufferPtr) != DTYPE_Configuration)
+    return HOST_GETCONFIG_InvalidData;
+
+    return HOST_GETCONFIG_Successful;
 }
 #endif
 
@@ -73,13 +73,13 @@ void USB_GetNextDescriptorOfType(uint16_t* const BytesRem,
                                  void** const CurrConfigLoc,
                                  const uint8_t Type)
 {
-	while (*BytesRem)
-	{
-		USB_GetNextDescriptor(BytesRem, CurrConfigLoc);	  
+    while (*BytesRem)
+    {
+        USB_GetNextDescriptor(BytesRem, CurrConfigLoc);
 
-		if (DESCRIPTOR_TYPE(*CurrConfigLoc) == Type)
-		  return;
-	}
+        if (DESCRIPTOR_TYPE(*CurrConfigLoc) == Type)
+        return;
+    }
 }
 
 void USB_GetNextDescriptorOfTypeBefore(uint16_t* const BytesRem,
@@ -87,20 +87,20 @@ void USB_GetNextDescriptorOfTypeBefore(uint16_t* const BytesRem,
                                        const uint8_t Type,
                                        const uint8_t BeforeType)
 {
-	while (*BytesRem)
-	{
-		USB_GetNextDescriptor(BytesRem, CurrConfigLoc);
+    while (*BytesRem)
+    {
+        USB_GetNextDescriptor(BytesRem, CurrConfigLoc);
 
-		if (DESCRIPTOR_TYPE(*CurrConfigLoc) == Type)
-		{
-			return;
-		}
-		else if (DESCRIPTOR_TYPE(*CurrConfigLoc) == BeforeType)
-		{
-			*BytesRem = 0;
-			return;
-		}
-	}
+        if (DESCRIPTOR_TYPE(*CurrConfigLoc) == Type)
+        {
+            return;
+        }
+        else if (DESCRIPTOR_TYPE(*CurrConfigLoc) == BeforeType)
+        {
+            *BytesRem = 0;
+            return;
+        }
+    }
 }
 
 void USB_GetNextDescriptorOfTypeAfter(uint16_t* const BytesRem,
@@ -108,34 +108,34 @@ void USB_GetNextDescriptorOfTypeAfter(uint16_t* const BytesRem,
                                       const uint8_t Type,
                                       const uint8_t AfterType)
 {
-	USB_GetNextDescriptorOfType(BytesRem, CurrConfigLoc, AfterType);
-	
-	if (*BytesRem)
-	  USB_GetNextDescriptorOfType(BytesRem, CurrConfigLoc, Type);
+    USB_GetNextDescriptorOfType(BytesRem, CurrConfigLoc, AfterType);
+
+    if (*BytesRem)
+    USB_GetNextDescriptorOfType(BytesRem, CurrConfigLoc, Type);
 }
-			
+
 uint8_t USB_GetNextDescriptorComp(uint16_t* const BytesRem, void** const CurrConfigLoc, ConfigComparatorPtr_t const ComparatorRoutine)
 {
-	uint8_t ErrorCode;
-		
-	while (*BytesRem)
-	{
-		uint8_t* PrevDescLoc  = *CurrConfigLoc;
-		uint16_t PrevBytesRem = *BytesRem;
+    uint8_t ErrorCode;
 
-		USB_GetNextDescriptor(BytesRem, CurrConfigLoc);
-				
-		if ((ErrorCode = ComparatorRoutine(*CurrConfigLoc)) != DESCRIPTOR_SEARCH_NotFound)
-		{
-			if (ErrorCode == DESCRIPTOR_SEARCH_Fail)
-			{
-				*CurrConfigLoc = PrevDescLoc;
-				*BytesRem      = PrevBytesRem;
-			}
-		
-			return ErrorCode;
-		}
-	}
-	
-	return DESCRIPTOR_SEARCH_COMP_EndOfDescriptor;
+    while (*BytesRem)
+    {
+        uint8_t* PrevDescLoc  = *CurrConfigLoc;
+        uint16_t PrevBytesRem = *BytesRem;
+
+        USB_GetNextDescriptor(BytesRem, CurrConfigLoc);
+
+        if ((ErrorCode = ComparatorRoutine(*CurrConfigLoc)) != DESCRIPTOR_SEARCH_NotFound)
+        {
+            if (ErrorCode == DESCRIPTOR_SEARCH_Fail)
+            {
+                *CurrConfigLoc = PrevDescLoc;
+                *BytesRem      = PrevBytesRem;
+            }
+
+            return ErrorCode;
+        }
+    }
+
+    return DESCRIPTOR_SEARCH_COMP_EndOfDescriptor;
 }

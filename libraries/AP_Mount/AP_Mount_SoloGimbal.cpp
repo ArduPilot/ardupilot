@@ -106,7 +106,7 @@ void AP_Mount_SoloGimbal::status_msg(mavlink_channel_t chan)
     if (_gimbal.aligned()) {
         mavlink_msg_mount_status_send(chan, 0, 0, degrees(_angle_ef_target_rad.y)*100, degrees(_angle_ef_target_rad.x)*100, degrees(_angle_ef_target_rad.z)*100);
     }
-    
+
     // block heartbeat from transmitting to the GCS
     GCS_MAVLINK::disable_channel_routing(chan);
 }

@@ -153,7 +153,7 @@ private:
 
     // EKF velocity fusion
     void fuseVelocity();
-    
+
     // read magnetometer data
     void readMagData();
 

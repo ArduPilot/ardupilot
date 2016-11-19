@@ -277,7 +277,7 @@ uint8_t AP_BattMonitor::capacity_remaining_pct(uint8_t instance) const
         return 0;
     }
  }
- 
+
  /// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
 bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_capacity_mah)
 {

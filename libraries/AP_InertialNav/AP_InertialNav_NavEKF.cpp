@@ -73,7 +73,7 @@ struct Location AP_InertialNav_NavEKF::get_origin() const
  *
  * @return
  */
-const Vector3f &AP_InertialNav_NavEKF::get_position(void) const 
+const Vector3f &AP_InertialNav_NavEKF::get_position(void) const
 {
     return _relpos_cm;
 }
@@ -108,9 +108,9 @@ int32_t AP_InertialNav_NavEKF::get_longitude() const
  * get_velocity - returns the current velocity in cm/s
  *
  * @return velocity vector:
- *      		.x : latitude  velocity in cm/s
- * 				.y : longitude velocity in cm/s
- * 				.z : vertical  velocity in cm/s
+ *              .x : latitude  velocity in cm/s
+ *                 .y : longitude velocity in cm/s
+ *                 .z : vertical  velocity in cm/s
  */
 const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
 {

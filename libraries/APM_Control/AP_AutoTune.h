@@ -49,7 +49,7 @@ public:
 
     // are we running?
     bool running:1;
-    
+
 private:
     // the current gains
     ATGains &current;
@@ -57,7 +57,7 @@ private:
     // what type of autotune is this
     ATType type;
 
-	const AP_Vehicle::FixedWing &aparm;
+    const AP_Vehicle::FixedWing &aparm;
 
     DataFlash_Class &dataflash;
 
@@ -65,10 +65,10 @@ private:
     bool saturated_surfaces:1;
 
     // values to restore if we leave autotune mode
-    ATGains restore; 
+    ATGains restore;
 
     // values we last saved
-    ATGains last_save; 
+    ATGains last_save;
 
     // values to save on the next save event
     ATGains next_save;
@@ -78,7 +78,7 @@ private:
 
     // the demanded/achieved state
     enum ATState {DEMAND_UNSATURATED,
-                  DEMAND_UNDER_POS, 
+                  DEMAND_UNDER_POS,
                   DEMAND_OVER_POS,
                   DEMAND_UNDER_NEG,
                   DEMAND_OVER_NEG} state = DEMAND_UNSATURATED;

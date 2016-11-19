@@ -32,37 +32,37 @@ void Scheduler::init()
     _main_task_pid = getpid();
 
     // setup the timer thread - this will call tasks at 1kHz
-	pthread_attr_t thread_attr;
-	struct sched_param param;
+    pthread_attr_t thread_attr;
+    struct sched_param param;
 
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setstacksize(&thread_attr, 40960);
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 40960);
 
-	param.sched_priority = APM_TIMER_PRIORITY;
-	(void)pthread_attr_setschedparam(&thread_attr, &param);
+    param.sched_priority = APM_TIMER_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
 
-	pthread_create(&_timer_thread_ctx, &thread_attr, &Scheduler::_timer_thread, this);
+    pthread_create(&_timer_thread_ctx, &thread_attr, &Scheduler::_timer_thread, this);
 
     // the UART thread runs at a medium priority
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setstacksize(&thread_attr, 40960);
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 40960);
 
-	param.sched_priority = APM_UART_PRIORITY;
-	(void)pthread_attr_setschedparam(&thread_attr, &param);
+    param.sched_priority = APM_UART_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
 
-	pthread_create(&_uart_thread_ctx, &thread_attr, &Scheduler::_uart_thread, this);
+    pthread_create(&_uart_thread_ctx, &thread_attr, &Scheduler::_uart_thread, this);
 
     // the IO thread runs at lower priority
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setstacksize(&thread_attr, 40960);
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 40960);
 
-	param.sched_priority = APM_IO_PRIORITY;
-	(void)pthread_attr_setschedparam(&thread_attr, &param);
+    param.sched_priority = APM_IO_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
 
-	pthread_create(&_io_thread_ctx, &thread_attr, &Scheduler::_io_thread, this);
+    pthread_create(&_io_thread_ctx, &thread_attr, &Scheduler::_io_thread, this);
 }
 
-void Scheduler::delay_microseconds(uint16_t usec) 
+void Scheduler::delay_microseconds(uint16_t usec)
 {
     //pthread_yield();
     usleep(usec);
@@ -74,9 +74,9 @@ void Scheduler::delay(uint16_t ms)
         ::printf("ERROR: delay() from timer process\n");
         return;
     }
-	uint64_t start = AP_HAL::micros64();
+    uint64_t start = AP_HAL::micros64();
     uint64_t now;
-    
+
     while (((now=AP_HAL::micros64()) - start)/1000 < ms) {
         delay_microseconds(1000);
         if (_min_delay_cb_ms <= ms) {
@@ -88,13 +88,13 @@ void Scheduler::delay(uint16_t ms)
 }
 
 void Scheduler::register_delay_callback(AP_HAL::Proc proc,
-                                            uint16_t min_time_ms) 
+                                            uint16_t min_time_ms)
 {
     _delay_cb = proc;
     _min_delay_cb_ms = min_time_ms;
 }
 
-void Scheduler::register_timer_process(AP_HAL::MemberProc proc) 
+void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -110,7 +110,7 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
     }
 }
 
-void Scheduler::register_io_process(AP_HAL::MemberProc proc) 
+void Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -126,17 +126,17 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc)
     }
 }
 
-void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us) 
+void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
 {
     _failsafe = failsafe;
 }
 
-void Scheduler::suspend_timer_procs() 
+void Scheduler::suspend_timer_procs()
 {
     _timer_suspended = true;
 }
 
-void Scheduler::resume_timer_procs() 
+void Scheduler::resume_timer_procs()
 {
     _timer_suspended = false;
     if (_timer_event_missed == true) {
@@ -145,7 +145,7 @@ void Scheduler::resume_timer_procs()
     }
 }
 
-void Scheduler::reboot(bool hold_in_bootloader) 
+void Scheduler::reboot(bool hold_in_bootloader)
 {
     HAP_PRINTF("**** REBOOT REQUESTED ****");
     usleep(2000000);
@@ -261,7 +261,7 @@ void *Scheduler::_io_thread(void *arg)
     return nullptr;
 }
 
-bool Scheduler::in_timerprocess() 
+bool Scheduler::in_timerprocess()
 {
     return getpid() != _main_task_pid;
 }

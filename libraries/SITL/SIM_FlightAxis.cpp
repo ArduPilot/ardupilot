@@ -94,13 +94,13 @@ char *FlightAxis::soap_request(const char *action, const char *fmt, ...)
 {
     va_list ap;
     char *req1;
-    
+
     va_start(ap, fmt);
     vasprintf(&req1, fmt, ap);
     va_end(ap);
 
     //printf("%s\n", req1);
-    
+
     // open SOAP socket to FlightAxis
     SocketAPM sock(false);
     if (!sock.connect(controller_ip, controller_port)) {
@@ -161,7 +161,7 @@ Connection: Keep-Alive
     }
     return strdup(reply);
 }
-    
+
 
 
 void FlightAxis::exchange_data(const struct sitl_input &input)
@@ -201,7 +201,7 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         memcpy(&scaled_servos[0], &scaled_servos[4], sizeof(saved));
         memcpy(&scaled_servos[4], saved, sizeof(saved));
     }
-    
+
     if (heli_demix) {
         // FlightAxis expects "roll/pitch/collective/yaw" input
         float swash1 = scaled_servos[0];
@@ -214,8 +214,8 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         scaled_servos[0] = constrain_float(roll_rate + 0.5, 0, 1);
         scaled_servos[1] = constrain_float(pitch_rate + 0.5, 0, 1);
     }
-    
-    
+
+
     char *reply = soap_request("ExchangeData", R"(<?xml version='1.0' encoding='UTF-8'?><soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
 <ExchangeData>
@@ -249,8 +249,8 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         free(reply);
     }
 }
-    
-    
+
+
 /*
   update the FlightAxis simulation by one time step
  */
@@ -303,13 +303,13 @@ void FlightAxis::update(const struct sitl_input &input)
         accel_ef.z -= GRAVITY_MSS;
         accel_body = dcm.transposed() * accel_ef;
     }
-    
+
     // limit to 16G to match pixhawk
     float a_limit = GRAVITY_MSS*16;
     accel_body.x = constrain_float(accel_body.x, -a_limit, a_limit);
     accel_body.y = constrain_float(accel_body.y, -a_limit, a_limit);
     accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
-    
+
     // offset based on first position to account for offset in RF world
     if (position_offset.is_zero() || state.m_resetButtonHasBeenPressed) {
         position_offset = position;
@@ -344,7 +344,7 @@ void FlightAxis::update(const struct sitl_input &input)
         }
         last_frame_count_s = state.m_currentPhysicsTime_SEC;
     }
-    
+
     last_time_s = state.m_currentPhysicsTime_SEC;
 
     last_velocity_ef = velocity_ef;

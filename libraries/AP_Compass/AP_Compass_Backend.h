@@ -54,8 +54,8 @@ public:
         DEVTYPE_BMM150  = 0x05,
         DEVTYPE_LSM9DS1 = 0x06,
     };
-    
-    
+
+
 protected:
 
     /*
@@ -91,13 +91,13 @@ protected:
 
     // set rotation of an instance
     void set_rotation(uint8_t instance, enum Rotation rotation);
-    
+
     // access to frontend
     Compass &_compass;
 
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *_sem;    
-    
+    AP_HAL::Semaphore *_sem;
+
 private:
     void apply_corrections(Vector3f &mag, uint8_t i);
 };

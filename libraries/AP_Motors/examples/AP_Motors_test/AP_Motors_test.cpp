@@ -47,12 +47,12 @@ RC_Channel rc1(0), rc2(1), rc3(2), rc4(3);
 RC_Channel rc7(6), rsc(8), h1(0), h2(1), h3(2), h4(3);
 
 // uncomment the row below depending upon what frame you are using
-//AP_MotorsTri	motors(400);
+//AP_MotorsTri    motors(400);
 AP_MotorsQuad   motors(400);
-//AP_MotorsHexa	motors(400);
-//AP_MotorsY6	motors(400);
-//AP_MotorsOcta	motors(400);
-//AP_MotorsOctaQuad	motors(400);
+//AP_MotorsHexa    motors(400);
+//AP_MotorsY6    motors(400);
+//AP_MotorsOcta    motors(400);
+//AP_MotorsOctaQuad    motors(400);
 //AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
 //AP_MotorsSingle motors(400);
 //AP_MotorsCoax motors(400);
@@ -74,7 +74,7 @@ void setup()
     motors.output_min();
 
     // setup radio
-	 rc3.set_radio_min(1000);
+    rc3.set_radio_min(1000);
     rc3.set_radio_max(2000);
 
     // set rc channel ranges

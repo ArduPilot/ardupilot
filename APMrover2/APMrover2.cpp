@@ -22,7 +22,7 @@
 
    Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Jean-Louis Naudin, Grant Morphett
 
-   Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier 
+   Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier
 
    APMrover alpha version tester: Franco Borasio, Daniel Chapelat...
 
@@ -71,7 +71,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(compass_accumulate,     50,    900),
     SCHED_TASK(update_notify,          50,    300),
     SCHED_TASK(one_second_loop,         1,   3000),
-    SCHED_TASK(compass_cal_update,     50,    100), 
+    SCHED_TASK(compass_cal_update,     50,    100),
     SCHED_TASK(accel_cal_update,       10,    100),
     SCHED_TASK(dataflash_periodic,     50,    300),
     SCHED_TASK(button_update,          5,     100),
@@ -90,7 +90,7 @@ void Rover::stats_update(void)
 /*
   setup is called when the sketch starts
  */
-void Rover::setup() 
+void Rover::setup()
 {
     cliSerial = hal.console;
 
@@ -100,7 +100,7 @@ void Rover::setup()
     notify.init(false);
 
     AP_Notify::flags.failsafe_battery = false;
-    
+
     rssi.init();
 
     init_ardupilot();
@@ -198,7 +198,7 @@ void Rover::update_trigger(void)
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
-    } 
+    }
 #endif
 }
 
@@ -340,7 +340,7 @@ void Rover::one_second_loop(void)
     }
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    
+
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
@@ -390,9 +390,9 @@ void Rover::update_GPS_10Hz(void)
 
                 // set system clock for log timestamps
                 uint64_t gps_timestamp = gps.time_epoch_usec();
-                
+
                 hal.util->set_system_clock(gps_timestamp);
-                
+
                 // update signing timestamp
                 GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
 

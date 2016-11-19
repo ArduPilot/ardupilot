@@ -1,5 +1,5 @@
 /*
- *  AP_Notify Library. 
+ *  AP_Notify Library.
  * based upon a prototype library by David "Buzz" Bussenschutt.
  */
 
@@ -41,7 +41,7 @@ public:
 
     // handle LED control, only used when LED_OVERRIDE=1
     virtual void handle_led_control(mavlink_message_t *msg) override;
-    
+
 protected:
     // methods implemented in hardware specific classes
     virtual bool hw_init(void) = 0;
@@ -51,7 +51,7 @@ protected:
     virtual void _set_rgb(uint8_t red, uint8_t green, uint8_t blue);
 
     virtual void update_override();
-    
+
     // meta-data common to all hw devices
     uint8_t counter;
     uint8_t step;
@@ -68,7 +68,7 @@ protected:
         uint8_t rate_hz;
         uint32_t start_ms;
     } _led_override;
-    
+
 private:
     virtual void update_colours();
 };

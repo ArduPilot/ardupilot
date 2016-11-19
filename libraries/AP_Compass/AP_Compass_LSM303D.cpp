@@ -386,7 +386,7 @@ void AP_Compass_LSM303D::read()
     if (!_sem->take_nonblocking()) {
         return;
     }
-    
+
     if (_accum_count == 0) {
         /* We're not ready to publish*/
         _sem->give();
@@ -399,7 +399,7 @@ void AP_Compass_LSM303D::read()
     _accum_count = 0;
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
-    _sem->give();    
+    _sem->give();
 
     publish_filtered_field(field, _compass_instance);
 }

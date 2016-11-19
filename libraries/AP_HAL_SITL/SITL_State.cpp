@@ -373,7 +373,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
 
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
     bool motors_on = false;
-    
+
     if (_vehicle == ArduPlane) {
         // add in engine multiplier
         if (input.servos[2] > 1000) {
@@ -410,14 +410,14 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
 
     float voltage = 0;
     _current = 0;
-    
+
     if (_sitl != nullptr) {
         if (_sitl->state.battery_voltage <= 0) {
             // simulate simple battery setup
             float throttle = motors_on?(input.servos[2]-1000) / 1000.0f:0;
             // lose 0.7V at full throttle
             voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
-            
+
             // assume 50A at full throttle
             _current = 50.0f * fabsf(throttle);
         } else {

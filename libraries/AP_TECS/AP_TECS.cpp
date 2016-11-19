@@ -88,7 +88,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: SPDWEIGHT
     // @DisplayName: Weighting applied to speed control
-    // @Description: This parameter adjusts the amount of weighting that the pitch control applies to speed vs height errors. Setting it to 0.0 will cause the pitch control to control height and ignore speed errors. This will normally improve height accuracy but give larger airspeed errors. Setting it to 2.0 will cause the pitch control loop to control speed and ignore height errors. This will normally reduce airsped errors, but give larger height errors.	A value of 1.0 gives a balanced response and is the default.
+    // @Description: This parameter adjusts the amount of weighting that the pitch control applies to speed vs height errors. Setting it to 0.0 will cause the pitch control to control height and ignore speed errors. This will normally improve height accuracy but give larger airspeed errors. Setting it to 2.0 will cause the pitch control loop to control speed and ignore height errors. This will normally reduce airsped errors, but give larger height errors.    A value of 1.0 gives a balanced response and is the default.
     // @Range: 0.0 2.0
     // @Increment: 0.1
     // @User: Advanced
@@ -238,7 +238,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("SYNAIRSPEED", 27, AP_TECS, _use_synthetic_airspeed, 0),
-    
+
     AP_GROUPEND
 };
 
@@ -781,7 +781,7 @@ void AP_TECS::_update_pitch(void)
     }
 
     logging.SKE_weighting = SKE_weighting;
-    
+
     float SPE_weighting = 2.0f - SKE_weighting;
 
     // Calculate Specific Energy Balance demand, and error
@@ -792,7 +792,7 @@ void AP_TECS::_update_pitch(void)
 
     logging.SKE_error = _SKE_dem - _SKE_est;
     logging.SPE_error = _SPE_dem - _SPE_est;
-    
+
     // Calculate integrator state, constraining input if pitch limits are exceeded
     float integSEB_input = SEB_error * _get_i_gain();
     if (_pitch_dem > _PITCHmaxf)
@@ -840,7 +840,7 @@ void AP_TECS::_update_pitch(void)
     float integSEB_range = integSEB_max - integSEB_min;
 
     logging.SEB_delta = integSEB_delta;
-    
+
     // don't allow the integrator to rise by more than 20% of its full
     // range in one step. This prevents single value glitches from
     // causing massive integrator changes. See Issue#4066
@@ -906,10 +906,10 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _flags.underspeed        = false;
         _flags.badDescent  = false;
     }
-    
+
     if (_flight_stage != AP_TECS::FLIGHT_TAKEOFF && _flight_stage != AP_TECS::FLIGHT_LAND_ABORT) {
         // reset takeoff speed flag when not in takeoff
-        _flags.reached_speed_takeoff = false;        
+        _flags.reached_speed_takeoff = false;
     }
 }
 
@@ -978,7 +978,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _PITCHminf = constrain_float(_PITCHminf, -_pitch_max_limit, _PITCHmaxf);
         _pitch_max_limit = 90;
     }
-        
+
     if (flight_stage == FLIGHT_LAND_FINAL) {
         // in flare use min pitch from LAND_PITCH_CD
         _PITCHminf = MAX(_PITCHminf, aparm.land_pitch_cd * 0.01f);
@@ -1018,7 +1018,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
             _flags.reached_speed_takeoff = true;
         }
     }
-    
+
     // convert to radians
     _PITCHmaxf = radians(_PITCHmaxf);
     _PITCHminf = radians(_PITCHminf);

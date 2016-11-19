@@ -31,7 +31,7 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("_REPLAY",  3, DataFlash_Class, _params.log_replay,       0),
-    
+
     AP_GROUPEND
 };
 
@@ -265,7 +265,7 @@ void DataFlash_Class::internal_error() const {
 void DataFlash_Class::Log_Write(const char *name, const char *labels, const char *fmt, ...)
 {
     va_list arg_list;
-    
+
     struct log_write_fmt *f = msg_fmt_for_name(name, labels, fmt);
     if (f == nullptr) {
         // unable to map name to a messagetype; could be out of

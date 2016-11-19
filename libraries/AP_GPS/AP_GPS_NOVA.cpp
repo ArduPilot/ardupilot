@@ -48,7 +48,7 @@ AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 
     const char *init_str = _initialisation_blob[0];
     const char *init_str1 = _initialisation_blob[1];
-    
+
     port->write((const uint8_t*)init_str, strlen(init_str));
     port->write((const uint8_t*)init_str1, strlen(init_str1));
 }
@@ -75,7 +75,7 @@ AP_GPS_NOVA::read(void)
         uint8_t temp = port->read();
         ret |= parse(temp);
     }
-    
+
     return ret;
 }
 
@@ -187,7 +187,7 @@ AP_GPS_NOVA::process_message(void)
     uint16_t messageid = nova_msg.header.nova_headeru.messageid;
 
     Debug("NOVA process_message messid=%u\n",messageid);
-    
+
     if (messageid == 42) // bestpos
     {
         const bestpos &bestposu = nova_msg.data.bestposu;
@@ -240,7 +240,7 @@ AP_GPS_NOVA::process_message(void)
         {
             state.status = AP_GPS::NO_FIX;
         }
-        
+
         _new_position = true;
     }
 
@@ -253,7 +253,7 @@ AP_GPS_NOVA::process_message(void)
         fill_3d_velocity();
         state.velocity.z = -(float) bestvelu.vertspd;
         state.have_vertical_velocity = true;
-        
+
         _last_vel_time = (uint32_t) nova_msg.header.nova_headeru.tow;
         _new_speed = true;
     }
@@ -270,10 +270,10 @@ AP_GPS_NOVA::process_message(void)
     // ensure out position and velocity stay insync
     if (_new_position && _new_speed && _last_vel_time == state.last_gps_time_ms) {
         _new_speed = _new_position = false;
-        
+
         return true;
     }
-    
+
     return false;
 }
 

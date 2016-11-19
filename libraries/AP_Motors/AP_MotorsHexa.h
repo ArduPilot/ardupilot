@@ -1,5 +1,5 @@
-/// @file	AP_MotorsHexa.h
-/// @brief	Motor control class for Hexacopters
+/// @file    AP_MotorsHexa.h
+/// @brief    Motor control class for Hexacopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>

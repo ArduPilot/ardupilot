@@ -31,9 +31,9 @@ void DataFlash_Block::StartWrite(uint16_t PageAdr)
 void DataFlash_Block::FinishWrite(void)
 {
     // Write Buffer to flash, NO WAIT
-    BufferToPage(df_BufferNum, df_PageAdr, 0);      
+    BufferToPage(df_BufferNum, df_PageAdr, 0);
     df_PageAdr++;
-    // If we reach the end of the memory, start from the beginning    
+    // If we reach the end of the memory, start from the beginning
     if (df_PageAdr > df_NumPages)
         df_PageAdr = 1;
 
@@ -137,7 +137,7 @@ bool DataFlash_Block::ReadBlock(void *pBuffer, uint16_t size)
         }
         size -= n;
         pBuffer = (void *)(n + (uintptr_t)pBuffer);
-        
+
         df_Read_BufferIdx += n;
 
         if (df_Read_BufferIdx == df_PageSize) {

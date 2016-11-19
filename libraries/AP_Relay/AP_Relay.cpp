@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AP_Relay::var_info[] = {
 
     // @Param: DEFAULT
     // @DisplayName: Default relay state
-    // @Description: The state of the relay on boot. 
+    // @Description: The state of the relay on boot.
     // @User: Standard
     // @Values: 0:Off,1:On,2:NoChange
     AP_GROUPINFO("DEFAULT",  4, AP_Relay, _default, 0),
@@ -79,7 +79,7 @@ AP_Relay::AP_Relay(void)
 }
 
 
-void AP_Relay::init() 
+void AP_Relay::init()
 {
     for (uint8_t i=0; i<AP_RELAY_NUM_RELAYS; i++) {
         if (_pin[i].get() != -1) {
@@ -97,8 +97,8 @@ void AP_Relay::init()
     }
 }
 
-void AP_Relay::on(uint8_t relay) 
-{    
+void AP_Relay::on(uint8_t relay)
+{
     if (relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1) {
         hal.gpio->pinMode(_pin[relay], HAL_GPIO_OUTPUT);
         hal.gpio->write(_pin[relay], 1);
@@ -106,7 +106,7 @@ void AP_Relay::on(uint8_t relay)
 }
 
 
-void AP_Relay::off(uint8_t relay) 
+void AP_Relay::off(uint8_t relay)
 {
     if (relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1) {
         hal.gpio->pinMode(_pin[relay], HAL_GPIO_OUTPUT);
@@ -115,7 +115,7 @@ void AP_Relay::off(uint8_t relay)
 }
 
 
-void AP_Relay::toggle(uint8_t relay) 
+void AP_Relay::toggle(uint8_t relay)
 {
     if (relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1) {
         bool ison = hal.gpio->read(_pin[relay]);

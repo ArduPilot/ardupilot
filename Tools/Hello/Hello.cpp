@@ -9,13 +9,13 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup()
 {
-	hal.console->println("hello world");
+    hal.console->println("hello world");
 }
 
 void loop()
 {
-	hal.scheduler->delay(1000);
-	hal.console->println("*");
+    hal.scheduler->delay(1000);
+    hal.console->println("*");
 }
 
 AP_HAL_MAIN();

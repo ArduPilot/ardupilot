@@ -31,7 +31,7 @@ public:
 
     // update button state and send messages, called periodically by main loop
     void update(void);
-    
+
 private:
     AP_Int8 enable;
     AP_Int8 pin[AP_BUTTON_NUM_PINS];
@@ -50,7 +50,7 @@ private:
 
     // has the timer been installed?
     bool initialised:1;
-    
+
     // called by timer thread
     void timer_update(void);
 

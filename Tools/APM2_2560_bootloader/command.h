@@ -1,11 +1,11 @@
 //**** ATMEL AVR - A P P L I C A T I O N   N O T E  ************************
 //*
-//* Title:		AVR068 - STK500 Communication Protocol
-//* Filename:		command.h
-//* Version:		1.0
-//* Last updated:	31.01.2005
+//* Title:        AVR068 - STK500 Communication Protocol
+//* Filename:        command.h
+//* Version:        1.0
+//* Last updated:    31.01.2005
 //*
-//* Support E-mail:	avr@atmel.com
+//* Support E-mail:    avr@atmel.com
 //*
 //**************************************************************************
 
@@ -56,7 +56,7 @@
 #define CMD_PROGRAM_LOCK_PP                 0x29
 #define CMD_READ_LOCK_PP                    0x2A
 #define CMD_READ_SIGNATURE_PP               0x2B
-#define CMD_READ_OSCCAL_PP                  0x2C    
+#define CMD_READ_OSCCAL_PP                  0x2C
 
 #define CMD_SET_CONTROL_STACK               0x2D
 

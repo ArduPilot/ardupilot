@@ -29,7 +29,7 @@ public:
      */
     struct FixedWing {
         AP_Int8 throttle_min;
-        AP_Int8 throttle_max;	
+        AP_Int8 throttle_max;
         AP_Int8 throttle_slewrate;
         AP_Int8 throttle_cruise;
         AP_Int8 takeoff_throttle_max;
@@ -37,7 +37,7 @@ public:
         AP_Int16 airspeed_max;
         AP_Int16 roll_limit_cd;
         AP_Int16 pitch_limit_max_cd;
-        AP_Int16 pitch_limit_min_cd;        
+        AP_Int16 pitch_limit_min_cd;
         AP_Int8  autotune_level;
         AP_Int16 land_pitch_cd;
         AP_Float land_flare_sec;

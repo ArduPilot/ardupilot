@@ -34,7 +34,7 @@
 #define MASK_GPS_HDOP       (1<<1)
 #define MASK_GPS_SPD_ERR    (1<<2)
 #define MASK_GPS_POS_ERR    (1<<3)
-#define MASK_GPS_YAW_ERR 	(1<<4)
+#define MASK_GPS_YAW_ERR     (1<<4)
 #define MASK_GPS_POS_DRIFT  (1<<5)
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
@@ -54,7 +54,7 @@ public:
 
     // setup this core backend
     bool setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index);
-    
+
     // Initialise the states from accelerometer and magnetometer data (if present)
     // This method can only be used when the vehicle is static
     bool InitialiseFilterBootstrap(void);
@@ -278,7 +278,7 @@ public:
 
     // get the IMU index
     uint8_t getIMUIndex(void) const { return imu_index; }
-    
+
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF2 *frontend;
@@ -658,7 +658,7 @@ private:
 
     // effective value of MAG_CAL
     uint8_t effective_magCal(void) const;
-    
+
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH
     static const uint32_t OBS_BUFFER_LENGTH = 5;

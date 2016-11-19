@@ -44,12 +44,12 @@ public:
     uint32_t socket_input(const uint8_t *buf, int len, uint32_t *nbytes);
 
     enum flow_control get_flow_control(void) { return FLOW_CONTROL_ENABLE; }
-    
+
 private:
     Semaphore lock;
     bool initialised;
     bool nonblocking_writes = true;
-    
+
     ByteBuffer *readbuf;
     ByteBuffer *writebuf;
 };

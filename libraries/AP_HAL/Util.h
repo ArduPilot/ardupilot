@@ -93,7 +93,7 @@ public:
 
     /* Support for an imu heating system */
     virtual void set_imu_target_temp(int8_t *target) {}
-    
+
     /*
       performance counter calls - wrapper around original PX4 interface
      */

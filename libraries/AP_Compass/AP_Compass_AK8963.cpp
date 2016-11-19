@@ -161,7 +161,7 @@ bool AP_Compass_AK8963::init()
     _compass_instance = register_compass();
 
     set_rotation(_compass_instance, _rotation);
-    
+
     _bus->set_device_type(DEVTYPE_AK8963);
     set_dev_id(_compass_instance, _bus->get_bus_id());
 
@@ -284,9 +284,9 @@ void AP_Compass_AK8963::_update_timer()
     }
 
     _update();
-    
+
     _last_update_timestamp = now;
-    
+
     _bus->get_semaphore()->give();
 }
 

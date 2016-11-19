@@ -19,7 +19,7 @@
 #include "AP_Proximity_Backend.h"
 
 /*
-  base class constructor. 
+  base class constructor.
   This incorporates initialisation as well.
 */
 AP_Proximity_Backend::AP_Proximity_Backend(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state) :

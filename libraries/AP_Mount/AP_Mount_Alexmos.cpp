@@ -144,7 +144,7 @@ void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degree
 */
 void AP_Mount_Alexmos::read_params(uint8_t profile_id)
 {
-    uint8_t data[1] = {(uint8_t) profile_id}; 
+    uint8_t data[1] = {(uint8_t) profile_id};
     send_command(CMD_READ_PARAMS, data, 1);
 }
 
@@ -251,7 +251,7 @@ void AP_Mount_Alexmos::read_incoming()
                 _step++;
                 break;
 
-            case 3:	// checksum of the header
+            case 3:    // checksum of the header
                 if (_checksum != data ) {
                     _step = 0;
                     _checksum = 0;

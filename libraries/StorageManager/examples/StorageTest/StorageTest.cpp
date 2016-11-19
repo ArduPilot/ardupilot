@@ -12,7 +12,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 /*
   instantiate all 4 storage types
  */
-static StorageAccess all_storage[4] = { 
+static StorageAccess all_storage[4] = {
     StorageAccess(StorageManager::StorageParam),
     StorageAccess(StorageManager::StorageMission),
     StorageAccess(StorageManager::StorageFence),

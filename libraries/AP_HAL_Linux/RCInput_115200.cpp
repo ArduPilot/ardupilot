@@ -76,10 +76,10 @@ void RCInput_115200::_timer_tick(void)
     // read up to 256 bytes at a time
     uint8_t bytes[256];
     int nread;
-    
+
     fd_set fds;
     struct timeval tv;
-    
+
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
@@ -101,7 +101,7 @@ void RCInput_115200::_timer_tick(void)
         return;
     }
     bool got_frame = false;
-    
+
     if (decoder == DECODER_SYNC ||
         decoder == DECODER_SRXL) {
         // try srxl first as it has a 16 bit CRC

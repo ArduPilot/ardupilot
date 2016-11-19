@@ -73,11 +73,11 @@ void AP_Compass_QURT::timer_update(void)
     }
 
     last_timestamp = data.timestamp;
-    
+
     Vector3f raw_field(data.mag_raw[0],
                        data.mag_raw[1],
                        -data.mag_raw[2]);
-    
+
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, instance);
 

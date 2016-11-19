@@ -296,7 +296,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//	gripper
+//    gripper
 #ifndef GRIPPER_ENABLED
  # define GRIPPER_ENABLED ENABLED
 #endif
@@ -460,7 +460,7 @@
 #endif
 
 #ifndef RTL_ALT
- # define RTL_ALT 				    1500    // default alt to return to home in cm, 0 = Maintain current altitude
+ # define RTL_ALT                     1500    // default alt to return to home in cm, 0 = Maintain current altitude
 #endif
 
 #ifndef RTL_ALT_MIN
@@ -522,7 +522,7 @@
 // Loiter position control gains
 //
 #ifndef POS_XY_P
- # define POS_XY_P             	1.0f
+ # define POS_XY_P                 1.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

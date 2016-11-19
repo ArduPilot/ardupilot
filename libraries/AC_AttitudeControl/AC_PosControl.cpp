@@ -408,14 +408,14 @@ void AC_PosControl::rate_to_accel_z()
 
     // feed forward desired acceleration calculation
     if (_dt > 0.0f) {
-    	if (!_flags.freeze_ff_z) {
-    		_accel_feedforward.z = (_vel_target.z - _vel_last.z)/_dt;
+        if (!_flags.freeze_ff_z) {
+            _accel_feedforward.z = (_vel_target.z - _vel_last.z)/_dt;
         } else {
-    		// stop the feed forward being calculated during a known discontinuity
-    		_flags.freeze_ff_z = false;
-    	}
+            // stop the feed forward being calculated during a known discontinuity
+            _flags.freeze_ff_z = false;
+        }
     } else {
-    	_accel_feedforward.z = 0.0f;
+        _accel_feedforward.z = 0.0f;
     }
 
     // store this iteration's velocities for the next iteration
@@ -571,7 +571,7 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
     Vector3f curr_vel = _inav.get_velocity();
     float linear_distance;      // the distance at which we swap from a linear to sqrt response
     float linear_velocity;      // the velocity above which we swap from a linear to sqrt response
-    float stopping_dist;		// the distance within the vehicle can stop
+    float stopping_dist;        // the distance within the vehicle can stop
     float kP = _p_pos_xy.kP();
 
     // add velocity error to current velocity
@@ -595,7 +595,7 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
 
     // calculate distance within which we can stop
     if (vel_total < linear_velocity) {
-    	stopping_dist = vel_total/kP;
+        stopping_dist = vel_total/kP;
     } else {
         linear_distance = _accel_cms/(2.0f*kP*kP);
         stopping_dist = linear_distance + (vel_total*vel_total)/(2.0f*_accel_cms);
@@ -884,16 +884,16 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 
     // feed forward desired acceleration calculation
     if (dt > 0.0f) {
-    	if (!_flags.freeze_ff_xy) {
-    		_accel_feedforward.x = (_vel_target.x - _vel_last.x)/dt;
-    		_accel_feedforward.y = (_vel_target.y - _vel_last.y)/dt;
+        if (!_flags.freeze_ff_xy) {
+            _accel_feedforward.x = (_vel_target.x - _vel_last.x)/dt;
+            _accel_feedforward.y = (_vel_target.y - _vel_last.y)/dt;
         } else {
-    		// stop the feed forward being calculated during a known discontinuity
-    		_flags.freeze_ff_xy = false;
-    	}
+            // stop the feed forward being calculated during a known discontinuity
+            _flags.freeze_ff_xy = false;
+        }
     } else {
-    	_accel_feedforward.x = 0.0f;
-    	_accel_feedforward.y = 0.0f;
+        _accel_feedforward.x = 0.0f;
+        _accel_feedforward.y = 0.0f;
     }
 
     // store this iteration's velocities for the next iteration

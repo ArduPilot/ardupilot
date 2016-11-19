@@ -399,7 +399,7 @@ AP_Mount::AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc)
     _num_instances(0),
     _primary(0)
 {
-	AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info);
 
     // initialise backend pointers and mode
     for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
@@ -640,5 +640,5 @@ void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
         if (_backends[instance] != nullptr) {
             _backends[instance]->send_gimbal_report(chan);
         }
-    }    
+    }
 }

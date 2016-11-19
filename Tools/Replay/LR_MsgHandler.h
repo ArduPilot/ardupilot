@@ -60,8 +60,8 @@ class LR_MsgHandler_ARSP : public LR_MsgHandler
 {
 public:
     LR_MsgHandler_ARSP(log_Format &_f, DataFlash_Class &_dataflash,
-		    uint64_t &_last_timestamp_usec, AP_Airspeed &_airspeed) :
-	LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), airspeed(_airspeed) { };
+            uint64_t &_last_timestamp_usec, AP_Airspeed &_airspeed) :
+    LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), airspeed(_airspeed) { };
 
     virtual void process_message(uint8_t *msg);
 
@@ -73,8 +73,8 @@ class LR_MsgHandler_NKF1 : public LR_MsgHandler
 {
 public:
     LR_MsgHandler_NKF1(log_Format &_f, DataFlash_Class &_dataflash,
-		    uint64_t &_last_timestamp_usec) :
-	LR_MsgHandler(_f, _dataflash, _last_timestamp_usec) { };
+            uint64_t &_last_timestamp_usec) :
+    LR_MsgHandler(_f, _dataflash, _last_timestamp_usec) { };
 
     virtual void process_message(uint8_t *msg);
 };
@@ -99,7 +99,7 @@ class LR_MsgHandler_CHEK : public LR_MsgHandler
 public:
     LR_MsgHandler_CHEK(log_Format &_f, DataFlash_Class &_dataflash,
                        uint64_t &_last_timestamp_usec, CheckState &_check_state)
-        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), 
+        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec),
           check_state(_check_state)
         { };
     virtual void process_message(uint8_t *msg);
@@ -364,7 +364,7 @@ class LR_MsgHandler_MAG_Base : public LR_MsgHandler
 public:
     LR_MsgHandler_MAG_Base(log_Format &_f, DataFlash_Class &_dataflash,
                         uint64_t &_last_timestamp_usec, Compass &_compass)
-	: LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), compass(_compass) { };
+    : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), compass(_compass) { };
 
 protected:
     void update_from_msg_compass(uint8_t compass_offset, uint8_t *msg);
@@ -417,8 +417,8 @@ class LR_MsgHandler_NTUN_Copter : public LR_MsgHandler
 {
 public:
     LR_MsgHandler_NTUN_Copter(log_Format &_f, DataFlash_Class &_dataflash,
-			   uint64_t &_last_timestamp_usec, Vector3f &_inavpos)
-	: LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), inavpos(_inavpos) {};
+            uint64_t &_last_timestamp_usec, Vector3f &_inavpos)
+    : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), inavpos(_inavpos) {};
 
     virtual void process_message(uint8_t *msg);
 

@@ -48,7 +48,7 @@ public:
     virtual void     resume_timer_procs() = 0;
 
     virtual bool     in_timerprocess() = 0;
-    
+
     virtual void     register_timer_failsafe(AP_HAL::Proc,
                                              uint32_t period_us) = 0;
 

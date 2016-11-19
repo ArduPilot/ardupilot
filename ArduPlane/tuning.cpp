@@ -93,7 +93,7 @@ AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
         // quadplane tuning options not available
         return nullptr;
     }
-    
+
     switch(parm) {
 
     case TUNING_RATE_ROLL_PI:
@@ -301,7 +301,7 @@ float AP_Tuning_Plane::controller_error(uint8_t parm)
         // don't report stale errors if not running VTOL motors
         return 0;
     }
-        
+
     switch(parm) {
     // special handling of dual-parameters
     case TUNING_RATE_ROLL_PI:
@@ -318,8 +318,8 @@ float AP_Tuning_Plane::controller_error(uint8_t parm)
         }
         return rms_P+rms_D;
     }
-        
-        
+
+
     case TUNING_RATE_PITCH_PI:
     case TUNING_RATE_PITCH_P:
     case TUNING_RATE_PITCH_I:
@@ -334,7 +334,7 @@ float AP_Tuning_Plane::controller_error(uint8_t parm)
         }
         return rms_P+rms_D;
     }
-        
+
     case TUNING_RATE_YAW_PI:
     case TUNING_RATE_YAW_P:
     case TUNING_RATE_YAW_I:

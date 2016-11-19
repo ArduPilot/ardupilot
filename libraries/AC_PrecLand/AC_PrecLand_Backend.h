@@ -26,13 +26,13 @@ public:
     // provides a unit vector towards the target in body frame
     //  returns same as have_los_meas()
     virtual bool get_los_body(Vector3f& dir_body) = 0;
-    
+
     // returns system time in milliseconds of last los measurement
     virtual uint32_t los_meas_time_ms() = 0;
-    
+
     // return true if there is a valid los measurement available
     virtual bool have_los_meas() = 0;
-    
+
     // parses a mavlink message from the companion computer
     virtual void handle_msg(mavlink_message_t* msg) {};
 

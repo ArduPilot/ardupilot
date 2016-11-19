@@ -71,7 +71,7 @@ for index = 1:indexLimit
             decInnovVarLog(1,index) = time;
             decInnovVarLog(2,index) = decInnovVar;
      end
-    
+
 end
 
 %% Generate Plots

@@ -60,7 +60,7 @@ void GCS_MAVLINK::handle_log_request_list(mavlink_message_t *msg, DataFlash_Clas
     _log_num_logs = dataflash.get_num_logs();
     if (_log_num_logs == 0) {
         _log_next_list_entry = 0;
-        _log_last_list_entry = 0;        
+        _log_last_list_entry = 0;
     } else {
         _log_next_list_entry = packet.start;
         _log_last_list_entry = packet.end;
@@ -220,7 +220,7 @@ bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
 
     int16_t ret = 0;
     uint32_t len = _log_data_remaining;
-	mavlink_log_data_t packet;
+    mavlink_log_data_t packet;
 
     if (len > 90) {
         len = 90;
@@ -237,7 +237,7 @@ bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
     packet.ofs = _log_data_offset;
     packet.id = _log_num_data;
     packet.count = ret;
-    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOG_DATA, (const char *)&packet, 
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOG_DATA, (const char *)&packet,
                                     MAVLINK_MSG_ID_LOG_DATA_MIN_LEN,
                                     MAVLINK_MSG_ID_LOG_DATA_LEN,
                                     MAVLINK_MSG_ID_LOG_DATA_CRC);

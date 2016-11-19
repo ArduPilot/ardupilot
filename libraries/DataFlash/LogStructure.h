@@ -4,7 +4,7 @@
   unfortunately these need to be macros because of a limitation of
   named member structure initialisation in g++
  */
-#define LOG_PACKET_HEADER	       uint8_t head1, head2, msgid;
+#define LOG_PACKET_HEADER           uint8_t head1, head2, msgid;
 #define LOG_PACKET_HEADER_INIT(id) head1 : HEAD_BYTE1, head2 : HEAD_BYTE2, msgid : id
 #define LOG_PACKET_HEADER_LEN 3 // bytes required for LOG_PACKET_HEADER
 
@@ -560,26 +560,26 @@ struct PACKED log_GPS_RAWS {
     uint8_t trkStat;
 };
 
-struct PACKED log_GPS_SBF_EVENT {  
-	LOG_PACKET_HEADER; 
-	uint64_t time_us;
-	uint32_t TOW;
-	uint16_t WNc;
-	uint8_t Mode;
-	uint8_t Error;
-	double Latitude;
-	double Longitude;
-	double Height;
-	float Undulation;
-	float Vn;
-	float Ve;
-	float Vu;
-	float COG;
+struct PACKED log_GPS_SBF_EVENT {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint32_t TOW;
+    uint16_t WNc;
+    uint8_t Mode;
+    uint8_t Error;
+    double Latitude;
+    double Longitude;
+    double Height;
+    float Undulation;
+    float Vn;
+    float Ve;
+    float Vu;
+    float COG;
 };
 
 struct PACKED log_Esc {
     LOG_PACKET_HEADER;
-    uint64_t time_us;     
+    uint64_t time_us;
     int16_t rpm;
     int16_t voltage;
     int16_t current;
@@ -780,7 +780,7 @@ Format characters in the format string for binary log messages
       "CURR", "Qfff","TimeUS,Volt,Curr,CurrTot" },\
     { LOG_CURRENT2_MSG, sizeof(log_Current), \
       "CUR2", "Qfff","TimeUS,Volt,Curr,CurrTot" }, \
-	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
+    { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", "QhhhhhhhhhBI",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S" }, \
@@ -983,7 +983,7 @@ enum LogMessages {
     LOG_GPS_RAW_MSG,
     LOG_GPS_RAWH_MSG,
     LOG_GPS_RAWS_MSG,
-	LOG_GPS_SBF_EVENT_MSG,
+    LOG_GPS_SBF_EVENT_MSG,
     LOG_ACC1_MSG,
     LOG_ACC2_MSG,
     LOG_ACC3_MSG,

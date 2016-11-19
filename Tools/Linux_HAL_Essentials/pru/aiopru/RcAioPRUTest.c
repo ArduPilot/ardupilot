@@ -24,41 +24,41 @@
 #define RCIN_PRUSS_RAM_BASE   0x4a303000
 
 struct ring_buffer {
-	volatile uint16_t ring_head;
-	volatile uint16_t ring_tail;
-	struct {
-		uint32_t s1;
-		uint32_t s0;
-	} buffer[NUM_RING_ENTRIES];
+    volatile uint16_t ring_head;
+    volatile uint16_t ring_tail;
+    struct {
+        uint32_t s1;
+        uint32_t s0;
+    } buffer[NUM_RING_ENTRIES];
 };
 
 struct pwm {
-	volatile uint32_t enable;
-	volatile uint32_t ch1_hi_time;
-	volatile uint32_t ch1_t_time;
-	volatile uint32_t ch2_hi_time;
-	volatile uint32_t ch2_t_time;
-	volatile uint32_t ch3_hi_time;
-	volatile uint32_t ch3_t_time;
-	volatile uint32_t ch4_hi_time;
-	volatile uint32_t ch4_t_time;
-	volatile uint32_t ch5_hi_time;
-	volatile uint32_t ch5_t_time;
-	volatile uint32_t ch6_hi_time;
-	volatile uint32_t ch6_t_time;
-	volatile uint32_t ch7_hi_time;
-	volatile uint32_t ch7_t_time;
-	volatile uint32_t ch8_hi_time;
-	volatile uint32_t ch8_t_time;
-	volatile uint32_t ch9_hi_time;
-	volatile uint32_t ch9_t_time;
-	volatile uint32_t ch10_hi_time;
-	volatile uint32_t ch10_t_time;
-	volatile uint32_t ch11_hi_time;
-	volatile uint32_t ch11_t_time;
-	volatile uint32_t ch12_hi_time;
-	volatile uint32_t ch12_t_time;
-	volatile uint32_t max_cycle_time;
+    volatile uint32_t enable;
+    volatile uint32_t ch1_hi_time;
+    volatile uint32_t ch1_t_time;
+    volatile uint32_t ch2_hi_time;
+    volatile uint32_t ch2_t_time;
+    volatile uint32_t ch3_hi_time;
+    volatile uint32_t ch3_t_time;
+    volatile uint32_t ch4_hi_time;
+    volatile uint32_t ch4_t_time;
+    volatile uint32_t ch5_hi_time;
+    volatile uint32_t ch5_t_time;
+    volatile uint32_t ch6_hi_time;
+    volatile uint32_t ch6_t_time;
+    volatile uint32_t ch7_hi_time;
+    volatile uint32_t ch7_t_time;
+    volatile uint32_t ch8_hi_time;
+    volatile uint32_t ch8_t_time;
+    volatile uint32_t ch9_hi_time;
+    volatile uint32_t ch9_t_time;
+    volatile uint32_t ch10_hi_time;
+    volatile uint32_t ch10_t_time;
+    volatile uint32_t ch11_hi_time;
+    volatile uint32_t ch11_t_time;
+    volatile uint32_t ch12_hi_time;
+    volatile uint32_t ch12_t_time;
+    volatile uint32_t max_cycle_time;
 };
 
 volatile struct ring_buffer *ring_buffer;

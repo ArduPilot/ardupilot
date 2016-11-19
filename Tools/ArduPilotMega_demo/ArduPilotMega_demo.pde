@@ -1,6 +1,6 @@
-//Realeased under really Creative Commons! 
+//Realeased under really Creative Commons!
 //This just a basic demo code...
-//Reads and pulses the 8 channels... 
+//Reads and pulses the 8 channels...
 //By Jordi Munoz
 #include <avr/interrupt.h>
 
@@ -21,7 +21,7 @@ long timer2=0;
 
 void setup()
 {
-  Init_PWM1(); //OUT2&3 
+  Init_PWM1(); //OUT2&3
   Init_PWM3(); //OUT6&7
   Init_PWM5(); //OUT0&1
   Init_PPM_PWM4(); //OUT4&5
@@ -30,7 +30,7 @@ void setup()
 }
 void loop()
 {
-  
+
    //Switch low, forward the PPM
    if(InputCh(5) <= 1250) //Reading channel 5 to change mode
    {
@@ -60,9 +60,9 @@ void loop()
      //Switch in the midle, center all servos
      else
      {
-        All_PWM=1500;  
-     } 
-     
+        All_PWM=1500;
+     }
+
      OutputCh(0, All_PWM);
      OutputCh(1, All_PWM);
      OutputCh(2, All_PWM);
@@ -70,10 +70,10 @@ void loop()
      OutputCh(4, All_PWM);
      OutputCh(5, All_PWM);
      OutputCh(6, All_PWM);
-     OutputCh(7, All_PWM);     
+     OutputCh(7, All_PWM);
    }
-  
-  //Printing all values. 
+
+  //Printing all values.
   if((millis()- timer) >= 250)
   {
     timer=millis();

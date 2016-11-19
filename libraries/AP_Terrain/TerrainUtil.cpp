@@ -40,7 +40,7 @@ extern const AP_HAL::HAL& hal;
   bit representing a 4x4 mavlink transmitted block
 */
 uint8_t AP_Terrain::grid_bitnum(uint8_t idx_x, uint8_t idx_y)
-{    
+{
     ASSERT_RANGE(idx_x,0,27);
     ASSERT_RANGE(idx_y,0,31);
     uint8_t subgrid_x = idx_x / TERRAIN_GRID_MAVLINK_SIZE;
@@ -98,7 +98,7 @@ void AP_Terrain::calculate_grid_info(const Location &loc, struct grid_info &info
     info.frac_y = (offset.y - idx_y * grid_spacing) / grid_spacing;
 
     // calculate lat/lon of SW corner of 32*28 grid_block
-    location_offset(ref, 
+    location_offset(ref,
                     info.grid_idx_x * TERRAIN_GRID_BLOCK_SPACING_X * (float)grid_spacing,
                     info.grid_idx_y * TERRAIN_GRID_BLOCK_SPACING_Y * (float)grid_spacing);
     info.grid_lat = ref.lat;
@@ -120,7 +120,7 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
 
     // see if we have that grid
     for (uint16_t i=0; i<cache_size; i++) {
-        if (cache[i].grid.lat == info.grid_lat && 
+        if (cache[i].grid.lat == info.grid_lat &&
             cache[i].grid.lon == info.grid_lon &&
             cache[i].grid.spacing == grid_spacing) {
             cache[i].last_access_ms = AP_HAL::millis();
@@ -160,18 +160,18 @@ int16_t AP_Terrain::find_io_idx(enum GridCacheState state)
     // try first with given state
     for (uint16_t i=0; i<cache_size; i++) {
         if (disk_block.block.lat == cache[i].grid.lat &&
-            disk_block.block.lon == cache[i].grid.lon && 
+            disk_block.block.lon == cache[i].grid.lon &&
             cache[i].state == state) {
             return i;
         }
-    }    
+    }
     // then any state
     for (uint16_t i=0; i<cache_size; i++) {
         if (disk_block.block.lat == cache[i].grid.lat &&
             disk_block.block.lon == cache[i].grid.lon) {
             return i;
         }
-    }    
+    }
     return -1;
 }
 

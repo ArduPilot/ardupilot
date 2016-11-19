@@ -24,7 +24,7 @@
 class AP_GPS_Backend
 {
 public:
-	AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     // we declare a virtual destructor so that GPS drivers can
     // override with a custom destructor if need be.
@@ -35,7 +35,7 @@ public:
     // valid packet from the GPS.
     virtual bool read() = 0;
 
-    // Highest status supported by this GPS. 
+    // Highest status supported by this GPS.
     // Allows external system to identify type of receiver connected.
     virtual AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D; }
 

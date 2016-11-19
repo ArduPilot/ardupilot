@@ -66,7 +66,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
         // not supported yet
         return;
     }
-    
+
     if (exclusive && port != nullptr) {
         // force flow control off for exclusive access. This protocol
         // is used to talk to bootloaders which may not have flow
@@ -94,7 +94,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
                 if (n > packet.count) {
                     n = packet.count;
                 }
-                stream->write(data, n);                
+                stream->write(data, n);
                 data += n;
                 count -= n;
             }
@@ -110,7 +110,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
 
 more_data:
     // sleep for the timeout
-    while (packet.timeout != 0 && 
+    while (packet.timeout != 0 &&
            stream->available() < (int16_t)sizeof(packet.data)) {
         hal.scheduler->delay(1);
         packet.timeout--;
@@ -150,7 +150,7 @@ more_data:
     }
 
     // and send the reply
-    _mav_finalize_message_chan_send(chan, 
+    _mav_finalize_message_chan_send(chan,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL,
                                     (const char *)&packet,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_MIN_LEN,

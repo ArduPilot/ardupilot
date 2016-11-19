@@ -1,7 +1,7 @@
 #pragma once
 
-/// @file	AC_HELI_PID.h
-/// @brief	Helicopter Specific Rate PID algorithm, with EEPROM-backed storage of constants.
+/// @file    AC_HELI_PID.h
+/// @brief    Helicopter Specific Rate PID algorithm, with EEPROM-backed storage of constants.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -11,15 +11,15 @@
 
 #define AC_PID_LEAK_MIN     0.1  // Default I-term Leak Minimum
 
-/// @class	AC_HELI_PID
-/// @brief	Heli PID control class
+/// @class    AC_HELI_PID
+/// @brief    Heli PID control class
 class AC_HELI_PID : public AC_PID {
 public:
 
     /// Constructor for PID
     AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff);
 
-    /// get_vff - return Velocity FeedForward Term 
+    /// get_vff - return Velocity FeedForward Term
     float       get_vff(float requested_rate);
 
     /// get_leaky_i - replacement for get_i but output is leaded at leak_rate

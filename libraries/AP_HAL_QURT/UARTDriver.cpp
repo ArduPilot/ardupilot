@@ -35,7 +35,7 @@ UARTDriver::UARTDriver(const char *name) :
 {
 }
 
-void UARTDriver::begin(uint32_t b) 
+void UARTDriver::begin(uint32_t b)
 {
     begin(b, 16384, 16384);
 }
@@ -81,7 +81,7 @@ void UARTDriver::_read_callback(char *buf, size_t size)
     }
 }
 
-void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
+void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (devname == nullptr) {
         return;
@@ -124,7 +124,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         }
         writebuf = new ByteBuffer(txS);
     }
-    
+
     struct dspal_serial_ioctl_receive_data_callback callback;
     callback.context = this;
     callback.rx_data_callback_func_ptr = read_callback_trampoline;
@@ -146,7 +146,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 }
 
-void UARTDriver::end() 
+void UARTDriver::end()
 {
     initialised = false;
     if (fd != -1) {
@@ -164,16 +164,16 @@ void UARTDriver::end()
 
 }
 
-void UARTDriver::flush() 
+void UARTDriver::flush()
 {
 }
 
-bool UARTDriver::is_initialized() 
-{ 
-    return fd != -1 && initialised; 
+bool UARTDriver::is_initialized()
+{
+    return fd != -1 && initialised;
 }
 
-void UARTDriver::set_blocking_writes(bool blocking) 
+void UARTDriver::set_blocking_writes(bool blocking)
 {
     nonblocking_writes = !blocking;
 }
@@ -184,24 +184,24 @@ bool UARTDriver::tx_pending()
 }
 
 /* QURT implementations of Stream virtual methods */
-int16_t UARTDriver::available() 
-{ 
+int16_t UARTDriver::available()
+{
     if (!initialised) {
         return 0;
     }
     return readbuf->available();
 }
 
-int16_t UARTDriver::txspace() 
-{ 
+int16_t UARTDriver::txspace()
+{
     if (!initialised) {
         return 0;
     }
     return writebuf->space();
 }
 
-int16_t UARTDriver::read() 
-{ 
+int16_t UARTDriver::read()
+{
     uint8_t c;
     if (!initialised) {
         return -1;
@@ -219,7 +219,7 @@ int16_t UARTDriver::read()
 }
 
 /* QURT implementations of Print virtual methods */
-size_t UARTDriver::write(uint8_t c) 
+size_t UARTDriver::write(uint8_t c)
 {
     if (!initialised) {
         return 0;
@@ -278,7 +278,7 @@ void UARTDriver::timer_tick(void)
     }
 
     in_timer = true;
-    
+
     // write any pending bytes
     n = writebuf->available();
     if (n == 0) {
@@ -293,7 +293,7 @@ void UARTDriver::timer_tick(void)
     writebuf->read(buf, n);
     ::write(fd, buf, n);
     lock.give();
-    
+
     in_timer = false;
 }
 

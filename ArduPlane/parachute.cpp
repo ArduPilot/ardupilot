@@ -1,7 +1,7 @@
 #include "Plane.h"
 
 
-/* 
+/*
    call parachute library update
 */
 void Plane::parachute_check()
@@ -17,7 +17,7 @@ void Plane::parachute_release()
     if (parachute.released()) {
         return;
     }
-    
+
     // send message to gcs and dataflash
     gcs_send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released");
 

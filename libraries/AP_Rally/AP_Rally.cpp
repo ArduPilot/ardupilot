@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_Rally::var_info[] = {
 };
 
 // constructor
-AP_Rally::AP_Rally(AP_AHRS &ahrs) 
+AP_Rally::AP_Rally(AP_AHRS &ahrs)
     : _ahrs(ahrs)
     , _last_change_time_ms(0xFFFFFFFF)
 {
@@ -76,7 +76,7 @@ bool AP_Rally::get_rally_point_with_index(uint8_t i, RallyLocation &ret) const
         return false; // sanity check
     }
 
-    return true; 
+    return true;
 }
 
 // save a rally point to EEPROM - this assumes that the RALLY_TOTAL param has been incremented beforehand, which is the case in Mission Planner
@@ -156,7 +156,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     RallyLocation ral_loc = {};
     Location return_loc = {};
     const struct Location &home_loc = _ahrs.get_home();
-    
+
     if (find_nearest_rally_point(current_loc, ral_loc)) {
         // valid rally point found
         return_loc = rally_location_to_location(ral_loc);

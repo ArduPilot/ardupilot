@@ -64,7 +64,7 @@ void Tracker::calc_angle_error(float pitch, float yaw, bool direction_reversed)
 
 void Tracker::convert_ef_to_bf(float pitch, float yaw, float& bf_pitch, float& bf_yaw)
 {
-	// earth frame to body frame pitch and yaw conversion
+    // earth frame to body frame pitch and yaw conversion
     bf_pitch = ahrs.cos_roll() * pitch + ahrs.sin_roll() * ahrs.cos_pitch() * yaw;
     bf_yaw = -ahrs.sin_roll() * pitch + ahrs.cos_pitch() * ahrs.cos_roll() * yaw;
 }

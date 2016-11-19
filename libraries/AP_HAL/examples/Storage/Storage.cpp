@@ -8,7 +8,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_HAL::Storage *st;
 
-void setup(void) 
+void setup(void)
 {
     /*
       init Storage API
@@ -37,8 +37,8 @@ void setup(void)
 }
 
 // In main loop do nothing
-void loop(void) 
-{	
+void loop(void)
+{
     hal.scheduler->delay(1000);
 }
 

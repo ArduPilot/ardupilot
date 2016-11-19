@@ -68,7 +68,7 @@ public:
 private:
     static const uint8_t num_buses = 2;
     DeviceBus businfo[num_buses];
-    
+
     uint8_t _busnum;
     PX4_I2C _px4dev;
     uint8_t _address;

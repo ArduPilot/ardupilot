@@ -14,7 +14,7 @@
  */
 
 #include <AP_RSSI/AP_RSSI.h>
-#include <utility> 
+#include <utility>
 
 extern const AP_HAL::HAL& hal;
 
@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: PIN_LOW
     // @DisplayName: Receiver RSSI voltage low
-    // @Description: This is the voltage value that the radio receiver will put on the RSSI_ANA_PIN when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_PIN_HIGH. 
+    // @Description: This is the voltage value that the radio receiver will put on the RSSI_ANA_PIN when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_PIN_HIGH.
     // @Units: Volt
     // @Increment: 0.01
     // @Range: 0 5.0
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: PIN_HIGH
     // @DisplayName: Receiver RSSI voltage high
-    // @Description: This is the voltage value that the radio receiver will put on the RSSI_ANA_PIN when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_PIN_LOW. 
+    // @Description: This is the voltage value that the radio receiver will put on the RSSI_ANA_PIN when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_PIN_LOW.
     // @Units: Volt
     // @Increment: 0.01
     // @Range: 0 5.0
@@ -66,13 +66,13 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: CHANNEL
     // @DisplayName: Receiver RSSI channel number
     // @Description: The channel number where RSSI will be output by the radio receiver (5 and above).
-    // @Units: 
+    // @Units:
     // @User: Standard
     AP_GROUPINFO("CHANNEL", 4, AP_RSSI, rssi_channel,  0),
 
     // @Param: CHAN_LOW
     // @DisplayName: Receiver RSSI PWM low value
-    // @Description: This is the PWM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_CHAN_HIGH. 
+    // @Description: This is the PWM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_CHAN_HIGH.
     // @Units: Microseconds
     // @Range: 0 2000
     // @User: Standard
@@ -80,7 +80,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: CHAN_HIGH
     // @DisplayName: Receiver RSSI PWM high value
-    // @Description: This is the PWM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_CHAN_LOW. 
+    // @Description: This is the PWM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_CHAN_LOW.
     // @Units: Microseconds
     // @Range: 0 2000
     // @User: Standard
@@ -94,21 +94,21 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
 // constructor
 AP_RSSI::AP_RSSI()
-{       
+{
     AP_Param::setup_object_defaults(this, var_info);
 }
 
 // destructor
 AP_RSSI::~AP_RSSI(void)
-{       
+{
 }
 
 // Initialize the rssi object and prepare it for use
 void AP_RSSI::init()
 {
-    // a pin for reading the receiver RSSI voltage. The scaling by 0.25 
-    // is to take the 0 to 1024 range down to an 8 bit range for MAVLink    
-    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);    
+    // a pin for reading the receiver RSSI voltage. The scaling by 0.25
+    // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
+    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 }
 
 // Read the receiver RSSI value as a float 0.0f - 1.0f.
@@ -116,7 +116,7 @@ void AP_RSSI::init()
 float AP_RSSI::read_receiver_rssi()
 {
     // Default to 0 RSSI
-    float receiver_rssi = 0.0f;  
+    float receiver_rssi = 0.0f;
 
     switch (rssi_type) {
         case RssiType::RSSI_DISABLED :
@@ -128,11 +128,11 @@ float AP_RSSI::read_receiver_rssi()
         case RssiType::RSSI_RC_CHANNEL_VALUE :
             receiver_rssi = read_channel_rssi();
             break;
-        default :   
+        default :
             receiver_rssi = 0.0f;
             break;
-    }    
-                  
+    }
+
     return receiver_rssi;
 }
 
@@ -140,7 +140,7 @@ float AP_RSSI::read_receiver_rssi()
 // 0 represents weakest signal, 255 represents maximum signal.
 uint8_t AP_RSSI::read_receiver_rssi_uint8()
 {
-    return read_receiver_rssi() * 255; 
+    return read_receiver_rssi() * 255;
 }
 
 // Private
@@ -160,30 +160,30 @@ float AP_RSSI::read_channel_rssi()
 {
     uint16_t rssi_channel_value = hal.rcin->read(rssi_channel-1);
     float channel_rssi = scale_and_constrain_float_rssi(rssi_channel_value, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
-    return channel_rssi;    
+    return channel_rssi;
 }
 
-// Scale and constrain a float rssi value to 0.0 to 1.0 range 
+// Scale and constrain a float rssi value to 0.0 to 1.0 range
 float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range)
-{    
+{
     float rssi_value_range = fabsf(high_rssi_range - low_rssi_range);
     if (is_zero(rssi_value_range)) {
         // User range isn't meaningful, return 0 for RSSI (and avoid divide by zero)
-        return 0.0f;   
+        return 0.0f;
     }
-    // Note that user-supplied ranges may be inverted and we accommodate that here. 
-    // (Some radio receivers put out inverted ranges for RSSI-type values).    
+    // Note that user-supplied ranges may be inverted and we accommodate that here.
+    // (Some radio receivers put out inverted ranges for RSSI-type values).
     bool range_is_inverted = (high_rssi_range < low_rssi_range);
-    // Constrain to the possible range - values outside are clipped to ends 
-    current_rssi_value = constrain_float(current_rssi_value, 
-                                        range_is_inverted ? high_rssi_range : low_rssi_range, 
-                                        range_is_inverted ? low_rssi_range : high_rssi_range);    
+    // Constrain to the possible range - values outside are clipped to ends
+    current_rssi_value = constrain_float(current_rssi_value,
+                                        range_is_inverted ? high_rssi_range : low_rssi_range,
+                                        range_is_inverted ? low_rssi_range : high_rssi_range);
 
     if (range_is_inverted)
     {
         // Swap values so we can treat them as low->high uniformly in the code that follows
         current_rssi_value = high_rssi_range + fabsf(current_rssi_value - low_rssi_range);
-        std::swap(low_rssi_range, high_rssi_range);        
+        std::swap(low_rssi_range, high_rssi_range);
     }
 
     // Scale the value down to a 0.0 - 1.0 range

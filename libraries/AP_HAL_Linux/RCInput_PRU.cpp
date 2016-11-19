@@ -31,7 +31,7 @@ void RCInput_PRU::init()
     if (mem_fd == -1) {
         AP_HAL::panic("Unable to open /dev/mem");
     }
-    ring_buffer = (volatile struct ring_buffer*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, 
+    ring_buffer = (volatile struct ring_buffer*) mmap(0, 0x1000, PROT_READ|PROT_WRITE,
                                                       MAP_SHARED, mem_fd, RCIN_PRUSS_SHAREDRAM_BASE);
     close(mem_fd);
     ring_buffer->ring_head = 0;
@@ -61,7 +61,7 @@ void RCInput_PRU::_timer_tick()
             _process_rc_pulse(_s0_time, ring_buffer->buffer[ring_buffer->ring_head].delta_t);
         }
         // move to the next ring buffer entry
-        ring_buffer->ring_head = (ring_buffer->ring_head + 1) % NUM_RING_ENTRIES;        
+        ring_buffer->ring_head = (ring_buffer->ring_head + 1) % NUM_RING_ENTRIES;
     }
 }
 

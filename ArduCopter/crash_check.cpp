@@ -62,7 +62,7 @@ void Copter::crash_check()
 // called at MAIN_LOOP_RATE
 void Copter::parachute_check()
 {
-    static uint16_t control_loss_count;	// number of iterations we have been out of control
+    static uint16_t control_loss_count;    // number of iterations we have been out of control
     static int32_t baro_alt_start;
 
     // exit immediately if parachute is not enabled
@@ -150,7 +150,7 @@ void Copter::parachute_release()
 }
 
 // parachute_manual_release - trigger the release of the parachute, after performing some checks for pilot error
-//   checks if the vehicle is landed 
+//   checks if the vehicle is landed
 void Copter::parachute_manual_release()
 {
     // exit immediately if parachute is not enabled

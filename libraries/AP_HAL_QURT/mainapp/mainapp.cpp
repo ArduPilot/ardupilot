@@ -53,7 +53,7 @@ static void send_storage(void)
     read(fd, buf, sizeof(buf));
     if (ardupilot_set_storage(buf, sizeof(buf)) != 0) {
         printf("Failed to send initial storage");
-        exit(1);        
+        exit(1);
     }
     close(fd);
 }

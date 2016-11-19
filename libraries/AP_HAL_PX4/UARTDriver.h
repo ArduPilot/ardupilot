@@ -27,13 +27,13 @@ public:
     size_t write(const uint8_t *buffer, size_t size);
 
     void set_device_path(const char *path) {
-	    _devpath = path;
+        _devpath = path;
     }
 
     void _timer_tick(void);
 
     int _get_fd(void) {
-	    return _fd;
+        return _fd;
     }
 
     void set_flow_control(enum flow_control flow_control);

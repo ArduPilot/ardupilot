@@ -58,7 +58,7 @@ void LR_MsgHandler_ARM::process_message(uint8_t *msg)
     wait_timestamp_from_msg(msg);
     uint8_t ArmState = require_field_uint8_t(msg, "ArmState");
     hal.util->set_soft_armed(ArmState);
-    printf("Armed state: %u at %lu\n", 
+    printf("Armed state: %u at %lu\n",
            (unsigned)ArmState,
            (unsigned long)AP_HAL::millis());
 }
@@ -69,8 +69,8 @@ void LR_MsgHandler_ARSP::process_message(uint8_t *msg)
     wait_timestamp_from_msg(msg);
 
     airspeed.setHIL(require_field_float(msg, "Airspeed"),
-		    require_field_float(msg, "DiffPress"),
-		    require_field_float(msg, "Temp"));
+            require_field_float(msg, "DiffPress"),
+            require_field_float(msg, "Temp"));
 }
 
 void LR_MsgHandler_NKF1::process_message(uint8_t *msg)
@@ -106,10 +106,10 @@ void LR_MsgHandler_BARO::process_message(uint8_t *msg)
         last_update_ms = 0;
     }
     baro.setHIL(0,
-		require_field_float(msg, "Press"),
-		require_field_int16_t(msg, "Temp") * 0.01f,
-		require_field_float(msg, "Alt"),
-		require_field_float(msg, "CRt"),
+        require_field_float(msg, "Press"),
+        require_field_int16_t(msg, "Temp") * 0.01f,
+        require_field_float(msg, "Alt"),
+        require_field_float(msg, "CRt"),
                 last_update_ms);
 }
 
@@ -122,11 +122,11 @@ void LR_MsgHandler_Event::process_message(uint8_t *msg)
     uint8_t id = require_field_uint8_t(msg, "Id");
     if (id == DATA_ARMED) {
         hal.util->set_soft_armed(true);
-        printf("Armed at %lu\n", 
+        printf("Armed at %lu\n",
                (unsigned long)AP_HAL::millis());
     } else if (id == DATA_DISARMED) {
         hal.util->set_soft_armed(false);
-        printf("Disarmed at %lu\n", 
+        printf("Disarmed at %lu\n",
                (unsigned long)AP_HAL::millis());
     }
 }
@@ -352,21 +352,21 @@ void LR_MsgHandler_MSG::process_message(uint8_t *msg)
     require_field(msg, "Message", msg_text, msg_text_len);
 
     if (strncmp(msg_text, "ArduPlane", strlen("ArduPlane")) == 0) {
-	vehicle = VehicleType::VEHICLE_PLANE;
-	::printf("Detected Plane\n");
-	ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
-	ahrs.set_fly_forward(true);
+    vehicle = VehicleType::VEHICLE_PLANE;
+    ::printf("Detected Plane\n");
+    ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
+    ahrs.set_fly_forward(true);
     } else if (strncmp(msg_text, "ArduCopter", strlen("ArduCopter")) == 0 ||
-	       strncmp(msg_text, "APM:Copter", strlen("APM:Copter")) == 0) {
-	vehicle = VehicleType::VEHICLE_COPTER;
-	::printf("Detected Copter\n");
-	ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
-	ahrs.set_fly_forward(false);
+        strncmp(msg_text, "APM:Copter", strlen("APM:Copter")) == 0) {
+    vehicle = VehicleType::VEHICLE_COPTER;
+    ::printf("Detected Copter\n");
+    ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
+    ahrs.set_fly_forward(false);
     } else if (strncmp(msg_text, "ArduRover", strlen("ArduRover")) == 0) {
-	vehicle = VehicleType::VEHICLE_ROVER;
-	::printf("Detected Rover\n");
-	ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
-	ahrs.set_fly_forward(true);
+    vehicle = VehicleType::VEHICLE_ROVER;
+    ::printf("Detected Rover\n");
+    ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
+    ahrs.set_fly_forward(true);
     }
 }
 
@@ -374,8 +374,8 @@ void LR_MsgHandler_MSG::process_message(uint8_t *msg)
 void LR_MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
 {
     inavpos = Vector3f(require_field_float(msg, "PosX") * 0.01f,
-		       require_field_float(msg, "PosY") * 0.01f,
-		       0);
+            require_field_float(msg, "PosY") * 0.01f,
+            0);
 }
 
 

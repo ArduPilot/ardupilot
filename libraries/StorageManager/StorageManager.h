@@ -82,7 +82,7 @@ public:
 
     // base access via block functions
     bool read_block(void *dst, uint16_t src, size_t n) const;
-    bool write_block(uint16_t dst, const void* src, size_t n) const;    
+    bool write_block(uint16_t dst, const void* src, size_t n) const;
 
     // helper functions
     uint8_t  read_byte(uint16_t loc) const;

@@ -139,7 +139,7 @@ public:
 
     // called to set all outputs to termination state
     void terminate_vehicle(void);
-    
+
 protected:
     // setup failsafe values for if FMU firmware stops running
     void setup_IO_failsafe(void);
@@ -179,7 +179,7 @@ private:
 
     // main loop scheduler
     AP_Scheduler scheduler;
- 
+
     // mapping between input channels
     RCMapper rcmap;
 
@@ -235,7 +235,7 @@ private:
 #endif
 
     AP_RPM rpm_sensor;
-    
+
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF EKF{&ahrs, barometer, rangefinder};
@@ -309,9 +309,9 @@ private:
 
     // Rally Ponints
     AP_Rally rally {ahrs};
-    
-    // RSSI 
-    AP_RSSI rssi;      
+
+    // RSSI
+    AP_RSSI rssi;
 
     // remember if USB is connected, so we can adjust baud rate
     bool usb_connected;
@@ -371,10 +371,10 @@ private:
 
         // the time when the last HEARTBEAT message arrived from a GCS
         uint32_t last_heartbeat_ms;
-        
+
         // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
         uint32_t ch3_timer_ms;
-        
+
         uint32_t last_valid_rc_ms;
 
         //keeps track of the last valid rc as it relates to the AFS system
@@ -427,7 +427,7 @@ private:
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
- 
+
     // Airspeed Sensors
     AP_Airspeed airspeed;
 
@@ -452,7 +452,7 @@ private:
         uint32_t last_report_ms;
         bool launchTimerStarted;
     } takeoff_state;
-    
+
     // ground steering controller state
     struct {
         // Direction held during phases of takeoff and landing centidegrees
@@ -460,7 +460,7 @@ private:
         // this is a 0..36000 value, or -1 for disabled
         int32_t hold_course_cd;
 
-        // locked_course and locked_course_cd are used in stabilize mode 
+        // locked_course and locked_course_cd are used in stabilize mode
         // when ground steering is active, and for steering in auto-takeoff
         bool locked_course;
         float locked_course_err;
@@ -524,10 +524,10 @@ private:
         // the highest airspeed we have reached since entering AUTO. Used
         // to control ground takeoff
         float highest_airspeed;
-        
+
         // initial pitch. Used to detect if nose is rising in a tail dragger
         int16_t initial_pitch_cd;
-        
+
         // turn angle for next leg of mission
         float next_turn_angle {90};
 
@@ -536,13 +536,13 @@ private:
 
         // time when we first pass min GPS speed on takeoff
         uint32_t takeoff_speed_time_ms;
-        
+
         // distance to next waypoint
         float wp_distance;
-        
+
         // proportion to next waypoint
         float wp_proportion;
-        
+
         // last time is_flying() returned true in milliseconds
         uint32_t last_flying_ms;
 
@@ -610,10 +610,10 @@ private:
     // true if we are in an auto-navigation mode, which controls whether control input is ignored
     // with STICK_MIXING=0
     bool auto_navigation_mode:1;
-    
+
     // this controls throttle suppression in auto modes
     bool throttle_suppressed:1;
-	
+
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
     int8_t  throttle_watt_limit_min; // for reverse thrust
@@ -649,7 +649,7 @@ private:
     float smoothed_airspeed;
 
     // Mission library
-    AP_Mission mission {ahrs, 
+    AP_Mission mission {ahrs,
             FUNCTOR_BIND_MEMBER(&Plane::start_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Plane::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void)};
@@ -679,7 +679,7 @@ private:
         // previous target bearing, used to update sum_cd
         int32_t old_target_bearing_cd;
 
-        // Total desired rotation in a loiter.  Used for Loiter Turns commands. 
+        // Total desired rotation in a loiter.  Used for Loiter Turns commands.
         int32_t total_cd;
 
         // total angle completed in the loiter so far
@@ -787,7 +787,7 @@ private:
 
     // last time home was updated while disarmed
     uint32_t last_home_update_ms;
-    
+
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
@@ -818,12 +818,12 @@ private:
     AP_Tuning_Plane tuning;
 
     static const struct LogStructure log_structure[];
-    
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // the crc of the last created PX4Mixer
     int32_t last_mixer_crc = -1;
 #endif // CONFIG_HAL_BOARD
-    
+
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_heartbeat(mavlink_channel_t chan);
@@ -1043,7 +1043,7 @@ private:
     void one_second_loop(void);
     void airspeed_ratio_update(void);
     void update_mount(void);
-    void update_trigger(void);    
+    void update_trigger(void);
     void log_perf_info(void);
     void compass_save(void);
     void update_logging1(void);

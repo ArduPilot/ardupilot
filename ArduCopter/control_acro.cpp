@@ -67,7 +67,7 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
         roll_in *= ratio;
         pitch_in *= ratio;
     }
-    
+
     // calculate roll, pitch rate requests
     if (g.acro_rp_expo <= 0) {
         rate_bf_request.x = roll_in * g.acro_rp_p;

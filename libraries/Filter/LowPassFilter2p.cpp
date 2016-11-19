@@ -27,7 +27,7 @@ T DigitalBiquadFilter<T>::apply(const T &sample, const struct biquad_params &par
 }
 
 template <class T>
-void DigitalBiquadFilter<T>::reset() { 
+void DigitalBiquadFilter<T>::reset() {
     _delay_element_1 = _delay_element_2 = T();
 }
 
@@ -53,8 +53,8 @@ void DigitalBiquadFilter<T>::compute_params(float sample_freq, float cutoff_freq
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-LowPassFilter2p<T>::LowPassFilter2p() { 
-    memset(&_params, 0, sizeof(_params) ); 
+LowPassFilter2p<T>::LowPassFilter2p() {
+    memset(&_params, 0, sizeof(_params) );
 }
 
 // constructor
@@ -91,7 +91,7 @@ void LowPassFilter2p<T>::reset(void) {
     return _filter.reset();
 }
 
-/* 
+/*
  * Make an instances
  * Otherwise we have to move the constructor implementations to the header file :P
  */

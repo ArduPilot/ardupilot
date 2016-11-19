@@ -6,7 +6,7 @@
 #include "AP_HAL_Linux.h"
 
 class SerialDevice {
-public: 
+public:
     virtual ~SerialDevice() {}
 
     virtual bool open() = 0;

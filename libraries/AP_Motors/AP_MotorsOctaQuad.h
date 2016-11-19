@@ -1,5 +1,5 @@
-/// @file	AP_MotorsOctaQuad.h
-/// @brief	Motor control class for OctaQuadcopters
+/// @file    AP_MotorsOctaQuad.h
+/// @brief    Motor control class for OctaQuadcopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>

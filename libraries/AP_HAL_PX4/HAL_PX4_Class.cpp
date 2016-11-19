@@ -109,7 +109,7 @@ void hal_px4_set_priority(uint8_t priority)
 {
     struct sched_param param;
     param.sched_priority = priority;
-    sched_setscheduler(daemon_task, SCHED_FIFO, &param);    
+    sched_setscheduler(daemon_task, SCHED_FIFO, &param);
 }
 
 /*
@@ -159,7 +159,7 @@ static int main_loop(int argc, char **argv)
 
     while (!_px4_thread_should_exit) {
         perf_begin(perf_loop);
-        
+
         /*
           this ensures a tight loop waiting on a lower priority driver
           will eventually give up some time for the driver to run. It
@@ -214,7 +214,7 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
     const char *deviceE = UARTE_DEFAULT_DEVICE;
 
     if (argc < 1) {
-        printf("%s: missing command (try '%s start')", 
+        printf("%s: missing command (try '%s start')",
                SKETCHNAME, SKETCHNAME);
         usage();
         exit(1);
@@ -235,7 +235,7 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
             uartCDriver.set_device_path(deviceC);
             uartDDriver.set_device_path(deviceD);
             uartEDriver.set_device_path(deviceE);
-            printf("Starting %s uartA=%s uartC=%s uartD=%s uartE=%s\n", 
+            printf("Starting %s uartA=%s uartC=%s uartD=%s uartE=%s\n",
                    SKETCHNAME, deviceA, deviceC, deviceD, deviceE);
 
             _px4_thread_should_exit = false;
@@ -252,7 +252,7 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
             _px4_thread_should_exit = true;
             exit(0);
         }
- 
+
         if (strcmp(argv[i], "status") == 0) {
             if (_px4_thread_should_exit && thread_running) {
                 printf("\t%s is exiting\n", SKETCHNAME);
@@ -308,7 +308,7 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
             }
         }
     }
- 
+
     usage();
     exit(1);
 }

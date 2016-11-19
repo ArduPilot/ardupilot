@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("DELAY_MS", 5, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),
-    
+
     AP_GROUPEND
 };
 
@@ -101,7 +101,7 @@ void AP_Parachute::update()
     // calc time since release
     uint32_t time_diff = AP_HAL::millis() - _release_time;
     uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
-    
+
     // check if we should release parachute
     if ((_release_time != 0) && !_release_in_progress) {
         if (time_diff >= delay_ms) {

@@ -92,7 +92,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, px4.ser2_rtscts, 2),
 #endif
-    
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: SAFETYENABLE
     // @DisplayName: Enable use of safety arming switch
@@ -159,7 +159,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, px4.board_type, BOARD_TYPE_DEFAULT),
 #endif
-    
+
     AP_GROUPEND
 };
 
@@ -168,7 +168,7 @@ void AP_BoardConfig::init()
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     px4_setup();
 #endif
-    
+
 #if HAL_HAVE_IMU_HEATER
     // let the HAL know the target temperature. We pass a pointer as
     // we want the user to be able to change the parameter without

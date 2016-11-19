@@ -291,7 +291,7 @@ private:
 
     // altitude below which we do no navigation in auto takeoff
     float auto_takeoff_no_nav_alt_cm;
-    
+
     RCMapper rcmap;
 
     // board specific config
@@ -454,7 +454,7 @@ private:
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
-    
+
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
@@ -557,8 +557,8 @@ private:
     AP_Rally_Copter rally;
 #endif
 
-    // RSSI 
-    AP_RSSI rssi;      
+    // RSSI
+    AP_RSSI rssi;
 
     // Crop Sprayer
 #if SPRAYER == ENABLED
@@ -603,7 +603,7 @@ private:
 
     // last valid RC input time
     uint32_t last_radio_update_ms;
-    
+
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;

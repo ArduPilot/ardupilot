@@ -28,7 +28,7 @@ void AP_Baro_QFLIGHT::timer_update(void)
         return;
     }
     last_check_ms = now;
-    
+
     if (barobuf == nullptr) {
         barobuf = QFLIGHT_RPC_ALLOCATE(DSPBuffer::BARO);
         if (barobuf == nullptr) {

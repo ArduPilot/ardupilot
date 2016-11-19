@@ -22,7 +22,7 @@
 #define NAVIO_LED_DIM    0x4F    // dim brightness
 #define NAVIO_LED_OFF    0xFF    // off
 
-NavioLED::NavioLED() : 
+NavioLED::NavioLED() :
     RGBLed(NAVIO_LED_OFF, NAVIO_LED_BRIGHT, NAVIO_LED_MEDIUM, NAVIO_LED_DIM)
 {
 

@@ -55,14 +55,14 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("LED_OVERRIDE", 2, AP_Notify, _rgb_led_override, 0),
-    
+
     AP_GROUPEND
 };
 
 // Default constructor
 AP_Notify::AP_Notify()
 {
-	AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 // static flags, to allow for direct class update from device drivers

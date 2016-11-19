@@ -82,7 +82,7 @@ public:
     virtual void set_desired_spool_state(enum spool_up_down_desired spool) { _spool_desired = spool; };
 
     enum spool_up_down_desired get_desired_spool_state(void) const { return _spool_desired; }
-    
+
     //
     // voltage, current and air pressure compensation or limiting features - multicopters only
     //
@@ -136,7 +136,7 @@ public:
 
     enum pwm_type { PWM_TYPE_NORMAL=0, PWM_TYPE_ONESHOT=1, PWM_TYPE_ONESHOT125=2 };
     pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
-    
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing()=0;
@@ -147,7 +147,7 @@ protected:
 
     // add a motor to the motor map
     void add_motor_num(int8_t motor_num);
-    
+
     // update the throttle input filter
     virtual void        update_throttle_filter() = 0;
 

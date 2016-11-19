@@ -74,7 +74,7 @@ end
 
 % Calculate the body to nav cosine matrix
 Tbn = Quat2Tbn(nextQuat);
-  
+
 % transform body delta velocities to delta velocities in the nav frame
 delVelNav = Tbn * correctedDelVel + [0;0;9.807]*dt;
 

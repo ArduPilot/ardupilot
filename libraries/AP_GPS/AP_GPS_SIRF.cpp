@@ -15,7 +15,7 @@
 
 //
 //  SiRF Binary GPS driver for ArduPilot and ArduPilotMega.
-//	Code by Michael Smith.
+//    Code by Michael Smith.
 //
 
 #include "AP_GPS_SIRF.h"
@@ -29,7 +29,7 @@
 //
 const uint8_t AP_GPS_SIRF::_initialisation_blob[] = {
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa8, 0xb0, 0xb3,
-    0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x00, 0x29, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0, 0xb0, 0xb3 
+    0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x00, 0x29, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0, 0xb0, 0xb3
 };
 
 AP_GPS_SIRF::AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
@@ -207,45 +207,45 @@ AP_GPS_SIRF::_accumulate(uint8_t val)
 bool
 AP_GPS_SIRF::_detect(struct SIRF_detect_state &state, uint8_t data)
 {
-	switch (state.step) {
-	case 1:
-		if (PREAMBLE2 == data) {
-			state.step++;
-			break;
-		}
-		state.step = 0;
-	case 0:
-		state.payload_length = state.payload_counter = state.checksum = 0;
-		if (PREAMBLE1 == data)
-			state.step++;
-		break;
-	case 2:
-		state.step++;
-		if (data != 0) {
-			// only look for short messages
-			state.step = 0;
-		}
-		break;
-	case 3:
-		state.step++;
-		state.payload_length = data;
-		break;
-	case 4:
-		state.checksum = (state.checksum + data) & 0x7fff;
-		if (++state.payload_counter == state.payload_length)
-			state.step++;
-		break;
-	case 5:
-		state.step++;
-		if ((state.checksum >> 8) != data) {
-			state.step = 0;
-		}
-		break;
-	case 6:
-		state.step = 0;
-		if ((state.checksum & 0xff) == data) {
-			return true;
-		}
+    switch (state.step) {
+    case 1:
+        if (PREAMBLE2 == data) {
+            state.step++;
+            break;
+        }
+        state.step = 0;
+    case 0:
+        state.payload_length = state.payload_counter = state.checksum = 0;
+        if (PREAMBLE1 == data)
+            state.step++;
+        break;
+    case 2:
+        state.step++;
+        if (data != 0) {
+            // only look for short messages
+            state.step = 0;
+        }
+        break;
+    case 3:
+        state.step++;
+        state.payload_length = data;
+        break;
+    case 4:
+        state.checksum = (state.checksum + data) & 0x7fff;
+        if (++state.payload_counter == state.payload_length)
+            state.step++;
+        break;
+    case 5:
+        state.step++;
+        if ((state.checksum >> 8) != data) {
+            state.step = 0;
+        }
+        break;
+    case 6:
+        state.step = 0;
+        if ((state.checksum & 0xff) == data) {
+            return true;
+        }
     }
     return false;
 }

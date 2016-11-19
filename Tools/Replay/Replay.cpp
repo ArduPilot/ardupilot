@@ -71,7 +71,7 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
     GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
-    
+
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass, "COMPASS_", Compass),
@@ -79,7 +79,7 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Group: LOG
     // @Path: ../libraries/DataFlash/DataFlash.cpp
     GOBJECT(dataflash, "LOG", DataFlash_Class),
-    
+
     AP_VAREND
 };
 
@@ -101,15 +101,15 @@ static const struct LogStructure min_log_structure[] = {
     { LOG_FORMAT_MSG, sizeof(log_Format),
       "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },
     { LOG_PARAMETER_MSG, sizeof(log_Parameter),
-      "PARM", "QNf",        "TimeUS,Name,Value" }, 
+      "PARM", "QNf",        "TimeUS,Name,Value" },
     { LOG_MESSAGE_MSG, sizeof(log_Message),
       "MSG",  "QZ",     "TimeUS,Message"},
 };
 
-void ReplayVehicle::setup(void) 
+void ReplayVehicle::setup(void)
 {
     load_parameters();
-    
+
     // we pass a minimal log structure, as we will be outputting the
     // log structures we need manually, to prevent FMT duplicates
     dataflash.Init(min_log_structure, ARRAY_SIZE(min_log_structure));
@@ -122,7 +122,7 @@ void ReplayVehicle::setup(void)
     ahrs.set_ekf_use(true);
 
     EKF2.set_enable(true);
-                        
+
     printf("Starting disarmed\n");
     hal.util->set_soft_armed(false);
 
@@ -231,7 +231,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 
     int opt;
     while ((opt = gopt.getoption()) != -1) {
-		switch (opt) {
+        switch (opt) {
         case 'g':
             logreader.set_gyro_mask(strtol(gopt.optarg, NULL, 0));
             break;
@@ -302,7 +302,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         case OPT_PARAM_FILE:
             load_param_file(gopt.optarg);
             break;
-            
+
         case OPT_NO_FPE:
             generate_fpe = false;
             break;
@@ -314,8 +314,8 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         }
     }
 
-	argv += gopt.optind;
-	argc -= gopt.optind;
+    argv += gopt.optind;
+    argc -= gopt.optind;
 
     if (argc > 0) {
         filename = argv[0];
@@ -375,7 +375,7 @@ bool IMUCounter::handle_msg(const struct log_Format &f, uint8_t *msg) {
 /*
   find information about the log
  */
-bool Replay::find_log_info(struct log_information &info) 
+bool Replay::find_log_info(struct log_information &info)
 {
     IMUCounter reader;
     if (!reader.open_log(filename)) {
@@ -539,7 +539,7 @@ void Replay::setup()
         _vehicle.ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
         _vehicle.ahrs.set_fly_forward(true);
     }
-    
+
     set_ins_update_rate(log_info.update_rate);
 
     plotf = xfopen("plot.dat", "we");
@@ -644,13 +644,13 @@ void Replay::read_sensors(const char *type)
     if (done_parameters && streq(type, "PARM")) {
         set_user_parameters();
     }
-    
+
     if (!done_home_init) {
         if (streq(type, "GPS") &&
             (_vehicle.gps.status() >= AP_GPS::GPS_OK_FIX_3D) && done_baro_init) {
             const Location &loc = _vehicle.gps.location();
-            ::printf("GPS Lock at %.7f %.7f %.2fm time=%.1f seconds\n", 
-                     loc.lat * 1.0e-7f, 
+            ::printf("GPS Lock at %.7f %.7f %.2fm time=%.1f seconds\n",
+                     loc.lat * 1.0e-7f,
                      loc.lng * 1.0e-7f,
                      loc.alt * 0.01f,
                      AP_HAL::millis()*0.001f);
@@ -676,7 +676,7 @@ void Replay::read_sensors(const char *type)
             ::printf("Barometer initialised\n");
             _vehicle.barometer.update_calibration();
         }
-    } 
+    }
 
     bool run_ahrs = false;
     if (log_info.have_imt2) {
@@ -697,7 +697,7 @@ void Replay::read_sensors(const char *type)
     if (check_solution) {
         run_ahrs = streq(type, "CHEK");
     }
-    
+
     if (run_ahrs) {
         _vehicle.ahrs.update();
         if (_vehicle.ahrs.get_home().lat != 0) {
@@ -708,7 +708,7 @@ void Replay::read_sensors(const char *type)
         }
         if (_vehicle.ahrs.healthy() != ahrs_healthy) {
             ahrs_healthy = _vehicle.ahrs.healthy();
-            printf("AHRS health: %u at %lu\n", 
+            printf("AHRS health: %u at %lu\n",
                    (unsigned)ahrs_healthy,
                    (unsigned long)AP_HAL::millis());
         }
@@ -718,7 +718,7 @@ void Replay::read_sensors(const char *type)
             log_check_solution();
         }
     }
-    
+
     if (logmatch && streq(type, "NKF1")) {
         write_ekf_logs();
     }
@@ -900,22 +900,22 @@ void Replay::loop()
             degrees(ekf_euler.x),
             degrees(ekf_euler.y),
             temp,
-            velNED.x, 
-            velNED.y, 
-            velNED.z, 
+            velNED.x,
+            velNED.y,
+            velNED.z,
             posNE.x,
             posNE.y,
             posD,
-            60*degrees(gyroBias.x), 
-            60*degrees(gyroBias.y), 
-            60*degrees(gyroBias.z), 
-            windVel.x, 
-            windVel.y, 
+            60*degrees(gyroBias.x),
+            60*degrees(gyroBias.y),
+            60*degrees(gyroBias.z),
+            windVel.x,
+            windVel.y,
             magNED.x,
             magNED.y,
             magNED.z,
-            magXYZ.x, 
-            magXYZ.y, 
+            magXYZ.x,
+            magXYZ.y,
             magXYZ.z,
             logreader.get_attitude().x,
             logreader.get_attitude().y,
@@ -938,15 +938,15 @@ void Replay::loop()
     fprintf(ekf1f, "%.3f %u %d %d %u %.2f %.2f %.2f %.2f %.2f %.2f %.0f %.0f %.0f\n",
             AP_HAL::millis() * 0.001f,
             AP_HAL::millis(),
-            roll, 
-            pitch, 
-            yaw, 
-            velN, 
-            velE, 
-            velD, 
-            posN, 
-            posE, 
-            posD, 
+            roll,
+            pitch,
+            yaw,
+            velN,
+            velE,
+            velD,
+            posN,
+            posE,
+            posD,
             gyrX,
             gyrY,
             gyrZ);
@@ -968,14 +968,14 @@ void Replay::loop()
     fprintf(ekf2f, "%.3f %d %d %d %d %d %d %d %d %d %d %d %d\n",
             AP_HAL::millis() * 0.001f,
             AP_HAL::millis(),
-            accWeight, 
-            acc1, 
-            acc2, 
-            windN, 
-            windE, 
-            magN, 
-            magE, 
-            magD, 
+            accWeight,
+            acc1,
+            acc2,
+            windN,
+            windE,
+            magN,
+            magE,
+            magD,
             magX,
             magY,
             magZ);
@@ -996,15 +996,15 @@ void Replay::loop()
     fprintf(ekf3f, "%.3f %d %d %d %d %d %d %d %d %d %d %d\n",
             AP_HAL::millis() * 0.001f,
             AP_HAL::millis(),
-            innovVN, 
-            innovVE, 
-            innovVD, 
-            innovPN, 
-            innovPE, 
-            innovPD, 
-            innovMX, 
-            innovMY, 
-            innovMZ, 
+            innovVN,
+            innovVE,
+            innovVD,
+            innovPN,
+            innovPE,
+            innovPD,
+            innovMX,
+            innovMY,
+            innovMZ,
             innovVT);
 
     // define messages for EKF4 data packet
@@ -1025,8 +1025,8 @@ void Replay::loop()
             (int)sqrtvarV,
             (int)sqrtvarP,
             (int)sqrtvarH,
-            (int)sqrtvarMX, 
-            (int)sqrtvarMY, 
+            (int)sqrtvarMX,
+            (int)sqrtvarMY,
             (int)sqrtvarMZ,
             (int)sqrtvarVT,
             (int)offsetNorth,
@@ -1038,7 +1038,7 @@ void Replay::loop()
 bool Replay::show_error(const char *text, float max_error, float tolerance)
 {
     bool failed = max_error > tolerance;
-    printf("%s:\t%.2f %c %.2f\n", 
+    printf("%s:\t%.2f %c %.2f\n",
            text,
            max_error,
            failed?'>':'<',
@@ -1058,7 +1058,7 @@ void Replay::report_checks(void)
     FILE *f = fopen("replay_results.txt","a");
     if (f != NULL) {
         fprintf(f, "%s\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n",
-                log_filename, 
+                log_filename,
                 check_result.max_roll_error,
                 check_result.max_pitch_error,
                 check_result.max_yaw_error,

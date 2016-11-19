@@ -38,7 +38,7 @@ void setup() {
 		APM_RC.enable_out(ch);
 	}
 	Serial.printf("Failsafe board started\n");
-}    
+}
 
 
 static uint8_t last_heartbeat;
@@ -77,7 +77,7 @@ void loop()
 	failsafe_enabled = digitalRead(FAILSAFE_PIN);
 	if (tnow - last_print > 200) {
 		Serial.printf("1:%4u 2:%4u 3:%4u 4:%4u 5:%4u 6:%4u 7:%4u 8:%4u HB=%u FS=%u HBFAIL=%u\n",
-			      pwm[0], pwm[1], pwm[2], pwm[3], 
+			      pwm[0], pwm[1], pwm[2], pwm[3],
 			      pwm[4], pwm[5], pwm[6], pwm[7],
 			      (unsigned)digitalRead(HEARTBEAT_PIN),
 			      (unsigned)failsafe_enabled,

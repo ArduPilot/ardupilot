@@ -38,8 +38,8 @@ const AP_Param::GroupInfo AP_MotorsCoax::var_info[] = {
     // 41 was PITCH_SV_REV
     // 42 was YAW_SV_REV
 
-	// @Param: SV_SPEED
-    // @DisplayName: Servo speed 
+    // @Param: SV_SPEED
+    // @DisplayName: Servo speed
     // @Description: Servo update speed
     // @Units: Hz
     AP_GROUPINFO("SV_SPEED", 43, AP_MotorsCoax, _servo_speed, AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS),

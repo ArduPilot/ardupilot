@@ -74,7 +74,7 @@ public:
 
     /* smooth sensors to provide kinematic consistancy */
     void smooth_sensors(void);
-    
+
     /* return normal distribution random numbers */
     static double rand_normal(double mean, double stddev);
 
@@ -82,7 +82,7 @@ public:
     static bool parse_home(const char *home_str, Location &loc, float &yaw_degrees);
 
     // get frame rate of model in Hz
-    float get_rate_hz(void) const { return rate_hz; }       
+    float get_rate_hz(void) const { return rate_hz; }
 
     const Vector3f &get_gyro(void) const {
         return gyro;
@@ -95,7 +95,7 @@ public:
     const Vector3f &get_velocity_air_ef(void) const {
         return velocity_air_ef;
     }
-    
+
     const Matrix3f &get_dcm(void) const {
         return dcm;
     }
@@ -164,13 +164,13 @@ protected:
     } ground_behavior;
 
     bool use_smoothing;
-    
+
     AP_Terrain *terrain;
     float ground_height_difference;
 
     const float FEET_TO_METERS = 0.3048f;
     const float KNOTS_TO_METERS_PER_SECOND = 0.51444f;
-    
+
     bool on_ground(const Vector3f &pos);
 
     /* update location from position */
@@ -218,7 +218,7 @@ protected:
     float filtered_idx(float v, uint8_t idx);
     float filtered_servo_angle(const struct sitl_input &input, uint8_t idx);
     float filtered_servo_range(const struct sitl_input &input, uint8_t idx);
-    
+
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;
@@ -237,13 +237,13 @@ private:
     } smoothing;
 
     LowPassFilterFloat servo_filter[4];
-    
+
     /* set this always to the sampling in degrees for the table below */
-    #define SAMPLING_RES		10.0f
-    #define SAMPLING_MIN_LAT	-60.0f
-    #define SAMPLING_MAX_LAT	60.0f
-    #define SAMPLING_MIN_LON	-180.0f
-    #define SAMPLING_MAX_LON	180.0f
+    #define SAMPLING_RES        10.0f
+    #define SAMPLING_MIN_LAT    -60.0f
+    #define SAMPLING_MAX_LAT    60.0f
+    #define SAMPLING_MIN_LON    -180.0f
+    #define SAMPLING_MAX_LON    180.0f
 
     /* table data containing magnetic declination angle in degrees */
     const float declination_table[13][37] =

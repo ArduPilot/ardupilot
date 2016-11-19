@@ -33,7 +33,7 @@ extern const AP_HAL::HAL& hal;
 
 /*
   scaling table between ADC count and actual input voltage, to account
-  for voltage dividers on the board. 
+  for voltage dividers on the board.
  */
 static const struct {
     uint8_t pin;
@@ -57,7 +57,7 @@ static const struct {
 using namespace VRBRAIN;
 
 VRBRAINAnalogSource::VRBRAINAnalogSource(int16_t pin, float initial_value) :
-	_pin(pin),
+    _pin(pin),
     _stop_pin(-1),
     _settle_time_ms(0),
     _value(initial_value),
@@ -75,8 +75,8 @@ VRBRAINAnalogSource::VRBRAINAnalogSource(int16_t pin, float initial_value) :
 }
 
 void VRBRAINAnalogSource::set_stop_pin(uint8_t p)
-{ 
-    _stop_pin = p; 
+{
+    _stop_pin = p;
 }
 
 float VRBRAINAnalogSource::read_average()
@@ -182,17 +182,17 @@ void VRBRAINAnalogSource::_add_value(float v, float vcc5V)
 
 VRBRAINAnalogIn::VRBRAINAnalogIn() :
     _current_stop_pin_i(0),
-	_board_voltage(0),
+    _board_voltage(0),
     _servorail_voltage(0),
     _power_flags(0)
 {}
 
 void VRBRAINAnalogIn::init()
 {
-	_adc_fd = open(ADC0_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
+    _adc_fd = open(ADC0_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
     if (_adc_fd == -1) {
         AP_HAL::panic("Unable to open " ADC0_DEVICE_PATH);
-	}
+    }
     _battery_handle   = orb_subscribe(ORB_ID(battery_status));
     _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
     _system_power_handle = orb_subscribe(ORB_ID(system_power));
@@ -266,7 +266,7 @@ void VRBRAINAnalogIn::_timer_tick(void)
                 if (c != nullptr && buf_adc[i].am_channel == c->_pin) {
                     // add a value if either there is no stop pin, or
                     // the stop pin has been settling for enough time
-                    if (c->_stop_pin == -1 || 
+                    if (c->_stop_pin == -1 ||
                         (_current_stop_pin_i == j &&
                          AP_HAL::millis() - _stop_pin_change_time > c->_settle_time_ms)) {
                         c->_add_value(buf_adc[i].am_data, _board_voltage);

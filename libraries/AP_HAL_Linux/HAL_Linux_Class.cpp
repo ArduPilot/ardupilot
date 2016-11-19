@@ -275,7 +275,7 @@ void _usage(void)
 void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
     const char *module_path = AP_MODULE_DEFAULT_DIRECTORY;
-    
+
     assert(callbacks);
 
     int opt;

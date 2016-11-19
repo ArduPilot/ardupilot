@@ -24,7 +24,7 @@ public:
     static UARTDriver *from(AP_HAL::UARTDriver *uart) {
         return static_cast<UARTDriver*>(uart);
     }
-    
+
     /* Implementations of UARTDriver virtual methods */
     void begin(uint32_t b) {
         begin(b, 0, 0);
@@ -60,7 +60,7 @@ public:
     enum flow_control get_flow_control(void) { return FLOW_CONTROL_ENABLE; }
 
     void _timer_tick(void);
-    
+
 private:
     uint8_t _portNumber;
     bool _connected = false; // true if a client has connected

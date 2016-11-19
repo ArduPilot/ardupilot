@@ -32,7 +32,7 @@ SingleCopter::SingleCopter(const char *home_str, const char *frame_str) :
     } else {
         frame_type = FRAME_SINGLE;
     }
-    
+
     /*
        scaling from motor power to Newtons. Allows the copter
        to hover against gravity when the motor is at hover_throttle
@@ -76,8 +76,8 @@ void SingleCopter::update(const struct sitl_input &input)
         pitch_thrust = (actuator[1] - actuator[3]) * 0.5f * thrust;
         break;
     }
-    }        
-    
+    }
+
     // rotational acceleration, in rad/s/s, in body frame
     Vector3f rot_accel(roll_thrust * roll_rate_max,
                        pitch_thrust * pitch_rate_max,
@@ -98,7 +98,7 @@ void SingleCopter::update(const struct sitl_input &input)
     accel_body += dcm.transposed() * air_resistance;
 
     update_dynamics(rot_accel);
-    
+
     // update lat/lon/altitude
     update_position();
 

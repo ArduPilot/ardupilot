@@ -68,7 +68,7 @@ bool Display_SSD1306_I2C::_timer()
         return true;
     }
     _need_hw_update = false;
-    
+
     struct PACKED {
         uint8_t reg;
         uint8_t cmd[6];

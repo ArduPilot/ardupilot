@@ -44,11 +44,11 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // @Param: 0_PROTOCOL
     // @DisplayName: Console protocol selection
-    // @Description: Control what protocol to use on the console. 
+    // @Description: Control what protocol to use on the console.
     // @Values: 1:MAVlink1, 2:MAVLink2
     // @User: Standard
     AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, SerialProtocol_MAVLink),
-    
+
     // @Param: 1_PROTOCOL
     // @DisplayName: Telem1 protocol selection
     // @Description: Control what protocol to use on the Telem1 port. Note that the Frsky options require external converter hardware. See the wiki for details.
@@ -120,7 +120,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("5_BAUD", 10, AP_SerialManager, state[5].baud, SERIAL5_BAUD),
 
     // index 11 used by 0_PROTOCOL
-    
+
     AP_GROUPEND
 };
 
@@ -154,7 +154,7 @@ void AP_SerialManager::init()
     if (state[0].uart == nullptr) {
         init_console();
     }
-    
+
     // initialise serial ports
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
         if (state[i].uart != nullptr) {
@@ -164,7 +164,7 @@ void AP_SerialManager::init()
                 case SerialProtocol_Console:
                 case SerialProtocol_MAVLink:
                 case SerialProtocol_MAVLink2:
-                    state[i].uart->begin(map_baudrate(state[i].baud), 
+                    state[i].uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX,
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX);
                     break;
@@ -181,7 +181,7 @@ void AP_SerialManager::init()
                     break;
                 case SerialProtocol_GPS:
                 case SerialProtocol_GPS2:
-                    state[i].uart->begin(map_baudrate(state[i].baud), 
+                    state[i].uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_GPS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_GPS_BUFSIZE_TX);
                     break;

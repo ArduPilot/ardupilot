@@ -230,7 +230,7 @@ void Plane::crash_detection_update(void)
             // we need a totally new method for this
             crashed = false;
             break;
-            
+
         case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
             if (been_auto_flying) {
                 crashed = true;

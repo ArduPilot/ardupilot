@@ -44,13 +44,13 @@ bool VRBRAIN_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t sen
     bool ret = (transfer(send, send_len, recv, recv_len) == OK);
     return ret;
 }
-    
+
 I2CDevice::I2CDevice(uint8_t bus, uint8_t address) :
     _bus(bus),
     _address(address)
 {
 }
-    
+
 I2CDevice::~I2CDevice()
 {
 }

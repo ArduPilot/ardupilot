@@ -50,7 +50,7 @@ void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot
 {
     frame->calculate_forces(*this, input, rot_accel, body_accel);
 }
-    
+
 /*
   update the multicopter simulation by one time step
  */

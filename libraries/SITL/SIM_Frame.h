@@ -42,7 +42,7 @@ public:
 
     // find a frame by name
     static Frame *find_frame(const char *name);
-    
+
     // initialise frame
     void init(float mass, float hover_throttle, float terminal_velocity, float terminal_rotation_rate);
 
@@ -50,7 +50,7 @@ public:
     void calculate_forces(const Aircraft &aircraft,
                           const Aircraft::sitl_input &input,
                           Vector3f &rot_accel, Vector3f &body_accel);
-    
+
     float terminal_velocity;
     float terminal_rotation_rate;
     float thrust_scale;

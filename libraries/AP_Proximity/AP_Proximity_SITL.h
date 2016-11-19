@@ -27,7 +27,7 @@ private:
     uint32_t last_load_ms;
     AC_PolyFence_loader fence_loader;
     Location current_loc;
-    
+
     void load_fence(void);
 };
 #endif // CONFIG_HAL_BOARD

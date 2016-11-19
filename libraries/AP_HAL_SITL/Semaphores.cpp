@@ -8,12 +8,12 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-bool Semaphore::give() 
+bool Semaphore::give()
 {
     return pthread_mutex_unlock(&_lock) == 0;
 }
 
-bool Semaphore::take(uint32_t timeout_ms) 
+bool Semaphore::take(uint32_t timeout_ms)
 {
     if (timeout_ms == 0) {
         return pthread_mutex_lock(&_lock) == 0;
@@ -31,7 +31,7 @@ bool Semaphore::take(uint32_t timeout_ms)
     return false;
 }
 
-bool Semaphore::take_nonblocking() 
+bool Semaphore::take_nonblocking()
 {
     return pthread_mutex_trylock(&_lock) == 0;
 }

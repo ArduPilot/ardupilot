@@ -54,7 +54,7 @@ public:
     bool use_rtscts(void) const {
         return _use_rtscts;
     }
-    
+
     // simulated airspeed, sonar and battery monitor
     uint16_t sonar_pin_value;    // pin 0
     uint16_t airspeed_pin_value; // pin 1
@@ -73,7 +73,7 @@ public:
         "GPS2",
         "tcp:4",
     };
-    
+
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
@@ -125,10 +125,10 @@ private:
     void _update_gps(double latitude, double longitude, float altitude,
                      double speedN, double speedE, double speedD, bool have_lock);
 
-    void _update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
-                     double rollRate, 	double pitchRate,double yawRate,	// Local to plane
-                     double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
-                     float airspeed,	float altitude);
+    void _update_ins(float roll,     float pitch,     float yaw,        // Relative to earth
+                     double rollRate,     double pitchRate,double yawRate,    // Local to plane
+                     double xAccel,     double yAccel,     double zAccel,        // Local to plane
+                     float airspeed,    float altitude);
     void _check_rc_input(void);
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
@@ -171,7 +171,7 @@ private:
 
     bool _use_rtscts;
     bool _use_fg_view;
-    
+
     const char *_fdm_address;
 
     // delay buffer variables
@@ -224,7 +224,7 @@ private:
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
-    
+
     // TCP address to connect uartC to
     const char *_client_address;
 

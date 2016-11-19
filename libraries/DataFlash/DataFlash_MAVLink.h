@@ -1,4 +1,4 @@
-/* 
+/*
    DataFlash logging - MAVLink variant
 
    - transfers blocks of the open log file to a client using MAVLink
@@ -55,9 +55,9 @@ public:
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override {}
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override { return 0; }
     uint16_t get_num_logs(void) override { return 0; }
-    
+
     void LogReadProcess(uint16_t log_num,
-                        uint16_t start_page, uint16_t end_page, 
+                        uint16_t start_page, uint16_t end_page,
                         print_mode_fn printMode,
                         AP_HAL::BetterStream *port) override {}
     void DumpPageInfo(AP_HAL::BetterStream *port) override {}
@@ -100,7 +100,7 @@ public:
     bool send_log_blocks_from_queue(dm_block_queue_t &queue);
     uint8_t stack_size(struct dm_block *stack);
     uint8_t queue_size(dm_block_queue_t queue);
-    
+
     struct dm_block *_blocks_free;
     dm_block_queue_t _blocks_sent;
     dm_block_queue_t _blocks_pending;
@@ -145,7 +145,7 @@ private:
     // of the logs, but low enough that we don't spend way too much
     // time packing messages in any one loop
     const uint8_t _max_blocks_per_send_blocks;
-    
+
     uint32_t _next_seq_num;
     uint16_t _latest_block_len;
     bool _logging_started;
@@ -155,7 +155,7 @@ private:
     bool _sending_to_client;
 
     void Log_Write_DF_MAV(DataFlash_MAVLink &df);
-    
+
     void internal_error();
     uint32_t bufferspace_available() override; // in bytes
     uint8_t remaining_space_in_current_block();
@@ -169,7 +169,7 @@ private:
     void periodic_10Hz(uint32_t now);
     void periodic_1Hz(uint32_t now);
     void periodic_fullrate(uint32_t now);
-    
+
     void stats_init();
     void stats_reset();
     void stats_collect();

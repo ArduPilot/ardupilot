@@ -1,5 +1,5 @@
 /*
- *  AP_Notify Library. 
+ *  AP_Notify Library.
  * based upon a prototype library by David "Buzz" Bussenschutt.
  */
 

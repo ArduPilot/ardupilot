@@ -19,7 +19,7 @@
 
 class VRBRAIN::VRBRAINGPIO : public AP_HAL::GPIO {
 public:
-	VRBRAINGPIO();
+    VRBRAINGPIO();
     void    init();
     void    pinMode(uint8_t pin, uint8_t output);
     int8_t  analogPinToDigitalPin(uint8_t pin);
@@ -49,7 +49,7 @@ private:
 
 class VRBRAIN::VRBRAINDigitalSource : public AP_HAL::DigitalSource {
 public:
-	VRBRAINDigitalSource(uint8_t v);
+    VRBRAINDigitalSource(uint8_t v);
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value);

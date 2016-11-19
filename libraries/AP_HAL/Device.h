@@ -60,8 +60,8 @@ public:
     void set_device_type(uint8_t devtype) {
         _bus_id.devid_s.devtype = devtype;
     }
-    
-    
+
+
     virtual ~Device() {
         if (_checked.regs != nullptr) {
             delete[] _checked.regs;
@@ -130,7 +130,7 @@ public:
      * or register checking has not been setup
      */
     bool check_next_register(void);
-    
+
     /**
      * Wrapper function over #transfer() to read a sequence of bytes from
      * device. No value is written, differently from the #read_registers()
@@ -222,7 +222,7 @@ public:
     uint32_t get_bus_id_devtype(uint8_t devtype) {
         return change_bus_id(get_bus_id(), devtype);
     }
-    
+
 protected:
     uint8_t _read_flag = 0;
 
@@ -243,7 +243,7 @@ protected:
         struct DeviceStructure devid_s;
         uint32_t devid;
     };
-    
+
     union DeviceId _bus_id;
 
     // set device address (eg. i2c bus address or spi CS)

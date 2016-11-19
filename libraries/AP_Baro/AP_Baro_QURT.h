@@ -24,7 +24,7 @@ private:
     uint32_t handle;
     uint32_t last_timer_ms;
     uint64_t last_counter;
-    
+
     uint32_t count;
     float temp_sum;
     float press_sum;

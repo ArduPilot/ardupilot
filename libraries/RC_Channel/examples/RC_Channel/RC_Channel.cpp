@@ -70,7 +70,7 @@ void loop()
 {
     RC_Channel::set_pwm_all();
     print_pwm();
-    
+
     copy_input_output();
 
     hal.scheduler->delay(20);
@@ -79,7 +79,7 @@ void loop()
 static void print_pwm(void)
 {
     for (int i=0; i<NUM_CHANNELS; i++) {
-	    hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)rc[i]->get_control_in());
+        hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)rc[i]->get_control_in());
     }
     hal.console->printf("\n");
 }
@@ -88,10 +88,10 @@ static void print_pwm(void)
 static void print_radio_values()
 {
     for (int i=0; i<NUM_CHANNELS; i++) {
-	     hal.console->printf("CH%u: %u|%u\n",
-			  (unsigned)i+1, 
-			  (unsigned)rc[i]->get_radio_min(), 
-			  (unsigned)rc[i]->get_radio_max()); 
+        hal.console->printf("CH%u: %u|%u\n",
+            (unsigned)i+1,
+            (unsigned)rc[i]->get_radio_min(),
+            (unsigned)rc[i]->get_radio_max());
     }
 }
 

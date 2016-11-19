@@ -1,5 +1,5 @@
-/// @file	AC_PI_2D.cpp
-/// @brief	Generic PID algorithm
+/// @file    AC_PI_2D.cpp
+/// @brief    Generic PID algorithm
 
 #include <AP_Math/AP_Math.h>
 #include "AC_PI_2D.h"
@@ -169,7 +169,7 @@ void AC_PI_2D::calc_filt_alpha()
         _filt_alpha = 1.0f;
         return;
     }
-  
+
     // calculate alpha
     float rc = 1/(M_2PI*_filt_hz);
     _filt_alpha = _dt / (_dt + rc);

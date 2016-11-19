@@ -13,8 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/// @file	MAVLink_routing.h
-/// @brief	handle routing of MAVLink packets by sysid/componentid
+/// @file    MAVLink_routing.h
+/// @brief    handle routing of MAVLink packets by sysid/componentid
 
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
@@ -33,7 +33,7 @@ MAVLink_routing::MAVLink_routing(void) : num_routes(0) {}
   forward a MAVLink message to the right port. This also
   automatically learns the route for the sender if it is not
   already known.
-  
+
   This returns true if the message should be processed locally
 
   Theory of MAVLink routing:
@@ -49,7 +49,7 @@ MAVLink_routing::MAVLink_routing(void) : num_routes(0) {}
        target_component field
 
     1d) the message has the flight controllers target system and has
-       the flight controllers target_component 
+       the flight controllers target_component
 
     1e) the message has the flight controllers target system and the
         flight controller has not seen any messages on any of its links
@@ -58,7 +58,7 @@ MAVLink_routing::MAVLink_routing(void) : num_routes(0) {}
 
   When a flight controller receives a message it should forward it
   onto another different link if any of these conditions hold for that
-  link: 
+  link:
 
     2a) the message has no target_system field
 
@@ -79,7 +79,7 @@ until they have received at least one package from that destination
 over the link. This is essential to prevent a flight controller from
 acting on a message that is not meant for it. For example, a PARAM_SET
 cannot be sent to a specific sysid/compid combination until the GCS
-has seen a packet from that sysid/compid combination on the link. 
+has seen a packet from that sysid/compid combination on the link.
 
 The GCS must also reset what sysid/compid combinations it has seen on
 a link when it sees a SYSTEM_TIME message with a decrease in
@@ -92,7 +92,7 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
 {
     // handle the case of loopback of our own messages, due to
     // incorrect serial configuration.
-    if (msg->sysid == mavlink_system.sysid && 
+    if (msg->sysid == mavlink_system.sysid &&
         msg->compid == mavlink_system.compid) {
         return true;
     }
@@ -105,7 +105,7 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         // don't forward RADIO packets
         return true;
     }
-    
+
     if (msg->msgid == MAVLINK_MSG_ID_HEARTBEAT) {
         // heartbeat needs special handling
         handle_heartbeat(in_channel, msg);
@@ -125,7 +125,7 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     bool broadcast_system = (target_system == 0 || target_system == -1);
     bool broadcast_component = (target_component == 0 || target_component == -1);
     bool match_system = broadcast_system || (target_system == mavlink_system.sysid);
-    bool match_component = match_system && (broadcast_component || 
+    bool match_component = match_system && (broadcast_component ||
                                             (target_component == mavlink_system.compid));
     bool process_locally = match_system && match_component;
 
@@ -140,7 +140,7 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     memset(sent_to_chan, 0, sizeof(sent_to_chan));
     for (uint8_t i=0; i<num_routes; i++) {
         if (broadcast_system || (target_system == routes[i].sysid &&
-                                 (broadcast_component || 
+                                 (broadcast_component ||
                                   target_component == routes[i].compid ||
                                   !match_system))) {
             if (in_channel != routes[i].channel && !sent_to_chan[routes[i].channel]) {
@@ -223,13 +223,13 @@ bool MAVLink_routing::find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &
 void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_message_t* msg)
 {
     uint8_t i;
-    if (msg->sysid == 0 || 
-        (msg->sysid == mavlink_system.sysid && 
+    if (msg->sysid == 0 ||
+        (msg->sysid == mavlink_system.sysid &&
          msg->compid == mavlink_system.compid)) {
         return;
     }
     for (i=0; i<num_routes; i++) {
-        if (routes[i].sysid == msg->sysid && 
+        if (routes[i].sysid == msg->sysid &&
             routes[i].compid == msg->compid &&
             routes[i].channel == in_channel) {
             if (routes[i].mavtype == 0 && msg->msgid == MAVLINK_MSG_ID_HEARTBEAT) {
@@ -248,7 +248,7 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
         num_routes++;
 #if ROUTING_DEBUG
         ::printf("learned route %u %u via %u\n",
-                 (unsigned)msg->sysid, 
+                 (unsigned)msg->sysid,
                  (unsigned)msg->compid,
                  (unsigned)in_channel);
 #endif
@@ -264,14 +264,14 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
 void MAVLink_routing::handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t* msg)
 {
     uint16_t mask = GCS_MAVLINK::active_channel_mask();
-    
+
     // don't send on the incoming channel. This should only matter if
     // the routing table is full
     mask &= ~(1U<<(in_channel-MAVLINK_COMM_0));
-    
+
     // mask out channels that do not want the heartbeat to be forwarded
     mask &= ~no_route_mask;
-    
+
     // mask out channels that are known sources for this sysid/compid
     for (uint8_t i=0; i<num_routes; i++) {
         if (routes[i].sysid == msg->sysid && routes[i].compid == msg->compid) {

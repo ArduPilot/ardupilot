@@ -7,7 +7,7 @@
 
 class QURT::RCOutput : public AP_HAL::RCOutput {
 public:
-    
+
     RCOutput(const char *_device_path) {
         device_path = _device_path;
     }
@@ -28,12 +28,12 @@ public:
     void push(void) override;
 
     void timer_update(void);
-    
+
 private:
     const char *device_path;
-    const uint32_t baudrate = 115200;    
+    const uint32_t baudrate = 115200;
     static const uint8_t channel_count = 4;
-    
+
     int fd = -1;
     uint16_t enable_mask;
     uint16_t period[channel_count];

@@ -52,7 +52,7 @@ void RCInput_Raspilot::_poll_data(void)
                    (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
     /* get reg4 data from raspilotio */
     _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
-		   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
+           (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
 
     uint16_t num_values = _dma_packet_rx.regs[0];
     uint16_t rc_ok = _dma_packet_rx.regs[1] & (1 << 4);

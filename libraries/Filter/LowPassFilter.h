@@ -14,8 +14,8 @@
  */
 
 //
-/// @file	LowPassFilter.h
-/// @brief	A class to implement a low pass filter without losing precision even for int types
+/// @file    LowPassFilter.h
+/// @brief    A class to implement a low pass filter without losing precision even for int types
 ///         the downside being that it's a little slower as it internally uses a float
 ///         and it consumes an extra 4 bytes of memory to hold the constant gain
 
@@ -57,7 +57,7 @@ public:
     T apply(const T &sample);
 
     void compute_alpha(float sample_freq, float cutoff_freq);
-    
+
     // get latest filtered value from filter (equal to the value returned by latest call to apply method)
     const T &get() const;
     void reset(T value);
@@ -85,7 +85,7 @@ public:
     const T &get() const;
     void reset(T value);
     void reset(void) { reset(T()); }
-    
+
 protected:
     float _cutoff_freq;
 
@@ -96,13 +96,13 @@ private:
 // Uncomment this, if you decide to remove the instantiations in the implementation file
 /*
 template <class T>
-LowPassFilter<T>::LowPassFilter() : _cutoff_freq(0.0f) { 
-  
+LowPassFilter<T>::LowPassFilter() : _cutoff_freq(0.0f) {
+
 }
 // constructor
 template <class T>
-LowPassFilter<T>::LowPassFilter(float cutoff_freq) : _cutoff_freq(cutoff_freq) { 
-  
+LowPassFilter<T>::LowPassFilter(float cutoff_freq) : _cutoff_freq(cutoff_freq) {
+
 }
 */
 

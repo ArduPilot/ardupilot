@@ -14,9 +14,9 @@
  */
 
 //
-/// @file	AP_Param.h
-/// @brief	A system for managing and storing variables that are of
-///			general interest to the system.
+/// @file    AP_Param.h
+/// @brief    A system for managing and storing variables that are of
+///            general interest to the system.
 #pragma once
 
 #include <stddef.h>
@@ -150,14 +150,14 @@ public:
         uint32_t group_element : 18;
     } ParamToken;
 
-    
+
     // nesting structure for recursive call states
     struct GroupNesting {
         static const uint8_t numlevels = 2;
         uint8_t level;
         const struct GroupInfo *group_ret[numlevels];
     };
-    
+
     // return true if AP_Param has been initialised via setup()
     static bool initialised(void);
 
@@ -168,7 +168,7 @@ public:
     // level gets the next 6 bits, and the 3rd level gets the last 6
     // bits. This limits groups to having at most 64 elements.
     static uint32_t group_id(const struct GroupInfo *grpinfo, uint32_t base, uint8_t i, uint8_t shift);
-    
+
     /// Copy the variable's name, prefixed by any containing group name, to a
     /// buffer.
     ///
@@ -177,15 +177,15 @@ public:
     /// Note that if the combination of names is larger than the buffer, the
     /// result in the buffer will be truncated.
     ///
-    /// @param	token			token giving current variable
-    /// @param	buffer			The destination buffer
-    /// @param	bufferSize		Total size of the destination buffer.
+    /// @param    token            token giving current variable
+    /// @param    buffer            The destination buffer
+    /// @param    bufferSize        Total size of the destination buffer.
     ///
     void copy_name_info(const struct AP_Param::Info *info,
                         const struct GroupInfo *ginfo,
                         const struct GroupNesting &group_nesting,
                         uint8_t idx, char *buffer, size_t bufferSize, bool force_scalar=false) const;
-    
+
     /// Copy the variable's name, prefixed by any containing group name, to a
     /// buffer.
     ///
@@ -208,7 +208,7 @@ public:
     /// @param  value           The default value
     /// @return                 true if the variable is found
     static bool set_default_by_name(const char *name, float value);
-    
+
     /// Find a variable by index.
     ///
     ///
@@ -218,7 +218,7 @@ public:
     ///
     static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token);
 
-    
+
     /// Find a variable by pointer
     ///
     ///
@@ -227,7 +227,7 @@ public:
     static bool find_key_by_pointer_group(const void *ptr, uint16_t vindex, const struct GroupInfo *group_info,
                                           ptrdiff_t offset, uint16_t &key);
     static bool find_key_by_pointer(const void *ptr, uint16_t &key);
-    
+
     /// Find a object in the top level var_info table
     ///
     /// If the variable has no name, it cannot be found by this interface.
@@ -239,7 +239,7 @@ public:
     /// Notify GCS of current parameter value
     ///
     void notify() const;
-    
+
     /// Save the current value of the variable to EEPROM.
     ///
     /// @param  force_save     If true then force save even if default
@@ -265,7 +265,7 @@ public:
     static bool load_all(void);
 
     static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
-    
+
     // set a AP_Param variable to a specified value
     static void         set_value(enum ap_var_type type, void *ptr, float def_value);
 
@@ -285,7 +285,7 @@ public:
                                  const char *name, float value);
 
     // load default values for all scalars in the main sketch. This
-    // does not recurse into the sub-objects    
+    // does not recurse into the sub-objects
     static void         setup_sketch_defaults(void);
 
     // convert old vehicle parameters to new object parameters
@@ -302,15 +302,15 @@ public:
     static void         show_all(AP_HAL::BetterStream *port, bool showKeyValues=false);
 
     /// print the value of one variable
-    static void         show(const AP_Param *param, 
+    static void         show(const AP_Param *param,
                              const char *name,
-                             enum ap_var_type ptype, 
+                             enum ap_var_type ptype,
                              AP_HAL::BetterStream *port);
 
     /// print the value of one variable
-    static void         show(const AP_Param *param, 
+    static void         show(const AP_Param *param,
                              const ParamToken &token,
-                             enum ap_var_type ptype, 
+                             enum ap_var_type ptype,
                              AP_HAL::BetterStream *port);
 
     /// Returns the first variable
@@ -388,7 +388,7 @@ private:
     static const uint8_t        _sentinal_type  = 0x1F;
     static const uint8_t        _sentinal_group = 0xFF;
 
-    static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
+    static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size,
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
 
@@ -410,7 +410,7 @@ private:
                                     const struct GroupInfo *  &group_ret,
                                     struct GroupNesting       &group_nesting,
                                     uint8_t *                 idx) const;
-    const struct Info *			find_var_info_token(const ParamToken &token,
+    const struct Info *            find_var_info_token(const ParamToken &token,
                                                     uint32_t *                 group_element,
                                                     const struct GroupInfo *  &group_ret,
                                                     struct GroupNesting       &group_nesting,
@@ -442,13 +442,13 @@ private:
     static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);
-    static uint8_t				type_size(enum ap_var_type type);
+    static uint8_t                type_size(enum ap_var_type type);
     static void                 eeprom_write_check(
                                     const void *ptr,
                                     uint16_t ofs,
                                     uint8_t size);
     static AP_Param *           next_group(
-                                    uint16_t vindex, 
+                                    uint16_t vindex,
                                     const struct GroupInfo *group_info,
                                     bool *found_current,
                                     uint32_t group_base,
@@ -475,7 +475,7 @@ private:
 
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
-    
+
     static StorageAccess        _storage;
     static uint16_t             _num_vars;
     static uint16_t             _parameter_count;
@@ -504,8 +504,8 @@ private:
 /// Objects of this type have a value, and can be treated in many ways as though they
 /// were the value.
 ///
-/// @tparam T			The scalar type of the variable
-/// @tparam PT			The AP_PARAM_* type
+/// @tparam T            The scalar type of the variable
+/// @tparam PT            The AP_PARAM_* type
 ///
 template<typename T, ap_var_type PT>
 class AP_ParamT : public AP_Param
@@ -532,7 +532,7 @@ public:
             set(v);
         }
     }
-    
+
     /// Value setter - set value, tell GCS
     ///
     void set_and_notify(const T &v) {
@@ -614,8 +614,8 @@ protected:
 /// Objects of this type have a value, and can be treated in many ways as though they
 /// were the value.
 ///
-/// @tparam T			The scalar type of the variable
-/// @tparam PT			AP_PARAM_* type
+/// @tparam T            The scalar type of the variable
+/// @tparam PT            AP_PARAM_* type
 ///
 template<typename T, ap_var_type PT>
 class AP_ParamV : public AP_Param

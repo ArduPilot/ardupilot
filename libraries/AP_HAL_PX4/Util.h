@@ -54,13 +54,13 @@ public:
     void perf_begin(perf_counter_t ) override;
     void perf_end(perf_counter_t) override;
     void perf_count(perf_counter_t) override;
-    
+
     // create a new semaphore
     AP_HAL::Semaphore *new_semaphore(void) override { return new PX4::Semaphore; }
 
     void set_imu_temp(float current) override;
     void set_imu_target_temp(int8_t *target) override;
-    
+
 private:
     int _safety_handle;
     PX4::NSHShellStream _shell_stream;

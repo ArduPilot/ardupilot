@@ -90,7 +90,7 @@ public:
     } state;
 
     static const uint16_t num_keys = sizeof(state)/sizeof(double);
-    
+
     struct keytable {
         const char *key;
         double &ref;
@@ -150,7 +150,7 @@ public:
         { "m-flightAxisControllerIsActive", state.m_flightAxisControllerIsActive },
         { "m-resetButtonHasBeenPressed", state.m_resetButtonHasBeenPressed },
     };
-    
+
 private:
     char *soap_request(const char *action, const char *fmt, ...);
     void exchange_data(const struct sitl_input &input);

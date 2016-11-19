@@ -1,5 +1,5 @@
-/// @file	AP_MotorsTri.h
-/// @brief	Motor control class for Tricopters
+/// @file    AP_MotorsTri.h
+/// @brief    Motor control class for Tricopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -54,7 +54,7 @@ protected:
 
     // call vehicle supplied thrust compensation if set
     void                thrust_compensation(void) override;
-    
+
     // calc_yaw_radio_output - calculate final radio output for yaw channel
     int16_t             calc_yaw_radio_output(float yaw_input, float yaw_input_max);        // calculate radio output for yaw servo, typically in range of 1100-1900
 

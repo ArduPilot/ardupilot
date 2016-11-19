@@ -16,7 +16,7 @@ void Tracker::update_vehicle_pos_estimate()
         float north_offset = vehicle.vel.x * dt;
         float east_offset = vehicle.vel.y * dt;
         location_offset(vehicle.location_estimate, north_offset, east_offset);
-    	vehicle.location_estimate.alt += vehicle.vel.z * 100.0f * dt;
+        vehicle.location_estimate.alt += vehicle.vel.z * 100.0f * dt;
         // set valid_location flag
         vehicle.location_valid = true;
     } else {
@@ -69,11 +69,11 @@ void Tracker::update_bearing_and_distance()
     // calculate pitch to vehicle
     // To-Do: remove need for check of control_mode
     if (control_mode != SCAN && !nav_status.manual_control_pitch) {
-    	if (g.alt_source == ALT_SOURCE_BARO) {
-    	    nav_status.pitch = degrees(atan2f(nav_status.alt_difference_baro, nav_status.distance));
-    	} else {
+        if (g.alt_source == ALT_SOURCE_BARO) {
+            nav_status.pitch = degrees(atan2f(nav_status.alt_difference_baro, nav_status.distance));
+        } else {
             nav_status.pitch = degrees(atan2f(nav_status.alt_difference_gps, nav_status.distance));
-    	}
+        }
     }
 }
 
@@ -154,13 +154,13 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
     if (!isnan(alt_diff) && !isinf(alt_diff)) {
         nav_status.alt_difference_baro = alt_diff + nav_status.altitude_offset;
 
-		if (nav_status.need_altitude_calibration) {
-			// we have done a baro calibration - zero the altitude
-			// difference to the aircraft
-			nav_status.altitude_offset = -alt_diff;
-			nav_status.alt_difference_baro = 0;
-			nav_status.need_altitude_calibration = false;
-		}
+        if (nav_status.need_altitude_calibration) {
+            // we have done a baro calibration - zero the altitude
+            // difference to the aircraft
+            nav_status.altitude_offset = -alt_diff;
+            nav_status.alt_difference_baro = 0;
+            nav_status.need_altitude_calibration = false;
+        }
     }
 
     // log vehicle baro data

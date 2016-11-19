@@ -36,7 +36,7 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #if defined(PX4_SPIDEV_ICM)
     SPIDesc("icm20608",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ICM, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
 #endif
-    // ICM20608 on the ACCEL_MAG 
+    // ICM20608 on the ACCEL_MAG
     SPIDesc("icm20608-am",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ACCEL_MAG, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
     SPIDesc("ms5611_int",   PX4_SPI_BUS_BARO, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
@@ -54,7 +54,7 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #endif
     SPIDesc("mpu9250",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 1*MHZ, 11*MHZ),
 #ifdef PX4_SPIDEV_EXT_MPU
-    SPIDesc("mpu6000_ext",  PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 500*KHZ, 11*MHZ),    
+    SPIDesc("mpu6000_ext",  PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 500*KHZ, 11*MHZ),
     SPIDesc("mpu9250_ext",  PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 1*MHZ, 11*MHZ),
     SPIDesc("icm20608_ext", PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 1*MHZ, 11*MHZ),
 #endif
@@ -167,7 +167,7 @@ AP_HAL::Semaphore *SPIDevice::get_semaphore()
     return &bus.semaphore;
 }
 
-    
+
 AP_HAL::Device::PeriodicHandle SPIDevice::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
     return bus.register_periodic_callback(period_usec, cb);
@@ -181,7 +181,7 @@ bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
 
 /*
   return a SPIDevice given a string device name
- */    
+ */
 AP_HAL::OwnPtr<AP_HAL::SPIDevice>
 SPIDeviceManager::get_device(const char *name)
 {
@@ -214,7 +214,7 @@ SPIDeviceManager::get_device(const char *name)
         }
         busp->next = buses;
         busp->bus = desc.bus;
-		busp->dev = up_spiinitialize(desc.bus);
+        busp->dev = up_spiinitialize(desc.bus);
         buses = busp;
     }
 

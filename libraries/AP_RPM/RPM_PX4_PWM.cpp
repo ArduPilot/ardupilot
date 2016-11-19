@@ -40,11 +40,11 @@ extern "C" {
     int pwm_input_main(int, char **);
 };
 
-/* 
+/*
    open the sensor in constructor
 */
 AP_RPM_PX4_PWM::AP_RPM_PX4_PWM(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state) :
-	AP_RPM_Backend(_ap_rpm, instance, _state)
+    AP_RPM_Backend(_ap_rpm, instance, _state)
 {
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     if (AP_BoardConfig::px4_start_driver(pwm_input_main, "pwm_input", "start")) {
@@ -67,13 +67,13 @@ AP_RPM_PX4_PWM::AP_RPM_PX4_PWM(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_St
 
     _resolution_usec = PWMIN_MINRPM_TO_RESOLUTION(((uint32_t)(ap_rpm._minimum[state.instance]+0.5f)));
     ioctl(_fd, PWMINIOSRESOLUTION, _resolution_usec);
-    
+
 #if PWM_LOGGING
     _logfd = open("/fs/microsd/pwm.log", O_WRONLY|O_CREAT|O_TRUNC, 0644);
 #endif
 }
 
-/* 
+/*
    close the file descriptor
 */
 AP_RPM_PX4_PWM::~AP_RPM_PX4_PWM()
@@ -95,7 +95,7 @@ void AP_RPM_PX4_PWM::update(void)
         ioctl(_fd, PWMINIOSRESOLUTION, newres);
         _resolution_usec = newres;
     }
-    
+
     struct pwm_input_s pwm;
     uint16_t count = 0;
     const float scaling = ap_rpm._scaling[state.instance];

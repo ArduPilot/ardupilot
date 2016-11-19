@@ -24,7 +24,7 @@ extern "C" {
 
     //typedef int32_t pid_t;
     pid_t getpid (void);
-    
+
     void HAP_printf(const char *file, int line, const char *fmt, ...);
 }
 

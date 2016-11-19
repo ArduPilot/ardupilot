@@ -32,14 +32,14 @@ class ADSB_Vehicle {
 
 private:
     void update(float delta_t);
-    
+
     Vector3f position; // NED from origin
     Vector3f velocity_ef; // NED
     char callsign[9];
     uint32_t ICAO_address;
     bool initialised = false;
 };
-        
+
 class ADSB {
 public:
     ADSB(const struct sitl_fdm &_fdm, const char *home_str);
@@ -54,13 +54,13 @@ private:
     uint8_t num_vehicles = 0;
     static const uint8_t num_vehicles_MAX = 200;
     ADSB_Vehicle vehicles[num_vehicles_MAX];
-    
+
     // reporting period in ms
     const float reporting_period_ms = 1000;
     uint32_t last_report_us = 0;
     uint32_t last_update_us = 0;
     uint32_t last_tx_report_ms = 0;
-    
+
     uint32_t last_heartbeat_ms = 0;
     bool seen_heartbeat = false;
     uint8_t vehicle_system_id;

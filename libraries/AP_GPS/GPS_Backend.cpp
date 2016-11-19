@@ -104,7 +104,7 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     hour = v % 100; v /= 100;
 
     int8_t rmon = mon - 2;
-    if (0 >= rmon) {    
+    if (0 >= rmon) {
         rmon += 12;
         year -= 1;
     }

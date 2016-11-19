@@ -18,7 +18,7 @@ private:
     float temperature_sum;
     uint32_t sum_count;
     uint32_t last_check_ms;
-    
+
     void timer_update();
 };
 

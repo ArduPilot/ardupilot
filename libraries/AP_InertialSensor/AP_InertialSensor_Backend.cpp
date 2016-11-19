@@ -12,7 +12,7 @@ AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
     _sem = hal.util->new_semaphore();
 }
 
-void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vector3f &accel) 
+void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vector3f &accel)
 {
     /*
       accel calibration is always done in sensor frame with this
@@ -22,7 +22,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
 
     // rotate for sensor orientation
     accel.rotate(_imu._accel_orientation[instance]);
-    
+
     // apply offsets
     accel -= _imu._accel_offset[instance];
 
@@ -36,11 +36,11 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
     accel.rotate(_imu._board_orientation);
 }
 
-void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) 
+void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro)
 {
     // rotate for sensor orientation
     gyro.rotate(_imu._gyro_orientation[instance]);
-    
+
     // gyro calibration is always assumed to have been done in sensor frame
     gyro -= _imu._gyro_offset[instance];
 
@@ -79,7 +79,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
     // call gyro_sample hook if any
     AP_Module::call_hook_gyro_sample(instance, dt, gyro);
-    
+
     // compute delta angle
     Vector3f delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
 
@@ -157,7 +157,7 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
         cal_sample.x /= accel_scale.x;
         cal_sample.y /= accel_scale.y;
         cal_sample.z /= accel_scale.z;
-        
+
         //remove offsets
         cal_sample += _imu._accel_offset[instance].get() * _imu._delta_velocity_dt[instance] ;
 
@@ -180,7 +180,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 
     // call gyro_sample hook if any
     AP_Module::call_hook_accel_sample(instance, dt, accel, fsync_set);
-    
+
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
     if (_sem->take(0)) {
@@ -268,7 +268,7 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
   common gyro update function for all backends
  */
 void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
-{    
+{
     if (!_sem->take_nonblocking()) {
         return;
     }
@@ -291,7 +291,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
   common accel update function for all backends
  */
 void AP_InertialSensor_Backend::update_accel(uint8_t instance)
-{    
+{
     if (!_sem->take_nonblocking()) {
         return;
     }
@@ -300,7 +300,7 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance)
         _publish_accel(instance, _imu._accel_filtered[instance]);
         _imu._new_accel_data[instance] = false;
     }
-    
+
     // possibly update filter frequency
     if (_last_accel_filter_hz[instance] != _accel_filter_cutoff()) {
         _imu._accel_filter[instance].set_cutoff_frequency(_accel_raw_sample_rate(instance), _accel_filter_cutoff());

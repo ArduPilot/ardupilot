@@ -51,10 +51,10 @@ static void *mpu_data_ready_trampoline(void *ctx)
     return nullptr;
 }
 
-void AP_InertialSensor_QURT::init_mpu9250(void) 
+void AP_InertialSensor_QURT::init_mpu9250(void)
 {
     struct mpu9x50_config config;
-    
+
     config.gyro_lpf = MPU9X50_GYRO_LPF_184HZ;
     config.acc_lpf  = MPU9X50_ACC_LPF_184HZ;
     config.gyro_fsr = MPU9X50_GYRO_FSR_2000DPS;
@@ -63,13 +63,13 @@ void AP_InertialSensor_QURT::init_mpu9250(void)
     config.compass_enabled = true;
     config.compass_sample_rate = MPU9x50_COMPASS_SAMPLE_RATE_100HZ;
     config.spi_dev_path = "/dev/spi-1";
-        
+
     int ret;
     ret = mpu9x50_validate_configuration(&config);
     if (ret != 0) {
         AP_HAL::panic("Bad MPU9x50 configuration");
     }
-    
+
     ret = mpu9x50_initialize(&config);
     if (ret != 0) {
         AP_HAL::panic("Failed to initialise mpu9250");
@@ -94,13 +94,13 @@ void AP_InertialSensor_QURT::data_ready(void)
     }
 }
 
-void AP_InertialSensor_QURT::accumulate(void) 
+void AP_InertialSensor_QURT::accumulate(void)
 {
     const float ACCEL_SCALE_1G = GRAVITY_MSS / 2048.0;
     const float GYRO_SCALE = 0.0174532 / 16.4;
 
     struct mpu9x50_data data;
-    
+
     while (buf.pop(data)) {
         Vector3f accel(data.accel_raw[0]*ACCEL_SCALE_1G,
                        data.accel_raw[1]*ACCEL_SCALE_1G,
@@ -111,13 +111,13 @@ void AP_InertialSensor_QURT::accumulate(void)
 
         _rotate_and_correct_accel(accel_instance, accel);
         _rotate_and_correct_gyro(gyro_instance, gyro);
-    
+
         _notify_new_gyro_raw_sample(gyro_instance, gyro, data.timestamp);
         _notify_new_accel_raw_sample(accel_instance, accel, data.timestamp);
     }
 }
 
-bool AP_InertialSensor_QURT::update(void) 
+bool AP_InertialSensor_QURT::update(void)
 {
     accumulate();
     update_accel(accel_instance);

@@ -98,7 +98,7 @@ void ADSB::update(void)
     for (uint8_t i=0; i<num_vehicles; i++) {
         vehicles[i].update(delta_t);
     }
-    
+
     // see if we should do a report
     send_report();
 }
@@ -197,7 +197,7 @@ void ADSB::send_report(void)
             if (get_distance(home, loc) > _sitl->adsb_radius_m) {
                 vehicle.initialised = false;
             }
-            
+
             mavlink_adsb_vehicle_t adsb_vehicle {};
             last_report_us = now_us;
 
@@ -228,7 +228,7 @@ void ADSB::send_report(void)
                                                   MAV_COMP_ID_ADSB,
                                                   &msg, &adsb_vehicle);
             chan0_status->current_tx_seq = saved_seq;
-            
+
             uint8_t msgbuf[len];
             len = mavlink_msg_to_send_buffer(msgbuf, &msg);
             if (len > 0) {
@@ -236,7 +236,7 @@ void ADSB::send_report(void)
             }
         }
     }
-    
+
     // ADSB_transceiever is enabled, send the status report.
     if (_sitl->adsb_tx && now - last_tx_report_ms > 1000) {
         last_tx_report_ms = now;

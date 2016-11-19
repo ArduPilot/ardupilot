@@ -34,7 +34,7 @@ public:
     bool     in_timerprocess();
     void     system_initialized();
     void     hal_initialized();
-    
+
 private:
     bool _initialized;
     volatile bool _hal_initialized;

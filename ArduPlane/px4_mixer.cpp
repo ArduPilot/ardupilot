@@ -84,29 +84,29 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             c2 = i;
             rev = true;
             mix = mix_max*mixmul[g.vtail_output][1];
-        } else if (i == rcmap.roll()-1 && g.elevon_output > MIXING_DISABLED && 
+        } else if (i == rcmap.roll()-1 && g.elevon_output > MIXING_DISABLED &&
                    g.elevon_output <= MIXING_DNDN && g.vtail_output == 0) {
             // first channel of ELEVON mix
             c1 = i;
             c2 = rcmap.pitch()-1;
             rev = true;
             mix = mix_max*mixmul[g.elevon_output][1];
-        } else if (i == rcmap.pitch()-1 && g.elevon_output > MIXING_DISABLED && 
+        } else if (i == rcmap.pitch()-1 && g.elevon_output > MIXING_DISABLED &&
                    g.elevon_output <= MIXING_DNDN && g.vtail_output == 0) {
             // second channel of ELEVON mix
             c1 = i;
             c2 = rcmap.roll()-1;
             rev = false;
             mix = mix_max*mixmul[g.elevon_output][0];
-        } else if (function == RC_Channel_aux::k_aileron || 
-                   function == RC_Channel_aux::k_flaperon1 || 
+        } else if (function == RC_Channel_aux::k_aileron ||
+                   function == RC_Channel_aux::k_flaperon1 ||
                    function == RC_Channel_aux::k_flaperon2) {
             // a secondary aileron. We don't mix flap input in yet for flaperons
             c1 = rcmap.roll()-1;
         } else if (function == RC_Channel_aux::k_elevator) {
             // a secondary elevator
             c1 = rcmap.pitch()-1;
-        } else if (function == RC_Channel_aux::k_rudder || 
+        } else if (function == RC_Channel_aux::k_rudder ||
                    function == RC_Channel_aux::k_steering) {
             // a secondary rudder or wheel
             c1 = rcmap.yaw()-1;
@@ -188,7 +188,7 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             int32_t in_scale_low = pwm_scale*(chan1_trim - pwm_min);
             int32_t in_scale_high = pwm_scale*(pwm_max - chan1_trim);
             int32_t offset = pwm_scale*(chan1_trim - 1500);
-            if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
+            if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n",
                               c1, in_scale_low, in_scale_high, offset,
                               (int)-scale_max2, (int)scale_max2)) {
                 return 0;
@@ -197,20 +197,20 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             in_scale_high = pwm_scale*(pwm_max - chan2_trim);
             offset = pwm_scale*(chan2_trim - 1500);
             if (rev) {
-                if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
+                if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n",
                                   c2, in_scale_low, in_scale_high, offset,
                                   (int)-scale_max2, (int)scale_max2)) {
                     return 0;
                 }
             } else {
-                if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
+                if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n",
                                   c2, -in_scale_low, -in_scale_high, -offset,
                                   (int)-scale_max2, (int)scale_max2)) {
                     return 0;
                 }
             }
         }
-    }    
+    }
 
     /*
       if possible, also write to a file for debugging purposes
@@ -284,14 +284,14 @@ bool Plane::setup_failsafe_mixing(void)
         goto failed;
     }
 
-	/* pass the buffer to the device */
+    /* pass the buffer to the device */
     if (ioctl(px4io_fd, MIXERIOCLOADBUF, (unsigned long)buf) != 0) {
         hal.console->printf("Unable to send mixer to IO\n");
-        goto failed;        
+        goto failed;
     }
 
     // setup RC config for each channel based on user specified
-    // mix/max/trim. We only do the first 8 channels due to 
+    // mix/max/trim. We only do the first 8 channels due to
     // a RC config limitation in px4io.c limiting to PX4IO_RC_MAPPED_CONTROL_CHANNELS
     for (uint8_t i=0; i<8; i++) {
         RC_Channel *ch = RC_Channel::rc_channel(i);

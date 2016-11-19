@@ -25,7 +25,7 @@ class DeviceBus {
 public:
     DeviceBus(uint8_t _thread_priority = APM_I2C_PRIORITY) :
         thread_priority(_thread_priority) {}
-    
+
     struct DeviceBus *next;
     Semaphore semaphore;
 
@@ -37,7 +37,7 @@ private:
         struct callback_info *next;
         AP_HAL::Device::PeriodicCb cb;
         uint32_t period_usec;
-        uint64_t next_usec;        
+        uint64_t next_usec;
     } *callbacks;
     uint8_t thread_priority;
     pthread_t thread_ctx;

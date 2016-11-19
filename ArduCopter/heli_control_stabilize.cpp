@@ -31,12 +31,12 @@ void Copter::heli_stabilize_run()
     // to armed, because the pilot will have placed the helicopter down on the landing pad.  This is so
     // that the servos move in a realistic fashion while disarmed for operational checks.
     // Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero so the swash servos move
-    
+
     if(!motors.armed()) {
         heli_flags.init_targets_on_arming=true;
         attitude_control.set_yaw_target_to_current_heading();
     }
-    
+
     if(motors.armed() && heli_flags.init_targets_on_arming) {
         attitude_control.set_yaw_target_to_current_heading();
         if (motors.rotor_speed_above_critical()) {

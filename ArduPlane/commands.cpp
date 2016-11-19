@@ -97,7 +97,7 @@ void Plane::set_guided_WP(void)
 
     // start in non-VTOL mode
     auto_state.vtol_loiter = false;
-    
+
     loiter_angle_reset();
 }
 

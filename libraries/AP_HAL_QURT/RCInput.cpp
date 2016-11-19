@@ -62,17 +62,17 @@ void RCInput::read_callback(char *buf, size_t size)
     add_dsm_input((const uint8_t *)buf, size);
 }
 
-bool RCInput::new_input() 
+bool RCInput::new_input()
 {
     return new_rc_input;
 }
 
-uint8_t RCInput::num_channels() 
+uint8_t RCInput::num_channels()
 {
     return _num_channels;
 }
 
-uint16_t RCInput::read(uint8_t ch) 
+uint16_t RCInput::read(uint8_t ch)
 {
     new_rc_input = false;
     if (_override[ch]) {
@@ -84,7 +84,7 @@ uint16_t RCInput::read(uint8_t ch)
     return _pwm_values[ch];
 }
 
-uint8_t RCInput::read(uint16_t* periods, uint8_t len) 
+uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 {
     uint8_t i;
     for (i=0; i<len; i++) {
@@ -98,7 +98,7 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     return (i+1);
 }
 
-bool RCInput::set_overrides(int16_t *overrides, uint8_t len) 
+bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
 {
     bool res = false;
     if(len > QURT_RC_INPUT_NUM_CHANNELS){
@@ -110,7 +110,7 @@ bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
     return res;
 }
 
-bool RCInput::set_override(uint8_t channel, int16_t override) 
+bool RCInput::set_override(uint8_t channel, int16_t override)
 {
     if (override < 0) return false; /* -1: no change. */
     if (channel < QURT_RC_INPUT_NUM_CHANNELS) {
@@ -141,13 +141,13 @@ void RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
     }
     const uint8_t dsm_frame_size = sizeof(dsm.frame);
 
-    uint32_t now = AP_HAL::millis();    
+    uint32_t now = AP_HAL::millis();
     if (now - dsm.last_input_ms > 5) {
         // resync based on time
         dsm.partial_frame_count = 0;
     }
     dsm.last_input_ms = now;
-    
+
     while (nbytes > 0) {
         size_t n = nbytes;
         if (dsm.partial_frame_count + n > dsm_frame_size) {
@@ -160,7 +160,7 @@ void RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
             bytes += n;
         }
 
-	if (dsm.partial_frame_count == dsm_frame_size) {
+    if (dsm.partial_frame_count == dsm_frame_size) {
             dsm.partial_frame_count = 0;
             uint16_t values[16] {};
             uint16_t num_values=0;

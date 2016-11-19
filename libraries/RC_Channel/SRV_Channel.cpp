@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: RNG_ENABLE
     // @DisplayName: Enable servo output ranges
-    // @Description: This enables the use of separate servo output ranges from input ranges. 
+    // @Description: This enables the use of separate servo output ranges from input ranges.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_RNG_ENABLE",  1, SRV_Channels, enable, 0, AP_PARAM_FLAG_ENABLE),
@@ -58,7 +58,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("1_TRIM",  4, SRV_Channels, servo_trim[0], 1500),
-    
+
     // @Param: 1_REV
     // @DisplayName: Servo1 reverse
     // @Description: Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
@@ -92,7 +92,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_TRIM",  8, SRV_Channels, servo_trim[1], 1500),
-    
+
     // @Param: 2_REV
     // @DisplayName: Servo1 reverse
     // @Description: Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
@@ -126,7 +126,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_TRIM",  12, SRV_Channels, servo_trim[2], 1500),
-    
+
     // @Param: 3_REV
     // @DisplayName: Servo1 reverse
     // @Description: Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
@@ -160,7 +160,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("4_TRIM",  16, SRV_Channels, servo_trim[3], 1500),
-    
+
     // @Param: 4_REV
     // @DisplayName: Servo1 reverse
     // @Description: Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
@@ -174,7 +174,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("_AUTO_TRIM",  18, SRV_Channels, auto_trim, 0),
-    
+
     AP_GROUPEND
 };
 

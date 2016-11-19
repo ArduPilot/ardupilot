@@ -120,7 +120,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("VELZ_MAX", 18, QuadPlane, pilot_velocity_z_max, 250),
-    
+
     // @Param: ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
     // @Description: The vertical acceleration used when pilot is controlling the altitude
@@ -318,7 +318,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("LAND_ICE_CUT", 44, QuadPlane, land_icengine_cut,  1),
-    
+
     // @Param: ASSIST_ANGLE
     // @DisplayName: Quadplane assistance angle
     // @Description: This is the angular error in attitude beyond which the quadplane VTOL motors will provide stability assistance. This will only be used if Q_ASSIST_SPEED is also non-zero. Assistance will be given if the attitude is outside the normal attitude limits by at least 5 degrees and the angular error in roll or pitch is greater than this angle for at least 1 second. Set to zero to disable angle assistance.
@@ -357,7 +357,7 @@ void QuadPlane::setup_default_channels(uint8_t num_motors)
         RC_Channel_aux::set_aux_channel_default((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+i), CH_5+i);
     }
 }
-    
+
 
 bool QuadPlane::setup(void)
 {
@@ -368,7 +368,7 @@ bool QuadPlane::setup(void)
         return false;
     }
     float loop_delta_t = 1.0 / plane.scheduler.get_loop_rate_hz();
-    
+
     if (hal.util->available_memory() <
         4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav)) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Not enough memory for quadplane");
@@ -418,7 +418,7 @@ bool QuadPlane::setup(void)
         hal.console->printf("%s motors\n", strUnableToAllocate);
         goto failed;
     }
-    
+
     AP_Param::load_object_from_eeprom(motors, motors->var_info);
     attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
@@ -465,15 +465,15 @@ bool QuadPlane::setup(void)
     // redo failsafe mixing on px4
     plane.setup_failsafe_mixing();
 #endif
-    
+
     transition_state = TRANSITION_DONE;
 
     setup_defaults();
-    
+
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane initialised");
     initialised = true;
     return true;
-    
+
 failed:
     initialised = false;
     enable.set(0);
@@ -509,7 +509,7 @@ void QuadPlane::run_esc_calibration(void)
         return;
     }
     if (!AP_Notify::flags.esc_calibration) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Starting ESC calibration");        
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Starting ESC calibration");
     }
     AP_Notify::flags.esc_calibration = true;
     switch (esc_calibration) {
@@ -525,7 +525,7 @@ void QuadPlane::run_esc_calibration(void)
 }
 
 
-// init quadplane stabilize mode 
+// init quadplane stabilize mode
 void QuadPlane::init_stabilize(void)
 {
     throttle_wait = false;
@@ -533,7 +533,7 @@ void QuadPlane::init_stabilize(void)
 
 // hold in stabilize with given throttle
 void QuadPlane::hold_stabilize(float throttle_in)
-{    
+{
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
@@ -564,7 +564,7 @@ void QuadPlane::control_stabilize(void)
 
 }
 
-// init quadplane hover mode 
+// init quadplane hover mode
 void QuadPlane::init_hover(void)
 {
     // initialize vertical speeds and leash lengths
@@ -694,7 +694,7 @@ bool QuadPlane::is_flying_vtol(void)
 
 /*
   smooth out descent rate for landing to prevent a jerk as we get to
-  land_final_alt. 
+  land_final_alt.
  */
 float QuadPlane::landing_descent_rate_cms(float height_above_ground)
 {
@@ -738,9 +738,9 @@ void QuadPlane::control_loiter()
                                            plane.channel_pitch->get_control_in());
 
     // Update EKF speed limit - used to limit speed when we are using optical flow
-    float ekfGndSpdLimit, ekfNavVelGainScaler;    
+    float ekfGndSpdLimit, ekfNavVelGainScaler;
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
-    
+
     // run loiter controller
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
@@ -806,7 +806,7 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
 
     // add in weathervaning
     yaw_cds += get_weathervane_yaw_rate_cds();
-    
+
     return yaw_cds;
 }
 
@@ -832,10 +832,10 @@ void QuadPlane::init_throttle_wait(void)
         plane.is_flying()) {
         throttle_wait = false;
     } else {
-        throttle_wait = true;        
+        throttle_wait = true;
     }
 }
-    
+
 // set motor arming
 void QuadPlane::set_armed(bool armed)
 {
@@ -920,7 +920,7 @@ bool QuadPlane::assistance_needed(float aspeed)
         angle_error_start_ms = 0;
         return false;
     }
-    
+
     uint32_t max_angle_cd = 100U*assist_angle;
     if ((labs(ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd &&
          labs(ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd)) {
@@ -962,7 +962,7 @@ void QuadPlane::update_transition(void)
 
     float aspeed;
     bool have_airspeed = ahrs.airspeed_estimate(&aspeed);
-    
+
     /*
       see if we should provide some assistance
      */
@@ -999,7 +999,7 @@ void QuadPlane::update_transition(void)
         // throttle calculation which is driven by pitch
         plane.TECS_controller.use_synthetic_airspeed();
     }
-    
+
     switch (transition_state) {
     case TRANSITION_AIRSPEED_WAIT: {
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
@@ -1021,7 +1021,7 @@ void QuadPlane::update_transition(void)
         last_throttle = motors->get_throttle();
         break;
     }
-        
+
     case TRANSITION_TIMER: {
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         // after airspeed is reached we degrade throttle over the
@@ -1074,17 +1074,17 @@ void QuadPlane::update(void)
         motors->output();
         return;
     }
-    
+
     if (motor_test.running) {
         motor_test_output();
         return;
     }
-    
+
     if (!in_vtol_mode()) {
         update_transition();
     } else {
         assisted_flight = false;
-        
+
         // run low level rate controllers
         run_rate_controller();
 
@@ -1111,7 +1111,7 @@ void QuadPlane::update(void)
 }
 
 /*
-  see if motors should be shutdown. If they should be then change AP_Motors state to 
+  see if motors should be shutdown. If they should be then change AP_Motors state to
   AP_Motors::DESIRED_SHUT_DOWN
 
   This is a safety check to prevent accidental motor runs on the
@@ -1155,7 +1155,7 @@ void QuadPlane::check_throttle_suppression(void)
     if (plane.control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_TAKEOFF) {
         return;
     }
-    
+
     // motors should be in the spin when armed state to warn user they could become active
     motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
     motors->set_throttle(0);
@@ -1179,7 +1179,7 @@ void QuadPlane::motors_output(void)
 
     // see if motors should be shut down
     check_throttle_suppression();
-    
+
     motors->output();
     if (motors->armed()) {
         plane.DataFlash.Log_Write_Rate(plane.ahrs, *motors, *attitude_control, *pos_control);
@@ -1194,7 +1194,7 @@ void QuadPlane::motors_output(void)
     if (motors->get_throttle() > 0.01f || tilt.motors_active) {
         last_motors_active_ms = AP_HAL::millis();
     }
-    
+
 }
 
 /*
@@ -1238,7 +1238,7 @@ bool QuadPlane::init_mode(void)
         return false;
     }
     if (!initialised) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "QuadPlane mode refused");        
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "QuadPlane mode refused");
         return false;
     }
 
@@ -1286,7 +1286,7 @@ bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state)
         }
         plane.auto_state.vtol_mode = true;
         return true;
-        
+
     case MAV_VTOL_STATE_FW:
         if (plane.auto_state.vtol_mode) {
             plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Exited VTOL mode");
@@ -1359,15 +1359,15 @@ void QuadPlane::vtol_position_controller(void)
     setup_target_position();
 
     const Location &loc = plane.next_WP_loc;
-    float ekfGndSpdLimit, ekfNavVelGainScaler;    
+    float ekfGndSpdLimit, ekfNavVelGainScaler;
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
-    
+
     switch (poscontrol.state) {
     case QPOS_LAND_FINAL:
         /*
           for land-final we use the loiter controller
          */
-    
+
         // run loiter controller
         wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
@@ -1436,14 +1436,14 @@ void QuadPlane::vtol_position_controller(void)
         }
         pos_control->set_desired_velocity_xy(target_speed_xy.x*100,
                                              target_speed_xy.y*100);
-        
+
         pos_control->update_vel_controller_xyz(ekfNavVelGainScaler);
 
         const Vector3f& curr_pos = inertial_nav.get_position();
         pos_control->set_xy_target(curr_pos.x, curr_pos.y);
 
         pos_control->freeze_ff_xy();
-        
+
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
         plane.nav_pitch_cd = pos_control->get_pitch();
@@ -1465,7 +1465,7 @@ void QuadPlane::vtol_position_controller(void)
             // stop integrator buildup
             pos_control->set_limit_accel_xy();
         }
-        
+
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
@@ -1486,12 +1486,12 @@ void QuadPlane::vtol_position_controller(void)
         /*
           for final land repositioning and descent we run the loiter controller
          */
-        
+
         // also run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.prev_WP_loc, loc);
 
         pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
-        
+
         // run loiter controller
         wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
@@ -1520,7 +1520,7 @@ void QuadPlane::vtol_position_controller(void)
             float target_altitude = plane.next_WP_loc.alt;
             if (poscontrol.slow_descent) {
                 // gradually descend as we approach target
-                plane.auto_state.wp_proportion = location_path_proportion(plane.current_loc, 
+                plane.auto_state.wp_proportion = location_path_proportion(plane.current_loc,
                                                                           plane.prev_WP_loc, plane.next_WP_loc);
                 target_altitude = linear_interpolate(plane.prev_WP_loc.alt,
                                                      plane.next_WP_loc.alt,
@@ -1543,11 +1543,11 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_LAND_FINAL:
         pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);
         break;
-        
+
     case QPOS_LAND_COMPLETE:
         break;
     }
-    
+
     pos_control->update_z_controller();
 }
 
@@ -1562,7 +1562,7 @@ void QuadPlane::setup_target_position(void)
     Vector2f diff2d;
 
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-    
+
     diff2d = location_diff(origin, loc);
     poscontrol.target.x = diff2d.x * 100;
     poscontrol.target.y = diff2d.y * 100;
@@ -1575,7 +1575,7 @@ void QuadPlane::setup_target_position(void)
         last_auto_target = loc;
     }
     last_loiter_ms = millis();
-    
+
     // setup vertical speed and acceleration
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
     pos_control->set_accel_z(pilot_accel_z);
@@ -1590,23 +1590,23 @@ void QuadPlane::takeoff_controller(void)
       for takeoff we need to use the loiter controller wpnav controller takes over the descent rate
       control
     */
-    float ekfGndSpdLimit, ekfNavVelGainScaler;    
+    float ekfGndSpdLimit, ekfNavVelGainScaler;
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     setup_target_position();
-    
+
     // run loiter controller
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
-    
+
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
                                                                          get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                          smoothing_gain);
-    
+
     // nav roll and pitch are controller by position controller
     plane.nav_roll_cd = pos_control->get_roll();
     plane.nav_pitch_cd = pos_control->get_pitch();
-    
+
     pos_control->set_alt_target_from_climb_rate(wp_nav->get_speed_up(), plane.G_Dt, true);
     pos_control->update_z_controller();
 }
@@ -1623,7 +1623,7 @@ void QuadPlane::waypoint_controller(void)
     */
     // run wpnav controller
     wp_nav->update_wpnav();
-    
+
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(),
                                                        wp_nav->get_pitch(),
@@ -1632,7 +1632,7 @@ void QuadPlane::waypoint_controller(void)
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = wp_nav->get_roll();
     plane.nav_pitch_cd = wp_nav->get_pitch();
-    
+
     // climb based on altitude error
     pos_control->set_alt_target_from_climb_rate_ff(assist_climb_rate_cms(), plane.G_Dt, false);
     pos_control->update_z_controller();
@@ -1716,7 +1716,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     // initialise position and desired velocity
     pos_control->set_alt_target(inertial_nav.get_altitude());
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-    
+
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
     return true;
@@ -1736,7 +1736,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     attitude_control->get_rate_yaw_pid().reset_I();
     pid_accel_z.reset_I();
     pi_vel_xy.reset_I();
-    
+
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
     plane.next_WP_loc.alt = plane.current_loc.alt;
@@ -1754,7 +1754,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     target.y = diff2d.y * 100;
     target.z = plane.next_WP_loc.alt - origin.alt;
     pos_control->set_alt_target(inertial_nav.get_altitude());
-    
+
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
     return true;
@@ -1776,7 +1776,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     pos_control->set_alt_target(inertial_nav.get_altitude());
 
     plane.complete_auto_takeoff();
-    
+
     return true;
 }
 
@@ -1809,7 +1809,7 @@ void QuadPlane::check_land_complete(void)
         landing_detect.land_start_ms = 0;
         return;
     }
-           
+
     if ((now - landing_detect.land_start_ms) < 4000 ||
         (now - landing_detect.lower_limit_start_ms) < 5000) {
         // not landed yet
@@ -1917,7 +1917,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
         return vel_forward.last_pct;
     }
     vel_forward.last_ms = AP_HAL::millis();
-    
+
     // work out the desired speed in forward direction
     const Vector3f &desired_velocity_cms = pos_control->get_desired_velocity();
     Vector3f vel_ned;
@@ -1945,14 +1945,14 @@ int8_t QuadPlane::forward_throttle_pct(void)
         fwd_vel_error = 0;
         vel_forward.integrator *= 0.95f;
     }
-    
+
     // integrator as throttle percentage (-100 to 100)
     vel_forward.integrator += fwd_vel_error * deltat * vel_forward.gain * 100;
 
     // inhibit reverse throttle and allow petrol engines with min > 0
     int8_t fwd_throttle_min = (plane.aparm.throttle_min <= 0) ? 0 : plane.aparm.throttle_min;
     vel_forward.integrator = constrain_float(vel_forward.integrator, fwd_throttle_min, plane.aparm.throttle_max);
-    
+
     // If we are below alt_cutoff then scale down the effect until it turns off at alt_cutoff and decay the integrator
     float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
     float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
@@ -1997,14 +1997,14 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
     float roll = wp_nav->get_roll() / 100.0f;
     if (fabsf(roll) < weathervane.min_roll) {
         weathervane.last_output = 0;
-        return 0;        
+        return 0;
     }
     if (roll > 0) {
         roll -= weathervane.min_roll;
     } else {
         roll += weathervane.min_roll;
     }
-    
+
     float output = constrain_float((roll/45.0f) * weathervane.gain, -1, 1);
     if (should_relax()) {
         output = 0;

@@ -52,7 +52,7 @@ bool AP_Airspeed_I2C::init()
 
     // lots of retries during probe
     _dev->set_retries(5);
-    
+
     _measure();
     hal.scheduler->delay(10);
     _collect();
@@ -60,7 +60,7 @@ bool AP_Airspeed_I2C::init()
 
     // drop to 2 retries for runtime
     _dev->set_retries(2);
-    
+
     if (_last_sample_time_ms != 0) {
         _dev->register_periodic_callback(20000,
                                          FUNCTOR_BIND_MEMBER(&AP_Airspeed_I2C::_timer, bool));
@@ -118,7 +118,7 @@ void AP_Airspeed_I2C::_collect()
     _temperature = ((200.0f * dT_raw) / 2047) - 50;
 
     _voltage_correction(_pressure, _temperature);
-    
+
     _last_sample_time_ms = AP_HAL::millis();
 }
 
@@ -131,18 +131,18 @@ void AP_Airspeed_I2C::_collect()
  */
 void AP_Airspeed_I2C::_voltage_correction(float &diff_press_pa, float &temperature)
 {
-	const float slope = 65.0f;
-	const float temp_slope = 0.887f;
+    const float slope = 65.0f;
+    const float temp_slope = 0.887f;
 
-	/*
-	  apply a piecewise linear correction within range given by above graph
-	 */
-	float voltage_diff = hal.analogin->board_voltage() - 5.0f;
+    /*
+      apply a piecewise linear correction within range given by above graph
+    */
+    float voltage_diff = hal.analogin->board_voltage() - 5.0f;
 
     voltage_diff = constrain_float(voltage_diff, -0.7f, 0.5f);
 
-	diff_press_pa -= voltage_diff * slope;
-	temperature -= voltage_diff * temp_slope;
+    diff_press_pa -= voltage_diff * slope;
+    temperature -= voltage_diff * temp_slope;
 }
 
 // 50Hz timer

@@ -50,7 +50,7 @@ uint8_t AP_InertialSensor_PX4::_queue_depth(uint16_t sensor_sample_rate) const
     return ret;
 }
 
-bool AP_InertialSensor_PX4::_init_sensor(void) 
+bool AP_InertialSensor_PX4::_init_sensor(void)
 {
     // assumes max 3 instances
     _accel_fd[0] = open(ACCEL_BASE_DEVICE_PATH "0", O_RDONLY);
@@ -159,7 +159,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
     return true;
 }
 
-bool AP_InertialSensor_PX4::update(void) 
+bool AP_InertialSensor_PX4::update(void)
 {
     // get the latest sample from the sensor drivers
     _get_sample();
@@ -171,7 +171,7 @@ bool AP_InertialSensor_PX4::update(void)
     for (uint8_t k=0; k<_num_gyro_instances; k++) {
         update_gyro(_gyro_instance[k]);
     }
-    
+
     return true;
 }
 
@@ -280,22 +280,22 @@ void AP_InertialSensor_PX4::_get_sample()
     }
 }
 
-bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &accel_report) 
+bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &accel_report)
 {
-    if (i<_num_accel_instances && 
-        _accel_fd[i] != -1 && 
-        ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) && 
+    if (i<_num_accel_instances &&
+        _accel_fd[i] != -1 &&
+        ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
         accel_report.timestamp != _last_accel_timestamp[i]) {
         return true;
     }
     return false;
 }
 
-bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro_report) 
+bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro_report)
 {
-    if (i<_num_gyro_instances && 
-        _gyro_fd[i] != -1 && 
-        ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) && 
+    if (i<_num_gyro_instances &&
+        _gyro_fd[i] != -1 &&
+        ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
         gyro_report.timestamp != _last_gyro_timestamp[i]) {
         return true;
     }

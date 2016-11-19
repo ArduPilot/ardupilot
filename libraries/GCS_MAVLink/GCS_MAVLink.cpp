@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/// @file	GCS_MAVLink.cpp
+/// @file    GCS_MAVLink.cpp
 
 /*
 This provides some support code and variables for MAVLink enabled sketches
@@ -31,7 +31,7 @@ This provides some support code and variables for MAVLink enabled sketches
 #include "include/mavlink/v2.0/mavlink_helpers.h"
 #endif
 
-AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
+AP_HAL::UARTDriver    *mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 
 mavlink_system_t mavlink_system = {7,1};
 
@@ -46,7 +46,7 @@ DataFlash_Class *GCS_MAVLINK::dataflash_p;
 
 // static frsky_telem pointer to support queueing text messages
 AP_Frsky_Telem *GCS_MAVLINK::frsky_telemetry_p;
- 
+
 // static AP_SerialManager pointer
 const AP_SerialManager *GCS_MAVLINK::serialmanager_p;
 
@@ -73,13 +73,13 @@ void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
 uint8_t mav_var_type(enum ap_var_type t)
 {
     if (t == AP_PARAM_INT8) {
-	    return MAVLINK_TYPE_INT8_T;
+        return MAVLINK_TYPE_INT8_T;
     }
     if (t == AP_PARAM_INT16) {
-	    return MAVLINK_TYPE_INT16_T;
+        return MAVLINK_TYPE_INT16_T;
     }
     if (t == AP_PARAM_INT32) {
-	    return MAVLINK_TYPE_INT32_T;
+        return MAVLINK_TYPE_INT32_T;
     }
     // treat any others as float
     return MAVLINK_TYPE_FLOAT;
@@ -88,8 +88,8 @@ uint8_t mav_var_type(enum ap_var_type t)
 
 /// Read a byte from the nominated MAVLink channel
 ///
-/// @param chan		Channel to receive on
-/// @returns		Byte read
+/// @param chan        Channel to receive on
+/// @returns        Byte read
 ///
 uint8_t comm_receive_ch(mavlink_channel_t chan)
 {
@@ -102,8 +102,8 @@ uint8_t comm_receive_ch(mavlink_channel_t chan)
 
 /// Check for available transmit space on the nominated MAVLink channel
 ///
-/// @param chan		Channel to check
-/// @returns		Number of bytes available
+/// @param chan        Channel to check
+/// @returns        Number of bytes available
 uint16_t comm_get_txspace(mavlink_channel_t chan)
 {
     if (!valid_channel(chan)) {
@@ -112,17 +112,17 @@ uint16_t comm_get_txspace(mavlink_channel_t chan)
     if ((1U<<chan) & mavlink_locked_mask) {
         return 0;
     }
-	int16_t ret = mavlink_comm_port[chan]->txspace();
-	if (ret < 0) {
-		ret = 0;
-	}
+    int16_t ret = mavlink_comm_port[chan]->txspace();
+    if (ret < 0) {
+        ret = 0;
+    }
     return (uint16_t)ret;
 }
 
 /// Check for available data on the nominated MAVLink channel
 ///
-/// @param chan		Channel to check
-/// @returns		Number of bytes available
+/// @param chan        Channel to check
+/// @returns        Number of bytes available
 uint16_t comm_get_available(mavlink_channel_t chan)
 {
     if (!valid_channel(chan)) {
@@ -132,9 +132,9 @@ uint16_t comm_get_available(mavlink_channel_t chan)
         return 0;
     }
     int16_t bytes = mavlink_comm_port[chan]->available();
-	if (bytes == -1) {
-		return 0;
-	}
+    if (bytes == -1) {
+        return 0;
+    }
     return (uint16_t)bytes;
 }
 
@@ -157,6 +157,6 @@ extern const AP_HAL::HAL& hal;
  */
 bool comm_is_idle(mavlink_channel_t chan)
 {
-	mavlink_status_t *status = mavlink_get_channel_status(chan);
-	return status == nullptr || status->parse_state <= MAVLINK_PARSE_STATE_IDLE;
+    mavlink_status_t *status = mavlink_get_channel_status(chan);
+    return status == nullptr || status->parse_state <= MAVLINK_PARSE_STATE_IDLE;
 }

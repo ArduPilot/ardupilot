@@ -7,8 +7,8 @@
 % Frame. Based on use of a rotation vector for attitude estimation as described
 % here:
 
-% Mark E. Pittelkau.  "Rotation Vector in Attitude Estimation", 
-% Journal of Guidance, Control, and Dynamics, Vol. 26, No. 6 (2003), 
+% Mark E. Pittelkau.  "Rotation Vector in Attitude Estimation",
+% Journal of Guidance, Control, and Dynamics, Vol. 26, No. 6 (2003),
 % pp. 855-860.
 
 % The gimbal is assumed to have the following characteristics:
@@ -94,7 +94,7 @@ truthQuat = QuatMult(estQuat, errQuat);
 Tsn = Quat2Tbn(truthQuat);
 
 % define the truth delta angle
-% ignore coning acompensation as these effects are negligible in terms of 
+% ignore coning acompensation as these effects are negligible in terms of
 % covariance growth for our application and grade of sensor
 dAngTruth = dAngMeas - dAngBias - [daxNoise;dayNoise;dazNoise];
 
@@ -171,10 +171,10 @@ F = subs(F, {'rotErr1', 'rotErr2', 'rotErr3'}, {0,0,0});
 %% Derive the predicted covariance
 % This reduces the number of floating point operations by a factor of 4 or
 % more compared to using the standard matrix operations in code
-% define a symbolic covariance matrix using strings to represent 
+% define a symbolic covariance matrix using strings to represent
 % '_l_' to represent '( '
 % '_c_' to represent ,
-% '_r_' to represent ')' 
+% '_r_' to represent ')'
 % these can be substituted later to create executable code
 for rowIndex = 1:nStates
     for colIndex = 1:nStates
@@ -216,7 +216,7 @@ Tmn = Tsn*Tms;
 save 'symeqns.mat';
 
 % rotate magentic field measured at top plate into nav axes
-magMeasNED = Tmn*[magX;magY;magZ]; 
+magMeasNED = Tmn*[magX;magY;magZ];
 % the predicted measurement is the angle wrt magnetic north of the horizontal
 % component of the measured field
 angMeas = tan(magMeasNED(2)/magMeasNED(1)) - decl;

@@ -41,6 +41,6 @@ private:
         };
         volatile uint32_t v;
     };
-    
+
     union rgb_value last, next;
 };

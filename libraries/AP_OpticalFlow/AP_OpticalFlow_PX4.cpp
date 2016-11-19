@@ -34,8 +34,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_OpticalFlow_PX4::AP_OpticalFlow_PX4(OpticalFlow &_frontend) : 
-OpticalFlow_backend(_frontend) 
+AP_OpticalFlow_PX4::AP_OpticalFlow_PX4(OpticalFlow &_frontend) :
+OpticalFlow_backend(_frontend)
 {}
 
 
@@ -60,7 +60,7 @@ void AP_OpticalFlow_PX4::init(void)
 
     // change to 10Hz update
     if (ioctl(_fd, SENSORIOCSPOLLRATE, 10) != 0) {
-        hal.console->printf("Unable to set flow rate to 10Hz\n");        
+        hal.console->printf("Unable to set flow rate to 10Hz\n");
     }
 }
 
@@ -73,7 +73,7 @@ void AP_OpticalFlow_PX4::update(void)
     }
 
     struct optical_flow_s report;
-    while (::read(_fd, &report, sizeof(optical_flow_s)) == sizeof(optical_flow_s) && 
+    while (::read(_fd, &report, sizeof(optical_flow_s)) == sizeof(optical_flow_s) &&
            report.timestamp != _last_timestamp) {
         struct OpticalFlow::OpticalFlow_state state;
         state.device_id = report.sensor_id;

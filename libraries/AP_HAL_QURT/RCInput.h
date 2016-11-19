@@ -15,7 +15,7 @@ public:
     void set_device_path(const char *path) {
         device_path = path;
     }
-    
+
     void init();
     bool new_input();
     uint8_t num_channels();
@@ -31,7 +31,7 @@ public:
  private:
     volatile bool new_rc_input;
 
-    uint16_t _pwm_values[QURT_RC_INPUT_NUM_CHANNELS];    
+    uint16_t _pwm_values[QURT_RC_INPUT_NUM_CHANNELS];
     uint8_t  _num_channels;
 
     /* override state */
@@ -39,10 +39,10 @@ public:
 
     // add some DSM input bytes, for RCInput over a serial port
     void add_dsm_input(const uint8_t *bytes, size_t nbytes);
-        
+
     const char *device_path;
     int32_t fd = -1;
-    
+
     // state of add_dsm_input
     struct {
         uint8_t frame[16];

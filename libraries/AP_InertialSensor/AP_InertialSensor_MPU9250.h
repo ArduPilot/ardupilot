@@ -69,7 +69,7 @@ private:
 
     void _fifo_reset();
     void _fifo_enable();
-    
+
     /* Check if there's data available by reading register */
     bool _data_ready();
     bool _data_ready(uint8_t int_status);
@@ -90,7 +90,7 @@ private:
 
     float _temp_filtered;
     LowPassFilter2pFloat _temp_filter;
-    
+
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     AP_MPU9250_AuxiliaryBus *_auxiliary_bus;
 
@@ -101,7 +101,7 @@ private:
 
     // has master i2c been enabled?
     bool _master_i2c_enable;
-    
+
     // last temperature reading, used to detect FIFO errors
     float _last_temp;
     uint8_t _temp_counter;

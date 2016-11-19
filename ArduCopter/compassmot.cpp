@@ -153,16 +153,16 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
 
         // read radio input
         read_radio();
-        
+
         // pass through throttle to motors
         motors.set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
-        
+
         // read some compass values
         compass.read();
-        
+
         // read current
         read_battery();
-        
+
         // calculate scaling for throttle
         throttle_pct = (float)channel_throttle->get_control_in() / 1000.0f;
         throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
@@ -197,7 +197,7 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
                 for (uint8_t i=0; i<compass.get_count(); i++) {
                     // current based compensation if more than 3amps being drawn
                     motor_impact_scaled[i] = motor_impact[i] / battery.current_amps();
-                
+
                     // adjust the motor compensation to negate the impact if drawing over 3amps
                     if (battery.current_amps() >= 3.0f) {
                         motor_compensation[i] = motor_compensation[i] * 0.99f - motor_impact_scaled[i] * 0.01f;
@@ -226,7 +226,7 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         }
         if (AP_HAL::millis() - last_send_time > 500) {
             last_send_time = AP_HAL::millis();
-            mavlink_msg_compassmot_status_send(chan, 
+            mavlink_msg_compassmot_status_send(chan,
                                                channel_throttle->get_control_in(),
                                                battery.current_amps(),
                                                interference_pct[compass.get_primary()],

@@ -86,7 +86,7 @@ AP_RPM::AP_RPM(void) :
 }
 
 /*
-  initialise the AP_RPM class. 
+  initialise the AP_RPM class.
  */
 void AP_RPM::init(void)
 {
@@ -132,7 +132,7 @@ void AP_RPM::update(void)
         }
     }
 }
-    
+
 /*
   check if an instance is healthy
  */

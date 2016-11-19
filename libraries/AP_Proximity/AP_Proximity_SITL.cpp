@@ -25,8 +25,8 @@ extern const AP_HAL::HAL& hal;
 #define PROXIMITY_MAX_RANGE 200
 #define PROXIMITY_ACCURACY 0.1
 
-/* 
-   The constructor also initialises the proximity sensor. 
+/*
+   The constructor also initialises the proximity sensor.
 */
 AP_Proximity_SITL::AP_Proximity_SITL(AP_Proximity &_frontend,
                                      AP_Proximity::Proximity_State &_state):
@@ -80,7 +80,7 @@ void AP_Proximity_SITL::update(void)
     if (fence && fence_loader.boundary_valid(fence_count->get(), fence, true)) {
         set_status(AP_Proximity::Proximity_Good);
     } else {
-        set_status(AP_Proximity::Proximity_NoData);        
+        set_status(AP_Proximity::Proximity_NoData);
     }
 }
 
@@ -91,7 +91,7 @@ void AP_Proximity_SITL::load_fence(void)
         return;
     }
     last_load_ms = now;
-    
+
     if (fence == nullptr) {
         fence = (Vector2l *)fence_loader.create_point_array(sizeof(Vector2l));
     }

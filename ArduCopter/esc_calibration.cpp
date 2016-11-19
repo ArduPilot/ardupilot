@@ -93,7 +93,7 @@ void Copter::esc_calibration_passthrough()
     // arm motors
     motors.armed(true);
     motors.enable();
-    
+
     while(1) {
         // flash LEDS
         AP_Notify::flags.esc_calibration = true;

@@ -77,7 +77,7 @@ void Copter::drift_run()
 
     roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
-    
+
     roll_input = roll_input * .96f + (float)channel_yaw->get_control_in() * .04f;
 
     //convert user input into desired roll velocity
@@ -122,6 +122,6 @@ float Copter::get_throttle_assist(float velz, float pilot_throttle_scaled)
         // ensure throttle assist never adjusts the throttle by more than 300 pwm
         thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);
     }
-    
+
     return constrain_float(pilot_throttle_scaled + thr_assist, 0.0f, 1.0f);
 }

@@ -48,7 +48,7 @@ void Motor::calculate_forces(const Aircraft::sitl_input &input,
     float roll = 0, pitch = 0;
 
     uint64_t now = AP_HAL::micros64();
-    
+
     // possibly roll and/or pitch the motor
     if (roll_servo >= 0) {
         uint16_t servoval = update_servo(input.servos[roll_servo+motor_offset], now, last_roll_value);

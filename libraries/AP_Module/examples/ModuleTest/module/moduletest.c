@@ -47,7 +47,7 @@ void ap_hook_gyro_sample(const struct gyro_sample *state)
     printf("gyro (%.1f,%.1f,%.1f)\n",
            degrees(state->gyro[0]),
            degrees(state->gyro[1]),
-           degrees(state->gyro[2]));    
+           degrees(state->gyro[2]));
 }
 
 void ap_hook_accel_sample(const struct accel_sample *state)

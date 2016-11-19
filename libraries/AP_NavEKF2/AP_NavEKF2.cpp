@@ -407,7 +407,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 1 127
     // @User: Advanced
     AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 3),
-    
+
     // @Param: CHECK_SCALE
     // @DisplayName: GPS accuracy check scaler (%)
     // @Description: This scales the thresholds that are used to check GPS accuracy before it is used by the EKF. A value of 100 is the default. Values greater than 100 increase and values less than 100 reduce the maximum GPS error the EKF will accept. A value of 200 will double the allowable GPS error.
@@ -573,14 +573,14 @@ bool NavEKF2::InitialiseFilter(void)
     if (dataflash != nullptr) {
         logging.enabled = dataflash->log_replay();
     }
-    
+
     if (core == nullptr) {
 
         // don't run multiple filters for 1 IMU
         const AP_InertialSensor &ins = _ahrs->get_ins();
         uint8_t mask = (1U<<ins.get_accel_count())-1;
         _imuMask.set(_imuMask.get() & mask);
-        
+
         // count IMUs from mask
         num_cores = 0;
         for (uint8_t i=0; i<7; i++) {
@@ -594,7 +594,7 @@ bool NavEKF2::InitialiseFilter(void)
             _enable.set(0);
             return false;
         }
-        
+
         core = new NavEKF2_core[num_cores];
         if (core == nullptr) {
             _enable.set(0);
@@ -636,7 +636,7 @@ void NavEKF2::UpdateFilter(void)
     }
 
     imuSampleTime_us = AP_HAL::micros64();
-    
+
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     for (uint8_t i=0; i<num_cores; i++) {

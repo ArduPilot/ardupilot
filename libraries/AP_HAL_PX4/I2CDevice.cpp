@@ -25,14 +25,14 @@ uint8_t PX4::PX4_I2C::instance;
 
 /*
   constructor for I2C wrapper class
- */    
+ */
 PX4_I2C::PX4_I2C(uint8_t bus) :
   I2C(devname, devpath, map_bus_number(bus), 0, 400000UL)
 {}
 
 /*
   map ArduPilot bus numbers to PX4 bus numbers
- */    
+ */
 uint8_t PX4_I2C::map_bus_number(uint8_t bus) const
 {
     switch (bus) {
@@ -51,12 +51,12 @@ uint8_t PX4_I2C::map_bus_number(uint8_t bus) const
 #else
         return 1;
 #endif
-        
+
     }
     // default to bus 1
     return 1;
 }
-    
+
 /*
   implement wrapper for PX4 I2C driver
  */
@@ -105,10 +105,10 @@ I2CDevice::I2CDevice(uint8_t bus, uint8_t address) :
              (unsigned)bus, (unsigned)address);
     perf = perf_alloc(PC_ELAPSED, pname);
 }
-    
+
 I2CDevice::~I2CDevice()
 {
-    printf("I2C device bus %u address 0x%02x closed\n", 
+    printf("I2C device bus %u address 0x%02x closed\n",
            (unsigned)_busnum, (unsigned)_address);
     perf_free(perf);
     free(pname);
@@ -129,7 +129,7 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
     return false;
 }
 
-    
+
 /*
   register a periodic callback
 */
@@ -141,7 +141,7 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
     struct DeviceBus &binfo = businfo[_busnum];
     return binfo.register_periodic_callback(period_usec, cb);
 }
-    
+
 
 /*
   adjust a periodic callback
@@ -150,7 +150,7 @@ bool I2CDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
 {
     return false;
 }
-    
+
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
 I2CDeviceManager::get_device(uint8_t bus, uint8_t address)
 {

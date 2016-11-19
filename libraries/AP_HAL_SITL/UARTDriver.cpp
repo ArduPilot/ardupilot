@@ -60,7 +60,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         _connected = true;
         _fd = _sitlState->gps2_pipe();
     } else {
-        /* parse type:args:flags string for path. 
+        /* parse type:args:flags string for path.
            For example:
              tcp:5760:wait    // tcp listen on port 5760
              tcp:0:wait       // tcp listen on use base_port + 0
@@ -156,7 +156,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     return size;
 }
 
-    
+
 /*
   start a TCP connection for the serial port. If wait_for_connection
   is true then block until a client connects
@@ -247,7 +247,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 
 
 /*
-  start a TCP client connection for the serial port. 
+  start a TCP client connection for the serial port.
  */
 void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 {
@@ -260,7 +260,7 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
     }
 
     _use_send_recv = true;
-    
+
     if (_fd != -1) {
         close(_fd);
     }
@@ -432,7 +432,7 @@ void UARTDriver::_timer_tick(void)
     if (space == 0) {
         return;
     }
-    
+
     char buf[space];
     ssize_t nread = 0;
     if (!_use_send_recv) {

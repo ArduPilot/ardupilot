@@ -1,5 +1,5 @@
-/// @file	AP_Parachute.h
-/// @brief	Parachute release library
+/// @file    AP_Parachute.h
+/// @brief    Parachute release library
 #pragma once
 
 #include <AP_Param/AP_Param.h>
@@ -20,8 +20,8 @@
 
 #define AP_PARACHUTE_ALT_MIN_DEFAULT            10     // default min altitude the vehicle should have before parachute is released
 
-/// @class	AP_Parachute
-/// @brief	Class managing the release of a parachute
+/// @class    AP_Parachute
+/// @brief    Class managing the release of a parachute
 class AP_Parachute {
 
 public:
@@ -49,10 +49,10 @@ public:
 
     /// released - true if the parachute has been released (or release is in progress)
     bool released() const { return _released; }
-    
+
     /// release_initiated - true if the parachute release sequence has been initiated (may wait before actual release)
     bool release_initiated() const { return _release_initiated; }
-    
+
     /// update - shuts off the trigger should be called at about 10hz
     void update();
 

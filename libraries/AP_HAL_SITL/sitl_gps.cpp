@@ -191,33 +191,33 @@ static void gps_time(uint16_t *time_week, uint32_t *time_week_ms)
 void SITL_State::_update_gps_ubx(const struct gps_data *d)
 {
     struct PACKED ubx_nav_posllh {
-        uint32_t	time; // GPS msToW
-        int32_t		longitude;
-        int32_t		latitude;
-        int32_t		altitude_ellipsoid;
-        int32_t		altitude_msl;
-        uint32_t	horizontal_accuracy;
-        uint32_t	vertical_accuracy;
+        uint32_t    time; // GPS msToW
+        int32_t        longitude;
+        int32_t        latitude;
+        int32_t        altitude_ellipsoid;
+        int32_t        altitude_msl;
+        uint32_t    horizontal_accuracy;
+        uint32_t    vertical_accuracy;
     } pos;
     struct PACKED ubx_nav_status {
-        uint32_t	time;				// GPS msToW
-        uint8_t		fix_type;
-        uint8_t		fix_status;
-        uint8_t		differential_status;
-        uint8_t		res;
-        uint32_t	time_to_first_fix;
-        uint32_t	uptime;				// milliseconds
+        uint32_t    time;                // GPS msToW
+        uint8_t        fix_type;
+        uint8_t        fix_status;
+        uint8_t        differential_status;
+        uint8_t        res;
+        uint32_t    time_to_first_fix;
+        uint32_t    uptime;                // milliseconds
     } status;
     struct PACKED ubx_nav_velned {
-        uint32_t	time;				// GPS msToW
-        int32_t		ned_north;
-        int32_t		ned_east;
-        int32_t		ned_down;
-        uint32_t	speed_3d;
-        uint32_t	speed_2d;
-        int32_t		heading_2d;
-        uint32_t	speed_accuracy;
-        uint32_t	heading_accuracy;
+        uint32_t    time;                // GPS msToW
+        int32_t        ned_north;
+        int32_t        ned_east;
+        int32_t        ned_down;
+        uint32_t    speed_3d;
+        uint32_t    speed_2d;
+        int32_t        heading_2d;
+        uint32_t    speed_accuracy;
+        uint32_t    heading_accuracy;
     } velned;
     struct PACKED ubx_nav_solution {
         uint32_t time;
@@ -810,43 +810,43 @@ void SITL_State::_update_gps_nova(const struct gps_data *d)
         double vertspd;
         float resv;
     } bestvel;
-    
+
     uint16_t time_week;
     uint32_t time_week_ms;
-    
+
     gps_time(&time_week, &time_week_ms);
-    
+
     header.preamble[0] = 0xaa;
     header.preamble[1] = 0x44;
     header.preamble[2] = 0x12;
     header.headerlength = sizeof(header);
     header.week = time_week;
     header.tow = time_week_ms;
-    
+
     header.messageid = 174;
     header.messagelength = sizeof(psrdop);
     header.sequence += 1;
-    
+
     psrdop.hdop = 1.20;
-    psrdop.htdop = 1.20;    
+    psrdop.htdop = 1.20;
     _nova_send_message((uint8_t*)&header,sizeof(header),(uint8_t*)&psrdop, sizeof(psrdop));
-    
-    
+
+
     header.messageid = 99;
     header.messagelength = sizeof(bestvel);
     header.sequence += 1;
-    
-    bestvel.horspd = norm(d->speedN, d->speedE);  
+
+    bestvel.horspd = norm(d->speedN, d->speedE);
     bestvel.trkgnd = ToDeg(atan2f(d->speedE, d->speedN));
     bestvel.vertspd = -d->speedD;
-    
+
     _nova_send_message((uint8_t*)&header,sizeof(header),(uint8_t*)&bestvel, sizeof(bestvel));
-    
-    
+
+
     header.messageid = 42;
     header.messagelength = sizeof(bestpos);
     header.sequence += 1;
-    
+
     bestpos.lat = d->latitude;
     bestpos.lng = d->longitude;
     bestpos.hgt = d->altitude;
@@ -856,7 +856,7 @@ void SITL_State::_update_gps_nova(const struct gps_data *d)
     bestpos.hgtsdev=0.2;
     bestpos.solstat=0;
     bestpos.postype=32;
-    
+
     _nova_send_message((uint8_t*)&header,sizeof(header),(uint8_t*)&bestpos, sizeof(bestpos));
 }
 
@@ -867,7 +867,7 @@ void SITL_State::_nova_send_message(uint8_t *header, uint8_t headerlength, uint8
 
     uint32_t crc = CalculateBlockCRC32(headerlength, header, (uint32_t)0);
     crc = CalculateBlockCRC32(payloadlen, payload, crc);
-    
+
     _gps_write((uint8_t*)&crc, 4);
 }
 
@@ -1056,7 +1056,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     case SITL::SITL::GPS_TYPE_SBP:
         _update_gps_sbp(&d);
         break;
-        
+
     case SITL::SITL::GPS_TYPE_NOVA:
         _update_gps_nova(&d);
         break;

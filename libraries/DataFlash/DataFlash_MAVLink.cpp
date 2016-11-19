@@ -1,4 +1,4 @@
-/* 
+/*
    DataFlash Remote(via MAVLink) logging
 */
 
@@ -111,7 +111,7 @@ bool DataFlash_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &
     }
     return false;
 }
-    
+
 /* Write a block of data at current offset */
 
 // DM_write: 70734 events, 0 overruns, 167806us elapsed, 2us avg, min 1us max 34us 0.620us rms
@@ -432,7 +432,7 @@ void DataFlash_MAVLink::stats_collect()
     if (sfree > stats.state_free_max) {
         stats.state_free_max = sfree;
     }
-    
+
     stats.collection_count++;
 }
 
@@ -542,7 +542,7 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
         return false;
     }
 #endif
-    
+
 #if DF_MAVLINK_DISABLE_INTERRUPTS
     irqstate_t istate = irqsave();
 #endif

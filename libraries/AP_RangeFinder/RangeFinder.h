@@ -26,8 +26,8 @@
 #define RANGEFINDER_PREARM_ALT_MAX_CM           200
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 
-class AP_RangeFinder_Backend; 
- 
+class AP_RangeFinder_Backend;
+
 class RangeFinder
 {
 public:
@@ -95,7 +95,7 @@ public:
     AP_Vector3f _pos_offset[RANGEFINDER_MAX_INSTANCES]; // position offset in body frame
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     // Return the number of range finder instances
     uint8_t num_sensors(void) const {
         return num_instances;
@@ -116,7 +116,7 @@ public:
     uint8_t get_primary(void) const {
         return primary_instance;
     }
-    
+
     uint16_t distance_cm(uint8_t instance) const {
         return (instance<num_instances? _RangeFinder_STATE(instance).distance_cm : 0);
     }
@@ -203,7 +203,7 @@ private:
     AP_SerialManager &serial_manager;
 
     void detect_instance(uint8_t instance);
-    void update_instance(uint8_t instance);  
+    void update_instance(uint8_t instance);
 
     void update_pre_arm_check(uint8_t instance);
     bool _add_backend(AP_RangeFinder_Backend *driver);

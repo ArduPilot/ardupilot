@@ -107,7 +107,7 @@ float location_path_proportion(const struct Location &location,
 
 /*
  *  extrapolate latitude/longitude given bearing and distance
- * Note that this function is accurate to about 1mm at a distance of 
+ * Note that this function is accurate to about 1mm at a distance of
  * 100m. This function has the advantage that it works in relative
  * positions, so it keeps the accuracy even when dealing with small
  * distances and floating point numbers

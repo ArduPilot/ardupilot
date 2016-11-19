@@ -105,7 +105,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: This parameter allows you to to set the PSI (pounds per square inch) range for your sensor. You should not change this unless you examine the datasheet for your device
     // @User: Advanced
     AP_GROUPINFO("PSI_RANGE",  8, AP_Airspeed, _psi_range, PSI_RANGE_DEFAULT),
-    
+
     AP_GROUPEND
 };
 
@@ -221,7 +221,7 @@ void AP_Airspeed::read(void)
     if (_cal.start_ms != 0) {
         update_calibration(raw_pressure);
     }
-    
+
     airspeed_pressure = raw_pressure - _offset;
 
     // remember raw pressure for logging

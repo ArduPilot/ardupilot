@@ -117,7 +117,7 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
 
     return true;
 }
-    
+
 /*
    return true if we are on the ground
 */
@@ -353,7 +353,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     if (smoothing.enabled) {
         fdm.xAccel = smoothing.accel_body.x;
         fdm.yAccel = smoothing.accel_body.y;
-        fdm.zAccel = smoothing.accel_body.z;    
+        fdm.zAccel = smoothing.accel_body.z;
         fdm.rollRate  = degrees(smoothing.gyro.x);
         fdm.pitchRate = degrees(smoothing.gyro.y);
         fdm.yawRate   = degrees(smoothing.gyro.z);
@@ -405,7 +405,7 @@ void Aircraft::set_speedup(float speedup)
 void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
     float delta_time = frame_time_us * 1.0e-6f;
-    
+
     // update rotational rates in body frame
     gyro += rot_accel * delta_time;
 
@@ -417,7 +417,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     // TODO the simulator interface should provide the angular acceleration
     ang_accel = (gyro - gyro_prev) / delta_time;
     gyro_prev = gyro;
-    
+
     // update attitude
     dcm.rotate(gyro * delta_time);
     dcm.normalize();
@@ -444,16 +444,16 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
     // velocity relative to air mass, in earth frame
     velocity_air_ef = velocity_ef + wind_ef;
-    
+
     // velocity relative to airmass in body frame
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
-    
-    // airspeed 
+
+    // airspeed
     airspeed = velocity_air_ef.length();
 
     // airspeed as seen by a fwd pitot tube (limited to 120m/s)
     airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1, 0, 0), 0, 120);
-    
+
     // constrain height to the ground
     if (on_ground(position)) {
         if (!on_ground(old_position) && AP_HAL::millis() - last_ground_contact_ms > 1000) {
@@ -675,7 +675,7 @@ void Aircraft::smooth_sensors(void)
                                            degrees(R), degrees(P), degrees(Y),
                                            degrees(R2), degrees(P2), degrees(Y2));
 #endif
-                                           
+
 
     // integrate to get new attitude
     smoothing.rotation_b2e.rotate(smoothing.gyro * delta_time);
@@ -688,7 +688,7 @@ void Aircraft::smooth_sensors(void)
     smoothing.location = home;
     location_offset(smoothing.location, smoothing.position.x, smoothing.position.y);
     smoothing.location.alt  = home.alt - smoothing.position.z*100.0f;
-    
+
     smoothing.last_update_us = now;
     smoothing.enabled = true;
 }
@@ -706,7 +706,7 @@ float Aircraft::filtered_idx(float v, uint8_t idx)
     servo_filter[idx].set_cutoff_frequency(cutoff);
     return servo_filter[idx].apply(v, frame_time_us*1.0e-6);
 }
-    
+
 
 /*
   return a filtered servo input as a value from -1 to 1
@@ -727,7 +727,7 @@ float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx
     float v = (input.servos[idx]-1000)/1000.0f;
     return filtered_idx(v, idx);
 }
-    
+
 } // namespace SITL
 
 

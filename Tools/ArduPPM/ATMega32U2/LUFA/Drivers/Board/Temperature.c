@@ -1,7 +1,7 @@
 /*
              LUFA Library
      Copyright (C) Dean Camera, 2010.
-              
+
   dean [at] fourwalledcubicle [dot] com
       www.fourwalledcubicle.com
 */
@@ -9,13 +9,13 @@
 /*
   Copyright 2010  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
-  Permission to use, copy, modify, distribute, and sell this 
+  Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
-  without fee, provided that the above copyright notice appear in 
+  without fee, provided that the above copyright notice appear in
   all copies and that both that the copyright notice and this
-  permission notice and warranty disclaimer appear in supporting 
-  documentation, and that the name of the author not be used in 
-  advertising or publicity pertaining to distribution of the 
+  permission notice and warranty disclaimer appear in supporting
+  documentation, and that the name of the author not be used in
+  advertising or publicity pertaining to distribution of the
   software without specific, written prior permission.
 
   The author disclaim all warranties with regard to this
@@ -45,16 +45,16 @@ static const uint16_t PROGMEM Temperature_Lookup[] = {
 
 int8_t Temperature_GetTemperature(void)
 {
-	uint16_t Temp_ADC = ADC_GetChannelReading(ADC_REFERENCE_AVCC | ADC_RIGHT_ADJUSTED | TEMP_ADC_CHANNEL_MASK);
+    uint16_t Temp_ADC = ADC_GetChannelReading(ADC_REFERENCE_AVCC | ADC_RIGHT_ADJUSTED | TEMP_ADC_CHANNEL_MASK);
 
-	if (Temp_ADC > pgm_read_word(&Temperature_Lookup[0]))
-	  return TEMP_MIN_TEMP;
+    if (Temp_ADC > pgm_read_word(&Temperature_Lookup[0]))
+    return TEMP_MIN_TEMP;
 
-	for (uint16_t Index = 0; Index < TEMP_TABLE_SIZE; Index++)
-	{
-		if (Temp_ADC > pgm_read_word(&Temperature_Lookup[Index]))
-		  return (Index + TEMP_TABLE_OFFSET);
-	}
+    for (uint16_t Index = 0; Index < TEMP_TABLE_SIZE; Index++)
+    {
+        if (Temp_ADC > pgm_read_word(&Temperature_Lookup[Index]))
+        return (Index + TEMP_TABLE_OFFSET);
+    }
 
-	return TEMP_MAX_TEMP;
+    return TEMP_MAX_TEMP;
 }

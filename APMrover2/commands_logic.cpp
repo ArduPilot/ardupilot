@@ -21,7 +21,7 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
     next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
 
     switch (cmd.id) {
-    case MAV_CMD_NAV_WAYPOINT:	// Navigate to Waypoint
+    case MAV_CMD_NAV_WAYPOINT:    // Navigate to Waypoint
         do_nav_wp(cmd);
         break;
 
@@ -211,7 +211,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 void Rover::do_RTL(void)
 {
     prev_WP = current_loc;
-    control_mode 	= RTL;
+    control_mode     = RTL;
     next_WP = home;
 }
 
@@ -408,7 +408,7 @@ void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 bool Rover::verify_wait_delay()
 {
     if ((uint32_t)(millis() - condition_start) > (uint32_t)condition_value) {
-        condition_value 	= 0;
+        condition_value     = 0;
         return true;
     }
     return false;

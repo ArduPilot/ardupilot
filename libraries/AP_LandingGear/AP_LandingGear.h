@@ -1,5 +1,5 @@
-/// @file	AP_LandingGear.h
-/// @brief	Landing gear control library
+/// @file    AP_LandingGear.h
+/// @brief    Landing gear control library
 #pragma once
 
 #include <AP_Param/AP_Param.h>
@@ -15,8 +15,8 @@ enum LandingGearCommandMode {
     LandingGear_Retract
 };
 
-/// @class	AP_LandingGear
-/// @brief	Class managing the control of landing gear
+/// @class    AP_LandingGear
+/// @brief    Class managing the control of landing gear
 class AP_LandingGear {
 
 public:
@@ -61,13 +61,13 @@ private:
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
     bool        _force_deploy;          // used by main code to force landing gear to deploy, such as in Land mode
     LandingGearCommandMode  _command_mode;  // pilots commanded control mode: Manual Deploy, Auto, or Manual Retract
-    
+
     /// enable - enable landing gear retraction
     void enable(bool on_off);
-    
+
     /// retract - retract landing gear
     void retract();
-    
+
     /// deploy - deploy the landing gear
     void deploy();
 };

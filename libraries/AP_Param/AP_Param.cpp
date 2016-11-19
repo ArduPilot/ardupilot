@@ -127,7 +127,7 @@ uint32_t AP_Param::group_id(const struct GroupInfo *grpinfo, uint32_t base, uint
     }
     return base + (grpinfo[i].idx<<shift);
 }
- 
+
 // validate a group info table
 bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
                                 uint16_t *                          total_size,
@@ -458,7 +458,7 @@ const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 
                                                      uint8_t *                  idx) const
 {
     group_ret = nullptr;
-    
+
     for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = _var_info[i].type;
         ptrdiff_t base;
@@ -504,7 +504,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_token(const ParamToken &tok
         return nullptr;
     }
     group_ret = nullptr;
-    
+
     if (type == AP_PARAM_GROUP) {
         const struct GroupInfo *group_info = _var_info[i].group_info;
         const struct AP_Param::Info *info;
@@ -804,7 +804,7 @@ AP_Param::find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token
          ap=AP_Param::next_scalar(token, ptype)) {
         count++;
     }
-    return ap;    
+    return ap;
 }
 
 
@@ -951,7 +951,7 @@ bool AP_Param::save(bool force_save)
         // clear cached parameter count
         _parameter_count = 0;
     }
-    
+
     char name[AP_MAX_NAME_SIZE+1];
     copy_name_info(info, ginfo, group_nesting, idx, name, sizeof(name), true);
 
@@ -1048,7 +1048,7 @@ bool AP_Param::load(void)
             set_value((enum ap_var_type)phdr.type, (void*)(base + ginfo->offset + group_offset),
                       get_default_value(&ginfo->def_value));
         } else {
-            set_value((enum ap_var_type)phdr.type, (void*)base, 
+            set_value((enum ap_var_type)phdr.type, (void*)base,
                       get_default_value(&info->def_value));
         }
         return false;
@@ -1256,7 +1256,7 @@ bool AP_Param::load_all(void)
 
 
 
-/* 
+/*
    Load all variables from EEPROM for a particular object. This is
    required for dynamically loaded objects
  */
@@ -1269,7 +1269,7 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
         hal.console->printf("ERROR: Unable to find param pointer\n");
         return;
     }
-    
+
     for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
         if (group_info[i].type == AP_PARAM_GROUP) {
             ptrdiff_t new_offset = 0;
@@ -1291,7 +1291,7 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
             if (get_key(phdr) == key) {
                 const struct AP_Param::Info *info;
                 void *ptr;
-                
+
                 info = find_by_header(phdr, &ptr);
                 if (info != nullptr) {
                     if ((ptrdiff_t)ptr == ((ptrdiff_t)object_pointer)+group_info[i].offset) {
@@ -1450,7 +1450,7 @@ AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
     while ((ap = next(token, &type)) != nullptr && type > AP_PARAM_FLOAT) ;
 
     if (ap != nullptr && type == AP_PARAM_INT8) {
-        /* 
+        /*
            check if this is an enable variable. To do that we need to
            find the info structures for the variable
          */
@@ -1482,7 +1482,7 @@ AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
                 // update the returned token so the next() call goes from this point
                 *token = token2;
             }
-            
+
         }
     }
 
@@ -1645,7 +1645,7 @@ void AP_Param::set_float(float value, enum ap_var_type var_type)
     // from float to integer to avoid truncating to the
     // next lower integer value.
     float rounding_addition = 0.01f;
-        
+
     // handle variables with standard type IDs
     if (var_type == AP_PARAM_FLOAT) {
         ((AP_Float *)this)->set(value);
@@ -1741,7 +1741,7 @@ bool AP_Param::load_defaults_file(const char *filename)
         return false;
     }
 
-    /* 
+    /*
        re-open to avoid possible seek issues with NuttX
      */
     f = fopen(filename, "r");
@@ -1784,7 +1784,7 @@ bool AP_Param::load_defaults_file(const char *filename)
 
 #endif // HAL_OS_POSIX_IO
 
-/* 
+/*
    find a default value given a pointer to a default value in flash
  */
 float AP_Param::get_default_value(const float *def_value_ptr)
@@ -1822,7 +1822,7 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     strncpy(name2, name, AP_MAX_NAME_SIZE);
     name2[AP_MAX_NAME_SIZE] = 0;
     char &name_axis = name2[strlen(name)-1];
-    
+
     name_axis = 'X';
     GCS_MAVLINK::send_parameter_value_all(name2, AP_PARAM_FLOAT, v.x);
     name_axis = 'Y';

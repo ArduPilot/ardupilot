@@ -23,7 +23,7 @@ static void setup_uart(AP_HAL::UARTDriver *uart, const char *name)
 }
 
 
-void setup(void) 
+void setup(void)
 {
     /*
       start all UARTs at 57600 with default buffer sizes
@@ -45,8 +45,8 @@ static void test_uart(AP_HAL::UARTDriver *uart, const char *name)
                  name, AP_HAL::millis()*0.001f);
 }
 
-void loop(void) 
-{	
+void loop(void)
+{
     test_uart(hal.uartA, "uartA");
     test_uart(hal.uartB, "uartB");
     test_uart(hal.uartC, "uartC");

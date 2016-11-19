@@ -144,6 +144,6 @@ void RCOutput_Sysfs::push(void)
     _pending_mask = 0;
     _corked = false;
 }
-    
+
 }
-    
+

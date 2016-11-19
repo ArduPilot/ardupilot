@@ -12,26 +12,26 @@ class AP_HAL::UARTDriver : public AP_HAL::BetterStream {
 public:
     UARTDriver() {}
     virtual void begin(uint32_t baud) = 0;
-	/// Extended port open method
-	///
-	/// Allows for both opening with specified buffer sizes, and re-opening
-	/// to adjust a subset of the port's settings.
-	///
-	/// @note	Buffer sizes greater than ::_max_buffer_size will be rounded
-	///			down.
-	///
-	/// @param	baud		Selects the speed that the port will be
-	///						configured to.  If zero, the port speed is left
-	///						unchanged.
-	/// @param rxSpace		Sets the receive buffer size for the port.  If zero
-	///						then the buffer size is left unchanged if the port
-	///						is open, or set to ::_default_rx_buffer_size if it is
-	///						currently closed.
-	/// @param txSpace		Sets the transmit buffer size for the port.  If zero
-	///						then the buffer size is left unchanged if the port
-	///						is open, or set to ::_default_tx_buffer_size if it
-	///						is currently closed.
-	///
+    /// Extended port open method
+    ///
+    /// Allows for both opening with specified buffer sizes, and re-opening
+    /// to adjust a subset of the port's settings.
+    ///
+    /// @note    Buffer sizes greater than ::_max_buffer_size will be rounded
+    ///            down.
+    ///
+    /// @param    baud        Selects the speed that the port will be
+    ///                        configured to.  If zero, the port speed is left
+    ///                        unchanged.
+    /// @param rxSpace        Sets the receive buffer size for the port.  If zero
+    ///                        then the buffer size is left unchanged if the port
+    ///                        is open, or set to ::_default_rx_buffer_size if it is
+    ///                        currently closed.
+    /// @param txSpace        Sets the transmit buffer size for the port.  If zero
+    ///                        then the buffer size is left unchanged if the port
+    ///                        is open, or set to ::_default_tx_buffer_size if it
+    ///                        is currently closed.
+    ///
     virtual void begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace) = 0;
     virtual void end() = 0;
     virtual void flush() = 0;

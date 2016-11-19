@@ -31,28 +31,28 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
 
     // @Param: PIN1
     // @DisplayName: First button Pin
-    // @Description: Digital pin number for first button input. 
+    // @Description: Digital pin number for first button input.
     // @User: Standard
     // @Values: -1:Disabled,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     AP_GROUPINFO("PIN1",  1, AP_Button, pin[0], -1),
 
     // @Param: PIN2
     // @DisplayName: Second button Pin
-    // @Description: Digital pin number for second button input. 
+    // @Description: Digital pin number for second button input.
     // @User: Standard
     // @Values: -1:Disabled,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     AP_GROUPINFO("PIN2",  2, AP_Button, pin[1], -1),
 
     // @Param: PIN3
     // @DisplayName: Third button Pin
-    // @Description: Digital pin number for third button input. 
+    // @Description: Digital pin number for third button input.
     // @User: Standard
     // @Values: -1:Disabled,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     AP_GROUPINFO("PIN3",  3, AP_Button, pin[2], -1),
 
     // @Param: PIN4
     // @DisplayName: Fourth button Pin
-    // @Description: Digital pin number for fourth button input. 
+    // @Description: Digital pin number for fourth button input.
     // @User: Standard
     // @Values: -1:Disabled,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     AP_GROUPINFO("PIN4",  4, AP_Button, pin[3], -1),
@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
     // @Range: 0 3600
     AP_GROUPINFO("REPORT_SEND", 5, AP_Button, report_send_time, 10),
 
-    AP_GROUPEND    
+    AP_GROUPEND
 };
 
 
@@ -93,7 +93,7 @@ void AP_Button::update(void)
         last_mask = get_mask();
 
         // register 1kHz timer callback
-        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Button::timer_update, void));        
+        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Button::timer_update, void));
     }
 
     if (last_change_time_ms != 0 &&

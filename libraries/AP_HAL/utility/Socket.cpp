@@ -25,7 +25,7 @@
   constructor
  */
 SocketAPM::SocketAPM(bool _datagram) :
-    SocketAPM(_datagram, 
+    SocketAPM(_datagram,
               socket(AF_INET, _datagram?SOCK_DGRAM:SOCK_STREAM, 0))
 {}
 
@@ -196,7 +196,7 @@ bool SocketAPM::pollout(uint32_t timeout_ms)
     return true;
 }
 
-/* 
+/*
    start listening for new tcp connections
  */
 bool SocketAPM::listen(uint16_t backlog)

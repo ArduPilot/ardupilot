@@ -29,7 +29,7 @@ public:
     // update state
     void update(void);
 private:
-    SITL::SITL *sitl;    
+    SITL::SITL *sitl;
     uint8_t instance;
 };
 

@@ -74,7 +74,7 @@ void Plane::failsafe_check(void)
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_rudder, rudder);
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_steering, rudder);
 
-        // this is to allow the failsafe module to deliberately crash 
+        // this is to allow the failsafe module to deliberately crash
         // the plane. Only used in extreme circumstances to meet the
         // OBC rules
         if (afs.should_crash_vehicle()) {
@@ -91,7 +91,7 @@ void Plane::failsafe_check(void)
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_flap_auto, 0);
 
         servos_output();
-        
+
         // setup flaperons
         flaperon_update(0);
     }

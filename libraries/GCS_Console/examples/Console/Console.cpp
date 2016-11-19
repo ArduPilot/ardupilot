@@ -33,7 +33,7 @@ void console_loopback() {
             r = hal.console->read();
         }
         hal.console->println();
-    }   
+    }
 }
 
 void setup(void) {
@@ -42,7 +42,7 @@ void setup(void) {
 
     /* Setup GCS_Mavlink library's comm 0 port. */
     mavlink_comm_port[0] = hal.uartA;
-    
+
     char hello[] = "Hello statustext\r\n";
     try_send_statustext(MAVLINK_COMM_0, hello, strlen(hello));
 

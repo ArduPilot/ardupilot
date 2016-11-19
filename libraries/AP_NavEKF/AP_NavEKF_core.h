@@ -41,7 +41,7 @@
 #define MASK_GPS_HDOP       (1<<1)
 #define MASK_GPS_SPD_ERR    (1<<2)
 #define MASK_GPS_POS_ERR    (1<<3)
-#define MASK_GPS_YAW_ERR 	(1<<4)
+#define MASK_GPS_YAW_ERR     (1<<4)
 #define MASK_GPS_POS_DRIFT  (1<<5)
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
@@ -52,7 +52,7 @@ class NavEKF_core
 {
 public:
     friend class NavEKF;
-    
+
     typedef float ftype;
 #if MATH_CHECK_INDEXES
     typedef VectorN<ftype,2> Vector2;
@@ -843,7 +843,7 @@ private:
     // magnetometer X,Y,Z measurements are fused across three time steps
     // to level computational load as this is an expensive operation
     struct {
-    	ftype q0;
+        ftype q0;
         ftype q1;
         ftype q2;
         ftype q3;
@@ -858,7 +858,7 @@ private:
         Vector3f MagPred;
         ftype R_MAG;
         Vector9 SH_MAG;
-	} mag_state;
+    } mag_state;
 
     // string representing last reason for prearm failure
     char prearm_fail_string[40];
@@ -872,7 +872,7 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_FuseSideslip;
     AP_HAL::Util::perf_counter_t  _perf_OpticalFlowEKF;
     AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
-    
+
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 

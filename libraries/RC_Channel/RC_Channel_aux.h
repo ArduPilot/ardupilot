@@ -1,5 +1,5 @@
-/// @file	RC_Channel_aux.h
-/// @brief	RC_Channel manager for auxiliary channels (5..8), with EEPROM-backed storage of constants.
+/// @file    RC_Channel_aux.h
+/// @brief    RC_Channel manager for auxiliary channels (5..8), with EEPROM-backed storage of constants.
 /// @author Amilcar Lucas
 #pragma once
 
@@ -8,8 +8,8 @@
 
 #define RC_AUX_MAX_CHANNELS 12
 
-/// @class	RC_Channel_aux
-/// @brief	Object managing one aux. RC channel (CH5-8), with information about its function
+/// @class    RC_Channel_aux
+/// @brief    Object managing one aux. RC channel (CH5-8), with information about its function
 class RC_Channel_aux : public RC_Channel {
 public:
     /// Constructor
@@ -26,7 +26,7 @@ public:
                 break;
             }
         }
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
     }
 
     typedef enum
@@ -104,51 +104,51 @@ public:
     // output all auxiliary channels
     static void     output_ch_all(void);
 
-	// set radio_out for a function channel
-	static void set_radio(Aux_servo_function_t function, int16_t value);
+    // set radio_out for a function channel
+    static void set_radio(Aux_servo_function_t function, int16_t value);
 
-	// set radio_out for all channels matching the given function type, allow radio_trim to center servo
-	static void set_radio_trimmed(Aux_servo_function_t function, int16_t value);
+    // set radio_out for all channels matching the given function type, allow radio_trim to center servo
+    static void set_radio_trimmed(Aux_servo_function_t function, int16_t value);
 
-	// set and save the trim for a function channel to radio_in
-	static void set_trim_to_radio_in_for(Aux_servo_function_t function);
+    // set and save the trim for a function channel to radio_in
+    static void set_trim_to_radio_in_for(Aux_servo_function_t function);
 
-	// set radio_out to radio_min
-	static void set_radio_to_min(Aux_servo_function_t function);
+    // set radio_out to radio_min
+    static void set_radio_to_min(Aux_servo_function_t function);
 
-	// set radio_out to radio_max
-	static void set_radio_to_max(Aux_servo_function_t function);
+    // set radio_out to radio_max
+    static void set_radio_to_max(Aux_servo_function_t function);
 
-	// set radio_out to radio_trim
-	static void set_radio_to_trim(Aux_servo_function_t function);
+    // set radio_out to radio_trim
+    static void set_radio_to_trim(Aux_servo_function_t function);
 
-	// copy radio_in to radio_out
-	static void copy_radio_in_out(Aux_servo_function_t function, bool do_input_output=false);
+    // copy radio_in to radio_out
+    static void copy_radio_in_out(Aux_servo_function_t function, bool do_input_output=false);
 
-	// set servo_out
-	static void set_servo_out_for(Aux_servo_function_t function, int16_t value);
+    // set servo_out
+    static void set_servo_out_for(Aux_servo_function_t function, int16_t value);
 
     // setup failsafe for an auxiliary channel function, by pwm
     static void set_servo_failsafe_pwm(RC_Channel_aux::Aux_servo_function_t function, uint16_t pwm);
-    
-	// setup failsafe for an auxiliary channel function
-	static void set_servo_failsafe(Aux_servo_function_t function, RC_Channel::LimitValue limit);
 
-	// set servo to a LimitValue
-	static void set_servo_limit(Aux_servo_function_t function, RC_Channel::LimitValue limit);
+    // setup failsafe for an auxiliary channel function
+    static void set_servo_failsafe(Aux_servo_function_t function, RC_Channel::LimitValue limit);
 
-	// return true if a function is assigned to a channel
-	static bool function_assigned(Aux_servo_function_t function);
+    // set servo to a LimitValue
+    static void set_servo_limit(Aux_servo_function_t function, RC_Channel::LimitValue limit);
 
-	// set a servo_out value, and angle range, then calc_pwm
-	static void move_servo(Aux_servo_function_t function,
-						   int16_t value, int16_t angle_min, int16_t angle_max);
+    // return true if a function is assigned to a channel
+    static bool function_assigned(Aux_servo_function_t function);
+
+    // set a servo_out value, and angle range, then calc_pwm
+    static void move_servo(Aux_servo_function_t function,
+                        int16_t value, int16_t angle_min, int16_t angle_max);
 
     static const struct AP_Param::GroupInfo        var_info[];
 
     // assigned and enable auxiliary channels
     static void enable_aux_servos(void);
-    
+
     // prevent a channel from being used for auxiliary functions
     static void disable_aux_channel(uint8_t channel);
 
@@ -168,7 +168,7 @@ public:
     static void disable_passthrough(bool disable) {
         _disable_passthrough = disable;
     }
-    
+
 private:
     static uint64_t _function_mask[2];
     static bool _initialised;

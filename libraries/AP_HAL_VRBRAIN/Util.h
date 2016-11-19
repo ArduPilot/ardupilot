@@ -29,7 +29,7 @@ private:
 
 class VRBRAIN::VRBRAINUtil : public AP_HAL::Util {
 public:
-	VRBRAINUtil(void);
+    VRBRAINUtil(void);
     bool run_debug_shell(AP_HAL::BetterStream *stream);
 
     enum safety_state safety_switch_state(void);
@@ -54,13 +54,13 @@ public:
     void perf_begin(perf_counter_t ) override;
     void perf_end(perf_counter_t) override;
     void perf_count(perf_counter_t) override;
-    
+
     // create a new semaphore
     AP_HAL::Semaphore *new_semaphore(void) override { return new VRBRAIN::Semaphore; }
 
     void set_imu_temp(float current) override;
     void set_imu_target_temp(int8_t *target) override;
-    
+
 private:
     int _safety_handle;
     VRBRAIN::NSHShellStream _shell_stream;

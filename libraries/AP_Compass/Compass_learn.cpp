@@ -48,8 +48,8 @@ Compass::learn_offsets(void)
             for (uint8_t i=0; i<_mag_history_size; i++) {
                 // fill the history buffer with the current mag vector,
                 // with the offset removed
-                _state[k].mag_history[i] = Vector3i(roundf(field.x) - ofs.x, 
-                                                    roundf(field.y) - ofs.y, 
+                _state[k].mag_history[i] = Vector3i(roundf(field.x) - ofs.x,
+                                                    roundf(field.y) - ofs.y,
                                                     roundf(field.z) - ofs.z);
             }
             _state[k].mag_history_index = 0;
@@ -95,8 +95,8 @@ Compass::learn_offsets(void)
         }
 
         // put the vector in the history
-        _state[k].mag_history[_state[k].mag_history_index] = Vector3i(roundf(field.x) - ofs.x, 
-                                                                      roundf(field.y) - ofs.y, 
+        _state[k].mag_history[_state[k].mag_history_index] = Vector3i(roundf(field.x) - ofs.x,
+                                                                      roundf(field.y) - ofs.y,
                                                                       roundf(field.z) - ofs.z);
         _state[k].mag_history_index = (_state[k].mag_history_index + 1) % _mag_history_size;
 
@@ -122,7 +122,7 @@ Compass::learn_offsets(void)
         new_offsets.x = constrain_float(new_offsets.x, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
         new_offsets.y = constrain_float(new_offsets.y, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
         new_offsets.z = constrain_float(new_offsets.z, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
-            
+
         // set the new offsets
         _state[k].offset.set(new_offsets);
     }

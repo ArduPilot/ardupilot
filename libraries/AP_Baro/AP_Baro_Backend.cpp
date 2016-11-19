@@ -3,10 +3,10 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_Baro_Backend::AP_Baro_Backend(AP_Baro &baro) : 
-    _frontend(baro) 
+AP_Baro_Backend::AP_Baro_Backend(AP_Baro &baro) :
+    _frontend(baro)
 {
-    _sem = hal.util->new_semaphore();    
+    _sem = hal.util->new_semaphore();
 }
 
 /*

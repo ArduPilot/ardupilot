@@ -462,7 +462,7 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
     // set flag for reading registers
     _dev_gyro->set_read_flag(0x80);
     _dev_accel->set_read_flag(0x80);
-    
+
     whoami = _register_read_g(WHO_AM_I_G);
     if (whoami != LSM9DS0_G_WHOAMI) {
         hal.console->printf("LSM9DS0: unexpected gyro WHOAMI 0x%x\n", (unsigned)whoami);
@@ -478,7 +478,7 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
     // setup for register checking
     _dev_gyro->setup_checked_registers(5);
     _dev_accel->setup_checked_registers(4);
-        
+
     for (tries = 0; tries < 5; tries++) {
         _dev_gyro->set_speed(AP_HAL::Device::SPEED_LOW);
         _dev_accel->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -524,7 +524,7 @@ void AP_InertialSensor_LSM9DS0::start(void)
 
     set_gyro_orientation(_gyro_instance, _rotation_g);
     set_accel_orientation(_accel_instance, _rotation_a);
-    
+
     _set_accel_max_abs_offset(_accel_instance, 5.0f);
 
     /* start the timer process to read samples */
@@ -704,7 +704,7 @@ bool AP_InertialSensor_LSM9DS0::_poll_data()
             _inc_accel_error_count(_accel_instance);
         }
     }
-    
+
     return true;
 }
 

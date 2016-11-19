@@ -48,7 +48,7 @@ static void test_rotation_accuracy(void)
 
         float roll2, pitch2, yaw2;
         attitude.to_euler(&roll2, &pitch2, &yaw2);
-        
+
         // display results
         hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
                             (int)i,ToDeg(roll), ToDeg(roll2));
@@ -78,12 +78,12 @@ static void test_rotation_accuracy(void)
 
         float roll2, pitch2, yaw2;
         attitude.to_euler(&roll2, &pitch2, &yaw2);
-        
+
         // display results
         hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
                             (int)i,ToDeg(pitch), ToDeg(pitch2));
     }
-    
+
 
     // test yaw
     for( i=0; i<90; i++ ) {
@@ -109,7 +109,7 @@ static void test_rotation_accuracy(void)
 
         float roll2, pitch2, yaw2;
         attitude.to_euler(&roll2, &pitch2, &yaw2);
-        
+
         // display results
         hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
                             (int)i,ToDeg(yaw), ToDeg(yaw2));
@@ -128,7 +128,7 @@ static void test_euler(enum Rotation rotation, float roll, float pitch, float ya
     v1 = v;
 
     v1.rotate(rotation);
-    
+
     rotmat.from_euler(radians(roll), radians(pitch), radians(yaw));
     v2 = v;
     v2 = rotmat * v2;
@@ -152,7 +152,7 @@ static void test_rotate_inverse(void)
 {
     hal.console->println("\nrotate inverse test(Vector (1,1,1)):");
     Vector3f vec(1.0f,1.0f,1.0f), cmp_vec(1.0f,1.0f,1.0f);
-    for (enum Rotation r=ROTATION_NONE; 
+    for (enum Rotation r=ROTATION_NONE;
          r<ROTATION_MAX;
          r = (enum Rotation)((uint8_t)r+1)) {
         hal.console->printf("\nROTATION(%d) ",r);
@@ -196,18 +196,18 @@ static void test_eulers(void)
     test_euler(ROTATION_ROLL_270_YAW_90,  270,   0,  90);
     test_euler(ROTATION_ROLL_270_YAW_135, 270,   0, 135);
     test_euler(ROTATION_PITCH_90,           0,  90,   0);
-    test_euler(ROTATION_PITCH_270,          0, 270,   0);    
-    test_euler(ROTATION_PITCH_180_YAW_90,   0, 180,  90);    
-    test_euler(ROTATION_PITCH_180_YAW_270,  0, 180, 270);    
-    test_euler(ROTATION_ROLL_90_PITCH_90,  90,  90,   0);    
-    test_euler(ROTATION_ROLL_180_PITCH_90,180,  90,   0);    
-    test_euler(ROTATION_ROLL_270_PITCH_90,270,  90,   0);    
-    test_euler(ROTATION_ROLL_90_PITCH_180, 90, 180,   0);    
-    test_euler(ROTATION_ROLL_270_PITCH_180,270,180,   0);    
-    test_euler(ROTATION_ROLL_90_PITCH_270, 90, 270,   0);    
-    test_euler(ROTATION_ROLL_180_PITCH_270,180,270,   0);    
-    test_euler(ROTATION_ROLL_270_PITCH_270,270,270,   0);    
-    test_euler(ROTATION_ROLL_90_PITCH_180_YAW_90, 90, 180,  90);    
+    test_euler(ROTATION_PITCH_270,          0, 270,   0);
+    test_euler(ROTATION_PITCH_180_YAW_90,   0, 180,  90);
+    test_euler(ROTATION_PITCH_180_YAW_270,  0, 180, 270);
+    test_euler(ROTATION_ROLL_90_PITCH_90,  90,  90,   0);
+    test_euler(ROTATION_ROLL_180_PITCH_90,180,  90,   0);
+    test_euler(ROTATION_ROLL_270_PITCH_90,270,  90,   0);
+    test_euler(ROTATION_ROLL_90_PITCH_180, 90, 180,   0);
+    test_euler(ROTATION_ROLL_270_PITCH_180,270,180,   0);
+    test_euler(ROTATION_ROLL_90_PITCH_270, 90, 270,   0);
+    test_euler(ROTATION_ROLL_180_PITCH_270,180,270,   0);
+    test_euler(ROTATION_ROLL_270_PITCH_270,270,270,   0);
+    test_euler(ROTATION_ROLL_90_PITCH_180_YAW_90, 90, 180,  90);
     test_euler(ROTATION_ROLL_90_YAW_270,   90,   0, 270);
     test_euler(ROTATION_ROLL_90_PITCH_68_YAW_293,90,68.8,293.3);
 }
@@ -215,7 +215,7 @@ static void test_eulers(void)
 static bool have_rotation(const Matrix3f &m)
 {
     Matrix3f mt = m.transposed();
-    for (enum Rotation r=ROTATION_NONE; 
+    for (enum Rotation r=ROTATION_NONE;
          r<ROTATION_MAX;
          r = (enum Rotation)((uint8_t)r+1)) {
         Vector3f v(1,2,3);

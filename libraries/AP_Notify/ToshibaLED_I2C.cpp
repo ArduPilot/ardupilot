@@ -54,7 +54,7 @@ bool ToshibaLED_I2C::hw_init()
     _dev->get_semaphore()->give();
 
     _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&ToshibaLED_I2C::_timer, bool));
-    
+
     return ret;
 }
 
@@ -71,7 +71,7 @@ bool ToshibaLED_I2C::_timer(void)
         return true;
     }
     _need_update = false;
-    
+
     /* 4-bit for each color */
     uint8_t val[4] = { TOSHIBA_LED_PWM0, (uint8_t)(rgb.b >> 4),
                        (uint8_t)(rgb.g / 16), (uint8_t)(rgb.r / 16) };

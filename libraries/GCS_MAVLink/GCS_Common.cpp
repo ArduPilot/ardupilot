@@ -68,7 +68,7 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
     serialmanager_p = &serial_manager;
 
     // search for serial port
-    
+
     AP_HAL::UARTDriver *uart;
     uart = serial_manager.find_serial(protocol, instance);
     if (uart == nullptr) {
@@ -101,7 +101,7 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
     }
     // since tcdrain() and TCSADRAIN may not be implemented...
     hal.scheduler->delay(1);
-    
+
     uart->set_flow_control(old_flow_control);
 
     // now change back to desired baudrate
@@ -115,7 +115,7 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
     if (status == nullptr) {
         return;
     }
-    
+
     if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2) {
         // load signing key
         load_signing_key();
@@ -289,7 +289,7 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
 {
     AP_Mission::Mission_Command cmd;
 
-    if (msg->msgid == MAVLINK_MSG_ID_MISSION_REQUEST_INT) {  
+    if (msg->msgid == MAVLINK_MSG_ID_MISSION_REQUEST_INT) {
         // decode
         mavlink_mission_request_int_t packet;
         mavlink_msg_mission_request_int_decode(msg, &packet);
@@ -325,7 +325,7 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
         ret_packet.seq = packet.seq;
         ret_packet.command = cmd.id;
 
-        _mav_finalize_message_chan_send(chan, 
+        _mav_finalize_message_chan_send(chan,
                                         MAVLINK_MSG_ID_MISSION_ITEM_INT,
                                         (const char *)&ret_packet,
                                         MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
@@ -346,7 +346,7 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
         if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet)) {
             goto mission_item_send_failed;
         }
-            
+
         // set packet's current field to 1 if this is the command being executed
         if (cmd.id == (uint16_t)mission.get_current_nav_cmd().index) {
             ret_packet.current = 1;
@@ -367,7 +367,7 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
         ret_packet.seq = packet.seq;
         ret_packet.command = cmd.id;
 
-        _mav_finalize_message_chan_send(chan, 
+        _mav_finalize_message_chan_send(chan,
                                         MAVLINK_MSG_ID_MISSION_ITEM,
                                         (const char *)&ret_packet,
                                         MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
@@ -599,7 +599,7 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
         return;
     }
     reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
-    
+
     enum ap_var_type p_type;
     AP_Param *vp;
     char param_name[AP_MAX_NAME_SIZE+1];
@@ -619,7 +619,7 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
             return;
         }
     }
-    
+
     float value = vp->cast_to_float(p_type);
     mavlink_msg_param_value_send_buf(
         msg,
@@ -766,34 +766,34 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     bool mission_is_complete = false;
     uint16_t seq=0;
     uint16_t current = 0;
-    
-    if (msg->msgid == MAVLINK_MSG_ID_MISSION_ITEM) {      
-        mavlink_mission_item_t packet;    
+
+    if (msg->msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
+        mavlink_mission_item_t packet;
         mavlink_msg_mission_item_decode(msg, &packet);
-        
+
         // convert mavlink packet to mission command
         result = AP_Mission::mavlink_to_mission_cmd(packet, cmd);
         if (result != MAV_MISSION_ACCEPTED) {
             goto mission_ack;
         }
-        
+
         seq = packet.seq;
         current = packet.current;
     } else {
         mavlink_mission_item_int_t packet;
         mavlink_msg_mission_item_int_decode(msg, &packet);
-        
+
         // convert mavlink packet to mission command
         result = AP_Mission::mavlink_int_to_mission_cmd(packet, cmd);
         if (result != MAV_MISSION_ACCEPTED) {
             goto mission_ack;
         }
-        
+
         seq = packet.seq;
         current = packet.current;
     }
 
-    if (current == 2) {                                               
+    if (current == 2) {
         // current = 2 is a flag to tell us this is a "guided mode"
         // waypoint and not for the mission
         result = (handle_guided_request(cmd) ? MAV_MISSION_ACCEPTED
@@ -832,7 +832,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
             goto mission_ack;
         }
     }
-    
+
     // if command index is within the existing list, replace the command
     if (seq < mission.num_commands()) {
         if (mission.replace_cmd(seq,cmd)) {
@@ -854,11 +854,11 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
         result = MAV_MISSION_ERROR;
         goto mission_ack;
     }
-    
+
     // update waypoint receiving state machine
     waypoint_timelast_receive = AP_HAL::millis();
     waypoint_request_i++;
-    
+
     if (waypoint_request_i >= waypoint_request_last) {
         mavlink_msg_mission_ack_send_buf(
             msg,
@@ -866,7 +866,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
             msg->sysid,
             msg->compid,
             MAV_MISSION_ACCEPTED);
-        
+
         send_text(MAV_SEVERITY_INFO,"Flight plan received");
         waypoint_receiving = false;
         mission_is_complete = true;
@@ -895,7 +895,7 @@ mission_ack:
     return mission_is_complete;
 }
 
-void 
+void
 GCS_MAVLINK::handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps)
 {
     mavlink_gps_inject_data_t packet;
@@ -914,7 +914,7 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     if (id == MSG_HEARTBEAT) {
         save_signing_timestamp(false);
     }
-    
+
     // see if we can send the deferred messages, if any
     while (num_deferred_messages != 0) {
         if (!try_send_message(deferred_messages[next_deferred_message])) {
@@ -1006,7 +1006,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
         if (run_cli) {
             /* allow CLI to be started by hitting enter 3 times, if no
              *  heartbeat packets have been received */
-            if ((mavlink_active==0) && (AP_HAL::millis() - _cli_timeout) < 20000 && 
+            if ((mavlink_active==0) && (AP_HAL::millis() - _cli_timeout) < 20000 &&
                 comm_is_idle(chan)) {
                 if (c == '\n' || c == '\r') {
                     crlf_count++;
@@ -1148,7 +1148,7 @@ void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
         values[15],
         values[16],
         values[17],
-        receiver_rssi);        
+        receiver_rssi);
 }
 
 void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &compass)
@@ -1201,7 +1201,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         gyro2.z * 1000.0f,
         mag.x,
         mag.y,
-        mag.z);        
+        mag.z);
 
     if (ins.get_gyro_count() <= 2 &&
         ins.get_accel_count() <= 2 &&
@@ -1229,7 +1229,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         gyro3.z * 1000.0f,
         mag.x,
         mag.y,
-        mag.z);        
+        mag.z);
 }
 
 void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
@@ -1251,7 +1251,7 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
             now,
             pressure*0.01f, // hectopascal
             (pressure - barometer.get_ground_pressure(1))*0.01f, // hectopascal
-            barometer.get_temperature(1)*100); // 0.01 degrees C        
+            barometer.get_temperature(1)*100); // 0.01 degrees C
     }
 
     if (barometer.num_instances() > 2 &&
@@ -1262,7 +1262,7 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
             now,
             pressure*0.01f, // hectopascal
             (pressure - barometer.get_ground_pressure(2))*0.01f, // hectopascal
-            barometer.get_temperature(2)*100); // 0.01 degrees C        
+            barometer.get_temperature(2)*100); // 0.01 degrees C
     }
 }
 
@@ -1539,7 +1539,7 @@ void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_ve
     uint16_t vendor_id = 0;
     uint16_t product_id = 0;
     uint64_t uid = 0;
-    
+
     flight_sw_version = major_version << (8*3) | \
                         minor_version << (8*2) | \
                         patch_version << (8*1) | \
@@ -1556,13 +1556,13 @@ void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_ve
 #else
     memset(middleware_custom_version,0,8);
 #endif
-    
+
 #if defined(NUTTX_GIT_VERSION)
     strncpy((char *)os_custom_version, NUTTX_GIT_VERSION, 8);
 #else
     memset(os_custom_version,0,8);
 #endif
-    
+
     mavlink_msg_autopilot_version_send(
         chan,
         hal.util->get_capabilities(),
@@ -1674,7 +1674,7 @@ float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
 {
     // send at a much lower rate while handling waypoints and
     // parameter sends
-    if ((stream_num != STREAM_PARAMS) && 
+    if ((stream_num != STREAM_PARAMS) &&
         (waypoint_receiving || _queued_parameter != nullptr)) {
         return 0.25f;
     }
@@ -1716,7 +1716,7 @@ void GCS_MAVLINK::send_servo_output_raw(bool hil)
         if (values[i] == 65535) {
             values[i] = 0;
         }
-    }    
+    }
     mavlink_msg_servo_output_raw_send(
             chan,
             AP_HAL::micros(),
@@ -1762,7 +1762,7 @@ void GCS_MAVLINK::send_accelcal_vehicle_position(uint8_t position)
 }
 
 /*
-  handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
+  handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command
 
   Optionally disable PX4IO overrides. This is done for quadplanes to
   prevent the mixer running while rebooting which can start the VTOL
@@ -1790,7 +1790,7 @@ uint8_t GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packe
 #endif
         }
 
-        // force safety on 
+        // force safety on
         hal.rcout->force_safety_on();
         hal.rcout->force_safety_no_wait();
         hal.scheduler->delay(200);

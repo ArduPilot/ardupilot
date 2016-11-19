@@ -11,7 +11,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static uint8_t max_channels_display = 8;  //Set to 0 for display numbers of channels detected.
 static uint16_t last_value[MAX_CHANNELS];
 
-void setup(void) 
+void setup(void)
 {
     hal.console->printf("Starting RCInput test\n");
 }

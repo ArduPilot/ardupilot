@@ -84,7 +84,7 @@ void AP_MotorsTri::Init()
     add_motor_num(AP_MOTORS_MOT_1);
     add_motor_num(AP_MOTORS_MOT_2);
     add_motor_num(AP_MOTORS_MOT_4);
-    
+
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
 
@@ -104,10 +104,10 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // set update rate for the 3 motors (but not the servo on channel 7)
-    uint32_t mask = 
-	    1U << AP_MOTORS_MOT_1 |
-	    1U << AP_MOTORS_MOT_2 |
-	    1U << AP_MOTORS_MOT_4;
+    uint32_t mask =
+        1U << AP_MOTORS_MOT_1 |
+        1U << AP_MOTORS_MOT_2 |
+        1U << AP_MOTORS_MOT_4;
     rc_set_freq(mask, _speed_hz);
 }
 

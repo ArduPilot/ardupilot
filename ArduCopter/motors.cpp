@@ -266,7 +266,7 @@ void Copter::init_disarm_motors()
 void Copter::motors_output()
 {
 #if ADVANCED_FAILSAFE == ENABLED
-    // this is to allow the failsafe module to deliberately crash 
+    // this is to allow the failsafe module to deliberately crash
     // the vehicle. Only used in extreme circumstances to meet the
     // OBC rules
     if (g2.afs.should_crash_vehicle()) {

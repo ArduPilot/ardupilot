@@ -15,7 +15,7 @@
 
 //
 //  u-blox GPS driver for ArduPilot
-//	Origin code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
+//    Origin code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //  Substantially rewritten for new GPS driver structure by Andrew Tridgell
 //
 #include "AP_GPS.h"
@@ -115,7 +115,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_POLL_SBAS:
         _send_message(CLASS_CFG, MSG_CFG_SBAS, nullptr, 0);
-	break;
+    break;
     case STEP_POLL_NAV:
         _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, nullptr, 0);
         break;
@@ -358,7 +358,7 @@ AP_GPS_UBLOX::read(void)
         // read the next byte
         data = port->read();
 
-	reset:
+    reset:
         switch(_step) {
 
         // Message preamble detection
@@ -417,7 +417,7 @@ AP_GPS_UBLOX::read(void)
                 // assume any payload bigger then what we know about is noise
                 _payload_length = 0;
                 _step = 0;
-				goto reset;
+                goto reset;
             }
             _payload_counter = 0;                               // prepare to receive payload
             break;
@@ -440,7 +440,7 @@ AP_GPS_UBLOX::read(void)
             if (_ck_a != data) {
                 Debug("bad cka %x should be %x", data, _ck_a);
                 _step = 0;
-				goto reset;
+                goto reset;
             }
             break;
         case 8:
@@ -633,7 +633,7 @@ AP_GPS_UBLOX::_parse_gps(void)
     if (_class == CLASS_CFG) {
         switch(_msg_id) {
         case  MSG_CFG_NAV_SETTINGS:
-	    Debug("Got settings %u min_elev %d drLimit %u\n", 
+        Debug("Got settings %u min_elev %d drLimit %u\n",
                   (unsigned)_buffer.nav_settings.dynModel,
                   (int)_buffer.nav_settings.minElev,
                   (unsigned)_buffer.nav_settings.drLimit);
@@ -722,7 +722,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 
         case MSG_CFG_SBAS:
             if (gps._sbas_mode != 2) {
-	        Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 
+            Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n",
                       (unsigned)_buffer.sbas.mode,
                       (unsigned)_buffer.sbas.usage,
                       (unsigned)_buffer.sbas.maxSBAS,
@@ -772,7 +772,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             }
             return false;
         }
-           
+
     }
 
     if (_class == CLASS_MON) {
@@ -784,12 +784,12 @@ AP_GPS_UBLOX::_parse_gps(void)
             break;
         case MSG_MON_HW2:
             if (_payload_length == 28) {
-                log_mon_hw2();  
+                log_mon_hw2();
             }
             break;
         case MSG_MON_VER:
             _have_version = true;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, 
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
                                              "u-blox %d HW: %s SW: %s",
                                              state.instance,
                                              _buffer.mon_ver.hwVersion,
@@ -1081,7 +1081,7 @@ bool
 AP_GPS_UBLOX::_detect(struct UBLOX_detect_state &state, uint8_t data)
 {
 reset:
-	switch (state.step) {
+    switch (state.step) {
         case 1:
             if (PREAMBLE2 == data) {
                 state.step++;
@@ -1120,17 +1120,17 @@ reset:
             state.step++;
             if (state.ck_a != data) {
                 state.step = 0;
-				goto reset;
+                goto reset;
             }
             break;
         case 8:
             state.step = 0;
-			if (state.ck_b == data) {
-				// a valid UBlox packet
-				return true;
-			} else {
-				goto reset;
-			}
+            if (state.ck_b == data) {
+                // a valid UBlox packet
+                return true;
+            } else {
+                goto reset;
+            }
     }
     return false;
 }

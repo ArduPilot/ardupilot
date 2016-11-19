@@ -1,7 +1,7 @@
 /*
              LUFA Library
      Copyright (C) Dean Camera, 2010.
-              
+
   dean [at] fourwalledcubicle [dot] com
       www.fourwalledcubicle.com
 */
@@ -9,13 +9,13 @@
 /*
   Copyright 2010  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
-  Permission to use, copy, modify, distribute, and sell this 
+  Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
-  without fee, provided that the above copyright notice appear in 
+  without fee, provided that the above copyright notice appear in
   all copies and that both that the copyright notice and this
-  permission notice and warranty disclaimer appear in supporting 
-  documentation, and that the name of the author not be used in 
-  advertising or publicity pertaining to distribution of the 
+  permission notice and warranty disclaimer appear in supporting
+  documentation, and that the name of the author not be used in
+  advertising or publicity pertaining to distribution of the
   software without specific, written prior permission.
 
   The author disclaim all warranties with regard to this
@@ -36,7 +36,7 @@
  *
  *  \deprecated This module is deprecated and will be removed in a future library release.
  */
- 
+
 /** @defgroup Group_Scheduler Simple Task Scheduler - LUFA/Scheduler/Scheduler.h
  *
  *  \deprecated This module is deprecated and will be removed in a future library release.
@@ -54,241 +54,241 @@
  *  Usage Example:
  *  \code
  *      #include <LUFA/Scheduler/Scheduler.h>
- *      
+ *
  *      TASK(MyTask1);
  *      TASK(MyTask2);
- *      
+ *
  *      TASK_LIST
  *      {
- *      	{ .Task = MyTask1, .TaskStatus = TASK_RUN, .GroupID = 1  },
- *      	{ .Task = MyTask2, .TaskStatus = TASK_RUN, .GroupID = 1  },
+ *          { .Task = MyTask1, .TaskStatus = TASK_RUN, .GroupID = 1  },
+ *          { .Task = MyTask2, .TaskStatus = TASK_RUN, .GroupID = 1  },
  *      }
  *
  *      int main(void)
  *      {
- *      	Scheduler_Start();
+ *          Scheduler_Start();
  *      }
  *
  *      TASK(MyTask1)
  *      {
- *      	// Implementation Here
+ *          // Implementation Here
  *      }
  *
  *      TASK(MyTask2)
  *      {
- *      	// Implementation Here
+ *          // Implementation Here
  *      }
  *  \endcode
  *
  *  @{
  */
- 
+
 #ifndef __SCHEDULER_H__
 #define __SCHEDULER_H__
 
-	/* Includes: */
-		#include <stdint.h>
-		#include <stdbool.h>
-		
-		#include <util/atomic.h>
+    /* Includes: */
+        #include <stdint.h>
+        #include <stdbool.h>
 
-		#include "../Common/Common.h"
+        #include <util/atomic.h>
 
-	/* Enable C linkage for C++ Compilers: */
-		#if defined(__cplusplus)
-			extern "C" {
-		#endif
+        #include "../Common/Common.h"
 
-	/* Public Interface - May be used in end-application: */
-		/* Macros: */
-			/** Creates a new scheduler task body or prototype. Should be used in the form:
-			 *  \code
-			 *      TASK(TaskName); // Prototype
-			 *
-			 *      TASK(TaskName)
-			 *      {
-			 *           // Task body
-			 *      }
-			 *  \endcode
-			 */
-			#define TASK(name)              void name (void)
-			
-			/** Defines a task list array, containing one or more task entries of the type TaskEntry_t. Each task list
-			 *  should be encased in curly braces and ended with a comma.
-			 *
-			 *  Usage Example:
-			 *  \code
-			 *      TASK_LIST
-			 *      {
-			 *           { .Task = MyTask1, .TaskStatus = TASK_RUN, .GroupID = 1 },
-			 *           // More task entries here
-			 *      }
-			 *  \endcode
-			 */
-			#define TASK_LIST               TaskEntry_t Scheduler_TaskList[] = 
-			
-			/** Constant, giving the maximum delay in scheduler ticks which can be stored in a variable of type
-			 *  \ref SchedulerDelayCounter_t.
-			 */
-			#define TASK_MAX_DELAY          (MAX_DELAYCTR_COUNT - 1)
+    /* Enable C linkage for C++ Compilers: */
+        #if defined(__cplusplus)
+            extern "C" {
+        #endif
 
-			/** Task status mode constant, for passing to \ref Scheduler_SetTaskMode() or \ref Scheduler_SetGroupTaskMode(). */
-			#define TASK_RUN                true
+    /* Public Interface - May be used in end-application: */
+        /* Macros: */
+            /** Creates a new scheduler task body or prototype. Should be used in the form:
+            *  \code
+            *      TASK(TaskName); // Prototype
+            *
+            *      TASK(TaskName)
+            *      {
+            *           // Task body
+            *      }
+            *  \endcode
+            */
+            #define TASK(name)              void name (void)
 
-			/** Task status mode constant, for passing to \ref Scheduler_SetTaskMode() or \ref Scheduler_SetGroupTaskMode(). */
-			#define TASK_STOP               false
-			
-		/* Pseudo-Function Macros: */
-			#if defined(__DOXYGEN__)
-				/** Starts the scheduler in its infinite loop, executing running tasks. This should be placed at the end
-				 *  of the user application's main() function, as it can never return to the calling function.
-				 */
-				void Scheduler_Start(void);
-				
-				/** Initialises the scheduler so that the scheduler functions can be called before the scheduler itself
-				 *  is started. This must be executed before any scheduler function calls other than Scheduler_Start(),
-				 *  and can be omitted if no such functions could be called before the scheduler is started.
-				 */
-				void Scheduler_Init(void);
-			#else
-				#define Scheduler_Start()    Scheduler_GoSchedule(TOTAL_TASKS);
-				#define Scheduler_Init()     Scheduler_InitScheduler(TOTAL_TASKS);
-			#endif
+            /** Defines a task list array, containing one or more task entries of the type TaskEntry_t. Each task list
+            *  should be encased in curly braces and ended with a comma.
+            *
+            *  Usage Example:
+            *  \code
+            *      TASK_LIST
+            *      {
+            *           { .Task = MyTask1, .TaskStatus = TASK_RUN, .GroupID = 1 },
+            *           // More task entries here
+            *      }
+            *  \endcode
+            */
+            #define TASK_LIST               TaskEntry_t Scheduler_TaskList[] =
 
-		/* Type Defines: */
-			/** Type define for a pointer to a scheduler task. */
-			typedef void (*TaskPtr_t)(void);
-			
-			/** Type define for a variable which can hold a tick delay value for the scheduler up to the maximum delay
-			 *  possible.
-			 */
-			typedef uint16_t SchedulerDelayCounter_t;
-			
-			/** \brief Scheduler Task List Entry Structure.
-			 *
-			 *  Structure for holding a single task's information in the scheduler task list.
-			 */
-			typedef struct
-			{
-				TaskPtr_t Task;       /**< Pointer to the task to execute. */
-				bool      TaskStatus; /**< Status of the task (either TASK_RUN or TASK_STOP). */
-				uint8_t   GroupID;    /**< Group ID of the task so that its status can be changed as a group. */
-			} TaskEntry_t;
+            /** Constant, giving the maximum delay in scheduler ticks which can be stored in a variable of type
+            *  \ref SchedulerDelayCounter_t.
+            */
+            #define TASK_MAX_DELAY          (MAX_DELAYCTR_COUNT - 1)
 
-		/* Global Variables: */
-			/** Task entry list, containing the scheduler tasks, task statuses and group IDs. Each entry is of type
-			 *  TaskEntry_t and can be manipulated as desired, although it is preferential that the proper Scheduler
-			 *  functions should be used instead of direct manipulation.
-			 */
-			exter TaskEntry_t Scheduler_TaskList[];
-			
-			/** Contains the total number of tasks in the task list, irrespective of if the task's status is set to
-			 *  \ref TASK_RUN or \ref TASK_STOP.
-			 *
-			 *  \note This value should be treated as read-only, and never altered in user-code.
-			 */
-			extern volatile uint8_t Scheduler_TotalTasks;
+            /** Task status mode constant, for passing to \ref Scheduler_SetTaskMode() or \ref Scheduler_SetGroupTaskMode(). */
+            #define TASK_RUN                true
 
-			/**  Contains the current scheduler tick count, for use with the delay functions. If the delay functions
-			 *   are used in the user code, this should be incremented each tick period so that the delays can be
-			 *   calculated.
-			 */
-			extern volatile SchedulerDelayCounter_t Scheduler_TickCounter;
+            /** Task status mode constant, for passing to \ref Scheduler_SetTaskMode() or \ref Scheduler_SetGroupTaskMode(). */
+            #define TASK_STOP               false
 
-		/* Inline Functions: */
-			/** Resets the delay counter value to the current tick count. This should be called to reset the period
-			 *  for a delay in a task which is dependent on the current tick value.
-			 *
-			 *  \param[out] DelayCounter  Counter which is storing the starting tick count for a given delay.
-			 */
-			static inline void Scheduler_ResetDelay(SchedulerDelayCounter_t* const DelayCounter)
-			                                        ATTR_NON_NULL_PTR_ARG(1) ATTR_ALWAYS_INLINE;
-			static inline void Scheduler_ResetDelay(SchedulerDelayCounter_t* const DelayCounter)
-			{
-				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-				{
-					*DelayCounter = Scheduler_TickCounter;
-				}
-			}
-		
-		/* Function Prototypes: */
-			/** Determines if the given tick delay has elapsed, based on the given delay period and tick counter value.
-			 *
-			 *  \param[in] Delay         The delay to test for, measured in ticks.
-			 *  \param[in] DelayCounter  The counter which is storing the starting tick value for the delay.
-			 *
-			 *  \return Boolean true if the delay has elapsed, false otherwise.
-			 *
-			 *  Usage Example:
-			 *  \code
-			 *      static SchedulerDelayCounter_t DelayCounter = 10000; // Force immediate run on start-up
-			 *
-			 *      // Task runs every 10000 ticks, 10 seconds for this demo
-			 *      if (Scheduler_HasDelayElapsed(10000, &DelayCounter))
-			 *      {
-			 *           // Code to execute after delay interval elapsed here
-			 *      }
-			 *  \endcode
-			 */
-			bool Scheduler_HasDelayElapsed(const uint16_t Delay,
-			                               SchedulerDelayCounter_t* const DelayCounter)
-			                               ATTR_WARN_UNUSED_RESULT ATTR_NON_NULL_PTR_ARG(2);
-			
-			/** Sets the task mode for a given task.
-			 *
-			 *  \param[in] Task        Name of the task whose status is to be changed.
-			 *  \param[in] TaskStatus  New task status for the task (\ref TASK_RUN or \ref TASK_STOP).
-			 */
-			void Scheduler_SetTaskMode(const TaskPtr_t Task,
-			                           const bool TaskStatus);
-			
-			/** Sets the task mode for a given task group ID, allowing for an entire group of tasks to have their
-			 *  statuses changed at once.
-			 *
-			 *  \param[in] GroupID     Value of the task group ID whose status is to be changed.
-			 *  \param[in] TaskStatus  New task status for tasks in the specified group (\ref TASK_RUN or \ref TASK_STOP).
-			 */
-			void Scheduler_SetGroupTaskMode(const uint8_t GroupID,
-			                                const bool TaskStatus);
+        /* Pseudo-Function Macros: */
+            #if defined(__DOXYGEN__)
+                /** Starts the scheduler in its infinite loop, executing running tasks. This should be placed at the end
+                *  of the user application's main() function, as it can never return to the calling function.
+                */
+                void Scheduler_Start(void);
 
-	/* Private Interface - For use in library only: */
-	#if !defined(__DOXYGEN__)
-		/* Macros: */
-			#define TOTAL_TASKS                       (sizeof(Scheduler_TaskList) / sizeof(TaskEntry_t))
-			#define MAX_DELAYCTR_COUNT                0xFFFF
+                /** Initialises the scheduler so that the scheduler functions can be called before the scheduler itself
+                *  is started. This must be executed before any scheduler function calls other than Scheduler_Start(),
+                *  and can be omitted if no such functions could be called before the scheduler is started.
+                */
+                void Scheduler_Init(void);
+            #else
+                #define Scheduler_Start()    Scheduler_GoSchedule(TOTAL_TASKS);
+                #define Scheduler_Init()     Scheduler_InitScheduler(TOTAL_TASKS);
+            #endif
 
-		/* Inline Functions: */
-			static inline void Scheduler_InitScheduler(const uint8_t TotalTasks) ATTR_ALWAYS_INLINE;
-			static inline void Scheduler_InitScheduler(const uint8_t TotalTasks)
-			{
-				Scheduler_TotalTasks = TotalTasks;
-			}
-		
-			static inline void Scheduler_GoSchedule(const uint8_t TotalTasks) ATTR_NO_RETURN ATTR_ALWAYS_INLINE ATTR_DEPRECATED;
-			static inline void Scheduler_GoSchedule(const uint8_t TotalTasks)
-			{
-				Scheduler_InitScheduler(TotalTasks);
+        /* Type Defines: */
+            /** Type define for a pointer to a scheduler task. */
+            typedef void (*TaskPtr_t)(void);
 
-				for (;;)
-				{
-					TaskEntry_t* CurrTask = &Scheduler_TaskList[0];
-					
-					while (CurrTask != &Scheduler_TaskList[TotalTasks])
-					{
-						if (CurrTask->TaskStatus == TASK_RUN)
-						  CurrTask->Task();
+            /** Type define for a variable which can hold a tick delay value for the scheduler up to the maximum delay
+            *  possible.
+            */
+            typedef uint16_t SchedulerDelayCounter_t;
 
-						CurrTask++;
-					}
-				}
-			}
-	#endif
-		
-	/* Disable C linkage for C++ Compilers: */
-		#if defined(__cplusplus)
-			}
-		#endif
-		
+            /** \brief Scheduler Task List Entry Structure.
+            *
+            *  Structure for holding a single task's information in the scheduler task list.
+            */
+            typedef struct
+            {
+                TaskPtr_t Task;       /**< Pointer to the task to execute. */
+                bool      TaskStatus; /**< Status of the task (either TASK_RUN or TASK_STOP). */
+                uint8_t   GroupID;    /**< Group ID of the task so that its status can be changed as a group. */
+            } TaskEntry_t;
+
+        /* Global Variables: */
+            /** Task entry list, containing the scheduler tasks, task statuses and group IDs. Each entry is of type
+            *  TaskEntry_t and can be manipulated as desired, although it is preferential that the proper Scheduler
+            *  functions should be used instead of direct manipulation.
+            */
+            exter TaskEntry_t Scheduler_TaskList[];
+
+            /** Contains the total number of tasks in the task list, irrespective of if the task's status is set to
+            *  \ref TASK_RUN or \ref TASK_STOP.
+            *
+            *  \note This value should be treated as read-only, and never altered in user-code.
+            */
+            extern volatile uint8_t Scheduler_TotalTasks;
+
+            /**  Contains the current scheduler tick count, for use with the delay functions. If the delay functions
+            *   are used in the user code, this should be incremented each tick period so that the delays can be
+            *   calculated.
+            */
+            extern volatile SchedulerDelayCounter_t Scheduler_TickCounter;
+
+        /* Inline Functions: */
+            /** Resets the delay counter value to the current tick count. This should be called to reset the period
+            *  for a delay in a task which is dependent on the current tick value.
+            *
+            *  \param[out] DelayCounter  Counter which is storing the starting tick count for a given delay.
+            */
+            static inline void Scheduler_ResetDelay(SchedulerDelayCounter_t* const DelayCounter)
+                                                    ATTR_NON_NULL_PTR_ARG(1) ATTR_ALWAYS_INLINE;
+            static inline void Scheduler_ResetDelay(SchedulerDelayCounter_t* const DelayCounter)
+            {
+                ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+                {
+                    *DelayCounter = Scheduler_TickCounter;
+                }
+            }
+
+        /* Function Prototypes: */
+            /** Determines if the given tick delay has elapsed, based on the given delay period and tick counter value.
+            *
+            *  \param[in] Delay         The delay to test for, measured in ticks.
+            *  \param[in] DelayCounter  The counter which is storing the starting tick value for the delay.
+            *
+            *  \return Boolean true if the delay has elapsed, false otherwise.
+            *
+            *  Usage Example:
+            *  \code
+            *      static SchedulerDelayCounter_t DelayCounter = 10000; // Force immediate run on start-up
+            *
+            *      // Task runs every 10000 ticks, 10 seconds for this demo
+            *      if (Scheduler_HasDelayElapsed(10000, &DelayCounter))
+            *      {
+            *           // Code to execute after delay interval elapsed here
+            *      }
+            *  \endcode
+            */
+            bool Scheduler_HasDelayElapsed(const uint16_t Delay,
+                                        SchedulerDelayCounter_t* const DelayCounter)
+                                        ATTR_WARN_UNUSED_RESULT ATTR_NON_NULL_PTR_ARG(2);
+
+            /** Sets the task mode for a given task.
+            *
+            *  \param[in] Task        Name of the task whose status is to be changed.
+            *  \param[in] TaskStatus  New task status for the task (\ref TASK_RUN or \ref TASK_STOP).
+            */
+            void Scheduler_SetTaskMode(const TaskPtr_t Task,
+                                    const bool TaskStatus);
+
+            /** Sets the task mode for a given task group ID, allowing for an entire group of tasks to have their
+            *  statuses changed at once.
+            *
+            *  \param[in] GroupID     Value of the task group ID whose status is to be changed.
+            *  \param[in] TaskStatus  New task status for tasks in the specified group (\ref TASK_RUN or \ref TASK_STOP).
+            */
+            void Scheduler_SetGroupTaskMode(const uint8_t GroupID,
+                                            const bool TaskStatus);
+
+    /* Private Interface - For use in library only: */
+    #if !defined(__DOXYGEN__)
+        /* Macros: */
+            #define TOTAL_TASKS                       (sizeof(Scheduler_TaskList) / sizeof(TaskEntry_t))
+            #define MAX_DELAYCTR_COUNT                0xFFFF
+
+        /* Inline Functions: */
+            static inline void Scheduler_InitScheduler(const uint8_t TotalTasks) ATTR_ALWAYS_INLINE;
+            static inline void Scheduler_InitScheduler(const uint8_t TotalTasks)
+            {
+                Scheduler_TotalTasks = TotalTasks;
+            }
+
+            static inline void Scheduler_GoSchedule(const uint8_t TotalTasks) ATTR_NO_RETURN ATTR_ALWAYS_INLINE ATTR_DEPRECATED;
+            static inline void Scheduler_GoSchedule(const uint8_t TotalTasks)
+            {
+                Scheduler_InitScheduler(TotalTasks);
+
+                for (;;)
+                {
+                    TaskEntry_t* CurrTask = &Scheduler_TaskList[0];
+
+                    while (CurrTask != &Scheduler_TaskList[TotalTasks])
+                    {
+                        if (CurrTask->TaskStatus == TASK_RUN)
+                        CurrTask->Task();
+
+                        CurrTask++;
+                    }
+                }
+            }
+    #endif
+
+    /* Disable C linkage for C++ Compilers: */
+        #if defined(__cplusplus)
+            }
+        #endif
+
 #endif
 
 /** @} */

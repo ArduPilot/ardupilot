@@ -20,7 +20,7 @@ using namespace VRBRAIN;
 
 /*
   enable RCOUT_DEBUG_LATENCY to measure output latency using a logic
-  analyser. AUX6 will go high during the cork/push output. 
+  analyser. AUX6 will go high during the cork/push output.
  */
 #define RCOUT_DEBUG_LATENCY 0
 
@@ -39,12 +39,12 @@ void VRBRAINRCOutput::init()
     }
 
     _rate_mask = 0;
-    _alt_fd = -1;    
+    _alt_fd = -1;
     _servo_count = 0;
     _alt_servo_count = 0;
 
     if (ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get servo count\n");        
+        hal.console->printf("RCOutput: Unable to get servo count\n");
         return;
     }
 
@@ -88,14 +88,14 @@ void VRBRAINRCOutput::_init_alt_channels(void)
         return;
     }
     if (ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get servo count\n");        
+        hal.console->printf("RCOutput: Unable to get servo count\n");
     }
 }
 
 /*
   set output frequency on outputs associated with fd
  */
-void VRBRAINRCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz) 
+void VRBRAINRCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
 {
     // we can't set this per channel
     if (freq_hz > 50 || freq_hz == 1) {
@@ -116,7 +116,7 @@ void VRBRAINRCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
         _freq_hz = freq_hz;
     }
 
-    /* work out the new rate mask. The outputs have 4 groups of servos. 
+    /* work out the new rate mask. The outputs have 4 groups of servos.
 
        Group 0: channels 0 1 2
        Group 1: channels 3 4 5
@@ -177,14 +177,14 @@ void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 
     // re-fetch servo count as it might have changed due to a change in BRD_PWM_COUNT
     if (_pwm_fd != -1 && ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get servo count\n");        
+        hal.console->printf("RCOutput: Unable to get servo count\n");
         return;
     }
     if (_alt_fd != -1 && ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get alt servo count\n");        
+        hal.console->printf("RCOutput: Unable to get alt servo count\n");
         return;
     }
-    
+
     // greater than 400 doesn't give enough room at higher periods for
     // the down pulse
     if (freq_hz > 400) {
@@ -342,7 +342,7 @@ uint16_t VRBRAINRCOutput::read(uint8_t ch)
     // otherwise use the value we last sent. This makes it easier to
     // observe the behaviour of failsafe in px4io
     for (uint8_t i=0; i<ORB_MULTI_MAX_INSTANCES; i++) {
-        if (_outputs[i].pwm_sub >= 0 && 
+        if (_outputs[i].pwm_sub >= 0 &&
             ch < _outputs[i].outputs.noutputs &&
             _outputs[i].outputs.output[ch] > 0) {
             return _outputs[i].outputs.output[ch];
@@ -384,7 +384,7 @@ void VRBRAINRCOutput::_arm_actuators(bool arm)
         return;
     }
 
-	_armed.timestamp = hrt_absolute_time();
+    _armed.timestamp = hrt_absolute_time();
     _armed.armed = arm;
     _armed.ready_to_arm = arm;
     _armed.lockdown = false;
@@ -402,7 +402,7 @@ void VRBRAINRCOutput::_arm_actuators(bool arm)
  */
 void VRBRAINRCOutput::_publish_actuators(void)
 {
-	struct actuator_direct_s actuators;
+    struct actuator_direct_s actuators;
 
     if (_esc_pwm_min == 0 ||
         _esc_pwm_max == 0) {
@@ -410,7 +410,7 @@ void VRBRAINRCOutput::_publish_actuators(void)
         return;
     }
 
-	actuators.nvalues = _max_channel;
+    actuators.nvalues = _max_channel;
     if (actuators.nvalues > actuators.NUM_ACTUATORS_DIRECT) {
         actuators.nvalues = actuators.NUM_ACTUATORS_DIRECT;
     }
@@ -421,7 +421,7 @@ void VRBRAINRCOutput::_publish_actuators(void)
         actuators.nvalues = 8;
     }
     bool armed = hal.util->get_soft_armed();
-	actuators.timestamp = hrt_absolute_time();
+    actuators.timestamp = hrt_absolute_time();
     for (uint8_t i=0; i<actuators.nvalues; i++) {
         if (!armed) {
             actuators.values[i] = 0;
@@ -468,7 +468,7 @@ void VRBRAINRCOutput::_send_outputs(void)
         }
         _last_config_us = now;
     }
-    
+
     if (_need_update && _pwm_fd != -1) {
         _need_update = false;
         perf_begin(_perf_rcout);
@@ -511,8 +511,8 @@ void VRBRAINRCOutput::_send_outputs(void)
 update_pwm:
     for (uint8_t i=0; i<ORB_MULTI_MAX_INSTANCES; i++) {
         bool rc_updated = false;
-        if (_outputs[i].pwm_sub >= 0 && 
-            orb_check(_outputs[i].pwm_sub, &rc_updated) == 0 && 
+        if (_outputs[i].pwm_sub >= 0 &&
+            orb_check(_outputs[i].pwm_sub, &rc_updated) == 0 &&
             rc_updated) {
             orb_copy(ORB_ID(actuator_outputs), _outputs[i].pwm_sub, &_outputs[i].outputs);
         }

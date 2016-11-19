@@ -1,5 +1,5 @@
-/// @file	AP_Buffer.h
-/// @brief	fifo (queue) buffer template class
+/// @file    AP_Buffer.h
+/// @brief    fifo (queue) buffer template class
 #pragma once
 
 #include <stdint.h>
@@ -8,7 +8,7 @@
 template <class T, uint8_t SIZE>
 class AP_Buffer {
 public:
-    
+
     /// Constructor
     ///
     AP_Buffer();
@@ -66,14 +66,14 @@ typedef AP_Buffer<float,15> AP_BufferFloat_Size15;
 
 template <class T, uint8_t SIZE>
 AP_Buffer<T,SIZE>::AP_Buffer() :
-	_num_items(0), _head(0)
+    _num_items(0), _head(0)
 {
 }
 
 template <class T, uint8_t SIZE>
 void AP_Buffer<T,SIZE>::clear() {
-	// clear the curve
-	_num_items = 0;
+    // clear the curve
+    _num_items = 0;
     _head = 0;
 }
 

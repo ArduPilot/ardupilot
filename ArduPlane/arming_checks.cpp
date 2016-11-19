@@ -33,26 +33,26 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: LIM_ROLL_CD too small (%u)", plane.aparm.roll_limit_cd);
         }
-        ret = false;        
+        ret = false;
     }
 
     if (plane.aparm.pitch_limit_max_cd < 300) {
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: LIM_PITCH_MAX too small (%u)", plane.aparm.pitch_limit_max_cd);
         }
-        ret = false;        
+        ret = false;
     }
 
     if (plane.aparm.pitch_limit_min_cd > -300) {
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: LIM_PITCH_MIN too large (%u)", plane.aparm.pitch_limit_min_cd);
         }
-        ret = false;        
+        ret = false;
     }
 
-    if (plane.channel_throttle->get_reverse() && 
+    if (plane.channel_throttle->get_reverse() &&
         plane.g.throttle_fs_enabled &&
-        plane.g.throttle_fs_value < 
+        plane.g.throttle_fs_value <
         plane.channel_throttle->get_radio_max()) {
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Invalid THR_FS_VALUE for rev throttle");

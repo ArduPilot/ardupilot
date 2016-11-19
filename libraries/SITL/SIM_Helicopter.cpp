@@ -161,7 +161,7 @@ void Helicopter::update(const struct sitl_input &input)
     accel_body += dcm.transposed() * air_resistance;
 
     update_dynamics(rot_accel);
-    
+
     // update lat/lon/altitude
     update_position();
 

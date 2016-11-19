@@ -161,16 +161,16 @@ static void mat_LU_decompose(float* A, float* L, float* U, float *P, uint8_t n)
     }
     for(uint8_t i = 0; i < n; i++) {
         for(uint8_t j = 0; j < n; j++) {
-            if(j <= i) {    
+            if(j <= i) {
                 U[j*n + i] = APrime[j*n + i];
                 for(uint8_t k = 0; k < j; k++) {
-                    U[j*n + i] -= L[j*n + k] * U[k*n + i]; 
+                    U[j*n + i] -= L[j*n + k] * U[k*n + i];
                 }
             }
             if(j >= i) {
                 L[j*n + i] = APrime[j*n + i];
                 for(uint8_t k = 0; k < i; k++) {
-                    L[j*n + i] -= L[j*n + k] * U[k*n + i]; 
+                    L[j*n + i] -= L[j*n + k] * U[k*n + i];
                 }
                 L[j*n + i] /= U[i*n + i];
             }

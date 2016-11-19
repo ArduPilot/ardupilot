@@ -78,7 +78,7 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
         slope_high = _heli_stab_col_max / 1000.0f;
         slope_range = 0.4f;
         slope_run = (control_in - 600) / 1000.0f;
-    }    
+    }
 
     scalar = (slope_high - slope_low)/slope_range;
     stab_col_out = slope_low + slope_run * scalar;

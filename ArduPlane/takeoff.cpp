@@ -18,8 +18,8 @@ bool Plane::auto_takeoff_check(void)
     // Reset states if process has been interrupted
     if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
         gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timer interrupted AUTO");
-	    takeoff_state.launchTimerStarted = false;
-	    takeoff_state.last_tkoff_arm_time = 0;
+        takeoff_state.launchTimerStarted = false;
+        takeoff_state.last_tkoff_arm_time = 0;
         takeoff_state.last_check_ms = now;
         return false;
     }
@@ -105,7 +105,7 @@ void Plane::takeoff_calc_roll(void)
     float roll_limit = roll_limit_cd*0.01f;
     float baro_alt = barometer.get_altitude();
     // below 5m use the LEVEL_ROLL_LIMIT
-    const float lim1 = 5;    
+    const float lim1 = 5;
     // at 15m allow for full roll
     const float lim2 = 15;
     if (baro_alt < auto_state.baro_takeoff_alt+lim1) {
@@ -117,7 +117,7 @@ void Plane::takeoff_calc_roll(void)
     nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit*100UL, roll_limit*100UL);
 }
 
-        
+
 /*
   calculate desired pitch angle during takeoff, setting nav_pitch_cd
  */

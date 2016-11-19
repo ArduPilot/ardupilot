@@ -1,5 +1,5 @@
-/// @file	AP_MotorsY6.h
-/// @brief	Motor control class for Y6 frames
+/// @file    AP_MotorsY6.h
+/// @brief    Motor control class for Y6 frames
 #pragma once
 
 #include <AP_Common/AP_Common.h>

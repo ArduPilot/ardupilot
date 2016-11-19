@@ -1,6 +1,6 @@
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
- 
+
    Please contribute your ideas! See http://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
@@ -52,7 +52,7 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
 /**
   setup the sketch - called once on startup
  */
-void Tracker::setup() 
+void Tracker::setup()
 {
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
@@ -72,7 +72,7 @@ void Tracker::setup()
 }
 
 /**
-   loop() is called continuously 
+   loop() is called continuously
  */
 void Tracker::loop()
 {

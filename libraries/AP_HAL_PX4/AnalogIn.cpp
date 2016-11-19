@@ -33,7 +33,7 @@ extern const AP_HAL::HAL& hal;
 
 /*
   scaling table between ADC count and actual input voltage, to account
-  for voltage dividers on the board. 
+  for voltage dividers on the board.
  */
 static const struct {
     uint8_t pin;
@@ -66,7 +66,7 @@ static const struct {
 using namespace PX4;
 
 PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value) :
-	_pin(pin),
+    _pin(pin),
     _stop_pin(-1),
     _settle_time_ms(0),
     _value(initial_value),
@@ -84,11 +84,11 @@ PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value) :
 }
 
 void PX4AnalogSource::set_stop_pin(uint8_t p)
-{ 
-    _stop_pin = p; 
+{
+    _stop_pin = p;
 }
 
-float PX4AnalogSource::read_average() 
+float PX4AnalogSource::read_average()
 {
     if (_sum_count == 0) {
         return _value;
@@ -103,7 +103,7 @@ float PX4AnalogSource::read_average()
     return _value;
 }
 
-float PX4AnalogSource::read_latest() 
+float PX4AnalogSource::read_latest()
 {
     return _latest_value;
 }
@@ -191,17 +191,17 @@ void PX4AnalogSource::_add_value(float v, float vcc5V)
 
 PX4AnalogIn::PX4AnalogIn() :
     _current_stop_pin_i(0),
-	_board_voltage(0),
+    _board_voltage(0),
     _servorail_voltage(0),
     _power_flags(0)
 {}
 
 void PX4AnalogIn::init()
 {
-	_adc_fd = open(ADC0_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
+    _adc_fd = open(ADC0_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
     if (_adc_fd == -1) {
         AP_HAL::panic("Unable to open " ADC0_DEVICE_PATH);
-	}
+    }
     _battery_handle   = orb_subscribe(ORB_ID(battery_status));
     _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
     _system_power_handle = orb_subscribe(ORB_ID(system_power));
@@ -289,7 +289,7 @@ void PX4AnalogIn::_timer_tick(void)
                 if (c != nullptr && buf_adc[i].am_channel == c->_pin) {
                     // add a value if either there is no stop pin, or
                     // the stop pin has been settling for enough time
-                    if (c->_stop_pin == -1 || 
+                    if (c->_stop_pin == -1 ||
                         (_current_stop_pin_i == j &&
                          AP_HAL::millis() - _stop_pin_change_time > c->_settle_time_ms)) {
                         c->_add_value(buf_adc[i].am_data, _board_voltage);
@@ -362,8 +362,8 @@ void PX4AnalogIn::_timer_tick(void)
             if (system_power.servo_valid)   flags |= MAV_POWER_STATUS_SERVO_VALID;
             if (system_power.periph_5V_OC)  flags |= MAV_POWER_STATUS_PERIPH_OVERCURRENT;
             if (system_power.hipower_5V_OC) flags |= MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT;
-            if (_power_flags != 0 && 
-                _power_flags != flags && 
+            if (_power_flags != 0 &&
+                _power_flags != flags &&
                 hal.util->get_soft_armed()) {
                 // the power status has changed while armed
                 flags |= MAV_POWER_STATUS_CHANGED;
@@ -375,7 +375,7 @@ void PX4AnalogIn::_timer_tick(void)
 
 }
 
-AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin) 
+AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin)
 {
     for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {

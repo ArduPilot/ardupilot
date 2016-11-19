@@ -98,7 +98,7 @@ private:
 
     PosVelEKF                   _ekf_x, _ekf_y;
     uint32_t                    _outlier_reject_count;
-    
+
     AP_Buffer<Matrix3f,8>       _attitude_history;
 
     // backend state
