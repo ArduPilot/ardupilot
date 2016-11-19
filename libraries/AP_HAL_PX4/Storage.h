@@ -52,13 +52,16 @@ private:
     bool _flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length);
     bool _flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length);
     bool _flash_erase_sector(uint8_t sector);
+    bool _flash_erase_ok(void);
     uint8_t _flash_page;
+    bool _flash_failed;
     
     AP_FlashStorage _flash{_buffer,
             128*1024U, 
             FUNCTOR_BIND_MEMBER(&PX4Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&PX4Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
-            FUNCTOR_BIND_MEMBER(&PX4Storage::_flash_erase_sector, bool, uint8_t)};
+            FUNCTOR_BIND_MEMBER(&PX4Storage::_flash_erase_sector, bool, uint8_t),
+            FUNCTOR_BIND_MEMBER(&PX4Storage::_flash_erase_ok, bool)};
     
     void _flash_load(void);
     void _flash_write(uint16_t line);
