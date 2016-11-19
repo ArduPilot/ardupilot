@@ -49,7 +49,7 @@ private:
     static const uint8_t srom_data[];
     static const uint8_t srom_id;
     static const RegData init_data[];
-    const float flow_pixel_scaling = 1.0e-3;
+    const float flow_pixel_scaling = 1.26e-3;
 
     // setup sensor
     bool setup_sensor(void);
