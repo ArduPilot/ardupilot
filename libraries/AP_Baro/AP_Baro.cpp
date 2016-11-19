@@ -25,6 +25,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "AP_Baro_BMP085.h"
 #include "AP_Baro_HIL.h"
@@ -339,6 +340,13 @@ void AP_Baro::init(void)
         drivers[0] = new AP_Baro_MS5611(*this,
                                         std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
         _num_drivers = 1;
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+		drivers[1] = new AP_Baro_MS5611(*this,
+				std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5837_BUS, HAL_BARO_MS5837_I2C_ADDR)));
+		_num_drivers = 2;
+#endif
+
     } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
         drivers[0] = new AP_Baro_MS5611(*this,
                                         std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME)));

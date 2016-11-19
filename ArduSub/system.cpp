@@ -233,7 +233,10 @@ void Sub::init_ardupilot()
     ins.set_hil_mode();
 #endif
 
-    if(barometer.num_instances() > 1) { // We have an external MS58XX pressure sensor connected
+    barometer.calibrate();
+    barometer.update();
+
+    if(barometer.healthy(1)) { // We have an external MS58XX pressure sensor connected
 
 		barometer.set_primary_baro(1); // Set the primary baro to external MS58XX !!Changes and saves parameter value!!
 
