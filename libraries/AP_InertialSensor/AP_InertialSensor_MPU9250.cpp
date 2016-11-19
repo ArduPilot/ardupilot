@@ -513,7 +513,7 @@ void AP_InertialSensor_MPU9250::_check_temperature(void)
     if (fabsf(_last_temp - temp) > 2 && !is_zero(_last_temp)) {
         // a 2 degree change in one sample is a highly likely
         // sign of a FIFO alignment error
-        printf("FIFO temperature reset: %.2f %.2f\n",
+        printf("MPU9250: FIFO temperature reset: %.2f %.2f\n",
                (double)temp, (double)_last_temp);
         _last_temp = temp;
         _fifo_reset();
@@ -557,6 +557,11 @@ bool AP_InertialSensor_MPU9250::_read_sample()
         n_samples -= n;
     }
 
+    if (bytes_read > MPU9250_SAMPLE_SIZE * 35) {
+        printf("MPU9250: fifo reset\n");
+        _fifo_reset();
+    }
+    
     if (_temp_counter++ == 255) {
         // check FIFO integrity every 0.25s
         _check_temperature();

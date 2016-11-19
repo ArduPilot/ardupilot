@@ -265,8 +265,6 @@ void Copter::land_run_horizontal_control()
         pos_control.set_xy_target(target_pos.x, target_pos.y);
         pos_control.override_vehicle_velocity_xy(-target_vel_rel);
     }
-#else
-    bool doing_precision_landing = false;
 #endif
     
     // process roll, pitch inputs

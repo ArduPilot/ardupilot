@@ -334,8 +334,6 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
     uint8_t num_iterations = 0;
 
     while(num_iterations < max_iterations) {
-        float last_fitness = fitness;
-
         float JTJ[ACCEL_CAL_MAX_NUM_PARAMS*ACCEL_CAL_MAX_NUM_PARAMS] {};
         VectorP JTFI;
 
@@ -379,9 +377,6 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
         }
 
         num_iterations++;
-        if (fitness - last_fitness < 1.0e-9f) {
-            break;
-        }
     }
 }
 
