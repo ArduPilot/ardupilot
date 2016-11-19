@@ -15,7 +15,7 @@
 
 //
 //  Septentrio GPS driver for ArduPilot.
-//	Code by Michael Oborne
+//    Code by Michael Oborne
 //
 #pragma once
 
@@ -52,7 +52,7 @@ private:
     "sem, PVT, 5\n",
     "spm, Rover, StandAlone+SBAS+DGPS+RTK\n",
     "sso, Stream2, Dsk1, postprocess+event, msec100\n"};
-   
+
     uint32_t last_hdop = 9999;
     uint32_t crc_error_counter = 0;
     uint32_t last_injected_data_ms = 0;
@@ -91,7 +91,7 @@ private:
          uint16_t VAccuracy;
          uint8_t Misc;
     };
-  
+
     struct PACKED msg4001
     {
          uint32_t TOW;

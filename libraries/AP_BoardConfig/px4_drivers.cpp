@@ -35,7 +35,7 @@ extern const AP_HAL::HAL& hal;
 
 AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
 
-/* 
+/*
    declare driver main entry points
  */
 extern "C" {
@@ -93,7 +93,7 @@ void AP_BoardConfig::px4_setup_pwm()
         }
     }
     if (i == ARRAY_SIZE(mode_table)) {
-        hal.console->printf("RCOutput: invalid BRD_PWM_COUNT %u\n", mode_parm); 
+        hal.console->printf("RCOutput: invalid BRD_PWM_COUNT %u\n", mode_parm);
     } else {
         int fd = open("/dev/px4fmu", 0);
         if (fd == -1) {
@@ -101,7 +101,7 @@ void AP_BoardConfig::px4_setup_pwm()
         }
         if (ioctl(fd, PWM_SERVO_SET_MODE, mode_table[i].mode_value) != 0) {
             hal.console->printf("RCOutput: unable to setup AUX PWM with BRD_PWM_COUNT %u\n", mode_parm);
-        }   
+        }
         close(fd);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         if (mode_table[i].num_gpios < 2) {
@@ -221,7 +221,7 @@ void AP_BoardConfig::px4_setup_canbus(void)
         // before the hmc5883
         hal.scheduler->delay(500);
         if (px4_start_driver(uavcan_main, "uavcan", "start")) {
-            hal.console->printf("UAVCAN: started\n");            
+            hal.console->printf("UAVCAN: started\n");
             // give some time for CAN bus initialisation
             hal.scheduler->delay(2000);
         } else {
@@ -273,7 +273,7 @@ bool AP_BoardConfig::px4_start_driver(main_fn_t main_function, const char *name,
 
     printf("Starting driver %s %s\n", name, arguments);
     pid_t pid;
-    
+
     if (task_spawn(&pid, name, main_function, nullptr, nullptr,
                    args, nullptr) != 0) {
         free(s);
@@ -300,7 +300,7 @@ void AP_BoardConfig::px4_start_fmuv2_sensors(void)
 {
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
     bool have_FMUV3 = false;
-    
+
     printf("Starting FMUv2 sensors\n");
     if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -I -R 4 start")) {
         printf("Have internal hmc5883\n");
@@ -373,7 +373,7 @@ void AP_BoardConfig::px4_start_fmuv2_sensors(void)
         // on Pixhawk2 default IMU temperature to 60
         _imu_target_temperature.set_default(60);
     }
-    
+
     printf("FMUv2 sensors started\n");
 #endif // CONFIG_ARCH_BOARD_PX4FMU_V2
 }
@@ -534,7 +534,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
       sensor brownout on boot
      */
     if (px4_start_driver(fmu_main, "fmu", "sensor_reset 20")) {
-        printf("FMUv4 sensor reset complete\n");        
+        printf("FMUv4 sensor reset complete\n");
     }
 #endif
 
@@ -545,7 +545,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
         px4.board_type == PX4_BOARD_PIXHAWK2) {
         _imu_target_temperature.set_default(60);
     }
-    
+
     if (px4.board_type == PX4_BOARD_PX4V1 ||
         px4.board_type == PX4_BOARD_PHMINI ||
         px4.board_type == PX4_BOARD_PH2SLIM ||
@@ -600,7 +600,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
 #endif // HAL_BOARD_PX4
 
     px4_configured_board = (enum px4_board_type)px4.board_type.get();
-    
+
     // delay for 1 second to give time for drivers to initialise
     hal.scheduler->delay(1000);
 }
@@ -741,7 +741,7 @@ void AP_BoardConfig::px4_autodetect(void)
         // user has chosen a board type
         return;
     }
-    
+
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     // only one choice
     px4.board_type.set(PX4_BOARD_PX4V1);
@@ -772,10 +772,10 @@ void AP_BoardConfig::px4_autodetect(void)
     }
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     // only one choice
-    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);    
+    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
     hal.console->printf("Detected Pixracer\n");
 #endif
-    
+
 }
 
 /*

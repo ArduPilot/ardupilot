@@ -22,7 +22,7 @@ class AP_RPM_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_RPM_Backend(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state);
+    AP_RPM_Backend(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state);
 
     // we declare a virtual destructor so that RPM drivers can
     // override with a custom destructor if need be

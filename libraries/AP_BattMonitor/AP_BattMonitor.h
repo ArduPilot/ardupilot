@@ -96,7 +96,7 @@ public:
     /// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
     int32_t pack_capacity_mah(uint8_t instance) const;
     int32_t pack_capacity_mah() const { return pack_capacity_mah(AP_BATT_PRIMARY_INSTANCE); }
- 
+
     /// exhausted - returns true if the battery's voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity
     bool exhausted(uint8_t instance, float low_voltage, float min_capacity_mah);
     bool exhausted(float low_voltage, float min_capacity_mah) { return exhausted(AP_BATT_PRIMARY_INSTANCE, low_voltage, min_capacity_mah); }

@@ -3,7 +3,7 @@
  *
  *       AHRS system using DCM matrices
  *
- *       Based on DCM code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
+ *       Based on DCM code by Doug Weibel, Jordi Muï¿½oz and Jose Julio. DIYDrones.com
  *
  *       Adapted for the general ArduPilot AHRS interface by Andrew Tridgell
 
@@ -210,7 +210,7 @@ AP_AHRS_DCM::check_matrix(void)
             // normalisation didn't fix the problem! We're
             // in real trouble. All we can do is reset
             //Serial.printf("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
-            //	   _dcm_matrix.c.x);
+            //       _dcm_matrix.c.x);
             AP_AHRS_DCM::reset(true);
         }
     }
@@ -255,7 +255,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
             // can recover our attitude using drift
             // correction before we hit the ground!
             //Serial.printf("ERROR: DCM renormalisation error. renorm_val=%f\n",
-            //	   renorm_val);
+            //       renorm_val);
             return false;
         }
     }
@@ -272,7 +272,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
  *  to approximations rather than identities. In effect, the axes in the two frames of reference no
  *  longer describe a rigid body. Fortunately, numerical error accumulates very slowly, so it is a
  *  simple matter to stay ahead of it.
- *  We call the process of enforcing the orthogonality conditions ÒrenormalizationÓ.
+ *  We call the process of enforcing the orthogonality conditions ï¿½renormalizationï¿½.
  */
 void
 AP_AHRS_DCM::normalize(void)
@@ -691,7 +691,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // waiting for more data
         return;
     }
-    
+
     bool using_gps_corrections = false;
     float ra_scale = 1.0f/(_ra_deltat*GRAVITY_MSS);
 

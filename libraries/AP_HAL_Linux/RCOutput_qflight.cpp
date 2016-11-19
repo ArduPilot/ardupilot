@@ -113,7 +113,7 @@ void RCOutput_QFLIGHT::timer_update(void)
         return;
     }
     /*
-      this implements the PWM over UART prototocol. 
+      this implements the PWM over UART prototocol.
      */
     struct PACKED {
         uint8_t magic = 0xF7;

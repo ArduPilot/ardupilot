@@ -62,7 +62,7 @@ public:
     static DataFlash_Class *instance(void) {
         return _instance;
     }
-    
+
     void set_mission(const AP_Mission *mission);
 
     // initialisation
@@ -82,7 +82,7 @@ public:
         num_types = _num_types;
         return _structures;
     }
-    
+
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
     /* Write an *important* block of data at current offset */
@@ -95,7 +95,7 @@ public:
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs(void);
     void LogReadProcess(uint16_t log_num,
-                                uint16_t start_page, uint16_t end_page, 
+                                uint16_t start_page, uint16_t end_page,
                                 print_mode_fn printMode,
                                 AP_HAL::BetterStream *port);
     void DumpPageInfo(AP_HAL::BetterStream *port);
@@ -131,7 +131,7 @@ public:
     void Log_Write_Message(const char *message);
     void Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
-    void Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);    
+    void Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
@@ -184,7 +184,7 @@ public:
     // accesss to public parameters
     bool log_while_disarmed(void) const { return _params.log_disarmed != 0; }
     uint8_t log_replay(void) const { return _params.log_replay; }
-    
+
     vehicle_startup_message_Log_Writer _vehicle_messages;
 
     // parameter support
@@ -244,7 +244,7 @@ private:
 
     // return (possibly allocating) a log_write_fmt for a name
     struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *fmt);
-    
+
     // returns true if msg_type is associated with a message
     bool msg_type_in_use(uint8_t msg_type) const;
 

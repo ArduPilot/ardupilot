@@ -20,4 +20,4 @@ quaterion(4,1) = (cosPhi*cosTheta*sinPsi - sinPhi*sinTheta*cosPsi);
 
 return;
 
-   
+

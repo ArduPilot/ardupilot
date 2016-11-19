@@ -43,8 +43,8 @@ const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_ARE
     { StorageParam,   4096,  1280},
     { StorageRally,   5376,   300},
     { StorageFence,   5676,   256},
-    { StorageMission, 5932,  2132}, 
-    { StorageKeys,    8064,    64}, 
+    { StorageMission, 5932,  2132},
+    { StorageKeys,    8064,    64},
 #endif
 #if STORAGE_NUM_AREAS >= 12
     { StorageParam,    8192,  1280},
@@ -70,7 +70,7 @@ const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREA
     { StorageRally,   5376,   300},
     { StorageFence,   5676,   256},
     { StorageMission, 5932,  2132},
-    { StorageKeys,    8064,    64}, 
+    { StorageKeys,    8064,    64},
 #endif
 #if STORAGE_NUM_AREAS >= 12
     { StorageParam,    8192,  1280},
@@ -102,14 +102,14 @@ void StorageManager::erase(void)
             hal.storage->write_block(offset + ofs, blk, n);
         }
     }
-    
+
 }
 
 /*
   constructor for StorageAccess
  */
-StorageAccess::StorageAccess(StorageManager::StorageType _type) : 
-    type(_type) 
+StorageAccess::StorageAccess(StorageManager::StorageType _type) :
+    type(_type)
 {
     // calculate available bytes
     total_size = 0;

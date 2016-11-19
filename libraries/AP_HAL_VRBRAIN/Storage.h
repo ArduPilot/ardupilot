@@ -12,7 +12,7 @@
 
 class VRBRAIN::VRBRAINStorage : public AP_HAL::Storage {
 public:
-	VRBRAINStorage();
+    VRBRAINStorage();
 
     void init() {}
     void read_block(void *dst, uint16_t src, size_t n);

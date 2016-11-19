@@ -34,13 +34,13 @@ extern const AP_HAL::HAL& hal;
 
 uint8_t AP_RangeFinder_PX4::num_px4_instances = 0;
 
-/* 
+/*
    The constructor also initialises the rangefinder. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_PX4::AP_RangeFinder_PX4(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-	AP_RangeFinder_Backend(_ranger, instance, _state),
+    AP_RangeFinder_Backend(_ranger, instance, _state),
     _last_max_distance_cm(-1),
     _last_min_distance_cm(-1)
 {
@@ -49,11 +49,11 @@ AP_RangeFinder_PX4::AP_RangeFinder_PX4(RangeFinder &_ranger, uint8_t instance, R
     // consider this path used up
     num_px4_instances++;
 
-	if (_fd == -1) {
+    if (_fd == -1) {
         hal.console->printf("Unable to open PX4 rangefinder %u\n", num_px4_instances);
         set_status(RangeFinder::RangeFinder_NotConnected);
         return;
-	}
+    }
 
     // average over up to 20 samples
     if (ioctl(_fd, SENSORIOCSQUEUEDEPTH, 20) != 0) {
@@ -66,7 +66,7 @@ AP_RangeFinder_PX4::AP_RangeFinder_PX4(RangeFinder &_ranger, uint8_t instance, R
     set_status(RangeFinder::RangeFinder_NoData);
 }
 
-/* 
+/*
    close the file descriptor
 */
 AP_RangeFinder_PX4::~AP_RangeFinder_PX4()
@@ -82,7 +82,7 @@ extern "C" {
     int mb12xx_main(int, char **);
 };
 
-/* 
+/*
    open the PX4 driver, returning the file descriptor
 */
 int AP_RangeFinder_PX4::open_driver(void)
@@ -110,7 +110,7 @@ int AP_RangeFinder_PX4::open_driver(void)
     return open(path, O_RDONLY);
 }
 
-/* 
+/*
    see if the PX4 driver is available
 */
 bool AP_RangeFinder_PX4::detect(RangeFinder &_ranger, uint8_t instance)

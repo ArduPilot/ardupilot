@@ -195,7 +195,7 @@ int16_t AP_Mount_Servo::closest_limit(int16_t angle, int16_t angle_min, int16_t 
 // move_servo - moves servo with the given id to the specified angle.  all angles are in degrees * 10
 void AP_Mount_Servo::move_servo(uint8_t function_idx, int16_t angle, int16_t angle_min, int16_t angle_max)
 {
-	// saturate to the closest angle limit if outside of [min max] angle interval
-	int16_t servo_out = closest_limit(angle, angle_min, angle_max);
-	RC_Channel_aux::move_servo((RC_Channel_aux::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
+    // saturate to the closest angle limit if outside of [min max] angle interval
+    int16_t servo_out = closest_limit(angle, angle_min, angle_max);
+    RC_Channel_aux::move_servo((RC_Channel_aux::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
 }

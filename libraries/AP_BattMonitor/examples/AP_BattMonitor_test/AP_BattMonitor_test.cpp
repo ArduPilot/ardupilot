@@ -45,8 +45,8 @@ void loop()
     if (counter >= 10) {
         counter = 0;
         hal.console->printf("\nVoltage: %.2f \tCurrent: %.2f \tTotCurr:%.2f",
-			    battery_mon.voltage(),
-			    battery_mon.current_amps(),
+                battery_mon.voltage(),
+                battery_mon.current_amps(),
                 battery_mon.current_total_mah());
     }
 

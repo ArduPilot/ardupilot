@@ -30,6 +30,6 @@ void Copter::landinggear_update(){
             }
         }
 
-        last_deploy_status = landinggear.deployed();        
+        last_deploy_status = landinggear.deployed();
     }
 }

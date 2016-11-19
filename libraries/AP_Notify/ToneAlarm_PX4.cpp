@@ -97,7 +97,7 @@ bool ToneAlarm_PX4::init()
         hal.console->printf("ToneAlarm_PX4: Unable to open " TONEALARM0_DEVICE_PATH);
         return false;
     }
-    
+
     // set initial boot states. This prevents us issuing a arming
     // warning in plane and rover on every boot
     flags.armed = AP_Notify::flags.armed;
@@ -319,12 +319,12 @@ void ToneAlarm_PX4::update()
 
     if (AP_Notify::events.tune_started) {
         play_tone(AP_NOTIFY_PX4_TONE_TUNING_START);
-        AP_Notify::events.tune_started = 0;        
+        AP_Notify::events.tune_started = 0;
     }
     if (AP_Notify::events.tune_next) {
         // signify which parameter in the set is starting
         play_tone(AP_NOTIFY_PX4_TONE_LOUD_1 + (AP_Notify::events.tune_next-1));
-        AP_Notify::events.tune_next = 0;        
+        AP_Notify::events.tune_next = 0;
     }
     if (AP_Notify::events.tune_save) {
         play_tone(AP_NOTIFY_PX4_TONE_TUNING_SAVE);
@@ -344,7 +344,7 @@ void ToneAlarm_PX4::handle_play_tune(mavlink_message_t *msg)
 {
     // decode mavlink message
     mavlink_play_tune_t packet;
-    
+
     mavlink_msg_play_tune_decode(msg, &packet);
 
     play_string(packet.tune);

@@ -21,7 +21,7 @@ public:
     }
 
     uint8_t map_bus_number(uint8_t bus) const;
-    
+
 private:
     static uint8_t instance;
     bool init_done;

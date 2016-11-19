@@ -312,14 +312,14 @@ void AP_InertialSensor_MPU9250::start()
     if (enable_fast_sampling(_accel_instance) && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
         _fast_sampling = true;
     }
-    
+
     if (_fast_sampling) {
         // setup for fast sampling
         _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_256HZ_NOLPF2, true);
     } else {
         _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_188HZ, true);
     }
-    
+
     // set sample rate to 1kHz, and use the 2 pole filter to give the
     // desired rate
     _register_write(MPUREG_SMPLRT_DIV, 0, true);
@@ -338,7 +338,7 @@ void AP_InertialSensor_MPU9250::start()
     } else {
         _register_write(MPUREG_ACCEL_CONFIG2, 0x00, true);
     }
-    
+
     // configure interrupt to fire when new data arrives
     _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
 
@@ -365,7 +365,7 @@ void AP_InertialSensor_MPU9250::start()
     if (_fifo_buffer == nullptr) {
         AP_HAL::panic("MPU9250: Unable to allocate FIFO buffer");
     }
-    
+
     // start the timer process to read samples
     _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_read_sample, bool));
 }
@@ -379,7 +379,7 @@ bool AP_InertialSensor_MPU9250::update()
     update_accel(_accel_instance);
 
     _publish_temperature(_accel_instance, _temp_filtered);
-    
+
     return true;
 }
 
@@ -425,7 +425,7 @@ void AP_InertialSensor_MPU9250::_accumulate(uint8_t *samples, uint8_t n_samples)
         float temp = int16_val(data, 3);
         temp = temp/340 + 36.53;
         _last_temp = temp;
-        
+
         gyro = Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
                         -int16_val(data, 6));
@@ -446,7 +446,7 @@ void AP_InertialSensor_MPU9250::_accumulate_fast_sampling(uint8_t *samples, uint
     float tsum = 0;
     const int32_t clip_limit = AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS / MPU9250_ACCEL_SCALE_1G;
     bool clipped = false;
-    
+
     for (uint8_t i = 0; i < n_samples; i++) {
         uint8_t *data = samples + MPU9250_SAMPLE_SIZE * i;
         Vector3l a(int16_val(data, 1),
@@ -483,10 +483,10 @@ void AP_InertialSensor_MPU9250::_accumulate_fast_sampling(uint8_t *samples, uint
 
         float gscale = GYRO_SCALE / _accum.count;
         Vector3f gyro(_accum.gyro.x*gscale, _accum.gyro.y*gscale, _accum.gyro.z*gscale);
-    
+
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
-    
+
         _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), false);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
@@ -504,7 +504,7 @@ void AP_InertialSensor_MPU9250::_accumulate_fast_sampling(uint8_t *samples, uint
 void AP_InertialSensor_MPU9250::_check_temperature(void)
 {
     uint8_t rx[2];
-    
+
     if (!_block_read(MPUREG_TEMP_OUT_H, rx, 2)) {
         return;
     }
@@ -528,7 +528,7 @@ bool AP_InertialSensor_MPU9250::_read_sample()
     uint8_t n_samples;
     uint16_t bytes_read;
     uint8_t *rx = _fifo_buffer;
-    
+
     if (!_block_read(MPUREG_FIFO_COUNTH, rx, 2)) {
         hal.console->printf("MPU9250: error in fifo read\n");
         goto check_registers;
@@ -576,7 +576,7 @@ check_registers:
             _inc_accel_error_count(_accel_instance);
         }
     }
-    
+
     return true;
 }
 

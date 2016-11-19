@@ -152,7 +152,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
 // ArduPlane code
 void
 AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms)
-{    
+{
     if (!_enable) {
         return;
     }
@@ -167,7 +167,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
     }
 
     enum control_mode mode = afs_mode();
-    
+
     // check if RC termination is enabled
     // check for RC failure in manual mode or RC failure when AFS_RC_MANUAL is 0
     if (_state != STATE_PREFLIGHT && !_terminate && _enable_RC_fs &&
@@ -177,7 +177,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RC failure terminate");
         _terminate.set_and_notify(1);
     }
-    
+
     // tell the failsafe board if we are in manual control
     // mode. This tells it to pass through controls from the
     // receiver
@@ -201,7 +201,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
         break;
 
     case STATE_AUTO:
-        // this is the normal mode. 
+        // this is the normal mode.
         if (!gcs_link_ok) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "State DATA_LINK_LOSS");
             _state = STATE_DATA_LINK_LOSS;
@@ -246,10 +246,10 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
             _state = STATE_AUTO;
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GCS OK");
             // we only return to the mission if we have not exceeded AFS_MAX_COM_LOSS
-            if (_saved_wp != 0 && 
-                (_max_comms_loss <= 0 || 
+            if (_saved_wp != 0 &&
+                (_max_comms_loss <= 0 ||
                  _comms_loss_count <= _max_comms_loss)) {
-                mission.set_current_cmd(_saved_wp);            
+                mission.set_current_cmd(_saved_wp);
                 _saved_wp = 0;
             }
         }
@@ -269,7 +269,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
             // we only return to the mission if we have not exceeded AFS_MAX_GPS_LOSS
             if (_saved_wp != 0 &&
                 (_max_gps_loss <= 0 || _gps_loss_count <= _max_gps_loss)) {
-                mission.set_current_cmd(_saved_wp);            
+                mission.set_current_cmd(_saved_wp);
                 _saved_wp = 0;
             }
         }
@@ -282,20 +282,20 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
         _heartbeat_pin_value = !_heartbeat_pin_value;
         hal.gpio->pinMode(_heartbeat_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(_heartbeat_pin, _heartbeat_pin_value);
-    }    
+    }
 
     // set the terminate pin
     if (_terminate_pin != -1) {
         hal.gpio->pinMode(_terminate_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(_terminate_pin, _terminate?1:0);
-    }    
+    }
 }
 
 
 // send heartbeat messages during sensor calibration
 void
 AP_AdvancedFailsafe::heartbeat(void)
-{    
+{
     if (!_enable) {
         return;
     }
@@ -306,13 +306,13 @@ AP_AdvancedFailsafe::heartbeat(void)
         _heartbeat_pin_value = !_heartbeat_pin_value;
         hal.gpio->pinMode(_heartbeat_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(_heartbeat_pin, _heartbeat_pin_value);
-    }    
+    }
 }
 
 // check for altitude limit breach
 bool
 AP_AdvancedFailsafe::check_altlimit(void)
-{    
+{
     if (!_enable) {
         return false;
     }
@@ -339,7 +339,7 @@ AP_AdvancedFailsafe::check_altlimit(void)
         // pressure altitude breach
         return true;
     }
-    
+
     // all OK
     return false;
 }

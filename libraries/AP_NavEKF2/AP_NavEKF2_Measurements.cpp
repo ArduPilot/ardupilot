@@ -183,7 +183,7 @@ void NavEKF2_core::readMagData()
 {
     if (!_ahrs->get_compass()) {
         allMagSensorsFailed = true;
-        return;        
+        return;
     }
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight

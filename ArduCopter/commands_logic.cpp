@@ -84,16 +84,16 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_SERVO:
         ServoRelayEvents.do_set_servo(cmd.content.servo.channel, cmd.content.servo.pwm);
         break;
-        
+
     case MAV_CMD_DO_SET_RELAY:
         ServoRelayEvents.do_set_relay(cmd.content.relay.num, cmd.content.relay.state);
         break;
-        
+
     case MAV_CMD_DO_REPEAT_SERVO:
         ServoRelayEvents.do_repeat_servo(cmd.content.repeat_servo.channel, cmd.content.repeat_servo.pwm,
                                          cmd.content.repeat_servo.repeat_count, cmd.content.repeat_servo.cycle_time * 1000.0f);
         break;
-        
+
     case MAV_CMD_DO_REPEAT_RELAY:
         ServoRelayEvents.do_repeat_relay(cmd.content.repeat_relay.num, cmd.content.repeat_relay.repeat_count,
                                          cmd.content.repeat_relay.cycle_time * 1000.0f);
@@ -289,7 +289,7 @@ void Copter::do_RTL(void)
 }
 
 /********************************************************************************/
-//	Nav (Must) commands
+//    Nav (Must) commands
 /********************************************************************************/
 
 // do_takeoff - initiate takeoff navigation command
@@ -319,7 +319,7 @@ void Copter::do_nav_wp(const AP_Mission::Mission_Command& cmd)
             target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
         }
     }
-    
+
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
@@ -604,7 +604,7 @@ void Copter::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 #endif
 
 /********************************************************************************/
-//	Verify Nav (Must) commands
+//    Verify Nav (Must) commands
 /********************************************************************************/
 
 // verify_takeoff - check if we have completed the takeoff
@@ -783,7 +783,7 @@ bool Copter::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 
 
 /********************************************************************************/
-//	Condition (May) commands
+//    Condition (May) commands
 /********************************************************************************/
 
 void Copter::do_wait_delay(const AP_Mission::Mission_Command& cmd)
@@ -799,11 +799,11 @@ void Copter::do_within_distance(const AP_Mission::Mission_Command& cmd)
 
 void Copter::do_yaw(const AP_Mission::Mission_Command& cmd)
 {
-	set_auto_yaw_look_at_heading(
-		cmd.content.yaw.angle_deg,
-		cmd.content.yaw.turn_rate_dps,
-		cmd.content.yaw.direction,
-		cmd.content.yaw.relative_angle);
+    set_auto_yaw_look_at_heading(
+        cmd.content.yaw.angle_deg,
+        cmd.content.yaw.turn_rate_dps,
+        cmd.content.yaw.direction,
+        cmd.content.yaw.relative_angle);
 }
 
 
@@ -848,7 +848,7 @@ bool Copter::verify_yaw()
 }
 
 /********************************************************************************/
-//	Do (Now) commands
+//    Do (Now) commands
 /********************************************************************************/
 
 // do_guided - start guided mode
@@ -902,7 +902,7 @@ void Copter::do_set_home(const AP_Mission::Mission_Command& cmd)
 // do_roi - starts actions required by MAV_CMD_DO_SET_ROI
 //          this involves either moving the camera to point at the ROI (region of interest)
 //          and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
-//	TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
+//    TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
 void Copter::do_roi(const AP_Mission::Mission_Command& cmd)
 {
     set_auto_yaw_roi(cmd.content.location);
@@ -957,7 +957,7 @@ void Copter::log_picture()
     } else {
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
-        }      
+        }
     }
 }
 

@@ -6,7 +6,7 @@ function P  = PredictCovariance(deltaAngle, ...
     dt) ... % IMU and prediction time step
 
 % Set the filter state process noise (IMU errors are already built into the
-% equations). It  includes the process noise required for evolution of the 
+% equations). It  includes the process noise required for evolution of the
 % IMU bias errors
 
 dAngBiasSigma = dt*1E-6;
@@ -54,7 +54,7 @@ P = 0.5*(P + transpose(P));
 for i=1:9
     if P(i,i) < 0
         P(i,i) = 0;
-    end   
+    end
 end
-    
+
 end

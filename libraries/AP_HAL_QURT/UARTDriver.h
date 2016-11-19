@@ -28,7 +28,7 @@ public:
     void set_device_path(const char *path) {
         devname = path;
     }
-    
+
     void begin(uint32_t b);
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
     void end();
@@ -49,7 +49,7 @@ public:
     void _read_callback(char *buf, size_t size);
 
     void timer_tick(void);
-    
+
 private:
     const char *devname;
     int fd = -1;

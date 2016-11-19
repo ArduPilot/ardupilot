@@ -40,7 +40,7 @@ private:
     bool _setup_sampling_mode();
 
     bool _timer();
-    
+
     /* Read a single sample */
     bool _read_sample();
 
@@ -63,7 +63,7 @@ private:
     uint8_t _compass_instance;
 
     enum Rotation _rotation;
-    
+
     bool _initialised:1;
     bool _force_external:1;
 };
@@ -113,7 +113,7 @@ public:
     uint32_t get_bus_id(void) const override {
         return _dev->get_bus_id();
     }
-    
+
 private:
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 };
@@ -141,7 +141,7 @@ public:
 
     // return 24 bit bus identifier
     uint32_t get_bus_id(void) const override;
-    
+
 private:
     AuxiliaryBus *_bus;
     AuxiliaryBusSlave *_slave;

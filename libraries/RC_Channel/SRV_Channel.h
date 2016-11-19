@@ -20,7 +20,7 @@
 #define NUM_SERVO_RANGE_CHANNELS 4
 
 /*
-  class	SRV_Channel
+  class    SRV_Channel
 */
 class SRV_Channels {
 public:
@@ -44,13 +44,13 @@ public:
 
     // return true when auto_trim enabled
     bool auto_trim_enabled(void) const { return auto_trim; }
-    
+
     // adjust trim of a channel by a small increment
     void adjust_trim(uint8_t ch, float v);
 
     // save trims
     void save_trim(void);
-    
+
 private:
     AP_Int8 enable;
 

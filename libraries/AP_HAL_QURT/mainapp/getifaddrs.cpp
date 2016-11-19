@@ -1,4 +1,4 @@
-/* 
+/*
    get system network addresses
 
    based on code from Samba
@@ -35,26 +35,26 @@
 
 void freeifaddrs(struct ifaddrs *ifp)
 {
-	if (ifp != nullptr) {
-		free(ifp->ifa_name);
-		free(ifp->ifa_addr);
-		free(ifp->ifa_netmask);
-		free(ifp->ifa_dstaddr);
-		freeifaddrs(ifp->ifa_next);
-		free(ifp);
-	}
+    if (ifp != nullptr) {
+        free(ifp->ifa_name);
+        free(ifp->ifa_addr);
+        free(ifp->ifa_netmask);
+        free(ifp->ifa_dstaddr);
+        freeifaddrs(ifp->ifa_next);
+        free(ifp);
+    }
 }
 
 static struct sockaddr *sockaddr_dup(struct sockaddr *sa)
 {
-	struct sockaddr *ret;
-	socklen_t socklen;
-	socklen = sizeof(struct sockaddr_storage);
-	ret = (struct sockaddr *)calloc(1, socklen);
-	if (ret == nullptr)
-		return nullptr;
-	memcpy(ret, sa, socklen);
-	return ret;
+    struct sockaddr *ret;
+    socklen_t socklen;
+    socklen = sizeof(struct sockaddr_storage);
+    ret = (struct sockaddr *)calloc(1, socklen);
+    if (ret == nullptr)
+        return nullptr;
+    memcpy(ret, sa, socklen);
+    return ret;
 }
 
 /* this works for Linux 2.2, Solaris 2.5, SunOS4, HPUX 10.20, OSF1
@@ -64,96 +64,96 @@ static struct sockaddr *sockaddr_dup(struct sockaddr *sa)
 
 int getifaddrs(struct ifaddrs **ifap)
 {
-	struct ifconf ifc;
-	char buff[8192];
-	int fd, i, n;
-	struct ifreq *ifr=nullptr;
-	struct ifaddrs *curif;
-	struct ifaddrs *lastif = nullptr;
+    struct ifconf ifc;
+    char buff[8192];
+    int fd, i, n;
+    struct ifreq *ifr=nullptr;
+    struct ifaddrs *curif;
+    struct ifaddrs *lastif = nullptr;
 
-	*ifap = nullptr;
+    *ifap = nullptr;
 
-	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		return -1;
-	}
-  
-	ifc.ifc_len = sizeof(buff);
-	ifc.ifc_buf = buff;
+    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+        return -1;
+    }
 
-	if (ioctl(fd, SIOCGIFCONF, &ifc) != 0) {
-		close(fd);
-		return -1;
-	} 
+    ifc.ifc_len = sizeof(buff);
+    ifc.ifc_buf = buff;
 
-	ifr = ifc.ifc_req;
-  
-	n = ifc.ifc_len / sizeof(struct ifreq);
+    if (ioctl(fd, SIOCGIFCONF, &ifc) != 0) {
+        close(fd);
+        return -1;
+    }
 
-	/* Loop through interfaces, looking for given IP address */
-	for (i=n-1; i>=0; i--) {
-		if (ioctl(fd, SIOCGIFFLAGS, &ifr[i]) == -1) {
-			freeifaddrs(*ifap);
-			close(fd);
-			return -1;
-		}
+    ifr = ifc.ifc_req;
 
-		curif = (struct ifaddrs *)calloc(1, sizeof(struct ifaddrs));
-		if (curif == nullptr) {
-			freeifaddrs(*ifap);
-			close(fd);
-			return -1;
-		}
-		curif->ifa_name = strdup(ifr[i].ifr_name);
-		if (curif->ifa_name == nullptr) {
-			free(curif);
-			freeifaddrs(*ifap);
-			close(fd);
-			return -1;
-		}
-		curif->ifa_flags = ifr[i].ifr_flags;
-		curif->ifa_dstaddr = nullptr;
-		curif->ifa_data = nullptr;
-		curif->ifa_next = nullptr;
+    n = ifc.ifc_len / sizeof(struct ifreq);
 
-		curif->ifa_addr = nullptr;
-		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != -1) {
-			curif->ifa_addr = sockaddr_dup(&ifr[i].ifr_addr);
-			if (curif->ifa_addr == nullptr) {
-				free(curif->ifa_name);
-				free(curif);
-				freeifaddrs(*ifap);
-				close(fd);
-				return -1;
-			}
-		}
+    /* Loop through interfaces, looking for given IP address */
+    for (i=n-1; i>=0; i--) {
+        if (ioctl(fd, SIOCGIFFLAGS, &ifr[i]) == -1) {
+            freeifaddrs(*ifap);
+            close(fd);
+            return -1;
+        }
 
-		curif->ifa_netmask = nullptr;
-		if (ioctl(fd, SIOCGIFNETMASK, &ifr[i]) != -1) {
-			curif->ifa_netmask = sockaddr_dup(&ifr[i].ifr_addr);
-			if (curif->ifa_netmask == nullptr) {
-				if (curif->ifa_addr != nullptr) {
-					free(curif->ifa_addr);
-				}
-				free(curif->ifa_name);
-				free(curif);
-				freeifaddrs(*ifap);
-				close(fd);
-				return -1;
-			}
-		}
+        curif = (struct ifaddrs *)calloc(1, sizeof(struct ifaddrs));
+        if (curif == nullptr) {
+            freeifaddrs(*ifap);
+            close(fd);
+            return -1;
+        }
+        curif->ifa_name = strdup(ifr[i].ifr_name);
+        if (curif->ifa_name == nullptr) {
+            free(curif);
+            freeifaddrs(*ifap);
+            close(fd);
+            return -1;
+        }
+        curif->ifa_flags = ifr[i].ifr_flags;
+        curif->ifa_dstaddr = nullptr;
+        curif->ifa_data = nullptr;
+        curif->ifa_next = nullptr;
 
-		if (lastif == nullptr) {
-			*ifap = curif;
-		} else {
-			lastif->ifa_next = curif;
-		}
-		lastif = curif;
-	}
+        curif->ifa_addr = nullptr;
+        if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != -1) {
+            curif->ifa_addr = sockaddr_dup(&ifr[i].ifr_addr);
+            if (curif->ifa_addr == nullptr) {
+                free(curif->ifa_name);
+                free(curif);
+                freeifaddrs(*ifap);
+                close(fd);
+                return -1;
+            }
+        }
 
-	close(fd);
+        curif->ifa_netmask = nullptr;
+        if (ioctl(fd, SIOCGIFNETMASK, &ifr[i]) != -1) {
+            curif->ifa_netmask = sockaddr_dup(&ifr[i].ifr_addr);
+            if (curif->ifa_netmask == nullptr) {
+                if (curif->ifa_addr != nullptr) {
+                    free(curif->ifa_addr);
+                }
+                free(curif->ifa_name);
+                free(curif);
+                freeifaddrs(*ifap);
+                close(fd);
+                return -1;
+            }
+        }
 
-	return 0;
-}  
+        if (lastif == nullptr) {
+            *ifap = curif;
+        } else {
+            lastif->ifa_next = curif;
+        }
+        lastif = curif;
+    }
+
+    close(fd);
+
+    return 0;
+}
 
 const char *get_ipv4_broadcast(void)
 {

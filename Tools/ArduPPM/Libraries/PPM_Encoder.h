@@ -35,7 +35,7 @@
 // PPM PASS-THROUGH MODE (signal pin 2&3 shorted):
 // -----------------------------------------------
 // - Any input level changes on pin 1 will be passed directly to the PPM output (PPM pass-trough)
-//   + If no input level changes are detected or if the input signals stop, there will be no PPM output 
+//   + If no input level changes are detected or if the input signals stop, there will be no PPM output
 
 // Changelog:
 
@@ -80,12 +80,12 @@
 //         - Minor variable and define naming changes to enhance readability
 
 // 15-03-2012
-// V2.2.66  - Added APM2 (ATmega32U2) support for using TX and RX status leds to indicate PWM and PPM traffic 
+// V2.2.66  - Added APM2 (ATmega32U2) support for using TX and RX status leds to indicate PWM and PPM traffic
 //            - <RX>: <OFF> = no pwm input detected, <TOGGLE> = speed of toggle indicate how many channel are active, <ON> = input lost (failsafe)
 //            - <TX>: <OFF> = ppm output not started, <FAST TOGGLE> = normal PWM->PPM output or PPM passtrough failsafe, <SLOW TOGGLE> = PPM passtrough
 
 // 03-06-2012
-// V2.2.67 - Implemented detection and failsafe (throttle = 900us) for missing throttle signal. 
+// V2.2.67 - Implemented detection and failsafe (throttle = 900us) for missing throttle signal.
 
 // 04-06-2012
 // V2.2.68 - Fixed possible logic flaw in throttle failsafe reset if  _JITTER_FILTER_ is enabled
@@ -103,7 +103,7 @@
 // V2.3.11 - Very experimental test forcing throttle fail-safe (RTL) on single channel loss. !DO NOT RELEASE TO PUBLIC!
 //         - Test for active input channels during init
 
-// 23-11-2012 !VERY EXPERIMENTAL! 
+// 23-11-2012 !VERY EXPERIMENTAL!
 // V2.3.11 - Nested interrupt PWM output interrupt (PPM generator) for greatly improved jitter performance
 //         - Active input channel test during init removed
 //         - Implemented dynamic testing of active input channels
@@ -143,7 +143,7 @@
 //         - permanent LED error condition indication is only triggered when throttle is set low (or all channels are disconnected)
 
 // 16-12-2013
-// V2.3.17 - Disabled fail-safe output when signal is missing in PPM pass-trough (PPMSUM) mode (feature depreciated by addition of missing signal detection in APM code) 
+// V2.3.17 - Disabled fail-safe output when signal is missing in PPM pass-trough (PPMSUM) mode (feature depreciated by addition of missing signal detection in APM code)
 //         - ppm_encoder_init() will now make sure PPM output always starts with fail-safe (900us) value on throttle after a brown-out reset
 
 // -------------------------------------------------------------
@@ -185,7 +185,7 @@
 #endif
 
 // Version stamp for firmware hex file ( decode hex file using <avr-objdump -s file.hex> and look for "ArduPPM" string )
-const char ver[15] = "ArduPPMv2.3.17"; 
+const char ver[15] = "ArduPPMv2.3.17";
 
 // -------------------------------------------------------------
 // INPUT MODE
@@ -209,7 +209,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 //#define _THROTTLE_LOW_FAILSAFE_INDICATION //if set, throttle is set to low when a single channel is lost
 //#define _THROTTLE_LOW_RECOVERY_POSSIBLE //if set, throttle low recovers from being low when the single channel comes back, only makes sense together with _THROTTLE_LOW_FAILSAFE_INDICATION
 
-#define _PPM_PASSTROUGH_MODE_DISABLE_FAILSAFE_ // Disable fail-safe PPM generator and watchdog timer in ppm pass-trough (PPMSUM) mode 
+#define _PPM_PASSTROUGH_MODE_DISABLE_FAILSAFE_ // Disable fail-safe PPM generator and watchdog timer in ppm pass-trough (PPMSUM) mode
 
 #if defined _THROTTLE_LOW_RECOVERY_POSSIBLE && !defined _THROTTLE_LOW_FAILSAFE_INDICATION
 #error failsafe recovery is only possible with throttle_low_failsafe_indication defined as well
@@ -255,7 +255,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 // Number of servo input channels
 #define SERVO_CHANNELS        8
 
-// PPM period 18.5ms - 26.5ms (54hz - 37Hz) 
+// PPM period 18.5ms - 26.5ms (54hz - 37Hz)
 #define PPM_PERIOD            ONE_US * ( 22500 - ( 8 * 1500 ) )
 
 // Size of ppm[..] data array ( servo channels * 2 + 2)
@@ -265,7 +265,7 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 // -------------------------------------------------------------
 // APM FAILSAFE VALUES
 // -------------------------------------------------------------
-volatile uint16_t failsafe_ppm[ PPM_ARRAY_MAX ] =                               
+volatile uint16_t failsafe_ppm[ PPM_ARRAY_MAX ] =
 {
     PPM_PRE_PULSE,
     PPM_CHANNEL_LOSS,         // Channel 1
@@ -290,7 +290,7 @@ volatile uint16_t failsafe_ppm[ PPM_ARRAY_MAX ] =
 // -------------------------------------------------------------
 // SERVO FAILSAFE VALUES
 // -------------------------------------------------------------
-volatile uint16_t failsafe_ppm[ PPM_ARRAY_MAX ] =                               
+volatile uint16_t failsafe_ppm[ PPM_ARRAY_MAX ] =
 {
     PPM_PRE_PULSE,
     PPM_SERVO_CENTER,         // Channel 1
@@ -316,10 +316,10 @@ volatile uint16_t failsafe_ppm[ PPM_ARRAY_MAX ] =
 // -------------------------------------------------------------
 // Data array for storing ppm (8 channels) pulse widths.
 // -------------------------------------------------------------
-volatile uint16_t ppm[ PPM_ARRAY_MAX ] =                                
+volatile uint16_t ppm[ PPM_ARRAY_MAX ] =
 {
     PPM_PRE_PULSE,
-    PPM_SERVO_CENTER,         // Channel 1 
+    PPM_SERVO_CENTER,         // Channel 1
     PPM_PRE_PULSE,
     PPM_SERVO_CENTER,         // Channel 2
     PPM_PRE_PULSE,
@@ -431,7 +431,7 @@ void EVENT_USB_Device_Disconnect(void)
 #else
 #error NO SUPPORTED DEVICE FOUND! (ATmega16u2 / ATmega32u2 / ATmega328p)
 #endif
-    
+
 // Used to indicate invalid SERVO input signals
 volatile uint8_t servo_input_errors = 0;
 
@@ -456,7 +456,7 @@ void ppm_start( void )
 {
         // Prevent reenabling an already active PPM generator
         if( ppm_generator_active ) return;
-        
+
         // Store interrupt status and register flags
         volatile uint8_t SREG_tmp = SREG;
 
@@ -465,7 +465,7 @@ void ppm_start( void )
 
         // Make sure initial output state is low
         PPM_PORT &= ~(1 << PPM_OUTPUT_PIN);
-        
+
         // Wait for output pin to settle
         //_delay_us( 1 );
 
@@ -478,7 +478,7 @@ void ppm_start( void )
 
         // Set TIMER1 8x prescaler
         TCCR1B = ( 1 << CS11 );
-        
+
         #if defined (_POSITIVE_PPM_FRAME_)
         // Force output compare to reverse polarity
         TCCR1C |= (1 << PPM_COMPARE_FORCE_MATCH);
@@ -490,7 +490,7 @@ void ppm_start( void )
         // Indicate that PPM generator is active
         ppm_generator_active = true;
 
-        #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)        
+        #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
         // Turn on TX led if PPM generator is active
         PORTD &= ~( 1<< PD5 );
         #endif
@@ -520,11 +520,11 @@ void ppm_stop( void )
         // Indicate that PPM generator is not active
         ppm_generator_active = false;
 
-        #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)        
+        #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
         // Turn off TX led if PPM generator is off
         PORTD |= ( 1<< PD5 );
         #endif
-        
+
         // Restore interrupt status and register flags
         SREG = SREG_tmp;
 }
@@ -542,7 +542,7 @@ ISR( WDT_vect ) // If watchdog is triggered then enable missing signal flag and 
         //{
         //  ppm[ i ] = failsafe_ppm[ i ];
         //}
-        
+
         // Set Throttle Low & leave other channels at last value
         ppm[5] = failsafe_ppm[ 5 ];
     }
@@ -555,7 +555,7 @@ ISR( WDT_vect ) // If watchdog is triggered then enable missing signal flag and 
         brownout_reset = false;
     }
 
-    #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)        
+    #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
     // Turn on RX led if signal is missing
     if( !servo_input_missing )
     {
@@ -565,10 +565,10 @@ ISR( WDT_vect ) // If watchdog is triggered then enable missing signal flag and 
 
     // Set missing receiver signal flag
     servo_input_missing = true;
-    
+
     // Reset servo input error flag
     servo_input_errors = 0;
-    
+
 }
 // ------------------------------------------------------------------------------
 
@@ -585,8 +585,8 @@ ISR( SERVO_INT_VECTOR )
     // Toggle LED delay
     static uint8_t led_delay = 0;
     #endif
- 
-    // Servo input pin storage 
+
+    // Servo input pin storage
     static uint8_t servo_pins_old = 0;
 
     // Used to store current servo input pins
@@ -610,9 +610,9 @@ ISR( SERVO_INT_VECTOR )
             // Stop PPM generator
             ppm_stop();
         }
-        
+
         // PPM (channel 1) input pin is high
-        if( SERVO_INPUT & 1 ) 
+        if( SERVO_INPUT & 1 )
         {
             // Set PPM output pin high
             PPM_PORT |= (1 << PPM_OUTPUT_PIN);
@@ -626,9 +626,9 @@ ISR( SERVO_INT_VECTOR )
 
         // Reset Watchdog Timer
         #ifndef _PPM_PASSTROUGH_MODE_DISABLE_FAILSAFE_
-        wdt_reset(); 
+        wdt_reset();
         #endif
-        
+
         // Set servo input missing flag false to indicate that we have received servo input signals
         servo_input_missing = false;
 
@@ -637,11 +637,11 @@ ISR( SERVO_INT_VECTOR )
         if( ++led_delay > 128 ) // Toggle every 128th pulse
         {
             // Toggle TX led
-            PIND |= ( 1<< PD5 ); 
+            PIND |= ( 1<< PD5 );
             led_delay = 0;
         }
         #endif
-        
+
         // Leave interrupt
         return;
     }
@@ -656,7 +656,7 @@ ISR( SERVO_INT_VECTOR )
 
     // Calculate servo input pin change mask
     servo_change = servo_pins ^ servo_pins_old;
-    
+
     // Set initial servo pin and ppm[..]  index
     servo_pin = 1;
     ppm_channel = 1;
@@ -678,23 +678,23 @@ CHECK_PINS_LOOP: // Input servo pin check loop
         {
             // Get servo pulse width
             uint16_t servo_width = servo_time - servo_start[ ppm_channel ] - PPM_PRE_PULSE;
-            
+
             // Check that servo pulse signal is valid before sending to ppm encoder
             if( servo_width > PPM_SERVO_MAX ) goto CHECK_PINS_ERROR;
             if( servo_width < PPM_SERVO_MIN ) goto CHECK_PINS_ERROR;
 
             // Reset Watchdog Timer
-            wdt_reset(); 
-            
+            wdt_reset();
+
             // Set servo input missing flag false to indicate that we have received servo input signals
             servo_input_missing = false;
-            
+
             // Count valid signals to mark channel active
             if( servo_input_connected[ ppm_channel ] < SERVO_INPUT_CONNECTED_VALUE )
             {
                 servo_input_connected[ ppm_channel ]++;
             }
-            
+
             //Reset ppm single channel fail-safe timeout
             ppm_timeout[ ppm_channel ] = 0;
 
@@ -709,7 +709,7 @@ CHECK_PINS_LOOP: // Input servo pin check loop
                 }
             }
         #endif
-    
+
         #ifdef _AVERAGE_FILTER_
             // Average filter to smooth input jitter
             servo_width += ppm[ ppm_channel ];
@@ -726,9 +726,9 @@ CHECK_PINS_LOOP: // Input servo pin check loop
             ppm[ ppm_channel ] = servo_width;
         }
     }
-    
+
 CHECK_PINS_NEXT:
- 
+
     // Are we done processing pins?
     if( servo_change )
     {
@@ -737,7 +737,7 @@ CHECK_PINS_NEXT:
 
         // Select next servo pin
         servo_pin <<= 1;
-     
+
         // Check next pin
         goto CHECK_PINS_LOOP;
     }
@@ -746,12 +746,12 @@ CHECK_PINS_NEXT:
     goto CHECK_PINS_DONE;
 
 CHECK_PINS_ERROR:
-    
+
     // Used to indicate invalid servo input signals
     servo_input_errors++;
 
     goto CHECK_PINS_NEXT;
-    
+
 // Processing done, cleanup and exit
 CHECK_PINS_DONE:
 
@@ -759,7 +759,7 @@ CHECK_PINS_DONE:
     if( !ppm_generator_active ) ppm_start();
 
     #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
-   
+
     // Toggle RX LED when finished receiving servo pulses
     if( ++led_delay == 0 ) // Toggle led every 128th or 255th interval
     {
@@ -771,7 +771,7 @@ CHECK_PINS_DONE:
             led_delay = 223;
         }
     }
-    #endif    
+    #endif
 
     // Store current servo input pins for next check
     servo_pins_old = servo_pins;
@@ -790,13 +790,13 @@ CHECK_PINS_DONE:
 // ------------------------------------------------------------------------------
 // Current active ppm channel
 volatile uint8_t ppm_out_channel = PPM_ARRAY_MAX - 1;
-ISR( PPM_INT_VECTOR, ISR_NOBLOCK )  
+ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
 {
     // ------------------------------------------------------------------------------
     // !! NESTED INTERRUPT !!
-    // - ALL VARIABLES SHOULD BE GLOBAL VOLATILE 
+    // - ALL VARIABLES SHOULD BE GLOBAL VOLATILE
     // - ACCESSING VARIABLES >8BIT MUST BE DONE ATOMIC USING CLI/SEI
-    // ------------------------------------------------------------------------------   
+    // ------------------------------------------------------------------------------
 
     // Update timing for next compare toggle with either current ppm input value, or fail-safe value if there is a channel timeout.
     if( ppm_timeout[ ppm_out_channel ] > PPM_TIMEOUT_VALUE )
@@ -816,33 +816,33 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
                 servo_input_missing = true;
             }
         }
-        else 
+        else
         {
             // Channel 5-8 - Use last known value
             cli();
             PPM_COMPARE += ppm[ ppm_out_channel ];
             sei();
         }
-       
+
     #if defined _THROTTLE_LOW_RECOVERY_POSSIBLE && defined _THROTTLE_LOW_FAILSAFE_INDICATION
         // Count the channel that we have lost
         disconnected_channels++;
     #elif defined _THROTTLE_LOW_FAILSAFE_INDICATION
-        throttle_failsafe_force = true; 
+        throttle_failsafe_force = true;
     #endif
 
     #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
         // Turn on RX LED to indicate a fail-safe condition
         PORTD &= ~(1 << PD4);
-    #endif    
+    #endif
     }
     else
     {
-        // Use latest ppm input value   
+        // Use latest ppm input value
         cli();
         PPM_COMPARE += ppm[ ppm_out_channel ];
         sei();
-        
+
         // Increment active channel timeout (reset to zero in input interrupt each time a valid signal is detected)
         if( servo_input_connected[ ppm_out_channel ] >= SERVO_INPUT_CONNECTED_VALUE )
         {
@@ -850,7 +850,7 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
         }
     }
 
-    if( ++ppm_out_channel >= PPM_ARRAY_MAX ) 
+    if( ++ppm_out_channel >= PPM_ARRAY_MAX )
     {
         ppm_out_channel = 0;
 
@@ -887,13 +887,13 @@ uint16_t ppm_read_channel( uint8_t channel )
 
     // Calculate ppm[..] position
     uint8_t ppm_index = ( _channel << 1 ) + 1;
-    
+
     // Read ppm[..] in a non blocking interrupt safe manner
     uint16_t ppm_tmp = ppm[ ppm_index ];
     while( ppm_tmp != ppm[ ppm_index ] ) ppm_tmp = ppm[ ppm_index ];
 
     // Return as normal servo value
-    return ppm_tmp + PPM_PRE_PULSE;    
+    return ppm_tmp + PPM_PRE_PULSE;
 }
 // ------------------------------------------------------------------------------
 
@@ -903,9 +903,9 @@ uint16_t ppm_read_channel( uint8_t channel )
 void ppm_encoder_init( void )
 {
     // ATmegaXXU2 only init code
-    // ------------------------------------------------------------------------------    
+    // ------------------------------------------------------------------------------
     #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
-        // ------------------------------------------------------------------------------    
+        // ------------------------------------------------------------------------------
         // Reset Source checkings
         // ------------------------------------------------------------------------------
         if (MCUSR & 1)    // Power-on Reset
@@ -923,7 +923,7 @@ void ppm_encoder_init( void )
            MCUSR=0; // Clear MCU Status register
            brownout_reset=true;
            // Make sure PPM generator will always start directly with throttle F/S value (900us) after a brown-out reset
-           ppm[5] = failsafe_ppm[ 5 ]; 
+           ppm[5] = failsafe_ppm[ 5 ];
         }
         else    // Watchdog Reset
         {
@@ -934,14 +934,14 @@ void ppm_encoder_init( void )
         // APM USB connection status UART MUX selector pin
         // ------------------------------------------------------------------------------
         USB_DDR |= (1 << USB_PIN); // Set USB pin to output
-        
+
         DDRD |= (1<<PD4); // RX LED OUTPUT
         DDRD |= (1<<PD5); // TX LED OUTPUT
-        
+
         PORTD |= (1<<PD4); // RX LED OFF
         PORTD |= (1<<PD5); // TX LED OFF
     #endif
-     
+
 
     // USE JUMPER TO CHECK FOR PWM OR PPM PASSTROUGH MODE (channel 2&3 shorted)
     // ------------------------------------------------------------------------------
@@ -963,15 +963,15 @@ void ppm_encoder_init( void )
         SERVO_PORT &= ~(1 << 1);
 
         _delay_us (10);
-        
+
         // Increment channel3_status if channel 3 is set low by channel 2
         if( ( SERVO_INPUT & (1 << 2) ) == 0 ) channel3_status++;
 
         // Set channel 2 output high
         SERVO_PORT |= (1 << 1);
-        
+
         _delay_us (10);
-        
+
         // Increment channel3_status if channel 3 is set high by channel 2
         if( ( SERVO_INPUT & (1 << 2) ) != 0 ) channel3_status++;
 
@@ -1024,7 +1024,7 @@ void ppm_encoder_init( void )
         // Interrupt on all input pins
         SERVO_INT_MASK = 0xFF;
     }
-    
+
     // Enable servo input interrupt
     PCICR |= (1 << SERVO_INT_ENABLE);
 
@@ -1034,13 +1034,13 @@ void ppm_encoder_init( void )
 
     // Set PPM pin to output
     PPM_DDR |= (1 << PPM_OUTPUT_PIN);
-    
+
     // ------------------------------------------------------------------------------
     // Enable watchdog interrupt mode
     // ------------------------------------------------------------------------------
     #ifdef _PPM_PASSTROUGH_MODE_DISABLE_FAILSAFE_
     if( servo_input_mode != PPM_PASSTROUGH_MODE )
-    #endif    
+    #endif
     {
         // Disable watchdog
         wdt_disable();

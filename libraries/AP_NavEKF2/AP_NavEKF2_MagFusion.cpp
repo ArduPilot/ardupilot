@@ -292,7 +292,7 @@ void NavEKF2_core::SelectMagFusion()
 void NavEKF2_core::FuseMagnetometer()
 {
     hal.util->perf_begin(_perf_test[1]);
-    
+
     // declarations
     ftype &q0 = mag_state.q0;
     ftype &q1 = mag_state.q1;
@@ -315,7 +315,7 @@ void NavEKF2_core::FuseMagnetometer()
     Vector6 SK_MZ;
 
     hal.util->perf_end(_perf_test[1]);
-    
+
     // perform sequential fusion of magnetometer measurements.
     // this assumes that the errors in the different components are
     // uncorrelated which is not true, however in the absence of covariance

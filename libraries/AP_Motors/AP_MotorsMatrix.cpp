@@ -45,7 +45,7 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
     uint32_t mask = 0;
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-		mask |= 1U << i;
+        mask |= 1U << i;
         }
     }
     rc_set_freq( mask, _speed_hz );

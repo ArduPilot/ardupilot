@@ -34,13 +34,13 @@ public:
         float b1;
         float b2;
     };
-  
+
     DigitalBiquadFilter();
 
     T apply(const T &sample, const struct biquad_params &params);
     void reset();
     static void compute_params(float sample_freq, float cutoff_freq, biquad_params &ret);
-    
+
 private:
     T _delay_element_1;
     T _delay_element_2;
@@ -62,7 +62,7 @@ public:
 
 protected:
     struct DigitalBiquadFilter<T>::biquad_params _params;
-    
+
 private:
     DigitalBiquadFilter<T> _filter;
 };
@@ -70,8 +70,8 @@ private:
 // Uncomment this, if you decide to remove the instantiations in the implementation file
 /*
 template <class T>
-LowPassFilter2p<T>::LowPassFilter2p() { 
-    memset(&_params, 0, sizeof(_params) ); 
+LowPassFilter2p<T>::LowPassFilter2p() {
+    memset(&_params, 0, sizeof(_params) );
 }
 
 // constructor

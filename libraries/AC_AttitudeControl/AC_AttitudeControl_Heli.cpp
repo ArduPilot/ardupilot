@@ -226,7 +226,7 @@ void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cd
 // rate_controller_run - run lowest level rate controller and send outputs to the motors
 // should be called at 100hz or more
 void AC_AttitudeControl_Heli::rate_controller_run()
-{	
+{
     // call rate controllers and send output to motors object
     // if using a flybar passthrough roll and pitch directly to motors
     if (_flags_heli.flybar_passthrough) {
@@ -285,11 +285,11 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_roll || ((roll_i>0&&rate_roll_error_rads<0)||(roll_i<0&&rate_roll_error_rads>0))){
-		if (_flags_heli.leaky_i){
-			roll_i = _pid_rate_roll.get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
-		}else{
-			roll_i = _pid_rate_roll.get_i();
-		}
+        if (_flags_heli.leaky_i){
+            roll_i = _pid_rate_roll.get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
+        }else{
+            roll_i = _pid_rate_roll.get_i();
+        }
     }
 
     // get pitch i term
@@ -297,13 +297,13 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_pitch || ((pitch_i>0&&rate_pitch_error_rads<0)||(pitch_i<0&&rate_pitch_error_rads>0))){
-		if (_flags_heli.leaky_i) {
-			pitch_i = _pid_rate_pitch.get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
-		}else{
-			pitch_i = _pid_rate_pitch.get_i();
-		}
+        if (_flags_heli.leaky_i) {
+            pitch_i = _pid_rate_pitch.get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
+        }else{
+            pitch_i = _pid_rate_pitch.get_i();
+        }
     }
-    
+
     // For legacy reasons, we convert to centi-degrees before inputting to the feedforward
     roll_ff = roll_feedforward_filter.apply(_pid_rate_roll.get_vff(rate_roll_target_rads), _dt);
     pitch_ff = pitch_feedforward_filter.apply(_pid_rate_pitch.get_vff(rate_pitch_target_rads), _dt);
@@ -333,7 +333,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     // Piro-Comp, or Pirouette Compensation is a pre-compensation calculation, which basically rotates the Roll and Pitch Rate I-terms as the
     // helicopter rotates in yaw.  Much of the built-up I-term is needed to tip the disk into the incoming wind.  Fast yawing can create an instability
     // as the built-up I-term in one axis must be reduced, while the other increases.  This helps solve that by rotating the I-terms before the error occurs.
-    // It does assume that the rotor aerodynamics and mechanics are essentially symmetrical about the main shaft, which is a generally valid assumption. 
+    // It does assume that the rotor aerodynamics and mechanics are essentially symmetrical about the main shaft, which is a generally valid assumption.
     if (_piro_comp_enabled){
 
         int32_t         piro_roll_i, piro_pitch_i;            // used to hold I-terms while doing piro comp
@@ -388,10 +388,10 @@ float AC_AttitudeControl_Heli::rate_target_to_motor_yaw(float rate_target_rads)
             i = ((AC_HELI_PID&)_pid_rate_yaw).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);    // If motor is not running use leaky I-term to avoid excessive build-up
         }
     }
-    
+
     // For legacy reasons, we convert to centi-degrees before inputting to the feedforward
     vff = yaw_velocity_feedforward_filter.apply(_pid_rate_yaw.get_vff(rate_target_rads), _dt);
-    
+
     // add feed forward
     yaw_out = pd + i + vff;
 

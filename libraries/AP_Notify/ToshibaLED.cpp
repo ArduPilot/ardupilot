@@ -24,7 +24,7 @@
 #define TOSHIBA_LED_DIM     0x11    // dim
 #define TOSHIBA_LED_OFF     0x00    // off
 
-ToshibaLED::ToshibaLED(): 
+ToshibaLED::ToshibaLED():
     RGBLed(TOSHIBA_LED_OFF, TOSHIBA_LED_BRIGHT, TOSHIBA_LED_MEDIUM, TOSHIBA_LED_DIM)
 {
 

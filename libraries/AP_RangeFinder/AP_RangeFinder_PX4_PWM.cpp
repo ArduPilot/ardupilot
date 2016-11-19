@@ -38,13 +38,13 @@ extern "C" {
     int pwm_input_main(int, char **);
 };
 
-/* 
+/*
    The constructor also initialises the rangefinder. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-	AP_RangeFinder_Backend(_ranger, instance, _state),
+    AP_RangeFinder_Backend(_ranger, instance, _state),
     _last_timestamp(0),
     _last_pulse_time_ms(0),
     _disable_time_ms(0),
@@ -69,7 +69,7 @@ AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder &_ranger, uint8_t ins
     set_status(RangeFinder::RangeFinder_NoData);
 }
 
-/* 
+/*
    close the file descriptor
 */
 AP_RangeFinder_PX4_PWM::~AP_RangeFinder_PX4_PWM()
@@ -80,7 +80,7 @@ AP_RangeFinder_PX4_PWM::~AP_RangeFinder_PX4_PWM()
     set_status(RangeFinder::RangeFinder_NotConnected);
 }
 
-/* 
+/*
    see if the PX4 driver is available
 */
 bool AP_RangeFinder_PX4_PWM::detect(RangeFinder &_ranger, uint8_t instance)
@@ -172,20 +172,20 @@ void AP_RangeFinder_PX4_PWM::update(void)
         // settle time
         if (stop_pin != -1) {
             hal.gpio->pinMode(stop_pin, HAL_GPIO_OUTPUT);
-            hal.gpio->write(stop_pin, false);            
+            hal.gpio->write(stop_pin, false);
             _disable_time_ms = now;
         }
     }
 
-    /* the user can configure a settle time. This controls how 
+    /* the user can configure a settle time. This controls how
        long the sensor is disabled for using the stop pin when it is
        reset. This is used both to make sure the sensor is properly
        reset, and also to allow for power management by running a low
-       duty cycle when it has no signal 
+       duty cycle when it has no signal
     */
-    if (stop_pin != -1 && _disable_time_ms != 0 && 
+    if (stop_pin != -1 && _disable_time_ms != 0 &&
         (now - _disable_time_ms > settle_time_ms)) {
-        hal.gpio->write(stop_pin, true);        
+        hal.gpio->write(stop_pin, true);
         _disable_time_ms = 0;
         _last_pulse_time_ms = now;
     }

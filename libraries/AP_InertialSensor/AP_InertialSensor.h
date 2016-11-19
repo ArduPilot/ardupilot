@@ -60,7 +60,7 @@ public:
     ///
     /// Gyros will be calibrated unless INS_GYRO_CAL is zero
     ///
-    /// @param style	The initialisation startup style.
+    /// @param style    The initialisation startup style.
     ///
     void init(uint16_t sample_rate_hz);
 
@@ -83,7 +83,7 @@ public:
 
     /// Fetch the current gyro values
     ///
-    /// @returns	vector of rotational rates in radians/sec
+    /// @returns    vector of rotational rates in radians/sec
     ///
     const Vector3f     &get_gyro(uint8_t i) const { return _gyro[i]; }
     const Vector3f     &get_gyro(void) const { return get_gyro(_primary_gyro); }
@@ -108,7 +108,7 @@ public:
 
     /// Fetch the current accelerometer values
     ///
-    /// @returns	vector of current accelerations in m/s/s
+    /// @returns    vector of current accelerations in m/s/s
     ///
     const Vector3f     &get_accel(uint8_t i) const { return _accel[i]; }
     const Vector3f     &get_accel(void) const { return get_accel(_primary_accel); }

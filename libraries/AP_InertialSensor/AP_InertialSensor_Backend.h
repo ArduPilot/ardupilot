@@ -89,7 +89,7 @@ public:
         DEVTYPE_GYR_L3GD20   = 0x22,
         DEVTYPE_GYR_MPU9250  = 0x24
     };
-        
+
 protected:
     // access to frontend
     AP_InertialSensor &_imu;
@@ -145,7 +145,7 @@ protected:
 
     // increment gyro error_count
     void _inc_gyro_error_count(uint8_t instance);
-    
+
     // backend unique identifier or -1 if backend doesn't identify itself
     int16_t _id = -1;
 
@@ -191,7 +191,7 @@ protected:
     bool enable_fast_sampling(uint8_t instance) {
         return (_imu._fast_sampling_mask & (1U<<instance)) != 0;
     }
-    
+
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available

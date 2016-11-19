@@ -12,10 +12,10 @@
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
 static const struct Menu::command log_menu_commands[] = {
-	{"dump",	MENU_FUNC(dump_log)},
-	{"erase",	MENU_FUNC(erase_logs)},
-	{"enable",	MENU_FUNC(select_logs)},
-	{"disable",	MENU_FUNC(select_logs)}
+    {"dump",    MENU_FUNC(dump_log)},
+    {"erase",    MENU_FUNC(erase_logs)},
+    {"enable",    MENU_FUNC(select_logs)},
+    {"disable",    MENU_FUNC(select_logs)}
 };
 
 // A Macro to create the Menu
@@ -23,37 +23,37 @@ MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&rover, &Rover::print_log
 
 bool Rover::print_log_menu(void)
 {
-	cliSerial->printf("logs enabled: ");
+    cliSerial->printf("logs enabled: ");
 
-	if (0 == g.log_bitmask) {
-		cliSerial->printf("none");
-	}else{
-		// Macro to make the following code a bit easier on the eye.
-		// Pass it the capitalised name of the log option, as defined
-		// in defines.h but without the LOG_ prefix.  It will check for
-		// the bit being set and print the name of the log option to suit.
-		#define PLOG(_s)	if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %s", #_s)
-		PLOG(ATTITUDE_FAST);
-		PLOG(ATTITUDE_MED);
-		PLOG(GPS);
-		PLOG(PM);
-		PLOG(CTUN);
-		PLOG(NTUN);
-		PLOG(MODE);
-		PLOG(IMU);
-		PLOG(CMD);
-		PLOG(CURRENT);
-		PLOG(SONAR);
-		PLOG(COMPASS);
-		PLOG(CAMERA);
-		PLOG(STEERING);
-		#undef PLOG
-	}
+    if (0 == g.log_bitmask) {
+        cliSerial->printf("none");
+    }else{
+        // Macro to make the following code a bit easier on the eye.
+        // Pass it the capitalised name of the log option, as defined
+        // in defines.h but without the LOG_ prefix.  It will check for
+        // the bit being set and print the name of the log option to suit.
+        #define PLOG(_s)    if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %s", #_s)
+        PLOG(ATTITUDE_FAST);
+        PLOG(ATTITUDE_MED);
+        PLOG(GPS);
+        PLOG(PM);
+        PLOG(CTUN);
+        PLOG(NTUN);
+        PLOG(MODE);
+        PLOG(IMU);
+        PLOG(CMD);
+        PLOG(CURRENT);
+        PLOG(SONAR);
+        PLOG(COMPASS);
+        PLOG(CAMERA);
+        PLOG(STEERING);
+        #undef PLOG
+    }
 
-	cliSerial->println();
+    cliSerial->println();
 
     DataFlash.ListAvailableLogs(cliSerial);
-	return(true);
+    return(true);
 }
 
 int8_t Rover::dump_log(uint8_t argc, const Menu::arg *argv)
@@ -93,63 +93,63 @@ int8_t Rover::erase_logs(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
 {
-	uint16_t	bits;
+    uint16_t    bits;
 
-	if (argc != 2) {
-		cliSerial->printf("missing log type\n");
-		return(-1);
-	}
+    if (argc != 2) {
+        cliSerial->printf("missing log type\n");
+        return(-1);
+    }
 
-	bits = 0;
+    bits = 0;
 
-	// Macro to make the following code a bit easier on the eye.
-	// Pass it the capitalised name of the log option, as defined
-	// in defines.h but without the LOG_ prefix.  It will check for
-	// that name as the argument to the command, and set the bit in
-	// bits accordingly.
-	//
-	if (!strcasecmp(argv[1].str, "all")) {
-		bits = ~0;
-	} else {
-		#define TARG(_s)	if (!strcasecmp(argv[1].str, #_s)) bits |= MASK_LOG_ ## _s
-		TARG(ATTITUDE_FAST);
-		TARG(ATTITUDE_MED);
-		TARG(GPS);
-		TARG(PM);
-		TARG(CTUN);
-		TARG(NTUN);
-		TARG(MODE);
-		TARG(IMU);
-		TARG(CMD);
-		TARG(CURRENT);
-		TARG(SONAR);
-		TARG(COMPASS);
-		TARG(CAMERA);
-		TARG(STEERING);
-		#undef TARG
-	}
+    // Macro to make the following code a bit easier on the eye.
+    // Pass it the capitalised name of the log option, as defined
+    // in defines.h but without the LOG_ prefix.  It will check for
+    // that name as the argument to the command, and set the bit in
+    // bits accordingly.
+    //
+    if (!strcasecmp(argv[1].str, "all")) {
+        bits = ~0;
+    } else {
+        #define TARG(_s)    if (!strcasecmp(argv[1].str, #_s)) bits |= MASK_LOG_ ## _s
+        TARG(ATTITUDE_FAST);
+        TARG(ATTITUDE_MED);
+        TARG(GPS);
+        TARG(PM);
+        TARG(CTUN);
+        TARG(NTUN);
+        TARG(MODE);
+        TARG(IMU);
+        TARG(CMD);
+        TARG(CURRENT);
+        TARG(SONAR);
+        TARG(COMPASS);
+        TARG(CAMERA);
+        TARG(STEERING);
+        #undef TARG
+    }
 
-	if (!strcasecmp(argv[0].str, "enable")) {
-		g.log_bitmask.set_and_save(g.log_bitmask | bits);
-	}else{
-		g.log_bitmask.set_and_save(g.log_bitmask & ~bits);
-	}
-	return(0);
+    if (!strcasecmp(argv[0].str, "enable")) {
+        g.log_bitmask.set_and_save(g.log_bitmask | bits);
+    }else{
+        g.log_bitmask.set_and_save(g.log_bitmask & ~bits);
+    }
+    return(0);
 }
 
 int8_t Rover::process_logs(uint8_t argc, const Menu::arg *argv)
 {
-	log_menu.run();
-	return 0;
+    log_menu.run();
+    return 0;
 }
 
 #endif // CLI_ENABLED == ENABLED
 
 void Rover::do_erase_logs(void)
 {
-	cliSerial->printf("\nErasing log...\n");
+    cliSerial->printf("\nErasing log...\n");
     DataFlash.EraseAll();
-	cliSerial->printf("\nLog erased.\n");
+    cliSerial->printf("\nLog erased.\n");
 }
 
 
@@ -389,25 +389,25 @@ void Rover::Log_Write_Home_And_Origin()
 
 const LogStructure Rover::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-    { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
+    { LOG_PERFORMANCE_MSG, sizeof(log_Performance),
       "PM",  "QIHIhhhBH", "TimeUS,LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },
-    { LOG_STARTUP_MSG, sizeof(log_Startup),         
+    { LOG_STARTUP_MSG, sizeof(log_Startup),
       "STRT", "QBH",        "TimeUS,SType,CTot" },
-    { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
+    { LOG_CTUN_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qhcchf",     "TimeUS,Steer,Roll,Pitch,ThrOut,AccY" },
-    { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
+    { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
       "NTUN", "QHfHHbf",    "TimeUS,Yaw,WpDist,TargBrg,NavBrg,Thr,XT" },
-    { LOG_SONAR_MSG, sizeof(log_Sonar),             
+    { LOG_SONAR_MSG, sizeof(log_Sonar),
       "SONR", "QfHHHbHCb",  "TimeUS,LatAcc,S1Dist,S2Dist,DCnt,TAng,TTim,Spd,Thr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
       "ARM", "QBH", "TimeUS,ArmState,ArmChecks" },
-    { LOG_STEERING_MSG, sizeof(log_Steering),             
+    { LOG_STEERING_MSG, sizeof(log_Steering),
       "STER", "Qff",   "TimeUS,Demanded,Achieved" },
 };
 
 void Rover::log_init(void)
 {
-	DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
+    DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
         gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
         g.log_bitmask.set(0);
@@ -420,9 +420,9 @@ void Rover::log_init(void)
         }
     }
 
-	if (g.log_bitmask != 0) {
-		start_logging();
-	}
+    if (g.log_bitmask != 0) {
+        start_logging();
+    }
 
     arming.set_logging_available(DataFlash.CardInserted());
 }
@@ -437,7 +437,7 @@ void Rover::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page
 
     cliSerial->println(HAL_BOARD_NAME);
 
-	DataFlash.LogReadProcess(list_entry, start_page, end_page,
+    DataFlash.LogReadProcess(list_entry, start_page, end_page,
                              FUNCTOR_BIND_MEMBER(&Rover::print_mode, void, AP_HAL::BetterStream *, uint8_t),
                              cliSerial);
 }
@@ -451,7 +451,7 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 }
 
 // start a new log
-void Rover::start_logging() 
+void Rover::start_logging()
 {
     in_mavlink_delay = true;
     DataFlash.set_mission(&mission);

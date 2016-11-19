@@ -43,28 +43,28 @@
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-# define BATTERY_PIN_1	  1
-# define CURRENT_PIN_1	  2
+# define BATTERY_PIN_1      1
+# define CURRENT_PIN_1      2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-# define BATTERY_PIN_1	  -1
-# define CURRENT_PIN_1	  -1
+# define BATTERY_PIN_1      -1
+# define CURRENT_PIN_1      -1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 # define BATTERY_PIN_1     -1
-# define CURRENT_PIN_1	   -1
+# define CURRENT_PIN_1       -1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-# define BATTERY_PIN_1	  -1
-# define CURRENT_PIN_1	  -1
+# define BATTERY_PIN_1      -1
+# define CURRENT_PIN_1      -1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
 
 #ifndef HIL_MODE
-#define HIL_MODE	HIL_MODE_DISABLED
+#define HIL_MODE    HIL_MODE_DISABLED
 #endif
 
 #ifndef MAV_SYSTEM_ID
-# define MAV_SYSTEM_ID		1
+# define MAV_SYSTEM_ID        1
 #endif
 
 
@@ -78,24 +78,24 @@
 
 
 #ifndef CH7_OPTION
-# define CH7_OPTION		          CH7_SAVE_WP
+# define CH7_OPTION                  CH7_SAVE_WP
 #endif
 
 #ifndef TUNING_OPTION
-# define TUNING_OPTION		          TUN_NONE
+# define TUNING_OPTION                  TUN_NONE
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // INPUT_VOLTAGE
 //
 #ifndef INPUT_VOLTAGE
-# define INPUT_VOLTAGE			4.68	//  4.68 is the average value for a sample set.  This is the value at the processor with 5.02 applied at the servo rail
+# define INPUT_VOLTAGE            4.68    //  4.68 is the average value for a sample set.  This is the value at the processor with 5.02 applied at the servo rail
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
-# define MAGNETOMETER			ENABLED
+# define MAGNETOMETER            ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -103,7 +103,7 @@
 // MODE_CHANNEL
 //
 #ifndef MODE_CHANNEL
-# define MODE_CHANNEL	8
+# define MODE_CHANNEL    8
 #endif
 #if (MODE_CHANNEL != 5) && (MODE_CHANNEL != 6) && (MODE_CHANNEL != 7) && (MODE_CHANNEL != 8)
 # error XXX
@@ -112,38 +112,38 @@
 #endif
 
 #if !defined(MODE_1)
-# define MODE_1			LEARNING
+# define MODE_1            LEARNING
 #endif
 #if !defined(MODE_2)
-# define MODE_2			LEARNING
+# define MODE_2            LEARNING
 #endif
 #if !defined(MODE_3)
-# define MODE_3			LEARNING
+# define MODE_3            LEARNING
 #endif
 #if !defined(MODE_4)
-# define MODE_4			LEARNING
+# define MODE_4            LEARNING
 #endif
 #if !defined(MODE_5)
-# define MODE_5			LEARNING
+# define MODE_5            LEARNING
 #endif
 #if !defined(MODE_6)
-# define MODE_6			MANUAL
+# define MODE_6            MANUAL
 #endif
 
 
 //////////////////////////////////////////////////////////////////////////////
 // failsafe defaults
 #ifndef THROTTLE_FAILSAFE
-# define THROTTLE_FAILSAFE		ENABLED
+# define THROTTLE_FAILSAFE        ENABLED
 #endif
 #ifndef THROTTLE_FS_VALUE
-# define THROTTLE_FS_VALUE		950
+# define THROTTLE_FS_VALUE        950
 #endif
 #ifndef LONG_FAILSAFE_ACTION
-# define LONG_FAILSAFE_ACTION		0
+# define LONG_FAILSAFE_ACTION        0
 #endif
 #ifndef GCS_HEARTBEAT_FAILSAFE
-# define GCS_HEARTBEAT_FAILSAFE		DISABLED
+# define GCS_HEARTBEAT_FAILSAFE        DISABLED
 #endif
 
 
@@ -151,7 +151,7 @@
 // THROTTLE_OUT
 //
 #ifndef THROTTE_OUT
-# define THROTTLE_OUT			ENABLED
+# define THROTTLE_OUT            ENABLED
 #endif
 
 
@@ -165,14 +165,14 @@
 // GROUND_START_DELAY
 //
 #ifndef GROUND_START_DELAY
-# define GROUND_START_DELAY		0
+# define GROUND_START_DELAY        0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // MOUNT (ANTENNA OR CAMERA)
 //
 #ifndef MOUNT
-# define MOUNT		ENABLED
+# define MOUNT        ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -186,24 +186,24 @@
 // AIRSPEED_CRUISE
 //
 #ifndef SPEED_CRUISE
-# define SPEED_CRUISE		5 // in m/s
+# define SPEED_CRUISE        5 // in m/s
 #endif
 
 #ifndef TURN_GAIN
-# define TURN_GAIN		5
+# define TURN_GAIN        5
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Servo Mapping
 //
 #ifndef THROTTLE_MIN
-# define THROTTLE_MIN			0 // percent
+# define THROTTLE_MIN            0 // percent
 #endif
 #ifndef THROTTLE_CRUISE
-# define THROTTLE_CRUISE		45
+# define THROTTLE_CRUISE        45
 #endif
 #ifndef THROTTLE_MAX
-# define THROTTLE_MAX			100
+# define THROTTLE_MAX            100
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -228,7 +228,7 @@
 // Dataflash logging control
 //
 #ifndef LOGGING_ENABLED
-# define LOGGING_ENABLED		ENABLED
+# define LOGGING_ENABLED        ENABLED
 #endif
 
 #define DEFAULT_LOG_BITMASK   0xffff

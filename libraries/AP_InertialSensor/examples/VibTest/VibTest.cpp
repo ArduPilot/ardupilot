@@ -110,12 +110,12 @@ void loop(void)
     do {
         got_sample = false;
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            struct accel_report	accel_report;
-            struct gyro_report	gyro_report;
-            
-            if (accel_fd[i] != -1 && ::read(accel_fd[i], &accel_report, sizeof(accel_report)) == 
+            struct accel_report    accel_report;
+            struct gyro_report    gyro_report;
+
+            if (accel_fd[i] != -1 && ::read(accel_fd[i], &accel_report, sizeof(accel_report)) ==
                 sizeof(accel_report) &&
-                accel_report.timestamp != last_accel_timestamp[i]) {        
+                accel_report.timestamp != last_accel_timestamp[i]) {
                 uint32_t deltat = accel_report.timestamp - last_accel_timestamp[i];
                 if (deltat > accel_deltat_max[i]) {
                     accel_deltat_max[i] = deltat;
@@ -137,9 +137,9 @@ void loop(void)
                 got_sample = true;
                 total_samples[i]++;
             }
-            if (gyro_fd[i] != -1 && ::read(gyro_fd[i], &gyro_report, sizeof(gyro_report)) == 
+            if (gyro_fd[i] != -1 && ::read(gyro_fd[i], &gyro_report, sizeof(gyro_report)) ==
                 sizeof(gyro_report) &&
-                gyro_report.timestamp != last_gyro_timestamp[i]) {        
+                gyro_report.timestamp != last_gyro_timestamp[i]) {
                 uint32_t deltat = gyro_report.timestamp - last_gyro_timestamp[i];
                 if (deltat > gyro_deltat_max[i]) {
                     gyro_deltat_max[i] = deltat;
@@ -166,27 +166,27 @@ void loop(void)
             if (total_samples[0] % 2000 == 0 && last_print != total_samples[0]) {
                 last_print = total_samples[0];
                 hal.console->printf("t=%lu total_samples=%lu/%lu/%lu adt=%u:%u/%u:%u/%u:%u gdt=%u:%u/%u:%u/%u:%u\n",
-                                    (unsigned long)AP_HAL::millis(), 
-                                    (unsigned long)total_samples[0], 
+                                    (unsigned long)AP_HAL::millis(),
+                                    (unsigned long)total_samples[0],
                                     (unsigned long)total_samples[1],
                                     (unsigned long)total_samples[2],
-                                    accel_deltat_min[0], 
-                                    accel_deltat_max[0], 
-                                    accel_deltat_min[1], 
-                                    accel_deltat_max[1], 
-                                    accel_deltat_min[2], accel_deltat_max[2], 
-                                    gyro_deltat_min[0], gyro_deltat_max[0], 
-                                    gyro_deltat_min[1], gyro_deltat_max[1], 
+                                    accel_deltat_min[0],
+                                    accel_deltat_max[0],
+                                    accel_deltat_min[1],
+                                    accel_deltat_max[1],
+                                    accel_deltat_min[2], accel_deltat_max[2],
+                                    gyro_deltat_min[0], gyro_deltat_max[0],
+                                    gyro_deltat_min[1], gyro_deltat_max[1],
                                     gyro_deltat_min[2], gyro_deltat_max[2]);
 #if 0
                 ::printf("t=%lu total_samples=%lu/%lu/%lu adt=%u:%u/%u:%u/%u:%u gdt=%u:%u/%u:%u/%u:%u\n",
-                         AP_HAL::millis(), 
+                         AP_HAL::millis(),
                          total_samples[0], total_samples[1],total_samples[2],
-                         accel_deltat_min[0], accel_deltat_max[0], 
-                         accel_deltat_min[1], accel_deltat_max[1], 
-                         accel_deltat_min[2], accel_deltat_max[2], 
-                         gyro_deltat_min[0], gyro_deltat_max[0], 
-                         gyro_deltat_min[1], gyro_deltat_max[1], 
+                         accel_deltat_min[0], accel_deltat_max[0],
+                         accel_deltat_min[1], accel_deltat_max[1],
+                         accel_deltat_min[2], accel_deltat_max[2],
+                         gyro_deltat_min[0], gyro_deltat_max[0],
+                         gyro_deltat_min[1], gyro_deltat_max[1],
                          gyro_deltat_min[2], gyro_deltat_max[2]);
 #endif
 

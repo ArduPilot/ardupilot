@@ -81,7 +81,7 @@ bool ToneAlarm_PX4_Solo::init()
         hal.console->printf("ToneAlarm_PX4_Solo: Unable to open " TONEALARM0_DEVICE_PATH);
         return false;
     }
-    
+
     // set initial boot states. This prevents us issuing a arming
     // warning in plane and rover on every boot
     flags.armed = AP_Notify::flags.armed;
@@ -195,7 +195,7 @@ void ToneAlarm_PX4_Solo::update()
         }
         return;
     }*/
-    
+
     if (AP_Notify::events.compass_cal_canceled) {
         play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
         return;

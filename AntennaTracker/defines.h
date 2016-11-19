@@ -24,9 +24,9 @@ enum ServoType {
 };
 
 enum AltSource {
-	ALT_SOURCE_BARO=0,
-	ALT_SOURCE_GPS=1,
-	ALT_SOURCE_GPS_VEH_ONLY=2
+    ALT_SOURCE_BARO=0,
+    ALT_SOURCE_GPS=1,
+    ALT_SOURCE_GPS_VEH_ONLY=2
 };
 
 //  Filter

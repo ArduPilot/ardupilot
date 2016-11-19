@@ -13,15 +13,15 @@ AP_Baro_HIL::AP_Baro_HIL(AP_Baro &baro) :
 // ==========================================================================
 // based on tables.cpp from http://www.pdas.com/atmosdownload.html
 
-/* 
+/*
    Compute the temperature, density, and pressure in the standard atmosphere
    Correct to 20 km.  Only approximate thereafter.
 */
 void AP_Baro::SimpleAtmosphere(
-	const float alt,                           // geometric altitude, km.
-	float& sigma,                   // density/sea-level standard density
-	float& delta,                 // pressure/sea-level standard pressure
-	float& theta)           // temperature/sea-level standard temperature
+    const float alt,                           // geometric altitude, km.
+    float& sigma,                   // density/sea-level standard density
+    float& delta,                 // pressure/sea-level standard pressure
+    float& theta)           // temperature/sea-level standard temperature
 {
     const float REARTH = 6369.0f;        // radius of the Earth (km)
     const float GMR    = 34.163195f;     // gas constant

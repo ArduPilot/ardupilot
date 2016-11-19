@@ -77,7 +77,7 @@ private:
     bool request_measurement();
 
     bool timer(void);
-    
+
     bool initialised;
     uint16_t num_errors;
 

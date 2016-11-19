@@ -54,21 +54,21 @@ const T &DigitalLPF<T>::get() const {
 }
 
 template <class T>
-void DigitalLPF<T>::reset(T value) { 
-    _output = value; 
+void DigitalLPF<T>::reset(T value) {
+    _output = value;
 }
-    
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 // LowPassFilter
 ////////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
-LowPassFilter<T>::LowPassFilter() : _cutoff_freq(0.0f) { 
-  
+LowPassFilter<T>::LowPassFilter() : _cutoff_freq(0.0f) {
+
 }
 // constructor
 template <class T>
-LowPassFilter<T>::LowPassFilter(float cutoff_freq) : _cutoff_freq(cutoff_freq) { 
-  
+LowPassFilter<T>::LowPassFilter(float cutoff_freq) : _cutoff_freq(cutoff_freq) {
+
 }
 
 // change parameters
@@ -109,7 +109,7 @@ void LowPassFilter<T>::reset(T value) {
     _filter.reset(value);
 }
 
-/* 
+/*
  * Make an instances
  * Otherwise we have to move the constructor implementations to the header file :P
  */

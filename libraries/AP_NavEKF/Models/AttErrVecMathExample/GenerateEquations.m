@@ -8,17 +8,17 @@
 % Based on use of a rotation vector for attitude estimation as described
 % here:
 %
-% Mark E. Pittelkau.  "Rotation Vector in Attitude Estimation", 
-% Journal of Guidance, Control, and Dynamics, Vol. 26, No. 6 (2003), 
+% Mark E. Pittelkau.  "Rotation Vector in Attitude Estimation",
+% Journal of Guidance, Control, and Dynamics, Vol. 26, No. 6 (2003),
 % pp. 855-860.
-% 
-% The benefits for use of rotation error vector over use of a four parameter 
+%
+% The benefits for use of rotation error vector over use of a four parameter
 % quaternion representation of the estiamted orientation are:
-% a) Reduced computational load 
-% b) Improved stability 
-% c) The ability to recover faster from large orientation errors. This 
-% makes this filter particularly suitable where the initial alignment is 
-% uncertain 
+% a) Reduced computational load
+% b) Improved stability
+% c) The ability to recover faster from large orientation errors. This
+% makes this filter particularly suitable where the initial alignment is
+% uncertain
 
 % State vector:
 % error rotation vector
@@ -77,7 +77,7 @@ truthQuat = QuatMult(estQuat, errQuat);
 Tbn = Quat2Tbn(truthQuat);
 
 % define the truth delta angle
-% ignore coning acompensation as these effects are negligible in terms of 
+% ignore coning acompensation as these effects are negligible in terms of
 % covariance growth for our application and grade of sensor
 dAngTruth = dAngMeas - dAngBias - [daxNoise;dayNoise;dazNoise];
 
@@ -135,10 +135,10 @@ F = jacobian([errRotNew;vNew;dabNew], stateVector);
 F = subs(F, {'rotErr1', 'rotErr2', 'rotErr3'}, {0,0,0});
 f = matlabFunction(F,'file','calcF.m');
 
-% define a symbolic covariance matrix using strings to represent 
+% define a symbolic covariance matrix using strings to represent
 % '_l_' to represent '( '
 % '_c_' to represent ,
-% '_r_' to represent ')' 
+% '_r_' to represent ')'
 % these can be substituted later to create executable code
 % for rowIndex = 1:nStates
 %     for colIndex = 1:nStates
@@ -152,7 +152,7 @@ f = matlabFunction(F,'file','calcF.m');
 % f = matlabFunction(nextP,'file','calcP.m');
 %% derive equations for fusion of magnetic deviation measurement
 % rotate body measured field into earth axes
-magMeasNED = Tbn*[magX;magY;magZ]; 
+magMeasNED = Tbn*[magX;magY;magZ];
 % the predicted measurement is the angle wrt true north of the horizontal
 % component of the measured field
 angMeas = tan(magMeasNED(2)/magMeasNED(1));

@@ -57,7 +57,7 @@ void Copter::fence_check()
 
 // fence_send_mavlink_status - send fence status to ground station
 void Copter::fence_send_mavlink_status(mavlink_channel_t chan)
-{   
+{
     if (fence.enabled()) {
         // traslate fence library breach types to mavlink breach types
         uint8_t mavlink_breach_type = FENCE_BREACH_NONE;

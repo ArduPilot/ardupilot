@@ -52,7 +52,7 @@ void HeatPwm::set_imu_temp(float current)
         // not configured
         return;
     }
-    
+
     if (AP_HAL::millis() - _last_temp_update < 5) {
         return;
     }

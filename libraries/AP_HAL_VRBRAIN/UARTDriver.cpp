@@ -21,7 +21,7 @@ using namespace VRBRAIN;
 extern const AP_HAL::HAL& hal;
 
 VRBRAINUARTDriver::VRBRAINUARTDriver(const char *devpath, const char *perf_name) :
-	_devpath(devpath),
+    _devpath(devpath),
     _fd(-1),
     _baudrate(57600),
     _initialised(false),
@@ -93,37 +93,37 @@ void VRBRAINUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         _writebuf.set_size(txS);
     }
 
-	if (_fd == -1) {
+    if (_fd == -1) {
         _fd = open(_devpath, O_RDWR);
-		if (_fd == -1) {
-			return;
-		}
-	}
+        if (_fd == -1) {
+            return;
+        }
+    }
 
-	if (_baudrate != 0) {
-		// set the baud rate
-		struct termios t;
-		tcgetattr(_fd, &t);
-		cfsetspeed(&t, _baudrate);
-		// disable LF -> CR/LF
-		t.c_oflag &= ~ONLCR;
-		tcsetattr(_fd, TCSANOW, &t);
+    if (_baudrate != 0) {
+        // set the baud rate
+        struct termios t;
+        tcgetattr(_fd, &t);
+        cfsetspeed(&t, _baudrate);
+        // disable LF -> CR/LF
+        t.c_oflag &= ~ONLCR;
+        tcsetattr(_fd, TCSANOW, &t);
 
         // separately setup IFLOW if we can. We do this as a 2nd call
         // as if the port has no RTS pin then the tcsetattr() call
         // will fail, and if done as one call then it would fail to
         // set the baudrate.
-		tcgetattr(_fd, &t);
-		t.c_cflag |= CRTS_IFLOW;
-		tcsetattr(_fd, TCSANOW, &t);
-	}
+        tcgetattr(_fd, &t);
+        t.c_cflag |= CRTS_IFLOW;
+        tcsetattr(_fd, TCSANOW, &t);
+    }
 
     if (_writebuf.get_size() && _readbuf.get_size() && _fd != -1) {
         if (!_initialised) {
             if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
                 ((VRBRAINGPIO *)hal.gpio)->set_usb_connected();
             }
-            ::printf("initialised %s OK %u %u\n", _devpath, 
+            ::printf("initialised %s OK %u %u\n", _devpath,
                      (unsigned)_writebuf.get_size(), (unsigned)_readbuf.get_size());
         }
         _initialised = true;
@@ -134,7 +134,7 @@ void VRBRAINUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
 void VRBRAINUARTDriver::set_flow_control(enum flow_control fcontrol)
 {
-	if (_fd == -1) {
+    if (_fd == -1) {
         return;
     }
     struct termios t;
@@ -156,7 +156,7 @@ void VRBRAINUARTDriver::set_flow_control(enum flow_control fcontrol)
 
 void VRBRAINUARTDriver::begin(uint32_t b)
 {
-	begin(b, 0, 0);
+    begin(b, 0, 0);
 }
 
 
@@ -197,9 +197,9 @@ void VRBRAINUARTDriver::end()
 void VRBRAINUARTDriver::flush() {}
 
 bool VRBRAINUARTDriver::is_initialized()
-{ 
+{
     try_initialise();
-    return _initialised; 
+    return _initialised;
 }
 
 void VRBRAINUARTDriver::set_blocking_writes(bool blocking)
@@ -213,7 +213,7 @@ bool VRBRAINUARTDriver::tx_pending() { return false; }
   return number of bytes available to be read from the buffer
  */
 uint32_t VRBRAINUARTDriver::available()
-{ 
+{
     if (!_initialised) {
         try_initialise();
         return 0;
@@ -226,7 +226,7 @@ uint32_t VRBRAINUARTDriver::available()
   return number of bytes that can be added to the write buffer
  */
 uint32_t VRBRAINUARTDriver::txspace()
-{ 
+{
     if (!_initialised) {
         try_initialise();
         return 0;
@@ -239,7 +239,7 @@ uint32_t VRBRAINUARTDriver::txspace()
   read one byte from the read buffer
  */
 int16_t VRBRAINUARTDriver::read()
-{ 
+{
     if (_uart_owner_pid != getpid()){
         return -1;
     }
@@ -255,11 +255,11 @@ int16_t VRBRAINUARTDriver::read()
     return byte;
 }
 
-/* 
+/*
    write one byte to the buffer
  */
 size_t VRBRAINUARTDriver::write(uint8_t c)
-{ 
+{
     if (_uart_owner_pid != getpid()){
         return 0;
     }
@@ -285,10 +285,10 @@ size_t VRBRAINUARTDriver::write(const uint8_t *buffer, size_t size)
     if (_uart_owner_pid != getpid()){
         return 0;
     }
-	if (!_initialised) {
+    if (!_initialised) {
         try_initialise();
-		return 0;
-	}
+        return 0;
+    }
 
     if (!_nonblocking_writes) {
         /*
@@ -322,7 +322,7 @@ int VRBRAINUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
     // and no data has been removed from the buffer since flow control turned on
     // and more than .5 seconds elapsed after writing a total of > 5 characters
     //
-    
+
     int nwrite = 0;
 
     if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
@@ -336,7 +336,7 @@ int VRBRAINUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
                 if (_os_start_auto_space - nwrite + 1 >= _total_written &&
                     (AP_HAL::micros64() - _first_write_time) > 500*1000UL) {
                     // it doesn't look like hw flow control is working
-                    ::printf("disabling flow control on %s _total_written=%u\n", 
+                    ::printf("disabling flow control on %s _total_written=%u\n",
                              _devpath, (unsigned)_total_written);
                     set_flow_control(FLOW_CONTROL_DISABLE);
                 }

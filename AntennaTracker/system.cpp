@@ -39,14 +39,14 @@ void Tracker::init_tracker()
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
-    
+
     BoardConfig.init();
 
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
     // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
+    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
     usb_connected = true;
     check_usb_mux();
 
@@ -162,7 +162,7 @@ void Tracker::set_home(struct Location temp)
 }
 
 void Tracker::arm_servos()
-{    
+{
     channel_yaw.enable_out();
     channel_pitch.enable_out();
 }
@@ -193,7 +193,7 @@ void Tracker::set_mode(enum ControlMode mode)
     }
     control_mode = mode;
 
-	switch (control_mode) {
+    switch (control_mode) {
     case AUTO:
     case MANUAL:
     case SCAN:
@@ -207,8 +207,8 @@ void Tracker::set_mode(enum ControlMode mode)
         break;
     }
 
-	// log mode change
-	DataFlash.Log_Write_Mode(control_mode);
+    // log mode change
+    DataFlash.Log_Write_Mode(control_mode);
 }
 
 /*

@@ -133,7 +133,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
     // fuse SoloGimbalEKF velocity data
     fuseVelocity();
 
-    
+
     // Align the heading once there has been enough time for the filter to settle and the tilt corrections have dropped below a threshold
     // Force it to align if too much time has lapsed
     if (((((imuSampleTime_ms - StartTime_ms) > 8000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
@@ -144,13 +144,13 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
     }
 
     // Fuse magnetometer data if  we have new measurements and an aligned heading
-    
+
     readMagData();
     if (newDataMag && YawAligned) {
         fuseCompass();
         newDataMag = false;
     }
-    
+
 }
 
 // state prediction

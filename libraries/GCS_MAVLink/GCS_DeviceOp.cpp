@@ -32,7 +32,7 @@ void GCS_MAVLINK::handle_device_op_read(mavlink_message_t *msg)
     AP_HAL::OwnPtr<AP_HAL::Device> dev = nullptr;
     uint8_t retcode = 0;
     uint8_t data[sizeof(mavlink_device_op_read_reply_t::data)] {};
-    
+
     if (packet.bustype == DEVICE_OP_BUSTYPE_I2C) {
         dev = hal.i2c_mgr->get_device(packet.bus, packet.address);
     } else if (packet.bustype == DEVICE_OP_BUSTYPE_SPI) {
@@ -47,7 +47,7 @@ void GCS_MAVLINK::handle_device_op_read(mavlink_message_t *msg)
     }
     if (!dev->get_semaphore()->take(10)) {
         retcode = 3;
-        goto fail;        
+        goto fail;
     }
     if (!dev->read_registers(packet.regstart, data, packet.count)) {
         retcode = 4;
@@ -83,7 +83,7 @@ void GCS_MAVLINK::handle_device_op_write(mavlink_message_t *msg)
     mavlink_msg_device_op_write_decode(msg, &packet);
     AP_HAL::OwnPtr<AP_HAL::Device> dev = nullptr;
     uint8_t retcode = 0;
-    
+
     if (packet.bustype == DEVICE_OP_BUSTYPE_I2C) {
         dev = hal.i2c_mgr->get_device(packet.bus, packet.address);
     } else if (packet.bustype == DEVICE_OP_BUSTYPE_SPI) {
@@ -98,7 +98,7 @@ void GCS_MAVLINK::handle_device_op_write(mavlink_message_t *msg)
     }
     if (!dev->get_semaphore()->take(10)) {
         retcode = 3;
-        goto fail;        
+        goto fail;
     }
     for (uint8_t i=0; i<packet.count; i++) {
         if (!dev->write_register(packet.regstart+i, packet.data[i])) {

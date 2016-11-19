@@ -18,13 +18,13 @@
 #include "utility/print_vprintf.h"
 #include "UARTDriver.h"
 
-/* 
+/*
    BetterStream method implementations
    These are implemented in AP_HAL to ensure consistent behaviour on
    all boards, although they can be overridden by a port
  */
 
-void AP_HAL::UARTDriver::printf(const char *fmt, ...) 
+void AP_HAL::UARTDriver::printf(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -32,7 +32,7 @@ void AP_HAL::UARTDriver::printf(const char *fmt, ...)
     va_end(ap);
 }
 
-void AP_HAL::UARTDriver::vprintf(const char *fmt, va_list ap) 
+void AP_HAL::UARTDriver::vprintf(const char *fmt, va_list ap)
 {
     print_vprintf(this, fmt, ap);
 }

@@ -35,7 +35,7 @@
 #define MASK_GPS_HDOP       (1<<1)
 #define MASK_GPS_SPD_ERR    (1<<2)
 #define MASK_GPS_POS_ERR    (1<<3)
-#define MASK_GPS_YAW_ERR 	(1<<4)
+#define MASK_GPS_YAW_ERR     (1<<4)
 #define MASK_GPS_POS_DRIFT  (1<<5)
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
@@ -46,7 +46,7 @@ class NavEKF_core;
 class NavEKF
 {
     friend class NavEKF_core;
-    
+
 public:
     // Constructor
     NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);

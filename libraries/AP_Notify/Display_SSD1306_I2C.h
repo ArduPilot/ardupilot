@@ -3,8 +3,8 @@
 #include "Display.h"
 #include <AP_HAL/I2CDevice.h>
 
-#define SSD1306_ROWS 128		    // display rows
-#define SSD1306_COLUMNS 64		    // display columns
+#define SSD1306_ROWS 128            // display rows
+#define SSD1306_COLUMNS 64            // display columns
 #define SSD1306_COLUMNS_PER_PAGE 8
 
 class Display_SSD1306_I2C: public Display {

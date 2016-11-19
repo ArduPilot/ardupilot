@@ -202,7 +202,7 @@ public:
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(mavlink_channel_t chan);
-    
+
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
     // this is used to limit height during optical flow navigation
     // it will return invalid when no limiting is required
@@ -240,7 +240,7 @@ public:
 
     // get the index of the current primary gyro sensor
     uint8_t get_primary_gyro_index(void) const override;
-    
+
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
 #if AP_AHRS_WITH_EKF1
@@ -279,10 +279,10 @@ private:
 
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;
-    
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
     void update_SITL(void);
-#endif    
+#endif
 };
 #endif

@@ -24,7 +24,7 @@ int8_t Copter::main_menu_help(uint8_t argc, const Menu::arg *argv)
 
 // Command/function table for the top-level menu.
 const struct Menu::command main_menu_commands[] = {
-//   command		function called
+//   command        function called
 //   =======        ===============
     {"logs",                MENU_FUNC(process_logs)},
     {"setup",               MENU_FUNC(setup_mode)},
@@ -115,7 +115,7 @@ void Copter::init_ardupilot()
 
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
-    
+
     // initialise serial ports
     serial_manager.init();
 
@@ -125,7 +125,7 @@ void Copter::init_ardupilot()
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
-    
+
     BoardConfig.init();
 
     // init cargo gripper
@@ -142,7 +142,7 @@ void Copter::init_ardupilot()
 
     // Init RSSI
     rssi.init();
-    
+
     barometer.init();
 
     // we start by assuming USB connected, as we initialed the serial
@@ -173,7 +173,7 @@ void Copter::init_ardupilot()
     // trad heli specific initialisation
     heli_init();
 #endif
-    
+
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
 
@@ -397,7 +397,7 @@ void Copter::update_auto_armed()
         if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
-#if FRAME_CONFIG == HELI_FRAME 
+#if FRAME_CONFIG == HELI_FRAME
         // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
         // so that rotor runup is checked again before attempting to take-off
         if(ap.land_complete && !motors.rotor_runup_complete()) {
@@ -406,7 +406,7 @@ void Copter::update_auto_armed()
 #endif // HELI_FRAME
     }else{
         // arm checks
-        
+
 #if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
         if(motors.armed() && !ap.throttle_zero && motors.rotor_runup_complete()) {

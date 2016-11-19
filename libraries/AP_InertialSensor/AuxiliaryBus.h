@@ -104,7 +104,7 @@ public:
 
     /* See AP_HAL::Device::register_periodic_callback() */
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t, AP_HAL::Device::PeriodicCb);
-    
+
     /*
      * Get the semaphore needed to call methods on the bus this sensor is on.
      * Internally no locks are taken and it's the caller's duty to lock and
@@ -126,7 +126,7 @@ public:
     uint32_t get_bus_id(void) const {
         return _devid;
     }
-        
+
 protected:
     /* Only AP_InertialSensor_Backend is able to create a bus */
     AuxiliaryBus(AP_InertialSensor_Backend &backend, uint8_t max_slaves, uint32_t devid);

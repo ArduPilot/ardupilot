@@ -41,10 +41,10 @@
 
 class AC_AttitudeControl_Multi : public AC_AttitudeControl {
 public:
-	AC_AttitudeControl_Multi(AP_AHRS &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
+    AC_AttitudeControl_Multi(AP_AHRS &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
 
-	// empty destructor to suppress compiler warning
-	virtual ~AC_AttitudeControl_Multi() {}
+    // empty destructor to suppress compiler warning
+    virtual ~AC_AttitudeControl_Multi() {}
 
     // pid accessors
     AC_PID& get_rate_roll_pid() { return _pid_rate_roll; }

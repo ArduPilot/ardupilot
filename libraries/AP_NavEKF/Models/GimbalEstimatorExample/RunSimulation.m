@@ -79,46 +79,46 @@ for fastIndex = 1:indexLimitFast % 1000 Hz gimbal prediction loop
     % heading alignment is complete
     psiRateTruth = gndSpd/radius*hdgAlignedEKF;
     angRateTruth = [0;0;psiRateTruth]; % constant yaw rate
-    
+
     % calculate yaw and track angles
     psiTruth = psiTruth + psiRateTruth*dtFast;
     trackAngTruth = trackAngTruth + psiRateTruth*dtFast;
-    
+
     % Cacluate truth quternion
     quatTruth = EulToQuat([phiInit,thetaInit,psiTruth]);
-    
+
     % Calculate truth rotaton from sensor to NED
     TsnTruth = Quat2Tbn(quatTruth);
-    
+
     % calculate truth accel vector
     centripAccel = centripAccelMag*[-sin(trackAngTruth);cos(trackAngTruth);0];
     accelTruth = transpose(TsnTruth)*(gravAccel + centripAccel);
-    
+
     % calculate truth velocity vector
     truthVel = gndSpd*[cos(trackAngTruth);sin(trackAngTruth);0];
-    
+
     % synthesise sensor measurements
     % Synthesise IMU measurements, adding bias and noise
     angRateMeas = angRateTruth + gyroBias + gyroNoise*[randn;randn;randn];
     accelMeas   = accelTruth + accBias + accNoise*[randn;randn;randn];
-    
+
     % synthesise velocity measurements
     measVel = truthVel;
-    
+
     % synthesise gimbal angles
     gPhi = 0;
     gTheta = 0;
     gPsi = gPsiInit;
-    
+
     % Define rotation from magnetometer to sensor using a 312 rotation sequence
     TmsTruth = calcTms(gPhi,gPsi,gTheta);
-    
+
     % calculate rotation from NED to magnetometer axes Tnm = Tsm * Tns
     TnmTruth = transpose(TmsTruth) * transpose(TsnTruth);
-    
+
     % synthesise magnetometer measurements adding sensor bias
     magMeas = TnmTruth*magEarthTruth + magMeasBias;
-    
+
     % integrate the IMU measurements to produce delta angles and velocities
     % using a trapezoidal integrator
     if isempty(prevAngRateMeas)
@@ -131,7 +131,7 @@ for fastIndex = 1:indexLimitFast % 1000 Hz gimbal prediction loop
     delVelFast = delVelFast + 0.5*(accelMeas + prevAccelMeas)*dtFast;
     prevAngRateMeas = angRateMeas;
     prevAccelMeas   = accelMeas;
-    
+
     % Run an attitude prediction calculation at 1000Hz
     % Convert the rotation vector to its equivalent quaternion
     % using a first order approximation after applying the correction for
@@ -144,7 +144,7 @@ for fastIndex = 1:indexLimitFast % 1000 Hz gimbal prediction loop
     quatFast = NormQuat(quatFast);
     % log the high rate data
     eulLogFast(:,fastIndex) = QuatToEul(quatFast);
-    
+
     % every 20msec we send them to the EKF computer and reset
     % the total
     % we also save a copy of the quaternion from our high rate prediction
@@ -155,7 +155,7 @@ for fastIndex = 1:indexLimitFast % 1000 Hz gimbal prediction loop
         delVelFast = [0;0;0];
         quatFastSaved = quatFast;
     end
-    
+
     % run the 50Hz EKF loop but do so 5 msec behind the
     % data transmission to simulate the effect of transmission and
     % computational delays
@@ -163,7 +163,7 @@ for fastIndex = 1:indexLimitFast % 1000 Hz gimbal prediction loop
         slowIndex = slowIndex + 1;
         [quatEKF,angRateBiasEKF,EKFlogs,hdgAlignedEKF] = calcEKF(delAngSlow,delVelSlow,measVel,gPhi,gPsi,gTheta,magMeas,declParam,time,dtSlow,slowIndex,indexLimitSlow);
     end
-    
+
     % Correct Gimbal attitude usng EKF data
     % Assume the gimbal controller receive the EKF solution 10 msec after
     % it sent the sensor data
@@ -180,7 +180,7 @@ for fastIndex = 1:indexLimitFast % 1000 Hz gimbal prediction loop
         % flag when the gimbals own heading is aligned
         hdgAlignedGimbal = hdgAlignedEKF;
     end
-    
+
     % Log gimbal data
     gimbal.time(fastIndex) = time;
     gimbal.euler(:,fastIndex) = QuatToEul(quatFast);
@@ -195,7 +195,7 @@ for fastIndex = 1:indexLimitFast % 1000 Hz gimbal prediction loop
     else
         gimbal.eulerError(:,fastIndex) = [NaN;NaN;NaN];
     end
-    
+
 end
 
 %% Generate Plots

@@ -198,7 +198,7 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
     }
 
     memset(&obs, 0, sizeof(obs));
-    
+
     /* fill obs class */
     for (uint8_t i = 0; i < _n_motors; i++) {
         /* extract 'rpm saturation bit' */
@@ -229,7 +229,7 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
         _state = BEBOP_BLDC_STARTED;
         break;
     }
-    
+
     obs.batt_mv = be16toh(data.batt_mv);
     obs.status = data.status;
     obs.error = data.error;
@@ -373,7 +373,7 @@ void RCOutput_Bebop::init()
 
     // enable servo power (also receiver power)
     _toggle_gpio(BEBOP_BLDC_GPIO_2 | BEBOP_BLDC_GPIO_POWER);
-    
+
 exit:
     pthread_mutex_unlock(&_mutex);
     return;
@@ -499,7 +499,7 @@ void RCOutput_Bebop::_run_rcout()
     bebop_bldc_channels[2] = bebop_bldc_left_front;
     bebop_bldc_channels[3] = bebop_bldc_right_back;
 #endif
-    
+
     hw_version = Util::from(hal.util)->get_hw_arm32();
     if (hw_version == UTIL_HARDWARE_BEBOP) {
         _max_rpm = BEBOP_BLDC_MAX_RPM_1;

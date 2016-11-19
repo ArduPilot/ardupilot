@@ -19,10 +19,10 @@
 #include "RPM_Backend.h"
 
 /*
-  base class constructor. 
+  base class constructor.
 */
 AP_RPM_Backend::AP_RPM_Backend(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state) :
         ap_rpm(_ap_rpm),
-        state(_state) 
+        state(_state)
 {
 }

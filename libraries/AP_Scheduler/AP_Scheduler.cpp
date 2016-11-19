@@ -101,7 +101,7 @@ void AP_Scheduler::run(uint32_t time_available)
             }
         }
     }
-    
+
     for (uint8_t i=0; i<_num_tasks; i++) {
         uint16_t dt = _tick_counter - _last_run[i];
         uint16_t interval_ticks = _loop_rate_hz / _tasks[i].rate_hz;

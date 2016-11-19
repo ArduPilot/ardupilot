@@ -193,8 +193,8 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_ICM_UNDOC1_VALUE 0xc9
 
 // WHOAMI values
-#define MPU_WHOAMI_6000			0x68
-#define ICM_WHOAMI_20608		0xaf
+#define MPU_WHOAMI_6000            0x68
+#define ICM_WHOAMI_20608        0xaf
 
 #define BIT_READ_FLAG                           0x80
 #define BIT_I2C_SLVX_EN                         0x80
@@ -212,18 +212,18 @@ extern const AP_HAL::HAL& hal;
 
 // Product ID Description for MPU6000
 // high 4 bits  low 4 bits
-// Product Name	Product Revision
-#define MPU6000ES_REV_C4                        0x14    // 0001			0100
-#define MPU6000ES_REV_C5                        0x15    // 0001			0101
-#define MPU6000ES_REV_D6                        0x16    // 0001			0110
-#define MPU6000ES_REV_D7                        0x17    // 0001			0111
-#define MPU6000ES_REV_D8                        0x18    // 0001			1000
-#define MPU6000_REV_C4                          0x54    // 0101			0100
-#define MPU6000_REV_C5                          0x55    // 0101			0101
-#define MPU6000_REV_D6                          0x56    // 0101			0110
-#define MPU6000_REV_D7                          0x57    // 0101			0111
-#define MPU6000_REV_D8                          0x58    // 0101			1000
-#define MPU6000_REV_D9                          0x59    // 0101			1001
+// Product Name    Product Revision
+#define MPU6000ES_REV_C4                        0x14    // 0001            0100
+#define MPU6000ES_REV_C5                        0x15    // 0001            0101
+#define MPU6000ES_REV_D6                        0x16    // 0001            0110
+#define MPU6000ES_REV_D7                        0x17    // 0001            0111
+#define MPU6000ES_REV_D8                        0x18    // 0001            1000
+#define MPU6000_REV_C4                          0x54    // 0101            0100
+#define MPU6000_REV_C5                          0x55    // 0101            0101
+#define MPU6000_REV_D6                          0x56    // 0101            0110
+#define MPU6000_REV_D7                          0x57    // 0101            0111
+#define MPU6000_REV_D8                          0x58    // 0101            1000
+#define MPU6000_REV_D9                          0x59    // 0101            1001
 
 #define MPU6000_SAMPLE_SIZE 14
 #define MPU6000_MAX_FIFO_SAMPLES 8
@@ -390,11 +390,11 @@ void AP_InertialSensor_MPU6000::start()
     }
     hal.scheduler->delay(1);
 
-	if (_is_icm_device) {
+    if (_is_icm_device) {
         // this avoids a sensor bug, see description above
-		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
-	}
-    
+        _register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
+    }
+
     // configure interrupt to fire when new data arrives
     _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
     hal.scheduler->delay(1);
@@ -421,7 +421,7 @@ void AP_InertialSensor_MPU6000::start()
     if (_fifo_buffer == nullptr) {
         AP_HAL::panic("MPU6000: Unable to allocate FIFO buffer");
     }
-    
+
     // start the timer process to read samples
     _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, bool));
 }
@@ -486,7 +486,7 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 #if MPU6000_EXT_SYNC_ENABLE
         fsync_set = (int16_val(data, 2) & 1U) != 0;
 #endif
-        
+
         accel = Vector3f(int16_val(data, 1),
                          int16_val(data, 0),
                          -int16_val(data, 2));
@@ -495,7 +495,7 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
         float temp = int16_val(data, 3);
         temp = temp/340 + 36.53;
         _last_temp = temp;
-        
+
         gyro = Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
                         -int16_val(data, 6));
@@ -516,7 +516,7 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
     float tsum = 0;
     const int32_t clip_limit = AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS / _accel_scale;
     bool clipped = false;
-    
+
     for (uint8_t i = 0; i < n_samples; i++) {
         uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
         Vector3l a(int16_val(data, 1),
@@ -553,10 +553,10 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
 
         float gscale = GYRO_SCALE / _accum.count;
         Vector3f gyro(_accum.gyro.x*gscale, _accum.gyro.y*gscale, _accum.gyro.z*gscale);
-    
+
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
-    
+
         _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), false);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
@@ -574,7 +574,7 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
 void AP_InertialSensor_MPU6000::_check_temperature(void)
 {
     uint8_t rx[2];
-    
+
     if (!_block_read(MPUREG_TEMP_OUT_H, rx, 2)) {
         return;
     }
@@ -681,7 +681,7 @@ void AP_InertialSensor_MPU6000::_set_filter_register(void)
     if (enable_fast_sampling(_accel_instance)) {
         _fast_sampling = (_is_icm_device && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
     }
-    
+
     if (_fast_sampling) {
         // this gives us 8kHz sampling on gyros and 4kHz on accels
         config |= BITS_DLPF_CFG_256HZ_NOLPF2;
@@ -691,7 +691,7 @@ void AP_InertialSensor_MPU6000::_set_filter_register(void)
     }
     _register_write(MPUREG_CONFIG, config, true);
 
-	if (_is_icm_device) {
+    if (_is_icm_device) {
         if (_fast_sampling) {
             // setup for 4kHz accels
             _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_FCHOICE_B, true);
@@ -728,7 +728,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
 
     // setup for register checking
     _dev->setup_checked_registers(7);
-    
+
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
@@ -736,7 +736,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         _dev->get_semaphore()->give();
         return false;
     }
-    
+
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries < 5; tries++) {
@@ -790,11 +790,11 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         return false;
     }
 
-	if (_is_icm_device) {
+    if (_is_icm_device) {
         // this avoids a sensor bug, see description above
-		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
-	}
-    
+        _register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
+    }
+
     return true;
 }
 
@@ -951,7 +951,7 @@ void AP_MPU6000_AuxiliaryBus::_configure_slaves()
     backend._register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_I2C_MST_EN);
 
     backend._master_i2c_enable = true;
-    
+
     /* stop condition between reads; clock at 400kHz */
     backend._register_write(MPUREG_I2C_MST_CTRL,
                             BIT_I2C_MST_P_NSR | BIT_I2C_MST_CLK_400KHZ);

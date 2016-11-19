@@ -14,7 +14,7 @@ public:
     // reading. This is needed for sonar devices where you have more
     // than one sonar, and you want to stop them interfering with each
     // other. It assumes that if held low the device is stopped, if
-    // held high the device starts reading.    
+    // held high the device starts reading.
     virtual void set_stop_pin(uint8_t p) = 0;
 
     // optionally allow a settle period in milliseconds. This is only

@@ -39,7 +39,7 @@ AP_GPS_PX4::AP_GPS_PX4(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriv
 
 AP_GPS_PX4::~AP_GPS_PX4()
 {
-	orb_unsubscribe(_gps_sub);
+    orb_unsubscribe(_gps_sub);
 }
 
 

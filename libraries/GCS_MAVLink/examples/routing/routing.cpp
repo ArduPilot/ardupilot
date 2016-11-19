@@ -1,5 +1,5 @@
 //
-// Simple test for the GCS_MAVLink routing 
+// Simple test for the GCS_MAVLink routing
 //
 
 #include <AP_HAL/AP_HAL.h>

@@ -160,137 +160,137 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 {
 
 
-	char c;
-	unsigned max_channels = 0;
-	uint32_t set_mask = 0;
+    char c;
+    unsigned max_channels = 0;
+    uint32_t set_mask = 0;
 
-	uint16_t pwm_high = PWM_CALIB_MAX;
-	uint16_t pwm_low = PWM_CALIB_MIN;
+    uint16_t pwm_high = PWM_CALIB_MAX;
+    uint16_t pwm_low = PWM_CALIB_MIN;
 
 
-	if (argc < 2) {
-		cliSerial->printf("Pls provide Channel Mask\n"
+    if (argc < 2) {
+        cliSerial->printf("Pls provide Channel Mask\n"
                                     "\tusage: esc_calib 1010 - enables calibration for 2nd and 4th Motor\n");
         return(0);
-	}
-    
+    }
 
-	
+
+
     set_mask = strtol (argv[1].str, nullptr, 2);
-	if (set_mask == 0)
-		cliSerial->printf("no channels chosen");
+    if (set_mask == 0)
+        cliSerial->printf("no channels chosen");
     //cliSerial->printf("\n%d\n",set_mask);
     set_mask<<=1;
-	/* wait 50 ms */
-	hal.scheduler->delay(50);
+    /* wait 50 ms */
+    hal.scheduler->delay(50);
 
 
-	cliSerial->printf("\nATTENTION, please remove or fix propellers before starting calibration!\n"
-	       "\n"
-	       "Make sure\n"
-	       "\t - that the ESCs are not powered\n"
-	       "\t - that safety is off\n"
-	       "\t - that the controllers are stopped\n"
-	       "\n"
-	       "Do you want to start calibration now: y or n?\n");
+    cliSerial->printf("\nATTENTION, please remove or fix propellers before starting calibration!\n"
+           "\n"
+           "Make sure\n"
+           "\t - that the ESCs are not powered\n"
+           "\t - that safety is off\n"
+           "\t - that the controllers are stopped\n"
+           "\n"
+           "Do you want to start calibration now: y or n?\n");
 
-	/* wait for user input */
+    /* wait for user input */
     const char *strEscCalib = "ESC calibration";
-	while (1) {
+    while (1) {
             c= cliSerial->read();
-			if (c == 'y' || c == 'Y') {
+            if (c == 'y' || c == 'Y') {
 
-				break;
+                break;
 
-			} else if (c == 0x03 || c == 0x63 || c == 'q') {
-				cliSerial->printf("%s exited\n", strEscCalib);
-				return(0);
+            } else if (c == 0x03 || c == 0x63 || c == 'q') {
+                cliSerial->printf("%s exited\n", strEscCalib);
+                return(0);
 
-			} else if (c == 'n' || c == 'N') {
-				cliSerial->printf("%s aborted\n", strEscCalib);
-				return(0);
+            } else if (c == 'n' || c == 'N') {
+                cliSerial->printf("%s aborted\n", strEscCalib);
+                return(0);
 
-			} 
+            }
 
-		/* rate limit to ~ 20 Hz */
-		hal.scheduler->delay(50);
-	}
-
-
-	/* get number of channels available on the device */
-	max_channels = AP_MOTORS_MAX_NUM_MOTORS;
-
-	/* tell IO/FMU that the system is armed (it will output values if safety is off) */
-	motors.armed(true);
+        /* rate limit to ~ 20 Hz */
+        hal.scheduler->delay(50);
+    }
 
 
-	cliSerial->printf("Outputs armed\n");
+    /* get number of channels available on the device */
+    max_channels = AP_MOTORS_MAX_NUM_MOTORS;
+
+    /* tell IO/FMU that the system is armed (it will output values if safety is off) */
+    motors.armed(true);
 
 
-	/* wait for user confirmation */
-	cliSerial->printf("\nHigh PWM set: %d\n"
-	       "\n"
-	       "Connect battery now and hit c+ENTER after the ESCs confirm the first calibration step\n"
-	       "\n", pwm_high);
+    cliSerial->printf("Outputs armed\n");
 
-	while (1) {
-		/* set max PWM */
-		for (unsigned i = 0; i < max_channels; i++) {
 
-			if (set_mask & 1<<i) {
-				motors.output_test(i, pwm_high);
-			}
-		}
+    /* wait for user confirmation */
+    cliSerial->printf("\nHigh PWM set: %d\n"
+           "\n"
+           "Connect battery now and hit c+ENTER after the ESCs confirm the first calibration step\n"
+           "\n", pwm_high);
+
+    while (1) {
+        /* set max PWM */
+        for (unsigned i = 0; i < max_channels; i++) {
+
+            if (set_mask & 1<<i) {
+                motors.output_test(i, pwm_high);
+            }
+        }
         c = cliSerial->read();
-            
-		if (c == 'c') {
+
+        if (c == 'c') {
             break;
 
-		} else if (c == 0x03 || c == 'q') {
-			cliSerial->printf("%s exited\n", strEscCalib);
-			return(0);
-		}
-        
-		/* rate limit to ~ 20 Hz */
-		hal.scheduler->delay(50);
-	}
+        } else if (c == 0x03 || c == 'q') {
+            cliSerial->printf("%s exited\n", strEscCalib);
+            return(0);
+        }
 
-	cliSerial->printf("Low PWM set: %d\n"
-	       "\n"
-	       "Hit c+Enter when finished\n"
-	       "\n", pwm_low);
+        /* rate limit to ~ 20 Hz */
+        hal.scheduler->delay(50);
+    }
 
-	while (1) {
+    cliSerial->printf("Low PWM set: %d\n"
+           "\n"
+           "Hit c+Enter when finished\n"
+           "\n", pwm_low);
 
-		/* set disarmed PWM */
-		for (unsigned i = 0; i < max_channels; i++) {
-			if (set_mask & 1<<i) {
-				motors.output_test(i, pwm_low);
-			}
-		}
-		c = cliSerial->read();
+    while (1) {
 
-		if (c == 'c') {
+        /* set disarmed PWM */
+        for (unsigned i = 0; i < max_channels; i++) {
+            if (set_mask & 1<<i) {
+                motors.output_test(i, pwm_low);
+            }
+        }
+        c = cliSerial->read();
 
-			break;
+        if (c == 'c') {
 
-		} else if (c == 0x03 || c == 'q') {
-			cliSerial->printf("%s exited\n", strEscCalib);
-			return(0);
-		}
-		
-		/* rate limit to ~ 20 Hz */
-		hal.scheduler->delay(50);
-	}
+            break;
 
-	/* disarm */
-	motors.armed(false);
-    
-	cliSerial->printf("Outputs disarmed\n");
+        } else if (c == 0x03 || c == 'q') {
+            cliSerial->printf("%s exited\n", strEscCalib);
+            return(0);
+        }
 
-	cliSerial->printf("%s finished\n", strEscCalib);
+        /* rate limit to ~ 20 Hz */
+        hal.scheduler->delay(50);
+    }
 
-	return(0);
+    /* disarm */
+    motors.armed(false);
+
+    cliSerial->printf("Outputs disarmed\n");
+
+    cliSerial->printf("%s finished\n", strEscCalib);
+
+    return(0);
 }
 
 

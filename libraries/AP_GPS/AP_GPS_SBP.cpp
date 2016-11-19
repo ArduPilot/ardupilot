@@ -15,7 +15,7 @@
 
 //
 //  Swift Navigation SBP GPS driver for ArduPilot.
-//	Code by Niels Joubert
+//    Code by Niels Joubert
 //
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
 //
@@ -83,7 +83,7 @@ AP_GPS_SBP::read(void)
 
 }
 
-void 
+void
 AP_GPS_SBP::inject_data(const uint8_t *data, uint16_t len)
 {
 
@@ -99,7 +99,7 @@ AP_GPS_SBP::inject_data(const uint8_t *data, uint16_t len)
 //This attempts to reads all SBP messages from the incoming port.
 //Returns true if a new message was read, false if we failed to read a message.
 void
-AP_GPS_SBP::_sbp_process() 
+AP_GPS_SBP::_sbp_process()
 {
 
     while (port->available() > 0) {
@@ -167,7 +167,7 @@ AP_GPS_SBP::_sbp_process()
                         crc_error_counter += 1;
                     }
 
-                    parser_state.state = sbp_parser_state_t::WAITING;                
+                    parser_state.state = sbp_parser_state_t::WAITING;
                 }
                 break;
 
@@ -223,9 +223,9 @@ AP_GPS_SBP::_sbp_process_message() {
         }
 
         default:
-            // log anyway if it's an unsupported message. 
+            // log anyway if it's an unsupported message.
             // The log mask will be used to adjust or suppress logging
-            break; 
+            break;
     }
 
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
@@ -244,7 +244,7 @@ AP_GPS_SBP::_attempt_state_update()
     bool ret = false;
 
     if (now - last_heatbeat_received_ms > SBP_TIMEOUT_HEATBEAT) {
-        
+
         state.status = AP_GPS::NO_GPS;
         Debug("No Heartbeats from Piksi! Driver Ready to Die!");
         ret = false;
@@ -286,7 +286,7 @@ AP_GPS_SBP::_attempt_state_update()
             state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
         else if (pos_llh->flags == 1)
             state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
-        
+
 
         last_full_update_tow = last_vel_ned.tow;
         last_full_update_cpu_ms = now;
@@ -302,10 +302,10 @@ AP_GPS_SBP::_attempt_state_update()
         ret = true;
 
     } else {
-        
+
         //No timeouts yet, no data yet, nothing has happened.
         ret = false;
-    
+
     }
 
 
@@ -383,7 +383,7 @@ AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data)
 
 #if SBP_HW_LOGGING
 
-void 
+void
 AP_GPS_SBP::logging_log_full_update()
 {
 
@@ -398,14 +398,14 @@ AP_GPS_SBP::logging_log_full_update()
         last_injected_data_ms      : last_injected_data_ms,
         last_iar_num_hypotheses    : last_iar_num_hypotheses,
     };
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 
 };
 
 void
-AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type, 
-        uint16_t sender_id, 
-        uint8_t msg_len, 
+AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
+        uint16_t sender_id,
+        uint8_t msg_len,
         uint8_t *msg_buff) {
 
     if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
@@ -426,8 +426,8 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         sender_id       : sender_id,
         msg_len         : msg_len,
     };
-    memcpy(pkt.data1, msg_buff, MIN(msg_len,64)); 
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
+    memcpy(pkt.data1, msg_buff, MIN(msg_len,64));
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 
     if (msg_len > 64) {
 
@@ -437,7 +437,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
             msg_type        : msg_type,
         };
         memcpy(pkt2.data2, &msg_buff[64], msg_len - 64);
-        gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));    
+        gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
 
     }
 

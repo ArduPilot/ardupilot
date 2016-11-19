@@ -81,7 +81,7 @@ void Copter::althold_run()
 
         motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-#if FRAME_CONFIG == HELI_FRAME    
+#if FRAME_CONFIG == HELI_FRAME
         // force descent rate and call position controller
         pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
 #else

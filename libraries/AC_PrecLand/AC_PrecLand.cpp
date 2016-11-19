@@ -120,7 +120,7 @@ void AC_PrecLand::init()
 void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 {
     _attitude_history.push_back(_ahrs.get_rotation_body_to_ned());
-    
+
     // run backend update
     if (_backend != nullptr && _enabled) {
         // read from sensor

@@ -6,7 +6,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-void setup (void) 
+void setup (void)
 {
     hal.console->println("Starting AP_HAL::RCOutput test");
     for (uint8_t i=0; i<14; i++) {
@@ -17,7 +17,7 @@ void setup (void)
 static uint16_t pwm = 1500;
 static int8_t delta = 1;
 
-void loop (void) 
+void loop (void)
 {
     uint8_t i;
     for (i=0; i<14; i++) {

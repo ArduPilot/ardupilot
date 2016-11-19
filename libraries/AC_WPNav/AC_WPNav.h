@@ -163,7 +163,7 @@ public:
     void shift_wp_origin_to_current_pos();
 
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
-    ///		results placed in stopping_position vector
+    ///        results placed in stopping_position vector
     void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
@@ -274,7 +274,7 @@ protected:
     } _flags;
 
     /// calc_loiter_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
-    ///		updated velocity sent directly to position controller
+    ///        updated velocity sent directly to position controller
     void calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit);
 
     /// get_bearing_cd - return bearing in centi-degrees between two positions
@@ -300,7 +300,7 @@ protected:
     bool advance_spline_target_along_track(float dt);
 
     /// calc_spline_pos_vel - update position and velocity from given spline time
-    /// 	relies on update_spline_solution being called since the previous
+    ///     relies on update_spline_solution being called since the previous
     void calc_spline_pos_vel(float spline_time, Vector3f& position, Vector3f& velocity);
 
     // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
@@ -332,7 +332,7 @@ protected:
 
     // loiter controller internal variables
     uint8_t     _loiter_step;           // used to decide which portion of loiter controller to run during this iteration
-    int16_t     _pilot_accel_fwd_cms; 	// pilot's desired acceleration forward (body-frame)
+    int16_t     _pilot_accel_fwd_cms;     // pilot's desired acceleration forward (body-frame)
     int16_t     _pilot_accel_rgt_cms;   // pilot's desired acceleration right (body-frame)
     Vector2f    _loiter_desired_accel;  // slewed pilot's desired acceleration in lat/lon frame
     uint32_t    _loiter_ekf_pos_reset_ms;   // system time of last recorded ekf position reset
@@ -357,7 +357,7 @@ protected:
     Vector3f    _spline_origin_vel;     // the target velocity vector at the origin of the spline segment
     Vector3f    _spline_destination_vel;// the target velocity vector at the destination point of the spline segment
     Vector3f    _hermite_spline_solution[4]; // array describing spline path between origin and destination
-    float       _spline_vel_scaler;	    //
+    float       _spline_vel_scaler;        //
     float       _yaw;                   // heading according to yaw
 
     // terrain following variables

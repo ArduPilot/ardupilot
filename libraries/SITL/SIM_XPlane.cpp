@@ -90,7 +90,7 @@ void XPlane::select_data(uint64_t usel_mask, uint64_t sel_mask)
         printf("De-selecting %u data types 0x%llx\n", (unsigned)count, (unsigned long long)usel_mask);
     }
 }
-    
+
 /*
   receive data from X-Plane via UDP
 */
@@ -117,7 +117,7 @@ bool XPlane::receive_data(void)
         wait_time_ms = 10;
     }
     ssize_t len = socket_in.recv(pkt, sizeof(pkt), wait_time_ms);
-    
+
     if (len < pkt_len+5 || memcmp(pkt, "DATA@", 5) != 0) {
         // not a data packet we understand
         goto failed;
@@ -132,7 +132,7 @@ bool XPlane::receive_data(void)
         connected = true;
         printf("Connected to %s:%u\n", xplane_ip, (unsigned)xplane_port);
     }
-    
+
     while (len >= pkt_len) {
         const float *data = (const float *)p;
         uint8_t code = p[0];
@@ -156,7 +156,7 @@ bool XPlane::receive_data(void)
             time_now_us = tnew;
             break;
         }
-            
+
         case LatLonAlt: {
             loc.lat = data[1] * 1e7;
             loc.lng = data[2] * 1e7;
@@ -181,7 +181,7 @@ bool XPlane::receive_data(void)
                 rcin[2] = data[4];
             }
             break;
-            
+
         case PitchRollHeading: {
             float roll, pitch, yaw;
             pitch = radians(data[1]);
@@ -257,7 +257,7 @@ bool XPlane::receive_data(void)
         case PropRPM:
             rpm2 = data[1];
             break;
-            
+
         case Joystick2:
             break;
 
@@ -291,7 +291,7 @@ bool XPlane::receive_data(void)
 
     accel_earth = dcm * accel_body;
     accel_earth.z += GRAVITY_MSS;
-    
+
     // the position may slowly deviate due to float accuracy and longitude scaling
     if (get_distance(loc, location) > 4 || fabsf(loc.alt - location.alt)*0.01 > 2) {
         printf("X-Plane home reset dist=%f alt=%.1f/%.1f\n",
@@ -317,7 +317,7 @@ bool XPlane::receive_data(void)
     report.data_count++;
     report.frame_count++;
     return true;
-        
+
 failed:
     if (AP_HAL::millis() - last_data_time_ms > 200) {
         // don't extrapolate beyond 0.2s
@@ -350,7 +350,7 @@ failed:
     report.frame_count++;
     return false;
 }
-    
+
 
 /*
   send data to X-Plane via UDP
@@ -379,11 +379,11 @@ void XPlane::send_data(const struct sitl_input &input)
     if (input.servos[3] == 0) {
         rudder = 0;
     }
-    
+
     // we add the throttle_magic to the throttle value we send so we
     // can detect when we get it back
     throttle = ((uint32_t)(throttle * 1000)) * 1.0e-3f + throttle_magic;
-    
+
     uint8_t flap_chan;
     if (RC_Channel_aux::find_channel(RC_Channel_aux::k_flap, flap_chan) ||
         RC_Channel_aux::find_channel(RC_Channel_aux::k_flap_auto, flap_chan)) {
@@ -453,9 +453,9 @@ void XPlane::send_dref(const char *name, float value)
     } d {};
     d.value = value;
     strcpy(d.name, name);
-    socket_out.send(&d, sizeof(d));        
+    socket_out.send(&d, sizeof(d));
 }
-    
+
 /*
   update the XPlane simulation by one time step
  */

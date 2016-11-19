@@ -21,7 +21,7 @@ public:
         // Layout version number, always key zero.
         //
         k_param_format_version = 0,
-		k_param_software_type,
+        k_param_software_type,
 
         // Misc
         //
@@ -57,7 +57,7 @@ public:
 
         // 100: Arming parameters
         k_param_arming = 100,
-                
+
         // 110: Telemetry control
         //
         k_param_gcs0 = 110, // stream rates for uartA
@@ -146,7 +146,7 @@ public:
         k_param_sonar2_old, // unused
         k_param_sonar_debounce,
         k_param_sonar, // sonar object
-        
+
         //
         // 210: driving modes
         //
@@ -203,37 +203,37 @@ public:
         };
 
     AP_Int16    format_version;
-	AP_Int8	    software_type;
+    AP_Int8        software_type;
 
     // Misc
     //
     AP_Int32    log_bitmask;
     AP_Int16    num_resets;
-    AP_Int8	    reset_switch_chan;
+    AP_Int8        reset_switch_chan;
     AP_Int8     initial_mode;
 
     // braking
     AP_Int8     braking_percent;
     AP_Float    braking_speederr;
 
-	// Telemetry control
-	//
-	AP_Int16    sysid_this_mav;
-	AP_Int16    sysid_my_gcs;
+    // Telemetry control
+    //
+    AP_Int16    sysid_this_mav;
+    AP_Int16    sysid_my_gcs;
     AP_Int8     telem_delay;
 #if CLI_ENABLED == ENABLED
     AP_Int8     cli_enabled;
 #endif
 
     // sensor parameters
-    AP_Int8	    compass_enabled; 
+    AP_Int8        compass_enabled;
 
     // navigation parameters
     //
     AP_Float    speed_cruise;
     AP_Int8     speed_turn_gain;
-    AP_Float    speed_turn_dist;    
-    AP_Int8	    ch7_option;
+    AP_Float    speed_turn_dist;
+    AP_Int8        ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
     AP_Float    turn_max_g;
@@ -242,13 +242,13 @@ public:
 
     // RC channels
     RC_Channel      rc_1;
-    RC_Channel_aux	rc_2;
+    RC_Channel_aux    rc_2;
     RC_Channel      rc_3;
     RC_Channel_aux  rc_4;
-    RC_Channel_aux	rc_5;
-    RC_Channel_aux	rc_6;
-    RC_Channel_aux	rc_7;
-    RC_Channel_aux	rc_8;
+    RC_Channel_aux    rc_5;
+    RC_Channel_aux    rc_6;
+    RC_Channel_aux    rc_7;
+    RC_Channel_aux    rc_8;
     RC_Channel_aux  rc_9;
     RC_Channel_aux  rc_10;
     RC_Channel_aux  rc_11;
@@ -270,14 +270,14 @@ public:
     AP_Float    fs_timeout;
     AP_Int8     fs_throttle_enabled;
     AP_Int16    fs_throttle_value;
-	AP_Int8	    fs_gcs_enabled;
+    AP_Int8        fs_gcs_enabled;
 
     // obstacle control
     AP_Int16    sonar_trigger_cm;
     AP_Float    sonar_turn_angle;
     AP_Float    sonar_turn_time;
     AP_Int8     sonar_debounce;
-    
+
 
     // driving modes
     //
@@ -289,7 +289,7 @@ public:
     AP_Int8     mode5;
     AP_Int8     mode6;
     AP_Int8     learn_channel;
-    
+
     // Waypoints
     //
     AP_Float    waypoint_radius;

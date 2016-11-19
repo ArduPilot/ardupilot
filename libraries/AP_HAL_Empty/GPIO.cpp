@@ -14,7 +14,7 @@ void GPIO::pinMode(uint8_t pin, uint8_t output)
 
 int8_t GPIO::analogPinToDigitalPin(uint8_t pin)
 {
-	return -1;
+    return -1;
 }
 
 

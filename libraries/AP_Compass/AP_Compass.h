@@ -65,7 +65,7 @@ public:
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
-    /// @param dcm_matrix			The current orientation rotation matrix
+    /// @param dcm_matrix            The current orientation rotation matrix
     ///
     /// @returns heading in radians
     ///
@@ -279,7 +279,7 @@ public:
     enum LearnType get_learn_type(void) const {
         return (enum LearnType)_learn.get();
     }
-    
+
 private:
     /// Register a new compas driver, allocating an instance number
     ///

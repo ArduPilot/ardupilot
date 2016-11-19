@@ -37,7 +37,7 @@
         EXPECT_VECTOR3F_EQ(expected, result);           \
     } while (false)
 
-void foo() { } 
+void foo() { }
 TEST(ThreatTests, Distance)
 {
 

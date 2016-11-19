@@ -22,8 +22,8 @@
 // Maximum number of RPM measurement instances available on this platform
 #define RPM_MAX_INSTANCES 2
 
-class AP_RPM_Backend; 
- 
+class AP_RPM_Backend;
+
 class AP_RPM
 {
 public:
@@ -42,7 +42,7 @@ public:
         uint8_t                instance;        // the instance number of this RPM
         float                  rate_rpm;        // measured rate in revs per minute
         uint32_t               last_reading_ms; // time of last reading
-        float                  signal_quality;  // synthetic quality metric 
+        float                  signal_quality;  // synthetic quality metric
     };
 
     // parameters for each instance
@@ -53,7 +53,7 @@ public:
     AP_Float _quality_min[RPM_MAX_INSTANCES];
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     // Return the number of rpm sensor instances
     uint8_t num_sensors(void) const {
         return num_instances;
@@ -92,5 +92,5 @@ private:
     uint8_t num_instances:2;
 
     void detect_instance(uint8_t instance);
-    void update_instance(uint8_t instance);  
+    void update_instance(uint8_t instance);
 };

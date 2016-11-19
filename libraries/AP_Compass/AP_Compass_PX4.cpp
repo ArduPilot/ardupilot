@@ -63,20 +63,20 @@ AP_Compass_Backend *AP_Compass_PX4::detect(Compass &compass)
 
 bool AP_Compass_PX4::init(void)
 {
-	_mag_fd[0] = open(MAG_BASE_DEVICE_PATH"0", O_RDONLY);
-	_mag_fd[1] = open(MAG_BASE_DEVICE_PATH"1", O_RDONLY);
-	_mag_fd[2] = open(MAG_BASE_DEVICE_PATH"2", O_RDONLY);
+    _mag_fd[0] = open(MAG_BASE_DEVICE_PATH"0", O_RDONLY);
+    _mag_fd[1] = open(MAG_BASE_DEVICE_PATH"1", O_RDONLY);
+    _mag_fd[2] = open(MAG_BASE_DEVICE_PATH"2", O_RDONLY);
 
     _num_sensors = 0;
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         if (_mag_fd[i] >= 0) {
             _num_sensors = i+1;
         }
-    }    
-	if (_num_sensors == 0) {
+    }
+    if (_num_sensors == 0) {
         hal.console->printf("Unable to open " MAG_BASE_DEVICE_PATH"0" "\n");
         return false;
-	}
+    }
 
     for (uint8_t i=0; i<_num_sensors; i++) {
         _instance[i] = register_compass();
@@ -87,7 +87,7 @@ bool AP_Compass_PX4::init(void)
         // average over up to 20 samples
         if (ioctl(_mag_fd[i], SENSORIOCSQUEUEDEPTH, 20) != 0) {
             hal.console->printf("Failed to setup compass queue\n");
-            return false;                
+            return false;
         }
 
         // remember if the compass is external
@@ -101,7 +101,7 @@ bool AP_Compass_PX4::init(void)
     hal.scheduler->delay(40);
     accumulate();
     if (_count[0] == 0) {
-        hal.console->printf("Failed initial compass accumulate\n");        
+        hal.console->printf("Failed initial compass accumulate\n");
     }
 
     return true;
@@ -120,7 +120,7 @@ void AP_Compass_PX4::read(void)
         _sum[i] /= _count[i];
 
         publish_filtered_field(_sum[i], frontend_instance);
-    
+
         _sum[i].zero();
         _count[i] = 0;
     }

@@ -86,7 +86,7 @@ public:
     };
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     // update terrain state. Should be called at 1Hz or more
     void update(void);
 
@@ -113,7 +113,7 @@ public:
      */
     bool height_amsl(const Location &loc, float &height, bool corrected);
 
-    /* 
+    /*
        find difference between home terrain height and the terrain
        height at the current location in meters. A positive result
        means the terrain is higher than home.
@@ -122,33 +122,33 @@ public:
        location is not available
 
        If extrapolate is true then allow return of an extrapolated
-       terrain altitude based on the last available data       
+       terrain altitude based on the last available data
     */
-    bool height_terrain_difference_home(float &terrain_difference, 
+    bool height_terrain_difference_home(float &terrain_difference,
                                         bool extrapolate = false);
 
-    /* 
+    /*
        return estimated equivalent relative-to-home altitude in meters
        of a given height above the terrain at the current location
-       
+
        This function allows existing height controllers which work on
        barometric altitude (relative to home) to be used with terrain
        based target altitude, by translating the "above terrain" altitude
        into an equivalent barometric relative height.
-       
+
        return false if terrain data is not available either at the given
-       location or at the home location.  
+       location or at the home location.
 
        If extrapolate is true then allow return of an extrapolated
        terrain altitude based on the last available data
     */
-    bool height_relative_home_equivalent(float terrain_altitude, 
-                                         float &relative_altitude, 
+    bool height_relative_home_equivalent(float terrain_altitude,
+                                         float &relative_altitude,
                                          bool extrapolate = false);
 
-    /* 
+    /*
        return current height above terrain at current AHRS
-       position. 
+       position.
 
        If extrapolate is true then extrapolate from most recently
        available terrain data is terrain data is not available for the
@@ -207,7 +207,7 @@ private:
         uint16_t grid_idx_x;
         uint16_t grid_idx_y;
 
-        // rounded latitude/longitude in degrees. 
+        // rounded latitude/longitude in degrees.
         int16_t lon_degrees;
         int8_t lat_degrees;
     };
@@ -245,7 +245,7 @@ private:
       the index terms for finding the right grid
      */
     struct grid_info {
-        // rounded latitude/longitude in degrees. 
+        // rounded latitude/longitude in degrees.
         int8_t lat_degrees;
         int16_t lon_degrees;
 
@@ -337,11 +337,11 @@ private:
     // heading and speed
     AP_AHRS &ahrs;
 
-    // reference to AP_Mission, so we can ask preload terrain data for 
+    // reference to AP_Mission, so we can ask preload terrain data for
     // all waypoints
     const AP_Mission &mission;
 
-    // reference to AP_Rally, so we can ask preload terrain data for 
+    // reference to AP_Rally, so we can ask preload terrain data for
     // all rally points
     const AP_Rally &rally;
 

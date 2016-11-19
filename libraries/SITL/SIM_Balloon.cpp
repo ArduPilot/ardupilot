@@ -60,14 +60,14 @@ void Balloon::update(const struct sitl_input &input)
 
     accel_body = Vector3f(0, 0, -lift_accel);
     accel_body += dcm.transposed() * air_resistance;
-    
+
     update_dynamics(rot_accel);
 
     if (position.z < -burst_altitude) {
         ::printf("Balloon burst at %.1f\n", -position.z);
         burst = true;
     }
-    
+
     // update lat/lon/altitude
     update_position();
 

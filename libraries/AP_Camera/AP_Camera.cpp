@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Units: Degrees
     // @Range: 0 180
     AP_GROUPINFO("MAX_ROLL",  7, AP_Camera, _max_roll, 0),
- 
+
     // @Param: FEEDBACK_PIN
     // @DisplayName: Camera feedback pin
     // @Description: pin number to use for save accurate camera feedback messages. If set to -1 then don't use a pin flag for this, otherwise this is a pin number which if held high after a picture trigger order, will save camera messages when camera really takes a picture. A universal camera hot shoe is needed. The pin should be held high for at least 2 milliseconds for reliable trigger detection. See also the CAM_FEEDBACK_POL option. If using AUX4 pin on a Pixhawk then a fast capture method is used that allows for the trigger time to be as short as one microsecond.
@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Values: 0:TriggerLow,1:TriggerHigh
     // @User: Standard
     AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
-    
+
     AP_GROUPEND
 };
 
@@ -106,10 +106,10 @@ volatile bool   AP_Camera::_camera_triggered;
 void
 AP_Camera::servo_pic()
 {
-	RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_on_pwm);
+    RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_on_pwm);
 
-	// leave a message that it should be active for this many loops (assumes 50hz loops)
-	_trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+    // leave a message that it should be active for this many loops (assumes 50hz loops)
+    _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
 }
 
 /// basic relay activation
@@ -220,7 +220,7 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
 bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
     bool ret = false;
-    
+
     // take picture
     if (is_equal(shooting_cmd,1.0f)) {
         trigger_pic(false);
@@ -261,7 +261,7 @@ void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS
         altitude_rel = current_loc.alt - ahrs.get_home().alt;
     }
 
-    mavlink_msg_camera_feedback_send(chan, 
+    mavlink_msg_camera_feedback_send(chan,
         gps.time_epoch_usec(),
         0, 0, _image_index,
         current_loc.lat, current_loc.lng,
@@ -352,7 +352,7 @@ bool AP_Camera::check_trigger_pin(void)
 void AP_Camera::capture_callback(void *context, uint32_t chan_index,
                                  hrt_abstime edge_time, uint32_t edge_state, uint32_t overflow)
 {
-    _camera_triggered = true;    
+    _camera_triggered = true;
 }
 #endif
 
@@ -378,7 +378,7 @@ void AP_Camera::setup_feedback_callback(void)
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: unable to setup 3PWM1CAP\n");
                 close(fd);
                 goto failed;
-            }   
+            }
             if (up_input_capture_set(3, _feedback_polarity==1?Rising:Falling, 0, capture_callback, this) != 0) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: unable to setup timer capture\n");
                 close(fd);

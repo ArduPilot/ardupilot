@@ -20,11 +20,11 @@
 
 extern const AP_HAL::HAL& hal;
 
-/* 
+/*
    open the sensor in constructor
 */
 AP_RPM_SITL::AP_RPM_SITL(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_state) :
-	AP_RPM_Backend(_ap_rpm, _instance, _state)
+    AP_RPM_Backend(_ap_rpm, _instance, _state)
 {
     sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     instance = _instance;

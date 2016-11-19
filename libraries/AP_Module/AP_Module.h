@@ -45,13 +45,13 @@ public:
 
     // initialise AP_Module, looking for shared libraries in the given module path
     static void init(const char *module_path);
-    
+
     // call any setup_start hooks
     static void call_hook_setup_start(void);
 
     // call any setup_complete hooks
     static void call_hook_setup_complete(void);
-    
+
     // call any AHRS_update hooks
     static void call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs);
 
@@ -60,8 +60,8 @@ public:
 
     // call any accel_sample hooks
     static void call_hook_accel_sample(uint8_t instance, float dt, const Vector3f &accel, bool fsync_set);
-    
-    
+
+
 private:
 
     enum ModuleHooks {
@@ -86,7 +86,7 @@ private:
     // modules. These are passed to dlsym(). The table order must
     // match the ModuleHooks enum
     static const char *hook_names[NUM_HOOKS];
-    
+
     // scan a module for hooks
     static void module_scan(const char *path);
 };

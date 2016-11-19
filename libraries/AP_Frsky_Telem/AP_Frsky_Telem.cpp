@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* 
+/*
    FRSKY Telemetry library
 */
 #include "AP_Frsky_Telem.h"
@@ -60,7 +60,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
             _ap.valuep = ap_valuep;
         }
     }
-    
+
     if (_port != nullptr) {
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::tick, void));
         // we don't want flow control for either protocol
@@ -246,7 +246,7 @@ void AP_Frsky_Telem::send_SPort(void)
                             break;
                         }
                     if (_SPort.vario_call++ > 1) _SPort.vario_call = 0;
-                    break;    
+                    break;
                 case SENSOR_ID_SP2UR:
                     switch (_SPort.various_call) {
                         case 0 :
@@ -330,7 +330,7 @@ void AP_Frsky_Telem::tick(void)
     }
 }
 
-/* 
+/*
  * build up the frame's crc
  * for FrSky SPort protocol (X-receivers)
  */
@@ -345,7 +345,7 @@ void AP_Frsky_Telem::calc_crc(uint8_t byte)
  * send the frame's crc at the end of the frame
  * for FrSky SPort protocol (X-receivers)
  */
-void AP_Frsky_Telem::send_crc(void) 
+void AP_Frsky_Telem::send_crc(void)
 {
     send_byte(0xFF - _crc);
     _crc = 0;
@@ -561,7 +561,7 @@ void AP_Frsky_Telem::check_ekf_status(void)
         }
     }
 }
-      
+
 /*
  * prepare parameter data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
@@ -595,7 +595,7 @@ uint32_t AP_Frsky_Telem::calc_param(void)
     }
     //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
     param = (_paramID << 24) | (param & 0xFFFFFF);
-    
+
     return param;
 }
 
@@ -640,12 +640,12 @@ uint32_t AP_Frsky_Telem::calc_gps_status(void)
     // GPS receiver status (limit to 3 (0x3) since the value is stored on 2 bits: NO_GPS = 0, NO_FIX = 1, GPS_OK_FIX_2D = 2, GPS_OK_FIX_3D or GPS_OK_FIX_3D_DGPS or GPS_OK_FIX_3D_RTK = 3)
     gps_status |= ((_ahrs.get_gps().status() < GPS_STATUS_LIMIT) ? _ahrs.get_gps().status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
     // GPS horizontal dilution of precision in dm
-    gps_status |= prep_number(roundf(_ahrs.get_gps().get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET; 
+    gps_status |= prep_number(roundf(_ahrs.get_gps().get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET;
     // GPS vertical dilution of precision in dm
-    gps_status |= prep_number(roundf(_ahrs.get_gps().get_vdop() * 0.1f),2,1)<<GPS_VDOP_OFFSET; 
+    gps_status |= prep_number(roundf(_ahrs.get_gps().get_vdop() * 0.1f),2,1)<<GPS_VDOP_OFFSET;
     // Altitude MSL in dm
     const Location &loc = _ahrs.get_gps().location();
-    gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET; 
+    gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET;
     return gps_status;
 }
 
@@ -656,11 +656,11 @@ uint32_t AP_Frsky_Telem::calc_gps_status(void)
 uint32_t AP_Frsky_Telem::calc_batt(void)
 {
     uint32_t batt;
-    
+
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
     batt = (((uint16_t)roundf(_battery.voltage() * 10.0f)) & BATT_VOLTAGE_LIMIT);
     // battery current draw in deciamps
-    batt |= prep_number(roundf(_battery.current_amps() * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET; 
+    batt |= prep_number(roundf(_battery.current_amps() * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET;
     // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
     batt |= ((_battery.current_total_mah() < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.current_total_mah()) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
     return batt;
@@ -698,7 +698,7 @@ uint32_t AP_Frsky_Telem::calc_home(void)
     uint32_t home = 0;
     Location loc;
     float _relative_home_altitude = 0;
-    if (_ahrs.get_position(loc)) {            
+    if (_ahrs.get_position(loc)) {
         // check home_loc is valid
         const Location &home_loc = _ahrs.get_home();
         if (home_loc.lat != 0 || home_loc.lng != 0) {
@@ -734,7 +734,7 @@ uint32_t AP_Frsky_Telem::calc_velandyaw(void)
     velandyaw = prep_number(roundf(velNED.z * 10), 2, 1);
     // horizontal velocity in dm/s (use airspeed if available and enabled - even if not used - otherwise use groundspeed)
     const AP_Airspeed *aspeed = _ahrs.get_airspeed();
-    if (aspeed && aspeed->enabled()) {        
+    if (aspeed && aspeed->enabled()) {
         velandyaw |= prep_number(roundf(aspeed->get_airspeed() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
     } else { // otherwise send groundspeed estimate from ahrs
         velandyaw |= prep_number(roundf(_ahrs.groundspeed() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
@@ -841,10 +841,10 @@ void AP_Frsky_Telem::calc_nav_alt(void)
             current_height -= _ahrs.get_home().alt*0.01f;
         }
     }
-    
+
     _gps.alt_nav_meters = (int16_t)current_height;
     _gps.alt_nav_cm = (current_height - _gps.alt_nav_meters) * 100;
-} 
+}
 
 /*
  * format the decimal latitude/longitude to the required degrees/minutes

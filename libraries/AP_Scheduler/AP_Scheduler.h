@@ -53,7 +53,7 @@ class AP_Scheduler
 public:
     // constructor
     AP_Scheduler(void);
-    
+
     FUNCTOR_TYPEDEF(task_fn_t, void);
 
     struct Task {
@@ -89,7 +89,7 @@ public:
     uint16_t get_loop_rate_hz(void) const {
         return _loop_rate_hz;
     }
-    
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // current running task, or -1 if none. Used to debug stuck tasks
@@ -101,7 +101,7 @@ private:
 
     // overall scheduling rate in Hz
     AP_Int16 _loop_rate_hz;  // The value of this variable can be changed with the non-initialization. (Ex. Tuning by GDB)
-    
+
     // progmem list of tasks to run
     const struct Task *_tasks;
 

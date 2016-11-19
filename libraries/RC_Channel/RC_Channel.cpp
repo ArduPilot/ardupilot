@@ -204,7 +204,7 @@ RC_Channel::set_pwm_all(void)
     }
 }
 
-// read input from APM_RC - create a control_in value, but use a 
+// read input from APM_RC - create a control_in value, but use a
 // zero value for the dead zone. When done this way the control_in
 // value can be used as servo_out to give the same output as input
 void
@@ -340,7 +340,7 @@ RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
 int16_t
 RC_Channel::pwm_to_angle()
 {
-	return pwm_to_angle_dz(_dead_zone);
+    return pwm_to_angle_dz(_dead_zone);
 }
 
 
@@ -365,7 +365,7 @@ RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
     int16_t r_in = constrain_int16(_radio_in, _radio_min.get(), _radio_max.get());
 
     if (_reverse == -1) {
-	    r_in = _radio_max.get() - (r_in - _radio_min.get());
+        r_in = _radio_max.get() - (r_in - _radio_min.get());
     }
 
     int16_t radio_trim_low  = _radio_min + dead_zone;
@@ -471,7 +471,7 @@ RC_Channel::norm_output()
         ret = 0;
     }
     if (_reverse == -1) {
-	    ret = -ret;
+        ret = -ret;
     }
     return ret;
 }

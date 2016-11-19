@@ -15,7 +15,7 @@ using namespace QURT;
 
 /*
   This stores 'eeprom' data on the filesystem, with a 16k size
-  
+
   Data is written on the ARM frontend via a RPC call
  */
 
@@ -25,7 +25,7 @@ volatile bool Storage::dirty;
 uint8_t Storage::buffer[QURT_STORAGE_SIZE];
 Semaphore Storage::lock;
 
-void Storage::read_block(void *dst, uint16_t loc, size_t n) 
+void Storage::read_block(void *dst, uint16_t loc, size_t n)
 {
     if (loc >= sizeof(buffer)-(n-1)) {
         return;
@@ -33,7 +33,7 @@ void Storage::read_block(void *dst, uint16_t loc, size_t n)
     memcpy(dst, &buffer[loc], n);
 }
 
-void Storage::write_block(uint16_t loc, const void *src, size_t n) 
+void Storage::write_block(uint16_t loc, const void *src, size_t n)
 {
     if (loc >= sizeof(buffer)-(n-1)) {
         return;

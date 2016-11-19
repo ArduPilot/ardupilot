@@ -72,7 +72,7 @@ void Copter::read_control_switch()
 // check_if_auxsw_mode_used - Check to see if any of the Aux Switches are set to a given mode.
 bool Copter::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 {
-    bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check 
+    bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check
                 || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check;
 
     return ret;
@@ -173,7 +173,7 @@ void Copter::init_aux_switches()
 
 // init_aux_switch_function - initialize aux functions
 void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
-{    
+{
     // init channel options
     switch(ch_option) {
         case AUXSW_SIMPLE_MODE:
@@ -448,7 +448,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // enable or disable accel limiting by restoring defaults
             attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
             break;
-        
+
 #if MOUNT == ENABLE
         case AUXSW_RETRACT_MOUNT:
             switch (ch_flag) {
@@ -474,11 +474,11 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             ServoRelayEvents.do_set_relay(2, ch_flag == AUX_SWITCH_HIGH);
             break;
 
-	   case AUXSW_RELAY4:
+        case AUXSW_RELAY4:
             ServoRelayEvents.do_set_relay(3, ch_flag == AUX_SWITCH_HIGH);
             break;
 
-		case AUXSW_LANDING_GEAR:
+        case AUXSW_LANDING_GEAR:
             switch (ch_flag) {
                 case AUX_SWITCH_LOW:
                     landinggear.set_cmd_mode(LandingGear_Deploy);

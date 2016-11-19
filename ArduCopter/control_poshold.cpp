@@ -79,7 +79,7 @@ bool Copter::poshold_init(bool ignore_checks)
     if (!position_ok() && !ignore_checks) {
         return false;
     }
-    
+
     // initialize vertical speeds and acceleration
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
@@ -205,7 +205,7 @@ void Copter::poshold_run()
         // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
         vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
         vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
-        
+
         // If not in LOITER, retrieve latest wind compensation lean angles related to current yaw
         if (poshold.roll_mode != POSHOLD_LOITER || poshold.pitch_mode != POSHOLD_LOITER)
         poshold_get_wind_comp_lean_angles(poshold.wind_comp_roll, poshold.wind_comp_pitch);
@@ -513,7 +513,7 @@ void Copter::poshold_run()
                     break;
             }
         }
-        
+
         // constrain target pitch/roll angles
         poshold.roll = constrain_int16(poshold.roll, -aparm.angle_max, aparm.angle_max);
         poshold.pitch = constrain_int16(poshold.pitch, -aparm.angle_max, aparm.angle_max);

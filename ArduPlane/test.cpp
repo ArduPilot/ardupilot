@@ -25,7 +25,7 @@ static const struct Menu::command test_menu_commands[] = {
     {"compass",             MENU_FUNC(test_mag)},
     {"logging",             MENU_FUNC(test_logging)},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    {"shell", 				MENU_FUNC(test_shell)},
+    {"shell",                 MENU_FUNC(test_shell)},
 #endif
 
 };
@@ -353,7 +353,7 @@ int8_t Plane::test_ins(uint8_t argc, const Menu::arg *argv)
 
     print_hit_enter();
     hal.scheduler->delay(1000);
-    
+
     uint8_t counter = 0;
 
     while(1) {

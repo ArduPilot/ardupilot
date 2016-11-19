@@ -107,7 +107,7 @@ public:
 
     // handle a PLAY_TUNE message
     static void handle_play_tune(mavlink_message_t* msg);
-    
+
     static const struct AP_Param::GroupInfo var_info[];
 
     bool buzzer_enabled() const { return _buzzer_enable; }

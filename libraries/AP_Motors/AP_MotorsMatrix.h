@@ -1,5 +1,5 @@
-/// @file	AP_MotorsMatrix.h
-/// @brief	Motor control class for Matrixcopters
+/// @file    AP_MotorsMatrix.h
+/// @brief    Motor control class for Matrixcopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -71,7 +71,7 @@ protected:
 
     // call vehicle supplied thrust compensation if set
     void                thrust_compensation(void) override;
-    
+
     float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to roll
     float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to pitch
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)

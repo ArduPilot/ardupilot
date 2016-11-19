@@ -193,7 +193,7 @@ bool AP_Compass_HMC5843::init()
     _compass_instance = register_compass();
 
     set_rotation(_compass_instance, _rotation);
-    
+
     _bus->set_device_type(DEVTYPE_HMC5883);
     set_dev_id(_compass_instance, _bus->get_bus_id());
 
@@ -206,7 +206,7 @@ bool AP_Compass_HMC5843::init()
                                      FUNCTOR_BIND_MEMBER(&AP_Compass_HMC5843::_timer, bool));
 
     hal.console->printf("HMC5843 found on bus 0x%x\n", _bus->get_bus_id());
-    
+
     return true;
 
 errout:
@@ -225,12 +225,12 @@ bool AP_Compass_HMC5843::_timer()
 
     // always ask for a new sample
     _take_sample();
-    
+
     if (!result) {
         return true;
     }
 
-    uint32_t tnow = AP_HAL::micros();    
+    uint32_t tnow = AP_HAL::micros();
 
     // the _mag_N values are in the range -2048 to 2047, so we can
     // accumulate up to 15 of them in an int16_t. Let's make it 14
@@ -240,7 +240,7 @@ bool AP_Compass_HMC5843::_timer()
     // get raw_field - sensor frame, uncorrected
     Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
     raw_field *= _gain_scale;
-    
+
     // rotate to the desired orientation
     if (is_external(_compass_instance)) {
         raw_field.rotate(ROTATION_YAW_90);
@@ -248,13 +248,13 @@ bool AP_Compass_HMC5843::_timer()
 
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _compass_instance);
-    
+
     // publish raw_field (uncorrected point sample) for calibration use
     publish_raw_field(raw_field, tnow, _compass_instance);
-    
+
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
-    
+
     if (_sem->take(0)) {
         _mag_x_accum += raw_field.x;
         _mag_y_accum += raw_field.y;
@@ -268,7 +268,7 @@ bool AP_Compass_HMC5843::_timer()
         }
         _sem->give();
     }
-    
+
     return true;
 }
 
@@ -290,7 +290,7 @@ void AP_Compass_HMC5843::read()
     if (!_sem->take_nonblocking()) {
         return;
     }
-    
+
     if (_accum_count == 0) {
         _sem->give();
         return;
@@ -305,7 +305,7 @@ void AP_Compass_HMC5843::read()
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
     _sem->give();
-    
+
     publish_filtered_field(field, _compass_instance);
 }
 
@@ -372,7 +372,7 @@ bool AP_Compass_HMC5843::_check_whoami()
     uint8_t id[3];
     if (!_bus->block_read(HMC5843_REG_ID_A, id, 3)) {
         // can't talk on bus
-        return false;        
+        return false;
     }
     if (id[0] != 'H' ||
         id[1] != '4' ||
@@ -395,11 +395,11 @@ bool AP_Compass_HMC5843::_calibrate()
     /*
      * the expected values are based on observation of real sensors
      */
-	float expected[3] = { 1.16*600, 1.08*600, 1.16*600 };
+    float expected[3] = { 1.16*600, 1.08*600, 1.16*600 };
 
     uint8_t base_config = HMC5843_OSR_15HZ;
     uint8_t num_samples = 0;
-    
+
     while (success == 0 && numAttempts < 25 && good_count < 5) {
         numAttempts++;
 
@@ -468,7 +468,7 @@ bool AP_Compass_HMC5843::_calibrate()
     }
 
     _bus->register_write(HMC5843_REG_CONFIG_A, base_config);
-    
+
     if (good_count >= 5) {
         _scaling[0] = _scaling[0] / good_count;
         _scaling[1] = _scaling[1] / good_count;
@@ -490,7 +490,7 @@ bool AP_Compass_HMC5843::_calibrate()
     printf("scaling: %.2f %.2f %.2f\n",
            _scaling[0], _scaling[1], _scaling[2]);
 #endif
-    
+
     return success;
 }
 

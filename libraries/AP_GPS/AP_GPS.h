@@ -40,8 +40,8 @@ class AP_GPS
 {
 public:
     // constructor
-	AP_GPS() {
-		AP_Param::setup_object_defaults(this, var_info);
+    AP_GPS() {
+        AP_Param::setup_object_defaults(this, var_info);
     }
 
     /// Startup initialisation.
@@ -65,11 +65,11 @@ public:
         GPS_TYPE_SBP   = 8,
         GPS_TYPE_PX4   = 9,
         GPS_TYPE_SBF   = 10,
-		GPS_TYPE_GSOF  = 11,
-		GPS_TYPE_QURT  = 12,
+        GPS_TYPE_GSOF  = 11,
+        GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
         GPS_TYPE_MAV = 14,
-		GPS_TYPE_NOVA = 15,
+        GPS_TYPE_NOVA = 15,
     };
 
     /// GPS status codes
@@ -116,7 +116,7 @@ public:
         float ground_course;                ///< ground course in degrees
         uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint16_t vdop;                      ///< vertical dilution of precision in cm
-        uint8_t num_sats;                   ///< Number of visible satellites        
+        uint8_t num_sats;                   ///< Number of visible satellites
         Vector3f velocity;                  ///< 3D velocitiy in m/s, in NED format
         float speed_accuracy;
         float horizontal_accuracy;
@@ -294,18 +294,18 @@ public:
 
     // convert GPS week and millis to unix epoch in ms
     static uint64_t time_epoch_convert(uint16_t gps_week, uint32_t gps_ms);
-    
+
     // return last fix time since the 1/1/1970 in microseconds
     uint64_t time_epoch_usec(uint8_t instance);
-    uint64_t time_epoch_usec(void) { 
-        return time_epoch_usec(primary_instance); 
+    uint64_t time_epoch_usec(void) {
+        return time_epoch_usec(primary_instance);
     }
 
-	// return true if the GPS supports vertical velocity values
-    bool have_vertical_velocity(uint8_t instance) const { 
-        return state[instance].have_vertical_velocity; 
+    // return true if the GPS supports vertical velocity values
+    bool have_vertical_velocity(uint8_t instance) const {
+        return state[instance].have_vertical_velocity;
     }
-    bool have_vertical_velocity(void) const { 
+    bool have_vertical_velocity(void) const {
         return have_vertical_velocity(primary_instance);
     }
 
@@ -321,13 +321,13 @@ public:
     }
 
     // set position for HIL
-    void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
+    void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms,
                 const Location &location, const Vector3f &velocity, uint8_t num_sats,
                 uint16_t hdop);
 
     // set accuracy for HIL
     void setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity, uint32_t sample_ms);
-    
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // dataflash for logging, if available
@@ -422,7 +422,7 @@ private:
     void _broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index);
 
     /*
-      buffer for re-assembling RTCM data for GPS injection. 
+      buffer for re-assembling RTCM data for GPS injection.
       The 8 bit flags field in GPS_RTCM_DATA is interpreted as:
               1 bit for "is fragmented"
               2 bits for fragment number

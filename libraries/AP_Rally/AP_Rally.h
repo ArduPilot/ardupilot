@@ -3,10 +3,10 @@
 
 /*
  * The AP_Rally library:
- * 
+ *
  * Initial implementation: Michael Day, September 2013
  * Moved to AP_Rally lib:  Andrew Chapman April 2014
- * 
+ *
  * - responsible for managing a list of rally points
  * - reads and writes the rally points to storage
  * - provides access to the rally points, including logic to find the nearest one
@@ -46,7 +46,7 @@ public:
     uint8_t get_rally_max(void) const { return _storage.size() / AP_RALLY_WP_SIZE; }
 
     float get_rally_limit_km() const { return _rally_limit_km; }
-    
+
     Location rally_location_to_location(const RallyLocation &ret) const;
 
     // logic handling

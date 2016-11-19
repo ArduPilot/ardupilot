@@ -23,7 +23,7 @@ void AP_AdvancedFailsafe_Copter::terminate_vehicle(void)
 
     // disarm as well
     copter.init_disarm_motors();
-    
+
     // and set all aux channels
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_heli_rsc, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_heli_tail_rsc, RC_Channel::RC_CHANNEL_LIMIT_TRIM);

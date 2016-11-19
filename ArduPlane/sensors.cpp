@@ -124,12 +124,12 @@ void Plane::read_battery(void)
     battery.read();
     compass.set_current(battery.current_amps());
 
-    if (!usb_connected && 
+    if (!usb_connected &&
         hal.util->get_soft_armed() &&
         battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
         low_battery_event();
     }
-    
+
     if (should_log(MASK_LOG_CURRENT)) {
         Log_Write_Current();
     }
@@ -249,7 +249,7 @@ void Plane::update_sensor_status_flags(void)
     case TRAINING:
         if (!training_manual_roll || !training_manual_pitch) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
-            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation        
+            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
         }
         break;
 
@@ -354,7 +354,7 @@ void Plane::update_sensor_status_flags(void)
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
         if (rangefinder.has_data()) {
-            control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;            
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
 #endif

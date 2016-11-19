@@ -44,11 +44,11 @@ static uint16_t srxl_crc16(const uint8_t *bytes, uint8_t nbytes)
     uint16_t crc = 0;
     while (nbytes--) {
         int i;
-	crc ^= (uint16_t)(*bytes++) << 8;
+    crc ^= (uint16_t)(*bytes++) << 8;
 
-	for (i = 0; i < 8; i++) {
-		crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
-	}
+    for (i = 0; i < 8; i++) {
+        crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+    }
     }
     return crc;
 }
@@ -101,7 +101,7 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
             //printf("bad data 0x%04x\n", b);
             // bad data
             return 2;
-        } 
+        }
         if (c == 12) {
             // special handling for channel 12, this contains the XPlus channels
             // see http://www.deviationtx.com/forum/protocol-development/2088-18-channels-for-dsm2-dsmx?start=40
@@ -127,7 +127,7 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
                 max_channels = c+1;
             }
         }
-        
+
         //printf("%u:%u ", (unsigned)c, (unsigned)v);
     }
     //printf("\n");
@@ -141,7 +141,7 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
     // check failsafe bit, this goes low when connection to the
     // transmitter is lost
     *failsafe_state = ((buffer[1] & 2) == 0);
-    
+
 #if 0
     for (uint8_t i=0; i<buflen; i++) {
         printf("%02x ", (unsigned)buffer[i]);
@@ -202,7 +202,7 @@ int main(int argc, const char *argv[])
         exit(1);
     }
     tcflush(fd, TCIOFLUSH);
-    
+
     while (true) {
         uint8_t b;
         uint8_t num_values = 0;
@@ -210,7 +210,7 @@ int main(int argc, const char *argv[])
         bool failsafe_state;
         fd_set fds;
         struct timeval tv;
-    
+
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
 
@@ -221,7 +221,7 @@ int main(int argc, const char *argv[])
         if (select(fd+1, &fds, nullptr, nullptr, &tv) != 1) {
             break;
         }
-        
+
         if (read(fd, &b, 1) != 1) {
             break;
         }
@@ -269,7 +269,7 @@ int main(int argc, const char *argv[])
 
         unsigned u[18];
         if (fscanf(f, "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
-                   &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9], 
+                   &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9],
                    &u[10], &u[11], &u[12], &u[13], &u[14], &u[15], &u[16], &u[17]) != 18) {
             break;
         }

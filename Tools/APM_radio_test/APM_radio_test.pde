@@ -13,7 +13,7 @@ Authors:	Doug Weibel, Jose Julio
 
 
 /* Radio values
-		Channel assignments	
+		Channel assignments
 			1	Ailerons (rudder if no ailerons)
 			2	Elevator
 			3	Throttle
@@ -39,7 +39,7 @@ void setup() {
 
 void loop()
 {
-	
+
 	// -----------------------------------------------------------------
 	if (millis()-fast_loopTimer > 199) {
 		fast_loopTimer		= millis();
@@ -59,7 +59,7 @@ void loop()
 		Serial.print("   ch6: ");
 		Serial.print(radio_in[5]);
 		Serial.print("   ch7: ");
-		Serial.print(radio_in[6]);  
+		Serial.print(radio_in[6]);
 		Serial.print("   ch8: ");
 		Serial.println(radio_in[7]);
 

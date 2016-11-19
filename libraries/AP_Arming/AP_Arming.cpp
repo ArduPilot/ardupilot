@@ -31,7 +31,7 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: REQUIRE
-    // @DisplayName: Require Arming Motors 
+    // @DisplayName: Require Arming Motors
     // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and send THR_MIN PWM to throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure.
     // @Values: 0:Disabled,1:THR_MIN PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @DisplayName: Minimum arming voltage on the first battery
     // @Description: The minimum voltage on the first battery to arm, 0 disabes the check
     // @Units: Volts
-    // @Increment: 0.1 
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("MIN_VOLT",      4,     AP_Arming,  _min_voltage[0],  0),
 
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @DisplayName: Minimum arming voltage on the second battery
     // @Description: The minimum voltage on the first battery to arm, 0 disabes the check
     // @Units: Volts
-    // @Increment: 0.1 
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("MIN_VOLT2",     5,     AP_Arming,  _min_voltage[1],  0),
 
@@ -91,8 +91,8 @@ AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &comp
 }
 
 bool AP_Arming::is_armed()
-{ 
-    return require == NONE || armed; 
+{
+    return require == NONE || armed;
 }
 
 uint16_t AP_Arming::get_enabled_checks()
@@ -183,7 +183,7 @@ bool AP_Arming::ins_checks(bool report)
             }
             return false;
         }
-        
+
         //check if accelerometers have calibrated and require reboot
         if (ins.accel_cal_requires_reboot()) {
             if (report) {
@@ -332,7 +332,7 @@ bool AP_Arming::gps_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
         //GPS OK?
-        if (home_is_set == HOME_UNSET || 
+        if (home_is_set == HOME_UNSET ||
             gps.status() < AP_GPS::GPS_OK_FIX_3D) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Bad GPS Position");
@@ -385,7 +385,7 @@ bool AP_Arming::battery_checks(bool report)
     return true;
 }
 
-bool AP_Arming::hardware_safety_check(bool report) 
+bool AP_Arming::hardware_safety_check(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_SWITCH)) {
@@ -493,7 +493,7 @@ bool AP_Arming::arm(uint8_t method)
 }
 
 //returns true if disarming occurred successfully
-bool AP_Arming::disarm() 
+bool AP_Arming::disarm()
 {
     if (!armed) { // already disarmed
         return false;
@@ -508,7 +508,7 @@ bool AP_Arming::disarm()
     return true;
 }
 
-AP_Arming::ArmingRequired AP_Arming::arming_required() 
+AP_Arming::ArmingRequired AP_Arming::arming_required()
 {
     return (AP_Arming::ArmingRequired)require.get();
 }

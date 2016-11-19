@@ -124,8 +124,8 @@ public:
     // update airspeed ratio calibration
     void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
-	// log data to MAVLink
-	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
+    // log data to MAVLink
+    void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
 
     // return health status of sensor
     bool healthy(void) const { return _healthy && fabsf(_offset) > 0 && _enable; }
@@ -155,11 +155,11 @@ private:
     AP_Int8         _skip_cal;
     float           _raw_airspeed;
     float           _airspeed;
-    float			_last_pressure;
-    float			_corrected_pressure;
+    float            _last_pressure;
+    float            _corrected_pressure;
     float           _EAS2TAS;
-    bool		    _healthy:1;
-    bool		    _hil_set:1;
+    bool            _healthy:1;
+    bool            _hil_set:1;
     float           _hil_pressure;
     uint32_t        _last_update_ms;
 

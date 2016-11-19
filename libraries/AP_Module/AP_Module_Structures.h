@@ -1,6 +1,6 @@
 /*
   this defines data structures for public module interfaces in
-  ArduPilot. 
+  ArduPilot.
 
   These structures are designed to not depend on other headers inside
   ArduPilot, although they do depend on the general ABI of the
@@ -33,17 +33,17 @@ struct AHRS_state {
 
     // time since boot in microseconds
     uint64_t time_us;
-    
+
     // status of AHRS solution
     enum AHRS_status status;
-    
+
     // quaternion attitude, first element is length scalar. Same
     // conventions as AP_Math/quaternion.h
     float quat[4];
 
     // euler angles in radians. Order is roll, pitch, yaw
     float eulers[3];
-    
+
     // global origin
     struct {
         // true when origin has been initialised with a global position
@@ -69,7 +69,7 @@ struct AHRS_state {
         // altitude AMSL in meters, positive up
         float altitude;
     } position;
-    
+
     // NED relative position in meters. Relative to origin
     float relative_position[3];
 
@@ -86,7 +86,7 @@ struct AHRS_state {
 
     // the current primary gyro instance
     uint8_t primary_gyro;
-    
+
     // current gyro bias. This is relative to the gyro data in
     // gyro_sample for primary_gyro. It should be added to a gyro
     // sample to get the corrected gyro estimate
@@ -106,13 +106,13 @@ struct gyro_sample {
 
     // which gyro this is
     uint8_t instance;
-    
+
     // time since boot in microseconds
     uint64_t time_us;
 
     // time associated with this sample (seconds)
     float delta_time;
-    
+
     // body frame rates in radian/sec
     float gyro[3];
 };
@@ -126,7 +126,7 @@ struct accel_sample {
 
     // which accel this is
     uint8_t instance;
-    
+
     // time since boot in microseconds
     uint64_t time_us;
 
@@ -139,16 +139,16 @@ struct accel_sample {
     // true if external frame sync is set
     bool fsync_set;
 };
-    
+
 /*
   prototypes for hook functions
  */
 typedef void (*ap_hook_setup_start_fn_t)(uint64_t);
 void ap_hook_setup_start(uint64_t time_us);
-    
+
 typedef void (*ap_hook_setup_complete_fn_t)(uint64_t);
 void ap_hook_setup_complete(uint64_t time_us);
-    
+
 typedef void (*ap_hook_AHRS_update_fn_t)(const struct AHRS_state *);
 void ap_hook_AHRS_update(const struct AHRS_state *state);
 
@@ -157,7 +157,7 @@ void ap_hook_gyro_sample(const struct gyro_sample *state);
 
 typedef void (*ap_hook_accel_sample_fn_t)(const struct accel_sample *);
 void ap_hook_accel_sample(const struct accel_sample *state);
-    
+
 #ifdef __cplusplus
 }
 #endif

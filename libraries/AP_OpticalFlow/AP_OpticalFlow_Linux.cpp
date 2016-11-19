@@ -146,7 +146,7 @@ void AP_OpticalFlow_Linux::update(void)
         _sem->give();
         return;
     }
-    
+
     // process
     struct OpticalFlow::OpticalFlow_state state;
     state.device_id = report.sensor_id;

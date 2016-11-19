@@ -1,5 +1,5 @@
-/// @file	AP_MotorsMulticopter.h
-/// @brief	Motor control class for Multicopters
+/// @file    AP_MotorsMulticopter.h
+/// @brief    Motor control class for Multicopters
 #pragma once
 
 #include "AP_Motors_Class.h"
@@ -92,13 +92,13 @@ public:
     // get minimum or maximum pwm value that can be output to motors
     int16_t             get_pwm_output_min() const;
     int16_t             get_pwm_output_max() const;
-    
+
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
     void                set_thrust_compensation_callback(thrust_compensation_fn_t callback) {
         _thrust_compensation_callback = callback;
     }
-    
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 

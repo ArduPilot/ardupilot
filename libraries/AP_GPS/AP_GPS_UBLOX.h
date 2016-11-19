@@ -15,7 +15,7 @@
 
 //
 //  u-blox UBX GPS driver for ArduPilot and ArduPilotMega.
-//	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
+//    Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //
 //  UBlox Lea6H protocol: http://www.u-blox.com/images/downloads/Product_Docs/u-blox6_ReceiverDescriptionProtocolSpec_%28GPS.G6-SW-10018%29.pdf
 #pragma once
@@ -26,7 +26,7 @@
 #include "GPS_Backend.h"
 
 /*
- *  try to put a UBlox into binary mode. This is in two parts. 
+ *  try to put a UBlox into binary mode. This is in two parts.
  *
  * First we send a ubx binary message that enables the NAV_SOL message
  * at rate 1. Then we send a NMEA message to set the baud rate to our
@@ -89,7 +89,7 @@
 class AP_GPS_UBLOX : public AP_GPS_Backend
 {
 public:
-	AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     // Methods
     bool read();
@@ -99,7 +99,7 @@ public:
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
     void inject_data(const uint8_t *data, uint16_t len) override;
-    
+
     bool is_configured(void) {
         if (!gps._auto_config) {
             return true;
@@ -514,7 +514,7 @@ private:
     void        _configure_sbas(bool enable);
     void        _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);
     void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
-    void	send_next_rate_update(void);
+    void    send_next_rate_update(void);
     bool        _request_message_rate(uint8_t msg_class, uint8_t msg_id);
     void        _request_next_config(void);
     void        _request_port(void);

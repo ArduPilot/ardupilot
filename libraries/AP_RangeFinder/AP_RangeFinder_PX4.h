@@ -25,7 +25,7 @@ public:
 
     // destructor
     ~AP_RangeFinder_PX4(void);
-    
+
     // static detection function
     static bool detect(RangeFinder &ranger, uint8_t instance);
 

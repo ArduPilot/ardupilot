@@ -1,5 +1,5 @@
-/// @file	RC_Channel.h
-/// @brief	RC_Channel manager, with EEPROM-backed storage of constants.
+/// @file    RC_Channel.h
+/// @brief    RC_Channel manager, with EEPROM-backed storage of constants.
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -11,8 +11,8 @@
 
 #define RC_MAX_CHANNELS 14
 
-/// @class	RC_Channel
-/// @brief	Object managing one RC channel
+/// @class    RC_Channel
+/// @brief    Object managing one RC channel
 class RC_Channel {
 public:
     /// Constructor
@@ -22,9 +22,9 @@ public:
     ///
     RC_Channel(uint8_t ch_out) :
         _high_in(1),
-        _ch_out(ch_out) 
+        _ch_out(ch_out)
     {
-		  AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
         if (ch_out < RC_MAX_CHANNELS) {
             _rc_ch[ch_out] = this;
         }
@@ -60,7 +60,7 @@ public:
     bool        get_reverse(void) const;
     void        set_default_dead_zone(int16_t dzone);
     uint16_t    get_dead_zone(void) const { return _dead_zone; }
-    
+
     // get the channel number
     uint8_t     get_ch_out(void) const { return _ch_out; }
 
@@ -117,11 +117,11 @@ public:
 
     static RC_Channel *rc_channel(uint8_t i);
 
-    static RC_Channel **rc_channel_array(void) 
+    static RC_Channel **rc_channel_array(void)
     {
         return _rc_ch;
     }
-    
+
     bool       in_trim_dz();
 
     int16_t    get_radio_in() const { return _radio_in;}
@@ -150,16 +150,16 @@ public:
 
     // return output type RC_CHANNEL_TYPE_*
     uint8_t    get_type_out(void) const { return _type_out; }
-    
+
     // get the current radio_out value as a floating point number
     // normalised so that 1.0 is full output
     float      get_radio_out_normalised(uint16_t pwm) const;
-    
+
     bool min_max_configured()
     {
         return _radio_min.configured() && _radio_max.configured();
     }
-    
+
 private:
 
     // pwm is stored here

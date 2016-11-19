@@ -27,7 +27,7 @@ public:
 
     // destructor
     ~AP_RPM_PX4_PWM(void);
-    
+
     // update state
     void update(void);
 

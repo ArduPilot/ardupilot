@@ -107,7 +107,7 @@ Menu::_run_command(bool prompt_on_enter)
         _argv[argc].f = atof(_argv[argc].str);      // calls strtod, > 700B !
         argc++;
     }
-    
+
     if (_argv[0].str == nullptr) {
         // we got a blank line, re-display the prompt
         if (prompt_on_enter) {
@@ -115,7 +115,7 @@ Menu::_run_command(bool prompt_on_enter)
         }
         return false;
     }
-    
+
     // populate arguments that have not been specified with "" and 0
     // this is safer than NULL in the case where commands may look
     // without testing argc
@@ -126,7 +126,7 @@ Menu::_run_command(bool prompt_on_enter)
         _argv[i].f = 0;
         i++;
     }
-    
+
     bool cmd_found = false;
     // look for a command matching the first word (note that it may be empty)
     for (i = 0; i < _entries; i++) {
@@ -138,7 +138,7 @@ Menu::_run_command(bool prompt_on_enter)
             break;
         }
     }
-    
+
     // implicit commands
     if (i == _entries) {
         if (!strcmp(_argv[0].str, "?") || (!strcasecmp(_argv[0].str, "help"))) {
@@ -163,10 +163,10 @@ Menu::_run_command(bool prompt_on_enter)
 void
 Menu::run(void)
 {
-	if (_port == nullptr) {
-		// default to main serial port
-		_port = hal.console;
-	}
+    if (_port == nullptr) {
+        // default to main serial port
+        _port = hal.console;
+    }
 
     _allocate_buffers();
 
@@ -196,23 +196,23 @@ Menu::run(void)
         if (_run_command(false)) break;
 
         _display_prompt();
-    }    
+    }
 }
 
 // check for new user input
 bool
 Menu::check_input(void)
 {
-	if (_port == nullptr) {
-		// default to main serial port
-		_port = hal.console;
-	}
+    if (_port == nullptr) {
+        // default to main serial port
+        _port = hal.console;
+    }
 
     _allocate_buffers();
 
     if (_check_for_input()) {
         return _run_command(true);
-    }    
+    }
 
     return false;
 }
@@ -225,9 +225,9 @@ Menu::_help(void)
 
     _port->println("Commands:");
     for (i = 0; i < _entries; i++) {
-		hal.scheduler->delay(10);
+        hal.scheduler->delay(10);
         _port->printf("  %s\n", _commands[i].command);
-	}
+    }
 }
 
 // run the n'th command in the menu

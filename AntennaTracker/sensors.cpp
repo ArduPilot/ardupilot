@@ -53,7 +53,7 @@ void Tracker::compass_accumulate(void)
 {
     if (g.compass_enabled) {
         compass.accumulate();
-    }    
+    }
 }
 
 /*
@@ -96,10 +96,10 @@ void Tracker::update_GPS(void)
 
     static uint32_t last_gps_msg_ms;
     static uint8_t ground_start_count = 5;
-    if (gps.last_message_time_ms() != last_gps_msg_ms && 
+    if (gps.last_message_time_ms() != last_gps_msg_ms &&
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         last_gps_msg_ms = gps.last_message_time_ms();
-        
+
         if(ground_start_count > 1) {
             ground_start_count--;
         } else if (ground_start_count == 1) {
@@ -117,9 +117,9 @@ void Tracker::update_GPS(void)
 
                 // set system clock for log timestamps
                 uint64_t gps_timestamp = gps.time_epoch_usec();
-                
+
                 hal.util->set_system_clock(gps_timestamp);
-                
+
                 // update signing timestamp
                 GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
 

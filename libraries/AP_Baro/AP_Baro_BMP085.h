@@ -24,7 +24,7 @@ private:
     bool _data_ready();
 
     bool _timer(void);
-    
+
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     AP_HAL::DigitalSource *_eoc;
 

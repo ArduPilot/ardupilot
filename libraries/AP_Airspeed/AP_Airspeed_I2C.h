@@ -32,7 +32,7 @@ class AP_Airspeed_I2C : public AP_Airspeed_Backend
 public:
     AP_Airspeed_I2C(const AP_Float &psi_range);
     ~AP_Airspeed_I2C(void) {}
-    
+
     // probe and initialise the sensor
     bool init();
 
@@ -47,7 +47,7 @@ private:
     void _collect();
     bool _timer();
     void _voltage_correction(float &diff_press_pa, float &temperature);
-    
+
     float _temperature;
     float _pressure;
     uint32_t _last_sample_time_ms;

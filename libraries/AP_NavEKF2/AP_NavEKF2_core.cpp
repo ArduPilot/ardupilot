@@ -76,7 +76,7 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
     }
     if(!storedBaro.init(OBS_BUFFER_LENGTH)) {
         return false;
-    } 
+    }
     if(!storedTAS.init(OBS_BUFFER_LENGTH)) {
         return false;
     }
@@ -95,7 +95,7 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
 
     return true;
 }
-    
+
 
 /********************************************************
 *                   INIT FUNCTIONS                      *
@@ -1349,7 +1349,7 @@ void NavEKF2_core::ConstrainStates()
     for (uint8_t i=9; i<=11; i++) statesArray[i] = constrain_float(statesArray[i],-GYRO_BIAS_LIMIT*dtEkfAvg,GYRO_BIAS_LIMIT*dtEkfAvg);
     // gyro scale factor limit of +-5% (this needs to be set based on manufacturers specs)
     for (uint8_t i=12; i<=14; i++) statesArray[i] = constrain_float(statesArray[i],0.95f,1.05f);
-    // Z accel bias limit 1.0 m/s^2	(this needs to be finalised from test data)
+    // Z accel bias limit 1.0 m/s^2    (this needs to be finalised from test data)
     stateStruct.accel_zbias = constrain_float(stateStruct.accel_zbias,-1.0f*dtEkfAvg,1.0f*dtEkfAvg);
     // earth magnetic field limit
     for (uint8_t i=16; i<=18; i++) statesArray[i] = constrain_float(statesArray[i],-1.0f,1.0f);

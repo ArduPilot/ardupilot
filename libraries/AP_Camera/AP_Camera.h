@@ -1,5 +1,5 @@
-/// @file	AP_Camera.h
-/// @brief	Photo or video camera manager, with EEPROM-backed storage of constants.
+/// @file    AP_Camera.h
+/// @brief    Photo or video camera manager, with EEPROM-backed storage of constants.
 #pragma once
 
 #include <AP_Param/AP_Param.h>
@@ -26,8 +26,8 @@
 
 #define AP_CAMERA_FEEDBACK_DEFAULT_FEEDBACK_PIN -1  // default is to not use camera feedback pin
 
-/// @class	Camera
-/// @brief	Object managing a Photo or video camera
+/// @class    Camera
+/// @brief    Object managing a Photo or video camera
 class AP_Camera {
 
 public:
@@ -37,7 +37,7 @@ public:
         _trigger_counter(0),    // count of number of cycles shutter has been held open
         _image_index(0)
     {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
         _apm_relay = obj_relay;
     }
 
@@ -69,7 +69,7 @@ public:
 
     // return true if we are using a feedback pin
     bool using_feedback_pin(void) const { return _feedback_pin > 0; }
-    
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
@@ -89,7 +89,7 @@ private:
     static void     capture_callback(void *context, uint32_t chan_index,
                                      hrt_abstime edge_time, uint32_t edge_state, uint32_t overflow);
 #endif
-    
+
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
     AP_Int16        _min_interval;      // Minimum time between shots required by camera
     AP_Int16        _max_roll;          // Maximum acceptable roll angle when trigging camera

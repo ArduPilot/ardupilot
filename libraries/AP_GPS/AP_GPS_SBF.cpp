@@ -226,7 +226,7 @@ AP_GPS_SBF::process_message(void)
             state.ground_speed = (float)safe_sqrt(ground_vector_sq);
 
             state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
-            
+
             // value is expressed as twice the rms error = int16 * 0.01/2
             state.horizontal_accuracy = (float)temp.HAccuracy * 0.005f;
             state.vertical_accuracy = (float)temp.VAccuracy * 0.005f;
@@ -275,12 +275,12 @@ AP_GPS_SBF::process_message(void)
                 state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
                 break;
         }
-        
+
         if ((temp.Mode & 64) > 0) // gps is in base mode
             state.status = AP_GPS::NO_FIX;
         if ((temp.Mode & 128) > 0) // gps only has 2d fix
             state.status = AP_GPS::GPS_OK_FIX_2D;
-                    
+
         return true;
     }
     // DOP

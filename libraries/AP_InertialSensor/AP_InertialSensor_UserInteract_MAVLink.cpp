@@ -19,7 +19,7 @@ static void _snoop(const mavlink_message_t* msg)
     }
 }
 
-bool AP_InertialSensor_UserInteract_MAVLink::blocking_read(void) 
+bool AP_InertialSensor_UserInteract_MAVLink::blocking_read(void)
 {
     uint32_t start_ms = AP_HAL::millis();
     // setup snooping of packets so we can see the COMMAND_ACK
@@ -29,7 +29,7 @@ bool AP_InertialSensor_UserInteract_MAVLink::blocking_read(void)
         hal.scheduler->delay(10);
         if (_got_ack) {
             _gcs->set_snoop(nullptr);
-            return true;    
+            return true;
         }
     }
     hal.console->println("Timed out waiting for user response");

@@ -5,8 +5,8 @@ function P  = PredictCovariance(deltaAngle, ...
     P, ...  % Previous state covariance matrix
     dt) ... % IMU and prediction time step
 
-% Set filter state process noise other than IMU errors, which are already 
-% built into the derived covariance predition equations. 
+% Set filter state process noise other than IMU errors, which are already
+% built into the derived covariance predition equations.
 % This process noise determines the rate of estimation of IMU bias errors
 dAngBiasSigma = dt*dt*5E-4; % delta angle bias process noise (rad)
 processNoise = [0*ones(1,6), dAngBiasSigma*[1 1 1]];
@@ -55,7 +55,7 @@ P = 0.5*(P + transpose(P));
 for i=1:9
     if P(i,i) < 0
         P(i,i) = 0;
-    end   
+    end
 end
-    
+
 end

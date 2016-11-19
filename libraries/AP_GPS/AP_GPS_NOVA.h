@@ -49,9 +49,9 @@ private:
     bool            _new_position:1;
     // do we have new speed information?
     bool            _new_speed:1;
-    
+
     uint32_t        _last_vel_time;
-    
+
     uint8_t _init_blob_index = 0;
     uint32_t _init_blob_time = 0;
     const char* _initialisation_blob[6] = {
@@ -62,7 +62,7 @@ private:
         "log psrdopb ontime 0.2\r\n", // comnav
         "log psrdopb\r\n" // poll message, as dop only changes when a sat is dropped/added to the visible list
     };
-   
+
     uint32_t crc_error_counter = 0;
     uint32_t last_injected_data_ms = 0;
 
@@ -96,7 +96,7 @@ private:
         uint16_t resv;
         //26
         uint16_t recvswver;
-    };    
+    };
 
     struct PACKED psrdop
     {
@@ -148,14 +148,14 @@ private:
         double vertspd;
         float resv;
     };
-    
+
     union PACKED msgbuffer {
         bestvel bestvelu;
         bestpos bestposu;
         psrdop psrdopu;
         uint8_t bytes[256];
     };
-    
+
     union PACKED msgheader {
         nova_header nova_headeru;
         uint8_t data[28];
@@ -176,7 +176,7 @@ private:
             CRC3,
             CRC4,
         } nova_state;
-        
+
         msgbuffer data;
         uint32_t crc;
         msgheader header;

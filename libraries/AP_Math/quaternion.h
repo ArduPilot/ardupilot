@@ -61,7 +61,7 @@ public:
     // return the rotation matrix equivalent for this quaternion after normalization
     void        rotation_matrix_norm(Matrix3f &m) const;
 
-    void		from_rotation_matrix(const Matrix3f &m);
+    void        from_rotation_matrix(const Matrix3f &m);
 
     // convert a vector from earth to body frame
     void        earth_to_body(Vector3f &v) const;

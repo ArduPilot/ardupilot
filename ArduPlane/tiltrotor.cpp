@@ -36,7 +36,7 @@ void QuadPlane::tiltrotor_update(void)
 
     // the maximum rate of throttle change
     float max_change = (tilt.max_rate_dps.get() * plane.G_Dt) / 90.0f;
-    
+
     if (!in_vtol_mode() && !assisted_flight) {
         // we are in pure fixed wing mode. Move the tiltable motors all the way forward and run them as
         // a forward motor
@@ -64,7 +64,7 @@ void QuadPlane::tiltrotor_update(void)
     tilt.current_throttle = constrain_float(motors->get_throttle(),
                                             tilt.current_throttle-max_change,
                                             tilt.current_throttle+max_change);
-    
+
     /*
       we are in a VTOL mode. We need to work out how much tilt is
       needed. There are 3 strategies we will use:
@@ -140,7 +140,7 @@ void QuadPlane::tilt_compensate(float *thrust, uint8_t num_motors)
     float tilt_total = 0;
     uint8_t tilt_count = 0;
     uint8_t mask = tilt.tilt_mask;
-    
+
     // apply _tilt_factor first
     for (uint8_t i=0; i<num_motors; i++) {
         if (mask & (1U<<i)) {

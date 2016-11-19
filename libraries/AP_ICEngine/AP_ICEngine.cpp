@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Units: Seconds
     // @Range: 1 10
     AP_GROUPINFO("START_DELAY", 3, AP_ICEngine, starter_delay, 2),
-    
+
     // @Param: RPM_THRESH
     // @DisplayName: RPM threshold
     // @Description: This is the measured RPM above which tne engine is considered to be running
@@ -100,8 +100,8 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @User: Standard
     // @Range: 0 100
     AP_GROUPINFO("START_PCT", 10, AP_ICEngine, start_percent, 5),
-    
-    AP_GROUPEND    
+
+    AP_GROUPEND
 };
 
 
@@ -210,7 +210,7 @@ void AP_ICEngine::update(void)
             state = ICE_OFF;
         }
     }
-    
+
     /* now set output channels */
     switch (state) {
     case ICE_OFF:
@@ -224,7 +224,7 @@ void AP_ICEngine::update(void)
         RC_Channel_aux::set_radio(RC_Channel_aux::k_ignition, pwm_ignition_on);
         RC_Channel_aux::set_radio(RC_Channel_aux::k_starter,  pwm_starter_off);
         break;
-        
+
     case ICE_STARTING:
         RC_Channel_aux::set_radio(RC_Channel_aux::k_ignition, pwm_ignition_on);
         RC_Channel_aux::set_radio(RC_Channel_aux::k_starter,  pwm_starter_on);

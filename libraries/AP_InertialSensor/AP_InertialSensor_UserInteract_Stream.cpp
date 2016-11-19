@@ -4,7 +4,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-bool AP_InertialSensor_UserInteractStream::blocking_read() 
+bool AP_InertialSensor_UserInteractStream::blocking_read()
 {
     /* Wait for input to be available */
     while(!_s->available()) {

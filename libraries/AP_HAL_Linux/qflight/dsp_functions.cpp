@@ -73,12 +73,12 @@ void HAP_debug(const char *msg, int level, const char *filename, int line);
 
 void HAP_printf(const char *file, int line, const char *format, ...)
 {
-	va_list ap;
+    va_list ap;
         char buf[300];
-        
-	va_start(ap, format);
-	vsnprintf(buf, sizeof(buf), format, ap);
-	va_end(ap);
+
+    va_start(ap, format);
+    vsnprintf(buf, sizeof(buf), format, ap);
+    va_end(ap);
         HAP_debug(buf, 0, file, line);
 }
 
@@ -87,15 +87,15 @@ void HAP_printf(const char *file, int line, const char *format, ...);
 
 static int init_barometer(void)
 {
-    int ret = bmp280_open("/dev/i2c-2", &bmp280_handle); 
+    int ret = bmp280_open("/dev/i2c-2", &bmp280_handle);
     HAP_PRINTF("**** bmp280: ret=%d handle=0x%x\n", ret, (unsigned)bmp280_handle);
     return ret;
 }
-        
+
 static int init_mpu9250(void)
 {
     struct mpu9x50_config config;
-    
+
     config.gyro_lpf = MPU9X50_GYRO_LPF_184HZ;
     config.acc_lpf  = MPU9X50_ACC_LPF_184HZ;
     config.gyro_fsr = MPU9X50_GYRO_FSR_2000DPS;
@@ -115,7 +115,7 @@ static int init_mpu9250(void)
     HAP_PRINTF("***** mpu9250 initialise ret=%d\n", ret);
 
     mpu9250_started = true;
-    
+
     return ret;
 }
 
@@ -126,7 +126,7 @@ static void *mpu_data_ready(void *ctx)
 {
     struct mpu9x50_data data;
     memset(&data, 0, sizeof(data));
-           
+
     int ret = mpu9x50_get_data(&data);
     if (ret != 0) {
         return nullptr;
@@ -196,7 +196,7 @@ int qflight_get_imu_data(uint8_t *buf, int len)
            imu_buffer.pop(imu.buf[imu.num_samples])) {
         imu.num_samples++;
     }
-    
+
     return 0;
 }
 
@@ -220,7 +220,7 @@ int qflight_get_mag_data(uint8_t *buf, int len)
            mag_buffer.pop(mag.buf[mag.num_samples])) {
         mag.num_samples++;
     }
-    
+
     return 0;
 }
 
@@ -251,7 +251,7 @@ int qflight_get_baro_data(uint8_t *buf, int len)
            baro_buffer.pop(baro.buf[baro.num_samples])) {
         baro.num_samples++;
     }
-    
+
     return 0;
 }
 
@@ -293,7 +293,7 @@ int qflight_UART_open(const char *device, int32_t *_fd)
     if (ret != 0) {
         HAP_PRINTF("Failed to setup UART flow control options");
     }
-    
+
     struct dspal_serial_ioctl_receive_data_callback callback {};
     callback.context = b.readbuffer;
     callback.rx_data_callback_func_ptr = read_callback_trampoline;

@@ -35,7 +35,7 @@ void main()
 {
      uint32_t last_time_us = 0;
      uint8_t last_pin_value = 0;
-     
+
      /*PRU Initialisation*/
      PRUCFG_SYSCFG &= ~SYSCFG_STANDBY_INIT;
      PRUCFG_SYSCFG = (PRUCFG_SYSCFG &
@@ -44,7 +44,7 @@ void main()
 
      /* our PRU wins arbitration */
      PRUCFG_SPP |=  SPP_PRU1_PAD_HP_EN;
-    
+
     /* configure timer */
     PIEP_GLOBAL_CFG = GLOBAL_CFG_DEFAULT_INC(1) |
               GLOBAL_CFG_CMP_INC(1);
@@ -53,7 +53,7 @@ void main()
     PIEP_CMP_CFG |= CMP_CFG_CMP_EN(1);
         PIEP_GLOBAL_CFG |= GLOBAL_CFG_CNT_ENABLE;
 
-     
+
      RBUFF->ring_tail = 20;
      while (1) {
         uint32_t v;

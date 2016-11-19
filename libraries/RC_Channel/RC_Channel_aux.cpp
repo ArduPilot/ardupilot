@@ -76,7 +76,7 @@ RC_Channel_aux::output_ch_all(void)
         if (_aux_channels[i]) {
             _aux_channels[i]->output_ch();
         }
-    }    
+    }
 }
 
 /*
@@ -90,7 +90,7 @@ void RC_Channel_aux::disable_aux_channel(uint8_t channel)
         if (_aux_channels[i] && _aux_channels[i]->_ch_out == channel) {
             _aux_channels[i] = nullptr;
         }
-    }    
+    }
 }
 
 /*
@@ -102,11 +102,11 @@ RC_Channel_aux::Aux_servo_function_t RC_Channel_aux::channel_function(uint8_t ch
         if (_aux_channels[i] && _aux_channels[i]->_ch_out == channel) {
             return (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
         }
-    }    
+    }
     return RC_Channel_aux::k_none;
 }
 
-/* 
+/*
    setup a channels aux servo function
 */
 void RC_Channel_aux::aux_servo_function_setup(void)
@@ -167,7 +167,7 @@ void RC_Channel_aux::update_aux_servo_function(void)
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] == nullptr) continue;
         _aux_channels[i]->aux_servo_function_setup();
-	}
+    }
     _initialised = true;
 }
 
@@ -182,13 +182,13 @@ void RC_Channel_aux::enable_aux_servos()
     // trim value on startup
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i]) {
-			   RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
-			   // see if it is a valid function
-			   if (function < RC_Channel_aux::k_nr_aux_servo_functions) {
-				    _aux_channels[i]->enable_out();
-			   }
-		  }
-	 }
+            RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
+            // see if it is a valid function
+            if (function < RC_Channel_aux::k_nr_aux_servo_functions) {
+                    _aux_channels[i]->enable_out();
+            }
+        }
+    }
 }
 
 /*
@@ -204,7 +204,7 @@ RC_Channel_aux::set_radio(RC_Channel_aux::Aux_servo_function_t function, int16_t
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
             _aux_channels[i]->set_radio_out(value);
             _aux_channels[i]->output();
-		  }
+        }
     }
 }
 
@@ -219,10 +219,10 @@ RC_Channel_aux::set_radio_trimmed(RC_Channel_aux::Aux_servo_function_t function,
     }
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-        	   int16_t value2 = value - 1500 + _aux_channels[i]->get_radio_trim();
-			   _aux_channels[i]->set_radio_out(constrain_int16(value2,_aux_channels[i]->get_radio_min(),_aux_channels[i]->get_radio_max()));
+            int16_t value2 = value - 1500 + _aux_channels[i]->get_radio_trim();
+            _aux_channels[i]->set_radio_out(constrain_int16(value2,_aux_channels[i]->get_radio_min(),_aux_channels[i]->get_radio_max()));
             _aux_channels[i]->output();
-		  }
+        }
     }
 }
 
@@ -238,11 +238,11 @@ RC_Channel_aux::set_trim_to_radio_in_for(RC_Channel_aux::Aux_servo_function_t fu
     }
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			   if (_aux_channels[i]->get_radio_in() != 0) {
-				    _aux_channels[i]->set_radio_trim( _aux_channels[i]->get_radio_in());
-				    _aux_channels[i]->save_radio_trim();
-			   }
-		  }
+            if (_aux_channels[i]->get_radio_in() != 0) {
+                    _aux_channels[i]->set_radio_trim( _aux_channels[i]->get_radio_in());
+                    _aux_channels[i]->save_radio_trim();
+            }
+        }
     }
 }
 
@@ -259,7 +259,7 @@ RC_Channel_aux::set_radio_to_min(RC_Channel_aux::Aux_servo_function_t function)
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
             _aux_channels[i]->set_radio_out( _aux_channels[i]->get_radio_min());
             _aux_channels[i]->output();
-		  }
+        }
     }
 }
 
@@ -276,7 +276,7 @@ RC_Channel_aux::set_radio_to_max(RC_Channel_aux::Aux_servo_function_t function)
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
             _aux_channels[i]->set_radio_out(_aux_channels[i]->get_radio_max());
             _aux_channels[i]->output();
-		}
+        }
     }
 }
 
@@ -291,9 +291,9 @@ RC_Channel_aux::set_radio_to_trim(RC_Channel_aux::Aux_servo_function_t function)
     }
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			   _aux_channels[i]->set_radio_out( _aux_channels[i]->get_radio_trim());
+            _aux_channels[i]->set_radio_out( _aux_channels[i]->get_radio_trim());
             _aux_channels[i]->output();
-		  }
+        }
     }
 }
 
@@ -308,14 +308,14 @@ RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::Aux_servo_function_t function,
     }
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			   if (do_input_output) {
-				    _aux_channels[i]->input();
-			   }
-			   _aux_channels[i]->set_radio_out(_aux_channels[i]->get_radio_in());
-			   if (do_input_output) {
-				    _aux_channels[i]->output();
-			   }
-		  }
+            if (do_input_output) {
+                _aux_channels[i]->input();
+            }
+            _aux_channels[i]->set_radio_out(_aux_channels[i]->get_radio_in());
+            if (do_input_output) {
+                _aux_channels[i]->output();
+            }
+        }
     }
 }
 
@@ -330,10 +330,10 @@ RC_Channel_aux::set_servo_out_for(RC_Channel_aux::Aux_servo_function_t function,
     }
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			   _aux_channels[i]->set_servo_out(value);
-			   _aux_channels[i]->calc_pwm();
+            _aux_channels[i]->set_servo_out(value);
+            _aux_channels[i]->calc_pwm();
             _aux_channels[i]->output();
-		  }
+        }
     }
 }
 
@@ -411,7 +411,7 @@ RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t function)
         uint8_t bit = fn % 64;
         return (_function_mask[idx] & (1ULL<<bit)) != 0;
     }
-	 return false;
+    return false;
 }
 
 /*
@@ -420,19 +420,19 @@ RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t function)
  */
 void
 RC_Channel_aux::move_servo(RC_Channel_aux::Aux_servo_function_t function,
-						   int16_t value, int16_t angle_min, int16_t angle_max)
+                        int16_t value, int16_t angle_min, int16_t angle_max)
 {
     if (!function_assigned(function)) {
         return;
     }
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			_aux_channels[i]->set_servo_out(value);
-			_aux_channels[i]->set_range(angle_min, angle_max);
-			_aux_channels[i]->calc_pwm();
-			_aux_channels[i]->output();
-		}
-	}
+            _aux_channels[i]->set_servo_out(value);
+            _aux_channels[i]->set_range(angle_min, angle_max);
+            _aux_channels[i]->calc_pwm();
+            _aux_channels[i]->output();
+        }
+    }
 }
 
 /*
@@ -465,7 +465,7 @@ bool RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::Aux_servo_function_
     }
     hal.console->printf("AUX channel %u not available\n",
                         (unsigned)channel);
-    return false;    
+    return false;
 }
 
 // find first channel that a function is assigned to

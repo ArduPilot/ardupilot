@@ -36,7 +36,7 @@ VRBRAINUtil::VRBRAINUtil(void) : Util()
  */
 bool VRBRAINUtil::run_debug_shell(AP_HAL::BetterStream *stream)
 {
-	VRBRAINUARTDriver *uart = (VRBRAINUARTDriver *)stream;
+    VRBRAINUARTDriver *uart = (VRBRAINUARTDriver *)stream;
     int fd;
 
     // trigger exit in the other threads. This stops use of the
@@ -44,15 +44,15 @@ bool VRBRAINUtil::run_debug_shell(AP_HAL::BetterStream *stream)
     // which otherwise would cause a crash if px4io is stopped in
     // the shell
     _vrbrain_thread_should_exit = true;
-    
+
     // take control of stream fd
     fd = uart->_get_fd();
 
     // mark it blocking (nsh expects a blocking fd)
     unsigned v;
     v = fcntl(fd, F_GETFL, 0);
-    fcntl(fd, F_SETFL, v & ~O_NONBLOCK);	
-    
+    fcntl(fd, F_SETFL, v & ~O_NONBLOCK);
+
     // setup the UART on stdin/stdout/stderr
     close(0);
     close(1);
@@ -60,9 +60,9 @@ bool VRBRAINUtil::run_debug_shell(AP_HAL::BetterStream *stream)
     dup2(fd, 0);
     dup2(fd, 1);
     dup2(fd, 2);
-    
+
     nsh_consolemain(0, nullptr);
-    
+
     // this shouldn't happen
     hal.console->printf("shell exited\n");
     return true;
@@ -97,7 +97,7 @@ void VRBRAINUtil::set_system_clock(uint64_t time_utc_usec)
     timespec ts;
     ts.tv_sec = time_utc_usec/1.0e6f;
     ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
-    clock_settime(CLOCK_REALTIME, &ts);    
+    clock_settime(CLOCK_REALTIME, &ts);
 }
 
 /*
@@ -127,9 +127,9 @@ bool VRBRAINUtil::get_system_id(char buf[40])
     // function in auth.c
     snprintf(buf, 40, "%s %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
              board_type,
-             (unsigned)serialid[0], (unsigned)serialid[1], (unsigned)serialid[2], (unsigned)serialid[3], 
-             (unsigned)serialid[4], (unsigned)serialid[5], (unsigned)serialid[6], (unsigned)serialid[7], 
-             (unsigned)serialid[8], (unsigned)serialid[9], (unsigned)serialid[10],(unsigned)serialid[11]); 
+             (unsigned)serialid[0], (unsigned)serialid[1], (unsigned)serialid[2], (unsigned)serialid[3],
+             (unsigned)serialid[4], (unsigned)serialid[5], (unsigned)serialid[6], (unsigned)serialid[7],
+             (unsigned)serialid[8], (unsigned)serialid[9], (unsigned)serialid[10],(unsigned)serialid[11]);
     return true;
 }
 
@@ -187,7 +187,7 @@ void VRBRAINUtil::set_imu_temp(float current)
     // average over temperatures to remove noise
     _heater.count++;
     _heater.sum += current;
-    
+
     // update once a second
     uint32_t now = AP_HAL::millis();
     if (now - _heater.last_update_ms < 1000) {
@@ -202,14 +202,14 @@ void VRBRAINUtil::set_imu_temp(float current)
     // experimentally tweaked for Pixhawk2
     const float kI = 0.3f;
     const float kP = 200.0f;
-    
+
     float err = ((float)*_heater.target) - current;
 
     _heater.integrator += kI * err;
     _heater.integrator = constrain_float(_heater.integrator, 0, 70);
 
     float output = constrain_float(kP * err + _heater.integrator, 0, 100);
-    
+
     // hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", _heater.integrator, output, current, err);
 
     if (_heater.fd == -1) {
@@ -218,7 +218,7 @@ void VRBRAINUtil::set_imu_temp(float current)
     if (_heater.fd != -1) {
         ioctl(_heater.fd, GPIO_SET_HEATER_DUTY_CYCLE, (unsigned)output);
     }
-   
+
 }
 
 void VRBRAINUtil::set_imu_target_temp(int8_t *target)

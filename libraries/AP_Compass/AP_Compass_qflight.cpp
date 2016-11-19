@@ -83,7 +83,7 @@ void AP_Compass_QFLIGHT::timer_update(void)
     uint64_t time_us = AP_HAL::micros64();
     for (uint16_t i=0; i<magbuf->num_samples; i++) {
         DSPBuffer::MAG::BUF &b = magbuf->buf[i];
-        
+
         // get raw_field - sensor frame, uncorrected
         Vector3f raw_field(b.mag_raw[0], b.mag_raw[1], -b.mag_raw[2]);
 

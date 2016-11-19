@@ -14,8 +14,8 @@
  */
 ///
 /// @file       AP_Common.h
-/// @brief		Common definitions and utility routines for the ArduPilot
-///				libraries.
+/// @brief        Common definitions and utility routines for the ArduPilot
+///                libraries.
 ///
 
 #pragma once
@@ -40,8 +40,8 @@
 #define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
 #define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
 
-#define ToRad(x) radians(x)	// *pi/180
-#define ToDeg(x) degrees(x)	// *180/pi
+#define ToRad(x) radians(x)    // *pi/180
+#define ToDeg(x) degrees(x)    // *180/pi
 
 /* Declare and implement const and non-const versions of the array subscript
  * operator. The object is treated as an array of type_ values. */
@@ -94,14 +94,14 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @name	Types
+/// @name    Types
 ///
 /// Data structures and types used throughout the libraries and applications. 0 = default
-/// bit 0: Altitude is stored               0: Absolute,	1: Relative
-/// bit 1: Chnage Alt between WP            0: Gradually,	1: ASAP
-/// bit 2: Direction of loiter command      0: Clockwise	1: Counter-Clockwise
+/// bit 0: Altitude is stored               0: Absolute,    1: Relative
+/// bit 1: Chnage Alt between WP            0: Gradually,    1: ASAP
+/// bit 2: Direction of loiter command      0: Clockwise    1: Counter-Clockwise
 /// bit 3: Req.to hit WP.alt to continue    0: No,          1: Yes
-/// bit 4: Relative to Home					0: No,          1: Yes
+/// bit 4: Relative to Home                    0: No,          1: Yes
 /// bit 5: Loiter crosstrack reference      0: WP center    1: Tangent exit point
 /// bit 6:
 /// bit 7: Move to next Command             0: YES,         1: Loiter until commanded
@@ -143,7 +143,7 @@ enum HomeState {
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @name	Conversions
+/// @name    Conversions
 ///
 /// Conversion macros and factors.
 ///

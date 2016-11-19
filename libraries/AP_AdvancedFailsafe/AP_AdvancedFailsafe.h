@@ -55,10 +55,10 @@ public:
         _comms_loss_count(0)
         {
             AP_Param::setup_object_defaults(this, var_info);
-            
+
             _state = STATE_PREFLIGHT;
             _terminate.set(0);
-            
+
             _saved_wp = 0;
         }
 
@@ -71,13 +71,13 @@ public:
 
     // return true if we are terminating (deliberately crashing the vehicle)
     bool should_crash_vehicle(void);
-    
+
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
 
     // called to set all outputs to termination state
     virtual void terminate_vehicle(void) = 0;
-        
+
 protected:
     // setup failsafe values for if FMU firmware stops running
     virtual void setup_IO_failsafe(void) = 0;
@@ -119,7 +119,7 @@ protected:
 
     // saved waypoint for resuming mission
     uint8_t _saved_wp;
-    
+
     // number of times we've lost GPS
     uint8_t _gps_loss_count;
 

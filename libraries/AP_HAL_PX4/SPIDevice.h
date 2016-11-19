@@ -25,7 +25,7 @@
 namespace PX4 {
 
 class SPIDesc;
-    
+
 class SPIBus : public DeviceBus {
 public:
     SPIBus(void) :
@@ -35,7 +35,7 @@ public:
 };
 
 struct SPIDesc {
-    SPIDesc(const char *_name, uint8_t _bus, 
+    SPIDesc(const char *_name, uint8_t _bus,
             enum spi_dev_e _device, enum spi_mode_e _mode,
             uint32_t _lowspeed, uint32_t _highspeed)
         : name(_name), bus(_bus), device(_device), mode(_mode),
@@ -50,8 +50,8 @@ struct SPIDesc {
     uint32_t lowspeed;
     uint32_t highspeed;
 };
-    
-    
+
+
 class SPIDevice : public AP_HAL::SPIDevice {
 public:
     SPIDevice(SPIBus &_bus, SPIDesc &_device_desc);
@@ -63,7 +63,7 @@ public:
 
     // low level transfer function
     void do_transfer(uint8_t *send, uint8_t *recv, uint32_t len);
-    
+
     /* See AP_HAL::Device::transfer() */
     bool transfer(const uint8_t *send, uint32_t send_len,
                   uint8_t *recv, uint32_t recv_len) override;

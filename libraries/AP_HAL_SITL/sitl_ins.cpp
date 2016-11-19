@@ -131,28 +131,28 @@ uint16_t SITL_State::_ground_sonar(void)
 
   inputs are in degrees
 
-	phi - roll
-	theta - pitch
-	psi - true heading
-	alpha - angle of attack
-	beta - side slip
-	phidot - roll rate
-	thetadot - pitch rate
-	psidot - yaw rate
-	v_north - north velocity in local/body frame
-	v_east - east velocity in local/body frame
-	v_down - down velocity in local/body frame
-	A_X_pilot - X accel in body frame
-	A_Y_pilot - Y accel in body frame
-	A_Z_pilot - Z accel in body frame
+    phi - roll
+    theta - pitch
+    psi - true heading
+    alpha - angle of attack
+    beta - side slip
+    phidot - roll rate
+    thetadot - pitch rate
+    psidot - yaw rate
+    v_north - north velocity in local/body frame
+    v_east - east velocity in local/body frame
+    v_down - down velocity in local/body frame
+    A_X_pilot - X accel in body frame
+    A_Y_pilot - Y accel in body frame
+    A_Z_pilot - Z accel in body frame
 
   Note: doubles on high prec. stuff are preserved until the last moment
 
  */
-void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
-                             double rollRate, 	double pitchRate,double yawRate,	// Local to plane
-                             double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
-                             float airspeed,	float altitude)
+void SITL_State::_update_ins(float roll,     float pitch,     float yaw,        // Relative to earth
+                             double rollRate,     double pitchRate,double yawRate,    // Local to plane
+                             double xAccel,     double yAccel,     double zAccel,        // Local to plane
+                             float airspeed,    float altitude)
 {
     if (_ins == nullptr) {
         // no inertial sensor in this sketch

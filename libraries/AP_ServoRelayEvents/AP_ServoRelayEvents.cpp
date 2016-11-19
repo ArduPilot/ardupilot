@@ -30,7 +30,7 @@ bool AP_ServoRelayEvents::do_set_servo(uint8_t _channel, uint16_t pwm)
         // not allowed
         return false;
     }
-    if (type == EVENT_TYPE_SERVO && 
+    if (type == EVENT_TYPE_SERVO &&
         channel == _channel) {
         // cancel previous repeat
         repeat = 0;
@@ -45,7 +45,7 @@ bool AP_ServoRelayEvents::do_set_relay(uint8_t relay_num, uint8_t state)
     if (!relay.enabled(relay_num)) {
         return false;
     }
-    if (type == EVENT_TYPE_RELAY && 
+    if (type == EVENT_TYPE_RELAY &&
         channel == relay_num) {
         // cancel previous repeat
         repeat = 0;
@@ -60,7 +60,7 @@ bool AP_ServoRelayEvents::do_set_relay(uint8_t relay_num, uint8_t state)
     return true;
 }
 
-bool AP_ServoRelayEvents::do_repeat_servo(uint8_t _channel, uint16_t _servo_value, 
+bool AP_ServoRelayEvents::do_repeat_servo(uint8_t _channel, uint16_t _servo_value,
                                           int16_t _repeat, uint16_t _delay_ms)
 {
     if (!(mask & 1U<<(_channel-1))) {
@@ -113,12 +113,12 @@ void AP_ServoRelayEvents::update_events(void)
             hal.rcout->write(channel-1, servo_value);
         }
         break;
-        
+
     case EVENT_TYPE_RELAY:
         relay.toggle(channel);
         break;
     }
-    
+
     if (repeat > 0) {
         repeat--;
     } else {

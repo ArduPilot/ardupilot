@@ -25,7 +25,7 @@ public:
     // constructor
     AP_BoardConfig(void)
     {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
     };
 
     void init(void);
@@ -67,7 +67,7 @@ public:
         return px4_configured_board;
     }
 #endif
-    
+
 private:
     AP_Int16 vehicleSerialNumber;
 
@@ -88,7 +88,7 @@ private:
     } px4;
 
     static enum px4_board_type px4_configured_board;
-    
+
     void px4_drivers_start(void);
     void px4_setup(void);
     void px4_setup_pwm(void);
@@ -103,7 +103,7 @@ private:
     void px4_tone_alarm(const char *tone_string);
     void px4_sensor_error(const char *reason);
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
-    
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     void px4_autodetect(void);
     void px4_start_common_sensors(void);

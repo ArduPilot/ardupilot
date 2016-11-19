@@ -26,7 +26,7 @@ bool Copter::land_init(bool ignore_checks)
         pos_control.set_alt_target_to_current_alt();
         pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
     }
-    
+
     land_start_time = millis();
 
     land_pause = false;
@@ -72,15 +72,15 @@ void Copter::land_gps_run()
         }
         return;
     }
-    
+
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-    
+
     // pause before beginning land descent
     if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
         land_pause = false;
     }
-    
+
     land_run_horizontal_control();
     land_run_vertical_control(land_pause);
 }
@@ -215,12 +215,12 @@ void Copter::land_run_horizontal_control()
 {
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
-    
+
     // relax loiter target if we might be landed
     if (ap.land_complete_maybe) {
         wp_nav.loiter_soften_for_landing();
     }
-    
+
     // process pilot inputs
     if (!failsafe.radio) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
@@ -266,7 +266,7 @@ void Copter::land_run_horizontal_control()
         pos_control.override_vehicle_velocity_xy(-target_vel_rel);
     }
 #endif
-    
+
     // process roll, pitch inputs
     wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
 
@@ -297,7 +297,7 @@ void Copter::land_run_horizontal_control()
         }
     }
 
-    
+
     // call attitude controller
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate, get_smoothing_gain());
 }

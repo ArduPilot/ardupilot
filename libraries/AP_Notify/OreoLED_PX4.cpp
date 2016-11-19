@@ -67,7 +67,7 @@ bool OreoLED_PX4::init()
         hal.scheduler->delay(500);
     }
 #endif
-    
+
     // open the device
     _oreoled_fd = open(OREOLED0_DEVICE_PATH, O_RDWR);
     if (_oreoled_fd == -1) {
@@ -321,7 +321,7 @@ void OreoLED_PX4::send_sync(void)
             _state_desired[i].mode = OREOLED_MODE_SYNC;
             _send_required = true;
         }
-    }  
+    }
 
     // release semaphore
     _state_desired_semaphore = false;

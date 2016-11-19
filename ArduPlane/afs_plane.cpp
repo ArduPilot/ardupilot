@@ -27,7 +27,7 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
     ch_throttle->set_radio_out(ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
 
     RC_Channel_aux::disable_passthrough(true);
-    
+
     plane.servos_output();
 
     // and all aux channels
@@ -41,7 +41,7 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_none, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
 
     plane.quadplane.afs_terminate();
-    
+
     // also disarm to ensure that ignition is cut
     plane.disarm_motors();
 }

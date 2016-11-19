@@ -18,7 +18,7 @@ struct PACKED log_Test {
 
 static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
-    { LOG_TEST_MSG, sizeof(log_Test),       
+    { LOG_TEST_MSG, sizeof(log_Test),
     "TEST", "HHHHii",        "V1,V2,V3,V4,L1,L2" }
 };
 
@@ -69,7 +69,7 @@ void DataFlashTest::setup(void)
     for (i = 0; i < NUM_PACKETS; i++) {
         uint32_t start = AP_HAL::micros();
         // note that we use g++ style initialisers to make larger
-        // structures easier to follow        
+        // structures easier to follow
         struct log_Test pkt = {
             LOG_PACKET_HEADER_INIT(LOG_TEST_MSG),
             v1    : (uint16_t)(2000 + i),
@@ -84,7 +84,7 @@ void DataFlashTest::setup(void)
         hal.scheduler->delay(20);
     }
 
-    hal.console->printf("Average write time %.1f usec/byte\n", 
+    hal.console->printf("Average write time %.1f usec/byte\n",
                        (double)total_micros/((double)i*sizeof(struct log_Test)));
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -100,8 +100,8 @@ void DataFlashTest::loop(void)
 
     hal.console->printf("Start read of log %u\n", log_num);
 
-    dataflash.get_log_boundaries(log_num, start, end); 
-    dataflash.LogReadProcess(log_num, start, end, 
+    dataflash.get_log_boundaries(log_num, start, end);
+    dataflash.LogReadProcess(log_num, start, end,
                              FUNCTOR_BIND_MEMBER(&DataFlashTest::print_mode, void, AP_HAL::BetterStream *, uint8_t),//print_mode,
                              hal.console);
     hal.console->printf("\nTest complete.  Test will repeat in 20 seconds\n");

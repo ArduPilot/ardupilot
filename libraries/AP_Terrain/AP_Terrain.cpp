@@ -157,7 +157,7 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
 }
 
 
-/* 
+/*
    find difference between home terrain height and the terrain
    height at the current location in meters. A positive result
    means the terrain is higher than home.
@@ -199,14 +199,14 @@ bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool 
     return true;
 }
 
-/* 
+/*
    return current height above terrain at current AHRS
-   position. 
-   
+   position.
+
    If extrapolate is true then extrapolate from most recently
    available terrain data is terrain data is not available for the
    current location.
-   
+
    Return true if height is available, otherwise false.
 */
 bool AP_Terrain::height_above_terrain(float &terrain_altitude, bool extrapolate)
@@ -229,22 +229,22 @@ bool AP_Terrain::height_above_terrain(float &terrain_altitude, bool extrapolate)
     return true;
 }
 
-/* 
+/*
    return estimated equivalent relative-to-home altitude in meters
    of a given height above the terrain at the current location
-       
+
    This function allows existing height controllers which work on
    barometric altitude (relative to home) to be used with terrain
    based target altitude, by translating the "above terrain" altitude
    into an equivalent barometric relative height.
-   
+
    return false if terrain data is not available either at the given
-   location or at the home location.  
-   
+   location or at the home location.
+
    If extrapolate is true then allow return of an extrapolated
    terrain altitude based on the last available data
 */
-bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude, 
+bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude,
                                                  float &relative_home_altitude,
                                                  bool extrapolate)
 {

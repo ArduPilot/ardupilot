@@ -38,7 +38,7 @@ void Copter::circle_run()
     pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
-    
+
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
         // To-Do: add some initialisation of position controllers

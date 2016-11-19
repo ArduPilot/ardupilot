@@ -94,7 +94,7 @@ public:
         k_param_skip_gyro_cal, // unused
         k_param_auto_fbw_steer,
         k_param_waypoint_max_radius,
-        k_param_ground_steer_alt,        
+        k_param_ground_steer_alt,
         k_param_ground_steer_dps,
         k_param_rally_limit_km_old, //unused anymore -- just holding this index
         k_param_hil_err_limit,
@@ -496,7 +496,7 @@ public:
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
     AP_Int8 land_flap_percent;
-    AP_Int8 takeoff_flap_percent;  
+    AP_Int8 takeoff_flap_percent;
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
@@ -547,7 +547,7 @@ public:
     uint8_t _dummy;
 
     Parameters() :
-        // variable				default
+        // variable                default
         //----------------------------------------
         rc_1                                    (CH_1),
         rc_2                                    (CH_2),

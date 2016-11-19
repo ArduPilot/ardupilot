@@ -43,7 +43,7 @@ void RCInput_SBUS::init()
         printf("Opened SBUS input %s fd=%d\n", device_path, (int)fd);
         fflush(stdout);
         struct termios2 tio {};
-        
+
         if (ioctl(fd, TCGETS2, &tio) != 0) {
             close(fd);
             fd = -1;
@@ -88,10 +88,10 @@ void RCInput_SBUS::_timer_tick(void)
     // read up to 10 frames at a time
     uint8_t bytes[SBUS_FRAME_SIZE*10];
     int nread;
-    
+
     fd_set fds;
     struct timeval tv;
-    
+
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
@@ -126,20 +126,20 @@ void RCInput_SBUS::_timer_tick(void)
     do {
         nread = ::read(fd, bytes, sizeof(bytes));
     } while (nread == sizeof(bytes));
-    
+
     if (nread % SBUS_FRAME_SIZE != 0) {
         /*
           SBUS frames are 25 bytes long, and always start with
           0x0f, but there is no other framing information to
           prevent us getting out of sync. All we have are the
           timing guarantees
-          
+
           In this case we have read a partial frame, or lost some
           bytes. A 25 bytes frame at 100000 baud takes 2.5ms. By
           delaying 3.5ms here we will get any remaining bytes for
           this frame. We shouldn't get the start of the next frame
           as frames happen at most every 7ms
-          
+
           This strategy allows us to resync even if we lose
           bytes. It assumes an interframe gap of more than
           3.5ms. If SBUS is run at very high rate (like 300Hz)

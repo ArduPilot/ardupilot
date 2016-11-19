@@ -109,7 +109,7 @@ public:
 
     // return true if a user parameter of name is set
     bool check_user_param(const char *name);
-    
+
 private:
     const char *filename;
     ReplayVehicle &_vehicle;

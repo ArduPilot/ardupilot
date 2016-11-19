@@ -26,7 +26,7 @@ public:
 
     // get the status of the calibrator server as a whole
     accel_cal_status_t get_status() { return _status; }
-    
+
     // Set vehicle position sent by the GCS
     bool gcs_vehicle_position(float position);
 

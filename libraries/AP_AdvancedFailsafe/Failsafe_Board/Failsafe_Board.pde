@@ -103,7 +103,7 @@ static void set_mux_mode(uint8_t mode)
 	case MUX_MODE_PRIMARY:
 		digitalWrite(MUXA_PIN, LOW);
 		digitalWrite(MUXB_PIN, LOW);
-		break;		
+		break;
 	}
 }
 
@@ -111,9 +111,9 @@ static void set_mux_mode(uint8_t mode)
 static void set_servos(uint16_t aileron, uint16_t elevator,
 		       uint16_t throttle, uint16_t rudder)
 {
-	digitalWrite(AILERON_PIN, HIGH);          
+	digitalWrite(AILERON_PIN, HIGH);
 	delayMicroseconds(aileron);
-	digitalWrite(AILERON_PIN, LOW);  
+	digitalWrite(AILERON_PIN, LOW);
 
 	digitalWrite(ELEVATOR_PIN, HIGH);
 	delayMicroseconds(elevator);
@@ -121,7 +121,7 @@ static void set_servos(uint16_t aileron, uint16_t elevator,
 
 	digitalWrite(THROTTLE_PIN, HIGH);
 	delayMicroseconds(throttle);
-	digitalWrite(THROTTLE_PIN, LOW); 
+	digitalWrite(THROTTLE_PIN, LOW);
 
 	digitalWrite(RUDDER_PIN, HIGH);
 	delayMicroseconds(rudder);
@@ -139,7 +139,7 @@ static void set_servos_terminate(uint8_t obc_mode)
 }
 
 
-void setup() 
+void setup()
 {
 	// input pins
 	pinMode(HEARTBEAT_PRIMARY_PIN, INPUT);
@@ -153,19 +153,19 @@ void setup()
 	pinMode(LED_PIN, OUTPUT);
 	pinMode(MUXA_PIN, OUTPUT);
 	pinMode(MUXB_PIN, OUTPUT);
-	pinMode(AILERON_PIN, OUTPUT); 
+	pinMode(AILERON_PIN, OUTPUT);
 	pinMode(ELEVATOR_PIN, OUTPUT);
 	pinMode(THROTTLE_PIN, OUTPUT);
-	pinMode(RUDDER_PIN, OUTPUT);   
+	pinMode(RUDDER_PIN, OUTPUT);
 
 	digitalWrite(LED_PIN, LOW);
 	set_mux_mode(MUX_MODE_MICRO);
 
 	Serial.begin(115200);
 	Serial.println("OBC Failsafe Starting\n");
-}   
+}
 
-void loop() 
+void loop()
 {
 	static uint32_t last_status_t;
 	uint32_t tnow = millis();
@@ -222,11 +222,11 @@ void loop()
 		}
 	}
 
-	// if we are not in OBC mode, and the mode control 
+	// if we are not in OBC mode, and the mode control
 	// channel is high, then give RC control
 	if (!obc_mode && manual_mode) {
 		// give manual control via RC
-		set_mux_mode(MUX_MODE_RC);		
+		set_mux_mode(MUX_MODE_RC);
 		return;
 	}
 
@@ -257,7 +257,7 @@ void loop()
 	// if we have terminated then setup the servos
 	if (has_terminated) {
 		set_servos_terminate(obc_mode);
-		return;		
+		return;
 	}
 
 	bool heartbeat_ok = heartbeat_primary_ok;
@@ -282,7 +282,7 @@ void loop()
 		if (obc_mode) {
 			set_servos_terminate(obc_mode);
 		} else {
-			// give RC control 
+			// give RC control
 			set_mux_mode(MUX_MODE_RC);
 		}
 	}

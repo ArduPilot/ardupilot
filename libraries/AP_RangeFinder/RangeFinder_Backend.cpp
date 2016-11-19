@@ -21,14 +21,14 @@
 extern const AP_HAL::HAL& hal;
 
 /*
-  base class constructor. 
+  base class constructor.
   This incorporates initialisation as well.
 */
 AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
         ranger(_ranger),
-        state(_state) 
+        state(_state)
 {
-    _sem = hal.util->new_semaphore();    
+    _sem = hal.util->new_semaphore();
 }
 
 // update status based on distance measurement

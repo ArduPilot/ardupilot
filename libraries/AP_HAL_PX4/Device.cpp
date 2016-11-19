@@ -80,22 +80,22 @@ void *DeviceBus::bus_thread(void *arg)
     }
     return nullptr;
 }
-    
+
 AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
     if (!thread_started) {
         thread_started = true;
-    
+
         pthread_attr_t thread_attr;
         struct sched_param param;
-    
+
         pthread_attr_init(&thread_attr);
         pthread_attr_setstacksize(&thread_attr, 1024);
-    
+
         param.sched_priority = thread_priority;
         (void)pthread_attr_setschedparam(&thread_attr, &param);
         pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
-    
+
         pthread_create(&thread_ctx, &thread_attr, &DeviceBus::bus_thread, this);
     }
     DeviceBus::callback_info *callback = new DeviceBus::callback_info;

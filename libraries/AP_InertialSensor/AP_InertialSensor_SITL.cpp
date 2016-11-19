@@ -27,7 +27,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_SITL::detect(AP_InertialSensor &_im
     return sensor;
 }
 
-bool AP_InertialSensor_SITL::init_sensor(void) 
+bool AP_InertialSensor_SITL::init_sensor(void)
 {
     sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     if (sitl == nullptr) {
@@ -126,7 +126,7 @@ void AP_InertialSensor_SITL::timer_update(void)
     gyro1.x *= (1 + scale.x*0.01);
     gyro1.y *= (1 + scale.y*0.01);
     gyro1.z *= (1 + scale.z*0.01);
-    
+
     _notify_new_gyro_raw_sample(gyro_instance[0], gyro0);
     _notify_new_gyro_raw_sample(gyro_instance[1], gyro1);
 }
@@ -153,7 +153,7 @@ float AP_InertialSensor_SITL::gyro_drift(void)
 }
 
 
-bool AP_InertialSensor_SITL::update(void) 
+bool AP_InertialSensor_SITL::update(void)
 {
     for (uint8_t i=0; i<INS_SITL_INSTANCES; i++) {
         update_accel(accel_instance[i]);

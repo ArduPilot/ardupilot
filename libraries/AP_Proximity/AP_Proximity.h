@@ -92,5 +92,5 @@ private:
     AP_Int16 _yaw_correction[PROXIMITY_MAX_INSTANCES];
 
     void detect_instance(uint8_t instance);
-    void update_instance(uint8_t instance);  
+    void update_instance(uint8_t instance);
 };

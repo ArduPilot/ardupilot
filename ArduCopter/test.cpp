@@ -15,7 +15,7 @@ static const struct Menu::command test_menu_commands[] = {
     {"optflow",             MENU_FUNC(test_optflow)},
     {"relay",               MENU_FUNC(test_relay)},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    {"shell", 				MENU_FUNC(test_shell)},
+    {"shell",                 MENU_FUNC(test_shell)},
 #endif
 #if HIL_MODE == HIL_MODE_DISABLED
     {"rangefinder",         MENU_FUNC(test_rangefinder)},
@@ -244,7 +244,7 @@ int8_t Copter::test_shell(uint8_t argc, const Menu::arg *argv)
 int8_t Copter::test_rangefinder(uint8_t argc, const Menu::arg *argv)
 {
 #if RANGEFINDER_ENABLED == ENABLED
-	rangefinder.init();
+    rangefinder.init();
 
     cliSerial->printf("RangeFinder: %d devices detected\n", rangefinder.num_sensors());
 

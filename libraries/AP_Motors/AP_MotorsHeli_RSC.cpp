@@ -42,7 +42,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
     float dt;
     uint64_t now = AP_HAL::micros64();
     float last_control_output = _control_output;
-    
+
     if (_last_update_us == 0) {
         _last_update_us = now;
         dt = 0.001f;
@@ -50,7 +50,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         dt = 1.0e-6f * (now - _last_update_us);
         _last_update_us = now;
     }
-    
+
     switch (state){
         case ROTOR_CONTROL_STOP:
             // set rotor ramp to decrease speed to zero, this happens instantly inside update_rotor_ramp()
@@ -97,7 +97,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         float max_delta = dt * _power_slewrate * 0.01f;
         _control_output = constrain_float(_control_output, last_control_output-max_delta, last_control_output+max_delta);
     }
-    
+
     // output to rsc servo
     write_rsc(_control_output);
 }

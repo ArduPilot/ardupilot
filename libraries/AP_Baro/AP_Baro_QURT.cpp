@@ -44,7 +44,7 @@ void AP_Baro_QURT::update(void)
         count = 0;
         temp_sum = 0;
         press_sum = 0;
-        
+
         _copy_to_frontend(instance, pressure, temperature);
         lock.give();
     }
@@ -53,7 +53,7 @@ void AP_Baro_QURT::update(void)
 void AP_Baro_QURT::timer(void)
 {
     if (handle == 0) {
-        int ret = bmp280_open("/dev/i2c-2", &handle);        
+        int ret = bmp280_open("/dev/i2c-2", &handle);
         if (ret != 0) {
             AP_HAL::panic("unable to open QURT baro");
             return;

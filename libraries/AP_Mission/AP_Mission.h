@@ -173,7 +173,7 @@ public:
         bool cold_start; // use cold start procedure
         uint16_t height_delay_cm; // height delay for start
     };
-    
+
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -228,7 +228,7 @@ public:
 
         // DO_ENGINE_CONTROL
         Do_Engine_Control do_engine_control;
-        
+
         // location
         Location location;      // Waypoint location
 
@@ -353,7 +353,7 @@ public:
     /// get_current_nav_index - returns the current "navigation" command index
     /// Note that this will return 0 if there is no command. This is
     /// used in MAVLink reporting of the mission command
-    uint16_t get_current_nav_index() const { 
+    uint16_t get_current_nav_index() const {
         return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index; }
 
     /// get_prev_nav_cmd_id - returns the previous "navigation" command id

@@ -67,7 +67,7 @@ void SchedTest::loop(void)
 }
 
 /*
-  update inertial sensor, reading data 
+  update inertial sensor, reading data
  */
 void SchedTest::ins_update(void)
 {

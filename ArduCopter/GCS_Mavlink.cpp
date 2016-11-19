@@ -117,7 +117,7 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     }
 
     update_sensor_status_flags();
-    
+
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
@@ -281,7 +281,7 @@ void Copter::send_pid_tuning(mavlink_channel_t chan)
     const Vector3f &gyro = ahrs.get_gyro();
     if (g.gcs_pid_mask & 1) {
         const DataFlash_Class::PID_Info &pid_info = attitude_control.get_rate_roll_pid().get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL, 
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL,
                                     pid_info.desired*0.01f,
                                     degrees(gyro.x),
                                     pid_info.FF*0.01f,
@@ -294,7 +294,7 @@ void Copter::send_pid_tuning(mavlink_channel_t chan)
     }
     if (g.gcs_pid_mask & 2) {
         const DataFlash_Class::PID_Info &pid_info = attitude_control.get_rate_pitch_pid().get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH, 
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
                                     pid_info.desired*0.01f,
                                     degrees(gyro.y),
                                     pid_info.FF*0.01f,
@@ -307,7 +307,7 @@ void Copter::send_pid_tuning(mavlink_channel_t chan)
     }
     if (g.gcs_pid_mask & 4) {
         const DataFlash_Class::PID_Info &pid_info = attitude_control.get_rate_yaw_pid().get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW, 
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW,
                                     pid_info.desired*0.01f,
                                     degrees(gyro.z),
                                     pid_info.FF*0.01f,
@@ -320,7 +320,7 @@ void Copter::send_pid_tuning(mavlink_channel_t chan)
     }
     if (g.gcs_pid_mask & 8) {
         const DataFlash_Class::PID_Info &pid_info = g.pid_accel_z.get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ, 
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info.desired*0.01f,
                                     -(ahrs.get_accel_ef_blended().z + GRAVITY_MSS),
                                     pid_info.FF*0.01f,
@@ -514,7 +514,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 
     case MSG_MOUNT_STATUS:
 #if MOUNT == ENABLED
-        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);    
+        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
         copter.camera_mount.status_msg(chan);
 #endif // MOUNT == ENABLED
         break;
@@ -886,7 +886,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         }
         break;
     }
-    
+
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
     {
         if (handle_mission_item(msg, copter.mission)) {
@@ -1077,9 +1077,9 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             // param3 : direction (-1:ccw, +1:cw)
             // param4 : relative offset (1) or absolute angle (0)
             if ((packet.param1 >= 0.0f)   &&
-            	(packet.param1 <= 360.0f) &&
-            	(is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
-            	copter.set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, (uint8_t)packet.param4);
+                (packet.param1 <= 360.0f) &&
+                (is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
+                copter.set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, (uint8_t)packet.param4);
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_FAILED;
@@ -1221,7 +1221,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 }
                 copter.ins.acal_init();
                 copter.ins.get_acal()->start(this);
-                
+
             } else if (is_equal(packet.param5,2.0f)) {
                 // calibrate gyros
                 if (!copter.calibrate_gyros()) {
@@ -1940,7 +1940,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // send message to Notify
         AP_Notify::handle_play_tune(msg);
         break;
-                
+
     case MAVLINK_MSG_ID_SET_HOME_POSITION:
     {
         mavlink_set_home_position_t packet;

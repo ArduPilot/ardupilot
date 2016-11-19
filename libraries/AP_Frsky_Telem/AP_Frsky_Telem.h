@@ -24,7 +24,7 @@
 
 #define FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY          5 // size of the message buffer queue (max number of messages waiting to be sent)
 
-/* 
+/*
 for FrSky D protocol (D-receivers)
 */
 // FrSky sensor hub data IDs
@@ -50,7 +50,7 @@ for FrSky D protocol (D-receivers)
 #define START_STOP_D                0x5E
 #define BYTESTUFF_D                 0x5D
 
-/* 
+/*
 for FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
 */
 // FrSky Sensor IDs
@@ -67,7 +67,7 @@ for FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
 #define START_STOP_SPORT            0x7E
 #define BYTESTUFF_SPORT             0x7D
 
-/* 
+/*
 for FrSky SPort Passthrough
 */
 // data bits preparation
@@ -127,7 +127,7 @@ public:
     // set land_complete flag to 0 if is_flying
     // set land_complete flag to 1 if not flying
     void set_is_flying(bool is_flying) { (is_flying) ? (_ap.value &= ~AP_LANDCOMPLETE_FLAG) : (_ap.value |= AP_LANDCOMPLETE_FLAG); }
- 
+
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
@@ -135,7 +135,7 @@ public:
     void update_sensor_status_flags(uint32_t error_mask) { _ap.sensor_status_flags = error_mask; }
 
     static ObjectArray<mavlink_statustext_t> _statustext_queue;
-    
+
 private:
     AP_AHRS &_ahrs;
     const AP_BattMonitor &_battery;
@@ -151,7 +151,7 @@ private:
         const AP_Float *fs_batt_voltage; // failsafe battery voltage in volts
         const AP_Float *fs_batt_mah; // failsafe reserve capacity in mAh
     } _params;
-    
+
     struct
     {
         uint8_t control_mode;
@@ -163,7 +163,7 @@ private:
     uint32_t check_sensor_status_timer;
     uint32_t check_ekf_status_timer;
     uint8_t _paramID;
-    
+
     struct
     {
         char lat_ns, lon_ew;
@@ -192,7 +192,7 @@ private:
         uint32_t velandyaw_timer;
         uint32_t gps_latlng_timer;
     } _passthrough;
-    
+
     struct
     {
         bool sport_status;
@@ -201,20 +201,20 @@ private:
         uint8_t vario_call;
         uint8_t various_call;
     } _SPort;
-    
+
     struct
     {
         uint32_t last_200ms_frame;
         uint32_t last_1000ms_frame;
     } _D;
-    
+
     struct
     {
         uint32_t chunk; // a "chunk" (four characters/bytes) at a time of the queued message to be sent
         uint8_t repeats; // send each message "chunk" 3 times to make sure the entire messsage gets through without getting cut
         uint8_t char_index; // index of which character to get in the message
     } _msg_chunk;
-    
+
     // main transmission function when protocol is FrSky SPort Passthrough (OpenTX)
     void send_SPort_Passthrough(void);
     // main transmission function when protocol is FrSky SPort

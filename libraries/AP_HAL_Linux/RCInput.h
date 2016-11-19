@@ -42,7 +42,7 @@ public:
 
     // add some srxl input bytes, for RCInput over a serial port
     bool add_srxl_input(const uint8_t *bytes, size_t nbytes);
-    
+
 protected:
     void _process_rc_pulse(uint16_t width_s0, uint16_t width_s1);
     void _update_periods(uint16_t *periods, uint8_t len);
@@ -67,8 +67,8 @@ protected:
 
     // state of SBUS bit decoder
     struct {
-	uint16_t bytes[25]; // including start bit, parity and stop bits
-	uint16_t bit_ofs;
+    uint16_t bytes[25]; // including start bit, parity and stop bits
+    uint16_t bit_ofs;
     } sbus_state;
 
     // state of DSM decoder

@@ -31,7 +31,7 @@ public:
     AP_RSSI();
 
     // destructor
-    ~AP_RSSI(void);        
+    ~AP_RSSI(void);
 
     // Initialize the rssi object and prepare it for use
     void init();
@@ -45,7 +45,7 @@ public:
 
     // Read the receiver RSSI value as an 8-bit integer
     // 0 represents weakest signal, 255 represents maximum signal.
-    uint8_t read_receiver_rssi_uint8();   
+    uint8_t read_receiver_rssi_uint8();
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
@@ -62,7 +62,7 @@ private:
     AP_Int16        rssi_channel_high_pwm_value;            // PWM value for strongest rssi signal
 
     // Analog Inputs
-    // a pin for reading the receiver RSSI voltage. 
+    // a pin for reading the receiver RSSI voltage.
     AP_HAL::AnalogSource *rssi_analog_source;
 
     // read the RSSI value from an analog pin - returns float in range 0.0 to 1.0
@@ -71,6 +71,6 @@ private:
     // read the RSSI value from a PWM value on a RC channel
     float read_channel_rssi();
 
-    // Scale and constrain a float rssi value to 0.0 to 1.0 range 
+    // Scale and constrain a float rssi value to 0.0 to 1.0 range
     float scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range);
 };

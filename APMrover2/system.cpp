@@ -105,7 +105,7 @@ void Rover::init_ardupilot()
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
-    
+
     BoardConfig.init();
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
@@ -282,7 +282,7 @@ void Rover::set_mode(enum mode mode)
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode);
 #endif
-    
+
     if (control_mode != AUTO) {
         auto_triggered = false;
     }

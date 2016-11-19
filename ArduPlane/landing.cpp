@@ -48,7 +48,7 @@ bool Plane::verify_land()
        2) we are within LAND_FLARE_SEC of the landing point vertically
           by the calculated sink rate (if LAND_FLARE_SEC != 0)
        3) we have gone past the landing point and don't have
-          rangefinder data (to prevent us keeping throttle on 
+          rangefinder data (to prevent us keeping throttle on
           after landing if we've had positive baro drift)
     */
 #if RANGEFINDER_ENABLED == ENABLED
@@ -113,9 +113,9 @@ bool Plane::verify_land()
       prevents sudden turns if we overshoot the landing point
      */
     struct Location land_WP_loc = next_WP_loc;
-	int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+    int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
     location_update(land_WP_loc,
-                    land_bearing_cd*0.01f, 
+                    land_bearing_cd*0.01f,
                     get_distance(prev_WP_loc, current_loc) + 200);
     nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
 
@@ -144,9 +144,9 @@ bool Plane::verify_land()
  */
 void Plane::disarm_if_autoland_complete()
 {
-    if (g.land_disarm_delay > 0 && 
-        auto_state.land_complete && 
-        !is_flying() && 
+    if (g.land_disarm_delay > 0 &&
+        auto_state.land_complete &&
+        !is_flying() &&
         arming.arming_required() != AP_Arming::NO &&
         arming.is_armed()) {
         /* we have auto disarm enabled. See if enough time has passed */
@@ -180,7 +180,7 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
 
     // re-calculate auto_state.land_slope with updated prev_WP_loc
     setup_landing_glide_slope();
-    
+
     if (rangefinder_state.correction >= 0) { // we're too low or object is below us
         // correction positive means we're too low so we should continue on with
         // the newly computed shallower slope instead of pitching/throttling up
@@ -249,8 +249,8 @@ void Plane::setup_landing_glide_slope(void)
         float aim_height = aparm.land_flare_sec * sink_rate;
         if (aim_height <= 0) {
             aim_height = g.land_flare_alt;
-        } 
-            
+        }
+
         // don't allow the aim height to be too far above LAND_FLARE_ALT
         if (g.land_flare_alt > 0 && aim_height > g.land_flare_alt*2) {
             aim_height = g.land_flare_alt*2;
@@ -270,7 +270,7 @@ void Plane::setup_landing_glide_slope(void)
         // distance to flare is based on ground speed, adjusted as we
         // get closer. This takes into account the wind
         float flare_distance = groundspeed * flare_time;
-        
+
         // don't allow the flare before half way along the final leg
         if (flare_distance > total_distance/2) {
             flare_distance = total_distance/2;
@@ -356,12 +356,12 @@ bool Plane::restart_landing_sequence()
     return success;
 }
 
-/* 
+/*
    find the nearest landing sequence starting point (DO_LAND_START) and
    switch to that mission item.  Returns false if no DO_LAND_START
    available.
  */
-bool Plane::jump_to_landing_sequence(void) 
+bool Plane::jump_to_landing_sequence(void)
 {
     uint16_t land_idx = mission.get_landing_sequence_start();
     if (land_idx != 0) {
@@ -377,7 +377,7 @@ bool Plane::jump_to_landing_sequence(void)
 
             gcs_send_text(MAV_SEVERITY_INFO, "Landing sequence start");
             return true;
-        }            
+        }
     }
 
     gcs_send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");

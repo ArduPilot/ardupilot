@@ -241,7 +241,7 @@ void Matrix3<T>::from_axis_angle(const Vector3<T> &v, float theta)
     float x = normv.x;
     float y = normv.y;
     float z = normv.z;
-    
+
     a.x = t*x*x + C;
     a.y = t*x*y - z*S;
     a.z = t*x*z + y*S;

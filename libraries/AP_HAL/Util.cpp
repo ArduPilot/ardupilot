@@ -27,7 +27,7 @@ public:
         return n;
     }
 
-    size_t _offs; 
+    size_t _offs;
     char* const  _str;
     const size_t _size;
 };

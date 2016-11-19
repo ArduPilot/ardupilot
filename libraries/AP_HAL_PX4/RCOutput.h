@@ -7,7 +7,7 @@
 
 #define PX4_NUM_OUTPUT_CHANNELS 16
 
-class PX4::PX4RCOutput : public AP_HAL::RCOutput 
+class PX4::PX4RCOutput : public AP_HAL::RCOutput
 {
 public:
     void     init() override;
@@ -33,7 +33,7 @@ public:
     void push();
 
     void set_output_mode(enum output_mode mode) override;
-    
+
     void _timer_tick(void);
     bool enable_sbus_out(uint16_t rate_hz) override;
 

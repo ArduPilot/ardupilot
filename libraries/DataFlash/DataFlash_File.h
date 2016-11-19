@@ -1,4 +1,4 @@
-/* 
+/*
    DataFlash logging - file oriented variant
 
    This uses posix file IO to create log files called logNN.dat in the
@@ -54,7 +54,7 @@ public:
     uint16_t get_num_logs() override;
     uint16_t start_new_log(void) override;
     void LogReadProcess(const uint16_t log_num,
-                        uint16_t start_page, uint16_t end_page, 
+                        uint16_t start_page, uint16_t end_page,
                         print_mode_fn print_mode,
                         AP_HAL::BetterStream *port);
     void DumpPageInfo(AP_HAL::BetterStream *port);
@@ -149,7 +149,7 @@ private:
     const uint32_t _free_space_min_avail = 8388608; // bytes
 
     AP_HAL::Semaphore *semaphore;
-    
+
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_write;
     AP_HAL::Util::perf_counter_t  _perf_fsync;

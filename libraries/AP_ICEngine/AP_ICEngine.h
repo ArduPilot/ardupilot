@@ -47,7 +47,7 @@ public:
 
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
     bool engine_control(float start_control, float cold_start, float height_delay);
-    
+
 private:
     const AP_RPM &rpm;
     const AP_AHRS &ahrs;
@@ -62,22 +62,22 @@ private:
 
     // which RPM instance to use
     AP_Int8 rpm_instance;
-    
+
     // time to run starter for (seconds)
     AP_Float starter_time;
 
     // delay between start attempts (seconds)
     AP_Float starter_delay;
-    
-    // pwm values 
+
+    // pwm values
     AP_Int16 pwm_ignition_on;
     AP_Int16 pwm_ignition_off;
     AP_Int16 pwm_starter_on;
     AP_Int16 pwm_starter_off;
-    
+
     // RPM above which engine is considered to be running
     AP_Int32 rpm_threshold;
-    
+
     // time when we started the starter
     uint32_t starter_start_time_ms;
 

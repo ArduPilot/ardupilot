@@ -13,7 +13,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static uint8_t max_channels = 0;
 static uint16_t last_value[MAX_CHANNELS];
 
-void setup(void) 
+void setup(void)
 {
     hal.console->printf("Starting RCInputToRCOutput test\n");
 
@@ -22,7 +22,7 @@ void setup(void)
     }
 }
 
-void loop(void) 
+void loop(void)
 {
     bool changed = false;
     uint8_t nchannels = hal.rcin->num_channels();

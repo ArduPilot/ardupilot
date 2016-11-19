@@ -26,7 +26,7 @@ class AP_GPS_QURT : public AP_GPS_Backend {
 public:
     AP_GPS_QURT(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
     ~AP_GPS_QURT();
-    
+
     bool read() override;
 
 private:

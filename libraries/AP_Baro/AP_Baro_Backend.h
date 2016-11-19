@@ -23,5 +23,5 @@ protected:
     void _copy_to_frontend(uint8_t instance, float pressure, float temperature);
 
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *_sem;    
+    AP_HAL::Semaphore *_sem;
 };

@@ -108,18 +108,18 @@ void VRBRAINGPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case HAL_GPIO_B_LED_PIN:    // not used yet 
-            if (value == LOW) { 
+        case HAL_GPIO_B_LED_PIN:    // not used yet
+            if (value == LOW) {
                 ioctl(_led_fd, LED_OFF, LED_BLUE);
-            } else { 
+            } else {
                 ioctl(_led_fd, LED_ON, LED_BLUE);
             }
             break;
 
-        case HAL_GPIO_C_LED_PIN:    // GPS LED 
-            if (value == LOW) { 
+        case HAL_GPIO_C_LED_PIN:    // GPS LED
+            if (value == LOW) {
                 ioctl(_led_fd, LED_OFF, LED_RED);
-            } else { 
+            } else {
                 ioctl(_led_fd, LED_ON, LED_RED);
             }
             break;

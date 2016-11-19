@@ -50,11 +50,11 @@ public:
     // retrieve body frame x and y angles (in radians) to target
     // returns true if data is available
     bool get_angle_to_target_rad(float &x_angle_rad, float &y_angle_rad) const;
-    
+
     // retrieve body frame unit vector in direction of target
     // returns true if data is available
     bool get_unit_vector_body(Vector3f& ret) const;
-    
+
 
 protected:
     struct AP_IRLock_Flags {

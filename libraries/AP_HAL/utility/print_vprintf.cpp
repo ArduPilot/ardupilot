@@ -389,7 +389,7 @@ flt_oper:
             }
 
         non_string:
-            
+
             /*
              * Handle integer formats variations for d/i, u, o, p, x, X.
              */

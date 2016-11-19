@@ -24,7 +24,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_HIL::detect(AP_InertialSensor &_imu
     return sensor;
 }
 
-bool AP_InertialSensor_HIL::_init_sensor(void) 
+bool AP_InertialSensor_HIL::_init_sensor(void)
 {
     // grab the used instances
     _imu.register_gyro(1200, 1);
@@ -35,7 +35,7 @@ bool AP_InertialSensor_HIL::_init_sensor(void)
     return true;
 }
 
-bool AP_InertialSensor_HIL::update(void) 
+bool AP_InertialSensor_HIL::update(void)
 {
     // the data is stored directly in the frontend, so update()
     // doesn't need to do anything

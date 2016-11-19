@@ -27,12 +27,12 @@ using namespace QURT;
 
 extern const AP_HAL::HAL& hal;
 
-void UDPDriver::begin(uint32_t b) 
+void UDPDriver::begin(uint32_t b)
 {
     begin(b, 16384, 16384);
 }
 
-void UDPDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
+void UDPDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     rxS = constrain_int32(rxS, 16384, 30000);
     txS = constrain_int32(txS, 16384, 30000);
@@ -58,13 +58,13 @@ void UDPDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         }
         writebuf = new ByteBuffer(txS);
     }
-    
+
     if (readbuf && writebuf) {
         initialised = true;
     }
 }
 
-void UDPDriver::end() 
+void UDPDriver::end()
 {
     initialised = false;
     if (readbuf) {
@@ -78,16 +78,16 @@ void UDPDriver::end()
 
 }
 
-void UDPDriver::flush() 
+void UDPDriver::flush()
 {
 }
 
-bool UDPDriver::is_initialized() 
-{ 
-    return initialised; 
+bool UDPDriver::is_initialized()
+{
+    return initialised;
 }
 
-void UDPDriver::set_blocking_writes(bool blocking) 
+void UDPDriver::set_blocking_writes(bool blocking)
 {
     nonblocking_writes = !blocking;
 }
@@ -98,24 +98,24 @@ bool UDPDriver::tx_pending()
 }
 
 /* QURT implementations of Stream virtual methods */
-int16_t UDPDriver::available() 
-{ 
+int16_t UDPDriver::available()
+{
     if (!initialised) {
         return 0;
     }
     return readbuf->available();
 }
 
-int16_t UDPDriver::txspace() 
-{ 
+int16_t UDPDriver::txspace()
+{
     if (!initialised) {
         return 0;
     }
     return writebuf->space();
 }
 
-int16_t UDPDriver::read() 
-{ 
+int16_t UDPDriver::read()
+{
     uint8_t c;
     if (!initialised) {
         return -1;
@@ -133,7 +133,7 @@ int16_t UDPDriver::read()
 }
 
 /* QURT implementations of Print virtual methods */
-size_t UDPDriver::write(uint8_t c) 
+size_t UDPDriver::write(uint8_t c)
 {
     if (!initialised) {
         return 0;
@@ -231,7 +231,7 @@ uint32_t UDPDriver::socket_check(uint8_t *buf, int len, uint32_t *nbytes)
                 // are aligned on UDP boundaries)
                 n = len+8;
             }
-        }        
+        }
     }
 
     *nbytes = n;

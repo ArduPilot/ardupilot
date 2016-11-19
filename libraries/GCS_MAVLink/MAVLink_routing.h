@@ -1,5 +1,5 @@
-/// @file	MAVLink_routing.h
-/// @brief	handle routing of MAVLink packets by ID
+/// @file    MAVLink_routing.h
+/// @brief    handle routing of MAVLink packets by ID
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
@@ -16,7 +16,7 @@
 class MAVLink_routing
 {
     friend class GCS_MAVLINK;
-    
+
 public:
     MAVLink_routing(void);
 
@@ -51,10 +51,10 @@ private:
         mavlink_channel_t channel;
         uint8_t mavtype;
     } routes[MAVLINK_MAX_ROUTES];
-    
+
     // a channel mask to block routing as required
     uint8_t no_route_mask;
-    
+
     // learn new routes
     void learn_route(mavlink_channel_t in_channel, const mavlink_message_t* msg);
 

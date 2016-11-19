@@ -1,7 +1,7 @@
 /*
              LUFA Library
      Copyright (C) Dean Camera, 2010.
-              
+
   dean [at] fourwalledcubicle [dot] com
       www.fourwalledcubicle.com
 */
@@ -9,13 +9,13 @@
 /*
   Copyright 2010  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
-  Permission to use, copy, modify, distribute, and sell this 
+  Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
-  without fee, provided that the above copyright notice appear in 
+  without fee, provided that the above copyright notice appear in
   all copies and that both that the copyright notice and this
-  permission notice and warranty disclaimer appear in supporting 
-  documentation, and that the name of the author not be used in 
-  advertising or publicity pertaining to distribution of the 
+  permission notice and warranty disclaimer appear in supporting
+  documentation, and that the name of the author not be used in
+  advertising or publicity pertaining to distribution of the
   software without specific, written prior permission.
 
   The author disclaim all warranties with regard to this
@@ -45,44 +45,44 @@ volatile uint8_t     USB_DeviceState;
 
 void USB_USBTask(void)
 {
-	#if defined(USB_HOST_ONLY)
-		USB_HostTask();
-	#elif defined(USB_DEVICE_ONLY)
-		USB_DeviceTask();
-	#else
-		if (USB_CurrentMode == USB_MODE_DEVICE)
-		  USB_DeviceTask();
-		else if (USB_CurrentMode == USB_MODE_HOST)
-		  USB_HostTask();
-	#endif
+    #if defined(USB_HOST_ONLY)
+        USB_HostTask();
+    #elif defined(USB_DEVICE_ONLY)
+        USB_DeviceTask();
+    #else
+        if (USB_CurrentMode == USB_MODE_DEVICE)
+        USB_DeviceTask();
+        else if (USB_CurrentMode == USB_MODE_HOST)
+        USB_HostTask();
+    #endif
 }
 
 #if defined(USB_CAN_BE_DEVICE)
 static void USB_DeviceTask(void)
 {
-	if (USB_DeviceState != DEVICE_STATE_Unattached)
-	{
-		uint8_t PrevEndpoint = Endpoint_GetCurrentEndpoint();
-	
-		Endpoint_SelectEndpoint(ENDPOINT_CONTROLEP);
+    if (USB_DeviceState != DEVICE_STATE_Unattached)
+    {
+        uint8_t PrevEndpoint = Endpoint_GetCurrentEndpoint();
 
-		if (Endpoint_IsSETUPReceived())
-		  USB_Device_ProcessControlRequest();
-		
-		Endpoint_SelectEndpoint(PrevEndpoint);
-	}
+        Endpoint_SelectEndpoint(ENDPOINT_CONTROLEP);
+
+        if (Endpoint_IsSETUPReceived())
+        USB_Device_ProcessControlRequest();
+
+        Endpoint_SelectEndpoint(PrevEndpoint);
+    }
 }
 #endif
 
 #if defined(USB_CAN_BE_HOST)
 static void USB_HostTask(void)
 {
-	uint8_t PrevPipe = Pipe_GetCurrentPipe();
-	
-	Pipe_SelectPipe(PIPE_CONTROLPIPE);
+    uint8_t PrevPipe = Pipe_GetCurrentPipe();
 
-	USB_Host_ProcessNextHostState();
-	
-	Pipe_SelectPipe(PrevPipe);
+    Pipe_SelectPipe(PIPE_CONTROLPIPE);
+
+    USB_Host_ProcessNextHostState();
+
+    Pipe_SelectPipe(PrevPipe);
 }
 #endif

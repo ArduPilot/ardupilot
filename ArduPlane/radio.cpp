@@ -61,7 +61,7 @@ void Plane::init_rc_out_main()
     // setup failsafe for bottom 4 channels. We don't do all channels
     // yet as some may be for VTOL motors in a quadplane
     RC_Channel::setup_failsafe_trim_mask(0x000F);
-    
+
     /*
       change throttle trim to minimum throttle. This prevents a
       configuration error where the user sets CH3_TRIM incorrectly and
@@ -71,7 +71,7 @@ void Plane::init_rc_out_main()
 
     channel_roll->enable_out();
     channel_pitch->enable_out();
-    
+
     if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
         channel_throttle->enable_out();
     }
@@ -93,14 +93,14 @@ void Plane::init_rc_out_aux()
     RC_Channel_aux::enable_aux_servos();
 
     hal.rcout->cork();
-    
+
     // Initialization of servo outputs
     RC_Channel::output_trim_all();
 
     servos_output();
-    
+
     // setup PWM values to send if the FMU firmware dies
-    RC_Channel::setup_failsafe_trim_all();  
+    RC_Channel::setup_failsafe_trim_all();
 }
 
 /*
@@ -126,49 +126,49 @@ void Plane::rudder_arm_disarm_check()
     if (auto_throttle_mode &&
         (control_mode != CRUISE && control_mode != FLY_BY_WIRE_B)) {
         rudder_arm_timer = 0;
-        return;      
+        return;
     }
 
-	if (!arming.is_armed()) {
-		// when not armed, full right rudder starts arming counter
-		if (channel_rudder->get_control_in() > 4000) {
-			uint32_t now = millis();
+    if (!arming.is_armed()) {
+        // when not armed, full right rudder starts arming counter
+        if (channel_rudder->get_control_in() > 4000) {
+            uint32_t now = millis();
 
-			if (rudder_arm_timer == 0 ||
-				now - rudder_arm_timer < 3000) {
+            if (rudder_arm_timer == 0 ||
+                now - rudder_arm_timer < 3000) {
 
-				if (rudder_arm_timer == 0) {
+                if (rudder_arm_timer == 0) {
                     rudder_arm_timer = now;
                 }
-			} else {
-				//time to arm!
-				arm_motors(AP_Arming::RUDDER);
-				rudder_arm_timer = 0;
-			}
-		} else {
-			// not at full right rudder
-			rudder_arm_timer = 0;
-		}
-	} else if (arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM && !is_flying()) {
-		// when armed and not flying, full left rudder starts disarming counter
-		if (channel_rudder->get_control_in() < -4000) {
-			uint32_t now = millis();
+            } else {
+                //time to arm!
+                arm_motors(AP_Arming::RUDDER);
+                rudder_arm_timer = 0;
+            }
+        } else {
+            // not at full right rudder
+            rudder_arm_timer = 0;
+        }
+    } else if (arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM && !is_flying()) {
+        // when armed and not flying, full left rudder starts disarming counter
+        if (channel_rudder->get_control_in() < -4000) {
+            uint32_t now = millis();
 
-			if (rudder_arm_timer == 0 ||
-				now - rudder_arm_timer < 3000) {
-				if (rudder_arm_timer == 0) {
+            if (rudder_arm_timer == 0 ||
+                now - rudder_arm_timer < 3000) {
+                if (rudder_arm_timer == 0) {
                     rudder_arm_timer = now;
                 }
-			} else {
-				//time to disarm!
-				disarm_motors();
-				rudder_arm_timer = 0;
-			}
-		} else {
-			// not at full left rudder
-			rudder_arm_timer = 0;
-		}
-	}
+            } else {
+                //time to disarm!
+                disarm_motors();
+                rudder_arm_timer = 0;
+            }
+        } else {
+            // not at full left rudder
+            rudder_arm_timer = 0;
+        }
+    }
 }
 
 void Plane::read_radio()
@@ -193,14 +193,14 @@ void Plane::read_radio()
         pwm_roll = elevon.ch1_temp;
         pwm_pitch = elevon.ch2_temp;
     }else{
-        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) 
+        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2)
          - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
-        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) 
+        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2)
          + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
     }
 
     RC_Channel::set_pwm_all();
-    
+
     if (control_mode == TRAINING) {
         // in training mode we don't want to use a deadzone, as we
         // want manual pass through when not exceeding attitude limits

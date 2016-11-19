@@ -88,10 +88,10 @@ void handle_message(mavlink_channel_t chan, mavlink_message_t* msg) {
             break;
         }
         case MAVLINK_MSG_ID_DATA16:
-            gcs_console_handle_data16(msg); 
+            gcs_console_handle_data16(msg);
             break;
         case MAVLINK_MSG_ID_DATA32:
-            gcs_console_handle_data32(msg); 
+            gcs_console_handle_data32(msg);
             break;
     }
 }

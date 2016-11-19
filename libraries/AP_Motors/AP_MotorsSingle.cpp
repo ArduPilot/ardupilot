@@ -36,10 +36,10 @@ const AP_Param::GroupInfo AP_MotorsSingle::var_info[] = {
 
     // 40 was ROLL_SV_REV
     // 41 was PITCH_SV_REV
-	// 42 was YAW_SV_REV
+    // 42 was YAW_SV_REV
 
-	// @Param: SV_SPEED
-    // @DisplayName: Servo speed 
+    // @Param: SV_SPEED
+    // @DisplayName: Servo speed
     // @Description: Servo update speed in hz
     // @Values: 50, 125, 250
     AP_GROUPINFO("SV_SPEED", 43, AP_MotorsSingle, _servo_speed, AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS),
@@ -90,7 +90,7 @@ void AP_MotorsSingle::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // set update rate for the 3 motors (but not the servo on channel 7)
-    uint32_t mask = 
+    uint32_t mask =
         1U << AP_MOTORS_MOT_1 |
         1U << AP_MOTORS_MOT_2 |
         1U << AP_MOTORS_MOT_3 |

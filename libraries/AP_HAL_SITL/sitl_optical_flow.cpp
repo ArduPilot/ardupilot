@@ -48,8 +48,8 @@ void SITL_State::_update_flow(void)
     }
     last_flow_ms = now;
 
-    gyro(radians(_sitl->state.rollRate), 
-         radians(_sitl->state.pitchRate), 
+    gyro(radians(_sitl->state.rollRate),
+         radians(_sitl->state.pitchRate),
          radians(_sitl->state.yawRate));
 
     OpticalFlow::OpticalFlow_state state;

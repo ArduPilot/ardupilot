@@ -29,7 +29,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_QFLIGHT::detect(AP_InertialSensor &
     return sensor;
 }
 
-bool AP_InertialSensor_QFLIGHT::init_sensor(void) 
+bool AP_InertialSensor_QFLIGHT::init_sensor(void)
 {
     gyro_instance = _imu.register_gyro(1000, 1);
     accel_instance = _imu.register_accel(1000, 1);
@@ -61,7 +61,7 @@ void AP_InertialSensor_QFLIGHT::timer_update(void)
     }
 }
 
-bool AP_InertialSensor_QFLIGHT::update(void) 
+bool AP_InertialSensor_QFLIGHT::update(void)
 {
     update_accel(accel_instance);
     update_gyro(gyro_instance);

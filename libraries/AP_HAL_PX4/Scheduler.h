@@ -33,7 +33,7 @@
    wait_for_sample(). That causes main loop timing jitter, which
    reduces performance. Using the priority boost the main loop
    temporarily runs at a priority higher than hpwork and the timer
-   thread, which results in much more consistent loop timing. 
+   thread, which results in much more consistent loop timing.
 */
 #define APM_MAIN_PRIORITY_BOOST_USEC 150
 
@@ -60,7 +60,7 @@ public:
     bool     in_timerprocess();
     void     system_initialized();
     void     hal_initialized() { _hal_initialized = true; }
-    
+
 private:
     bool _initialized;
     volatile bool _hal_initialized;

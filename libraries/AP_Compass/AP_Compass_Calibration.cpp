@@ -297,7 +297,7 @@ uint8_t Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
                 result = MAV_RESULT_FAILED;
             }
         }
-        
+
         break;
     }
 
@@ -307,37 +307,37 @@ uint8_t Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
             result = MAV_RESULT_FAILED;
             break;
         }
-        
+
         uint8_t mag_mask = packet.param1;
-        
+
         if (mag_mask == 0) { // 0 means all
             mag_mask = 0xFF;
         }
-        
+
         if(!_accept_calibration_mask(mag_mask)) {
             result = MAV_RESULT_FAILED;
         }
         break;
     }
-        
+
     case MAV_CMD_DO_CANCEL_MAG_CAL: {
         result = MAV_RESULT_ACCEPTED;
         if(packet.param1 < 0 || packet.param1 > 255) {
             result = MAV_RESULT_FAILED;
             break;
         }
-        
+
         uint8_t mag_mask = packet.param1;
-        
+
         if (mag_mask == 0) { // 0 means all
             cancel_calibration_all();
             break;
         }
-        
+
         _cancel_calibration_mask(mag_mask);
         break;
     }
     }
-    
+
     return result;
 }

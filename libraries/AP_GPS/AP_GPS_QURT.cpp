@@ -67,16 +67,16 @@ AP_GPS_QURT::read(void)
         return false;
     }
 
-	if (data.nav_type & NAV_TYPE_4SV_OR_MORE_KF_SOLUTION ||
-	    data.nav_type & NAV_TYPE_3SV_KF_SOLUTION) {
-		state.status = AP_GPS::GPS_OK_FIX_3D;
-	} else if (data.nav_type & NAV_TYPE_2SV_KF_SOLUTION) {
-		state.status = AP_GPS::GPS_OK_FIX_2D;
-	} else if (data.nav_type & NAV_TYPE_1SV_KF_SOLUTION) {
-		state.status = AP_GPS::NO_FIX;
-	} else {
-		state.status = AP_GPS::NO_GPS;
-	}
+    if (data.nav_type & NAV_TYPE_4SV_OR_MORE_KF_SOLUTION ||
+        data.nav_type & NAV_TYPE_3SV_KF_SOLUTION) {
+        state.status = AP_GPS::GPS_OK_FIX_3D;
+    } else if (data.nav_type & NAV_TYPE_2SV_KF_SOLUTION) {
+        state.status = AP_GPS::GPS_OK_FIX_2D;
+    } else if (data.nav_type & NAV_TYPE_1SV_KF_SOLUTION) {
+        state.status = AP_GPS::NO_FIX;
+    } else {
+        state.status = AP_GPS::NO_GPS;
+    }
 
     state.num_sats = data.sv_in_fix;
     state.hdop = data.HDOP;
@@ -93,12 +93,12 @@ AP_GPS_QURT::read(void)
     // raw week information (or APM switches to Posix epoch ;-) )
     state.time_week = data.ext_week_num;
     state.time_week_ms = data.tow;
-    
+
     if (state.time_week == 0) {
         // reject bad time
         state.status = AP_GPS::NO_FIX;
     }
-    
+
     state.have_vertical_velocity = true;
     float gps_heading = radians(state.ground_course);
     state.velocity.x = state.ground_speed * cosf(gps_heading);

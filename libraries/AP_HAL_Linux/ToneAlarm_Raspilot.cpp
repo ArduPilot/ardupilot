@@ -30,12 +30,12 @@
 #define RPI2_PWM_BASE  0x3F20C000
 #define RPI2_CLK_BASE  0x3F101000
 
-#define	RPI_PWM_CTL  0
-#define	RPI_PWM_RNG1 4
-#define	RPI_PWM_DAT1 5
+#define    RPI_PWM_CTL  0
+#define    RPI_PWM_RNG1 4
+#define    RPI_PWM_DAT1 5
 
-#define	RPI_PWMCLK_CNTL 40
-#define	RPI_PWMCLK_DIV  41
+#define    RPI_PWMCLK_CNTL 40
+#define    RPI_PWMCLK_DIV  41
 
 using namespace Linux;
 

@@ -216,7 +216,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             update_trig();
 
             // keep _gyro_bias for get_gyro_drift()
-            _gyro_bias.zero();            
+            _gyro_bias.zero();
             EKF2.getGyroBias(-1,_gyro_bias);
             _gyro_bias = -_gyro_bias;
 
@@ -365,7 +365,7 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
         return true;
     }
 #endif
-        
+
     default:
         break;
     }
@@ -794,7 +794,7 @@ uint8_t AP_AHRS_NavEKF::ekf_type(void) const
         type = 2;
     }
 #endif
-    
+
     // check for invalid type
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (type > 2 && type != EKF_TYPE_SITL) {
@@ -1228,11 +1228,11 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan)
         mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0);
         break;
 #endif
-        
+
     case EKF_TYPE2:
     default:
         return EKF2.send_status_report(chan);
-    }    
+    }
 }
 
 // passes a reference to the location of the inertial navigation origin

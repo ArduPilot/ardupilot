@@ -23,7 +23,7 @@ public:
 
     // Constructor
     AC_PrecLand_IRLock(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state);
-    
+
     // perform any required initialisation of backend
     void init();
 
@@ -33,12 +33,15 @@ public:
     // provides a unit vector towards the target in body frame
     //  returns same as have_los_meas()
     bool get_los_body(Vector3f& ret);
-    
+
     // returns system time in milliseconds of last los measurement
     uint32_t los_meas_time_ms();
-    
+
     // return true if there is a valid los measurement available
     bool have_los_meas();
+
+    // parses a mavlink message from the companion computer
+    void handle_msg(mavlink_message_t* msg) {};
 
 private:
     AP_IRLock_PX4 irlock;

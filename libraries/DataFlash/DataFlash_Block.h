@@ -1,4 +1,4 @@
-/* 
+/*
    DataFlash logging - block oriented variant
  */
 #pragma once
@@ -33,7 +33,7 @@ public:
     uint16_t get_num_logs() override;
     uint16_t start_new_log(void);
     void LogReadProcess(const uint16_t list_entry,
-                        uint16_t start_page, uint16_t end_page, 
+                        uint16_t start_page, uint16_t end_page,
                         print_mode_fn print_mode,
                         AP_HAL::BetterStream *port);
     void DumpPageInfo(AP_HAL::BetterStream *port);
@@ -74,10 +74,10 @@ private:
     // write size bytes of data to a page. The caller must ensure that
     // the data fits within the page, otherwise it will wrap to the
     // start of the page
-    virtual void BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr, 
+    virtual void BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr,
                             const void *pHeader, uint8_t hdr_size,
                             const void *pBuffer, uint16_t size) = 0;
-    
+
     // read size bytes of data to a page. The caller must ensure that
     // the data fits within the page, otherwise it will wrap to the
     // start of the page
@@ -105,7 +105,7 @@ private:
     uint16_t GetFileNumber();
 
     void _print_log_formats(AP_HAL::BetterStream *port);
-    
+
 protected:
     uint8_t df_manufacturer;
     uint16_t df_device;

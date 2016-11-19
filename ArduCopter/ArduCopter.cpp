@@ -16,11 +16,11 @@
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
- *  Lead Tester:    Marco Robustini 
- *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen, 
+ *  Lead Tester:    Marco Robustini
+ *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen,
                                                       Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
                                                       Jean-Louis Naudin, Mike Smith, and more
- *  Thanks to:	Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
+ *  Thanks to:    Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
  *
  *  Special Thanks to contributors (in alphabetical order by first name):
  *
@@ -35,7 +35,7 @@
  *  Christof Schmid     :Alpha testing
  *  Craig Elder         :Release Management, Support
  *  Dani Saez           :V Octo Support
- *  Doug Weibel	        :DCM, Libraries, Control law advice
+ *  Doug Weibel            :DCM, Libraries, Control law advice
  *  Emile Castelnuovo   :VRBrain port, bug fixes
  *  Gregory Fletcher    :Camera mount orientation math
  *  Guntars             :Arming safety suggestion
@@ -46,7 +46,7 @@
  *  James Goppert       :Mavlink Support
  *  Jani Hiriven        :Testing feedback
  *  Jean-Louis Naudin   :Auto Landing
- *  John Arne Birkeland	:PPM Encoder
+ *  John Arne Birkeland    :PPM Encoder
  *  Jose Julio          :Stabilization Control laws, MPU6k driver
  *  Julien Dubois       :PosHold flight mode
  *  Julian Oes          :Pixhawk
@@ -155,7 +155,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 };
 
 
-void Copter::setup() 
+void Copter::setup()
 {
     cliSerial = hal.console;
 
@@ -260,7 +260,7 @@ void Copter::fast_loop()
 
     // run low level rate controllers that only require IMU data
     attitude_control.rate_controller_run();
-    
+
 #if FRAME_CONFIG == HELI_FRAME
     update_heli_control_dynamics();
 #endif //HELI_FRAME
@@ -347,7 +347,7 @@ void Copter::update_trigger(void)
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
-    }    
+    }
 #endif
 }
 
@@ -511,7 +511,7 @@ void Copter::one_hz_loop()
     terrain_logging();
 
     adsb.set_is_flying(!ap.land_complete);
-    
+
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not

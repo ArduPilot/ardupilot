@@ -11,14 +11,14 @@ void setup (void) {
 
 static int8_t pin;
 
-void loop (void) 
+void loop (void)
 {
-    float v  = ch->voltage_average(); 
+    float v  = ch->voltage_average();
     if (pin == 0) {
-	    hal.console->println();
+        hal.console->println();
     }
     hal.console->printf("[%u %.3f] ",
-			  (unsigned)pin, v);
+              (unsigned)pin, v);
     pin = (pin+1) % 16;
     ch->set_pin(pin);
     hal.scheduler->delay(100);

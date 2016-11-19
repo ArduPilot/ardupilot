@@ -183,24 +183,24 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case HAL_GPIO_B_LED_PIN:    // not used yet 
+        case HAL_GPIO_B_LED_PIN:    // not used yet
             break;
 
-        case HAL_GPIO_C_LED_PIN:    // GPS LED 
-            if (value == LOW) { 
+        case HAL_GPIO_C_LED_PIN:    // GPS LED
+            if (value == LOW) {
                 ioctl(_led_fd, LED_OFF, LED_BLUE);
-            } else { 
+            } else {
                 ioctl(_led_fd, LED_ON, LED_BLUE);
             }
             break;
 #endif
 
-        case PX4_GPIO_PIEZO_PIN:    // Piezo beeper 
-            if (value == LOW) { // this is inverted 
-                ioctl(_tone_alarm_fd, TONE_SET_ALARM, 3);    // Alarm on !! 
+        case PX4_GPIO_PIEZO_PIN:    // Piezo beeper
+            if (value == LOW) { // this is inverted
+                ioctl(_tone_alarm_fd, TONE_SET_ALARM, 3);    // Alarm on !!
                 //::write(_tone_alarm_fd, &user_tune, sizeof(user_tune));
-            } else { 
-                ioctl(_tone_alarm_fd, TONE_SET_ALARM, 0);    // Alarm off !! 
+            } else {
+                ioctl(_tone_alarm_fd, TONE_SET_ALARM, 0);    // Alarm off !!
             }
             break;
 

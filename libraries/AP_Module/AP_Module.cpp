@@ -177,7 +177,7 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
         state.position.longitude = loc.lng;
         state.position.altitude = loc.alt*0.01f;
     }
-    
+
     Vector3f pos;
     if (ahrs.get_relative_position_NED(pos)) {
         state.relative_position[0] = pos[0];
@@ -209,7 +209,7 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
         state.velocity_ned[1] = vel.y;
         state.velocity_ned[2] = vel.z;
     }
-    
+
     for (const struct hook_list *h=hooks[HOOK_AHRS_UPDATE]; h; h=h->next) {
         ap_hook_AHRS_update_fn_t fn = reinterpret_cast<ap_hook_AHRS_update_fn_t>(h->symbol);
         fn(&state);
