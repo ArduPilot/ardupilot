@@ -30,10 +30,8 @@
 #define OPTICALFLOW_ONBOARD_ID 1
 extern const AP_HAL::HAL& hal;
 
-AP_OpticalFlow_Onboard::AP_OpticalFlow_Onboard(OpticalFlow &_frontend,
-                                               AP_AHRS_NavEKF& ahrs) :
-    OpticalFlow_backend(_frontend),
-    _ahrs(ahrs)
+AP_OpticalFlow_Onboard::AP_OpticalFlow_Onboard(OpticalFlow &_frontend) :
+    OpticalFlow_backend(_frontend)
 {}
 
 void AP_OpticalFlow_Onboard::init(void)
@@ -102,7 +100,7 @@ void AP_OpticalFlow_Onboard::update()
 void AP_OpticalFlow_Onboard::_get_gyro(float &rate_x, float &rate_y,
                                        float &rate_z)
 {
-    Vector3f rates = _ahrs.get_gyro();
+    Vector3f rates = get_ahrs().get_gyro();
     rate_x = rates.x;
     rate_y = rates.y;
     rate_z = rates.z;

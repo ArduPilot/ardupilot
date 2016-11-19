@@ -87,10 +87,9 @@ void OpticalFlow::init(void)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-        backend = new AP_OpticalFlow_Onboard(*this, _ahrs);
+        backend = new AP_OpticalFlow_Onboard(*this);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         backend = new AP_OpticalFlow_Linux(*this, hal.i2c_mgr->get_device(HAL_OPTFLOW_PX4FLOW_I2C_BUS, HAL_OPTFLOW_PX4FLOW_I2C_ADDRESS));
-
 #endif
     }
 

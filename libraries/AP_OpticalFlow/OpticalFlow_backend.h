@@ -48,6 +48,9 @@ protected:
     // get the yaw angle in radians
     float _yawAngleRad(void) const { return radians(float(frontend._yawAngle_cd) * 0.01f); }
 
+    // get access to AHRS object
+    AP_AHRS_NavEKF &get_ahrs(void) { return frontend._ahrs; }
+    
     // semaphore for access to shared frontend data
     AP_HAL::Semaphore *_sem;
 };
