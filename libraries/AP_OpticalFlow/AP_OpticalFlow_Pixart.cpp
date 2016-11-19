@@ -22,6 +22,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/edc.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include <utility>
 #include "OpticalFlow.h"
 #include "AP_OpticalFlow_Pixart_SROM.h"
@@ -146,6 +147,8 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
 
     _dev->get_semaphore()->give();
 
+    integral.last_frame_us = AP_HAL::micros();
+    
     _dev->register_periodic_callback(2000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Pixart::timer, bool));
     return true;
 
@@ -154,10 +157,6 @@ failed:
     return false;
 }
 
-// update - read latest values from sensor and fill in x,y and totals.
-void AP_OpticalFlow_Pixart::update(void)
-{
-}
 
 // write an 8 bit register
 void AP_OpticalFlow_Pixart::reg_write(uint8_t reg, uint8_t value)
@@ -260,10 +259,25 @@ bool AP_OpticalFlow_Pixart::timer(void)
     }
     motion_burst();
     last_burst_us = AP_HAL::micros();
+
+    uint32_t dt_us = last_burst_us - integral.last_frame_us;
+    float dt = dt_us * 1.0e-6;
+    const Vector3f &gyro = get_ahrs().get_gyro();
+
+    if (_sem->take(0)) {
+        integral.sum.x += burst.delta_x;
+        integral.sum.y += burst.delta_y;
+        integral.sum_us += dt_us;
+        integral.last_frame_us = last_burst_us;
+        integral.gyro += Vector2f(gyro.x, gyro.y) * dt;
+        _sem->give();
+    }
     
+#if 0
+    // used for debugging
     sum_x += burst.delta_x;
     sum_y += burst.delta_y;
-
+    
     uint32_t now = AP_HAL::millis();
     if (now - last_print_ms >= 100 && (sum_x != 0 || sum_y != 0)) {
         last_print_ms = now;
@@ -272,5 +286,44 @@ bool AP_OpticalFlow_Pixart::timer(void)
                (unsigned)burst.max_raw, (unsigned)burst.min_raw, (unsigned)burst.shutter_upper, (unsigned)burst.shutter_lower);
         sum_x = sum_y = 0;
     }
+#endif
     return true;
+}
+
+// update - read latest values from sensor and fill in x,y and totals.
+void AP_OpticalFlow_Pixart::update(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - last_update_ms < 100) {
+        return;
+    }
+    last_update_ms = now;
+    
+    struct OpticalFlow::OpticalFlow_state state;
+    state.device_id = 1;
+    state.surface_quality = burst.squal;
+    
+    if (integral.sum_us > 0 && _sem->take(0)) {
+        const Vector2f flowScaler = _flowScaler();
+        float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
+        float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
+        float dt = integral.sum_us * 1.0e-6;
+        
+        state.flowRate = Vector2f(integral.sum.x * flowScaleFactorX,
+                                  integral.sum.y * flowScaleFactorY);
+        state.flowRate *= flow_pixel_scaling / dt;
+
+        state.bodyRate = integral.gyro / dt;
+
+        integral.sum.zero();
+        integral.sum_us = 0;
+        integral.gyro.zero();
+        _sem->give();
+    } else {
+        state.flowRate.zero();
+        state.bodyRate.zero();
+    }
+
+    // copy results to front end
+    _update_frontend(state);
 }

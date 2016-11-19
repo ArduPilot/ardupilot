@@ -38,10 +38,18 @@ private:
         uint8_t shutter_upper;
         uint8_t shutter_lower;
     } burst;
+
+    struct {
+        Vector2l sum;
+        uint32_t last_frame_us;
+        uint32_t sum_us;
+        Vector2f gyro;
+    } integral;
     
     static const uint8_t srom_data[];
     static const uint8_t srom_id;
     static const RegData init_data[];
+    const float flow_pixel_scaling = 1.0e-3;
 
     // setup sensor
     bool setup_sensor(void);
@@ -61,4 +69,5 @@ private:
     int32_t sum_y;
     uint32_t last_print_ms;
     uint32_t last_burst_us;
+    uint32_t last_update_ms;
 };
