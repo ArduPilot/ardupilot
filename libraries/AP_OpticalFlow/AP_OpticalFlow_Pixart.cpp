@@ -161,7 +161,12 @@ failed:
 // write an 8 bit register
 void AP_OpticalFlow_Pixart::reg_write(uint8_t reg, uint8_t value)
 {
-    _dev->write_register(reg | PIXART_WRITE_FLAG, value);
+    _dev->set_chip_select(true);
+    reg |= PIXART_WRITE_FLAG;
+    _dev->transfer(&reg, 1, nullptr, 0);
+    hal.scheduler->delay_microseconds(PIXART_Tsrad);
+    _dev->transfer(&value, 1, nullptr, 0);
+    _dev->set_chip_select(false);
     hal.scheduler->delay_microseconds(120);
 }
 
@@ -223,7 +228,15 @@ void AP_OpticalFlow_Pixart::srom_download(void)
 void AP_OpticalFlow_Pixart::load_configuration(void)
 {
     for (uint16_t i = 0; i < ARRAY_SIZE(init_data); i++) {
-        reg_write(init_data[i].reg, init_data[i].value);
+        // writing a config register can fail - retry up to 5 times
+        for (uint8_t tries=0; tries<5; tries++) {
+            reg_write(init_data[i].reg, init_data[i].value);
+            uint8_t v = reg_read(init_data[i].reg);
+            if (v == init_data[i].value) {
+                break;
+            }
+            //printf("reg[%u:%02x] 0x%02x 0x%02x\n", (unsigned)i, (unsigned)init_data[i].reg, (unsigned)init_data[i].value, (unsigned)v);
+        }
     }
 }
 
