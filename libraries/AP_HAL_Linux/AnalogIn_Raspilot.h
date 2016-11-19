@@ -35,13 +35,12 @@ public:
     float board_voltage(void);
 
 protected:
-    void _update();
+    bool _update();
 
     AP_HAL::AnalogSource *_vcc_pin_analog_source;
     AnalogSource_Raspilot *_channels[RASPILOT_ADC_MAX_CHANNELS];
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
-    uint32_t _last_update_timestamp;
     uint8_t _channels_number;
 };
