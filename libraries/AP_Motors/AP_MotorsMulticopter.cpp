@@ -137,6 +137,13 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HOVER_LEARN", 22, AP_MotorsMulticopter, _throttle_hover_learn, HOVER_LEARN_AND_SAVE),
 
+    // @Param: SAFE_DISARM
+    // @DisplayName: Motor PWM output disabled when disarmed
+    // @Description: Disables motor PWM output when disarmed
+    // @Values: 0:PWM enabled while disarmed, 1:PWM disabled while disarmed
+    // @User: Advanced
+    AP_GROUPINFO("SAFE_DISARM", 23, AP_MotorsMulticopter, _disarm_disable_pwm, 0),
+
     AP_GROUPEND
 };
 
@@ -151,7 +158,8 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     _batt_timer(0),
     _lift_max(1.0f),
     _throttle_limit(1.0f),
-    _throttle_thrust_max(0.0f)
+    _throttle_thrust_max(0.0f),
+    _disarm_safety_timer(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -385,6 +393,12 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
 // run spool logic
 void AP_MotorsMulticopter::output_logic()
 {
+    if (_flags.armed) {
+        _disarm_safety_timer = 100;
+    } else if (_disarm_safety_timer != 0) {
+        _disarm_safety_timer--;
+    }
+
     // force desired and current spool mode if disarmed or not interlocked
     if (!_flags.armed || !_flags.interlock) {
         _spool_desired = DESIRED_SHUT_DOWN;
