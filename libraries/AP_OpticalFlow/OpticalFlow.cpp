@@ -83,7 +83,7 @@ void OpticalFlow::init(void)
             backend = new AP_OpticalFlow_PX4(*this);
         }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        backend = new AP_OpticalFlow_HIL(*this);
+        backend = new AP_OpticalFlow_SITL(*this);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
@@ -110,9 +110,3 @@ void OpticalFlow::update(void)
     _flags.healthy = (AP_HAL::millis() - _last_update_ms < 500);
 }
 
-void OpticalFlow::setHIL(const struct OpticalFlow::OpticalFlow_state &state)
-{
-    if (backend) {
-        backend->_update_frontend(state);
-    }
-}

@@ -70,9 +70,6 @@ public:
         Vector2f bodyRate;          // body inertial angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
     };
 
-    // support for HIL/SITL
-    void setHIL(const struct OpticalFlow_state &state);
-
     // return a 3D vector defining the position offset of the sensors focal point in metres relative to the body frame origin
     const Vector3f &get_pos_offset(void) const {
         return _pos_offset;
@@ -100,7 +97,7 @@ private:
 };
 
 #include "OpticalFlow_backend.h"
-#include "AP_OpticalFlow_HIL.h"
+#include "AP_OpticalFlow_SITL.h"
 #include "AP_OpticalFlow_PX4.h"
 #include "AP_OpticalFlow_Linux.h"
 #include "AP_OpticalFlow_Pixart.h"
