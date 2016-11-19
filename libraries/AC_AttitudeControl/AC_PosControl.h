@@ -84,9 +84,7 @@ public:
     /// set_alt_min - sets the minimum altitude (maximum depth) in cm
     ///   only enforced when set_alt_target_from_climb_rate is used
     ///   set to zero to disable limit
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
     void set_alt_min(float alt) { _alt_min = alt; }
-#endif
 
     /// set_speed_z - sets maximum climb and descent rates
     ///     speed_down can be positive or negative but will always be interpreted as a descent speed
@@ -413,9 +411,7 @@ private:
     Vector3f    _accel_feedforward;     // feedforward acceleration in cm/s/s
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
     float       _alt_max;               // max altitude - should be updated from the main code with altitude limit from fence
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
     float		_alt_min;
-#endif
     float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
 

@@ -27,9 +27,7 @@
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
 #define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #define AC_FENCE_DEPTH_MAX_DEFAULT					-10.0f // default maximum depth in meters
-#endif
 
 // give up distance
 #define AC_FENCE_GIVE_UP_DISTANCE                   100.0f  // distance outside the fence at which we should give up and just land.  Note: this is not used by library directly but is intended to be used by the main code
@@ -83,9 +81,8 @@ public:
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
     float get_safe_alt() const { return _alt_max - _margin; }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
     float get_safe_depth() const { return _alt_min + _margin; }
-#endif
+
     /// get_radius - returns the fence radius in meters
     float get_radius() const { return _circle_radius.get(); }
 
@@ -139,13 +136,10 @@ private:
     AP_Int8         _enabled_fences;        // bit mask holding which fences are enabled
     AP_Int8         _action;                // recovery action specified by user
     AP_Float        _alt_max;               // altitude upper limit in meters
+    AP_Float		_alt_min;
     AP_Float        _circle_radius;         // circle fence radius in meters
     AP_Float        _margin;                // distance in meters that autopilot's should maintain from the fence to avoid a breach
     AP_Int8         _total;                 // number of polygon points saved in eeprom
-
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    AP_Float		_alt_min;
-#endif
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
