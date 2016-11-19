@@ -79,18 +79,20 @@ void AP_OpticalFlow_PX4::update(void)
         state.device_id = report.sensor_id;
         state.surface_quality = report.quality;
         if (report.integration_timespan > 0) {
-            float yawAngleRad = _yawAngleRad();
-            float cosYaw = cosf(yawAngleRad);
-            float sinYaw = sinf(yawAngleRad);
             const Vector2f flowScaler = _flowScaler();
             float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
             float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
             float integralToRate = 1e6f / float(report.integration_timespan);
-            // rotate sensor measurements from sensor to body frame through sensor yaw angle
-            state.flowRate.x = flowScaleFactorX * integralToRate * (cosYaw * float(report.pixel_flow_x_integral) - sinYaw * float(report.pixel_flow_y_integral)); // rad/sec measured optically about the X body axis
-            state.flowRate.y = flowScaleFactorY * integralToRate * (sinYaw * float(report.pixel_flow_x_integral) + cosYaw * float(report.pixel_flow_y_integral)); // rad/sec measured optically about the Y body axis
-            state.bodyRate.x = integralToRate * (cosYaw * float(report.gyro_x_rate_integral) - sinYaw * float(report.gyro_y_rate_integral)); // rad/sec measured inertially about the X body axis
-            state.bodyRate.y = integralToRate * (sinYaw * float(report.gyro_x_rate_integral) + cosYaw * float(report.gyro_y_rate_integral)); // rad/sec measured inertially about the Y body axis
+
+            // rad/sec measured optically about the X body axis
+            state.flowRate.x = flowScaleFactorX * integralToRate * report.pixel_flow_x_integral;
+            state.flowRate.y = flowScaleFactorY * integralToRate * report.pixel_flow_y_integral;
+            _applyYaw(state.flowRate);
+
+            // rad/sec measured inertially about the X body axis
+            state.bodyRate.x = integralToRate * report.gyro_x_rate_integral;
+            state.bodyRate.y = integralToRate * report.gyro_y_rate_integral;
+            _applyYaw(state.bodyRate);
         } else {
             state.flowRate.zero();
             state.bodyRate.zero();
