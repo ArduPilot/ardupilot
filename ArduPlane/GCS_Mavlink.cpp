@@ -2181,6 +2181,7 @@ void Plane::gcs_update(void)
 void Plane::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
     GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    notify.send_text(str);
 }
 
 /*
@@ -2196,6 +2197,7 @@ void Plane::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
     va_end(arg_list);
     GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    notify.send_text(str);
 }
 
 /*
