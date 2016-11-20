@@ -195,6 +195,7 @@ private:
         int16_t alt_cm;     // tilt compensated altitude (in cm) from rangefinder
         uint32_t last_healthy_ms;
         LowPassFilterFloat alt_cm_filt; // altitude filter
+        int8_t glitch_count;
     } rangefinder_state = { false, false, 0, 0 };
 
     AP_RPM rpm_sensor;
