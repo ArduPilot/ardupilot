@@ -151,6 +151,14 @@
  # define RANGEFINDER_TILT_CORRECTION ENABLED
 #endif
 
+#ifndef RANGEFINDER_GLITCH_ALT_CM
+ # define RANGEFINDER_GLITCH_ALT_CM  200      // amount of rangefinder change to be considered a glitch
+#endif
+
+#ifndef RANGEFINDER_GLITCH_NUM_SAMPLES
+ # define RANGEFINDER_GLITCH_NUM_SAMPLES  3   // number of rangefinder glitches in a row to take new reading
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Proximity sensor
 //
