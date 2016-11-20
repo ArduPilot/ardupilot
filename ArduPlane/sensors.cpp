@@ -125,6 +125,9 @@ void Plane::read_battery(void)
         battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
         low_battery_event();
     }
+    if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
+        AP_Notify::flags.battery_voltage = battery.voltage(); //for on-board oled display
+    }
     
     if (should_log(MASK_LOG_CURRENT)) {
         Log_Write_Current();

@@ -322,6 +322,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         // don't switch modes if we are already in the correct mode.
         return;
     }
+    AP_Notify::flags.flight_mode = mode; //for on-board oled display
     if(g.auto_trim > 0 && control_mode == MANUAL)
         trim_control_surfaces();
 
