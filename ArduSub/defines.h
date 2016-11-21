@@ -401,6 +401,7 @@ enum ThrowModeState {
 #define ERROR_SUBSYSTEM_TERRAIN             21
 #define ERROR_SUBSYSTEM_NAVIGATION          22
 #define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
+#define ERROR_SUBSYSTEM_FAILSAFE_LEAK       24
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
