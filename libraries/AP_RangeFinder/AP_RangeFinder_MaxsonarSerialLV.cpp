@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2016  Intel Corporation. All rights reserved.
  *
@@ -17,9 +16,9 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_RangeFinder_MaxsonarSerialLV.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
+#include "AP_RangeFinder_MaxsonarSerialLV.h"
 
 #define MAXSONAR_SERIAL_LV_BAUD_RATE 9600
 
@@ -62,13 +61,6 @@ bool AP_RangeFinder_MaxsonarSerialLV::get_reading(uint16_t &reading_cm)
     int16_t nbytes = uart->available();
     uint16_t count = 0;
 
-    /* MaxSonarSeriaLV might need a manual reconection */
-    if (nbytes == 0) {
-        uart->end();
-        uart->begin(MAXSONAR_SERIAL_LV_BAUD_RATE);
-        nbytes = uart->available();
-    }
-
     while (nbytes-- > 0) {
         char c = uart->read();
         if (c == '\r') {
@@ -85,13 +77,12 @@ bool AP_RangeFinder_MaxsonarSerialLV::get_reading(uint16_t &reading_cm)
         }
     }
 
-
     if (count == 0) {
         return false;
     }
 
     // This sonar gives the metrics in inches, so we have to transform this to centimeters
-    reading_cm = 2.54 * sum / count;
+    reading_cm = 2.54f * sum / count;
 
     return true;
 }
