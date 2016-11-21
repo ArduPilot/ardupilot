@@ -597,10 +597,10 @@ void Compass::_detect_backends(void)
                      true),
                  AP_Compass_HMC5843::name, true);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO2
-    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
-                 AP_Compass_AK8963::name, false);
     ADD_BACKEND(AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m"), ROTATION_ROLL_180),
                  AP_Compass_LSM9DS1::name, false);
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+                 AP_Compass_AK8963::name, false);
     ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
                  AP_Compass_HMC5843::name, true);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO
