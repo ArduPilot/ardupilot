@@ -335,7 +335,7 @@ _options_for_frame = {
     },
     # SUB
     "vectored": {
-        "model": "quad",
+        "model": "vectored",
         "waf_target": "bin/ardusub-vectored",
         "default_params_filename": "Sub.parm",
     },
