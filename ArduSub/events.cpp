@@ -144,7 +144,7 @@ void Sub::set_leak_status(bool status) {
 	// Always send a warning every 5 seconds
 	if(tnow > failsafe.last_leak_warn_ms + 5000) {
 		failsafe.last_leak_warn_ms = tnow;
-		gcs_send_text(MAV_SEVERITY_WARNING, "Leak Detected");
+		gcs_send_text(MAV_SEVERITY_CRITICAL, "Leak Detected");
 	}
 
 	// Do nothing if we have already triggered the failsafe action, or if the motors are disarmed
