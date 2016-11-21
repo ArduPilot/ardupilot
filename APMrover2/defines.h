@@ -60,6 +60,7 @@ enum GuidedMode {
 #define LOG_ARM_DISARM_MSG      0x08
 #define LOG_STEERING_MSG        0x0D
 #define LOG_GUIDEDTARGET_MSG    0x0E
+#define LOG_ERROR_MSG           0x13
 
 #define TYPE_AIRSTART_MSG		0x00
 #define TYPE_GROUNDSTART_MSG	0x01
@@ -90,3 +91,15 @@ enum GuidedMode {
 #define MAVLINK_SET_POS_TYPE_MASK_FORCE           (1<<9)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE      (1<<10)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE (1<<11)
+
+// Error message sub systems and error codes
+#define ERROR_SUBSYSTEM_CRASH_CHECK         12
+// subsystem specific error codes -- crash checker
+#define ERROR_CODE_CRASH_CHECK_CRASH        1
+
+enum fs_crash_action {
+  FS_CRASH_DISABLE = 0,
+  FS_CRASH_HOLD = 1,
+  FS_CRASH_HOLD_AND_DISARM = 2
+};
+
