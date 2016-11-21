@@ -639,36 +639,53 @@ void NavEKF2::UpdateFilter(void)
     
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
+    bool statePredictEnabled[num_cores];
     for (uint8_t i=0; i<num_cores; i++) {
         // if the previous core has only recently finished a new state prediction cycle, then
         // don't start a new cycle to allow time for fusion operations to complete if the update
         // rate is higher than 200Hz
-        bool statePredictEnabled;
         if ((i > 0) && (core[i-1].getFramesSincePredict() < 2) && (ins.get_sample_rate() > 200)) {
-            statePredictEnabled = false;
+            statePredictEnabled[i] = false;
         } else {
-            statePredictEnabled = true;
+            statePredictEnabled[i] = true;
         }
-        core[i].UpdateFilter(statePredictEnabled);
+        core[i].UpdateFilter(statePredictEnabled[i]);
     }
 
-    // If the current core selected has a bad fault score or is unhealthy, switch to a healthy core with the lowest fault score
-    if (core[primary].faultScore() > 0.0f || !core[primary].healthy()) {
-        float score = 1e9f;
+    // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
+    float primaryErrorScore = core[primary].errorScore();
+    if (primaryErrorScore > 1.0f || !core[primary].healthy()) {
+        float lowestErrorScore = primaryErrorScore; // lowest error score from all lanes
         bool has_switched = false; // true if a switch has occurred this frame
-        for (uint8_t i=0; i<num_cores; i++) {
-            if (core[i].healthy()) {
-                float tempScore = core[i].faultScore();
-                if (tempScore < score) {
-                    // update the yaw and position reset data to capture changes due to the lane switch
-                    updateLaneSwitchYawResetData(has_switched, i, primary);
-                    updateLaneSwitchPosResetData(has_switched, i, primary);
+        uint8_t newPrimaryIndex = primary; // index for new primary
+        for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
 
-                    has_switched = true;
-                    primary = i;
-                    score = tempScore;
+            if (coreIndex != primary) {
+                // an alternative core is available for selection only if healthy and if states have been updated on this time step
+                bool altCoreAvailable = core[coreIndex].healthy() && statePredictEnabled[coreIndex];
+
+                // If the primary core is unhealthy and another core is available, then switch now
+                if (!core[primary].healthy() && altCoreAvailable) {
+                    newPrimaryIndex = coreIndex;
+                    break;
+                }
+
+                // If the primary core is still healthy,then switching is optional and will only be done if
+                // a core with a significantly lower error score can be found
+                bool maySwitch = core[primary].healthy() && altCoreAvailable;
+                float altErrorScore = core[coreIndex].errorScore();
+                if ((altErrorScore < 0.67f * primaryErrorScore) && (altErrorScore < lowestErrorScore) && maySwitch) {
+                    newPrimaryIndex = coreIndex;
+                    lowestErrorScore = altErrorScore;
                 }
             }
+        }
+        // update the yaw and position reset data to capture changes due to the lane switch
+        if (newPrimaryIndex != primary) {
+            updateLaneSwitchYawResetData(has_switched, newPrimaryIndex, primary);
+            updateLaneSwitchPosResetData(has_switched, newPrimaryIndex, primary);
+            primary = newPrimaryIndex;
+            has_switched = true;
         }
     }
 
