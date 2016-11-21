@@ -73,6 +73,7 @@ class LowPassFilter {
 public:
     LowPassFilter();
     LowPassFilter(float cutoff_freq);
+    LowPassFilter(float sample_freq, float cutoff_freq);
 
     // change parameters
     void set_cutoff_frequency(float cutoff_freq);
