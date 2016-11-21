@@ -89,11 +89,9 @@ void Sub::set_surfaced(bool at_surface) {
 
 	if(!ap.at_surface) {
 	    Log_Write_Event(DATA_SURFACED);
-		gcs_send_text(MAV_SEVERITY_INFO, "Off Surface");
 	} else {
 		surface_detector_count = 0;
 		Log_Write_Event(DATA_NOT_SURFACED);
-		gcs_send_text(MAV_SEVERITY_INFO, "Surfaced");
 	}
 }
 
@@ -107,10 +105,8 @@ void Sub::set_bottomed(bool at_bottom) {
 
 	if(!ap.at_bottom) {
 		Log_Write_Event(DATA_BOTTOMED);
-		gcs_send_text(MAV_SEVERITY_INFO, "Off Bottom");
 	} else {
 		bottom_detector_count = 0;
 		Log_Write_Event(DATA_NOT_BOTTOMED);
-		gcs_send_text(MAV_SEVERITY_INFO, "Bottomed");
 	}
 }
