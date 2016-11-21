@@ -15,9 +15,6 @@
 #include "AP_InertialSensor_Backend.h"
 #include "AuxiliaryBus.h"
 
-// enable debug to see a register dump on startup
-#define MPU6000_DEBUG 0
-
 class AP_MPU6000_AuxiliaryBus;
 class AP_MPU6000_AuxiliaryBusSlave;
 
@@ -42,7 +39,8 @@ public:
                                             enum Rotation rotation = ROTATION_NONE);
 
     /* update accel and gyro state */
-    bool update();
+    bool update() override;
+    void accumulate() override;
 
     /*
      * Return an AuxiliaryBus if the bus driver allows it
@@ -55,10 +53,6 @@ private:
     AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
                               enum Rotation rotation);
-
-#if MPU6000_DEBUG
-    void _dump_registers();
-#endif
 
     /* Initialize sensor*/
     bool _init();
@@ -85,9 +79,8 @@ private:
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val, bool checked=false);
 
-    void _accumulate(uint8_t *samples, uint8_t n_samples);
-    void _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
-    void _check_temperature(void);
+    bool _accumulate(uint8_t *samples, uint8_t n_samples, int16_t raw_temp);
+    bool _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples, int16_t raw_temp);
 
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
@@ -110,11 +103,10 @@ private:
 
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
-    
-    // last temperature reading, used to detect FIFO errors
-    float _last_temp;
-    uint8_t _temp_counter;
 
+    // are we using accumulate for sensor reading or a bus callback?
+    bool _use_accumulate;
+    
     // has master i2c been enabled?
     bool _master_i2c_enable;    
     
@@ -123,11 +115,16 @@ private:
 
     uint8_t _reg_check_counter;
 
-    // accumulators for fast sampling
+    /*
+      accumulators for fast sampling
+      See description in _accumulate_fast_sampling()
+    */
     struct {
-        Vector3l accel;
-        Vector3l gyro;
+        Vector3f accel;
+        Vector3f gyro;
         uint8_t count;
+        LowPassFilterVector3f accel_filter{4000, 188};
+        LowPassFilterVector3f gyro_filter{8000, 188};
     } _accum;
 };
 
