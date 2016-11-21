@@ -134,6 +134,9 @@ void Sub::set_leak_status(bool status) {
 
 	// Do nothing if we are dry, or if leak failsafe action is disabled
 	if(status == false || g.failsafe_leak == FS_LEAK_DISABLED) {
+		if(failsafe.leak) {
+			Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_LEAK, ERROR_CODE_FAILSAFE_RESOLVED);
+		}
 		failsafe.leak = false;
 		return;
 	}
@@ -148,14 +151,16 @@ void Sub::set_leak_status(bool status) {
 	}
 
 	// Do nothing if we have already triggered the failsafe action, or if the motors are disarmed
-	if(failsafe.leak || !motors.armed()) {
+	if(failsafe.leak) {
 		return;
 	}
 
 	failsafe.leak = true;
+	
+	Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_LEAK, ERROR_CODE_FAILSAFE_OCCURRED);
 
 	// Handle failsafe action
-	if(g.failsafe_leak == FS_LEAK_SURFACE && motors.armed()) {
+	if(failsafe.leak && g.failsafe_leak == FS_LEAK_SURFACE && motors.armed()) {
 		set_mode(SURFACE, MODE_REASON_LEAK_FAILSAFE);
 	}
 }
