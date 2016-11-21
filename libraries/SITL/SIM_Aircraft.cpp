@@ -413,6 +413,7 @@ void Aircraft::set_interface_ports(const char* address, const int port_in, const
         fprintf(stderr, "Abording launch...\n");
         exit(1);
     }
+    printf("Bind %s:%d for SITL in\n", "127.0.0.1", port_in);
     socket_in.reuseaddress();
     socket_in.set_blocking(false);
 
@@ -421,6 +422,7 @@ void Aircraft::set_interface_ports(const char* address, const int port_in, const
         fprintf(stderr, "Abording launch...\n");
         exit(1);
     }
+    printf("Bind %s:%d for SITL out\n", address, port_out);
     socket_out.reuseaddress();
     socket_out.set_blocking(false);
 }
