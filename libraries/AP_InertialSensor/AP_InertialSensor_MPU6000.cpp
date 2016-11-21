@@ -21,6 +21,8 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
+#define debug(fmt, args ...)  do {printf("MPU6000: " fmt "\n", ## args); } while(0)
+
 /*
   EXT_SYNC allows for frame synchronisation with an external device
   such as a camera. When enabled the LSB of AccelZ holds the FSYNC bit
@@ -64,6 +66,7 @@ extern const AP_HAL::HAL& hal;
 #       define MPUREG_CONFIG_EXT_SYNC_AX            0x05
 #       define MPUREG_CONFIG_EXT_SYNC_AY            0x06
 #       define MPUREG_CONFIG_EXT_SYNC_AZ            0x07
+#       define MPUREG_CONFIG_FIFO_MODE_STOP         0x40
 #define MPUREG_GYRO_CONFIG                      0x1B
 // bit definitions for MPUREG_GYRO_CONFIG
 #       define BITS_GYRO_FS_250DPS                  0x00
@@ -313,27 +316,33 @@ bool AP_InertialSensor_MPU6000::_init()
 
     bool success = _hardware_init();
 
-#if MPU6000_DEBUG
-    _dump_registers();
-#endif
-
     return success;
 }
 
 void AP_InertialSensor_MPU6000::_fifo_reset()
 {
     uint8_t user_ctrl = _master_i2c_enable?BIT_USER_CTRL_I2C_MST_EN:0;
+    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    _register_write(MPUREG_FIFO_EN, 0);
     _register_write(MPUREG_USER_CTRL, user_ctrl);
     _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_RESET);
     _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_EN);
+    _register_write(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
+                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN);
+    hal.scheduler->delay_microseconds(1);
+    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 }
 
 void AP_InertialSensor_MPU6000::_fifo_enable()
 {
+    uint8_t user_ctrl = _master_i2c_enable?BIT_USER_CTRL_I2C_MST_EN:0;
+    _register_write(MPUREG_FIFO_EN, 0);
+    hal.scheduler->delay_microseconds(1);
+    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_FIFO_EN);
+    hal.scheduler->delay_microseconds(1);
     _register_write(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
                     BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN,
                     true);
-    _fifo_reset();
     hal.scheduler->delay(1);
 }
 
@@ -357,6 +366,10 @@ void AP_InertialSensor_MPU6000::start()
 
     // always use FIFO
     _fifo_enable();
+
+    // grab the used instances
+    _gyro_instance = _imu.register_gyro(1000, _dev->get_bus_id_devtype(DEVTYPE_GYR_MPU6000));
+    _accel_instance = _imu.register_accel(1000, _dev->get_bus_id_devtype(DEVTYPE_ACC_MPU6000));
 
     // setup ODR and on-sensor filtering
     _set_filter_register();
@@ -408,10 +421,6 @@ void AP_InertialSensor_MPU6000::start()
 
     _dev->get_semaphore()->give();
 
-    // grab the used instances
-    _gyro_instance = _imu.register_gyro(1000, _dev->get_bus_id_devtype(DEVTYPE_GYR_MPU6000));
-    _accel_instance = _imu.register_accel(1000, _dev->get_bus_id_devtype(DEVTYPE_ACC_MPU6000));
-
     // setup sensor rotations from probe()
     set_gyro_orientation(_gyro_instance, _rotation);
     set_accel_orientation(_accel_instance, _rotation);
@@ -421,13 +430,18 @@ void AP_InertialSensor_MPU6000::start()
     if (_fifo_buffer == nullptr) {
         AP_HAL::panic("MPU6000: Unable to allocate FIFO buffer");
     }
-    
-    // start the timer process to read samples
-    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, bool));
+
+    if (get_sample_rate_hz() >= 400) {
+        _use_accumulate = true;
+    } else {
+        // start the timer process to read samples
+        _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, bool));
+    }
 }
 
+
 /*
-  process any
+  publish any pending data
  */
 bool AP_InertialSensor_MPU6000::update()
 {
@@ -437,6 +451,17 @@ bool AP_InertialSensor_MPU6000::update()
     _publish_temperature(_accel_instance, _temp_filtered);
 
     return true;
+}
+
+/*
+  accumulate new samples
+ */
+void AP_InertialSensor_MPU6000::accumulate()
+{
+    if (_use_accumulate && _dev->get_semaphore()->take(0)) {
+        _poll_data();
+        _dev->get_semaphore()->give();
+    }
 }
 
 AuxiliaryBus *AP_InertialSensor_MPU6000::get_auxiliary_bus()
@@ -476,10 +501,10 @@ bool AP_InertialSensor_MPU6000::_poll_data()
     return true;
 }
 
-void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
+bool AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples, int16_t raw_temp)
 {
     for (uint8_t i = 0; i < n_samples; i++) {
-        uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
+        const uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
         Vector3f accel, gyro;
         bool fsync_set = false;
 
@@ -492,9 +517,13 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
                          -int16_val(data, 2));
         accel *= _accel_scale;
 
-        float temp = int16_val(data, 3);
-        temp = temp/340 + 36.53;
-        _last_temp = temp;
+        int16_t t2 = int16_val(data, 3);
+        if (abs(t2 - raw_temp) > 400) {
+            debug("temp reset %d %d", raw_temp, t2);
+            _fifo_reset();
+            return false;
+        }
+        float temp = t2/340.0 + 36.53;
         
         gyro = Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
@@ -509,85 +538,83 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 
         _temp_filtered = _temp_filter.apply(temp);
     }
+    return true;
 }
 
-void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples)
+/*
+  when doing fast sampling the sensor gives us 8k samples/second. Every 2nd accel sample is a duplicate.
+
+  To filter this we first apply a 1p low pass filter at 188Hz, then we
+  average over 8 samples to bring the data rate down to 1kHz. This
+  gives very good aliasing rejection at frequencies well above what
+  can be handled with 1kHz sample rates.
+ */
+bool AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples, int16_t raw_temp)
 {
-    float tsum = 0;
+    int32_t tsum = 0;
     const int32_t clip_limit = AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS / _accel_scale;
     bool clipped = false;
+    bool ret = true;
     
     for (uint8_t i = 0; i < n_samples; i++) {
-        uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
-        Vector3l a(int16_val(data, 1),
-                   int16_val(data, 0),
-                   -int16_val(data, 2));
-        if (abs(a.x) > clip_limit ||
-            abs(a.y) > clip_limit ||
-            abs(a.z) > clip_limit) {
-            clipped = true;
+        const uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
+
+        // use temperatue to detect FIFO corruption
+        int16_t t2 = int16_val(data, 3);
+        if (abs(t2 - raw_temp) > 400) {
+            debug("temp reset %d %d %d", raw_temp, t2, raw_temp - t2);
+            _fifo_reset();
+            ret = false;
+            break;
         }
-        Vector3l g(int16_val(data, 5),
+        tsum += t2;
+
+        if ((_accum.count & 1) == 0) {
+            // accel data is at 4kHz
+            Vector3f a(int16_val(data, 1),
+                       int16_val(data, 0),
+                       -int16_val(data, 2));
+            if (fabsf(a.x) > clip_limit ||
+                fabsf(a.y) > clip_limit ||
+                fabsf(a.z) > clip_limit) {
+                clipped = true;
+            }
+            _accum.accel += _accum.accel_filter.apply(a);
+        }
+
+        Vector3f g(int16_val(data, 5),
                    int16_val(data, 4),
                    -int16_val(data, 6));
 
-        _accum.accel += a;
-        _accum.gyro += g;
+        _accum.gyro += _accum.gyro_filter.apply(g);
         _accum.count++;
-
-        float temp = int16_val(data, 3);
-        temp = temp/340 + 36.53;
-        tsum += temp;
-        _last_temp = temp;
     }
 
     if (clipped) {
         increment_clip_count(_accel_instance);
     }
 
-    _temp_filtered = _temp_filter.apply(tsum / n_samples);
-
+    float temp = (tsum/n_samples)/340.0 + 36.53;
+    _temp_filtered = _temp_filter.apply(temp);
+    
     if (_accum.count == MPU6000_MAX_FIFO_SAMPLES) {
-        float ascale = _accel_scale / _accum.count;
-        Vector3f accel(_accum.accel.x*ascale, _accum.accel.y*ascale, _accum.accel.z*ascale);
+        float ascale = _accel_scale / (MPU6000_MAX_FIFO_SAMPLES/2);
+        _accum.accel *= ascale;
 
-        float gscale = GYRO_SCALE / _accum.count;
-        Vector3f gyro(_accum.gyro.x*gscale, _accum.gyro.y*gscale, _accum.gyro.z*gscale);
+        float gscale = GYRO_SCALE / MPU6000_MAX_FIFO_SAMPLES;
+        _accum.gyro *= gscale;
     
-        _rotate_and_correct_accel(_accel_instance, accel);
-        _rotate_and_correct_gyro(_gyro_instance, gyro);
+        _rotate_and_correct_accel(_accel_instance, _accum.accel);
+        _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
     
-        _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), false);
-        _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+        _notify_new_accel_raw_sample(_accel_instance, _accum.accel, AP_HAL::micros64(), false);
+        _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
 
         _accum.accel.zero();
         _accum.gyro.zero();
         _accum.count = 0;
     }
-
-}
-
-/*
- * check the FIFO integrity by cross-checking the temperature against
- * the last FIFO reading
- */
-void AP_InertialSensor_MPU6000::_check_temperature(void)
-{
-    uint8_t rx[2];
-    
-    if (!_block_read(MPUREG_TEMP_OUT_H, rx, 2)) {
-        return;
-    }
-    float temp = int16_val(rx, 0) / 340 + 36.53;
-
-    if (fabsf(_last_temp - temp) > 2 && !is_zero(_last_temp)) {
-        // a 2 degree change in one sample is a highly likely
-        // sign of a FIFO alignment error
-        printf("MPU6000: FIFO temperature reset: %.2f %.2f\n",
-               (double)temp, (double)_last_temp);
-        _last_temp = temp;
-        _fifo_reset();
-    }
+    return ret;
 }
 
 void AP_InertialSensor_MPU6000::_read_fifo()
@@ -595,9 +622,11 @@ void AP_InertialSensor_MPU6000::_read_fifo()
     uint8_t n_samples;
     uint16_t bytes_read;
     uint8_t *rx = _fifo_buffer;
+    int16_t raw_temp;
+    uint8_t trx[2];
+    bool need_reset = false;
 
     if (!_block_read(MPUREG_FIFO_COUNTH, rx, 2)) {
-        hal.console->printf("MPU60x0: error in fifo read\n");
         goto check_registers;
     }
 
@@ -609,6 +638,26 @@ void AP_InertialSensor_MPU6000::_read_fifo()
         goto check_registers;
     }
 
+    /*
+      fetch temperature in order to detect FIFO sync errors
+     */
+    if (!_block_read(MPUREG_TEMP_OUT_H, trx, 2)) {
+        return;
+    }
+    raw_temp = int16_val(trx, 0);
+
+    /*
+      testing has shown that if we have more than 32 samples in the
+      FIFO then some of those samples will be corrupt. It always is
+      the ones at the end of the FIFO, so clear those with a reset
+      once we've read the first 24. Reading 24 gives us the normal
+      number of samples for fast sampling at 400Hz
+     */
+    if (n_samples > 32) {
+        need_reset = true;
+        n_samples = 24;
+    }
+    
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, MPU6000_MAX_FIFO_SAMPLES - _accum.count);
         if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU6000_SAMPLE_SIZE)) {
@@ -617,23 +666,23 @@ void AP_InertialSensor_MPU6000::_read_fifo()
         }
 
         if (_fast_sampling) {
-            _accumulate_fast_sampling(rx, n);
+            if (!_accumulate_fast_sampling(rx, n, raw_temp)) {
+                debug("stop at %u of %u", n_samples, bytes_read/MPU6000_SAMPLE_SIZE);
+                break;
+            }
         } else {
-            _accumulate(rx, n);
+            if (!_accumulate(rx, n, raw_temp)) {
+                break;
+            }
         }
         n_samples -= n;
     }
 
-    if (bytes_read > MPU6000_SAMPLE_SIZE * 35) {
-        printf("MPU60x0: fifo reset\n");
+    if (need_reset) {
+        //debug("fifo reset n_samples %u", bytes_read/MPU6000_SAMPLE_SIZE);
         _fifo_reset();
     }
     
-    if (_temp_counter++ == 255) {
-        // check FIFO integrity every 0.25s
-        _check_temperature();
-    }
-
 check_registers:
     if (_reg_check_counter++ == 10) {
         _reg_check_counter = 0;
@@ -680,6 +729,9 @@ void AP_InertialSensor_MPU6000::_set_filter_register(void)
 
     if (enable_fast_sampling(_accel_instance)) {
         _fast_sampling = (_is_icm_device && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
+        if (_fast_sampling) {
+            hal.console->printf("MPU6000: enabled fast sampling\n");
+        }
     }
     
     if (_fast_sampling) {
@@ -689,6 +741,8 @@ void AP_InertialSensor_MPU6000::_set_filter_register(void)
         // limit to 1kHz if not on SPI
         config |= BITS_DLPF_CFG_188HZ;
     }
+
+    config |= MPUREG_CONFIG_FIFO_MODE_STOP;
     _register_write(MPUREG_CONFIG, config, true);
 
 	if (_is_icm_device) {
@@ -776,10 +830,6 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         if (_data_ready()) {
             break;
         }
-
-#if MPU6000_DEBUG
-        _dump_registers();
-#endif
     }
 
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
@@ -797,28 +847,6 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     
     return true;
 }
-
-#if MPU6000_DEBUG
-// dump all config registers - used for debug
-void AP_InertialSensor_MPU6000::_dump_registers(void)
-{
-    hal.console->println("MPU6000 registers");
-    if (!_dev->get_semaphore()->take(0)) {
-        return;
-    }
-
-    for (uint8_t reg=MPUREG_PRODUCT_ID; reg<=108; reg++) {
-        uint8_t v = _register_read(reg);
-        hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
-        if ((reg - (MPUREG_PRODUCT_ID-1)) % 16 == 0) {
-            hal.console->println();
-        }
-    }
-    hal.console->println();
-
-    _dev->get_semaphore()->give();
-}
-#endif
 
 AP_MPU6000_AuxiliaryBusSlave::AP_MPU6000_AuxiliaryBusSlave(AuxiliaryBus &bus, uint8_t addr,
                                                          uint8_t instance)
