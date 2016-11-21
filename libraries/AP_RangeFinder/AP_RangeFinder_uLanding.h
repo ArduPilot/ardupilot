@@ -27,5 +27,3 @@ private:
     uint8_t linebuf[10];
     uint8_t linebuf_len = 0;
 };
-
-

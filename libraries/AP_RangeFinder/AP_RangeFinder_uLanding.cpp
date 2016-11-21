@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -63,29 +62,28 @@ bool AP_RangeFinder_uLanding::get_reading(uint16_t &reading_cm)
     while (nbytes-- > 0) {
         uint8_t c = uart->read();
         // ok, we have located start byte
-        if ( c == 72 && index ==0 ) {
+        if (c == 72 && index == 0) {
             linebuf_len = 0;
             index       = 1;
         }
         // now it is ready to decode index information
-        if ( index == 1 ){
-        	linebuf[linebuf_len] = c;
-        	linebuf_len ++;
-        	if ( linebuf_len == 3 ){
-        		index = 0;
-        		sum += ( linebuf[2]&0x7F ) *128 + ( linebuf[1]&0x7F );
-        		linebuf_len = 0;
-        		count ++;
-        	}
+        if (index == 1) {
+            linebuf[linebuf_len] = c;
+            linebuf_len ++;
+            if (linebuf_len == 3) {
+                index = 0;
+                sum += (linebuf[2]&0x7F) *128 + (linebuf[1]&0x7F);
+                linebuf_len = 0;
+                count ++;
+            }
         }
-
     }
 
     if (count == 0) {
         return false;
     }
-    //reading_cm = 4.5 * sum / count;
-    reading_cm = 2.5 * sum / count;
+
+    reading_cm = 2.5f * sum / count;
     return true;
 }
 
