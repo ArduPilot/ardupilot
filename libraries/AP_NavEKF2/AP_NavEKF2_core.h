@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   24 state EKF based on https://github.com/priseborough/InertialNav
 
@@ -39,6 +38,11 @@
 #define MASK_GPS_POS_DRIFT  (1<<5)
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
+
+// active height source
+#define HGT_SOURCE_BARO 0
+#define HGT_SOURCE_RNG  1
+#define HGT_SOURCE_GPS  2
 
 class AP_AHRS;
 
@@ -183,7 +187,8 @@ public:
     // rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
     // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
-    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas);
+    // posOffset is the XYZ flow sensor position in the body frame in m
+    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
 
     // return data for debugging optical flow fusion
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
@@ -195,6 +200,11 @@ public:
     // called by vehicle code to specify that a touchdown is expected to happen
     // causes the EKF to compensate for expected barometer errors due to ground effect
     void setTouchdownExpected(bool val);
+
+    // Set to true if the terrain underneath is stable enough to be used as a height reference
+    // in combination with a range finder. Set to false if the terrain underneath the vehicle
+    // cannot be used as a height reference
+    void setTerrainHgtStable(bool val);
 
     /*
     return the filter fault status as a bitmasked integer
@@ -266,6 +276,9 @@ public:
     // publish output observer angular, velocity and position tracking error
     void getOutputTrackingError(Vector3f &error) const;
 
+    // get the IMU index
+    uint8_t getIMUIndex(void) const { return imu_index; }
+    
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF2 *frontend;
@@ -361,6 +374,7 @@ private:
         float       hgt;         // 2
         Vector3f    vel;         // 3..5
         uint32_t    time_ms;     // 6
+        uint8_t     sensor_idx;  // 7..9
     };
 
     struct mag_elements {
@@ -376,6 +390,7 @@ private:
     struct range_elements {
         float       rng;         // 0
         uint32_t    time_ms;     // 1
+        uint8_t     sensor_idx;  // 2
     };
 
     struct tas_elements {
@@ -387,6 +402,8 @@ private:
         Vector2f    flowRadXY;      // 0..1
         Vector2f    flowRadXYcomp;  // 2..3
         uint32_t    time_ms;        // 4
+        Vector3f    bodyRadXYZ;     //8..10
+        const Vector3f *body_offset;// 5..7
     };
 
     // update the navigation filter status
@@ -624,6 +641,9 @@ private:
     // calculate a filtered offset between baro height measurement and EKF height estimate
     void calcFiltBaroOffset();
 
+    // calculate a filtered offset between GPS height measurement and EKF height estimate
+    void calcFiltGpsHgtOffset();
+
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
 
@@ -737,6 +757,7 @@ private:
     bool validOrigin;               // true when the EKF origin is valid
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     float gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
+    float gpsHgtAccuracy;           // estimated height accuracy in m returned by the GPS receiver
     uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
     uint32_t lastGpsAidBadTime_ms;  // time in msec gps aiding was last detected to be bad
     float posDownAtTakeoff;         // flight vehicle vertical position sampled at transition from on-ground to in-air and used as a reference (m)
@@ -809,8 +830,11 @@ private:
     Vector3f bodyMagFieldVar;       // XYZ body mag field variances for last learned field (mGauss^2)
     bool delAngBiasLearned;         // true when the gyro bias has been learned
     nav_filter_status filterStatus; // contains the status of various filter outputs
-
-    Vector3f outputTrackError;
+    float ekfOriginHgtVar;          // Variance of the the EKF WGS-84 origin height estimate (m^2)
+    uint32_t lastOriginHgtTime_ms;  // last time the ekf's WGS-84 origin height was corrected
+    Vector3f outputTrackError;      // attitude (rad), velocity (m/s) and position (m) tracking error magnitudes from the output observer
+    Vector3f velOffsetNED;          // This adds to the earth frame velocity estimate at the IMU to give the velocity at the body origin (m/s)
+    Vector3f posOffsetNED;          // This adds to the earth frame position estimate at the IMU to give the position at the body origin (m)
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
@@ -853,8 +877,6 @@ private:
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
-    Vector3f omegaAcrossFlowTime;   // body angular rates averaged across the optical flow sample period
-    Matrix3f Tnb_flow;              // transformation matrix from nav to body axes at the middle of the optical flow sample period
     Matrix3f Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
     Vector2 varInnovOptFlow;        // optical flow innovations variances (rad/sec)^2
     Vector2 innovOptFlow;           // optical flow LOS innovations (rad/sec)
@@ -887,14 +909,21 @@ private:
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     Vector3f delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     float delTimeOF;                // time that delAngBodyOF is summed across
+    Vector3f accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
+
 
     // Range finder
-    float baroHgtOffset;            // offset applied when baro height used as a backup height reference if range-finder fails
-    float rngOnGnd;                 // Expected range finder reading in metres when vehicle is on ground
-    float storedRngMeas[3];             // Ringbuffer of stored range measurements
-    uint32_t storedRngMeasTime_ms[3];   // Ringbuffer of stored range measurement times
-    uint32_t lastRngMeasTime_ms;        // Timestamp of last range measurement
-    uint8_t rngMeasIndex;               // Current range measurement ringbuffer index
+    float baroHgtOffset;                    // offset applied when when switching to use of Baro height
+    float rngOnGnd;                         // Expected range finder reading in metres when vehicle is on ground
+    float storedRngMeas[2][3];              // Ringbuffer of stored range measurements for dual range sensors
+    uint32_t storedRngMeasTime_ms[2][3];    // Ringbuffers of stored range measurement times for dual range sensors
+    uint32_t lastRngMeasTime_ms;            // Timestamp of last range measurement
+    uint8_t rngMeasIndex[2];                // Current range measurement ringbuffer index for dual range sensors
+    bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
+    uint32_t terrainHgtStableSet_ms;        // system time at which terrainHgtStable was set
+
+    // height source selection logic
+    uint8_t activeHgtSource;    // integer defining active height source
 
     // Movement detector
     bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected

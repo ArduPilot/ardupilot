@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Rover.h"
 
 void Rover::read_control_switch()
@@ -51,12 +49,12 @@ void Rover::read_control_switch()
 uint8_t Rover::readSwitch(void){
     uint16_t pulsewidth = hal.rcin->read(g.mode_channel - 1);
 	if (pulsewidth <= 900 || pulsewidth >= 2200) 	return 255;	// This is an error condition
-	if (pulsewidth > 1230 && pulsewidth <= 1360) 	return 1;
-	if (pulsewidth > 1360 && pulsewidth <= 1490) 	return 2;
-	if (pulsewidth > 1490 && pulsewidth <= 1620) 	return 3;
-	if (pulsewidth > 1620 && pulsewidth <= 1749) 	return 4;	// Software Manual
-	if (pulsewidth >= 1750) 						return 5;	// Hardware Manual
-	return 0;
+	if (pulsewidth <= 1230)     return 0;
+	if (pulsewidth <= 1360) 	return 1;
+	if (pulsewidth <= 1490) 	return 2;
+	if (pulsewidth <= 1620) 	return 3;
+	if (pulsewidth <= 1749) 	return 4;	// Software Manual
+	return 5;	// Hardware Manual
 }
 
 void Rover::reset_control_switch()
@@ -121,7 +119,7 @@ bool Rover::motor_active()
 {
     // Check if armed and throttle is not neutral
     if (hal.util->get_soft_armed()) {
-        if (!channel_throttle->in_trim_dz()) {
+        if (channel_throttle->get_servo_out() != channel_throttle->get_radio_trim()) {
             return true;
         }
     }

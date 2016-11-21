@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -32,10 +31,6 @@
 /// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
 /// change in your local copy of APM_Config.h.
 ///
-
-// Just so that it's completely clear...
-#define ENABLED			1
-#define DISABLED		0
 
 //////////////////////////////////////////////////////////////////////////////
 // sensor types
@@ -191,21 +186,7 @@
 // AIRSPEED_CRUISE
 //
 #ifndef SPEED_CRUISE
-# define SPEED_CRUISE		3 // 3 m/s
-#endif
-
-#ifndef GSBOOST
-# define GSBOOST		0
-#endif
-#ifndef GSBOOST
-# define GSBOOST		0
-#endif
-#ifndef NUDGE_OFFSET
-# define NUDGE_OFFSET		0
-#endif
-
-#ifndef E_GLIDER
-# define E_GLIDER		ENABLED
+# define SPEED_CRUISE		5 // in m/s
 #endif
 
 #ifndef TURN_GAIN
@@ -244,18 +225,6 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// Crosstrack compensation
-//
-#ifndef XTRACK_GAIN
-# define XTRACK_GAIN          1 // deg/m
-#endif
-#ifndef XTRACK_ENTRY_ANGLE
-# define XTRACK_ENTRY_ANGLE   50 // deg
-#endif
-# define XTRACK_GAIN_SCALED XTRACK_GAIN*100
-# define XTRACK_ENTRY_ANGLE_CENTIDEGREE XTRACK_ENTRY_ANGLE*100
-
-//////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
 #ifndef LOGGING_ENABLED
@@ -268,12 +237,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
-
-#ifndef STANDARD_SPEED
-# define STANDARD_SPEED		3.0
-#define STANDARD_SPEED_SQUARED (STANDARD_SPEED * STANDARD_SPEED)
-#endif
-#define STANDARD_THROTTLE_SQUARED (THROTTLE_CRUISE * THROTTLE_CRUISE)
 
 // use this to enable servos in HIL mode
 #ifndef HIL_SERVOS
@@ -291,12 +254,4 @@
 // fence breach)
 #ifndef RESET_SWITCH_CHAN_PWM
 # define RESET_SWITCH_CHAN_PWM 1750
-#endif
-
-#ifndef BOOSTER
-# define BOOSTER              2    // booster factor x1 = 1 or x2 = 2
-#endif
-
-#ifndef SONAR_ENABLED
-# define SONAR_ENABLED       DISABLED
 #endif

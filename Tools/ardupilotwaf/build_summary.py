@@ -142,20 +142,20 @@ def _build_summary(bld):
         filtered_taskgens.append(tg)
     taskgens = filtered_taskgens
 
-    l = bld.size_summary(nodes)
-    for i, data in enumerate(l):
-        taskgens[i].build_summary.update(data)
+    if nodes:
+        l = bld.size_summary(nodes)
+        for i, data in enumerate(l):
+            taskgens[i].build_summary.update(data)
 
-    summary_data_list = [tg.build_summary for tg in taskgens]
-    print_table(summary_data_list, bld.env.BUILD_SUMMARY_HEADER)
+        summary_data_list = [tg.build_summary for tg in taskgens]
+        print_table(summary_data_list, bld.env.BUILD_SUMMARY_HEADER)
 
-    if targets_suppressed:
-        Logs.info('')
-        Logs.pprint(
-            'NORMAL',
-            'Note: Some targets were suppressed. Use --summary-all if you ' +
-            'want information of all targets.',
-        )
+        if targets_suppressed:
+            Logs.info('')
+            Logs.pprint(
+                'NORMAL',
+                'Note: Some targets were suppressed. Use --summary-all if you want information of all targets.',
+            )
 
     if hasattr(bld, 'extra_build_summary'):
         bld.extra_build_summary(bld, sys.modules[__name__])
@@ -195,6 +195,10 @@ def size_summary(bld, nodes):
 
     return l
 
+@conf
+def build_summary_post_fun(bld):
+    bld.add_post_fun(_build_summary)
+
 @feature('cprogram', 'cxxprogram')
 @before_method('process_rule')
 def init_summary_data(self):
@@ -221,6 +225,3 @@ def configure(cfg):
             'size_bss',
             'size_total',
         ]
-
-def build(bld):
-    bld.add_post_fun(_build_summary)

@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 /*
@@ -8,6 +6,7 @@
 
 #define CRASH_DETECTION_DELAY_MS            500
 #define IS_FLYING_IMPACT_TIMER_MS           3000
+#define GPS_IS_FLYING_SPEED_CMS             150
 
 /*
   Do we think we are flying?
@@ -19,7 +18,7 @@ void Plane::update_is_flying_5Hz(void)
     bool is_flying_bool;
     uint32_t now_ms = AP_HAL::millis();
 
-    uint32_t ground_speed_thresh_cm = (g.min_gndspeed_cm > 0) ? ((uint32_t)(g.min_gndspeed_cm*0.9f)) : 500;
+    uint32_t ground_speed_thresh_cm = (g.min_gndspeed_cm > 0) ? ((uint32_t)(g.min_gndspeed_cm*0.9f)) : GPS_IS_FLYING_SPEED_CMS;
     bool gps_confirmed_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
                                     (gps.ground_speed_cm() >= ground_speed_thresh_cm);
 
@@ -154,6 +153,10 @@ void Plane::update_is_flying_5Hz(void)
     }
     previous_is_flying = new_is_flying;
     adsb.set_is_flying(new_is_flying);
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.set_is_flying(new_is_flying);
+#endif
+    g2.stats.set_flying(new_is_flying);
 
     crash_detection_update();
 

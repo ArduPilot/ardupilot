@@ -8,9 +8,9 @@ class PX4::NSHShellStream : public AP_HAL::Stream {
 public:
     size_t write(uint8_t);
     size_t write(const uint8_t *buffer, size_t size);
-    int16_t read();
-    int16_t available();
-    int16_t txspace();
+    int16_t read() override;
+    uint32_t available() override;
+    uint32_t txspace() override;
 private:
     int shell_stdin = -1;
     int shell_stdout = -1;

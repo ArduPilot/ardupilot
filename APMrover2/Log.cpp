@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Rover.h"
 #include "version.h"
 
@@ -180,7 +178,7 @@ void Rover::Log_Write_Performance()
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
         gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
         gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),
-        i2c_lockup_count: hal.i2c->lockup_count(),
+        i2c_lockup_count: 0,
         ins_error_count  : ins.error_count()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));

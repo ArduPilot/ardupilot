@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -107,6 +106,14 @@ struct Vector2
     // check if all elements are zero
     bool is_zero(void) const { return (fabsf(x) < FLT_EPSILON) && (fabsf(y) < FLT_EPSILON); }
 
+    const T & operator[](uint8_t i) const {
+        const T *_v = &x;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 2);
+#endif
+        return _v[i];
+    }
+
     // zero the vector
     void zero()
     {
@@ -153,6 +160,60 @@ struct Vector2
     {
         return v * (*this * v)/(v*v);
     }
+
+    // given a position p1 and a velocity v1 produce a vector
+    // perpendicular to v1 maximising distance from p1
+    static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1)
+    {
+        Vector2<T> perpendicular1 = Vector2<T>(-v1[1], v1[0]);
+        Vector2<T> perpendicular2 = Vector2<T>(v1[1], -v1[0]);
+        T d1 = perpendicular1 * pos_delta;
+        T d2 = perpendicular2 * pos_delta;
+        if (d1 > d2) {
+            return perpendicular1;
+        }
+        return perpendicular2;
+    }
+
+    /*
+     * Returns the point closest to p on the line segment (v,w).
+     *
+     * Comments and implementation taken from
+     * http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+     */
+    static Vector2<T> closest_point(const Vector2<T> &p, const Vector2<T> &v, const Vector2<T> &w)
+    {
+        // length squared of line segment
+        const float l2 = (v - w).length_squared();
+        if (l2 < FLT_EPSILON) {
+            // v == w case
+            return v;
+        }
+        // Consider the line extending the segment, parameterized as v + t (w - v).
+        // We find projection of point p onto the line.
+        // It falls where t = [(p-v) . (w-v)] / |w-v|^2
+        // We clamp t from [0,1] to handle points outside the segment vw.
+        const float t = ((p - v) * (w - v)) / l2;
+        if (t <= 0) {
+            return v;
+        } else if (t >= 1) {
+            return w;
+        } else {
+            return v + (w - v)*t;
+        }
+    }
+
+    // w defines a line segment from the origin
+    // p is a point
+    // returns the closest distance between the radial and the point
+    static float closest_distance_between_radial_and_point(const Vector2<T> &w,
+                                                           const Vector2<T> &p)
+    {
+        const Vector2<T> closest = closest_point(p, Vector2<T>(0,0), w);
+        const Vector2<T> delta = closest - p;
+        return delta.length();
+    }
+
 };
 
 typedef Vector2<int16_t>        Vector2i;

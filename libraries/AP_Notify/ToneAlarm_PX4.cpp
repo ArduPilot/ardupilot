@@ -18,7 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "ToneAlarm_PX4.h"
 #include "AP_Notify.h"
 
@@ -348,5 +348,20 @@ void ToneAlarm_PX4::update()
         AP_Notify::events.tune_error = 0;
     }
 }
+
+
+/*
+  handle a PLAY_TUNE message
+*/
+void ToneAlarm_PX4::handle_play_tune(mavlink_message_t *msg)
+{
+    // decode mavlink message
+    mavlink_play_tune_t packet;
+    
+    mavlink_msg_play_tune_decode(msg, &packet);
+
+    play_string(packet.tune);
+}
+
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

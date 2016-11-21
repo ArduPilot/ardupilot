@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 #include "version.h"
 
@@ -319,7 +317,9 @@ void Copter::Log_Write_Control_Tuning()
     // get terrain altitude
     float terr_alt = 0.0f;
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    terrain.height_above_terrain(terr_alt, true);
+    if (terrain.height_above_terrain(terr_alt, true)) {
+        terr_alt = 0.0f;
+    }
 #endif
 
     struct log_Control_Tuning pkt = {
@@ -363,7 +363,7 @@ void Copter::Log_Write_Performance()
         num_loops        : perf_info_get_num_loops(),
         max_time         : perf_info_get_max_time(),
         pm_test          : pmTest1,
-        i2c_lockup_count : hal.i2c->lockup_count(),
+        i2c_lockup_count : 0,
         ins_error_count  : ins.error_count(),
         log_dropped      : DataFlash.num_dropped() - perf_info_get_num_dropped(),
     };
@@ -649,12 +649,11 @@ struct PACKED log_Precland {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t healthy;
-    float bf_angle_x;
-    float bf_angle_y;
-    float ef_angle_x;
-    float ef_angle_y;
+    uint8_t target_acquired;
     float pos_x;
     float pos_y;
+    float vel_x;
+    float vel_y;
 };
 
 // Write an optical flow packet
@@ -666,19 +665,20 @@ void Copter::Log_Write_Precland()
         return;
     }
 
-    const Vector2f &bf_angle = precland.last_bf_angle_to_target();
-    const Vector2f &ef_angle = precland.last_ef_angle_to_target();
-    const Vector3f &target_pos_ofs = precland.last_target_pos_offset();
+    Vector2f target_pos_rel = Vector2f(0.0f,0.0f);
+    Vector2f target_vel_rel = Vector2f(0.0f,0.0f);
+    precland.get_target_position_relative_cm(target_pos_rel);
+    precland.get_target_velocity_relative_cms(target_vel_rel);
+
     struct log_Precland pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
         time_us         : AP_HAL::micros64(),
         healthy         : precland.healthy(),
-        bf_angle_x      : degrees(bf_angle.x),
-        bf_angle_y      : degrees(bf_angle.y),
-        ef_angle_x      : degrees(ef_angle.x),
-        ef_angle_y      : degrees(ef_angle.y),
-        pos_x           : target_pos_ofs.x,
-        pos_y           : target_pos_ofs.y
+        target_acquired : precland.target_acquired(),
+        pos_x           : target_pos_rel.x,
+        pos_y           : target_pos_rel.y,
+        vel_x           : target_vel_rel.x,
+        vel_y           : target_vel_rel.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
  #endif     // PRECISION_LANDING == ENABLED
@@ -712,6 +712,91 @@ void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_tar
         vel_target_z    : vel_target.z
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+// precision landing logging
+struct PACKED log_Throw {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t stage;
+    float velocity;
+    float velocity_z;
+    float accel;
+    float ef_accel_z;
+    uint8_t throw_detect;
+    uint8_t attitude_ok;
+    uint8_t height_ok;
+    uint8_t pos_ok;
+};
+
+// Write a Throw mode details
+void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool pos_ok)
+{
+    struct log_Throw pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_THROW_MSG),
+        time_us         : AP_HAL::micros64(),
+        stage           : (uint8_t)stage,
+        velocity        : velocity,
+        velocity_z      : velocity_z,
+        accel           : accel,
+        ef_accel_z      : ef_accel_z,
+        throw_detect    : throw_detect,
+        attitude_ok     : attitude_ok,
+        height_ok       : height_ok,
+        pos_ok          : pos_ok
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+// proximity sensor logging
+struct PACKED log_Proximity {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t health;
+    float dist0;
+    float dist45;
+    float dist90;
+    float dist135;
+    float dist180;
+    float dist225;
+    float dist270;
+    float dist315;
+};
+
+// Write proximity sensor distances
+void Copter::Log_Write_Proximity()
+{
+#if PROXIMITY_ENABLED == ENABLED
+    // exit immediately if not enabled
+    if (g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+        return;
+    }
+
+    float sector_distance[8] = {0,0,0,0,0,0,0,0};
+    g2.proximity.get_horizontal_distance(0, sector_distance[0]);
+    g2.proximity.get_horizontal_distance(45, sector_distance[1]);
+    g2.proximity.get_horizontal_distance(90, sector_distance[2]);
+    g2.proximity.get_horizontal_distance(135, sector_distance[3]);
+    g2.proximity.get_horizontal_distance(180, sector_distance[4]);
+    g2.proximity.get_horizontal_distance(225, sector_distance[5]);
+    g2.proximity.get_horizontal_distance(270, sector_distance[6]);
+    g2.proximity.get_horizontal_distance(315, sector_distance[7]);
+
+    struct log_Proximity pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
+        time_us         : AP_HAL::micros64(),
+        health          : (uint8_t)g2.proximity.get_status(),
+        dist0           : sector_distance[0],
+        dist45          : sector_distance[1],
+        dist90          : sector_distance[2],
+        dist135         : sector_distance[3],
+        dist180         : sector_distance[4],
+        dist225         : sector_distance[5],
+        dist270         : sector_distance[6],
+        dist315         : sector_distance[7]
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+#endif
 }
 
 const struct LogStructure Copter::log_structure[] = {
@@ -751,9 +836,13 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_HELI_MSG, sizeof(log_Heli),
       "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM" },
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
-      "PL",    "QBffffff",    "TimeUS,Heal,bX,bY,eX,eY,pX,pY" },
+      "PL",    "QBBffff",    "TimeUS,Heal,TAcq,pX,pY,vX,vY" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
+    { LOG_THROW_MSG, sizeof(log_Throw),
+      "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk" },
+    { LOG_PROXIMITY_MSG, sizeof(log_Proximity),
+      "PRX",   "QBffffffff",  "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315" },
 };
 
 #if CLI_ENABLED == ENABLED
@@ -785,11 +874,15 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
 // start a new log
 void Copter::start_logging() 
 {
-    if (g.log_bitmask != 0) {
+    if (g.log_bitmask != 0 && !in_log_download) {
         if (!ap.logging_started) {
             ap.logging_started = true;
             DataFlash.set_mission(&mission);
             DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
+            DataFlash.StartNewLog();
+        } else if (!DataFlash.logging_started()) {
+            // dataflash may have stopped logging - when we get_log_data,
+            // for example.  Try to restart:
             DataFlash.StartNewLog();
         }
         // enable writes

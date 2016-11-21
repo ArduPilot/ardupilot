@@ -1,11 +1,14 @@
 #pragma once
 
 #include <AP_HAL/utility/OwnPtr.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 #include "AP_HAL_Linux.h"
 #include "SerialDevice.h"
 
-class Linux::UARTDriver : public AP_HAL::UARTDriver {
+namespace Linux {
+
+class UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(bool default_console);
 
@@ -23,9 +26,9 @@ public:
     bool tx_pending();
 
     /* Linux implementations of Stream virtual methods */
-    int16_t available();
-    int16_t txspace();
-    int16_t read();
+    uint32_t available() override;
+    uint32_t txspace() override;
+    int16_t read() override;
 
     /* Linux implementations of Print virtual methods */
     size_t write(uint8_t c);
@@ -54,34 +57,26 @@ private:
     uint16_t _base_port;
     char *_ip;
     char *_flag;
-    bool _connected; // true if a client has connected         
+    bool _connected; // true if a client has connected
     bool _packetise; // true if writes should try to be on mavlink boundaries
 
     void _allocate_buffers(uint16_t rxS, uint16_t txS);
     void _deallocate_buffers();
 
     AP_HAL::OwnPtr<SerialDevice> _parseDevicePath(const char *arg);
-    uint64_t _last_write_time;    
+    uint64_t _last_write_time;
 
 protected:
     const char *device_path;
     volatile bool _initialised;
+
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
-    uint8_t *_readbuf;
-    uint16_t _readbuf_size;
-
-    // _head is where the next available data is. _tail is where new
-    // data is put
-    volatile uint16_t _readbuf_head;
-    volatile uint16_t _readbuf_tail;
-
-    uint8_t *_writebuf;
-    uint16_t _writebuf_size;
-    volatile uint16_t _writebuf_head;
-    volatile uint16_t _writebuf_tail;
+    ByteBuffer _readbuf{0};
+    ByteBuffer _writebuf{0};
 
     virtual int _write_fd(const uint8_t *buf, uint16_t n);
     virtual int _read_fd(uint8_t *buf, uint16_t n);
-
 };
+
+}

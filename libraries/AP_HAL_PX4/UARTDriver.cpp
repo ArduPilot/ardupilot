@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -16,7 +14,6 @@
 #include <termios.h>
 #include <drivers/drv_hrt.h>
 #include <assert.h>
-#include <AP_HAL/utility/RingBuffer.h>
 #include "GPIO.h"
 
 using namespace PX4;
@@ -42,7 +39,7 @@ extern const AP_HAL::HAL& hal;
   this UART driver maps to a serial device in /dev
  */
 
-void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
+void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (strcmp(_devpath, "/dev/null") == 0) {
         // leave uninitialised
@@ -72,19 +69,14 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
       thrashing of the heap once we are up. The ttyACM0 driver may not
       connect for some time after boot
      */
-	if (rxS != 0 && rxS != _readbuf_size) {
+    if (rxS != 0 && rxS != _readbuf.get_size()) {
         _initialised = false;
         while (_in_timer) {
             hal.scheduler->delay(1);
         }
-		_readbuf_size = rxS;
-		if (_readbuf != NULL) {
-			free(_readbuf);
-		}
-		_readbuf = (uint8_t *)malloc(_readbuf_size);
-		_readbuf_head = 0;
-		_readbuf_tail = 0;
-	}
+
+        _readbuf.set_size(rxS);
+    }
 
     if (b != 0) {
         _baudrate = b;
@@ -93,19 +85,13 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     /*
       allocate the write buffer
      */
-	if (txS != 0 && txS != _writebuf_size) {
+    if (txS != 0 && txS != _writebuf.get_size()) {
         _initialised = false;
         while (_in_timer) {
             hal.scheduler->delay(1);
         }
-		_writebuf_size = txS;
-		if (_writebuf != NULL) {
-			free(_writebuf);
-		}
-		_writebuf = (uint8_t *)malloc(_writebuf_size+16);
-		_writebuf_head = 0;
-		_writebuf_tail = 0;
-	}
+        _writebuf.set_size(txS);
+    }
 
 	if (_fd == -1) {
         _fd = open(_devpath, O_RDWR);
@@ -132,18 +118,17 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		tcsetattr(_fd, TCSANOW, &t);
 	}
 
-    if (_writebuf_size != 0 && _readbuf_size != 0 && _fd != -1) {
+    if (_writebuf.get_size() && _readbuf.get_size() && _fd != -1) {
         if (!_initialised) {
             if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
                 ((PX4GPIO *)hal.gpio)->set_usb_connected();
             }
-            ::printf("initialised %s OK %u %u\n", _devpath, 
-                     (unsigned)_writebuf_size, (unsigned)_readbuf_size);
+            ::printf("initialised %s OK %u %u\n", _devpath,
+                     (unsigned)_writebuf.get_size(), (unsigned)_readbuf.get_size());
         }
         _initialised = true;
     }
     _uart_owner_pid = getpid();
-
 }
 
 void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
@@ -168,7 +153,7 @@ void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
     _flow_control = fcontrol;
 }
 
-void PX4UARTDriver::begin(uint32_t b) 
+void PX4UARTDriver::begin(uint32_t b)
 {
 	begin(b, 0, 0);
 }
@@ -195,7 +180,7 @@ void PX4UARTDriver::try_initialise(void)
 }
 
 
-void PX4UARTDriver::end() 
+void PX4UARTDriver::end()
 {
     _initialised = false;
     while (_in_timer) hal.scheduler->delay(1);
@@ -203,30 +188,20 @@ void PX4UARTDriver::end()
         close(_fd);
         _fd = -1;
     }
-    if (_readbuf) {
-        free(_readbuf);
-        _readbuf = NULL;
-    }
-    if (_writebuf) {
-        free(_writebuf);
-        _writebuf = NULL;
-    }
-    _readbuf_size = _writebuf_size = 0;
-    _writebuf_head = 0;
-    _writebuf_tail = 0;
-    _readbuf_head = 0;
-    _readbuf_tail = 0;
+
+    _readbuf.set_size(0);
+    _writebuf.set_size(0);
 }
 
 void PX4UARTDriver::flush() {}
 
-bool PX4UARTDriver::is_initialized() 
-{ 
+bool PX4UARTDriver::is_initialized()
+{
     try_initialise();
-    return _initialised; 
+    return _initialised;
 }
 
-void PX4UARTDriver::set_blocking_writes(bool blocking) 
+void PX4UARTDriver::set_blocking_writes(bool blocking)
 {
     _nonblocking_writes = !blocking;
 }
@@ -236,35 +211,34 @@ bool PX4UARTDriver::tx_pending() { return false; }
 /*
   return number of bytes available to be read from the buffer
  */
-int16_t PX4UARTDriver::available() 
-{ 
-	if (!_initialised) {
+uint32_t PX4UARTDriver::available()
+{
+    if (!_initialised) {
         try_initialise();
-		return 0;
-	}
-    uint16_t _tail;
-    return BUF_AVAILABLE(_readbuf);
+        return 0;
+    }
+
+    return _readbuf.available();
 }
 
 /*
   return number of bytes that can be added to the write buffer
  */
-int16_t PX4UARTDriver::txspace() 
-{ 
-	if (!_initialised) {
+uint32_t PX4UARTDriver::txspace()
+{
+    if (!_initialised) {
         try_initialise();
-		return 0;
-	}
-    uint16_t _head;
-    return BUF_SPACE(_writebuf);
+        return 0;
+    }
+
+    return _writebuf.space();
 }
 
 /*
   read one byte from the read buffer
  */
-int16_t PX4UARTDriver::read() 
-{ 
-	uint8_t c;
+int16_t PX4UARTDriver::read()
+{
     if (_uart_owner_pid != getpid()){
         return -1;
     }
@@ -272,22 +246,20 @@ int16_t PX4UARTDriver::read()
         try_initialise();
         return -1;
     }
-	if (_readbuf == NULL) {
-		return -1;
-	}
-    if (BUF_EMPTY(_readbuf)) {
+
+    uint8_t byte;
+    if (!_readbuf.read_byte(&byte)) {
         return -1;
     }
-    c = _readbuf[_readbuf_head];
-    BUF_ADVANCEHEAD(_readbuf, 1);
-	return c;
+
+    return byte;
 }
 
-/* 
+/*
    write one byte to the buffer
  */
-size_t PX4UARTDriver::write(uint8_t c) 
-{ 
+size_t PX4UARTDriver::write(uint8_t c)
+{
     if (_uart_owner_pid != getpid()){
         return 0;
     }
@@ -295,17 +267,14 @@ size_t PX4UARTDriver::write(uint8_t c)
         try_initialise();
         return 0;
     }
-    uint16_t _head;
 
-    while (BUF_SPACE(_writebuf) == 0) {
+    while (_writebuf.space() == 0) {
         if (_nonblocking_writes) {
             return 0;
         }
         hal.scheduler->delay(1);
     }
-    _writebuf[_writebuf_tail] = c;
-    BUF_ADVANCETAIL(_writebuf, 1);
-    return 1;
+    return _writebuf.write(&c, 1);
 }
 
 /*
@@ -333,36 +302,7 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
-    uint16_t _head, space;
-    space = BUF_SPACE(_writebuf);
-    if (space == 0) {
-        return 0;
-    }
-    if (size > space) {
-        size = space;
-    }
-    if (_writebuf_tail < _head) {
-        // perform as single memcpy
-        assert(_writebuf_tail+size <= _writebuf_size);
-        memcpy(&_writebuf[_writebuf_tail], buffer, size);
-        BUF_ADVANCETAIL(_writebuf, size);
-        return size;
-    }
-
-    // perform as two memcpy calls
-    uint16_t n = _writebuf_size - _writebuf_tail;
-    if (n > size) n = size;
-    assert(_writebuf_tail+n <= _writebuf_size);
-    memcpy(&_writebuf[_writebuf_tail], buffer, n);
-    BUF_ADVANCETAIL(_writebuf, n);
-    buffer += n;
-    n = size - n;
-    if (n > 0) {
-        assert(_writebuf_tail+n <= _writebuf_size);
-        memcpy(&_writebuf[_writebuf_tail], buffer, n);
-        BUF_ADVANCETAIL(_writebuf, n);
-    }        
-    return size;
+    return _writebuf.write(buffer, size);
 }
 
 /*
@@ -382,7 +322,7 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
     // and no data has been removed from the buffer since flow control turned on
     // and more than .5 seconds elapsed after writing a total of > 5 characters
     //
-    
+
     int nwrite = 0;
 
     if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
@@ -396,7 +336,7 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
                 if (_os_start_auto_space - nwrite + 1 >= _total_written &&
                     (AP_HAL::micros64() - _first_write_time) > 500*1000UL) {
                     // it doesn't look like hw flow control is working
-                    ::printf("disabling flow control on %s _total_written=%u\n", 
+                    ::printf("disabling flow control on %s _total_written=%u\n",
                              _devpath, (unsigned)_total_written);
                     set_flow_control(FLOW_CONTROL_DISABLE);
                 }
@@ -411,7 +351,6 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
     }
 
     if (ret > 0) {
-        BUF_ADVANCEHEAD(_writebuf, ret);
         _last_write_time = AP_HAL::micros64();
         _total_written += ret;
         if (! _first_write_time && _total_written > 5) {
@@ -422,34 +361,13 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 
     if (AP_HAL::micros64() - _last_write_time > 2000 &&
         _flow_control == FLOW_CONTROL_DISABLE) {
-#if 0
-        // this trick is disabled for now, as it sometimes blocks on
-        // re-opening the ttyACM0 port, which would cause a crash
-        if (AP_HAL::micros64() - _last_write_time > 2000000) {
-            // we haven't done a successful write for 2 seconds - try
-            // reopening the port        
-            _initialised = false;
-            ::close(_fd);
-            _fd = ::open(_devpath, O_RDWR);
-            if (_fd == -1) {
-                fprintf(stdout, "Failed to reopen UART device %s - %s\n",
-                        _devpath, strerror(errno));
-                // leave it uninitialised
-                return n;
-            }
-            
-            _last_write_time = AP_HAL::micros64();
-            _initialised = true;
-        }
-#else
         _last_write_time = AP_HAL::micros64();
-#endif
-        // we haven't done a successful write for 2ms, which means the 
+
+        // we haven't done a successful write for 2ms, which means the
         // port is running at less than 500 bytes/sec. Start
         // discarding bytes, even if this is a blocking port. This
         // prevents the ttyACM0 port blocking startup if the endpoint
         // is not connected
-        BUF_ADVANCEHEAD(_writebuf, n);
         return n;
     }
     return ret;
@@ -474,7 +392,6 @@ int PX4UARTDriver::_read_fd(uint8_t *buf, uint16_t n)
         }
     }
     if (ret > 0) {
-        BUF_ADVANCETAIL(_readbuf, ret);
         _total_read += ret;
     }
     return ret;
@@ -484,11 +401,12 @@ int PX4UARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 /*
   push any pending bytes to/from the serial port. This is called at
   1kHz in the timer thread. Doing it this way reduces the system call
-  overhead in the main task enormously. 
+  overhead in the main task enormously.
  */
 void PX4UARTDriver::_timer_tick(void)
 {
-    uint16_t n;
+    int ret;
+    uint32_t n;
 
     if (!_initialised) return;
 
@@ -500,47 +418,46 @@ void PX4UARTDriver::_timer_tick(void)
     _in_timer = true;
 
     // write any pending bytes
-    uint16_t _tail;
-    n = BUF_AVAILABLE(_writebuf);
+    n = _writebuf.available();
     if (n > 0) {
-        uint16_t n1 = _writebuf_size - _writebuf_head;
+        ByteBuffer::IoVec vec[2];
         perf_begin(_perf_uart);
-        if (n1 >= n) {
-            // do as a single write
-            _write_fd(&_writebuf[_writebuf_head], n);
-        } else {
-            // split into two writes
-            int ret = _write_fd(&_writebuf[_writebuf_head], n1);
-            if (ret == n1 && n > n1) {
-                _write_fd(&_writebuf[_writebuf_head], n - n1);                
+        const auto n_vec = _writebuf.peekiovec(vec, n);
+        for (int i = 0; i < n_vec; i++) {
+            ret = _write_fd(vec[i].data, (uint16_t)vec[i].len);
+            if (ret < 0) {
+                break;
+            }
+            _writebuf.advance(ret);
+
+            /* We wrote less than we asked for, stop */
+            if ((unsigned)ret != vec[i].len) {
+                break;
             }
         }
         perf_end(_perf_uart);
     }
 
     // try to fill the read buffer
-    uint16_t _head;
-    n = BUF_SPACE(_readbuf);
-    if (n > 0) {
-        uint16_t n1 = _readbuf_size - _readbuf_tail;
-        perf_begin(_perf_uart);
-        if (n1 >= n) {
-            // one read will do
-            assert(_readbuf_tail+n <= _readbuf_size);
-            _read_fd(&_readbuf[_readbuf_tail], n);
-        } else {
-            assert(_readbuf_tail+n1 <= _readbuf_size);
-            int ret = _read_fd(&_readbuf[_readbuf_tail], n1);
-            if (ret == n1 && n > n1) {
-                assert(_readbuf_tail+(n-n1) <= _readbuf_size);
-                _read_fd(&_readbuf[_readbuf_tail], n - n1);                
-            }
+    ByteBuffer::IoVec vec[2];
+
+    perf_begin(_perf_uart);
+    const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
+    for (int i = 0; i < n_vec; i++) {
+        ret = _read_fd(vec[i].data, vec[i].len);
+        if (ret < 0) {
+            break;
         }
-        perf_end(_perf_uart);
+        _readbuf.commit((unsigned)ret);
+
+        /* stop reading as we read less than we asked for */
+        if ((unsigned)ret < vec[i].len) {
+            break;
+        }
     }
+    perf_end(_perf_uart);
 
     _in_timer = false;
 }
 
-#endif // CONFIG_HAL_BOARD
-
+#endif

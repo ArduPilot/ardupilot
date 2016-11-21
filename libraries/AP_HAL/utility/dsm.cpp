@@ -1,4 +1,3 @@
-// -*- tab-width: 8; Mode: C++; c-basic-offset: 8; indent-tabs-mode: -*- t -*-
 /*
   DSM decoder, based on src/modules/px4iofirmware/dsm.c from PX4Firmware
   modified for use in AP_HAL_* by Andrew Tridgell
@@ -38,8 +37,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
-#include <AP_Common/AP_Common.h>
+#include <stdio.h>
 
 #include "dsm.h"
 
@@ -47,7 +45,9 @@
 #define DSM_FRAME_CHANNELS	7		/**<Max supported DSM channels*/
 
 static uint64_t dsm_last_frame_time;		/**< Timestamp for start of last dsm frame */
-static unsigned dsm_channel_shift;			/**< Channel resolution, 0=unknown, 1=10 bit, 2=11 bit */
+static unsigned dsm_channel_shift;			/**< Channel resolution, 0=unknown, 10=10 bit, 11=11 bit */
+
+//#define DEBUG
 
 #ifdef DEBUG
 # define debug(fmt, args...)	printf(fmt "\n", ##args)
@@ -162,7 +162,7 @@ dsm_guess_format(bool reset, const uint8_t dsm_frame[16])
 	unsigned votes10 = 0;
 	unsigned votes11 = 0;
 
-	for (unsigned i = 0; i < ARRAY_SIZE(masks); i++) {
+	for (unsigned i = 0; i < sizeof(masks)/sizeof(masks[0]); i++) {
 
 		if (cs10 == masks[i])
 			votes10++;
@@ -311,3 +311,262 @@ dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[16], uint16_t *values, u
 	 */
 	return true;
 }
+
+#if defined(TEST_MAIN_PROGRAM) || defined(TEST_HEX_STRING)
+static uint8_t dsm_partial_frame_count;
+static uint8_t dsm_frame[DSM_FRAME_SIZE];
+static enum DSM_DECODE_STATE {
+	DSM_DECODE_STATE_DESYNC = 0,
+	DSM_DECODE_STATE_SYNC
+} dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+static uint64_t dsm_last_rx_time;            /**< Timestamp when we last received data */
+static uint16_t dsm_chan_count;
+static uint16_t dsm_frame_drops;
+
+static bool
+dsm_parse(uint64_t now, uint8_t *frame, unsigned len, uint16_t *values,
+	  uint16_t *num_values, bool *dsm_11_bit, unsigned *frame_drops, uint16_t max_channels)
+{
+
+	/* this is set by the decoding state machine and will default to false
+	 * once everything that was decodable has been decoded.
+	 */
+	bool decode_ret = false;
+
+	/* keep decoding until we have consumed the buffer */
+	for (unsigned d = 0; d < len; d++) {
+
+		/* overflow check */
+		if (dsm_partial_frame_count == sizeof(dsm_frame) / sizeof(dsm_frame[0])) {
+			dsm_partial_frame_count = 0;
+			dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+#ifdef DSM_DEBUG
+			printf("DSM: RESET (BUF LIM)\n");
+#endif
+		}
+
+		if (dsm_partial_frame_count == DSM_FRAME_SIZE) {
+			dsm_partial_frame_count = 0;
+			dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+#ifdef DSM_DEBUG
+			printf("DSM: RESET (PACKET LIM)\n");
+#endif
+		}
+
+#ifdef DSM_DEBUG
+#if 1
+		printf("dsm state: %s%s, count: %d, val: %02x\n",
+		       (dsm_decode_state == DSM_DECODE_STATE_DESYNC) ? "DSM_DECODE_STATE_DESYNC" : "",
+		       (dsm_decode_state == DSM_DECODE_STATE_SYNC) ? "DSM_DECODE_STATE_SYNC" : "",
+		       dsm_partial_frame_count,
+		       (unsigned)frame[d]);
+#endif
+#endif
+
+		switch (dsm_decode_state) {
+		case DSM_DECODE_STATE_DESYNC:
+
+			/* we are de-synced and only interested in the frame marker */
+			if ((now - dsm_last_rx_time) > 5000) {
+				printf("resync %u\n", dsm_partial_frame_count);
+				dsm_decode_state = DSM_DECODE_STATE_SYNC;
+				dsm_partial_frame_count = 0;
+				dsm_chan_count = 0;
+				dsm_frame[dsm_partial_frame_count++] = frame[d];
+			}
+
+			break;
+
+		case DSM_DECODE_STATE_SYNC: {
+				dsm_frame[dsm_partial_frame_count++] = frame[d];
+
+				/* decode whatever we got and expect */
+				if (dsm_partial_frame_count < DSM_FRAME_SIZE) {
+					break;
+				}
+
+				/*
+				 * Great, it looks like we might have a frame.  Go ahead and
+				 * decode it.
+				 */
+				decode_ret = dsm_decode(now, dsm_frame, values, &dsm_chan_count, max_channels);
+
+#if 1
+                                printf("%u %u: ", ((unsigned)(now/1000)) % 1000000, len);
+                                for (uint8_t i=0; i<DSM_FRAME_SIZE; i++) {
+                                    printf("%02x ", (unsigned)dsm_frame[i]);
+                                }
+                                printf("\n");
+#endif
+	
+                                
+				/* we consumed the partial frame, reset */
+				dsm_partial_frame_count = 0;
+
+				/* if decoding failed, set proto to desync */
+				if (decode_ret == false) {
+					dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+					dsm_frame_drops++;
+					printf("drop ");
+					for (uint8_t i=0; i<DSM_FRAME_SIZE; i++) {
+						printf("%02x ", (unsigned)dsm_frame[i]);
+					}
+					printf("\n");
+				}
+			}
+			break;
+
+		default:
+#ifdef DSM_DEBUG
+			printf("UNKNOWN PROTO STATE");
+#endif
+			decode_ret = false;
+		}
+
+
+	}
+
+	if (frame_drops) {
+		*frame_drops = dsm_frame_drops;
+	}
+
+	if (decode_ret) {
+		*num_values = dsm_chan_count;
+	}
+
+	dsm_last_rx_time = now;
+
+	/* return false as default */
+	return decode_ret;
+}
+#endif
+
+
+#ifdef TEST_MAIN_PROGRAM
+/*
+  test harness for use under Linux with USB serial adapter
+ */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <time.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <termios.h>
+#include <string.h>
+
+static uint64_t micros64(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)));
+}
+
+int main(int argc, const char *argv[])
+{
+    int fd = open(argv[1], O_RDONLY|O_CLOEXEC);
+    if (fd == -1) {
+        perror(argv[1]);
+        exit(1);
+    }
+
+    struct termios options;
+
+    tcgetattr(fd, &options);
+
+    cfsetispeed(&options, B115200);
+    cfsetospeed(&options, B115200);
+
+    options.c_cflag &= ~(PARENB|CSTOPB|CSIZE);
+    options.c_cflag |= CS8;
+
+    options.c_lflag &= ~(ICANON|ECHO|ECHOE|ISIG);
+    options.c_iflag &= ~(IXON|IXOFF|IXANY);
+    options.c_oflag &= ~OPOST;
+
+    if (tcsetattr(fd, TCSANOW, &options) != 0) {
+        perror("tcsetattr");
+        exit(1);
+    }
+    tcflush(fd, TCIOFLUSH);
+
+    uint16_t values[18];
+    memset(values, 0, sizeof(values));
+
+    while (true) {
+        uint8_t b[16];
+        uint16_t num_values = 0;
+        fd_set fds;
+        struct timeval tv;
+    
+        FD_ZERO(&fds);
+        FD_SET(fd, &fds);
+
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
+        // check if any bytes are available
+        if (select(fd+1, &fds, nullptr, nullptr, &tv) != 1) {
+            break;
+        }
+
+        ssize_t nread;
+        if ((nread = read(fd, b, sizeof(b))) < 1) {
+            break;
+        }
+
+        bool dsm_11_bit;
+        unsigned frame_drops;
+        
+        if (dsm_parse(micros64(), b, nread, values, &num_values, &dsm_11_bit, &frame_drops, 18)) {
+#if 1
+            printf("%u: ", num_values);
+            for (uint8_t i=0; i<num_values; i++) {
+                printf("%u:%4u ", i+1, values[i]);
+            }
+            printf("\n");
+#endif
+        }
+    }
+}
+#elif defined(TEST_HEX_STRING)
+/*
+  test harness providing hex string to decode
+ */
+#include <string.h>
+
+int main(int argc, const char *argv[])
+{
+    uint8_t b[16];
+    uint64_t t = 0;
+
+    for (uint8_t i=1; i<argc; i++) {
+        unsigned v;
+        if (sscanf(argv[i], "%02x", &v) != 1 || v > 255) {
+            printf("Bad hex value at %u : %s\n", (unsigned)i, argv[i]);
+            return 1;
+        }
+        b[i-1] = v;
+    }
+    uint16_t values[18];
+    memset(values, 0, sizeof(values));
+    
+    while (true) {
+        uint16_t num_values = 0;
+        bool dsm_11_bit;
+        unsigned frame_drops;
+
+        t += 11000;
+        
+        if (dsm_parse(t, b, sizeof(b), values, &num_values, &dsm_11_bit, &frame_drops, 18)) {
+#if 1
+            printf("%u: ", num_values);
+            for (uint8_t i=0; i<num_values; i++) {
+                printf("%u:%4u ", i+1, values[i]);
+            }
+            printf("\n");
+#endif
+        }
+    }
+}
+#endif

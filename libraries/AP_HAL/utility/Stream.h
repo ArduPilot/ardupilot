@@ -8,10 +8,10 @@
 
 class AP_HAL::Stream : public AP_HAL::Print {
 public:
-    virtual int16_t available() = 0;
+    virtual uint32_t available() = 0;
     /* NB txspace was traditionally a member of BetterStream in the
      * FastSerial library. As far as concerns go, it belongs with available() */
-    virtual int16_t txspace() = 0;
+    virtual uint32_t txspace() = 0;
 
     /* return value for read():
      * -1 if nothing available, uint8_t value otherwise. */

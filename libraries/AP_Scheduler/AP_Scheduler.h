@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -73,7 +72,7 @@ public:
     // run the tasks. Call this once per 'tick'.
     // time_available is the amount of time available to run
     // tasks in microseconds
-    void run(uint16_t time_available);
+    void run(uint32_t time_available);
 
     // return the number of microseconds available for the current task
     uint16_t time_available_usec(void);
@@ -101,7 +100,7 @@ private:
     AP_Int8 _debug;
 
     // overall scheduling rate in Hz
-    AP_Int16 _loop_rate_hz;
+    AP_Int16 _loop_rate_hz;  // The value of this variable can be changed with the non-initialization. (Ex. Tuning by GDB)
     
     // progmem list of tasks to run
     const struct Task *_tasks;

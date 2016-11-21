@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
@@ -23,14 +22,13 @@ public:
                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     /* update accel and gyro state */
-    bool update();
+    bool update() override;
 
-    // return product ID
-    int16_t product_id() const { return AP_PRODUCT_ID_L3G4200D; }
+    void start(void) override;
 
 private:
     bool _init_sensor();
-    void _accumulate();
+    bool _accumulate();
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 

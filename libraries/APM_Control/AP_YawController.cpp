@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +29,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
 	// @Description: This is the gain from measured lateral acceleration to demanded yaw rate. It should be set to zero unless active control of sideslip is desired. This will only work effectively if there is enough fuselage side area to generate a measureable lateral acceleration when the model sideslips. Flying wings and most gliders cannot use this term. This term should only be adjusted after the basic yaw damper gain YAW2SRV_DAMP is tuned and the YAW2SRV_INT integrator gain has been set. Set this gain to zero if only yaw damping is required.
 	// @Range: 0 4
 	// @Increment: 0.25
+    // @User: Advanced
 	AP_GROUPINFO("SLIP",    0, AP_YawController, _K_A,    0),
 
 	// @Param: INT
@@ -37,6 +37,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
 	// @Description: This is the integral gain from lateral acceleration error. This gain should only be non-zero if active control over sideslip is desired. If active control over sideslip is required then this can be set to 1.0 as a first try.
 	// @Range: 0 2
 	// @Increment: 0.25
+    // @User: Advanced
 	AP_GROUPINFO("INT",    1, AP_YawController, _K_I,    0),
 
 	// @Param: DAMP
@@ -44,6 +45,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
 	// @Description: This is the gain from yaw rate to rudder. It acts as a damper on yaw motion. If a basic yaw damper is required, this gain term can be incremented, whilst leaving the YAW2SRV_SLIP and YAW2SRV_INT gains at zero. Note that unlike with a standard PID controller, if this damping term is zero then the integrator will also be disabled.
 	// @Range: 0 2
 	// @Increment: 0.25
+    // @User: Advanced
 	AP_GROUPINFO("DAMP",   2, AP_YawController, _K_D,    0),
 
 	// @Param: RLL
@@ -51,6 +53,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
 	// @Description: This is the gain term that is applied to the yaw rate offset calculated as required to keep the yaw rate consistent with the turn rate for a coordinated turn. The default value is 1 which will work for all models. Advanced users can use it to correct for any tendency to yaw away from or into the turn once the turn is established. Increase to make the model yaw more initially and decrease to make the model yaw less initially. If values greater than 1.1 or less than 0.9 are required then it normally indicates a problem with the airspeed calibration.
 	// @Range: 0.8 1.2
 	// @Increment: 0.05
+    // @User: Advanced
 	AP_GROUPINFO("RLL",   3, AP_YawController, _K_FF,   1),
 
     /*

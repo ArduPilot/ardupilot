@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 /// @file    AC_AttitudeControl.h
@@ -37,7 +36,6 @@
 
 #define AC_ATTITUDE_THRUST_ERROR_ANGLE                  radians(30.0f) // Thrust angle error above which yaw corrections are limited
 
-#define AC_ATTITUDE_100HZ_DT                            0.0100f // delta time in seconds for 100hz update rate
 #define AC_ATTITUDE_400HZ_DT                            0.0025f // delta time in seconds for 400hz update rate
 
 #define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          1       // body-frame rate feedforward enabled by default
@@ -113,8 +111,11 @@ public:
     // Ensure attitude controller have zero errors to relax rate controller output
     void relax_attitude_controllers();
 
+    // reset rate controller I terms
+    void reset_rate_controller_I_terms();
+
     // Sets yaw target to vehicle heading
-    void set_yaw_target_to_current_heading() { _attitude_target_euler_angle.z = _ahrs.yaw; }
+    void set_yaw_target_to_current_heading() { shift_ef_yaw_target(degrees(_ahrs.yaw - _attitude_target_euler_angle.z)*100.0f); }
 
     // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
     void shift_ef_yaw_target(float yaw_shift_cd);
@@ -149,6 +150,8 @@ public:
 
     // Return 321-intrinsic euler angles in centidegrees representing the rotation from NED earth frame to the
     // attitude controller's target attitude.
+    // **NOTE** Using vector3f*deg(100) is more efficient than deg(vector3f)*100 or deg(vector3d*100) because it gives the
+    // same result with the fewest multiplcations. Even though it may look like a bug, it is intentional. See issue 4895.
     Vector3f get_att_target_euler_cd() const { return _attitude_target_euler_angle*degrees(100.0f); }
 
     // Return the angle between the target thrust vector and the current thrust vector.
@@ -163,22 +166,22 @@ public:
     // Set z-axis angular velocity in centidegrees/s
     void rate_bf_yaw_target(float rate_cds) { _rate_target_ang_vel.z = radians(rate_cds*0.01f); }
 
-    // Return roll rate step size in centidegrees/s that results in maximum output after 4 time steps
+    // Return roll rate step size in radians/s that results in maximum output after 4 time steps
     float max_rate_step_bf_roll();
 
-    // Return pitch rate step size in centidegrees/s that results in maximum output after 4 time steps
+    // Return pitch rate step size in radians/s that results in maximum output after 4 time steps
     float max_rate_step_bf_pitch();
 
-    // Return yaw rate step size in centidegrees/s that results in maximum output after 4 time steps
+    // Return yaw rate step size in radians/s that results in maximum output after 4 time steps
     float max_rate_step_bf_yaw();
 
-    // Return roll step size in centidegrees that results in maximum output after 4 time steps
+    // Return roll step size in radians that results in maximum output after 4 time steps
     float max_angle_step_bf_roll() { return max_rate_step_bf_roll()/_p_angle_roll.kP(); }
 
-    // Return pitch step size in centidegrees that results in maximum output after 4 time steps
+    // Return pitch step size in radians that results in maximum output after 4 time steps
     float max_angle_step_bf_pitch() { return max_rate_step_bf_pitch()/_p_angle_pitch.kP(); }
 
-    // Return yaw step size in centidegrees that results in maximum output after 4 time steps
+    // Return yaw step size in radians that results in maximum output after 4 time steps
     float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw()/_p_angle_yaw.kP(); }
 
     // Return angular velocity in radians used in the angular velocity controller
@@ -223,9 +226,6 @@ public:
     // Inverse proportional controller with piecewise sqrt sections to constrain second derivative
     static float stopping_point(float first_ord_mag, float p, float second_ord_lim);
 
-    // User settable parameters
-    static const struct AP_Param::GroupInfo var_info[];
-
     // calculates the velocity correction from an angle error. The angular velocity has acceleration and
     // deceleration limits including basic jerk limiting using smoothing_gain
     float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel);
@@ -243,6 +243,11 @@ public:
     // Calculates the body frame angular velocities to follow the target attitude
     void attitude_controller_run_quat();
 
+    // sanity check parameters.  should be called once before take-off
+    virtual void parameter_sanity_check() {}
+
+    // User settable parameters
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 

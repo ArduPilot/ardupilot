@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -104,14 +103,14 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: SPIN_MIN
     // @DisplayName: Motor Spin minimum
-    // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range
+    // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
     // @Values: 0.0:Low, 0.15:Default, 0.3:High
     // @User: Advanced
     AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, _spin_min, AP_MOTORS_SPIN_MIN_DEFAULT),
 
     // @Param: SPIN_ARM
     // @DisplayName: Motor Spin armed
-    // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range
+    // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range.  Should be lower than MOT_SPIN_MIN.
     // @Values: 0.0:Low, 0.1:Default, 0.2:High
     // @User: Advanced
     AP_GROUPINFO("SPIN_ARM", 19, AP_MotorsMulticopter, _spin_arm, AP_MOTORS_SPIN_ARM_DEFAULT),
@@ -127,7 +126,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: THST_HOVER
     // @DisplayName: Thrust Hover Value
     // @Description: Motor thrust needed to hover expressed as a number from 0 to 1
-    // @Range: 0.25 0.8
+    // @Range: 0.2 0.8
     // @User: Advanced
     AP_GROUPINFO("THST_HOVER", 21, AP_MotorsMulticopter, _throttle_hover, AP_MOTORS_THST_HOVER_DEFAULT),
 
@@ -138,18 +137,29 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HOVER_LEARN", 22, AP_MotorsMulticopter, _throttle_hover_learn, HOVER_LEARN_AND_SAVE),
 
+    // @Param: SAFE_DISARM
+    // @DisplayName: Motor PWM output disabled when disarmed
+    // @Description: Disables motor PWM output when disarmed
+    // @Values: 0:PWM enabled while disarmed, 1:PWM disabled while disarmed
+    // @User: Advanced
+    AP_GROUPINFO("SAFE_DISARM", 23, AP_MotorsMulticopter, _disarm_disable_pwm, 0),
+
     AP_GROUPEND
 };
 
 // Constructor
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Motors(loop_rate, speed_hz),
+    _spool_mode(SHUT_DOWN),
+    _spin_up_ratio(0.0f),
     _batt_voltage_resting(0.0f),
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
     _batt_timer(0),
     _lift_max(1.0f),
-    _throttle_limit(1.0f)
+    _throttle_limit(1.0f),
+    _throttle_thrust_max(0.0f),
+    _disarm_safety_timer(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -375,13 +385,20 @@ void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_m
 void AP_MotorsMulticopter::update_throttle_hover(float dt)
 {
     if (_throttle_hover_learn != HOVER_LEARN_DISABLED) {
-        _throttle_hover = _throttle_hover + (dt/(dt+AP_MOTORS_THST_HOVER_TC))*(_throttle_in-_throttle_hover);
+        // we have chosen to constrain the hover throttle to be within the range reachable by the third order expo polynomial.
+        _throttle_hover = constrain_float(_throttle_hover + (dt/(dt+AP_MOTORS_THST_HOVER_TC))*(get_throttle()-_throttle_hover), AP_MOTORS_THST_HOVER_MIN, AP_MOTORS_THST_HOVER_MAX);
     }
 }
 
 // run spool logic
 void AP_MotorsMulticopter::output_logic()
 {
+    if (_flags.armed) {
+        _disarm_safety_timer = 100;
+    } else if (_disarm_safety_timer != 0) {
+        _disarm_safety_timer--;
+    }
+
     // force desired and current spool mode if disarmed or not interlocked
     if (!_flags.armed || !_flags.interlock) {
         _spool_desired = DESIRED_SHUT_DOWN;

@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 #pragma once
 
@@ -53,6 +52,10 @@
 # define MAIN_LOOP_RATE    400
 # define MAIN_LOOP_SECONDS 0.0025f
 # define MAIN_LOOP_MICROS  2500
+
+#ifndef ARMING_DELAY_SEC
+    # define ARMING_DELAY_SEC 2.0f
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // FRAME_CONFIG
@@ -148,6 +151,12 @@
  # define RANGEFINDER_TILT_CORRECTION ENABLED
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// Proximity sensor
+//
+#ifndef PROXIMITY_ENABLED
+ # define PROXIMITY_ENABLED ENABLED
+#endif
 
 #ifndef MAV_SYSTEM_ID
  # define MAV_SYSTEM_ID          1
@@ -184,10 +193,6 @@
 #endif
 #ifndef FS_GCS_TIMEOUT_MS
  # define FS_GCS_TIMEOUT_MS             5000    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
-#endif
-
-#ifndef GNDEFFECT_COMPENSATION
- # define GNDEFFECT_COMPENSATION          DISABLED
 #endif
 
 // Radio failsafe while using RC_override
@@ -259,6 +264,13 @@
  #endif
 #endif
 
+#ifndef COMPASS_CAL_STICK_GESTURE_TIME
+ #define COMPASS_CAL_STICK_GESTURE_TIME 2.0f // 2 seconds
+#endif
+#ifndef COMPASS_CAL_STICK_DELAY
+ #define COMPASS_CAL_STICK_DELAY 5.0f
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW
@@ -274,7 +286,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  Crop Sprayer
 #ifndef SPRAYER
- # define SPRAYER  DISABLED
+ # define SPRAYER  ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -284,9 +296,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//	EPM cargo gripper
-#ifndef EPM_ENABLED
- # define EPM_ENABLED ENABLED
+//	gripper
+#ifndef GRIPPER_ENABLED
+ # define GRIPPER_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -361,9 +373,6 @@
 #ifndef LAND_START_ALT
  # define LAND_START_ALT 1000         // altitude in cm where land controller switches to slow rate of descent
 #endif
-#ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM
- # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM DISABLED  // we do not require pilot to reduce throttle to minimum before vehicle will disarm in AUTO, LAND or RTL
-#endif
 #ifndef LAND_REPOSITION_DEFAULT
  # define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing
 #endif
@@ -372,6 +381,9 @@
 #endif
 #ifndef LAND_CANCEL_TRIGGER_THR
  # define LAND_CANCEL_TRIGGER_THR   700     // land is cancelled by input throttle above 700
+#endif
+#ifndef LAND_RANGEFINDER_MIN_ALT_CM
+#define LAND_RANGEFINDER_MIN_ALT_CM 200
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -430,8 +442,16 @@
  #define ACRO_BALANCE_PITCH         1.0f
 #endif
 
-#ifndef ACRO_EXPO_DEFAULT
- #define ACRO_EXPO_DEFAULT          0.3f
+#ifndef ACRO_RP_EXPO_DEFAULT
+ #define ACRO_RP_EXPO_DEFAULT       0.3f
+#endif
+
+#ifndef ACRO_Y_EXPO_DEFAULT
+ #define ACRO_Y_EXPO_DEFAULT        0.0f
+#endif
+
+#ifndef ACRO_THR_MID_DEFAULT
+ #define ACRO_THR_MID_DEFAULT       0.0f
 #endif
 
 // RTL Mode
@@ -488,8 +508,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // Stabilize Rate Control
 //
-#ifndef ROLL_PITCH_INPUT_MAX
- # define ROLL_PITCH_INPUT_MAX      4500            // roll, pitch input range
+#ifndef ROLL_PITCH_YAW_INPUT_MAX
+ # define ROLL_PITCH_YAW_INPUT_MAX      4500        // roll, pitch and yaw input range
 #endif
 #ifndef DEFAULT_ANGLE_MAX
  # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
@@ -600,6 +620,16 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Throw mode configuration
+//
+#ifndef THROW_HIGH_SPEED
+# define THROW_HIGH_SPEED       500.0f  // vehicle much reach this total 3D speed in cm/s (or be free falling)
+#endif
+#ifndef THROW_VERTICAL_SPEED
+# define THROW_VERTICAL_SPEED   50.0f   // motors start when vehicle reaches this total 3D speed in cm/s
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
 #ifndef LOGGING_ENABLED
@@ -657,4 +687,8 @@
 //use this to completely disable FRSKY TELEM
 #ifndef FRSKY_TELEM_ENABLED
   #  define FRSKY_TELEM_ENABLED          ENABLED
+#endif
+
+#ifndef ADVANCED_FAILSAFE
+# define ADVANCED_FAILSAFE DISABLED
 #endif

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PosControl.h"
 #include <AP_Math/AP_Math.h>
@@ -272,13 +271,13 @@ void AC_PosControl::relax_alt_hold_controllers(float throttle_setting)
     _pos_target.z = _inav.get_altitude();
     _vel_desired.z = 0.0f;
     _flags.use_desvel_ff_z = false;
-    _vel_target.z= _inav.get_velocity_z();
+    _vel_target.z = _inav.get_velocity_z();
     _vel_last.z = _inav.get_velocity_z();
     _accel_feedforward.z = 0.0f;
     _accel_last_z_cms = 0.0f;
     _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
     _flags.reset_accel_to_throttle = true;
-    _pid_accel_z.set_integrator(throttle_setting*1000.0f);
+    _pid_accel_z.set_integrator((throttle_setting-_motors.get_throttle_hover())*1000.0f);
 }
 
 // get_alt_error - returns altitude error in cm
@@ -499,7 +498,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     }
 
     // set input to PID
-    _pid_accel_z.set_input_filter_d(_accel_error.z);
+    _pid_accel_z.set_input_filter_all(_accel_error.z);
     _pid_accel_z.set_desired_rate(accel_target_z);
 
     // separately calculate p, i, d values for logging
@@ -507,6 +506,11 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
 
     // get i term
     i = _pid_accel_z.get_integrator();
+
+    // ensure imax is always large enough to overpower hover throttle
+    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
+        _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
+    }
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     // To-Do: should this be replaced with limits check from attitude_controller?
@@ -598,8 +602,8 @@ void AC_PosControl::set_target_to_stopping_point_xy()
 ///     set_leash_length() should have been called before this method
 void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
 {
-	const Vector3f curr_pos = _inav.get_position();
-	Vector3f curr_vel = _inav.get_velocity();
+    const Vector3f curr_pos = _inav.get_position();
+    Vector3f curr_vel = _inav.get_velocity();
     float linear_distance;      // the distance at which we swap from a linear to sqrt response
     float linear_velocity;      // the velocity above which we swap from a linear to sqrt response
     float stopping_dist;		// the distance within the vehicle can stop
@@ -856,8 +860,8 @@ void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainSc
             _vel_target.y = vel_sqrt * _pos_error.y/_distance_to_target;
         }else{
             // velocity response grows linearly with the distance
-            _vel_target.x = _p_pos_xy.kP() * _pos_error.x;
-            _vel_target.y = _p_pos_xy.kP() * _pos_error.y;
+            _vel_target.x = kP * _pos_error.x;
+            _vel_target.y = kP * _pos_error.y;
         }
 
         if (mode == XY_MODE_POS_LIMITED_AND_VEL_FF) {
@@ -896,7 +900,6 @@ void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainSc
 ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
 void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 {
-    const Vector3f &vel_curr = _inav.get_velocity();  // current velocity in cm/s
     Vector2f vel_xy_p, vel_xy_i;
 
     // reset last velocity target to current target
@@ -904,6 +907,14 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
         _vel_last.x = _vel_target.x;
         _vel_last.y = _vel_target.y;
         _flags.reset_rate_to_accel_xy = false;
+    }
+
+    // check if vehicle velocity is being overridden
+    if (_flags.vehicle_horiz_vel_override) {
+        _flags.vehicle_horiz_vel_override = false;
+    } else {
+        _vehicle_horiz_vel.x = _inav.get_velocity().x;
+        _vehicle_horiz_vel.y = _inav.get_velocity().y;
     }
 
     // feed forward desired acceleration calculation
@@ -925,8 +936,8 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
     _vel_last.y = _vel_target.y;
 
     // calculate velocity error
-    _vel_error.x = _vel_target.x - vel_curr.x;
-    _vel_error.y = _vel_target.y - vel_curr.y;
+    _vel_error.x = _vel_target.x - _vehicle_horiz_vel.x;
+    _vel_error.y = _vel_target.y - _vehicle_horiz_vel.y;
 
     // call pi controller
     _pi_vel_xy.set_input(_vel_error);

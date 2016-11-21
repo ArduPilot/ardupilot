@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /* 
    DataFlash logging - file oriented variant
 
@@ -10,6 +8,7 @@
 
 #if HAL_OS_POSIX_IO
 
+#include <AP_HAL/utility/RingBuffer.h>
 #include "DataFlash_Backend.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
@@ -45,7 +44,7 @@ public:
 
     /* Write a block of data at current offset */
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
-    uint16_t bufferspace_available();
+    uint32_t bufferspace_available();
 
     // high level interface
     uint16_t find_last_log() override;
@@ -66,7 +65,11 @@ public:
     void flush(void);
 #endif
     void periodic_fullrate(const uint32_t now);
-    
+
+    // this method is used when reporting system status over mavlink
+    bool logging_enabled() const;
+    bool logging_failed() const;
+
 private:
     int _write_fd;
     int _read_fd;
@@ -103,11 +106,8 @@ private:
     const float min_avail_space_percent = 10.0f;
 #endif
     // write buffer
-    uint8_t *_writebuf;
-    uint32_t _writebuf_size; // in bytes; may be == 65536, thus 32-bits
+    ByteBuffer _writebuf;
     const uint16_t _writebuf_chunk;
-    volatile uint16_t _writebuf_head;
-    volatile uint16_t _writebuf_tail;
     uint32_t _last_write_time;
 
     /* construct a file name given a log number. Caller must free. */
@@ -120,19 +120,19 @@ private:
 
     void _io_timer(void);
 
-    uint16_t critical_message_reserved_space() const {
+    uint32_t critical_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
-        uint16_t ret = 1024;
-        if (ret > _writebuf_size) {
+        uint32_t ret = 1024;
+        if (ret > _writebuf.get_size()) {
             // in this case you will only get critical messages
-            ret = _writebuf_size;
+            ret = _writebuf.get_size();
         }
         return ret;
     };
-    uint16_t non_messagewriter_message_reserved_space() const {
+    uint32_t non_messagewriter_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
-        uint16_t ret = 1024;
-        if (ret >= _writebuf_size) {
+        uint32_t ret = 1024;
+        if (ret >= _writebuf.get_size()) {
             // need to allow messages out from the messagewriters.  In
             // this case while you have a messagewriter you won't get
             // any other messages.  This should be a corner case!
@@ -140,6 +140,13 @@ private:
         }
         return ret;
     };
+
+    // free-space checks; filling up SD cards under NuttX leads to
+    // corrupt filesystems which cause loss of data, failure to gather
+    // data and failures-to-boot.
+    uint64_t _free_space_last_check_time; // microseconds
+    const uint32_t _free_space_check_interval = 1000000UL; // microseconds
+    const uint32_t _free_space_min_avail = 8388608; // bytes
 
     AP_HAL::Semaphore *semaphore;
     

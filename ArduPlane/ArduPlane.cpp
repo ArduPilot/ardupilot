@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    Lead developer: Andrew Tridgell
  
@@ -50,7 +48,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(read_airspeed,          10,    100),
     SCHED_TASK(update_alt,             10,    200),
     SCHED_TASK(adjust_altitude_target, 10,    200),
-    SCHED_TASK(obc_fs_check,           10,    100),
+    SCHED_TASK(afs_fs_check,           10,    100),
     SCHED_TASK(gcs_update,             50,    500),
     SCHED_TASK(gcs_data_stream_send,   50,    500),
     SCHED_TASK(update_events,          50,    150),
@@ -60,6 +58,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(barometer_accumulate,   50,    150),
     SCHED_TASK(update_notify,          50,    300),
     SCHED_TASK(read_rangefinder,       50,    100),
+    SCHED_TASK(ice_update,             10,    100),
     SCHED_TASK(compass_cal_update,     50,    50),
     SCHED_TASK(accel_cal_update,       10,    50),
 #if OPTFLOW == ENABLED
@@ -78,14 +77,22 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_logging1,        10,    300),
     SCHED_TASK(update_logging2,        10,    300),
     SCHED_TASK(parachute_check,        10,    200),
-#if FRSKY_TELEM_ENABLED == ENABLED
-    SCHED_TASK(frsky_telemetry_send,    5,    100),
-#endif
     SCHED_TASK(terrain_update,         10,    200),
     SCHED_TASK(update_is_flying_5Hz,    5,    100),
     SCHED_TASK(dataflash_periodic,     50,    400),
-    SCHED_TASK(adsb_update,            10,    100),
+    SCHED_TASK(avoidance_adsb_update,  10,    100),
+    SCHED_TASK(button_update,           5,    100),
+    SCHED_TASK(stats_update,            1,    100),
 };
+
+/*
+  update AP_Stats
+ */
+void Plane::stats_update(void)
+{
+    g2.stats.update();
+}
+
 
 void Plane::setup() 
 {
@@ -229,7 +236,7 @@ void Plane::update_compass(void)
             DataFlash.Log_Write_Compass(compass);
         }
     } else {
-        ahrs.set_compass(NULL);
+        ahrs.set_compass(nullptr);
     }
 }
 
@@ -284,14 +291,12 @@ void Plane::update_logging2(void)
 
 
 /*
-  check for OBC failsafe check
+  check for AFS failsafe check
  */
-void Plane::obc_fs_check(void)
+void Plane::afs_fs_check(void)
 {
-#if OBC_FAILSAFE == ENABLED
-    // perform OBC failsafe checks
-    obc.check(OBC_MODE(control_mode), failsafe.last_heartbeat_ms, geofence_breached(), failsafe.AFS_last_valid_rc_ms);
-#endif
+    // perform AFS failsafe checks
+    afs.check(failsafe.last_heartbeat_ms, geofence_breached(), failsafe.AFS_last_valid_rc_ms);
 }
 
 
@@ -311,7 +316,7 @@ void Plane::one_second_loop()
     // make it possible to change control channel ordering at runtime
     set_control_channels();
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAVE_PX4_MIXER
     if (!hal.util->get_soft_armed() && (last_mixer_crc == -1)) {
         // if disarmed try to configure the mixer
         setup_failsafe_mixing();
@@ -340,6 +345,24 @@ void Plane::one_second_loop()
 #endif
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
+
+    // update home position if soft armed and gps position has
+    // changed. Update every 5s at most
+    if (!hal.util->get_soft_armed() &&
+        gps.last_message_time_ms() - last_home_update_ms > 5000 &&
+        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+            last_home_update_ms = gps.last_message_time_ms();
+            update_home();
+            
+            // reset the landing altitude correction
+            auto_state.land_alt_offset = 0;
+    }
+    
+    // update error mask of sensors and subsystems. The mask uses the
+    // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
+    // indicates that the sensor or subsystem is present but not
+    // functioning correctly
+    update_sensor_status_flags();
 }
 
 void Plane::log_perf_info()
@@ -411,7 +434,7 @@ void Plane::airspeed_ratio_update(void)
         return;
     }
     const Vector3f &vg = gps.velocity();
-    airspeed.update_calibration(vg);
+    airspeed.update_calibration(vg, aparm.airspeed_max);
     gcs_send_airspeed_calibration(vg);
 }
 
@@ -452,7 +475,7 @@ void Plane::update_GPS_10Hz(void)
             // We countdown N number of good GPS fixes
             // so that the altitude is more accurate
             // -------------------------------------
-            if (current_loc.lat == 0) {
+            if (current_loc.lat == 0 && current_loc.lng == 0) {
                 ground_start_count = 5;
 
             } else {
@@ -484,13 +507,6 @@ void Plane::update_GPS_10Hz(void)
         }
 #endif        
 
-        if (!hal.util->get_soft_armed()) {
-            update_home();
-
-            // reset the landing altitude correction
-            auto_state.land_alt_offset = 0;
-        }
-
         // update wind estimate
         ahrs.estimate_wind();
     } else if (gps.status() < AP_GPS::GPS_OK_FIX_3D && ground_start_count != 0) {
@@ -510,7 +526,7 @@ void Plane::handle_auto_mode(void)
 
     if (mission.state() != AP_Mission::MISSION_RUNNING) {
         // this should never be reached
-        set_mode(RTL);
+        set_mode(RTL, MODE_REASON_MISSION_END);
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
     }
@@ -582,6 +598,7 @@ void Plane::update_flight_mode(void)
         handle_auto_mode();
         break;
 
+    case AVOID_ADSB:
     case GUIDED:
         if (auto_state.vtol_loiter && quadplane.available()) {
             quadplane.guided_update();
@@ -778,7 +795,7 @@ void Plane::update_navigation()
     case RTL:
         if (quadplane.available() && quadplane.rtl_mode == 1 &&
             nav_controller->reached_loiter_target()) {
-            set_mode(QRTL);
+            set_mode(QRTL, MODE_REASON_UNKNOWN);
             break;
         } else if (g.rtl_autoland == 1 &&
             !auto_state.checked_for_autoland &&
@@ -807,6 +824,7 @@ void Plane::update_navigation()
         // fall through to LOITER
 
     case LOITER:
+    case AVOID_ADSB:
     case GUIDED:
         update_loiter(radius);
         break;
@@ -1014,7 +1032,8 @@ void Plane::update_optical_flow(void)
         uint8_t flowQuality = optflow.quality();
         Vector2f flowRate = optflow.flowRate();
         Vector2f bodyRate = optflow.bodyRate();
-        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update);
+        const Vector3f &posOffset = optflow.get_pos_offset();
+        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, posOffset);
         Log_Write_Optflow();
     }
 }

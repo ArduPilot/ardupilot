@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "AP_Mount_SToRM32_serial.h"
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -10,7 +8,7 @@ extern const AP_HAL::HAL& hal;
 
 AP_Mount_SToRM32_serial::AP_Mount_SToRM32_serial(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
-    _port(NULL),
+    _port(nullptr),
     _initialised(false),
     _last_send(0),
     _reply_length(0),

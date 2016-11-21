@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   dummy backend for HIL (and SITL). This doesn't actually need to do
   any work, as setHIL() is in the frontend

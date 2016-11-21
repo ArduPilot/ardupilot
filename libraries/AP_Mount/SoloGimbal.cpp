@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -375,7 +373,7 @@ void SoloGimbal::update_target(Vector3f newTarget)
 
 void SoloGimbal::write_logs(DataFlash_Class* dataflash)
 {
-    if (dataflash == NULL) return;
+    if (dataflash == nullptr) return;
 
     uint32_t tstamp = AP_HAL::millis();
     Vector3f eulerEst;
@@ -431,7 +429,7 @@ AccelCalibrator* SoloGimbal::_acal_get_calibrator(uint8_t instance)
     if(instance==0 && (present() || _calibrator.get_status() == ACCEL_CAL_SUCCESS)) {
         return &_calibrator;
     } else {
-        return NULL;
+        return nullptr;
     }
 }
 

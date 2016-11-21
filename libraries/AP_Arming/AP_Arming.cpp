@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,7 +17,10 @@
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 
+#ifndef AP_ARMING_COMPASS_OFFSETS_MAX
+// this can also be overridden for specific boards in the HAL
 #define AP_ARMING_COMPASS_OFFSETS_MAX   600
+#endif
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
 #define AP_ARMING_BOARD_VOLTAGE_MIN     4.3f
@@ -123,7 +125,7 @@ bool AP_Arming::airspeed_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_AIRSPEED)) {
         const AP_Airspeed *airspeed = ahrs.get_airspeed();
-        if (airspeed == NULL) {
+        if (airspeed == nullptr) {
             // not an airspeed capable vehicle
             return true;
         }
@@ -236,7 +238,7 @@ bool AP_Arming::ins_checks(bool report)
                 // get next gyro vector
                 const Vector3f &gyro_vec = ins.get_gyro(i);
                 Vector3f vec_diff = gyro_vec - prime_gyro_vec;
-                // allow for up to 5 degrees/s difference. Pass if its
+                // allow for up to 5 degrees/s difference. Pass if it has
                 // been OK in last 10 seconds
                 if (vec_diff.length() <= radians(5)) {
                     last_gyro_pass_ms[i] = AP_HAL::millis();
@@ -339,6 +341,7 @@ bool AP_Arming::gps_checks(bool report)
         }
     }
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
         uint8_t first_unconfigured = gps.first_unconfigured_gps();
         if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
@@ -348,11 +351,10 @@ bool AP_Arming::gps_checks(bool report)
                                                   first_unconfigured + 1);
                 gps.broadcast_first_configuration_failure_reason();
             }
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
             return false;
-#endif
         }
     }
+#endif
     return true;
 }
 

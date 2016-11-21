@@ -99,7 +99,11 @@
 #define BMI160_READ_FLAG 0x80
 #define BMI160_HARDWARE_INIT_MAX_TRIES 5
 
-#define BMI160_INT1_GPIO -1
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
+#    define BMI160_INT1_GPIO AERO_GPIO_BMI160_INT1
+#else
+#    define BMI160_INT1_GPIO -1
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -127,6 +131,9 @@ AP_InertialSensor_Backend *
 AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
                                 AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
 {
+    if (!dev) {
+        return nullptr;
+    }
     auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev));
 
     if (!sensor) {
@@ -145,7 +152,6 @@ void AP_InertialSensor_BMI160::start()
 {
     bool r;
 
-    hal.scheduler->suspend_timer_procs();
     if (!_dev->get_semaphore()->take(100)) {
         AP_HAL::panic("BMI160: Unable to get semaphore");
     }
@@ -174,13 +180,12 @@ void AP_InertialSensor_BMI160::start()
 
     _dev->get_semaphore()->give();
 
-    _accel_instance = _imu.register_accel(BMI160_ODR_TO_HZ(BMI160_ODR));
-    _gyro_instance = _imu.register_gyro(BMI160_ODR_TO_HZ(BMI160_ODR));
+    _accel_instance = _imu.register_accel(BMI160_ODR_TO_HZ(BMI160_ODR), _dev->get_bus_id_devtype(DEVTYPE_BMI160));
+    _gyro_instance = _imu.register_gyro(BMI160_ODR_TO_HZ(BMI160_ODR),   _dev->get_bus_id_devtype(DEVTYPE_BMI160));
 
-    hal.scheduler->register_timer_process(
-        FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI160::_poll_data, void));
-
-    hal.scheduler->resume_timer_procs();
+    /* Call _poll_data() at 1kHz */
+    _dev->register_periodic_callback(1000,
+        FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI160::_poll_data, bool));
 }
 
 bool AP_InertialSensor_BMI160::update()
@@ -386,6 +391,11 @@ read_fifo_read_data:
                       (float)(int16_t)le16toh(raw_data[i].gyro.y),
                       (float)(int16_t)le16toh(raw_data[i].gyro.z)};
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
+        accel.rotate(ROTATION_ROLL_180);
+        gyro.rotate(ROTATION_ROLL_180);
+#endif
+
         accel *= _accel_scale;
         gyro *= _gyro_scale;
 
@@ -407,15 +417,10 @@ read_fifo_end:
     }
 }
 
-void AP_InertialSensor_BMI160::_poll_data()
+bool AP_InertialSensor_BMI160::_poll_data()
 {
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
-
     _read_fifo();
-
-    _dev->get_semaphore()->give();
+    return true;
 }
 
 bool AP_InertialSensor_BMI160::_hardware_init()
@@ -485,10 +490,7 @@ bool AP_InertialSensor_BMI160::_init()
     bool ret = false;
     _dev->set_read_flag(BMI160_READ_FLAG);
 
-    hal.scheduler->suspend_timer_procs();
     ret = _hardware_init();
-    hal.scheduler->resume_timer_procs();
-
     if (!ret) {
         hal.console->printf("BMI160: failed to init\n");
     }

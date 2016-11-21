@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 //
@@ -71,3 +69,15 @@ void Copter::failsafe_check()
         }
     }
 }
+
+
+#if ADVANCED_FAILSAFE == ENABLED
+/*
+  check for AFS failsafe check
+*/
+void Copter::afs_fs_check(void)
+{
+    // perform AFS failsafe checks
+    g2.afs.check(failsafe.last_heartbeat_ms, fence.get_breaches() != 0, last_radio_update_ms);
+}
+#endif

@@ -103,7 +103,9 @@
 #define BBB_P9_41 20
 #define BBB_P9_42 7
 
-class Linux::GPIO_BBB : public AP_HAL::GPIO {
+namespace Linux {
+
+class GPIO_BBB : public AP_HAL::GPIO {
 private:
     struct GPIO {
         volatile uint32_t *base;
@@ -131,3 +133,5 @@ public:
     /* return true if USB cable is connected */
     bool    usb_connected(void);
 };
+
+}

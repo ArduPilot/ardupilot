@@ -16,7 +16,9 @@
 
 #include "AP_HAL_Linux.h"
 
-class Linux::CameraSensor {
+namespace Linux {
+
+class CameraSensor {
 public:
     CameraSensor(const char *device_path) { _device_path = device_path; }
 
@@ -26,3 +28,5 @@ public:
 private:
     const char *_device_path;
 };
+
+}

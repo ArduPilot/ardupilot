@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_TECS.h
 /// @brief   Combined Total Energy Speed & Height Control. This is a instance of an
 /// AP_SpdHgtControl class
@@ -102,6 +100,11 @@ public:
     // set pitch max limit in degrees
     void set_pitch_max_limit(int8_t pitch_limit) {
         _pitch_max_limit = pitch_limit;
+    }
+
+    // force use of synthetic airspeed for one loop
+    void use_synthetic_airspeed(void) {
+        _use_synthetic_airspeed_once = true;
     }
     
     // this supports the TECS_* user settable parameters
@@ -305,6 +308,11 @@ private:
         float SKE_error;
         float SEB_delta;
     } logging;
+
+    AP_Int8 _use_synthetic_airspeed;
+    
+    // use synthetic airspeed for next loop
+    bool _use_synthetic_airspeed_once;
     
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(float load_factor);

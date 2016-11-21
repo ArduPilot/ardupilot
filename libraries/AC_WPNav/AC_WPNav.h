@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -64,7 +63,7 @@ public:
     void set_avoidance(AC_Avoid* avoid_ptr) { _avoid = avoid_ptr; }
 
     /// provide rangefinder altitude
-    void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_use = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
+    void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
 
     ///
     /// loiter controller
@@ -85,7 +84,9 @@ public:
 
     /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
     void set_pilot_desired_acceleration(float control_roll, float control_pitch);
-
+    /// get_pilot_desired_acceleration - gets pilot desired
+    /// acceleration, body frame, [forward,right]
+    Vector2f get_pilot_desired_acceleration() const { return Vector2f(_pilot_accel_fwd_cms, _pilot_accel_rgt_cms); }
     /// clear_pilot_desired_acceleration - clear pilot desired acceleration
     void clear_pilot_desired_acceleration() { _pilot_accel_fwd_cms = 0.0f; _pilot_accel_rgt_cms = 0.0f; }
 
@@ -317,8 +318,8 @@ protected:
     const AP_AHRS&          _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
-    AP_Terrain              *_terrain = NULL;
-    AC_Avoid                *_avoid = NULL;
+    AP_Terrain              *_terrain = nullptr;
+    AC_Avoid                *_avoid = nullptr;
 
     // parameters
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
@@ -365,7 +366,8 @@ protected:
     // terrain following variables
     bool        _terrain_alt = false;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
     bool        _ekf_origin_terrain_alt_set = false;
-    bool        _rangefinder_use = false;
+    bool        _rangefinder_available;
+    AP_Int8     _rangefinder_use;
     bool        _rangefinder_healthy = false;
     float       _rangefinder_alt_cm = 0.0f;
 };

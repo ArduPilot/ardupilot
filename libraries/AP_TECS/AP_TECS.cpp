@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "AP_TECS.h"
 #include <AP_HAL/AP_HAL.h>
 
@@ -21,7 +19,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Description: This is the best climb rate that the aircraft can achieve with the throttle set to THR_MAX and the airspeed set to the default value. For electric aircraft make sure this number can be achieved towards the end of flight when the battery voltage has reduced. The setting of this parameter can be checked by commanding a positive altitude change of 100m in loiter, RTL or guided mode. If the throttle required to climb is close to THR_MAX and the aircraft is maintaining airspeed, then this parameter is set correctly. If the airspeed starts to reduce, then the parameter is set to high, and if the throttle demand require to climb and maintain speed is noticeably less than THR_MAX, then either CLMB_MAX should be increased or THR_MAX reduced.
     // @Increment: 0.1
     // @Range: 0.1 20.0
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("CLMB_MAX",    0, AP_TECS, _maxClimbRate, 5.0f),
 
     // @Param: SINK_MIN
@@ -29,7 +27,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Description: This is the sink rate of the aircraft with the throttle set to THR_MIN and the same airspeed as used to measure CLMB_MAX.
     // @Increment: 0.1
     // @Range: 0.1 10.0
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("SINK_MIN",    1, AP_TECS, _minSinkRate, 2.0f),
 
     // @Param: TIME_CONST
@@ -227,12 +225,20 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     AP_GROUPINFO("TKOFF_IGAIN", 25, AP_TECS, _integGain_takeoff, 0),
 
     // @Param: LAND_PDAMP
-    // @Description: This is the damping gain for the pitch demand loop. Increase to add damping  to correct for oscillations in speed and height. If set to 0 then TECS_PTCH_DAMP will be used instead.
+    // @DisplayName: Pitch damping gain when landing
+    // @Description: This is the damping gain for the pitch demand loop during landing. Increase to add damping  to correct for oscillations in speed and height. If set to 0 then TECS_PTCH_DAMP will be used instead.
     // @Range: 0.1 1.0
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("LAND_PDAMP", 26, AP_TECS, _land_pitch_damp, 0),
 
+    // @Param: SYNAIRSPEED
+    // @DisplayName: Enable the use of synthetic airspeed
+    // @Description: This enable the use of synthetic airspeed for aircraft that don't have a real airspeed sensor. This is useful for development testing where the user is aware of the considerable limitations of the synthetic airspeed system, such as very poor estimates when a wind estimate is not accurate. Do not enable this option unless you fully understand the limitations of a synthetic airspeed estimate.
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("SYNAIRSPEED", 27, AP_TECS, _use_synthetic_airspeed, 0),
+    
     AP_GROUPEND
 };
 
@@ -366,7 +372,8 @@ void AP_TECS::_update_speed(float load_factor)
 
     // Get airspeed or default to halfway between min and max if
     // airspeed is not being used and set speed rate to zero
-    if (!_ahrs.airspeed_sensor_enabled() || !_ahrs.airspeed_estimate(&_EAS)) {
+    bool use_airspeed = _use_synthetic_airspeed_once || _use_synthetic_airspeed.get() || _ahrs.airspeed_sensor_enabled();
+    if (!use_airspeed || !_ahrs.airspeed_estimate(&_EAS)) {
         // If no airspeed available use average of min and max
         _EAS = 0.5f * (aparm.airspeed_min.get() + (float)aparm.airspeed_max.get());
     }
@@ -406,18 +413,8 @@ void AP_TECS::_update_speed_demand(void)
     // calculate velocity rate limits based on physical performance limits
     // provision to use a different rate limit if bad descent or underspeed condition exists
     // Use 50% of maximum energy rate to allow margin for total energy contgroller
-    float velRateMax;
-    float velRateMin;
-    if ((_flags.badDescent) || (_flags.underspeed))
-    {
-        velRateMax = 0.5f * _STEdot_max / _TAS_state;
-        velRateMin = 0.5f * _STEdot_min / _TAS_state;
-    }
-    else
-    {
-        velRateMax = 0.5f * _STEdot_max / _TAS_state;
-        velRateMin = 0.5f * _STEdot_min / _TAS_state;
-    }
+    float velRateMax = 0.5f * _STEdot_max / _TAS_state;
+    float velRateMin = 0.5f * _STEdot_min / _TAS_state;
 
     // Apply rate limit
     if ((_TAS_dem - _TAS_dem_adj) > (velRateMax * 0.1f))
@@ -1044,9 +1041,14 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Calculate specific energy quantitiues
     _update_energies();
 
-    // Calculate throttle demand - use simple pitch to throttle if no airspeed sensor
-    if (_ahrs.airspeed_sensor_enabled()) {
+    // Calculate throttle demand - use simple pitch to throttle if no
+    // airspeed sensor.
+    // Note that caller can demand the use of
+    // synthetic airspeed for one loop if needed. This is required
+    // during QuadPlane transition when pitch is constrained
+    if (_ahrs.airspeed_sensor_enabled() || _use_synthetic_airspeed || _use_synthetic_airspeed_once) {
         _update_throttle_with_airspeed();
+        _use_synthetic_airspeed_once = false;
     } else {
         _update_throttle_without_airspeed(throttle_nudge);
     }

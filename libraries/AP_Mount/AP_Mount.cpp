@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include "AP_Mount.h"
@@ -405,7 +403,7 @@ AP_Mount::AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc)
 
     // initialise backend pointers and mode
     for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
-        _backends[i] = NULL;
+        _backends[i] = nullptr;
     }
 }
 
@@ -467,7 +465,7 @@ void AP_Mount::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_m
         }
 
         // init new instance
-        if (_backends[instance] != NULL) {
+        if (_backends[instance] != nullptr) {
             _backends[instance]->init(serial_manager);
             if (!primary_set) {
                 _primary = instance;
@@ -482,7 +480,7 @@ void AP_Mount::update()
 {
     // update each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != NULL) {
+        if (_backends[instance] != nullptr) {
             _backends[instance]->update();
         }
     }
@@ -493,7 +491,7 @@ void AP_Mount::update_fast()
 {
     // update each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != NULL) {
+        if (_backends[instance] != nullptr) {
             _backends[instance]->update_fast();
         }
     }
@@ -512,7 +510,7 @@ AP_Mount::MountType AP_Mount::get_mount_type(uint8_t instance) const
 // has_pan_control - returns true if the mount has yaw control (required for copters)
 bool AP_Mount::has_pan_control(uint8_t instance) const
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == NULL) {
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
         return false;
     }
 
@@ -542,7 +540,7 @@ void AP_Mount::set_mode_to_default(uint8_t instance)
 void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
 {
     // sanity check instance
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == NULL) {
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
         return;
     }
 
@@ -553,7 +551,7 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
 // set_angle_targets - sets angle targets in degrees
 void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float pan)
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == NULL) {
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
         return;
     }
 
@@ -565,7 +563,7 @@ void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float
 /// triggered by a MavLink packet.
 void AP_Mount::configure_msg(uint8_t instance, mavlink_message_t* msg)
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == NULL) {
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
         return;
     }
 
@@ -577,7 +575,7 @@ void AP_Mount::configure_msg(uint8_t instance, mavlink_message_t* msg)
 /// triggered by a MavLink packet.
 void AP_Mount::control_msg(uint8_t instance, mavlink_message_t *msg)
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == NULL) {
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
         return;
     }
 
@@ -587,7 +585,7 @@ void AP_Mount::control_msg(uint8_t instance, mavlink_message_t *msg)
 
 void AP_Mount::control(uint8_t instance, int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode)
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == NULL) {
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
         return;
     }
 
@@ -600,7 +598,7 @@ void AP_Mount::status_msg(mavlink_channel_t chan)
 {
     // call status_msg for  each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != NULL) {
+        if (_backends[instance] != nullptr) {
             _backends[instance]->status_msg(chan);
         }
     }
@@ -610,7 +608,7 @@ void AP_Mount::status_msg(mavlink_channel_t chan)
 void AP_Mount::set_roi_target(uint8_t instance, const struct Location &target_loc)
 {
     // call instance's set_roi_cmd
-    if (instance < AP_MOUNT_MAX_INSTANCES && _backends[instance] != NULL) {
+    if (instance < AP_MOUNT_MAX_INSTANCES && _backends[instance] != nullptr) {
         _backends[instance]->set_roi_target(target_loc);
     }
 }
@@ -619,7 +617,7 @@ void AP_Mount::set_roi_target(uint8_t instance, const struct Location &target_lo
 void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != NULL) {
+        if (_backends[instance] != nullptr) {
             _backends[instance]->handle_gimbal_report(chan, msg);
         }
     }
@@ -629,7 +627,7 @@ void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *m
 void AP_Mount::handle_param_value(mavlink_message_t *msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != NULL) {
+        if (_backends[instance] != nullptr) {
             _backends[instance]->handle_param_value(msg);
         }
     }
@@ -639,7 +637,7 @@ void AP_Mount::handle_param_value(mavlink_message_t *msg)
 void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != NULL) {
+        if (_backends[instance] != nullptr) {
             _backends[instance]->send_gimbal_report(chan);
         }
     }    

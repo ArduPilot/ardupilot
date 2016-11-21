@@ -40,6 +40,25 @@ const struct LogStructure *DataFlash_Class::structure(uint16_t num) const
     return &_structures[num];
 }
 
+bool DataFlash_Class::logging_present() const
+{
+    return _next_backend != 0;
+}
+bool DataFlash_Class::logging_enabled() const
+{
+    if (_next_backend == 0) {
+        return false;
+    }
+    return backends[0]->logging_enabled();
+}
+bool DataFlash_Class::logging_failed() const
+{
+    if (_next_backend < 1) {
+        // we should not have been called!
+        return true;
+    }
+    return backends[0]->logging_failed();
+}
 
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \
@@ -351,6 +370,11 @@ bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct
             break;
         }
     }
+
+    if (!f) {
+        return false;
+    }
+
     logstruct.msg_type = msg_type;
     strncpy((char*)logstruct.name, f->name, sizeof(logstruct.name)); /* cast away the "const" (*gulp*) */
     strncpy((char*)logstruct.format, f->fmt, sizeof(logstruct.format));

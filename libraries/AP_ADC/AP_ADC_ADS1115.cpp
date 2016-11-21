@@ -1,7 +1,4 @@
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include <AP_HAL/utility/sparse-endian.h>
 
 #include "AP_ADC_ADS1115.h"
@@ -112,20 +109,28 @@ static const uint16_t mux_table[ADS1115_CHANNELS_COUNT] = {
 
 
 AP_ADC_ADS1115::AP_ADC_ADS1115()
-    : _dev(hal.i2c_mgr->get_device(ADS1115_I2C_BUS, ADS1115_I2C_ADDR))
+    : _dev{}
+    , _gain(ADS1115_PGA_4P096)
     , _channel_to_read(0)
 {
     _samples = new adc_report_s[_channels_number];
 }
 
+AP_ADC_ADS1115::~AP_ADC_ADS1115()
+{
+    delete[] _samples;
+}
+
 bool AP_ADC_ADS1115::init()
 {
-    hal.scheduler->suspend_timer_procs();
+    _dev = hal.i2c_mgr->get_device(ADS1115_I2C_BUS, ADS1115_I2C_ADDR);
+    if (!_dev) {
+        return false;
+    }
 
     _gain = ADS1115_PGA_4P096;
 
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_ADC_ADS1115::_update, void));
-    hal.scheduler->resume_timer_procs();
+    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_ADC_ADS1115::_update, bool));
 
     return true;
 }
@@ -195,38 +200,24 @@ float AP_ADC_ADS1115::_convert_register_data_to_mv(int16_t word) const
     return (float) word * pga;
 }
 
-void AP_ADC_ADS1115::_update()
+bool AP_ADC_ADS1115::_update()
 {
-    /* TODO: make update rate configurable */
-    if (AP_HAL::micros() - _last_update_timestamp < 100000) {
-        return;
-    }
-
     uint8_t config[2];
     be16_t val;
 
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
-
     if (!_dev->read_registers(ADS1115_RA_CONFIG, config, sizeof(config))) {
-        error("i2c->read_registers failed in ADS1115");
-        _dev->get_semaphore()->give();
-        return;
+        error("_dev->read_registers failed in ADS1115");
+        return true;
     }
 
     /* check rdy bit */
     if ((config[1] & 0x80) != 0x80 ) {
-        _dev->get_semaphore()->give();
-        return;
+        return true;
     }
 
     if (!_dev->read_registers(ADS1115_RA_CONVERSION, (uint8_t *)&val,  sizeof(val))) {
-        _dev->get_semaphore()->give();
-        return;
+        return true;
     }
-
-    _dev->get_semaphore()->give();
 
     float sample = _convert_register_data_to_mv(be16toh(val));
 
@@ -237,7 +228,5 @@ void AP_ADC_ADS1115::_update()
     _channel_to_read = (_channel_to_read + 1) % _channels_number;
     _start_conversion(_channel_to_read);
 
-    _last_update_timestamp = AP_HAL::micros();
+    return true;
 }
-
-#endif

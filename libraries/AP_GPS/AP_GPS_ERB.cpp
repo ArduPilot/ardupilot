@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -225,7 +224,7 @@ AP_GPS_ERB::_parse_gps(void)
 }
 
 void
-AP_GPS_ERB::inject_data(uint8_t *data, uint8_t len)
+AP_GPS_ERB::inject_data(const uint8_t *data, uint16_t len)
 {
 
     if (port->txspace() > len) {

@@ -40,7 +40,7 @@ public:
     bool enabled() const { return _enabled; }
 
     // healthy - return true if the sensor is healthy
-    bool healthy() const { return backend != NULL && _flags.healthy; }
+    bool healthy() const { return backend != nullptr && _flags.healthy; }
 
     // read latest values from sensor and fill in x,y and totals.
     void update(void);
@@ -73,6 +73,11 @@ public:
     // support for HIL/SITL
     void setHIL(const struct OpticalFlow_state &state);
 
+    // return a 3D vector defining the position offset of the sensors focal point in metres relative to the body frame origin
+    const Vector3f &get_pos_offset(void) const {
+        return _pos_offset;
+    }
+
 private:
     OpticalFlow_backend *backend;
 
@@ -85,7 +90,7 @@ private:
     AP_Int16 _flowScalerX;          // X axis flow scale factor correction - parts per thousand
     AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
     AP_Int16 _yawAngle_cd;          // yaw angle of sensor X axis with respect to vehicle X axis - centi degrees
-
+    AP_Vector3f _pos_offset;        // position offset of the flow sensor in the body frame
 
     // state filled in by backend
     struct OpticalFlow_state _state;

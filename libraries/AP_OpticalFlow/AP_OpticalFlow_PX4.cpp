@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,8 +21,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "OpticalFlow.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -39,8 +39,18 @@ OpticalFlow_backend(_frontend)
 {}
 
 
+extern "C" int px4flow_main(int, char **);
+
 void AP_OpticalFlow_PX4::init(void)
 {
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V54) || defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRCORE_V10)
+    if (!AP_BoardConfig::px4_start_driver(px4flow_main, "px4flow", "start")) {
+        hal.console->printf("Unable to start px4flow driver\n");
+    } else {
+        // give it time to initialise
+        hal.scheduler->delay(500);
+    }
+#endif
     _fd = open(PX4FLOW0_DEVICE_PATH, O_RDONLY);
 
     // check for failure to open device

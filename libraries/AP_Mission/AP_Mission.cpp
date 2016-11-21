@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_Mission.cpp
 /// @brief   Handles the MAVLINK command mission stack.  Reads and writes mission to storage.
 
@@ -20,6 +18,7 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @DisplayName: Mission Restart when entering Auto mode
     // @Description: Controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
     // @Values: 0:Resume Mission, 1:Restart Mission
+    // @User: Advanced
     AP_GROUPINFO("RESTART",  1, AP_Mission, _restart, AP_MISSION_RESTART_DEFAULT),
 
     AP_GROUPEND
@@ -757,11 +756,17 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_DO_VTOL_TRANSITION:
         cmd.content.do_vtol_transition.target_state = packet.param1;
         break;
-        
+
     case MAV_CMD_DO_SET_REVERSE:
         cmd.p1 = packet.param1; // 0 = forward, 1 = reverse
         break;
 
+    case MAV_CMD_DO_ENGINE_CONTROL:
+        cmd.content.do_engine_control.start_control = (packet.param1>0);
+        cmd.content.do_engine_control.cold_start = (packet.param2>0);
+        cmd.content.do_engine_control.height_delay_cm = packet.param3*100;
+        break;        
+        
     default:
         // unrecognised command
         return MAV_MISSION_UNSUPPORTED;
@@ -1200,7 +1205,13 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_DO_VTOL_TRANSITION:
         packet.param1 = cmd.content.do_vtol_transition.target_state;
         break;
-        
+
+    case MAV_CMD_DO_ENGINE_CONTROL:
+        packet.param1 = cmd.content.do_engine_control.start_control?1:0;
+        packet.param2 = cmd.content.do_engine_control.cold_start?1:0;
+        packet.param3 = cmd.content.do_engine_control.height_delay_cm*0.01f;
+        break;        
+                
     default:
         // unrecognised command
         return false;

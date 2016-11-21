@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * matrix3.cpp
  * Copyright (C) Siddharth Bharat Purohit, 3DRobotics Inc. 2015
@@ -177,7 +176,7 @@ static void mat_LU_decompose(float* A, float* L, float* U, float *P, uint8_t n)
             }
         }
     }
-    free(APrime);
+    delete[] APrime;
 }
 
 /*
@@ -208,8 +207,8 @@ static bool mat_inverse(float* A, float* inv, uint8_t n)
     mat_back_sub(U,U_inv,n);
 
     // decomposed matrices no longer required
-    free(L);
-    free(U);
+    delete[] L;
+    delete[] U;
 
     float *inv_unpivoted = mat_mul(U_inv,L_inv,n);
     float *inv_pivoted = mat_mul(inv_unpivoted, P, n);
@@ -225,11 +224,11 @@ static bool mat_inverse(float* A, float* inv, uint8_t n)
     memcpy(inv,inv_pivoted,n*n*sizeof(float));
 
     //free memory
-    free(inv_pivoted);
-    free(inv_unpivoted);
-    free(P);
-    free(U_inv);
-    free(L_inv);
+    delete[] inv_pivoted;
+    delete[] inv_unpivoted;
+    delete[] P;
+    delete[] U_inv;
+    delete[] L_inv;
     return ret;
 }
 

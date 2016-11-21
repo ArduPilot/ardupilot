@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -75,11 +73,19 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(one_second_loop,         1,   3000),
     SCHED_TASK(compass_cal_update,     50,    100), 
     SCHED_TASK(accel_cal_update,       10,    100),
-#if FRSKY_TELEM_ENABLED == ENABLED
-    SCHED_TASK(frsky_telemetry_send,    5,    100),
-#endif
     SCHED_TASK(dataflash_periodic,     50,    300),
+    SCHED_TASK(button_update,          5,     100),
+    SCHED_TASK(stats_update,           1,     100),
 };
+
+/*
+  update AP_Stats
+*/
+void Rover::stats_update(void)
+{
+    g2.stats.set_flying(motor_active());
+    g2.stats.update();
+}
 
 /*
   setup is called when the sketch starts
@@ -237,7 +243,7 @@ void Rover::update_compass(void)
             DataFlash.Log_Write_Compass(compass);
         }
     } else {
-        ahrs.set_compass(NULL);
+        ahrs.set_compass(nullptr);
     }
 }
 
@@ -334,6 +340,12 @@ void Rover::one_second_loop(void)
     }
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
+    
+    // update error mask of sensors and subsystems. The mask uses the
+    // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
+    // indicates that the sensor or subsystem is present but not
+    // functioning correctly
+    update_sensor_status_flags();
 }
 
 void Rover::dataflash_periodic(void)
@@ -371,7 +383,7 @@ void Rover::update_GPS_10Hz(void)
             // We countdown N number of good GPS fixes
             // so that the altitude is more accurate
             // -------------------------------------
-            if (current_loc.lat == 0) {
+            if (current_loc.lat == 0 && current_loc.lng == 0) {
                 ground_start_count = 20;
             } else {
                 init_home();
@@ -416,21 +428,34 @@ void Rover::update_current_mode(void)
         calc_throttle(g.speed_cruise);
         break;
 
-    case GUIDED:
-        if (rtl_complete || verify_RTL()) {
-            // we have reached destination so stop where we are
-            if (channel_throttle->get_servo_out() != g.throttle_min.get()) {
-                gcs_send_mission_item_reached_message(0);
+    case GUIDED: {
+        switch (guided_mode){
+        case Guided_Angle:
+            nav_set_yaw_speed();
+            break;
+
+        case Guided_WP:
+            if (rtl_complete || verify_RTL()) {
+                // we have reached destination so stop where we are
+                if (channel_throttle->get_servo_out() != g.throttle_min.get()) {
+                    gcs_send_mission_item_reached_message(0);
+                }
+                channel_throttle->set_servo_out(g.throttle_min.get());
+                channel_steer->set_servo_out(0);
+                lateral_acceleration = 0;
+            } else {
+                calc_lateral_acceleration();
+                calc_nav_steer();
+                calc_throttle(g.speed_cruise);
             }
-            channel_throttle->set_servo_out(g.throttle_min.get());
-            channel_steer->set_servo_out(0);
-            lateral_acceleration = 0;
-        } else {
-            calc_lateral_acceleration();
-            calc_nav_steer();
-            calc_throttle(g.speed_cruise);
+            break;
+
+        default:
+            gcs_send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            break;
         }
         break;
+    }
 
     case STEERING: {
         /*
@@ -513,17 +538,29 @@ void Rover::update_navigation()
         break;
 
     case GUIDED:
-        // no loitering around the wp with the rover, goes direct to the wp position
-        calc_lateral_acceleration();
-        calc_nav_steer();
-        if (rtl_complete || verify_RTL()) {
-            // we have reached destination so stop where we are
-            channel_throttle->set_servo_out(g.throttle_min.get());
-            channel_steer->set_servo_out(0);
-            lateral_acceleration = 0;
+        switch (guided_mode){
+        case Guided_Angle:
+            nav_set_yaw_speed();
+            break;
+
+        case Guided_WP:
+            // no loitering around the wp with the rover, goes direct to the wp position
+            calc_lateral_acceleration();
+            calc_nav_steer();
+            if (rtl_complete || verify_RTL()) {
+                // we have reached destination so stop where we are
+                channel_throttle->set_servo_out(g.throttle_min.get());
+                channel_steer->set_servo_out(0);
+                lateral_acceleration = 0;
+            }
+            break;
+
+        default:
+            gcs_send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            break;
         }
         break;
     }
 }
- 
+
 AP_HAL_MAIN_CALLBACKS(&rover);

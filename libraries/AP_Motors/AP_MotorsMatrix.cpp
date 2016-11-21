@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -89,15 +88,20 @@ void AP_MotorsMatrix::output_to_motors()
     int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final pwm values sent to the motor
 
     switch (_spool_mode) {
-        case SHUT_DOWN:
+        case SHUT_DOWN: {
             // sends minimum values out to the motors
             // set motor output based on thrust requests
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    motor_out[i] = get_pwm_output_min();
+                    if (_disarm_disable_pwm && _disarm_safety_timer == 0 && !armed()) {
+                        motor_out[i] = 0;
+                    } else {
+                        motor_out[i] = get_pwm_output_min();
+                    }
                 }
             }
             break;
+        }
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {

@@ -5,6 +5,7 @@
 
 #include <AP_Compass/AP_Compass.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -12,8 +13,11 @@ static Compass compass;
 
 uint32_t timer;
 
-void setup() {
+static void setup()
+{
     hal.console->println("Compass library test");
+
+    AP_BoardConfig{}.init(); // initialise the board drivers
 
     if (!compass.init()) {
         AP_HAL::panic("compass initialisation failed!");
@@ -29,7 +33,7 @@ void setup() {
     timer = AP_HAL::micros();
 }
 
-void loop()
+static void loop()
 {
     static const uint8_t compass_count = compass.get_count();
     static float min[COMPASS_MAX_INSTANCES][3];
@@ -77,12 +81,11 @@ void loop()
             offset[i][2] = -(max[i][2] + min[i][2]) / 2;
 
             // display all to user
-            hal.console->printf("Heading: %.2f (%3d,%3d,%3d) i2c error: %u",
+            hal.console->printf("Heading: %.2f (%3d,%3d,%3d)",
                                 ToDeg(heading),
                                 (int)mag.x,
                                 (int)mag.y,
-                                (int)mag.z,
-                                (unsigned)hal.i2c->lockup_count());
+                                (int)mag.z);
 
             // display offsets
             hal.console->printf(" offsets(%.2f, %.2f, %.2f)",

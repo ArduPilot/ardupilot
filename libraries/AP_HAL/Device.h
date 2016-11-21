@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
  *
@@ -20,6 +19,7 @@
 #include <inttypes.h>
 
 #include "AP_HAL_Namespace.h"
+#include "utility/functor.h"
 
 /*
  * This is an interface abstracting I2C and SPI devices
@@ -27,8 +27,10 @@
 class AP_HAL::Device {
 public:
     enum BusType {
-        BUS_TYPE_I2C,
-        BUS_TYPE_SPI,
+        BUS_TYPE_UNKNOWN = 0,
+        BUS_TYPE_I2C     = 1,
+        BUS_TYPE_SPI     = 2,
+        BUS_TYPE_UAVCAN  = 3
     };
 
     enum Speed {
@@ -36,15 +38,35 @@ public:
         SPEED_LOW,
     };
 
-    typedef void PeriodicHandle;
-
-    const enum BusType bus_type;
+    FUNCTOR_TYPEDEF(PeriodicCb, bool);
+    typedef void* PeriodicHandle;
 
     Device(enum BusType type)
-        : bus_type(type)
-    { }
+    {
+        _bus_id.devid_s.bus_type = type;
+    }
 
-    virtual ~Device() { }
+    // return bus type
+    enum BusType bus_type(void) const {
+        return _bus_id.devid_s.bus_type;
+    }
+
+    // return 24 bit bus identifier
+    uint32_t get_bus_id(void) const {
+        return _bus_id.devid;
+    }
+
+    // set device type within a device class (eg. AP_COMPASS_TYPE_LSM303D)
+    void set_device_type(uint8_t devtype) {
+        _bus_id.devid_s.devtype = devtype;
+    }
+    
+    
+    virtual ~Device() {
+        if (_checked.regs != nullptr) {
+            delete[] _checked.regs;
+        }
+    }
 
     /*
      * Set the speed of future transfers. Depending on the bus the speed may
@@ -84,12 +106,31 @@ public:
      *
      * Return: true on a successful transfer, false on failure.
      */
-    bool write_register(uint8_t reg, uint8_t val)
+    bool write_register(uint8_t reg, uint8_t val, bool checked=false)
     {
         uint8_t buf[2] = { reg, val };
+        if (checked) {
+            set_checked_register(reg, val);
+        }
         return transfer(buf, sizeof(buf), nullptr, 0);
     }
 
+    /**
+     * set a value for a checked register
+     */
+    void set_checked_register(uint8_t reg, uint8_t val);
+
+    /**
+     * setup for register value checking
+     */
+    bool setup_checked_registers(uint8_t num_regs);
+
+    /**
+     * check next register value for correctness. Return false if value is incorrect
+     * or register checking has not been setup
+     */
+    bool check_next_register(void);
+    
     /**
      * Wrapper function over #transfer() to read a sequence of bytes from
      * device. No value is written, differently from the #read_registers()
@@ -118,15 +159,26 @@ public:
      * lock must be taken.
      *
      * Return: A handle for this periodic callback. To cancel the callback
-     * delete the handle.
+     * call #unregister_callback() or return false on the callback.
      */
-    virtual PeriodicHandle *register_periodic_callback(uint32_t period_usec, AP_HAL::MemberProc) = 0;
+    virtual PeriodicHandle register_periodic_callback(uint32_t period_usec, PeriodicCb) = 0;
 
     /*
-     * Temporary method to get the fd used by this device: it's here only for
-     * allowing to convert old drivers to this new interface
+     * Adjust the time for the periodic callback registered with
+     * #register_periodic_callback. Note that the time will be re-calculated
+     * from the moment this call is made and expire after @period_usec.
+     *
+     * Return: true if periodic callback was sucessfully adjusted, false otherwise.
      */
-    virtual int get_fd() = 0;
+    virtual bool adjust_periodic_callback(PeriodicHandle h, uint32_t period_usec) = 0;
+
+    /*
+     * Cancel a periodic callback on this bus.
+     *
+     * Return: true if callback was successfully unregistered, false
+     * otherwise.
+     */
+    virtual bool unregister_callback(PeriodicHandle h) { return false; }
 
     /**
      * Some devices connected on the I2C or SPI bus require a bit to be set on
@@ -138,6 +190,82 @@ public:
         _read_flag = flag;
     }
 
+
+    /**
+     * make a bus id given bus type, bus number, bus address and
+     * device type This is for use by devices that do not use one of
+     * the standard HAL Device types, such as UAVCAN devices
+     */
+    static uint32_t make_bus_id(enum BusType bus_type, uint8_t bus, uint8_t address, uint8_t devtype) {
+        union DeviceId d;
+        d.devid_s.bus_type = bus_type;
+        d.devid_s.bus = bus;
+        d.devid_s.address = address;
+        d.devid_s.devtype = devtype;
+        return d.devid;
+    }
+
+    /**
+     * return a new bus ID for the same bus connection but a new device type.
+     * This is used for auxillary bus connections
+     */
+    static uint32_t change_bus_id(uint32_t old_id, uint8_t devtype) {
+        union DeviceId d;
+        d.devid = old_id;
+        d.devid_s.devtype = devtype;
+        return d.devid;
+    }
+
+    /**
+     * return bus ID with a new devtype
+     */
+    uint32_t get_bus_id_devtype(uint8_t devtype) {
+        return change_bus_id(get_bus_id(), devtype);
+    }
+    
 protected:
     uint8_t _read_flag = 0;
+
+    /*
+      broken out device elements. The bitfields are used to keep
+      the overall value small enough to fit in a float accurately,
+      which makes it possible to transport over the MAVLink
+      parameter protocol without loss of information.
+     */
+    struct DeviceStructure {
+        enum BusType bus_type : 3;
+        uint8_t bus: 5;    // which instance of the bus type
+        uint8_t address;   // address on the bus (eg. I2C address)
+        uint8_t devtype;   // device class specific device type
+    };
+
+    union DeviceId {
+        struct DeviceStructure devid_s;
+        uint32_t devid;
+    };
+    
+    union DeviceId _bus_id;
+
+    // set device address (eg. i2c bus address or spi CS)
+    void set_device_address(uint8_t address) {
+        _bus_id.devid_s.address = address;
+    }
+
+    // set device bus number
+    void set_device_bus(uint8_t bus) {
+        _bus_id.devid_s.bus = bus;
+    }
+
+private:
+    // checked registers
+    struct checkreg {
+        uint8_t regnum;
+        uint8_t value;
+    };
+    struct {
+        uint8_t n_allocated;
+        uint8_t n_set;
+        uint8_t next;
+        struct checkreg *regs;
+    } _checked;
 };

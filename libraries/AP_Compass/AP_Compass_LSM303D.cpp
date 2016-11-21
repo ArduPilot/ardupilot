@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -161,10 +160,14 @@ AP_Compass_LSM303D::AP_Compass_LSM303D(Compass &compass, AP_HAL::OwnPtr<AP_HAL::
 }
 
 AP_Compass_Backend *AP_Compass_LSM303D::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::Device> dev)
+                                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                              enum Rotation rotation)
 {
+    if (!dev) {
+        return nullptr;
+    }
     AP_Compass_LSM303D *sensor = new AP_Compass_LSM303D(compass, std::move(dev));
-    if (!sensor || !sensor->init()) {
+    if (!sensor || !sensor->init(rotation)) {
         delete sensor;
         return nullptr;
     }
@@ -209,7 +212,7 @@ void AP_Compass_LSM303D::_register_modify(uint8_t reg, uint8_t clearbits, uint8_
  */
 bool AP_Compass_LSM303D::_data_ready()
 {
-    return (_drdy_pin_m->read()) != 0;
+    return _drdy_pin_m == nullptr || (_drdy_pin_m->read() != 0);
 }
 
 
@@ -252,19 +255,14 @@ bool AP_Compass_LSM303D::_read_sample()
     return true;
 }
 
-bool AP_Compass_LSM303D::init()
+bool AP_Compass_LSM303D::init(enum Rotation rotation)
 {
-    // TODO: support users without data ready pin
-    if (LSM303D_DRDY_M_PIN < 0) {
-        return false;
+    if (LSM303D_DRDY_M_PIN >= 0) {
+        _drdy_pin_m = hal.gpio->channel(LSM303D_DRDY_M_PIN);
+        _drdy_pin_m->mode(HAL_GPIO_INPUT);
     }
 
-    _drdy_pin_m = hal.gpio->channel(LSM303D_DRDY_M_PIN);
-    _drdy_pin_m->mode(HAL_GPIO_INPUT);
-
-    hal.scheduler->suspend_timer_procs();
     bool success = _hardware_init();
-    hal.scheduler->resume_timer_procs();
 
     if (!success) {
         return false;
@@ -274,14 +272,19 @@ bool AP_Compass_LSM303D::init()
 
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
-    set_dev_id(_compass_instance, AP_COMPASS_TYPE_LSM303D);
+
+    set_rotation(_compass_instance, rotation);
+
+    _dev->set_device_type(DEVTYPE_LSM303D);
+    set_dev_id(_compass_instance, _dev->get_bus_id());
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
     // FIXME: wrong way to force internal compass
     set_external(_compass_instance, false);
 #endif
 
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, void));
+    // read at 100Hz
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, bool));
 
     return true;
 }
@@ -340,49 +343,37 @@ fail_whoami:
     return false;
 }
 
-void AP_Compass_LSM303D::_update()
+bool AP_Compass_LSM303D::_update()
 {
-    uint32_t time_us = AP_HAL::micros();
-    Vector3f raw_field;
-
-    if (AP_HAL::micros() - _last_update_timestamp < 10000) {
-        return;
-    }
-
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
-
     if (!_read_sample()) {
-        goto fail;
+        return true;
     }
 
-    raw_field = Vector3f(_mag_x, _mag_y, _mag_z) * _mag_range_scale;
+    Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z) * _mag_range_scale;
 
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _compass_instance);
 
     // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, time_us, _compass_instance);
+    publish_raw_field(raw_field, AP_HAL::micros(), _compass_instance);
 
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
 
-    _mag_x_accum += raw_field.x;
-    _mag_y_accum += raw_field.y;
-    _mag_z_accum += raw_field.z;
-    _accum_count++;
-    if (_accum_count == 10) {
-        _mag_x_accum /= 2;
-        _mag_y_accum /= 2;
-        _mag_z_accum /= 2;
-        _accum_count = 5;
+    if (_sem->take(0)) {
+        _mag_x_accum += raw_field.x;
+        _mag_y_accum += raw_field.y;
+        _mag_z_accum += raw_field.z;
+        _accum_count++;
+        if (_accum_count == 10) {
+            _mag_x_accum /= 2;
+            _mag_y_accum /= 2;
+            _mag_z_accum /= 2;
+            _accum_count = 5;
+        }
+        _sem->give();
     }
-
-    _last_update_timestamp = AP_HAL::micros();
-
-fail:
-    _dev->get_semaphore()->give();
+    return true;
 }
 
 // Read Sensor data
@@ -392,18 +383,23 @@ void AP_Compass_LSM303D::read()
         return;
     }
 
+    if (!_sem->take_nonblocking()) {
+        return;
+    }
+    
     if (_accum_count == 0) {
         /* We're not ready to publish*/
+        _sem->give();
         return;
     }
 
-    hal.scheduler->suspend_timer_procs();
     Vector3f field(_mag_x_accum, _mag_y_accum, _mag_z_accum);
     field /= _accum_count;
 
     _accum_count = 0;
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-    hal.scheduler->resume_timer_procs();
+
+    _sem->give();    
 
     publish_filtered_field(field, _compass_instance);
 }

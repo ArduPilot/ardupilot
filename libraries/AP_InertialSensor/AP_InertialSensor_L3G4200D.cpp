@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -108,6 +107,9 @@ AP_InertialSensor_L3G4200D::~AP_InertialSensor_L3G4200D()
 AP_InertialSensor_Backend *AP_InertialSensor_L3G4200D::probe(AP_InertialSensor &imu,
                                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
+    if (!dev) {
+        return nullptr;
+    }
     AP_InertialSensor_L3G4200D *sensor
         = new AP_InertialSensor_L3G4200D(imu, std::move(dev));
     if (!sensor || !sensor->_init_sensor()) {
@@ -197,14 +199,19 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
 
     _dev->get_semaphore()->give();
 
-    _gyro_instance = _imu.register_gyro(800);
-    _accel_instance = _imu.register_accel(800);
-    _product_id = AP_PRODUCT_ID_L3G4200D;
+    return true;
+}
+
+/*
+  startup the sensor
+ */
+void AP_InertialSensor_L3G4200D::start(void)
+{
+    _gyro_instance = _imu.register_gyro(800, _dev->get_bus_id_devtype(DEVTYPE_L3G4200D));
+    _accel_instance = _imu.register_accel(800, _dev->get_bus_id_devtype(DEVTYPE_L3G4200D));
 
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_L3G4200D::_accumulate, void));
-
-    return true;
+    _dev->register_periodic_callback(1250, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_L3G4200D::_accumulate, bool));
 }
 
 /*
@@ -219,12 +226,8 @@ bool AP_InertialSensor_L3G4200D::update(void)
 }
 
 // Accumulate values from accels and gyros
-void AP_InertialSensor_L3G4200D::_accumulate(void)
+bool AP_InertialSensor_L3G4200D::_accumulate(void)
 {
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
-
     uint8_t num_samples_available;
     uint8_t fifo_status = 0;
 
@@ -277,9 +280,7 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
             }
         }
     }
-
-    // give back i2c semaphore
-    _dev->get_semaphore()->give();
+    return true;
 }
 
 #endif

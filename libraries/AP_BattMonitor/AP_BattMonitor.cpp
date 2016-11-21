@@ -1,8 +1,8 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -175,7 +175,8 @@ AP_BattMonitor::init()
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
                 drivers[instance] = new AP_BattMonitor_SMBus_PX4(*this, instance, state[instance]);
 #else
-                drivers[instance] = new AP_BattMonitor_SMBus_I2C(*this, instance, state[instance]);
+                drivers[instance] = new AP_BattMonitor_SMBus_I2C(*this, instance, state[instance],
+                                                                 hal.i2c_mgr->get_device(BATTMONITOR_SBUS_I2C_BUS, BATTMONITOR_SMBUS_I2C_ADDR));
 #endif
                 _num_instances++;
                 break;
@@ -189,7 +190,7 @@ AP_BattMonitor::init()
         }
 
         // call init function for each backend
-        if (drivers[instance] != NULL) {
+        if (drivers[instance] != nullptr) {
             drivers[instance]->init();
         }
     }
@@ -200,7 +201,7 @@ void
 AP_BattMonitor::read()
 {
     for (uint8_t i=0; i<_num_instances; i++) {
-        if (drivers[i] != NULL && _monitoring[i] != BattMonitor_TYPE_NONE) {
+        if (drivers[i] != nullptr && _monitoring[i] != BattMonitor_TYPE_NONE) {
             drivers[i]->read();
         }
     }
@@ -219,7 +220,7 @@ bool AP_BattMonitor::is_powering_off(uint8_t instance) const {
 bool AP_BattMonitor::has_current(uint8_t instance) const
 {
     // check for analog voltage and current monitor or smbus monitor
-    if (instance < _num_instances && drivers[instance] != NULL) {
+    if (instance < _num_instances && drivers[instance] != nullptr) {
         return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT ||
                 _monitoring[instance] == BattMonitor_TYPE_SMBUS ||
                 _monitoring[instance] == BattMonitor_TYPE_BEBOP);
@@ -260,14 +261,24 @@ float AP_BattMonitor::current_total_mah(uint8_t instance) const {
 /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
 uint8_t AP_BattMonitor::capacity_remaining_pct(uint8_t instance) const
 {
-    if (instance < _num_instances && drivers[instance] != NULL) {
+    if (instance < _num_instances && drivers[instance] != nullptr) {
         return drivers[instance]->capacity_remaining_pct();
     } else {
         return 0;
     }
 }
 
-/// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
+/// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
+ int32_t AP_BattMonitor::pack_capacity_mah(uint8_t instance) const
+ {
+ if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
+        return _pack_capacity[instance];
+    } else {
+        return 0;
+    }
+ }
+ 
+ /// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
 bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_capacity_mah)
 {
     // exit immediately if no monitors setup
@@ -297,7 +308,6 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
     return false;
 }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // return true if any battery is pushing too much power
 bool AP_BattMonitor::overpower_detected() const
 {
@@ -310,11 +320,14 @@ bool AP_BattMonitor::overpower_detected() const
 
 bool AP_BattMonitor::overpower_detected(uint8_t instance) const
 {
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (instance < _num_instances && _watt_max[instance] > 0) {
         float power = _BattMonitor_STATE(instance).current_amps * _BattMonitor_STATE(instance).voltage;
         return _BattMonitor_STATE(instance).healthy && (power > _watt_max[instance]);
     }
     return false;
-}
+#else
+    return false;
 #endif
+}
 

@@ -15,9 +15,9 @@ public:
     bool tx_pending();
 
     /* Empty implementations of Stream virtual methods */
-    int16_t available();
-    int16_t txspace();
-    int16_t read();
+    uint32_t available() override;
+    uint32_t txspace() override;
+    int16_t read() override;
 
     /* Empty implementations of Print virtual methods */
     size_t write(uint8_t c);

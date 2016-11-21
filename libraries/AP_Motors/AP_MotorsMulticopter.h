@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	AP_MotorsMulticopter.h
 /// @brief	Motor control class for Multicopters
 #pragma once
@@ -17,6 +15,8 @@
 #define AP_MOTORS_THST_EXPO_DEFAULT     0.65f   // set to 0 for linear and 1 for second order approximation
 #define AP_MOTORS_THST_HOVER_DEFAULT    0.5f    // the estimated hover throttle, 0 ~ 1
 #define AP_MOTORS_THST_HOVER_TC         10.0f   // time constant used to update estimated hover throttle, 0 ~ 1
+#define AP_MOTORS_THST_HOVER_MIN        0.125f  // minimum possible hover throttle
+#define AP_MOTORS_THST_HOVER_MAX        0.6875f // maximum possible hover throttle
 #define AP_MOTORS_SPIN_MIN_DEFAULT      0.15f   // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
 #define AP_MOTORS_SPIN_MAX_DEFAULT      0.95f   // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
 #define AP_MOTORS_SPIN_ARM_DEFAULT      0.10f   // throttle out ratio which produces the armed spin rate.  (i.e. 0 ~ 1 ) of the full throttle range
@@ -161,6 +161,7 @@ protected:
     AP_Int16            _pwm_max;               // maximum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's max pwm used)
     AP_Float            _throttle_hover;        // estimated throttle required to hover throttle in the range 0 ~ 1
     AP_Int8             _throttle_hover_learn;  // enable/disabled hover thrust learning
+    AP_Int8             _disarm_disable_pwm;    // disable PWM output while disarmed
 
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
@@ -180,6 +181,7 @@ protected:
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
     float               _throttle_thrust_max;   // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max
+    uint16_t            _disarm_safety_timer;
 
     // vehicle supplied callback for thrust compensation. Used for tiltrotors and tiltwings
     thrust_compensation_fn_t _thrust_compensation_callback;

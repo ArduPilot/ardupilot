@@ -1,8 +1,6 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
-// position_vector.pde related utility functions
+// Position vectors related utility functions
 
 // position vectors are Vector3f
 //    .x = latitude from home in cm

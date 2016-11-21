@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Rover.h"
 
 /* Functions in this file:
@@ -97,7 +95,15 @@ void Rover::restart_nav()
 void Rover::update_home()
 {
     if (home_is_set == HOME_SET_NOT_LOCKED) {
-        ahrs.set_home(gps.location());
+        Location loc = gps.location();
+        Location origin;
+        // if an EKF origin is available then we leave home equal to
+        // the height of that origin. This ensures that our relative
+        // height calculations are using the same origin
+        if (ahrs.get_origin(origin)) {
+            loc.alt = origin.alt;
+        }
+        ahrs.set_home(loc);
         Log_Write_Home_And_Origin();
         GCS_MAVLINK::send_home_all(gps.location());
     }

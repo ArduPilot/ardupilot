@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 /*   Check for automatic takeoff conditions being met using the following sequence:
@@ -34,9 +32,8 @@ bool Plane::auto_takeoff_check(void)
         return false;
     }
 
-    // Check for launch acceleration or timer started. NOTE: relies on TECS 50Hz processing
-    if (!takeoff_state.launchTimerStarted &&
-        !is_zero(g.takeoff_throttle_min_accel) &&
+    // Check for launch acceleration if set. NOTE: relies on TECS 50Hz processing
+    if (!is_zero(g.takeoff_throttle_min_accel) &&
         SpdHgt_Controller->get_VXdot() < g.takeoff_throttle_min_accel) {
         goto no_launch;
     }
@@ -225,3 +222,19 @@ return_zero:
     return 0;
 }
 
+
+/*
+  called when an auto-takeoff is complete
+ */
+void Plane::complete_auto_takeoff(void)
+{
+#if GEOFENCE_ENABLED == ENABLED
+    if (g.fence_autoenable > 0) {
+        if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
+            gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
+        } else {
+            gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");
+        }
+    }
+#endif
+}

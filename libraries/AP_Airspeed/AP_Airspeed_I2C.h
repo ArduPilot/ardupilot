@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,7 +45,9 @@ public:
 private:
     void _measure();
     void _collect();
-    void _timer();
+    bool _timer();
+    void _voltage_correction(float &diff_press_pa, float &temperature);
+    
     float _temperature;
     float _pressure;
     uint32_t _last_sample_time_ms;

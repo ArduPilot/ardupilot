@@ -22,9 +22,12 @@
 #include "AP_HAL_Linux.h"
 #include "CameraSensor.h"
 #include "Flow_PX4.h"
+#include "PWM_Sysfs.h"
 #include "VideoIn.h"
 
-class Linux::OpticalFlow_Onboard : public AP_HAL::OpticalFlow {
+namespace Linux {
+
+class OpticalFlow_Onboard : public AP_HAL::OpticalFlow {
 public:
     void init(AP_HAL::OpticalFlow::Gyro_Cb);
     bool read(AP_HAL::OpticalFlow::Data_Frame& frame);
@@ -59,3 +62,5 @@ private:
     AP_HAL::OpticalFlow::Gyro_Cb _get_gyro;
     Vector3f _last_gyro_rate;
 };
+
+}

@@ -83,9 +83,14 @@ class ManifestGenerator():
                 git_sha = self.git_sha_from_git_version(os.path.join(some_dir, "git-version.txt"))
             except Exception as e:
                 continue
+            firmware_version_file = os.path.join(some_dir, "firmware-version.txt")
             try:
-                firmware_version = open(os.path.join(some_dir, "firmware-version.txt")).read()
+                firmware_version = open(firmware_version_file).read()
                 firmware_version = firmware_version.strip()
+                (version_numbers,release_type) = firmware_version.split("-")
+            except ValueError as e:
+                # print("malformed firmware-version.txt at (%s)" % (firmware_version_file,))
+                firmware_version = None
             except Exception as e:
                 # this exception is swallowed.... the current archive
                 # is incomplete.
@@ -108,6 +113,8 @@ class ManifestGenerator():
                 if file == "git-version.txt":
                     continue
                 if file == "firmware-version.txt":
+                    continue
+                if file == "files.html":
                     continue
 
                 m = variant_firmware_regex.match(file)
@@ -198,10 +205,17 @@ class ManifestGenerator():
         for vehicletype in vehicletypes:
             vdir = os.listdir(os.path.join(basedir, vehicletype))
             for firstlevel in vdir:
+                if firstlevel == "files.html":
+                    # generated file which should be ignored
+                    continue
+                # skip any non-directories (e.g. "files.html"):
                 if year_month_regex.match(firstlevel):
                     # this is a dated directory e.g. binaries/Copter/2016-02
                     year_month_path = os.path.join(basedir, vehicletype, firstlevel)
                     for fulldate in os.listdir(year_month_path):
+                        if fulldate == "files.html":
+                            # generated file which should be ignored
+                            continue
                         self.add_firmware_data_from_dir(os.path.join(year_month_path, fulldate), xfirmwares, vehicletype)
                 else:
                     # assume this is a release directory such as

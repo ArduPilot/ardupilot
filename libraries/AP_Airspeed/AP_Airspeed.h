@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -9,21 +8,20 @@
 
 #include "AP_Airspeed_Backend.h"
 #include "AP_Airspeed_I2C.h"
-#include "AP_Airspeed_PX4.h"
 #include "AP_Airspeed_analog.h"
 
 class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
     // constructor
-    Airspeed_Calibration(const AP_Vehicle::FixedWing &parms);
+    Airspeed_Calibration();
 
     // initialise the calibration
     void init(float initial_ratio);
 
     // take current airspeed in m/s and ground speed vector and return
     // new scaling factor
-    float update(float airspeed, const Vector3f &vg);
+    float update(float airspeed, const Vector3f &vg, int16_t max_airspeed_allowed_during_cal);
 
 private:
     // state of kalman filter for airspeed ratio estimation
@@ -32,14 +30,13 @@ private:
     const float Q1; // process noise matrix bottom right element
     Vector3f state; // state vector
     const float DT; // time delta
-    const AP_Vehicle::FixedWing &aparm;
 };
 
 class AP_Airspeed
 {
 public:
     // constructor
-    AP_Airspeed(const AP_Vehicle::FixedWing &parms);
+    AP_Airspeed();
 
     void init(void);
 
@@ -125,7 +122,7 @@ public:
     }
 
     // update airspeed ratio calibration
-    void update_calibration(const Vector3f &vground);
+    void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
 	// log data to MAVLink
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
@@ -182,9 +179,5 @@ private:
     void update_calibration(float raw_pressure);
 
     AP_Airspeed_Analog analog{_pin, _psi_range};
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    AP_Airspeed_PX4    digital{_psi_range};
-#else
     AP_Airspeed_I2C    digital{_psi_range};
-#endif
 };

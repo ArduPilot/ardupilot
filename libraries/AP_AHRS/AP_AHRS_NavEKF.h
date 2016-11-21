@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 /*
@@ -44,6 +43,8 @@
  */
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && (defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2))
 #define AP_AHRS_WITH_EKF1 0
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && !defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
+#define AP_AHRS_WITH_EKF1 0
 #else
 #define AP_AHRS_WITH_EKF1 1
 #endif
@@ -61,11 +62,11 @@ public:
                    NavEKF &_EKF1, NavEKF2 &_EKF2, Flags flags = FLAG_NONE);
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f &get_gyro(void) const;
-    const Matrix3f &get_rotation_body_to_ned(void) const;
+    const Vector3f &get_gyro(void) const override;
+    const Matrix3f &get_rotation_body_to_ned(void) const override;
 
     // return the current drift correction integrator value
-    const Vector3f &get_gyro_drift(void) const;
+    const Vector3f &get_gyro_drift(void) const override;
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
@@ -121,10 +122,11 @@ public:
     // EKF has a better ground speed vector estimate
     Vector2f groundspeed_vector(void);
 
-    const Vector3f &get_accel_ef(uint8_t i) const;
-    const Vector3f &get_accel_ef() const {
-        return get_accel_ef(_ins.get_primary_accel());
-    };
+    const Vector3f &get_accel_ef(uint8_t i) const override;
+    const Vector3f &get_accel_ef() const override;
+
+    // Retrieves the corrected NED delta velocity in use by the inertial navigation
+    void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const;
 
     // blended accelerometer values in the earth frame in m/s/s
     const Vector3f &get_accel_ef_blended(void) const;
@@ -153,7 +155,7 @@ public:
     bool get_vert_pos_rate(float &velocity);
 
     // write optical flow measurements to EKF
-    void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas);
+    void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
 
     // inibit GPS usage
     uint8_t setInhibitGPS(void);
@@ -214,7 +216,7 @@ public:
     // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
     // inconsistency that will be accpeted by the filter
     // boolean false is returned if variances are not available
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const override;
 
     // returns the expected NED magnetic field
     bool get_mag_field_NED(Vector3f& ret) const;
@@ -232,6 +234,12 @@ public:
 
     // is the EKF backend doing its own sensor logging?
     bool have_ekf_logging(void) const override;
+
+    // get the index of the current primary accelerometer sensor
+    uint8_t get_primary_accel_index(void) const override;
+
+    // get the index of the current primary gyro sensor
+    uint8_t get_primary_gyro_index(void) const override;
     
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
@@ -269,6 +277,9 @@ private:
     void update_EKF1(void);
     void update_EKF2(void);
 
+    // get the index of the current primary IMU
+    uint8_t get_primary_IMU_index(void) const;
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
     void update_SITL(void);

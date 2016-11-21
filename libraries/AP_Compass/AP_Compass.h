@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <inttypes.h>
@@ -12,19 +11,6 @@
 
 #include "CompassCalibrator.h"
 #include "AP_Compass_Backend.h"
-
-// compass product id
-#define AP_COMPASS_TYPE_UNKNOWN         0x00
-#define AP_COMPASS_TYPE_HIL             0x01
-#define AP_COMPASS_TYPE_HMC5843         0x02
-#define AP_COMPASS_TYPE_HMC5883L        0x03
-#define AP_COMPASS_TYPE_PX4             0x04
-#define AP_COMPASS_TYPE_VRBRAIN         0x05
-#define AP_COMPASS_TYPE_AK8963_MPU9250  0x06
-#define AP_COMPASS_TYPE_AK8963_I2C      0x07
-#define AP_COMPASS_TYPE_LSM303D         0x08
-#define AP_COMPASS_TYPE_LSM9DS1         0x09
-#define AP_COMPASS_TYPE_BMM150          0x0A
 
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
@@ -50,9 +36,6 @@
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3
 
-//MAXIMUM COMPASS REPORTS
-#define MAX_CAL_REPORTS 10
-#define CONTINUOUS_REPORTS 0
 #define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(50.0f)
 #define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
 #define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
@@ -127,21 +110,11 @@ public:
     // compass calibrator interface
     void compass_cal_update();
 
-    bool start_calibration(uint8_t i, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
-    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
-    bool start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
+    void start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
 
-    void cancel_calibration(uint8_t i);
     void cancel_calibration_all();
-    void cancel_calibration_mask(uint8_t mask);
-
-    bool accept_calibration(uint8_t i);
-    bool accept_calibration_all();
-    bool accept_calibration_mask(uint8_t mask);
 
     bool compass_cal_requires_reboot() { return _cal_complete_requires_reboot; }
-    bool auto_reboot() { return _compass_cal_autoreboot; }
-    uint8_t get_cal_mask() const;
     bool is_calibrating() const;
 
     /*
@@ -317,8 +290,20 @@ private:
     bool _add_backend(AP_Compass_Backend *backend, const char *name, bool external);
     void _detect_backends(void);
 
-    //keep track of number of calibration reports sent
-    uint8_t _reports_sent[COMPASS_MAX_INSTANCES];
+    // compass cal
+    bool _accept_calibration(uint8_t i);
+    bool _accept_calibration_mask(uint8_t mask);
+    void _cancel_calibration(uint8_t i);
+    void _cancel_calibration_mask(uint8_t mask);
+    uint8_t _get_cal_mask() const;
+    bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
+    bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
+    bool _auto_reboot() { return _compass_cal_autoreboot; }
+
+
+    //keep track of which calibrators have been saved
+    bool _cal_saved[COMPASS_MAX_INSTANCES];
+    bool _cal_autosave;
 
     //autoreboot after compass calibration
     bool _compass_cal_autoreboot;
@@ -390,6 +375,9 @@ private:
         // when we last got data
         uint32_t    last_update_ms;
         uint32_t    last_update_usec;
+
+        // board specific orientation
+        enum Rotation rotation;
     } _state[COMPASS_MAX_INSTANCES];
 
     CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];

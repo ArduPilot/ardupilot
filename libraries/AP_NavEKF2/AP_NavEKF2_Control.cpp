@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -170,7 +168,7 @@ void NavEKF2_core::setAidingMode()
         // GPS aiding is the perferred option unless excluded by the user
         if((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit) {
             PV_AidingMode = AID_ABSOLUTE;
-        } else if ((frontend->_fusionModeGPS == 3) && optFlowDataPresent()) {
+        } else if (optFlowDataPresent() && filterIsStable) {
             PV_AidingMode = AID_RELATIVE;
         }
     } else if (PV_AidingMode == AID_RELATIVE) {
@@ -178,7 +176,11 @@ void NavEKF2_core::setAidingMode()
          bool flowSensorTimeout = ((imuSampleTime_ms - flowValidMeaTime_ms) > 5000);
          // Check if the fusion has timed out (flow measurements have been rejected for too long)
          bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
-         if (flowSensorTimeout || flowFusionTimeout) {
+         // Enable switch to absolute position mode if GPS is available
+         // If GPS is not available and flow fusion has timed out, then fall-back to no-aiding
+         if((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && !gpsInhibit) {
+             PV_AidingMode = AID_ABSOLUTE;
+         } else if (flowSensorTimeout || flowFusionTimeout) {
              PV_AidingMode = AID_NONE;
          }
      } else if (PV_AidingMode == AID_ABSOLUTE) {
@@ -239,7 +241,7 @@ void NavEKF2_core::setAidingMode()
             stateStruct.position.z = -meaHgtAtTakeOff;
         } else if (PV_AidingMode == AID_RELATIVE) {
             // We have commenced aiding, but GPS usage has been prohibited so use optical flow only
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u is using optical flow",(unsigned)imu_index);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u is using optical flow",(unsigned)imu_index);
             posTimeout = true;
             velTimeout = true;
             // Reset the last valid flow measurement time
@@ -248,7 +250,7 @@ void NavEKF2_core::setAidingMode()
             prevFlowFuseTime_ms = imuSampleTime_ms;
         } else if (PV_AidingMode == AID_ABSOLUTE) {
             // We have commenced aiding and GPS usage is allowed
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u is using GPS",(unsigned)imu_index);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u is using GPS",(unsigned)imu_index);
             posTimeout = false;
             velTimeout = false;
             // we need to reset the GPS timers to prevent GPS timeout logic being invoked on entry into GPS aiding
@@ -277,7 +279,7 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
     tiltErrFilt = alpha*temp + (1.0f-alpha)*tiltErrFilt;
     if (tiltErrFilt < 0.005f && !tiltAlignComplete) {
         tiltAlignComplete = true;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u tilt alignment complete",(unsigned)imu_index);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u tilt alignment complete",(unsigned)imu_index);
     }
 
     // submit yaw and magnetic field reset requests depending on whether we have compass data
@@ -353,7 +355,7 @@ void NavEKF2_core::setOrigin()
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u Origin Set",(unsigned)imu_index);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u Origin Set",(unsigned)imu_index);
 }
 
 // record a yaw reset event
@@ -403,7 +405,7 @@ void  NavEKF2_core::updateFilterStatus(void)
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
     bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
-    bool optFlowNavPossible = flowDataValid && (frontend->_fusionModeGPS == 3) && delAngBiasLearned;
+    bool optFlowNavPossible = flowDataValid && delAngBiasLearned;
     bool gpsNavPossible = !gpsNotAvailable && gpsGoodToAlign && delAngBiasLearned;
     bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode == AID_NONE)));
     // If GPS height usage is specified, height is considered to be inaccurate until the GPS passes all checks

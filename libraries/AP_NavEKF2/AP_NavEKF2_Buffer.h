@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 // EKF Buffer models
 
 // this buffer model is to be used for observation buffers,
@@ -17,7 +15,7 @@ public:
     bool init(uint32_t size)
     {
         buffer = new element_t[size];
-        if(buffer == NULL)
+        if(buffer == nullptr)
         {
             return false;
         }
@@ -128,7 +126,7 @@ public:
     bool init(uint32_t size)
     {
         buffer = new element_t[size];
-        if(buffer == NULL)
+        if(buffer == nullptr)
         {
             return false;
         }

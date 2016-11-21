@@ -1,10 +1,8 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 #if FRAME_CONFIG == HELI_FRAME
 /*
- * heli_control_stabilize.pde - init and run calls for stabilize flight mode for trad heli
+ * Init and run calls for stabilize flight mode for trad heli
  */
 
 // stabilize_init - initialise stabilize controller
@@ -44,6 +42,11 @@ void Copter::heli_stabilize_run()
         if (motors.rotor_speed_above_critical()) {
             heli_flags.init_targets_on_arming=false;
         }
+    }
+
+    // clear landing flag above zero throttle
+    if (motors.armed() && motors.get_interlock() && motors.rotor_runup_complete() && !ap.throttle_zero) {
+        set_land_complete(false);
     }
 
     // apply SIMPLE mode transform to pilot inputs

@@ -1,9 +1,7 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 /*
- * control_rtl.pde - init and run calls for RTL flight mode
+ * Init and run calls for RTL flight mode
  *
  * There are two parts to RTL, the high level decision making which controls which state we are in
  * and the lower implementation of the waypoint or landing controllers within those states
@@ -350,8 +348,10 @@ void Copter::rtl_land_start()
     wp_nav.init_loiter_target(wp_nav.get_wp_destination());
 
     // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    if (!pos_control.is_active_z()) {
+        pos_control.set_alt_target_to_current_alt();
+        pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    }
 
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
@@ -375,17 +375,10 @@ void Copter::rtl_land_run()
         // set target to current position
         wp_nav.init_loiter_target();
 
-#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
-        // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {
-            init_disarm_motors();
-        }
-#else
         // disarm when the landing detector says we've landed
         if (ap.land_complete) {
             init_disarm_motors();
         }
-#endif
 
         // check if we've completed this stage of RTL
         rtl_state_complete = ap.land_complete;
@@ -411,15 +404,8 @@ void Copter::rtl_build_path(bool terrain_following_allowed)
     rtl_path.origin_point = Location_Class(stopping_point);
     rtl_path.origin_point.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME);
 
-    // set return target to nearest rally point or home position
-#if AC_RALLY == ENABLED
-    rtl_path.return_target = rally.calc_best_rally_or_home_location(current_loc, ahrs.get_home().alt);
-#else
-    rtl_path.return_target = ahrs.get_home();
-#endif
-
-    // compute return altitude
-    rtl_compute_return_alt(rtl_path.origin_point, rtl_path.return_target, terrain_following_allowed);
+    // compute return target
+    rtl_compute_return_target(terrain_following_allowed);
 
     // climb target is above our origin point at the return altitude
     rtl_path.climb_target = Location_Class(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
@@ -431,13 +417,17 @@ void Copter::rtl_build_path(bool terrain_following_allowed)
     rtl_path.land = g.rtl_alt_final <= 0;
 }
 
-// return altitude in cm above home at which vehicle should return home
-//   rtl_origin_point is the stopping point of the vehicle when rtl is initiated
-//   rtl_return_target is the home or rally point that the vehicle is returning to.  It's lat, lng and alt values must already have been filled in before this function is called
-//   rtl_return_target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)
-void Copter::rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target, bool terrain_following_allowed)
+// compute the return target - home or rally point
+//   return altitude in cm above home at which vehicle should return home
+//   return target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)
+void Copter::rtl_compute_return_target(bool terrain_following_allowed)
 {
-    float rtl_return_dist_cm = rtl_return_target.get_distance(rtl_origin_point) * 100.0f;
+    // set return target to nearest rally point or home position (Note: alt is absolute)
+#if AC_RALLY == ENABLED
+    rtl_path.return_target = rally.calc_best_rally_or_home_location(current_loc, ahrs.get_home().alt);
+#else
+    rtl_path.return_target = ahrs.get_home();
+#endif
 
     // curr_alt is current altitude above home or above terrain depending upon use_terrain
     int32_t curr_alt = current_loc.alt;
@@ -447,41 +437,60 @@ void Copter::rtl_compute_return_alt(const Location_Class &rtl_origin_point, Loca
     if (rtl_path.terrain_used) {
         // attempt to retrieve terrain alt for current location, stopping point and origin
         int32_t origin_terr_alt, return_target_terr_alt;
-        if (!rtl_origin_point.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, origin_terr_alt) ||
-            !rtl_origin_point.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, return_target_terr_alt) ||
+        if (!rtl_path.origin_point.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, origin_terr_alt) ||
+            !rtl_path.return_target.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, return_target_terr_alt) ||
             !current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_alt)) {
             rtl_path.terrain_used = false;
             Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
         }
     }
 
-    // maximum of current altitude + climb_min and rtl altitude
-    float ret = MAX(curr_alt + MAX(0, g.rtl_climb_min), MAX(g.rtl_altitude, RTL_ALT_MIN));
+    // convert return-target alt (which is an absolute alt) to alt-above-home or alt-above-terrain
+    if (!rtl_path.terrain_used || !rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_TERRAIN)) {
+        if (!rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME)) {
+            // this should never happen but just in case
+            rtl_path.return_target.set_alt_cm(0, Location_Class::ALT_FRAME_ABOVE_HOME);
+        }
+        rtl_path.terrain_used = false;
+    }
 
+    // set new target altitude to return target altitude
+    // Note: this is alt-above-home or terrain-alt depending upon use_terrain
+    // Note: ignore negative altitudes which could happen if user enters negative altitude for rally point or terrain is higher at rally point compared to home
+    int32_t target_alt = MAX(rtl_path.return_target.alt, 0);
+
+    // increase target to maximum of current altitude + climb_min and rtl altitude
+    target_alt = MAX(target_alt, curr_alt + MAX(0, g.rtl_climb_min));
+    target_alt = MAX(target_alt, MAX(g.rtl_altitude, RTL_ALT_MIN));
+
+    // reduce climb if close to return target
+    float rtl_return_dist_cm = rtl_path.return_target.get_distance(rtl_path.origin_point) * 100.0f;
     // don't allow really shallow slopes
     if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) {
-        ret = MAX(curr_alt, MIN(ret, MAX(rtl_return_dist_cm*g.rtl_cone_slope, curr_alt+RTL_ABS_MIN_CLIMB)));
+        target_alt = MAX(curr_alt, MIN(target_alt, MAX(rtl_return_dist_cm*g.rtl_cone_slope, curr_alt+RTL_ABS_MIN_CLIMB)));
     }
+
+    // set returned target alt to new target_alt
+    rtl_path.return_target.set_alt_cm(target_alt, rtl_path.terrain_used ? Location_Class::ALT_FRAME_ABOVE_TERRAIN : Location_Class::ALT_FRAME_ABOVE_HOME);
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
-    // Note: we are assuming the fence alt is the same frame as ret
+    // Note: because the rtl_path.climb_target's altitude is simply copied from the return_target's altitude,
+    //       if terrain altitudes are being used, the code below which reduces the return_target's altitude can lead to
+    //       the vehicle not climbing at all as RTL begins.  This can be overly conservative and it might be better
+    //       to apply the fence alt limit independently on the origin_point and return_target
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        ret = MIN(ret, fence.get_safe_alt()*100.0f);
+        // get return target as alt-above-home so it can be compared to fence's alt
+        if (rtl_path.return_target.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, target_alt)) {
+            float fence_alt = fence.get_safe_alt()*100.0f;
+            if (target_alt > fence_alt) {
+                // reduce target alt to the fence alt
+                rtl_path.return_target.alt -= (target_alt - fence_alt);
+            }
+        }
     }
 #endif
 
     // ensure we do not descend
-    ret = MAX(ret, curr_alt);
-
-    // convert return-target to alt-above-home or alt-above-terrain
-    if (!rtl_path.terrain_used || !rtl_return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_TERRAIN)) {
-        if (!rtl_return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME)) {
-            // this should never happen but just in case
-            rtl_return_target.set_alt_cm(0, Location_Class::ALT_FRAME_ABOVE_HOME);
-        }
-    }
-
-    // add ret to altitude
-    rtl_return_target.alt += ret;
+    rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt);
 }

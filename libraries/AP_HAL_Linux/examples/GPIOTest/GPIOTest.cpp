@@ -25,7 +25,7 @@ int parse_gpio_pin_number(uint8_t argc, const Menu::arg *argv) {
 }
 
 static int8_t test_gpio_input(uint8_t argc, const Menu::arg *argv, bool use_channel) {
-    AP_HAL::DigitalSource *ch = NULL;
+    AP_HAL::DigitalSource *ch = nullptr;
     int pin = parse_gpio_pin_number(argc, argv);
 
     if (pin <= 0) return -1;
@@ -46,7 +46,7 @@ static int8_t test_gpio_input(uint8_t argc, const Menu::arg *argv, bool use_chan
 }
 
 static int8_t test_gpio_output(uint8_t argc, const Menu::arg *argv, bool use_channel) {
-    AP_HAL::DigitalSource *ch = NULL;
+    AP_HAL::DigitalSource *ch = nullptr;
     int pin = parse_gpio_pin_number(argc, argv);
 
     if (pin <= 0) return -1;

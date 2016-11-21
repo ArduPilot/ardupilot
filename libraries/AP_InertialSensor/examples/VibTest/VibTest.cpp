@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // test harness for vibration testing
 //
@@ -68,8 +66,8 @@ void setup(void)
         char gyro_path[] = GYRO_BASE_DEVICE_PATH "n";
         accel_path[strlen(accel_path)-1] = '0'+i;
         gyro_path[strlen(gyro_path)-1] = '0'+i;
-        accel_fd[i] = open(accel_path, O_RDONLY);
-        gyro_fd[i] = open(gyro_path, O_RDONLY);
+        accel_fd[i] = open(accel_path, O_RDONLY|O_CLOEXEC);
+        gyro_fd[i] = open(gyro_path, O_RDONLY|O_CLOEXEC);
     }
     if (accel_fd[0] == -1 || gyro_fd[0] == -1) {
         AP_HAL::panic("Failed to open accel/gyro 0");

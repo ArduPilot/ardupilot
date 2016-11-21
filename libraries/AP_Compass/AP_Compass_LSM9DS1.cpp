@@ -60,7 +60,10 @@ extern const AP_HAL::HAL &hal;
 AP_Compass_Backend *AP_Compass_LSM9DS1::probe(Compass &compass,
                                               AP_HAL::OwnPtr<AP_HAL::Device> dev)
 {
-    AP_Compass_LSM9DS1 *sensor = new AP_Compass_LSM9DS1(compass, std::move(dev), AP_COMPASS_TYPE_LSM9DS1);
+    if (!dev) {
+        return nullptr;
+    }
+    AP_Compass_LSM9DS1 *sensor = new AP_Compass_LSM9DS1(compass, std::move(dev));
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -71,14 +74,11 @@ AP_Compass_Backend *AP_Compass_LSM9DS1::probe(Compass &compass,
 
 bool AP_Compass_LSM9DS1::init()
 {
-    _last_update_timestamp = AP_HAL::micros();
-
-    hal.scheduler->suspend_timer_procs();
     AP_HAL::Semaphore *bus_sem = _dev->get_semaphore();
 
     if (!bus_sem || !bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.console->printf("LSM9DS1: Unable to get bus semaphore\n");
-        goto fail_sem;
+        return false;
     }
 
     if (!_check_id()) {
@@ -97,21 +97,18 @@ bool AP_Compass_LSM9DS1::init()
     }
 
     _compass_instance = register_compass();
-    set_dev_id(_compass_instance, _dev_id);
 
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_LSM9DS1::_update, void));
+    _dev->set_device_type(DEVTYPE_LSM9DS1);
+    set_dev_id(_compass_instance, _dev->get_bus_id());
 
-    hal.scheduler->resume_timer_procs();
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM9DS1::_update, bool));
+
     bus_sem->give();
 
     return true;
 
 errout:
     bus_sem->give();
-
-fail_sem:
-    hal.scheduler->resume_timer_procs();
-
     return false;
 }
 
@@ -128,19 +125,11 @@ void AP_Compass_LSM9DS1::_dump_registers()
     hal.console->println();
 }
 
-void AP_Compass_LSM9DS1::_update(void)
+bool AP_Compass_LSM9DS1::_update(void)
 {
     struct sample_regs regs;
     Vector3f raw_field;
     uint32_t time_us = AP_HAL::micros();
-
-    if (AP_HAL::micros() - _last_update_timestamp < 10000) {
-        goto end;
-    }
-
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        goto end;
-    }
 
     if (!_block_read(LSM9DS1M_STATUS_REG_M, (uint8_t *) &regs, sizeof(regs))) {
         goto fail;
@@ -167,61 +156,48 @@ void AP_Compass_LSM9DS1::_update(void)
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
 
-    _mag_x_accum += raw_field.x;
-    _mag_y_accum += raw_field.y;
-    _mag_z_accum += raw_field.z;
-    _accum_count++;
-    if (_accum_count == 10) {
-        _mag_x_accum /= 2;
-        _mag_y_accum /= 2;
-        _mag_z_accum /= 2;
-        _accum_count = 5;
+    if (_sem->take(0)) {
+        _mag_x_accum += raw_field.x;
+        _mag_y_accum += raw_field.y;
+        _mag_z_accum += raw_field.z;
+        _accum_count++;
+        if (_accum_count == 10) {
+            _mag_x_accum /= 2;
+            _mag_y_accum /= 2;
+            _mag_z_accum /= 2;
+            _accum_count = 5;
+        }
+        _sem->give();
     }
 
-    _last_update_timestamp = AP_HAL::micros();
-
 fail:
-    _dev->get_semaphore()->give();
-end:
-    return;
+    return true;
 }
 
 void AP_Compass_LSM9DS1::read()
 {
+    if (!_sem->take_nonblocking()) {
+        return;
+    }
     if (_accum_count == 0) {
         /* We're not ready to publish*/
+        _sem->give();
         return;
     }
 
-    hal.scheduler->suspend_timer_procs();
+    Vector3f field(_mag_x_accum, _mag_y_accum, _mag_z_accum);
+    field /= _accum_count;
+    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
+    _accum_count = 0;
 
-    auto field = _get_filtered_field();
-    _reset_filter();
-
-    hal.scheduler->resume_timer_procs();
-
+    _sem->give();
+        
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
     field.rotate(ROTATION_ROLL_180);
 #endif
 
     publish_filtered_field(field, _compass_instance);
-
 }
-
-void AP_Compass_LSM9DS1::_reset_filter()
-{
-    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-    _accum_count = 0;
-}
-
-Vector3f AP_Compass_LSM9DS1::_get_filtered_field() const
-{
-    Vector3f field(_mag_x_accum, _mag_y_accum, _mag_z_accum);
-    field /= _accum_count;
-
-    return field;
-}
-
 
 bool AP_Compass_LSM9DS1::_check_id(void)
 {
@@ -259,12 +235,10 @@ bool AP_Compass_LSM9DS1::_set_scale(void)
     return true;
 }
 
-AP_Compass_LSM9DS1::AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev, uint32_t dev_id)
+AP_Compass_LSM9DS1::AP_Compass_LSM9DS1(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : AP_Compass_Backend(compass)
     , _dev(std::move(dev))
-    , _dev_id(dev_id)
 {
-    _reset_filter();
 }
 
 uint8_t AP_Compass_LSM9DS1::_register_read(uint8_t reg)

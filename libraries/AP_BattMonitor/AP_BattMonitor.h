@@ -1,10 +1,8 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 // maximum number of battery monitors
 #define AP_BATT_MONITOR_MAX_INSTANCES       2
@@ -95,6 +93,10 @@ public:
     virtual uint8_t capacity_remaining_pct(uint8_t instance) const;
     uint8_t capacity_remaining_pct() const { return capacity_remaining_pct(AP_BATT_PRIMARY_INSTANCE); }
 
+    /// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
+    int32_t pack_capacity_mah(uint8_t instance) const;
+    int32_t pack_capacity_mah() const { return pack_capacity_mah(AP_BATT_PRIMARY_INSTANCE); }
+ 
     /// exhausted - returns true if the battery's voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity
     bool exhausted(uint8_t instance, float low_voltage, float min_capacity_mah);
     bool exhausted(float low_voltage, float min_capacity_mah) { return exhausted(AP_BATT_PRIMARY_INSTANCE, low_voltage, min_capacity_mah); }
@@ -106,14 +108,12 @@ public:
     /// set_monitoring - sets the monitor type (used for example sketch only)
     void set_monitoring(uint8_t instance, uint8_t mon) { _monitoring[instance].set(mon); }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     bool get_watt_max() { return get_watt_max(AP_BATT_PRIMARY_INSTANCE); }
     bool get_watt_max(uint8_t instance) { return _watt_max[instance]; }
 
     /// true when (voltage * current) > watt_max
     bool overpower_detected() const;
     bool overpower_detected(uint8_t instance) const;
-#endif
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -127,9 +127,7 @@ protected:
     AP_Float    _curr_amp_per_volt[AP_BATT_MONITOR_MAX_INSTANCES];  /// voltage on current pin multiplied by this to calculate current in amps
     AP_Float    _curr_amp_offset[AP_BATT_MONITOR_MAX_INSTANCES];    /// offset voltage that is subtracted from current pin before conversion to amps
     AP_Int32    _pack_capacity[AP_BATT_MONITOR_MAX_INSTANCES];      /// battery pack capacity less reserve in mAh
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     AP_Int16    _watt_max[AP_BATT_MONITOR_MAX_INSTANCES];           /// max battery power allowed. Reduce max throttle to reduce current to satisfy this limit
-#endif
 
 private:
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];

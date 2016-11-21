@@ -60,7 +60,7 @@ public:
 
     void set_mission(const AP_Mission *mission);
 
-    virtual uint16_t bufferspace_available() = 0;
+    virtual uint32_t bufferspace_available() = 0;
 
     virtual uint16_t start_new_log(void) = 0;
     bool log_write_started;
@@ -116,6 +116,10 @@ public:
     // write a log message out to the log of msg_type type, with
     // values contained in arg_list:
     bool Log_Write(uint8_t msg_type, va_list arg_list, bool is_critical=false);
+
+    // these methods are used when reporting system status over mavlink
+    virtual bool logging_enabled() const = 0;
+    virtual bool logging_failed() const = 0;
 
 protected:
     uint32_t dropped;

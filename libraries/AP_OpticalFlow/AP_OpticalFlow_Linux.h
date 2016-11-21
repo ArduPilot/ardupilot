@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
  * Portions of this driver were borrowed from the PX4Firmware px4flow driver which can be found here:
  *     https://github.com/PX4/Firmware/blob/master/src/drivers/px4flow/px4flow.cpp
@@ -54,6 +52,7 @@ private:
         uint16_t ground_distance;
         int16_t gyro_temperature;
         uint8_t qual;
+        uint8_t padding_not_used;
     } i2c_integral_frame;
 
     typedef struct {
@@ -77,10 +76,11 @@ private:
     // request the sensor produce a measurement, returns true on success
     bool request_measurement();
 
-    // read from sensor, returns true if successful
-    bool read(optical_flow_s* report);
+    bool timer(void);
+    
+    bool initialised;
+    uint16_t num_errors;
 
-    bool initialised = false;
-    uint16_t num_errors = 0;
-    uint32_t last_read_ms = 0;
+    optical_flow_s report;
+    bool new_report;
 };

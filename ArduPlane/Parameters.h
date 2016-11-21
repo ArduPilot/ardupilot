@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -50,6 +49,8 @@ public:
         k_param_software_type,
         k_param_num_resets,
         k_param_NavEKF2,
+        k_param_g2,
+        k_param_avoidance_adsb,
 
         // Misc
         //
@@ -320,7 +321,7 @@ public:
 
         // other objects
         k_param_sitl = 230,
-        k_param_obc,
+        k_param_afs,
         k_param_rollController,
         k_param_pitchController,
         k_param_yawController,
@@ -566,6 +567,32 @@ public:
         rc_16                                   (CH_16),
         _dummy(0)
         {}
+};
+
+/*
+  2nd block of parameters, to avoid going past 256 top level keys
+ */
+class ParametersG2 {
+public:
+    ParametersG2(void);
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
+    // button reporting library
+    AP_Button button;
+
+    // vehicle statistics
+    AP_Stats stats;
+
+    // internal combustion engine control
+    AP_ICEngine ice_control;
+
+    // control over servo output ranges
+    SRV_Channels servo_channels;
+
+    // whether to enforce acceptance of packets only from sysid_my_gcs
+    AP_Int8 sysid_enforce;
 };
 
 extern const AP_Param::Info var_info[];

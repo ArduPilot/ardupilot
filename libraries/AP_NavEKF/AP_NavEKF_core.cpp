@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF_core.h"
@@ -4345,9 +4343,8 @@ void NavEKF_core::setWindVelStates()
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF_core::getRotationBodyToNED(Matrix3f &mat) const
 {
-    Vector3f trim = _ahrs->get_trim();
     state.quat.rotation_matrix(mat);
-    mat.rotateXYinv(trim);
+    mat = mat * _ahrs->get_rotation_vehicle_body_to_autopilot_body();
 }
 
 // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
@@ -5138,8 +5135,8 @@ void NavEKF_core::readRangeFinder(void)
                 minIndex = 1;
                 maxIndex = 0;
             } else {
-                maxIndex = 0;
-                minIndex = 1;
+                minIndex = 0;
+                maxIndex = 1;
             }
             if (storedRngMeas[2] > storedRngMeas[maxIndex]) {
                 midIndex = maxIndex;

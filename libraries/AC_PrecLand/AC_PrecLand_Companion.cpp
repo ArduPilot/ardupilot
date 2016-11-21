@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PrecLand_Companion.h"
 
@@ -7,9 +6,10 @@ extern const AP_HAL::HAL& hal;
 // Constructor
 AC_PrecLand_Companion::AC_PrecLand_Companion(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state)
     : AC_PrecLand_Backend(frontend, state),
-      _distance_to_target(0.0f),
       _timestamp_us(0),
-      _have_los_meas(false)
+      _distance_to_target(0.0f),
+      _have_los_meas(false),
+      _los_meas_time_ms(0)
 {
 }
 

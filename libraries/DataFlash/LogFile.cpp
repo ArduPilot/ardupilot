@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <stdlib.h>
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -37,14 +35,14 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
         DFMessageWriter_DFLogStart *message_writer =
             new DFMessageWriter_DFLogStart(_firmware_string);
-        if (message_writer != NULL)  {
+        if (message_writer != nullptr)  {
 #if HAL_OS_POSIX_IO
             backends[_next_backend] = new DataFlash_File(*this,
                                                          message_writer,
                                                          HAL_BOARD_LOG_DIRECTORY);
 #endif
         }
-        if (backends[_next_backend] == NULL) {
+        if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open DataFlash_File");
         } else {
             _next_backend++;
@@ -61,11 +59,11 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
         }
         DFMessageWriter_DFLogStart *message_writer =
             new DFMessageWriter_DFLogStart(_firmware_string);
-        if (message_writer != NULL)  {
+        if (message_writer != nullptr)  {
             backends[_next_backend] = new DataFlash_MAVLink(*this,
                                                             message_writer);
         }
-        if (backends[_next_backend] == NULL) {
+        if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open DataFlash_MAVLink");
         } else {
             _next_backend++;
@@ -1394,7 +1392,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     ahrs.get_NavEKF2().getFilterGpsStatus(0,gpsStatus);
     float tiltError;
     ahrs.get_NavEKF2().getTiltError(0,tiltError);
-    uint8_t primaryIndex = ahrs.get_NavEKF2().getPrimaryCoreIndex();
+    int8_t primaryIndex = ahrs.get_NavEKF2().getPrimaryCoreIndex();
     struct log_NKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
         time_us : time_us,

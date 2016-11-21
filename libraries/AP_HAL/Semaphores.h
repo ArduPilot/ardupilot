@@ -2,7 +2,7 @@
 
 #include "AP_HAL_Namespace.h"
 
-#define HAL_SEMAPHORE_BLOCK_FOREVER ((uint32_t) 0xFFFFFFFF)
+#define HAL_SEMAPHORE_BLOCK_FOREVER 0
 
 class AP_HAL::Semaphore {
 public:

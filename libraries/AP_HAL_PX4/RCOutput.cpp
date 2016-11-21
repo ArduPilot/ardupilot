@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -55,24 +53,27 @@ void PX4RCOutput::init()
     }
 
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    _alt_fd = open("/dev/px4fmu", O_RDWR);
-    if (_alt_fd == -1) {
-        hal.console->printf("RCOutput: failed to open /dev/px4fmu");
-        return;
+    struct stat st;
+    // don't try and open px4fmu unless there is a px4io. Otherwise we
+    // can end up opening the same device twice
+    if (stat("/dev/px4io", &st) == 0) {
+        _alt_fd = open("/dev/px4fmu", O_RDWR);
+        if (_alt_fd == -1) {
+            hal.console->printf("RCOutput: failed to open /dev/px4fmu");
+        }
     }
 #endif
 
     // ensure not to write zeros to disabled channels
-    _enabled_channels = 0;
     for (uint8_t i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
         _period[i] = PWM_IGNORE_THIS_CHANNEL;
     }
 
     // publish actuator vaules on demand
-    _actuator_direct_pub = NULL;
+    _actuator_direct_pub = nullptr;
 
     // and armed state
-    _actuator_armed_pub = NULL;
+    _actuator_armed_pub = nullptr;
 }
 
 
@@ -278,19 +279,20 @@ void PX4RCOutput::force_safety_off(void)
 void PX4RCOutput::force_safety_pending_requests(void)
 {
     // check if there is a pending saftey_state change. If so (timer != 0) then set it.
+    uint32_t now = AP_HAL::millis();
     if (_safety_state_request_last_ms != 0 &&
-            AP_HAL::millis() - _safety_state_request_last_ms >= 100) {
-        if (hal.util->safety_switch_state() == _safety_state_request) {
-            // current switch state matches request, stop attempting
+        now - _safety_state_request_last_ms >= 100) {
+        if (hal.util->safety_switch_state() == _safety_state_request &&
+            _safety_state_request_last_ms != 1) {
             _safety_state_request_last_ms = 0;
         } else if (_safety_state_request == AP_HAL::Util::SAFETY_DISARMED) {
             // current != requested, set it
             ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_ON, 0);
-            _safety_state_request_last_ms = AP_HAL::millis();
+            _safety_state_request_last_ms = now;
         } else if (_safety_state_request == AP_HAL::Util::SAFETY_ARMED) {
             // current != requested, set it
             ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
-            _safety_state_request_last_ms = AP_HAL::millis();
+            _safety_state_request_last_ms = now;
         }
     }
 }
@@ -380,11 +382,15 @@ void PX4RCOutput::_arm_actuators(bool arm)
 
 	_armed.timestamp = hrt_absolute_time();
     _armed.armed = arm;
-    _armed.ready_to_arm = arm;
+    if (arm) {
+        // this latches ready_to_arm to true once set once. Otherwise
+        // we have a race condition with px4io safety switch update
+        _armed.ready_to_arm = true;
+    }
     _armed.lockdown = false;
     _armed.force_failsafe = false;
 
-    if (_actuator_armed_pub == NULL) {
+    if (_actuator_armed_pub == nullptr) {
         _actuator_armed_pub = orb_advertise(ORB_ID(actuator_armed), &_armed);
     } else {
         orb_publish(ORB_ID(actuator_armed), _actuator_armed_pub, &_armed);
@@ -426,13 +432,15 @@ void PX4RCOutput::_publish_actuators(void)
         actuators.values[i] = actuators.values[i]*2 - 1;
     }
 
-    if (_actuator_direct_pub == NULL) {
+    if (_actuator_direct_pub == nullptr) {
         _actuator_direct_pub = orb_advertise(ORB_ID(actuator_direct), &actuators);
     } else {
         orb_publish(ORB_ID(actuator_direct), _actuator_direct_pub, &actuators);
     }
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
         _arm_actuators(true);
+    } else {
+        _arm_actuators(false);
     }
 }
 
@@ -538,7 +546,7 @@ void PX4RCOutput::push()
 
 void PX4RCOutput::_timer_tick(void)
 {
-    if (_output_mode != MODE_PWM_ONESHOT) {
+    if (_output_mode != MODE_PWM_ONESHOT && !_corking) {
         /* in oneshot mode the timer does nothing as the outputs are
          * sent from push() */
         _send_outputs();

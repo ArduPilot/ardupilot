@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 /*
@@ -42,13 +40,11 @@ void Plane::failsafe_check(void)
     if (in_failsafe && tnow - last_timestamp > 20000) {
         last_timestamp = tnow;
 
-#if OBC_FAILSAFE == ENABLED
         if (in_calibration) {
             // tell the failsafe system that we are calibrating
             // sensors, so don't trigger failsafe
-            obc.heartbeat();
+            afs.heartbeat();
         }
-#endif
 
         if (hal.rcin->num_channels() < 5) {
             // we don't have any RC input to pass through
@@ -61,6 +57,9 @@ void Plane::failsafe_check(void)
         channel_pitch->set_radio_out(channel_pitch->read());
         if (hal.util->get_soft_armed()) {
             channel_throttle->set_radio_out(channel_throttle->read());
+        } else {
+            channel_throttle->set_servo_out(0);
+            channel_throttle->calc_pwm();
         }
         channel_rudder->set_radio_out(channel_rudder->read());
 
@@ -75,26 +74,12 @@ void Plane::failsafe_check(void)
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_rudder, rudder);
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_steering, rudder);
 
-        if (g.vtail_output != MIXING_DISABLED) {
-            channel_output_mixer(g.vtail_output, channel_pitch, channel_rudder);
-        } else if (g.elevon_output != MIXING_DISABLED) {
-            channel_output_mixer(g.elevon_output, channel_pitch, channel_roll);
-        }
-
-#if OBC_FAILSAFE == ENABLED
         // this is to allow the failsafe module to deliberately crash 
         // the plane. Only used in extreme circumstances to meet the
         // OBC rules
-        obc.check_crash_plane();
-#endif
-
-        if (!demoing_servos) {
-            channel_roll->output();
-            channel_pitch->output();
-        }
-        channel_throttle->output();
-        if (g.rudder_only == 0) {
-            channel_rudder->output();
+        if (afs.should_crash_vehicle()) {
+            afs.terminate_vehicle();
+            return;
         }
 
         // setup secondary output channels that do have
@@ -105,6 +90,8 @@ void Plane::failsafe_check(void)
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_flap, 0);
         RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_flap_auto, 0);
 
+        servos_output();
+        
         // setup flaperons
         flaperon_update(0);
     }

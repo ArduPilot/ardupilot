@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
@@ -15,7 +14,6 @@ public:
 
     /* AP_Baro public interface: */
     void update();
-    void accumulate(void);
 
 private:
     void _cmd_read_pressure();
@@ -25,6 +23,8 @@ private:
     void _calculate();
     bool _data_ready();
 
+    bool _timer(void);
+    
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     AP_HAL::DigitalSource *_eoc;
 

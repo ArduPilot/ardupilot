@@ -53,12 +53,6 @@ float safe_asin(const T v);
 template <class T>
 float safe_sqrt(const T v);
 
-// return determinant of square matrix
-float detnxn(const float C[], const uint8_t n);
-
-// Output inverted nxn matrix when returns true, otherwise matrix is Singular
-bool inversenxn(const float x[], float y[], const uint8_t n);
-
 // invOut is an inverted 4x4 matrix when returns true, otherwise matrix is Singular
 bool inverse3x3(float m[], float invOut[]);
 

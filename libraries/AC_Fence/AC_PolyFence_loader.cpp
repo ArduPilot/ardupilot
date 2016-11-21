@@ -13,13 +13,13 @@ uint8_t AC_PolyFence_loader::max_points() const
 }
 
 // create buffer to hold copy of eeprom points in RAM
-// returns NULL if not enough memory can be allocated
+// returns nullptr if not enough memory can be allocated
 void* AC_PolyFence_loader::create_point_array(uint8_t element_size)
 {
     uint32_t array_size = max_points() * element_size;
     if (hal.util->available_memory() < 100U + array_size) {
         // too risky to enable as we could run out of stack
-        return NULL;
+        return nullptr;
     }
 
     return calloc(1, array_size);
@@ -35,7 +35,7 @@ bool AC_PolyFence_loader::load_point_from_eeprom(uint16_t i, Vector2l& point)
 
     // read fence point
     point.x = fence_storage.read_uint32(i * sizeof(Vector2l));
-    point.y = fence_storage.read_uint32(i * sizeof(Vector2l) + 4);
+    point.y = fence_storage.read_uint32(i * sizeof(Vector2l) + sizeof(uint32_t));
     return true;
 }
 
@@ -49,7 +49,7 @@ bool AC_PolyFence_loader::save_point_to_eeprom(uint16_t i, const Vector2l& point
 
     // write point to eeprom
     fence_storage.write_uint32(i * sizeof(Vector2l), point.x);
-    fence_storage.write_uint32(i * sizeof(Vector2l)+4, point.y);
+    fence_storage.write_uint32(i * sizeof(Vector2l)+sizeof(uint32_t), point.y);
     return true;
 }
 
@@ -59,7 +59,7 @@ bool AC_PolyFence_loader::save_point_to_eeprom(uint16_t i, const Vector2l& point
 bool AC_PolyFence_loader::boundary_valid(uint16_t num_points, const Vector2l* points, bool contains_return_point) const
 {
     // exit immediate if no points
-    if (points == NULL) {
+    if (points == nullptr) {
         return false;
     }
 
@@ -87,7 +87,7 @@ bool AC_PolyFence_loader::boundary_valid(uint16_t num_points, const Vector2l* po
 bool AC_PolyFence_loader::boundary_valid(uint16_t num_points, const Vector2f* points, bool contains_return_point) const
 {
     // exit immediate if no points
-    if (points == NULL) {
+    if (points == nullptr) {
         return false;
     }
 
@@ -118,7 +118,7 @@ bool AC_PolyFence_loader::boundary_valid(uint16_t num_points, const Vector2f* po
 bool AC_PolyFence_loader::boundary_breached(const Vector2l& location, uint16_t num_points, const Vector2l* points, bool contains_return_point) const
 {
     // exit immediate if no points
-    if (points == NULL) {
+    if (points == nullptr) {
         return false;
     }
 
@@ -132,7 +132,7 @@ bool AC_PolyFence_loader::boundary_breached(const Vector2l& location, uint16_t n
 bool AC_PolyFence_loader::boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points, bool contains_return_point) const
 {
     // exit immediate if no points
-    if (points == NULL) {
+    if (points == nullptr) {
         return false;
     }
 

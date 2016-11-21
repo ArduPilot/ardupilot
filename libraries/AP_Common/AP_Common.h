@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -150,19 +149,6 @@ enum HomeState {
 ///
 //@{
 
-
-/*  Product IDs for all supported products follow */
-
-#define AP_PRODUCT_ID_NONE                      0x00    // Hardware in the loop
-#define AP_PRODUCT_ID_SITL              0x03    // Software in the loop
-#define AP_PRODUCT_ID_PX4               0x04    // PX4 on NuttX
-#define AP_PRODUCT_ID_PX4_V2            0x05    // PX4 FMU2 on NuttX
-#define AP_PRODUCT_ID_PX4_V4            0x06    // PX4 FMU4 on NuttX
-#define AP_PRODUCT_ID_L3G4200D          0x101   // Linux with L3G4200D and ADXL345
-#define AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE 0x102   // Linux with the PixHawk Fire Cape
-#define AP_PRODUCT_ID_MPU9250           0x103   // MPU9250
-#define AP_PRODUCT_ID_VRBRAIN           0x150   // VRBRAIN on NuttX
-
 /*
   Return true if value is between lower and upper bound inclusive.
   False otherwise.
@@ -181,4 +167,3 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 #else
 #define SITL_printf(fmt, args ...)
 #endif
-

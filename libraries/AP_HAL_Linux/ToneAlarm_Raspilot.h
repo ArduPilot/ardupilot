@@ -4,7 +4,9 @@
 
 #include "ToneAlarm.h"
 
-class Linux::ToneAlarm_Raspilot : public Linux::ToneAlarm {
+namespace Linux {
+
+class ToneAlarm_Raspilot : public ToneAlarm {
 public:
     ToneAlarm_Raspilot();
     bool init() override;
@@ -18,3 +20,5 @@ private:
     volatile uint32_t *_pwm;
     volatile uint32_t *_clk;
 };
+
+}

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -81,22 +80,17 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
     _state = 0;
 
     sem->give();
+
+    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP085::_timer, bool));
 }
 
 /*
   This is a state machine. Acumulate a new sensor reading.
  */
-void AP_Baro_BMP085::accumulate(void)
+bool AP_Baro_BMP085::_timer(void)
 {
-    AP_HAL::Semaphore *sem = _dev->get_semaphore();
-
     if (!_data_ready()) {
-        return;
-    }
-
-    // take i2c bus sempahore
-    if (!sem->take(1)) {
-        return;
+        return true;
     }
 
     if (_state == 0) {
@@ -112,8 +106,7 @@ void AP_Baro_BMP085::accumulate(void)
     } else {
         _cmd_read_pressure();
     }
-
-    sem->give();
+    return true;
 }
 
 /*
@@ -121,17 +114,18 @@ void AP_Baro_BMP085::accumulate(void)
  */
 void AP_Baro_BMP085::update(void)
 {
-    if (!_has_sample && _data_ready()) {
-        accumulate();
-    }
-    if (!_has_sample) {
-        return;
-    }
+    if (_sem->take_nonblocking()) {
+        if (!_has_sample) {
+            _sem->give();
+            return;
+        }
 
-    float temperature = 0.1f * _temp;
+        float temperature = 0.1f * _temp;
+        float pressure = _pressure_filter.getf();
 
-    float pressure = _pressure_filter.getf();
-    _copy_to_frontend(_instance, pressure, temperature);
+        _copy_to_frontend(_instance, pressure, temperature);
+        _sem->give();
+    }
 }
 
 // Send command to Read Pressure
@@ -218,8 +212,11 @@ void AP_Baro_BMP085::_calculate()
     x2 = (-7357 * p) >> 16;
     p += ((x1 + x2 + 3791) >> 4);
 
-    _pressure_filter.apply(p);
-    _has_sample = true;
+    if (_sem->take(0)) {
+        _pressure_filter.apply(p);
+        _has_sample = true;
+        _sem->give();
+    }
 }
 
 bool AP_Baro_BMP085::_data_ready()

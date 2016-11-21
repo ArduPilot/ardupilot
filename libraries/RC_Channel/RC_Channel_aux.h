@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	RC_Channel_aux.h
 /// @brief	RC_Channel manager for auxiliary channels (5..8), with EEPROM-backed storage of constants.
 /// @author Amilcar Lucas
@@ -23,7 +21,7 @@ public:
         RC_Channel(ch_out)
     {
         for (uint8_t i=0; i<RC_AUX_MAX_CHANNELS; i++) {
-            if (_aux_channels[i] == NULL) {
+            if (_aux_channels[i] == nullptr) {
                 _aux_channels[i] = this;
                 break;
             }
@@ -61,7 +59,7 @@ public:
         k_flaperon2             = 25,            ///< flaperon, right wing
         k_steering              = 26,            ///< ground steering, used to separate from rudder
         k_parachute_release     = 27,            ///< parachute release
-        k_epm                   = 28,            ///< epm gripper
+        k_gripper               = 28,            ///< gripper
         k_landing_gear_control  = 29,            ///< landing gear controller
         k_engine_run_enable     = 30,            ///< engine kill switch, used for gas airplanes and helicopters
         k_heli_rsc              = 31,            ///< helicopter RSC output
@@ -91,6 +89,10 @@ public:
         k_rcin14                = 64,
         k_rcin15                = 65,
         k_rcin16                = 66,
+        k_ignition              = 67,
+        k_choke                 = 68,
+        k_starter               = 69,
+        k_throttle              = 70,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -161,11 +163,19 @@ public:
 
     // find first channel that a function is assigned to
     static bool find_channel(Aux_servo_function_t function, uint8_t &chan);
+
+    // control pass-thru of channels
+    static void disable_passthrough(bool disable) {
+        _disable_passthrough = disable;
+    }
     
 private:
-    static uint64_t _function_mask;
+    static uint64_t _function_mask[2];
     static bool _initialised;
     static RC_Channel_aux *_aux_channels[RC_AUX_MAX_CHANNELS];
+    static bool _disable_passthrough;
 
     void aux_servo_function_setup(void);
+    static void set_function_mask(uint8_t function);
+    static void clear_function_mask(void);
 };

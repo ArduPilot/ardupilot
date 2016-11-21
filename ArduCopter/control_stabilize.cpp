@@ -1,16 +1,15 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 /*
- * control_stabilize.pde - init and run calls for stabilize flight mode
+ * Init and run calls for stabilize flight mode
  */
 
 // stabilize_init - initialise stabilize controller
 bool Copter::stabilize_init(bool ignore_checks)
 {
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-    if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (get_pilot_desired_throttle(channel_throttle->get_control_in()) > get_non_takeoff_throttle())) {
+    if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) &&
+            (get_pilot_desired_throttle(channel_throttle->get_control_in()) > get_non_takeoff_throttle())) {
         return false;
     }
     // set target altitude to zero for reporting
@@ -33,6 +32,9 @@ void Copter::stabilize_run()
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
     }
+
+    // clear landing flag
+    set_land_complete(false);
 
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 

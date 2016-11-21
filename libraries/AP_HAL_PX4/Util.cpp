@@ -61,7 +61,7 @@ bool PX4Util::run_debug_shell(AP_HAL::BetterStream *stream)
     dup2(fd, 1);
     dup2(fd, 2);
     
-    nsh_consolemain(0, NULL);
+    nsh_consolemain(0, nullptr);
     
     // this shouldn't happen
     hal.console->printf("shell exited\n");
@@ -152,7 +152,7 @@ PX4Util::perf_counter_t PX4Util::perf_alloc(PX4Util::perf_counter_type t, const 
         px4_t = ::PC_INTERVAL;
         break;
     default:
-        return NULL;
+        return nullptr;
     }
     return (perf_counter_t)::perf_alloc(px4_t, name);
 }
@@ -196,8 +196,12 @@ void PX4Util::set_imu_temp(float current)
     // experimentally tweaked for Pixhawk2
     const float kI = 0.3f;
     const float kP = 200.0f;
+    float target = (float)(*_heater.target);
+
+    // limit to 65 degrees to prevent damage
+    target = constrain_float(target, 0, 65);
     
-    float err = ((float)*_heater.target) - current;
+    float err = target - current;
 
     _heater.integrator += kI * err;
     _heater.integrator = constrain_float(_heater.integrator, 0, 70);

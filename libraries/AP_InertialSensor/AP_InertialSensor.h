@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 // Gyro and Accelerometer calibration criteria
@@ -67,8 +66,8 @@ public:
 
     /// Register a new gyro/accel driver, allocating an instance
     /// number
-    uint8_t register_gyro(uint16_t raw_sample_rate_hz);
-    uint8_t register_accel(uint16_t raw_sample_rate_hz);
+    uint8_t register_gyro(uint16_t raw_sample_rate_hz, uint32_t id);
+    uint8_t register_accel(uint16_t raw_sample_rate_hz, uint32_t id);
 
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
@@ -141,6 +140,14 @@ public:
     // get accel scale
     const Vector3f &get_accel_scale(uint8_t i) const { return _accel_scale[i]; }
     const Vector3f &get_accel_scale(void) const { return get_accel_scale(_primary_accel); }
+
+    // return a 3D vector defining the position offset of the IMU accelerometer in metres relative to the body frame origin
+    const Vector3f &get_imu_pos_offset(uint8_t instance) const {
+        return _accel_pos[instance];
+    }
+    const Vector3f &get_imu_pos_offset(void) const {
+        return _accel_pos[_primary_accel];
+    }
 
     // return the temperature if supported. Zero is returned if no
     // temperature is available
@@ -252,7 +259,7 @@ public:
 private:
 
     // load backend drivers
-    void _add_backend(AP_InertialSensor_Backend *backend);
+    bool _add_backend(AP_InertialSensor_Backend *backend);
     void _start_backends();
     AP_InertialSensor_Backend *_find_backend(int16_t backend_id, uint8_t instance);
 
@@ -265,8 +272,8 @@ private:
 
     bool _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
 
-    // save parameters to eeprom
-    void  _save_parameters();
+    // save gyro calibration values to eeprom
+    void _save_gyro_calibration();
 
     // backend objects
     AP_InertialSensor_Backend *_backends[INS_MAX_BACKENDS];
@@ -312,12 +319,20 @@ private:
     Vector3f _last_raw_gyro[INS_MAX_INSTANCES];
 
     // product id
-    AP_Int16 _product_id;
+    AP_Int16 _old_product_id;
+
+    // IDs to uniquely identify each sensor: shall remain
+    // the same across reboots
+    AP_Int32 _accel_id[INS_MAX_INSTANCES];
+    AP_Int32 _gyro_id[INS_MAX_INSTANCES];
 
     // accelerometer scaling and offsets
     AP_Vector3f _accel_scale[INS_MAX_INSTANCES];
     AP_Vector3f _accel_offset[INS_MAX_INSTANCES];
     AP_Vector3f _gyro_offset[INS_MAX_INSTANCES];
+
+    // accelerometer position offset in body frame
+    AP_Vector3f _accel_pos[INS_MAX_INSTANCES];
 
     // accelerometer max absolute offsets to be used for calibration
     float _accel_max_abs_offsets[INS_MAX_INSTANCES];
@@ -337,11 +352,19 @@ private:
     // use for attitude, velocity, position estimates
     AP_Int8     _use[INS_MAX_INSTANCES];
 
+    // control enable of fast sampling
+    AP_Int8     _fast_sampling_mask;
+
     // board orientation from AHRS
     enum Rotation _board_orientation;
 
-    // calibrated_ok flags
+    // per-sensor orientation to allow for board type defaults at runtime
+    enum Rotation _gyro_orientation[INS_MAX_INSTANCES];
+    enum Rotation _accel_orientation[INS_MAX_INSTANCES];
+
+    // calibrated_ok/id_ok flags
     bool _gyro_cal_ok[INS_MAX_INSTANCES];
+    bool _accel_id_ok[INS_MAX_INSTANCES];
 
     // primary accel and gyro
     uint8_t _primary_gyro;
@@ -417,7 +440,7 @@ private:
     void _acal_event_failure();
 
     // Returns AccelCalibrator objects pointer for specified acceleromter
-    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):NULL; }
+    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):nullptr; }
 
     float _trim_pitch;
     float _trim_roll;

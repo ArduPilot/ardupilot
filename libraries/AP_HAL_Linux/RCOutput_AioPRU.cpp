@@ -36,7 +36,7 @@ void RCOutput_AioPRU::init()
 
    signal(SIGBUS,catch_sigbus);
 
-   mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+   mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
 
    pwm = (struct pwm*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, RCOUT_PRUSS_RAM_BASE);
    iram = (uint32_t*)mmap(0, 0x2000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, RCOUT_PRUSS_IRAM_BASE);
@@ -98,7 +98,12 @@ void RCOutput_AioPRU::disable_ch(uint8_t ch)
 void RCOutput_AioPRU::write(uint8_t ch, uint16_t period_us)
 {
    if(ch < PWM_CHAN_COUNT) {
-      pwm->channel[ch].time_high = TICK_PER_US * period_us;
+       if (corked) {
+           pending_mask |= (1U << ch);
+           pending[ch] = period_us;
+       } else {
+           pwm->channel[ch].time_high = TICK_PER_US * period_us;
+       }
    }
 }
 
@@ -124,4 +129,20 @@ void RCOutput_AioPRU::read(uint16_t* period_us, uint8_t len)
    for(i = 0; i < len; i++) {
       period_us[i] = pwm->channel[i].time_high / TICK_PER_US;
    }
+}
+
+void RCOutput_AioPRU::cork(void)
+{
+    corked = true;
+}
+
+void RCOutput_AioPRU::push(void)
+{
+    corked = false;
+    for (uint8_t i=0; i<PWM_CHAN_COUNT; i++) {
+        if (pending_mask & (1U<<i)) {
+            write(i, pending[i]);
+        }
+    }
+    pending_mask = 0;
 }

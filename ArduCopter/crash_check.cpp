@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 // Code to detect a crash main ArduCopter code
@@ -101,7 +99,9 @@ void Copter::parachute_check()
     // check for angle error over 30 degrees
     const float angle_error = attitude_control.get_att_error_angle_deg();
     if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
-        control_loss_count = 0;
+        if (control_loss_count > 0) {
+            control_loss_count--;
+        }
         return;
     }
 

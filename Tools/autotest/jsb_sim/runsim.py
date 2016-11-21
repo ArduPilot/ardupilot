@@ -1,13 +1,25 @@
 #!/usr/bin/env python
-# run a jsbsim model as a child process
+"""
+ Run a jsbsim model as a child process.
+"""
+from __future__ import print_function
+import atexit
+import errno
+import fdpexpect
+import math
+import os
+import select
+import signal
+import socket
+import struct
+import sys
+import time
 
-import sys, os, pexpect, socket
-import math, time, select, struct, signal, errno
-
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'pysim'))
-
-import util, atexit, fdpexpect
+import pexpect
 from pymavlink import fgFDM
+
+from .. pysim import util
+
 
 class control_state(object):
     def __init__(self):
@@ -21,18 +33,20 @@ sitl_state = control_state()
 
 
 def interpret_address(addrstr):
-    '''interpret a IP:port string'''
+    """Interpret a IP:port string."""
     a = addrstr.split(':')
     a[1] = int(a[1])
     return tuple(a)
 
+
 def jsb_set(variable, value):
-    '''set a JSBSim variable'''
+    """Set a JSBSim variable."""
     global jsb_console
     jsb_console.send('set %s %s\r\n' % (variable, value))
 
+
 def setup_template(home):
-    '''setup aircraft/Rascal/reset.xml'''
+    """Setup aircraft/Rascal/reset.xml ."""
     global opts
     v = home.split(',')
     if len(v) != 4:
@@ -45,50 +59,50 @@ def setup_template(home):
     sitl_state.ground_height = altitude
     template = os.path.join('aircraft', 'Rascal', 'reset_template.xml')
     reset = os.path.join('aircraft', 'Rascal', 'reset.xml')
-    xml = open(template).read() % { 'LATITUDE'  : str(latitude),
-                                    'LONGITUDE' : str(longitude),
-                                    'HEADING'   : str(heading) }
+    xml = open(template).read() % {'LATITUDE': str(latitude),
+                                   'LONGITUDE': str(longitude),
+                                   'HEADING': str(heading)}
     open(reset, mode='w').write(xml)
     print("Wrote %s" % reset)
 
     baseport = int(opts.simout.split(':')[1])
 
     template = os.path.join('jsb_sim', 'fgout_template.xml')
-    out      = os.path.join('jsb_sim', 'fgout.xml')
-    xml = open(template).read() % { 'FGOUTPORT'  : str(baseport+3) }
+    out = os.path.join('jsb_sim', 'fgout.xml')
+    xml = open(template).read() % {'FGOUTPORT': str(baseport+3)}
     open(out, mode='w').write(xml)
     print("Wrote %s" % out)
 
     template = os.path.join('jsb_sim', 'rascal_test_template.xml')
-    out      = os.path.join('jsb_sim', 'rascal_test.xml')
-    xml = open(template).read() % { 'JSBCONSOLEPORT'  : str(baseport+4) }
+    out = os.path.join('jsb_sim', 'rascal_test.xml')
+    xml = open(template).read() % {'JSBCONSOLEPORT': str(baseport+4)}
     open(out, mode='w').write(xml)
     print("Wrote %s" % out)
-    
+
 
 def process_sitl_input(buf):
-    '''process control changes from SITL sim'''
+    """Process control changes from SITL sim."""
     control = list(struct.unpack('<14H', buf))
     pwm = control[:11]
     (speed, direction, turbulance) = control[11:]
 
     global wind
-    wind.speed      = speed*0.01
-    wind.direction  = direction*0.01
+    wind.speed = speed*0.01
+    wind.direction = direction*0.01
     wind.turbulance = turbulance*0.01
-    
-    aileron  = (pwm[0]-1500)/500.0
+
+    aileron = (pwm[0]-1500)/500.0
     elevator = (pwm[1]-1500)/500.0
     throttle = (pwm[2]-1000)/1000.0
     if opts.revthr:
         throttle = 1.0 - throttle
-    rudder   = (pwm[3]-1500)/500.0
+    rudder = (pwm[3]-1500)/500.0
 
     if opts.elevon:
         # fake an elevon plane
         ch1 = aileron
         ch2 = elevator
-        aileron  = (ch2-ch1)/2.0
+        aileron = (ch2-ch1)/2.0
         # the minus does away with the need for RC2_REV=-1
         elevator = -(ch2+ch1)/2.0
 
@@ -98,7 +112,7 @@ def process_sitl_input(buf):
         ch2 = rudder
         # this matches VTAIL_OUTPUT==2
         elevator = (ch2-ch1)/2.0
-        rudder   = (ch2+ch1)/2.0
+        rudder = (ch2+ch1)/2.0
 
     buf = ''
     if aileron != sitl_state.aileron:
@@ -117,14 +131,16 @@ def process_sitl_input(buf):
     global jsb_console
     jsb_console.send(buf)
 
+
 def update_wind(wind):
-    '''update wind simulation'''
+    """Update wind simulation."""
     (speed, direction) = wind.current()
     jsb_set('atmosphere/psiw-rad', math.radians(direction))
     jsb_set('atmosphere/wind-mag-fps', speed/0.3048)
 
+
 def process_jsb_input(buf, simtime):
-    '''process FG FDM input from JSBSim'''
+    """Process FG FDM input from JSBSim."""
     global fdm, fg_out, sim_out
     fdm.parse(buf)
     if fg_out:
@@ -134,7 +150,7 @@ def process_jsb_input(buf, simtime):
             fdm.set('rpm', sitl_state.throttle*1000)
             fg_out.send(fdm.pack())
         except socket.error as e:
-            if e.errno not in [ errno.ECONNREFUSED ]:
+            if e.errno not in [errno.ECONNREFUSED]:
                 raise
 
     timestamp = int(simtime*1.0e6)
@@ -162,13 +178,11 @@ def process_jsb_input(buf, simtime):
     try:
         sim_out.send(simbuf)
     except socket.error as e:
-        if e.errno not in [ errno.ECONNREFUSED ]:
+        if e.errno not in [errno.ECONNREFUSED]:
             raise
 
 
-
-##################
-# main program
+################## main program ##################
 from optparse import OptionParser
 parser = OptionParser("runsim.py [options]")
 parser.add_option("--simin",   help="SITL input (IP:port)",          default="127.0.0.1:5502")
@@ -186,7 +200,7 @@ parser.add_option("--speedup", type='float', default=1.0, help="speedup from rea
 
 (opts, args) = parser.parse_args()
 
-for m in [ 'home', 'script' ]:
+for m in ['home', 'script']:
     if not opts.__dict__[m]:
         print("Missing required option '%s'" % m)
         parser.print_help()
@@ -233,7 +247,7 @@ jsb_in.setblocking(0)
 
 # socket addresses
 sim_out_address = interpret_address(opts.simout)
-sim_in_address  = interpret_address(opts.simin)
+sim_in_address = interpret_address(opts.simin)
 
 # setup input from SITL sim
 sim_in = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -259,15 +273,16 @@ fdm = fgFDM.fgFDM()
 
 jsb_console.send('info\n')
 jsb_console.send('resume\n')
-jsb.expect(["trim computation time","Trim Results"])
+jsb.expect(["trim computation time", "Trim Results"])
 time.sleep(1.5)
 jsb_console.send('step\n')
 jsb_console.logfile = None
 
 print("Simulator ready to fly")
 
+
 def main_loop():
-    '''run main loop'''
+    """Run main loop."""
     tnow = time.time()
     last_report = tnow
     last_sim_input = tnow
@@ -348,8 +363,9 @@ def main_loop():
 
             last_wall_time = now
 
+
 def exit_handler():
-    '''exit the sim'''
+    """Exit the sim."""
     print("running exit handler")
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)

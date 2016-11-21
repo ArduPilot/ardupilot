@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
  *
@@ -22,9 +21,9 @@
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/OwnPtr.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include "Semaphores.h"
 #include "I2CWrapper.h"
+#include "Device.h"
 
 namespace PX4 {
 
@@ -42,7 +41,7 @@ public:
     void set_address(uint8_t address) override { _address = address; }
 
     /* See AP_HAL::I2CDevice::set_retries() */
-    void set_retries(uint8_t retries) override { _retries = retries; }
+    void set_retries(uint8_t retries) override { _px4dev.set_retries(retries); }
 
     /* See AP_HAL::Device::set_speed(): Empty implementation, not supported. */
     bool set_speed(enum Device::Speed speed) override { return true; }
@@ -55,24 +54,26 @@ public:
                                  uint32_t recv_len, uint8_t times) override;
 
     /* See AP_HAL::Device::register_periodic_callback() */
-    AP_HAL::Device::PeriodicHandle *register_periodic_callback(
-        uint32_t period_usec, AP_HAL::MemberProc) override
-    {
-        /* Not implemented yet */
-        return nullptr;
-    };
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(
+        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
 
-    // this makes no sense on PX4 
-    int get_fd() override { return -1; }
+    /* See AP_HAL::Device::adjust_periodic_callback() */
+    bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
-    AP_HAL::Semaphore* get_semaphore() override { return &semaphore; }
+    AP_HAL::Semaphore* get_semaphore() override {
+        // if asking for invalid bus number use bus 0 semaphore
+        return &businfo[_busnum<num_buses?_busnum:0].semaphore;
+    }
 
 private:
-    // we use an empty semaphore as the underlying I2C class already has a semaphore
-    Empty::Semaphore semaphore;
-    PX4_I2C _bus;
+    static const uint8_t num_buses = 2;
+    DeviceBus businfo[num_buses];
+    
+    uint8_t _busnum;
+    PX4_I2C _px4dev;
     uint8_t _address;
-    uint8_t _retries = 0;
+    perf_counter_t perf;
+    char *pname;
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {

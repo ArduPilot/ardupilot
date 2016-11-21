@@ -56,14 +56,15 @@ class Board:
 
         cfg.ap_common_checks()
 
+        cfg.env.prepend_value('INCLUDES', [
+            cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
+        ])
+
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the convetional list for definitions to
         # make easy to override them. Convert back to list before consumption.
         env.DEFINES = {}
-
-        env.prepend_value('INCLUDES', [
-            cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
-        ])
 
         env.CFLAGS += [
             '-ffunction-sections',
@@ -218,6 +219,8 @@ class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
 
+        cfg.find_toolchain_program('pkg-config', var='PKGCONFIG')
+
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NONE',
@@ -362,6 +365,26 @@ class bhat(linux):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BH',
         )
 
+class dark(linux):
+    toolchain = 'arm-linux-gnueabihf'
+
+    def configure_env(self, cfg, env):
+        super(dark, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_DARK',
+        )
+
+class urus(linux):
+    toolchain = 'arm-linux-gnueabihf'
+
+    def configure_env(self, cfg, env):
+        super(urus, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_URUS',
+        )
+
 class pxfmini(linux):
     toolchain = 'arm-linux-gnueabihf'
 
@@ -370,6 +393,14 @@ class pxfmini(linux):
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXFMINI',
+        )
+
+class aero(linux):
+    def configure_env(self, cfg, env):
+        super(aero, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_AERO',
         )
 
 class px4(Board):
@@ -392,6 +423,7 @@ class px4(Board):
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_PX4',
+            HAVE_OCLOEXEC = 0,
             HAVE_STD_NULLPTR_T = 0,
         )
         env.CXXFLAGS += [

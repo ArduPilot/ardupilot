@@ -1,9 +1,7 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 /*
- * control_drift.pde - init and run calls for drift flight mode
+ * Init and run calls for drift flight mode
  */
 
 #ifndef DRIFT_SPEEDGAIN
@@ -55,6 +53,11 @@ void Copter::drift_run()
         return;
     }
 
+    // clear landing flag above zero throttle
+    if (!ap.throttle_zero) {
+        set_land_complete(false);
+    }
+
     // convert pilot input to lean angles
     get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
@@ -82,7 +85,7 @@ void Copter::drift_run()
 
     // Roll velocity is feed into roll acceleration to minimize slip
     target_roll = roll_vel_error * -DRIFT_SPEEDGAIN;
-    target_roll = constrain_int16(target_roll, -4500, 4500);
+    target_roll = constrain_float(target_roll, -4500.0f, 4500.0f);
 
     // If we let go of sticks, bring us to a stop
     if(is_zero(target_pitch)){

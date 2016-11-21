@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,6 +30,7 @@
 #include "ToshibaLED_PX4.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
+#include "DiscoLED.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
@@ -87,15 +87,16 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #endif
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    Buzzer buzzer;
+    ToneAlarm_PX4 tonealarm;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
     AP_BoardLED boardled;
 #else
     VRBoard_LED boardled;
 #endif
-    ToshibaLED_I2C toshibaled;
+    ToshibaLED_PX4 toshibaled;
     ExternalLED externalled;
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &externalled, &buzzer};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &externalled, &tonealarm};
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
         NavioLED_I2C navioled;
@@ -124,6 +125,10 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         AP_BoardLED boardled;
         RCOutputRGBLed bhled(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);
         NotifyDevice *AP_Notify::_devices[] = {&boardled, &bhled};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+        DiscoLED discoled;
+        ToneAlarm_Linux tonealarm;
+        NotifyDevice *AP_Notify::_devices[] = {&discoled, &tonealarm};
     #else
         AP_BoardLED boardled;
         ToshibaLED_I2C toshibaled;
@@ -169,5 +174,13 @@ void AP_Notify::handle_led_control(mavlink_message_t *msg)
 {
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->handle_led_control(msg);
+    }
+}
+
+// handle a PLAY_TUNE message
+void AP_Notify::handle_play_tune(mavlink_message_t *msg)
+{
+    for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+        _devices[i]->handle_play_tune(msg);
     }
 }

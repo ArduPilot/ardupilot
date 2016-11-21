@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
@@ -134,8 +132,8 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-#if EPM_ENABLED == ENABLED
-    case MAV_CMD_DO_GRIPPER:                            // Mission command to control EPM gripper
+#if GRIPPER_ENABLED == ENABLED
+    case MAV_CMD_DO_GRIPPER:                            // Mission command to control gripper
         do_gripper(cmd);
         break;
 #endif
@@ -176,10 +174,15 @@ bool Copter::verify_command_callback(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
+/*******************************************************************************
+Verify command Handlers
 
-// verify_command - this will be called repeatedly by ap_mission lib to ensure the active commands are progressing
-//  should return true once the active navigation command completes successfully
-//  called at 10hz or higher
+Each type of mission element has a "verify" operation. The verify
+operation returns true when the mission element has completed and we
+should move onto the next mission element.
+Return true if we do not recognize the command so that we move on to the next command
+*******************************************************************************/
+
 bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
 {
     switch(cmd.id) {
@@ -231,11 +234,27 @@ bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_CONDITION_YAW:
         return verify_yaw();
 
-    case MAV_CMD_DO_PARACHUTE:
-        // assume parachute was released successfully
+    // do commands (always return true)
+    case MAV_CMD_DO_CHANGE_SPEED:
+    case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_REPEAT_RELAY:
+    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_DO_MOUNT_CONTROL:
+    case MAV_CMD_DO_CONTROL_VIDEO:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_DO_PARACHUTE:  // assume parachute was released successfully
+    case MAV_CMD_DO_GRIPPER:
+    case MAV_CMD_DO_GUIDED_LIMITS:
         return true;
 
     default:
+        // error message
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
@@ -253,15 +272,8 @@ void Copter::exit_mission()
             set_mode(LAND, MODE_REASON_MISSION_END);
         }
     }else{
-#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
-        // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.throttle_zero || failsafe.radio) {
-            init_disarm_motors();
-        }
-#else
         // if we've landed it's safe to disarm
         init_disarm_motors();
-#endif
     }
 }
 
@@ -330,7 +342,7 @@ void Copter::do_land(const AP_Mission::Mission_Command& cmd)
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         // set state to fly to location
-        land_state = LAND_STATE_FLY_TO_LOCATION;
+        land_state = LandStateType_FlyToLocation;
 
         // convert to location class
         Location_Class target_loc(cmd.content.location);
@@ -349,7 +361,7 @@ void Copter::do_land(const AP_Mission::Mission_Command& cmd)
         auto_wp_start(target_loc);
     }else{
         // set landing state
-        land_state = LAND_STATE_DESCENDING;
+        land_state = LandStateType_Descending;
 
         // initialise landing controller
         auto_land_start();
@@ -559,19 +571,19 @@ void Copter::do_parachute(const AP_Mission::Mission_Command& cmd)
 }
 #endif
 
-#if EPM_ENABLED == ENABLED
-// do_gripper - control EPM gripper
+#if GRIPPER_ENABLED == ENABLED
+// do_gripper - control gripper
 void Copter::do_gripper(const AP_Mission::Mission_Command& cmd)
 {
     // Note: we ignore the gripper num parameter because we only support one gripper
     switch (cmd.content.gripper.action) {
         case GRIPPER_ACTION_RELEASE:
-            epm.release();
-            Log_Write_Event(DATA_EPM_RELEASE);
+            g2.gripper.release();
+            Log_Write_Event(DATA_GRIPPER_RELEASE);
             break;
         case GRIPPER_ACTION_GRAB:
-            epm.grab();
-            Log_Write_Event(DATA_EPM_GRAB);
+            g2.gripper.grab();
+            Log_Write_Event(DATA_GRIPPER_GRAB);
             break;
         default:
             // do nothing
@@ -607,8 +619,8 @@ bool Copter::verify_land()
 {
     bool retval = false;
 
-    switch( land_state ) {
-        case LAND_STATE_FLY_TO_LOCATION:
+    switch (land_state) {
+        case LandStateType_FlyToLocation:
             // check if we've reached the location
             if (wp_nav.reached_wp_destination()) {
                 // get destination so we can use it for loiter target
@@ -618,11 +630,11 @@ bool Copter::verify_land()
                 auto_land_start(dest);
 
                 // advance to next state
-                land_state = LAND_STATE_DESCENDING;
+                land_state = LandStateType_Descending;
             }
             break;
 
-        case LAND_STATE_DESCENDING:
+        case LandStateType_Descending:
             // rely on THROTTLE_LAND mode to correctly update landing status
             retval = ap.land_complete;
             break;
@@ -855,18 +867,15 @@ bool Copter::do_guided(const AP_Mission::Mission_Command& cmd)
             // set wp_nav's destination
             Location_Class dest(cmd.content.location);
             return guided_set_destination(dest);
-            break;
         }
 
         case MAV_CMD_CONDITION_YAW:
             do_yaw(cmd);
             return true;
-            break;
 
         default:
             // reject unrecognised command
             return false;
-            break;
     }
 
     return true;
@@ -890,7 +899,7 @@ void Copter::do_set_home(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-// do_roi - starts actions required by MAV_CMD_NAV_ROI
+// do_roi - starts actions required by MAV_CMD_DO_SET_ROI
 //          this involves either moving the camera to point at the ROI (region of interest)
 //          and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
 //	TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint

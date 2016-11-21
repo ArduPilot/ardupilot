@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
 
@@ -132,6 +130,12 @@ private:
     RC_Channel channel_yaw{CH_YAW};
     RC_Channel channel_pitch{CH_PITCH};
 
+    LowPassFilterFloat yaw_servo_out_filt;
+    LowPassFilterFloat pitch_servo_out_filt;
+
+    bool yaw_servo_out_filt_init = false;
+    bool pitch_servo_out_filt_init = false;
+
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
     GCS_MAVLINK_Tracker gcs[MAVLINK_COMM_NUM_BUFFERS];
@@ -158,6 +162,8 @@ private:
         float bearing;                  // bearing to vehicle in centi-degrees
         float distance;                 // distance to vehicle in meters
         float pitch;                    // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
+        float angle_error_pitch;        // angle error between target and current pitch in centi-degrees
+        float angle_error_yaw;          // angle error between target and current yaw in centi-degrees
         float alt_difference_baro;      // altitude difference between tracker and vehicle in meters according to the barometer.  positive value means vehicle is above tracker
         float alt_difference_gps;       // altitude difference between tracker and vehicle in meters according to the gps.  positive value means vehicle is above tracker
         float altitude_offset;          // offset in meters which is added to tracker altitude to align altitude measurements with vehicle's barometer
@@ -166,15 +172,13 @@ private:
         bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
         bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
         bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
-    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
+    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
 
     // setup the var_info table
     AP_Param param_loader{var_info};
 
     uint8_t one_second_counter = 0;
     bool target_set = false;
-    int8_t slew_dir = 0;
-    uint32_t slew_start_ms = 0;
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay = false;
@@ -189,7 +193,6 @@ private:
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
-    void send_radio_out(mavlink_channel_t chan);
     void send_hwstatus(mavlink_channel_t chan);
     void send_waypoint_request(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
@@ -202,6 +205,10 @@ private:
     void gcs_retry_deferred(void);
     void load_parameters(void);
     void update_auto(void);
+    void calc_angle_error(float pitch, float yaw, bool direction_reversed);
+    void convert_ef_to_bf(float pitch, float yaw, float& bf_pitch, float& bf_yaw);
+    bool convert_bf_to_ef(float pitch, float yaw, float& ef_pitch, float& ef_yaw);
+    bool get_ef_yaw_direction();
     void update_manual(void);
     void update_scan(void);
     bool servo_test_set_servo(uint8_t servo_num, uint16_t pwm);
@@ -216,11 +223,11 @@ private:
     void update_GPS(void);
     void init_servos();
     void update_pitch_servo(float pitch);
-    void update_pitch_position_servo(float pitch);
+    void update_pitch_position_servo(void);
     void update_pitch_cr_servo(float pitch);
     void update_pitch_onoff_servo(float pitch);
     void update_yaw_servo(float yaw);
-    void update_yaw_position_servo(float yaw);
+    void update_yaw_position_servo(void);
     void update_yaw_cr_servo(float yaw);
     void update_yaw_onoff_servo(float yaw);
     void init_tracker();

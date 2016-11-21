@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    Please contribute your ideas! See http://dev.ardupilot.org for details
 
@@ -43,8 +42,8 @@
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX     256
 
-// mavlink default baud rates, use default buffer sizes
-#define AP_SERIALMANAGER_FRSKY_DPORT_BAUD       9600
+// FrSky default baud rates, use default buffer sizes
+#define AP_SERIALMANAGER_FRSKY_D_BAUD           9600
 #define AP_SERIALMANAGER_FRSKY_SPORT_BAUD       57600
 #define AP_SERIALMANAGER_FRSKY_BUFSIZE_RX       0
 #define AP_SERIALMANAGER_FRSKY_BUFSIZE_TX       0
@@ -64,6 +63,12 @@
 #define AP_SERIALMANAGER_SToRM32_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_SToRM32_BUFSIZE_TX     128
 
+// Aerotenne uLanding Altimeter
+// Note that size of UART FIFO is 128 for Altera-OcPoc board
+#define AP_SERIALMANAGER_ULANDING_BAUD           115200
+#define AP_SERIALMANAGER_ULANDING_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_ULANDING_BUFSIZE_TX     128
+
 
 class AP_SerialManager {
 
@@ -73,14 +78,17 @@ public:
         SerialProtocol_None = -1,
         SerialProtocol_Console = 0, // unused
         SerialProtocol_MAVLink = 1,
-        SerialProtocol_MAVLink2 = 2,    // do not use - use MAVLink and provide instance of 1
-        SerialProtocol_FRSky_DPort = 3,
-        SerialProtocol_FRSky_SPort = 4,
+        SerialProtocol_MAVLink2 = 2,                 // do not use - use MAVLink and provide instance of 1
+        SerialProtocol_FrSky_D = 3,                  // FrSky D protocol (D-receivers)
+        SerialProtocol_FrSky_SPort = 4,              // FrSky SPort protocol (X-receivers)
         SerialProtocol_GPS = 5,
-        SerialProtocol_GPS2 = 6,        // do not use - use GPS and provide instance of 1
+        SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
         SerialProtocol_Lidar = 9,
+        SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+        SerialProtocol_Lidar360 = 11,
+        SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
     };
 
     // Constructor
@@ -94,7 +102,7 @@ public:
 
     // find_serial - searches available serial ports that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
-    //  returns uart on success, NULL if a serial port cannot be found
+    //  returns uart on success, nullptr if a serial port cannot be found
     AP_HAL::UARTDriver *find_serial(enum SerialProtocol protocol, uint8_t instance) const;
 
     // find_baudrate - searches available serial ports for the first instance that allows the given protocol

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,8 +41,8 @@ FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
 {
     use_time_sync = false;
     rate_hz = 250 / target_speedup;
-    heli_demix = strstr(frame_str, "helidemix") != NULL;
-    rev4_servos = strstr(frame_str, "rev4") != NULL;
+    heli_demix = strstr(frame_str, "helidemix") != nullptr;
+    rev4_servos = strstr(frame_str, "rev4") != nullptr;
     const char *colon = strchr(frame_str, ':');
     if (colon) {
         controller_ip = colon+1;
@@ -137,7 +136,7 @@ Connection: Keep-Alive
     }
 
     // get the content length
-    uint32_t content_length = strtoul(p+16, NULL, 10);
+    uint32_t content_length = strtoul(p+16, nullptr, 10);
     char *body = strstr(p, "\r\n\r\n");
     if (body == nullptr) {
         printf("No body\n");

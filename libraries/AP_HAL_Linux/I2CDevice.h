@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
  *
@@ -39,11 +38,7 @@ public:
 
     /* AP_HAL::I2CDevice implementation */
 
-    I2CDevice(I2CBus &bus, uint8_t address)
-        : _bus(bus)
-        , _address(address)
-    {
-    }
+    I2CDevice(I2CBus &bus, uint8_t address);
 
     ~I2CDevice();
 
@@ -69,15 +64,12 @@ public:
     AP_HAL::Semaphore *get_semaphore() override;
 
     /* See AP_HAL::Device::register_periodic_callback() */
-    AP_HAL::Device::PeriodicHandle *register_periodic_callback(
-        uint32_t period_usec, AP_HAL::MemberProc) override
-    {
-        /* Not implemented yet */
-        return nullptr;
-    };
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(
+        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
 
-    /* See AP_HAL::Device::get_fd() */
-    int get_fd() override;
+    /* See AP_HAL::Device::adjust_periodic_callback() */
+    bool adjust_periodic_callback(
+        AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
 protected:
     I2CBus &_bus;
@@ -108,6 +100,13 @@ public:
 
     /* AP_HAL::I2CDeviceManager implementation */
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) override;
+
+    /*
+     * Stop all I2C threads and block until they are finalized. This doesn't
+     * free memory because they can still be used by devices, however device
+     * drivers won't receive any new event
+     */
+    void teardown();
 
 protected:
     void _unregister(I2CBus &b);

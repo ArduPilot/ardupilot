@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 // This file contains the high-level takeoff logic for Loiter, PosHold, AltHold, Sport modes.
@@ -150,21 +148,21 @@ void Copter::auto_takeoff_set_start_alt(void)
     auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude();
     
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
-        // we are not flying, add the takeoff_nav_alt
-        auto_takeoff_no_nav_alt_cm += g2.takeoff_nav_alt * 100;
+        // we are not flying, add the wp_navalt_min
+        auto_takeoff_no_nav_alt_cm += g2.wp_navalt_min * 100;
     }
 }
 
 
 /*
   call attitude controller for automatic takeoff, limiting roll/pitch
-  if below takeoff_nav_alt
+  if below wp_navalt_min
  */
 void Copter::auto_takeoff_attitude_run(float target_yaw_rate)
 {
     float nav_roll, nav_pitch;
     
-    if (g2.takeoff_nav_alt > 0 && inertial_nav.get_altitude() < auto_takeoff_no_nav_alt_cm) {
+    if (g2.wp_navalt_min > 0 && inertial_nav.get_altitude() < auto_takeoff_no_nav_alt_cm) {
         // we haven't reached the takeoff navigation altitude yet
         nav_roll = 0;
         nav_pitch = 0;

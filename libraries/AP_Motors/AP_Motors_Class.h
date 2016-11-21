@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -87,6 +86,8 @@ public:
 
     virtual void set_desired_spool_state(enum spool_up_down_desired spool) { _spool_desired = spool; };
 
+    enum spool_up_down_desired get_desired_spool_state(void) const { return _spool_desired; }
+    
     //
     // voltage, current and air pressure compensation or limiting features - multicopters only
     //
@@ -137,6 +138,9 @@ public:
 
     // set loop rate. Used to support loop rate as a parameter
     void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
+
+    enum pwm_type { PWM_TYPE_NORMAL=0, PWM_TYPE_ONESHOT=1, PWM_TYPE_ONESHOT125=2 };
+    pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
     
 protected:
     // output functions that should be overloaded by child classes
@@ -197,6 +201,5 @@ protected:
     float _throttle_radio_passthrough = 0.0f; // throttle/collective input from pilot in 0 ~ 1 range.  used for setup and providing servo feedback while landed
     float _yaw_radio_passthrough = 0.0f;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
 
-    enum pwm_type { PWM_TYPE_NORMAL=0, PWM_TYPE_ONESHOT=1, PWM_TYPE_ONESHOT125=2 };
     AP_Int8             _pwm_type;            // PWM output type
 };

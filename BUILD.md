@@ -1,66 +1,144 @@
-# WAF Build #
+# Building ArduPilot #
 
 Ardupilot is gradually moving from the make-based build system to
-[Waf](https://waf.io/).
+[Waf](https://waf.io/). The instructions below should be enough for you to
+build Ardupilot, but you can also read more about the build system in the
+[Waf Book](https://waf.io/book/).
 
-To keep access to Waf convenient, use the following alias from the
-root ardupilot directory:
+Waf should always be called from the ardupilot's root directory. Differently
+from the make-based build, with Waf there's a configure step to choose the
+board to be used (default is `sitl`).
 
-```bash
-alias waf="$PWD/modules/waf/waf-light"
-```
+## Basic usage ##
 
-You can also define the alias or create a function in your shell rc file (e.g.
-`~/.bashrc`).
+There are several commands in the build system for advanced usages, but here we
+list some basic and more used commands as example.
 
-You can read the [Waf Book](https://waf.io/book/) if you want to learn more
-about Waf.
+* **Build ArduCopter**
 
-## Calling waf ##
+    Here we use minlure as an example of Linux board. Other boards can be used
+    and the next section shows how to get a list of available boards.
 
-Waf should always be called from the ardupilot's root directory.
+    ```sh
+    ./waf configure --board minlure
+    ./waf copter
+    ```
 
-Differently from the make-based build, with Waf there's a configure step
-to choose the board to be used (default is `sitl`):
+    The first command should be called only once or when you want to change a
+    configuration option. One configuration often used is the `--board` option to
+    switch from one board to another one. For example we could switch to
+    Pixhawk and build again:
+
+    ```sh
+    ./waf configure --board px4-v2
+    ./waf copter
+    ```
+
+* **List available boards**
+
+
+    It's possible to get a list of supported boards on ArduPilot with the command
+    below
+
+    ```sh
+    ./waf list_boards
+
+    ```
+
+* **Clean the build**
+
+    Commands `clean` and `distclean` can be used to clean the objects produced by
+    the build. The first keeps the `configure` information, cleaning only the
+    objects for the current board. The second cleans everything for every board,
+    including the saved `configure` information.
+
+    Cleaning the build is very often not necessary and discouraged. We do
+    incremental builds reducing the build time by orders of magnitude.
+
+
+* **Upload or install**
+
+    Build commands have a `--upload` option in order to upload the binary built
+    to a connected board. This option is supported by Pixhawk. The command below
+    uses the `--targets` option that is explained in the next item.
+
+    ```sh
+    ./waf --targets bin/arducopter-quad --upload
+    ```
+
+    Currently Linux boards don't support the upload option, but there's an
+    install command, which will install to a certain directory. This can be
+    used by distributors to create .deb, .rpm or other package types:
+
+    ```sh
+    ./waf copter
+    DESTDIR=/my/temporary/location ./waf install
+    ```
+
+* **Use different targets**
+
+    The build commands in the items above use `copter` as argument. This
+    builds all binaries that fall under the "copter" group. See the
+    section [Advanced usage](#advanced-usage) below for more details regarding
+    groups.
+
+    This shows a list of all possible targets:
+
+    ```
+    ./waf list
+    ```
+
+    For example, to build only a single binary:
+
+    ```
+    # Quad frame of ArduCopter
+    ./waf --targets bin/arducopter-quad
+
+    # unit test of our math functions
+    ./waf --targets tests/test_math
+    ```
+
+* **Other options**
+
+    It's possible to see all available commands and options:
+
+    ```
+    ./waf -h
+    ```
+
+    Also, take a look on the [Advanced section](#advanced-usage) below.
+
+## Advanced usage ##
+
+This section contains some explanations on how the Waf build system works
+and how you can use more advanced features.
+
+Waf build system is composed of commands. For example, the command below
+(`configure`) is for configuring the build with all the options used by this
+particular build.
 
 ```bash
 # Configure the Linux board
-waf configure --board=linux
+./waf configure --board=linux
 ```
 
-Waf build system is composed of commands. For example, the above command
-(`configure`) is for configuring the build. Consequently, in order to build, a
-"build" command is issued, thus `waf build`. That is the default command, so
-calling just `waf` is enough:
+Consequently, in order to build, a "build" command is issued, thus `waf build`.
+That is the default command, so calling just `waf` is enough:
 
 ```bash
 # Build programs from bin group
-waf
+./waf
 
 # Waf also accepts '-j' option to parallelize the build.
-waf -j8
+./waf -j8
 ```
 
-To clean things up, use the `clean` or `distclean` command:
+By default waf tries to parallelize the build automatically to all processors
+so the `-j` option is usually not needed, unless you are using icecc (thus
+you want a bigger value) or you don't want to stress your machine with
+the build.
 
-```bash
-# Clean the build products, but keep configure information
-waf clean
-
-# Clean everything, will need to call configure again
-waf distclean
-```
-
-Using git to clean the files also work fine.
-
-To list the task generator names that can be used for the option `--targets`,
-use the `list`command:
-
-```bash
-waf list
-```
-
-## Program groups ##
+### Program groups ###
 
 Program groups are used to represent a class of programs. They can be used to
 build all programs of a certain class without having to specify each program.
@@ -70,7 +148,7 @@ to one main group.
 
 There's a special group, called "all", that comprises all programs.
 
-### Main groups ###
+#### Main groups ####
 
 The main groups form a partition of all programs. Besides separating the
 programs logically, they also define where they are built.
@@ -94,20 +172,20 @@ main group the program belongs to. For example, for a linux build, arduplane,
 which belongs to the main group "bin", will be located at
 `build/linux/bin/arduplane`.
 
-### Main products groups ###
+#### Main product groups ####
 
 Those are groups for ardupilot's main products. They contain programs for the
 product they represent. Currently only the "copter" group has more than one
 program - one for each frame type.
 
-The main products groups are:
+The main product groups are:
 
  - antennatracker
  - copter
  - plane
  - rover
 
-## Building a program group ##
+#### Building a program group ####
 
 Ardupilot adds to waf an option called `--program-group`, which receives as
 argument the group you want it to build. For a build command, if you don't pass
@@ -118,60 +196,46 @@ Examples:
 
 ```bash
 # Group bin is the default one
-waf
+./waf
 
 # Build all vehicles and Antenna Tracker
-waf --program-group bin
+./waf --program-group bin
 
 # Build all benchmarks and tests
-waf --program-group benchmarks --program-group tests
+./waf --program-group benchmarks --program-group tests
 ```
-### Shortcut for program groups ###
+#### Shortcut for program groups ####
 
 For less typing, you can use the group name as the command to waf. Examples:
 
 ```bash
 # Build all vehicles and Antenna Tracker
-waf bin
+./waf bin
 
 # Build all examples
-waf examples
+./waf examples
 
 # Build arducopter binaries
-waf copter
+./waf copter
 ```
 
-## Building a specific program ##
+### Building a specific program ###
 
 In order to build a specific program, you just need to pass its path relative
 to `build/<board>/` to the option `--targets`. Example:
 
 ```bash
 # Build arducopter for quad frame
-waf --targets bin/arducopter-quad
+./waf --targets bin/arducopter-quad
 
 # Build vectors unit test
-waf --targets tests/test_vectors
+./waf --targets tests/test_vectors
 ```
 
-## Uploading ##
+### Checking ###
 
-There's a build option `--upload` that can be used to tell the build that it
-must upload the program(s) addressed by `--targets` arguments. The
-implementation is board-specific and not all boards may have that implemented.
-Example:
-
-```bash
-# PX4 supports uploading the program through a USB connection
-waf configure --board px4-v2
-# Build arducopter-quad and upload it to my board
-waf --targets bin/arducopter-quad --upload
-```
-
-## Checking ##
-
-The command `check` builds all programs and then run the relevant tests. In
-that context, a relevant test is a program from the group "tests" that makes
+The command `check` builds all programs and then executes the relevant tests.
+In that context, a relevant test is a program from the group "tests" that makes
 one of the following statements true:
 
  - it's the first time the test is built since the last cleanup or when the
@@ -188,28 +252,38 @@ Examples:
 
 ```bash
 # Build everything and run relevant tests
-waf check
+./waf check
 
 # Build everything and run all tests
-waf check --alltests
+./waf check --alltests
 
 # Build everything and run all tests
-waf check-all
+./waf check-all
 ```
 
-## Debugging ##
+### Debugging ###
 
 It's possible to pass the option `--debug` to the `configure` command. That
 will set compiler flags to store debugging information in the binaries so that
 you can use them with `gdb`, for example. The build directory will be set to
 `build/<board>-debug/`. That option might come handy when using SITL.
 
-## Make wrapper ##
+### Build-system wrappers ###
+
+The `waf` binary on root tree is actually a wrapper to the real `waf` that's
+maintained in its own submodule.  It's possible to call the latter directly via
+`./modules/waf/waf-light` or to use an alias if you prefer typing `waf` over
+`./waf`.
+
+```sh
+alias waf="<ardupilot-directory>/modules/waf/waf-light"
+
+```
 
 There's also a make wrapper called `Makefile.waf`. You can use
 `make -f Makefile.waf help` for instructions on how to use it.
 
-## Command line help ##
+### Command line help ###
 
 You can use `waf --help` to see information about commands and options built-in
 to waf as well as some quick help on those added by ardupilot.

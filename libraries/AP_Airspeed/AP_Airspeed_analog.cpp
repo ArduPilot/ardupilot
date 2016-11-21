@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,7 +37,7 @@ bool AP_Airspeed_Analog::init()
 // read the airspeed sensor
 bool AP_Airspeed_Analog::get_differential_pressure(float &pressure)
 {
-    if (_source == NULL) {
+    if (_source == nullptr) {
         return false;
     }
     _source->set_pin(_pin);

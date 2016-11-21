@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 #pragma once
 
 /// @file    AC_AttitudeControl_Multi.h
@@ -77,6 +76,9 @@ public:
 
     // run lowest level body-frame rate controller and send outputs to the motors
     void rate_controller_run();
+
+    // sanity check parameters.  should be called once before take-off
+    void parameter_sanity_check();
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];

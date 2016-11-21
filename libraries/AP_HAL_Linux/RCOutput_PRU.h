@@ -13,7 +13,9 @@
 #define PWM_CMD_CLR	         5	/* clr a pwm output explicitly */
 #define PWM_CMD_TEST	         6	/* various crap */
 
-class Linux::RCOutput_PRU : public AP_HAL::RCOutput {
+namespace Linux {
+
+class RCOutput_PRU : public AP_HAL::RCOutput {
     void     init();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
@@ -22,6 +24,8 @@ class Linux::RCOutput_PRU : public AP_HAL::RCOutput {
     void     write(uint8_t ch, uint16_t period_us);
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
+    void     cork(void) override;
+    void     push(void) override;
 
 private:
     static const int TICK_PER_US=200;
@@ -36,4 +40,8 @@ private:
     };
     volatile struct pwm_cmd *sharedMem_cmd;
 
+    uint16_t pending[MAX_PWMS];
+    bool corked;
+    uint32_t pending_mask;    
 };
+}

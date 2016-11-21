@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 /*
@@ -24,28 +23,18 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_Common/Location.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_AHRS/AP_AHRS.h>
+
+#include <AP_Buffer/AP_Buffer.h>
 
 class AP_ADSB
 {
 public:
-    enum ADSB_BEHAVIOR {
-        ADSB_BEHAVIOR_NONE = 0,
-        ADSB_BEHAVIOR_LOITER = 1,
-        ADSB_BEHAVIOR_LOITER_AND_DESCEND = 2,
-        ADSB_BEHAVIOR_GUIDED = 3
-    };
-
-    enum ADSB_THREAT_LEVEL {
-        ADSB_THREAT_LOW = 0,
-        ADSB_THREAT_HIGH = 1
-    };
-
     struct adsb_vehicle_t {
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
-        ADSB_THREAT_LEVEL threat_level;   // basic threat level
     };
 
 
@@ -62,17 +51,6 @@ public:
     // periodic task that maintains vehicle_list
     void update(void);
 
-    // add or update vehicle_list from inbound mavlink msg
-    void update_vehicle(const mavlink_message_t* msg);
-
-    // handle ADS-B transceiver report
-    void transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
-
-    bool get_possible_threat()  { return _enabled && avoid_state.another_vehicle_within_radius; }
-
-    ADSB_BEHAVIOR get_behavior()  { return (ADSB_BEHAVIOR)(avoid_state.behavior.get()); }
-    bool get_is_evading_threat()  { return _enabled && avoid_state.is_evading_threat; }
-    void set_is_evading_threat(const bool is_evading) { if (_enabled) { avoid_state.is_evading_threat = is_evading; } }
     uint16_t get_vehicle_count() { return in_state.vehicle_count; }
 
     // send ADSB_VEHICLE mavlink message, usually as a StreamRate
@@ -80,8 +58,21 @@ public:
 
     void set_stall_speed_cm(const uint16_t stall_speed_cm) { out_state.cfg.stall_speed_cm = stall_speed_cm; }
 
-    void set_is_auto_mode(const bool is_in_auto_mode) { _is_in_auto_mode = is_in_auto_mode; }
+    void set_is_auto_mode(const bool is_in_auto_mode) { out_state._is_in_auto_mode = is_in_auto_mode; }
     void set_is_flying(const bool is_flying) { out_state.is_flying = is_flying; }
+
+    UAVIONIX_ADSB_RF_HEALTH get_transceiver_status(void) { return out_state.status; }
+
+    // extract a location out of a vehicle item
+    Location_Class get_location(const adsb_vehicle_t &vehicle) const;
+
+    bool enabled() const {
+        return _enabled;
+    }
+    bool next_sample(adsb_vehicle_t &obstacle);
+
+    // mavlink message handler
+    void handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg);
 
 private:
 
@@ -92,10 +83,7 @@ private:
     void deinit();
 
     // compares current vector against vehicle_list to detect threats
-    void perform_threat_detection(void);
-
-    // extract a location out of a vehicle item
-    Location_Class get_location(const adsb_vehicle_t &vehicle) const;
+    void determine_furthest_aircraft(void);
 
     // return index of given vehicle if ICAO_ADDRESS matches. return -1 if no match
     bool find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const;
@@ -115,6 +103,11 @@ private:
     void send_configure(const mavlink_channel_t chan);
     void send_dynamic_out(const mavlink_channel_t chan);
 
+    // add or update vehicle_list from inbound mavlink msg
+    void handle_vehicle(const mavlink_message_t* msg);
+
+    // handle ADS-B transceiver report for ping2020
+    void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
 
     // reference to AHRS, so we can ask for our position,
     // heading and speed
@@ -124,7 +117,6 @@ private:
 
     Location_Class  _my_loc;
 
-    bool _is_in_auto_mode;
 
     // ADSB-IN state. Maintains list of external vehicles
     struct {
@@ -145,10 +137,11 @@ private:
     struct {
         uint32_t    last_config_ms; // send once every 10s
         uint32_t    last_report_ms; // send at 5Hz
-        int8_t      chan = -1; // channel that contains an ADS-b Transceiver. -1 means broadcast to all
+        int8_t      chan = -1; // channel that contains an ADS-b Transceiver. -1 means transceiver is not detected
         uint32_t    chan_last_ms;
-        // TODO: add enum "status"
+        UAVIONIX_ADSB_RF_HEALTH status;     // transceiver status
         bool        is_flying;
+        bool        _is_in_auto_mode;
 
         // ADSB-OUT configuration
         struct {
@@ -157,29 +150,23 @@ private:
             int32_t     ICAO_id_param_prev = -1; // assume we never send
             char        callsign[9]; //Vehicle identifier (8 characters, null terminated, valid characters are A-Z, 0-9, " " only).
             AP_Int8     emitterType;
-            AP_Int8      lengthWidth;  // Aircraft length and width encoding (table 2-35 of DO-282B)
-            AP_Int8      gpsLatOffset;
-            AP_Int8      gpsLonOffset;
-            uint16_t     stall_speed_cm;
+            AP_Int8     lengthWidth;  // Aircraft length and width encoding (table 2-35 of DO-282B)
+            AP_Int8     gpsLatOffset;
+            AP_Int8     gpsLonOffset;
+            uint16_t    stall_speed_cm;
+            AP_Int8     rfSelect;
         } cfg;
 
     } out_state;
 
 
-    // Avoidance state
-    struct {
-        AP_Int8     behavior;
+    // index of and distance to furthest vehicle in list
+    uint16_t    furthest_vehicle_index;
+    float       furthest_vehicle_distance;
 
-        bool        another_vehicle_within_radius;
-        bool        is_evading_threat;
+    static const uint8_t max_samples = 30;
+    AP_Buffer<adsb_vehicle_t, max_samples> samples;
 
-        // index of and distance to vehicle with lowest threat
-        uint16_t    lowest_threat_index;
-        float       lowest_threat_distance;
-
-        // index of and distance to vehicle with highest threat
-        uint16_t    highest_threat_index;
-        float       highest_threat_distance;
-    } avoid_state;
+    void push_sample(adsb_vehicle_t &vehicle);
 
 };

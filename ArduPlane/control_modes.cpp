@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 void Plane::read_control_switch()
@@ -41,7 +39,7 @@ void Plane::read_control_switch()
             return;
         }
 
-        set_mode((enum FlightMode)(flight_modes[switchPosition].get()));
+        set_mode((enum FlightMode)(flight_modes[switchPosition].get()), MODE_REASON_TX_COMMAND);
 
         oldSwitchPosition = switchPosition;
     }
@@ -68,7 +66,7 @@ void Plane::read_control_switch()
     }
 #endif
     
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAVE_PX4_MIXER
     if (g.override_channel > 0) {
         // if the user has configured an override channel then check it
         bool override_requested = (hal.rcin->read(g.override_channel-1) >= PX4IO_OVERRIDE_PWM);
@@ -97,19 +95,19 @@ void Plane::read_control_switch()
             hal.rcout->force_safety_off();
         }
     }
-#endif // CONFIG_HAL_BOARD
+#endif // HAVE_PX4_MIXER
 }
 
 uint8_t Plane::readSwitch(void)
 {
     uint16_t pulsewidth = hal.rcin->read(g.flight_mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
-    if (pulsewidth > 1230 && pulsewidth <= 1360) return 1;
-    if (pulsewidth > 1360 && pulsewidth <= 1490) return 2;
-    if (pulsewidth > 1490 && pulsewidth <= 1620) return 3;
-    if (pulsewidth > 1620 && pulsewidth <= 1749) return 4;              // Software Manual
-    if (pulsewidth >= 1750) return 5;                                                           // Hardware Manual
-    return 0;
+    if (pulsewidth <= 1230) return 0;
+    if (pulsewidth <= 1360) return 1;
+    if (pulsewidth <= 1490) return 2;
+    if (pulsewidth <= 1620) return 3;
+    if (pulsewidth <= 1749) return 4;              // Software Manual
+    return 5;                                                           // Hardware Manual
 }
 
 void Plane::reset_control_switch()

@@ -20,7 +20,7 @@ void PX4RCInput::init()
 		AP_HAL::panic("Unable to subscribe to input_rc");
 	}
 	clear_overrides();
-        pthread_mutex_init(&rcin_mutex, NULL);
+        pthread_mutex_init(&rcin_mutex, nullptr);
 }
 
 bool PX4RCInput::new_input() 
@@ -121,7 +121,10 @@ bool PX4RCInput::rc_bind(int dsmMode)
 {
     int fd = open("/dev/px4io", 0);
     if (fd == -1) {
-        hal.console->printf("RCInput: failed to open /dev/px4io\n");
+        fd = open("/dev/px4fmu", 0);
+    }
+    if (fd == -1) {
+        hal.console->printf("RCInput: failed to open /dev/px4io or /dev/px4fmu\n");
         return false;
     }
     

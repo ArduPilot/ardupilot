@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -13,7 +11,7 @@
 
 /* VRBRAIN headers */
 #include <drivers/drv_led.h>
-#include <drivers/drv_buzzer.h>
+#include <drivers/drv_tone_alarm.h>
 #include <drivers/drv_gpio.h>
 
 #include <arch/board/board.h>
@@ -31,9 +29,9 @@ VRBRAINGPIO::VRBRAINGPIO()
 
 void VRBRAINGPIO::init()
 {
-    _led_fd = open(LED_DEVICE_PATH, O_RDWR);
+    _led_fd = open(LED0_DEVICE_PATH, O_RDWR);
     if (_led_fd == -1) {
-        AP_HAL::panic("Unable to open " LED_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " LED0_DEVICE_PATH);
     }
     if (ioctl(_led_fd, LED_OFF, LED_BLUE) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO LED BLUE\n");
@@ -44,38 +42,30 @@ void VRBRAINGPIO::init()
     if (ioctl(_led_fd, LED_OFF, LED_GREEN) != 0) {
          hal.console->printf("GPIO: Unable to setup GPIO LED GREEN\n");
     }
-#if defined(LED_EXT1)
-    if (ioctl(_led_fd, LED_OFF, LED_EXT1) != 0) {
-         hal.console->printf("GPIO: Unable to setup GPIO LED EXT 1\n");
-    }
-#endif
-#if defined(LED_EXT2)
-    if (ioctl(_led_fd, LED_OFF, LED_EXT2) != 0) {
-         hal.console->printf("GPIO: Unable to setup GPIO LED EXT 2\n");
-    }
-#endif
-#if defined(LED_EXT3)
-    if (ioctl(_led_fd, LED_OFF, LED_EXT3) != 0) {
-         hal.console->printf("GPIO: Unable to setup GPIO LED EXT 3\n");
-    }
-#endif
 
-#if defined(BUZZER_EXT)
-    _buzzer_fd = open(BUZZER_DEVICE_PATH, O_RDWR);
-    if (_buzzer_fd == -1) {
-        AP_HAL::panic("Unable to open " BUZZER_DEVICE_PATH);
+    _tone_alarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
+    if (_tone_alarm_fd == -1) {
+        AP_HAL::panic("Unable to open " TONEALARM0_DEVICE_PATH);
     }
-    if (ioctl(_buzzer_fd, BUZZER_OFF, BUZZER_EXT) != 0) {
-        hal.console->printf("GPIO: Unable to setup GPIO BUZZER\n");
+
+    _gpio_fmu_fd = open(PX4FMU_DEVICE_PATH, 0);
+    if (_gpio_fmu_fd == -1) {
+        AP_HAL::panic("Unable to open GPIO");
+    }
+#ifdef GPIO_SERVO_1
+    if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_SERVO_1) != 0) {
+        hal.console->printf("GPIO: Unable to setup GPIO_1\n");
     }
 #endif
-
-#if defined(GPIO_GPIO0_OUTPUT)
-    stm32_configgpio(GPIO_GPIO0_OUTPUT);
+#ifdef GPIO_SERVO_2
+    if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_SERVO_2) != 0) {
+        hal.console->printf("GPIO: Unable to setup GPIO_2\n");
+    }
 #endif
-
-#if defined(GPIO_GPIO1_OUTPUT)
-    stm32_configgpio(GPIO_GPIO1_OUTPUT);
+#ifdef GPIO_SERVO_3
+    if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_SERVO_3) != 0) {
+        hal.console->printf("GPIO: Unable to setup GPIO_3\n");
+    }
 #endif
 }
 
@@ -91,20 +81,17 @@ int8_t VRBRAINGPIO::analogPinToDigitalPin(uint8_t pin)
 }
 
 
-uint8_t VRBRAINGPIO::read(uint8_t pin)
-{
-
+uint8_t VRBRAINGPIO::read(uint8_t pin) {
     switch (pin) {
-        case EXTERNAL_RELAY1_PIN:
-#if defined(GPIO_GPIO0_OUTPUT)
-        	return (stm32_gpioread(GPIO_GPIO0_OUTPUT))?HIGH:LOW;
+
+#ifdef GPIO_SERVO_3
+        case EXTERNAL_RELAY1_PIN: {
+            uint32_t relays = 0;
+            ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & GPIO_SERVO_3)?HIGH:LOW;
+        }
 #endif
-            break;
-        case EXTERNAL_RELAY2_PIN:
-#if defined(GPIO_GPIO1_OUTPUT)
-        	return (stm32_gpioread(GPIO_GPIO1_OUTPUT))?HIGH:LOW;
-#endif
-            break;
+
     }
     return LOW;
 }
@@ -121,7 +108,7 @@ void VRBRAINGPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case HAL_GPIO_B_LED_PIN:    // not used yet
+        case HAL_GPIO_B_LED_PIN:    // not used yet 
             if (value == LOW) { 
                 ioctl(_led_fd, LED_OFF, LED_BLUE);
             } else { 
@@ -129,110 +116,39 @@ void VRBRAINGPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case HAL_GPIO_C_LED_PIN:    // GPS LED
-            if (value == LOW) {
+        case HAL_GPIO_C_LED_PIN:    // GPS LED 
+            if (value == LOW) { 
                 ioctl(_led_fd, LED_OFF, LED_RED);
-            } else {
+            } else { 
                 ioctl(_led_fd, LED_ON, LED_RED);
             }
             break;
 
+#ifdef GPIO_SERVO_1
         case EXTERNAL_LED_GPS:
-#if defined(LED_EXT1)
-            if (value == LOW) {
-                ioctl(_led_fd, LED_OFF, LED_EXT1);
-            } else {
-                ioctl(_led_fd, LED_ON, LED_EXT1);
-            }
-#endif
+            ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, GPIO_SERVO_1);
             break;
+#endif
 
+#ifdef GPIO_SERVO_2
         case EXTERNAL_LED_ARMED:
-#if defined(LED_EXT2)
-            if (value == LOW) {
-                ioctl(_led_fd, LED_OFF, LED_EXT2);
-            } else {
-                ioctl(_led_fd, LED_ON, LED_EXT2);
-            }
+            ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, GPIO_SERVO_2);
+            break;
 #endif
-            break;
 
-        case EXTERNAL_LED_MOTOR1:
-            break;
-
-        case EXTERNAL_LED_MOTOR2:
-            break;
-
-        case BUZZER_PIN:
-#if defined(BUZZER_EXT)
-            if (value == LOW) {
-                ioctl(_buzzer_fd, BUZZER_OFF, BUZZER_EXT);
-            } else {
-                ioctl(_buzzer_fd, BUZZER_ON, BUZZER_EXT);
-            }
-#endif
-            break;
-
+#ifdef GPIO_SERVO_3
         case EXTERNAL_RELAY1_PIN:
-#if defined(GPIO_GPIO0_OUTPUT)
-        	stm32_gpiowrite(GPIO_GPIO0_OUTPUT, (value==HIGH));
+            ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, GPIO_SERVO_3);
+            break;
 #endif
-        	break;
-        case EXTERNAL_RELAY2_PIN:
-#if defined(GPIO_GPIO1_OUTPUT)
-        	stm32_gpiowrite(GPIO_GPIO1_OUTPUT, (value==HIGH));
-#endif
-        	break;
+
 
     }
 }
 
 void VRBRAINGPIO::toggle(uint8_t pin)
 {
-    switch (pin) {
-
-        case HAL_GPIO_A_LED_PIN:    // Arming LED
-			ioctl(_led_fd, LED_TOGGLE, LED_GREEN);
-            break;
-
-        case HAL_GPIO_B_LED_PIN:    // not used yet
-			ioctl(_led_fd, LED_TOGGLE, LED_BLUE);
-            break;
-
-        case HAL_GPIO_C_LED_PIN:    // GPS LED
-			ioctl(_led_fd, LED_TOGGLE, LED_RED);
-            break;
-
-        case EXTERNAL_LED_GPS:
-#if defined(LED_EXT1)
-			ioctl(_led_fd, LED_TOGGLE, LED_EXT1);
-#endif
-            break;
-
-        case EXTERNAL_LED_ARMED:
-#if defined(LED_EXT2)
-			ioctl(_led_fd, LED_TOGGLE, LED_EXT2);
-#endif
-            break;
-
-        case EXTERNAL_LED_MOTOR1:
-
-        	break;
-
-        case EXTERNAL_LED_MOTOR2:
-
-            break;
-
-        case BUZZER_PIN:
-#if defined(BUZZER_EXT)
-			ioctl(_buzzer_fd, BUZZER_TOGGLE, BUZZER_EXT);
-#endif
-            break;
-
-        default:
-            write(pin, !read(pin));
-        	break;
-    }
+    write(pin, !read(pin));
 }
 
 /* Alternative interface: */
@@ -251,7 +167,13 @@ bool VRBRAINGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_
  */
 bool VRBRAINGPIO::usb_connected(void)
 {
-    return stm32_gpioread(GPIO_OTGFS_VBUS);
+    /*
+      we use a combination of voltage on the USB connector and the
+      open of the /dev/ttyACM0 character device. This copes with
+      systems where the VBUS may go high even with no USB connected
+      (such as AUAV-X2)
+     */
+    return stm32_gpioread(GPIO_OTGFS_VBUS) && _usb_connected;
 }
 
 

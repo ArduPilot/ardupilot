@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -105,7 +104,8 @@ bool XPlane::receive_data(void)
     const uint64_t required_mask = (one<<Times | one<<LatLonAlt | one<<Speed | one<<PitchRollHeading |
                                     one<<LocVelDistTraveled | one<<AngularVelocities | one<<Gload |
                                     one << Joystick1 | one << ThrottleCommand | one << Trim |
-                                    one << PropPitch | one << EngineRPM | one << PropRPM | one << Generator);
+                                    one << PropPitch | one << EngineRPM | one << PropRPM | one << Generator |
+                                    one << Mixture);
     Location loc {};
     Vector3f pos;
     uint32_t wait_time_ms = 1;
@@ -269,7 +269,13 @@ bool XPlane::receive_data(void)
             rcin_chan_count = 8;
             rcin[7] = data[1];
             break;
-            
+
+        case Mixture:
+            // map channel 6 and 7 from Mixture3 and Mixture4 for extra channels
+            rcin_chan_count = MAX(7, rcin_chan_count);
+            rcin[5] = data[3];
+            rcin[6] = data[4];
+            break;
         }
         len -= pkt_len;
         p += pkt_len;
@@ -336,7 +342,7 @@ failed:
     // new velocity and position vectors
     velocity_ef += accel_earth * delta_time;
     position += velocity_ef * delta_time;
-    velocity_air_ef = velocity_ef - wind_ef;
+    velocity_air_ef = velocity_ef + wind_ef;
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 
     update_position();
@@ -410,6 +416,10 @@ void XPlane::send_data(const struct sitl_input &input)
         // and send throttle from channel 8
         throttle = (input.servos[7]-1000)/1000.0;
 
+        // allow for extra throttle outputs for special aircraft
+        float throttle2 = (input.servos[5]-1000)/1000.0;
+        float throttle3 = (input.servos[6]-1000)/1000.0;
+
         d.code = PropPitch;
         d.data[0] = collective;
         d.data[1] = -rudder*15; // reverse sense of rudder, 15 degrees pitch range
@@ -421,8 +431,8 @@ void XPlane::send_data(const struct sitl_input &input)
         d.code = ThrottleCommand;
         d.data[0] = throttle;
         d.data[1] = throttle;
-        d.data[2] = throttle;
-        d.data[3] = throttle;
+        d.data[2] = throttle2;
+        d.data[3] = throttle3;
         d.data[4] = 0;
         socket_out.send(&d, sizeof(d));
     }

@@ -22,17 +22,6 @@ NUTTX_ROOT := $(shell cd $(PX4NUTTX_DIRECTORY) && pwd)
 NUTTX_SRC := $(NUTTX_ROOT)/nuttx/
 UAVCAN_DIR=$(shell cd $(UAVCAN_DIRECTORY) && pwd)/
 
-# warn if user has old PX4Firmware or PX4NuttX trees
-ifneq ($(wildcard $(SKETCHBOOK)/../PX4Firmware),)
-$(warning *** You have an old PX4Firmware tree - see http://dev.ardupilot.com/wiki/git-submodules/)
-endif
-ifneq ($(wildcard $(SKETCHBOOK)/../PX4NuttX),)
-$(warning *** You have an old PX4NuttX tree - see http://dev.ardupilot.com/wiki/git-submodules/)
-endif
-ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)
-$(warning *** You have an old uavcan tree - see http://dev.ardupilot.com/wiki/git-submodules/)
-endif
-
 NUTTX_GIT_VERSION ?= $(shell cd $(NUTTX_SRC) && git rev-parse HEAD | cut -c1-8)
 PX4_GIT_VERSION   ?= $(shell cd $(PX4_ROOT) && git rev-parse HEAD | cut -c1-8)
 
@@ -45,6 +34,7 @@ EXTRAFLAGS += -D__STDC_FORMAT_MACROS
 EXTRAFLAGS += -DHAVE_STD_NULLPTR_T=0
 EXTRAFLAGS += -DHAVE_ENDIAN_H=0
 EXTRAFLAGS += -DHAVE_BYTESWAP_H=0
+EXTRAFLAGS += -DHAVE_OCLOEXEC=0
 
 EXTRAFLAGS += -I$(BUILDROOT)/libraries/GCS_MAVLink/include/mavlink
 
@@ -90,6 +80,7 @@ module_mk:
 	$(v) rm -f $(SKETCHBOOK)/module.mk.new
 
 px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
+	$(v) echo Building px4-v1
 	$(RULEHDR)
 	$(v) cp $(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(v) $(PX4_MAKE) px4fmu-v1_APM
@@ -99,6 +90,7 @@ px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v1.px4"
 
 px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
+	$(v) echo Building px4-v2
 	$(RULEHDR)
 	$(v) cp $(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v2_APM
@@ -108,6 +100,7 @@ px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v2.px4"
 
 px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v4.export $(SKETCHCPP) module_mk
+	$(v) echo Building px4-v4
 	$(RULEHDR)
 	$(v) cp $(PX4_V4_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v4_APM
@@ -118,11 +111,17 @@ px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v4.px4" "$(SKETCH)-v4.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v4.px4"
 
-px4: px4-v1 px4-v2 px4-v4
+# force the 3 build types to not run in parallel. We got bad binaries with incorrect parameter handling
+# when these were allowed to happen in parallel
+px4:
+	$(MAKE) px4-v1
+	$(MAKE) px4-v2
+	$(MAKE) px4-v4
 
 px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build $(PX4_ROOT)/Images/*.px4 $(PX4_ROOT)/Images/*.bin
 	$(v) /bin/rm -rf $(PX4_ROOT)/src/modules/uORB/topics $(PX4_ROOT)/src/platforms/nuttx/px4_messages
+	$(v) /bin/rm -f $(SRCROOT)/*.o
 
 px4-cleandep: clean
 	$(v) mkdir -p $(PX4_ROOT)/Build

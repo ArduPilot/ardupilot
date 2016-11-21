@@ -26,7 +26,7 @@ class OpticalFlow_backend
 
 public:
     // constructor
-    OpticalFlow_backend(OpticalFlow &_frontend) : frontend(_frontend) {}
+    OpticalFlow_backend(OpticalFlow &_frontend);
 
     // init - initialise sensor
     virtual void init() = 0;
@@ -46,4 +46,7 @@ protected:
 
     // get the yaw angle in radians
     float _yawAngleRad(void) const { return radians(float(frontend._yawAngle_cd) * 0.01f); }
+
+    // semaphore for access to shared frontend data
+    AP_HAL::Semaphore *_sem;
 };

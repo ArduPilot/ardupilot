@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -100,6 +99,8 @@ private:
         LatLonAlt           = 20,
 		LocVelDistTraveled  = 21,
         ThrottleCommand     = 25,
+        Mixture             = 29,
+        CarbHeat            = 30,
         EngineRPM           = 37,
         PropRPM             = 38,
         PropPitch           = 39,

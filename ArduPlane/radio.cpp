@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 //Function that will read the radio data, limit servos and trigger a failsafe
@@ -39,7 +37,7 @@ void Plane::set_control_channels(void)
 
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
     // take a proportion of speed
-    hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+    g2.servo_channels.set_esc_scaling(channel_throttle->get_ch_out());
 }
 
 /*
@@ -94,9 +92,13 @@ void Plane::init_rc_out_aux()
     update_aux();
     RC_Channel_aux::enable_aux_servos();
 
+    hal.rcout->cork();
+    
     // Initialization of servo outputs
     RC_Channel::output_trim_all();
 
+    servos_output();
+    
     // setup PWM values to send if the FMU firmware dies
     RC_Channel::setup_failsafe_trim_all();  
 }
@@ -119,8 +121,10 @@ void Plane::rudder_arm_disarm_check()
         return;
     }
 
-    // if not in a manual throttle mode then disallow rudder arming/disarming
-    if (auto_throttle_mode ) {
+    // if not in a manual throttle mode and not in CRUISE or FBWB
+    // modes then disallow rudder arming/disarming
+    if (auto_throttle_mode &&
+        (control_mode != CRUISE && control_mode != FLY_BY_WIRE_B)) {
         rudder_arm_timer = 0;
         return;      
     }
@@ -345,6 +349,8 @@ void Plane::trim_control_surfaces()
     channel_roll->save_eeprom();
     channel_pitch->save_eeprom();
     channel_rudder->save_eeprom();
+
+    g2.servo_channels.set_trim();
 }
 
 void Plane::trim_radio()

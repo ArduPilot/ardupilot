@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,42 +32,12 @@ extern const AP_HAL::HAL &hal;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
  #define ARSPD_DEFAULT_PIN 1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
- #include <sys/stat.h>
- #include <sys/types.h>
- #include <fcntl.h>
- #include <unistd.h>
- #include <systemlib/airspeed.h>
- #include <drivers/drv_airspeed.h>
- #include <uORB/topics/differential_pressure.h>
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
- #define ARSPD_DEFAULT_PIN 11
 #else
- #define ARSPD_DEFAULT_PIN 15
+ #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
 #endif
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-         #define ARSPD_DEFAULT_PIN 5
-    #else
-         #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
-    #endif
-    #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-         #define PSI_RANGE_DEFAULT 0.05
-    #endif
-#else
- #define ARSPD_DEFAULT_PIN 0
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+#define PSI_RANGE_DEFAULT 0.05
 #endif
 
 #ifndef PSI_RANGE_DEFAULT
@@ -82,24 +51,28 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @DisplayName: Airspeed enable
     // @Description: enable airspeed sensor
     // @Values: 0:Disable,1:Enable
-    AP_GROUPINFO("ENABLE",    0, AP_Airspeed, _enable, 1),
+    // @User: Standard
+    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Airspeed, _enable, 1, AP_PARAM_FLAG_ENABLE),
 
     // @Param: USE
     // @DisplayName: Airspeed use
     // @Description: use airspeed for flight control
     // @Values: 1:Use,0:Don't Use
+    // @User: Standard
     AP_GROUPINFO("USE",    1, AP_Airspeed, _use, 0),
 
     // @Param: OFFSET
     // @DisplayName: Airspeed offset
     // @Description: Airspeed calibration offset
     // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("OFFSET", 2, AP_Airspeed, _offset, 0),
 
     // @Param: RATIO
     // @DisplayName: Airspeed ratio
     // @Description: Airspeed calibration ratio
     // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("RATIO",  3, AP_Airspeed, _ratio, 1.9936f),
 
     // @Param: PIN
@@ -137,9 +110,9 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 };
 
 
-AP_Airspeed::AP_Airspeed(const AP_Vehicle::FixedWing &parms)
+AP_Airspeed::AP_Airspeed()
     : _EAS2TAS(1.0f)
-    , _calibration(parms)
+    , _calibration()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

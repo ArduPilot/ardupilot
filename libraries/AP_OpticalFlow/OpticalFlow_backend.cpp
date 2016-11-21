@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,6 +16,12 @@
 #include "OpticalFlow.h"
 
 extern const AP_HAL::HAL& hal;
+
+OpticalFlow_backend::OpticalFlow_backend(OpticalFlow &_frontend) :
+    frontend(_frontend)
+{
+    _sem = hal.util->new_semaphore();    
+}
 
 // update the frontend
 void OpticalFlow_backend::_update_frontend(const struct OpticalFlow::OpticalFlow_state &state)

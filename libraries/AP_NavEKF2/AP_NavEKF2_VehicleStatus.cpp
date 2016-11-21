@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -412,6 +410,15 @@ void NavEKF2_core::setTouchdownExpected(bool val)
 {
     touchdownExpectedSet_ms = imuSampleTime_ms;
     expectGndEffectTouchdown = val;
+}
+
+// Set to true if the terrain underneath is stable enough to be used as a height reference
+// in combination with a range finder. Set to false if the terrain underneath the vehicle
+// cannot be used as a height reference
+void NavEKF2_core::setTerrainHgtStable(bool val)
+{
+    terrainHgtStableSet_ms = imuSampleTime_ms;
+    terrainHgtStable = val;
 }
 
 // Detect takeoff for optical flow navigation

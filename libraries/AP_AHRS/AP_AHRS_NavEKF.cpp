@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -172,7 +171,7 @@ void AP_AHRS_NavEKF::update_EKF1(void)
                     accel.z -= abias2;
                 }
                 if (_ins.get_accel_health(i)) {
-                    _accel_ef_ekf[i] = _dcm_matrix * accel;
+                    _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
                 }
             }
 
@@ -217,39 +216,37 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             update_trig();
 
             // keep _gyro_bias for get_gyro_drift()
+            _gyro_bias.zero();            
             EKF2.getGyroBias(-1,_gyro_bias);
             _gyro_bias = -_gyro_bias;
 
             // calculate corrected gryo estimate for get_gyro()
             _gyro_estimate.zero();
-            uint8_t healthy_count = 0;
-            for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
-                if (_ins.get_gyro_health(i) && healthy_count < 2 && _ins.use_gyro(i)) {
-                    _gyro_estimate += _ins.get_gyro(i);
-                    healthy_count++;
-                }
-            }
-            if (healthy_count > 1) {
-                _gyro_estimate /= healthy_count;
+
+            // the gyro bias applies only to the IMU associated with the primary EKF2
+            // core
+            int8_t primary_imu = EKF2.getPrimaryCoreIMUIndex();
+            if (primary_imu == -1) {
+                _gyro_estimate = _ins.get_gyro();
+            } else {
+                _gyro_estimate = _ins.get_gyro(primary_imu);
             }
             _gyro_estimate += _gyro_bias;
 
-            float abias;
+            float abias = 0;
             EKF2.getAccelZBias(-1,abias);
 
-            // This EKF uses the primary IMU
-            // Eventually we will run a separate instance of the EKF for each IMU and do the selection and blending of EKF outputs upstream
-            // update _accel_ef_ekf
+            // This EKF is currently using primary_imu, and abias applies to only that IMU
             for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
                 Vector3f accel = _ins.get_accel(i);
-                if (i==_ins.get_primary_accel()) {
+                if (i == primary_imu) {
                     accel.z -= abias;
                 }
                 if (_ins.get_accel_health(i)) {
-                    _accel_ef_ekf[i] = _dcm_matrix * accel;
+                    _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
                 }
             }
-            _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
+            _accel_ef_ekf_blended = _accel_ef_ekf[primary_imu>=0?primary_imu:_ins.get_primary_accel()];
         }
     }
 }
@@ -865,12 +862,15 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
     /*
       fixed wing and rover when in fly_forward mode will fall back to
       DCM if the EKF doesn't have GPS. This is the safest option as
-      DCM is very robust
+      DCM is very robust. Note that we also check the filter status
+      when fly_forward is false and we are disarmed. This is to ensure
+      that the arming checks do wait for good GPS position on fixed
+      wing and rover
      */
     if (ret != EKF_TYPE_NONE &&
         (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
          _vehicle_class == AHRS_VEHICLE_GROUND) &&
-        _flags.fly_forward) {
+        (_flags.fly_forward || !hal.util->get_soft_armed())) {
         nav_filter_status filt_state;
         if (ret == EKF_TYPE2) {
             EKF2.getFilterStatus(-1,filt_state);
@@ -1038,10 +1038,10 @@ bool AP_AHRS_NavEKF::get_filter_status(nav_filter_status &status) const
 }
 
 // write optical flow data to EKF
-void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas)
+void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset)
 {
-    EKF1.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas);
-    EKF2.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas);
+    EKF1.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+    EKF2.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
 }
 
 // inhibit GPS usage
@@ -1105,6 +1105,24 @@ bool AP_AHRS_NavEKF::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets)
         magOffsets.zero();
         return true;
 #endif
+    }
+}
+
+// Retrieves the NED delta velocity corrected
+void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
+{
+    if (ekf_type() == 2) {
+        uint8_t imu_idx = EKF2.getPrimaryCoreIMUIndex();
+        float accel_z_bias;
+        EKF2.getAccelZBias(-1,accel_z_bias);
+        ret.zero();
+        _ins.get_delta_velocity(imu_idx, ret);
+        dt = _ins.get_delta_velocity_dt(imu_idx);
+        ret.z -= accel_z_bias*dt;
+        ret = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
+        ret.z += GRAVITY_MSS*dt;
+    } else {
+        AP_AHRS::getCorrectedDeltaVelocityNED(ret, dt);
     }
 }
 
@@ -1392,6 +1410,49 @@ bool AP_AHRS_NavEKF::have_ekf_logging(void) const
         break;
     }
     return false;
+}
+
+// get earth-frame accel vector for primary IMU
+uint8_t AP_AHRS_NavEKF::get_primary_IMU_index() const
+{
+    int8_t imu = -1;
+    switch (ekf_type()) {
+    case 2:
+        // let EKF2 choose primary IMU
+        imu = EKF2.getPrimaryCoreIMUIndex();
+        break;
+    default:
+        break;
+    }
+    if (imu == -1) {
+        imu = _ins.get_primary_accel();
+    }
+    return imu;
+}
+
+// get earth-frame accel vector for primary IMU
+const Vector3f &AP_AHRS_NavEKF::get_accel_ef() const
+{
+    return get_accel_ef(get_primary_accel_index());
+}
+
+
+// get the index of the current primary accelerometer sensor
+uint8_t AP_AHRS_NavEKF::get_primary_accel_index(void) const
+{
+    if (ekf_type() == 2) {
+        return get_primary_IMU_index();
+    }
+    return _ins.get_primary_accel();
+}
+
+// get the index of the current primary gyro sensor
+uint8_t AP_AHRS_NavEKF::get_primary_gyro_index(void) const
+{
+    if (ekf_type() == 2) {
+        return get_primary_IMU_index();
+    }
+    return _ins.get_primary_gyro();
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

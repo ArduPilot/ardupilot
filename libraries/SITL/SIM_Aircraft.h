@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -104,7 +103,9 @@ public:
     const Vector3f &get_mag_field_bf(void) const {
         return mag_bf;
     }
-    
+
+    virtual float gross_mass() const { return mass; }
+
 protected:
     SITL *sitl;
     Location home;
@@ -115,6 +116,8 @@ protected:
     float frame_height;
     Matrix3f dcm;  // rotation matrix, APM conventions, from body to earth
     Vector3f gyro; // rad/s
+    Vector3f gyro_prev; // rad/s
+    Vector3f ang_accel; // rad/s/s
     Vector3f velocity_ef; // m/s, earth frame
     Vector3f wind_ef; // m/s, earth frame
     Vector3f velocity_air_ef; // velocity relative to airmass, earth frame
@@ -130,6 +133,11 @@ protected:
     float rpm2 = 0;
     uint8_t rcin_chan_count = 0;
     float rcin[8];
+
+    //Wind Turbulence simulated Data
+    float turbulence_azimuth = 0;
+    float turbulence_horizontal_speed = 0; // m/s
+    float turbulence_vertical_speed =0; // m/s
 
     Vector3f mag_bf; // local earth magnetic field vector in Gauss, earth frame
 
@@ -147,6 +155,7 @@ protected:
     const char *autotest_dir;
     const char *frame;
     bool use_time_sync = true;
+    float last_speedup = -1;
 
     enum {
         GROUND_BEHAVIOR_NONE=0,
@@ -204,6 +213,11 @@ protected:
      * Boolean returns false if latitude and longitude are outside the valid input range of +-60 latitude and +-180 longitude
     */
     bool get_mag_field_ef(float latitude_deg, float longitude_deg, float &intensity_gauss, float &declination_deg, float &inclination_deg);
+
+    // return filtered servo input as -1 to 1 range
+    float filtered_idx(float v, uint8_t idx);
+    float filtered_servo_angle(const struct sitl_input &input, uint8_t idx);
+    float filtered_servo_range(const struct sitl_input &input, uint8_t idx);
     
 private:
     uint64_t last_time_us = 0;
@@ -221,6 +235,8 @@ private:
         uint64_t last_update_us;
         Location location;
     } smoothing;
+
+    LowPassFilterFloat servo_filter[4];
     
     /* set this always to the sampling in degrees for the table below */
     #define SAMPLING_RES		10.0f

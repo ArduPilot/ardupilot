@@ -10,7 +10,13 @@
 #define LINUX_SCHEDULER_MAX_TIMESLICED_PROCS 10
 #define LINUX_SCHEDULER_MAX_IO_PROCS 10
 
-class Linux::Scheduler : public AP_HAL::Scheduler {
+#define AP_LINUX_SENSORS_STACK_SIZE  256 * 1024
+#define AP_LINUX_SENSORS_SCHED_POLICY  SCHED_FIFO
+#define AP_LINUX_SENSORS_SCHED_PRIO 12
+
+namespace Linux {
+
+class Scheduler : public AP_HAL::Scheduler {
 public:
     Scheduler();
 
@@ -43,6 +49,8 @@ public:
     uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
 
     void microsleep(uint32_t usec);
+
+    void teardown();
 
 private:
     class SchedulerThread : public PeriodicThread {
@@ -109,3 +117,5 @@ private:
     Semaphore _timer_semaphore;
     Semaphore _io_semaphore;
 };
+
+}

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 // set_home_state - update home state
@@ -41,17 +39,21 @@ void Copter::set_auto_armed(bool b)
 void Copter::set_simple_mode(uint8_t b)
 {
     if(ap.simple_mode != b){
-        if(b == 0){
+        switch (b) {
+        case 0:
             Log_Write_Event(DATA_SET_SIMPLE_OFF);
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SIMPLE mode off");
-        }else if(b == 1){
+            break;
+        case 1:
             Log_Write_Event(DATA_SET_SIMPLE_ON);
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SIMPLE mode on");
-        }else{
+            break;
+        default:
             // initialise super simple heading
             update_super_simple_bearing(true);
             Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SUPERSIMPLE mode on");
+            break;
         }
         ap.simple_mode = b;
     }
@@ -122,7 +124,7 @@ void Copter::update_using_interlock()
 #else
     // check if we are using motor interlock control on an aux switch or are in throw mode
     // which uses the interlock to stop motors while the copter is being thrown
-    ap.using_interlock = check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) || (control_mode == THROW);
+    ap.using_interlock = check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK);
 #endif
 }
 

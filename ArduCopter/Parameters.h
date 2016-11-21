@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -68,8 +67,8 @@ public:
         // relay object
         k_param_relay,
 
-        // EPM object
-        k_param_epm,
+        // (old) EPM object
+        k_param_epm_unused,
 
         // BoardConfig object
         k_param_BoardConfig,
@@ -126,7 +125,7 @@ public:
         k_param_rangefinder, // rangefinder object
         k_param_fs_ekf_thresh,
         k_param_terrain,
-        k_param_acro_expo,
+        k_param_acro_rp_expo,
         k_param_throttle_deadzone,
         k_param_optflow,
         k_param_dcmcheck_thresh,        // deprecated - remove
@@ -183,6 +182,7 @@ public:
         k_param_throw_motor_start,
         k_param_terrain_follow,    // 94
         k_param_avoid,
+        k_param_avoidance_adsb,
 
         // 97: RSSI
         k_param_rssi = 97,
@@ -364,6 +364,9 @@ public:
         k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
+
+        // the k_param_* space is 9-bits in size
+        // 511: reserved
     };
 
     AP_Int16        format_version;
@@ -480,7 +483,7 @@ public:
     AP_Float                acro_balance_roll;
     AP_Float                acro_balance_pitch;
     AP_Int8                 acro_trainer;
-    AP_Float                acro_expo;
+    AP_Float                acro_rp_expo;
 
     // PI/D controllers
     AC_PI_2D                pi_vel_xy;
@@ -536,13 +539,50 @@ public:
  */
 class ParametersG2 {
 public:
-    ParametersG2(void) { AP_Param::setup_object_defaults(this, var_info); }
+    ParametersG2(void);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
     // altitude at which nav control can start in takeoff
-    AP_Float takeoff_nav_alt;
+    AP_Float wp_navalt_min;
+
+    // button checking
+    AP_Button button;
+
+    // vehicle statistics
+    AP_Stats stats;
+
+#if GRIPPER_ENABLED
+    AP_Gripper gripper;
+#endif
+
+    // Throw mode parameters
+    AP_Int8 throw_nextmode;
+    AP_Int8 throw_type;
+
+    // ground effect compensation enable/disable
+    AP_Int8 gndeffect_comp_enabled;
+
+#if PROXIMITY_ENABLED == ENABLED
+    // proximity (aka object avoidance) library
+    AP_Proximity proximity;
+#endif
+
+    // whether to enforce acceptance of packets only from sysid_my_gcs
+    AP_Int8 sysid_enforce;
+    
+#if ADVANCED_FAILSAFE == ENABLED
+    // advanced failsafe library
+    AP_AdvancedFailsafe_Copter afs;
+#endif
+
+    // developer options
+    AP_Int32 dev_options;
+
+    // acro exponent parameters
+    AP_Float acro_y_expo;
+    AP_Float acro_thr_mid;
 };
 
 extern const AP_Param::Info        var_info[];

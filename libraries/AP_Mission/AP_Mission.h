@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_Mission.h
 /// @brief   Handles the MAVLINK command mission stack.  Reads and writes mission to storage.
 
@@ -169,6 +167,13 @@ public:
         int8_t sec_utc; // absolute time's sec (utc)
     };
 
+    // DO_ENGINE_CONTROL support
+    struct PACKED Do_Engine_Control {
+        bool start_control; // start or stop engine
+        bool cold_start; // use cold start procedure
+        uint16_t height_delay_cm; // height delay for start
+    };
+    
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -220,6 +225,9 @@ public:
 
         // do vtol transition
         Do_VTOL_Transition do_vtol_transition;
+
+        // DO_ENGINE_CONTROL
+        Do_Engine_Control do_engine_control;
         
         // location
         Location location;      // Waypoint location

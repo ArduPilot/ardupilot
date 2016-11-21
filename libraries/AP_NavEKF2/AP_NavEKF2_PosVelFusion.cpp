@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -103,12 +101,20 @@ void NavEKF2_core::ResetHeight(void)
 {
     // write to the state vector
     stateStruct.position.z = -hgtMea;
-    terrainState = stateStruct.position.z + rngOnGnd;
+    outputDataNew.position.z = stateStruct.position.z;
+    outputDataDelayed.position.z = stateStruct.position.z;
+
+    // reset the terrain state height
+    if (onGround) {
+        // assume vehicle is sitting on the ground
+        terrainState = stateStruct.position.z + rngOnGnd;
+    } else {
+        // can make no assumption other than vehicle is not below ground level
+        terrainState = MAX(stateStruct.position.z + rngOnGnd , terrainState);
+    }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].position.z = stateStruct.position.z;
     }
-    outputDataNew.position.z = stateStruct.position.z;
-    outputDataDelayed.position.z = stateStruct.position.z;
 
     // reset the corresponding covariances
     zeroRows(P,8,8);
@@ -139,15 +145,12 @@ void NavEKF2_core::ResetHeight(void)
 
 }
 
-// Reset the baro so that it reads zero at the current height
-// Reset the EKF height to zero
-// Adjust the EKf origin height so that the EKF height + origin height is the same as before
+// Zero the EKF height datum
 // Return true if the height datum reset has been performed
-// If using a range finder for height do not reset and return false
 bool NavEKF2_core::resetHeightDatum(void)
 {
-    // if we are using a range finder for height, return false
-    if (frontend->_altSource == 1) {
+    if (activeHgtSource == HGT_SOURCE_RNG) {
+        // by definition the height dataum is at ground level so cannot perform the reset
         return false;
     }
     // record the old height estimate
@@ -160,6 +163,8 @@ bool NavEKF2_core::resetHeightDatum(void)
     if (validOrigin) {
         EKF_origin.alt += oldHgt*100;
     }
+    // adjust the terrain state
+    terrainState += oldHgt;
     return true;
 }
 
@@ -191,6 +196,22 @@ void NavEKF2_core::SelectVelPosFusion()
             fuseVelData = false;
         }
         fusePosData = true;
+
+        // correct GPS data for position offset of antenna phase centre relative to the IMU
+        Vector3f posOffsetBody = _ahrs->get_gps().get_antenna_offset(gpsDataDelayed.sensor_idx) - accelPosOffset;
+        if (!posOffsetBody.is_zero()) {
+            if (fuseVelData) {
+                // TODO use a filtered angular rate with a group delay that matches the GPS delay
+                Vector3f angRate = imuDataDelayed.delAng * (1.0f/imuDataDelayed.delAngDT);
+                Vector3f velOffsetBody = angRate % posOffsetBody;
+                Vector3f velOffsetEarth = prevTnb.mul_transpose(velOffsetBody);
+                gpsDataDelayed.vel -= velOffsetEarth;
+            }
+            Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+            gpsDataDelayed.pos.x -= posOffsetEarth.x;
+            gpsDataDelayed.pos.y -= posOffsetEarth.y;
+            gpsDataDelayed.hgt += posOffsetEarth.z;
+        }
     } else {
         fuseVelData = false;
         fusePosData = false;
@@ -627,18 +648,72 @@ void NavEKF2_core::selectHeightForFusion()
     readRangeFinder();
     rangeDataToFuse = storedRange.recall(rangeDataDelayed,imuDataDelayed.time_ms);
 
+    // correct range data for the body frame position offset relative to the IMU
+    // the corrected reading is the reading that would have been taken if the sensor was
+    // co-located with the IMU
+    if (rangeDataToFuse) {
+        Vector3f posOffsetBody = frontend->_rng.get_pos_offset(rangeDataDelayed.sensor_idx) - accelPosOffset;
+        if (!posOffsetBody.is_zero()) {
+            Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+            rangeDataDelayed.rng += posOffsetEarth.z / prevTnb.c.z;
+        }
+    }
+
     // read baro height data from the sensor and check for new data in the buffer
     readBaroData();
     baroDataToFuse = storedBaro.recall(baroDataDelayed, imuDataDelayed.time_ms);
 
-    // determine if we should be using a height source other than baro
-    bool usingRangeForHgt = (frontend->_altSource == 1 && imuSampleTime_ms - rngValidMeaTime_ms < 500 && frontend->_fusionModeGPS == 3);
-    bool usingGpsForHgt = (frontend->_altSource == 2 && imuSampleTime_ms - lastTimeGpsReceived_ms < 500 && validOrigin && gpsAccuracyGood);
+    // select height source
+    if (((frontend->_useRngSwHgt > 0) || (frontend->_altSource == 1)) && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
+        if (frontend->_altSource == 1) {
+            // always use range finder
+            activeHgtSource = HGT_SOURCE_RNG;
+        } else {
+            // determine if we are above or below the height switch region
+            float rangeMaxUse = 1e-4f * (float)frontend->_rng.max_distance_cm() * (float)frontend->_useRngSwHgt;
+            bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
+            bool belowLowerSwHgt = (terrainState - stateStruct.position.z) < 0.7f * rangeMaxUse;
 
-    // if there is new baro data to fuse, calculate filterred baro data required by other processes
+            // If the terrain height is consistent and we are moving slowly, then it can be
+            // used as a height reference in combination with a range finder
+            float horizSpeed = norm(stateStruct.velocity.x, stateStruct.velocity.y);
+            bool dontTrustTerrain = (horizSpeed > 2.0f) || !terrainHgtStable;
+            bool trustTerrain = (horizSpeed < 1.0f) && terrainHgtStable;
+
+            /*
+             * Switch between range finder and primary height source using height above ground and speed thresholds with
+             * hysteresis to avoid rapid switching. Using range finder for height requires a consistent terrain height
+             * which cannot be assumed if the vehicle is moving horizontally.
+            */
+            if ((aboveUpperSwHgt || dontTrustTerrain) && (activeHgtSource == HGT_SOURCE_RNG)) {
+                // cannot trust terrain or range finder so stop using range finder height
+                if (frontend->_altSource == 0) {
+                    activeHgtSource = HGT_SOURCE_BARO;
+                } else if (frontend->_altSource == 2) {
+                    activeHgtSource = HGT_SOURCE_GPS;
+                }
+            } else if (belowLowerSwHgt && trustTerrain && (activeHgtSource != HGT_SOURCE_RNG)) {
+                // reliable terrain and range finder so start using range finder height
+                activeHgtSource = HGT_SOURCE_RNG;
+            }
+        }
+    } else if ((frontend->_altSource == 2) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {
+        activeHgtSource = HGT_SOURCE_GPS;
+    } else {
+        activeHgtSource = HGT_SOURCE_BARO;
+    }
+
+    // Use Baro alt as a fallback if we lose range finder or GPS
+    bool lostRngHgt = ((activeHgtSource == HGT_SOURCE_RNG) && ((imuSampleTime_ms - rngValidMeaTime_ms) > 500));
+    bool lostGpsHgt = ((activeHgtSource == HGT_SOURCE_GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000));
+    if (lostRngHgt || lostGpsHgt) {
+        activeHgtSource = HGT_SOURCE_BARO;
+    }
+
+    // if there is new baro data to fuse, calculate filtered baro data required by other processes
     if (baroDataToFuse) {
-        // calculate offset to baro data that enables baro to be used as a backup if we are using other height sources
-        if  (usingRangeForHgt || usingGpsForHgt) {
+        // calculate offset to baro data that enables us to switch to Baro height use during operation
+        if  (activeHgtSource != HGT_SOURCE_BARO) {
             calcFiltBaroOffset();
         }
         // filtered baro data used to provide a reference for takeoff
@@ -651,29 +726,42 @@ void NavEKF2_core::selectHeightForFusion()
         }
     }
 
+    // calculate offset to GPS height data that enables us to switch to GPS height during operation
+    if (gpsDataToFuse && (activeHgtSource != HGT_SOURCE_GPS)) {
+            calcFiltGpsHgtOffset();
+    }
+
     // Select the height measurement source
-    if (rangeDataToFuse && usingRangeForHgt) {
+    if (rangeDataToFuse && (activeHgtSource == HGT_SOURCE_RNG)) {
         // using range finder data
         // correct for tilt using a flat earth model
         if (prevTnb.c.z >= 0.7) {
+            // calculate height above ground
             hgtMea  = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+            // correct for terrain position relative to datum
+            hgtMea -= terrainState;
             // enable fusion
             fuseHgtData = true;
             // set the observation noise
             posDownObsNoise = sq(constrain_float(frontend->_rngNoise, 0.1f, 10.0f));
+            // add uncertainty created by terrain gradient and vehicle tilt
+            posDownObsNoise += sq(rangeDataDelayed.rng * frontend->_terrGradMax) * MAX(0.0f , (1.0f - sq(prevTnb.c.z)));
         } else {
             // disable fusion if tilted too far
             fuseHgtData = false;
         }
-    } else if  (gpsDataToFuse && usingGpsForHgt) {
+    } else if  (gpsDataToFuse && (activeHgtSource == HGT_SOURCE_GPS)) {
         // using GPS data
         hgtMea = gpsDataDelayed.hgt;
         // enable fusion
         fuseHgtData = true;
-        // set the observation noise to the horizontal GPS noise plus a scaler because GPS vertical position is usually less accurate
-        // TODO use VDOP/HDOP, reported accuracy or a separate parameter
-        posDownObsNoise = sq(constrain_float(frontend->_gpsHorizPosNoise * 1.5f, 0.1f, 10.0f));
-    } else if (baroDataToFuse && !usingRangeForHgt && !usingGpsForHgt) {
+        // set the observation noise using receiver reported accuracy or the horizontal noise scaled for typical VDOP/HDOP ratio
+        if (gpsHgtAccuracy > 0.0f) {
+            posDownObsNoise = sq(constrain_float(gpsHgtAccuracy, 1.5f * frontend->_gpsHorizPosNoise, 100.0f));
+        } else {
+            posDownObsNoise = sq(constrain_float(1.5f * frontend->_gpsHorizPosNoise, 0.1f, 10.0f));
+        }
+    } else if (baroDataToFuse && (activeHgtSource == HGT_SOURCE_BARO)) {
         // using Baro data
         hgtMea = baroDataDelayed.hgt - baroHgtOffset;
         // enable fusion

@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -86,6 +85,7 @@ public:
         k_param_mission, // mission library
         k_param_NavEKF2_old, // deprecated
         k_param_NavEKF2,
+        k_param_g2, // 2nd block of parameters
 
         // 140: battery controls
         k_param_battery_monitoring = 140,   // deprecated, can be deleted
@@ -195,6 +195,7 @@ public:
         k_param_steerController,
         k_param_barometer,
         k_param_notify,
+        k_param_button,
 
         k_param_DataFlash = 253, // Logging Group
 
@@ -319,5 +320,21 @@ public:
         pidSpeedThrottle    (0.7,             0.2,             0.2,             4000)
         {}
 };
+
+/*
+  2nd block of parameters, to avoid going past 256 top level keys
+ */
+class ParametersG2 {
+public:
+    ParametersG2(void) { AP_Param::setup_object_defaults(this, var_info); }
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
+    // vehicle statistics
+    AP_Stats stats;
+
+};
+
 
 extern const AP_Param::Info var_info[];

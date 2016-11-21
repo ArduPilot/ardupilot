@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 #if CLI_ENABLED == ENABLED
@@ -82,13 +80,14 @@ int8_t Copter::setup_set(uint8_t argc, const Menu::arg *argv)
         return 0;
     }
 
+    const char *strType = "Value out of range for type";
     switch(p_type)
     {
         case AP_PARAM_INT8:
             value_int8 = (int8_t)(argv[2].i);
             if(argv[2].i!=value_int8)
             {
-                cliSerial->printf("Value out of range for type INT8\n");
+                cliSerial->printf("%s INT8\n", strType);
                 return 0;
             }
             ((AP_Int8*)param)->set_and_save(value_int8);
@@ -97,7 +96,7 @@ int8_t Copter::setup_set(uint8_t argc, const Menu::arg *argv)
             value_int16 = (int16_t)(argv[2].i);
             if(argv[2].i!=value_int16)
             {
-                cliSerial->printf("Value out of range for type INT16\n");
+                cliSerial->printf("%s INT16\n", strType);
                 return 0;
             }
             ((AP_Int16*)param)->set_and_save(value_int16);
@@ -177,7 +176,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
     
 
 	
-    set_mask = strtol (argv[1].str, NULL, 2);
+    set_mask = strtol (argv[1].str, nullptr, 2);
 	if (set_mask == 0)
 		cliSerial->printf("no channels chosen");
     //cliSerial->printf("\n%d\n",set_mask);
@@ -196,6 +195,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	       "Do you want to start calibration now: y or n?\n");
 
 	/* wait for user input */
+    const char *strEscCalib = "ESC calibration";
 	while (1) {
             c= cliSerial->read();
 			if (c == 'y' || c == 'Y') {
@@ -203,11 +203,11 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 				break;
 
 			} else if (c == 0x03 || c == 0x63 || c == 'q') {
-				cliSerial->printf("ESC calibration exited\n");
+				cliSerial->printf("%s exited\n", strEscCalib);
 				return(0);
 
 			} else if (c == 'n' || c == 'N') {
-				cliSerial->printf("ESC calibration aborted\n");
+				cliSerial->printf("%s aborted\n", strEscCalib);
 				return(0);
 
 			} 
@@ -246,8 +246,8 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 		if (c == 'c') {
             break;
 
-		} else if (c == 0x03 || c == 0x63 || c == 'q') {
-			cliSerial->printf("ESC calibration exited\n");
+		} else if (c == 0x03 || c == 'q') {
+			cliSerial->printf("%s exited\n", strEscCalib);
 			return(0);
 		}
         
@@ -274,8 +274,8 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 
 			break;
 
-		} else if (c == 0x03 || c == 0x63 || c == 'q') {
-			cliSerial->printf("ESC calibration exited\n");
+		} else if (c == 0x03 || c == 'q') {
+			cliSerial->printf("%s exited\n", strEscCalib);
 			return(0);
 		}
 		
@@ -288,7 +288,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
     
 	cliSerial->printf("Outputs disarmed\n");
 
-	cliSerial->printf("ESC calibration finished\n");
+	cliSerial->printf("%s finished\n", strEscCalib);
 
 	return(0);
 }
@@ -502,7 +502,7 @@ void Copter::print_enabled(bool b)
 
 void Copter::report_version()
 {
-    cliSerial->printf("FW Ver: %d\n",(int)g.k_format_version);
+    cliSerial->printf("FW Ver: %d\n",(int)(g.k_format_version));
     print_divider();
     print_blanks(2);
 }

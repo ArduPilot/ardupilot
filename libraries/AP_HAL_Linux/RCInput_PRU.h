@@ -5,14 +5,14 @@
   doing the edge detection of the PPM sum input
  */
 
-#include "AP_HAL_Linux.h"
+#include "RCInput.h"
 
-#define RCIN_PRUSS_SHAREDRAM_BASE   0x4a312000
 // we use 300 ring buffer entries to guarantee that a full 25 byte
 // frame of 12 bits per byte
 
-class Linux::RCInput_PRU : public Linux::RCInput
-{
+namespace Linux {
+
+class RCInput_PRU : public RCInput {
 public:
     void init();
     void _timer_tick(void);
@@ -33,3 +33,5 @@ public:
     // time spent in the low state
     uint16_t _s0_time;
 };
+
+}

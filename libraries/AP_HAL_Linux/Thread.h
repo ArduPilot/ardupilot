@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2016  Intel Corporation. All rights reserved.
  *
@@ -23,8 +22,6 @@
 
 #include <AP_HAL/utility/functor.h>
 
-#include "AP_HAL_Linux_Namespace.h"
-
 namespace Linux {
 
 /*
@@ -42,9 +39,15 @@ public:
 
     bool is_current_thread();
 
+    bool is_started() const { return _started; }
+
     size_t get_stack_usage();
 
     bool set_stack_size(size_t stack_size);
+
+    virtual bool stop() { return false; }
+
+    bool join();
 
 protected:
     static void *_run_trampoline(void *arg);
@@ -59,15 +62,16 @@ protected:
     void _poison_stack();
 
     task_t _task;
-    bool _started;
-    pthread_t _ctx;
+    bool _started = false;
+    bool _should_exit = false;
+    pthread_t _ctx = 0;
 
     struct stack_debug {
         uint32_t *start;
         uint32_t *end;
     } _stack_debug;
 
-    size_t _stack_size;
+    size_t _stack_size = 0;
 };
 
 class PeriodicThread : public Thread {
@@ -78,10 +82,12 @@ public:
 
     bool set_rate(uint32_t rate_hz);
 
+    bool stop() override;
+
 protected:
     bool _run() override;
 
-    uint64_t _period_usec;
+    uint64_t _period_usec = 0;
 };
 
 }

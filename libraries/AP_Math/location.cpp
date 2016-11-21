@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * location.cpp
  * Copyright (C) Andrew Tridgell 2011
@@ -24,12 +23,6 @@
 #include <stdlib.h>
 #include "AP_Math.h"
 #include "location.h"
-
-// scaling factor from 1e-7 degrees to meters at equater
-// == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
-#define LOCATION_SCALING_FACTOR 0.011131884502145034f
-// inverse of LOCATION_SCALING_FACTOR
-#define LOCATION_SCALING_FACTOR_INV 89.83204953368922f
 
 float longitude_scale(const struct Location &loc)
 {

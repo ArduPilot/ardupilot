@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <stdint.h>
@@ -35,10 +34,12 @@ public:
     }
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                            enum Rotation rotation = ROTATION_NONE);
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev);
+                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                            enum Rotation rotation = ROTATION_NONE);
 
     /* update accel and gyro state */
     bool update();
@@ -53,7 +54,7 @@ public:
 private:
     AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                              bool use_fifo);
+                              enum Rotation rotation);
 
 #if MPU6000_DEBUG
     void _dump_registers();
@@ -62,8 +63,9 @@ private:
     /* Initialize sensor*/
     bool _init();
     bool _hardware_init();
+    bool _check_whoami();
 
-    void _set_filter_register(uint16_t filter_hz);
+    void _set_filter_register(void);
     void _fifo_reset();
     void _fifo_enable();
     bool _has_auxiliary_bus();
@@ -71,37 +73,62 @@ private:
     /* Read samples from FIFO (FIFO enabled) */
     void _read_fifo();
 
-    /* Read a single sample (FIFO disabled) */
-    void _read_sample();
-
     /* Check if there's data available by either reading DRDY pin or register */
     bool _data_ready();
 
     /* Poll for new data (non-blocking) */
-    void _poll_data();
+    bool _poll_data();
 
     /* Read and write functions taking the differences between buses into
      * account */
     bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
     uint8_t _register_read(uint8_t reg);
-    void _register_write(uint8_t reg, uint8_t val );
+    void _register_write(uint8_t reg, uint8_t val, bool checked=false);
 
     void _accumulate(uint8_t *samples, uint8_t n_samples);
+    void _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
+    void _check_temperature(void);
 
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    const bool _use_fifo;
-
     uint16_t _error_count;
 
     float _temp_filtered;
+    float _accel_scale;
     LowPassFilter2pFloat _temp_filter;
+
+    enum Rotation _rotation;
 
     AP_HAL::DigitalSource *_drdy_pin;
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     AP_MPU6000_AuxiliaryBus *_auxiliary_bus;
+
+    // is this an ICM-20608?
+    bool _is_icm_device;
+
+    // are we doing more than 1kHz sampling?
+    bool _fast_sampling;
+    
+    // last temperature reading, used to detect FIFO errors
+    float _last_temp;
+    uint8_t _temp_counter;
+
+    // has master i2c been enabled?
+    bool _master_i2c_enable;    
+    
+    // buffer for fifo read
+    uint8_t *_fifo_buffer;
+
+    uint8_t _reg_check_counter;
+
+    // accumulators for fast sampling
+    struct {
+        Vector3l accel;
+        Vector3l gyro;
+        uint8_t count;
+    } _accum;
 };
 
 class AP_MPU6000_AuxiliaryBusSlave : public AuxiliaryBusSlave
@@ -135,7 +162,7 @@ public:
     AP_HAL::Semaphore *get_semaphore() override;
 
 protected:
-    AP_MPU6000_AuxiliaryBus(AP_InertialSensor_MPU6000 &backend);
+    AP_MPU6000_AuxiliaryBus(AP_InertialSensor_MPU6000 &backend, uint32_t devid);
 
     AuxiliaryBusSlave *_instantiate_slave(uint8_t addr, uint8_t instance) override;
     int _configure_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg,

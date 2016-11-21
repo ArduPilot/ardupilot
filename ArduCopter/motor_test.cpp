@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 /*
@@ -58,7 +56,6 @@ void Copter::motor_test_output()
             default:
                 motor_test_stop();
                 return;
-                break;
         }
 
         // sanity check throttle values

@@ -11,11 +11,10 @@ def build(bld):
 
     bld.ap_stlib(
         name=vehicle + '_libs',
-        vehicle=vehicle,
-        libraries=bld.ap_common_vehicle_libraries() + [
+        ap_vehicle=vehicle,
+        ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AP_InertialNav',
         ],
-        use='mavlink',
     )
 
     bld.ap_program(

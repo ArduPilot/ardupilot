@@ -1,10 +1,8 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
-#if GNDEFFECT_COMPENSATION == ENABLED
+
 void Copter::update_ground_effect_detector(void)
 {
-    if(!motors.armed()) {
+    if(!g2.gndeffect_comp_enabled || !motors.armed()) {
         // disarmed - disable ground effect and return
         gndeffect_state.takeoff_expected = false;
         gndeffect_state.touchdown_expected = false;
@@ -69,4 +67,3 @@ void Copter::update_ground_effect_detector(void)
     ahrs.setTakeoffExpected(gndeffect_state.takeoff_expected);
     ahrs.setTouchdownExpected(gndeffect_state.touchdown_expected);
 }
-#endif // GNDEFFECT_COMPENSATION == ENABLED

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "AP_Parachute.h"
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
@@ -16,7 +14,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Description: Parachute release enabled or disabled
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("ENABLED", 0, AP_Parachute, _enabled, 0),
+    AP_GROUPINFO_FLAGS("ENABLED", 0, AP_Parachute, _enabled, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: TYPE
     // @DisplayName: Parachute release mechanism type (relay or servo)

@@ -89,9 +89,10 @@ bool DataFlash_Backend::WriteBlockCheckStartupMessages()
     // caller hoping to write blocks out.  Push out log blocks - we
     // might end up clearing the buffer.....
     push_log_blocks();
-    if (_startup_messagewriter->fmt_done()) {
-        return true;
-    }
+
+    //  even if we did finish writing startup messages, we can't
+    //  permit any message to go in as its timestamp will be before
+    //  any we wrote in.  Time going backwards annoys log readers.
 
     // sorry!  currently busy writing out startup messages...
     return false;
@@ -146,7 +147,7 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
     // stack-allocate a buffer so we can WriteBlock(); this could be
     // 255 bytes!  If we were willing to lose the WriteBlock
     // abstraction we could do WriteBytes() here instead?
-    const char *fmt  = NULL;
+    const char *fmt  = nullptr;
     uint8_t msg_len;
     DataFlash_Class::log_write_fmt *f;
     for (f = _front.log_write_fmts; f; f=f->next) {
@@ -156,7 +157,7 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
             break;
         }
     }
-    if (fmt == NULL) {
+    if (fmt == nullptr) {
         // this is a bug.
         internal_error();
         return false;

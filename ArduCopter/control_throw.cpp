@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 
@@ -11,30 +9,22 @@ bool Copter::throw_init(bool ignore_checks)
     return false;
 #endif
 
-    // do not enter the mode when already armed
+    // do not enter the mode when already armed or when flying
     if (motors.armed()) {
         return false;
     }
 
-    // this mode needs a position reference
-    return true;
-}
+    // init state
+    throw_state.stage = Throw_Disarmed;
+    throw_state.nextmode_attempted = false;
 
-// clean up when exiting throw mode
-void Copter::throw_exit()
-{
-    // If exiting throw mode before commencing flight, restore the throttle interlock to the value last set by the switch
-    if (!throw_flight_commenced) {
-        motors.set_interlock(throw_early_exit_interlock);
-    }
+    return true;
 }
 
 // runs the throw to start controller
 // should be called at 100hz or more
 void Copter::throw_run()
 {
-    static ThrowModeState throw_state = Throw_Disarmed;
-
     /* Throw State Machine
     Throw_Disarmed - motors are off
     Throw_Detecting -  motors are on and we are waiting for the throw
@@ -46,49 +36,22 @@ void Copter::throw_run()
     // Don't enter THROW mode if interlock will prevent motors running
     if (!motors.armed() && motors.get_interlock()) {
         // state machine entry is always from a disarmed state
-        throw_state = Throw_Disarmed;
+        throw_state.stage = Throw_Disarmed;
 
-        // remember the current value of the motor interlock so that this condition can be restored if we exit the throw mode before starting motors
-        throw_early_exit_interlock = true;
-
-        // prevent motors from rotating before the throw is detected unless enabled by the user
-        if (g.throw_motor_start == 1) {
-            motors.set_interlock(true);
-        } else {
-            motors.set_interlock(false);
-        }
-
-        // status to let system know flight control has not started which means the interlock setting needs to restored if we exit to another flight mode
-        // this is necessary because throw mode uses the interlock to achieve a post arm motor start.
-        throw_flight_commenced = false;
-
-    } else if (throw_state == Throw_Disarmed && motors.armed()) {
+    } else if (throw_state.stage == Throw_Disarmed && motors.armed()) {
         gcs_send_text(MAV_SEVERITY_INFO,"waiting for throw");
-        throw_state = Throw_Detecting;
+        throw_state.stage = Throw_Detecting;
 
-        // prevent motors from rotating before the throw is detected unless enabled by the user
-        if (g.throw_motor_start == 1) {
-            motors.set_interlock(true);
-        } else {
-            motors.set_interlock(false);
-        }
-
-    } else if (throw_state == Throw_Detecting && throw_detected()){
+    } else if (throw_state.stage == Throw_Detecting && throw_detected()){
         gcs_send_text(MAV_SEVERITY_INFO,"throw detected - uprighting");
-        throw_state = Throw_Uprighting;
+        throw_state.stage = Throw_Uprighting;
 
         // Cancel the waiting for throw tone sequence
         AP_Notify::flags.waiting_for_throw = false;
 
-        // reset the interlock
-        motors.set_interlock(true);
-
-        // status to let system know flight control has started which means the entry interlock setting will not restored if we exit to another flight mode
-        throw_flight_commenced = true;
-
-    } else if (throw_state == Throw_Uprighting && throw_attitude_good()) {
+    } else if (throw_state.stage == Throw_Uprighting && throw_attitude_good()) {
         gcs_send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
-        throw_state = Throw_HgtStabilise;
+        throw_state.stage = Throw_HgtStabilise;
 
         // initialize vertical speed and acceleration limits
         // use brake mode values for rapid response
@@ -97,7 +60,11 @@ void Copter::throw_run()
 
         // initialise the demanded height to 3m above the throw height
         // we want to rapidly clear surrounding obstacles
-        pos_control.set_alt_target(inertial_nav.get_altitude() + 300);
+        if (g2.throw_type == ThrowType_Drop) {
+            pos_control.set_alt_target(inertial_nav.get_altitude() - 100);
+        } else {
+            pos_control.set_alt_target(inertial_nav.get_altitude() + 300);
+        }
 
         // set the initial velocity of the height controller demand to the measured velocity if it is going up
         // if it is going down, set it to zero to enforce a very hard stop
@@ -106,27 +73,57 @@ void Copter::throw_run()
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         set_auto_armed(true);
 
-    } else if (throw_state == Throw_HgtStabilise && throw_height_good()) {
+    } else if (throw_state.stage == Throw_HgtStabilise && throw_height_good()) {
         gcs_send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
-        throw_state = Throw_PosHold;
+        throw_state.stage = Throw_PosHold;
 
         // initialise the loiter target to the curent position and velocity
         wp_nav.init_loiter_target();
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         set_auto_armed(true);
+    } else if (throw_state.stage == Throw_PosHold && throw_position_good()) {
+        if (!throw_state.nextmode_attempted) {
+            switch (g2.throw_nextmode) {
+                case AUTO:
+                case GUIDED:
+                case RTL:
+                case LAND:
+                case BRAKE:
+                    set_mode((control_mode_t)g2.throw_nextmode.get(), MODE_REASON_THROW_COMPLETE);
+                    break;
+                default:
+                    // do nothing
+                    break;
+            }
+            throw_state.nextmode_attempted = true;
+        }
     }
 
     // Throw State Processing
-    switch (throw_state) {
+    switch (throw_state.stage) {
 
     case Throw_Disarmed:
+
+        // prevent motors from rotating before the throw is detected unless enabled by the user
+        if (g.throw_motor_start == 1) {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        } else {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        }
 
         // demand zero throttle (motors will be stopped anyway) and continually reset the attitude controller
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         break;
 
     case Throw_Detecting:
+
+        // prevent motors from rotating before the throw is detected unless enabled by the user
+        if (g.throw_motor_start == 1) {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        } else {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        }
 
         // Hold throttle at zero during the throw and continually reset the attitude controller
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -138,15 +135,21 @@ void Copter::throw_run()
 
     case Throw_Uprighting:
 
+        // set motors to full range
+        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
         // demand a level roll/pitch attitude with zero yaw rate
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
 
         // output 50% throttle and turn off angle boost to maximise righting moment
-        attitude_control.set_throttle_out(500, false, g.throttle_filt);
+        attitude_control.set_throttle_out(0.5f, false, g.throttle_filt);
 
         break;
 
     case Throw_HgtStabilise:
+
+        // set motors to full range
+        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
@@ -158,6 +161,9 @@ void Copter::throw_run()
         break;
 
     case Throw_PosHold:
+
+        // set motors to full range
+        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // run loiter controller
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
@@ -171,6 +177,30 @@ void Copter::throw_run()
 
         break;
     }
+
+    // log at 10hz or if stage changes
+    uint32_t now = AP_HAL::millis();
+    if ((throw_state.stage != throw_state.prev_stage) || (now - throw_state.last_log_ms) > 100) {
+        throw_state.prev_stage = throw_state.stage;
+        throw_state.last_log_ms = now;
+        float velocity = inertial_nav.get_velocity().length();
+        float velocity_z = inertial_nav.get_velocity().z;
+        float accel = ins.get_accel().length();
+        float ef_accel_z = ahrs.get_accel_ef().z;
+        bool throw_detect = (throw_state.stage > Throw_Detecting) || throw_detected();
+        bool attitude_ok = (throw_state.stage > Throw_Uprighting) || throw_attitude_good();
+        bool height_ok = (throw_state.stage > Throw_HgtStabilise) || throw_height_good();
+        bool pos_ok = (throw_state.stage > Throw_PosHold) || throw_position_good();
+        Log_Write_Throw(throw_state.stage,
+                        velocity,
+                        velocity_z,
+                        accel,
+                        ef_accel_z,
+                        throw_detect,
+                        attitude_ok,
+                        height_ok,
+                        pos_ok);
+    }
 }
 
 bool Copter::throw_detected()
@@ -181,11 +211,16 @@ bool Copter::throw_detected()
         return false;
     }
 
-    // Check for high speed (note get_inertial_nav methods use a cm length scale)
-    bool high_speed = inertial_nav.get_velocity().length() > 500.0f;
+    // Check for high speed (>500 cm/s)
+    bool high_speed = inertial_nav.get_velocity().length() > THROW_HIGH_SPEED;
 
-    // check for upwards trajectory
-    bool gaining_height = inertial_nav.get_velocity().z > 50.0f;
+    // check for upwards or downwards trajectory (airdrop) of 50cm/s
+    bool changing_height;
+    if (g2.throw_type == ThrowType_Drop) {
+        changing_height = inertial_nav.get_velocity().z < -THROW_VERTICAL_SPEED;
+    } else {
+        changing_height = inertial_nav.get_velocity().z > THROW_VERTICAL_SPEED;
+    }
 
     // Check the vertical acceleraton is greater than 0.25g
     bool free_falling = ahrs.get_accel_ef().z > -0.25 * GRAVITY_MSS;
@@ -193,17 +228,17 @@ bool Copter::throw_detected()
     // Check if the accel length is < 1.0g indicating that any throw action is complete and the copter has been released
     bool no_throw_action = ins.get_accel().length() < 1.0f * GRAVITY_MSS;
 
-    // High velocity or free-fall combined with incresing height indicate a possible throw release
-    bool possible_throw_detected = (free_falling || high_speed) && gaining_height && no_throw_action;
+    // High velocity or free-fall combined with increasing height indicate a possible air-drop or throw release
+    bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action;
 
     // Record time and vertical velocity when we detect the possible throw
-    if (possible_throw_detected && ((AP_HAL::millis() - throw_free_fall_start_ms) > 500)) {
-        throw_free_fall_start_ms = AP_HAL::millis();
-        throw_free_fall_start_velz = inertial_nav.get_velocity().z;
+    if (possible_throw_detected && ((AP_HAL::millis() - throw_state.free_fall_start_ms) > 500)) {
+        throw_state.free_fall_start_ms = AP_HAL::millis();
+        throw_state.free_fall_start_velz = inertial_nav.get_velocity().z;
     }
 
     // Once a possible throw condition has been detected, we check for 2.5 m/s of downwards velocity change in less than 0.5 seconds to confirm
-    bool throw_condition_confirmed = ((AP_HAL::millis() - throw_free_fall_start_ms < 500) && ((inertial_nav.get_velocity().z - throw_free_fall_start_velz) < -250.0f));
+    bool throw_condition_confirmed = ((AP_HAL::millis() - throw_state.free_fall_start_ms < 500) && ((inertial_nav.get_velocity().z - throw_state.free_fall_start_velz) < -250.0f));
 
     // start motors and enter the control mode if we are in continuous freefall
     if (throw_condition_confirmed) {
@@ -217,8 +252,7 @@ bool Copter::throw_attitude_good()
 {
     // Check that we have uprighted the copter
     const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
-    bool is_upright = (rotMat.c.z > 0.866f);
-    return is_upright;
+    return (rotMat.c.z > 0.866f); // is_upright
 }
 
 bool Copter::throw_height_good()
@@ -227,3 +261,8 @@ bool Copter::throw_height_good()
     return (pos_control.get_alt_error() < 50.0f);
 }
 
+bool Copter::throw_position_good()
+{
+    // check that our horizontal position error is within 50cm
+    return (pos_control.get_horizontal_error() < 50.0f);
+}

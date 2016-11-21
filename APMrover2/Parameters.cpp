@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Rover.h"
 
 /*
@@ -80,7 +78,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
     // @User: Standard
     // @Units: seconds
-    // @Range: 0 10
+    // @Range: 0 30
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
@@ -92,7 +90,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Bitmask: 0:Steering,1:Throttle
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
-    // @Param: MAG_ENABLED
+    // @Param: MAG_ENABLE
     // @DisplayName: Enable Compass
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
     // @User: Standard
@@ -122,7 +120,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
-	GSCALAR(speed_cruise,        "CRUISE_SPEED",    5),
+	GSCALAR(speed_cruise,        "CRUISE_SPEED",    SPEED_CRUISE),
 
     // @Param: SPEED_TURN_GAIN
     // @DisplayName: Target speed reduction while turning
@@ -552,8 +550,30 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
+    // @Group: BTN_
+    // @Path: ../libraries/AP_Button/AP_Button.cpp
+    GOBJECT(button, "BTN_",  AP_Button),
+
+    // @Group:
+    // @Path: Parameters.cpp
+    GOBJECT(g2, "",  ParametersG2),
+
 	AP_VAREND
 };
+
+/*
+  2nd group of parameters
+ */
+const AP_Param::GroupInfo ParametersG2::var_info[] = {
+
+    // @Group: STAT
+    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
+    AP_SUBGROUPINFO(stats, "STAT", 1, ParametersG2, AP_Stats),
+
+    AP_GROUPEND
+};
+
+
 
 /*
   This is a conversion table from old parameter values to new

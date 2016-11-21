@@ -17,15 +17,9 @@ set(config_module_list
     drivers/led
     drivers/px4fmu
     drivers/rgbled
-    drivers/mpu6000
-    drivers/hmc5883
-    drivers/ms5611
     drivers/mb12xx
     drivers/ll40ls
     drivers/trone
-    drivers/airspeed
-    drivers/ets_airspeed
-    drivers/meas_airspeed
     drivers/mkblctrl
     drivers/batt_smbus
     drivers/irlock

@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /* ************************************************************ */
 /* Test for DataFlash Log library                               */
 /* ************************************************************ */
@@ -199,6 +197,13 @@ public:
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
+
+    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    // these methods cover only the first logging backend used -
+    // typically DataFlash_File.
+    bool logging_present() const;
+    bool logging_enabled() const;
+    bool logging_failed() const;
 
 protected:
 

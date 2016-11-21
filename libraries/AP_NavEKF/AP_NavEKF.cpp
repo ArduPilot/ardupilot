@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF.h"
@@ -402,6 +400,8 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GPS_CHECK",    33, NavEKF, _gpsCheck, 31),
 
+    // **NOTE** index 34 is "Enable" and is at the top for AP_PARAM_FLAG_ENABLE
+
     AP_GROUPEND
 };
 
@@ -727,7 +727,8 @@ bool NavEKF::use_compass(void) const
 // rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
 // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
 // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
-void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas)
+// NOTE: AP_NavEKF does not use the posOffset data
+void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset)
 {
     if (core) {
         core->writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas);

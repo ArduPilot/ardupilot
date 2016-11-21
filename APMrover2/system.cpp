@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*****************************************************************************
 The init_ardupilot function processes everything we need for an in - air restart
     We will determine later if we are actually on the ground and process a
@@ -49,10 +48,10 @@ int8_t Rover::reboot_board(uint8_t argc, const Menu::arg *argv)
 void Rover::run_cli(AP_HAL::UARTDriver *port)
 {
     // disable the failsafe code in the CLI
-    hal.scheduler->register_timer_failsafe(NULL,1);
+    hal.scheduler->register_timer_failsafe(nullptr,1);
 
     // disable the mavlink delay callback
-    hal.scheduler->register_delay_callback(NULL, 5);
+    hal.scheduler->register_delay_callback(nullptr, 5);
 
     cliSerial = port;
     Menu::set_port(port);
@@ -90,10 +89,24 @@ void Rover::init_ardupilot()
 
     load_parameters();
 
-    BoardConfig.init();
+    // initialise stats module
+    g2.stats.init();
+
+    GCS_MAVLINK::set_dataflash(&DataFlash);
+
+    mavlink_system.sysid = g.sysid_this_mav;
 
     // initialise serial ports
     serial_manager.init();
+
+    // setup first port early to allow BoardConfig to report errors
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+
+    // Register mavlink_delay_cb, which will run anytime you have
+    // more than 5ms remaining in your call to hal.scheduler->delay
+    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
+    
+    BoardConfig.init();
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
@@ -114,26 +127,18 @@ void Rover::init_ardupilot()
     check_usb_mux();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
 
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init(serial_manager);
+    frsky_telemetry.init(serial_manager, FIRMWARE_STRING, MAV_TYPE_GROUND_ROVER);
 #endif
-
-    mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
-
-    GCS_MAVLINK::set_dataflash(&DataFlash);
-
-    // Register mavlink_delay_cb, which will run anytime you have
-    // more than 5ms remaining in your call to hal.scheduler->delay
-    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     if (g.compass_enabled==true) {
         if (!compass.init()|| !compass.read()) {
@@ -183,10 +188,10 @@ void Rover::init_ardupilot()
     if (g.cli_enabled == 1) {
         const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
         cliSerial->println(msg);
-        if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
+        if (gcs[1].initialised && (gcs[1].get_uart() != nullptr)) {
             gcs[1].get_uart()->println(msg);
         }
-        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
+        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != nullptr)) {
             gcs[2].get_uart()->println(msg);
         }
     }
@@ -266,7 +271,7 @@ void Rover::set_mode(enum mode mode)
 
     // If we are changing out of AUTO mode reset the loiter timer
     if (control_mode == AUTO) {
-        loiter_time = 0;
+        loiter_start_time = 0;
     }
 
     control_mode = mode;
@@ -274,6 +279,10 @@ void Rover::set_mode(enum mode mode)
     throttle = 500;
     g.pidSpeedThrottle.reset_I();
 
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.update_control_mode(control_mode);
+#endif
+    
     if (control_mode != AUTO) {
         auto_triggered = false;
     }
@@ -483,16 +492,6 @@ bool Rover::should_log(uint32_t mask)
     }
     return ret;
 }
-
-/*
-  send FrSky telemetry. Should be called at 5Hz by scheduler
- */
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Rover::frsky_telemetry_send(void)
-{
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
-#endif
 
 /*
   update AHRS soft arm state and log as needed

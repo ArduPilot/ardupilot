@@ -22,7 +22,7 @@ public:
 
     CompassCalibrator();
 
-    void start(bool retry=false, bool autosave=false, float delay=0.0f);
+    void start(bool retry=false, float delay=0.0f);
     void clear();
 
     void update(bool &failure);
@@ -40,7 +40,6 @@ public:
     completion_mask_t& get_completion_mask();
     enum compass_cal_status_t get_status() const { return _status; }
     float get_fitness() const { return sqrtf(_fitness); }
-    bool get_autosave() const { return _autosave; }
     uint8_t get_attempt() const { return _attempt; }
 
 private:
@@ -80,7 +79,6 @@ private:
     // behavioral state
     float _delay_start_sec;
     uint32_t _start_time_ms;
-    bool _autosave;
     bool _retry;
     float _tolerance;
     uint8_t _attempt;
@@ -119,6 +117,7 @@ private:
     float calc_mean_squared_residuals(const param_t& params) const;
     float calc_mean_squared_residuals() const;
 
+    void calc_initial_offset();
     void calc_sphere_jacob(const Vector3f& sample, const param_t& params, float* ret) const;
     void run_sphere_fit();
 

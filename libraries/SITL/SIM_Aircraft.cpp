@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -43,6 +42,8 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     frame_height(0),
     dcm(),
     gyro(),
+    gyro_prev(),
+    ang_accel(),
     velocity_ef(),
     mass(0),
     accel_body(0, 0, -GRAVITY_MSS),
@@ -50,7 +51,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     gyro_noise(radians(0.1f)),
     accel_noise(0.3),
     rate_hz(1200),
-    autotest_dir(NULL),
+    autotest_dir(nullptr),
     frame(frame_str),
 #ifdef __CYGWIN__
     min_sleep_time(20000)
@@ -80,7 +81,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
  */
 bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degrees)
 {
-    char *saveptr=NULL;
+    char *saveptr=nullptr;
     char *s = strdup(home_str);
     if (!s) {
         return false;
@@ -90,28 +91,28 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
         free(s);
         return false;
     }
-    char *lon_s = strtok_r(NULL, ",", &saveptr);
+    char *lon_s = strtok_r(nullptr, ",", &saveptr);
     if (!lon_s) {
         free(s);
         return false;
     }
-    char *alt_s = strtok_r(NULL, ",", &saveptr);
+    char *alt_s = strtok_r(nullptr, ",", &saveptr);
     if (!alt_s) {
         free(s);
         return false;
     }
-    char *yaw_s = strtok_r(NULL, ",", &saveptr);
+    char *yaw_s = strtok_r(nullptr, ",", &saveptr);
     if (!yaw_s) {
         free(s);
         return false;
     }
 
     memset(&loc, 0, sizeof(loc));
-    loc.lat = strtof(lat_s, NULL) * 1.0e7;
-    loc.lng = strtof(lon_s, NULL) * 1.0e7;
-    loc.alt = strtof(alt_s, NULL) * 1.0e2;
+    loc.lat = strtof(lat_s, nullptr) * 1.0e7;
+    loc.lng = strtof(lon_s, nullptr) * 1.0e7;
+    loc.alt = strtof(alt_s, nullptr) * 1.0e2;
 
-    yaw_degrees = strtof(yaw_s, NULL);
+    yaw_degrees = strtof(yaw_s, nullptr);
     free(s);
 
     return true;
@@ -332,6 +333,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.rollRate  = degrees(gyro.x);
     fdm.pitchRate = degrees(gyro.y);
     fdm.yawRate   = degrees(gyro.z);
+    fdm.angAccel.x = degrees(ang_accel.x);
+    fdm.angAccel.y = degrees(ang_accel.y);
+    fdm.angAccel.z = degrees(ang_accel.z);
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
     fdm.rollDeg  = degrees(r);
@@ -360,6 +364,11 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         fdm.longitude = smoothing.location.lng * 1.0e-7;
         fdm.altitude  = smoothing.location.alt * 1.0e-2;
     }
+
+    if (last_speedup != sitl->speedup && sitl->speedup > 0) {
+        set_speedup(sitl->speedup);
+        last_speedup = sitl->speedup;
+    }
 }
 
 uint64_t Aircraft::get_wall_time_us() const
@@ -377,7 +386,7 @@ uint64_t Aircraft::get_wall_time_us() const
     return last_ret_us;
 #else
     struct timeval tp;
-    gettimeofday(&tp,NULL);
+    gettimeofday(&tp,nullptr);
     return tp.tv_sec*1.0e6 + tp.tv_usec;
 #endif
 }
@@ -403,6 +412,11 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     gyro.x = constrain_float(gyro.x, -radians(2000), radians(2000));
     gyro.y = constrain_float(gyro.y, -radians(2000), radians(2000));
     gyro.z = constrain_float(gyro.z, -radians(2000), radians(2000));
+
+    // estimate angular acceleration using a first order difference calculation
+    // TODO the simulator interface should provide the angular acceleration
+    ang_accel = (gyro - gyro_prev) / delta_time;
+    gyro_prev = gyro;
     
     // update attitude
     dcm.rotate(gyro * delta_time);
@@ -429,7 +443,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     position += velocity_ef * delta_time;
 
     // velocity relative to air mass, in earth frame
-    velocity_air_ef = velocity_ef - wind_ef;
+    velocity_air_ef = velocity_ef + wind_ef;
     
     // velocity relative to airmass in body frame
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
@@ -496,6 +510,24 @@ void Aircraft::update_wind(const struct sitl_input &input)
 {
     // wind vector in earth frame
     wind_ef = Vector3f(cosf(radians(input.wind.direction)), sinf(radians(input.wind.direction)), 0) * input.wind.speed;
+    
+    const float wind_turb = input.wind.turbulence * 10.0; // scale input.wind.turbulence to match standard deviation when using iir_coef=0.98
+    const float iir_coef = 0.98; // filtering high frequencies from turbulence
+    
+    if (wind_turb > 0 && !on_ground(position)) {
+
+        turbulence_azimuth = turbulence_azimuth + (2 * rand());
+
+        turbulence_horizontal_speed=
+            turbulence_horizontal_speed * iir_coef+wind_turb * rand_normal(0,1) * (1-iir_coef);
+
+        turbulence_vertical_speed = (turbulence_vertical_speed * iir_coef) + (wind_turb * rand_normal(0,1) * (1-iir_coef));
+
+        wind_ef += Vector3f(
+            cosf(radians(turbulence_azimuth)) * turbulence_horizontal_speed,
+            sinf(radians(turbulence_azimuth)) * turbulence_horizontal_speed,
+            turbulence_vertical_speed);
+    }     
 }
 
 /*
@@ -660,6 +692,42 @@ void Aircraft::smooth_sensors(void)
     smoothing.last_update_us = now;
     smoothing.enabled = true;
 }
+
+/*
+  return a filtered servo input as a value from -1 to 1
+  servo is assumed to be 1000 to 2000, trim at 1500
+ */
+float Aircraft::filtered_idx(float v, uint8_t idx)
+{
+    if (sitl->servo_speed <= 0) {
+        return v;
+    }
+    float cutoff = 1.0 / (2 * M_PI * sitl->servo_speed);
+    servo_filter[idx].set_cutoff_frequency(cutoff);
+    return servo_filter[idx].apply(v, frame_time_us*1.0e-6);
+}
+    
+
+/*
+  return a filtered servo input as a value from -1 to 1
+  servo is assumed to be 1000 to 2000, trim at 1500
+ */
+float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx)
+{
+    float v = (input.servos[idx]-1500)/500.0f;
+    return filtered_idx(v, idx);
+}
+
+/*
+  return a filtered servo input as a value from 0 to 1
+  servo is assumed to be 1000 to 2000
+ */
+float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx)
+{
+    float v = (input.servos[idx]-1000)/1000.0f;
+    return filtered_idx(v, idx);
+}
     
 } // namespace SITL
+
 

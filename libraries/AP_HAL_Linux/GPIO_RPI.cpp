@@ -4,7 +4,9 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_URUS || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 
 #include <errno.h>
@@ -46,14 +48,14 @@ void GPIO_RPI::init()
     int rpi_version = UtilRPI::from(hal.util)->get_rpi_version();
     uint32_t gpio_address = rpi_version == 1 ? GPIO_BASE(BCM2708_PERI_BASE)   : GPIO_BASE(BCM2709_PERI_BASE);
 
-    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
     if (mem_fd < 0) {
         AP_HAL::panic("Can't open /dev/mem");
     }
 
     // mmap GPIO
     void *gpio_map = mmap(
-        NULL,                 // Any adddress in our space will do
+        nullptr,              // Any adddress in our space will do
         BLOCK_SIZE,           // Map length
         PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
         MAP_SHARED,           // Shared with other processes

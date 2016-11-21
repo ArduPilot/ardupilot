@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -28,10 +26,6 @@ extern const AP_HAL::HAL& hal;
 // constructor
 NavEKF2_core::NavEKF2_core(void) :
     stateStruct(*reinterpret_cast<struct state_elements *>(&statesArray)),
-
-    //variables
-    lastRngMeasTime_ms(0),          // time in msec that the last range measurement was taken
-    rngMeasIndex(0),                // index into ringbuffer of current range measurement
 
     _perf_UpdateFilter(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_UpdateFilter")),
     _perf_CovariancePrediction(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_CovariancePrediction")),
@@ -89,7 +83,7 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedOF.init(OBS_BUFFER_LENGTH)) {
         return false;
     }
-    if(!storedRange.init(OBS_BUFFER_LENGTH)) {
+    if(!storedRange.init(2*OBS_BUFFER_LENGTH)) {
         return false;
     }
     if(!storedIMU.init(imu_buffer_length)) {
@@ -144,6 +138,8 @@ void NavEKF2_core::InitialiseVariables()
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
     lastPosReset_ms = 0;
     lastVelReset_ms = 0;
+    lastRngMeasTime_ms = 0;
+    terrainHgtStableSet_ms = 0;
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
@@ -171,7 +167,7 @@ void NavEKF2_core::InitialiseVariables()
     terrainState = 0.0f;
     prevPosN = stateStruct.position.x;
     prevPosE = stateStruct.position.y;
-    inhibitGndState = true;
+    inhibitGndState = false;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
     heldVelNE.zero();
@@ -198,6 +194,7 @@ void NavEKF2_core::InitialiseVariables()
     expectGndEffectTouchdown = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
+    gpsHgtAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
@@ -264,6 +261,14 @@ void NavEKF2_core::InitialiseVariables()
     delAngBiasLearned = false;
     memset(&filterStatus, 0, sizeof(filterStatus));
     gpsInhibit = false;
+    activeHgtSource = 0;
+    memset(&rngMeasIndex, 0, sizeof(rngMeasIndex));
+    memset(&storedRngMeasTime_ms, 0, sizeof(storedRngMeasTime_ms));
+    memset(&storedRngMeas, 0, sizeof(storedRngMeas));
+    terrainHgtStable = true;
+    ekfOriginHgtVar = 0.0f;
+    velOffsetNED.zero();
+    posOffsetNED.zero();
 
     // zero data buffers
     storedIMU.reset();
@@ -600,6 +605,27 @@ void NavEKF2_core::calcOutputStates()
 
     // apply a trapezoidal integration to velocities to calculate position
     outputDataNew.position += (outputDataNew.velocity + lastVelocity) * (imuDataNew.delVelDT*0.5f);
+
+    // If the IMU accelerometer is offset from the body frame origin, then calculate corrections
+    // that can be added to the EKF velocity and position outputs so that they represent the velocity
+    // and position of the body frame origin.
+    // Note the * operator has been overloaded to operate as a dot product
+    if (!accelPosOffset.is_zero()) {
+        // calculate the average angular rate across the last IMU update
+        // note delAngDT is prevented from being zero in readIMUData()
+        Vector3f angRate = imuDataNew.delAng * (1.0f/imuDataNew.delAngDT);
+
+        // Calculate the velocity of the body frame origin relative to the IMU in body frame
+        // and rotate into earth frame. Note % operator has been overloaded to perform a cross product
+        Vector3f velBodyRelIMU = angRate % (- accelPosOffset);
+        velOffsetNED = Tbn_temp * velBodyRelIMU;
+
+        // calculate the earth frame position of the body frame origin relative to the IMU
+        posOffsetNED = Tbn_temp * (- accelPosOffset);
+    } else {
+        velOffsetNED.zero();
+        posOffsetNED.zero();
+    }
 
     // store INS states in a ring buffer that with the same length and time coordinates as the IMU data buffer
     if (runUpdates) {
@@ -1331,8 +1357,10 @@ void NavEKF2_core::ConstrainStates()
     for (uint8_t i=19; i<=21; i++) statesArray[i] = constrain_float(statesArray[i],-0.5f,0.5f);
     // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
     for (uint8_t i=22; i<=23; i++) statesArray[i] = constrain_float(statesArray[i],-100.0f,100.0f);
-    // constrain the terrain offset state
-    terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
+    // constrain the terrain state to be below the vehicle height unless we are using terrain as the height datum
+    if (!inhibitGndState) {
+        terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
+    }
 }
 
 // calculate the NED earth spin vector in rad/sec

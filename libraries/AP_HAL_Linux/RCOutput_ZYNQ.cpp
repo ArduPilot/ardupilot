@@ -18,7 +18,16 @@
 
 using namespace Linux;
 
-#define PWM_CHAN_COUNT 8	// FIXME
+#define PWM_CHAN_COUNT 8
+#define RCOUT_ZYNQ_PWM_BASE	 0x43c00000
+#define PWM_CMD_CONFIG	         0	/* full configuration in one go */
+#define PWM_CMD_ENABLE	         1	/* enable a pwm */
+#define PWM_CMD_DISABLE	         2	/* disable a pwm */
+#define PWM_CMD_MODIFY	         3	/* modify a pwm */
+#define PWM_CMD_SET	         4	/* set a pwm output explicitly */
+#define PWM_CMD_CLR	         5	/* clr a pwm output explicitly */
+#define PWM_CMD_TEST	         6	/* various crap */
+
 
 static void catch_sigbus(int sig)
 {
@@ -28,7 +37,7 @@ void RCOutput_ZYNQ::init()
 {
     uint32_t mem_fd;
     signal(SIGBUS,catch_sigbus);
-    mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
     sharedMem_cmd = (struct pwm_cmd *) mmap(0, 0x1000, PROT_READ|PROT_WRITE, 
                                             MAP_SHARED, mem_fd, RCOUT_ZYNQ_PWM_BASE);
     close(mem_fd);
@@ -67,7 +76,12 @@ void RCOutput_ZYNQ::disable_ch(uint8_t ch)
 
 void RCOutput_ZYNQ::write(uint8_t ch, uint16_t period_us)
 {
-    sharedMem_cmd->periodhi[ch].hi = TICK_PER_US*period_us;
+    if (corked) {
+        pending[ch] = period_us;
+        pending_mask |= (1U << ch);
+    } else {
+        sharedMem_cmd->periodhi[ch].hi = TICK_PER_US*period_us;
+    }
 }
 
 uint16_t RCOutput_ZYNQ::read(uint8_t ch)
@@ -84,4 +98,20 @@ void RCOutput_ZYNQ::read(uint16_t* period_us, uint8_t len)
     for(i=0;i<len;i++){
         period_us[i] = sharedMem_cmd->periodhi[i].hi/TICK_PER_US;
     }
+}
+
+void RCOutput_ZYNQ::cork(void)
+{
+    corked = true;
+}
+
+void RCOutput_ZYNQ::push(void)
+{
+    corked = false;
+    for (uint8_t i=0; i<MAX_ZYNQ_PWMS; i++) {
+        if (pending_mask & (1U << i)) {
+            write(i, pending[i]);
+        }
+    }
+    pending_mask = 0;
 }

@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -108,6 +106,9 @@ public:
     // handle a LED_CONTROL message
     static void handle_led_control(mavlink_message_t* msg);
 
+    // handle a PLAY_TUNE message
+    static void handle_play_tune(mavlink_message_t* msg);
+    
     static const struct AP_Param::GroupInfo var_info[];
 
     bool buzzer_enabled() const { return _buzzer_enable; }

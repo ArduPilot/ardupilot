@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -35,7 +34,7 @@ public:
     virtual bool have_los_meas() = 0;
     
     // parses a mavlink message from the companion computer
-    virtual void handle_msg(mavlink_message_t* msg) = 0;
+    virtual void handle_msg(mavlink_message_t* msg) {};
 
 protected:
     const AC_PrecLand&  _frontend;          // reference to precision landing front end

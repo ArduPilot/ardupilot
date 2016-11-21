@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -51,14 +49,26 @@ bool Display_SSD1306_I2C::hw_init()
     // give back i2c semaphore
     _dev->get_semaphore()->give();
 
-    // clear display
-    hw_update();
+    _need_hw_update = true;
+
+    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&Display_SSD1306_I2C::_timer, bool));
 
     return true;
 }
 
 bool Display_SSD1306_I2C::hw_update()
 {
+    _need_hw_update = true;
+    return true;
+}
+
+bool Display_SSD1306_I2C::_timer()
+{
+    if (!_need_hw_update) {
+        return true;
+    }
+    _need_hw_update = false;
+    
     struct PACKED {
         uint8_t reg;
         uint8_t cmd[6];
@@ -69,10 +79,6 @@ bool Display_SSD1306_I2C::hw_update()
         uint8_t db[SSD1306_ROWS];
     } display_buffer = { 0x40, {} };
 
-    if (!_dev || !_dev->get_semaphore()->take(5)) {
-        return false;
-    }
-
     // write buffer to display
     for (uint8_t i = 0; i < (SSD1306_COLUMNS / SSD1306_COLUMNS_PER_PAGE); i++) {
         command.cmd[4] = i;
@@ -82,9 +88,6 @@ bool Display_SSD1306_I2C::hw_update()
         memcpy(&display_buffer.db[0], &_displaybuffer[i * SSD1306_ROWS], SSD1306_ROWS);
         _dev->transfer((uint8_t *)&display_buffer, sizeof(display_buffer), nullptr, 0);
     }
-
-    // give back i2c semaphore
-    _dev->get_semaphore()->give();
 
     return true;
 }

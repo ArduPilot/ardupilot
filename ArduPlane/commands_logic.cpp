@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 /********************************************************************************/
@@ -81,7 +79,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        set_mode(RTL);
+        set_mode(RTL, MODE_REASON_UNKNOWN);
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
@@ -160,7 +158,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
             }
         } else { //commanding to only disable floor
             if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unabled to disable fence floor");
+                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to disable fence floor");
             } else {
                 gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Fence floor disabled");
             }
@@ -225,6 +223,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_VTOL_TRANSITION:
         plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)cmd.content.do_vtol_transition.target_state);
         break;
+
+    case MAV_CMD_DO_ENGINE_CONTROL:
+        plane.g2.ice_control.engine_control(cmd.content.do_engine_control.start_control,
+                                            cmd.content.do_engine_control.cold_start,
+                                            cmd.content.do_engine_control.height_delay_cm*0.01f);
+        break;
     }
 
     return true;
@@ -236,6 +240,7 @@ Verify command Handlers
 Each type of mission element has a "verify" operation. The verify
 operation returns true when the mission element has completed and we
 should move onto the next mission element.
+Return true if we do not recognize the command so that we move on to the next command
 *******************************************************************************/
 
 bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Returns true if command complete
@@ -245,11 +250,11 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_TAKEOFF:
         return verify_takeoff();
 
-    case MAV_CMD_NAV_LAND:
-        return verify_land();
-
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
+
+    case MAV_CMD_NAV_LAND:
+        return verify_land();
 
     case MAV_CMD_NAV_LOITER_UNLIM:
         return verify_loiter_unlim();
@@ -272,6 +277,12 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_ALTITUDE_WAIT:
         return verify_altitude_wait(cmd);
 
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        return quadplane.verify_vtol_takeoff(cmd);
+
+    case MAV_CMD_NAV_VTOL_LAND:
+        return quadplane.verify_vtol_land();
+
     // Conditional commands
 
     case MAV_CMD_CONDITION_DELAY:
@@ -284,14 +295,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_PARACHUTE:
         // assume parachute was released successfully
         return true;
-        break;
 #endif
-
-    case MAV_CMD_NAV_VTOL_TAKEOFF:
-        return quadplane.verify_vtol_takeoff(cmd);
-
-    case MAV_CMD_NAV_VTOL_LAND:
-        return quadplane.verify_vtol_land();
         
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -300,26 +304,24 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_SET_RELAY:
     case MAV_CMD_DO_REPEAT_SERVO:
     case MAV_CMD_DO_REPEAT_RELAY:
-    case MAV_CMD_DO_CONTROL_VIDEO:
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:
-    case MAV_CMD_DO_DIGICAM_CONTROL:
-    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-    case MAV_CMD_NAV_ROI:
-    case MAV_CMD_DO_MOUNT_CONFIGURE:
     case MAV_CMD_DO_INVERTED_FLIGHT:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
+    case MAV_CMD_DO_CONTROL_VIDEO:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_DO_MOUNT_CONTROL:
+    case MAV_CMD_DO_VTOL_TRANSITION:
+    case MAV_CMD_DO_ENGINE_CONTROL:
         return true;
 
     default:
         // error message
-        if (AP_Mission::is_nav_cmd(cmd)) {
-            gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav. Invalid or no current nav cmd");
-        }else{
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify conditon. Invalid or no current condition cmd");
-    }
-        // return true so that we do not get stuck at this command
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
+        // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
 }
@@ -540,15 +542,7 @@ bool Plane::verify_takeoff()
         auto_state.takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;
 
-#if GEOFENCE_ENABLED == ENABLED
-        if (g.fence_autoenable > 0) {
-            if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
-            } else {
-                gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");
-            }
-        }
-#endif
+        plane.complete_auto_takeoff();
 
         // don't cross-track on completion of takeoff, as otherwise we
         // can end up doing too sharp a turn
@@ -981,7 +975,7 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 void Plane::exit_mission_callback()
 {
     if (control_mode == AUTO) {
-        set_mode(RTL);
+        set_mode(RTL, MODE_REASON_MISSION_END);
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
 }

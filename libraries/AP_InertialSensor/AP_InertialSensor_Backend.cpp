@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
@@ -9,9 +7,10 @@
 const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
-    _imu(imu),
-    _product_id(AP_PRODUCT_ID_NONE)
-{}
+    _imu(imu)
+{
+    _sem = hal.util->new_semaphore();
+}
 
 void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vector3f &accel) 
 {
@@ -21,6 +20,9 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
       offsets and scaling.
      */
 
+    // rotate for sensor orientation
+    accel.rotate(_imu._accel_orientation[instance]);
+    
     // apply offsets
     accel -= _imu._accel_offset[instance];
 
@@ -36,8 +38,12 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
 
 void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) 
 {
+    // rotate for sensor orientation
+    gyro.rotate(_imu._gyro_orientation[instance]);
+    
     // gyro calibration is always assumed to have been done in sensor frame
     gyro -= _imu._gyro_offset[instance];
+
     gyro.rotate(_imu._board_orientation);
 }
 
@@ -87,26 +93,28 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     delta_coning = delta_coning % delta_angle;
     delta_coning *= 0.5f;
 
-    // integrate delta angle accumulator
-    // the angles and coning corrections are accumulated separately in the
-    // referenced paper, but in simulation little difference was found between
-    // integrating together and integrating separately (see examples/coning.py)
-    _imu._delta_angle_acc[instance] += delta_angle + delta_coning;
-    _imu._delta_angle_acc_dt[instance] += dt;
+    if (_sem->take(0)) {
+        // integrate delta angle accumulator
+        // the angles and coning corrections are accumulated separately in the
+        // referenced paper, but in simulation little difference was found between
+        // integrating together and integrating separately (see examples/coning.py)
+        _imu._delta_angle_acc[instance] += delta_angle + delta_coning;
+        _imu._delta_angle_acc_dt[instance] += dt;
 
-    // save previous delta angle for coning correction
-    _imu._last_delta_angle[instance] = delta_angle;
-    _imu._last_raw_gyro[instance] = gyro;
+        // save previous delta angle for coning correction
+        _imu._last_delta_angle[instance] = delta_angle;
+        _imu._last_raw_gyro[instance] = gyro;
 
-    _imu._gyro_filtered[instance] = _imu._gyro_filter[instance].apply(gyro);
-    if (_imu._gyro_filtered[instance].is_nan() || _imu._gyro_filtered[instance].is_inf()) {
-        _imu._gyro_filter[instance].reset();
+        _imu._gyro_filtered[instance] = _imu._gyro_filter[instance].apply(gyro);
+        if (_imu._gyro_filtered[instance].is_nan() || _imu._gyro_filtered[instance].is_inf()) {
+            _imu._gyro_filter[instance].reset();
+        }
+        _imu._new_gyro_data[instance] = true;
+        _sem->give();
     }
 
-    _imu._new_gyro_data[instance] = true;
-
     DataFlash_Class *dataflash = get_dataflash();
-    if (dataflash != NULL) {
+    if (dataflash != nullptr) {
         uint64_t now = AP_HAL::micros64();
         struct log_GYRO pkt = {
             LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+instance)),
@@ -138,7 +146,7 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
     _imu._delta_velocity_valid[instance] = true;
 
 
-    if (_imu._accel_calibrator != NULL && _imu._accel_calibrator[instance].get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
+    if (_imu._accel_calibrator != nullptr && _imu._accel_calibrator[instance].get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
         Vector3f cal_sample = _imu._delta_velocity[instance];
 
         //remove rotation
@@ -149,7 +157,7 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
         cal_sample.x /= accel_scale.x;
         cal_sample.y /= accel_scale.y;
         cal_sample.z /= accel_scale.z;
-
+        
         //remove offsets
         cal_sample += _imu._accel_offset[instance].get() * _imu._delta_velocity_dt[instance] ;
 
@@ -159,7 +167,8 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
                                                              const Vector3f &accel,
-                                                             uint64_t sample_us)
+                                                             uint64_t sample_us,
+                                                             bool fsync_set)
 {
     float dt;
 
@@ -170,25 +179,28 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     dt = 1.0f / _imu._accel_raw_sample_rates[instance];
 
     // call gyro_sample hook if any
-    AP_Module::call_hook_accel_sample(instance, dt, accel);
+    AP_Module::call_hook_accel_sample(instance, dt, accel, fsync_set);
     
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
-    // delta velocity
-    _imu._delta_velocity_acc[instance] += accel * dt;
-    _imu._delta_velocity_acc_dt[instance] += dt;
+    if (_sem->take(0)) {
+        // delta velocity
+        _imu._delta_velocity_acc[instance] += accel * dt;
+        _imu._delta_velocity_acc_dt[instance] += dt;
 
-    _imu._accel_filtered[instance] = _imu._accel_filter[instance].apply(accel);
-    if (_imu._accel_filtered[instance].is_nan() || _imu._accel_filtered[instance].is_inf()) {
-        _imu._accel_filter[instance].reset();
+        _imu._accel_filtered[instance] = _imu._accel_filter[instance].apply(accel);
+        if (_imu._accel_filtered[instance].is_nan() || _imu._accel_filtered[instance].is_inf()) {
+            _imu._accel_filter[instance].reset();
+        }
+
+        _imu.set_accel_peak_hold(instance, _imu._accel_filtered[instance]);
+
+        _imu._new_accel_data[instance] = true;
+        _sem->give();
     }
 
-    _imu.set_accel_peak_hold(instance, _imu._accel_filtered[instance]);
-
-    _imu._new_accel_data[instance] = true;
-
     DataFlash_Class *dataflash = get_dataflash();
-    if (dataflash != NULL) {
+    if (dataflash != nullptr) {
         uint64_t now = AP_HAL::micros64();
         struct log_ACCEL pkt = {
             LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+instance)),
@@ -220,6 +232,18 @@ void AP_InertialSensor_Backend::_set_gyro_error_count(uint8_t instance, uint32_t
     _imu._gyro_error_count[instance] = error_count;
 }
 
+// increment accelerometer error_count
+void AP_InertialSensor_Backend::_inc_accel_error_count(uint8_t instance)
+{
+    _imu._accel_error_count[instance]++;
+}
+
+// increment gyro error_count
+void AP_InertialSensor_Backend::_inc_gyro_error_count(uint8_t instance)
+{
+    _imu._gyro_error_count[instance]++;
+}
+
 // return the requested sample rate in Hz
 uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
 {
@@ -245,7 +269,9 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
  */
 void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
 {    
-    hal.scheduler->suspend_timer_procs();
+    if (!_sem->take_nonblocking()) {
+        return;
+    }
 
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
@@ -258,7 +284,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
         _last_gyro_filter_hz[instance] = _gyro_filter_cutoff();
     }
 
-    hal.scheduler->resume_timer_procs();
+    _sem->give();
 }
 
 /*
@@ -266,7 +292,9 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
  */
 void AP_InertialSensor_Backend::update_accel(uint8_t instance)
 {    
-    hal.scheduler->suspend_timer_procs();
+    if (!_sem->take_nonblocking()) {
+        return;
+    }
 
     if (_imu._new_accel_data[instance]) {
         _publish_accel(instance, _imu._accel_filtered[instance]);
@@ -279,5 +307,5 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance)
         _last_accel_filter_hz[instance] = _accel_filter_cutoff();
     }
 
-    hal.scheduler->resume_timer_procs();
+    _sem->give();
 }

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,8 +46,14 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     } else if (strstr(frame_str, "-vtail")) {
         vtail = true;
     }
+    if (strstr(frame_str, "-elevrev")) {
+        reverse_elevator_rudder = true;
+    }
 
     ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
+    if (strstr(frame_str, "-ice")) {
+        ice_engine = true;
+    }
 }
 
 /*
@@ -201,10 +206,14 @@ Vector3f Plane::getForce(float inputAileron, float inputElevator, float inputRud
 
 void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
-    float aileron  = (input.servos[0]-1500)/500.0f;
-    float elevator = (input.servos[1]-1500)/500.0f;
-    float rudder   = (input.servos[3]-1500)/500.0f;
+    float aileron  = filtered_servo_angle(input, 0);
+    float elevator = filtered_servo_angle(input, 1);
+    float rudder   = filtered_servo_angle(input, 3);
     float throttle;
+    if (reverse_elevator_rudder) {
+        elevator = -elevator;
+        rudder = -rudder;
+    }
     if (elevons) {
         // fake an elevon plane
         float ch1 = aileron;
@@ -222,12 +231,16 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     }
 
     if (reverse_thrust) {
-        throttle = constrain_float((input.servos[2]-1500)/500.0f, -1, 1);
+        throttle = filtered_servo_angle(input, 2);
     } else {
-        throttle = constrain_float((input.servos[2]-1000)/1000.0f, 0, 1);
+        throttle = filtered_servo_range(input, 2);
     }
     
     float thrust     = throttle;
+
+    if (ice_engine) {
+        thrust = icengine.update(input);
+    }
 
     // calculate angle of attack
     angle_of_attack = atan2f(velocity_air_bf.z, velocity_air_bf.x);
@@ -236,6 +249,9 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     Vector3f force = getForce(aileron, elevator, rudder);
     rot_accel = getTorque(aileron, elevator, rudder, force);
 
+    // simulate engine RPM
+    rpm1 = thrust * 7000;
+    
     // scale thrust to newtons
     thrust *= thrust_scale;
 

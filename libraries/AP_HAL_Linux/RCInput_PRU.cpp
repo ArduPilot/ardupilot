@@ -3,6 +3,7 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+#include "RCInput_PRU.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -17,7 +18,8 @@
 #include <unistd.h>
 
 #include "GPIO.h"
-#include "RCInput.h"
+
+#define RCIN_PRUSS_SHAREDRAM_BASE   0x4a312000
 
 extern const AP_HAL::HAL& hal;
 
@@ -25,7 +27,7 @@ using namespace Linux;
 
 void RCInput_PRU::init()
 {
-    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
     if (mem_fd == -1) {
         AP_HAL::panic("Unable to open /dev/mem");
     }

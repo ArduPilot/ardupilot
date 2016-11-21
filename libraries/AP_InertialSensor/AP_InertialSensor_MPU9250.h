@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <stdint.h>
@@ -33,10 +32,12 @@ public:
     }
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                            enum Rotation rotation = ROTATION_NONE);
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev);
+                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                            enum Rotation rotation = ROTATION_NONE);
 
     /* update accel and gyro state */
     bool update();
@@ -50,7 +51,8 @@ public:
 
 private:
     AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
-                              AP_HAL::OwnPtr<AP_HAL::Device> dev);
+                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                              enum Rotation rotation);
 
 #if MPU9250_DEBUG
     static void _dump_registers();
@@ -63,33 +65,58 @@ private:
     bool _has_auxiliary_bus();
 
     /* Read a single sample */
-    void _read_sample();
+    bool _read_sample();
 
+    void _fifo_reset();
+    void _fifo_enable();
+    
     /* Check if there's data available by reading register */
     bool _data_ready();
     bool _data_ready(uint8_t int_status);
-
-    /* Poll for new data (non-blocking) */
-    void _poll_data();
 
     /* Read and write functions taking the differences between buses into
      * account */
     bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
     uint8_t _register_read(uint8_t reg);
-    void _register_write(uint8_t reg, uint8_t val);
+    void _register_write(uint8_t reg, uint8_t val, bool checked=false);
 
-    void _accumulate(uint8_t *sample);
+    void _accumulate(uint8_t *samples, uint8_t n_samples);
+    void _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
+    void _check_temperature(void);
 
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    // The default rotation for the IMU, its value depends on how the IMU is
-    // placed by default on the system
-    enum Rotation _default_rotation;
-
+    float _temp_filtered;
+    LowPassFilter2pFloat _temp_filter;
+    
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     AP_MPU9250_AuxiliaryBus *_auxiliary_bus;
+
+    enum Rotation _rotation;
+
+    // are we doing more than 1kHz sampling?
+    bool _fast_sampling;
+
+    // has master i2c been enabled?
+    bool _master_i2c_enable;
+    
+    // last temperature reading, used to detect FIFO errors
+    float _last_temp;
+    uint8_t _temp_counter;
+
+    // buffer for fifo read
+    uint8_t *_fifo_buffer;
+
+    uint8_t _reg_check_counter;
+
+    // accumulators for fast sampling
+    struct {
+        Vector3l accel;
+        Vector3l gyro;
+        uint8_t count;
+    } _accum;
 };
 
 class AP_MPU9250_AuxiliaryBusSlave : public AuxiliaryBusSlave
@@ -123,7 +150,7 @@ public:
     AP_HAL::Semaphore *get_semaphore() override;
 
 protected:
-    AP_MPU9250_AuxiliaryBus(AP_InertialSensor_MPU9250 &backend);
+    AP_MPU9250_AuxiliaryBus(AP_InertialSensor_MPU9250 &backend, uint32_t devid);
 
     AuxiliaryBusSlave *_instantiate_slave(uint8_t addr, uint8_t instance);
     int _configure_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg,

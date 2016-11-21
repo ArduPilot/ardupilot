@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -15,15 +13,15 @@ using namespace HALSITL;
 extern const AP_HAL::HAL& hal;
 
 
-AP_HAL::Proc Scheduler::_failsafe = NULL;
+AP_HAL::Proc Scheduler::_failsafe = nullptr;
 volatile bool Scheduler::_timer_suspended = false;
 volatile bool Scheduler::_timer_event_missed = false;
 
-AP_HAL::MemberProc Scheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc Scheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_timer_procs = 0;
 bool Scheduler::_in_timer_proc = false;
 
-AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_io_procs = 0;
 bool Scheduler::_in_io_proc = false;
 
@@ -131,7 +129,7 @@ void Scheduler::system_initialized() {
     // i386 with gcc doesn't work with FE_INVALID
     exceptions |= FE_INVALID;
 #endif
-    if (_sitlState->_sitl == NULL || _sitlState->_sitl->float_exception) {
+    if (_sitlState->_sitl == nullptr || _sitlState->_sitl->float_exception) {
         feenableexcept(exceptions);
     } else {
         feclearexcept(exceptions);
@@ -164,7 +162,7 @@ void Scheduler::_run_timer_procs(bool called_from_isr)
         // need be.  We assume the failsafe code can't
         // block. If it does then we will recurse and die when
         // we run out of stack
-        if (_failsafe != NULL) {
+        if (_failsafe != nullptr) {
             _failsafe();
         }
         return;
@@ -183,7 +181,7 @@ void Scheduler::_run_timer_procs(bool called_from_isr)
     }
 
     // and the failsafe, if one is setup
-    if (_failsafe != NULL) {
+    if (_failsafe != nullptr) {
         _failsafe();
     }
 

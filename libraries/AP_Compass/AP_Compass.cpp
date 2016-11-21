@@ -1,9 +1,9 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/I2CDevice.h>
 #endif
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
@@ -34,6 +34,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS_Y
     // @DisplayName: Compass offsets in milligauss on the Y axis
@@ -41,6 +42,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS_Z
     // @DisplayName: Compass offsets in milligauss on the Z axis
@@ -48,6 +50,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("OFS",    1, Compass, _state[0].offset, 0),
 
     // @Param: DEC
@@ -93,6 +96,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT_Y
     // @DisplayName: Motor interference compensation for body frame Y axis
@@ -100,6 +104,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT_Z
     // @DisplayName: Motor interference compensation for body frame Z axis
@@ -107,6 +112,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("MOT",    7, Compass, _state[0].motor_compensation, 0),
 
     // @Param: ORIENT
@@ -129,6 +135,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS2_Y
     // @DisplayName: Compass2 offsets in milligauss on the Y axis
@@ -136,6 +143,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS2_Z
     // @DisplayName: Compass2 offsets in milligauss on the Z axis
@@ -143,6 +151,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("OFS2",    10, Compass, _state[1].offset, 0),
 
     // @Param: MOT2_X
@@ -151,6 +160,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT2_Y
     // @DisplayName: Motor interference compensation to compass2 for body frame Y axis
@@ -158,6 +168,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT2_Z
     // @DisplayName: Motor interference compensation to compass2 for body frame Z axis
@@ -165,6 +176,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("MOT2",    11, Compass, _state[1].motor_compensation, 0),
 
     // @Param: PRIMARY
@@ -180,6 +192,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS3_Y
     // @DisplayName: Compass3 offsets in milligauss on the Y axis
@@ -187,6 +200,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS3_Z
     // @DisplayName: Compass3 offsets in milligauss on the Z axis
@@ -194,6 +208,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("OFS3",    13, Compass, _state[2].offset, 0),
 
     // @Param: MOT3_X
@@ -202,6 +217,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT3_Y
     // @DisplayName: Motor interference compensation to compass3 for body frame Y axis
@@ -209,6 +225,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT3_Z
     // @DisplayName: Motor interference compensation to compass3 for body frame Z axis
@@ -216,21 +233,25 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("MOT3",    14, Compass, _state[2].motor_compensation, 0),
 
     // @Param: DEV_ID
     // @DisplayName: Compass device id
     // @Description: Compass device id.  Automatically detected, do not set manually
+    // @User: Advanced
     AP_GROUPINFO("DEV_ID",  15, Compass, _state[0].dev_id, 0),
 
     // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
+    // @User: Advanced
     AP_GROUPINFO("DEV_ID2", 16, Compass, _state[1].dev_id, 0),
 
     // @Param: DEV_ID3
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
+    // @User: Advanced
     AP_GROUPINFO("DEV_ID3", 17, Compass, _state[2].dev_id, 0),
 
     // @Param: USE2
@@ -278,85 +299,104 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DIA_X
     // @DisplayName: Compass soft-iron diagonal X component
     // @Description: DIA_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA_Y
     // @DisplayName: Compass soft-iron diagonal Y component
     // @Description: DIA_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA_Z
     // @DisplayName: Compass soft-iron diagonal Z component
     // @Description: DIA_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("DIA",    24, Compass, _state[0].diagonals, 0),
 
     // @Param: ODI_X
     // @DisplayName: Compass soft-iron off-diagonal X component
     // @Description: ODI_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI_Y
     // @DisplayName: Compass soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI_Z
     // @DisplayName: Compass soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("ODI",    25, Compass, _state[0].offdiagonals, 0),
 
     // @Param: DIA2_X
     // @DisplayName: Compass2 soft-iron diagonal X component
     // @Description: DIA_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA2_Y
     // @DisplayName: Compass2 soft-iron diagonal Y component
     // @Description: DIA_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA2_Z
     // @DisplayName: Compass2 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("DIA2",    26, Compass, _state[1].diagonals, 0),
 
     // @Param: ODI2_X
     // @DisplayName: Compass2 soft-iron off-diagonal X component
     // @Description: ODI_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI2_Y
     // @DisplayName: Compass2 soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI2_Z
     // @DisplayName: Compass2 soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("ODI2",    27, Compass, _state[1].offdiagonals, 0),
 
     // @Param: DIA3_X
     // @DisplayName: Compass3 soft-iron diagonal X component
     // @Description: DIA_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA3_Y
     // @DisplayName: Compass3 soft-iron diagonal Y component
     // @Description: DIA_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA3_Z
     // @DisplayName: Compass3 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("DIA3",    28, Compass, _state[2].diagonals, 0),
 
     // @Param: ODI3_X
     // @DisplayName: Compass3 soft-iron off-diagonal X component
     // @Description: ODI_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI3_Y
     // @DisplayName: Compass3 soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI3_Z
     // @DisplayName: Compass3 soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("ODI3",    29, Compass, _state[2].offdiagonals, 0),
 
     // @Param: CAL_FIT
     // @DisplayName: Compass calibration fitness
     // @Description: This controls the fitness level required for a successful compass calibration. A lower value makes for a stricter fit (less likely to pass). This is the value used for the primary magnetometer. Other magnetometers get double the value.
-    // @Range: 4 20
+    // @Range: 4 32
+    // @Values: 4:Very Strict,8:Default,16:Relaxed,32:Very Relaxed
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, 8.0f),
@@ -381,9 +421,8 @@ Compass::Compass(void) :
 {
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
-        _backends[i] = NULL;
+        _backends[i] = nullptr;
         _state[i].last_update_usec = 0;
-        _reports_sent[i] = 0;
     }
 
     // default device ids to zero.  init() method will overwrite with the actual device ids
@@ -453,6 +492,51 @@ void Compass::_detect_backends(void)
 #if HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
     _add_backend(AP_Compass_HIL::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PX4V1 ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2 ||
+        AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
+        // external i2c bus
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                               true, ROTATION_ROLL_180),
+                     AP_Compass_HMC5843::name, true);
+        // internal i2c bus
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR), false),
+                         AP_Compass_HMC5843::name, false);
+    }
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK) {
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
+                                               false, ROTATION_PITCH_180),
+                     AP_Compass_HMC5843::name, false);
+        _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)),
+                     AP_Compass_LSM303D::name, false);
+    }
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
+        _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_EXT_A_NAME), ROTATION_YAW_270),
+                     AP_Compass_LSM303D::name, false);
+        // we run the AK8963 only on the 2nd MPU9250, which leaves the
+        // first MPU9250 to run without disturbance at high rate
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 1, ROTATION_YAW_270),
+                     AP_Compass_AK8963::name, false);
+    }
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
+        _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
+                                               false, ROTATION_PITCH_180),
+                     AP_Compass_HMC5843::name, false);
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
+                     AP_Compass_AK8963::name, false);
+    }
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI) {
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180),
+                     AP_Compass_AK8963::name, false);
+    }
+    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM) {
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_YAW_270),
+                     AP_Compass_AK8963::name, false);
+    }
+    // also add any px4 level drivers (for canbus magnetometers)
     _add_backend(AP_Compass_PX4::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QURT
     _add_backend(AP_Compass_QURT::detect(*this), nullptr, false);
@@ -524,6 +608,9 @@ void Compass::_detect_backends(void)
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250_I2C
     _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, hal.i2c_mgr->get_device(HAL_COMPASS_AK8963_I2C_BUS, HAL_COMPASS_AK8963_I2C_ADDR)),
                  AP_Compass_AK8963::name, false);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AERO
+    _add_backend(AP_Compass_BMM150::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_BMM150_I2C_BUS, HAL_COMPASS_BMM150_I2C_ADDR)),
+                 AP_Compass_BMM150::name, false);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
                  AP_Compass_HMC5843::name, false);
@@ -732,11 +819,6 @@ bool Compass::configured(uint8_t i)
     }
 
     // exit immediately if all offsets are zero
-    if (is_zero(get_offsets(i).length())) {
-        return false;
-    }
-
-    // exit immediately if all offsets (mG) are zero
     if (is_zero(get_offsets(i).length())) {
         return false;
     }
