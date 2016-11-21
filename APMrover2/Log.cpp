@@ -365,6 +365,25 @@ void Rover::Log_Write_RC(void)
     }
 }
 
+struct PACKED log_Error {
+  LOG_PACKET_HEADER;
+  uint64_t time_us;
+  uint8_t sub_system;
+  uint8_t error_code;
+};
+
+// Write an error packet
+void Rover::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
+{
+  struct log_Error pkt = {
+      LOG_PACKET_HEADER_INIT(LOG_ERROR_MSG),
+      time_us       : AP_HAL::micros64(),
+      sub_system    : sub_system,
+      error_code    : error_code,
+  };
+  DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 void Rover::Log_Write_Baro(void)
 {
     DataFlash.Log_Write_Baro(barometer);
@@ -436,6 +455,8 @@ const LogStructure Rover::log_structure[] = {
       "STER", "Qff",   "TimeUS,Demanded,Achieved" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
+    { LOG_ERROR_MSG, sizeof(log_Error),
+      "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
 };
 
 void Rover::log_init(void)

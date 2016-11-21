@@ -76,6 +76,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(dataflash_periodic,     50,    300),
     SCHED_TASK(button_update,          5,     100),
     SCHED_TASK(stats_update,           1,     100),
+    SCHED_TASK(crash_check,           10,    1000),
 };
 
 /*
