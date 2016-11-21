@@ -59,7 +59,7 @@ private:
     bool CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck);
 
     // send a request message to execute ModBus function
-    LeddarOne_Status send_request(void);
+    void send_request(void);
 
     // parse a response message from ModBus
     LeddarOne_Status parse_response(uint8_t &number_detections);
@@ -74,4 +74,6 @@ private:
     LeddarOne_ModbusStatus modbus_status = LEDDARONE_MODBUS_STATE_INIT;
     uint8_t read_buffer[LEDDARONE_READ_BUFFER_SIZE];
     uint32_t read_len;
+
+    uint8_t send_request_buffer[8] = {0};
 };
