@@ -345,7 +345,7 @@ bool AP_InertialSensor_MPU6000::_has_auxiliary_bus()
 void AP_InertialSensor_MPU6000::start()
 {
     if (!_dev->get_semaphore()->take(0)) {
-        AP_HAL::panic("MPU6000: Unable to get semaphore");
+        return;
     }
 
     // initially run the bus at low speed
@@ -723,7 +723,7 @@ bool AP_InertialSensor_MPU6000::_check_whoami(void)
 bool AP_InertialSensor_MPU6000::_hardware_init(void)
 {
     if (!_dev->get_semaphore()->take(0)) {
-        AP_HAL::panic("MPU6000: Unable to get semaphore");
+        return false;
     }
 
     // setup for register checking

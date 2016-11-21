@@ -153,7 +153,7 @@ void AP_InertialSensor_BMI160::start()
     bool r;
 
     if (!_dev->get_semaphore()->take(0)) {
-        AP_HAL::panic("BMI160: Unable to get semaphore");
+        return;
     }
 
     r = _configure_accel();
@@ -430,7 +430,7 @@ bool AP_InertialSensor_BMI160::_hardware_init()
     hal.scheduler->delay(BMI160_POWERUP_DELAY_MSEC);
 
     if (!_dev->get_semaphore()->take(0)) {
-        AP_HAL::panic("BMI160: Unable to get semaphore");
+        return false;
     }
 
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
