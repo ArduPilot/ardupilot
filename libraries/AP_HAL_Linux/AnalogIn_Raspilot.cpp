@@ -97,6 +97,8 @@ bool AnalogIn_Raspilot::_update()
     /* set raspilotio to read reg4 */
     _dev->transfer((uint8_t *)&tx, sizeof(tx), (uint8_t *)&rx, sizeof(rx));
 
+    // TODO: should not delay for such huge values: converting this to a
+    // state-machine like driver would be better, adjusting the callback timer
     hal.scheduler->delay_microseconds(200);
 
     count = 0;
