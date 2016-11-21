@@ -114,7 +114,11 @@ AP_GPS_UBLOX::_request_next_config(void)
         }
         break;
     case STEP_POLL_SBAS:
-        _send_message(CLASS_CFG, MSG_CFG_SBAS, nullptr, 0);
+        if (gps._sbas_mode != 2) {
+            _send_message(CLASS_CFG, MSG_CFG_SBAS, nullptr, 0);
+        } else {
+            _unconfigured_messages &= ~CONFIG_SBAS;
+        }
 	break;
     case STEP_POLL_NAV:
         _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, nullptr, 0);
