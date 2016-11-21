@@ -431,9 +431,30 @@ void AP_InertialSensor_MPU6000::start()
         AP_HAL::panic("MPU6000: Unable to allocate FIFO buffer");
     }
 
-    if (get_sample_rate_hz() >= 400) {
+#if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+    /*
+      on systems where SPI transfers hold the CPU (no DMA and single
+      core) when we are transferring large numbers of samples through
+      the FIFO we can't afford to have it come in as a a timer as that
+      completely throws off the scheduling. Transferring 30 lots of 14
+      byte samples at 11MBit costs 305usec. With two IMUs doing fast
+      sampling that becomes 700us. With filtering overhead and some
+      context switching it becomes over 1ms.
+
+      We can afford that 1ms cost, but only if it comes at the right
+      time so the scheduling is prepared to handle it. So we force the
+      bus transfers to happen in accumulate()
+
+      We only do this when running at 400Hz as at lower loop rates the
+      FIFO can't hold enough data to last between accumulate calls and
+      we would lose samples
+     */
+    if (get_sample_rate_hz() >= 400 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
         _use_accumulate = true;
-    } else {
+    }
+#endif
+    
+    if (!_use_accumulate) {
         // start the timer process to read samples
         _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, bool));
     }
