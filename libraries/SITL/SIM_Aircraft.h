@@ -67,7 +67,7 @@ public:
     }
 
     /*  Create and set in/out socket */
-    void set_interface_ports(const char* address, const int port_in, const int port_out);
+    void set_interface_ports(const char* local_ipaddress, const char* gazebo_ipaddress, const int port_in, const int port_out);
 
     /*
       step the FDM by one time step

@@ -306,7 +306,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         if (strncasecmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
             sitl_model = model_constructors[i].constructor(home_str, model_str);
             if (strncasecmp("gazebo", model_str, strlen("gazebo")) == 0) {
-              sitl_model->set_interface_ports(_gazebo_address, _gazebo_port_in, _gazebo_port_out);
+              sitl_model->set_interface_ports(_fdm_address, _gazebo_address, _gazebo_port_in, _gazebo_port_out);
             }
             sitl_model->set_speedup(speedup);
             sitl_model->set_instance(_instance);
