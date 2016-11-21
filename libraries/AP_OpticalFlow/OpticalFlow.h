@@ -80,6 +80,7 @@ public:
 
 private:
     OpticalFlow_backend *backend;
+    AP_AHRS_NavEKF &_ahrs;
 
     struct AP_OpticalFlow_Flags {
         uint8_t healthy     : 1;    // true if sensor is healthy
