@@ -295,8 +295,8 @@ bool AP_InertialSensor_MPU9250::_has_auxiliary_bus()
 
 void AP_InertialSensor_MPU9250::start()
 {
-    if (!_dev->get_semaphore()->take(100)) {
-        AP_HAL::panic("MPU92500: Unable to get semaphore");
+    if (!_dev->get_semaphore()->take(0)) {
+        return;
     }
 
     // initially run the bus at low speed
@@ -600,8 +600,8 @@ void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val, bool c
 
 bool AP_InertialSensor_MPU9250::_hardware_init(void)
 {
-    if (!_dev->get_semaphore()->take(100)) {
-        AP_HAL::panic("MPU9250: Unable to get semaphore");
+    if (!_dev->get_semaphore()->take(0)) {
+        return false;
     }
 
     // setup for register checking

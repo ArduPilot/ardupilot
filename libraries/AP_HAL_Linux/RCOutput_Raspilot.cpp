@@ -27,29 +27,12 @@ void RCOutput_Raspilot::init()
 {
     _dev = hal.spi->get_device("raspio");
 
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&RCOutput_Raspilot::_update, void));
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&RCOutput_Raspilot::_update, bool));
 }
 
 void RCOutput_Raspilot::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
-    if (!_dev->get_semaphore()->take(10)) {
-        return;
-    }
-
-    struct IOPacket _dma_packet_tx, _dma_packet_rx;
-    uint16_t count = 1;
-    _dma_packet_tx.count_code = count | PKT_CODE_WRITE;
-    _dma_packet_tx.page = 50;
-    _dma_packet_tx.offset = 3;
-    _dma_packet_tx.regs[0] = freq_hz;
-    _dma_packet_tx.crc = 0;
-    _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
-    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
-                   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
-
-    _frequency = freq_hz;
-
-    _dev->get_semaphore()->give();
+    _new_frequency = freq_hz;
 }
 
 uint16_t RCOutput_Raspilot::get_freq(uint8_t ch)
@@ -91,18 +74,27 @@ void RCOutput_Raspilot::read(uint16_t* period_us, uint8_t len)
         period_us[i] = read(0 + i);
 }
 
-void RCOutput_Raspilot::_update(void)
+bool RCOutput_Raspilot::_update(void)
 {
     int i;
 
-    if (_corked || AP_HAL::micros() - _last_update_timestamp < 10000) {
-        return;
+    if (_corked) {
+        return true;
     }
 
-    _last_update_timestamp = AP_HAL::micros();
-
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
+    if (_new_frequency) {
+        _frequency = _new_frequency;
+        _new_frequency = 0;
+        struct IOPacket _dma_packet_tx, _dma_packet_rx;
+        uint16_t count = 1;
+        _dma_packet_tx.count_code = count | PKT_CODE_WRITE;
+        _dma_packet_tx.page = 50;
+        _dma_packet_tx.offset = 3;
+        _dma_packet_tx.regs[0] = _frequency;
+        _dma_packet_tx.crc = 0;
+        _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
+        _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
+                       (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
     }
 
     struct IOPacket _dma_packet_tx, _dma_packet_rx;
@@ -137,8 +129,7 @@ void RCOutput_Raspilot::_update(void)
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
     _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
                    (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
-
-    _dev->get_semaphore()->give();
+    return true;
 }
 
 void RCOutput_Raspilot::cork(void)
