@@ -570,7 +570,7 @@ private:
     bool auto_navigation_mode:1;
     
     // this controls throttle suppression in auto modes
-    bool throttle_suppressed:1;
+    bool throttle_suppressed;
 	
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
@@ -622,7 +622,13 @@ private:
     AP_Terrain terrain {ahrs, mission, rally};
 #endif
 
-    AP_Landing landing {mission,ahrs,SpdHgt_Controller,aparm};
+    AP_Landing landing {mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
+        FUNCTOR_BIND_MEMBER(&Plane::set_target_altitude_proportion, void, const Location&, float),
+        FUNCTOR_BIND_MEMBER(&Plane::constrain_target_altitude_location, void, const Location&, const Location&),
+        FUNCTOR_BIND_MEMBER(&Plane::adjusted_altitude_cm, int32_t),
+        FUNCTOR_BIND_MEMBER(&Plane::adjusted_relative_altitude_cm, int32_t),
+        FUNCTOR_BIND_MEMBER(&Plane::disarm_if_autoland_complete, void),
+        FUNCTOR_BIND_MEMBER(&Plane::update_flight_stage, void)};
 
     AP_ADSB adsb {ahrs};
 
@@ -913,8 +919,6 @@ private:
     bool geofence_breached(void);
     bool verify_land();
     void disarm_if_autoland_complete();
-    void setup_landing_glide_slope(void);
-    void adjust_landing_slope_for_rangefinder_bump(void);
     float tecs_hgt_afe(void);
     void set_nav_controller(void);
     void loiter_angle_reset(void);
