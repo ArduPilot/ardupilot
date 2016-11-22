@@ -438,6 +438,12 @@ public:
         return 0;
     };
 
+    // return the amount of vertical position change due to the last reset in meters
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    virtual uint32_t getLastPosDownReset(float &posDelta) const {
+        return 0;
+    };
+
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
