@@ -138,6 +138,7 @@ void NavEKF2_core::InitialiseVariables()
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
     lastPosReset_ms = 0;
     lastVelReset_ms = 0;
+    lastPosResetD_ms = 0;
     lastRngMeasTime_ms = 0;
     terrainHgtStableSet_ms = 0;
 
@@ -239,6 +240,7 @@ void NavEKF2_core::InitialiseVariables()
     sideSlipFusionDelayed = false;
     posResetNE.zero();
     velResetNE.zero();
+    posResetD = 0.0f;
     hgtInnovFiltState = 0.0f;
     if (_ahrs->get_compass()) {
         magSelectIndex = _ahrs->get_compass()->get_primary();

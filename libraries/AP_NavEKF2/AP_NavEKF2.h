@@ -280,6 +280,10 @@ public:
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
 
+    // return the amount of vertical position change due to the last reset in metres
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    uint32_t getLastPosDownReset(float &posDelta);
+
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const;
 
@@ -395,6 +399,13 @@ private:
         Vector2f core_delta;          // the amount of NE position change between cores when a change happened
     } pos_reset_data;
 
+    struct {
+        uint32_t last_function_call;  // last time getLastPosDownReset was called
+        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
+        uint32_t last_primary_change; // last time a primary has changed
+        float core_delta;             // the amount of D position change between cores when a change happened
+    } pos_down_reset_data;
+
     // update the yaw reset data to capture changes due to a lane switch
     // has_switched - true if the primary instance has already been changed during this filter update cycle
     // new_primary - index of the ekf instance that we are about to switch to as the primary
@@ -406,4 +417,9 @@ private:
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosResetData(bool has_switched, uint8_t new_primary, uint8_t old_primary);
+
+    // update the position reset data to capture changes due to a lane switch
+    // new_primary - index of the ekf instance that we are about to switch to as the primary
+    // old_primary - index of the ekf instance that we are currently using as the primary
+    void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
 };

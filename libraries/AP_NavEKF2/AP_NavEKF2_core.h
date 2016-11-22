@@ -262,6 +262,10 @@ public:
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosNorthEastReset(Vector2f &pos) const;
 
+    // return the amount of D position change due to the last position reset in metres
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    uint32_t getLastPosDownReset(float &posD) const;
+
     // return the amount of NE velocity change due to the last velocity reset in metres/sec
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
@@ -813,6 +817,8 @@ private:
     uint32_t lastPosReset_ms;       // System time at which the last position reset occurred. Returned by getLastPosNorthEastReset
     Vector2f velResetNE;            // Change in North/East velocity due to last in-flight reset in metres/sec. Returned by getLastVelNorthEastReset
     uint32_t lastVelReset_ms;       // System time at which the last velocity reset occurred. Returned by getLastVelNorthEastReset
+    float posResetD;                // Change in Down position due to last in-flight reset in metres. Returned by getLastPosDowntReset
+    uint32_t lastPosResetD_ms;      // System time at which the last position reset occurred. Returned by getLastPosDownReset
     float yawTestRatio;             // square of magnetometer yaw angle innovation divided by fail threshold
     Quaternion prevQuatMagReset;    // Quaternion from the last time the magnetic field state reset condition test was performed
     uint8_t fusionHorizonOffset;    // number of IMU samples that the fusion time horizon  has been shifted to prevent multiple EKF instances fusing data at the same time
