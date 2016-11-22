@@ -416,7 +416,7 @@ private:
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary);
 
-    // update the position reset data to capture changes due to a lane switch
+    // update the position down reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
