@@ -27,23 +27,23 @@ extern const AP_HAL::HAL& hal;
 AP_RangeFinder_LeddarOne::AP_RangeFinder_LeddarOne(RangeFinder &_ranger, uint8_t instance,
                                                                RangeFinder::RangeFinder_State &_state,
                                                                AP_SerialManager &serial_manager) :
-    AP_RangeFinder_Backend(_ranger, instance, _state)
+    AP_RangeFinder_Backend(_ranger, instance, _state),
+    // Modbus send request buffer
+    // read input register (function code 0x04)
+    send_request_buffer {
+        LEDDARONE_DEFAULT_ADDRESS,
+        LEDDARONE_MODOBUS_FUNCTION_CODE,
+        0,
+        LEDDARONE_MODOBUS_FUNCTION_REGISTER_ADDRESS,   // 20: Address of first register to read
+        0,
+        LEDDARONE_MODOBUS_FUNCTION_READ_NUMBER,        // 10: The number of consecutive registers to read
+        0x30,   // CRC Lo
+        0x09    // CRC Hi
+    }
 {
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, 0);
     if (uart != nullptr) {
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar, 0));
-
-        // Modbus send request buffer
-        // read input register (function code 0x04)
-        send_request_buffer[0] = LEDDARONE_DEFAULT_ADDRESS;
-        send_request_buffer[1] = LEDDARONE_MODOBUS_FUNCTION_CODE;
-        send_request_buffer[2] = 0;
-        send_request_buffer[3] = LEDDARONE_MODOBUS_FUNCTION_REGISTER_ADDRESS;   // 20: Address of first register to read
-        send_request_buffer[4] = 0;
-        send_request_buffer[5] = LEDDARONE_MODOBUS_FUNCTION_READ_NUMBER;        // 10: The number of consecutive registers to read
-
-        // CRC16
-        CRC16(send_request_buffer, 6, false);
     }
 }
 
@@ -62,17 +62,16 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 {
     uint8_t number_detections;
     LeddarOne_Status leddarone_status;
-    uint8_t index = 0;
-    uint32_t nbytes;
 
     if (uart == nullptr) {
         return false;
     }
 
     switch (modbus_status) {
-    case LEDDARONE_MODBUS_STATE_INIT:
+    case LEDDARONE_MODBUS_STATE_INIT: {
+        uint8_t index = 0;
         // clear read buffer
-        nbytes = uart->available();
+        uint32_t nbytes = uart->available();
         while (nbytes-- > 0) {
             uart->read();
             if (++index > LEDDARONE_SERIAL_PORT_MAX) {
@@ -87,10 +86,11 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 
         // FALL THROUGH
         // no break to fall through to next state LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST immediately
+    }
 
     case LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST:
         // send a request message for Modbus function 4
-        send_request();
+        uart->write(send_request_buffer, 8);
         modbus_status = LEDDARONE_MODBUS_STATE_SENT_REQUEST;
         last_sending_request_ms = AP_HAL::millis();
 
@@ -100,6 +100,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
         if (uart->available()) {
             // change mod_bus status to read available buffer
             modbus_status = LEDDARONE_MODBUS_STATE_AVAILABLE;
+            last_available_ms = AP_HAL::millis();
         } else {
             if (AP_HAL::millis() - last_sending_request_ms > 200) {
                 // reset mod_bus status to read new buffer
@@ -122,7 +123,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
             return true;
         }
         // if status is not reading buffer, reset mod_bus status to read new buffer
-        else if (leddarone_status != LEDDARONE_STATE_READING_BUFFER) {
+        else if (leddarone_status != LEDDARONE_STATE_READING_BUFFER || AP_HAL::millis() - last_available_ms > 200) {
             // if read_len is zero, send request without initialize
             modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST : LEDDARONE_MODBUS_STATE_INIT;
         }
@@ -175,15 +176,6 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
         aBuffer[aLength+1] = lCRCHi;
         return true;
     }
-}
-
-/*
-   send a request message to execute ModBus function 0x04
- */
-void AP_RangeFinder_LeddarOne::send_request(void)
-{
-    // write send request buffer that is initialized in constructor
-    uart->write(send_request_buffer, 8);
 }
 
  /*
