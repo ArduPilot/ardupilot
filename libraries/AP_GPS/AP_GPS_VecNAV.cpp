@@ -296,6 +296,8 @@ bool AP_GPS_VecNAV::read(void){
             state.have_speed_accuracy = true;
             state.speed_accuracy = msg6.VelU;
             state.num_sats = msg4.NumSats;
+            state.hdop     = 130;           
+            state.vdop     = 170;
 
             
 
