@@ -27,19 +27,7 @@ extern const AP_HAL::HAL& hal;
 AP_RangeFinder_LeddarOne::AP_RangeFinder_LeddarOne(RangeFinder &_ranger, uint8_t instance,
                                                                RangeFinder::RangeFinder_State &_state,
                                                                AP_SerialManager &serial_manager) :
-    AP_RangeFinder_Backend(_ranger, instance, _state),
-    // Modbus send request buffer
-    // read input register (function code 0x04)
-    send_request_buffer {
-        LEDDARONE_DEFAULT_ADDRESS,
-        LEDDARONE_MODOBUS_FUNCTION_CODE,
-        0,
-        LEDDARONE_MODOBUS_FUNCTION_REGISTER_ADDRESS,   // 20: Address of first register to read
-        0,
-        LEDDARONE_MODOBUS_FUNCTION_READ_NUMBER,        // 10: The number of consecutive registers to read
-        0x30,   // CRC Lo
-        0x09    // CRC Hi
-    }
+    AP_RangeFinder_Backend(_ranger, instance, _state)
 {
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, 0);
     if (uart != nullptr) {
@@ -90,7 +78,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 
     case LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST:
         // send a request message for Modbus function 4
-        uart->write(send_request_buffer, 8);
+        uart->write(send_request_buffer, sizeof(send_request_buffer));
         modbus_status = LEDDARONE_MODBUS_STATE_SENT_REQUEST;
         last_sending_request_ms = AP_HAL::millis();
 
