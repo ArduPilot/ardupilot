@@ -331,7 +331,6 @@ protected:
     AP_Float    _wp_accel_z_cms;        // vertical acceleration in cm/s/s during missions
 
     // loiter controller internal variables
-    uint8_t     _loiter_step;           // used to decide which portion of loiter controller to run during this iteration
     int16_t     _pilot_accel_fwd_cms; 	// pilot's desired acceleration forward (body-frame)
     int16_t     _pilot_accel_rgt_cms;   // pilot's desired acceleration right (body-frame)
     Vector2f    _loiter_desired_accel;  // slewed pilot's desired acceleration in lat/lon frame
