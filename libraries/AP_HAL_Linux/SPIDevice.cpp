@@ -219,19 +219,16 @@ SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
     , _desc(device_desc)
 {
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
-    mraa_init();
-    SCS = mraa_gpio_init(7);
     hal.console->printf("Ports initialized\n");
-    mraa_gpio_dir(SCS, MRAA_GPIO_OUT);
     hal.console->printf("Port directions set\n");
-
-    set_device_bus(_bus.bus);
-    set_device_address(_desc.subdev);
     spi = mraa_spi_init(0);
-
     mraa_spi_mode(spi, MRAA_SPI_MODE3);
     mraa_spi_lsbmode(spi, 0);
 #else
+
+    set_device_bus(_bus.bus);
+    set_device_address(_desc.subdev);
+
     if (_desc.cs_pin != SPI_CS_KERNEL) {
         _cs = hal.gpio->channel(_desc.cs_pin);
         if (!_cs) {
@@ -277,9 +274,7 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     uint8_t tmpRcv[length+1];
     uint8_t tmpSend[length+1];
     memcpy(tmpSend,send,send_len);
-    mraa_gpio_write(SCS, 1);
     mraa_result_t res = mraa_spi_transfer_buf(spi,tmpSend,tmpRcv,length+1);
-    mraa_gpio_write(SCS, 0);
     memcpy(recv,tmpRcv+1,recv_len);
     //hal.console->printf("0x%02x 0x%02x -- 0x%02x \n",(uint8_t)tmpSend[0],(uint8_t)tmpSend[1],(uint8_t)recv[0]);
     if (res != MRAA_SUCCESS ) return false;
@@ -366,10 +361,8 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
 {
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
     hal.console->printf("t-fd\n");
-    mraa_gpio_write(SCS, 1);
     mraa_result_t res = mraa_spi_transfer_buf(spi,(uint8_t*)send,recv,len);
     if (res != MRAA_SUCCESS ) return false;
-    mraa_gpio_write(SCS, 0);
     return true;
 #else
    struct spi_ioc_transfer msgs[1] = { };

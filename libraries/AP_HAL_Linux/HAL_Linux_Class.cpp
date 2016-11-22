@@ -48,6 +48,7 @@
 #include "UARTDriver.h"
 #include "Util.h"
 #include "Util_RPI.h"
+#include "mraa.h"
 
 using namespace Linux;
 
@@ -245,7 +246,9 @@ HAL_Linux::HAL_Linux() :
         &schedulerInstance,
         &utilInstance,
         &opticalFlow)
-{}
+{
+        mraa_init();
+}
 
 void _usage(void)
 {

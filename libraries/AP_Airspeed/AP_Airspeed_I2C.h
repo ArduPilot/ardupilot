@@ -41,7 +41,10 @@ public:
 
     // return the current temperature in degrees C, if available
     bool get_temperature(float &temperature);
-
+    uint8_t status;             // 2 bit
+    uint16_t bridge_data;       // 14 bit
+    uint16_t temperature_data;  // 11 bit
+    
 private:
     void _measure();
     void _collect();

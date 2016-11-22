@@ -53,8 +53,8 @@ bool AP_Airspeed_I2C::init()
     // lots of retries during probe
     _dev->set_retries(5);
     
-    _measure();
-    hal.scheduler->delay(10);
+    //_measure();
+    //hal.scheduler->delay(10);
     _collect();
     _dev->get_semaphore()->give();
 
@@ -82,42 +82,28 @@ void AP_Airspeed_I2C::_measure()
 // read the values from the sensor
 void AP_Airspeed_I2C::_collect()
 {
-    uint8_t data[4];
+    uint8_t val[4];
 
     _measurement_started_ms = 0;
 
-    if (!_dev->transfer(nullptr, 0, data, sizeof(data))) {
+    if (!_dev->transfer(nullptr, 0, val, sizeof(val))) {
         return;
     }
 
-    uint8_t status = (data[0] & 0xC0) >> 6;
-    if (status == 2 || status == 3) {
-        return;
-    }
+    status = (val[0] & 0xc0) >> 6;  // first 2 bits from first byte
+    bridge_data = ((val[0] & 0x3f) << 8) + val[1];
+    temperature_data = ((val[2] << 8) + (val[3] & 0xe0)) >> 5;
+    if ( temperature_data == 65535 ) return;
 
-    int16_t dp_raw, dT_raw;
-    dp_raw = (data[0] << 8) + data[1];
-    dp_raw = 0x3FFF & dp_raw;
-    dT_raw = (data[2] << 8) + data[3];
-    dT_raw = (0xFFE0 & dT_raw) >> 5;
+    float output_min = 1638;
+    float output_max = 14745;
+    float pressure_min = -249.0889;
+    float pressure_max = 249.0889;
 
-    const float P_max = _psi_range.get();
-    const float P_min = - P_max;
-    const float PSI_to_Pa = 6894.757f;
-    /*
-      this equation is an inversion of the equation in the
-      pressure transfer function figure on page 4 of the datasheet
+    _pressure = 1.0 * (bridge_data - output_min) * (pressure_max - pressure_min) / (output_max - output_min) + pressure_min;
+    _temperature = (temperature_data * 0.0977) - 50;
 
-      We negate the result so that positive differential pressures
-      are generated when the bottom port is used as the static
-      port on the pitot and top port is used as the dynamic port
-     */
-    float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
-
-    _pressure = diff_press_PSI * PSI_to_Pa;
-    _temperature = ((200.0f * dT_raw) / 2047) - 50;
-
-    _voltage_correction(_pressure, _temperature);
+    //_voltage_correction(_pressure, _temperature);
     
     _last_sample_time_ms = AP_HAL::millis();
 }
