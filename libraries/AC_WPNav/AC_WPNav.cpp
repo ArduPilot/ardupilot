@@ -117,7 +117,6 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _attitude_control(attitude_control),
     _pilot_accel_fwd_cms(0),
     _pilot_accel_rgt_cms(0),
-    _loiter_ekf_pos_reset_ms(0),
     _wp_last_update(0),
     _wp_step(0),
     _track_length(0.0f),
@@ -178,9 +177,6 @@ void AC_WPNav::init_loiter_target()
 {
     const Vector3f& curr_pos = _inav.get_position();
     const Vector3f& curr_vel = _inav.get_velocity();
-
-    // initialise ekf position reset check
-    init_ekf_position_reset();
 
     // initialise position controller
     _pos_control.init_xy_controller();
@@ -329,8 +325,6 @@ void AC_WPNav::update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler)
         if (dt >= 0.2f) {
             dt = 0.0f;
         }
-        // initialise ekf position reset check
-        check_for_ekf_position_reset();
 
         // initialise pos controller speed and acceleration
         _pos_control.set_speed_xy(_loiter_speed_cms);
@@ -347,9 +341,6 @@ void AC_WPNav::init_brake_target(float accel_cmss)
 {
     const Vector3f& curr_vel = _inav.get_velocity();
     Vector3f stopping_point;
-
-    // initialise ekf position reset check
-    init_ekf_position_reset();
 
     // initialise position controller
     _pos_control.init_xy_controller();
@@ -1256,24 +1247,5 @@ float AC_WPNav::get_slow_down_speed(float dist_from_dest_cm, float accel_cmss)
         return WPNAV_WP_TRACK_SPEED_MIN;
     } else {
         return target_speed;
-    }
-}
-
-/// initialise ekf position reset check
-void AC_WPNav::init_ekf_position_reset()
-{
-    Vector2f pos_shift;
-    _loiter_ekf_pos_reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
-}
-
-/// check for ekf position reset and adjust loiter or brake target position
-void AC_WPNav::check_for_ekf_position_reset()
-{
-    // check for position shift
-    Vector2f pos_shift;
-    uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
-    if (reset_ms != _loiter_ekf_pos_reset_ms) {
-        _pos_control.shift_pos_xy_target(pos_shift.x * 100.0f, pos_shift.y * 100.0f);
-        _loiter_ekf_pos_reset_ms = reset_ms;
     }
 }
