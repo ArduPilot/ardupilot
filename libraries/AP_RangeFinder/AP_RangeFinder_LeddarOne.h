@@ -58,15 +58,13 @@ private:
     // CRC16
     bool CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck);
 
-    // send a request message to execute ModBus function
-    void send_request(void);
-
     // parse a response message from ModBus
     LeddarOne_Status parse_response(uint8_t &number_detections);
 
     AP_HAL::UARTDriver *uart = nullptr;
     uint32_t last_reading_ms;
     uint32_t last_sending_request_ms;
+    uint32_t last_available_ms;
 
     uint16_t detections[LEDDARONE_DETECTIONS_MAX];
     uint32_t sum_distance;
@@ -75,5 +73,5 @@ private:
     uint8_t read_buffer[LEDDARONE_READ_BUFFER_SIZE];
     uint32_t read_len;
 
-    uint8_t send_request_buffer[8] = {0};
+    const uint8_t send_request_buffer[8];
 };
