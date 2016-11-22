@@ -73,5 +73,16 @@ private:
     uint8_t read_buffer[LEDDARONE_READ_BUFFER_SIZE];
     uint32_t read_len;
 
-    const uint8_t send_request_buffer[8];
+    // Modbus send request buffer
+    // read input register (function code 0x04)
+    const uint8_t send_request_buffer[8] = {
+        LEDDARONE_DEFAULT_ADDRESS,
+        LEDDARONE_MODOBUS_FUNCTION_CODE,
+        0,
+        LEDDARONE_MODOBUS_FUNCTION_REGISTER_ADDRESS,   // 20: Address of first register to read
+        0,
+        LEDDARONE_MODOBUS_FUNCTION_READ_NUMBER,        // 10: The number of consecutive registers to read
+        0x30,   // CRC Lo
+        0x09    // CRC Hi
+    };
 };
