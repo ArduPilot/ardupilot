@@ -115,7 +115,6 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _ahrs(ahrs),
     _pos_control(pos_control),
     _attitude_control(attitude_control),
-    _loiter_step(0),
     _pilot_accel_fwd_cms(0),
     _pilot_accel_rgt_cms(0),
     _loiter_ekf_pos_reset_ms(0),
