@@ -35,8 +35,8 @@ void Plane::adjust_altitude_target()
         set_target_altitude_location(next_WP_loc);
     } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
             flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE) {
-        setup_landing_glide_slope();
-        adjust_landing_slope_for_rangefinder_bump();
+        landing.setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude.offset_cm);
+        landing.adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, auto_state.wp_distance, target_altitude.offset_cm);
     } else if (reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
         // altitude target
