@@ -465,7 +465,7 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     if opts.callgrind:
         cmd_name += " (callgrind)"
         cmd.append("valgrind --tool=callgrind")
-    if opts.gdb:
+    if opts.gdb or opts.gdb_stopped:
         cmd_name += " (gdb)"
         cmd.append("gdb")
         gdb_commands_file = tempfile.NamedTemporaryFile(delete=False)
@@ -473,7 +473,8 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
 
         for breakpoint in opts.breakpoint:
             gdb_commands_file.write("b %s\n" % (breakpoint,))
-        gdb_commands_file.write("r\n")
+        if not opts.gdb_stopped:
+            gdb_commands_file.write("r\n")
         gdb_commands_file.close()
         cmd.extend(["-x", gdb_commands_file.name])
         cmd.append("--args")
