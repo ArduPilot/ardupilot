@@ -407,16 +407,14 @@ private:
     } pos_down_reset_data;
 
     // update the yaw reset data to capture changes due to a lane switch
-    // has_switched - true if the primary instance has already been changed during this filter update cycle
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
-    void updateLaneSwitchYawResetData(bool has_switched, uint8_t new_primary, uint8_t old_primary);
+    void updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_primary);
 
     // update the position reset data to capture changes due to a lane switch
-    // has_switched - true if the primary instance has already been changed during this filter update cycle
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
-    void updateLaneSwitchPosResetData(bool has_switched, uint8_t new_primary, uint8_t old_primary);
+    void updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary);
 
     // update the position reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
