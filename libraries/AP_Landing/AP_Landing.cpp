@@ -28,206 +28,10 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
 };
 
 
-
 /*
-     Restart a landing by first checking for a DO_LAND_START and
-     jump there. Otherwise decrement waypoint so we would re-start
-     from the top with same glide slope. Return true if successful.
+  update navigation for landing. Called when on landing approach or
+  final flare
  */
-bool AP_Landing::restart_landing_sequence()
-{
-    if (mission.get_current_nav_cmd().id != MAV_CMD_NAV_LAND) {
-        return false;
-    }
-
-    uint16_t do_land_start_index = mission.get_landing_sequence_start();
-    uint16_t prev_cmd_with_wp_index = mission.get_prev_nav_cmd_with_wp_index();
-    bool success = false;
-    uint16_t current_index = mission.get_current_nav_index();
-    AP_Mission::Mission_Command cmd;
-
-    if (mission.read_cmd_from_storage(current_index+1,cmd) &&
-            cmd.id == MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT &&
-            (cmd.p1 == 0 || cmd.p1 == 1) &&
-            mission.set_current_cmd(current_index+1))
-    {
-        // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", cmd.content.location.alt/100);
-        success =  true;
-    }
-    else if (do_land_start_index != 0 &&
-            mission.set_current_cmd(do_land_start_index))
-    {
-        // look for a DO_LAND_START and use that index
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Restarted landing via DO_LAND_START: %d",do_land_start_index);
-        success =  true;
-    }
-    else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
-               mission.set_current_cmd(prev_cmd_with_wp_index))
-    {
-        // if a suitable navigation waypoint was just executed, one that contains lat/lng/alt, then
-        // repeat that cmd to restart the landing from the top of approach to repeat intended glide slope
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
-        success =  true;
-    } else {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
-        success =  false;
-    }
-
-    return success;
-}
-
-
-/*
-   find the nearest landing sequence starting point (DO_LAND_START) and
-   switch to that mission item.  Returns false if no DO_LAND_START
-   available.
- */
-bool AP_Landing::jump_to_landing_sequence(void)
-{
-    uint16_t land_idx = mission.get_landing_sequence_start();
-    if (land_idx != 0) {
-        if (mission.set_current_cmd(land_idx)) {
-
-            //if the mission has ended it has to be restarted
-            if (mission.state() == AP_Mission::MISSION_STOPPED) {
-                mission.resume();
-            }
-
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing sequence start");
-            return true;
-        }
-    }
-
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
-    return false;
-}
-
-/*
-  a special glide slope calculation for the landing approach
-
-  During the land approach use a linear glide slope to a point
-  projected through the landing point. We don't use the landing point
-  itself as that leads to discontinuities close to the landing point,
-  which can lead to erratic pitch control
- */
-
-void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm)
-{
-    float total_distance = get_distance(prev_WP_loc, next_WP_loc);
-
-    // If someone mistakenly puts all 0's in their LAND command then total_distance
-    // will be calculated as 0 and cause a divide by 0 error below.  Lets avoid that.
-    if (total_distance < 1) {
-        total_distance = 1;
-    }
-
-    // height we need to sink for this WP
-    float sink_height = (prev_WP_loc.alt - next_WP_loc.alt)*0.01f;
-
-    // current ground speed
-    float groundspeed = ahrs.groundspeed();
-    if (groundspeed < 0.5f) {
-        groundspeed = 0.5f;
-    }
-
-    // calculate time to lose the needed altitude
-    float sink_time = total_distance / groundspeed;
-    if (sink_time < 0.5f) {
-        sink_time = 0.5f;
-    }
-
-    // find the sink rate needed for the target location
-    float sink_rate = sink_height / sink_time;
-
-    // the height we aim for is the one to give us the right flare point
-    float aim_height = aparm.land_flare_sec * sink_rate;
-    if (aim_height <= 0) {
-        aim_height = aparm.land_flare_alt;
-    }
-
-    // don't allow the aim height to be too far above LAND_FLARE_ALT
-    if (aparm.land_flare_alt > 0 && aim_height > aparm.land_flare_alt*2) {
-        aim_height = aparm.land_flare_alt*2;
-    }
-
-    // calculate slope to landing point
-    bool is_first_calc = is_zero(slope);
-    slope = (sink_height - aim_height) / total_distance;
-    if (is_first_calc) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing glide slope %.1f degrees", (double)degrees(atanf(slope)));
-    }
-
-
-    // time before landing that we will flare
-    float flare_time = aim_height / SpdHgt_Controller->get_land_sinkrate();
-
-    // distance to flare is based on ground speed, adjusted as we
-    // get closer. This takes into account the wind
-    float flare_distance = groundspeed * flare_time;
-
-    // don't allow the flare before half way along the final leg
-    if (flare_distance > total_distance/2) {
-        flare_distance = total_distance/2;
-    }
-
-    // project a point 500 meters past the landing point, passing
-    // through the landing point
-    const float land_projection = 500;
-    int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
-
-    // now calculate our aim point, which is before the landing
-    // point and above it
-    Location loc = next_WP_loc;
-    location_update(loc, land_bearing_cd*0.01f, -flare_distance);
-    loc.alt += aim_height*100;
-
-    // calculate point along that slope 500m ahead
-    location_update(loc, land_bearing_cd*0.01f, land_projection);
-    loc.alt -= slope * land_projection * 100;
-
-    // setup the offset_cm for set_target_altitude_proportion()
-    target_altitude_offset_cm = loc.alt - prev_WP_loc.alt;
-
-    // calculate the proportion we are to the target
-    float land_proportion = location_path_proportion(current_loc, prev_WP_loc, loc);
-
-    // now setup the glide slope for landing
-    set_target_altitude_proportion_fn(loc, 1.0f - land_proportion);
-
-    // stay within the range of the start and end locations in altitude
-    constrain_target_altitude_location_fn(loc, prev_WP_loc);
-}
-
-void AP_Landing::check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state)
-{
-    if (rangefinder_state.correction >= 0) { // we're too low or object is below us
-        // correction positive means we're too low so we should continue on with
-        // the newly computed shallower slope instead of pitching/throttling up
-
-    } else if (aparm.land_slope_recalc_steep_threshold_to_abort > 0 && !has_aborted_due_to_slope_recalc) {
-        // correction negative means we're too high and need to point down (and speed up) to re-align
-        // to land on target. A large negative correction means we would have to dive down a lot and will
-        // generating way too much speed that we can not bleed off in time. It is better to remember
-        // the large baro altitude offset and abort the landing to come around again with the correct altitude
-        // offset and "perfect" slope.
-
-        // calculate projected slope with projected alt
-        float new_slope_deg = degrees(atan(slope));
-        float initial_slope_deg = degrees(atan(initial_slope));
-
-        // is projected slope too steep?
-        if (new_slope_deg - initial_slope_deg > aparm.land_slope_recalc_steep_threshold_to_abort) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Steep landing slope (%.0fm %.1fdeg)",
-                                             (double)rangefinder_state.correction, (double)(new_slope_deg - initial_slope_deg));
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "aborting landing!");
-            alt_offset = rangefinder_state.correction;
-            commanded_go_around = true;
-            has_aborted_due_to_slope_recalc = true; // only allow this once.
-        }
-    }
-}
-
 bool AP_Landing::verify_land(AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
         int32_t auto_state_takeoff_altitude_rel_cm, float height, float sink_rate, float wp_proportion, uint32_t last_flying_ms, bool is_armed, bool is_flying, bool rangefinder_state_in_range, bool &throttle_suppressed)
 {
@@ -373,8 +177,202 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
     // re-calculate auto_state.land_slope with updated prev_WP_loc
     setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
 
-    check_if_need_to_abort(rangefinder_state);
+    if (rangefinder_state.correction >= 0) { // we're too low or object is below us
+        // correction positive means we're too low so we should continue on with
+        // the newly computed shallower slope instead of pitching/throttling up
+
+    } else if (aparm.land_slope_recalc_steep_threshold_to_abort > 0 && !has_aborted_due_to_slope_recalc) {
+        // correction negative means we're too high and need to point down (and speed up) to re-align
+        // to land on target. A large negative correction means we would have to dive down a lot and will
+        // generating way too much speed that we can not bleed off in time. It is better to remember
+        // the large baro altitude offset and abort the landing to come around again with the correct altitude
+        // offset and "perfect" slope.
+
+        // calculate projected slope with projected alt
+        float new_slope_deg = degrees(atan(slope));
+        float initial_slope_deg = degrees(atan(initial_slope));
+
+        // is projected slope too steep?
+        if (new_slope_deg - initial_slope_deg > aparm.land_slope_recalc_steep_threshold_to_abort) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Steep landing slope (%.0fm %.1fdeg)",
+                                             (double)rangefinder_state.correction, (double)(new_slope_deg - initial_slope_deg));
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "aborting landing!");
+            alt_offset = rangefinder_state.correction;
+            commanded_go_around = true;
+            has_aborted_due_to_slope_recalc = true; // only allow this once.
+        }
+    }
 }
 
+/*
+  a special glide slope calculation for the landing approach
+
+  During the land approach use a linear glide slope to a point
+  projected through the landing point. We don't use the landing point
+  itself as that leads to discontinuities close to the landing point,
+  which can lead to erratic pitch control
+ */
+
+void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm)
+{
+    float total_distance = get_distance(prev_WP_loc, next_WP_loc);
+
+    // If someone mistakenly puts all 0's in their LAND command then total_distance
+    // will be calculated as 0 and cause a divide by 0 error below.  Lets avoid that.
+    if (total_distance < 1) {
+        total_distance = 1;
+    }
+
+    // height we need to sink for this WP
+    float sink_height = (prev_WP_loc.alt - next_WP_loc.alt)*0.01f;
+
+    // current ground speed
+    float groundspeed = ahrs.groundspeed();
+    if (groundspeed < 0.5f) {
+        groundspeed = 0.5f;
+    }
+
+    // calculate time to lose the needed altitude
+    float sink_time = total_distance / groundspeed;
+    if (sink_time < 0.5f) {
+        sink_time = 0.5f;
+    }
+
+    // find the sink rate needed for the target location
+    float sink_rate = sink_height / sink_time;
+
+    // the height we aim for is the one to give us the right flare point
+    float aim_height = aparm.land_flare_sec * sink_rate;
+    if (aim_height <= 0) {
+        aim_height = aparm.land_flare_alt;
+    }
+
+    // don't allow the aim height to be too far above LAND_FLARE_ALT
+    if (aparm.land_flare_alt > 0 && aim_height > aparm.land_flare_alt*2) {
+        aim_height = aparm.land_flare_alt*2;
+    }
+
+    // calculate slope to landing point
+    bool is_first_calc = is_zero(slope);
+    slope = (sink_height - aim_height) / total_distance;
+    if (is_first_calc) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing glide slope %.1f degrees", (double)degrees(atanf(slope)));
+    }
 
 
+    // time before landing that we will flare
+    float flare_time = aim_height / SpdHgt_Controller->get_land_sinkrate();
+
+    // distance to flare is based on ground speed, adjusted as we
+    // get closer. This takes into account the wind
+    float flare_distance = groundspeed * flare_time;
+
+    // don't allow the flare before half way along the final leg
+    if (flare_distance > total_distance/2) {
+        flare_distance = total_distance/2;
+    }
+
+    // project a point 500 meters past the landing point, passing
+    // through the landing point
+    const float land_projection = 500;
+    int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+
+    // now calculate our aim point, which is before the landing
+    // point and above it
+    Location loc = next_WP_loc;
+    location_update(loc, land_bearing_cd*0.01f, -flare_distance);
+    loc.alt += aim_height*100;
+
+    // calculate point along that slope 500m ahead
+    location_update(loc, land_bearing_cd*0.01f, land_projection);
+    loc.alt -= slope * land_projection * 100;
+
+    // setup the offset_cm for set_target_altitude_proportion()
+    target_altitude_offset_cm = loc.alt - prev_WP_loc.alt;
+
+    // calculate the proportion we are to the target
+    float land_proportion = location_path_proportion(current_loc, prev_WP_loc, loc);
+
+    // now setup the glide slope for landing
+    set_target_altitude_proportion_fn(loc, 1.0f - land_proportion);
+
+    // stay within the range of the start and end locations in altitude
+    constrain_target_altitude_location_fn(loc, prev_WP_loc);
+}
+
+/*
+     Restart a landing by first checking for a DO_LAND_START and
+     jump there. Otherwise decrement waypoint so we would re-start
+     from the top with same glide slope. Return true if successful.
+ */
+bool AP_Landing::restart_landing_sequence()
+{
+    if (mission.get_current_nav_cmd().id != MAV_CMD_NAV_LAND) {
+        return false;
+    }
+
+    uint16_t do_land_start_index = mission.get_landing_sequence_start();
+    uint16_t prev_cmd_with_wp_index = mission.get_prev_nav_cmd_with_wp_index();
+    bool success = false;
+    uint16_t current_index = mission.get_current_nav_index();
+    AP_Mission::Mission_Command cmd;
+
+    if (mission.read_cmd_from_storage(current_index+1,cmd) &&
+            cmd.id == MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT &&
+            (cmd.p1 == 0 || cmd.p1 == 1) &&
+            mission.set_current_cmd(current_index+1))
+    {
+        // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", cmd.content.location.alt/100);
+        success =  true;
+    }
+    else if (do_land_start_index != 0 &&
+            mission.set_current_cmd(do_land_start_index))
+    {
+        // look for a DO_LAND_START and use that index
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Restarted landing via DO_LAND_START: %d",do_land_start_index);
+        success =  true;
+    }
+    else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
+               mission.set_current_cmd(prev_cmd_with_wp_index))
+    {
+        // if a suitable navigation waypoint was just executed, one that contains lat/lng/alt, then
+        // repeat that cmd to restart the landing from the top of approach to repeat intended glide slope
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
+        success =  true;
+    } else {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
+        success =  false;
+    }
+
+    if (success) {
+        // exit landing stages if we're no longer executing NAV_LAND
+        update_flight_stage_fn();
+    }
+    return success;
+}
+
+/*
+   find the nearest landing sequence starting point (DO_LAND_START) and
+   switch to that mission item.  Returns false if no DO_LAND_START
+   available.
+ */
+bool AP_Landing::jump_to_landing_sequence(void)
+{
+    uint16_t land_idx = mission.get_landing_sequence_start();
+    if (land_idx != 0) {
+        if (mission.set_current_cmd(land_idx)) {
+
+            //if the mission has ended it has to be restarted
+            if (mission.state() == AP_Mission::MISSION_STOPPED) {
+                mission.resume();
+            }
+
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing sequence start");
+            return true;
+        }
+    }
+
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
+    return false;
+}
