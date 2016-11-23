@@ -70,10 +70,10 @@ public:
 
     bool restart_landing_sequence();
     bool jump_to_landing_sequence(void);
-    bool verify_land(AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc,const  Location &current_loc,
-            int32_t auto_state_takeoff_altitude_rel_cm, float height, float sink_rate, float wp_proportion, uint32_t last_flying_ms, bool is_armed, bool is_flying, bool rangefinder_state_in_range, bool &throttle_suppressed);
+    bool verify_land(const AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+            const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed);
 
-    void adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, float wp_distance, int32_t &target_altitude_offset_cm);
+    void adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm);
 
     void setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
     void check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);

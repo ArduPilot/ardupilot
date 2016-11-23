@@ -32,8 +32,8 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
   update navigation for landing. Called when on landing approach or
   final flare
  */
-bool AP_Landing::verify_land(AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
-        int32_t auto_state_takeoff_altitude_rel_cm, float height, float sink_rate, float wp_proportion, uint32_t last_flying_ms, bool is_armed, bool is_flying, bool rangefinder_state_in_range, bool &throttle_suppressed)
+bool AP_Landing::verify_land(const AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+        const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed)
 {
     // we don't 'verify' landing in the sense that it never completes,
     // so we don't verify command completion. Instead we use this to
@@ -155,7 +155,7 @@ bool AP_Landing::verify_land(AP_SpdHgtControl::FlightStage flight_stage, const L
     return false;
 }
 
-void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, float wp_distance, int32_t &target_altitude_offset_cm)
+void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm)
 {
     // check the rangefinder correction for a large change. When found, recalculate the glide slope. This is done by
     // determining the slope from your current location to the land point then following that back up to the approach
