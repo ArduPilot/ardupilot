@@ -371,6 +371,21 @@ struct PACKED log_NKF5 {
     float posErr;
 };
 
+struct PACKED log_RngBcnDebug {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t ID;             // beacon identifier
+    int16_t rng;            // beacon range (cm)
+    int16_t innov;          // beacon range innovation (cm)
+    uint16_t sqrtInnovVar;  // sqrt of beacon range innovation variance (cm)
+    uint16_t testRatio;     // beacon range innovation consistency test ratio *100
+    int16_t beaconPosN;     // beacon north position (cm)
+    int16_t beaconPosE;     // beacon east position (cm)
+    int16_t beaconPosD;     // beacon down position (cm)
+    int16_t offsetHigh;     // high estimate of vertical position offset of beacons rel to EKF origin (cm)
+    int16_t offsetLow;      // low estimate of vertical position offset of beacons rel to EKF origin (cm)
+};
+
 struct PACKED log_Cmd {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -821,6 +836,8 @@ Format characters in the format string for binary log messages
       "NKF8","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT" }, \
     { LOG_NKF9_MSG, sizeof(log_NKF4), \
       "NKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
+    { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
+      "NKF0","QBccCCccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
@@ -1000,6 +1017,7 @@ enum LogMessages {
     LOG_NKF7_MSG,
     LOG_NKF8_MSG,
     LOG_NKF9_MSG,
+    LOG_NKF10_MSG,
     LOG_DF_MAV_STATS,
 
     LOG_MSG_SBPHEALTH,
