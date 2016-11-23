@@ -24,6 +24,74 @@
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Landing::var_info[] = {
 
+    // @Param: LAND_SLOPE_RCALC
+    // @DisplayName: Landing slope re-calc threshold
+    // @Description: This parameter is used when using a rangefinder during landing for altitude correction from baro drift (RNGFND_LANDING=1) and the altitude correction indicates your altitude is lower than the intended slope path. This value is the threshold of the correction to re-calculate the landing approach slope. Set to zero to keep the original slope all the way down and any detected baro drift will be corrected by pitching/throttling up to snap back to resume the original slope path. Otherwise, when a rangefinder altitude correction exceeds this threshold it will trigger a slope re-calculate to give a shallower slope. This also smoothes out the approach when flying over objects such as trees. Recommend a value of 2m.
+    // @Range: 0 5
+    // @Units: meters
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("SLOPE_RCALC", 1, AP_Landing, slope_recalc_shallow_threshold, 2.0f),
+
+    // @Param: LAND_ABORT_DEG
+    // @DisplayName: Landing auto-abort slope threshold
+    // @Description: This parameter is used when using a rangefinder during landing for altitude correction from baro drift (RNGFND_LANDING=1) and the altitude correction indicates your actual altitude is higher than the intended slope path. Normally it would pitch down steeply but that can result in a crash with high airspeed so this allows remembering the baro offset and self-abort the landing and come around for another landing with the correct baro offset applied for a perfect slope. An auto-abort go-around will only happen once, next attempt will not auto-abort again. This operation happens entirely automatically in AUTO mode. This value is the delta degrees threshold to trigger the go-around compared to the original slope. Example: if set to 5 deg and the mission planned slope is 15 deg then if the new slope is 21 then it will go-around. Set to 0 to disable. Requires LAND_SLOPE_RCALC > 0.
+    // @Range: 0 90
+    // @Units: degrees
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("ABORT_DEG", 2, AP_Landing, slope_recalc_steep_threshold_to_abort, 0),
+
+    // @Param: LAND_PITCH_CD
+    // @DisplayName: Landing Pitch
+    // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
+    // @Units: centi-Degrees
+    // @User: Advanced
+    AP_GROUPINFO("PITCH_CD", 3, AP_Landing, pitch_cd, 0),
+
+    // @Param: LAND_FLARE_ALT
+    // @DisplayName: Landing flare altitude
+    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch. Note that this option is secondary to LAND_FLARE_SEC. For a good landing it preferable that the flare is triggered by LAND_FLARE_SEC.
+    // @Units: meters
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("FLARE_ALT", 4, AP_Landing, flare_alt, 3.0f),
+
+    // @Param: LAND_FLARE_SEC
+    // @DisplayName: Landing flare time
+    // @Description: Vertical time before landing point at which to lock heading and flare with the motor stopped. This is vertical time, and is calculated based solely on the current height above the ground and the current descent rate.  Set to 0 if you only wish to flare based on altitude (see LAND_FLARE_ALT).
+    // @Units: seconds
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("FLARE_SEC", 5, AP_Landing, flare_sec, 2.0f),
+
+    // @Param: LAND_PF_ALT
+    // @DisplayName: Landing pre-flare altitude
+    // @Description: Altitude to trigger pre-flare flight stage where LAND_PF_ARSPD controls airspeed. The pre-flare flight stage trigger works just like LAND_FLARE_ALT but higher. Disabled when LAND_PF_ARSPD is 0.
+    // @Units: meters
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("PF_ALT", 6, AP_Landing, pre_flare_alt, 10.0f),
+
+    // @Param: LAND_PF_SEC
+    // @DisplayName: Landing pre-flare time
+    // @Description: Vertical time to ground to trigger pre-flare flight stage where LAND_PF_ARSPD controls airspeed. This pre-flare flight stage trigger works just like LAND_FLARE_SEC but earlier. Disabled when LAND_PF_ARSPD is 0.
+    // @Units: seconds
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("PF_SEC", 7, AP_Landing, pre_flare_sec, 6.0f),
+
+    // @Param: LAND_PF_ARSPD
+    // @DisplayName: Landing pre-flare airspeed
+    // @Description: Desired airspeed during pre-flare flight stage. This is useful to reduce airspeed just before the flare. Use 0 to disable.
+    // @Units: m/s
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("PF_ARSPD", 8, AP_Landing, pre_flare_airspeed, 0),
+
     AP_GROUPEND
 };
 
