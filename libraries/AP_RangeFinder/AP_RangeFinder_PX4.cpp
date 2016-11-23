@@ -34,13 +34,13 @@ extern const AP_HAL::HAL& hal;
 
 uint8_t AP_RangeFinder_PX4::num_px4_instances = 0;
 
-/* 
+/*
    The constructor also initialises the rangefinder. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_PX4::AP_RangeFinder_PX4(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-	AP_RangeFinder_Backend(_ranger, instance, _state),
+    AP_RangeFinder_Backend(_ranger, instance, _state),
     _last_max_distance_cm(-1),
     _last_min_distance_cm(-1)
 {
@@ -49,11 +49,11 @@ AP_RangeFinder_PX4::AP_RangeFinder_PX4(RangeFinder &_ranger, uint8_t instance, R
     // consider this path used up
     num_px4_instances++;
 
-	if (_fd == -1) {
+    if (_fd == -1) {
         hal.console->printf("Unable to open PX4 rangefinder %u\n", num_px4_instances);
         set_status(RangeFinder::RangeFinder_NotConnected);
         return;
-	}
+    }
 
     // average over up to 20 samples
     if (ioctl(_fd, SENSORIOCSQUEUEDEPTH, 20) != 0) {
@@ -66,7 +66,7 @@ AP_RangeFinder_PX4::AP_RangeFinder_PX4(RangeFinder &_ranger, uint8_t instance, R
     set_status(RangeFinder::RangeFinder_NoData);
 }
 
-/* 
+/*
    close the file descriptor
 */
 AP_RangeFinder_PX4::~AP_RangeFinder_PX4()
@@ -82,7 +82,7 @@ extern "C" {
     int mb12xx_main(int, char **);
 };
 
-/* 
+/*
    open the PX4 driver, returning the file descriptor
 */
 int AP_RangeFinder_PX4::open_driver(void)
@@ -91,17 +91,21 @@ int AP_RangeFinder_PX4::open_driver(void)
         /*
           we start the px4 rangefinder drivers on demand
         */
-        if (AP_BoardConfig::px4_start_driver(ll40ls_main, "ll40ls", "-X start")) {
-            hal.console->printf("Found external ll40ls sensor\n");
+        const char *strLl40ls = "ll40ls";
+        if (AP_BoardConfig::px4_start_driver(ll40ls_main, strLl40ls, "-X start")) {
+            hal.console->printf("Found external %s sensor\n", strLl40ls);
         }
-        if (AP_BoardConfig::px4_start_driver(ll40ls_main, "ll40ls", "-I start")) {
-            hal.console->printf("Found internal ll40ls sensor\n");
+        if (AP_BoardConfig::px4_start_driver(ll40ls_main, strLl40ls, "-I start")) {
+            hal.console->printf("Found internal %s sensor\n", strLl40ls);
         }
-        if (AP_BoardConfig::px4_start_driver(trone_main, "trone", "start")) {
-            hal.console->printf("Found trone sensor\n");
+        const char *strTrone = "trone";
+        const char *strStart = "start";
+        if (AP_BoardConfig::px4_start_driver(trone_main, strTrone, strStart)) {
+            hal.console->printf("Found %s sensor\n", strTrone);
         }
-        if (AP_BoardConfig::px4_start_driver(mb12xx_main, "mb12xx", "start")) {
-            hal.console->printf("Found mb12xx sensor\n");
+        const char *strMb12xx = "mb12xx";
+        if (AP_BoardConfig::px4_start_driver(mb12xx_main, strMb12xx, strStart)) {
+            hal.console->printf("Found %s sensor\n", strMb12xx);
         }
     }
     // work out the device path based on how many PX4 drivers we have loaded
@@ -110,7 +114,7 @@ int AP_RangeFinder_PX4::open_driver(void)
     return open(path, O_RDONLY);
 }
 
-/* 
+/*
    see if the PX4 driver is available
 */
 bool AP_RangeFinder_PX4::detect(RangeFinder &_ranger, uint8_t instance)
