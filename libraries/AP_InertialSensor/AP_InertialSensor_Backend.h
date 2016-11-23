@@ -186,6 +186,11 @@ protected:
     void increment_clip_count(uint8_t instance) {
         _imu._accel_clip_count[instance]++;
     }
+
+    // should fast sampling be enabled on this IMU?
+    bool enable_fast_sampling(uint8_t instance) {
+        return (_imu._fast_sampling_mask & (1U<<instance)) != 0;
+    }
     
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor

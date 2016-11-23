@@ -37,7 +37,6 @@ public:
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
-                                            bool fast_sampling = false,
                                             enum Rotation rotation = ROTATION_NONE);
 
     /* update accel and gyro state */
@@ -53,7 +52,6 @@ public:
 private:
     AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                              bool fast_sampling,
                               enum Rotation rotation);
 
 #if MPU9250_DEBUG
@@ -112,6 +110,13 @@ private:
     uint8_t *_fifo_buffer;
 
     uint8_t _reg_check_counter;
+
+    // accumulators for fast sampling
+    struct {
+        Vector3l accel;
+        Vector3l gyro;
+        uint8_t count;
+    } _accum;
 };
 
 class AP_MPU9250_AuxiliaryBusSlave : public AuxiliaryBusSlave

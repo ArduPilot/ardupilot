@@ -171,6 +171,7 @@ public:
     void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
+    void send_accelcal_vehicle_position(uint8_t position);
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    

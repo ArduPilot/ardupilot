@@ -177,6 +177,8 @@ private:
     void load_param_file(const char *filename);
     void set_signal_handlers(void);
     void flush_and_exit();
+
+    FILE *xfopen(const char *f, const char *mode);
 };
 
 enum {

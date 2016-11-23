@@ -56,7 +56,17 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
     }
 
     switch (modbus_status) {
-    case LEDDARONE_MODBUS_STATE_INIT:
+    case LEDDARONE_MODBUS_STATE_INIT: {
+        uint8_t index = 0;
+        // clear read buffer
+        uint32_t nbytes = uart->available();
+        while (nbytes-- > 0) {
+            uart->read();
+            if (++index > LEDDARONE_SERIAL_PORT_MAX) {
+                // LEDDARONE_STATE_ERR_SERIAL_PORT
+                return false;
+            }
+        }
         // clear buffer and buffer_len
         memset(read_buffer, 0, sizeof(read_buffer));
         read_len = 0;
@@ -64,21 +74,21 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 
         // FALL THROUGH
         // no break to fall through to next state LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST immediately
+    }
 
     case LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST:
         // send a request message for Modbus function 4
-        if (send_request() != LEDDARONE_STATE_OK) {
-            // TODO: handle LEDDARONE_ERR_SERIAL_PORT
-            break;
-        }
+        uart->write(send_request_buffer, sizeof(send_request_buffer));
         modbus_status = LEDDARONE_MODBUS_STATE_SENT_REQUEST;
         last_sending_request_ms = AP_HAL::millis();
-        break;
+
+        // FALL THROUGH
 
     case LEDDARONE_MODBUS_STATE_SENT_REQUEST:
         if (uart->available()) {
             // change mod_bus status to read available buffer
             modbus_status = LEDDARONE_MODBUS_STATE_AVAILABLE;
+            last_available_ms = AP_HAL::millis();
         } else {
             if (AP_HAL::millis() - last_sending_request_ms > 200) {
                 // reset mod_bus status to read new buffer
@@ -101,7 +111,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
             return true;
         }
         // if status is not reading buffer, reset mod_bus status to read new buffer
-        else if (leddarone_status != LEDDARONE_STATE_READING_BUFFER) {
+        else if (leddarone_status != LEDDARONE_STATE_READING_BUFFER || AP_HAL::millis() - last_available_ms > 200) {
             // if read_len is zero, send request without initialize
             modbus_status = (read_len == 0) ? LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST : LEDDARONE_MODBUS_STATE_INIT;
         }
@@ -154,44 +164,6 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
         aBuffer[aLength+1] = lCRCHi;
         return true;
     }
-}
-
-/*
-   send a request message to execute ModBus function 0x04
- */
-LeddarOne_Status AP_RangeFinder_LeddarOne::send_request(void)
-{
-    uint8_t send_buffer[8] = {0};
-    uint8_t index = 0;
-
-    uint32_t nbytes = uart->available();
-
-    // clear buffer
-    while (nbytes-- > 0) {
-        uart->read();
-        if (++index > LEDDARONE_SERIAL_PORT_MAX) {
-            return LEDDARONE_STATE_ERR_SERIAL_PORT;
-        }
-    }
-
-    // Modbus read input register (function code 0x04)
-    send_buffer[0] = LEDDARONE_DEFAULT_ADDRESS;
-    send_buffer[1] = LEDDARONE_MODOBUS_FUNCTION_CODE;
-    send_buffer[2] = 0;
-    send_buffer[3] = LEDDARONE_MODOBUS_FUNCTION_REGISTER_ADDRESS;   // 20: Address of first register to read
-    send_buffer[4] = 0;
-    send_buffer[5] = LEDDARONE_MODOBUS_FUNCTION_READ_NUMBER;        // 10: The number of consecutive registers to read
-
-    // CRC16
-    CRC16(send_buffer, 6, false);
-
-    // write buffer data with CRC16 bits
-    for (index=0; index<8; index++) {
-        uart->write(send_buffer[index]);
-    }
-    uart->flush();
-
-    return LEDDARONE_STATE_OK;
 }
 
  /*

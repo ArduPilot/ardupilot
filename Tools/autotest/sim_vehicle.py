@@ -13,6 +13,7 @@ import getpass
 import optparse
 import os
 import os.path
+import re
 import signal
 import subprocess
 import sys
@@ -485,14 +486,42 @@ def do_build(vehicledir, opts, frame_options):
     os.chdir(old_dir)
 
 
+def get_user_locations_path():
+    '''The user locations.txt file is located by default in
+    $XDG_CONFIG_DIR/ardupilot/locations.txt. If $XDG_CONFIG_DIR is
+    not defined, we look in $HOME/.config/ardupilot/locations.txt.  If
+    $HOME is not defined, we look in ./.config/ardpupilot/locations.txt.'''
+
+    config_dir = os.environ.get(
+        'XDG_CONFIG_DIR',
+        os.path.join(os.environ.get('HOME', '.'), '.config'))
+
+    user_locations_path = os.path.join(
+        config_dir, 'ardupilot', 'locations.txt')
+
+    return user_locations_path
+
+
 def find_location_by_name(autotest, locname):
     """Search locations.txt for locname, return GPS coords"""
+    locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
+                                        get_user_locations_path())
     locations_filepath = os.path.join(autotest, "locations.txt")
-    for line in open(locations_filepath, 'r'):
-        line = line.rstrip("\n")
-        (name, loc) = line.split("=")
-        if name == locname:
-            return loc
+    comment_regex = re.compile("\s*#.*")
+    for path in [locations_userpath, locations_filepath]:
+        if not os.path.isfile(path):
+            continue
+
+        with open(path, 'r') as fd:
+            for line in fd:
+                line = re.sub(comment_regex, "", line)
+                line = line.rstrip("\n")
+                if len(line) == 0:
+                    continue
+                (name, loc) = line.split("=")
+                if name == locname:
+                    return loc
+
     print("Failed to find location (%s)" % cmd_opts.location)
     sys.exit(1)
 

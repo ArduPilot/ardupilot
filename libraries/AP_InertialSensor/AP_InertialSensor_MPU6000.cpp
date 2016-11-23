@@ -344,8 +344,8 @@ bool AP_InertialSensor_MPU6000::_has_auxiliary_bus()
 
 void AP_InertialSensor_MPU6000::start()
 {
-    if (!_dev->get_semaphore()->take(100)) {
-        AP_HAL::panic("MPU6000: Unable to get semaphore");
+    if (!_dev->get_semaphore()->take(0)) {
+        return;
     }
 
     // initially run the bus at low speed
@@ -513,7 +513,6 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 
 void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples)
 {
-    Vector3l asum, gsum;
     float tsum = 0;
     const int32_t clip_limit = AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS / _accel_scale;
     bool clipped = false;
@@ -528,10 +527,13 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
             abs(a.z) > clip_limit) {
             clipped = true;
         }
-        asum += a;
-        gsum += Vector3l(int16_val(data, 5),
-                         int16_val(data, 4),
-                         -int16_val(data, 6));
+        Vector3l g(int16_val(data, 5),
+                   int16_val(data, 4),
+                   -int16_val(data, 6));
+
+        _accum.accel += a;
+        _accum.gyro += g;
+        _accum.count++;
 
         float temp = int16_val(data, 3);
         temp = temp/340 + 36.53;
@@ -542,20 +544,27 @@ void AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
     if (clipped) {
         increment_clip_count(_accel_instance);
     }
-    
-    float ascale = _accel_scale / n_samples;
-    Vector3f accel(asum.x*ascale, asum.y*ascale, asum.z*ascale);
-
-    float gscale = GYRO_SCALE / n_samples;
-    Vector3f gyro(gsum.x*gscale, gsum.y*gscale, gsum.z*gscale);
-    
-    _rotate_and_correct_accel(_accel_instance, accel);
-    _rotate_and_correct_gyro(_gyro_instance, gyro);
-    
-    _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), false);
-    _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
     _temp_filtered = _temp_filter.apply(tsum / n_samples);
+
+    if (_accum.count == MPU6000_MAX_FIFO_SAMPLES) {
+        float ascale = _accel_scale / _accum.count;
+        Vector3f accel(_accum.accel.x*ascale, _accum.accel.y*ascale, _accum.accel.z*ascale);
+
+        float gscale = GYRO_SCALE / _accum.count;
+        Vector3f gyro(_accum.gyro.x*gscale, _accum.gyro.y*gscale, _accum.gyro.z*gscale);
+    
+        _rotate_and_correct_accel(_accel_instance, accel);
+        _rotate_and_correct_gyro(_gyro_instance, gyro);
+    
+        _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), false);
+        _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+
+        _accum.accel.zero();
+        _accum.gyro.zero();
+        _accum.count = 0;
+    }
+
 }
 
 /*
@@ -574,7 +583,7 @@ void AP_InertialSensor_MPU6000::_check_temperature(void)
     if (fabsf(_last_temp - temp) > 2 && !is_zero(_last_temp)) {
         // a 2 degree change in one sample is a highly likely
         // sign of a FIFO alignment error
-        printf("FIFO temperature reset: %.2f %.2f\n",
+        printf("MPU6000: FIFO temperature reset: %.2f %.2f\n",
                (double)temp, (double)_last_temp);
         _last_temp = temp;
         _fifo_reset();
@@ -601,7 +610,7 @@ void AP_InertialSensor_MPU6000::_read_fifo()
     }
 
     while (n_samples > 0) {
-        uint8_t n = MIN(n_samples, MPU6000_MAX_FIFO_SAMPLES);
+        uint8_t n = MIN(n_samples, MPU6000_MAX_FIFO_SAMPLES - _accum.count);
         if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU6000_SAMPLE_SIZE)) {
             printf("MPU60x0: error in fifo read %u bytes\n", n * MPU6000_SAMPLE_SIZE);
             goto check_registers;
@@ -615,6 +624,11 @@ void AP_InertialSensor_MPU6000::_read_fifo()
         n_samples -= n;
     }
 
+    if (bytes_read > MPU6000_SAMPLE_SIZE * 35) {
+        printf("MPU60x0: fifo reset\n");
+        _fifo_reset();
+    }
+    
     if (_temp_counter++ == 255) {
         // check FIFO integrity every 0.25s
         _check_temperature();
@@ -663,10 +677,14 @@ void AP_InertialSensor_MPU6000::_set_filter_register(void)
     config = 0;
 #endif
 
-    if (_is_icm_device && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+
+    if (enable_fast_sampling(_accel_instance)) {
+        _fast_sampling = (_is_icm_device && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
+    }
+    
+    if (_fast_sampling) {
         // this gives us 8kHz sampling on gyros and 4kHz on accels
         config |= BITS_DLPF_CFG_256HZ_NOLPF2;
-        _fast_sampling = true;
     } else {
         // limit to 1kHz if not on SPI
         config |= BITS_DLPF_CFG_188HZ;
@@ -704,8 +722,8 @@ bool AP_InertialSensor_MPU6000::_check_whoami(void)
 
 bool AP_InertialSensor_MPU6000::_hardware_init(void)
 {
-    if (!_dev->get_semaphore()->take(100)) {
-        AP_HAL::panic("MPU6000: Unable to get semaphore");
+    if (!_dev->get_semaphore()->take(0)) {
+        return false;
     }
 
     // setup for register checking
@@ -785,7 +803,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
 void AP_InertialSensor_MPU6000::_dump_registers(void)
 {
     hal.console->println("MPU6000 registers");
-    if (!_dev->get_semaphore()->take(100)) {
+    if (!_dev->get_semaphore()->take(0)) {
         return;
     }
 

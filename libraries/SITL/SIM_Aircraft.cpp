@@ -510,6 +510,24 @@ void Aircraft::update_wind(const struct sitl_input &input)
 {
     // wind vector in earth frame
     wind_ef = Vector3f(cosf(radians(input.wind.direction)), sinf(radians(input.wind.direction)), 0) * input.wind.speed;
+    
+    const float wind_turb = input.wind.turbulence * 10.0; // scale input.wind.turbulence to match standard deviation when using iir_coef=0.98
+    const float iir_coef = 0.98; // filtering high frequencies from turbulence
+    
+    if (wind_turb > 0 && !on_ground(position)) {
+
+        turbulence_azimuth = turbulence_azimuth + (2 * rand());
+
+        turbulence_horizontal_speed=
+            turbulence_horizontal_speed * iir_coef+wind_turb * rand_normal(0,1) * (1-iir_coef);
+
+        turbulence_vertical_speed = (turbulence_vertical_speed * iir_coef) + (wind_turb * rand_normal(0,1) * (1-iir_coef));
+
+        wind_ef += Vector3f(
+            cosf(radians(turbulence_azimuth)) * turbulence_horizontal_speed,
+            sinf(radians(turbulence_azimuth)) * turbulence_horizontal_speed,
+            turbulence_vertical_speed);
+    }     
 }
 
 /*

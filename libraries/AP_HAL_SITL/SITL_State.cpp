@@ -97,7 +97,10 @@ void SITL_State::_sitl_setup(const char *home_str)
             gimbal = new SITL::Gimbal(_sitl->state);
         }
 
-        fg_socket.connect("127.0.0.1", 5503);
+        if (_use_fg_view) {
+            fg_socket.connect("127.0.0.1", _fg_view_port);
+        }
+
     }
 
     if (_synthetic_clock_mode) {
@@ -113,7 +116,7 @@ void SITL_State::_sitl_setup(const char *home_str)
  */
 void SITL_State::_setup_fdm(void)
 {
-    if (!_sitl_rc_in.bind("0.0.0.0", _simin_port)) {
+    if (!_sitl_rc_in.bind("0.0.0.0", _rcin_port)) {
         fprintf(stderr, "SITL: socket bind failed - %s\n", strerror(errno));
         exit(1);
     }
@@ -195,9 +198,9 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
 
 #ifndef HIL_MODE
 /*
-  check for a SITL FDM packet
+  check for a SITL RC input packet
  */
-void SITL_State::_fdm_input(void)
+void SITL_State::_check_rc_input(void)
 {
     ssize_t size;
     struct pwm_packet {
@@ -268,7 +271,7 @@ void SITL_State::_fdm_input_local(void)
     SITL::Aircraft::sitl_input input;
 
     // check for direct RC input
-    _fdm_input();
+    _check_rc_input();
 
     // construct servos structure for FDM
     _simulator_servos(input);
@@ -295,7 +298,7 @@ void SITL_State::_fdm_input_local(void)
         adsb->update();
     }
 
-    if (_sitl) {
+    if (_sitl && _use_fg_view) {
         _output_to_flightgear();
     }
 

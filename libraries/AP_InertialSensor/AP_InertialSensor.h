@@ -352,6 +352,9 @@ private:
     // use for attitude, velocity, position estimates
     AP_Int8     _use[INS_MAX_INSTANCES];
 
+    // control enable of fast sampling
+    AP_Int8     _fast_sampling_mask;
+
     // board orientation from AHRS
     enum Rotation _board_orientation;
 

@@ -7,7 +7,7 @@ BASE_PKGS="build-essential ccache g++ gawk git make wget"
 PYTHON_PKGS="future lxml pymavlink MAVProxy"
 PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo libftdi-dev zlib1g-dev \
-          zip genromfs python-empy libc6-i386 cmake cmake-data"
+          zip genromfs python-empy cmake cmake-data"
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
 SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing realpath"
 ASSUME_YES=false
@@ -25,6 +25,13 @@ if [ "$yrelease" -ge "$UBUNTU_YEAR" ]; then
     else
         SITL_PKGS+=" python-wxgtk2.8"
     fi
+fi
+
+MACHINE_TYPE=$(uname -m)
+if [ ${MACHINE_TYPE} == 'x86_64' ]; then
+    PX4_PKGS+=" libc6-i386"
+else
+  # 32-bit stuff here
 fi
 
 # GNU Tools for ARM Embedded Processors

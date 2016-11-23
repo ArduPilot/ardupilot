@@ -42,6 +42,7 @@ private:
     uint8_t hw_version;
     uint8_t check_reg_counter;
     bool v2_hardware;
-
+    uint16_t last_distance_cm;
+    
     enum { PHASE_MEASURE, PHASE_COLLECT } phase;
 };
