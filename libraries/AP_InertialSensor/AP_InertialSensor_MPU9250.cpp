@@ -271,27 +271,18 @@ bool AP_InertialSensor_MPU9250::_init()
 
 void AP_InertialSensor_MPU9250::_fifo_reset()
 {
-    uint8_t user_ctrl = _master_i2c_enable?BIT_USER_CTRL_I2C_MST_EN:0;
+    uint8_t user_ctrl = _last_stat_user_ctrl;
+    user_ctrl &= ~(BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_FIFO_EN);
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
     _register_write(MPUREG_FIFO_EN, 0);
     _register_write(MPUREG_USER_CTRL, user_ctrl);
     _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_RESET);
     _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_EN);
     _register_write(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
-                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN);
+                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN, true);
     hal.scheduler->delay_microseconds(1);
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
-}
-
-void AP_InertialSensor_MPU9250::_fifo_enable()
-{
-    uint8_t user_ctrl = _master_i2c_enable?BIT_USER_CTRL_I2C_MST_EN:0;
-    _register_write(MPUREG_FIFO_EN, 0);
-    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_FIFO_EN);
-    _register_write(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
-                    BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN,
-                    true);
-    hal.scheduler->delay(1);
+    _last_stat_user_ctrl = user_ctrl | BIT_USER_CTRL_FIFO_EN;
 }
 
 bool AP_InertialSensor_MPU9250::_has_auxiliary_bus()
@@ -313,7 +304,7 @@ void AP_InertialSensor_MPU9250::start()
     hal.scheduler->delay(1);
 
     // always use FIFO
-    _fifo_enable();
+    _fifo_reset();
 
     // grab the used instances
     _gyro_instance = _imu.register_gyro(1000, _dev->get_bus_id_devtype(DEVTYPE_GYR_MPU9250));
@@ -662,13 +653,14 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries < 5; tries++) {
-        uint8_t user_ctrl = _register_read(MPUREG_USER_CTRL);
+        _last_stat_user_ctrl = _register_read(MPUREG_USER_CTRL);
 
         /* First disable the master I2C to avoid hanging the slaves on the
          * aulixiliar I2C bus - it will be enabled again if the AuxiliaryBus
          * is used */
-        if (user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
-            _register_write(MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
+        if (_last_stat_user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
+            _last_stat_user_ctrl &= ~BIT_USER_CTRL_I2C_MST_EN;
+            _register_write(MPUREG_USER_CTRL, _last_stat_user_ctrl);
             hal.scheduler->delay(10);
         }
 
@@ -680,7 +672,8 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
         if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
             /* Disable I2C bus if SPI selected (Recommended in Datasheet to be
              * done just after the device is reset) */
-            _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+            _last_stat_user_ctrl |= BIT_USER_CTRL_I2C_IF_DIS;
+            _register_write(MPUREG_USER_CTRL, _last_stat_user_ctrl);
         }
 
         // Wake up device and select GyroZ clock. Note that the
@@ -840,10 +833,10 @@ void AP_MPU9250_AuxiliaryBus::_configure_slaves()
     auto &backend = AP_InertialSensor_MPU9250::from(_ins_backend);
 
     /* Enable the I2C master to slaves on the auxiliary I2C bus*/
-    uint8_t user_ctrl = backend._register_read(MPUREG_USER_CTRL);
-    backend._register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_I2C_MST_EN);
-
-    backend._master_i2c_enable = true;
+    if (!(backend._last_stat_user_ctrl & BIT_USER_CTRL_I2C_MST_EN)) {
+        backend._last_stat_user_ctrl |= BIT_USER_CTRL_I2C_MST_EN;
+        backend._register_write(MPUREG_USER_CTRL, backend._last_stat_user_ctrl);
+    }
 
     /* stop condition between reads; clock at 400kHz */
     backend._register_write(MPUREG_I2C_MST_CTRL,
