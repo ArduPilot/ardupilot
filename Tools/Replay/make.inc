@@ -31,3 +31,4 @@ LIBRARIES += RC_Channel
 LIBRARIES += AP_RangeFinder
 LIBRARIES += VehicleType
 LIBRARIES += AP_Frsky_Telem
+LIBRARIES += AP_Beacon
