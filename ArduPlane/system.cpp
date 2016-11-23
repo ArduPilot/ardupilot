@@ -335,7 +335,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     auto_state.next_wp_no_crosstrack = true;
 
     // reset landing check
-    landing.checked_for_autoland = false;
+    auto_state.checked_for_autoland = false;
 
     // reset go around command
     landing.commanded_go_around = false;
