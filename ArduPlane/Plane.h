@@ -920,7 +920,6 @@ private:
     bool geofence_stickmixing(void);
     void geofence_send_status(mavlink_channel_t chan);
     bool geofence_breached(void);
-    bool verify_land();
     void disarm_if_autoland_complete();
     float tecs_hgt_afe(void);
     void set_nav_controller(void);
