@@ -173,6 +173,9 @@ protected:
 
     bool on_ground() const;
 
+    // returns height above ground level in metres
+    float hagl() const; // metres
+
     /* update location from position */
     void update_position(void);
 

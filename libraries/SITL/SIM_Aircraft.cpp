@@ -133,11 +133,18 @@ float Aircraft::ground_height_difference() const
 }
 
 /*
+   return current height above ground level (metres)
+*/
+float Aircraft::hagl() const
+{
+    return (-position.z) + home.alt*0.01f - ground_level - frame_height - ground_height_difference();
+}
+/*
    return true if we are on the ground
 */
 bool Aircraft::on_ground() const
 {
-    return (-position.z) + home.alt*0.01f <= ground_level + frame_height + ground_height_difference();
+    return hagl() <= 0;
 }
 
 /*
