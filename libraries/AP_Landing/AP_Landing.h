@@ -102,9 +102,6 @@ public:
     // once landed, post some landing statistics to the GCS
     bool post_stats;
 
-    // have we checked for an auto-land?
-    bool checked_for_autoland;
-
     // denotes if a go-around has been commanded for landing
     bool commanded_go_around;
 
