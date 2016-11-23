@@ -135,9 +135,9 @@ float Aircraft::ground_height_difference() const
 /*
    return true if we are on the ground
 */
-bool Aircraft::on_ground(const Vector3f &pos) const
+bool Aircraft::on_ground() const
 {
-    return (-pos.z) + home.alt*0.01f <= ground_level + frame_height + ground_height_difference();
+    return (-position.z) + home.alt*0.01f <= ground_level + frame_height + ground_height_difference();
 }
 
 /*
@@ -435,7 +435,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
     // if we're on the ground, then our vertical acceleration is limited
     // to zero. This effectively adds the force of the ground on the aircraft
-    if (on_ground(position) && accel_earth.z > 0) {
+    if (on_ground() && accel_earth.z > 0) {
         accel_earth.z = 0;
     }
 
@@ -446,7 +446,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     // new velocity vector
     velocity_ef += accel_earth * delta_time;
 
-    const bool was_on_ground = on_ground(position);
+    const bool was_on_ground = on_ground();
     // new position vector
     position += velocity_ef * delta_time;
 
@@ -463,7 +463,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1, 0, 0), 0, 120);
     
     // constrain height to the ground
-    if (on_ground(position)) {
+    if (on_ground()) {
         if (!was_on_ground && AP_HAL::millis() - last_ground_contact_ms > 1000) {
             printf("Hit ground at %f m/s\n", velocity_ef.z);
             last_ground_contact_ms = AP_HAL::millis();
@@ -522,7 +522,7 @@ void Aircraft::update_wind(const struct sitl_input &input)
     const float wind_turb = input.wind.turbulence * 10.0; // scale input.wind.turbulence to match standard deviation when using iir_coef=0.98
     const float iir_coef = 0.98; // filtering high frequencies from turbulence
     
-    if (wind_turb > 0 && !on_ground(position)) {
+    if (wind_turb > 0 && !on_ground()) {
 
         turbulence_azimuth = turbulence_azimuth + (2 * rand());
 
