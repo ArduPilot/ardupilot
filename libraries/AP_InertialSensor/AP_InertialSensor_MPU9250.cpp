@@ -187,9 +187,9 @@ extern const AP_HAL::HAL &hal;
 #define BITS_DLPF_CFG_MASK                              0x07
 #define BITS_DLPF_FCHOICE_B                             0x08
 
-#define MPU9250_SAMPLE_SIZE 14
-#define MPU9250_MAX_FIFO_SAMPLES 8
-#define MAX_DATA_READ (MPU9250_MAX_FIFO_SAMPLES * MPU9250_SAMPLE_SIZE)
+#define MPU_SAMPLE_SIZE 14
+#define MPU_FIFO_DOWNSAMPLE_COUNT 8
+#define MPU_FIFO_BUFFER_SIZE 16
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
@@ -368,38 +368,13 @@ void AP_InertialSensor_MPU9250::start()
     set_accel_orientation(_accel_instance, _rotation);
 
     // allocate fifo buffer
-    _fifo_buffer = new uint8_t[MAX_DATA_READ];
+    _fifo_buffer = (uint8_t *)hal.util->dma_allocate(MPU_FIFO_BUFFER_SIZE * MPU_SAMPLE_SIZE);
     if (_fifo_buffer == nullptr) {
         AP_HAL::panic("MPU9250: Unable to allocate FIFO buffer");
     }
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
-    /*
-      on systems where SPI transfers hold the CPU (no DMA and single
-      core) when we are transferring large numbers of samples through
-      the FIFO we can't afford to have it come in as a a timer as that
-      completely throws off the scheduling. Transferring 30 lots of 14
-      byte samples at 11MBit costs 305usec. With two IMUs doing fast
-      sampling that becomes 700us. With filtering overhead and some
-      context switching it becomes over 1ms.
-
-      We can afford that 1ms cost, but only if it comes at the right
-      time so the scheduling is prepared to handle it. So we force the
-      bus transfers to happen in accumulate()
-
-      We only do this when running at 400Hz as at lower loop rates the
-      FIFO can't hold enough data to last between accumulate calls and
-      we would lose samples
-     */
-    if (get_sample_rate_hz() >= 400 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
-        _use_accumulate = true;
-    }
-#endif
-
-    if (!_use_accumulate) {
-        // start the timer process to read samples
-        _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_read_sample, bool));
-    }
+    // start the timer process to read samples
+    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_read_sample, bool));
 }
 
 /*
@@ -420,10 +395,7 @@ bool AP_InertialSensor_MPU9250::update()
  */
 void AP_InertialSensor_MPU9250::accumulate()
 {
-    if (_use_accumulate && _dev->get_semaphore()->take(0)) {
-        _read_sample();
-        _dev->get_semaphore()->give();
-    }
+    // nothing to do
 }
 
 
@@ -458,7 +430,7 @@ bool AP_InertialSensor_MPU9250::_data_ready(uint8_t int_status)
 bool AP_InertialSensor_MPU9250::_accumulate(uint8_t *samples, uint8_t n_samples, int16_t raw_temp)
 {
     for (uint8_t i = 0; i < n_samples; i++) {
-        const uint8_t *data = samples + MPU9250_SAMPLE_SIZE * i;
+        const uint8_t *data = samples + MPU_SAMPLE_SIZE * i;
         Vector3f accel, gyro;
 
         accel = Vector3f(int16_val(data, 1),
@@ -506,7 +478,7 @@ bool AP_InertialSensor_MPU9250::_accumulate_fast_sampling(uint8_t *samples, uint
     bool ret = true;
     
     for (uint8_t i = 0; i < n_samples; i++) {
-        const uint8_t *data = samples + MPU9250_SAMPLE_SIZE * i;
+        const uint8_t *data = samples + MPU_SAMPLE_SIZE * i;
 
         // use temperatue to detect FIFO corruption
         int16_t t2 = int16_val(data, 3);
@@ -536,32 +508,35 @@ bool AP_InertialSensor_MPU9250::_accumulate_fast_sampling(uint8_t *samples, uint
 
         _accum.gyro += _accum.gyro_filter.apply(g);
         _accum.count++;
+
+        if (_accum.count == MPU_FIFO_DOWNSAMPLE_COUNT) {
+            float ascale = MPU9250_ACCEL_SCALE_1G / (MPU_FIFO_DOWNSAMPLE_COUNT/2);
+            _accum.accel *= ascale;
+            
+            float gscale = GYRO_SCALE / MPU_FIFO_DOWNSAMPLE_COUNT;
+            _accum.gyro *= gscale;
+            
+            _rotate_and_correct_accel(_accel_instance, _accum.accel);
+            _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
+            
+            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, AP_HAL::micros64(), false);
+            _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
+            
+            _accum.accel.zero();
+            _accum.gyro.zero();
+            _accum.count = 0;
+        }
     }
 
     if (clipped) {
         increment_clip_count(_accel_instance);
     }
 
-    float temp = (tsum/n_samples)/340.0 + 36.53;
-    _temp_filtered = _temp_filter.apply(temp);
-
-    if (_accum.count == MPU9250_MAX_FIFO_SAMPLES) {
-        float ascale = MPU9250_ACCEL_SCALE_1G / (MPU9250_MAX_FIFO_SAMPLES/2);
-        _accum.accel *= ascale;
-
-        float gscale = GYRO_SCALE / MPU9250_MAX_FIFO_SAMPLES;
-        _accum.gyro *= gscale;
-    
-        _rotate_and_correct_accel(_accel_instance, _accum.accel);
-        _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
-    
-        _notify_new_accel_raw_sample(_accel_instance, _accum.accel, AP_HAL::micros64(), false);
-        _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
-
-        _accum.accel.zero();
-        _accum.gyro.zero();
-        _accum.count = 0;
+    if (ret) {
+        float temp = (tsum/n_samples)/340.0 + 36.53;
+        _temp_filtered = _temp_filter.apply(temp);
     }
+
     return ret;
 }
 
@@ -583,7 +558,7 @@ bool AP_InertialSensor_MPU9250::_read_sample()
     }
 
     bytes_read = uint16_val(rx, 0);
-    n_samples = bytes_read / MPU9250_SAMPLE_SIZE;
+    n_samples = bytes_read / MPU_SAMPLE_SIZE;
 
     if (n_samples == 0) {
         /* Not enough data in FIFO */
@@ -611,15 +586,15 @@ bool AP_InertialSensor_MPU9250::_read_sample()
     }
     
     while (n_samples > 0) {
-        uint8_t n = MIN(MPU9250_MAX_FIFO_SAMPLES - _accum.count, n_samples);
-        if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU9250_SAMPLE_SIZE)) {
-            printf("MPU60x0: error in fifo read %u bytes\n", n * MPU9250_SAMPLE_SIZE);
+        uint8_t n = MIN(MPU_FIFO_BUFFER_SIZE, n_samples);
+        if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU_SAMPLE_SIZE)) {
+            printf("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
             goto check_registers;
         }
 
         if (_fast_sampling) {
             if (!_accumulate_fast_sampling(rx, n, raw_temp)) {
-                debug("stop at %u of %u", n_samples, bytes_read/MPU9250_SAMPLE_SIZE);
+                debug("stop at %u of %u", n_samples, bytes_read/MPU_SAMPLE_SIZE);
                 break;
             }
         } else {
@@ -631,7 +606,7 @@ bool AP_InertialSensor_MPU9250::_read_sample()
     }
 
     if (need_reset) {
-        //debug("fifo reset %u", bytes_read/MPU9250_SAMPLE_SIZE);
+        //debug("fifo reset %u", bytes_read/MPU_SAMPLE_SIZE);
         _fifo_reset();
     }
     
