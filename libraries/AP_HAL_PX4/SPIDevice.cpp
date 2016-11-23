@@ -124,16 +124,38 @@ bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
  */
 void SPIDevice::do_transfer(uint8_t *send, uint8_t *recv, uint32_t len)
 {
-    irqstate_t state = irqsave();
+    /*
+      to accomodate the method in PX4 drivers of using interrupt
+      context for SPI device transfers we need to check if PX4 has
+      registered a driver on this bus.  If not then we can avoid the
+      irqsave/irqrestore and get bus parallelism for DMA enabled
+      buses.
+      
+      There is a race in this if a PX4 driver starts while we are
+      running this, but that would only happen at early boot and is
+      very unlikely
+
+      yes, this is a nasty hack. Suggestions for a better method
+      appreciated.
+     */
+    bool use_irq_save = up_spi_use_irq_save(bus.dev);
+    irqstate_t state;
+    if (use_irq_save) {
+        state = irqsave();
+    }
     perf_begin(perf);
+    SPI_LOCK(bus.dev, true);
     SPI_SETFREQUENCY(bus.dev, frequency);
     SPI_SETMODE(bus.dev, device_desc.mode);
     SPI_SETBITS(bus.dev, 8);
     SPI_SELECT(bus.dev, device_desc.device, true);
     SPI_EXCHANGE(bus.dev, send, recv, len);
     SPI_SELECT(bus.dev, device_desc.device, false);
+    SPI_LOCK(bus.dev, false);
     perf_end(perf);
-    irqrestore(state);
+    if (use_irq_save) {
+        irqrestore(state);
+    }
 }
 
 bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
