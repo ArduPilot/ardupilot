@@ -150,8 +150,8 @@ bool AP_Landing::verify_land(const AP_SpdHgtControl::FlightStage flight_stage, c
 
     bool on_approach_stage = (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
-    bool below_flare_alt = (height <= aparm.land_flare_alt);
-    bool below_flare_sec = (aparm.land_flare_sec > 0 && height <= sink_rate * aparm.land_flare_sec);
+    bool below_flare_alt = (height <= flare_alt);
+    bool below_flare_sec = (flare_sec > 0 && height <= sink_rate * flare_sec);
     bool probably_crashed = (aparm.crash_detection_enable && fabsf(sink_rate) < 0.2f && !is_flying);
 
     if ((on_approach_stage && below_flare_alt) ||
@@ -183,9 +183,9 @@ bool AP_Landing::verify_land(const AP_SpdHgtControl::FlightStage flight_stage, c
             aparm.min_gndspeed_cm.load();
             aparm.throttle_cruise.load();
         }
-    } else if (!complete && !pre_flare && aparm.land_pre_flare_airspeed > 0) {
-        bool reached_pre_flare_alt = aparm.land_pre_flare_alt > 0 && (height <= aparm.land_pre_flare_alt);
-        bool reached_pre_flare_sec = aparm.land_pre_flare_sec > 0 && (height <= sink_rate * aparm.land_pre_flare_sec);
+    } else if (!complete && !pre_flare && pre_flare_airspeed > 0) {
+        bool reached_pre_flare_alt = pre_flare_alt > 0 && (height <= pre_flare_alt);
+        bool reached_pre_flare_sec = pre_flare_sec > 0 && (height <= sink_rate * pre_flare_sec);
         if (reached_pre_flare_alt || reached_pre_flare_sec) {
             pre_flare = true;
             update_flight_stage_fn();
@@ -230,8 +230,8 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
     // altitude and moving the prev_wp to that location. From there
     float correction_delta = fabsf(rangefinder_state.last_stable_correction) - fabsf(rangefinder_state.correction);
 
-    if (aparm.land_slope_recalc_shallow_threshold <= 0 ||
-            fabsf(correction_delta) < aparm.land_slope_recalc_shallow_threshold) {
+    if (slope_recalc_shallow_threshold <= 0 ||
+            fabsf(correction_delta) < slope_recalc_shallow_threshold) {
         return;
     }
 
@@ -249,7 +249,7 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
         // correction positive means we're too low so we should continue on with
         // the newly computed shallower slope instead of pitching/throttling up
 
-    } else if (aparm.land_slope_recalc_steep_threshold_to_abort > 0 && !has_aborted_due_to_slope_recalc) {
+    } else if (slope_recalc_steep_threshold_to_abort > 0 && !has_aborted_due_to_slope_recalc) {
         // correction negative means we're too high and need to point down (and speed up) to re-align
         // to land on target. A large negative correction means we would have to dive down a lot and will
         // generating way too much speed that we can not bleed off in time. It is better to remember
@@ -261,7 +261,7 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
         float initial_slope_deg = degrees(atan(initial_slope));
 
         // is projected slope too steep?
-        if (new_slope_deg - initial_slope_deg > aparm.land_slope_recalc_steep_threshold_to_abort) {
+        if (new_slope_deg - initial_slope_deg > slope_recalc_steep_threshold_to_abort) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Steep landing slope (%.0fm %.1fdeg)",
                                              (double)rangefinder_state.correction, (double)(new_slope_deg - initial_slope_deg));
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "aborting landing!");
@@ -310,14 +310,14 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
     float sink_rate = sink_height / sink_time;
 
     // the height we aim for is the one to give us the right flare point
-    float aim_height = aparm.land_flare_sec * sink_rate;
+    float aim_height = flare_sec * sink_rate;
     if (aim_height <= 0) {
-        aim_height = aparm.land_flare_alt;
+        aim_height = flare_alt;
     }
 
     // don't allow the aim height to be too far above LAND_FLARE_ALT
-    if (aparm.land_flare_alt > 0 && aim_height > aparm.land_flare_alt*2) {
-        aim_height = aparm.land_flare_alt*2;
+    if (flare_alt > 0 && aim_height > flare_alt*2) {
+        aim_height = flare_alt*2;
     }
 
     // calculate slope to landing point
