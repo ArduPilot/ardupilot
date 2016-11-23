@@ -125,7 +125,7 @@ public:
         k_param_terrain_lookahead,
         k_param_fbwa_tdrag_chan,
         k_param_rangefinder_landing,
-        k_param_land_flap_percent,
+        k_param_land_flap_percent,  // unused - moved to AP_Landing
         k_param_takeoff_flap_percent,
         k_param_flap_slewrate,
         k_param_rtl_autoland,
@@ -135,13 +135,13 @@ public:
         k_param_cli_enabled,
         k_param_trim_rc_at_start,
         k_param_hil_mode,
-        k_param_land_disarm_delay,
+        k_param_land_disarm_delay,  // unused - moved to AP_Landing
         k_param_glide_slope_threshold,
         k_param_rudder_only,
         k_param_gcs3,            // 93
         k_param_gcs_pid_mask,
         k_param_crash_detection_enable,
-        k_param_land_abort_throttle_enable,
+        k_param_land_abort_throttle_enable, // unused - moved to AP_Landing
         k_param_rssi = 97,
         k_param_rpm_sensor,
         k_param_parachute,
@@ -149,7 +149,7 @@ public:
         k_param_parachute_channel,
         k_param_crash_accel_threshold,
         k_param_override_safety,
-        k_param_land_throttle_slewrate, // 104
+        k_param_land_throttle_slewrate, // 104 unused - moved to AP_Landing
 
         // 105: Extra parameters
         k_param_fence_retalt = 105,
@@ -288,7 +288,7 @@ public:
         k_param_scaling_speed,
         k_param_quadplane,
         k_param_rtl_radius,
-        k_param_land_then_servos_neutral,
+        k_param_land_then_servos_neutral,   // unused - moved to AP_Landing
         k_param_rc_15,
         k_param_rc_16,
 
@@ -473,9 +473,6 @@ public:
     AP_Int8 reset_switch_chan;
     AP_Int8 reset_mission_chan;
     AP_Int32 RTL_altitude_cm;
-    AP_Int8 land_disarm_delay;
-    AP_Int8 land_then_servos_neutral;
-    AP_Int8 land_abort_throttle_enable;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
     AP_Int8  hil_servos;
@@ -488,7 +485,6 @@ public:
     AP_Int8 flap_1_speed;
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
-    AP_Int8 land_flap_percent;
     AP_Int8 takeoff_flap_percent;  
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
@@ -500,7 +496,6 @@ public:
     AP_Float takeoff_rotate_speed;
     AP_Int8 takeoff_throttle_slewrate;
     AP_Float takeoff_pitch_limit_reduction_sec;
-    AP_Int8 land_throttle_slewrate;
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
     AP_Int8 flaperon_output;

@@ -205,15 +205,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(takeoff_pitch_limit_reduction_sec, "TKOFF_PLIM_SEC",  2),
 
-    // @Param: LAND_THR_SLEW
-    // @DisplayName: Landing throttle slew rate
-    // @Description: This parameter sets the slew rate for the throttle during auto landing. When this is zero the THR_SLEWRATE parameter is used during landing. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on landing. Values below 50 are not recommended as it may cause a stall when airspeed is low and you can not throttle up fast enough.
-    // @Units: percent
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: User
-    GSCALAR(land_throttle_slewrate, "LAND_THR_SLEW",  0),
-
     // @Param: TKOFF_FLAP_PCNT
     // @DisplayName: Takeoff flap percentage
     // @Description: The amount of flaps (as a percentage) to apply in automatic takeoff
@@ -243,29 +234,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Bitmask: 0:AUTO_ALWAYS,1:AUTO_LAND,2:AUTO_LOITER_TO_ALT,3:AUTO_LOITER_ALL,4:AUTO_WAYPOINTS,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED
     // @User: Advanced
     GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
-
-    // @Param: LAND_DISARMDELAY
-    // @DisplayName: Landing disarm delay
-    // @Description: After a landing has completed using a LAND waypoint, automatically disarm after this many seconds have passed. Use 0 to not disarm.
-    // @Units: seconds
-    // @Increment: 1
-    // @Range: 0 127
-    // @User: Advanced
-    GSCALAR(land_disarm_delay,       "LAND_DISARMDELAY",  20),
-
-    // @Param: LAND_THEN_NEUTRL
-    // @DisplayName: Set servos to neutral after landing
-    // @Description: When enabled, after an autoland and auto-disarm via LAND_DISARMDELAY happens then set all servos to neutral. This is helpful when an aircraft has a rough landing upside down or a crazy angle causing the servos to strain.
-    // @Values: 0:Disabled, 1:Servos to Neutral, 2:Servos to Zero PWM
-    // @User: Advanced
-    GSCALAR(land_then_servos_neutral,       "LAND_THEN_NEUTRL",  0),
-
-    // @Param: LAND_ABORT_THR
-    // @DisplayName: Landing abort using throttle
-    // @Description: Allow a landing abort to trigger with a throttle > 95%
-    // @Values: 0:Disabled, 1:Enabled
-    // @User: Advanced
-    GSCALAR(land_abort_throttle_enable,       "LAND_ABORT_THR",  0),
 
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection
@@ -928,14 +896,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
-    // @Param: LAND_FLAP_PERCNT
-    // @DisplayName: Landing flap percentage
-    // @Description: The amount of flaps (as a percentage) to apply in the landing approach and flare of an automatic landing
-    // @Range: 0 100
-    // @Units: Percent
-    // @User: Advanced
-    GSCALAR(land_flap_percent,     "LAND_FLAP_PERCNT", 0),
-
 #if HAVE_PX4_MIXER
     // @Param: OVERRIDE_CHAN
     // @DisplayName: PX4IO override channel
@@ -1392,6 +1352,11 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_land_pre_flare_sec, 0,      AP_PARAM_FLOAT, "LAND_PF_SEC" },
     { Parameters::k_param_land_pre_flare_alt, 0,      AP_PARAM_FLOAT, "LAND_PF_ALT" },
     { Parameters::k_param_land_pre_flare_airspeed, 0, AP_PARAM_FLOAT, "LAND_PF_ARSPD" },
+    { Parameters::k_param_land_throttle_slewrate, 0,  AP_PARAM_INT8,  "LAND_THR_SLEW" },
+    { Parameters::k_param_land_disarm_delay,  0,      AP_PARAM_INT8,  "LAND_DISARMDELAY" },
+    { Parameters::k_param_land_then_servos_neutral,0, AP_PARAM_INT8,  "LAND_THEN_NEUTRAL" },
+    { Parameters::k_param_land_abort_throttle_enable,0,AP_PARAM_INT8, "LAND_ABORT_THR" },
+    { Parameters::k_param_land_flap_percent,  0,      AP_PARAM_INT8,  "LAND_FLAP_PERCENT" },
 
 };
 
