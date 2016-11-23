@@ -974,7 +974,6 @@ void NavEKF_core::CovariancePrediction() OPT_MATHS
         magBodySigma  = 0.0f;
     }
     for (uint8_t i= 0; i<=9;  i++) processNoise[i] = 1.0e-9f;
-    for (uint8_t i=10; i<=12; i++) processNoise[i] = dAngBiasSigma;
     // scale gyro bias noise when disarmed to allow for faster bias estimation
     for (uint8_t i=10; i<=12; i++) {
         processNoise[i] = dAngBiasSigma;
