@@ -47,7 +47,7 @@ private:
     const float gap = 30; // mm
 
     float position; // percentage
-    float position_slew_rate = 20; // percentage
+    float position_slew_rate = 35; // percentage
     float reported_position = -1; // unlikely
 
     uint64_t last_update_us;
@@ -57,7 +57,7 @@ private:
 
     // dangle load from a string:
     const float string_length = 2.0f; // metres
-    const float load_mass = 0.0f; // kilograms
+    float load_mass = 0.0f; // kilograms
 };
 
 }
