@@ -322,10 +322,9 @@ bool AP_InertialSensor_MPU6000::_init()
 
 void AP_InertialSensor_MPU6000::_fifo_reset()
 {
-    uint8_t user_ctrl = _master_i2c_enable?BIT_USER_CTRL_I2C_MST_EN:0;
-    _register_write(MPUREG_USER_CTRL, user_ctrl);
-    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_RESET);
-    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_EN);
+    _register_write(MPUREG_USER_CTRL, _last_stat_user_ctrl & ~BIT_USER_CTRL_FIFO_EN);
+    _register_write(MPUREG_USER_CTRL, _last_stat_user_ctrl | BIT_USER_CTRL_FIFO_RESET);
+    _register_write(MPUREG_USER_CTRL, _last_stat_user_ctrl | BIT_USER_CTRL_FIFO_EN);
 }
 
 void AP_InertialSensor_MPU6000::_fifo_enable()
@@ -736,17 +735,18 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         _dev->get_semaphore()->give();
         return false;
     }
-    
+
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries < 5; tries++) {
-        uint8_t user_ctrl = _register_read(MPUREG_USER_CTRL);
+        _last_stat_user_ctrl = _register_read(MPUREG_USER_CTRL);
 
         /* First disable the master I2C to avoid hanging the slaves on the
          * aulixiliar I2C bus - it will be enabled again if the AuxiliaryBus
          * is used */
-        if (user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
-            _register_write(MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
+        if (_last_stat_user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
+            _last_stat_user_ctrl &= ~BIT_USER_CTRL_I2C_MST_EN;
+            _register_write(MPUREG_USER_CTRL, _last_stat_user_ctrl);
             hal.scheduler->delay(10);
         }
 
@@ -758,7 +758,8 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
             /* Disable I2C bus if SPI selected (Recommended in Datasheet to be
              * done just after the device is reset) */
-            _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+            _last_stat_user_ctrl |= BIT_USER_CTRL_I2C_IF_DIS;
+            _register_write(MPUREG_USER_CTRL, _last_stat_user_ctrl);
         }
 
         // Wake up device and select GyroZ clock. Note that the
@@ -947,11 +948,11 @@ void AP_MPU6000_AuxiliaryBus::_configure_slaves()
     auto &backend = AP_InertialSensor_MPU6000::from(_ins_backend);
 
     /* Enable the I2C master to slaves on the auxiliary I2C bus*/
-    uint8_t user_ctrl = backend._register_read(MPUREG_USER_CTRL);
-    backend._register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_I2C_MST_EN);
+    if (!(backend._last_stat_user_ctrl & BIT_USER_CTRL_I2C_MST_EN)) {
+        backend._last_stat_user_ctrl |= BIT_USER_CTRL_I2C_MST_EN;
+        backend._register_write(MPUREG_USER_CTRL, backend._last_stat_user_ctrl);
+    }
 
-    backend._master_i2c_enable = true;
-    
     /* stop condition between reads; clock at 400kHz */
     backend._register_write(MPUREG_I2C_MST_CTRL,
                             BIT_I2C_MST_P_NSR | BIT_I2C_MST_CLK_400KHZ);
