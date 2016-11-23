@@ -220,6 +220,9 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
 
 AP_InertialSensor_MPU9250::~AP_InertialSensor_MPU9250()
 {
+    if (_fifo_buffer != nullptr) {
+        hal.util->dma_free(_fifo_buffer, MPU_FIFO_BUFFER_LEN * MPU_SAMPLE_SIZE);
+    }
     delete _auxiliary_bus;
 }
 
