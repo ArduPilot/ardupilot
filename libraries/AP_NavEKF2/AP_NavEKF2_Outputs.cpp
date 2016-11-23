@@ -45,9 +45,11 @@ float NavEKF2_core::errorScore() const
 {
     float score = 0.0f;
     if (tiltAlignComplete && yawAlignComplete) {
-        score = MAX(score, velTestRatio);
-        score = MAX(score, posTestRatio);
+        // Check GPS fusion performance
+        score = MAX(score, 0.5f * (velTestRatio + posTestRatio));
+        // Check altimeter fusion performance
         score = MAX(score, hgtTestRatio);
+        // Check attitude corrections
         const float tiltErrThreshold = 0.05f;
         score = MAX(score, tiltErrFilt / tiltErrThreshold);
     }
