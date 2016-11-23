@@ -68,12 +68,12 @@ public:
         k_param_flap_2_speed,
         k_param_reset_switch_chan,
         k_param_manual_level, // unused
-        k_param_land_pitch_cd,
+        k_param_land_pitch_cd,  // unused - moved to AP_Landing
         k_param_ins_old,            // *** Deprecated, remove with next eeprom number change
         k_param_stick_mixing,
         k_param_reset_mission_chan,
-        k_param_land_flare_alt,
-        k_param_land_flare_sec,
+        k_param_land_flare_alt, // unused - moved to AP_Landing
+        k_param_land_flare_sec, // unused - moved to AP_Landing
         k_param_crosstrack_min_distance, // unused
         k_param_rudder_steer, // unused
         k_param_throttle_nudge,
@@ -206,8 +206,8 @@ public:
         k_param_mission, // mission library
         k_param_serial_manager, // serial manager library
         k_param_NavEKF2_old,  // deprecated
-        k_param_land_pre_flare_alt,
-        k_param_land_pre_flare_airspeed = 149,
+        k_param_land_pre_flare_alt, // unused - moved to AP_Landing
+        k_param_land_pre_flare_airspeed = 149,  // unused - moved to AP_Landing
 
         //
         // 150: Navigation parameters
@@ -232,7 +232,7 @@ public:
         k_param_camera_mount2,      // unused
         k_param_adsb,
         k_param_notify,
-        k_param_land_pre_flare_sec = 165,
+        k_param_land_pre_flare_sec = 165,   // unused - moved to AP_Landing
 
         //
         // Battery monitoring parameters
@@ -303,8 +303,8 @@ public:
         k_param_flight_mode5,
         k_param_flight_mode6,
         k_param_initial_mode,
-        k_param_land_slope_recalc_shallow_threshold,
-        k_param_land_slope_recalc_steep_threshold_to_abort,
+        k_param_land_slope_recalc_shallow_threshold,    // unused - moved to AP_Landing
+        k_param_land_slope_recalc_steep_threshold_to_abort, // unused - moved to AP_Landing
 
         //
         // 220: Waypoint data
