@@ -28,9 +28,9 @@ void Plane::throttle_slew_limit(int16_t last_throttle)
     if (control_mode==AUTO) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
             slewrate = g.takeoff_throttle_slewrate;
-        } else if (g.land_throttle_slewrate != 0 &&
+        } else if (landing.get_throttle_slewrate() != 0 &&
                 (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE)) {
-            slewrate = g.land_throttle_slewrate;
+            slewrate = landing.get_throttle_slewrate();
         }
     }
     // if slew limit rate is set to zero then do not slew limit
@@ -575,8 +575,8 @@ void Plane::set_servos_flaps(void)
             case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
             case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
             case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-                if (g.land_flap_percent != 0) {
-                    auto_flap_percent = g.land_flap_percent;
+                if (landing.get_flap_percent() != 0) {
+                    auto_flap_percent = landing.get_flap_percent();
                 }
                 break;
             default:
@@ -771,18 +771,18 @@ void Plane::set_servos(void)
     }
 #endif
 
-    if (g.land_then_servos_neutral > 0 &&
+    if (landing.get_then_servos_neutral() > 0 &&
             control_mode == AUTO &&
-            g.land_disarm_delay > 0 &&
+            landing.get_disarm_delay() > 0 &&
             landing.complete &&
             !arming.is_armed()) {
         // after an auto land and auto disarm, set the servos to be neutral just
         // in case we're upside down or some crazy angle and straining the servos.
-        if (g.land_then_servos_neutral == 1) {
+        if (landing.get_then_servos_neutral() == 1) {
             channel_roll->set_radio_out(channel_roll->get_radio_trim());
             channel_pitch->set_radio_out(channel_pitch->get_radio_trim());
             channel_rudder->set_radio_out(channel_rudder->get_radio_trim());
-        } else if (g.land_then_servos_neutral == 2) {
+        } else if (landing.get_then_servos_neutral() == 2) {
             channel_roll->disable_out();
             channel_pitch->disable_out();
             channel_rudder->disable_out();
