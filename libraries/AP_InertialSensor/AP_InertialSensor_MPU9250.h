@@ -62,7 +62,6 @@ private:
     bool _read_sample();
 
     void _fifo_reset();
-    void _fifo_enable();
     
     /* Check if there's data available by reading register */
     bool _data_ready();
@@ -92,9 +91,9 @@ private:
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
 
-    // has master i2c been enabled?
-    bool _master_i2c_enable;
-    
+    // Last status from register user control
+    uint8_t _last_stat_user_ctrl;
+
     // buffer for fifo read
     uint8_t *_fifo_buffer;
 

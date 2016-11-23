@@ -61,7 +61,6 @@ private:
 
     void _set_filter_register(void);
     void _fifo_reset();
-    void _fifo_enable();
     bool _has_auxiliary_bus();
 
     /* Read samples from FIFO (FIFO enabled) */
@@ -104,9 +103,9 @@ private:
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
 
-    // has master i2c been enabled?
-    bool _master_i2c_enable;    
-    
+    // Last status from register user control
+    uint8_t _last_stat_user_ctrl;    
+
     // buffer for fifo read
     uint8_t *_fifo_buffer;
 
