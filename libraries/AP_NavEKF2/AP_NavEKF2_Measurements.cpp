@@ -658,6 +658,11 @@ void NavEKF2_core::readRngBcnData()
     // get the location of the beacon data
     const AP_Beacon *beacon = _ahrs->get_beacon();
 
+    // exit immediately if no beacon object
+    if (beacon == nullptr) {
+        return;
+    }
+
     // get the number of beacons in use
     N_beacons = beacon->count();
 
