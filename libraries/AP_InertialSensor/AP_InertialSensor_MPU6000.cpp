@@ -262,7 +262,7 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
 AP_InertialSensor_MPU6000::~AP_InertialSensor_MPU6000()
 {
     if (_fifo_buffer != nullptr) {
-        delete[] _fifo_buffer;
+        hal.util->dma_free(_fifo_buffer, MPU_FIFO_BUFFER_LEN * MPU_SAMPLE_SIZE);
     }
     delete _auxiliary_bus;
 }
