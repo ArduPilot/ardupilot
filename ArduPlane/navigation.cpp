@@ -108,9 +108,9 @@ void Plane::calc_airspeed_errors()
 
         case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
         case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-            if (landing.pre_flare && aparm.land_pre_flare_airspeed > 0) {
+            if (landing.pre_flare && landing.pre_flare_airspeed > 0) {
                 // if we just preflared then continue using the pre-flare airspeed during final flare
-                target_airspeed_cm = aparm.land_pre_flare_airspeed * 100;
+                target_airspeed_cm = landing.pre_flare_airspeed * 100;
             } else if (land_airspeed >= 0) {
                 target_airspeed_cm = land_airspeed * 100;
             }
