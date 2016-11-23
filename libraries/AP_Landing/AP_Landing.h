@@ -90,7 +90,7 @@ public:
     // are we in auto and flight mode is approach || pre-flare || final (flare)
     bool in_progress;
 
-    // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - aparm.land_flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
+    // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
     float slope;
 
     // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
