@@ -921,6 +921,7 @@ private:
     void init_rc_out();
     void enable_motor_output();
     void read_radio();
+    void init_joystick();
     void transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons);
     void handle_jsbutton_press(uint8_t button,bool shift=false,bool held=false);
     void camera_tilt_smooth();

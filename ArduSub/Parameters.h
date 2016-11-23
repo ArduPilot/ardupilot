@@ -369,6 +369,12 @@ public:
 		//Sub-specific parameters
 		k_param_surface_depth = 256,
 
+		// Joystic gain parameters
+		k_param_gain_default,
+		k_param_maxGain,
+		k_param_minGain,
+		k_param_numGainSettings,
+		
 		// Joystick button mapping parameters
 		k_param_jbtn_0 = 261,
 		k_param_jbtn_1,
@@ -518,6 +524,11 @@ public:
     RC_Channel_aux          rc_14;
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
+
+	AP_Float				gain_default;
+	AP_Float				maxGain;
+	AP_Float				minGain;
+	AP_Int8					numGainSettings;
 
     // Joystick button parameters
     JSButton 				jbtn_0;
