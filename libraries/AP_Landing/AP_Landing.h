@@ -106,6 +106,16 @@ public:
     bool commanded_go_around;
 
 
+    // TODO: move these to private
+    AP_Int16 pitch_cd;
+    AP_Float flare_alt;
+    AP_Float flare_sec;
+    AP_Float pre_flare_airspeed;
+    AP_Float pre_flare_alt;
+    AP_Float pre_flare_sec;
+    AP_Float slope_recalc_shallow_threshold;
+    AP_Float slope_recalc_steep_threshold_to_abort;
+
 private:
 
     bool has_aborted_due_to_slope_recalc;
