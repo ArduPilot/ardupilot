@@ -104,9 +104,6 @@ private:
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
 
-    // are we using accumulate for sensor reading or a bus callback?
-    bool _use_accumulate;
-    
     // has master i2c been enabled?
     bool _master_i2c_enable;    
     
