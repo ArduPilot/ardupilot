@@ -45,7 +45,7 @@ void Sub::althold_run()
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Multicopters do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
+        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         last_pilot_heading = ahrs.yaw_sensor;
         return;
     }
@@ -96,18 +96,20 @@ void Sub::althold_run()
 
 	// call z axis position controller
 	if(ap.at_bottom) {
-		pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
+		pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
 		pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
 	} else {
 		if(inertial_nav.get_altitude() < g.surface_depth) { // pilot allowed to move up or down freely
 			pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
 		} else if(target_climb_rate < 0) { // pilot allowed to move only down freely
 			if(pos_control.get_vel_target_z() > 0) {
-				pos_control.relax_alt_hold_controllers(0); // reset target velocity and acceleration
+				pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // reset target velocity and acceleration
 			}
 			pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
 		} else if(pos_control.get_alt_target() > g.surface_depth) { // hold depth at surface level.
 			pos_control.set_alt_target(g.surface_depth);
+		} else {
+			// do nothing
 		}
 	}
 
