@@ -401,7 +401,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
                 const Vector3f mag_ofs = compass.get_offsets();
                 const Vector3f mag = compass.get_field();
                 cliSerial->printf("Heading: %f, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n",
-                                    (wrap_360_cd(ToDeg(heading) * 100)) /100,
+                                    (double)(wrap_360_cd(ToDeg(heading) * 100)) /100,
                                     (double)mag.x, (double)mag.y, (double)mag.z,
                                     (double)mag_ofs.x, (double)mag_ofs.y, (double)mag_ofs.z);
             } else {
