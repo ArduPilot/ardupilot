@@ -232,7 +232,7 @@ private:
 #endif
 
     AP_L1_Control L1_controller {ahrs};
-    AP_TECS TECS_controller {ahrs, aparm};
+    AP_TECS TECS_controller {ahrs, aparm, landing};
 
     // Attitude to servo controllers
     AP_RollController  rollController {ahrs, aparm, DataFlash};
