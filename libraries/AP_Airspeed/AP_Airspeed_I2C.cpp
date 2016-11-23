@@ -96,8 +96,8 @@ typedef enum {
     temperature_data = ((val[2] << 8) + (val[3] & 0xe0)) >> 5;
     if ( temperature_data == 65535 ) return;
 
-    uint8_t cmd = 0;
-    if (!_dev_honeywell->transfer(&cmd, 1, val, 3)) {
+    uint8_t cmd = 0xF1;
+    if (!_dev_sensiron->transfer(&cmd, 1, val, 3)) {
       return;
     }
     sensresult = (val[0] << 8);
@@ -113,7 +113,7 @@ typedef enum {
     _pressure = 1.0 * (bridge_data - output_min) * (pressure_max - pressure_min) / (output_max - output_min) + pressure_min;
     _temperature = (temperature_data * 0.0977) - 50;
 
-    hal.console->printf("honeywell=%.02f sensiron=%.02f\n", _pressure, sensironPressure);
+    //hal.console->printf("honeywell=%.02f sensiron=%.02f\n", _pressure, sensironPressure);
     //_voltage_correction(_pressure, _temperature);
     
     _last_sample_time_ms = AP_HAL::millis();

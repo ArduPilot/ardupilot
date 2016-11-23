@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @DisplayName: Control pitot tube order
     // @Description: This parameter allows you to control whether the order in which the tubes are attached to your pitot tube matters. If you set this to 0 then the top connector on the sensor needs to be the dynamic pressure. If set to 1 then the bottom connector needs to be the dynamic pressure. If set to 2 (the default) then the airspeed driver will accept either order. The reason you may wish to specify the order is it will allow your airspeed sensor to detect if the aircraft it receiving excessive pressure on the static port, which would otherwise be seen as a positive airspeed.
     // @User: Advanced
-    AP_GROUPINFO("TUBE_ORDER",  6, AP_Airspeed, _tube_order, 1),
+    AP_GROUPINFO("TUBE_ORDER",  6, AP_Airspeed, _tube_order, 2),
 
     // @Param: SKIP_CAL
     // @DisplayName: Skip airspeed calibration on startup
@@ -247,10 +247,10 @@ void AP_Airspeed::read(void)
         airspeed_pressure = fabsf(airspeed_pressure);
         break;
     }
-    //airspeed_pressure       = MAX(airspeed_pressure, 0);
+    airspeed_pressure       = MAX(airspeed_pressure, 0);
     _last_pressure          = airspeed_pressure;
     _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
-    _airspeed               = 0.7f * _airspeed  +  0.3f * _last_pressure;
+    _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
     _last_update_ms         = AP_HAL::millis();
 }
 
