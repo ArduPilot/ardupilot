@@ -189,7 +189,7 @@ extern const AP_HAL::HAL &hal;
 
 #define MPU_SAMPLE_SIZE 14
 #define MPU_FIFO_DOWNSAMPLE_COUNT 8
-#define MPU_FIFO_BUFFER_SIZE 16
+#define MPU_FIFO_BUFFER_LEN 16
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
@@ -359,7 +359,7 @@ void AP_InertialSensor_MPU9250::start()
     set_accel_orientation(_accel_instance, _rotation);
 
     // allocate fifo buffer
-    _fifo_buffer = (uint8_t *)hal.util->dma_allocate(MPU_FIFO_BUFFER_SIZE * MPU_SAMPLE_SIZE);
+    _fifo_buffer = (uint8_t *)hal.util->dma_allocate(MPU_FIFO_BUFFER_LEN * MPU_SAMPLE_SIZE);
     if (_fifo_buffer == nullptr) {
         AP_HAL::panic("MPU9250: Unable to allocate FIFO buffer");
     }
@@ -577,7 +577,7 @@ bool AP_InertialSensor_MPU9250::_read_sample()
     }
     
     while (n_samples > 0) {
-        uint8_t n = MIN(MPU_FIFO_BUFFER_SIZE, n_samples);
+        uint8_t n = MIN(MPU_FIFO_BUFFER_LEN, n_samples);
         if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU_SAMPLE_SIZE)) {
             printf("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
             goto check_registers;
