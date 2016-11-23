@@ -660,7 +660,7 @@ void NavEKF2::UpdateFilter(void)
     // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
     float primaryErrorScore = core[primary].errorScore();
     if (primaryErrorScore > 1.0f || !core[primary].healthy()) {
-        float lowestErrorScore = primaryErrorScore; // lowest error score from all lanes
+        float lowestErrorScore = 0.67f * primaryErrorScore;
         uint8_t newPrimaryIndex = primary; // index for new primary
         for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
 
@@ -669,16 +669,10 @@ void NavEKF2::UpdateFilter(void)
                 bool altCoreAvailable = core[coreIndex].healthy() && statePredictEnabled[coreIndex];
 
                 // If the primary core is unhealthy and another core is available, then switch now
-                if (!core[primary].healthy() && altCoreAvailable) {
-                    newPrimaryIndex = coreIndex;
-                    break;
-                }
-
                 // If the primary core is still healthy,then switching is optional and will only be done if
                 // a core with a significantly lower error score can be found
-                bool maySwitch = core[primary].healthy() && altCoreAvailable;
                 float altErrorScore = core[coreIndex].errorScore();
-                if ((altErrorScore < 0.67f * primaryErrorScore) && (altErrorScore < lowestErrorScore) && maySwitch) {
+                if (altCoreAvailable && (!core[primary].healthy() || altErrorScore < lowestErrorScore)) {
                     newPrimaryIndex = coreIndex;
                     lowestErrorScore = altErrorScore;
                 }
