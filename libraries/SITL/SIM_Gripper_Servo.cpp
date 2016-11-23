@@ -63,3 +63,11 @@ bool Gripper_Servo::should_report()
     return false;
 }
 
+
+float Gripper_Servo::payload_mass() const
+{
+    if (aircraft->hagl() < string_length) {
+        return 0.0f;
+    }
+    return load_mass;
+}

@@ -33,7 +33,13 @@ public:
     // update Gripper state
     void update(const struct Aircraft::sitl_input &input);
 
+    float payload_mass() const; // kg
+
+    void set_aircraft(Aircraft *_aircraft) { aircraft = _aircraft; }
+
 private:
+
+    Aircraft *aircraft;
 
     const uint32_t report_interval = 1000000; // microseconds
     uint64_t last_report_us;
@@ -48,6 +54,10 @@ private:
 
     bool should_report();
     bool zero_report_done = false;
+
+    // dangle load from a string:
+    const float string_length = 2.0f; // metres
+    const float load_mass = 0.0f; // kilograms
 };
 
 }
