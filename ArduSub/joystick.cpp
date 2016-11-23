@@ -21,10 +21,20 @@ namespace {
 	int16_t video_switch = 1100;
 	int16_t x_last, y_last, z_last;
 	uint16_t buttons_prev;
-	float gain = 0.5;
-	float maxGain = 1.0;
-	float minGain = 0.25;
-	int8_t numGainSettings = 4;
+	float gain;
+}
+
+void Sub::init_joystick() {
+    if(g.numGainSettings < 1) g.numGainSettings.set_and_save(1);
+
+    if(g.numGainSettings == 1 || (g.gain_default < g.maxGain + 0.01 && g.gain_default > g.minGain - 0.01)) {
+    	gain = constrain_float(g.gain_default, g.minGain, g.maxGain); // Use default gain parameter
+    } else {
+    	// Use setting closest to average of minGain and maxGain
+        gain = g.minGain + (g.numGainSettings/2 - 1) * (g.maxGain - g.minGain) / (g.numGainSettings - 1);
+    }
+
+    gain = constrain_float(gain, 0.1, 1.0);
 }
 
 void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons) {
@@ -208,13 +218,33 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 			break;
 		case JSButton::button_function_t::k_gain_inc:
 			if ( !held ) {
-				gain = constrain_float(gain + (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
+				// check that our gain parameters are in correct range, update in eeprom and notify gcs if needed
+				g.minGain.set_and_save(constrain_float(g.minGain, 0.10, 0.80));
+				g.maxGain.set_and_save(constrain_float(g.maxGain, g.minGain, 1.0));
+				g.numGainSettings.set_and_save(constrain_int16(g.numGainSettings, 1, 10));
+
+				if(g.numGainSettings == 1) {
+					gain = constrain_float(g.gain_default, g.minGain, g.maxGain);
+				} else {
+					gain = constrain_float(gain + (g.maxGain-g.minGain)/(g.numGainSettings-1), g.minGain, g.maxGain);
+				}
+
 				gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",gain*100);
 			}
 			break;
 		case JSButton::button_function_t::k_gain_dec:
 			if ( !held ) {
-				gain = constrain_float(gain - (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
+				// check that our gain parameters are in correct range, update in eeprom and notify gcs if needed
+				g.minGain.set_and_save(constrain_float(g.minGain, 0.10, 0.80));
+				g.maxGain.set_and_save(constrain_float(g.maxGain, g.minGain, 1.0));
+				g.numGainSettings.set_and_save(constrain_int16(g.numGainSettings, 1, 10));
+
+				if(g.numGainSettings == 1) {
+					gain = constrain_float(g.gain_default, g.minGain, g.maxGain);
+				} else {
+					gain = constrain_float(gain - (g.maxGain-g.minGain)/(g.numGainSettings-1), g.minGain, g.maxGain);
+				}
+
 				gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",gain*100);
 			}
 			break;
