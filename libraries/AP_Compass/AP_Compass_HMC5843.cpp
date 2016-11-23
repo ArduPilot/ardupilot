@@ -98,8 +98,8 @@ AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *b
                                        bool force_external, enum Rotation rotation)
     : AP_Compass_Backend(compass)
     , _bus(bus)
-    , _force_external(force_external)
     , _rotation(rotation)
+    , _force_external(force_external)
 {
 }
 
