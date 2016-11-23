@@ -972,7 +972,7 @@ void Plane::update_flight_stage(void)
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
-                if ((g.land_abort_throttle_enable && channel_throttle->get_control_in() >= 90) ||
+                if ((landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) ||
                         landing.commanded_go_around ||
                         flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT){
                     // abort mode is sticky, it must complete while executing NAV_LAND
@@ -1052,13 +1052,13 @@ void Plane::update_optical_flow(void)
  */
 void Plane::disarm_if_autoland_complete()
 {
-    if (g.land_disarm_delay > 0 &&
+    if (landing.get_disarm_delay() > 0 &&
         landing.complete &&
         !is_flying() &&
         arming.arming_required() != AP_Arming::NO &&
         arming.is_armed()) {
         /* we have auto disarm enabled. See if enough time has passed */
-        if (millis() - auto_state.last_flying_ms >= g.land_disarm_delay*1000UL) {
+        if (millis() - auto_state.last_flying_ms >= landing.get_disarm_delay()*1000UL) {
             if (disarm_motors()) {
                 gcs_send_text(MAV_SEVERITY_INFO,"Auto disarmed");
             }
