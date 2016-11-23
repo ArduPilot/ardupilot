@@ -119,17 +119,25 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
 }
     
 /*
-   return true if we are on the ground
+   return difference in altitude between home position and current loc
 */
-bool Aircraft::on_ground(const Vector3f &pos)
+float Aircraft::ground_height_difference() const
 {
     float h1, h2;
     if (sitl->terrain_enable && terrain &&
         terrain->height_amsl(home, h1, false) &&
         terrain->height_amsl(location, h2, false)) {
-        ground_height_difference = h2 - h1;
+        return h2 - h1;
     }
-    return (-pos.z) + home.alt*0.01f <= ground_level + frame_height + ground_height_difference;
+    return 0.0f;
+}
+
+/*
+   return true if we are on the ground
+*/
+bool Aircraft::on_ground(const Vector3f &pos) const
+{
+    return (-pos.z) + home.alt*0.01f <= ground_level + frame_height + ground_height_difference();
 }
 
 /*
@@ -438,8 +446,8 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     // new velocity vector
     velocity_ef += accel_earth * delta_time;
 
+    const bool was_on_ground = on_ground(position);
     // new position vector
-    Vector3f old_position = position;
     position += velocity_ef * delta_time;
 
     // velocity relative to air mass, in earth frame
@@ -456,11 +464,11 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     
     // constrain height to the ground
     if (on_ground(position)) {
-        if (!on_ground(old_position) && AP_HAL::millis() - last_ground_contact_ms > 1000) {
+        if (!was_on_ground && AP_HAL::millis() - last_ground_contact_ms > 1000) {
             printf("Hit ground at %f m/s\n", velocity_ef.z);
             last_ground_contact_ms = AP_HAL::millis();
         }
-        position.z = -(ground_level + frame_height - home.alt*0.01f + ground_height_difference);
+        position.z = -(ground_level + frame_height - home.alt*0.01f + ground_height_difference());
 
         switch (ground_behavior) {
         case GROUND_BEHAVIOR_NONE:

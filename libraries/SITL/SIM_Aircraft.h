@@ -166,12 +166,12 @@ protected:
     bool use_smoothing;
     
     AP_Terrain *terrain;
-    float ground_height_difference;
+    float ground_height_difference() const;
 
     const float FEET_TO_METERS = 0.3048f;
     const float KNOTS_TO_METERS_PER_SECOND = 0.51444f;
-    
-    bool on_ground(const Vector3f &pos);
+
+    bool on_ground(const Vector3f &pos) const;
 
     /* update location from position */
     void update_position(void);
