@@ -80,6 +80,17 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // accessor functions for the params
+    int16_t get_pitch_cd(void) const { return pitch_cd; }
+    float get_flare_sec(void) const { return flare_sec; }
+    float get_pre_flare_airspeed(void) const { return pre_flare_airspeed; }
+    int8_t get_disarm_delay(void) const { return disarm_delay; }
+    int8_t get_then_servos_neutral(void) const { return then_servos_neutral; }
+    int8_t get_abort_throttle_enable(void) const { return abort_throttle_enable; }
+    int8_t get_flap_percent(void) const { return flap_percent; }
+    int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
+
+
     // Flag to indicate if we have landed.
     // Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
     bool complete;
@@ -105,23 +116,6 @@ public:
     // denotes if a go-around has been commanded for landing
     bool commanded_go_around;
 
-
-    // TODO: move these to private
-    AP_Int16 pitch_cd;
-    AP_Float flare_alt;
-    AP_Float flare_sec;
-    AP_Float pre_flare_airspeed;
-    AP_Float pre_flare_alt;
-    AP_Float pre_flare_sec;
-    AP_Float slope_recalc_shallow_threshold;
-    AP_Float slope_recalc_steep_threshold_to_abort;
-
-    AP_Int8 disarm_delay;
-    AP_Int8 then_servos_neutral;
-    AP_Int8 abort_throttle_enable;
-    AP_Int8 flap_percent;
-    AP_Int8 throttle_slewrate;
-
 private:
 
     bool has_aborted_due_to_slope_recalc;
@@ -132,4 +126,18 @@ private:
     AP_Navigation *nav_controller;
 
     AP_Vehicle::FixedWing &aparm;
+
+    AP_Int16 pitch_cd;
+    AP_Float flare_alt;
+    AP_Float flare_sec;
+    AP_Float pre_flare_airspeed;
+    AP_Float pre_flare_alt;
+    AP_Float pre_flare_sec;
+    AP_Float slope_recalc_shallow_threshold;
+    AP_Float slope_recalc_steep_threshold_to_abort;
+    AP_Int8 disarm_delay;
+    AP_Int8 then_servos_neutral;
+    AP_Int8 abort_throttle_enable;
+    AP_Int8 flap_percent;
+    AP_Int8 throttle_slewrate;
 };
