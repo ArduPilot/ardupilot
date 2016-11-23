@@ -46,7 +46,6 @@ public:
     uint16_t temperature_data;  // 11 bit
     
 private:
-    void _measure();
     void _collect();
     bool _timer();
     void _voltage_correction(float &diff_press_pa, float &temperature);
@@ -55,6 +54,7 @@ private:
     float _pressure;
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev_honeywell;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev_sensiron;
     const AP_Float &_psi_range;
 };
