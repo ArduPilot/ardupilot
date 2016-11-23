@@ -42,14 +42,6 @@ public:
         AP_Int16 pitch_limit_max_cd;
         AP_Int16 pitch_limit_min_cd;        
         AP_Int8  autotune_level;
-        AP_Int16 land_pitch_cd;
-        AP_Float land_flare_alt;
-        AP_Float land_flare_sec;
-        AP_Float land_pre_flare_airspeed;
-        AP_Float land_pre_flare_alt;
-        AP_Float land_pre_flare_sec;
-        AP_Float land_slope_recalc_shallow_threshold;
-        AP_Float land_slope_recalc_steep_threshold_to_abort;
         AP_Int8  stall_prevention;
 
         struct Rangefinder_State {
