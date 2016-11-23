@@ -981,7 +981,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         
     if (flight_stage == FLIGHT_LAND_FINAL) {
         // in flare use min pitch from LAND_PITCH_CD
-        _PITCHminf = MAX(_PITCHminf, _landing.pitch_cd * 0.01f);
+        _PITCHminf = MAX(_PITCHminf, _landing.get_pitch_cd() * 0.01f);
 
         // and use max pitch from TECS_LAND_PMAX
         if (_land_pitch_max != 0) {
@@ -994,15 +994,15 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         // constrain the pitch in landing as we get close to the flare
         // point. Use a simple linear limit from 15 meters after the
         // landing point
-        float time_to_flare = (- hgt_afe / _climb_rate) - _landing.flare_sec;
+        float time_to_flare = (- hgt_afe / _climb_rate) - _landing.get_flare_sec();
         if (time_to_flare < 0) {
             // we should be flaring already
-            _PITCHminf = MAX(_PITCHminf, _landing.pitch_cd * 0.01f);
+            _PITCHminf = MAX(_PITCHminf, _landing.get_pitch_cd() * 0.01f);
         } else if (time_to_flare < timeConstant()*2) {
             // smoothly move the min pitch to the flare min pitch over
             // twice the time constant
             float p = time_to_flare/(2*timeConstant());
-            float pitch_limit_cd = p*aparm.pitch_limit_min_cd + (1-p)*_landing.pitch_cd;
+            float pitch_limit_cd = p*aparm.pitch_limit_min_cd + (1-p)*_landing.get_pitch_cd();
 #if 0
             ::printf("ttf=%.1f hgt_afe=%.1f _PITCHminf=%.1f pitch_limit=%.1f climb=%.1f\n",
                      time_to_flare, hgt_afe, _PITCHminf, pitch_limit_cd*0.01f, _climb_rate);
