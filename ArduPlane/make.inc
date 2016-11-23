@@ -60,3 +60,4 @@ LIBRARIES += AC_Avoidance
 LIBRARIES += AP_Proximity
 LIBRARIES += AP_Tuning
 LIBRARIES += AP_Stats
+LIBRARIES += AP_Beacon
