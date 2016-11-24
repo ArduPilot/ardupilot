@@ -115,9 +115,9 @@ private:
     float _last_temp;
     uint8_t _temp_counter;
 
-    // has master i2c been enabled?
-    bool _master_i2c_enable;    
-    
+    // Last status from register user control
+    uint8_t _last_stat_user_ctrl;    
+
     // buffer for fifo read
     uint8_t *_fifo_buffer;
 
