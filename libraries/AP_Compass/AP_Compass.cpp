@@ -15,6 +15,7 @@
 #include "AP_Compass_PX4.h"
 #include "AP_Compass_QURT.h"
 #include "AP_Compass_qflight.h"
+#include "AP_Compass_LIS3MDL.h"
 #include "AP_Compass.h"
 
 extern AP_HAL::HAL& hal;
@@ -510,13 +511,23 @@ void Compass::_detect_backends(void)
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
+        bool both_i2c_external = (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2);
         // external i2c bus
         ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
                                                true, ROTATION_ROLL_180),
                      AP_Compass_HMC5843::name, true);
         // internal i2c bus
-        ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR), false),
-                         AP_Compass_HMC5843::name, false);
+        ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                              both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_NONE),
+                    AP_Compass_HMC5843::name, both_i2c_external);
+
+        // lis3mdl
+        ADD_BACKEND(AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_LIS3MDL_I2C_ADDR),
+                                               true, ROTATION_YAW_90),
+                     AP_Compass_LIS3MDL::name, true);
+        ADD_BACKEND(AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_LIS3MDL_I2C_ADDR),
+                                              both_i2c_external, both_i2c_external?ROTATION_YAW_90:ROTATION_NONE),
+                     AP_Compass_LIS3MDL::name, both_i2c_external);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK) {
         ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
