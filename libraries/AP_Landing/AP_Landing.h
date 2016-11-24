@@ -28,6 +28,13 @@ class AP_Landing
 {
 public:
 
+    enum Landing_Type {
+        TYPE_STANDARD_GLIDE_SLOPE = 0,
+//      TODO: TYPE_DEEPSTALL,
+//      TODO: TYPE_PARACHUTE,
+//      TODO: TYPE_HELICAL,
+    };
+
     FUNCTOR_TYPEDEF(set_target_altitude_proportion_fn_t, void, const Location&, float);
     set_target_altitude_proportion_fn_t set_target_altitude_proportion_fn;
 
@@ -140,4 +147,17 @@ private:
     AP_Int8 abort_throttle_enable;
     AP_Int8 flap_percent;
     AP_Int8 throttle_slewrate;
+    AP_Int8 type;
+
+
+
+    // Land Type STANDARD GLIDE SLOPE
+    bool type_slope_verify_land(const AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+            const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed);
+
+    void type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm);
+
+    void type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
+    void type_slope_check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
+
 };
