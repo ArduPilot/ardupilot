@@ -122,17 +122,20 @@ bool AP_Mission::starts_with_takeoff_cmd()
     // get starting point for search or Reset cmd_index, if _restart is set
     cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
 
-    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
-        // start from beginning of the mission command list
-        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
-        if (!get_next_cmd(cmd_index, cmd, true)) {
-            return false;
+    do {
+        if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+            // start from beginning of the mission command list
+            cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+            if (!get_next_cmd(cmd_index, cmd, true)) {
+                return false;
+            }
+        } else {
+            if (!read_cmd_from_storage(cmd_index, cmd)) {
+                return false;
+            }
         }
-    } else {
-        if (!read_cmd_from_storage(cmd_index, cmd)) {
-            return false;
-        }
-    }
+        cmd_index++; // in case we iterate
+    } while (!is_nav_cmd(cmd));
 
     if (cmd.id != MAV_CMD_NAV_TAKEOFF) {
         return false;
