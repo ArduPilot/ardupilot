@@ -405,7 +405,10 @@ public:
 
 		k_param_failsafe_terrain, // terrain failsafe behavior
 
-		k_param_xtrack_angle_limit // angle limit for xtrack correction in degrees
+		k_param_xtrack_angle_limit, // angle limit for xtrack correction in degrees
+
+		k_param_cam_tilt_step,
+		k_param_lights_step
     };
 
     AP_Int16        format_version;
@@ -529,6 +532,9 @@ public:
 	AP_Float				maxGain;
 	AP_Float				minGain;
 	AP_Int8					numGainSettings;
+
+	AP_Int16					cam_tilt_step;
+	AP_Int16					lights_step;
 
     // Joystick button parameters
     JSButton 				jbtn_0;
