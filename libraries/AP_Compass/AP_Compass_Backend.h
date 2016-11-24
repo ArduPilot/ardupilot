@@ -53,6 +53,7 @@ public:
         DEVTYPE_AK8963  = 0x04,
         DEVTYPE_BMM150  = 0x05,
         DEVTYPE_LSM9DS1 = 0x06,
+        DEVTYPE_LIS3MDL = 0x08,
     };
     
     
