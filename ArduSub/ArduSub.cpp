@@ -294,10 +294,9 @@ void Sub::fast_loop()
 // called at 100hz
 void Sub::rc_loop()
 {
-    // Read radio and 3-position switch on radio
+    // Read radio
     // -----------------------------------------
     read_radio();
-    read_control_switch();
 }
 
 // throttle_loop - should be run at 50 hz

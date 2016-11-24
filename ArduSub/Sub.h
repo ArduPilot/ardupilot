@@ -953,7 +953,6 @@ private:
     void print_divider(void);
     void print_enabled(bool b);
     void report_version();
-    void read_control_switch();
     bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check);
     bool check_duplicate_auxsw(void);
     void reset_control_switch();
