@@ -387,6 +387,37 @@ void Rover::Log_Write_Home_And_Origin()
     }
 }
 
+// guided mode logging
+struct PACKED log_GuidedTarget {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t type;
+    float pos_target_x;
+    float pos_target_y;
+    float pos_target_z;
+    float vel_target_x;
+    float vel_target_y;
+    float vel_target_z;
+};
+
+// Write a Guided mode target
+void Rover::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target)
+{
+    struct log_GuidedTarget pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
+        time_us         : AP_HAL::micros64(),
+        type            : target_type,
+        pos_target_x    : pos_target.x,
+        pos_target_y    : pos_target.y,
+        pos_target_z    : pos_target.z,
+        vel_target_x    : vel_target.x,
+        vel_target_y    : vel_target.y,
+        vel_target_z    : vel_target.z
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+
 const LogStructure Rover::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
@@ -403,6 +434,8 @@ const LogStructure Rover::log_structure[] = {
       "ARM", "QBH", "TimeUS,ArmState,ArmChecks" },
     { LOG_STEERING_MSG, sizeof(log_Steering),             
       "STER", "Qff",   "TimeUS,Demanded,Achieved" },
+    { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
+      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
 };
 
 void Rover::log_init(void)
