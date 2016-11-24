@@ -99,18 +99,7 @@ void Sub::althold_run()
 		pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
 		pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
 	} else {
-		if(inertial_nav.get_altitude() < g.surface_depth) { // pilot allowed to move up or down freely
-			pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-		} else if(target_climb_rate < 0) { // pilot allowed to move only down freely
-			if(pos_control.get_vel_target_z() > 0) {
-				pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // reset target velocity and acceleration
-			}
-			pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-		} else if(pos_control.get_alt_target() > g.surface_depth) { // hold depth at surface level.
-			pos_control.set_alt_target(g.surface_depth);
-		} else {
-			// do nothing
-		}
+		pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
 	}
 
 	pos_control.update_z_controller();
