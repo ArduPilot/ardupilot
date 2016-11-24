@@ -224,4 +224,23 @@ void PX4Util::set_imu_target_temp(int8_t *target)
     _heater.target = target;
 }
 
+
+extern "C" {
+    extern void *fat_dma_alloc(size_t);
+    extern void fat_dma_free(void *, size_t);
+}
+
+/*
+  allocate DMA-capable memory if possible. Otherwise return normal
+  memory.
+*/
+void *PX4Util::dma_allocate(size_t size)
+{
+    return fat_dma_alloc(size);
+}
+void PX4Util::dma_free(void *ptr, size_t size)
+{
+    fat_dma_free(ptr, size);
+}
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

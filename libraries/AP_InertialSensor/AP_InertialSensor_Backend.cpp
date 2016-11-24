@@ -269,7 +269,7 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
  */
 void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
 {    
-    if (!_sem->take_nonblocking()) {
+    if (!_sem->take(0)) {
         return;
     }
 
@@ -292,7 +292,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
  */
 void AP_InertialSensor_Backend::update_accel(uint8_t instance)
 {    
-    if (!_sem->take_nonblocking()) {
+    if (!_sem->take(0)) {
         return;
     }
 

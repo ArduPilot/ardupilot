@@ -34,10 +34,10 @@ SPIDesc SPIDeviceManager::device_table[] = {
     SPIDesc("ms5611_ext",   PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
 #endif
 #if defined(PX4_SPIDEV_ICM)
-    SPIDesc("icm20608",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ICM, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
+    SPIDesc("icm20608",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ICM, SPIDEV_MODE3, 500*KHZ, 20*MHZ),
 #endif
     // ICM20608 on the ACCEL_MAG 
-    SPIDesc("icm20608-am",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ACCEL_MAG, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
+    SPIDesc("icm20608-am",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ACCEL_MAG, SPIDEV_MODE3, 500*KHZ, 20*MHZ),
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
     SPIDesc("ms5611_int",   PX4_SPI_BUS_BARO, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
 #endif
@@ -52,7 +52,7 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #ifdef PX4_SPIDEV_EXT_GYRO
     SPIDesc("lsm9ds0_ext_g",PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_GYRO, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
 #endif
-    SPIDesc("mpu9250",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 1*MHZ, 11*MHZ),
+    SPIDesc("mpu9250",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 1*MHZ, 20*MHZ),
 #ifdef PX4_SPIDEV_EXT_MPU
     SPIDesc("mpu6000_ext",  PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 500*KHZ, 11*MHZ),    
     SPIDesc("mpu9250_ext",  PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 1*MHZ, 11*MHZ),
@@ -124,16 +124,38 @@ bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
  */
 void SPIDevice::do_transfer(uint8_t *send, uint8_t *recv, uint32_t len)
 {
-    irqstate_t state = irqsave();
+    /*
+      to accomodate the method in PX4 drivers of using interrupt
+      context for SPI device transfers we need to check if PX4 has
+      registered a driver on this bus.  If not then we can avoid the
+      irqsave/irqrestore and get bus parallelism for DMA enabled
+      buses.
+      
+      There is a race in this if a PX4 driver starts while we are
+      running this, but that would only happen at early boot and is
+      very unlikely
+
+      yes, this is a nasty hack. Suggestions for a better method
+      appreciated.
+     */
+    bool use_irq_save = up_spi_use_irq_save(bus.dev);
+    irqstate_t state;
+    if (use_irq_save) {
+        state = irqsave();
+    }
     perf_begin(perf);
+    SPI_LOCK(bus.dev, true);
     SPI_SETFREQUENCY(bus.dev, frequency);
     SPI_SETMODE(bus.dev, device_desc.mode);
     SPI_SETBITS(bus.dev, 8);
     SPI_SELECT(bus.dev, device_desc.device, true);
     SPI_EXCHANGE(bus.dev, send, recv, len);
     SPI_SELECT(bus.dev, device_desc.device, false);
+    SPI_LOCK(bus.dev, false);
     perf_end(perf);
-    irqrestore(state);
+    if (use_irq_save) {
+        irqrestore(state);
+    }
 }
 
 bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
