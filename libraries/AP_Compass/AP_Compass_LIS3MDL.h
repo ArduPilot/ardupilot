@@ -52,10 +52,6 @@ private:
     bool init();
     bool timer();
 
-    enum {
-        PHASE_MEASURE, PHASE_COLLECT
-    } phase;
-    
     uint8_t compass_instance;
     Vector3f accum;
     uint16_t accum_count;
