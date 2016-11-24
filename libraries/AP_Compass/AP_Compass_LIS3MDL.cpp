@@ -93,12 +93,13 @@ bool AP_Compass_LIS3MDL::init()
         goto fail;
     }
 
-    dev->setup_checked_registers(4);
+    dev->setup_checked_registers(5);
 
-    dev->write_register(ADDR_CTRL_REG1, 0xFC, true);
+    dev->write_register(ADDR_CTRL_REG1, 0x62, true); // 155Hz, UHP
     dev->write_register(ADDR_CTRL_REG2, 0, true); // 4Ga range
+    dev->write_register(ADDR_CTRL_REG3, 0, true); // continuous
     dev->write_register(ADDR_CTRL_REG4, 0x0C, true); // z-axis ultra high perf
-    dev->write_register(ADDR_CTRL_REG5, 0x40, true);
+    dev->write_register(ADDR_CTRL_REG5, 0x40, true); // block-data-update
     
     dev->get_semaphore()->give();
 
@@ -116,11 +117,9 @@ bool AP_Compass_LIS3MDL::init()
     dev->set_device_type(DEVTYPE_LIS3MDL);
     set_dev_id(compass_instance, dev->get_bus_id());
 
-    phase = PHASE_MEASURE;
-    
-    // call timer() at 80Hz
-    dev->register_periodic_callback(12500,
-                                     FUNCTOR_BIND_MEMBER(&AP_Compass_LIS3MDL::timer, bool));
+    // call timer() at 155Hz
+    dev->register_periodic_callback(1000000U/155U,
+                                    FUNCTOR_BIND_MEMBER(&AP_Compass_LIS3MDL::timer, bool));
 
     return true;
 
@@ -131,16 +130,7 @@ fail:
 
 bool AP_Compass_LIS3MDL::timer()
 {
-    if (phase == PHASE_MEASURE) {
-        // start single measurement
-        if (dev->write_register(ADDR_CTRL_REG3, 1)) {
-            phase = PHASE_COLLECT;
-        }
-        return true;
-    }
-
     struct PACKED {
-        uint8_t status;
         int16_t magx;
         int16_t magy;
         int16_t magz;
@@ -148,7 +138,17 @@ bool AP_Compass_LIS3MDL::timer()
     const float range_scale = 1000.0f / 6842.0f;
     Vector3f field;
 
-    if (!dev->read_registers(ADDR_STATUS_REG, (uint8_t *)&data, sizeof(data))) {
+    // check data ready
+    uint8_t status;
+    if (!dev->read_registers(ADDR_STATUS_REG, (uint8_t *)&status, 1)) {
+        goto check_registers;
+    }
+    if (!(status & 0x08)) {
+        // data not available yet
+        goto check_registers;
+    }
+
+    if (!dev->read_registers(ADDR_OUT_X_L, (uint8_t *)&data, sizeof(data))) {
         goto check_registers;
     }
 
@@ -169,8 +169,6 @@ bool AP_Compass_LIS3MDL::timer()
         _sem->give();
     }
 
-    phase = PHASE_MEASURE;
-    
 check_registers:
     dev->check_next_register();
     return true;
@@ -186,6 +184,20 @@ void AP_Compass_LIS3MDL::read()
         return;
     }
 
+#if 0
+    // debugging code for sample rate
+    static uint32_t lastt;
+    static uint32_t total;
+    total += accum_count;
+    uint32_t now = AP_HAL::micros();
+    float dt = (now - lastt) * 1.0e-6;
+    if (dt > 1) {
+        printf("%u samples\n", total);
+        lastt = now;
+        total = 0;
+    }
+#endif
+    
     accum /= accum_count;
 
     publish_filtered_field(accum, compass_instance);
