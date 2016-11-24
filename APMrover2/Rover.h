@@ -545,6 +545,7 @@ private:
     void nav_set_yaw_speed();
     bool in_stationary_loiter(void);
     void set_loiter_active(const AP_Mission::Mission_Command& cmd);
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
 
 public:
     bool print_log_menu(void);

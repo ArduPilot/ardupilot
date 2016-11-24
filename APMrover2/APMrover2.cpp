@@ -447,6 +447,7 @@ void Rover::update_current_mode(void)
                 calc_lateral_acceleration();
                 calc_nav_steer();
                 calc_throttle(g.speed_cruise);
+                Log_Write_GuidedTarget(guided_mode, Vector3f(guided_WP.lat, guided_WP.lng, guided_WP.alt), Vector3f(g.speed_cruise, channel_throttle->get_servo_out(), 0));
             }
             break;
 
