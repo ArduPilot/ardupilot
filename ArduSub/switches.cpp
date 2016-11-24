@@ -18,62 +18,6 @@ static union {
     uint32_t value;
 } aux_con;
 
-void Sub::read_control_switch()
-{
-    uint32_t tnow_ms = millis();
-
-    // calculate position of flight mode switch
-    int8_t switch_position;
-    if      (g.rc_5.get_radio_in() < 1231) switch_position = 0;
-    else if (g.rc_5.get_radio_in() < 1361) switch_position = 1;
-    else if (g.rc_5.get_radio_in() < 1491) switch_position = 2;
-    else if (g.rc_5.get_radio_in() < 1621) switch_position = 3;
-    else if (g.rc_5.get_radio_in() < 1750) switch_position = 4;
-    else switch_position = 5;
-
-    // store time that switch last moved
-    if(control_switch_state.last_switch_position != switch_position) {
-        control_switch_state.last_edge_time_ms = tnow_ms;
-    }
-
-    // debounce switch
-    bool control_switch_changed = control_switch_state.debounced_switch_position != switch_position;
-    bool sufficient_time_elapsed = tnow_ms - control_switch_state.last_edge_time_ms > CONTROL_SWITCH_DEBOUNCE_TIME_MS;
-    bool failsafe_disengaged = !failsafe.radio && failsafe.radio_counter == 0;
-
-    if (control_switch_changed && sufficient_time_elapsed && failsafe_disengaged) {
-        // set flight mode and simple mode setting
-    	if (set_mode((control_mode_t)flight_modes[switch_position].get(), MODE_REASON_TX_COMMAND)) {
-            // play a tone
-            if (control_switch_state.debounced_switch_position != -1) {
-                // alert user to mode change failure (except if autopilot is just starting up)
-                if (ap.initialised) {
-                    AP_Notify::events.user_mode_change = 1;
-                }
-            }
-
-            if(!check_if_auxsw_mode_used(AUXSW_SIMPLE_MODE) && !check_if_auxsw_mode_used(AUXSW_SUPERSIMPLE_MODE)) {
-                // if none of the Aux Switches are set to Simple or Super Simple Mode then
-                // set Simple Mode using stored parameters from EEPROM
-                if (BIT_IS_SET(g.super_simple, switch_position)) {
-                    set_simple_mode(2);
-                }else{
-                    set_simple_mode(BIT_IS_SET(g.simple_modes, switch_position));
-                }
-            }
-
-        } else if (control_switch_state.last_switch_position != -1) {
-            // alert user to mode change failure
-            AP_Notify::events.user_mode_change_failed = 1;
-        }
-
-        // set the debounced switch position
-        control_switch_state.debounced_switch_position = switch_position;
-    }
-
-    control_switch_state.last_switch_position = switch_position;
-}
-
 // check_if_auxsw_mode_used - Check to see if any of the Aux Switches are set to a given mode.
 bool Sub::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 {
@@ -108,7 +52,6 @@ bool Sub::check_duplicate_auxsw(void)
 void Sub::reset_control_switch()
 {
     control_switch_state.last_switch_position = control_switch_state.debounced_switch_position = -1;
-    read_control_switch();
 }
 
 // read_3pos_switch

@@ -7,7 +7,7 @@
 
 // Anonymous namespace to hold variables used only in this file
 namespace {
-	int16_t mode = 1100;
+	int16_t mode_switch_pwm = 1100;
 	float cam_tilt = 1500.0;
 	float cam_tilt_goal = 1500.0;
 	float cam_tilt_alpha = 0.97;
@@ -74,7 +74,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	channels[1] = 1500 + rollTrim;                            // roll
 	channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900);  // throttle
 	channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                       // yaw
-	channels[4] = mode;                                       // for testing only
+	channels[4] = mode_switch_pwm;                                       // for testing only
 	channels[5] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900);           // forward for ROV
 	channels[6] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900);           // lateral for ROV
 	channels[7] = 0xffff;                                     // camera tilt (sent in camera_tilt_smooth)
@@ -92,6 +92,10 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 }
 
 void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
+	// For attempts to change control mode
+	control_mode_t next_mode = control_mode;
+	uint16_t next_mode_switch_pwm = mode_switch_pwm;
+
 	// Act based on the function assigned to this button
 	switch ( get_button(button)->function(shift) ) {
 		case JSButton::button_function_t::k_arm_toggle:
@@ -111,22 +115,28 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 			init_disarm_motors();
 			break;
 		case JSButton::button_function_t::k_mode_1:
-			mode = 1100;
+			next_mode = (control_mode_t)flight_modes[0].get();
+			next_mode_switch_pwm = 1100;
 			break;
 		case JSButton::button_function_t::k_mode_2:
-			mode = 1300;
+			next_mode = (control_mode_t)flight_modes[1].get();
+			next_mode_switch_pwm = 1300;
 			break;
 		case JSButton::button_function_t::k_mode_3:
-			mode = 1420;
+			next_mode = (control_mode_t)flight_modes[2].get();
+			next_mode_switch_pwm = 1420;
 			break;
 		case JSButton::button_function_t::k_mode_4:
-			mode = 1550;
+			next_mode = (control_mode_t)flight_modes[3].get();
+			next_mode_switch_pwm = 1550;
 			break;
 		case JSButton::button_function_t::k_mode_5:
-			mode = 1690;
+			next_mode = (control_mode_t)flight_modes[4].get();
+			next_mode_switch_pwm = 1690;
 			break;
 		case JSButton::button_function_t::k_mode_6:
-			mode = 1900;
+			next_mode = (control_mode_t)flight_modes[5].get();
+			next_mode_switch_pwm = 1900;
 			break;
 		case JSButton::button_function_t::k_mount_center:
 			cam_tilt_goal = 1500;
@@ -328,6 +338,23 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 		case JSButton::button_function_t::k_custom_6:
 			// Not implemented
 			break;
+	}
+
+	// Update the control mode if needed
+	if(control_mode != next_mode) {
+		if(set_mode(next_mode, MODE_REASON_TX_COMMAND)) {
+			// Notify user
+	        if (ap.initialised) {
+	            AP_Notify::events.user_mode_change = 1;
+	        }
+	        // Update CH5 pwm value (For GCS)
+	        mode_switch_pwm = next_mode_switch_pwm;
+		} else {
+		    // Notify user
+			if(ap.initialised) {
+				AP_Notify::events.user_mode_change_failed = 1;
+			}
+		}
 	}
 }
 
