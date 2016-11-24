@@ -169,13 +169,13 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
     // do not let target alt get above limit
-    if (_alt_max < 0 && _alt_max > _alt_min && _pos_target.z > _alt_max) {
+    if (_alt_max < 100 && _pos_target.z > _alt_max) {
         _pos_target.z = _alt_max;
         _limit.pos_up = true;
     }
 
     // do not let target alt get below limit
-    if (_alt_min < 0 && _pos_target.z < _alt_min) {
+    if (_alt_min < 0 && _alt_min < _alt_max && _pos_target.z < _alt_min) {
         _pos_target.z = _alt_min;
         _limit.pos_down = true;
     }
@@ -230,7 +230,7 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
     // do not let target alt get above limit
-    if (_alt_max < 0 && _alt_max > _alt_min && _pos_target.z > _alt_max) {
+    if (_alt_max < 100 && _pos_target.z > _alt_max) {
         _pos_target.z = _alt_max;
         _limit.pos_up = true;
         // decelerate feed forward to zero
@@ -238,7 +238,7 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
     }
 
     // do not let target alt get below limit
-    if (_alt_min < 0 && _pos_target.z < _alt_min) {
+    if (_alt_min < 0 && _alt_min < _alt_max && _pos_target.z < _alt_min) {
         _pos_target.z = _alt_min;
         _limit.pos_down = true;
         // decelerate feed forward to zero
