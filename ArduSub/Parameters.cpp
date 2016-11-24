@@ -654,6 +654,22 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Default: 4
 	GSCALAR(numGainSettings, "JS_GAIN_STEPS", 4),
 
+	// @Param: JS_CAM_TILT_STEP
+	// @DisplayName: Camera tilt step size
+	// @Description: Size of PWM increment on camera tilt servo
+	// @User: Standard
+	// @Range: 30 400
+	// @Default: 50
+	GSCALAR(cam_tilt_step, "JS_CAM_TILT_STEP", 50),
+
+	// @Param: JS_LIGHTS_STEP
+	// @DisplayName: Lights step size
+	// @Description: Size of PWM increment on lights servo
+	// @User: Standard
+	// @Range: 30 400
+	// @Default: 100
+	GSCALAR(lights_step, "JS_LIGHTS_STEP", 100),
+
 	// @Group: BTN0_
 	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
 	GGROUP(jbtn_0,                   "BTN0_", JSButton),

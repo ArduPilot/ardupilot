@@ -132,10 +132,10 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 			cam_tilt_goal = 1500;
 			break;
 		case JSButton::button_function_t::k_mount_tilt_up:
-			cam_tilt_goal = constrain_float(cam_tilt_goal-30,800,2200);
+			cam_tilt_goal = constrain_float(cam_tilt_goal-g.cam_tilt_step,800,2200);
 			break;
 		case JSButton::button_function_t::k_mount_tilt_down:
-			cam_tilt_goal = constrain_float(cam_tilt_goal+30,800,2200);
+			cam_tilt_goal = constrain_float(cam_tilt_goal+g.cam_tilt_step,800,2200);
 			break;
 		case JSButton::button_function_t::k_camera_trigger:
 			break;
@@ -162,9 +162,9 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 			if ( !held ) {
 				static bool increasing = true;
 				if ( increasing ) {
-					lights1 = constrain_float(lights1+100,1100,1900);
+					lights1 = constrain_float(lights1+g.lights_step,1100,1900);
 				} else {
-					lights1 = constrain_float(lights1-100,1100,1900);
+					lights1 = constrain_float(lights1-g.lights_step,1100,1900);
 				}
 				if ( lights1 >= 1900 || lights1 <= 1100 ) {
 					increasing = !increasing;
@@ -173,21 +173,21 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 			break;
 		case JSButton::button_function_t::k_lights1_brighter:
 			if ( !held ) {
-				lights1 = constrain_float(lights1+100,1100,1900);
+				lights1 = constrain_float(lights1+g.lights_step,1100,1900);
 			}
 			break;
 		case JSButton::button_function_t::k_lights1_dimmer:
 			if ( !held ) {
-				lights1 = constrain_float(lights1-100,1100,1900);
+				lights1 = constrain_float(lights1-g.lights_step,1100,1900);
 			}
 			break;
 		case JSButton::button_function_t::k_lights2_cycle:
 			if ( !held ) {
 				static bool increasing = true;
 				if ( increasing ) {
-					lights2 = constrain_float(lights2+100,1100,1900);
+					lights2 = constrain_float(lights2+g.lights_step,1100,1900);
 				} else {
-					lights2 = constrain_float(lights2-100,1100,1900);
+					lights2 = constrain_float(lights2-g.lights_step,1100,1900);
 				}
 				if ( lights2 >= 1900 || lights2 <= 1100 ) {
 					increasing = !increasing;
@@ -196,12 +196,12 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 			break;
 		case JSButton::button_function_t::k_lights2_brighter:
 			if ( !held ) {
-				lights2 = constrain_float(lights2+100,1100,1900);
+				lights2 = constrain_float(lights2+g.lights_step,1100,1900);
 			}
 			break;
 		case JSButton::button_function_t::k_lights2_dimmer:
 			if ( !held ) {
-				lights2 = constrain_float(lights2-100,1100,1900);
+				lights2 = constrain_float(lights2-g.lights_step,1100,1900);
 			}
 			break;
 		case JSButton::button_function_t::k_gain_toggle:
