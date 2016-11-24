@@ -499,7 +499,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Values: 0:Disabled, 1:Enabled, -3:Skip Baro, -5:Skip Compass, -9:Skip GPS, -17:Skip INS, -33:Skip Params/Rangefinder, -65:Skip RC, 127:Skip Voltage
     // @Bitmask: 0:All,1:Baro,2:Compass,3:GPS,4:INS,5:Parameters+Rangefinder,6:RC,7:Voltage
     // @User: Standard
-    GSCALAR(arming_check, "ARMING_CHECK",           -66),
+    GSCALAR(arming_check, "ARMING_CHECK",           ARMING_CHECK_NONE),
 
     // @Param: DISARM_DELAY
     // @DisplayName: Disarm delay
