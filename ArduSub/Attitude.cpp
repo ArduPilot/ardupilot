@@ -290,8 +290,13 @@ void Sub::set_accel_throttle_I_from_pilot_throttle(float pilot_throttle)
 // updates position controller's maximum altitude using fence and EKF limits
 void Sub::update_poscon_alt_max()
 {
-	float min_alt_cm = 0.0f;  // interpreted as no limit if left as zero
-	float max_alt_cm = 0.0f;
+	// minimum altitude, ie. maximum depth
+	// interpreted as no limit if left as zero
+	float min_alt_cm = 0.0;
+
+	// no limit if greater than 100, a limit is necessary,
+	// or the vehicle will try to fly out of the water
+	float max_alt_cm = g.surface_depth; // minimum depth
 
 #if AC_FENCE == ENABLED
     // set fence altitude limit in position controller
