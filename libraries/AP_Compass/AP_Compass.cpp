@@ -461,12 +461,6 @@ uint8_t Compass::register_compass(void)
 
 bool Compass::_add_backend(AP_Compass_Backend *backend, const char *name, bool external)
 {
-    if (name != nullptr) {
-        hal.console->printf("%s: %s compass %sdetected\n", name,
-                            external ? "External" : "Onboard",
-                            backend == nullptr ? "not " : "");
-    }
-
     if (!backend) {
         return false;
     }
