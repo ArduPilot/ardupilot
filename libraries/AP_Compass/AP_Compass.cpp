@@ -489,8 +489,20 @@ void Compass::_detect_backends(void)
         return;
     }
 
+/*
+  macro to add a backend with check for too many backends or compass
+  instances. We don't try to start more than the maximum allowed
+ */
+#define ADD_BACKEND(backend, name, external) \
+    do { _add_backend(backend, name, external);     \
+       if (_backend_count == COMPASS_MAX_BACKEND || \
+           _compass_count == COMPASS_MAX_INSTANCES) { \
+          return; \
+        } \
+    } while (0)
+    
 #if HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
-    _add_backend(AP_Compass_HIL::detect(*this), nullptr, false);
+    ADD_BACKEND(AP_Compass_HIL::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PX4V1 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK ||
@@ -499,73 +511,73 @@ void Compass::_detect_backends(void)
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2 ||
         AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
         // external i2c bus
-        _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
+        ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
                                                true, ROTATION_ROLL_180),
                      AP_Compass_HMC5843::name, true);
         // internal i2c bus
-        _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR), false),
+        ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR), false),
                          AP_Compass_HMC5843::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK) {
-        _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
+        ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
                                                false, ROTATION_PITCH_180),
                      AP_Compass_HMC5843::name, false);
-        _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)),
+        ADD_BACKEND(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)),
                      AP_Compass_LSM303D::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
-        _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_EXT_A_NAME), ROTATION_YAW_270),
+        ADD_BACKEND(AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_EXT_A_NAME), ROTATION_YAW_270),
                      AP_Compass_LSM303D::name, false);
         // we run the AK8963 only on the 2nd MPU9250, which leaves the
         // first MPU9250 to run without disturbance at high rate
-        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 1, ROTATION_YAW_270),
+        ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 1, ROTATION_YAW_270),
                      AP_Compass_AK8963::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
-        _add_backend(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
+        ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
                                                false, ROTATION_PITCH_180),
                      AP_Compass_HMC5843::name, false);
-        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
+        ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                      AP_Compass_AK8963::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI) {
-        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180),
+        ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180),
                      AP_Compass_AK8963::name, false);
     }
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM) {
-        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_YAW_270),
+        ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_YAW_270),
                      AP_Compass_AK8963::name, false);
     }
     // also add any px4 level drivers (for canbus magnetometers)
-    _add_backend(AP_Compass_PX4::detect(*this), nullptr, false);
+    ADD_BACKEND(AP_Compass_PX4::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QURT
-    _add_backend(AP_Compass_QURT::detect(*this), nullptr, false);
+    ADD_BACKEND(AP_Compass_QURT::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_RASPILOT
-    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
+    ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
                  AP_Compass_HMC5843::name, true);
-    _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device("lsm9ds0_am")),
+    ADD_BACKEND(AP_Compass_LSM303D::probe(*this, hal.spi->get_device("lsm9ds0_am")),
                  AP_Compass_LSM303D::name, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BH
     // In BH, only one compass should be detected
-    bool ret = _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
+    bool ret = ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
                             AP_Compass_HMC5843::name, false);
     if (!ret) {
-        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+        ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
                      AP_Compass_AK8963::name, false);
     }
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QFLIGHT
-    _add_backend(AP_Compass_QFLIGHT::detect(*this));
+    ADD_BACKEND(AP_Compass_QFLIGHT::detect(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BBBMINI
-    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
+    ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
                  AP_Compass_HMC5843::name, true);
-    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
                  AP_Compass_AK8963::name, false);
-    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 1),
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 1),
                  AP_Compass_AK8963::name, true);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-    _add_backend(AP_Compass_HMC5843::probe_mpu6000(*this),
+    ADD_BACKEND(AP_Compass_HMC5843::probe_mpu6000(*this),
                  AP_Compass_HMC5843::name, false);
-    _add_backend(AP_Compass_HMC5843::probe(*this,
+    ADD_BACKEND(AP_Compass_HMC5843::probe(*this,
                      Linux::I2CDeviceManager::from(hal.i2c_mgr)->get_device(
                          { /* UEFI with lpss set to ACPI */
                            "platform/80860F41:05",
@@ -575,48 +587,48 @@ void Compass::_detect_backends(void)
                      true),
                  AP_Compass_HMC5843::name, true);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO2
-    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
                  AP_Compass_AK8963::name, false);
-    _add_backend(AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m")),
+    ADD_BACKEND(AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m")),
                  AP_Compass_LSM9DS1::name, false);
-    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
+    ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
                  AP_Compass_HMC5843::name, true);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO
-    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
                  AP_Compass_AK8963::name, false);
-    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
+    ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
                  AP_Compass_HMC5843::name, true);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
-    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
                  AP_Compass_AK8963::name, false);
-    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
+    ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
                  AP_Compass_HMC5843::name, true);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
-    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
                  AP_Compass_AK8963::name, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
-    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
+    ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
                  AP_Compass_HMC5843::name, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843_MPU6000
-    _add_backend(AP_Compass_HMC5843::probe_mpu6000(*this),
+    ADD_BACKEND(AP_Compass_HMC5843::probe_mpu6000(*this),
                  AP_Compass_HMC5843::name, false);
 #elif  HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_I2C
-    _add_backend(AP_Compass_AK8963::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_AK8963_I2C_BUS, HAL_COMPASS_AK8963_I2C_ADDR)),
+    ADD_BACKEND(AP_Compass_AK8963::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_AK8963_I2C_BUS, HAL_COMPASS_AK8963_I2C_ADDR)),
                  AP_Compass_AK8963::name, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250_I2C
-    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, hal.i2c_mgr->get_device(HAL_COMPASS_AK8963_I2C_BUS, HAL_COMPASS_AK8963_I2C_ADDR)),
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, hal.i2c_mgr->get_device(HAL_COMPASS_AK8963_I2C_BUS, HAL_COMPASS_AK8963_I2C_ADDR)),
                  AP_Compass_AK8963::name, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AERO
-    _add_backend(AP_Compass_BMM150::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_BMM150_I2C_BUS, HAL_COMPASS_BMM150_I2C_ADDR)),
+    ADD_BACKEND(AP_Compass_BMM150::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_BMM150_I2C_BUS, HAL_COMPASS_BMM150_I2C_ADDR)),
                  AP_Compass_BMM150::name, false);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
+    ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
                  AP_Compass_HMC5843::name, false);
-    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0),
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
                  AP_Compass_AK8963::name, false);
-    _add_backend(AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m")),
+    ADD_BACKEND(AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m")),
                  AP_Compass_LSM9DS1::name, false);
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
