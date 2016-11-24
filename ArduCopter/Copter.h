@@ -61,6 +61,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <Filter/Filter.h>             // Filter library
@@ -714,6 +715,8 @@ private:
     void init_proximity();
     void update_proximity();
     void stats_update();
+    void init_beacon();
+    void update_beacon();
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
@@ -748,6 +751,7 @@ private:
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool position_ok);
     void Log_Write_Proximity();
+    void Log_Write_Beacon();
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;

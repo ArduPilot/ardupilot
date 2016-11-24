@@ -199,8 +199,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: ALT_SOURCE
     // @DisplayName: Primary height source
-    // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS. NOTE - the EK2_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
-    // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS
+    // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS. Setting 3 uses the range beacon data. NOTE - the EK2_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
+    // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF2, _altSource, 0),
 
@@ -491,6 +491,32 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TERR_GRAD", 43, NavEKF2, _terrGradMax, 0.1f),
 
+    // @Param: BCN_M_NSE
+    // @DisplayName: Range beacon measurement noise (m)
+    // @Description: This is the RMS value of noise in the range beacon measurement. Increasing it reduces the weighting on this measurement.
+    // @Range: 0.1 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m
+    AP_GROUPINFO("BCN_M_NSE", 44, NavEKF2, _rngBcnNoise, 1.0f),
+
+    // @Param: BCN_I_GTE
+    // @DisplayName: Range beacon measurement gate size
+    // @Description: This sets the percentage number of standard deviations applied to the range beacon measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 1000
+    // @Increment: 25
+    // @User: Advanced
+    AP_GROUPINFO("BCN_I_GTE", 45, NavEKF2, _rngBcnInnovGate, 500),
+
+    // @Param: BCN_DELAY
+    // @DisplayName: Range beacon measurement delay (msec)
+    // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
+    // @Range: 0 250
+    // @Increment: 10
+    // @User: Advanced
+    // @Units: msec
+    AP_GROUPINFO("BCN_DELAY", 46, NavEKF2, _rngBcnDelay_ms, 50),
+
     AP_GROUPEND
 };
 
@@ -503,9 +529,9 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gpsPosVarAccScale(0.05f),       // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     magDelay_ms(60),                // Magnetometer measurement delay (msec)
     tasDelay_ms(240),               // Airspeed measurement delay (msec)
-    gpsRetryTimeUseTAS_ms(10000),   // GPS retry time with airspeed measurements (msec)
-    gpsRetryTimeNoTAS_ms(7000),     // GPS retry time without airspeed measurements (msec)
-    gpsFailTimeWithFlow_ms(1000),   // If we have no GPS for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
+    tiltDriftTimeMax_ms(15000),      // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
+    posRetryTimeUseVel_ms(10000),   // Position aiding retry time with velocity measurements (msec)
+    posRetryTimeNoVel_ms(7000),     // Position aiding retry time without velocity measurements (msec)
     hgtRetryTimeMode0_ms(10000),    // Height retry time with vertical velocity measurement (msec)
     hgtRetryTimeMode12_ms(5000),    // Height retry time without vertical velocity measurement (msec)
     tasRetryTime_ms(5000),          // True airspeed timeout and retry interval (msec)
@@ -1032,6 +1058,15 @@ void NavEKF2::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, fl
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         core[instance].getFlowDebug(varFlow, gndOffset, flowInnovX, flowInnovY, auxInnov, HAGL, rngInnov, range, gndOffsetErr);
+    }
+}
+
+// return data for debugging range beacon fusion
+void NavEKF2::getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow)
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        core[instance].getRangeBeaconDebug(ID, rng, innov, innovVar, testRatio, beaconPosNED, offsetHigh, offsetLow);
     }
 }
 

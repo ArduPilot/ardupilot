@@ -1039,6 +1039,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 13, ParametersG2, AP_Gripper),
 #endif
 
+    // @Group: BCN
+    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
+    AP_SUBGROUPINFO(beacon, "BCN", 14, ParametersG2, AP_Beacon),
 
     AP_GROUPEND
 };
@@ -1048,7 +1051,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
   constructor for g2 object
  */
 ParametersG2::ParametersG2(void)
-    : proximity(copter.serial_manager)
+    : proximity(copter.serial_manager),
+      beacon(copter.serial_manager)
 #if ADVANCED_FAILSAFE == ENABLED
      ,afs(copter.mission, copter.barometer, copter.gps, copter.rcmap)
 #endif

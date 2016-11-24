@@ -31,6 +31,7 @@ def build(bld):
             'AC_Avoidance',
             'AP_Proximity',
             'AP_Stats',
+            'AP_Beacon',
         ],
     )
 
