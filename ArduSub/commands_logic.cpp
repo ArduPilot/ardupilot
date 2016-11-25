@@ -124,12 +124,6 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-#if PARACHUTE == ENABLED
-    case MAV_CMD_DO_PARACHUTE:                          // Mission command to configure or release parachute
-        do_parachute(cmd);
-        break;
-#endif
-
 #if GRIPPER_ENABLED == ENABLED
     case MAV_CMD_DO_GRIPPER:                            // Mission command to control gripper
         do_gripper(cmd);
@@ -234,7 +228,6 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-    case MAV_CMD_DO_PARACHUTE:  // assume parachute was released successfully
     case MAV_CMD_DO_GRIPPER:
     case MAV_CMD_DO_GUIDED_LIMITS:
         return true;
@@ -528,30 +521,6 @@ void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
     }
     gcs_send_text_fmt(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
 }
-
-
-#if PARACHUTE == ENABLED
-// do_parachute - configure or release parachute
-void Sub::do_parachute(const AP_Mission::Mission_Command& cmd)
-{
-    switch (cmd.p1) {
-        case PARACHUTE_DISABLE:
-            parachute.enabled(false);
-            Log_Write_Event(DATA_PARACHUTE_DISABLED);
-            break;
-        case PARACHUTE_ENABLE:
-            parachute.enabled(true);
-            Log_Write_Event(DATA_PARACHUTE_ENABLED);
-            break;
-        case PARACHUTE_RELEASE:
-            parachute_release();
-            break;
-        default:
-            // do nothing
-            break;
-    }
-}
-#endif
 
 #if GRIPPER_ENABLED == ENABLED
 // do_gripper - control gripper

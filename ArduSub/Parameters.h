@@ -73,9 +73,6 @@ public:
         // GPS object
         k_param_gps,
 
-        // Parachute object
-        k_param_parachute,
-
         // Landing gear object
         k_param_landinggear,    // 18
 

@@ -24,7 +24,6 @@ def build(bld):
             'AP_LeakDetector',
             'AP_Menu',
             'AP_Motors',
-            'AP_Parachute',
             'AP_RCMapper',
             'AP_Relay',
             'AP_ServoRelayEvents',
