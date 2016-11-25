@@ -84,7 +84,6 @@ public:
         k_param_rangefinder_gain,
         k_param_ch8_option,
         k_param_arming_check,
-        k_param_sprayer,
         k_param_angle_max,
         k_param_gps_hdop_good,
         k_param_battery,

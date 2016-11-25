@@ -423,10 +423,6 @@ void Sub::three_hz_loop()
     fence_check();
 #endif // AC_FENCE_ENABLED
 
-#if SPRAYER == ENABLED
-    sprayer.update();
-#endif
-
     update_events();
 
     // update ch6 in flight tuning
