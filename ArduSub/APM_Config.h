@@ -29,7 +29,6 @@
 //#define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 //#define OPTFLOW               DISABLED            // disable optical flow sensor to save 5K of flash space
-#define TRANSECT_ENABLED      DISABLED
 
 // features below are disabled by default on all boards
 //#define DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE   // disable mode changes from GCS during Radio failsafes.  Avoids a race condition for vehicle like Solo in which the RC and telemetry travel along the same link
