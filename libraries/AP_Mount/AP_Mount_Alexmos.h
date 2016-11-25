@@ -161,7 +161,7 @@ private:
     void get_boardinfo();
 
     // control_axis - send new angles to the gimbal at a fixed speed of 30 deg/s
-    void control_axis(const Vector3f& angle , bool targets_in_degrees);
+    void control_axis(const Vector3f& angle, bool targets_in_degrees, float boost = 1.0f);
 
     // read_params - read current profile profile_id and global parameters from the gimbal settings
     void read_params(uint8_t profile_id);
