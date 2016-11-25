@@ -86,7 +86,9 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_Terrain/AP_Terrain.h>
+#if RPM_ENABLED == ENABLED
 #include <AP_RPM/AP_RPM.h>
+#endif
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include "../libraries/AP_LeakDetector/AP_LeakDetector.h" // Leak detector
@@ -175,7 +177,9 @@ private:
         LowPassFilterFloat alt_cm_filt; // altitude filter
     } rangefinder_state = { false, false, 0, 0 };
 
+#if RPM_ENABLED == ENABLED
     AP_RPM rpm_sensor;
+#endif
 
     // Inertial Navigation EKF
     NavEKF EKF{&ahrs, barometer, rangefinder};
@@ -556,8 +560,10 @@ private:
     void send_vfr_hud(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
+#if RPM_ENABLED == ENABLED
     void send_rpm(mavlink_channel_t chan);
     void rpm_update();
+#endif
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
