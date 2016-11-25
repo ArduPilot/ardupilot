@@ -962,9 +962,11 @@ const AP_Param::Info Sub::var_info[] = {
 //    GOBJECT(motors, "MOT_",         AP_MotorsMulticopter),
 //#endif
 
+#if RCMAP_ENABLED == ENABLED
     // @Group: RCMAP_
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
     GOBJECT(rcmap, "RCMAP_",        RCMapper),
+#endif
 
     // @Group: EKF_
     // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp

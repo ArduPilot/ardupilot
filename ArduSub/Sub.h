@@ -81,7 +81,9 @@
 #include <AC_Fence/AC_Fence.h>           // ArduCopter Fence library
 #include <AC_Avoidance/AC_Avoid.h>           // Arducopter stop at fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
+#if RCMAP_ENABLED == ENABLED
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
+#endif
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
@@ -255,7 +257,9 @@ private:
     control_mode_t prev_control_mode;
     mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
 
+#if RCMAP_ENABLED == ENABLED
     RCMapper rcmap;
+#endif
 
     // board specific config
     AP_BoardConfig BoardConfig;
