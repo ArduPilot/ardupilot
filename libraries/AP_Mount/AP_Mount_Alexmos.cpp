@@ -21,15 +21,31 @@ void AP_Mount_Alexmos::update()
 
     read_incoming(); // read the incoming messages from the gimbal
 
+    bool mode_transition = false;
+    enum MAV_MOUNT_MODE mount_mode = get_mode();
+    if (_prev_mount_mode != mount_mode) {
+        mode_transition = true;
+    }
+    _prev_mount_mode = mount_mode;
+
     // update based on mount mode
-    switch(get_mode()) {
+    switch(mount_mode) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
+            if (mode_transition)
+            {
+                // H1_RAW: compensate NORTH once
+                compensate_mount_imu(AP_MOUNT_ALEXMOS_COMPENSATE_NORTH);
+            }
             control_axis(_state._retract_angles.get(), true);
             break;
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL:
+            if (mode_transition) {
+                // H1_RAW: compensate NORTH once
+                compensate_mount_imu(AP_MOUNT_ALEXMOS_COMPENSATE_NORTH);
+            }
             control_axis(_state._neutral_angles.get(), true);
             break;
 
@@ -57,6 +73,8 @@ void AP_Mount_Alexmos::update()
             // we do not know this mode so do nothing
             break;
     }
+
+    get_angles();
 }
 
 // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
@@ -78,8 +96,9 @@ void AP_Mount_Alexmos::status_msg(mavlink_channel_t chan)
     if (!_initialised) {
         return;
     }
+    // NOTE: this routine is called with the LOWEST possible priority 
+    // (hence requests for mount angles were moved elsewhere)
 
-    get_angles();
     mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100);
 }
 

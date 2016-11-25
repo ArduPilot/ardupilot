@@ -409,6 +409,8 @@ private:
 
     Vector3f _angle_ef_target_2x720;
 
+    enum MAV_MOUNT_MODE _prev_mount_mode;
+
     uint16_t _rt_data_timestamp;
 
     // CMD_READ_PARAMS has been called once
