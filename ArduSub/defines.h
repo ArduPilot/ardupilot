@@ -56,9 +56,12 @@ enum aux_sw_func {
     AUXSW_AUTOTUNE =            17, // auto tune
     AUXSW_LAND =                18, // change to LAND flight mode
     AUXSW_GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
-    AUXSW_PARACHUTE_ENABLE  =   21, // Parachute enable/disable
-    AUXSW_PARACHUTE_RELEASE =   22, // Parachute release
-    AUXSW_PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
+
+// No parachute for Sub, remove
+//    AUXSW_PARACHUTE_ENABLE  =   21, // Parachute enable/disable
+//    AUXSW_PARACHUTE_RELEASE =   22, // Parachute release
+//    AUXSW_PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
+
     AUXSW_MISSION_RESET =       24, // Reset auto mission to start from first command
     AUXSW_ATTCON_FEEDFWD =      25, // enable/disable the roll and pitch rate feed forward
     AUXSW_ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting
@@ -340,9 +343,9 @@ enum ThrowModeState {
 #define DATA_ACRO_TRAINER_LIMITED           45
 #define DATA_GRIPPER_GRAB                   46
 #define DATA_GRIPPER_RELEASE                47
-#define DATA_PARACHUTE_DISABLED             49
-#define DATA_PARACHUTE_ENABLED              50
-#define DATA_PARACHUTE_RELEASED             51
+//#define DATA_PARACHUTE_DISABLED             49 // Remove
+//#define DATA_PARACHUTE_ENABLED              50 // Remove
+//#define DATA_PARACHUTE_RELEASED             51 // Remove
 #define DATA_LANDING_GEAR_DEPLOYED          52
 #define DATA_LANDING_GEAR_RETRACTED         53
 #define DATA_MOTORS_EMERGENCY_STOPPED       54
@@ -377,7 +380,7 @@ enum ThrowModeState {
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
 //#define ERROR_SUBSYSTEM_FLIP                13
 #define ERROR_SUBSYSTEM_AUTOTUNE            14
-#define ERROR_SUBSYSTEM_PARACHUTE           15
+//#define ERROR_SUBSYSTEM_PARACHUTE           15 // Remove
 #define ERROR_SUBSYSTEM_EKFCHECK            16
 #define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
 #define ERROR_SUBSYSTEM_BARO                18
@@ -411,9 +414,6 @@ enum ThrowModeState {
 #define ERROR_CODE_FAILED_CIRCLE_INIT       4
 #define ERROR_CODE_DEST_OUTSIDE_FENCE       5
 
-// parachute failed to deploy because of low altitude or landed
-#define ERROR_CODE_PARACHUTE_TOO_LOW        2
-#define ERROR_CODE_PARACHUTE_LANDED         3
 // EKF check definitions
 #define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
 #define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0

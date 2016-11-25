@@ -235,8 +235,6 @@ void Sub::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_ACRO_TRAINER:
         case AUXSW_GRIPPER:
         case AUXSW_SPRAYER:
-        case AUXSW_PARACHUTE_ENABLE:
-        case AUXSW_PARACHUTE_3POS:      // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
         case AUXSW_RETRACT_MOUNT:
         case AUXSW_MISSION_RESET:
         case AUXSW_ATTCON_FEEDFWD:
@@ -440,37 +438,6 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 //                }
 //            }
             break;
-
-#if PARACHUTE == ENABLED
-        case AUXSW_PARACHUTE_ENABLE:
-            // Parachute enable/disable
-            parachute.enabled(ch_flag == AUX_SWITCH_HIGH);
-            break;
-
-        case AUXSW_PARACHUTE_RELEASE:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                parachute_manual_release();
-            }
-            break;
-
-        case AUXSW_PARACHUTE_3POS:
-            // Parachute disable, enable, release with 3 position switch
-            switch (ch_flag) {
-                case AUX_SWITCH_LOW:
-                    parachute.enabled(false);
-                    Log_Write_Event(DATA_PARACHUTE_DISABLED);
-                    break;
-                case AUX_SWITCH_MIDDLE:
-                    parachute.enabled(true);
-                    Log_Write_Event(DATA_PARACHUTE_ENABLED);
-                    break;
-                case AUX_SWITCH_HIGH:
-                    parachute.enabled(true);
-                    parachute_manual_release();
-                    break;
-            }
-            break;
-#endif
 
         case AUXSW_MISSION_RESET:
             if (ch_flag == AUX_SWITCH_HIGH) {
