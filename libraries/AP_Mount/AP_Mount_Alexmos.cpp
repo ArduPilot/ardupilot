@@ -37,7 +37,14 @@ void AP_Mount_Alexmos::update()
                 // H1_RAW: compensate NORTH once
                 compensate_mount_imu(AP_MOUNT_ALEXMOS_COMPENSATE_NORTH);
             }
-            control_axis(_state._retract_angles.get(), true);
+
+            {
+                Vector3f retract_target = Vector3f(0.0f, 0.0f, _frontend._ahrs.yaw*RAD_TO_DEG);
+                retract_target += _state._retract_angles.get();
+
+                update_target_2x720(_angle_ef_target_2x720, retract_target, true, true);
+            }
+            control_axis(_angle_ef_target_2x720, true);
             break;
 
         // move mount to a neutral position, typically pointing forward
@@ -46,26 +53,36 @@ void AP_Mount_Alexmos::update()
                 // H1_RAW: compensate NORTH once
                 compensate_mount_imu(AP_MOUNT_ALEXMOS_COMPENSATE_NORTH);
             }
-            control_axis(_state._neutral_angles.get(), true);
+
+            {
+                Vector3f neutral_target = Vector3f(0.0f, 0.0f, _frontend._ahrs.yaw*RAD_TO_DEG);
+                neutral_target += _state._neutral_angles.get();
+
+                update_target_2x720(_angle_ef_target_2x720, neutral_target, true, true);
+            }
+            control_axis(_angle_ef_target_2x720, true);
             break;
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            control_axis(_angle_ef_target_rad, false);
+            update_target_2x720(_angle_ef_target_2x720, _angle_ef_target_rad*RAD_TO_DEG, true, true);
+            control_axis(_angle_ef_target_2x720, true);
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
             // update targets using pilot's rc inputs
-            update_targets_from_rc();
-            control_axis(_angle_ef_target_rad, false);
+            update_targets_from_rc(true); //do_wrap_yaw
+            update_target_2x720(_angle_ef_target_2x720, _angle_ef_target_rad*RAD_TO_DEG, true, true);
+            control_axis(_angle_ef_target_2x720, true);
             break;
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
             if(_frontend._ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
                 calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true, false);
-                control_axis(_angle_ef_target_rad, false);
+                update_target_2x720(_angle_ef_target_2x720, _angle_ef_target_rad*RAD_TO_DEG, true, true);
+                control_axis(_angle_ef_target_2x720, true);
             }
             break;
 
