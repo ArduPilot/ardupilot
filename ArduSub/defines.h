@@ -388,7 +388,7 @@ enum ThrowModeState {
 #define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
 #define ERROR_SUBSYSTEM_BARO                18
 #define ERROR_SUBSYSTEM_CPU                 19
-#define ERROR_SUBSYSTEM_FAILSAFE_ADSB       20
+//#define ERROR_SUBSYSTEM_FAILSAFE_ADSB       20 // Remove
 #define ERROR_SUBSYSTEM_TERRAIN             21
 #define ERROR_SUBSYSTEM_NAVIGATION          22
 #define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23

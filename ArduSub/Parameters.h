@@ -113,8 +113,6 @@ public:
 
         k_param_fence,
 
-        // AP_ADSB Library
-        k_param_adsb,                   // 72
 		k_param_notify, 				// 73
 
         //
