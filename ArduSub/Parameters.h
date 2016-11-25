@@ -456,9 +456,11 @@ public:
 
 
     // Autotune
+#if AUTOTUNE_ENABLED == ENABLED
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
     AP_Float                autotune_min_d;
+#endif
 
     AP_Float				surface_depth;
 
