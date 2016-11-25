@@ -35,7 +35,7 @@ void AP_Mount_Alexmos::update()
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
+            control_axis(_angle_ef_target_rad, false);
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
@@ -48,7 +48,7 @@ void AP_Mount_Alexmos::update()
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
             if(_frontend._ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, false);
+                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true, false);
                 control_axis(_angle_ef_target_rad, false);
             }
             break;
