@@ -86,7 +86,6 @@
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
-#include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_RPM/AP_RPM.h>
@@ -497,9 +496,6 @@ private:
     AC_Sprayer sprayer;
 #endif
 
-    // Landing Gear Controller
-    AP_LandingGear landinggear;
-
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     AP_Terrain terrain;
@@ -792,7 +788,6 @@ private:
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
-    void landinggear_update();
     void update_notify();
     void motor_test_output();
     bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc);
