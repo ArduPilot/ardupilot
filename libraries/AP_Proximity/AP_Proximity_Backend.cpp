@@ -65,6 +65,55 @@ bool AP_Proximity_Backend::get_closest_object(float& angle_deg, float &distance)
     return sector_found;
 }
 
+// get distances in 8 directions. used for sending distances to ground station
+bool AP_Proximity_Backend::get_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const
+{
+    // exit immediately if we have no good ranges
+    bool valid_distances = false;
+    for (uint8_t i=0; i<_num_sectors; i++) {
+        if (_distance_valid[i]) {
+            valid_distances = true;
+        }
+    }
+    if (!valid_distances) {
+        return false;
+    }
+
+    // initialise orientations and directions
+    //  see MAV_SENSOR_ORIENTATION for orientations (0 = forward, 1 = 45 degree clockwise from north, etc)
+    //  distances initialised to maximum distances
+    bool dist_set[8];
+    for (uint8_t i=0; i<8; i++) {
+        prx_dist_array.orientation[i] = i;
+        prx_dist_array.distance[i] = distance_max();
+        dist_set[i] = false;
+    }
+
+    // cycle through all sectors filling in distances
+    for (uint8_t i=0; i<_num_sectors; i++) {
+        if (_distance_valid[i]) {
+            // convert angle to orientation
+            int16_t orientation = _angle[i] / 45;
+            if ((orientation >= 0) && (orientation < 8) && (_distance[i] < prx_dist_array.distance[orientation])) {
+                prx_dist_array.distance[orientation] = _distance[i];
+                dist_set[orientation] = true;
+            }
+        }
+    }
+
+    // fill in missing orientations with average of adjacent orientations if necessary and possible
+    for (uint8_t i=0; i<8; i++) {
+        if (!dist_set[i]) {
+            uint8_t orient_before = (i==0) ? 7 : (i-1);
+            uint8_t orient_after = (i==7) ? 0 : (i+1);
+            if (dist_set[orient_before] && dist_set[orient_after]) {
+                prx_dist_array.distance[i] = (prx_dist_array.distance[orient_before] + prx_dist_array.distance[orient_after]) / 2.0f;
+            }
+        }
+    }
+    return true;
+}
+
 // get boundary points around vehicle for use by avoidance
 //   returns nullptr and sets num_points to zero if no boundary can be returned
 const Vector2f* AP_Proximity_Backend::get_boundary_points(uint16_t& num_points) const

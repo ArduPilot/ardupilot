@@ -306,3 +306,31 @@ bool AP_Proximity::get_closest_object(float& angle_deg, float &distance) const
     // get closest object from backend
     return drivers[primary_instance]->get_closest_object(angle_deg, distance);
 }
+
+// get distances in 8 directions. used for sending distances to ground station
+bool AP_Proximity::get_distances(Proximity_Distance_Array &prx_dist_array) const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return 0.0f;
+    }
+    // get maximum distance from backend
+    return drivers[primary_instance]->get_distances(prx_dist_array);
+}
+
+// get maximum and minimum distances (in meters) of primary sensor
+float AP_Proximity::distance_max() const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return 0.0f;
+    }
+    // get maximum distance from backend
+    return drivers[primary_instance]->distance_max();
+}
+float AP_Proximity::distance_min() const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return 0.0f;
+    }
+    // get minimum distance from backend
+    return drivers[primary_instance]->distance_min();
+}

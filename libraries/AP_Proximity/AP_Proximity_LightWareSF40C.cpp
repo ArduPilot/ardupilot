@@ -69,6 +69,16 @@ void AP_Proximity_LightWareSF40C::update(void)
     }
 }
 
+// get maximum and minimum distances (in meters) of primary sensor
+float AP_Proximity_LightWareSF40C::distance_max() const
+{
+    return 100.0f;
+}
+float AP_Proximity_LightWareSF40C::distance_min() const
+{
+    return 0.20f;
+}
+
 // initialise sensor (returns true if sensor is succesfully initialised)
 bool AP_Proximity_LightWareSF40C::initialise()
 {

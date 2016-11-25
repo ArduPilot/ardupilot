@@ -80,6 +80,19 @@ public:
     //   returns true on success, false if no valid readings
     bool get_closest_object(float& angle_deg, float &distance) const;
 
+    // stucture holding distances in 8 directions
+    struct Proximity_Distance_Array {
+        uint8_t orientation[8]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)
+        float distance[8];      // distance in meters
+    };
+
+    // get distances in 8 directions. used for sending distances to ground station
+    bool get_distances(Proximity_Distance_Array &prx_dist_array) const;
+
+    // get maximum and minimum distances (in meters) of primary sensor
+    float distance_max() const;
+    float distance_min() const;
+
     // The Proximity_State structure is filled in by the backend driver
     struct Proximity_State {
         uint8_t                 instance;   // the instance number of this proximity sensor

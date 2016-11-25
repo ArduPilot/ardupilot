@@ -22,8 +22,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define PROXIMITY_MAX_RANGE 200
-#define PROXIMITY_ACCURACY 0.1
+#define PROXIMITY_MAX_RANGE 200.0f
+#define PROXIMITY_ACCURACY 0.1f
 
 /* 
    The constructor also initialises the proximity sensor. 
@@ -113,6 +113,16 @@ bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) 
     }
     distance = min_dist;
     return true;
+}
+
+// get maximum and minimum distances (in meters) of primary sensor
+float AP_Proximity_SITL::distance_max() const
+{
+    return PROXIMITY_MAX_RANGE;
+}
+float AP_Proximity_SITL::distance_min() const
+{
+    return 0.0f;
 }
 
 #endif // CONFIG_HAL_BOARD
