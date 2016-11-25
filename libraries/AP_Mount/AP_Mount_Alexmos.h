@@ -137,6 +137,9 @@ public:
     // status_msg - called to allow mounts to send their status to GCS via MAVLink
     virtual void status_msg(mavlink_channel_t chan) ;
 
+    // mount IMU helper mode
+    virtual void trigger_imu_helper(uint8_t mntCal);
+
 private:
 
     // get_angles -

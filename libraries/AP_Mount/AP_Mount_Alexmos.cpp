@@ -83,6 +83,12 @@ void AP_Mount_Alexmos::status_msg(mavlink_channel_t chan)
     mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100);
 }
 
+// camera rig parameters
+void AP_Mount_Alexmos::trigger_imu_helper(uint8_t mntCal)
+{
+    compensate_mount_imu(mntCal);
+}
+
 /*
  * get_angles
  */
