@@ -80,7 +80,7 @@ public:
 protected:
 
     // update_targets_from_rc - updates angle targets (i.e. _angle_ef_target_rad) using input from receiver
-    void update_targets_from_rc();
+    void update_targets_from_rc(bool do_wrap_yaw = false);
 
     // angle_input, angle_input_rad - convert RC input into an earth-frame target angle
     int32_t angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
