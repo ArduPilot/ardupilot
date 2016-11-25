@@ -23,6 +23,27 @@
 #include "Scheduler.h"
 #include "Semaphores.h"
 
+/*
+  NuttX on STM32 doesn't produce the exact SPI bus frequency
+  requested. This is a table mapping requested to achieved SPI
+  frequency:
+
+  2  -> 1.3 MHz
+  4  -> 2.6 MHz
+  6  -> 5.3 MHz
+  8  -> 5.3 MHz
+  10 -> 5.3 MHz
+  11 -> 10
+  12 -> 10
+  13 -> 10
+  14 -> 10
+  16 -> 10
+  18 -> 10
+  20 -> 10
+  21 -> 20
+  28 -> 20
+ */
+
 namespace PX4 {
 
 #define MHZ (1000U*1000U)
