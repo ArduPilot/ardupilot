@@ -448,9 +448,10 @@ public:
 
 
 
-
+#if TRANSECT_ENABLED == ENABLED
 	AC_PID pid_crosstrack_control;
 	AC_PID pid_heading_control;
+#endif
 
 
     // Autotune
@@ -492,11 +493,13 @@ public:
         //----------------------------------------------------------------------
         p_pos_xy                (POS_XY_P),
 
-        p_alt_hold              (ALT_HOLD_P),
+        p_alt_hold              (ALT_HOLD_P)
 
+#if TRANSECT_ENABLED == ENABLED
+		,
 		pid_crosstrack_control  (XTRACK_P,        XTRACK_I,         XTRACK_D,       XTRACK_IMAX,        XTRACK_FILT_HZ,      XTRACK_DT),
-
 		pid_heading_control     (HEAD_P,		  HEAD_I,           HEAD_D,         HEAD_IMAX,          HEAD_FILT_HZ,       HEAD_DT)
+#endif
 
     {
     }
