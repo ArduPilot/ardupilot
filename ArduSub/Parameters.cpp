@@ -986,10 +986,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
-
-    // @Group: RSSI_
-    // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
-    GOBJECT(rssi, "RSSI_",  AP_RSSI),      
     
 #if RANGEFINDER_ENABLED == ENABLED
     // @Group: RNGFND
