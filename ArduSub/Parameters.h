@@ -138,7 +138,6 @@ public:
         k_param_gcs1,
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
-        k_param_telem_delay,
         k_param_gcs2,
         k_param_serial_manager,
         k_param_ch9_option,
@@ -297,7 +296,6 @@ public:
     //
     AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
-    AP_Int8         telem_delay;
 #if CLI_ENABLED == ENABLED
     AP_Int8         cli_enabled;
 #endif
