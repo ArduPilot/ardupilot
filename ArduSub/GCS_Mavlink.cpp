@@ -711,9 +711,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         break;
 
     case MSG_ADSB_VEHICLE:
-		CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
-		sub.adsb.send_adsb_vehicle(chan);
-		break;
+		break; // Do nothing for Sub, here to prevent warning
     }
 
     return true;
@@ -801,15 +799,6 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  0),
-
-    // @Param: ADSB
-    // @DisplayName: ADSB stream rate to ground station
-    // @Description: ADSB stream rate to ground station
-    // @Units: Hz
-    // @Range: 0 50
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("ADSB",   9, GCS_MAVLINK, streamRates[9],  5),
 AP_GROUPEND
 };
 
@@ -918,10 +907,6 @@ GCS_MAVLINK_Sub::data_stream_send(void)
     }
 
     if (sub.gcs_out_of_time) return;
-
-    if (stream_trigger(STREAM_ADSB)) {
-        send_message(MSG_ADSB_VEHICLE);
-    }
 }
 
 
@@ -1975,9 +1960,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         }
         break;
     }
-
-    case MAVLINK_MSG_ID_ADSB_VEHICLE:
-        break;
 
     case MAVLINK_MSG_ID_SETUP_SIGNING:
         handle_setup_signing(msg);
