@@ -122,9 +122,6 @@ void Sub::init_ardupilot()
 
     // initialise battery monitor
     battery.init();
-
-    // Init RSSI
-    rssi.init();
     
     barometer.init();
 

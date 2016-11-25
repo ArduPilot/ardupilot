@@ -180,13 +180,6 @@ void Sub::read_battery(void)
     }
 }
 
-// read the receiver RSSI as an 8 bit number for MAVLink
-// RC_CHANNELS_SCALED message
-void Sub::read_receiver_rssi(void)
-{
-    receiver_rssi = rssi.read_receiver_rssi_uint8();
-}
-
 void Sub::compass_cal_update()
 {
     if (!hal.util->get_soft_armed()) {

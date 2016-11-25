@@ -335,7 +335,7 @@ void NOINLINE Sub::send_servo_out(mavlink_channel_t chan)
         10000 * g.rc_2.norm_output(),
         10000 * g.rc_3.norm_output(),
         10000 * g.rc_4.norm_output(),
-        receiver_rssi);
+        0);
 #endif // HIL_MODE
 }
 
@@ -548,7 +548,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        send_radio_in(sub.receiver_rssi);
+        send_radio_in(0);
         break;
 
     case MSG_RADIO_OUT:
