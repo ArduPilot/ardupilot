@@ -89,7 +89,44 @@ void AP_Mount_Alexmos::status_msg(mavlink_channel_t chan)
 void AP_Mount_Alexmos::get_angles()
 {
     uint8_t data[1] = {(uint8_t)1};
-    send_command(CMD_GET_ANGLES, data, 1);
+    send_command(CMD_GET_ANGLES_EXT, data, 1);
+}
+
+/*
+ * set_data_stream_interval
+ */
+void AP_Mount_Alexmos::set_data_stream_interval()
+{
+    alexmos_parameters outgoing_buffer;
+
+    outgoing_buffer.dstream_interval.cmd_id = CMD_REALTIME_DATA_CUSTOM;
+    outgoing_buffer.dstream_interval.interval_ms = 1250; // cycles x 0.8msec = 1sec
+
+    outgoing_buffer.dstream_interval.config = (uint32_t)0x40; 
+    // bit3<<24: translate from camera to frame  : bit6: IMU attitude as RotMat
+
+    outgoing_buffer.dstream_interval.res0 = 0;
+    outgoing_buffer.dstream_interval.res1 = 0;
+    send_command(CMD_DATA_STREAM_INTERVAL,
+                    (uint8_t *)&outgoing_buffer.dstream_interval,
+                    sizeof(alexmos_data_stream_interval));
+}
+
+/*
+ *  set_ahrs_helper
+ */
+void AP_Mount_Alexmos::set_ahrs_helper(uint8_t mode, const Vector3f& zenith, const Vector3f& north)
+{
+
+    alexmos_parameters outgoing_buffer;
+    outgoing_buffer.ahrs_helper.mode = mode;
+    for(uint8_t i = 0; i<3; i++)
+    {
+        outgoing_buffer.ahrs_helper.zenith[i] = zenith[i];
+        outgoing_buffer.ahrs_helper.north[i] = north[i];
+    }
+    send_command(CMD_AHRS_HELPER, (uint8_t *)&outgoing_buffer.ahrs_helper, sizeof(alexmos_ahrs_helper));
+
 }
 
 /*
@@ -200,12 +237,53 @@ void AP_Mount_Alexmos::parse_body()
             _current_angle.z = VALUE_TO_DEGREE(_buffer.angles.angle_yaw);
             break;
 
+        case CMD_GET_ANGLES_EXT:
+            // Alexmoss Pitch/Tilt is positive when pointing downward
+            _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.angle_roll);
+            _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.angle_pitch);
+            _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw);
+
+            _current_stat_rot_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_roll);
+            _current_stat_rot_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_pitch); 
+            _current_stat_rot_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_yaw);
+
+            break;
+
         case CMD_READ_PARAMS:
             _param_read_once = true;
             _current_parameters.params = _buffer.params;
             break;
 
         case CMD_WRITE_PARAMS:
+            break;
+
+        case CMD_AHRS_HELPER:
+            _current_zenith.x = _buffer.ahrs_helper.zenith[0];
+            _current_zenith.y = _buffer.ahrs_helper.zenith[1];
+            _current_zenith.z = _buffer.ahrs_helper.zenith[2];
+
+            _current_north.x = _buffer.ahrs_helper.north[0];
+            _current_north.y = _buffer.ahrs_helper.north[1];
+            _current_north.z = _buffer.ahrs_helper.north[2];
+            break;
+
+        case CMD_REALTIME_DATA_CUSTOM:
+            _rt_data_timestamp = _buffer.rt_data_custom.time_ms;
+
+            _current_zenith.x = _buffer.rt_data_custom.zenith[0];
+            _current_zenith.y = _buffer.rt_data_custom.zenith[1];
+            _current_zenith.z = _buffer.rt_data_custom.zenith[2];
+
+            _current_north.x = _buffer.rt_data_custom.north[0];
+            _current_north.y = _buffer.rt_data_custom.north[1];
+            _current_north.z = _buffer.rt_data_custom.north[2];
+            break;
+
+        case CMD_CONFIRM:
+            _last_command_confirmed = true;
+            break;
+
+        case CMD_ERROR:
             break;
 
         default :
