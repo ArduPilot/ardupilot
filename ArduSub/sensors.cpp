@@ -84,6 +84,7 @@ bool Sub::rangefinder_alt_ok()
 /*
   update RPM sensors
  */
+#if RPM_ENABLED == ENABLED
 void Sub::rpm_update(void)
 {
     rpm_sensor.update();
@@ -93,6 +94,7 @@ void Sub::rpm_update(void)
         }
     }
 }
+#endif
 
 // initialise compass
 void Sub::init_compass()

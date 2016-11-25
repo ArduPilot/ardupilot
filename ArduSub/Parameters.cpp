@@ -996,9 +996,11 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(optflow,   "FLOW", OpticalFlow),
 #endif
 
+#if RPM_ENABLED == ENABLED
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
+#endif
 
 #if AUTOTUNE_ENABLED == ENABLED
     // @Param: AUTOTUNE_AXES
