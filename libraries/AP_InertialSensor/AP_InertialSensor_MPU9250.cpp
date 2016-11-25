@@ -605,15 +605,13 @@ bool AP_InertialSensor_MPU9250::_read_sample()
     }
     
 check_registers:
-    if (_reg_check_counter++ == 10) {
-        _reg_check_counter = 0;
-        // check next register value for correctness
-        if (!_dev->check_next_register()) {
-            _inc_gyro_error_count(_gyro_instance);
-            _inc_accel_error_count(_accel_instance);
-        }
+    // check next register value for correctness
+    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    if (!_dev->check_next_register()) {
+        _inc_gyro_error_count(_gyro_instance);
+        _inc_accel_error_count(_accel_instance);
     }
-    
+    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
     return true;
 }
 
@@ -642,7 +640,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     }
 
     // setup for register checking
-    _dev->setup_checked_registers(6);
+    _dev->setup_checked_registers(6, 20);
 
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
