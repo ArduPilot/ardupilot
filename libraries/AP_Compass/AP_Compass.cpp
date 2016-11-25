@@ -572,13 +572,9 @@ void Compass::_detect_backends(void)
     ADD_BACKEND(AP_Compass_LSM303D::probe(*this, hal.spi->get_device("lsm9ds0_am")),
                  AP_Compass_LSM303D::name, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BH
-    // In BH, only one compass should be detected
-    bool ret = ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
-                            AP_Compass_HMC5843::name, false);
-    if (!ret) {
-        ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
-                     AP_Compass_AK8963::name, false);
-    }
+    ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
+                AP_Compass_HMC5843::name, false);
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0), AP_Compass_AK8963::name, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QFLIGHT
     ADD_BACKEND(AP_Compass_QFLIGHT::detect(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BBBMINI
