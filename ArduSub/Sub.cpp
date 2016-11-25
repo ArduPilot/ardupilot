@@ -91,9 +91,6 @@ Sub::Sub(void) :
 #if SPRAYER == ENABLED
     sprayer(&inertial_nav),
 #endif
-#if PARACHUTE == ENABLED
-    parachute(relay),
-#endif
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     terrain(ahrs, mission, rally),
 #endif

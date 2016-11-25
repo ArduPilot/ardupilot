@@ -105,9 +105,6 @@
 #if GRIPPER_ENABLED == ENABLED
 #include <AP_Gripper/AP_Gripper.h>             // gripper stuff
 #endif
-#if PARACHUTE == ENABLED
-#include <AP_Parachute/AP_Parachute.h>       // Parachute release library
-#endif
 #if PRECISION_LANDING == ENABLED
 #include <AC_PrecLand/AC_PrecLand.h>
 #include <AP_IRLock/AP_IRLock.h>
@@ -500,11 +497,6 @@ private:
     AC_Sprayer sprayer;
 #endif
 
-    // Parachute release
-#if PARACHUTE == ENABLED
-    AP_Parachute parachute;
-#endif
-
     // Landing Gear Controller
     AP_LandingGear landinggear;
 
@@ -766,9 +758,6 @@ private:
     bool manual_init(bool ignore_checks);
     void manual_run();
     void crash_check();
-    void parachute_check();
-    void parachute_release();
-    void parachute_manual_release();
     void ekf_check();
     bool ekf_over_threshold();
     void failsafe_ekf_event();
@@ -935,9 +924,6 @@ private:
 #if CAMERA == ENABLED
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-#endif
-#if PARACHUTE == ENABLED
-    void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
 #if GRIPPER_ENABLED == ENABLED
     void do_gripper(const AP_Mission::Mission_Command& cmd);

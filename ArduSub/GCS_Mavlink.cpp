@@ -1546,30 +1546,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif
             break;
 
-#if PARACHUTE == ENABLED
-        case MAV_CMD_DO_PARACHUTE:
-            // configure or release parachute
-            result = MAV_RESULT_ACCEPTED;
-            switch ((uint16_t)packet.param1) {
-                case PARACHUTE_DISABLE:
-                    sub.parachute.enabled(false);
-                    sub.Log_Write_Event(DATA_PARACHUTE_DISABLED);
-                    break;
-                case PARACHUTE_ENABLE:
-                    sub.parachute.enabled(true);
-                    sub.Log_Write_Event(DATA_PARACHUTE_ENABLED);
-                    break;
-                case PARACHUTE_RELEASE:
-                    // treat as a manual release which performs some additional check of altitude
-                    sub.parachute_manual_release();
-                    break;
-                default:
-                    result = MAV_RESULT_FAILED;
-                    break;
-            }
-            break;
-#endif
-
         case MAV_CMD_DO_MOTOR_TEST:
             // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
             // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
