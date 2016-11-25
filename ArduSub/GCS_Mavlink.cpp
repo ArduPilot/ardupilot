@@ -468,11 +468,6 @@ void Sub::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-uint32_t GCS_MAVLINK_Sub::telem_delay() const
-{
-    return (uint32_t)(sub.g.telem_delay);;
-}
-
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 {
