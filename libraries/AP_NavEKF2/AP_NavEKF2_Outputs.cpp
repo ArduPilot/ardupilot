@@ -39,25 +39,19 @@ bool NavEKF2_core::healthy(void) const
     return true;
 }
 
-// Return a consolidated fault score where higher numbers are less healthy
+// Return a consolidated error score where higher numbers represent larger errors
 // Intended to be used by the front-end to determine which is the primary EKF
-float NavEKF2_core::faultScore(void) const
+float NavEKF2_core::errorScore() const
 {
     float score = 0.0f;
-    // If velocity, position or height measurements are failing consistency checks, this adds to the score
-    if (velTestRatio > 1.0f) {
-        score += velTestRatio-1.0f;
-    }
-    if (posTestRatio > 1.0f) {
-        score += posTestRatio-1.0f;
-    }
-    if (hgtTestRatio > 1.0f) {
-        score += hgtTestRatio-1.0f;
-    }
-    // If the tilt error is excessive this adds to the score
-    const float tiltErrThreshold = 0.05f;
-    if (tiltAlignComplete && yawAlignComplete && tiltErrFilt > tiltErrThreshold) {
-        score += tiltErrFilt / tiltErrThreshold;
+    if (tiltAlignComplete && yawAlignComplete) {
+        // Check GPS fusion performance
+        score = MAX(score, 0.5f * (velTestRatio + posTestRatio));
+        // Check altimeter fusion performance
+        score = MAX(score, hgtTestRatio);
+        // Check attitude corrections
+        const float tiltErrThreshold = 0.05f;
+        score = MAX(score, tiltErrFilt / tiltErrThreshold);
     }
     return score;
 }
@@ -158,6 +152,14 @@ uint32_t NavEKF2_core::getLastPosNorthEastReset(Vector2f &pos) const
 {
     pos = posResetNE;
     return lastPosReset_ms;
+}
+
+// return the amount of vertical position change due to the last vertical position reset in metres
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF2_core::getLastPosDownReset(float &posD) const
+{
+    posD = posResetD;
+    return lastPosResetD_ms;
 }
 
 // return the amount of NE velocity change due to the last velocity reset in metres/sec

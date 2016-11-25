@@ -16,9 +16,6 @@
 class AP_MPU9250_AuxiliaryBus;
 class AP_MPU9250_AuxiliaryBusSlave;
 
-// enable debug to see a register dump on startup
-#define MPU9250_DEBUG 0
-
 class AP_InertialSensor_MPU9250 : public AP_InertialSensor_Backend
 {
     friend AP_MPU9250_AuxiliaryBus;
@@ -40,7 +37,8 @@ public:
                                             enum Rotation rotation = ROTATION_NONE);
 
     /* update accel and gyro state */
-    bool update();
+    bool update() override;
+    void accumulate() override;
 
     /*
      * Return an AuxiliaryBus if the bus driver allows it
@@ -54,10 +52,6 @@ private:
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
                               enum Rotation rotation);
 
-#if MPU9250_DEBUG
-    static void _dump_registers();
-#endif
-
     bool _init();
     bool _hardware_init();
 
@@ -68,7 +62,6 @@ private:
     bool _read_sample();
 
     void _fifo_reset();
-    void _fifo_enable();
     
     /* Check if there's data available by reading register */
     bool _data_ready();
@@ -80,9 +73,8 @@ private:
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val, bool checked=false);
 
-    void _accumulate(uint8_t *samples, uint8_t n_samples);
-    void _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
-    void _check_temperature(void);
+    bool _accumulate(uint8_t *samples, uint8_t n_samples, int16_t raw_temp);
+    bool _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples, int16_t raw_temp);
 
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
@@ -99,23 +91,22 @@ private:
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
 
-    // has master i2c been enabled?
-    bool _master_i2c_enable;
-    
-    // last temperature reading, used to detect FIFO errors
-    float _last_temp;
-    uint8_t _temp_counter;
+    // Last status from register user control
+    uint8_t _last_stat_user_ctrl;
 
     // buffer for fifo read
     uint8_t *_fifo_buffer;
 
-    uint8_t _reg_check_counter;
-
-    // accumulators for fast sampling
+    /*
+      accumulators for fast sampling
+      See description in _accumulate_fast_sampling()
+    */
     struct {
-        Vector3l accel;
-        Vector3l gyro;
+        Vector3f accel;
+        Vector3f gyro;
         uint8_t count;
+        LowPassFilterVector3f accel_filter{8000, 188};
+        LowPassFilterVector3f gyro_filter{8000, 188};
     } _accum;
 };
 

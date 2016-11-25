@@ -61,14 +61,20 @@ void DigitalLPF<T>::reset(T value) {
 ////////////////////////////////////////////////////////////////////////////////////////////
 // LowPassFilter
 ////////////////////////////////////////////////////////////////////////////////////////////
+
+// constructors
 template <class T>
-LowPassFilter<T>::LowPassFilter() : _cutoff_freq(0.0f) { 
-  
-}
-// constructor
+LowPassFilter<T>::LowPassFilter() :
+    _cutoff_freq(0.0f) {}
+
 template <class T>
-LowPassFilter<T>::LowPassFilter(float cutoff_freq) : _cutoff_freq(cutoff_freq) { 
-  
+LowPassFilter<T>::LowPassFilter(float cutoff_freq) :
+    _cutoff_freq(cutoff_freq) {}
+
+template <class T>
+LowPassFilter<T>::LowPassFilter(float sample_freq, float cutoff_freq)
+{
+    set_cutoff_frequency(sample_freq, cutoff_freq);
 }
 
 // change parameters

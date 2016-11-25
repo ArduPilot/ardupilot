@@ -280,6 +280,30 @@ float AP_Baro::get_calibration_temperature(uint8_t instance) const
 }
 
 
+bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
+{
+    if (!backend) {
+        return false;
+    }
+    if (_num_drivers >= BARO_MAX_DRIVERS) {
+        AP_HAL::panic("Too many barometer drivers");
+    }
+    drivers[_num_drivers++] = backend;
+    return true;
+}
+
+/*
+  macro to add a backend with check for too many sensors
+ We don't try to start more than the maximum allowed
+ */
+#define ADD_BACKEND(backend) \
+    do { _add_backend(backend);     \
+       if (_num_drivers == BARO_MAX_DRIVERS || \
+          _num_sensors == BARO_MAX_INSTANCES) { \
+          return; \
+       } \
+    } while (0)
+
 /*
   initialise the barometer object, loading backend drivers
  */
@@ -294,26 +318,27 @@ void AP_Baro::init(void)
 #if HAL_BARO_DEFAULT == HAL_BARO_PX4 || HAL_BARO_DEFAULT == HAL_BARO_VRBRAIN
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PX4V1) {
 #ifdef HAL_BARO_MS5611_I2C_BUS
-        drivers[0] = new AP_Baro_MS5611(*this,
-                                        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR)));
-        _num_drivers = 1;
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR))));
 #endif
     } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK ||
                AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI ||
                AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM) {
-        drivers[0] = new AP_Baro_MS5611(*this,
-                                        std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
-        _num_drivers = 1;
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
     } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
-        drivers[0] = new AP_Baro_MS5611(*this,
-                                        std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME)));
-        drivers[1] = new AP_Baro_MS5611(*this,
-                                        std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
-        _num_drivers = 2;
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
+        // can have baro on I2C too
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(0, HAL_BARO_MS5611_I2C_ADDR))));
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(1, HAL_BARO_MS5611_I2C_ADDR))));
     } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
-        drivers[0] = new AP_Baro_MS5611(*this,
-                                        std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME)));
-        _num_drivers = 1;
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME))));
     } else {
         drivers[0] = new AP_Baro_PX4(*this);
         _num_drivers = 1;
@@ -326,21 +351,19 @@ void AP_Baro::init(void)
         std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR)));
     _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_I2C
-    drivers[0] = new AP_Baro_MS5611(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR)));
-    _num_drivers = 1;
+    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR))));
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_SPI
-    drivers[0] = new AP_Baro_MS5611(*this,
-        std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
-    _num_drivers = 1;
+    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                      std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5607_I2C
-    drivers[0] = new AP_Baro_MS5607(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)));
-    _num_drivers = 1;
+    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)),
+                                      AP_Baro_MS56XX::BARO_MS5607));
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5637_I2C
-    drivers[0] = new AP_Baro_MS5637(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5637_I2C_BUS, HAL_BARO_MS5637_I2C_ADDR)));
-    _num_drivers = 1;
+    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5637_I2C_BUS, HAL_BARO_MS5637_I2C_ADDR)),
+                                      AP_Baro_MS56XX::BARO_MS5637));
 #elif HAL_BARO_DEFAULT == HAL_BARO_QFLIGHT
     drivers[0] = new AP_Baro_QFLIGHT(*this);
     _num_drivers = 1;
