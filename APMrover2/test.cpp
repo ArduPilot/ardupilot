@@ -147,7 +147,7 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 
 	oldSwitchPosition = readSwitch();
 
-	cliSerial->printf("Unplug battery, throttle in neutral, turn off radio.\n");
+	cliSerial->println("Unplug battery, throttle in neutral, turn off radio.");
 	while(channel_throttle->get_control_in() > 0){
 		delay(20);
 		read_radio();
@@ -163,7 +163,7 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 		}
 
 		if (oldSwitchPosition != readSwitch()){
-			cliSerial->printf("CONTROL MODE CHANGED: ");
+			cliSerial->print("CONTROL MODE CHANGED: ");
             print_mode(cliSerial, readSwitch());
             cliSerial->println();
 			fail_test++;
@@ -180,7 +180,7 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 		if(cliSerial->available() > 0){
-			cliSerial->printf("LOS caused no change in APM.\n");
+			cliSerial->println("LOS caused no change in APM.");
 			return (0);
 		}
 	}
@@ -192,14 +192,14 @@ int8_t Rover::test_relay(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	while(1){
-		cliSerial->printf("Relay on\n");
+		cliSerial->println("Relay on");
 		relay.on(0);
 		delay(3000);
 		if(cliSerial->available() > 0){
 			return (0);
 		}
 
-		cliSerial->printf("Relay off\n");
+		cliSerial->println("Relay off");
 		relay.off(0);
 		delay(3000);
 		if(cliSerial->available() > 0){
@@ -242,7 +242,7 @@ int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 
-	cliSerial->printf("Control CH ");
+	cliSerial->print("Control CH ");
 
 	cliSerial->println(MODE_CHANNEL, BASE_DEC);
 
@@ -293,7 +293,7 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
                                 (long)loc.alt/100,
                                 (int)gps.num_sats());
         } else {
-            cliSerial->printf(".");
+            cliSerial->print(".");
         }
         if(cliSerial->available() > 0) {
             return (0);
@@ -303,7 +303,7 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 {
-	//cliSerial->printf("Calibrating.");
+	//cliSerial->print("Calibrating.");
 	ahrs.init();
     ahrs.set_fly_forward(true);
 
@@ -347,16 +347,16 @@ int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 void Rover::print_enabled(bool b)
 {
        if(b)
-               cliSerial->printf("en");
+               cliSerial->print("en");
        else
-               cliSerial->printf("dis");
-       cliSerial->printf("abled\n");
+               cliSerial->print("dis");
+       cliSerial->println("abled");
 }
 
 int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
 {
 	if (!g.compass_enabled) {
-        cliSerial->printf("Compass: ");
+        cliSerial->print("Compass: ");
 		print_enabled(false);
 		return (0);
     }
