@@ -73,9 +73,6 @@ public:
         // GPS object
         k_param_gps,
 
-        // Landing gear object
-        k_param_landinggear,    // 18
-
         // Input Management object
         k_param_input_manager,  // 19
 

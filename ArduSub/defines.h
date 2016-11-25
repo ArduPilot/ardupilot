@@ -67,7 +67,10 @@ enum aux_sw_func {
     AUXSW_ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting
     AUXSW_RETRACT_MOUNT =       27, // Retract Mount
     AUXSW_RELAY =               28, // Relay pin on/off (only supports first relay)
-    AUXSW_LANDING_GEAR =        29, // Landing gear controller
+
+// No landing gear for sub, remove
+//    AUXSW_LANDING_GEAR =        29, // Landing gear controller
+
     AUXSW_LOST_COPTER_SOUND =   30, // Play lost copter sound
     AUXSW_MOTOR_ESTOP =         31, // Emergency Stop Switch
     AUXSW_MOTOR_INTERLOCK =     32, // Motor On/Off switch
@@ -346,8 +349,8 @@ enum ThrowModeState {
 //#define DATA_PARACHUTE_DISABLED             49 // Remove
 //#define DATA_PARACHUTE_ENABLED              50 // Remove
 //#define DATA_PARACHUTE_RELEASED             51 // Remove
-#define DATA_LANDING_GEAR_DEPLOYED          52
-#define DATA_LANDING_GEAR_RETRACTED         53
+//#define DATA_LANDING_GEAR_DEPLOYED          52 // Remove
+//#define DATA_LANDING_GEAR_RETRACTED         53 // Remove
 #define DATA_MOTORS_EMERGENCY_STOPPED       54
 #define DATA_MOTORS_EMERGENCY_STOP_CLEARED  55
 #define DATA_MOTORS_INTERLOCK_DISABLED      56
