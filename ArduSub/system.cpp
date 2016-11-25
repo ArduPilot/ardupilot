@@ -250,7 +250,9 @@ void Sub::init_ardupilot()
 #endif
 
     // initialise AP_RPM library
+#if RPM_ENABLED == ENABLED
     rpm_sensor.init();
+#endif
 
     // initialise mission library
     mission.init();

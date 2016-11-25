@@ -438,6 +438,7 @@ void NOINLINE Sub::send_rangefinder(mavlink_channel_t chan)
 /*
   send RPM packet
  */
+#if RPM_ENABLED == ENABLED
 void NOINLINE Sub::send_rpm(mavlink_channel_t chan)
 {
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
@@ -447,6 +448,7 @@ void NOINLINE Sub::send_rpm(mavlink_channel_t chan)
             rpm_sensor.get_rpm(1));
     }
 }
+#endif
 
 
 /*
@@ -652,8 +654,10 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_RPM:
+#if RPM_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RPM);
         sub.send_rpm(chan);
+#endif
         break;
 
     case MSG_TERRAIN:
@@ -1001,7 +1005,9 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_MAG_CAL_PROGRESS);
         send_message(MSG_EKF_STATUS_REPORT);
         send_message(MSG_VIBRATION);
+#if RPM_ENABLED == ENABLED
         send_message(MSG_RPM);
+#endif
     }
 
     if (sub.gcs_out_of_time) return;

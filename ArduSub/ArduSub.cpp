@@ -123,7 +123,9 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(full_rate_logging_loop,400,    100),
     SCHED_TASK(dataflash_periodic,    400,    300),
     SCHED_TASK(perf_update,           0.1,    75),
+#if RPM_ENABLED == ENABLED
     SCHED_TASK(rpm_update,            10,    200),
+#endif
     SCHED_TASK(compass_cal_update,   100,    100),
     SCHED_TASK(accel_cal_update,      10,    100),
 	SCHED_TASK(terrain_update,        10,    100),
