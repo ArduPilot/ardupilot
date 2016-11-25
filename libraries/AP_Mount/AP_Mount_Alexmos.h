@@ -64,6 +64,33 @@
 
 #define AP_MOUNT_ALEXMOS_SPEED 30 // degree/s2
 
+// CMD_AHRS_HELPER
+// 0x00 get main IMU attitude
+// 0x02 get frame IMU attitude
+
+// 0x01 says WRITE
+// 0x02 says FRAME_IMU
+// 0x08 says translate to camera frame (or back)
+// 0x10 says Zenith only
+// 0x30 says North only
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_GET_REF_MAIN  0x00
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_GET_REF_MAIN2 0x08
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_GET_REF_FRAME 0x0A
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_RAW_FRAME 0x0B
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_Z1        0x1B
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_H1        0x2B
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_Z1_RO     0x1F
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_H1_RO     0x2F
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_RAW       0x01
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_Z1_RAW    0x11
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_H1_RAW    0x21
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_H1_RAW_FR 0x29
+
+#define AP_MOUNT_ALEXMOS_COMPENSATE_NORTH       0x01
+#define AP_MOUNT_ALEXMOS_COMPENSATE_ZENITH      0x02
+#define AP_MOUNT_ALEXMOS_COMPENSATE_BOTH        0x03
+#define AP_MOUNT_ALEXMOS_COMPENSATE_NO_OP       0x00
+
 #define VALUE_TO_DEGREE(d) (float)(d)*0.02197265625f //((float)((d * 720) >> 15))
 #define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.02197265625f)))
 #define DEGREE_PER_SEC_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.1220740379f)))
@@ -85,6 +112,7 @@ public:
         _current_zenith(0.0f, 0.0f, 0.0f),
         _current_north(0.0f, 0.0f, 0.0f),
         _current_stat_rot_angle(0.0f, 0.0f, 0.0f),
+        _angle_ef_target_2x720(0.0f, 0.0f, 0.0f),
         _param_read_once(false),
         _checksum(0),
         _step(0),
@@ -119,6 +147,12 @@ private:
 
     // set_ahrs_helper
     void set_ahrs_helper(uint8_t mode, const Vector3f& zenith, const Vector3f& north);
+
+    // apply heading (YAW) compensation to the camera mount IMU
+    float compensate_mount_imu(uint8_t mntCal_mode);
+
+    // translate mount target to Alexmos convetion (-720deg, +720deg) pan range
+    void update_target_2x720(Vector3f& current_target, const Vector3f& new_target, bool is_earth_fixed, bool invert_pitch);
 
     // set_motor will activate motors if true, and disable them if false
     void set_motor(bool on);
@@ -369,6 +403,9 @@ private:
     Vector3f _current_zenith;
     Vector3f _current_north;
     Vector3f _current_stat_rot_angle;
+
+    Vector3f _angle_ef_target_2x720;
+
     uint16_t _rt_data_timestamp;
 
     // CMD_READ_PARAMS has been called once

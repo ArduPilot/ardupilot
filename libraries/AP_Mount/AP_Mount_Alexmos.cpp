@@ -126,7 +126,94 @@ void AP_Mount_Alexmos::set_ahrs_helper(uint8_t mode, const Vector3f& zenith, con
         outgoing_buffer.ahrs_helper.north[i] = north[i];
     }
     send_command(CMD_AHRS_HELPER, (uint8_t *)&outgoing_buffer.ahrs_helper, sizeof(alexmos_ahrs_helper));
+}
 
+/*
+ * To be called at regular intervals as soon as current imu and encoder angles get updated
+ */
+float AP_Mount_Alexmos::compensate_mount_imu(uint8_t mntCal_mode)
+{
+    // AHRS DCM row a corresponds to north direction in vehicle body frame
+    // AHRS DCM row c corresponds to nadir direction in vehicle body frame
+    // NOTE: Alexmos uses (East, North, Up) frame while APM uses NED
+    const Matrix3f& dcm = _frontend._ahrs.get_rotation_body_to_ned();
+    Vector3f north = Vector3f(dcm.a.y, dcm.a.x, -dcm.a.z);   //  North in (right, front, up)
+    Vector3f zenith = Vector3f(-dcm.c.y, -dcm.c.x, dcm.c.z); // Zenith in (right, front, up)
+
+    float sin_phi = sinf(_current_stat_rot_angle.x*DEG_TO_RAD);
+    float cos_phi = cosf(_current_stat_rot_angle.x*DEG_TO_RAD);
+    float sin_tht = sinf(_current_stat_rot_angle.y*DEG_TO_RAD);
+    float cos_tht = cosf(_current_stat_rot_angle.y*DEG_TO_RAD);
+    float sin_ksi = sinf(_current_stat_rot_angle.z*DEG_TO_RAD);
+    float cos_ksi = cosf(_current_stat_rot_angle.z*DEG_TO_RAD);
+
+    Matrix3f f2m;
+
+    f2m.a.x =  cos_phi*cos_ksi;
+    f2m.b.x = -sin_phi*sin_tht*cos_ksi + cos_tht*sin_ksi;
+    f2m.c.x =  sin_phi*cos_tht*cos_ksi + sin_tht*sin_ksi;
+
+    f2m.a.y = -cos_phi*sin_ksi;
+    f2m.b.y =  sin_phi*sin_tht*sin_ksi + cos_tht*cos_ksi;
+    f2m.c.y = -sin_phi*cos_tht*sin_ksi + sin_tht*cos_ksi;
+
+    f2m.a.z = -sin_phi;
+    f2m.b.z = -cos_phi*sin_tht;
+    f2m.c.z =  cos_phi*cos_tht;
+
+    Vector3f north_m = f2m*north;           //  North direction in IMU coords
+    Vector3f zenith_m = f2m*zenith;         // Zenith direction in IMU coords
+
+    // below section translates (East, North, Up) to (East, North, Down) [in IMU frame]
+    // i.e. north & zenith from (right, front, up) to (right, front, down)
+    north_m.z = -north_m.z;
+    zenith_m.x = -zenith_m.x;
+    zenith_m.y = -zenith_m.y;
+
+    /* NOTE: simply removing minus signs from the 3 eqtn. above, as well as
+     * from north & zenith vector definitions from the start of this section WILL NOT WORK
+     */
+
+    switch (mntCal_mode) {
+        case AP_MOUNT_ALEXMOS_COMPENSATE_NORTH:
+            // H1_RAW: compensate NORTH once
+            set_ahrs_helper(AP_MOUNT_ALEXMOS_AHRS_HLR_SET_H1_RAW, zenith_m, north_m);
+            break;
+
+        case AP_MOUNT_ALEXMOS_COMPENSATE_ZENITH:
+            // Z1_RAW: compensate ZENITH once
+            set_ahrs_helper(AP_MOUNT_ALEXMOS_AHRS_HLR_SET_Z1_RAW, zenith_m, north_m);
+            break;
+
+        case AP_MOUNT_ALEXMOS_COMPENSATE_BOTH:
+            // RAW: compensate NORTH & ZENITH once
+            set_ahrs_helper(AP_MOUNT_ALEXMOS_AHRS_HLR_SET_RAW, zenith_m, north_m);
+            break;
+
+        case AP_MOUNT_ALEXMOS_COMPENSATE_NO_OP:
+            // fall through
+        default:
+            break;
+    }
+
+    return wrap_180(_current_angle.z - _current_stat_rot_angle.z - _frontend._ahrs.yaw*RAD_TO_DEG);
+}
+
+/*
+ *
+ */
+void AP_Mount_Alexmos::update_target_2x720(Vector3f& current_target, const Vector3f& new_target, bool is_earth_fixed, bool invert_pitch)
+{
+    current_target.x = new_target.x;
+    current_target.y = invert_pitch ? -new_target.y : new_target.y;
+
+    if (!is_earth_fixed) {
+        // use last yaw encoder data to get to the closest relative position
+        current_target.z = _current_stat_rot_angle.z;
+    }
+
+    float yaw_error = wrap_180(new_target.z - current_target.z);
+    current_target.z = wrap_2x720(current_target.z + yaw_error);
 }
 
 /*
@@ -242,10 +329,13 @@ void AP_Mount_Alexmos::parse_body()
             _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.angle_roll);
             _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.angle_pitch);
             _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw);
+            update_target_2x720(_angle_ef_target_2x720, _current_angle, true, true);
 
             _current_stat_rot_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_roll);
             _current_stat_rot_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_pitch); 
             _current_stat_rot_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_yaw);
+            // stat_rot_angle does not overflow, so we need to make it consistent with AM IMU yaw angle range (-720, 720)
+            _current_stat_rot_angle.z = wrap_2x720(_current_stat_rot_angle.z);
 
             break;
 
