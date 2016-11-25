@@ -117,9 +117,6 @@ public:
         k_param_adsb,                   // 72
 		k_param_notify, 				// 73
 
-        // 74: precision landing object
-        k_param_precland = 74,
-
         //
         // 90: misc2
         //

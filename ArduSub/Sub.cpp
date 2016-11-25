@@ -96,9 +96,6 @@ Sub::Sub(void) :
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     terrain(ahrs, mission, rally),
 #endif
-#if PRECISION_LANDING == ENABLED
-    precland(ahrs, inertial_nav),
-#endif
     in_mavlink_delay(false),
     gcs_out_of_time(false),
     param_loader(var_info),

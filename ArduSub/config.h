@@ -249,12 +249,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Precision Landing with companion computer or IRLock sensor
-#ifndef PRECISION_LANDING
- # define PRECISION_LANDING ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 //	gripper
 #ifndef GRIPPER_ENABLED
  # define GRIPPER_ENABLED DISABLED

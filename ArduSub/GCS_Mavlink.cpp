@@ -134,11 +134,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
-#if PRECISION_LANDING == ENABLED
-    if (precland.enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
-#endif
     if (ap.rc_receiver_present) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
@@ -191,11 +186,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
 #if OPTFLOW == ENABLED
     if (optflow.healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-#if PRECISION_LANDING == ENABLED
-    if (precland.healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
     if (ap.rc_receiver_present && !failsafe.radio) {
@@ -1849,14 +1839,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         handle_gps_inject(msg, sub.gps);
         result = MAV_RESULT_ACCEPTED;
         break;
-
-#if PRECISION_LANDING == ENABLED
-    case MAVLINK_MSG_ID_LANDING_TARGET:
-        // configure or release parachute
-        result = MAV_RESULT_ACCEPTED;
-        sub.precland.handle_msg(msg);
-        break;
-#endif
 
 #if AC_FENCE == ENABLED
     // send or receive fence points with GCS

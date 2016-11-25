@@ -101,9 +101,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 	SCHED_TASK(update_turn_counter,   10,     50),
     SCHED_TASK(compass_accumulate,   100,    100),
     SCHED_TASK(barometer_accumulate,  50,     90),
-#if PRECISION_LANDING == ENABLED
-    SCHED_TASK(update_precland,      400,     50),
-#endif
     SCHED_TASK(update_notify,         50,     90),
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK(ekf_check,             10,     75),
@@ -398,11 +395,6 @@ void Sub::twentyfive_hz_logging()
     if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMU(ins);
     }
-#endif
-
-#if PRECISION_LANDING == ENABLED
-    // log output
-    Log_Write_Precland();
 #endif
 }
 
