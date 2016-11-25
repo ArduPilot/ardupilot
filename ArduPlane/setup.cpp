@@ -73,7 +73,7 @@ void Plane::zero_eeprom(void)
 {
     cliSerial->printf("\nErasing EEPROM\n");
     StorageManager::erase();
-    cliSerial->printf("done\n");
+    cliSerial->println("done");
 }
 
 #endif // CLI_ENABLED

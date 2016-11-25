@@ -1456,14 +1456,14 @@ const AP_Param::ConversionInfo conversion_table[] = {
 void Plane::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf("Bad parameter table\n");
+        cliSerial->println("Bad parameter table");
         AP_HAL::panic("Bad parameter table");
     }
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->printf("Firmware change: erasing EEPROM...\n");
+        cliSerial->println("Firmware change: erasing EEPROM...");
         AP_Param::erase_all();
 
         // save the current format version
