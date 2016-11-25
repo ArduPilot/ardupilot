@@ -52,7 +52,6 @@ LIBRARIES += AP_BattMonitor
 LIBRARIES += AP_BoardConfig
 LIBRARIES += AP_Frsky_Telem
 LIBRARIES += AC_Sprayer
-LIBRARIES += AP_LandingGear
 LIBRARIES += AP_Terrain
 LIBRARIES += AP_RPM
 LIBRARIES += AC_PrecLand
