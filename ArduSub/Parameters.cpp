@@ -1015,12 +1015,6 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(optflow,   "FLOW", OpticalFlow),
 #endif
 
-#if PRECISION_LANDING == ENABLED
-    // @Group: PLND_
-    // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
-    GOBJECT(precland, "PLND_", AC_PrecLand),
-#endif
-
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
