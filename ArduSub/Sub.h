@@ -104,10 +104,6 @@
 #if GRIPPER_ENABLED == ENABLED
 #include <AP_Gripper/AP_Gripper.h>             // gripper stuff
 #endif
-#if PRECISION_LANDING == ENABLED
-#include <AC_PrecLand/AC_PrecLand.h>
-#include <AP_IRLock/AP_IRLock.h>
-#endif
 
 // Local modules
 #include "Parameters.h"
@@ -259,9 +255,6 @@ private:
 
     control_mode_t prev_control_mode;
     mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
-
-
-    uint32_t precland_last_update_ms;
 
     RCMapper rcmap;
 
@@ -501,11 +494,6 @@ private:
     AP_Terrain terrain;
 #endif
 
-    // Precision Landing
-#if PRECISION_LANDING == ENABLED
-    AC_PrecLand precland;
-#endif
-
     AP_ADSB adsb {ahrs};
 
     // use this to prevent recursion during sensor init
@@ -615,7 +603,6 @@ private:
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
     void Log_Write_Home_And_Origin();
     void Log_Sensor_Health();
-    void Log_Write_Precland();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
@@ -849,8 +836,6 @@ private:
     void init_compass();
     void init_optflow();
     void update_optical_flow(void);
-    void init_precland();
-    void update_precland();
     void read_battery(void);
     void read_receiver_rssi(void);
     void gripper_update();
