@@ -123,9 +123,6 @@ public:
 		k_param_throw_motor_start,
 		k_param_terrain_follow,		// 94
 		k_param_avoid,
-
-        // 97: RSSI
-        k_param_rssi = 97,
                 
         //
         // 100: Inertial Nav

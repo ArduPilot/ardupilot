@@ -66,7 +66,6 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
-#include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>           // APM relay
@@ -256,9 +255,6 @@ private:
 
     // board specific config
     AP_BoardConfig BoardConfig;
-
-    // receiver RSSI
-    uint8_t receiver_rssi;
 
     // Failsafe
     struct {
@@ -476,9 +472,6 @@ private:
 #if AC_RALLY == ENABLED
     AP_Rally rally;
 #endif
-
-    // RSSI 
-    AP_RSSI rssi;
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
@@ -826,7 +819,6 @@ private:
     void init_optflow();
     void update_optical_flow(void);
     void read_battery(void);
-    void read_receiver_rssi(void);
     void gripper_update();
     void terrain_update();
     void terrain_logging();
