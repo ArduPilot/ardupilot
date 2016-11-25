@@ -33,6 +33,10 @@ public:
     // update the state structure
     virtual void update() = 0;
 
+    // get maximum and minimum distances (in meters) of sensor
+    virtual float distance_max() const = 0;
+    virtual float distance_min() const = 0;
+
     // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
     // returns true on successful read and places distance in distance
     bool get_horizontal_distance(float angle_deg, float &distance) const;
@@ -44,6 +48,9 @@ public:
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings
     bool get_closest_object(float& angle_deg, float &distance) const;
+
+    // get distances in 8 directions. used for sending distances to ground station
+    bool get_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
 
 protected:
 

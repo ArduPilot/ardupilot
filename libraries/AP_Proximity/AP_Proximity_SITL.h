@@ -16,6 +16,10 @@ public:
     // update state
     void update(void) override;
 
+    // get maximum and minimum distances (in meters) of sensor
+    float distance_max() const;
+    float distance_min() const;
+
 private:
     SITL::SITL *sitl;
     Vector2l *fence;

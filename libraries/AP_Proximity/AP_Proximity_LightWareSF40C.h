@@ -18,6 +18,10 @@ public:
     // update state
     void update(void);
 
+    // get maximum and minimum distances (in meters) of sensor
+    float distance_max() const;
+    float distance_min() const;
+
 private:
 
     enum RequestType {
