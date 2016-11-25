@@ -259,6 +259,43 @@ void NOINLINE Copter::send_rangefinder(mavlink_channel_t chan)
 }
 #endif
 
+void NOINLINE Copter::send_proximity(mavlink_channel_t chan, uint16_t count_max)
+{
+#if PROXIMITY_ENABLED == ENABLED
+    // return immediately if no proximity sensor is present
+    if (g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+        return;
+    }
+
+    // return immediately if no tx buffer room to send messages
+    if (count_max == 0) {
+        return;
+    }
+
+    // send at most 8 distances
+    if (count_max > 8) {
+        count_max = 8;
+    }
+
+    // send known distances
+    AP_Proximity::Proximity_Distance_Array dist_array;
+    if (g2.proximity.get_distances(dist_array)) {
+        for (uint8_t i=0; i<count_max; i++) {
+            mavlink_msg_distance_sensor_send(
+                chan,
+                AP_HAL::millis(),               //  time since system boot
+                (uint16_t)(g2.proximity.distance_min() * 100),  // minimum distance the sensor can measure in centimeters
+                (uint16_t)(g2.proximity.distance_max() * 100),  // maximum distance the sensor can measure in centimeters
+                (uint16_t)(dist_array.distance[i] * 100),   // current distance reading (in cm?)
+                MAV_DISTANCE_SENSOR_LASER,      // type from MAV_DISTANCE_SENSOR enum
+                0,                              // onboard ID of the sensor
+                dist_array.orientation[i],      //  direction the sensor faces from MAV_SENSOR_ORIENTATION enum
+                1);                             // Measurement covariance in centimeters, 0 for unknown / invalid readings
+        }
+    }
+#endif
+}
+
 /*
   send RPM packet
  */
@@ -461,6 +498,8 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         copter.send_rangefinder(chan);
 #endif
+        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+        copter.send_proximity(chan, comm_get_txspace(chan) / (packet_overhead()+9));
         break;
 
     case MSG_RPM:
