@@ -96,15 +96,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
 
-    // @Param: TELEM_DELAY
-    // @DisplayName: Telemetry startup delay
-    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
-    // @User: Advanced
-    // @Units: seconds
-    // @Range: 0 10
-    // @Increment: 1
-    GSCALAR(telem_delay,            "TELEM_DELAY",     0),
-
     // @Param: GCS_PID_MASK
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
