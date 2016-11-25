@@ -121,9 +121,10 @@ public:
     void set_checked_register(uint8_t reg, uint8_t val);
 
     /**
-     * setup for register value checking
+     * setup for register value checking. Frequency is how often to check registers. If set to 10 then
+     * every 10th call to check_next_register will check a register
      */
-    bool setup_checked_registers(uint8_t num_regs);
+    bool setup_checked_registers(uint8_t num_regs, uint8_t frequency=10);
 
     /**
      * check next register value for correctness. Return false if value is incorrect
@@ -266,6 +267,8 @@ private:
         uint8_t n_allocated;
         uint8_t n_set;
         uint8_t next;
+        uint8_t frequency;
+        uint8_t counter;
         struct checkreg *regs;
     } _checked;
 };
