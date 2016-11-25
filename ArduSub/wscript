@@ -13,7 +13,6 @@ def build(bld):
             'AC_Fence',
             'AC_Avoidance',
             'AC_PID',
-            'AC_Sprayer',
             'AC_WPNav',
             'AP_Camera',
             'AP_InertialNav',

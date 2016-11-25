@@ -97,9 +97,6 @@
 #include "GCS_Mavlink.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
-#if SPRAYER == ENABLED
-#include <AC_Sprayer/AC_Sprayer.h>         // crop sprayer library
-#endif
 #if GRIPPER_ENABLED == ENABLED
 #include <AP_Gripper/AP_Gripper.h>             // gripper stuff
 #endif
@@ -481,12 +478,7 @@ private:
 #endif
 
     // RSSI 
-    AP_RSSI rssi;      
-
-    // Crop Sprayer
-#if SPRAYER == ENABLED
-    AC_Sprayer sprayer;
-#endif
+    AP_RSSI rssi;
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN

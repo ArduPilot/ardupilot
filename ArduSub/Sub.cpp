@@ -88,9 +88,6 @@ Sub::Sub(void) :
 #if AC_RALLY == ENABLED
     rally(ahrs),
 #endif
-#if SPRAYER == ENABLED
-    sprayer(&inertial_nav),
-#endif
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     terrain(ahrs, mission, rally),
 #endif

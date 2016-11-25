@@ -189,11 +189,6 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 
-#if SPRAYER == ENABLED
-    // turn off sprayer's test if on
-    sprayer.test_pump(false);
-#endif
-
     // enable output to motors
     enable_motor_output();
 

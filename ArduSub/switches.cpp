@@ -234,7 +234,6 @@ void Sub::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_SUPERSIMPLE_MODE:
         case AUXSW_ACRO_TRAINER:
         case AUXSW_GRIPPER:
-        case AUXSW_SPRAYER:
         case AUXSW_RETRACT_MOUNT:
         case AUXSW_MISSION_RESET:
         case AUXSW_ATTCON_FEEDFWD:
@@ -385,13 +384,6 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     Log_Write_Event(DATA_GRIPPER_GRAB);
                     break;
             }
-            break;
-#endif
-#if SPRAYER == ENABLED
-        case AUXSW_SPRAYER:
-            sprayer.enable(ch_flag == AUX_SWITCH_HIGH);
-            // if we are disarmed the pilot must want to test the pump
-            sprayer.test_pump((ch_flag == AUX_SWITCH_HIGH) && !motors.armed());
             break;
 #endif
 

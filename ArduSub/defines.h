@@ -51,7 +51,10 @@ enum aux_sw_func {
 	AUXSW_RESETTOARMEDYAW =     12, // changes yaw to be same as when quad was armed
     AUXSW_SUPERSIMPLE_MODE =    13, // change to simple mode in middle, super simple at top
     AUXSW_ACRO_TRAINER =        14, // low = disabled, middle = leveled, high = leveled and limited
-    AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
+
+// No sprayer for Sub, remove
+//    AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
+
     AUXSW_AUTO =                16, // change to auto flight mode
     AUXSW_AUTOTUNE =            17, // auto tune
     AUXSW_LAND =                18, // change to LAND flight mode
