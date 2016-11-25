@@ -74,7 +74,6 @@ bool AP_Compass_PX4::init(void)
         }
     }    
 	if (_num_sensors == 0) {
-        hal.console->printf("Unable to open " MAG_BASE_DEVICE_PATH"0" "\n");
         return false;
 	}
 
