@@ -145,13 +145,6 @@ public:
         k_param_gcs_pid_mask,    // 126
 
         //
-        // 135 : reserved for Solo until features merged with master
-        //
-        k_param_rtl_speed_cms = 135,
-        k_param_fs_batt_curr_rtl,
-		k_param_rtl_cone_slope, // 137
-
-        //
         // 140: Sensor parameters
         //
         k_param_compass_enabled,
@@ -159,13 +152,6 @@ public:
         k_param_fs_batt_voltage,
         k_param_ch7_option,
         k_param_ahrs, // AHRS group // 159
-
-        //
-        // 160: Navigation parameters
-        //
-        k_param_rtl_altitude = 160,
-        k_param_rtl_loiter_time,
-        k_param_rtl_alt_final,
 
         //
         // Camera and mount parameters
@@ -224,7 +210,6 @@ public:
         k_param_autotune_aggressiveness,
         k_param_pi_vel_xy,
         k_param_fs_ekf_action,
-        k_param_rtl_climb_min,
         k_param_rpm_sensor,
         k_param_autotune_min_d, // 251
         k_param_DataFlash = 253, // 253 - Logging Group
@@ -290,9 +275,6 @@ public:
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
 
-    AP_Int16        rtl_altitude;
-    AP_Int16        rtl_speed_cms;
-    AP_Float        rtl_cone_slope;
     AP_Float        rangefinder_gain;
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
@@ -312,15 +294,12 @@ public:
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         compass_enabled;
-    AP_Int16        rtl_alt_final;
-    AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
     
     // Waypoints
     //
-    AP_Int32        rtl_loiter_time;
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
     AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
 

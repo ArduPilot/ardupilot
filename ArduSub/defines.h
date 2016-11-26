@@ -42,7 +42,10 @@ enum aux_sw_func {
     AUXSW_DO_NOTHING =           0, // aux switch disabled
 //    AUXSW_FLIP =                 2, // flip
     AUXSW_SIMPLE_MODE =          3, // change to simple mode
-    AUXSW_RTL =                  4, // change to RTL flight mode
+
+// No RTL mode for Sub
+//    AUXSW_RTL =                  4, // change to RTL flight mode
+
     AUXSW_SAVE_TRIM =            5, // save current position as level
     AUXSW_SAVE_WP =              7, // save mission waypoint or RTL if in auto mode
     AUXSW_CAMERA_TRIGGER =       9, // trigger camera servo or relay
@@ -112,7 +115,7 @@ enum control_mode_t {
     AUTO =          3,  // not implemented in sub // fully automatic waypoint control using mission commands
     GUIDED =        4,  // not implemented in sub // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
     VELHOLD =       5,  // automatic x/y velocity control and automatic depth/throttle
-    RTL =           6,  // not implemented in sub // automatic return to launching point
+//    RTL =           6,  // not implemented in sub // automatic return to launching point
     CIRCLE =        7,  // not implemented in sub // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     OF_LOITER =    10,  // deprecated
@@ -207,7 +210,7 @@ enum AutoMode {
     Auto_TakeOff,
     Auto_WP,
     Auto_Land,
-    Auto_RTL,
+//    Auto_RTL,
     Auto_CircleMoveToEdge,
     Auto_Circle,
     Auto_Spline,

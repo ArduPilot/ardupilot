@@ -48,7 +48,6 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
     switch (control_mode) {
     case AUTO:
-    case RTL:
     case VELHOLD:
     case GUIDED:
     case CIRCLE:
@@ -168,7 +167,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     case AUTO:
     case GUIDED:
     case VELHOLD:
-    case RTL:
     case CIRCLE:
     case SURFACE:
     case OF_LOITER:
@@ -1264,12 +1262,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_NAV_LOITER_UNLIM:
             if (sub.set_mode(POSHOLD, MODE_REASON_GCS_COMMAND)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-            if (sub.set_mode(RTL, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
