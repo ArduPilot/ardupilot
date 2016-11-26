@@ -160,7 +160,6 @@ public:
         //
         k_param_compass_enabled,
         k_param_compass,
-        k_param_frame_orientation,
         k_param_fs_batt_voltage,
         k_param_ch7_option,
         k_param_super_simple = 155,
@@ -366,7 +365,6 @@ public:
     AP_Int8         radio_tuning;
     AP_Int16        radio_tuning_high;
     AP_Int16        radio_tuning_low;
-    AP_Int8         frame_orientation;
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
     AP_Int8         ch9_option;
