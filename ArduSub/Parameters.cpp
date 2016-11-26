@@ -266,24 +266,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(rtl_loiter_time,      "RTL_LOIT_TIME",    RTL_LOITER_TIME),
 
-    // @Param: LAND_SPEED
-    // @DisplayName: Land speed
-    // @Description: The descent speed for the final stage of landing in cm/s
-    // @Units: cm/s
-    // @Range: 30 200
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
-
-    // @Param: LAND_SPEED_HIGH
-    // @DisplayName: Land speed high
-    // @Description: The descent speed for the first stage of landing in cm/s. If this is zero then WPNAV_SPEED_DN is used
-    // @Units: cm/s
-    // @Range: 0 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(land_speed_high,        "LAND_SPEED_HIGH",   0),    
-
     // @Param: PILOT_VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
@@ -481,13 +463,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
     GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_MEDIUM),
-
-    // @Param: LAND_REPOSITION
-    // @DisplayName: Land repositioning
-    // @Description: Enables user input during LAND mode, the landing phase of RTL, and auto mode landings.
-    // @Values: 0:No repositioning, 1:Repositioning
-    // @User: Advanced
-    GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
 
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
