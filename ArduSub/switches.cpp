@@ -200,18 +200,6 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             set_simple_mode(ch_flag);
             break;
 
-        case AUXSW_RTL:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                // engage RTL (if not possible we remain in current flight mode)
-                set_mode(RTL, MODE_REASON_TX_COMMAND);
-            }else{
-                // return to flight mode switch's flight mode if we are currently in RTL
-                if (control_mode == RTL) {
-//                    reset_control_switch();
-                }
-            }
-            break;
-
         case AUXSW_SAVE_TRIM:
             if ((ch_flag == AUX_SWITCH_HIGH) && (control_mode <= ACRO) && (channel_throttle->get_control_in() == 0)) {
                 save_trim();
