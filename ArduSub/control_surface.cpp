@@ -49,7 +49,7 @@ void Sub::surface_run()
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // set target climb rate
-	float cmb_rate = constrain_float(abs(g.land_speed), 1, pos_control.get_speed_up());
+	float cmb_rate = constrain_float(abs(wp_nav.get_speed_up()), 1, pos_control.get_speed_up());
 
     // record desired climb rate for logging
     desired_climb_rate = cmb_rate;

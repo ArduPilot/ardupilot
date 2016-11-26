@@ -294,14 +294,15 @@ void Sub::rtl_descent_run()
             }
         }
         
-        if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
-            // process pilot's roll and pitch input
-            roll_control = channel_roll->get_control_in();
-            pitch_control = channel_pitch->get_control_in();
-        }
+// g.land_repositioning removed
+//        if (g.land_repositioning) {
+//            // apply SIMPLE mode transform to pilot inputs
+//            update_simple_mode();
+//
+//            // process pilot's roll and pitch input
+//            roll_control = channel_roll->get_control_in();
+//            pitch_control = channel_pitch->get_control_in();
+//        }
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
