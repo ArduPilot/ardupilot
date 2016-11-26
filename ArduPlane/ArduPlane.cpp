@@ -803,7 +803,7 @@ void Plane::update_navigation()
             reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {
             // we've reached the RTL point, see if we have a landing sequence
-            if (landing.jump_to_landing_sequence()) {
+            if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
                 set_mode(AUTO, MODE_REASON_UNKNOWN);
             }
@@ -815,7 +815,7 @@ void Plane::update_navigation()
         else if (g.rtl_autoland == 2 &&
             !auto_state.checked_for_autoland) {
             // Go directly to the landing sequence
-            if (landing.jump_to_landing_sequence()) {
+            if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
                 set_mode(AUTO, MODE_REASON_UNKNOWN);
             }

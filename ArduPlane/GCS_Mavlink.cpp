@@ -1335,7 +1335,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_FAILED;
             
             // attempt to switch to next DO_LAND_START command in the mission
-            if (plane.landing.jump_to_landing_sequence()) {
+            if (plane.mission.jump_to_landing_sequence()) {
                 plane.set_mode(AUTO, MODE_REASON_UNKNOWN);
                 result = MAV_RESULT_ACCEPTED;
             } 
