@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Sub.h"
+#if CH6_TUNE_ENABLED == ENABLED
 
 /*
  * tuning.pde - function to update various parameters in flight using the ch6 tuning knob
@@ -190,3 +190,4 @@ void Sub::tuning() {
          break;
     }
 }
+#endif

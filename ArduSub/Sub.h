@@ -859,7 +859,9 @@ private:
     void check_usb_mux(void);
     bool should_log(uint32_t mask);
     void print_hit_enter();
+#if CH6_TUNE_ENABLED == ENABLED
     void tuning();
+#endif
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
