@@ -81,10 +81,6 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 #endif
 
-        case THROW:
-        	success = throw_init(ignore_checks);
-        	break;
-
         case MANUAL:
         	success = manual_init(ignore_checks);
         	break;
@@ -188,10 +184,6 @@ void Sub::update_flight_mode()
             break;
 #endif
 
-        case THROW:
-        	throw_run();
-        	break;
-
         case MANUAL:
         	manual_run();
         	break;
@@ -220,10 +212,6 @@ void Sub::exit_mode(control_mode_t old_control_mode, control_mode_t new_control_
 #endif  // MOUNT == ENABLED
     }
 
-    if (old_control_mode == THROW) {
-    	throw_exit();
-    }
-
     // smooth throttle transition when switching from manual to automatic flight modes
     if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && motors.armed()) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
@@ -241,7 +229,6 @@ bool Sub::mode_requires_GPS(control_mode_t mode) {
         case RTL:
         case CIRCLE:
         case POSHOLD:
-        case THROW:
         case TRANSECT:
             return true;
         default:
@@ -268,7 +255,7 @@ bool Sub::mode_has_manual_throttle(control_mode_t mode) {
 // mode_allows_arming - returns true if vehicle can be armed in the specified mode
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
 bool Sub::mode_allows_arming(control_mode_t mode, bool arming_from_gcs) {
-	if (mode_has_manual_throttle(mode) || mode == VELHOLD || mode == ALT_HOLD || mode == POSHOLD || mode == TRANSECT || mode == THROW || (arming_from_gcs && mode == GUIDED)) {
+	if (mode_has_manual_throttle(mode) || mode == VELHOLD || mode == ALT_HOLD || mode == POSHOLD || mode == TRANSECT || (arming_from_gcs && mode == GUIDED)) {
         return true;
     }
     return false;
@@ -336,9 +323,6 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case POSHOLD:
         port->print("POSHOLD");
-        break;
-    case THROW:
-        port->print("THROW");
         break;
     case MANUAL:
     	port->print("MANUAL");

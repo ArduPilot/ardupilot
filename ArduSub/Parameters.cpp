@@ -1025,13 +1025,6 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Path: ../libraries/AP_Notify/AP_Notify.cpp
 	GOBJECT(notify, "NTF_",  AP_Notify),
 
-	// @Param: THROW_MOT_START
-	// @DisplayName: Start motors before throwing is detected
-	// @Description: Used by THROW mode. Controls whether motors will run at the speed set by THR_MIN or will be stopped when armed and waiting for the throw.
-	// @Values: 0:Stopped,1:Running
-	// @User: Standard
-	GSCALAR(throw_motor_start, "THROW_MOT_START", 0),
-
 	// @Param: TERRAIN_FOLLOW
 	// @DisplayName: Terrain Following use control
 	// @Description: This enables terrain following for RTL and LAND flight modes. To use this option TERRAIN_ENABLE must be 1 and the GCS must  support sending terrain data to the aircraft.  In RTL the RTL_ALT will be considered a height above the terrain.  In LAND mode the vehicle will slow to LAND_SPEED 10m above terrain (instead of 10m above home).  This parameter does not affect AUTO and Guided which use a per-command flag to determine if the height is above-home, absolute or above-terrain.

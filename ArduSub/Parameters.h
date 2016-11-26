@@ -120,7 +120,6 @@ public:
         k_param_motors = 90,
         k_param_disarm_delay,
         k_param_fs_crash_check,
-		k_param_throw_motor_start,
 		k_param_terrain_follow,		// 94
 		k_param_avoid,
                 
@@ -380,7 +379,6 @@ public:
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
-    AP_Int8         throw_motor_start;
     AP_Int8         terrain_follow;
 
     // RC channels
