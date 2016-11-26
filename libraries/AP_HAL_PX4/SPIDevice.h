@@ -62,7 +62,7 @@ public:
     bool set_speed(AP_HAL::Device::Speed speed) override;
 
     // low level transfer function
-    void do_transfer(uint8_t *send, uint8_t *recv, uint32_t len);
+    void do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len);
     
     /* See AP_HAL::Device::transfer() */
     bool transfer(const uint8_t *send, uint32_t send_len,
