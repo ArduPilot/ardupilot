@@ -163,6 +163,9 @@ void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
     // boundary point lies on the line between the two sectors at the shorter distance found in the two sectors
     if (_distance_valid[sector] && _distance_valid[next_sector]) {
         float shortest_distance = MIN(_distance[sector], _distance[next_sector]);
+        if (shortest_distance < PROXIMITY_BOUNDARY_DIST_MIN) {
+            shortest_distance = PROXIMITY_BOUNDARY_DIST_MIN;
+        }
         _boundary_point[sector] = _sector_edge_vector[sector] * shortest_distance;
     }
 
