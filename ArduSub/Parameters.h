@@ -95,7 +95,6 @@ public:
         k_param_rc_14,
         k_param_rally,
         k_param_pilot_accel_z,
-        k_param_land_repositioning,
         k_param_rangefinder, // rangefinder object
         k_param_fs_ekf_thresh,
         k_param_terrain,
@@ -211,12 +210,6 @@ public:
         k_param_flight_mode6,
 
         //
-        // 210: Waypoint data
-        //
-        k_param_land_speed,
-        k_param_land_speed_high,
-
-        //
         // 220: PI/D Controllers
         //
         k_param_acro_rp_p = 221,
@@ -328,8 +321,6 @@ public:
     // Waypoints
     //
     AP_Int32        rtl_loiter_time;
-    AP_Int16        land_speed;
-    AP_Int16        land_speed_high;
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
     AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
 
@@ -364,7 +355,6 @@ public:
     AP_Int8         arming_check;
     AP_Int8         disarm_delay;
 
-    AP_Int8         land_repositioning;
     AP_Int8         fs_ekf_action;
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
