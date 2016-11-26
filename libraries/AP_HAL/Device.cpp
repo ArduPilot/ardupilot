@@ -42,14 +42,14 @@ bool AP_HAL::Device::setup_checked_registers(uint8_t nregs, uint8_t frequency)
         _checked.n_allocated = 0;
         _checked.n_set = 0;
         _checked.next = 0;
-        _checked.frequency = frequency;
-        _checked.counter = 0;
     }
     _checked.regs = new struct checkreg[nregs];
     if (_checked.regs == nullptr) {
         return false;
     }
     _checked.n_allocated = nregs;
+    _checked.frequency = frequency;
+    _checked.counter = 0;
     return true;
 }
 
