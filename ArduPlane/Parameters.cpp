@@ -205,15 +205,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(takeoff_pitch_limit_reduction_sec, "TKOFF_PLIM_SEC",  2),
 
-    // @Param: LAND_THR_SLEW
-    // @DisplayName: Landing throttle slew rate
-    // @Description: This parameter sets the slew rate for the throttle during auto landing. When this is zero the THR_SLEWRATE parameter is used during landing. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on landing. Values below 50 are not recommended as it may cause a stall when airspeed is low and you can not throttle up fast enough.
-    // @Units: percent
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: User
-    GSCALAR(land_throttle_slewrate, "LAND_THR_SLEW",  0),
-
     // @Param: TKOFF_FLAP_PCNT
     // @DisplayName: Takeoff flap percentage
     // @Description: The amount of flaps (as a percentage) to apply in automatic takeoff
@@ -237,103 +228,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: User
     GSCALAR(level_roll_limit,              "LEVEL_ROLL_LIMIT",   5),
 
-    // @Param: LAND_SLOPE_RCALC
-    // @DisplayName: Landing slope re-calc threshold
-    // @Description: This parameter is used when using a rangefinder during landing for altitude correction from baro drift (RNGFND_LANDING=1) and the altitude correction indicates your altitude is lower than the intended slope path. This value is the threshold of the correction to re-calculate the landing approach slope. Set to zero to keep the original slope all the way down and any detected baro drift will be corrected by pitching/throttling up to snap back to resume the original slope path. Otherwise, when a rangefinder altitude correction exceeds this threshold it will trigger a slope re-calculate to give a shallower slope. This also smoothes out the approach when flying over objects such as trees. Recommend a value of 2m.
-    // @Range: 0 5
-    // @Units: meters
-    // @Increment: 0.5
-    // @User: Advanced
-    GSCALAR(land_slope_recalc_shallow_threshold,          "LAND_SLOPE_RCALC",  2.0f),
-
-    // @Param: LAND_ABORT_DEG
-    // @DisplayName: Landing auto-abort slope threshold
-    // @Description: This parameter is used when using a rangefinder during landing for altitude correction from baro drift (RNGFND_LANDING=1) and the altitude correction indicates your actual altitude is higher than the intended slope path. Normally it would pitch down steeply but that can result in a crash with high airspeed so this allows remembering the baro offset and self-abort the landing and come around for another landing with the correct baro offset applied for a perfect slope. An auto-abort go-around will only happen once, next attempt will not auto-abort again. This operation happens entirely automatically in AUTO mode. This value is the delta degrees threshold to trigger the go-around compared to the original slope. Example: if set to 5 deg and the mission planned slope is 15 deg then if the new slope is 21 then it will go-around. Set to 0 to disable. Requires LAND_SLOPE_RCALC > 0.
-    // @Range: 0 90
-    // @Units: degrees
-    // @Increment: 0.1
-    // @User: Advanced
-    GSCALAR(land_slope_recalc_steep_threshold_to_abort,          "LAND_ABORT_DEG", 0),
-
-    // @Param: LAND_PITCH_CD
-    // @DisplayName: Landing Pitch
-    // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
-    // @Units: centi-Degrees
-    // @User: Advanced
-    ASCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
-
-    // @Param: LAND_FLARE_ALT
-    // @DisplayName: Landing flare altitude
-    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch. Note that this option is secondary to LAND_FLARE_SEC. For a good landing it preferable that the flare is triggered by LAND_FLARE_SEC. 
-    // @Units: meters
-    // @Increment: 0.1
-    // @User: Advanced
-    GSCALAR(land_flare_alt,          "LAND_FLARE_ALT",  3.0),
-
-    // @Param: LAND_FLARE_SEC
-    // @DisplayName: Landing flare time
-    // @Description: Vertical time before landing point at which to lock heading and flare with the motor stopped. This is vertical time, and is calculated based solely on the current height above the ground and the current descent rate.  Set to 0 if you only wish to flare based on altitude (see LAND_FLARE_ALT).
-    // @Units: seconds
-    // @Increment: 0.1
-    // @User: Advanced
-    ASCALAR(land_flare_sec,          "LAND_FLARE_SEC",  2.0),
-
-    // @Param: LAND_PF_ALT
-    // @DisplayName: Landing pre-flare altitude
-    // @Description: Altitude to trigger pre-flare flight stage where LAND_PF_ARSPD controls airspeed. The pre-flare flight stage trigger works just like LAND_FLARE_ALT but higher. Disabled when LAND_PF_ARSPD is 0.
-    // @Units: meters
-    // @Range: 0 30
-    // @Increment: 0.1
-    // @User: Advanced
-    GSCALAR(land_pre_flare_alt     , "LAND_PF_ALT",  10.0),
-
-    // @Param: LAND_PF_SEC
-    // @DisplayName: Landing pre-flare time
-    // @Description: Vertical time to ground to trigger pre-flare flight stage where LAND_PF_ARSPD controls airspeed. This pre-flare flight stage trigger works just like LAND_FLARE_SEC but earlier. Disabled when LAND_PF_ARSPD is 0.
-    // @Units: seconds
-    // @Range: 0 10
-    // @Increment: 0.1
-    // @User: Advanced
-    GSCALAR(land_pre_flare_sec     , "LAND_PF_SEC",  6.0),
-
-    // @Param: LAND_PF_ARSPD
-    // @DisplayName: Landing pre-flare airspeed
-    // @Description: Desired airspeed during pre-flare flight stage. This is useful to reduce airspeed just before the flare. Use 0 to disable.
-    // @Units: m/s
-    // @Range: 0 30
-    // @Increment: 0.1
-    // @User: Advanced
-    ASCALAR(land_pre_flare_airspeed, "LAND_PF_ARSPD",  0),
-
     // @Param: USE_REV_THRUST
     // @DisplayName: Bitmask for when to allow negative reverse thrust
     // @Description: Typically THR_MIN will be clipped to zero unless reverse thrust is available. Since you may not want negative thrust available at all times this bitmask allows THR_MIN to go below 0 while executing certain auto-mission commands.
     // @Bitmask: 0:AUTO_ALWAYS,1:AUTO_LAND,2:AUTO_LOITER_TO_ALT,3:AUTO_LOITER_ALL,4:AUTO_WAYPOINTS,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED
     // @User: Advanced
     GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
-
-    // @Param: LAND_DISARMDELAY
-    // @DisplayName: Landing disarm delay
-    // @Description: After a landing has completed using a LAND waypoint, automatically disarm after this many seconds have passed. Use 0 to not disarm.
-    // @Units: seconds
-    // @Increment: 1
-    // @Range: 0 127
-    // @User: Advanced
-    GSCALAR(land_disarm_delay,       "LAND_DISARMDELAY",  20),
-
-    // @Param: LAND_THEN_NEUTRL
-    // @DisplayName: Set servos to neutral after landing
-    // @Description: When enabled, after an autoland and auto-disarm via LAND_DISARMDELAY happens then set all servos to neutral. This is helpful when an aircraft has a rough landing upside down or a crazy angle causing the servos to strain.
-    // @Values: 0:Disabled, 1:Servos to Neutral, 2:Servos to Zero PWM
-    // @User: Advanced
-    GSCALAR(land_then_servos_neutral,       "LAND_THEN_NEUTRL",  0),
-
-    // @Param: LAND_ABORT_THR
-    // @DisplayName: Landing abort using throttle
-    // @Description: Allow a landing abort to trigger with a throttle > 95%
-    // @Values: 0:Disabled, 1:Enabled
-    // @User: Advanced
-    GSCALAR(land_abort_throttle_enable,       "LAND_ABORT_THR",  0),
 
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection
@@ -905,7 +805,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Airspeed in cm/s to aim for when airspeed is enabled in auto mode. This is a calibrated (apparent) airspeed.
     // @Units: cm/s
     // @User: User
-    GSCALAR(airspeed_cruise_cm,     "TRIM_ARSPD_CM",  AIRSPEED_CRUISE_CM),
+    ASCALAR(airspeed_cruise_cm,     "TRIM_ARSPD_CM",  AIRSPEED_CRUISE_CM),
 
     // @Param: SCALING_SPEED
     // @DisplayName: speed used for speed scaling calculations
@@ -919,7 +819,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Minimum ground speed in cm/s when under airspeed control
     // @Units: cm/s
     // @User: Advanced
-    GSCALAR(min_gndspeed_cm,      "MIN_GNDSPD_CM",  MIN_GNDSPEED_CM),
+    ASCALAR(min_gndspeed_cm,      "MIN_GNDSPD_CM",  MIN_GNDSPEED_CM),
 
     // @Param: TRIM_PITCH_CD
     // @DisplayName: Pitch angle offset
@@ -996,14 +896,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
-    // @Param: LAND_FLAP_PERCNT
-    // @DisplayName: Landing flap percentage
-    // @Description: The amount of flaps (as a percentage) to apply in the landing approach and flare of an automatic landing
-    // @Range: 0 100
-    // @Units: Percent
-    // @User: Advanced
-    GSCALAR(land_flap_percent,     "LAND_FLAP_PERCNT", 0),
-
 #if HAVE_PX4_MIXER
     // @Param: OVERRIDE_CHAN
     // @DisplayName: PX4IO override channel
@@ -1077,7 +969,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Automatically detect a crash during AUTO flight and perform the bitmask selected action(s). Disarm will turn off motor for safety and to help against burning out ESC and motor. Setting the mode to manual will help save the servos from burning out by overexerting if the aircraft crashed in an odd orientation such as upsidedown. Set to 0 to disable crash detection.
     // @Bitmask: 0:Disarm
     // @User: Advanced
-    GSCALAR(crash_detection_enable,         "CRASH_DETECT",   0),
+    ASCALAR(crash_detection_enable,         "CRASH_DETECT",   0),
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
@@ -1116,11 +1008,9 @@ const AP_Param::Info Plane::var_info[] = {
     GSCALAR(parachute_channel,      "CHUTE_CHAN",  0),
 #endif
 
-#if RANGEFINDER_ENABLED == ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
     GOBJECT(rangefinder,            "RNGFND", RangeFinder),
-#endif
 
     // @Param: RNGFND_LANDING
     // @DisplayName: Enable rangefinder for landing
@@ -1357,6 +1247,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
     
+    // @Group: LAND_
+    // @Path: ../libraries/AP_Landing/AP_Landing.cpp
+    GOBJECT(landing, "LAND_", AP_Landing),
+
     AP_VAREND
 };
 
@@ -1450,7 +1344,20 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_quadplane,         15,      AP_PARAM_FLOAT, "Q_VZ_P" },
     { Parameters::k_param_quadplane,         16,      AP_PARAM_FLOAT, "Q_AZ_P" },
     
-    
+    { Parameters::k_param_land_slope_recalc_shallow_threshold,0,AP_PARAM_FLOAT, "LAND_SLOPE_RCALC" },
+    { Parameters::k_param_land_slope_recalc_steep_threshold_to_abort,0,AP_PARAM_FLOAT, "LAND_ABORT_DEG" },
+    { Parameters::k_param_land_pitch_cd,      0,      AP_PARAM_INT16, "LAND_PITCH_CD" },
+    { Parameters::k_param_land_flare_alt,     0,      AP_PARAM_FLOAT, "LAND_FLARE_ALT" },
+    { Parameters::k_param_land_flare_sec,     0,      AP_PARAM_FLOAT, "LAND_FLARE_SEC" },
+    { Parameters::k_param_land_pre_flare_sec, 0,      AP_PARAM_FLOAT, "LAND_PF_SEC" },
+    { Parameters::k_param_land_pre_flare_alt, 0,      AP_PARAM_FLOAT, "LAND_PF_ALT" },
+    { Parameters::k_param_land_pre_flare_airspeed, 0, AP_PARAM_FLOAT, "LAND_PF_ARSPD" },
+    { Parameters::k_param_land_throttle_slewrate, 0,  AP_PARAM_INT8,  "LAND_THR_SLEW" },
+    { Parameters::k_param_land_disarm_delay,  0,      AP_PARAM_INT8,  "LAND_DISARMDELAY" },
+    { Parameters::k_param_land_then_servos_neutral,0, AP_PARAM_INT8,  "LAND_THEN_NEUTRAL" },
+    { Parameters::k_param_land_abort_throttle_enable,0,AP_PARAM_INT8, "LAND_ABORT_THR" },
+    { Parameters::k_param_land_flap_percent,  0,      AP_PARAM_INT8,  "LAND_FLAP_PERCENT" },
+
 };
 
 void Plane::load_parameters(void)

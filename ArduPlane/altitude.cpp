@@ -35,8 +35,8 @@ void Plane::adjust_altitude_target()
         set_target_altitude_location(next_WP_loc);
     } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
             flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE) {
-        setup_landing_glide_slope();
-        adjust_landing_slope_for_rangefinder_bump();
+        landing.setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude.offset_cm);
+        landing.adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, auto_state.wp_distance, target_altitude.offset_cm);
     } else if (reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
         // altitude target
@@ -139,11 +139,9 @@ int32_t Plane::relative_altitude_abs_cm(void)
  */
 float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 {
-#if RANGEFINDER_ENABLED == ENABLED
    if (use_rangefinder_if_available && rangefinder_state.in_range) {
         return rangefinder_state.height_estimate;
     }
-#endif
 
 #if AP_TERRAIN_AVAILABLE
     float altitude;
@@ -475,10 +473,10 @@ float Plane::mission_alt_offset(void)
 {
     float ret = g.alt_offset;
     if (control_mode == AUTO &&
-            (auto_state.land_in_progress || auto_state.wp_is_land_approach)) {
+            (landing.in_progress || auto_state.wp_is_land_approach)) {
         // when landing after an aborted landing due to too high glide
         // slope we use an offset from the last landing attempt
-        ret += auto_state.land_alt_offset;
+        ret += landing.alt_offset;
     }
     return ret;
 }
@@ -571,7 +569,6 @@ float Plane::lookahead_adjustment(void)
  */
 float Plane::rangefinder_correction(void)
 {
-#if RANGEFINDER_ENABLED == ENABLED
     if (millis() - rangefinder_state.last_correction_time_ms > 5000) {
         // we haven't had any rangefinder data for 5s - don't use it
         return 0;
@@ -588,12 +585,8 @@ float Plane::rangefinder_correction(void)
     }
 
     return rangefinder_state.correction;
-#else
-    return 0;
-#endif
 }
 
-#if RANGEFINDER_ENABLED == ENABLED
 /*
   update the offset between rangefinder height and terrain height
  */
@@ -664,7 +657,7 @@ void Plane::rangefinder_height_update(void)
         if (now - rangefinder_state.last_correction_time_ms > 5000) {
             rangefinder_state.correction = correction;
             rangefinder_state.initial_correction = correction;
-            auto_state.initial_land_slope = auto_state.land_slope;
+            landing.initial_slope = landing.slope;
             rangefinder_state.last_correction_time_ms = now;
         } else {
             rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
@@ -680,4 +673,3 @@ void Plane::rangefinder_height_update(void)
         
     }
 }
-#endif
