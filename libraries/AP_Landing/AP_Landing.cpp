@@ -236,27 +236,3 @@ bool AP_Landing::restart_landing_sequence()
     return success;
 }
 
-/*
-   find the nearest landing sequence starting point (DO_LAND_START) and
-   switch to that mission item.  Returns false if no DO_LAND_START
-   available.
- */
-bool AP_Landing::jump_to_landing_sequence(void)
-{
-    uint16_t land_idx = mission.get_landing_sequence_start();
-    if (land_idx != 0) {
-        if (mission.set_current_cmd(land_idx)) {
-
-            //if the mission has ended it has to be restarted
-            if (mission.state() == AP_Mission::MISSION_STOPPED) {
-                mission.resume();
-            }
-
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing sequence start");
-            return true;
-        }
-    }
-
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
-    return false;
-}
