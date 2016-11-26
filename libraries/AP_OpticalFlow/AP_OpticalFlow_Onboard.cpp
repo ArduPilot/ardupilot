@@ -77,6 +77,8 @@ void AP_OpticalFlow_Onboard::update()
 
         state.bodyRate.y = 1.0f / float(data_frame.delta_time) *
                            data_frame.gyro_y_integral;
+
+        _applyYaw(state.flowRate);
     } else {
         state.flowRate.zero();
         state.bodyRate.zero();
