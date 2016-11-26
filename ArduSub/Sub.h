@@ -81,16 +81,10 @@
 #include <AC_Fence/AC_Fence.h>           // ArduCopter Fence library
 #include <AC_Avoidance/AC_Avoid.h>           // Arducopter stop at fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
-#if RCMAP_ENABLED == ENABLED
-#include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
-#endif
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_Terrain/AP_Terrain.h>
-#if RPM_ENABLED == ENABLED
-#include <AP_RPM/AP_RPM.h>
-#endif
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include "../libraries/AP_LeakDetector/AP_LeakDetector.h" // Leak detector
@@ -100,6 +94,14 @@
 #include "GCS_Mavlink.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
+#if RCMAP_ENABLED == ENABLED
+#include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
+#endif
+
+#if RPM_ENABLED == ENABLED
+#include <AP_RPM/AP_RPM.h>
+#endif
+
 #if GRIPPER_ENABLED == ENABLED
 #include <AP_Gripper/AP_Gripper.h>             // gripper stuff
 #endif
