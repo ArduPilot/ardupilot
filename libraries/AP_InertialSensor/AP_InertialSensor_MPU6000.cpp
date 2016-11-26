@@ -635,9 +635,24 @@ void AP_InertialSensor_MPU6000::_read_fifo()
     
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, MPU_FIFO_BUFFER_LEN);
-        if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU_SAMPLE_SIZE)) {
-            printf("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
-            goto check_registers;
+        if (!_dev->set_chip_select(true)) {
+            if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU_SAMPLE_SIZE)) {
+                goto check_registers;
+            }
+        } else {
+            // this ensures we keep things nicely setup for DMA
+            uint8_t reg = MPUREG_FIFO_R_W | 0x80;
+            if (!_dev->transfer(&reg, 1, nullptr, 0)) {
+                _dev->set_chip_select(false);
+                goto check_registers;
+            }
+            memset(rx, 0, n * MPU_SAMPLE_SIZE);
+            if (!_dev->transfer(rx, n * MPU_SAMPLE_SIZE, rx, n * MPU_SAMPLE_SIZE)) {
+                hal.console->printf("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
+                _dev->set_chip_select(false);
+                goto check_registers;
+            }
+            _dev->set_chip_select(false);
         }
 
         if (_fast_sampling) {
