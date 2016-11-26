@@ -69,7 +69,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
       thrashing of the heap once we are up. The ttyACM0 driver may not
       connect for some time after boot
      */
-    if (rxS != 0 && rxS != _readbuf.get_size()) {
+    if (rxS != _readbuf.get_size()) {
         _initialised = false;
         while (_in_timer) {
             hal.scheduler->delay(1);
@@ -85,7 +85,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     /*
       allocate the write buffer
      */
-    if (txS != 0 && txS != _writebuf.get_size()) {
+    if (txS != _writebuf.get_size()) {
         _initialised = false;
         while (_in_timer) {
             hal.scheduler->delay(1);
