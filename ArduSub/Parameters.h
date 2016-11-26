@@ -94,8 +94,6 @@ public:
         k_param_rc_13,
         k_param_rc_14,
         k_param_rally,
-        k_param_poshold_brake_rate,
-        k_param_poshold_brake_angle_max,
         k_param_pilot_accel_z,
         k_param_land_repositioning,
         k_param_rangefinder, // rangefinder object
@@ -329,9 +327,6 @@ public:
 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
-
-    AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
-    AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
     
     // Waypoints
     //
