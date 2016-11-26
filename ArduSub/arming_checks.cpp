@@ -482,13 +482,6 @@ bool Sub::pre_arm_terrain_check(bool display_failure)
         return true;
     }
 
-    // check if terrain following is enabled, using a range finder but RTL_ALT is higher than rangefinder's max range
-    // To-Do: modify RTL return path to fly at or above the RTL_ALT and remove this check
-    if ((rangefinder.num_sensors() > 0) && (g.rtl_altitude > rangefinder.max_distance_cm())) {
-        gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: RTL_ALT above rangefinder max range");
-        return false;
-    }
-
     // show terrain statistics
     uint16_t terr_pending, terr_loaded;
     terrain.get_statistics(terr_pending, terr_loaded);

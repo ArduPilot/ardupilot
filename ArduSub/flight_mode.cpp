@@ -59,10 +59,6 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
             success = surface_init(ignore_checks);
             break;
 
-        case RTL:
-            success = rtl_init(ignore_checks);
-            break;
-
 #if TRANSECT_ENABLED == ENABLED
         case TRANSECT:
             success = transect_init(ignore_checks);
@@ -162,10 +158,6 @@ void Sub::update_flight_mode()
             surface_run();
             break;
 
-        case RTL:
-            rtl_run();
-            break;
-
 #if TRANSECT_ENABLED == ENABLED
         case TRANSECT:
             transect_run();
@@ -226,7 +218,6 @@ bool Sub::mode_requires_GPS(control_mode_t mode) {
         case AUTO:
         case GUIDED:
         case VELHOLD:
-        case RTL:
         case CIRCLE:
         case POSHOLD:
         case TRANSECT:
@@ -266,7 +257,6 @@ void Sub::notify_flight_mode(control_mode_t mode) {
     switch(mode) {
         case AUTO:
         case GUIDED:
-        case RTL:
         case CIRCLE:
         case SURFACE:
             // autopilot modes
@@ -302,9 +292,6 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case VELHOLD:
         port->print("VELHOLD");
-        break;
-    case RTL:
-        port->print("RTL");
         break;
     case CIRCLE:
         port->print("CIRCLE");
