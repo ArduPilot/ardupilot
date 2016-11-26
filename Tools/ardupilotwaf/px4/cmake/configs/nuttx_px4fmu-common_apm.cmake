@@ -22,7 +22,6 @@ set(config_module_list
     drivers/trone
     drivers/mkblctrl
     drivers/batt_smbus
-    drivers/irlock
 
 #
 # System commands
