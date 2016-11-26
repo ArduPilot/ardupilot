@@ -36,8 +36,6 @@ Sub::Sub(void) :
     wp_distance(0),
     auto_mode(Auto_WP),
     guided_mode(Guided_WP),
-    rtl_state(RTL_InitialClimb),
-    rtl_state_complete(false),
     circle_pilot_yaw_override(false),
     simple_cos_yaw(1.0f),
     simple_sin_yaw(0.0f),
@@ -73,7 +71,6 @@ Sub::Sub(void) :
     pmTest1(0),
     fast_loopTimer(0),
     mainLoop_count(0),
-    rtl_loiter_start_time(0),
     auto_trim_counter(0),
     ServoRelayEvents(relay),
 #if CAMERA == ENABLED

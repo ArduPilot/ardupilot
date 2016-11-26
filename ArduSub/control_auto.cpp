@@ -66,10 +66,6 @@ void Sub::auto_run()
         auto_land_run();
         break;
 
-    case Auto_RTL:
-        auto_rtl_run();
-        break;
-
     case Auto_Circle:
         auto_circle_run();
         break;
@@ -435,23 +431,6 @@ void Sub::auto_land_run()
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
-}
-
-// auto_rtl_start - initialises RTL in AUTO flight mode
-void Sub::auto_rtl_start()
-{
-    auto_mode = Auto_RTL;
-
-    // call regular rtl flight mode initialisation and ask it to ignore checks
-    rtl_init(true);
-}
-
-// auto_rtl_run - rtl in AUTO flight mode
-//      called by auto_run at 100hz or more
-void Sub::auto_rtl_run()
-{
-    // call regular rtl flight mode run function
-    rtl_run();
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location

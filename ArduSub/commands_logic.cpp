@@ -35,10 +35,6 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_loiter_time(cmd);
         break;
 
-    case MAV_CMD_NAV_RETURN_TO_LAUNCH:             //20
-        do_RTL();
-        break;
-
     case MAV_CMD_NAV_SPLINE_WAYPOINT:           // 82  Navigate to Waypoint using spline
         do_spline_wp(cmd);
         break;
@@ -189,9 +185,6 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time();
 
-    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        return verify_RTL();
-
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
         return verify_spline_wp(cmd);
 
@@ -250,17 +243,6 @@ void Sub::exit_mission()
     if(!auto_loiter_start()) {
         set_mode(ALT_HOLD, MODE_REASON_MISSION_END);
     }
-}
-
-/********************************************************************************/
-//
-/********************************************************************************/
-
-// do_RTL - start Return-to-Launch
-void Sub::do_RTL(void)
-{
-    // start rtl in auto flight mode
-    auto_rtl_start();
 }
 
 /********************************************************************************/
@@ -633,14 +615,6 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
 
     // check if we have completed circling
     return fabsf(circle_nav.get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
-}
-
-// verify_RTL - handles any state changes required to implement RTL
-// do_RTL should have been called once first to initialise all variables
-// returns true with RTL has completed successfully
-bool Sub::verify_RTL()
-{
-    return (rtl_state_complete && (rtl_state == RTL_FinalDescent || rtl_state == RTL_Land));
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
