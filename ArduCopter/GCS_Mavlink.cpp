@@ -1152,6 +1152,15 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_ACCEPTED;
             break;
 
+#if NAV_GUIDED == ENABLED
+        case MAV_CMD_NAV_GUIDED_ENABLE: {
+            AP_Mission::Mission_Command cmd = {0};
+            cmd.p1 = packet.param1;
+            copter.do_nav_guided_enable(cmd); 
+            break;
+        }
+#endif
+
 #if CAMERA == ENABLED
         case MAV_CMD_DO_DIGICAM_CONFIGURE:
             copter.camera.configure(packet.param1,
