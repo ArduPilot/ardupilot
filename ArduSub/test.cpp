@@ -40,7 +40,7 @@ int8_t Sub::test_baro(uint8_t argc, const Menu::arg *argv)
     init_barometer(true);
 
     while(1) {
-        delay(100);
+    	hal.scheduler->delay(100);
         read_barometer();
 
         if (!barometer.healthy()) {
@@ -92,7 +92,7 @@ int8_t Sub::test_compass(uint8_t argc, const Menu::arg *argv)
     print_hit_enter();
 
     while(1) {
-        delay(20);
+    	hal.scheduler->delay(20);
         if (millis() - fast_loopTimer > 19) {
             delta_ms_fast_loop      = millis() - fast_loopTimer;
             G_Dt                    = (float)delta_ms_fast_loop / 1000.0f;                       // used by DCM integrator
@@ -149,13 +149,13 @@ int8_t Sub::test_ins(uint8_t argc, const Menu::arg *argv)
     Vector3f gyro, accel;
     print_hit_enter();
     cliSerial->printf("INS\n");
-    delay(1000);
+    hal.scheduler->delay(1000);
 
     ahrs.init();
     ins.init(scheduler.get_loop_rate_hz());
     cliSerial->printf("...done\n");
 
-    delay(50);
+    hal.scheduler->delay(50);
 
     while(1) {
         ins.update();
@@ -169,7 +169,7 @@ int8_t Sub::test_ins(uint8_t argc, const Menu::arg *argv)
             (double)gyro.x, (double)gyro.y, (double)gyro.z,
             (double)test);
 
-        delay(40);
+        hal.scheduler->delay(40);
         if(cliSerial->available() > 0) {
             return (0);
         }
@@ -184,7 +184,7 @@ int8_t Sub::test_optflow(uint8_t argc, const Menu::arg *argv)
         print_hit_enter();
 
         while(1) {
-            delay(200);
+        	hal.scheduler->delay(200);
             optflow.update();
             const Vector2f& flowRate = optflow.flowRate();
             cliSerial->printf("flowX : %7.4f\t flowY : %7.4f\t flow qual : %d\n",
@@ -209,19 +209,19 @@ int8_t Sub::test_optflow(uint8_t argc, const Menu::arg *argv)
 int8_t Sub::test_relay(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
-    delay(1000);
+    hal.scheduler->delay(1000);
 
     while(1) {
         cliSerial->printf("Relay on\n");
         relay.on(0);
-        delay(3000);
+        hal.scheduler->delay(3000);
         if(cliSerial->available() > 0) {
             return (0);
         }
 
         cliSerial->printf("Relay off\n");
         relay.off(0);
-        delay(3000);
+        hal.scheduler->delay(3000);
         if(cliSerial->available() > 0) {
             return (0);
         }
@@ -252,7 +252,7 @@ int8_t Sub::test_rangefinder(uint8_t argc, const Menu::arg *argv)
 
     print_hit_enter();
     while(1) {
-        delay(100);
+    	hal.scheduler->delay(100);
         rangefinder.update();
 
         cliSerial->printf("Primary: status %d distance_cm %d \n", (int)rangefinder.status(), rangefinder.distance_cm());

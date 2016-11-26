@@ -42,7 +42,7 @@ void Sub::esc_calibration_startup_check()
                 // turn on esc calibration notification
                 AP_Notify::flags.esc_calibration = true;
                 // block until we restart
-                while(1) { delay(5); }
+                while(1) { hal.scheduler->delay(5); }
             }
             break;
         case ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH:
@@ -94,7 +94,7 @@ void Sub::esc_calibration_passthrough()
 
         // read pilot input
         read_radio();
-        delay(10);
+        hal.scheduler->delay(10);
 
         // pass through to motors
         motors.set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);    }
@@ -119,7 +119,7 @@ void Sub::esc_calibration_auto()
     AP_Notify::flags.esc_calibration = true;
 
     // raise throttle to maximum
-    delay(10);
+    hal.scheduler->delay(10);
     motors.set_throttle_passthrough_for_esc_calibration(1.0f);
 
     // wait for safety switch to be pressed
@@ -128,11 +128,11 @@ void Sub::esc_calibration_auto()
             gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
             printed_msg = true;
         }
-        delay(10);
+        hal.scheduler->delay(10);
     }
 
     // delay for 5 seconds
-    delay(5000);
+    hal.scheduler->delay(5000);
 
     // reduce throttle to minimum
     motors.set_throttle_passthrough_for_esc_calibration(0.0f);
@@ -141,5 +141,5 @@ void Sub::esc_calibration_auto()
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
     // block until we restart
-    while(1) { delay(5); }
+    while(1) { hal.scheduler->delay(5); }
 }
