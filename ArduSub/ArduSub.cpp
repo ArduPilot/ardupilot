@@ -465,8 +465,10 @@ void Sub::three_hz_loop()
 
     update_events();
 
+#if CH6_TUNE_ENABLED == ENABLED
     // update ch6 in flight tuning
     tuning();
+#endif
 }
 
 // one_hz_loop - runs at 1Hz

@@ -343,9 +343,11 @@ public:
     //
     AP_Int32        log_bitmask;
     AP_Int8         esc_calibrate;
+#if CH6_TUNE_ENABLED == ENABLED
     AP_Int8         radio_tuning;
     AP_Int16        radio_tuning_high;
     AP_Int16        radio_tuning_low;
+#endif
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
     AP_Int8         ch9_option;
