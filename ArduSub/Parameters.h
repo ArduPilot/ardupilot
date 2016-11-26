@@ -159,7 +159,6 @@ public:
         k_param_compass,
         k_param_fs_batt_voltage,
         k_param_ch7_option,
-        k_param_super_simple = 155,
         k_param_ahrs, // AHRS group // 159
 
         //
@@ -210,7 +209,6 @@ public:
         k_param_flight_mode4,
         k_param_flight_mode5,
         k_param_flight_mode6,
-        k_param_simple_modes,
 
         //
         // 210: Waypoint data
@@ -321,7 +319,6 @@ public:
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         compass_enabled;
-    AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
     AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
 
@@ -350,7 +347,6 @@ public:
     AP_Int8         flight_mode4;
     AP_Int8         flight_mode5;
     AP_Int8         flight_mode6;
-    AP_Int8         simple_modes;
 
     // Misc
     //
