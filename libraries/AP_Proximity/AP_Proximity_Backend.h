@@ -19,6 +19,7 @@
 #include "AP_Proximity.h"
 
 #define PROXIMITY_SECTORS_MAX   12  // maximum number of sectors
+#define PROXIMITY_BOUNDARY_DIST_MIN 0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
 
 class AP_Proximity_Backend
 {
