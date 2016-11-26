@@ -88,7 +88,7 @@ void Sub::init_ardupilot()
         // least one second after powering up. Simplest solution for
         // now is to delay for 1 second. Something more elegant may be
         // added later
-        delay(1000);
+    	hal.scheduler->delay(1000);
     }
 
     // initialise serial port
@@ -226,7 +226,7 @@ void Sub::init_ardupilot()
         // the barometer begins updating when we get the first
         // HIL_STATE message
         gcs_send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
-        delay(1000);
+        hal.scheduler->delay(1000);
     }
 
     // set INS to HIL mode

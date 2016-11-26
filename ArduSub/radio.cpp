@@ -88,7 +88,7 @@ void Sub::init_rc_out()
     motors.Init();                                              // motor initialisation
 
     for(uint8_t i = 0; i < 5; i++) {
-        delay(20);
+    	hal.scheduler->delay(20);
         read_radio();
     }
 
