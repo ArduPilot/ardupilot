@@ -23,13 +23,13 @@
 //#define RANGEFINDER_ENABLED   DISABLED            // disable rangefinder to save 1k of flash
 //#define PROXIMITY_ENABLED     DISABLED            // disable proximity sensors
 //#define POSHOLD_ENABLED       DISABLED            // disable PosHold flight mode to save 4.5k of flash
-//#define AC_RALLY              DISABLED            // disable rally points library (must also disable terrain which relies on rally)
-#define AC_TERRAIN            DISABLED            // disable terrain library
 #define GRIPPER_ENABLED           DISABLED            // disable gripper to save 500bytes of flash
 //#define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 
 // features below are disabled by default on all boards
+//#define AC_RALLY              ENABLED            // enable rally points library
+//#define AC_TERRAIN            ENABLED            // enable terrain library (Must also enable Rally)
 //#define OPTFLOW               ENABLED // enable optical flow sensor support
 //#define DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE   // disable mode changes from GCS during Radio failsafes.  Avoids a race condition for vehicle like Solo in which the RC and telemetry travel along the same link
 
