@@ -81,7 +81,6 @@ enum aux_sw_func {
 	AUXSW_RELAY2 =              34, // Relay2 pin on/off (in Mission planner set CH8_OPT  = 34)
     AUXSW_RELAY3 =              35, // Relay3 pin on/off (in Mission planner set CH9_OPT  = 35)
     AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
-    AUXSW_THROW =               37  // change to THROW flight mode
 };
 
 // Frame types
@@ -120,7 +119,6 @@ enum control_mode_t {
     TRANSECT =     13,  // automatic x/y velocity, automatic heading/crosstrack error compensation, automatic depth/throttle
     AUTOTUNE =     15,  // not implemented in sub // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-	THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
 	MANUAL =	   19   // Pass-through input with no stabilization
 };
 
@@ -252,15 +250,6 @@ enum LoiterModeState {
     Loiter_Takeoff,
     Loiter_Flying,
     Loiter_Landed
-};
-
-// Throw states
-enum ThrowModeState {
-    Throw_Disarmed,
-    Throw_Detecting,
-    Throw_Uprighting,
-    Throw_HgtStabilise,
-    Throw_PosHold
 };
 
 // LAND state
