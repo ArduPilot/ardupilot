@@ -442,9 +442,6 @@ void Sub::one_hz_loop()
 
         update_using_interlock();
 
-        // check the user hasn't updated the frame orientation
-        motors.set_frame_orientation(g.frame_orientation);
-
         // set all throttle channel settings
         motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
     }

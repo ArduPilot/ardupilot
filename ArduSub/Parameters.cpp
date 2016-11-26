@@ -418,13 +418,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 0 32767
     GSCALAR(radio_tuning_high, "TUNE_HIGH",         1000),
 
-    // @Param: FRAME
-    // @DisplayName: Frame Orientation (+, X or V)
-    // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
-    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B (New)
-    // @User: Standard
-    GSCALAR(frame_orientation, "FRAME",             AP_MOTORS_X_FRAME),
-
     // @Param: CH7_OPT
     // @DisplayName: Channel 7 option
     // @Description: Select which function if performed when CH7 is above 1800 pwm
