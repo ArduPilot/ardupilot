@@ -17,6 +17,8 @@
  * AP_IRLock_I2C.cpp
  *
  * Based on AP_IRLock_PX4 by MLandes
+ *
+ * See: http://irlock.com/pages/serial-communication-protocol
  */
 #include <AP_HAL/AP_HAL.h>
 #include "AP_IRLock_I2C.h"
@@ -26,56 +28,45 @@ extern const AP_HAL::HAL& hal;
 
 #define IRLOCK_I2C_ADDRESS		0x54
 
-#define IRLOCK_SYNC			0xAA55
-#define IRLOCK_RESYNC		0x5500
-#define IRLOCK_ADJUST		0xAA
+#define IRLOCK_SYNC			0xAA55AA55
 
 void AP_IRLock_I2C::init()
 {
-    AP_HAL::OwnPtr<AP_HAL::Device> tdev = hal.i2c_mgr->get_device(1, IRLOCK_I2C_ADDRESS);
-    if (!tdev || !tdev->get_semaphore()->take(0)) {
+    dev = std::move(hal.i2c_mgr->get_device(1, IRLOCK_I2C_ADDRESS));
+    if (!dev) {
         return;
     }
 
-    // get initial frame
-    read_frame();
+    sem = hal.util->new_semaphore();
 
-    tdev->get_semaphore()->give();
-    
-    if (_flags.healthy) {
-        // read at 50Hz
-        printf("Found IRLock on I2C\n");
-        dev = std::move(tdev);
+    // read at 50Hz
+    printf("Starting IRLock on I2C\n");
 
-        sem = hal.util->new_semaphore();        
-
-        dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_IRLock_I2C::read_frame, bool));
-    }
+    dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_IRLock_I2C::read_frames, bool));
 }
 
-/* 
-   synchronise with frame start
+/*
+   synchronise with frame start. We expect 0xAA55AA55 at the start of
+   a frame
 */
 bool AP_IRLock_I2C::sync_frame_start(void)
 {
-	uint16_t sync_word;
-    if (!dev->transfer(nullptr, 0, (uint8_t *)&sync_word, 2)) {
-		return false;
-	}
-    if (sync_word == IRLOCK_SYNC) {
-        return true;
-    }
-    if (sync_word != IRLOCK_RESYNC) {
+    uint32_t sync_word;
+    if (!dev->transfer(nullptr, 0, (uint8_t *)&sync_word, 4)) {
         return false;
     }
-    uint8_t sync_byte;
-    if (!dev->transfer(nullptr, 0, &sync_byte, 1)) {
-        return false;
+    uint8_t count=40;
+    while (count-- && sync_word != IRLOCK_SYNC && sync_word != 0) {
+        uint8_t sync_byte;
+        if (!dev->transfer(nullptr, 0, &sync_byte, 1)) {
+            return false;
+        }
+        if (sync_byte == 0) {
+            break;
+        }
+        sync_word = (sync_word>>8) | (uint32_t(sync_byte)<<24);
     }
-    if (sync_byte == IRLOCK_ADJUST) {
-        return true;
-    }
-	return false;
+    return sync_word == IRLOCK_SYNC;
 }
 
 /*
@@ -91,30 +82,41 @@ void AP_IRLock_I2C::pixel_to_1M_plane(float pix_x, float pix_y, float &ret_x, fl
 }
 
 /*
-  read a frame from sensor 
+  read a frame from sensor
 */
-bool AP_IRLock_I2C::read_frame(void)
+bool AP_IRLock_I2C::read_block(struct frame &irframe)
 {
-	if (!sync_frame_start()) {
-		return false;
-	}
-
-    struct frame irframe;
     if (!dev->transfer(nullptr, 0, (uint8_t*)&irframe, sizeof(irframe))) {
         return false;
     }
 
-	/* check crc */
-	if (irframe.signature + irframe.pixel_x + irframe.pixel_y + irframe.pixel_size_x + irframe.pixel_size_y !=
-        irframe.checksum) {
+    /* check crc */
+    uint32_t crc = irframe.signature + irframe.pixel_x + irframe.pixel_y + irframe.pixel_size_x + irframe.pixel_size_y;
+    if (crc != irframe.checksum) {
+        // printf("bad crc 0x%04x 0x%04x\n", crc, irframe.checksum);
         return false;
-	}
+    }
+    return true;
+}
 
-	int16_t corner1_pix_x = irframe.pixel_x - irframe.pixel_size_x/2;
+bool AP_IRLock_I2C::read_frames(void)
+{
+    if (!sync_frame_start()) {
+        return true;
+    }
+    struct frame irframe;
+
+    _last_sync_ms = AP_HAL::millis();
+    
+    if (!read_block(irframe)) {
+        return true;
+    }
+
+    int16_t corner1_pix_x = irframe.pixel_x - irframe.pixel_size_x/2;
     int16_t corner1_pix_y = irframe.pixel_y - irframe.pixel_size_y/2;
     int16_t corner2_pix_x = irframe.pixel_x + irframe.pixel_size_x/2;
     int16_t corner2_pix_y = irframe.pixel_y + irframe.pixel_size_y/2;
-    
+
     float corner1_pos_x, corner1_pos_y, corner2_pos_x, corner2_pos_y;
     pixel_to_1M_plane(corner1_pix_x, corner1_pix_y, corner1_pos_x, corner1_pos_y);
     pixel_to_1M_plane(corner2_pix_x, corner2_pix_y, corner2_pos_x, corner2_pos_y);
@@ -128,7 +130,18 @@ bool AP_IRLock_I2C::read_frame(void)
         _target_info.size_y = corner2_pos_y-corner1_pos_y;
         sem->give();
     }
-    
+
+#if 0
+    // debugging
+    static uint32_t lastt;
+    if (_target_info.timestamp - lastt > 2000) {
+        lastt = _target_info.timestamp;
+        printf("pos_x:%.5f pos_y:%.5f size_x:%.6f size_y:%.5f\n", 
+               _target_info.pos_x, _target_info.pos_y,
+               _target_info.size_x, _target_info.size_y);
+    }
+#endif
+
     return true;
 }
 
@@ -136,7 +149,7 @@ bool AP_IRLock_I2C::read_frame(void)
 bool AP_IRLock_I2C::update()
 {
     bool new_data = false;
-    if (!sem) {
+    if (!dev || !sem) {
         return false;
     }
     if (sem->take(0)) {
@@ -144,7 +157,7 @@ bool AP_IRLock_I2C::update()
             new_data = true;
         }
         _last_update_ms = _target_info.timestamp;
-        _flags.healthy = (AP_HAL::millis() - _last_update_ms < 100);
+        _flags.healthy = (AP_HAL::millis() - _last_sync_ms < 100);
         sem->give();
     }
     // return true if new data found
