@@ -89,6 +89,7 @@ private:
     AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
     AP_Int16 _yawAngle_cd;          // yaw angle of sensor X axis with respect to vehicle X axis - centi degrees
     AP_Vector3f _pos_offset;        // position offset of the flow sensor in the body frame
+    AP_Int8  _bus_id;               // ID on bus (some sensors only)
 
     // state filled in by backend
     struct OpticalFlow_state _state;
@@ -97,7 +98,3 @@ private:
 };
 
 #include "OpticalFlow_backend.h"
-#include "AP_OpticalFlow_SITL.h"
-#include "AP_OpticalFlow_PX4.h"
-#include "AP_OpticalFlow_Linux.h"
-#include "AP_OpticalFlow_Pixart.h"

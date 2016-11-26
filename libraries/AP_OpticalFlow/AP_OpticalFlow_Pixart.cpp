@@ -25,6 +25,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <utility>
 #include "OpticalFlow.h"
+#include "AP_OpticalFlow_Pixart.h"
 #include "AP_OpticalFlow_Pixart_SROM.h"
 #include <stdio.h>
 
