@@ -382,7 +382,6 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
 
 void Plane::send_rangefinder(mavlink_channel_t chan)
 {
-#if RANGEFINDER_ENABLED == ENABLED
     if (!rangefinder.has_data()) {
         // no sonar to report
         return;
@@ -391,7 +390,6 @@ void Plane::send_rangefinder(mavlink_channel_t chan)
         chan,
         rangefinder.distance_cm() * 0.01f,
         rangefinder.voltage_mv()*0.001f);
-#endif
 }
 
 void Plane::send_current_waypoint(mavlink_channel_t chan)
@@ -1337,7 +1335,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_FAILED;
             
             // attempt to switch to next DO_LAND_START command in the mission
-            if (plane.jump_to_landing_sequence()) {
+            if (plane.landing.jump_to_landing_sequence()) {
+                plane.set_mode(AUTO, MODE_REASON_UNKNOWN);
                 result = MAV_RESULT_ACCEPTED;
             } 
             break;
@@ -1361,7 +1360,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 if (!is_zero(packet.param1)) {
                     plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
                 }
-                plane.auto_state.commanded_go_around = true;
+                plane.landing.commanded_go_around = true;
                
                 result = MAV_RESULT_ACCEPTED;
                 plane.gcs_send_text(MAV_SEVERITY_INFO,"Go around command accepted");
@@ -1897,11 +1896,9 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         handle_gps_inject(msg, plane.gps);
         break;
 
-#if RANGEFINDER_ENABLED == ENABLED
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
         plane.rangefinder.handle_msg(msg);
         break;
-#endif
 
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:

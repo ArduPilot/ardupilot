@@ -774,7 +774,7 @@ void Plane::set_servos(void)
     if (g.land_then_servos_neutral > 0 &&
             control_mode == AUTO &&
             g.land_disarm_delay > 0 &&
-            auto_state.land_complete &&
+            landing.complete &&
             !arming.is_armed()) {
         // after an auto land and auto disarm, set the servos to be neutral just
         // in case we're upside down or some crazy angle and straining the servos.
