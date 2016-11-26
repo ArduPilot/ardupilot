@@ -51,7 +51,7 @@ int8_t Sub::setup_factory(uint8_t argc, const Menu::arg *argv)
     AP_Param::erase_all();
     cliSerial->printf("\nReboot board");
 
-    delay(1000);
+    hal.scheduler->delay(1000);
 
     for (;; ) {
     }
