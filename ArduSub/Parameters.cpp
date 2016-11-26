@@ -366,6 +366,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle, 9:Disabled
     GSCALAR(esc_calibrate, "ESC_CALIBRATION",       0),
 
+#if CH6_TUNE_ENABLED == ENABLED
     // @Param: TUNE
     // @DisplayName: Channel 6 Tuning
     // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
@@ -386,6 +387,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     // @Range: 0 32767
     GSCALAR(radio_tuning_high, "TUNE_HIGH",         1000),
+#endif
 
 #if AUXSW_ENABLED == ENABLED
     // @Param: CH7_OPT
