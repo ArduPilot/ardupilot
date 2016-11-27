@@ -348,7 +348,7 @@ void *PX4Scheduler::_io_thread(void *arg)
         poll(nullptr, 0, 1);
     }
     while (!_px4_thread_should_exit) {
-        poll(nullptr, 0, 1);
+        sched->delay_microseconds_semaphore(1000);
 
         // run registered IO processes
         perf_begin(sched->_perf_io_timers);
@@ -368,7 +368,7 @@ void *PX4Scheduler::_storage_thread(void *arg)
         poll(nullptr, 0, 1);
     }
     while (!_px4_thread_should_exit) {
-        poll(nullptr, 0, 10);
+        sched->delay_microseconds_semaphore(10000);
 
         // process any pending storage writes
         perf_begin(sched->_perf_storage_timer);
