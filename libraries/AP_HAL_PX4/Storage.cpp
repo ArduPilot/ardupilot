@@ -97,26 +97,6 @@ void PX4Storage::write_block(uint16_t loc, const void *src, size_t n)
     }
 }
 
-void PX4Storage::bus_lock(bool lock)
-{
-#if defined (CONFIG_ARCH_BOARD_PX4FMU_V4)
-    /*
-      this is needed on Pixracer where the ms5611 may be on the same
-      bus as FRAM, and the NuttX ramtron driver does not go via the
-      PX4 spi bus abstraction. The ramtron driver relies on
-      SPI_LOCK(). We need to prevent the ms5611 reads which happen in
-      interrupt context from interfering with the FRAM operations. As
-      the px4 spi bus abstraction just uses interrupt blocking as the
-      locking mechanism we need to block interrupts here as well.
-    */
-    if (lock) {
-        irq_state = irqsave();
-    } else {
-        irqrestore(irq_state);
-    }
-#endif
-}
-
 void PX4Storage::_timer_tick(void)
 {
     if (!_initialised || _dirty_mask.empty()) {
@@ -124,6 +104,7 @@ void PX4Storage::_timer_tick(void)
     }
     perf_begin(_perf_storage);
 
+#if !USE_FLASH_STORAGE
     if (_fd == -1) {
         _fd = open(MTD_PARAMS_FILE, O_WRONLY);
         if (_fd == -1) {
@@ -132,6 +113,7 @@ void PX4Storage::_timer_tick(void)
             return;
         }
     }
+#endif
 
     // write out the first dirty line. We don't write more
     // than one to keep the latency of this call to a minimum
@@ -157,6 +139,28 @@ void PX4Storage::_timer_tick(void)
     
     perf_end(_perf_storage);
 }
+
+#if !USE_FLASH_STORAGE
+void PX4Storage::bus_lock(bool lock)
+{
+#if defined (CONFIG_ARCH_BOARD_PX4FMU_V4)
+    /*
+      this is needed on Pixracer where the ms5611 may be on the same
+      bus as FRAM, and the NuttX ramtron driver does not go via the
+      PX4 spi bus abstraction. The ramtron driver relies on
+      SPI_LOCK(). We need to prevent the ms5611 reads which happen in
+      interrupt context from interfering with the FRAM operations. As
+      the px4 spi bus abstraction just uses interrupt blocking as the
+      locking mechanism we need to block interrupts here as well.
+    */
+    if (lock) {
+        irq_state = irqsave();
+    } else {
+        irqrestore(irq_state);
+    }
+#endif
+}
+
 
 /*
   write one storage line. This also updates _dirty_mask. 
@@ -206,6 +210,8 @@ void PX4Storage::_mtd_load(void)
     }
     close(fd);
 }
+
+#else // USE_FLASH_STORAGE
 
 /*
   load all data from flash
@@ -276,5 +282,7 @@ bool PX4Storage::_flash_erase_ok(void)
     // only allow erase while disarmed
     return !hal.util->get_soft_armed();
 }
+#endif // USE_FLASH_STORAGE
+
 
 #endif // CONFIG_HAL_BOARD
