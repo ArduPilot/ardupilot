@@ -23,6 +23,8 @@ namespace PX4 {
 
 uint8_t PX4::PX4_I2C::instance;
 
+DeviceBus I2CDevice::businfo[I2CDevice::num_buses];
+
 /*
   constructor for I2C wrapper class
  */    
