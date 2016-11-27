@@ -254,9 +254,9 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
      */
     int32_t glitch_cm = rangefinder_state.alt_cm - target_rangefinder_alt;
     if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
-        rangefinder_state.glitch_count++;
+        rangefinder_state.glitch_count = MAX(rangefinder_state.glitch_count+1,1);
     } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
-        rangefinder_state.glitch_count--;
+        rangefinder_state.glitch_count = MIN(rangefinder_state.glitch_count-1,-1);
     } else {
         rangefinder_state.glitch_count = 0;
     }
