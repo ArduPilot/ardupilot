@@ -27,14 +27,14 @@ private:
       reply packet sent from simulator to ArduPilot
      */
     struct irlock_packet {
-            uint64_t timestamp;
-            uint16_t num_targets;
-            float pos_x;
-            float pos_y;
-            float size_x;
-            float size_y;
-          };
+        uint64_t timestamp;
+        uint16_t num_targets;
+        float pos_x;
+        float pos_y;
+        float size_x;
+        float size_y;
+    };
 
-    uint64_t _last_timestamp;
+    uint32_t _last_timestamp;
     SocketAPM sock;
 };
