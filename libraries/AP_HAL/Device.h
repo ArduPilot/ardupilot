@@ -51,6 +51,11 @@ public:
         return _bus_id.devid_s.bus_type;
     }
 
+    // return bus number
+    uint8_t bus_num(void) const {
+        return _bus_id.devid_s.bus;
+    }
+    
     // return 24 bit bus identifier
     uint32_t get_bus_id(void) const {
         return _bus_id.devid;
