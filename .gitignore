@@ -1,3 +1,7 @@
+modules/PX4Firmware/nuttx-configs/px4fmu-v2/nsh/defconfig
+modules/PX4Firmware/nuttx-configs/px4fmu-v4/nsh/defconfig
+modules/PX4Firmware/src/drivers/boards/px4fmu-v2/board_config.h
+modules/PX4Firmware/src/systemcmds/bl_update/bl_update.c
 /.lock-waf*
 /.waf*
 /Tools/autotest/aircraft/Rascal/reset.xml
