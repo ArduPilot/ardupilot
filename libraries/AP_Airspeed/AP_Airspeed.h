@@ -47,6 +47,9 @@ public:
     // altitude/climb_rate/acceleration interfaces are ever used
     void            calibrate(bool in_startup);
 
+    float           get_yaw(void) const {
+        return _yaw;
+    }
     // return the current airspeed in m/s
     float           get_airspeed(void) const {
         return _airspeed;
@@ -143,6 +146,9 @@ public:
                             PITOT_TUBE_ORDER_NEGATIVE = 1,
                             PITOT_TUBE_ORDER_AUTO     = 2 };
 
+    float get_yaw_pressure(void);
+
+
 private:
     AP_Float        _offset;
     AP_Float        _ratio;
@@ -153,6 +159,8 @@ private:
     AP_Int8         _autocal;
     AP_Int8         _tube_order;
     AP_Int8         _skip_cal;
+    float           _yaw_pressure;
+    float           _yaw;
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;

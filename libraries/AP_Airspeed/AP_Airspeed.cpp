@@ -137,6 +137,10 @@ void AP_Airspeed::init()
 }
 
 // read the airspeed sensor
+float AP_Airspeed::get_yaw_pressure(void) {
+    return digital.get_yaw_pressure();
+}
+
 float AP_Airspeed::get_pressure(void)
 {
     if (!_enable) {
@@ -218,6 +222,7 @@ void AP_Airspeed::read(void)
         return;
     }
     float raw_pressure = get_pressure();
+    float raw_yaw = get_yaw_pressure();
     if (_cal.start_ms != 0) {
         update_calibration(raw_pressure);
     }
@@ -250,7 +255,8 @@ void AP_Airspeed::read(void)
     airspeed_pressure       = MAX(airspeed_pressure, 0);
     _last_pressure          = airspeed_pressure;
     _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
-    _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
+    _airspeed               = 0.95f * _airspeed  +  0.05f * _raw_airspeed;
+    _yaw                    = 0.95f * _yaw + 0.05f * raw_yaw;
     _last_update_ms         = AP_HAL::millis();
 }
 

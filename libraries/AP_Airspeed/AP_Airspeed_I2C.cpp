@@ -103,7 +103,7 @@ typedef enum {
     sensresult = (val[0] << 8);
     sensresult += val[1];
     sensresult &= ~0x0003;
-    float sensironPressure = sensresult / 1200.0; // (SDP6x0-25Pa scale factor is 1200)
+    _yaw_pressure = sensresult / 1200.0; // (SDP6x0-25Pa scale factor is 1200)
 
     float output_min = 1638;
     float output_max = 14745;
@@ -149,6 +149,11 @@ bool AP_Airspeed_I2C::_timer()
         _collect();
     }
     return true;
+}
+
+float AP_Airspeed_I2C::get_yaw_pressure(void)
+{
+    return _yaw_pressure;
 }
 
 // return the current differential_pressure in Pascal
