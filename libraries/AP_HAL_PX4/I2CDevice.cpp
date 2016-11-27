@@ -141,7 +141,7 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
         return nullptr;
     }
     struct DeviceBus &binfo = businfo[_busnum];
-    return binfo.register_periodic_callback(period_usec, cb);
+    return binfo.register_periodic_callback(period_usec, cb, this);
 }
     
 

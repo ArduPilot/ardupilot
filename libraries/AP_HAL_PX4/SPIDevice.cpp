@@ -223,7 +223,7 @@ AP_HAL::Semaphore *SPIDevice::get_semaphore()
 
 AP_HAL::Device::PeriodicHandle SPIDevice::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
-    return bus.register_periodic_callback(period_usec, cb);
+    return bus.register_periodic_callback(period_usec, cb, this);
 }
 
 bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
