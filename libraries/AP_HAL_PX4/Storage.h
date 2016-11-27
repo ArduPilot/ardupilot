@@ -1,6 +1,12 @@
 #pragma once
 
-#define USE_FLASH_STORAGE 1
+/*
+  we can optionally use flash for storage instead of FRAM. That allows
+  ArduPilot to run on a wider range of boards and reduces board cost
+ */
+#ifndef USE_FLASH_STORAGE
+#define USE_FLASH_STORAGE 0
+#endif
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_PX4_Namespace.h"
@@ -41,14 +47,16 @@ private:
     perf_counter_t  _perf_storage;
     perf_counter_t  _perf_errors;
 
+#if !USE_FLASH_STORAGE
     int _fd = -1;
+    void bus_lock(bool lock);
     void _mtd_load(void);
     void _mtd_write(uint16_t line);
 #if defined (CONFIG_ARCH_BOARD_PX4FMU_V4)
     irqstate_t irq_state;
 #endif
-    void bus_lock(bool lock);
 
+#else // USE_FLASH_STORAGE
     bool _flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length);
     bool _flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length);
     bool _flash_erase_sector(uint8_t sector);
@@ -65,4 +73,5 @@ private:
     
     void _flash_load(void);
     void _flash_write(uint16_t line);
+#endif
 };
