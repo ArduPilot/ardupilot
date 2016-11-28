@@ -84,7 +84,7 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
  */
 uint16_t SITL_State::_ground_sonar(void)
 {
-    float altitude = height_agl();
+    float altitude = _sitl->height_agl;
 
     // sensor position offset in body frame
     Vector3f relPosSensorBF = _sitl->rngfnd_pos_offset;

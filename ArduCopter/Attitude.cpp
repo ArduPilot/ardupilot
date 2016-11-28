@@ -244,9 +244,31 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
         target_rangefinder_alt += target_rate * dt;
     }
 
-    // do not let target altitude get too far from current altitude above ground
-    // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
-    target_rangefinder_alt = constrain_float(target_rangefinder_alt,rangefinder_state.alt_cm-pos_control.get_leash_down_z(),rangefinder_state.alt_cm+pos_control.get_leash_up_z());
+    /*
+      handle rangefinder glitches. When we get a rangefinder reading
+      more than RANGEFINDER_GLITCH_ALT_CM different from the current
+      rangefinder reading then we consider it a glitch and reject
+      until we get RANGEFINDER_GLITCH_NUM_SAMPLES samples in a
+      row. When that happens we reset the target altitude to the new
+      reading
+     */
+    int32_t glitch_cm = rangefinder_state.alt_cm - target_rangefinder_alt;
+    if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
+        rangefinder_state.glitch_count = MAX(rangefinder_state.glitch_count+1,1);
+    } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
+        rangefinder_state.glitch_count = MIN(rangefinder_state.glitch_count-1,-1);
+    } else {
+        rangefinder_state.glitch_count = 0;
+    }
+    if (abs(rangefinder_state.glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
+        // shift to the new rangefinder reading
+        target_rangefinder_alt = rangefinder_state.alt_cm;
+        rangefinder_state.glitch_count = 0;
+    }
+    if (rangefinder_state.glitch_count != 0) {
+        // we are currently glitching, just use the target rate
+        return target_rate;
+    }
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
     distance_error = (target_rangefinder_alt - rangefinder_state.alt_cm) - (current_alt_target - current_alt);

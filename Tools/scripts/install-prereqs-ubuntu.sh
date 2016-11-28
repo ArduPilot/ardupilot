@@ -31,7 +31,7 @@ MACHINE_TYPE=$(uname -m)
 if [ ${MACHINE_TYPE} == 'x86_64' ]; then
     PX4_PKGS+=" libc6-i386"
 else
-  # 32-bit stuff here
+  echo "no extra pkgs for i386"
 fi
 
 # GNU Tools for ARM Embedded Processors

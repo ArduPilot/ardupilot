@@ -6,7 +6,6 @@ list(APPEND config_module_list
     drivers/ms5611
     drivers/boards/px4fmu-v1
     drivers/px4io
-    drivers/px4flow
 )
 
 set(config_io_board

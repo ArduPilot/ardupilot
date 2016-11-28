@@ -41,7 +41,7 @@ public:
     bool have_los_meas();
 
 private:
-    AP_IRLock_PX4 irlock;
+    AP_IRLock_I2C irlock;
 
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
     bool                _have_los_meas;         // true if there is a valid measurement from the camera

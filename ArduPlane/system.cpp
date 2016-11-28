@@ -338,10 +338,10 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     auto_state.checked_for_autoland = false;
 
     // reset go around command
-    auto_state.commanded_go_around = false;
+    landing.commanded_go_around = false;
 
     // not in pre-flare
-    auto_state.land_pre_flare = false;
+    landing.pre_flare = false;
     
     // zero locked course
     steer_state.locked_course_err = 0;
@@ -545,7 +545,7 @@ void Plane::exit_mode(enum FlightMode mode)
 
             if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND)
             {
-                restart_landing_sequence();
+                landing.restart_landing_sequence();
             }
         }
         auto_state.started_flying_in_auto_ms = 0;
@@ -859,7 +859,7 @@ bool Plane::disarm_motors(void)
     change_arm_state();
 
     // reload target airspeed which could have been modified by a mission
-    plane.g.airspeed_cruise_cm.load();
+    plane.aparm.airspeed_cruise_cm.load();
     
     return true;
 }

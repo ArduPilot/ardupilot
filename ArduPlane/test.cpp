@@ -152,7 +152,7 @@ int8_t Plane::test_failsafe(uint8_t argc, const Menu::arg *argv)
 
     oldSwitchPosition = readSwitch();
 
-    cliSerial->printf("Unplug battery, throttle in neutral, turn off radio.\n");
+    cliSerial->println("Unplug battery, throttle in neutral, turn off radio.");
     while(channel_throttle->get_control_in() > 0) {
         hal.scheduler->delay(20);
         read_radio();
@@ -168,7 +168,7 @@ int8_t Plane::test_failsafe(uint8_t argc, const Menu::arg *argv)
         }
 
         if(oldSwitchPosition != readSwitch()) {
-            cliSerial->printf("CONTROL MODE CHANGED: ");
+            cliSerial->print("CONTROL MODE CHANGED: ");
             print_flight_mode(cliSerial, readSwitch());
             cliSerial->println();
             fail_test++;
@@ -185,7 +185,7 @@ int8_t Plane::test_failsafe(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
         if(cliSerial->available() > 0) {
-            cliSerial->printf("LOS caused no change in APM.\n");
+            cliSerial->println("LOS caused no change in APM.");
             return (0);
         }
     }
@@ -197,14 +197,14 @@ int8_t Plane::test_relay(uint8_t argc, const Menu::arg *argv)
     hal.scheduler->delay(1000);
 
     while(1) {
-        cliSerial->printf("Relay on\n");
+        cliSerial->println("Relay on");
         relay.on(0);
         hal.scheduler->delay(3000);
         if(cliSerial->available() > 0) {
             return (0);
         }
 
-        cliSerial->printf("Relay off\n");
+        cliSerial->println("Relay off");
         relay.off(0);
         hal.scheduler->delay(3000);
         if(cliSerial->available() > 0) {
@@ -219,7 +219,7 @@ int8_t Plane::test_wp(uint8_t argc, const Menu::arg *argv)
 
     // save the alitude above home option
     if (g.RTL_altitude_cm < 0) {
-        cliSerial->printf("Hold current altitude\n");
+        cliSerial->println("Hold current altitude");
     }else{
         cliSerial->printf("Hold altitude of %dm\n", (int)g.RTL_altitude_cm/100);
     }
@@ -254,7 +254,7 @@ int8_t Plane::test_xbee(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     hal.scheduler->delay(1000);
-    cliSerial->printf("Begin XBee X-CTU Range and RSSI Test:\n");
+    cliSerial->println("Begin XBee X-CTU Range and RSSI Test:");
 
     while(1) {
 
@@ -273,7 +273,7 @@ int8_t Plane::test_modeswitch(uint8_t argc, const Menu::arg *argv)
     print_hit_enter();
     hal.scheduler->delay(1000);
 
-    cliSerial->printf("Control CH ");
+    cliSerial->print("Control CH ");
 
     cliSerial->println(FLIGHT_MODE_CHANNEL, BASE_DEC);
 
@@ -333,7 +333,7 @@ int8_t Plane::test_gps(uint8_t argc, const Menu::arg *argv)
                                 (long)loc.alt/100,
                                 (int)gps.num_sats());
         } else {
-            cliSerial->printf(".");
+            cliSerial->print(".");
         }
         if(cliSerial->available() > 0) {
             return (0);
@@ -343,7 +343,7 @@ int8_t Plane::test_gps(uint8_t argc, const Menu::arg *argv)
 
 int8_t Plane::test_ins(uint8_t argc, const Menu::arg *argv)
 {
-    //cliSerial->printf("Calibrating.");
+    //cliSerial->print("Calibrating.");
     ahrs.init();
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
@@ -394,7 +394,7 @@ int8_t Plane::test_ins(uint8_t argc, const Menu::arg *argv)
 int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
 {
     if (!g.compass_enabled) {
-        cliSerial->printf("Compass: ");
+        cliSerial->print("Compass: ");
         print_enabled(false);
         return (0);
     }
@@ -468,13 +468,13 @@ int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
 int8_t Plane::test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
     if (!airspeed.enabled()) {
-        cliSerial->printf("airspeed: ");
+        cliSerial->print("airspeed: ");
         print_enabled(false);
         return (0);
     }else{
         print_hit_enter();
         zero_airspeed(false);
-        cliSerial->printf("airspeed: ");
+        cliSerial->print("airspeed: ");
         print_enabled(true);
 
         while(1) {
@@ -492,7 +492,7 @@ int8_t Plane::test_airspeed(uint8_t argc, const Menu::arg *argv)
 
 int8_t Plane::test_pressure(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->printf("Uncalibrated relative airpressure\n");
+    cliSerial->println("Uncalibrated relative airpressure");
     print_hit_enter();
 
     init_barometer(true);
@@ -519,11 +519,11 @@ int8_t Plane::test_pressure(uint8_t argc, const Menu::arg *argv)
 void Plane::print_enabled(bool b)
 {
     if (b) {
-        cliSerial->printf("en");
+        cliSerial->print("en");
     } else {
-        cliSerial->printf("dis");
+        cliSerial->print("dis");
     }
-    cliSerial->printf("abled\n");
+    cliSerial->println("abled");
 }
 
 #endif // CLI_ENABLED

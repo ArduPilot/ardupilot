@@ -34,6 +34,24 @@ static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 void *DeviceBus::bus_thread(void *arg)
 {
     struct DeviceBus *binfo = (struct DeviceBus *)arg;
+
+    // setup a name for the thread
+    char name[] = "XXX:X";
+    switch (binfo->hal_device->bus_type()) {
+    case AP_HAL::Device::BUS_TYPE_I2C:
+        snprintf(name, sizeof(name), "I2C:%u",
+                 binfo->hal_device->bus_num());
+        break;
+
+    case AP_HAL::Device::BUS_TYPE_SPI:
+        snprintf(name, sizeof(name), "SPI:%u",
+                 binfo->hal_device->bus_num());
+        break;
+    default:
+        break;
+    }
+    pthread_setname_np(pthread_self(), name);
+    
     while (!_px4_thread_should_exit) {
         uint64_t now = AP_HAL::micros64();
         DeviceBus::callback_info *callback;
@@ -81,7 +99,7 @@ void *DeviceBus::bus_thread(void *arg)
     return nullptr;
 }
     
-AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb, AP_HAL::Device *_hal_device)
 {
     if (!thread_started) {
         thread_started = true;
@@ -95,7 +113,9 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
         param.sched_priority = thread_priority;
         (void)pthread_attr_setschedparam(&thread_attr, &param);
         pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
-    
+
+        hal_device = _hal_device;
+        
         pthread_create(&thread_ctx, &thread_attr, &DeviceBus::bus_thread, this);
     }
     DeviceBus::callback_info *callback = new DeviceBus::callback_info;

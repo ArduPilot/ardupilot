@@ -29,9 +29,9 @@ public:
     struct DeviceBus *next;
     Semaphore semaphore;
 
-    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb);
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb, AP_HAL::Device *hal_device);
     static void *bus_thread(void *arg);
-
+    
 private:
     struct callback_info {
         struct callback_info *next;
@@ -42,6 +42,7 @@ private:
     uint8_t thread_priority;
     pthread_t thread_ctx;
     bool thread_started;
+    AP_HAL::Device *hal_device;
 };
 
 }

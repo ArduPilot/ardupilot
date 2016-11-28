@@ -1085,7 +1085,7 @@ const AP_Param::ConversionInfo conversion_table[] = {
 void Copter::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf("Bad var table\n");
+        cliSerial->println("Bad var table");
         AP_HAL::panic("Bad var table");
     }
 
@@ -1097,7 +1097,7 @@ void Copter::load_parameters(void)
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->printf("Firmware change: erasing EEPROM...\n");
+        cliSerial->println("Firmware change: erasing EEPROM...");
         AP_Param::erase_all();
 
         // save the current format version

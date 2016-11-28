@@ -376,16 +376,6 @@ bool Copter::parameter_checks(bool display_failure)
         }
         #endif
 
-        #if PROXIMITY_ENABLED == ENABLED
-        // check proximity sensor if enabled
-        if (copter.g2.proximity.get_status() == AP_Proximity::Proximity_NoData) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
-            }
-            return false;
-        }
-        #endif
-
         #if FRAME_CONFIG == HELI_FRAME
         // check helicopter parameters
         if (!motors.parameter_check(display_failure)) {
@@ -403,6 +393,11 @@ bool Copter::parameter_checks(bool display_failure)
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: ADSB threat detected");
             }
+            return false;
+        }
+
+        // check for something close to vehicle
+        if (!pre_arm_proximity_check(display_failure)) {
             return false;
         }
     }
@@ -602,6 +597,42 @@ bool Copter::pre_arm_terrain_check(bool display_failure)
         gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Terrain data");
     }
     return have_all_data;
+#else
+    return true;
+#endif
+}
+
+// check nothing is too close to vehicle
+bool Copter::pre_arm_proximity_check(bool display_failure)
+{
+#if PROXIMITY_ENABLED == ENABLED
+
+    // return true immediately if no sensor present
+    if (g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+        return true;
+    }
+
+    // return false if proximity sensor unhealthy
+    if (g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
+        }
+        return false;
+    }
+
+    // get closest object
+    float angle_deg, distance;
+    if (g2.proximity.get_closest_object(angle_deg, distance)) {
+        // display error if something is within 60cm
+        if (distance <= 0.6f) {
+            if (display_failure) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Proximity %d deg, %4.2fm", (int)angle_deg, (double)distance);
+            }
+            return false;
+        }
+    }
+
+    return true;
 #else
     return true;
 #endif

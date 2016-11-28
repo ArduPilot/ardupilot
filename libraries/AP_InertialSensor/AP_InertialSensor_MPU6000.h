@@ -78,9 +78,13 @@ private:
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val, bool checked=false);
 
-    bool _accumulate(uint8_t *samples, uint8_t n_samples, int16_t raw_temp);
-    bool _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples, int16_t raw_temp);
+    bool _accumulate(uint8_t *samples, uint8_t n_samples);
+    bool _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
 
+    bool _check_raw_temp(int16_t t2);
+
+    int16_t _raw_temp;
+    
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
     uint8_t _accel_instance;

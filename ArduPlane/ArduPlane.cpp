@@ -355,7 +355,7 @@ void Plane::one_second_loop()
             update_home();
             
             // reset the landing altitude correction
-            auto_state.land_alt_offset = 0;
+            landing.alt_offset = 0;
     }
     
     // update error mask of sensors and subsystems. The mask uses the
@@ -525,7 +525,8 @@ void Plane::handle_auto_mode(void)
     uint16_t nav_cmd_id;
 
     if (mission.state() != AP_Mission::MISSION_RUNNING) {
-        // this should never be reached
+        // this could happen if AP_Landing::restart_landing_sequence() returns false which would only happen if:
+        // restart_landing_sequence() is called when not executing a NAV_LAND or there is no previous nav point
         set_mode(RTL, MODE_REASON_MISSION_END);
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
@@ -544,14 +545,14 @@ void Plane::handle_auto_mode(void)
         calc_nav_roll();
         calc_nav_pitch();
         
-        if (auto_state.land_complete) {
+        if (landing.complete) {
             // during final approach constrain roll to the range
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
         }
         calc_throttle();
         
-        if (auto_state.land_complete) {
+        if (landing.complete) {
             // we are in the final stage of a landing - force
             // zero throttle
             channel_throttle->set_servo_out(0);
@@ -562,8 +563,8 @@ void Plane::handle_auto_mode(void)
         if (nav_cmd_id != MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT) {
             steer_state.hold_course_cd = -1;
         }
-        auto_state.land_complete = false;
-        auto_state.land_pre_flare = false;
+        landing.complete = false;
+        landing.pre_flare = false;
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();
@@ -802,7 +803,10 @@ void Plane::update_navigation()
             reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {
             // we've reached the RTL point, see if we have a landing sequence
-            jump_to_landing_sequence();
+            if (mission.jump_to_landing_sequence()) {
+                // switch from RTL -> AUTO
+                set_mode(AUTO, MODE_REASON_UNKNOWN);
+            }
 
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
@@ -811,7 +815,10 @@ void Plane::update_navigation()
         else if (g.rtl_autoland == 2 &&
             !auto_state.checked_for_autoland) {
             // Go directly to the landing sequence
-            jump_to_landing_sequence();
+            if (mission.jump_to_landing_sequence()) {
+                // switch from RTL -> AUTO
+                set_mode(AUTO, MODE_REASON_UNKNOWN);
+            }
 
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
@@ -864,7 +871,7 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
     switch (fs) {
     case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude());
-        auto_state.land_in_progress = true;
+        landing.in_progress = true;
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
@@ -884,18 +891,18 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 
     case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
         gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
-        auto_state.land_in_progress = false;
+        landing.in_progress = false;
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
     case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-        auto_state.land_in_progress = true;
+        landing.in_progress = true;
         break;
 
     case AP_SpdHgtControl::FLIGHT_NORMAL:
     case AP_SpdHgtControl::FLIGHT_VTOL:
     case AP_SpdHgtControl::FLIGHT_TAKEOFF:
-        auto_state.land_in_progress = false;
+        landing.in_progress = false;
         break;
     }
     
@@ -935,14 +942,14 @@ void Plane::update_alt()
     if (auto_throttle_mode && !throttle_suppressed) {        
 
         float distance_beyond_land_wp = 0;
-        if (auto_state.land_in_progress && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+        if (landing.in_progress && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
             distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
         }
 
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
                                                  flight_stage,
-                                                 auto_state.land_in_progress,
+                                                 landing.in_progress,
                                                  distance_beyond_land_wp,
                                                  get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
@@ -965,14 +972,14 @@ void Plane::update_flight_stage(void)
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
-                if ((g.land_abort_throttle_enable && channel_throttle->get_control_in() >= 90) ||
-                        auto_state.commanded_go_around ||
+                if ((landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) ||
+                        landing.commanded_go_around ||
                         flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT){
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
-                } else if (auto_state.land_complete == true) {
+                } else if (landing.complete == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
-                } else if (auto_state.land_pre_flare == true) {
+                } else if (landing.pre_flare == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
                 } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
                     bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
@@ -1038,5 +1045,52 @@ void Plane::update_optical_flow(void)
     }
 }
 #endif
+
+
+/*
+    If land_DisarmDelay is enabled (non-zero), check for a landing then auto-disarm after time expires
+ */
+void Plane::disarm_if_autoland_complete()
+{
+    if (landing.get_disarm_delay() > 0 &&
+        landing.complete &&
+        !is_flying() &&
+        arming.arming_required() != AP_Arming::NO &&
+        arming.is_armed()) {
+        /* we have auto disarm enabled. See if enough time has passed */
+        if (millis() - auto_state.last_flying_ms >= landing.get_disarm_delay()*1000UL) {
+            if (disarm_motors()) {
+                gcs_send_text(MAV_SEVERITY_INFO,"Auto disarmed");
+            }
+        }
+    }
+}
+
+
+
+/*
+  the height above field elevation that we pass to TECS
+ */
+float Plane::tecs_hgt_afe(void)
+{
+    /*
+      pass the height above field elevation as the height above
+      the ground when in landing, which means that TECS gets the
+      rangefinder information and thus can know when the flare is
+      coming.
+    */
+    float hgt_afe;
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+        hgt_afe = height_above_target();
+        hgt_afe -= rangefinder_correction();
+    } else {
+        // when in normal flight we pass the hgt_afe as relative
+        // altitude to home
+        hgt_afe = relative_altitude();
+    }
+    return hgt_afe;
+}
 
 AP_HAL_MAIN_CALLBACKS(&plane);

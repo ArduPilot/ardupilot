@@ -146,7 +146,7 @@ bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
 /*
   low level transfer function
  */
-void SPIDevice::do_transfer(uint8_t *send, uint8_t *recv, uint32_t len)
+void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
 {
     /*
       to accomodate the method in PX4 drivers of using interrupt
@@ -187,6 +187,11 @@ void SPIDevice::do_transfer(uint8_t *send, uint8_t *recv, uint32_t len)
 bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+    if (send_len == recv_len && send == recv) {
+        // simplest cases, needed for DMA
+        do_transfer(send, recv, recv_len);
+        return true;
+    }
     uint8_t buf[send_len+recv_len];
     if (send_len > 0) {
         memcpy(buf, send, send_len);
@@ -218,7 +223,7 @@ AP_HAL::Semaphore *SPIDevice::get_semaphore()
 
 AP_HAL::Device::PeriodicHandle SPIDevice::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
-    return bus.register_periodic_callback(period_usec, cb);
+    return bus.register_periodic_callback(period_usec, cb, this);
 }
 
 bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)

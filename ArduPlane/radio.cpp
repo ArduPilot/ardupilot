@@ -220,7 +220,7 @@ void Plane::read_radio()
     if (g.throttle_nudge && channel_throttle->get_servo_out() > 50 && geofence_stickmixing()) {
         float nudge = (channel_throttle->get_servo_out() - 50) * 0.02f;
         if (ahrs.airspeed_sensor_enabled()) {
-            airspeed_nudge_cm = (aparm.airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;
+            airspeed_nudge_cm = (aparm.airspeed_max * 100 - aparm.airspeed_cruise_cm) * nudge;
         } else {
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;
         }

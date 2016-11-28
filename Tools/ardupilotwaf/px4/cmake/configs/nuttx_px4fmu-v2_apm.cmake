@@ -12,7 +12,6 @@ list(APPEND config_module_list
     modules/uavcan
     lib/mathlib
     drivers/px4io
-    drivers/px4flow
     drivers/oreoled
 )
 

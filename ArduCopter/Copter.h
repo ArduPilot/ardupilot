@@ -195,6 +195,7 @@ private:
         int16_t alt_cm;     // tilt compensated altitude (in cm) from rangefinder
         uint32_t last_healthy_ms;
         LowPassFilterFloat alt_cm_filt; // altitude filter
+        int8_t glitch_count;
     } rangefinder_state = { false, false, 0, 0 };
 
     AP_RPM rpm_sensor;
@@ -708,6 +709,7 @@ private:
     void send_vfr_hud(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
+    void send_proximity(mavlink_channel_t chan, uint16_t count_max);
     void send_rpm(mavlink_channel_t chan);
     void rpm_update();
     void button_update();
@@ -995,6 +997,7 @@ private:
     bool pre_arm_gps_checks(bool display_failure);
     bool pre_arm_ekf_attitude_check();
     bool pre_arm_terrain_check(bool display_failure);
+    bool pre_arm_proximity_check(bool display_failure);
     bool arm_checks(bool display_failure, bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();

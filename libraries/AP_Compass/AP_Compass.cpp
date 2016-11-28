@@ -513,7 +513,7 @@ void Compass::_detect_backends(void)
                      AP_Compass_HMC5843::name, true);
         // internal i2c bus
         ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR),
-                                              both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_NONE),
+                                              both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_YAW_270),
                     AP_Compass_HMC5843::name, both_i2c_external);
 
         // lis3mdl
