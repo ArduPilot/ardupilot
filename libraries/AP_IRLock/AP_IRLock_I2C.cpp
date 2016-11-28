@@ -55,6 +55,10 @@ bool AP_IRLock_I2C::sync_frame_start(void)
     if (!dev->transfer(nullptr, 0, (uint8_t *)&sync_word, 4)) {
         return false;
     }
+
+    // record sensor successfully responded to I2C request
+    _last_read_ms = AP_HAL::millis();
+
     uint8_t count=40;
     while (count-- && sync_word != IRLOCK_SYNC && sync_word != 0) {
         uint8_t sync_byte;
@@ -90,6 +94,9 @@ bool AP_IRLock_I2C::read_block(struct frame &irframe)
         return false;
     }
 
+    // record sensor successfully responded to I2C request
+    _last_read_ms = AP_HAL::millis();
+
     /* check crc */
     uint32_t crc = irframe.signature + irframe.pixel_x + irframe.pixel_y + irframe.pixel_size_x + irframe.pixel_size_y;
     if (crc != irframe.checksum) {
@@ -105,8 +112,6 @@ bool AP_IRLock_I2C::read_frames(void)
         return true;
     }
     struct frame irframe;
-
-    _last_sync_ms = AP_HAL::millis();
     
     if (!read_block(irframe)) {
         return true;
@@ -157,7 +162,7 @@ bool AP_IRLock_I2C::update()
             new_data = true;
         }
         _last_update_ms = _target_info.timestamp;
-        _flags.healthy = (AP_HAL::millis() - _last_sync_ms < 100);
+        _flags.healthy = (AP_HAL::millis() - _last_read_ms < 100);
         sem->give();
     }
     // return true if new data found

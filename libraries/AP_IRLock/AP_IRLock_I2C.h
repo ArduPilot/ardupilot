@@ -36,5 +36,5 @@ private:
     void pixel_to_1M_plane(float pix_x, float pix_y, float &ret_x, float &ret_y);
 
     AP_HAL::Semaphore *sem;
-    uint32_t _last_sync_ms;
+    uint32_t _last_read_ms;
 };
