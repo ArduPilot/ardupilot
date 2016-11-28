@@ -278,6 +278,8 @@ void NavEKF2_core::InitialiseVariables()
     posOffsetNED.zero();
 
     // range beacon fusion variables
+    memset(&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
+    memset(&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
     rngBcnStoreIndex = 0;
     lastRngBcnPassTime_ms = 0;
     rngBcnTestRatio = 0.0f;
