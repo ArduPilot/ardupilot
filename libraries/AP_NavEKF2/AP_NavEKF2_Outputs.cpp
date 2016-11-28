@@ -73,9 +73,27 @@ void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
 // return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
 void NavEKF2_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow)
 {
+    // if the states have not been initialised or we have not received any beacon updates then return zeros
+    if (!statesInitialised || N_beacons == 0) {
+        ID = 0;
+        rng = 0.0f;
+        innov = 0.0f;
+        innovVar = 0.0f;
+        testRatio = 0.0f;
+        Vector3f temp;
+        temp.zero();
+        beaconPosNED = temp;
+        offsetHigh = 0.0f;
+        offsetLow = 0.0f;
+        return;
+    }
+
+    // Ensure that beacons are not skipped due to calling this function at a rate lower than the updates
     if (rngBcnFuseDataReportIndex >= N_beacons) {
         rngBcnFuseDataReportIndex = 0;
     }
+
+    // Output the fusion status data for the specified beacon
     ID = rngBcnFuseDataReportIndex;                                             // beacon identifier
     rng = rngBcnFusionReport[rngBcnFuseDataReportIndex].rng;                    // measured range to beacon (m)
     innov = rngBcnFusionReport[rngBcnFuseDataReportIndex].innov;                // range innovation (m)
