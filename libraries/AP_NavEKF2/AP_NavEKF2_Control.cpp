@@ -224,7 +224,7 @@ void NavEKF2_core::setAidingMode()
         // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         if (PV_AidingMode == AID_NONE) {
             // We have ceased aiding
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u has stopped aiding",(unsigned)imu_index);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u has stopped aiding",(unsigned)imu_index);
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
             posTimeout = true;
             velTimeout = true;            
