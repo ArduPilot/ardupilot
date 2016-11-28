@@ -294,19 +294,17 @@ void NavEKF2_core::InitialiseVariables()
     rngBcnLast3DmeasTime_ms = 0;
     rngBcnGoodToAlign = false;
     lastRngBcnChecked = 0;
-    memset(&receiverPosCov, 0, sizeof(receiverPosCov));
     receiverPos.zero();
+    memset(&receiverPosCov, 0, sizeof(receiverPosCov));
     rngBcnAlignmentStarted =  false;
     rngBcnAlignmentCompleted = false;
     lastBeaconIndex = 0;
     rngBcnPosSum.zero();
     numBcnMeas = 0;
     rngSum = 0.0f;
-    memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
-    rngBcnFuseDataReportIndex = 0;
     N_beacons = 0;
-    minBcnPosD = 0.0f;
     maxBcnPosD = 0.0f;
+    minBcnPosD = 0.0f;
     bcnPosOffset = 0.0f;
     bcnPosOffsetMax = 0.0f;
     bcnPosOffsetMaxVar = 0.0f;
@@ -314,6 +312,8 @@ void NavEKF2_core::InitialiseVariables()
     bcnPosOffsetMin = 0.0f;
     bcnPosOffsetMinVar = 0.0f;
     OffsetMinInnovFilt = 0.0f;
+    rngBcnFuseDataReportIndex = 0;
+    memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
 
     // zero data buffers
     storedIMU.reset();
