@@ -152,9 +152,8 @@ void NavEKF2_core::FuseRngBcn()
             Kfusion[20] = -t26*(P[20][6]*t4*t9+P[20][7]*t3*t9+P[20][8]*t2*t9);
             Kfusion[21] = -t26*(P[21][6]*t4*t9+P[21][7]*t3*t9+P[21][8]*t2*t9);
         } else {
-            for (uint8_t i=16; i<=21; i++) {
-                Kfusion[i] = 0.0f;
-            }
+            // zero indexes 16 to 21 = 6*4 bytes
+            memset(&Kfusion[16], 0, 24);
         }
         Kfusion[22] = -t26*(P[22][6]*t4*t9+P[22][7]*t3*t9+P[22][8]*t2*t9);
         Kfusion[23] = -t26*(P[23][6]*t4*t9+P[23][7]*t3*t9+P[23][8]*t2*t9);
