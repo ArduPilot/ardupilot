@@ -34,8 +34,8 @@
 #include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Terrain/AP_Terrain.h>
@@ -143,9 +143,9 @@ private:
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF EKF{&ahrs, barometer, sonar};
     NavEKF2 EKF2{&ahrs, barometer, sonar};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, sonar, EKF, EKF2};
+    NavEKF3 EKF3{&ahrs, barometer, sonar};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, sonar, EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs {ins, barometer, gps};
 #endif
