@@ -38,20 +38,25 @@ public:
 
     // return the current differential_pressure in Pascal
     bool get_differential_pressure(float &pressure);
+    float get_yaw_pressure(void);
 
     // return the current temperature in degrees C, if available
     bool get_temperature(float &temperature);
-
+    uint8_t status;             // 2 bit
+    uint16_t bridge_data;       // 14 bit
+    uint16_t temperature_data;  // 11 bit
+    
 private:
-    void _measure();
     void _collect();
     bool _timer();
     void _voltage_correction(float &diff_press_pa, float &temperature);
     
     float _temperature;
     float _pressure;
+    float _yaw_pressure;
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev_honeywell;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev_sensiron;
     const AP_Float &_psi_range;
 };

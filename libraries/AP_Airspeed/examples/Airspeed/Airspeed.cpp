@@ -45,11 +45,6 @@ void set_object_value(const void *object_pointer,
 void setup()
 {
     hal.console->println("ArduPilot Airspeed library test");
-
-    set_object_value(&airspeed, airspeed.var_info, "PIN", 65);
-    set_object_value(&airspeed, airspeed.var_info, "ENABLE", 1);
-    set_object_value(&airspeed, airspeed.var_info, "USE", 1);
-
     AP_BoardConfig{}.init();
 
     airspeed.init();
@@ -59,13 +54,13 @@ void setup()
 void loop(void)
 {
     static uint32_t timer;
-    if ((AP_HAL::millis() - timer) > 100) {
+    if ((AP_HAL::millis() - timer) > 10) {
         timer = AP_HAL::millis();
         airspeed.read();
         airspeed.get_temperature(temperature);
 
-        hal.console->printf("airspeed %5.2f temperature %6.2f healthy = %u\n",
-                            airspeed.get_airspeed(), temperature, airspeed.healthy());
+        hal.console->printf("airspeed %5.2f yaw_pressure %.02f temperature %6.2f healthy = %u\n",
+                            airspeed.get_airspeed(), airspeed.get_yaw(), temperature, airspeed.healthy());
     }
     hal.scheduler->delay(1);
 }

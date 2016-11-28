@@ -144,6 +144,7 @@ void AP_SerialManager::init_console()
 // init - // init - initialise serial ports
 void AP_SerialManager::init()
 {
+    hal.uartB->set_device_path("/dev/ttyMFD1");
     // initialise pointers to serial ports
     state[1].uart = hal.uartC;  // serial1, uartC, normally telem1
     state[2].uart = hal.uartD;  // serial2, uartD, normally telem2

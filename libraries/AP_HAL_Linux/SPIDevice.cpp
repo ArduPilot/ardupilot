@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
+#include <string.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/OwnPtr.h>
@@ -36,6 +37,7 @@
 #include "Semaphores.h"
 #include "Thread.h"
 #include "Util.h"
+#include "mraa.h"
 
 namespace Linux {
 
@@ -125,6 +127,10 @@ SPIDesc SPIDeviceManager::_device[] = {
     SPIDesc("aeroio", 1, 1, SPI_MODE_0, 8, SPI_CS_KERNEL,  10*MHZ, 10*MHZ),
     SPIDesc("bmi160", 3, 0, SPI_MODE_3, 8, SPI_CS_KERNEL, 1*MHZ, 10*MHZ),
 };
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
+SPIDesc SPIDeviceManager::_device[] = {
+    SPIDesc("mpu9250",5, 1, SPI_MODE_3, 8, SPI_CS_KERNEL,  1*MHZ, 20*MHZ),
+};
 #else
 // empty device table
 SPIDesc SPIDeviceManager::_device[] = {
@@ -207,9 +213,17 @@ SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
     : _bus(bus)
     , _desc(device_desc)
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
+    hal.console->printf("Ports initialized\n");
+    hal.console->printf("Port directions set\n");
+    spi = mraa_spi_init(0);
+    mraa_spi_mode(spi, MRAA_SPI_MODE3);
+    mraa_spi_lsbmode(spi, 0);
+#else
+
     set_device_bus(_bus.bus);
     set_device_address(_desc.subdev);
-    
+
     if (_desc.cs_pin != SPI_CS_KERNEL) {
         _cs = hal.gpio->channel(_desc.cs_pin);
         if (!_cs) {
@@ -221,6 +235,7 @@ SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
         // do not hold the SPI bus initially
         _cs_release();
     }
+#endif
 }
 
 SPIDevice::~SPIDevice()
@@ -233,10 +248,10 @@ bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
 {
     switch (speed) {
     case AP_HAL::Device::SPEED_HIGH:
-        _speed = _desc.highspeed;
+        mraa_spi_frequency(spi,6000000);
         break;
     case AP_HAL::Device::SPEED_LOW:
-        _speed = _desc.lowspeed;
+        mraa_spi_frequency(spi,1000000);
         break;
     }
 
@@ -246,6 +261,20 @@ bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
 bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
+    uint32_t length = send_len;
+    if (recv_len > send_len) length = recv_len;
+
+    //hal.console->printf("t sl %i rl %i\n",send_len, recv_len);
+    uint8_t tmpRcv[length+1];
+    uint8_t tmpSend[length+1];
+    memcpy(tmpSend,send,send_len);
+    mraa_result_t res = mraa_spi_transfer_buf(spi,tmpSend,tmpRcv,length+1);
+    memcpy(recv,tmpRcv+1,recv_len);
+    //hal.console->printf("0x%02x 0x%02x -- 0x%02x \n",(uint8_t)tmpSend[0],(uint8_t)tmpSend[1],(uint8_t)recv[0]);
+    if (res != MRAA_SUCCESS ) return false;
+    return true;
+#else
     struct spi_ioc_transfer msgs[2] = { };
     unsigned nmsgs = 0;
 
@@ -319,12 +348,19 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     }
 
     return true;
+#endif
 }
 
 bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                                     uint32_t len)
 {
-    struct spi_ioc_transfer msgs[1] = { };
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
+    hal.console->printf("t-fd\n");
+    mraa_result_t res = mraa_spi_transfer_buf(spi,(uint8_t*)send,recv,len);
+    if (res != MRAA_SUCCESS ) return false;
+    return true;
+#else
+   struct spi_ioc_transfer msgs[1] = { };
 
     assert(_bus.fd >= 0);
 
@@ -358,25 +394,32 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
     }
 
     return true;
+#endif    
 }
 
 
 void SPIDevice::_cs_assert()
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
+#else    
     if (_desc.cs_pin == SPI_CS_KERNEL) {
         return;
     }
 
     _cs->write(0);
+#endif
 }
 
 void SPIDevice::_cs_release()
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
+#else   
     if (_desc.cs_pin == SPI_CS_KERNEL) {
         return;
     }
 
     _cs->write(1);
+#endif    
 }
 
 AP_HAL::Semaphore *SPIDevice::get_semaphore()
