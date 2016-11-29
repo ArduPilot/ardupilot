@@ -100,6 +100,10 @@ void PX4RCOutput::_init_alt_channels(void)
  */
 void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz) 
 {
+    if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
+        freq_hz = 2000; // this maps to 16kHz due to 8MHz clock
+    }
+    
     // we can't set this per channel
     if (freq_hz > 50 || freq_hz == 1) {
         // we're being asked to set the alt rate
@@ -111,7 +115,7 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
              */
             freq_hz = 1;
         }
-        //::printf("SET_UPDATE_RATE %u\n", (unsigned)freq_hz);
+        //::printf("SET_UPDATE_RATE %d %u\n", fd, (unsigned)freq_hz);
         if (ioctl(fd, PWM_SERVO_SET_UPDATE_RATE, (unsigned long)freq_hz) != 0) {
             hal.console->printf("RCOutput: Unable to set alt rate to %uHz\n", (unsigned)freq_hz);
             return;
@@ -155,10 +159,14 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
         }
     }
 
-    //::printf("SELECT_UPDATE_RATE 0x%02x\n", (unsigned)_rate_mask);
+    //::printf("SELECT_UPDATE_RATE %d 0x%02x\n", fd, (unsigned)_rate_mask);
     if (ioctl(fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
         hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)_rate_mask);
     }
+
+    if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
+        ioctl(fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
+    }    
 }
 
 /*
@@ -183,7 +191,7 @@ void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     
     // greater than 400 doesn't give enough room at higher periods for
     // the down pulse
-    if (freq_hz > 400) {
+    if (freq_hz > 400 && _output_mode != MODE_PWM_BRUSHED16KHZ) {
         freq_hz = 400;
     }
     uint32_t primary_mask = chmask & ((1UL<<_servo_count)-1);
@@ -317,6 +325,18 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
     if (ch >= _max_channel) {
         _max_channel = ch + 1;
     }
+
+    if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
+        // map form 1000 to 2000 onto zero to 100% duty cycle
+        if (period_us <= 1000) {
+            period_us = 0;
+        } else if (period_us >= 2000) {
+            period_us = 500;
+        } else {
+            period_us = (period_us - 1000)/2;
+        }
+    }
+    
     /*
       only mark an update is needed if there has been a change, or we
       are in oneshot mode. In oneshot mode we always need to send the
@@ -598,17 +618,26 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
         set_freq(_rate_mask, 1);
     }
     _output_mode = mode;
-    if (_output_mode == MODE_PWM_ONESHOT) {
-        //::printf("enable oneshot\n");
+    switch (_output_mode) {
+    case MODE_PWM_ONESHOT:
         ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 1);
         if (_alt_fd != -1) {
             ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 1);
         }
-    } else {
+        break;
+    case MODE_PWM_NORMAL:
         ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 0);
         if (_alt_fd != -1) {
             ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 0);
         }
+        break;
+    case MODE_PWM_BRUSHED16KHZ:
+        // setup an 8MHz clock. This has the effect of scaling all outputs by 8x
+        ioctl(_pwm_fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
+        if (_alt_fd != -1) {
+            ioctl(_alt_fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
+        }
+        break;
     }
 }
 
