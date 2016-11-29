@@ -1095,6 +1095,7 @@ private:
     void parachute_release();
     bool parachute_manual_release();
     void accel_cal_update(void);
+    void update_soft_armed();
 
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);

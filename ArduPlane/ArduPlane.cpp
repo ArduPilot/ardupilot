@@ -151,11 +151,17 @@ void Plane::loop()
     scheduler.run(loop_us);
 }
 
+void Plane::update_soft_armed()
+{
+    hal.util->set_soft_armed(arming.is_armed() &&
+                             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    DataFlash.set_vehicle_armed(hal.util->get_soft_armed());
+}
+
 // update AHRS system
 void Plane::ahrs_update()
 {
-    hal.util->set_soft_armed(arming.is_armed() &&
-                   hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    update_soft_armed();
 
 #if HIL_SUPPORT
     if (g.hil_mode == 1) {

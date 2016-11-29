@@ -579,6 +579,7 @@ public:
 #endif
 
     void dataflash_periodic(void);
+    void update_soft_armed();
 };
 
 #define MENU_FUNC(func) FUNCTOR_BIND(&rover, &Rover::func, int8_t, uint8_t, const Menu::arg *)
