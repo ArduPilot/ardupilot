@@ -327,13 +327,17 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
     }
 
     if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
-        // map form 1000 to 2000 onto zero to 100% duty cycle
-        if (period_us <= 1000) {
+        // map from the PWM range to 0 t0 100% duty cycle. For 16kHz
+        // this ends up being 0 to 500 pulse width in units of
+        // 125usec.
+        const uint32_t period_max = 1000000UL/(16000/8);
+        if (period_us <= _esc_pwm_min) {
             period_us = 0;
-        } else if (period_us >= 2000) {
-            period_us = 500;
+        } else if (period_us >= _esc_pwm_max) {
+            period_us = period_max;
         } else {
-            period_us = (period_us - 1000)/2;
+            uint32_t pdiff = period_us - _esc_pwm_min;
+            period_us = pdiff*period_max/(_esc_pwm_max - _esc_pwm_min);
         }
     }
     
