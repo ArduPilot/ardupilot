@@ -9,4 +9,5 @@ public:
     virtual bool take(uint32_t timeout_ms) WARN_IF_UNUSED = 0 ;
     virtual bool take_nonblocking() WARN_IF_UNUSED = 0;
     virtual bool give() = 0;
+    virtual ~Semaphore(void) {}
 };

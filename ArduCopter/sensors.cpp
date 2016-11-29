@@ -39,6 +39,11 @@ void Copter::read_rangefinder(void)
 #if RANGEFINDER_ENABLED == ENABLED
     rangefinder.update();
 
+    if (rangefinder.num_sensors() > 0 &&
+        should_log(MASK_LOG_CTUN)) {
+        DataFlash.Log_Write_RFND(rangefinder);
+    }
+    
     rangefinder_state.alt_healthy = ((rangefinder.status() == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count() >= RANGEFINDER_HEALTH_MAX));
 
     int16_t temp_alt = rangefinder.distance_cm();

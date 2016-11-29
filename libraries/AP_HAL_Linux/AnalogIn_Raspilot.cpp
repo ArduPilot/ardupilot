@@ -81,21 +81,11 @@ void AnalogIn_Raspilot::init()
         return;
     }
 
-    hal.scheduler->suspend_timer_procs();
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AnalogIn_Raspilot::_update, void));
-    hal.scheduler->resume_timer_procs();
+    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AnalogIn_Raspilot::_update, bool));
 }
 
-void AnalogIn_Raspilot::_update()
+bool AnalogIn_Raspilot::_update()
 {
-    if (AP_HAL::micros() - _last_update_timestamp < 100000) {
-        return;
-    }
-
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
-
     struct IOPacket tx = { }, rx = { };
     uint16_t count = RASPILOT_ADC_MAX_CHANNELS;
     tx.count_code = count | PKT_CODE_READ;
@@ -107,6 +97,8 @@ void AnalogIn_Raspilot::_update()
     /* set raspilotio to read reg4 */
     _dev->transfer((uint8_t *)&tx, sizeof(tx), (uint8_t *)&rx, sizeof(rx));
 
+    // TODO: should not delay for such huge values: converting this to a
+    // state-machine like driver would be better, adjusting the callback timer
     hal.scheduler->delay_microseconds(200);
 
     count = 0;
@@ -119,8 +111,6 @@ void AnalogIn_Raspilot::_update()
     /* get reg4 data from raspilotio */
     _dev->transfer((uint8_t *)&tx, sizeof(tx), (uint8_t *)&rx, sizeof(rx));
 
-    _dev->get_semaphore()->give();
-
     for (int16_t i = 0; i < RASPILOT_ADC_MAX_CHANNELS; i++) {
         for (int16_t j=0; j < RASPILOT_ADC_MAX_CHANNELS; j++) {
             AnalogSource_Raspilot *source = _channels[j];
@@ -130,6 +120,5 @@ void AnalogIn_Raspilot::_update()
             }
         }
     }
-
-    _last_update_timestamp = AP_HAL::micros();
+    return true;
 }

@@ -143,11 +143,17 @@ void Rover::loop()
     scheduler.run(remaining);
 }
 
+void Rover::update_soft_armed()
+{
+    hal.util->set_soft_armed(arming.is_armed() &&
+                             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    DataFlash.set_vehicle_armed(hal.util->get_soft_armed());
+}
+
 // update AHRS system
 void Rover::ahrs_update()
 {
-    hal.util->set_soft_armed(arming.is_armed() &&
-                   hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    update_soft_armed();
 
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
@@ -447,6 +453,7 @@ void Rover::update_current_mode(void)
                 calc_lateral_acceleration();
                 calc_nav_steer();
                 calc_throttle(g.speed_cruise);
+                Log_Write_GuidedTarget(guided_mode, Vector3f(guided_WP.lat, guided_WP.lng, guided_WP.alt), Vector3f(g.speed_cruise, channel_throttle->get_servo_out(), 0));
             }
             break;
 

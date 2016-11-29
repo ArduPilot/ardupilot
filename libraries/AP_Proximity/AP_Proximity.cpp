@@ -44,27 +44,111 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_YAW_CORR", 3, AP_Proximity, _yaw_correction[0], PROXIMITY_YAW_CORRECTION_DEFAULT),
 
+    // @Param: _IGN_ANG1
+    // @DisplayName: Proximity sensor ignore angle 1
+    // @Description: Proximity sensor ignore angle 1
+    // @Range: 0 360
+    // @User: Standard
+    AP_GROUPINFO("_IGN_ANG1", 4, AP_Proximity, _ignore_angle_deg[0], 0),
+
+    // @Param: _IGN_WID1
+    // @DisplayName: Proximity sensor ignore width 1
+    // @Description: Proximity sensor ignore width 1
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO("_IGN_WID1", 5, AP_Proximity, _ignore_width_deg[0], 0),
+
+    // @Param: _IGN_ANG2
+    // @DisplayName: Proximity sensor ignore angle 2
+    // @Description: Proximity sensor ignore angle 2
+    // @Range: 0 360
+    // @User: Standard
+    AP_GROUPINFO("_IGN_ANG2", 6, AP_Proximity, _ignore_angle_deg[1], 0),
+
+    // @Param: _IGN_WID1
+    // @DisplayName: Proximity sensor ignore width 2
+    // @Description: Proximity sensor ignore width 2
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO("_IGN_WID2", 7, AP_Proximity, _ignore_width_deg[1], 0),
+
+    // @Param: _IGN_ANG3
+    // @DisplayName: Proximity sensor ignore angle 3
+    // @Description: Proximity sensor ignore angle 3
+    // @Range: 0 360
+    // @User: Standard
+    AP_GROUPINFO("_IGN_ANG3", 8, AP_Proximity, _ignore_angle_deg[2], 0),
+
+    // @Param: _IGN_WID3
+    // @DisplayName: Proximity sensor ignore width 3
+    // @Description: Proximity sensor ignore width 3
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO("_IGN_WID3", 9, AP_Proximity, _ignore_width_deg[2], 0),
+
+    // @Param: _IGN_ANG4
+    // @DisplayName: Proximity sensor ignore angle 4
+    // @Description: Proximity sensor ignore angle 4
+    // @Range: 0 360
+    // @User: Standard
+    AP_GROUPINFO("_IGN_ANG4", 10, AP_Proximity, _ignore_angle_deg[3], 0),
+
+    // @Param: _IGN_WID4
+    // @DisplayName: Proximity sensor ignore width 4
+    // @Description: Proximity sensor ignore width 4
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO("_IGN_WID4", 11, AP_Proximity, _ignore_width_deg[3], 0),
+
+    // @Param: _IGN_ANG5
+    // @DisplayName: Proximity sensor ignore angle 5
+    // @Description: Proximity sensor ignore angle 5
+    // @Range: 0 360
+    // @User: Standard
+    AP_GROUPINFO("_IGN_ANG5", 12, AP_Proximity, _ignore_angle_deg[4], 0),
+
+    // @Param: _IGN_WID5
+    // @DisplayName: Proximity sensor ignore width 5
+    // @Description: Proximity sensor ignore width 5
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO("_IGN_WID5", 13, AP_Proximity, _ignore_width_deg[4], 0),
+
+    // @Param: _IGN_ANG6
+    // @DisplayName: Proximity sensor ignore angle 6
+    // @Description: Proximity sensor ignore angle 6
+    // @Range: 0 360
+    // @User: Standard
+    AP_GROUPINFO("_IGN_ANG6", 14, AP_Proximity, _ignore_angle_deg[5], 0),
+
+    // @Param: _IGN_WID6
+    // @DisplayName: Proximity sensor ignore width 6
+    // @Description: Proximity sensor ignore width 6
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO("_IGN_WID6", 15, AP_Proximity, _ignore_width_deg[5], 0),
+
 #if PROXIMITY_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Proximity type
     // @Description: What type of proximity sensor is connected
     // @Values: 0:None,1:LightWareSF40C
     // @User: Advanced
-    AP_GROUPINFO("2_TYPE", 4, AP_Proximity, _type[1], 0),
+    AP_GROUPINFO("2_TYPE", 16, AP_Proximity, _type[1], 0),
 
     // @Param: _ORIENT
     // @DisplayName: Second Proximity sensor orientation
     // @Description: Second Proximity sensor orientation
     // @Values: 0:Default,1:Upside Down
     // @User: Standard
-    AP_GROUPINFO("2_ORIENT", 5, AP_Proximity, _orientation[1], 0),
+    AP_GROUPINFO("2_ORIENT", 17, AP_Proximity, _orientation[1], 0),
 
     // @Param: _YAW_CORR
     // @DisplayName: Second Proximity sensor yaw correction
     // @Description: Second Proximity sensor yaw correction
     // @Range: -180 180
     // @User: Standard
-    AP_GROUPINFO("2_YAW_CORR", 6, AP_Proximity, _yaw_correction[1], PROXIMITY_YAW_CORRECTION_DEFAULT),
+    AP_GROUPINFO("2_YAW_CORR", 18, AP_Proximity, _yaw_correction[1], PROXIMITY_YAW_CORRECTION_DEFAULT),
 #endif
 
     AP_GROUPEND
@@ -193,4 +277,60 @@ bool AP_Proximity::get_horizontal_distance(uint8_t instance, float angle_deg, fl
 bool AP_Proximity::get_horizontal_distance(float angle_deg, float &distance) const
 {
     return get_horizontal_distance(primary_instance, angle_deg, distance);
+}
+
+// get boundary points around vehicle for use by avoidance
+//   returns nullptr and sets num_points to zero if no boundary can be returned
+const Vector2f* AP_Proximity::get_boundary_points(uint8_t instance, uint16_t& num_points) const
+{
+    if ((drivers[instance] == nullptr) || (_type[instance] == Proximity_Type_None)) {
+        num_points = 0;
+        return nullptr;
+    }
+    // get boundary from backend
+    return drivers[primary_instance]->get_boundary_points(num_points);
+}
+
+const Vector2f* AP_Proximity::get_boundary_points(uint16_t& num_points) const
+{
+    return get_boundary_points(primary_instance, num_points);
+}
+
+// get distance and angle to closest object (used for pre-arm check)
+//   returns true on success, false if no valid readings
+bool AP_Proximity::get_closest_object(float& angle_deg, float &distance) const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return false;
+    }
+    // get closest object from backend
+    return drivers[primary_instance]->get_closest_object(angle_deg, distance);
+}
+
+// get distances in 8 directions. used for sending distances to ground station
+bool AP_Proximity::get_distances(Proximity_Distance_Array &prx_dist_array) const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return 0.0f;
+    }
+    // get maximum distance from backend
+    return drivers[primary_instance]->get_distances(prx_dist_array);
+}
+
+// get maximum and minimum distances (in meters) of primary sensor
+float AP_Proximity::distance_max() const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return 0.0f;
+    }
+    // get maximum distance from backend
+    return drivers[primary_instance]->distance_max();
+}
+float AP_Proximity::distance_min() const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return 0.0f;
+    }
+    // get minimum distance from backend
+    return drivers[primary_instance]->distance_min();
 }

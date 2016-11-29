@@ -24,11 +24,10 @@
 class AP_OpticalFlow_Onboard : public OpticalFlow_backend
 {
 public:
-    AP_OpticalFlow_Onboard(OpticalFlow &_frontend, AP_AHRS_NavEKF &ahrs);
+    AP_OpticalFlow_Onboard(OpticalFlow &_frontend);
     void init(void);
     void update(void);
 private:
-    AP_AHRS &_ahrs;
     void _get_gyro(float&, float&, float&);
     uint32_t _last_read_ms;
 };

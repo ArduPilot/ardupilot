@@ -134,6 +134,11 @@ protected:
     uint8_t rcin_chan_count = 0;
     float rcin[8];
 
+    //Wind Turbulence simulated Data
+    float turbulence_azimuth = 0;
+    float turbulence_horizontal_speed = 0; // m/s
+    float turbulence_vertical_speed =0; // m/s
+
     Vector3f mag_bf; // local earth magnetic field vector in Gauss, earth frame
 
     uint64_t time_now_us;

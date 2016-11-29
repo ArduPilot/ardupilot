@@ -70,6 +70,8 @@ public:
     bool logging_enabled() const;
     bool logging_failed() const;
 
+    void vehicle_was_disarmed() override;
+
 private:
     int _write_fd;
     int _read_fd;

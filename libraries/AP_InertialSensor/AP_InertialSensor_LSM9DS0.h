@@ -103,6 +103,4 @@ private:
      */
     enum Rotation _rotation_a;
     enum Rotation _rotation_g;
-
-    uint8_t _reg_check_counter;
 };

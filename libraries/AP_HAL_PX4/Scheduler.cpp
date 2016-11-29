@@ -266,6 +266,8 @@ void *PX4Scheduler::_timer_thread(void *arg)
     PX4Scheduler *sched = (PX4Scheduler *)arg;
     uint32_t last_ran_overtime = 0;
 
+    pthread_setname_np(pthread_self(), "apm_timer");
+
     while (!sched->_hal_initialized) {
         poll(nullptr, 0, 1);
     }
@@ -317,6 +319,8 @@ void *PX4Scheduler::_uart_thread(void *arg)
 {
     PX4Scheduler *sched = (PX4Scheduler *)arg;
 
+    pthread_setname_np(pthread_self(), "apm_uart");
+    
     while (!sched->_hal_initialized) {
         poll(nullptr, 0, 1);
     }
@@ -338,11 +342,13 @@ void *PX4Scheduler::_io_thread(void *arg)
 {
     PX4Scheduler *sched = (PX4Scheduler *)arg;
 
+    pthread_setname_np(pthread_self(), "apm_io");
+    
     while (!sched->_hal_initialized) {
         poll(nullptr, 0, 1);
     }
     while (!_px4_thread_should_exit) {
-        poll(nullptr, 0, 1);
+        sched->delay_microseconds_semaphore(1000);
 
         // run registered IO processes
         perf_begin(sched->_perf_io_timers);
@@ -356,11 +362,13 @@ void *PX4Scheduler::_storage_thread(void *arg)
 {
     PX4Scheduler *sched = (PX4Scheduler *)arg;
 
+    pthread_setname_np(pthread_self(), "apm_storage");
+    
     while (!sched->_hal_initialized) {
         poll(nullptr, 0, 1);
     }
     while (!_px4_thread_should_exit) {
-        poll(nullptr, 0, 10);
+        sched->delay_microseconds_semaphore(10000);
 
         // process any pending storage writes
         perf_begin(sched->_perf_storage_timer);

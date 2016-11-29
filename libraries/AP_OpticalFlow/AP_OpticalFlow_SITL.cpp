@@ -1,43 +1,43 @@
 /*
-  SITL handling
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-  This simulates a optical flow sensor
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-  Andrew Tridgell November 2011
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * AP_OpticalFlow_SITL.cpp - SITL emulation of optical flow sensor.
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include "AP_HAL_SITL.h"
-
-using namespace HALSITL;
+#include "AP_OpticalFlow_SITL.h"
 
 extern const AP_HAL::HAL& hal;
 
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <cmath>
-
-#define MAX_OPTFLOW_DELAY 20
-static uint8_t next_optflow_index;
-static uint8_t optflow_delay;
-static OpticalFlow::OpticalFlow_state optflow_data[MAX_OPTFLOW_DELAY];
-
-/*
-  update the optical flow with new data
- */
-void SITL_State::_update_flow(void)
+AP_OpticalFlow_SITL::AP_OpticalFlow_SITL(OpticalFlow &_frontend) : 
+    OpticalFlow_backend(_frontend) 
 {
-    Vector3f gyro;
-    static uint32_t last_flow_ms;
+    _sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
+}
 
-    if (!_optical_flow ||
-            !_sitl->flow_enable) {
+void AP_OpticalFlow_SITL::init(void)
+{
+}
+
+void AP_OpticalFlow_SITL::update(void)
+{
+    if (!_sitl->flow_enable) {
         return;
     }
 
@@ -48,9 +48,9 @@ void SITL_State::_update_flow(void)
     }
     last_flow_ms = now;
 
-    gyro(radians(_sitl->state.rollRate), 
-         radians(_sitl->state.pitchRate), 
-         radians(_sitl->state.yawRate));
+    Vector3f gyro(radians(_sitl->state.rollRate), 
+                  radians(_sitl->state.pitchRate), 
+                  radians(_sitl->state.yawRate));
 
     OpticalFlow::OpticalFlow_state state;
 
@@ -72,18 +72,11 @@ void SITL_State::_update_flow(void)
     // sensor position offset in body frame
     Vector3f posRelSensorBF = _sitl->optflow_pos_offset;
 
-    // for effiency only do offset correction if offset is non-zero
-    bool correctForOffset = !posRelSensorBF.is_zero();
-
     // estimate range to centre of image
     float range;
-    if (rotmat.c.z > 0.05f && height_agl() > 0) {
-        if (!correctForOffset) {
-            range = height_agl() / rotmat.c.z;
-        } else {
-            Vector3f relPosSensorEF = rotmat * posRelSensorBF;
-            range = (height_agl() - relPosSensorEF.z) / rotmat.c.z;
-        }
+    if (rotmat.c.z > 0.05f && _sitl->height_agl > 0) {
+        Vector3f relPosSensorEF = rotmat * posRelSensorBF;
+        range = (_sitl->height_agl - relPosSensorEF.z) / rotmat.c.z;
     } else {
         range = 1e38f;
     }
@@ -92,9 +85,7 @@ void SITL_State::_update_flow(void)
     Vector3f relVelSensor = rotmat.mul_transpose(velocity);
 
     // correct relative velocity for rotation rates and sensor offset
-    if (correctForOffset) {
-        relVelSensor += gyro % posRelSensorBF;
-    }
+    relVelSensor += gyro % posRelSensorBF;
 
     // Divide velocity by range and add body rates to get predicted sensed angular
     // optical rates relative to X and Y sensor axes assuming no misalignment or scale
@@ -117,8 +108,8 @@ void SITL_State::_update_flow(void)
 
     if (_sitl->flow_delay != optflow_delay) {
         // cope with updates to the delay control
-        if (_sitl->flow_delay > MAX_OPTFLOW_DELAY) {
-            _sitl->flow_delay = MAX_OPTFLOW_DELAY;
+        if (_sitl->flow_delay > ARRAY_SIZE(optflow_data)) {
+            _sitl->flow_delay = ARRAY_SIZE(optflow_data);
         }
         optflow_delay = _sitl->flow_delay;
         for (uint8_t i=0; i<optflow_delay; i++) {
@@ -126,7 +117,10 @@ void SITL_State::_update_flow(void)
         }
     }
 
-    _optical_flow->setHIL(state);
+    _applyYaw(state.flowRate);
+    
+    // copy results to front end
+    _update_frontend(state);
 }
 
-#endif
+#endif // CONFIG_HAL_BOARD

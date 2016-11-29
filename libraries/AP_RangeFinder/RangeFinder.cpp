@@ -17,6 +17,7 @@
 #include "AP_RangeFinder_analog.h"
 #include "AP_RangeFinder_PulsedLightLRF.h"
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
+#include "AP_RangeFinder_MaxsonarSerialLV.h"
 #include "AP_RangeFinder_PX4.h"
 #include "AP_RangeFinder_PX4_PWM.h"
 #include "AP_RangeFinder_BBB_PRU.h"
@@ -25,6 +26,7 @@
 #include "AP_RangeFinder_Bebop.h"
 #include "AP_RangeFinder_MAVLink.h"
 #include "AP_RangeFinder_LeddarOne.h"
+#include "AP_RangeFinder_uLanding.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
@@ -34,7 +36,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,12:LeddarOne
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, RangeFinder, _type[0], 0),
 
@@ -154,7 +156,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,12:LeddarOne
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    12, RangeFinder, _type[1], 0),
 
@@ -269,7 +271,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_TYPE
     // @DisplayName: Third Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,12:LeddarOne
+    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial
     // @User: Advanced
     AP_GROUPINFO("3_TYPE",    25, RangeFinder, _type[2], 0),
 
@@ -384,7 +386,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_TYPE
     // @DisplayName: Fourth Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,12:LeddarOne
+    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial
     // @User: Advanced
     AP_GROUPINFO("4_TYPE",    37, RangeFinder, _type[3], 0),
 
@@ -637,6 +639,13 @@ void RangeFinder::detect_instance(uint8_t instance)
             return;
         }
     }
+    if (type == RangeFinder_TYPE_ULANDING) {
+        if (AP_RangeFinder_uLanding::detect(*this, instance, serial_manager)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_uLanding(*this, instance, state[instance], serial_manager);
+            return;
+        }
+    }
 #if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
     if (type == RangeFinder_TYPE_BEBOP) {
@@ -654,6 +663,13 @@ void RangeFinder::detect_instance(uint8_t instance)
             return;
         }
     }
+    if (type == RangeFinder_TYPE_MBSER) {
+        if (AP_RangeFinder_MaxsonarSerialLV::detect(*this, instance, serial_manager)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_MaxsonarSerialLV(*this, instance, state[instance], serial_manager);
+            return;
+        }
+    } 
     if (type == RangeFinder_TYPE_ANALOG) {
         // note that analog must be the last to be checked, as it will
         // always come back as present if the pin is valid

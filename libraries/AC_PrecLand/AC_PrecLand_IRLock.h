@@ -39,16 +39,9 @@ public:
     
     // return true if there is a valid los measurement available
     bool have_los_meas();
-    
-    // parses a mavlink message from the companion computer
-    void handle_msg(mavlink_message_t* msg) {};
 
 private:
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    AP_IRLock_SITL irlock;
-#else
-    AP_IRLock_PX4 irlock;
-#endif
+    AP_IRLock_I2C irlock;
 
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
     bool                _have_los_meas;         // true if there is a valid measurement from the camera

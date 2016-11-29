@@ -10,7 +10,7 @@
 
 // maximum number of drivers. Note that a single driver can provide
 // multiple sensor instances
-#define BARO_MAX_DRIVERS 2
+#define BARO_MAX_DRIVERS 3
 
 class AP_Baro_Backend;
 
@@ -172,4 +172,5 @@ private:
     uint32_t                            _last_notify_ms;
 
     void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
+    bool _add_backend(AP_Baro_Backend *backend);
 };

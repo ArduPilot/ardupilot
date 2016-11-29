@@ -23,9 +23,31 @@ OpticalFlow_backend::OpticalFlow_backend(OpticalFlow &_frontend) :
     _sem = hal.util->new_semaphore();    
 }
 
+OpticalFlow_backend::~OpticalFlow_backend(void)
+{
+    if (_sem) {
+        delete _sem;
+    }
+}
+
 // update the frontend
 void OpticalFlow_backend::_update_frontend(const struct OpticalFlow::OpticalFlow_state &state)
 {
     frontend._state = state;
     frontend._last_update_ms = AP_HAL::millis();
+}
+
+// apply yaw angle to a vector
+void OpticalFlow_backend::_applyYaw(Vector2f &v)
+{
+    float yawAngleRad = _yawAngleRad();
+    if (is_zero(yawAngleRad)) {
+        return;
+    }
+    float cosYaw = cosf(yawAngleRad);
+    float sinYaw = sinf(yawAngleRad);
+    float x = v.x;
+    float y = v.y;
+    v.x = cosYaw * x - sinYaw * y;
+    v.y = sinYaw * x + cosYaw * y;
 }

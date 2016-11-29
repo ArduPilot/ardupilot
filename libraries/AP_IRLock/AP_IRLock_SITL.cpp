@@ -64,28 +64,23 @@ bool AP_IRLock_SITL::update()
     const int wait_ms = 0;
     size_t s = sock.recv(&pkt, sizeof(irlock_packet), wait_ms);
 
-    // TODO: need to fix this
-    // for some reason, pkt.num_targets occasionally gets a bad number.
-    // hardcode _num_targets to 1 for now.
-    // _num_targets = pkt.num_targets;
-    _num_targets = 1;
-
-    for (uint16_t i=0; i<_num_targets; ++i) {
-      // fprintf(stderr, "sitl %d %d\n", i, _num_targets);
-      if (s == sizeof(irlock_packet) && pkt.timestamp >_last_timestamp) {
-          // fprintf(stderr, "     posx %f posy %f sizex %f sizey %f\n", pkt.pos_x, pkt.pos_y, pkt.size_x, pkt.size_y);
-          _target_info[i].timestamp = pkt.timestamp;
-          _target_info[i].pos_x = pkt.pos_x;
-          _target_info[i].pos_y = pkt.pos_y;
-          _target_info[i].size_x = pkt.size_x;
-          _target_info[i].size_y = pkt.size_y;
-          _last_timestamp = pkt.timestamp;
-          _last_update_ms = AP_HAL::millis();
-      }
+    bool new_data = false;
+    
+    // fprintf(stderr, "sitl %d %d\n", i, _num_targets);
+    if (s == sizeof(irlock_packet) && pkt.timestamp/1000 > _last_timestamp) {
+        // fprintf(stderr, "     posx %f posy %f sizex %f sizey %f\n", pkt.pos_x, pkt.pos_y, pkt.size_x, pkt.size_y);
+        _target_info.timestamp = pkt.timestamp / 1000;
+        _target_info.pos_x = pkt.pos_x;
+        _target_info.pos_y = pkt.pos_y;
+        _target_info.size_x = pkt.size_x;
+        _target_info.size_y = pkt.size_y;
+        _last_timestamp = pkt.timestamp/1000;
+        _last_update_ms = _last_timestamp;
+        new_data = true;
     }
 
     // return true if new data found
-    return (_num_targets > 0);
+    return new_data;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

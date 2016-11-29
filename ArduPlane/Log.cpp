@@ -70,11 +70,11 @@ int8_t Plane::dump_log(uint8_t argc, const Menu::arg *argv)
         DataFlash.DumpPageInfo(cliSerial);
         return(-1);
     } else if (dump_log_num <= 0) {
-        cliSerial->printf("dumping all\n");
+        cliSerial->println("dumping all");
         Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
-        cliSerial->printf("bad log number\n");
+        cliSerial->println("bad log number");
         return(-1);
     }
 
@@ -96,7 +96,7 @@ int8_t Plane::select_logs(uint8_t argc, const Menu::arg *argv)
     uint32_t bits;
 
     if (argc != 2) {
-        cliSerial->printf("missing log type\n");
+        cliSerial->println("missing log type");
         return(-1);
     }
 
@@ -342,7 +342,6 @@ struct PACKED log_Sonar {
 // Write a sonar packet
 void Plane::Log_Write_Sonar()
 {
-#if RANGEFINDER_ENABLED == ENABLED
     uint16_t distance = 0;
     if (rangefinder.status() == RangeFinder::RangeFinder_Good) {
         distance = rangefinder.distance_cm();
@@ -359,7 +358,6 @@ void Plane::Log_Write_Sonar()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
     DataFlash.Log_Write_RFND(rangefinder);
-#endif
 }
 
 struct PACKED log_Optflow {

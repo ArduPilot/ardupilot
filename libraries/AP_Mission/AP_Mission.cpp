@@ -3,6 +3,7 @@
 
 #include "AP_Mission.h"
 #include <AP_Terrain/AP_Terrain.h>
+#include <GCS_MAVLink/GCS.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -1615,3 +1616,25 @@ uint16_t AP_Mission::get_landing_sequence_start()
     return landing_start_index;
 }
 
+/*
+   find the nearest landing sequence starting point (DO_LAND_START) and
+   switch to that mission item.  Returns false if no DO_LAND_START
+   available.
+ */
+bool AP_Mission::jump_to_landing_sequence(void)
+{
+    uint16_t land_idx = get_landing_sequence_start();
+    if (land_idx != 0 && set_current_cmd(land_idx)) {
+
+        //if the mission has ended it has to be restarted
+        if (state() == AP_Mission::MISSION_STOPPED) {
+            resume();
+        }
+
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing sequence start");
+        return true;
+    }
+
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
+    return false;
+}

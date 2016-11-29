@@ -137,6 +137,9 @@ public:
     /// set_alt_target_to_current_alt - set altitude target to current altitude
     void set_alt_target_to_current_alt() { _pos_target.z = _inav.get_altitude(); }
 
+    /// shift altitude target (positive means move altitude up)
+    void shift_alt_target(float z_cm);
+
     /// relax_alt_hold_controllers - set all desired and targets to measured
     void relax_alt_hold_controllers(float throttle_setting);
 
@@ -358,6 +361,12 @@ private:
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
 
+    /// initialise and check for ekf position resets
+    void init_ekf_xy_reset();
+    void check_for_ekf_xy_reset();
+    void init_ekf_z_reset();
+    void check_for_ekf_z_reset();
+
     // references to inertial nav and ahrs libraries
     const AP_AHRS&              _ahrs;
     const AP_InertialNav&       _inav;
@@ -411,4 +420,8 @@ private:
 
     Vector2f    _accel_target_jerk_limited; // acceleration target jerk limited to 100deg/s/s
     LowPassFilterVector2f _accel_target_filter; // acceleration target filter
+
+    // ekf reset handling
+    uint32_t    _ekf_xy_reset_ms;      // system time of last recorded ekf xy position reset
+    uint32_t    _ekf_z_reset_ms;       // system time of last recorded ekf altitude reset
 };
