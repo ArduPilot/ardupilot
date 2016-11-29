@@ -85,6 +85,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: This selects the output PWM type, allowing for normal PWM continuous output, OneShot or brushed motor output
     // @Values: 0:Normal,1:OneShot,2:OneShot125,3:Brushed16kHz
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("PWM_TYPE", 15, AP_MotorsMulticopter, _pwm_type, PWM_TYPE_NORMAL),
 
     // @Param: PWM_MIN
