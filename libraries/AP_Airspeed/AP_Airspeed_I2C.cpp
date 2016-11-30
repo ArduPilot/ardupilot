@@ -35,8 +35,8 @@ extern const AP_HAL::HAL &hal;
 #define MS4525D0_I2C_BUS 1
 #endif
 
-AP_Airspeed_I2C::AP_Airspeed_I2C(const AP_Float &psi_range) :
-    _psi_range(psi_range)
+AP_Airspeed_I2C::AP_Airspeed_I2C(AP_Airspeed &_frontend) :
+    AP_Airspeed_Backend(_frontend)
 {
 }
 
@@ -101,7 +101,7 @@ void AP_Airspeed_I2C::_collect()
     dT_raw = (data[2] << 8) + data[3];
     dT_raw = (0xFFE0 & dT_raw) >> 5;
 
-    const float P_max = _psi_range.get();
+    const float P_max = get_psi_range();
     const float P_min = - P_max;
     const float PSI_to_Pa = 6894.757f;
     /*
