@@ -16,7 +16,7 @@
 /*
   backend driver for airspeed from a I2C MS4525D0 sensor
  */
-#include "AP_Airspeed_I2C.h"
+#include "AP_Airspeed_MS4525.h"
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -35,13 +35,13 @@ extern const AP_HAL::HAL &hal;
 #define MS4525D0_I2C_BUS 1
 #endif
 
-AP_Airspeed_I2C::AP_Airspeed_I2C(AP_Airspeed &_frontend) :
+AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend) :
     AP_Airspeed_Backend(_frontend)
 {
 }
 
 // probe and initialise the sensor
-bool AP_Airspeed_I2C::init()
+bool AP_Airspeed_MS4525::init()
 {
     _dev = hal.i2c_mgr->get_device(MS4525D0_I2C_BUS, MS4525D0_I2C_ADDR);
 
@@ -63,14 +63,14 @@ bool AP_Airspeed_I2C::init()
     
     if (_last_sample_time_ms != 0) {
         _dev->register_periodic_callback(20000,
-                                         FUNCTOR_BIND_MEMBER(&AP_Airspeed_I2C::_timer, bool));
+                                         FUNCTOR_BIND_MEMBER(&AP_Airspeed_MS4525::_timer, bool));
         return true;
     }
     return false;
 }
 
 // start a measurement
-void AP_Airspeed_I2C::_measure()
+void AP_Airspeed_MS4525::_measure()
 {
     _measurement_started_ms = 0;
     uint8_t cmd = 0;
@@ -80,7 +80,7 @@ void AP_Airspeed_I2C::_measure()
 }
 
 // read the values from the sensor
-void AP_Airspeed_I2C::_collect()
+void AP_Airspeed_MS4525::_collect()
 {
     uint8_t data[4];
 
@@ -129,7 +129,7 @@ void AP_Airspeed_I2C::_collect()
    See http://uav.tridgell.net/MS4525/MS4525-offset.png for a graph of
    offset versus voltage for 3 sensors
  */
-void AP_Airspeed_I2C::_voltage_correction(float &diff_press_pa, float &temperature)
+void AP_Airspeed_MS4525::_voltage_correction(float &diff_press_pa, float &temperature)
 {
 	const float slope = 65.0f;
 	const float temp_slope = 0.887f;
@@ -146,7 +146,7 @@ void AP_Airspeed_I2C::_voltage_correction(float &diff_press_pa, float &temperatu
 }
 
 // 50Hz timer
-bool AP_Airspeed_I2C::_timer()
+bool AP_Airspeed_MS4525::_timer()
 {
     if (_measurement_started_ms == 0) {
         _measure();
@@ -161,7 +161,7 @@ bool AP_Airspeed_I2C::_timer()
 }
 
 // return the current differential_pressure in Pascal
-bool AP_Airspeed_I2C::get_differential_pressure(float &pressure)
+bool AP_Airspeed_MS4525::get_differential_pressure(float &pressure)
 {
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
@@ -171,7 +171,7 @@ bool AP_Airspeed_I2C::get_differential_pressure(float &pressure)
 }
 
 // return the current temperature in degrees C, if available
-bool AP_Airspeed_I2C::get_temperature(float &temperature)
+bool AP_Airspeed_MS4525::get_temperature(float &temperature)
 {
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;

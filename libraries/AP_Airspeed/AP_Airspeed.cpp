@@ -24,7 +24,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <utility>
 #include "AP_Airspeed.h"
-#include "AP_Airspeed_I2C.h"
+#include "AP_Airspeed_MS4525.h"
 #include "AP_Airspeed_analog.h"
 
 extern const AP_HAL::HAL &hal;
@@ -143,7 +143,7 @@ void AP_Airspeed::init()
         // nothing to do
         break;
     case TYPE_I2C_MS4525:
-        sensor = new AP_Airspeed_I2C(*this);
+        sensor = new AP_Airspeed_MS4525(*this);
         break;
     case TYPE_ANALOG:
         sensor = new AP_Airspeed_Analog(*this);

@@ -27,11 +27,11 @@
 #include "AP_Airspeed_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
-class AP_Airspeed_I2C : public AP_Airspeed_Backend
+class AP_Airspeed_MS4525 : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_I2C(AP_Airspeed &frontend);
-    ~AP_Airspeed_I2C(void) {}
+    AP_Airspeed_MS4525(AP_Airspeed &frontend);
+    ~AP_Airspeed_MS4525(void) {}
     
     // probe and initialise the sensor
     bool init() override;
