@@ -15,12 +15,23 @@ AP_InertialSensor ins;
 Compass compass;
 
 AP_GPS gps;
-AP_Baro baro;
+AP_Baro barometer;
 AP_SerialManager serial_manager;
 
-// choose which AHRS system to use
-AP_AHRS_DCM  ahrs(ins, baro, gps);
+class DummyVehicle {
+public:
+    RangeFinder sonar {serial_manager};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF, EKF2,
+                        AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF EKF{&ahrs, barometer, sonar};
+    NavEKF2 EKF2{&ahrs, barometer, sonar};
+};
 
+static DummyVehicle vehicle;
+
+// choose which AHRS system to use
+// AP_AHRS_DCM  ahrs(ins, baro, gps);
+AP_AHRS_NavEKF ahrs(vehicle.ahrs);
 
 
 #define HIGH 1
