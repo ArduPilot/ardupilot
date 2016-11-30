@@ -64,6 +64,7 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     void flush(void);
 #endif
+    void periodic_1Hz(const uint32_t now) override;
     void periodic_fullrate(const uint32_t now);
 
     // this method is used when reporting system status over mavlink
@@ -81,6 +82,9 @@ private:
     volatile bool _initialised;
     volatile bool _open_error;
     const char *_log_directory;
+
+    uint32_t _io_timer_heartbeat;
+    bool io_thread_alive() const;
 
     uint16_t _cached_oldest_log;
 
@@ -146,8 +150,8 @@ private:
     // free-space checks; filling up SD cards under NuttX leads to
     // corrupt filesystems which cause loss of data, failure to gather
     // data and failures-to-boot.
-    uint64_t _free_space_last_check_time; // microseconds
-    const uint32_t _free_space_check_interval = 1000000UL; // microseconds
+    uint32_t _free_space_last_check_time; // milliseconds
+    const uint32_t _free_space_check_interval = 1000UL; // milliseconds
     const uint32_t _free_space_min_avail = 8388608; // bytes
 
     AP_HAL::Semaphore *semaphore;
