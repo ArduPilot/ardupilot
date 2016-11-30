@@ -1304,27 +1304,34 @@ const char *NavEKF2::prearm_failure_reason(void) const
     return core[primary].prearm_failure_reason();
 }
 
-// return the amount of vertical position change due to the last reset in metres
-// returns the time of the last reset or 0 if no reset has ever occurred
+// Returns the amount of vertical position change due to the last reset or core switch in metres
+// Returns the time of the last reset or 0 if no reset or core switch has ever occurred
+// Where there are multiple consumers, they must access this function on the same frame as each other
 uint32_t NavEKF2::getLastPosDownReset(float &posDelta)
 {
     if (!core) {
         return 0;
     }
 
-    // Record last time controller got the position reset
-    pos_down_reset_data.last_function_call = imuSampleTime_us / 1000;
     posDelta = 0.0f;
-    uint32_t lastPosReset_ms = 0;
+
+    // Do the conversion to msec in one place
+    uint32_t now_time_ms = imuSampleTime_us / 1000;
+
+    // The last time we switched to the current primary core is the first reset event
+    uint32_t lastPosReset_ms = pos_down_reset_data.last_primary_change;
 
     // There has been a change in the primary core that the controller has not consumed
-    if (pos_down_reset_data.core_changed) {
+    // allow for multiple consumers on the same frame
+    if (pos_down_reset_data.core_changed || pos_down_reset_data.last_function_call == now_time_ms) {
         posDelta = pos_down_reset_data.core_delta;
-        lastPosReset_ms = pos_down_reset_data.last_primary_change;
         pos_down_reset_data.core_changed = false;
     }
 
-    // There has been a reset inside the core since we switched
+    // Record last time controller got the position reset
+    pos_down_reset_data.last_function_call = now_time_ms;
+
+    // There has been a reset inside the core since we switched so update the time and delta
     float tempPosDelta;
     uint32_t lastCorePosReset_ms = core[primary].getLastPosDownReset(tempPosDelta);
     if (lastCorePosReset_ms > lastPosReset_ms) {
