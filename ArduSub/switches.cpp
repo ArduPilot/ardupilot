@@ -49,11 +49,6 @@ bool Sub::check_duplicate_auxsw(void)
     return ret;
 }
 
-void Sub::reset_control_switch()
-{
-    control_switch_state.last_switch_position = control_switch_state.debounced_switch_position = -1;
-}
-
 // read_3pos_switch
 uint8_t Sub::read_3pos_switch(int16_t radio_in)
 {
@@ -222,7 +217,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }else{
                 // return to flight mode switch's flight mode if we are currently in RTL
                 if (control_mode == RTL) {
-                    reset_control_switch();
+//                    reset_control_switch();
                 }
             }
             break;
@@ -371,7 +366,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }else{
                 // return to flight mode switch's flight mode if we are currently in AUTO
                 if (control_mode == AUTO) {
-                    reset_control_switch();
+//                    reset_control_switch();
                 }
             }
             break;
@@ -384,7 +379,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 case AUX_SWITCH_MIDDLE:
                     // restore flight mode based on flight mode switch position
                     if (control_mode == AUTOTUNE) {
-                        reset_control_switch();
+//                        reset_control_switch();
                     }
                     break;
                 case AUX_SWITCH_HIGH:
@@ -525,7 +520,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }else{
                 // return to flight mode switch's flight mode if we are currently in BRAKE
                 if (control_mode == BRAKE) {
-                    reset_control_switch();
+//                    reset_control_switch();
                 }
             }
             break;
@@ -537,7 +532,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             } else {
                 // return to flight mode switch's flight mode if we are currently in throw mode
                 if (control_mode == THROW) {
-                    reset_control_switch();
+//                    reset_control_switch();
                 }
             }
             break;
