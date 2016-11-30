@@ -20,6 +20,7 @@
 #include "AP_OpticalFlow_PX4Flow.h"
 #include <AP_Math/edc.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/I2CDevice.h>
 #include <utility>
 #include "OpticalFlow.h"
 #include <stdio.h>
