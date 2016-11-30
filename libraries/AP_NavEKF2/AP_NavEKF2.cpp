@@ -1247,27 +1247,34 @@ uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
     return lastYawReset_ms;
 }
 
-// return the amount of NE position change due to the last position reset in metres
-// returns the time of the last reset or 0 if no reset has ever occurred
+// Returns the amount of NE position change due to the last position reset or core switch in metres
+// Returns the time of the last reset or 0 if no reset or core switch has ever occurred
+// Where there are multiple consumers, they must access this function on the same frame as each other
 uint32_t NavEKF2::getLastPosNorthEastReset(Vector2f &posDelta)
 {
     if (!core) {
         return 0;
     }
 
-    // Record last time controller got the position reset
-    pos_reset_data.last_function_call = imuSampleTime_us / 1000;
     posDelta.zero();
-    uint32_t lastPosReset_ms = 0;
+
+    // Do the conversion to msec in one place
+    uint32_t now_time_ms = imuSampleTime_us / 1000;
+
+    // The last time we switched to the current primary core is the first reset event
+    uint32_t lastPosReset_ms = pos_reset_data.last_primary_change;
 
     // There has been a change in the primary core that the controller has not consumed
-    if (pos_reset_data.core_changed) {
+    // allow for multiple consumers on the same frame
+    if (pos_reset_data.core_changed || pos_reset_data.last_function_call == now_time_ms) {
         posDelta = pos_reset_data.core_delta;
-        lastPosReset_ms = pos_reset_data.last_primary_change;
         pos_reset_data.core_changed = false;
     }
 
-    // There has been a reset inside the core since we switched
+    // Record last time controller got the position reset
+    pos_reset_data.last_function_call = now_time_ms;
+
+    // There has been a reset inside the core since we switched so update the time and delta
     Vector2f tempPosDelta;
     uint32_t lastCorePosReset_ms = core[primary].getLastPosNorthEastReset(tempPosDelta);
     if (lastCorePosReset_ms > lastPosReset_ms) {
