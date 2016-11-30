@@ -852,7 +852,6 @@ private:
     bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc);
     uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec);
     void motor_test_stop();
-    void arm_motors_check();
     void auto_disarm_check();
     bool init_arm_motors(bool arming_from_gcs);
     void update_arming_checks(void);
