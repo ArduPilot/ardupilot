@@ -9,66 +9,6 @@
 
 static uint32_t auto_disarm_begin;
 
-// arm_motors_check - checks for pilot input to arm or disarm the copter
-// called at 10hz
-void Sub::arm_motors_check()
-{
-	static int16_t arming_counter;
-
-    // ensure throttle is down
-    if (channel_throttle->get_control_in() > 0) {
-        arming_counter = 0;
-        return;
-    }
-
-    int16_t tmp = channel_yaw->get_control_in();
-
-    // full right
-    if (tmp > 4000) {
-
-        // increase the arming counter to a maximum of 1 beyond the auto trim counter
-        if( arming_counter <= AUTO_TRIM_DELAY ) {
-            arming_counter++;
-        }
-
-        // arm the motors and configure for flight
-        if (arming_counter == ARM_DELAY && !motors.armed()) {
-            // reset arming counter if arming fail
-            if (!init_arm_motors(false)) {
-                arming_counter = 0;
-            }
-        }
-
-        // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors.armed() && control_mode == STABILIZE) {
-            auto_trim_counter = 250;
-            // ensure auto-disarm doesn't trigger immediately
-            auto_disarm_begin = millis();
-        }
-
-    // full left
-    }else if (tmp < -4000) {
-        if (!mode_has_manual_throttle(control_mode) && !ap.land_complete) {
-            arming_counter = 0;
-            return;
-        }
-
-        // increase the counter to a maximum of 1 beyond the disarm delay
-        if( arming_counter <= DISARM_DELAY ) {
-            arming_counter++;
-        }
-
-        // disarm the motors
-        if (arming_counter == DISARM_DELAY && motors.armed()) {
-            init_disarm_motors();
-        }
-
-    // Yaw is centered so reset arming counter
-    }else{
-        arming_counter = 0;
-    }
-}
-
 // auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds
 void Sub::auto_disarm_check()
 {
