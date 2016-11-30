@@ -186,9 +186,6 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
 
-    case MAV_CMD_NAV_LAND:
-        return verify_land();
-
     case MAV_CMD_NAV_LOITER_UNLIM:
         return verify_loiter_unlimited();
 
@@ -591,42 +588,6 @@ void Sub::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 /********************************************************************************/
 //	Verify Nav (Must) commands
 /********************************************************************************/
-
-// verify_land - returns true if landing has been completed
-bool Sub::verify_land()
-{
-    bool retval = false;
-
-    switch( land_state ) {
-        case LAND_STATE_FLY_TO_LOCATION:
-            // check if we've reached the location
-            if (wp_nav.reached_wp_destination()) {
-                // get destination so we can use it for loiter target
-                Vector3f dest = wp_nav.get_wp_destination();
-
-                // initialise landing controller
-                auto_land_start(dest);
-
-                // advance to next state
-                land_state = LAND_STATE_DESCENDING;
-            }
-            break;
-
-        case LAND_STATE_DESCENDING:
-            // rely on THROTTLE_LAND mode to correctly update landing status
-            retval = ap.land_complete;
-            break;
-
-        default:
-            // this should never happen
-            // TO-DO: log an error
-            retval = true;
-            break;
-    }
-
-    // true is returned if we've successfully landed
-    return retval;
-}
 
 // verify_nav_wp - check if we have reached the next way point
 bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)

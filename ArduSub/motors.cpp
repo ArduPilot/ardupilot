@@ -114,7 +114,7 @@ void Sub::auto_disarm_check()
             thr_low = g.rc_3.control_in <= deadband_top;
         }
 
-        if (!thr_low || !ap.land_complete) {
+        if (!thr_low) {
             // reset timer
             auto_disarm_begin = tnow_ms;
         }
@@ -245,10 +245,6 @@ void Sub::init_disarm_motors()
     // save auto tuned parameters
     autotune_save_tuning_gains();
 #endif
-
-    // we are not in the air
-//    set_land_complete(true);// We will let the land detector decide this in sub
-//    set_land_complete_maybe(true);
 
     // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);

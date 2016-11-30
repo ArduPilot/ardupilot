@@ -348,7 +348,7 @@ void Sub::rtl_land_run()
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
     // if not auto armed or landing completed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
     	// multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -358,18 +358,18 @@ void Sub::rtl_land_run()
 
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
         // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {
-            init_disarm_motors();
-        }
+//        if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {
+//            init_disarm_motors();
+//        }
 #else
         // disarm when the landing detector says we've landed
-        if (ap.land_complete) {
-            init_disarm_motors();
-        }
+//        if (ap.land_complete) {
+//            init_disarm_motors();
+//        }
 #endif
 
         // check if we've completed this stage of RTL
-        rtl_state_complete = ap.land_complete;
+//        rtl_state_complete = ap.land_complete;
         return;
     }
 
@@ -414,7 +414,7 @@ void Sub::rtl_land_run()
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
 
     // check if we've completed this stage of RTL
-    rtl_state_complete = ap.land_complete;
+//    rtl_state_complete = ap.land_complete;
 }
 
 void Sub::rtl_build_path(bool terrain_following_allowed)
