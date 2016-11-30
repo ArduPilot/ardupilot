@@ -25,6 +25,7 @@
 #include <utility>
 #include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
+#include "AP_Airspeed_MS5525.h"
 #include "AP_Airspeed_analog.h"
 
 extern const AP_HAL::HAL &hal;
@@ -51,7 +52,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 0, AP_Airspeed, _type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
@@ -106,6 +107,13 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: This parameter allows you to to set the PSI (pounds per square inch) range for your sensor. You should not change this unless you examine the datasheet for your device
     // @User: Advanced
     AP_GROUPINFO("PSI_RANGE",  8, AP_Airspeed, _psi_range, PSI_RANGE_DEFAULT),
+
+    // @Param: BUS
+    // @DisplayName: Airspeed I2C bus
+    // @Description: The bus number of the I2C bus to look for the sensor on
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Advanced
+    AP_GROUPINFO("BUS",  9, AP_Airspeed, _bus, 1),
     
     AP_GROUPEND
 };
@@ -148,9 +156,14 @@ void AP_Airspeed::init()
     case TYPE_ANALOG:
         sensor = new AP_Airspeed_Analog(*this);
         break;
+    case TYPE_I2C_MS5525:
+        sensor = new AP_Airspeed_MS5525(*this);
+        break;
     }
     if (sensor && !sensor->init()) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed init failed");
+        delete sensor;
+        sensor = nullptr;
     }
 }
 
@@ -193,8 +206,6 @@ void AP_Airspeed::calibrate(bool in_startup)
     if (in_startup && _skip_cal) {
         return;
     }
-    // discard first reading
-    get_pressure();
     _cal.start_ms = AP_HAL::millis();
     _cal.count = 0;
     _cal.sum = 0;
@@ -209,7 +220,7 @@ void AP_Airspeed::update_calibration(float raw_pressure)
     // consider calibration complete when we have at least 10 samples
     // over at least 1 second
     if (AP_HAL::millis() - _cal.start_ms >= 1000 &&
-        _cal.read_count > 10) {
+        _cal.read_count > 15) {
         if (_cal.count == 0) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor unhealthy");
         } else {
@@ -219,7 +230,8 @@ void AP_Airspeed::update_calibration(float raw_pressure)
         _cal.start_ms = 0;
         return;
     }
-    if (_healthy) {
+    // we discard the first 5 samples
+    if (_healthy && _cal.read_count > 5) {
         _cal.sum += raw_pressure;
         _cal.count++;
     }

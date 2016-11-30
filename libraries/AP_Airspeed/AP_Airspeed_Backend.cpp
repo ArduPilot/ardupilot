@@ -21,9 +21,18 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Airspeed.h"
 
+extern const AP_HAL::HAL &hal;
+
 AP_Airspeed_Backend::AP_Airspeed_Backend(AP_Airspeed &_frontend) :
     frontend(_frontend)
-{}
+{
+    sem = hal.util->new_semaphore();
+}
+
+AP_Airspeed_Backend::~AP_Airspeed_Backend(void)
+{
+    delete sem;
+}
  
 
 int8_t AP_Airspeed_Backend::get_pin(void) const
@@ -36,3 +45,7 @@ float AP_Airspeed_Backend::get_psi_range(void) const
     return frontend._psi_range;
 }
 
+uint8_t AP_Airspeed_Backend::get_bus(void) const
+{
+    return frontend._bus;
+}

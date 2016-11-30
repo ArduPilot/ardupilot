@@ -27,11 +27,11 @@
 #include "AP_Airspeed_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
-class AP_Airspeed_MS4525 : public AP_Airspeed_Backend
+class AP_Airspeed_MS5525 : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_MS4525(AP_Airspeed &frontend);
-    ~AP_Airspeed_MS4525(void) {}
+    AP_Airspeed_MS5525(AP_Airspeed &frontend);
+    ~AP_Airspeed_MS5525(void) {}
     
     // probe and initialise the sensor
     bool init() override;
@@ -43,18 +43,27 @@ public:
     bool get_temperature(float &temperature) override;
 
 private:
-    void _measure();
-    void _collect();
-    bool _timer();
-    void _voltage_correction(float &diff_press_pa, float &temperature);
+    void measure();
+    void collect();
+    bool timer();
+    bool read_prom(void);
+    uint16_t crc4_prom(void);
+    int32_t read_adc();
+    void calculate();
 
-    float _temp_sum;
-    float _press_sum;
-    uint32_t _temp_count;
-    uint32_t _press_count;
-    float _temperature;
-    float _pressure;
-    uint32_t _last_sample_time_ms;
-    uint32_t _measurement_started_ms;
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    float pressure;
+    float temperature;
+    float temperature_sum;
+    float pressure_sum;
+    uint32_t temp_count;
+    uint32_t press_count;
+    
+    uint32_t last_sample_time_ms;
+
+    uint16_t prom[8];
+    uint8_t state;
+    int32_t D1;
+    int32_t D2;
+    
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 };

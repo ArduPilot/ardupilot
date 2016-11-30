@@ -146,6 +146,7 @@ public:
         TYPE_NONE=0,
         TYPE_I2C_MS4525=1,
         TYPE_ANALOG=2,
+        TYPE_I2C_MS5525=3,
     };
     
 private:
@@ -155,6 +156,7 @@ private:
     AP_Int8         _use;
     AP_Int8         _type;
     AP_Int8         _pin;
+    AP_Int8         _bus;
     AP_Int8         _autocal;
     AP_Int8         _tube_order;
     AP_Int8         _skip_cal;
