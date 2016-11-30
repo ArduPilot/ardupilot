@@ -266,7 +266,7 @@ void Sub::init_ardupilot()
 
     // initialise the flight mode and aux switch
     // ---------------------------
-    reset_control_switch();
+//    reset_control_switch();
     init_aux_switches();
 
     startup_INS_ground();
