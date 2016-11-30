@@ -84,8 +84,6 @@ void Plane::calc_airspeed_errors()
 {
     float airspeed_measured_cm = airspeed.get_airspeed_cm();
 
-    // Normal airspeed target
-    target_airspeed_cm = aparm.airspeed_cruise_cm;
 
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B || 
@@ -94,31 +92,14 @@ void Plane::calc_airspeed_errors()
                                         aparm.airspeed_min) *
                               channel_throttle->get_control_in()) +
                              ((int32_t)aparm.airspeed_min * 100);
-    }
 
-    // Landing airspeed target
-    if (control_mode == AUTO) {
-        float land_airspeed = SpdHgt_Controller->get_land_airspeed();
-        switch (flight_stage) {
-        case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
-            if (land_airspeed >= 0) {
-                target_airspeed_cm = land_airspeed * 100;
-            }
-            break;
+    } else if (control_mode == AUTO && landing.in_progress) {
+        // Landing airspeed target
+        target_airspeed_cm = landing.get_target_airspeed_cm(flight_stage);
 
-        case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
-        case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-            if (landing.pre_flare && landing.get_pre_flare_airspeed() > 0) {
-                // if we just preflared then continue using the pre-flare airspeed during final flare
-                target_airspeed_cm = landing.get_pre_flare_airspeed() * 100;
-            } else if (land_airspeed >= 0) {
-                target_airspeed_cm = land_airspeed * 100;
-            }
-            break;
-
-        default:
-            break;
-        }
+    } else {
+        // Normal airspeed target
+        target_airspeed_cm = aparm.airspeed_cruise_cm;
     }
 
     // Set target to current airspeed + ground speed undershoot,
