@@ -246,8 +246,4 @@ void AC_AttitudeControl_Multi::parameter_sanity_check()
         // which can be useful for very high powered copters with very low hover throttle
         _thr_mix_max = AC_ATTITUDE_CONTROL_MAX_DEFAULT;
     }
-    if (_thr_mix_min > _thr_mix_max) {
-        _thr_mix_min = AC_ATTITUDE_CONTROL_MIN_DEFAULT;
-        _thr_mix_max = AC_ATTITUDE_CONTROL_MAX_DEFAULT;
-    }
 }
