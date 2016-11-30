@@ -21,8 +21,12 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
+class AP_Airspeed;
+
 class AP_Airspeed_Backend {
 public:
+    AP_Airspeed_Backend(AP_Airspeed &frontend);
+    
     // probe and initialise the sensor
     virtual bool init(void) = 0;
 
@@ -31,4 +35,11 @@ public:
 
     // return the current temperature in degrees C, if available
     virtual bool get_temperature(float &temperature) = 0;
+
+protected:
+    int8_t get_pin(void) const;
+    float get_psi_range(void) const;
+    
+private:
+    AP_Airspeed &frontend;
 };

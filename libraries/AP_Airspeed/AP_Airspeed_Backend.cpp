@@ -12,40 +12,27 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 /*
- *   analog airspeed driver
+  backend driver class for airspeed
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
-
+#include <AP_HAL/AP_HAL.h>
 #include "AP_Airspeed.h"
-#include "AP_Airspeed_analog.h"
 
-extern const AP_HAL::HAL &hal;
+AP_Airspeed_Backend::AP_Airspeed_Backend(AP_Airspeed &_frontend) :
+    frontend(_frontend)
+{}
+ 
 
-// scaling for 3DR analog airspeed sensor
-#define VOLTS_TO_PASCAL 819
-
-AP_Airspeed_Analog::AP_Airspeed_Analog(AP_Airspeed &_frontend) :
-    AP_Airspeed_Backend(_frontend)
+int8_t AP_Airspeed_Backend::get_pin(void) const
 {
-    _source = hal.analogin->channel(get_pin());
+    return frontend._pin;
 }
 
-bool AP_Airspeed_Analog::init()
+float AP_Airspeed_Backend::get_psi_range(void) const
 {
-    return _source != nullptr;
+    return frontend._psi_range;
 }
 
-// read the airspeed sensor
-bool AP_Airspeed_Analog::get_differential_pressure(float &pressure)
-{
-    if (_source == nullptr) {
-        return false;
-    }
-    // allow pin to change
-    _source->set_pin(get_pin());
-    pressure = _source->voltage_average_ratiometric() * VOLTS_TO_PASCAL / get_psi_range();
-    return true;
-}
