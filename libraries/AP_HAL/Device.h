@@ -106,6 +106,20 @@ public:
     }
 
     /**
+     * read 16 bit unsigned integer, little endian
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
+    bool read_uint16_le(uint8_t first_reg, uint16_t &value);
+
+    /**
+     * read 16 bit unsigned integer, big endian
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
+    bool read_uint16_be(uint8_t first_reg, uint16_t &value);
+    
+    /**
      * Wrapper function over #transfer() to write a byte to the register reg.
      * The transfer is done by sending reg and val in that order.
      *
