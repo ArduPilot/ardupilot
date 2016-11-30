@@ -305,9 +305,6 @@ void Sub::init_ardupilot()
 
     startup_INS_ground();
 
-    // set landed flags
-    set_land_complete(false);
-
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly

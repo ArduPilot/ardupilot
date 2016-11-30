@@ -239,7 +239,7 @@ bool Copter::autotune_start(bool ignore_checks)
     }
 
     // ensure we are flying
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete) {
+    if (!motors.armed() || !ap.auto_armed) {
         return false;
     }
 
@@ -288,24 +288,24 @@ void Copter::autotune_run()
     target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
 
     // check for pilot requested take-off - this should not actually be possible because of autotune_init() checks
-    if (ap.land_complete && target_climb_rate > 0) {
+    if (target_climb_rate > 0) {
         // indicate we are taking off
-        set_land_complete(false);
+//        set_land_complete(false);
         // clear i term when we're taking off
         set_throttle_takeoff();
     }
 
-    // reset target lean angles and heading while landed
-    if (ap.land_complete) {
-        if (ap.throttle_zero) {
-            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        } else {
-            motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        }
-        // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->get_control_in()),false,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
-    }else{
+//    // reset target lean angles and heading while landed
+//    if (ap.land_complete) {
+//        if (ap.throttle_zero) {
+//            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+//        } else {
+//            motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+//        }
+//        // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
+//        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->get_control_in()),false,g.throttle_filt);
+//        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
+//    }else{
         // check if pilot is overriding the controls
         if (!is_zero(target_roll) || !is_zero(target_pitch) || !is_zero(target_yaw_rate) || target_climb_rate != 0) {
             if (!autotune_state.pilot_override) {
@@ -341,7 +341,7 @@ void Copter::autotune_run()
         // call position controller
         pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control.update_z_controller();
-    }
+//    }
 }
 
 // autotune_attitude_controller - sets attitude control targets during tuning

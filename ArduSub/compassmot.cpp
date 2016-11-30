@@ -69,13 +69,6 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
         return 1;
     }
 
-    // check we are landed
-    if (!ap.land_complete) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Not landed");
-        ap.compass_mot = false;
-        return 1;
-    }
-
     // disable cpu failsafe
     failsafe_disable();
 

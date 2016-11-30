@@ -4,10 +4,6 @@
 // manual_init - initialise manual controller
 bool Sub::manual_init(bool ignore_checks)
 {
-    // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-    if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode)) {
-        return false;
-    }
     // set target altitude to zero for reporting
     pos_control.set_alt_target(0);
 

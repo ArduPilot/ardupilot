@@ -298,16 +298,17 @@ bool Sub::should_disarm_on_failsafe() {
         case STABILIZE:
         case ACRO:
             // if throttle is zero OR vehicle is landed disarm motors
-            return ap.throttle_zero || ap.land_complete;
+            return ap.throttle_zero;
             break;
         case AUTO:
             // if mission has not started AND vehicle is landed, disarm motors
-            return !ap.auto_armed && ap.land_complete;
+            return !ap.auto_armed;
             break;
         default:
             // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
             // if landed disarm
-            return ap.land_complete;
+//            return ap.land_complete;
+        	return false;
             break;
     }
 }

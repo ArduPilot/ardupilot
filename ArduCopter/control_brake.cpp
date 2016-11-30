@@ -53,15 +53,15 @@ void Copter::brake_run()
         return;
     }
 
-    // relax stop target if we might be landed
-    if (ap.land_complete_maybe) {
-        wp_nav.loiter_soften_for_landing();
-    }
-
-    // if landed immediately disarm
-    if (ap.land_complete) {
-        init_disarm_motors();
-    }
+//    // relax stop target if we might be landed
+//    if (ap.land_complete_maybe) {
+//        wp_nav.loiter_soften_for_landing();
+//    }
+//
+//    // if landed immediately disarm
+//    if (ap.land_complete) {
+//        init_disarm_motors();
+//    }
 
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);

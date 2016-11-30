@@ -55,7 +55,7 @@ bool Copter::flip_init(bool ignore_checks)
     }
 
     // only allow flip when flying
-    if (!motors.armed() || ap.land_complete) {
+    if (!motors.armed()) {
         return false;
     }
 
