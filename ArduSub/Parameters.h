@@ -51,118 +51,63 @@ public:
         //
         k_param_format_version = 0,
         k_param_software_type,
-        k_param_ins,                            // libraries/AP_InertialSensor variables
-		k_param_NavEKF2,
+
 		k_param_g2, // 2nd block of parameters
 
-        // simulation
-        k_param_sitl = 10,
+        k_param_sitl, // Simulation
 
-        // barometer object (needed for SITL)
-        k_param_barometer,
-
-        // scheduler object (for debugging)
-        k_param_scheduler,
-
-        // relay object
-        k_param_relay,
-
-        // BoardConfig object
-        k_param_BoardConfig,
-
-        // GPS object
-        k_param_gps,
-
-        // Input Management object
-        k_param_input_manager,  // 19
-
-        // Misc
-        //
-        k_param_wp_yaw_behavior,
-        k_param_acro_trainer,
-        k_param_pilot_velocity_z_max,
-        k_param_rangefinder_gain,
-        k_param_ch8_option,
-        k_param_arming_check,
-        k_param_angle_max,
-        k_param_gps_hdop_good,
-        k_param_battery,
-        k_param_fs_batt_mah,
-        k_param_rc_feel_rp,
-        k_param_NavEKF,                 // Extended Kalman Filter Inertial Navigation Group
-        k_param_mission,                // mission library
-        k_param_rc_13,
-        k_param_rc_14,
-        k_param_rally,
-        k_param_pilot_accel_z,
-        k_param_rangefinder, // rangefinder object
-        k_param_fs_ekf_thresh,
-        k_param_terrain,
-        k_param_acro_expo,
-        k_param_throttle_deadzone,
-        k_param_optflow,
-        k_param_log_bitmask,
-        k_param_cli_enabled,
-        k_param_throttle_filt,
-        k_param_throttle_behavior,
-        k_param_pilot_takeoff_alt, // 64
-
-        k_param_fence,
-
-		k_param_notify, 				// 73
-
-        //
-        // 90: misc2
-        //
-        k_param_motors = 90,
-        k_param_disarm_delay,
-        k_param_fs_crash_check,
-		k_param_terrain_follow,		// 94
-		k_param_avoid,
-                
-        //
-        // 100: Inertial Nav
-        //
-        k_param_wp_nav,
-        k_param_attitude_control,
-        k_param_pos_control,
-        k_param_circle_nav,     // 104
-
-        // 110: Telemetry control
-        //
-        k_param_gcs0 = 110,
+        // Telemetry
+        k_param_gcs0 = 10,
         k_param_gcs1,
+        k_param_gcs2,
+        k_param_gcs3,
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
-        k_param_gcs2,
-        k_param_serial_manager,
-        k_param_ch9_option,
-        k_param_ch10_option,
-        k_param_ch11_option,
-        k_param_ch12_option,
-        k_param_takeoff_trigger_dz,
-        k_param_gcs3,
-        k_param_gcs_pid_mask,    // 126
 
-        //
-        // 140: Sensor parameters
-        //
-        k_param_compass_enabled,
-        k_param_compass,
-        k_param_fs_batt_voltage,
-        k_param_ch7_option,
-        k_param_ahrs, // AHRS group // 159
+		// Hardware/Software configuration
+        k_param_BoardConfig = 20, // Board configuration (PX4/Linux/etc)
+        k_param_scheduler, // Scheduler (for debugging/perf_info)
+        k_param_DataFlash, // DataFlash Logging
+        k_param_serial_manager, // Serial ports, AP_SerialManager
+		k_param_notify, // Notify Library, AP_Notify
+        k_param_cli_enabled, // Old (deprecated) command line interface
 
-        //
-        // Camera and mount parameters
-        //
-        k_param_camera = 165,
-        k_param_camera_mount,
 
-        //
-        // 170: Radio settings
-        //
-        k_param_rc_1 = 170,
+		// Sensor objects
+        k_param_ins = 30, // AP_InertialSensor
+        k_param_compass, // Compass
+        k_param_barometer, // Barometer/Depth Sensor
+        k_param_battery, // AP_BattMonitor
+		k_param_leak_detector, // Leak Detector
+        k_param_rangefinder, // Rangefinder
+        k_param_gps, // GPS
+        k_param_optflow, // Optical Flow
+
+
+		// Navigation libraries
+        k_param_ahrs = 50, // AHRS
+        k_param_NavEKF, // Extended Kalman Filter Inertial Navigation
+		k_param_NavEKF2, // EKF2
+        k_param_attitude_control, // Attitude Control
+        k_param_pos_control, // Position Control
+        k_param_wp_nav, // Waypoint navigation
+        k_param_mission, // Mission library
+        k_param_fence, // Fence Library
+        k_param_terrain, // Terrain database
+        k_param_rally, // Disabled
+        k_param_circle_nav, // Disabled
+		k_param_avoid,
+
+
+		// Other external hardware interfaces
+        k_param_motors = 65, // Motors
+        k_param_relay, // Relay
+        k_param_camera, // Camera
+        k_param_camera_mount, // Camera gimbal
+
+
+		// RC_Channel settings
+        k_param_rc_1 = 75,
         k_param_rc_2,
         k_param_rc_3,
         k_param_rc_4,
@@ -170,63 +115,23 @@ public:
         k_param_rc_6,
         k_param_rc_7,
         k_param_rc_8,
+        k_param_rc_9,
         k_param_rc_10,
         k_param_rc_11,
-        k_param_failsafe_throttle,
-        k_param_failsafe_throttle_value,
-        k_param_esc_calibrate,
-        k_param_radio_tuning,
-        k_param_radio_tuning_high,
-        k_param_radio_tuning_low,
-        k_param_rc_speed = 192,
-        k_param_failsafe_battery_enabled,
-        k_param_rc_9,
         k_param_rc_12,
-        k_param_failsafe_gcs,
-        k_param_rcmap, // 199
+        k_param_rc_13,
+        k_param_rc_14,
 
-        //
-        // 200: flight modes
-        //
-        k_param_flight_mode1 = 200,
-        k_param_flight_mode2,
-        k_param_flight_mode3,
-        k_param_flight_mode4,
-        k_param_flight_mode5,
-        k_param_flight_mode6,
-
-        //
-        // 220: PI/D Controllers
-        //
-        k_param_acro_rp_p = 221,
-        k_param_p_pos_xy,
-        k_param_p_alt_hold,
-        k_param_p_vel_z,
-        k_param_pid_accel_z,
-        k_param_acro_balance_roll,
-        k_param_acro_balance_pitch,
-        k_param_acro_yaw_p,
-        k_param_autotune_axis_bitmask,
-        k_param_autotune_aggressiveness,
-        k_param_pi_vel_xy,
-        k_param_fs_ekf_action,
-        k_param_rpm_sensor,
-        k_param_autotune_min_d, // 251
-        k_param_DataFlash = 253, // 253 - Logging Group
-
-        // 254,255: reserved
-
-		//Sub-specific parameters
-		k_param_surface_depth = 256,
-
-		// Joystic gain parameters
+		// Joystick gain parameters
 		k_param_gain_default,
 		k_param_maxGain,
 		k_param_minGain,
 		k_param_numGainSettings,
+		k_param_cam_tilt_step,
+		k_param_lights_step,
 		
 		// Joystick button mapping parameters
-		k_param_jbtn_0 = 261,
+		k_param_jbtn_0 = 95,
 		k_param_jbtn_1,
 		k_param_jbtn_2,
 		k_param_jbtn_3,
@@ -241,24 +146,103 @@ public:
 		k_param_jbtn_12,
 		k_param_jbtn_13,
 		k_param_jbtn_14,
-		k_param_jbtn_15, // 276
+		k_param_jbtn_15,
 
-		k_param_pid_crosstrack_control,
-		k_param_pid_heading_control,
-		
-		k_param_leak_detector, // leak detector object
+
+		// Flight mode selection
+        k_param_flight_mode1 = 120,
+        k_param_flight_mode2,
+        k_param_flight_mode3,
+        k_param_flight_mode4,
+        k_param_flight_mode5,
+        k_param_flight_mode6,
+
+
+		// PID Controllers
+        k_param_p_pos_xy,
+        k_param_p_alt_hold,
+        k_param_pi_vel_xy,
+        k_param_p_vel_z,
+        k_param_pid_accel_z,
+		k_param_pid_crosstrack_control, // Experimental
+		k_param_pid_heading_control, // Experimental
+
+
+		// Failsafes
+        k_param_failsafe_gcs = 140,
 		k_param_failsafe_leak, // leak failsafe behavior
 		k_param_failsafe_pressure, // internal pressure failsafe behavior
 		k_param_failsafe_pressure_max, // maximum internal pressure in pascal before failsafe is triggered
 		k_param_failsafe_temperature, // internal temperature failsafe behavior
 		k_param_failsafe_temperature_max, // maximum internal temperature in degrees C before failsafe is triggered
-
 		k_param_failsafe_terrain, // terrain failsafe behavior
+        k_param_fs_ekf_thresh,
+        k_param_fs_ekf_action,
+        k_param_fs_crash_check,
+        k_param_failsafe_battery_enabled,
+        k_param_fs_batt_mah,
+        k_param_fs_batt_voltage,
+        k_param_failsafe_throttle,
+        k_param_failsafe_throttle_value,
 
-		k_param_xtrack_angle_limit, // angle limit for xtrack correction in degrees
 
-		k_param_cam_tilt_step,
-		k_param_lights_step
+        // Misc Sub settings
+        k_param_log_bitmask = 165,
+        k_param_arming_check,
+        k_param_angle_max,
+		k_param_rangefinder_gain,
+        k_param_gps_hdop_good,
+        k_param_wp_yaw_behavior,
+		k_param_xtrack_angle_limit, // Angle limit for crosstrack correction in Auto modes (degrees)
+        k_param_pilot_velocity_z_max,
+        k_param_pilot_accel_z,
+        k_param_compass_enabled,
+		k_param_surface_depth,
+        k_param_rc_speed, // Main output pwm frequency
+        k_param_esc_calibrate, // Boot-time ESC calibration behavior
+        k_param_gcs_pid_mask,
+        k_param_throttle_filt,
+        k_param_throttle_deadzone, // Used in auto-throttle modes
+        k_param_disarm_delay,
+		k_param_terrain_follow,
+        k_param_rc_feel_rp,
+
+
+		// Acro Mode parameters
+        k_param_acro_yaw_p = 220, // Used in all modes for get_pilot_desired_yaw_rate
+        k_param_acro_trainer,
+        k_param_acro_expo,
+        k_param_acro_rp_p,
+        k_param_acro_balance_roll,
+        k_param_acro_balance_pitch,
+
+
+		// AUX switch options
+        k_param_ch7_option, // Disabled
+        k_param_ch8_option, // Disabled
+        k_param_ch9_option, // Disabled
+        k_param_ch10_option, // Disabled
+        k_param_ch11_option, // Disabled
+        k_param_ch12_option, // Disabled
+
+		// RPM Sensor
+        k_param_rpm_sensor, // Disabled
+
+		// RC_Mapper Library
+        k_param_rcmap, // Disabled
+
+		// CH6 Tuning
+        k_param_radio_tuning, // Disabled
+        k_param_radio_tuning_high, // Disabled
+        k_param_radio_tuning_low, // Disabled
+
+		// Autotune parameters
+        k_param_autotune_axis_bitmask, // Disabled
+        k_param_autotune_aggressiveness, // Disabled
+        k_param_autotune_min_d, // Disabled
+
+
+        k_param_throttle_behavior, // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Remove
     };
 
     AP_Int16        format_version;
