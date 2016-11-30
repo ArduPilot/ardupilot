@@ -42,7 +42,7 @@ void Sub::circle_run()
     pos_control.set_accel_z(g.pilot_accel_z);
     
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         // To-Do: add some initialisation of position controllers
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
     	// multicopters do not stabilize roll/pitch/yaw when disarmed
@@ -63,11 +63,13 @@ void Sub::circle_run()
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
 
-        // check for pilot requested take-off
-        if (ap.land_complete && target_climb_rate > 0) {
-            // indicate we are taking off
-            set_land_complete(false);
-        }
+//        // check for pilot requested take-off
+//        if (ap.land_complete && target_climb_rate > 0) {
+//            // indicate we are taking off
+//            set_land_complete(false);
+//            // clear i term when we're taking off
+//            set_throttle_takeoff();
+//        }
     }
 
     // set motors to full range

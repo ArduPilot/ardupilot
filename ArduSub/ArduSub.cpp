@@ -274,9 +274,6 @@ void Sub::fast_loop()
     // update home from EKF if necessary
     update_home_from_EKF();
 
-    // check if we've landed or crashed
-    update_land_and_crash_detectors();
-
     // check if we've reached the surface or bottom
     update_surface_and_bottom_detector();
 
@@ -302,9 +299,6 @@ void Sub::rc_loop()
 // ---------------------------
 void Sub::throttle_loop()
 {
-    // update throttle_low_comp value (controls priority of throttle vs attitude control)
-    update_throttle_thr_mix();
-
     // check auto_armed status
     update_auto_armed();
 

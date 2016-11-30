@@ -236,14 +236,12 @@ private:
             uint8_t pre_arm_check       : 1; // 4       // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
             uint8_t auto_armed          : 1; // 5       // stops auto missions from beginning until throttle is raised
             uint8_t logging_started     : 1; // 6       // true if dataflash logging has started
-            uint8_t land_complete       : 1; // 7       // true if we have detected a landing
             uint8_t new_radio_frame     : 1; // 8       // Set true if we have new PWM data to act on from the Radio
             uint8_t usb_connected       : 1; // 9       // true if APM is powered from USB connection
             uint8_t rc_receiver_present : 1; // 10      // true if we have an rc receiver present (i.e. if we've ever received an update
             uint8_t compass_mot         : 1; // 11      // true if we are currently performing compassmot calibration
             uint8_t motor_test          : 1; // 12      // true if we are currently performing the motors test
             uint8_t initialised         : 1; // 13      // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
-            uint8_t land_complete_maybe : 1; // 14      // true if we may have landed (less strict version of land_complete)
             uint8_t throttle_zero       : 1; // 15      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
             uint8_t system_time_set     : 1; // 16      // true if the system time has been set from the GPS
             uint8_t gps_base_pos_set    : 1; // 17      // true when the gps base position has been set (used for RTK gps only)
@@ -568,8 +566,6 @@ private:
     void set_simple_mode(uint8_t b);
     void set_failsafe_radio(bool b);
     void set_failsafe_battery(bool b);
-    void set_land_complete(bool b);
-    void set_land_complete_maybe(bool b);
     void set_pre_arm_check(bool b);
     void set_pre_arm_rc_check(bool b);
     void update_using_interlock();
@@ -804,10 +800,6 @@ private:
     void check_dynamic_flight(void);
     void read_inertia();
     void read_inertial_altitude();
-    bool land_complete_maybe();
-    void update_land_and_crash_detectors();
-    void update_land_detector();
-    void update_throttle_thr_mix();
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
