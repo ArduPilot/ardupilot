@@ -1209,27 +1209,34 @@ bool NavEKF2::getHeightControlLimit(float &height) const
     return core[primary].getHeightControlLimit(height);
 }
 
-// return the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
-// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+// Returns the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
+// Returns the time of the last yaw angle reset or 0 if no reset or core switch has ever occurred
+// Where there are multiple consumers, they must access this function on the same frame as each other
 uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
 {
     if (!core) {
         return 0;
     }
 
-    // Record last time controller got the yaw reset
-    yaw_reset_data.last_function_call = imuSampleTime_us / 1000;
-    yawAngDelta = 0;
-    uint32_t lastYawReset_ms = 0;
+    yawAngDelta = 0.0f;
+
+    // Do the conversion to msec in one place
+    uint32_t now_time_ms = imuSampleTime_us / 1000;
+
+    // The last time we switched to the current primary core is the first reset event
+    uint32_t lastYawReset_ms = yaw_reset_data.last_primary_change;
 
     // There has been a change notification in the primary core that the controller has not consumed
-    if (yaw_reset_data.core_changed) {
+    // or this is a repeated acce
+    if (yaw_reset_data.core_changed || yaw_reset_data.last_function_call == now_time_ms) {
         yawAngDelta = yaw_reset_data.core_delta;
-        lastYawReset_ms = yaw_reset_data.last_primary_change;
         yaw_reset_data.core_changed = false;
     }
 
-    // There has been a reset inside the core since we switched
+    // Record last time controller got the yaw reset
+    yaw_reset_data.last_function_call = now_time_ms;
+
+    // There has been a reset inside the core since we switched so update the time and delta
     float temp_yawAng;
     uint32_t lastCoreYawReset_ms = core[primary].getLastYawResetAngle(temp_yawAng);
     if (lastCoreYawReset_ms > lastYawReset_ms) {
