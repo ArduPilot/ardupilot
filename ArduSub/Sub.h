@@ -552,16 +552,6 @@ private:
 	uint32_t last_pilot_yaw_input_ms;
 	uint32_t fs_terrain_recover_start_ms = 0;
 
-#if GNDEFFECT_COMPENSATION == ENABLED
-    // ground effect detector
-    struct {
-        bool takeoff_expected;
-        bool touchdown_expected;
-        uint32_t takeoff_time_ms;
-        float takeoff_alt_cm;
-    } gndeffect_state;
-#endif // GNDEFFECT_COMPENSATION == ENABLED
-
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -856,9 +846,6 @@ private:
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
-#if GNDEFFECT_COMPENSATION == ENABLED
-    void update_ground_effect_detector(void);
-#endif // GNDEFFECT_COMPENSATION == ENABLED
     void landinggear_update();
     void update_notify();
     void motor_test_output();

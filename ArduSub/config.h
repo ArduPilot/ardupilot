@@ -156,10 +156,6 @@
  # define FS_GCS_TIMEOUT_MS             2500    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
 #endif
 
-#ifndef GNDEFFECT_COMPENSATION
- # define GNDEFFECT_COMPENSATION          DISABLED
-#endif
-
 // Radio failsafe while using RC_override
 #ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
  # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  1000    // RC Radio failsafe triggers after 1 second while using RC_override from ground station
