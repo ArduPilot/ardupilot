@@ -26,6 +26,7 @@ class AP_Airspeed;
 class AP_Airspeed_Backend {
 public:
     AP_Airspeed_Backend(AP_Airspeed &frontend);
+    virtual ~AP_Airspeed_Backend();
     
     // probe and initialise the sensor
     virtual bool init(void) = 0;
@@ -39,6 +40,10 @@ public:
 protected:
     int8_t get_pin(void) const;
     float get_psi_range(void) const;
+    uint8_t get_bus(void) const;
+
+    // semaphore for access to shared frontend data
+    AP_HAL::Semaphore *sem;    
     
 private:
     AP_Airspeed &frontend;
