@@ -266,13 +266,6 @@ private:
     control_mode_t prev_control_mode;
     mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
 
-    // Structure used to detect changes in the flight mode control switch
-    struct {
-        int8_t debounced_switch_position;   // currently used switch position
-        int8_t last_switch_position;        // switch position in previous iteration
-        uint32_t last_edge_time_ms;         // system time that switch position was last changed
-    } control_switch_state;
-
     struct {
         bool running;
         float max_speed;
@@ -955,7 +948,6 @@ private:
     void report_version();
     bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check);
     bool check_duplicate_auxsw(void);
-    void reset_control_switch();
     uint8_t read_3pos_switch(int16_t radio_in);
     void read_aux_switches();
     void init_aux_switches();
