@@ -241,7 +241,9 @@ void AC_AttitudeControl_Multi::parameter_sanity_check()
     if (_thr_mix_min < 0.1f || _thr_mix_min > 0.25f) {
         _thr_mix_min = AC_ATTITUDE_CONTROL_MIN_DEFAULT;
     }
-    if (_thr_mix_max < 0.5f || _thr_mix_max > 0.9f) {
+    if (_thr_mix_max < 0.5f || _thr_mix_max > 2.0f) {
+        // parameter description recommends thr-mix-max be no higher than 0.9 but we allow up to 2.0
+        // which can be useful for very high powered copters with very low hover throttle
         _thr_mix_max = AC_ATTITUDE_CONTROL_MAX_DEFAULT;
     }
     if (_thr_mix_min > _thr_mix_max) {
