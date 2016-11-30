@@ -216,8 +216,9 @@ public:
         innovVar : innovation variance (m^2)
         testRatio : innovation consistency test ratio
         beaconPosNED : beacon NED position (m)
+        returns true if data could be found, false if it could not
     */
-    void getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow);
+    bool getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow);
 
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to ground effect
