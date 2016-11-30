@@ -298,10 +298,6 @@ void Sub::throttle_loop()
 
     // check auto_armed status
     update_auto_armed();
-
-#if GNDEFFECT_COMPENSATION == ENABLED
-    update_ground_effect_detector();
-#endif // GNDEFFECT_COMPENSATION == ENABLED
 }
 
 // update_mount - update camera mount position
