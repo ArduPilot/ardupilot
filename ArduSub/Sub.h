@@ -793,13 +793,6 @@ private:
     void velhold_run();
     bool poshold_init(bool ignore_checks);
     void poshold_run();
-    void poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
-    int16_t poshold_mix_controls(float mix_ratio, int16_t first_control, int16_t second_control);
-    void poshold_update_brake_angle_from_velocity(int16_t &brake_angle, float velocity);
-    void poshold_update_wind_comp_estimate();
-    void poshold_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle);
-    void poshold_roll_controller_to_pilot_override();
-    void poshold_pitch_controller_to_pilot_override();
 
     // Throw to launch functionality
     bool throw_init(bool ignore_checks);
