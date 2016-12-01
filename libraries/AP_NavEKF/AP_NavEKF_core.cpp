@@ -4438,7 +4438,6 @@ void NavEKF_core::InitialiseVariables()
     dtDelAng = 0.0025f;
     dt = 0;
     hgtMea = 0;
-    storeIndex = 0;
     lastGyroBias.zero();
     lastAngRate.zero();
     lastAccel1.zero();
