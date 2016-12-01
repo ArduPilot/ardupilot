@@ -73,10 +73,6 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 #endif
 
-        case FLIP:
-            success = flip_init(ignore_checks);
-            break;
-
 #if AUTOTUNE_ENABLED == ENABLED
         case AUTOTUNE:
             success = autotune_init(ignore_checks);
@@ -191,10 +187,6 @@ void Sub::update_flight_mode()
             transect_run();
             break;
 #endif
-
-        case FLIP:
-            flip_run();
-            break;
 
 #if AUTOTUNE_ENABLED == ENABLED
         case AUTOTUNE:
@@ -361,9 +353,6 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case TRANSECT:
         port->print("TRANSECT");
-        break;
-    case FLIP:
-        port->print("FLIP");
         break;
     case AUTOTUNE:
         port->print("AUTOTUNE");

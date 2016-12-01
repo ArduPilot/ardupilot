@@ -255,12 +255,6 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 {
 
     switch(ch_function) {
-        case AUXSW_FLIP:
-            // flip if switch is on, positive throttle and we're actually flying
-            if(ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(FLIP, MODE_REASON_TX_COMMAND);
-            }
-            break;
 
         case AUXSW_SIMPLE_MODE:
             // low = simple mode off, middle or high position turns simple mode on

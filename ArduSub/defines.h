@@ -40,7 +40,7 @@ enum autopilot_yaw_mode {
 // Aux Switch enumeration
 enum aux_sw_func {
     AUXSW_DO_NOTHING =           0, // aux switch disabled
-    AUXSW_FLIP =                 2, // flip
+//    AUXSW_FLIP =                 2, // flip
     AUXSW_SIMPLE_MODE =          3, // change to simple mode
     AUXSW_RTL =                  4, // change to RTL flight mode
     AUXSW_SAVE_TRIM =            5, // save current position as level
@@ -110,7 +110,6 @@ enum control_mode_t {
     OF_LOITER =    10,  // deprecated
     DRIFT =        11,  // not implemented in sub // semi-automous position, yaw and throttle control
     TRANSECT =     13,  // automatic x/y velocity, automatic heading/crosstrack error compensation, automatic depth/throttle
-    FLIP =         14,  // not implemented in sub // automatically flip the vehicle on the roll axis
     AUTOTUNE =     15,  // not implemented in sub // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
     BRAKE =        17,  // not implemented in sub // full-brake using inertial/GPS system, no pilot input
@@ -132,7 +131,6 @@ enum mode_reason_t {
     MODE_REASON_FENCE_BREACH,
 	MODE_REASON_TERRAIN_FAILSAFE,
 	MODE_REASON_BRAKE_TIMEOUT,
-	MODE_REASON_FLIP_COMPLETE,
 	MODE_REASON_SURFACE_COMPLETE,
 	MODE_REASON_LEAK_FAILSAFE
 };
@@ -250,16 +248,6 @@ enum LoiterModeState {
     Loiter_Landed
 };
 
-// Flip states
-enum FlipState {
-    Flip_Start,
-    Flip_Roll,
-    Flip_Pitch_A,
-    Flip_Pitch_B,
-    Flip_Recover,
-    Flip_Abandon
-};
-
 // Throw states
 enum ThrowModeState {
     Throw_Disarmed,
@@ -332,8 +320,8 @@ enum ThrowModeState {
 #define DATA_LAND_COMPLETE                  18
 #define DATA_NOT_LANDED                     28
 #define DATA_LOST_GPS                       19
-#define DATA_FLIP_START                     21
-#define DATA_FLIP_END                       22
+//#define DATA_FLIP_START                     21
+//#define DATA_FLIP_END                       22
 #define DATA_SET_HOME                       25
 #define DATA_SET_SIMPLE_ON                  26
 #define DATA_SET_SIMPLE_OFF                 27
@@ -390,7 +378,7 @@ enum ThrowModeState {
 #define ERROR_SUBSYSTEM_FLIGHT_MODE         10
 #define ERROR_SUBSYSTEM_GPS                 11  // not used
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
-#define ERROR_SUBSYSTEM_FLIP                13
+//#define ERROR_SUBSYSTEM_FLIP                13
 #define ERROR_SUBSYSTEM_AUTOTUNE            14
 #define ERROR_SUBSYSTEM_PARACHUTE           15
 #define ERROR_SUBSYSTEM_EKFCHECK            16
@@ -418,8 +406,6 @@ enum ThrowModeState {
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH        1
 #define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
-// subsystem specific error codes -- flip
-#define ERROR_CODE_FLIP_ABANDONED           2
 // subsystem specific error codes -- terrain
 #define ERROR_CODE_MISSING_TERRAIN_DATA     2
 // subsystem specific error codes -- navigation
