@@ -170,6 +170,18 @@ void Copter::auto_takeoff_run()
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
+#if FRAME_CONFIG == HELI_FRAME
+    // helicopters stay in landed state until rotor speed runup has finished
+    if (motors.rotor_runup_complete()) {
+        set_land_complete(false);
+    } else {
+        // initialise wpnav targets
+        wp_nav.shift_wp_origin_to_current_pos();
+    }
+#else
+    set_land_complete(false);
+#endif
+
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
