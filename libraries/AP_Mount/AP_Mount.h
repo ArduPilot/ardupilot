@@ -132,6 +132,9 @@ public:
     // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
     void status_msg(mavlink_channel_t chan);
 
+    // mount IMU helper mode
+    void trigger_imu_helper(uint8_t mntCal);
+
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 

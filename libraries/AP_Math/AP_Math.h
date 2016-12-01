@@ -94,6 +94,21 @@ template <class T>
 auto wrap_360_cd(const T angle) -> decltype(wrap_360(angle, 100.f));
 
 /*
+ * Wrapping function specific for Alexmos Mount
+ * Constrain an euler angle to be within the range: -720 to 720 degrees. The
+ * second parameter changes the units. Default: 1 == degrees, 10 == dezi,
+ * 100 == centi.
+ */
+template <class T>
+float wrap_2x720(const T angle, float unit_mod = 1);
+
+/*
+ * Wrap an angle in centi-degrees. See wrap_2x720().
+ */
+template <class T>
+auto wrap_2x720_cd(const T angle) -> decltype(wrap_2x720(angle, 100.0f));
+
+/*
   wrap an angle in radians to -PI ~ PI (equivalent to +- 180 degrees)
  */
 template <class T>
@@ -104,6 +119,13 @@ float wrap_PI(const T radian);
  */
 template <class T>
 float wrap_2PI(const T radian);
+
+/*
+ * wrap an angle defined in radians to the interval [-4*PI,4*PI)
+ * Function specific for Alexmos Mount
+ */
+template <class T>
+float wrap_2x4PI(const T radian);
 
 /*
  * Constrain a value to be within the range: low and high

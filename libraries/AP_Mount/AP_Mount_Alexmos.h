@@ -9,8 +9,8 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_Mount_Backend.h"
-
 
 //definition of the commands id for the Alexmos Serial Protocol
 #define CMD_READ_PARAMS 'R'
@@ -48,6 +48,11 @@
 #define CMD_WRITE_PARAMS_EXT 34
 #define CMD_AUTO_PID 35
 #define CMD_SERVO_OUT 36
+#define CMD_AHRS_HELPER 56
+#define CMD_GET_ANGLES_EXT 61
+#define CMD_DATA_STREAM_INTERVAL 85 //'U'
+#define CMD_REALTIME_DATA_CUSTOM 88 //'X'
+
 #define CMD_ERROR 255
 
 #define AP_MOUNT_ALEXMOS_MODE_NO_CONTROL 0
@@ -55,10 +60,38 @@
 #define AP_MOUNT_ALEXMOS_MODE_ANGLE 2
 #define AP_MOUNT_ALEXMOS_MODE_SPEED_ANGLE 3
 #define AP_MOUNT_ALEXMOS_MODE_RC 4
+#define AP_MOUNT_ALEXMOS_MODE_REL 5
 
 #define AP_MOUNT_ALEXMOS_SPEED 30 // degree/s2
 
-#define VALUE_TO_DEGREE(d) ((float)((d * 720) >> 15))
+// CMD_AHRS_HELPER
+// 0x00 get main IMU attitude
+// 0x02 get frame IMU attitude
+
+// 0x01 says WRITE
+// 0x02 says FRAME_IMU
+// 0x08 says translate to camera frame (or back)
+// 0x10 says Zenith only
+// 0x30 says North only
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_GET_REF_MAIN  0x00
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_GET_REF_MAIN2 0x08
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_GET_REF_FRAME 0x0A
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_RAW_FRAME 0x0B
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_Z1        0x1B
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_H1        0x2B
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_Z1_RO     0x1F
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_H1_RO     0x2F
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_RAW       0x01
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_Z1_RAW    0x11
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_H1_RAW    0x21
+#define AP_MOUNT_ALEXMOS_AHRS_HLR_SET_H1_RAW_FR 0x29
+
+#define AP_MOUNT_ALEXMOS_COMPENSATE_NORTH       0x01
+#define AP_MOUNT_ALEXMOS_COMPENSATE_ZENITH      0x02
+#define AP_MOUNT_ALEXMOS_COMPENSATE_BOTH        0x03
+#define AP_MOUNT_ALEXMOS_COMPENSATE_NO_OP       0x00
+
+#define VALUE_TO_DEGREE(d) (float)(d)*0.02197265625f //((float)((d * 720) >> 15))
 #define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.02197265625f)))
 #define DEGREE_PER_SEC_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.1220740379f)))
 
@@ -75,7 +108,11 @@ public:
         _firmware_beta_version(0),
         _gimbal_3axis(false),
         _gimbal_bat_monitoring(false),
-        _current_angle(0,0,0),
+        _current_angle(0.0f, 0.0f, 0.0f),
+        _current_zenith(0.0f, 0.0f, 0.0f),
+        _current_north(0.0f, 0.0f, 0.0f),
+        _current_stat_rot_angle(0.0f, 0.0f, 0.0f),
+        _angle_ef_target_2x720(0.0f, 0.0f, 0.0f),
         _param_read_once(false),
         _checksum(0),
         _step(0),
@@ -100,10 +137,25 @@ public:
     // status_msg - called to allow mounts to send their status to GCS via MAVLink
     virtual void status_msg(mavlink_channel_t chan) ;
 
+    // mount IMU helper mode
+    virtual void trigger_imu_helper(uint8_t mntCal);
+
 private:
 
     // get_angles -
     void get_angles();
+
+    // set DATA_STREAM_INTERVAL
+    void set_data_stream_interval();
+
+    // set_ahrs_helper
+    void set_ahrs_helper(uint8_t mode, const Vector3f& zenith, const Vector3f& north);
+
+    // apply heading (YAW) compensation to the camera mount IMU
+    float compensate_mount_imu(uint8_t mntCal_mode);
+
+    // translate mount target to Alexmos convetion (-720deg, +720deg) pan range
+    void update_target_2x720(Vector3f& current_target, const Vector3f& new_target, bool is_earth_fixed, bool invert_pitch);
 
     // set_motor will activate motors if true, and disable them if false
     void set_motor(bool on);
@@ -112,15 +164,13 @@ private:
     void get_boardinfo();
 
     // control_axis - send new angles to the gimbal at a fixed speed of 30 deg/s
-    void control_axis(const Vector3f& angle , bool targets_in_degrees);
+    void control_axis(const Vector3f& angle, bool targets_in_degrees, float boost = 1.0f);
 
     // read_params - read current profile profile_id and global parameters from the gimbal settings
     void read_params(uint8_t profile_id);
 
     // write_params - write new parameters to the gimbal settings
     void write_params();
-
-    bool get_realtimedata( Vector3f& angle);
 
     // Alexmos Serial Protocol reading part implementation
     // send_command - send a command to the Alemox Serial API
@@ -155,6 +205,27 @@ private:
         int16_t rc_speed_yaw;
     };
 
+    // CMD_GET_ANGLES_EXT
+    struct PACKED alexmos_angles_ext {
+        int16_t angle_roll;
+        int16_t rc_angle_roll;
+        int32_t stator_rotor_roll;
+        int64_t res0_r;
+        int16_t res1_r;
+
+        int16_t angle_pitch;
+        int16_t rc_angle_pitch;
+        int32_t stator_rotor_pitch;
+        int64_t res0_p;
+        int16_t res1_p;
+
+        int16_t angle_yaw;
+        int16_t rc_angle_yaw;
+        int32_t stator_rotor_yaw;
+        int64_t res0_y;
+        int16_t res1_y;
+    };
+
     // CMD_CONTROL
     struct PACKED alexmos_angles_speed {
         int8_t mode;
@@ -164,6 +235,29 @@ private:
         int16_t angle_pitch;
         int16_t speed_yaw;
         int16_t angle_yaw;
+    };
+
+    // CMD_AHRS_HELPER
+    struct PACKED alexmos_ahrs_helper {
+        uint8_t mode;
+        float zenith[3]; // unit vector pointing UP
+        float north[3];  // unit vector pointing North
+    };
+
+    //CMD_REALTIME_DATA_CUSTOM response
+    struct PACKED alexmos_rt_data_custom {
+        uint16_t time_ms;
+        float zenith[3]; // unit vector pointing UP
+        float north[3];  // unit vector pointing North
+    };
+
+    //CMD_DATA_STREAM_INTERVAL
+    struct PACKED alexmos_data_stream_interval {
+        uint8_t cmd_id;
+        uint16_t interval_ms;
+        uint64_t config;    //8 Bytes
+        uint64_t res0;      //8 Bytes  
+        uint16_t res1;      //2 Bytes
     };
 
     // CMD_READ_PARAMS
@@ -287,6 +381,12 @@ private:
         alexmos_angles angles;
         alexmos_params params;
         alexmos_angles_speed angle_speed;
+
+        alexmos_angles_ext              angles_ext;
+        alexmos_ahrs_helper             ahrs_helper;
+        alexmos_rt_data_custom          rt_data_custom;
+        alexmos_data_stream_interval    dstream_interval; 
+        uint8_t bytes[];
     } _buffer,_current_parameters;
 
     AP_HAL::UARTDriver *_port;
@@ -301,6 +401,17 @@ private:
 
     // keep the last _current_angle values
     Vector3f _current_angle;
+
+    // keep the last reference frame orientation
+    Vector3f _current_zenith;
+    Vector3f _current_north;
+    Vector3f _current_stat_rot_angle;
+
+    Vector3f _angle_ef_target_2x720;
+
+    enum MAV_MOUNT_MODE _prev_mount_mode;
+
+    uint16_t _rt_data_timestamp;
 
     // CMD_READ_PARAMS has been called once
     bool _param_read_once : 1;

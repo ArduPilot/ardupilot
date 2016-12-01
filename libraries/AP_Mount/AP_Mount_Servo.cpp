@@ -70,7 +70,7 @@ void AP_Mount_Servo::update()
         case MAV_MOUNT_MODE_GPS_POINT:
         {
             if(_frontend._ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, _flags.tilt_control, _flags.pan_control);
+                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, false);
                 stabilize();
             }
             break;

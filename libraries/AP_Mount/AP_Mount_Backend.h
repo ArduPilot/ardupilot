@@ -77,17 +77,20 @@ public:
     // send a GIMBAL_REPORT message to the GCS
     virtual void send_gimbal_report(mavlink_channel_t chan) {}
 
+    // mount IMU helper mode (FlyTech observation setup)
+    virtual void trigger_imu_helper(uint8_t mntCal) {}
+
 protected:
 
     // update_targets_from_rc - updates angle targets (i.e. _angle_ef_target_rad) using input from receiver
-    void update_targets_from_rc();
+    void update_targets_from_rc(bool do_wrap_yaw = false);
 
     // angle_input, angle_input_rad - convert RC input into an earth-frame target angle
     int32_t angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
     float angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan);
+    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan = true);
 
     // get the mount mode from frontend
     MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }

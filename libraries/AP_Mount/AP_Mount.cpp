@@ -642,3 +642,10 @@ void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
         }
     }    
 }
+
+void AP_Mount::trigger_imu_helper(uint8_t mntCal)
+{
+    if (_backends[0] != NULL) {
+        _backends[0]->trigger_imu_helper(mntCal);
+    }
+}
