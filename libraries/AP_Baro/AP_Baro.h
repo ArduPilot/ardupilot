@@ -161,6 +161,7 @@ private:
     AP_Float                            _alt_offset;
     float                               _alt_offset_active;
     AP_Int8                             _primary_baro; // primary chosen by user
+    AP_Int8                             _ext_bus; // bus number for external barometer
     float                               _last_altitude_EAS2TAS;
     float                               _EAS2TAS;
     float                               _external_temperature;
