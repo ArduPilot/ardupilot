@@ -624,10 +624,9 @@ const AP_Param::Info Sub::var_info[] = {
 
 	// @Param: JS_GAIN_DEFAULT
 	// @DisplayName: Default gain at boot
-	// @Discription: Default gain at boot, must be in range [JS_GAIN_MIN , JS_GAIN_MAX]
+	// @Description: Default gain at boot, must be in range [JS_GAIN_MIN , JS_GAIN_MAX]
 	// @User: Standard
 	// @Range: 0.1 1.0
-	// @Default: 0.5
 	GSCALAR(gain_default, "JS_GAIN_DEFAULT", 0.5),
 
 	// @Param: JS_GAIN_MAX
@@ -635,7 +634,6 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Description: Maximum joystick gain
 	// @User: Standard
 	// @Range: 0.2 1.0
-	// @Default: 1.0
 	GSCALAR(maxGain, "JS_GAIN_MAX", 1.0),
 
 	// @Param: JS_GAIN_MIN
@@ -643,15 +641,13 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Description: Minimum joystick gain
 	// @User: Standard
 	// @Range: 0.1 0.8
-	// @Default: 0.25
 	GSCALAR(minGain, "JS_GAIN_MIN", 0.25),
 
 	// @Param: JS_GAIN_STEPS
 	// @DisplayName: Gain steps
-	// @Discription: Controls the number of steps between minimum and maximum joystick gain when the gain is adjusted using buttons. Set to 1 to always use JS_GAIN_DEFAULT.
+	// @Description: Controls the number of steps between minimum and maximum joystick gain when the gain is adjusted using buttons. Set to 1 to always use JS_GAIN_DEFAULT.
 	// @User: Standard
 	// @Range: 1 10
-	// @Default: 4
 	GSCALAR(numGainSettings, "JS_GAIN_STEPS", 4),
 
 	// @Param: JS_CAM_TILT_STEP
@@ -659,7 +655,6 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Description: Size of PWM increment on camera tilt servo
 	// @User: Standard
 	// @Range: 30 400
-	// @Default: 50
 	GSCALAR(cam_tilt_step, "JS_CAM_TILT_STEP", 50),
 
 	// @Param: JS_LIGHTS_STEP
@@ -667,7 +662,6 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Description: Size of PWM increment on lights servo
 	// @User: Standard
 	// @Range: 30 400
-	// @Default: 100
 	GSCALAR(lights_step, "JS_LIGHTS_STEP", 100),
 
 	// @Group: BTN0_
