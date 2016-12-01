@@ -86,6 +86,9 @@ bool AP_Compass_LIS3MDL::init()
         dev->set_read_flag(0xC0);
     }
 
+    // high retries for init
+    dev->set_retries(10);
+    
     uint8_t whoami;
     if (!dev->read_registers(ADDR_WHO_AM_I, &whoami, 1) ||
         whoami != ID_WHO_AM_I) {
@@ -100,6 +103,9 @@ bool AP_Compass_LIS3MDL::init()
     dev->write_register(ADDR_CTRL_REG3, 0, true); // continuous
     dev->write_register(ADDR_CTRL_REG4, 0x0C, true); // z-axis ultra high perf
     dev->write_register(ADDR_CTRL_REG5, 0x40, true); // block-data-update
+
+    // lower retries for run
+    dev->set_retries(3);
     
     dev->get_semaphore()->give();
 

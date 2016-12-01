@@ -159,6 +159,9 @@ bool AP_Compass_HMC5843::init()
         return false;
     }
 
+    // high retries for init
+    _bus->set_retries(10);
+    
     if (!_bus->configure()) {
         hal.console->printf("HMC5843: Could not configure the bus\n");
         goto errout;
@@ -185,6 +188,9 @@ bool AP_Compass_HMC5843::init()
 
     _initialised = true;
 
+    // lower retries for run
+    _bus->set_retries(3);
+    
     bus_sem->give();
 
     // perform an initial read
