@@ -734,9 +734,6 @@ private:
     void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
     bool circle_init(bool ignore_checks);
     void circle_run();
-    bool drift_init(bool ignore_checks);
-    void drift_run();
-    float get_throttle_assist(float velz, float pilot_throttle_scaled);
     bool guided_init(bool ignore_checks);
     bool guided_takeoff_start(float final_alt_above_home);
     void guided_pos_control_start();
