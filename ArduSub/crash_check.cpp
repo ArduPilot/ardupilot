@@ -20,8 +20,8 @@ void Sub::crash_check()
         return;
     }
 
-    // return immediately if we are not in an angle stabilize flight mode or we are flipping
-    if (control_mode == ACRO || control_mode == FLIP) {
+    // return immediately if we are not in an angle stabilize flight mode
+    if (control_mode == ACRO) {
         crash_counter = 0;
         return;
     }
