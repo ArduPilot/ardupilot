@@ -941,7 +941,7 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
     vel_xy_p = _pi_vel_xy.get_p();
 
     // update i term if we have not hit the accel or throttle limits OR the i term will reduce
-    if ((!_limit.accel_xy && !_motors.limit.throttle_upper)) {
+    if (!_limit.accel_xy && !_motors.limit.throttle_upper) {
         vel_xy_i = _pi_vel_xy.get_i();
     } else {
         vel_xy_i = _pi_vel_xy.get_i_shrink();
