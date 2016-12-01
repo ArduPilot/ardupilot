@@ -522,7 +522,6 @@ private:
     AC_AttitudeControl_Multi attitude_control;
 #endif
     AC_PosControl pos_control;
-    AC_Avoid avoid;
     AC_WPNav wp_nav;
     AC_Circle circle_nav;
 
@@ -564,6 +563,7 @@ private:
 #if AC_FENCE == ENABLED
     AC_Fence    fence;
 #endif
+    AC_Avoid avoid;
 
     // Rally library
 #if AC_RALLY == ENABLED
