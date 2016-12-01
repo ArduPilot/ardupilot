@@ -682,8 +682,7 @@ void NavEKF2_core::readRngBcnData()
         }
 
         // check that the beacon is healthy and has new data
-        if (beacon != nullptr &&
-                beacon->beacon_healthy(index) &&
+        if (beacon->beacon_healthy(index) &&
                 beacon->beacon_last_update_ms(index) != lastTimeRngBcn_ms[index])
         {
             // set the timestamp, correcting for measurement delay and average intersampling delay due to the filter update rate
@@ -712,7 +711,7 @@ void NavEKF2_core::readRngBcnData()
     }
 
     // Check if the beacon system has returned a 3D fix
-    if (beacon != nullptr && beacon->get_vehicle_position_ned(beaconVehiclePosNED, beaconVehiclePosErr)) {
+    if (beacon->get_vehicle_position_ned(beaconVehiclePosNED, beaconVehiclePosErr)) {
         rngBcnLast3DmeasTime_ms = imuSampleTime_ms;
     }
 
