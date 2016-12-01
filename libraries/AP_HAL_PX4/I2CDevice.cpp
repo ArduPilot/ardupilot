@@ -101,7 +101,7 @@ I2CDevice::I2CDevice(uint8_t bus, uint8_t address) :
     _px4dev(_busnum),
     _address(address)
 {
-    set_device_bus(_px4dev.map_bus_number(bus));
+    set_device_bus(bus);
     set_device_address(address);
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)bus, (unsigned)address);
