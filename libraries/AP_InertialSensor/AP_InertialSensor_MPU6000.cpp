@@ -254,8 +254,8 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                                                      enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
     , _temp_filter(1000, 1)
-    , _dev(std::move(dev))
     , _rotation(rotation)
+    , _dev(std::move(dev))
 {
 }
 

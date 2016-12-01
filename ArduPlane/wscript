@@ -32,6 +32,7 @@ def build(bld):
             'AP_Proximity',
             'AP_Stats',
             'AP_Landing',
+            'AP_Beacon',
         ],
     )
 

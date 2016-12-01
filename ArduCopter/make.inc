@@ -63,3 +63,4 @@ LIBRARIES += AP_Avoidance
 LIBRARIES += AP_Proximity
 LIBRARIES += AP_Stats
 LIBRARIES += AP_Gripper
+LIBRARIES += AP_Beacon

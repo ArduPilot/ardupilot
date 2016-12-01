@@ -283,9 +283,9 @@ void Rover::Log_Write_Attitude()
 
 #if AP_AHRS_NAVEKF_AVAILABLE
  #if defined(OPTFLOW) and (OPTFLOW == ENABLED)
-    DataFlash.Log_Write_EKF(ahrs,optflow.enabled());
+    DataFlash.Log_Write_EKF2(ahrs,optflow.enabled());
  #else
-    DataFlash.Log_Write_EKF(ahrs,false);
+    DataFlash.Log_Write_EKF2(ahrs,false);
  #endif
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
