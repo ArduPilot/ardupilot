@@ -665,7 +665,7 @@ void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, 
         if (direction < 0) {
             angle_deg = -angle_deg;
         }
-        yaw_look_at_heading = wrap_360_cd((angle_deg*100+curr_yaw_target));
+        yaw_look_at_heading = wrap_360_cd((angle_deg * 100) + curr_yaw_target);
     }
 
     // get turn speed
