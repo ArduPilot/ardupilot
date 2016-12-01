@@ -395,9 +395,6 @@ private:
     int32_t nav_delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
     uint32_t nav_delay_time_start;
 
-    // Flip
-    Vector3f flip_orig_attitude;         // original Sub attitude before flip
-
     // Throw
     bool throw_early_exit_interlock = true; // value of the throttle interlock that must be restored when exiting throw mode early
     bool throw_flight_commenced = false;    // true when the throw has been detected and the motors and control loops are running
@@ -747,8 +744,6 @@ private:
     bool drift_init(bool ignore_checks);
     void drift_run();
     float get_throttle_assist(float velz, float pilot_throttle_scaled);
-    bool flip_init(bool ignore_checks);
-    void flip_run();
     bool guided_init(bool ignore_checks);
     bool guided_takeoff_start(float final_alt_above_home);
     void guided_pos_control_start();
