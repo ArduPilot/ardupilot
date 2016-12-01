@@ -15,10 +15,6 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
     ///
     /// navigation commands
     ///
-    case MAV_CMD_NAV_TAKEOFF:                   // 22
-        do_takeoff(cmd);
-        break;
-
     case MAV_CMD_NAV_WAYPOINT:                  // 16  Navigate to Waypoint
         do_nav_wp(cmd);
         break;
@@ -187,9 +183,6 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     //
     // navigation commands
     //
-    case MAV_CMD_NAV_TAKEOFF:
-        return verify_takeoff();
-
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
 
@@ -283,13 +276,6 @@ void Sub::do_RTL(void)
 /********************************************************************************/
 //	Nav (Must) commands
 /********************************************************************************/
-
-// do_takeoff - initiate takeoff navigation command
-void Sub::do_takeoff(const AP_Mission::Mission_Command& cmd)
-{
-    // Set wp navigation target to safe altitude above current position
-    auto_takeoff_start(cmd.content.location);
-}
 
 // do_nav_wp - initiate move to next waypoint
 void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
@@ -605,13 +591,6 @@ void Sub::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 /********************************************************************************/
 //	Verify Nav (Must) commands
 /********************************************************************************/
-
-// verify_takeoff - check if we have completed the takeoff
-bool Sub::verify_takeoff()
-{
-    // have we reached our target altitude?
-    return wp_nav.reached_wp_destination();
-}
 
 // verify_land - returns true if landing has been completed
 bool Sub::verify_land()

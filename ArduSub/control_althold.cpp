@@ -23,9 +23,6 @@ bool Sub::althold_init(bool ignore_checks)
     pos_control.set_alt_target(inertial_nav.get_altitude());
     pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
-    // stop takeoff if running
-    takeoff_stop();
-
     last_pilot_heading = ahrs.yaw_sensor;
 
     return true;

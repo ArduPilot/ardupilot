@@ -47,7 +47,7 @@ void Sub::poshold_run()
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         wp_nav.init_loiter_target();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
+        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         return;
     }
 

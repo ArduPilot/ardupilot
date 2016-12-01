@@ -84,23 +84,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Increment: .5
     GSCALAR(throttle_filt,  "PILOT_THR_FILT",     0),
 
-    // @Param: PILOT_TKOFF_ALT
-    // @DisplayName: Pilot takeoff altitude
-    // @Description: Altitude that altitude control modes will climb to when a takeoff is triggered with the throttle stick.
-    // @User: Standard
-    // @Units: Centimeters
-    // @Range: 0.0 1000.0
-    // @Increment: 10
-    GSCALAR(pilot_takeoff_alt,  "PILOT_TKOFF_ALT",  PILOT_TKOFF_ALT_DEFAULT),
-
-    // @Param: PILOT_TKOFF_DZ
-    // @DisplayName: Takeoff trigger deadzone
-    // @Description: Offset from mid stick at which takeoff is triggered
-    // @User: Standard
-    // @Range: 0.0 500.0
-    // @Increment: 10
-    GSCALAR(takeoff_trigger_dz, "PILOT_TKOFF_DZ", THR_DZ_DEFAULT),
-
     // @Param: PILOT_THR_BHV
     // @DisplayName: Throttle stick behavior
     // @Description: Bitmask containing various throttle stick options. Add up the values for options that you want.

@@ -53,10 +53,6 @@ void Sub::auto_run()
     // call the correct auto controller
     switch (auto_mode) {
 
-    case Auto_TakeOff:
-        auto_takeoff_run();
-        break;
-
     case Auto_WP:
     case Auto_CircleMoveToEdge:
         auto_wp_run();
@@ -92,90 +88,6 @@ void Sub::auto_run()
     	auto_terrain_recover_run();
     	break;
     }
-}
-
-// auto_takeoff_start - initialises waypoint controller to implement take-off
-void Sub::auto_takeoff_start(const Location& dest_loc)
-{
-    auto_mode = Auto_TakeOff;
-
-    // convert location to class
-	Location_Class dest(dest_loc);
-
-	// set horizontal target
-	dest.lat = current_loc.lat;
-	dest.lng = current_loc.lng;
-
-	// get altitude target
-	int32_t alt_target;
-	if (!dest.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_target)) {
-		// this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
-		Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
-		// fall back to altitude above current altitude
-		alt_target = current_loc.alt + dest.alt;
-	}
-
-	// sanity check target
-	if (alt_target < current_loc.alt) {
-		dest.set_alt_cm(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
-	}
-	// Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
-	if (alt_target < 100) {
-		dest.set_alt_cm(100, Location_Class::ALT_FRAME_ABOVE_HOME);
-	}
-
-	// set waypoint controller target
-	if (!wp_nav.set_wp_destination(dest)) {
-		// failure to set destination can only be because of missing terrain data
-		failsafe_terrain_on_event();
-		return;
-	}
-
-    // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
-
-    // clear i term when we're taking off
-    set_throttle_takeoff();
-
-    // get initial alt for TKOFF_NAV_ALT
-    auto_takeoff_set_start_alt();
-}
-
-// auto_takeoff_run - takeoff in auto mode
-//      called by auto_run at 100hz or more
-void Sub::auto_takeoff_run()
-{
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
-        // initialise wpnav targets
-        wp_nav.shift_wp_origin_to_current_pos();
-        // multicopters do not stabilize roll/pitch/yaw when disarmed
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        // reset attitude control targets
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        // clear i term when we're taking off
-        set_throttle_takeoff();
-        return;
-    }
-
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!failsafe.radio) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-    }
-
-    // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // run waypoint controller
-    failsafe_terrain_set_status(wp_nav.update_wpnav());
-
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control.update_z_controller();
-
-    // call attitude controller
-    auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
@@ -225,8 +137,6 @@ void Sub::auto_wp_run()
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
-        // clear i term when we're taking off
-        set_throttle_takeoff();
         return;
     }
 
@@ -313,8 +223,6 @@ void Sub::auto_spline_run()
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
 
-        // clear i term when we're taking off
-        set_throttle_takeoff();
         return;
     }
 

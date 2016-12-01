@@ -197,7 +197,6 @@ enum tuning_func {
 
 // Auto modes
 enum AutoMode {
-    Auto_TakeOff,
     Auto_WP,
     Auto_Land,
     Auto_RTL,
@@ -211,7 +210,6 @@ enum AutoMode {
 
 // Guided modes
 enum GuidedMode {
-    Guided_TakeOff,
     Guided_WP,
     Guided_Velocity,
     Guided_PosVel,
@@ -231,7 +229,6 @@ enum RTLState {
 enum AltHoldModeState {
     AltHold_MotorStopped,
 	AltHold_NotAutoArmed,
-    AltHold_Takeoff,
     AltHold_Flying,
     AltHold_Landed
 };
@@ -240,7 +237,6 @@ enum AltHoldModeState {
 enum LoiterModeState {
     Loiter_MotorStopped,
 	Loiter_NotAutoArmed,
-    Loiter_Takeoff,
     Loiter_Flying,
     Loiter_Landed
 };

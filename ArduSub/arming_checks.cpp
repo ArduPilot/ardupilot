@@ -664,13 +664,6 @@ bool Sub::arm_checks(bool display_failure, bool arming_from_gcs)
 
         // check throttle is not too high - skips checks if arming from GCS in Guided
         if (!(arming_from_gcs && control_mode == GUIDED)) {
-            // above top of deadband is too always high
-            if (channel_throttle->get_control_in() > get_takeoff_trigger_throttle()) {
-                if (display_failure) {
-                    gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Throttle too high");
-                }
-                return false;
-            }
             // in manual modes throttle must be at zero
             if ((mode_has_manual_throttle(control_mode)) && channel_throttle->get_control_in() > 0) {
                 if (display_failure) {

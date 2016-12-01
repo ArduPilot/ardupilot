@@ -123,13 +123,6 @@ void Sub::update_throttle_hover()
     }
 }
 
-// set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared
-void Sub::set_throttle_takeoff()
-{
-    // tell position controller to reset alt target and reset I terms
-    pos_control.init_takeoff();
-}
-
 // get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
 // used only for manual throttle modes
 // returns throttle output 0 to 1000
@@ -196,52 +189,6 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
     desired_climb_rate = desired_rate;
 
     return desired_rate;
-}
-
-// get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
-float Sub::get_non_takeoff_throttle()
-{
-	// ensure mid throttle is set within a reasonable range
-	return MAX(0,motors.get_throttle_hover()/2.0f);
-}
-
-float Sub::get_takeoff_trigger_throttle()
-{
-    return channel_throttle->get_control_mid() + g.takeoff_trigger_dz;
-}
-
-// get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output (in the range 0 to 1) before take-off
-// used only for althold, loiter, hybrid flight modes
-float Sub::get_throttle_pre_takeoff(float input_thr)
-{
-    // exit immediately if input_thr is zero
-    if (input_thr <= 0.0f) {
-        return 0.0f;
-    }
-
-    // ensure reasonable throttle values
-    input_thr = constrain_float(input_thr,0.0f,1000.0f);
-
-    float in_min = 0.0f;
-    float in_max = get_takeoff_trigger_throttle();
-
-    // multicopters will output between spin-when-armed and 1/2 of mid throttle
-    float out_min = 0.0f;
-    float out_max = get_non_takeoff_throttle();
-
-    if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {
-        in_min = channel_throttle->get_control_mid();
-    }
-
-    float input_range = in_max-in_min;
-    float output_range = out_max-out_min;
-
-    // sanity check ranges
-    if (input_range <= 0.0f || output_range <= 0.0f) {
-        return 0.0f;
-    }
-
-    return constrain_float(out_min + (input_thr-in_min)*output_range/input_range, out_min, out_max);
 }
 
 // get_surface_tracking_climb_rate - hold copter at the desired distance above the ground

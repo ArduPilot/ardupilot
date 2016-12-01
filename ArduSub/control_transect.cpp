@@ -85,7 +85,7 @@ void Sub::transect_run()
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
 
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
+        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         pos_control.set_pos_target(inertial_nav.get_position());
         pos_control.set_desired_velocity(Vector3f(0,0,0));
         return;
