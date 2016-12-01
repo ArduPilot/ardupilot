@@ -1256,24 +1256,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-        case MAV_CMD_NAV_TAKEOFF: {
-            // param3 : horizontal navigation by pilot acceptable
-            // param4 : yaw angle   (not supported)
-            // param5 : latitude    (not supported)
-            // param6 : longitude   (not supported)
-            // param7 : altitude [metres]
-
-            float takeoff_alt = packet.param7 * 100;      // Convert m to cm
-
-            if(sub.do_user_takeoff(takeoff_alt, is_zero(packet.param3))) {
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
-            break;
-        }
-
-
         case MAV_CMD_NAV_LOITER_UNLIM:
             if (sub.set_mode(POSHOLD, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;

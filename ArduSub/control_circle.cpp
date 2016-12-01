@@ -67,8 +67,6 @@ void Sub::circle_run()
         if (ap.land_complete && target_climb_rate > 0) {
             // indicate we are taking off
             set_land_complete(false);
-            // clear i term when we're taking off
-            set_throttle_takeoff();
         }
     }
 

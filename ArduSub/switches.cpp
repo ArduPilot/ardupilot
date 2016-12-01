@@ -301,24 +301,6 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 // create new mission command
                 AP_Mission::Mission_Command cmd  = {};
 
-                // if the mission is empty save a takeoff command
-                if(mission.num_commands() == 0) {
-                    // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
-                    cmd.id = MAV_CMD_NAV_TAKEOFF;
-                    cmd.content.location.options = 0;
-                    cmd.p1 = 0;
-                    cmd.content.location.lat = 0;
-                    cmd.content.location.lng = 0;
-                    cmd.content.location.alt = MAX(current_loc.alt,100);
-
-                    // use the current altitude for the target alt for takeoff.
-                    // only altitude will matter to the AP mission script for takeoff.
-                    if(mission.add_cmd(cmd)) {
-                        // log event
-                        Log_Write_Event(DATA_SAVEWP_ADD_WP);
-                    }
-                }
-
                 // set new waypoint to current location
                 cmd.content.location = current_loc;
 
