@@ -85,10 +85,6 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 #endif
 
-        case BRAKE:
-            success = brake_init(ignore_checks);
-            break;
-
         case THROW:
         	success = throw_init(ignore_checks);
         	break;
@@ -200,10 +196,6 @@ void Sub::update_flight_mode()
             break;
 #endif
 
-        case BRAKE:
-            brake_run();
-            break;
-
         case THROW:
         	throw_run();
         	break;
@@ -260,7 +252,6 @@ bool Sub::mode_requires_GPS(control_mode_t mode) {
         case CIRCLE:
         case DRIFT:
         case POSHOLD:
-        case BRAKE:
         case THROW:
         case TRANSECT:
             return true;
@@ -359,9 +350,6 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case POSHOLD:
         port->print("POSHOLD");
-        break;
-    case BRAKE:
-        port->print("BRAKE");
         break;
     case THROW:
         port->print("THROW");

@@ -56,7 +56,6 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     case GUIDED:
     case CIRCLE:
     case POSHOLD:
-    case BRAKE:
     case TRANSECT:
         base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
@@ -159,7 +158,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     case SURFACE:
     case OF_LOITER:
     case POSHOLD:
-    case BRAKE:
     case TRANSECT:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
