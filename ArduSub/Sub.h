@@ -387,10 +387,6 @@ private:
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
     uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
-    // Brake
-    uint32_t brake_timeout_start;
-    uint32_t brake_timeout_ms;
-
     // Delay the next navigation command
     int32_t nav_delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
     uint32_t nav_delay_time_start;
@@ -736,9 +732,6 @@ private:
     void autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float target, float measurement_max);
     void autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
     void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
-    bool brake_init(bool ignore_checks);
-    void brake_run();
-    void brake_timeout_to_loiter_ms(uint32_t timeout_ms);
     bool circle_init(bool ignore_checks);
     void circle_run();
     bool drift_init(bool ignore_checks);

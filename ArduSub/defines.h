@@ -68,7 +68,7 @@ enum aux_sw_func {
     AUXSW_LOST_COPTER_SOUND =   30, // Play lost copter sound
     AUXSW_MOTOR_ESTOP =         31, // Emergency Stop Switch
     AUXSW_MOTOR_INTERLOCK =     32, // Motor On/Off switch
-    AUXSW_BRAKE =               33, // Brake flight mode
+//    AUXSW_BRAKE =               33, // Brake flight mode
 	AUXSW_RELAY2 =              34, // Relay2 pin on/off (in Mission planner set CH8_OPT  = 34)
     AUXSW_RELAY3 =              35, // Relay3 pin on/off (in Mission planner set CH9_OPT  = 35)
     AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
@@ -112,7 +112,6 @@ enum control_mode_t {
     TRANSECT =     13,  // automatic x/y velocity, automatic heading/crosstrack error compensation, automatic depth/throttle
     AUTOTUNE =     15,  // not implemented in sub // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    BRAKE =        17,  // not implemented in sub // full-brake using inertial/GPS system, no pilot input
 	THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
 	MANUAL =	   19   // Pass-through input with no stabilization
 };
@@ -130,7 +129,6 @@ enum mode_reason_t {
     MODE_REASON_THROTTLE_LAND_ESCAPE,
     MODE_REASON_FENCE_BREACH,
 	MODE_REASON_TERRAIN_FAILSAFE,
-	MODE_REASON_BRAKE_TIMEOUT,
 	MODE_REASON_SURFACE_COMPLETE,
 	MODE_REASON_LEAK_FAILSAFE
 };
