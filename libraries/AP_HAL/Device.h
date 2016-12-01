@@ -61,6 +61,11 @@ public:
         return _bus_id.devid;
     }
 
+    // return address on bus
+    uint8_t get_bus_address(void) const {
+        return _bus_id.devid_s.address;
+    }
+    
     // set device type within a device class (eg. AP_COMPASS_TYPE_LSM303D)
     void set_device_type(uint8_t devtype) {
         _bus_id.devid_s.devtype = devtype;
