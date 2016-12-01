@@ -304,13 +304,6 @@
  # define FS_THR_VALUE_DEFAULT             975
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Takeoff
-//
-#ifndef PILOT_TKOFF_ALT_DEFAULT
- # define PILOT_TKOFF_ALT_DEFAULT           0     // default final alt above home for pilot initiated takeoff
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Landing
