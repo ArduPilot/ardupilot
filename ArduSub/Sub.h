@@ -266,17 +266,8 @@ private:
     control_mode_t prev_control_mode;
     mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
 
-    struct {
-        bool running;
-        float max_speed;
-        float alt_delta;
-        uint32_t start_ms;
-    } takeoff_state;
 
     uint32_t precland_last_update_ms;
-
-    // altitude below which we do no navigation in auto takeoff
-    float auto_takeoff_no_nav_alt_cm;
 
     RCMapper rcmap;
 
@@ -590,15 +581,9 @@ private:
     float get_roi_yaw();
     float get_look_ahead_yaw();
     void update_throttle_hover();
-    void set_throttle_takeoff();
     float get_pilot_desired_throttle(int16_t throttle_control);
     float get_pilot_desired_climb_rate(float throttle_control);
-    float get_non_takeoff_throttle();
-    float get_takeoff_trigger_throttle();
-    float get_throttle_pre_takeoff(float input_thr);
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
-    void auto_takeoff_set_start_alt(void);
-    void auto_takeoff_attitude_run(float target_yaw_rate);
     void set_accel_throttle_I_from_pilot_throttle(float pilot_throttle);
     void update_poscon_alt_max();
     void rotate_body_frame_to_NE(float &x, float &y);
@@ -669,7 +654,6 @@ private:
     void set_system_time_from_GPS();
     void exit_mission();
     void do_RTL(void);
-    bool verify_takeoff();
     bool verify_land();
     bool verify_loiter_unlimited();
     bool verify_loiter_time();
@@ -687,8 +671,6 @@ private:
     void althold_run();
     bool auto_init(bool ignore_checks);
     void auto_run();
-    void auto_takeoff_start(const Location& dest_loc);
-    void auto_takeoff_run();
     void auto_wp_start(const Vector3f& destination);
     void auto_wp_start(const Location_Class& dest_loc);
     void auto_wp_run();
@@ -735,7 +717,6 @@ private:
     bool circle_init(bool ignore_checks);
     void circle_run();
     bool guided_init(bool ignore_checks);
-    bool guided_takeoff_start(float final_alt_above_home);
     void guided_pos_control_start();
     void guided_vel_control_start();
     void guided_posvel_control_start();
@@ -746,7 +727,6 @@ private:
     void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
     void guided_set_angle(const Quaternion &q, float climb_rate_cms);
     void guided_run();
-    void guided_takeoff_run();
     void guided_pos_control_run();
     void guided_vel_control_run();
     void guided_posvel_control_run();
@@ -934,11 +914,6 @@ private:
     void update_auto_armed();
     void check_usb_mux(void);
     bool should_log(uint32_t mask);
-    bool current_mode_has_user_takeoff(bool must_navigate);
-    bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
-    void takeoff_timer_start(float alt_cm);
-    void takeoff_stop();
-    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     void print_hit_enter();
     void tuning();
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
@@ -947,7 +922,6 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
 
     bool do_guided(const AP_Mission::Mission_Command& cmd);
-    void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_land(const AP_Mission::Mission_Command& cmd);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);

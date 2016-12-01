@@ -230,8 +230,6 @@ void Sub::exit_mode(control_mode_t old_control_mode, control_mode_t new_control_
         set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(channel_throttle->control_in));
     }
 
-    // cancel any takeoffs in progress
-    takeoff_stop();
 }
 
 // returns true or false whether mode requires GPS

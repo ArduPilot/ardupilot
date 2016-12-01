@@ -425,8 +425,6 @@ public:
 
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
-    AP_Int16        takeoff_trigger_dz;
-    AP_Float        pilot_takeoff_alt;
 
     AP_Int16        rtl_altitude;
     AP_Int16        rtl_speed_cms;
