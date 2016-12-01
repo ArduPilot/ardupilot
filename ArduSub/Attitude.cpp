@@ -103,8 +103,8 @@ void Sub::update_throttle_hover()
         return;
     }
 
-    // do not update in manual throttle modes or Drift
-    if (mode_has_manual_throttle(control_mode) || (control_mode == DRIFT)) {
+    // do not update in manual throttle modes
+    if (mode_has_manual_throttle(control_mode)) {
         return;
     }
 

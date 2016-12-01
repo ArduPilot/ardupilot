@@ -672,7 +672,7 @@ bool Sub::arm_checks(bool display_failure, bool arming_from_gcs)
                 return false;
             }
             // in manual modes throttle must be at zero
-            if ((mode_has_manual_throttle(control_mode) || control_mode == DRIFT) && channel_throttle->get_control_in() > 0) {
+            if ((mode_has_manual_throttle(control_mode)) && channel_throttle->get_control_in() > 0) {
                 if (display_failure) {
                     gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Throttle too high");
                 }
