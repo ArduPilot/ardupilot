@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,9 +32,6 @@ void AP_Beacon_Backend::set_vehicle_position(const Vector3f& pos, float accuracy
     _frontend.veh_pos_update_ms = AP_HAL::millis();
     _frontend.veh_pos_accuracy = accuracy_estimate;
     _frontend.veh_pos_ned = correct_for_orient_yaw(pos);
-
-    // debug
-    //::printf("vehicle x:%4.2f y:%4.2f z:%4.2f error:%4.2f\n", (double)pos.x, (double)pos.y, (double)pos.z, (double)accuracy_estimate);
 }
 
 // set individual beacon distance in meters
@@ -54,8 +50,6 @@ void AP_Beacon_Backend::set_beacon_distance(uint8_t beacon_instance, float dista
     _frontend.beacon_state[beacon_instance].distance_update_ms = AP_HAL::millis();
     _frontend.beacon_state[beacon_instance].distance = distance;
     _frontend.beacon_state[beacon_instance].healthy = true;
-
-    //::printf("beacon %d dist:%4.2f\n", (int)beacon_instance, (double)distance);
 }
 
 // configure beacon's position in meters from origin
@@ -71,8 +65,6 @@ void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vecto
     if (beacon_instance >= _frontend.num_beacons) {
         _frontend.num_beacons = beacon_instance+1;
     }
-
-    //::printf("beacon %d x:%4.2f y:%4.2f z:%4.2f\n", (int)beacon_instance, (double)pos.x, (double)pos.y, (double)pos.z);
 
     // set position after correcting yaw
     _frontend.beacon_state[beacon_instance].position = correct_for_orient_yaw(pos);
