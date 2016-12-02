@@ -61,6 +61,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <Filter/Filter.h>             // Filter library
@@ -379,6 +380,17 @@ private:
     // distance between plane and next waypoint in cm.
     uint32_t wp_distance;
     LandStateType land_state = LandStateType_FlyToLocation; // records state of land (flying to location, descending)
+
+    struct {
+        PayloadPlaceStateType state = PayloadPlaceStateType_Calibrating_Hover_Start; // records state of place (descending, releasing, released, ...)
+        uint32_t hover_start_timestamp; // milliseconds
+        float hover_throttle_level;
+        uint32_t descend_start_timestamp; // milliseconds
+        uint32_t place_start_timestamp; // milliseconds
+        float descend_throttle_level;
+        float descend_start_altitude;
+        float descend_max; // centimetres
+    } nav_payload_place;
 
     // Auto
     AutoMode auto_mode;   // controls which auto controller is run
@@ -716,6 +728,8 @@ private:
     void init_proximity();
     void update_proximity();
     void stats_update();
+    void init_beacon();
+    void update_beacon();
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
@@ -750,6 +764,7 @@ private:
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool position_ok);
     void Log_Write_Proximity();
+    void Log_Write_Beacon();
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
@@ -773,6 +788,7 @@ private:
     void do_RTL(void);
     bool verify_takeoff();
     bool verify_land();
+    bool verify_payload_place();
     bool verify_loiter_unlimited();
     bool verify_loiter_time();
     bool verify_RTL();
@@ -799,6 +815,14 @@ private:
     void auto_land_start();
     void auto_land_start(const Vector3f& destination);
     void auto_land_run();
+    void do_payload_place(const AP_Mission::Mission_Command& cmd);
+    void auto_payload_place_start();
+    void auto_payload_place_start(const Vector3f& destination);
+    void auto_payload_place_run();
+    bool auto_payload_place_run_should_run();
+    void auto_payload_place_run_loiter();
+    void auto_payload_place_run_descend();
+    void auto_payload_place_run_release();
     void auto_rtl_start();
     void auto_rtl_run();
     void auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
@@ -1093,6 +1117,8 @@ private:
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
+
+    Location_Class terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
 
     bool do_guided(const AP_Mission::Mission_Command& cmd);
     void do_takeoff(const AP_Mission::Mission_Command& cmd);

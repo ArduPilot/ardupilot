@@ -1,5 +1,18 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.3-rc1 01-Dec-2016
+Changes from 3.4.1
+1) Bug Fixes:
+    a) reduce unnecessary EKF core switching and fix position reset
+    b) attitude control does not limit rate if ATC_ACCEL_MAX is zero
+    c) ignore arm command from GCS if already armed
+    d) set land-complete to false during auto takeoff 
+2) Minor Improvements:
+    a) LeddarOne driver robustness improvements
+    b) allow MOT_THR_MIX_MAX to be as high as 2.0
+    c) uavcan bus settle time increased to 2sec
+    d) helicopters do not hold position during auto takeoff until rotor is at full speed
+------------------------------------------------------------------
 Copter 3.4.2 16-Nov-2016 / Copter 3.4.2-rc1/rc2 07-Nov-2016
 Changes from 3.4.1
 1) Minor Improvements:

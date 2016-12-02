@@ -60,6 +60,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Beacon/AP_Beacon.h>
 
 // Configuration
 #include "config.h"

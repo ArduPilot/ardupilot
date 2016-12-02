@@ -39,11 +39,19 @@ void Gripper_Servo::update(const Aircraft::sitl_input &input)
     const float position_max_change = position_slew_rate/100.0f * dt;
     position = constrain_float(position_demand, position-position_max_change, position+position_max_change);
 
+    const float jaw_gap = gap*(1.0f-position);
     if (should_report()) {
-        ::fprintf(stderr, "position_demand=%f\n", position_demand);
-        printf("Position: %f mm\n", gap*position);
+        ::fprintf(stderr, "position_demand=%f jaw_gap=%f load=%f\n", position_demand, jaw_gap, load_mass);
         last_report_us = now;
         reported_position = position;
+    }
+
+    if (jaw_gap < 5) {
+        if (aircraft->on_ground()) {
+            load_mass = 1.0f; // attach the load
+        }
+    } else if (jaw_gap > 10) {
+        load_mass = 0.0f; // detach the load
     }
 
     last_update_us = now;
@@ -63,3 +71,11 @@ bool Gripper_Servo::should_report()
     return false;
 }
 
+
+float Gripper_Servo::payload_mass() const
+{
+    if (aircraft->hagl() < string_length) {
+        return 0.0f;
+    }
+    return load_mass;
+}

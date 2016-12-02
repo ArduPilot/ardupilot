@@ -188,6 +188,9 @@ void Copter::init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
+    // give AHRS the rnage beacon sensor
+    ahrs.set_beacon(&g2.beacon);
+
     // Do GPS init
     gps.init(&DataFlash, serial_manager);
 
@@ -261,6 +264,9 @@ void Copter::init_ardupilot()
 
     // init proximity sensor
     init_proximity();
+
+    // init beacons used for non-gps position estimation
+    init_beacon();
 
     // initialise AP_RPM library
     rpm_sensor.init();

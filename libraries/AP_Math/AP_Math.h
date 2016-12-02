@@ -212,3 +212,7 @@ inline uint32_t usec_to_hz(uint32_t usec)
 float linear_interpolate(float low_output, float high_output,
                          float var_value,
                          float var_low, float var_high);
+
+/* simple 16 bit random number generator */
+uint16_t get_random16(void);
+

@@ -85,6 +85,9 @@ bool AP_Baro_MS56XX::_init()
         AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
     }
 
+    // high retries for init
+    _dev->set_retries(10);
+    
     uint16_t prom[8];
     bool prom_read_ok = false;
     
@@ -122,6 +125,9 @@ bool AP_Baro_MS56XX::_init()
 
     _instance = _frontend.register_sensor();
 
+    // lower retries for run
+    _dev->set_retries(3);
+    
     _dev->get_semaphore()->give();
 
     /* Request 100Hz update */

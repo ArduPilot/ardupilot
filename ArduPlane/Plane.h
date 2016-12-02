@@ -53,6 +53,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
+#include <AP_Beacon/AP_Beacon.h>
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <APM_Control/APM_Control.h>
@@ -122,6 +123,7 @@ public:
             AP_Param::setup_object_defaults(this, var_info);
     }
     bool pre_arm_checks(bool report);
+    bool arm(uint8_t method) override;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
