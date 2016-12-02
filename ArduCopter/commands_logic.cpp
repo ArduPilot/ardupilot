@@ -705,6 +705,28 @@ bool Copter::verify_payload_place()
 
     const float current_throttle_level = motors.get_throttle();
     const uint32_t now =  AP_HAL::millis();
+
+    // if we discover we've landed then immediately release the load:
+    if (ap.land_complete) {
+        switch (nav_payload_place.state) {
+        case PayloadPlaceStateType_FlyToLocation:
+        case PayloadPlaceStateType_Calibrating_Hover_Start:
+        case PayloadPlaceStateType_Calibrating_Hover:
+        case PayloadPlaceStateType_Descending_Start:
+        case PayloadPlaceStateType_Descending:
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "NAV_PLACE: landed");
+            nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
+            break;
+        case PayloadPlaceStateType_Releasing_Start:
+        case PayloadPlaceStateType_Releasing:
+        case PayloadPlaceStateType_Released:
+        case PayloadPlaceStateType_Ascending_Start:
+        case PayloadPlaceStateType_Ascending:
+        case PayloadPlaceStateType_Done:
+            break;
+        }
+    }
+
     switch (nav_payload_place.state) {
     case PayloadPlaceStateType_FlyToLocation:
         if (!wp_nav.reached_wp_destination()) {
