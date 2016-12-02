@@ -35,6 +35,12 @@ public:
     // release - move the EPM pwm output to the release position
     void        release() override;
 
+    // grabbed - returns true if gripper in grabbed state
+    bool grabbed() const override;
+
+    // released - returns true if gripper in released state
+    bool released() const override;
+
     // update - moves the pwm back to neutral after the timeout has passed
     // should be called at at least 10hz
     void        update_gripper() override;

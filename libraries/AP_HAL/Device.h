@@ -235,6 +235,9 @@ public:
     uint32_t get_bus_id_devtype(uint8_t devtype) {
         return change_bus_id(get_bus_id(), devtype);
     }
+
+    /* set number of retries on transfers */
+    virtual void set_retries(uint8_t retries) {};
     
 protected:
     uint8_t _read_flag = 0;

@@ -135,6 +135,4 @@ private:
      * Reset and update #_completion_mask with the current samples.
      */
     void update_completion_mask();
-
-    uint16_t get_random();
 };

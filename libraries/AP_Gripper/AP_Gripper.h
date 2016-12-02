@@ -35,8 +35,17 @@ public:
     // release - move the servo output to the release position
     void release();
 
+    // released - returns true if currently in released position
+    bool released() const;
+
+    // grabbed - returns true if currently in grabbed position
+    bool grabbed() const;
+
     // update - should be called at at least 10hz
     void update();
+
+    // valid - returns true if we have a gripper and it should work
+    bool valid() const;
 
     static const struct AP_Param::GroupInfo        var_info[];
 

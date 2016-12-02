@@ -29,6 +29,8 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
 {
     mass = 1.5f;
 
+    gripper.set_aircraft(this);
+
     frame = Frame::find_frame(frame_str);
     if (frame == nullptr) {
         printf("Frame '%s' not found", frame_str);
@@ -81,5 +83,5 @@ void MultiCopter::update(const struct sitl_input &input)
 
 float MultiCopter::gross_mass() const
 {
-    return Aircraft::gross_mass() + sprayer.payload_mass();
+    return Aircraft::gross_mass() + sprayer.payload_mass() + gripper.payload_mass();
 }

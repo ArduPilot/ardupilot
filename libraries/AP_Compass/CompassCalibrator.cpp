@@ -371,7 +371,7 @@ void CompassCalibrator::thin_samples() {
     // shuffle the samples http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
     // this is so that adjacent samples don't get sequentially eliminated
     for(uint16_t i=_samples_collected-1; i>=1; i--) {
-        uint16_t j = get_random() % (i+1);
+        uint16_t j = get_random16() % (i+1);
         CompassSample temp = _sample_buffer[i];
         _sample_buffer[i] = _sample_buffer[j];
         _sample_buffer[j] = temp;
@@ -685,15 +685,6 @@ void CompassCalibrator::run_ellipsoid_fit()
     }
 }
 
-
-uint16_t CompassCalibrator::get_random(void)
-{
-    static uint32_t m_z = 1234;
-    static uint32_t m_w = 76542;
-    m_z = 36969 * (m_z & 65535) + (m_z >> 16);
-    m_w = 18000 * (m_w & 65535) + (m_w >> 16);
-    return ((m_z << 16) + m_w) & 0xFFFF;
-}
 
 //////////////////////////////////////////////////////////
 //////////// CompassSample public interface //////////////
