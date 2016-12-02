@@ -30,7 +30,6 @@ MODULES		+= drivers/trone
 #MODULES	+= modules/sensors
 MODULES		+= drivers/mkblctrl
 MODULES		+= drivers/batt_smbus
-MODULES		+= drivers/irlock
 MODULES		+= drivers/pwm_input
 MODULES		+= drivers/px4flow
 

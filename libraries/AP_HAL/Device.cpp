@@ -35,7 +35,7 @@
 /*
   setup nregs checked registers
  */
-bool AP_HAL::Device::setup_checked_registers(uint8_t nregs)
+bool AP_HAL::Device::setup_checked_registers(uint8_t nregs, uint8_t frequency)
 {
     if (_checked.regs != nullptr) {
         delete[] _checked.regs;
@@ -48,6 +48,8 @@ bool AP_HAL::Device::setup_checked_registers(uint8_t nregs)
         return false;
     }
     _checked.n_allocated = nregs;
+    _checked.frequency = frequency;
+    _checked.counter = 0;
     return true;
 }
 
@@ -84,6 +86,11 @@ bool AP_HAL::Device::check_next_register(void)
     if (_checked.n_set == 0) {
         return true;
     }
+    if (++_checked.counter < _checked.frequency) {
+        return true;
+    }
+    _checked.counter = 0;
+    
     struct checkreg &reg = _checked.regs[_checked.next];
     uint8_t v;
     if (!read_registers(reg.regnum, &v, 1) || v != reg.value) {

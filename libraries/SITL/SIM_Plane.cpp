@@ -263,7 +263,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         add_noise(fabsf(thrust) / thrust_scale);
     }
 
-    if (on_ground(position)) {
+    if (on_ground()) {
         // add some ground friction
         Vector3f vel_body = dcm.transposed() * velocity_ef;
         accel_body.x -= vel_body.x * 0.3f;

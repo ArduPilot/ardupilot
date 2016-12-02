@@ -209,6 +209,24 @@ RC_Channel_aux::set_radio(RC_Channel_aux::Aux_servo_function_t function, int16_t
 }
 
 /*
+  get radio_out for *first* channel matching the given function type.
+  Returns true if a value was found.
+ */
+bool RC_Channel_aux::get_radio(RC_Channel_aux::Aux_servo_function_t function, int16_t &value)
+{
+    if (!function_assigned(function)) {
+        return false;
+    }
+    for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
+            value = _aux_channels[i]->get_radio_out();
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
   set radio_out for all channels matching the given function type, allow radio_trim to center servo
  */
 void

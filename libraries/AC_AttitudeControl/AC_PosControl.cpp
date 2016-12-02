@@ -263,6 +263,17 @@ void AC_PosControl::add_takeoff_climb_rate(float climb_rate_cms, float dt)
     _pos_target.z += climb_rate_cms * dt;
 }
 
+/// shift altitude target (positive means move altitude up)
+void AC_PosControl::shift_alt_target(float z_cm)
+{
+    _pos_target.z += z_cm;
+
+    // freeze feedforward to avoid jump
+    if (!is_zero(z_cm)) {
+        freeze_ff_z();
+    }
+}
+
 /// relax_alt_hold_controllers - set all desired and targets to measured
 void AC_PosControl::relax_alt_hold_controllers(float throttle_setting)
 {
@@ -339,6 +350,9 @@ void AC_PosControl::init_takeoff()
 
     // shift difference between last motor out and hover throttle into accelerometer I
     _pid_accel_z.set_integrator((_motors.get_throttle()-_motors.get_throttle_hover())*1000.0f);
+
+    // initialise ekf reset handler
+    init_ekf_z_reset();
 }
 
 // is_active_z - returns true if the z-axis position controller has been run very recently
@@ -357,6 +371,9 @@ void AC_PosControl::update_z_controller()
         _flags.reset_accel_to_throttle = true;
     }
     _last_update_z_ms = now;
+
+    // check for ekf altitude reset
+    check_for_ekf_z_reset();
 
     // check if leash lengths need to be recalculated
     calc_leash_length_z();
@@ -675,6 +692,9 @@ void AC_PosControl::init_xy_controller(bool reset_I)
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
     _flags.reset_accel_to_lean_xy = true;
+
+    // initialise ekf xy reset handler
+    init_ekf_xy_reset();
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
@@ -689,6 +709,9 @@ void AC_PosControl::update_xy_controller(xy_mode mode, float ekfNavVelGainScaler
     if (dt > POSCONTROL_ACTIVE_TIMEOUT_MS*1.0e-3f) {
         dt = 0.0f;
     }
+
+    // check for ekf xy position reset
+    check_for_ekf_xy_reset();
 
     // check if xy leash needs to be recalculated
     calc_leash_length_xy();
@@ -736,6 +759,10 @@ void AC_PosControl::init_vel_controller_xyz()
     // move current vehicle velocity into feed forward velocity
     const Vector3f& curr_vel = _inav.get_velocity();
     set_desired_velocity(curr_vel);
+
+    // initialise ekf reset handlers
+    init_ekf_xy_reset();
+    init_ekf_z_reset();
 }
 
 /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
@@ -754,6 +781,9 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
         if (dt >= 0.2f) {
             dt = 0.0f;
         }
+
+        // check for ekf xy position reset
+        check_for_ekf_xy_reset();
 
         // check if xy leash needs to be recalculated
         calc_leash_length_xy();
@@ -1052,4 +1082,42 @@ float AC_PosControl::calc_leash_length(float speed_cms, float accel_cms, float k
     }
 
     return leash_length;
+}
+
+/// initialise ekf xy position reset check
+void AC_PosControl::init_ekf_xy_reset()
+{
+    Vector2f pos_shift;
+    _ekf_xy_reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
+}
+
+/// check for ekf position reset and adjust loiter or brake target position
+void AC_PosControl::check_for_ekf_xy_reset()
+{
+    // check for position shift
+    Vector2f pos_shift;
+    uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
+    if (reset_ms != _ekf_xy_reset_ms) {
+        shift_pos_xy_target(pos_shift.x * 100.0f, pos_shift.y * 100.0f);
+        _ekf_xy_reset_ms = reset_ms;
+    }
+}
+
+/// initialise ekf z axis reset check
+void AC_PosControl::init_ekf_z_reset()
+{
+    float alt_shift;
+    _ekf_z_reset_ms = _ahrs.getLastPosDownReset(alt_shift);
+}
+
+/// check for ekf position reset and adjust loiter or brake target position
+void AC_PosControl::check_for_ekf_z_reset()
+{
+    // check for position shift
+    float alt_shift;
+    uint32_t reset_ms = _ahrs.getLastPosDownReset(alt_shift);
+    if (reset_ms != _ekf_z_reset_ms) {
+        shift_alt_target(-alt_shift * 100.0f);
+        _ekf_z_reset_ms = reset_ms;
+    }
 }

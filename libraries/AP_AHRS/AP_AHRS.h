@@ -24,6 +24,7 @@
 #include <inttypes.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Baro/AP_Baro.h>
@@ -57,6 +58,7 @@ public:
         _compass(nullptr),
         _optflow(nullptr),
         _airspeed(nullptr),
+        _beacon(nullptr),
         _compass_last_update(0),
         _ins(ins),
         _baro(baro),
@@ -149,8 +151,16 @@ public:
         _airspeed = airspeed;
     }
 
+    void set_beacon(AP_Beacon *beacon) {
+        _beacon = beacon;
+    }
+
     const AP_Airspeed *get_airspeed(void) const {
         return _airspeed;
+    }
+
+    const AP_Beacon *get_beacon(void) const {
+        return _beacon;
     }
 
     const AP_GPS &get_gps() const {
@@ -438,6 +448,12 @@ public:
         return 0;
     };
 
+    // return the amount of vertical position change due to the last reset in meters
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    virtual uint32_t getLastPosDownReset(float &posDelta) const {
+        return 0;
+    };
+
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
@@ -506,6 +522,9 @@ protected:
 
     // pointer to airspeed object, if available
     AP_Airspeed     * _airspeed;
+
+    // pointer to beacon object, if available
+    AP_Beacon     * _beacon;
 
     // time in microseconds of last compass update
     uint32_t _compass_last_update;

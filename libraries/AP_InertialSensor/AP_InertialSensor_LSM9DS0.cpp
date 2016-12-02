@@ -476,8 +476,8 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
     }
 
     // setup for register checking
-    _dev_gyro->setup_checked_registers(5);
-    _dev_accel->setup_checked_registers(4);
+    _dev_gyro->setup_checked_registers(5, 20);
+    _dev_accel->setup_checked_registers(4, 20);
         
     for (tries = 0; tries < 5; tries++) {
         _dev_gyro->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -694,15 +694,12 @@ bool AP_InertialSensor_LSM9DS0::_poll_data()
         _read_data_transaction_a();
     }
 
-    if (_reg_check_counter++ == 10) {
-        _reg_check_counter = 0;
-        // check next register value for correctness
-        if (!_dev_gyro->check_next_register()) {
-            _inc_gyro_error_count(_gyro_instance);
-        }
-        if (!_dev_accel->check_next_register()) {
-            _inc_accel_error_count(_accel_instance);
-        }
+    // check next register value for correctness
+    if (!_dev_gyro->check_next_register()) {
+        _inc_gyro_error_count(_gyro_instance);
+    }
+    if (!_dev_accel->check_next_register()) {
+        _inc_accel_error_count(_accel_instance);
     }
     
     return true;

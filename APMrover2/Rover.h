@@ -57,7 +57,6 @@
 #include <DataFlash/DataFlash.h>
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
-#include <stdarg.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <APM_Control/APM_Control.h>
 #include <AP_L1_Control/AP_L1_Control.h>
@@ -73,6 +72,7 @@
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <AP_Button/AP_Button.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
+#include <AP_Beacon/AP_Beacon.h>
 
 // Configuration
 #include "config.h"
@@ -546,6 +546,7 @@ private:
     void nav_set_yaw_speed();
     bool in_stationary_loiter(void);
     void set_loiter_active(const AP_Mission::Mission_Command& cmd);
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
 
 public:
     bool print_log_menu(void);
@@ -579,6 +580,7 @@ public:
 #endif
 
     void dataflash_periodic(void);
+    void update_soft_armed();
 };
 
 #define MENU_FUNC(func) FUNCTOR_BIND(&rover, &Rover::func, int8_t, uint8_t, const Menu::arg *)

@@ -51,6 +51,11 @@ public:
         return _bus_id.devid_s.bus_type;
     }
 
+    // return bus number
+    uint8_t bus_num(void) const {
+        return _bus_id.devid_s.bus;
+    }
+    
     // return 24 bit bus identifier
     uint32_t get_bus_id(void) const {
         return _bus_id.devid;
@@ -121,9 +126,10 @@ public:
     void set_checked_register(uint8_t reg, uint8_t val);
 
     /**
-     * setup for register value checking
+     * setup for register value checking. Frequency is how often to check registers. If set to 10 then
+     * every 10th call to check_next_register will check a register
      */
-    bool setup_checked_registers(uint8_t num_regs);
+    bool setup_checked_registers(uint8_t num_regs, uint8_t frequency=10);
 
     /**
      * check next register value for correctness. Return false if value is incorrect
@@ -180,6 +186,13 @@ public:
      */
     virtual bool unregister_callback(PeriodicHandle h) { return false; }
 
+    /*
+     * support for direct control of SPI chip select. Needed for
+     * devices with unusual SPI transfer patterns that include
+     * specific delays
+     */
+    virtual bool set_chip_select(bool set) { return false; }
+    
     /**
      * Some devices connected on the I2C or SPI bus require a bit to be set on
      * the register address in order to perform a read operation. This sets a
@@ -222,6 +235,9 @@ public:
     uint32_t get_bus_id_devtype(uint8_t devtype) {
         return change_bus_id(get_bus_id(), devtype);
     }
+
+    /* set number of retries on transfers */
+    virtual void set_retries(uint8_t retries) {};
     
 protected:
     uint8_t _read_flag = 0;
@@ -266,6 +282,8 @@ private:
         uint8_t n_allocated;
         uint8_t n_set;
         uint8_t next;
+        uint8_t frequency;
+        uint8_t counter;
         struct checkreg *regs;
     } _checked;
 };

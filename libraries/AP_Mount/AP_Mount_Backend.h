@@ -87,7 +87,7 @@ protected:
     float angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan);
+    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan = true);
 
     // get the mount mode from frontend
     MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }

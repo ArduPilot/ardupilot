@@ -15,6 +15,7 @@ public:
 protected:
 
     uint32_t telem_delay() const override;
+    bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) override;
 
 private:
 

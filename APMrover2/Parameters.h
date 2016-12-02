@@ -334,6 +334,9 @@ public:
     // vehicle statistics
     AP_Stats stats;
 
+    // whether to enforce acceptance of packets only from sysid_my_gcs
+    AP_Int8 sysid_enforce;
+
 };
 
 

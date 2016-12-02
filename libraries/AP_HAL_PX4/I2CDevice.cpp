@@ -23,6 +23,8 @@ namespace PX4 {
 
 uint8_t PX4::PX4_I2C::instance;
 
+DeviceBus I2CDevice::businfo[I2CDevice::num_buses];
+
 /*
   constructor for I2C wrapper class
  */    
@@ -139,7 +141,7 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
         return nullptr;
     }
     struct DeviceBus &binfo = businfo[_busnum];
-    return binfo.register_periodic_callback(period_usec, cb);
+    return binfo.register_periodic_callback(period_usec, cb, this);
 }
     
 

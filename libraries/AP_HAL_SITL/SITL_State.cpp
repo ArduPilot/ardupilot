@@ -83,7 +83,6 @@ void SITL_State::_sitl_setup(const char *home_str)
 #if AP_TERRAIN_AVAILABLE
     _terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
 #endif
-    _optical_flow = (OpticalFlow *)AP_Param::find_object("FLOW");
 
     if (_sitl != nullptr) {
         // setup some initial values
@@ -171,7 +170,6 @@ void SITL_State::_fdm_input_step(void)
                     _sitl->state.airspeed, _sitl->state.altitude);
         _update_barometer(_sitl->state.altitude);
         _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
-        _update_flow();
 
         if (_sitl->adsb_plane_count >= 0 &&
             adsb == nullptr) {
@@ -308,6 +306,8 @@ void SITL_State::_fdm_input_local(void)
     } else {
         hal.scheduler->stop_clock(AP_HAL::micros64()+100);
     }
+
+    set_height_agl();
 
     _synthetic_clock_mode = true;
     _update_count++;
@@ -463,9 +463,9 @@ void SITL_State::init(int argc, char * const argv[])
 }
 
 /*
-  return height above the ground in meters
+  set height above the ground in meters
  */
-float SITL_State::height_agl(void)
+void SITL_State::set_height_agl(void)
 {
     static float home_alt = -1;
 
@@ -485,13 +485,14 @@ float SITL_State::height_agl(void)
         location.lng = _sitl->state.longitude*1.0e7;
 
         if (_terrain->height_amsl(location, terrain_height_amsl, false)) {
-            return _sitl->state.altitude - terrain_height_amsl;
+            _sitl->height_agl = _sitl->state.altitude - terrain_height_amsl;
+            return;
         }
     }
 #endif
 
     // fall back to flat earth model
-    return _sitl->state.altitude - home_alt;
+    _sitl->height_agl = _sitl->state.altitude - home_alt;
 }
 
 #endif

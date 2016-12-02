@@ -202,7 +202,8 @@ enum AutoMode {
     Auto_Circle,
     Auto_Spline,
     Auto_NavGuided,
-    Auto_Loiter
+    Auto_Loiter,
+    Auto_NavPayloadPlace,
 };
 
 // Guided modes
@@ -277,6 +278,20 @@ enum LandStateType {
     LandStateType_Descending = 1
 };
 
+enum PayloadPlaceStateType {
+    PayloadPlaceStateType_FlyToLocation,
+    PayloadPlaceStateType_Calibrating_Hover_Start,
+    PayloadPlaceStateType_Calibrating_Hover,
+    PayloadPlaceStateType_Descending_Start,
+    PayloadPlaceStateType_Descending,
+    PayloadPlaceStateType_Releasing_Start,
+    PayloadPlaceStateType_Releasing,
+    PayloadPlaceStateType_Released,
+    PayloadPlaceStateType_Ascending_Start,
+    PayloadPlaceStateType_Ascending,
+    PayloadPlaceStateType_Done,
+};
+
 // bit options for DEV_OPTIONS parameter
 enum DevOptions {
     DevOptionADSBMAVLink = 1,
@@ -308,6 +323,7 @@ enum DevOptions {
 #define LOG_GUIDEDTARGET_MSG            0x22
 #define LOG_THROW_MSG                   0x23
 #define LOG_PROXIMITY_MSG               0x24
+#define LOG_BEACON_MSG                  0x25
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)

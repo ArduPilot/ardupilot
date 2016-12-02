@@ -36,9 +36,6 @@ public:
      */
     virtual void set_address(uint8_t address) = 0;
 
-    /* set number of retries on transfers */
-    virtual void set_retries(uint8_t retries) = 0;
-
     /* Device implementation */
 
     /* See Device::set_speed() */

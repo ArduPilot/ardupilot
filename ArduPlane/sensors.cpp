@@ -14,9 +14,7 @@ void Plane::init_barometer(bool full_calibration)
 
 void Plane::init_rangefinder(void)
 {
-#if RANGEFINDER_ENABLED == ENABLED
     rangefinder.init();
-#endif
 }
 
 /*
@@ -24,7 +22,6 @@ void Plane::init_rangefinder(void)
  */
 void Plane::read_rangefinder(void)
 {
-#if RANGEFINDER_ENABLED == ENABLED
 
     // notify the rangefinder of our approximate altitude above ground to allow it to power on
     // during low-altitude flight when configured to power down during higher-altitude flight
@@ -55,7 +52,6 @@ void Plane::read_rangefinder(void)
         Log_Write_Sonar();
 
     rangefinder_height_update();
-#endif
 }
 
 /*
@@ -347,7 +343,6 @@ void Plane::update_sensor_status_flags(void)
     }
 #endif
 
-#if RANGEFINDER_ENABLED == ENABLED
     if (rangefinder.num_sensors() > 0) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         if (g.rangefinder_landing) {
@@ -357,7 +352,6 @@ void Plane::update_sensor_status_flags(void)
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;            
         }
     }
-#endif
 
     if (aparm.throttle_min < 0 && channel_throttle->get_servo_out() < 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_REVERSE_MOTOR;

@@ -1039,6 +1039,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 13, ParametersG2, AP_Gripper),
 #endif
 
+    // @Group: BCN
+    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
+    AP_SUBGROUPINFO(beacon, "BCN", 14, ParametersG2, AP_Beacon),
 
     AP_GROUPEND
 };
@@ -1048,7 +1051,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
   constructor for g2 object
  */
 ParametersG2::ParametersG2(void)
-    : proximity(copter.serial_manager)
+    : proximity(copter.serial_manager),
+      beacon(copter.serial_manager)
 #if ADVANCED_FAILSAFE == ENABLED
      ,afs(copter.mission, copter.barometer, copter.gps, copter.rcmap)
 #endif
@@ -1085,7 +1089,7 @@ const AP_Param::ConversionInfo conversion_table[] = {
 void Copter::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf("Bad var table\n");
+        cliSerial->println("Bad var table");
         AP_HAL::panic("Bad var table");
     }
 
@@ -1097,7 +1101,7 @@ void Copter::load_parameters(void)
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->printf("Firmware change: erasing EEPROM...\n");
+        cliSerial->println("Firmware change: erasing EEPROM...");
         AP_Param::erase_all();
 
         // save the current format version

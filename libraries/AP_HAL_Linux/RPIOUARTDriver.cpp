@@ -8,8 +8,6 @@
 
 #include "px4io_protocol.h"
 
-#define RPIOUART_POLL_TIME_INTERVAL 10000
-
 extern const AP_HAL::HAL& hal;
 
 #define RPIOUART_DEBUG 0
@@ -29,21 +27,10 @@ using namespace Linux;
 RPIOUARTDriver::RPIOUARTDriver() :
     UARTDriver(false),
     _dev(nullptr),
-    _last_update_timestamp(0),
     _external(false),
     _need_set_baud(false),
     _baudrate(0)
 {
-}
-
-bool RPIOUARTDriver::sem_take_nonblocking()
-{
-    return _dev->get_semaphore()->take_nonblocking();
-}
-
-void RPIOUARTDriver::sem_give()
-{
-    _dev->get_semaphore()->give();
 }
 
 bool RPIOUARTDriver::isExternal()
@@ -76,18 +63,20 @@ void RPIOUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     _readbuf.set_size(rxS);
     _writebuf.set_size(txS);
 
-   _dev = hal.spi->get_device("raspio");
+    if (!_registered_callback) {
+        _dev = hal.spi->get_device("raspio");
+        _registered_callback = true;
+        _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&RPIOUARTDriver::_bus_timer, bool));
+    }
 
     /* set baudrate */
     _baudrate = b;
     _need_set_baud = true;
-    while (_need_set_baud) {
-        hal.scheduler->delay(1);
-    }
 
     if (_writebuf.get_size() && _readbuf.get_size()) {
         _initialised = true;
     }
+
 }
 
 int RPIOUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
@@ -114,14 +103,13 @@ void RPIOUARTDriver::_timer_tick(void)
         UARTDriver::_timer_tick();
         return;
     }
+}
 
+bool RPIOUARTDriver::_bus_timer(void)
+{
     /* set the baudrate of raspilotio */
     if (_need_set_baud) {
         if (_baudrate != 0) {
-            if (!_dev->get_semaphore()->take_nonblocking()) {
-                return;
-            }
-
             struct IOPacket _packet_tx = {0}, _packet_rx = {0};
 
             _packet_tx.count_code = 2 | PKT_CODE_WRITE;
@@ -134,33 +122,23 @@ void RPIOUARTDriver::_timer_tick(void)
                            (uint8_t *)&_packet_rx, sizeof(_packet_rx));
 
             hal.scheduler->delay(1);
-
-            _dev->get_semaphore()->give();
-
         }
 
         _need_set_baud = false;
     }
     /* finish set */
 
-    if (!_initialised) return;
-
-    /* lower the update rate */
-    if (AP_HAL::micros() - _last_update_timestamp < RPIOUART_POLL_TIME_INTERVAL) {
-        return;
+    if (!_initialised) {
+        return true;
     }
 
     _in_timer = true;
-
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
 
     struct IOPacket _packet_tx = {0}, _packet_rx = {0};
 
     /* get write_buf bytes */
     uint32_t max_size = MIN((uint32_t) PKT_MAX_REGS * 2,
-                            _baudrate / 10 / (1000000 / RPIOUART_POLL_TIME_INTERVAL));
+                            _baudrate / 10 / (1000000 / 100000));
     uint32_t n = MIN(_writebuf.available(), max_size);
 
     _writebuf.read(&((uint8_t *)_packet_tx.regs)[0], n);
@@ -185,9 +163,6 @@ void RPIOUARTDriver::_timer_tick(void)
 
     hal.scheduler->delay_microseconds(100);
 
-    /* release sem */
-    _dev->get_semaphore()->give();
-
     if (_packet_rx.page == PX4IO_PAGE_UART_BUFFER) {
         /* add bytes to read buf */
         max_size = MIN(_packet_rx.offset, PKT_MAX_REGS * 2);
@@ -198,5 +173,5 @@ void RPIOUARTDriver::_timer_tick(void)
 
     _in_timer = false;
 
-    _last_update_timestamp = AP_HAL::micros();
+    return true;
 }

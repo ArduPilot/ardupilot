@@ -15,81 +15,170 @@
 /*
   SRXL protocol decoder, tested against AR7700 SRXL port
   Andrew Tridgell, September 2016
+
+  Co author: Roman Kirchner, September 2016
+   - 2016.10.23: SRXL variant V1 sucessfully (Testbench and Pixhawk/MissionPlanner) tested with RX-9-DR M-LINK (SW v1.26)
  */
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include "srxl.h"
 
-/*
-  there are other SRXL varients, but we need some sample data before accepting them
- */
-#define SRXL_MAX_CHANNELS 20
-#define SRXL_HEAD_MARKER  0xA5
 
-#define SRXL_NUM_BYTES 18
 
-static uint8_t buffer[SRXL_NUM_BYTES];
-static uint8_t buflen;
-static uint64_t last_data_us;
-static uint16_t channels[SRXL_MAX_CHANNELS];
+/* SRXL datastream characteristics for all variants */
+#define SRXL_MIN_FRAMESPACE_US 8000U    /* Minumum space between srxl frames in us (applies to all variants)  */
+#define SRXL_MAX_CHANNELS 20U           /* Maximum number of channels from srxl datastream  */
+
+/* decode progress states */
+#define STATE_IDLE              0x00U       /* do nothing */
+#define STATE_NEW               0x01U       /* get header of frame + prepare for frame reception + begin new crc cycle   */
+#define STATE_COLLECT           0x02U       /* collect RC channel data from frame + concurrently calc crc over payload data + extract channel information */
+
+
+/* Variant specific SRXL datastream characteristics */
+/* Framelength in byte */
+#define SRXL_FRAMELEN_V1    27U      /* Framelength with header in byte for:  Mpx SRXLv1 or XBUS Mode B */
+#define SRXL_FRAMELEN_V2    35U      /* Framelength with header in byte for:  Mpx SRXLv2 */
+#define SRXL_FRAMELEN_V5    18U      /* Framelength with header in byte for  Spk AR7700 etc. */
+#define SRXL_FRAMELEN_MAX   35U      /* maximum possible framelengh  */
+
+/* Headerbyte */
+#define SRXL_HEADER_V1          0xA1U    /* Headerbyte for:  Mpx SRXLv1 or XBUS Mode B */
+#define SRXL_HEADER_V2          0xA2U    /* Headerbyte for:  Mpx SRXLv2  */
+#define SRXL_HEADER_V5          0xA5U    /* Headerbyte for:  Spk AR7700 etc. */
+#define SRXL_HEADER_NOT_IMPL    0xFFU    /* Headerbyte for non impemented srxl header*/
+
+
+
+
+static uint8_t buffer[SRXL_FRAMELEN_MAX];       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */
+static uint8_t buflen;                          /* length in number of bytes of received srxl dataframe in buffer  */
+static uint64_t last_data_us;                   /* timespan since last received data in us   */
+static uint16_t channels[SRXL_MAX_CHANNELS];    /* buffer for extracted RC channel data as pulsewidth in microseconds */
+
+static uint8_t frame_header = 0U;                   /* Frame header from SRXL datastream    */
+static uint8_t frame_len_full = 0U;                 /* Length in number of bytes of full srxl datastream */
+static uint8_t decode_state = STATE_IDLE;           /* Current state of SRXL frame decoding */
+static uint8_t decode_state_next = STATE_IDLE;      /* State of frame decoding thatwill be applied when the next byte from dataframe drops in  */
+static uint16_t crc_fmu = 0U;                       /* CRC calculated over payload from srxl datastream on this machine */
+static uint16_t crc_receiver = 0U;                  /* CRC extracted from srxl datastream  */
+
+
 static uint16_t max_channels;
 
-/*
-  get SRXL crc16 for a set of bytes
- */
-static uint16_t srxl_crc16(const uint8_t *bytes, uint8_t nbytes)
-{
-    uint16_t crc = 0;
-    while (nbytes--) {
-        int i;
-	crc ^= (uint16_t)(*bytes++) << 8;
 
-	for (i = 0; i < 8; i++) {
+
+
+/**
+ * This function calculates the 16bit crc as used throughout the srxl protocol variants
+ *
+ * This function is intended to be called whenever a new byte shall be added to the crc.
+ * Simply provide the old crc and the new data byte and the function return the new crc value.
+ *
+ * To start a new crc calculation for a new srxl frame, provide parameter crc=0 and the first byte of the frame.
+ *
+ * @param[in]   crc - start value for crc
+ * @param[in]   new_byte - byte that shall be included in crc calculation
+ * @return      calculated crc
+ */
+static uint16_t srxl_crc16 (uint16_t crc, uint8_t new_byte)
+{
+    uint8_t loop;
+    crc = crc ^ (uint16_t)new_byte << 8;
+    for(loop = 0; loop < 8; loop++) {
 		crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
 	}
-    }
     return crc;
 }
 
 
-/*
-  decode a SRXL packet
+/**
+ * Get RC channel information as microsecond pulsewidth representation from srxl version 1 and 2
+ *
+ * This function extracts RC channel information from srxl dataframe. The function expects the whole dataframe
+ * in correct order in static array "buffer[SRXL_FRAMELEN_MAX]". After extracting all RC channel information, the data
+ * is transferred to "values" array from parameter list. If the pixhawk does not support all channels from srxl datastream,
+ * only supported number of channels will be refreshed.
+ *
+ * IMPORTANT SAFETY NOTICE: This function shall only be used after CRC has been successful.
+ *
+ * Structure of SRXL v1 dataframe --> 12 channels, 12 Bit per channel
+ * Byte0: Header 0xA1
+ * Byte1: Bits7-4:Empty Bits3-0:Channel1 MSB
+ * Byte2: Bits7-0: Channel1 LSB
+ * (....)
+ * Byte23: Bits7-4:Empty Bits3-0:Channel12 MSB
+ * Byte24: Bits7-0: Channel12 LSB
+ * Byte25: CRC16 MSB
+ * Byte26: CRC16 LSB
+ *
+ * Structure of SRXL v2 dataframe --> 16 channels, 12 Bit per channel
+ * Byte0: Header 0xA2
+ * Byte1: Bits7-4:Empty Bits3-0:Channel1 MSB
+ * Byte2: Bits7-0: Channel1 LSB
+ * (....)
+ * Byte31: Bits7-4:Empty Bits3-0:Channel16 MSB
+ * Byte32: Bits7-0: Channel16 LSB
+ * Byte33: CRC16 MSB
+ * Byte34: CRC16 LSB
+ *
+ * @param[in]   max_values - maximum number of values supported by the pixhawk
+ * @param[out]  num_values - number of RC channels extracted from srxl frame
+ * @param[out]  values - array of RC channels with refreshed information as pulsewidth in microseconds Range: 800us - 2200us
+ * @param[out]  failsafe_state - true: RC-receiver is in failsafe state, false: RC-receiver is not in failsafe state
+ * @return      0: success
  */
-int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16_t *values, uint16_t max_values, bool *failsafe_state)
+static int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state)
 {
-    if (timestamp_us - last_data_us > 5000U || buflen == SRXL_NUM_BYTES) {
-        // we've seen a frame gap
-        if (buflen != 0) {
-            buflen = 0;
-        }
-    }
-    last_data_us = timestamp_us;
-    buffer[buflen++] = byte;
+    uint8_t loop;
+    uint32_t channel_raw_value;
 
-    switch (buffer[0]) {
-    case SRXL_HEAD_MARKER:
-        break;
+    *num_values = (uint8_t)((frame_len_full - 3U)/2U);
+    *failsafe_state = 0U;    /* this protocol version does not support failsafe information */
 
-    default:
-        // invalid packet, we don't support this format yet
-        return 2;
+    /* get data channel data from frame */
+    for (loop=0U; loop < *num_values; loop++) {
+        channel_raw_value = ((((uint32_t)buffer[loop*2U+1U])& 0x0000000FU) << 8U)  | ((uint32_t)(buffer[loop*2U+2U]));   /* get 12bit channel raw value from srxl datastream (mask out unused bits with 0x0000000F)  */
+        channels[loop] = (uint16_t)(((channel_raw_value * (uint32_t)1400U) >> 12U) + (uint32_t)800U);                    /* convert raw value to servo/esc signal pulsewidth in us */
     }
 
-    uint8_t expected_bytes = SRXL_NUM_BYTES;
-    if (buflen < expected_bytes) {
-        // more bytes pending
-        return 1;
+    /* provide channel data to FMU */
+    if ( (uint16_t)*num_values > max_values) {
+        *num_values = (uint8_t)max_values;
+    }
+    memcpy(values, channels, (*num_values)*2);
+
+    return 0;   /* for srxl protocol version 1 and 2 it is not expected, that any error happen during decode process  */
     }
 
-    uint16_t crc = srxl_crc16(buffer, buflen-2);
-    uint64_t crc2 = buffer[buflen-1] | (buffer[buflen-2]<<8);
-    if (crc != crc2) {
-        // bad CRC
-        return 4;
-    }
 
+/**
+ * Get RC channel information as microsecond pulsewidth representation from srxl version 5
+ *
+ * This function extracts RC channel information from srxl dataframe. The function expects the whole dataframe
+ * in correct order in static array "buffer[SRXL_FRAMELEN_MAX]". After extracting all RC channel information, the data
+ * is transferred to "values" array from parameter list. If the pixhawk does not support all channels from srxl datastream,
+ * only supported number of channels will be refreshed.
+ *
+ * IMPORTANT SAFETY NOTICE: This function shall only be used after CRC has been successful.
+ *
+ * Structure of SRXL v5 dataframe
+ * Byte0: Header 0xA5
+ * Byte1 - Byte16: Payload
+ * Byte17: CRC16 MSB
+ * Byte18: CRC16 LSB
+ *
+ * @param[in]  max_values - maximum number of values supported by the pixhawk
+ * @param[out] num_values - number of RC channels extracted from srxl frame
+ * @param[out] values - array of RC channels with refreshed information as pulsewidth in microseconds Range: 800us - 2200us
+ * @param[out] failsafe_state - true: RC-receiver is in failsafe state, false: RC-receiver is not in failsafe state
+ * @return 0: success
+ */
+static int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state)
+{
     // up to 7 channel values per packet. Each channel value is 16
     // bits, with 11 bits of data and 4 bits of channel number. The
     // top bit indicates a special X-Plus channel
@@ -98,12 +187,10 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
         uint16_t c = b >> 11; // channel number
         int32_t v = b & 0x7FF;
         if (b & 0x8000) {
-            //printf("bad data 0x%04x\n", b);
-            // bad data
-            return 2;
+            continue;
         } 
         if (c == 12) {
-            // special handling for channel 12, this contains the XPlus channels
+            // special handling for channel 12
             // see http://www.deviationtx.com/forum/protocol-development/2088-18-channels-for-dsm2-dsmx?start=40
             //printf("c12: 0x%x %02x %02x\n", (unsigned)(b>>9), (unsigned)buffer[0], (unsigned)buffer[1]);
             v = (b & 0x1FF) << 2;
@@ -120,6 +207,10 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
             v = 0;
         }
 
+        // if channel number if greater than 16 then it is a X-Plus
+        // channel. We don't yet know how to decode those. There is some information here:
+        // http://www.deviationtx.com/forum/protocol-development/2088-18-channels-for-dsm2-dsmx?start=40
+        // but we really need some sample data to confirm
         if (c < SRXL_MAX_CHANNELS) {
             v = (((v - 0x400) * 500) / 876) + 1500;
             channels[c] = v;
@@ -142,17 +233,119 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
     // transmitter is lost
     *failsafe_state = ((buffer[1] & 2) == 0);
     
-#if 0
-    for (uint8_t i=0; i<buflen; i++) {
-        printf("%02x ", (unsigned)buffer[i]);
-    }
-    printf("\n");
-#endif
-
-    buflen = 0;
-
     // success
     return 0;
+    }
+
+
+
+
+/**
+ * Decode SRXL frames
+ *
+ *
+ * Structure of all SRXL frames
+ * Byte[0]: Header 0xA<VARIANT> --> Variant specific header. Variant is encoded in bits 3-0 of header byte.
+ * Byte[1] - Byte[N-2]: SRXL variant specific payload
+ * Byte[N-1] - Byte[N]: CRC16 over payload and header
+ *
+ * @param[in]  timestamp_us - timestamp in microseconds
+ * @param[in]  received byte in microseconds
+ * @param[out] num_values - number of RC channels extracted from srxl frame
+ * @param[out] values - array of RC channels with refreshed information as pulsewidth in microseconds Range: 800us - 2200us
+ * @param[in] maximum number of values supported by pixhawk
+ * @param[out] failsafe_state - true: RC-receiver is in failsafe state, false: RC-receiver is not in failsafe state
+ * @return 0: success
+ */
+int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16_t *values, uint16_t max_values, bool *failsafe_state)
+{
+    int ret = 1;
+
+    /*----------------------------------------distinguish different srxl variants at the beginning of each frame---------------------------------------------- */
+    /* Check if we have a new begin of a frame --> indicators: Time gap in datastream + SRXL header 0xA<VARIANT>*/
+    if ( (timestamp_us - last_data_us) >= SRXL_MIN_FRAMESPACE_US) {
+        /* Now detect SRXL variant based on header */
+        switch(byte) {
+        case SRXL_HEADER_V1:
+            frame_len_full = SRXL_FRAMELEN_V1;
+            frame_header = SRXL_HEADER_V1;
+            decode_state = STATE_NEW;
+            break;
+        case SRXL_HEADER_V2:
+            frame_len_full = SRXL_FRAMELEN_V2;
+            frame_header = SRXL_HEADER_V2;
+            decode_state = STATE_NEW;
+            break;
+        case SRXL_HEADER_V5:
+            frame_len_full = SRXL_FRAMELEN_V5;
+            frame_header = SRXL_HEADER_V5;
+            decode_state = STATE_NEW;
+            break;
+        default:
+            frame_len_full = 0U;
+            frame_header = SRXL_HEADER_NOT_IMPL;
+            decode_state = STATE_IDLE;
+            ret = 2; /* protocol version not implemented --> no channel data --> unknown packet  */
+            break;
+        }
+    }
+
+
+    /*--------------------------------------------collect all data from stream and decode-------------------------------------------------------*/
+    switch (decode_state) {
+    case STATE_NEW:   /* buffer header byte and prepare for frame reception and decoding */
+        buffer[0U]=byte;
+        crc_fmu = srxl_crc16(0U,byte);
+        buflen = 1U;
+        decode_state_next = STATE_COLLECT;
+        break;
+
+    case STATE_COLLECT: /* receive all bytes. After reception decode frame and provide rc channel information to FMU   */
+        buffer[buflen] = byte;
+        buflen++;
+        /* CRC not over last 2 frame bytes as these bytes inhabitate the crc */
+        if (buflen <= (frame_len_full-2)) {
+           crc_fmu = srxl_crc16(crc_fmu,byte);
+        }
+        if(  buflen == frame_len_full ) {
+            /* CRC check here */
+            crc_receiver =  ((uint16_t)buffer[buflen-2] << 8U) | ((uint16_t)buffer[buflen-1]);
+            if (crc_receiver == crc_fmu) {
+                /* at this point buffer contains all frame data and crc is valid --> extract channel info according to SRXL variant */
+                switch (frame_header) {
+                case SRXL_HEADER_V1:
+                    ret = srxl_channels_get_v1v2(max_values, num_values, values, failsafe_state);
+                    break;
+                case SRXL_HEADER_V2:
+                    ret = srxl_channels_get_v1v2(max_values, num_values, values, failsafe_state);
+                    break;
+                case SRXL_HEADER_V5:
+                    ret = srxl_channels_get_v5(max_values, num_values, values, failsafe_state);
+                    break;
+                default:
+                    ret = 2; /* protocol version not implemented --> no channel data  */
+                    break;
+                }
+            }
+            else {
+                ret = 4; /* CRC fail --> no channel data */
+            }
+            decode_state_next = STATE_IDLE; /* frame data buffering and decoding finished --> statemachine not in use until new header drops is */
+        }
+        else {
+            /* frame not completely received --> frame data buffering still ongoing  */
+            decode_state_next = STATE_COLLECT;
+        }
+        break;
+
+    default:
+        ret = 1; /* STATE_IDLE --> do nothing */
+        break;
+    } /* switch (decode_state) */
+
+   decode_state = decode_state_next;
+   last_data_us = timestamp_us;
+   return ret;
 }
 
 
@@ -218,7 +411,7 @@ int main(int argc, const char *argv[])
         tv.tv_usec = 0;
 
         // check if any bytes are available
-        if (select(fd+1, &fds, nullptr, nullptr, &tv) != 1) {
+        if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
             break;
         }
         
@@ -240,7 +433,7 @@ int main(int argc, const char *argv[])
 #endif
 
 
-#ifdef TEST_HEX_PROGRAM
+#ifdef TEST_BIN_PROGRAM
 /*
   test harness for use under Linux with hex dump in a file
  */
@@ -267,25 +460,43 @@ int main(int argc, const char *argv[])
         uint16_t values[20];
         bool failsafe_state;
 
-        unsigned u[18];
-        if (fscanf(f, "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
-                   &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9], 
-                   &u[10], &u[11], &u[12], &u[13], &u[14], &u[15], &u[16], &u[17]) != 18) {
+
+        uint8_t header;
+        if (fread(&header, 1, 1, f) != 1) {
+            break;
+        }
+
+        uint8_t frame_size = 0;
+        switch (header) {
+        case SRXL_HEADER_V1:
+            frame_size = SRXL_FRAMELEN_V1;
+            break;
+        case SRXL_HEADER_V2:
+            frame_size = SRXL_FRAMELEN_V2;
+            break;
+        case SRXL_HEADER_V5:
+            frame_size = SRXL_FRAMELEN_V5;
+            break;
+        }
+        if (frame_size == 0) {
+            continue;
+        }
+        uint8_t u[frame_size];
+        u[0] = header;
+        if (fread(&u[1], 1, sizeof(u)-1, f) != sizeof(u)-1) {
             break;
         }
         t += 11000;
 
-        for (uint8_t i=0; i<18; i++) {
+        for (uint8_t i=0; i<sizeof(u); i++) {
             b = u[i];
 
             if (srxl_decode(t, b, &num_values, values, sizeof(values)/sizeof(values[0]), &failsafe_state) == 0) {
-#if 1
                 printf("%u: ", num_values);
                 for (uint8_t i=0; i<num_values; i++) {
                     printf("%u:%4u ", i+1, values[i]);
                 }
                 printf("%s\n", failsafe_state?"FAIL":"OK");
-#endif
             }
         }
     }

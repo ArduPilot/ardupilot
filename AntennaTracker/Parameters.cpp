@@ -394,7 +394,7 @@ void Tracker::load_parameters(void)
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        hal.console->printf("Firmware change: erasing EEPROM...\n");
+        hal.console->println("Firmware change: erasing EEPROM...");
         AP_Param::erase_all();
 
         // save the current format version

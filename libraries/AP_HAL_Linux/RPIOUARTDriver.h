@@ -26,14 +26,12 @@ protected:
 private:
     bool _in_timer;
 
-    bool sem_take_nonblocking();
-    void sem_give();
+    bool _bus_timer(void);
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
-    uint32_t _last_update_timestamp;
-
     bool _external;
+    bool _registered_callback;
 
     bool _need_set_baud;
     uint32_t _baudrate;
