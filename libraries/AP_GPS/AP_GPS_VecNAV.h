@@ -65,7 +65,7 @@ struct BinGroup4{
   uint8_t hour;
   uint8_t min;
   uint8_t sec;
-  uint16_t ms[2];
+  uint16_t ms;
   
   uint64_t Tow;
   uint16_t Week;
@@ -126,7 +126,11 @@ class AP_GPS_VecNAV : public AP_GPS_Backend{
 
         bool ProcessGPSMessage(uint8_t c, struct BinGroup1* msg1, struct BinGroup4* msg4,struct BinGroup6* msg6 );
 
+        void MakeGPSTime(AP_GPS::GPS_State &state,struct BinGroup4* msg);
+
         static const char _initialisation_blob[];  
+
+        
 
 
 };

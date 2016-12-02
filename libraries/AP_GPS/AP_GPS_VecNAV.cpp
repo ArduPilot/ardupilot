@@ -298,13 +298,48 @@ bool AP_GPS_VecNAV::read(void){
             state.num_sats = msg4.NumSats;
             state.hdop     = 130;           
             state.vdop     = 170;
-
+            MakeGPSTime(state,&msg4);
+            state.last_gps_time_ms = AP_HAL::millis();
             
-
             return true;
         }
     }
 
     return false;
+}
+
+void AP_GPS_VecNAV::MakeGPSTime(AP_GPS::GPS_State &_state,struct BinGroup4* msg){
+    uint8_t year, mon, day, hour, min, sec;
+    uint16_t msec;
+
+    year = 2000 - msg->year;
+    mon  = msg->month;
+    day  = msg->day;
+
+    msec = msg->ms;
+    sec  = msg->sec;
+    min  = msg->min;
+    hour = msg->hour;
+
+    int8_t rmon = mon - 2;
+    if (0 >= rmon) {    
+        rmon += 12;
+        year -= 1;
+    }
+
+    // get time in seconds since unix epoch
+    uint32_t ret = (year/4) - 15 + 367*rmon/12 + day;
+    ret += year*365 + 10501;
+    ret = ret*24 + hour;
+    ret = ret*60 + min;
+    ret = ret*60 + sec;
+
+    // convert to time since GPS epoch
+    ret -= 272764785UL;
+
+    // get GPS week and time
+    _state.time_week = ret / (7*86400UL);
+    _state.time_week_ms = (ret % (7*86400UL)) * 1000;
+    _state.time_week_ms += msec;
 }
 
