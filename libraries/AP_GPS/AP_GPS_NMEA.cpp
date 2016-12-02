@@ -307,9 +307,9 @@ bool AP_GPS_NMEA::_term_complete()
                     make_gps_time(_new_date, _new_time * 10);
                     state.last_gps_time_ms = now;
                     // To-Do: add support for proper reporting of 2D and 3D fix
-                    if (_gps_status != 5) {
+                    if (_gps_status = 5) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
-                    } if (_gps_status != 4) {
+                    } if (_gps_status = 4) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
                     } else {                  
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
@@ -326,9 +326,9 @@ bool AP_GPS_NMEA::_term_complete()
                     state.num_sats      = _new_satellite_count;
                     state.hdop          = _new_hdop;
                     // To-Do: add support for proper reporting of 2D and 3D fix
-                    if (_gps_status != 5) {
+                    if (_gps_status = 5) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
-                    } if (_gps_status != 4) {
+                    } if (_gps_status = 4) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
                     } else {                  
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
