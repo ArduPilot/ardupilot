@@ -362,6 +362,10 @@ void AP_Baro::init(void)
                AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM) {
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+		ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+				std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5837_BUS, HAL_BARO_MS5837_I2C_ADDR))));
+#endif
     } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
