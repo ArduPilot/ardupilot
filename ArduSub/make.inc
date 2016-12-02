@@ -63,3 +63,4 @@ LIBRARIES += AP_ADSB
 LIBRARIES += AP_JSButton
 LIBRARIES += AP_LeakDetector
 LIBRARIES += AP_Gripper
+LIBRARIES += AP_Beacon
