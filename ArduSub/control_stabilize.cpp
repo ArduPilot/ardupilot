@@ -42,9 +42,6 @@ void Sub::stabilize_run()
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
-    // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
-
     // call attitude controller
 	// update attitude controller targets
 
@@ -70,7 +67,7 @@ void Sub::stabilize_run()
 	}
 
     // output pilot's throttle
-    attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
+    attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
 
     //control_in is range -1000-1000
     //radio_in is raw pwm value

@@ -34,14 +34,11 @@ void Sub::acro_run()
     // convert the input to the desired body frame rate
     get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
 
-    // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
-
     // run attitude controller
     attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
 
     // output pilot's throttle without angle boost
-    attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
+    attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
 
     //control_in is range 0-1000
     //radio_in is raw pwm value

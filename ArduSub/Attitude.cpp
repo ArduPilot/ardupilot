@@ -94,65 +94,6 @@ float Sub::get_look_ahead_yaw()
  *  throttle control
  ****************************************************************/
 
-// update estimated throttle required to hover (if necessary)
-//  called at 100hz
-void Sub::update_throttle_hover()
-{
-    // if not armed or landed exit
-    if (!motors.armed()) {
-        return;
-    }
-
-    // do not update in manual throttle modes
-    if (mode_has_manual_throttle(control_mode)) {
-        return;
-    }
-
-    // do not update while climbing or descending
-    if (!is_zero(pos_control.get_desired_velocity().z)) {
-        return;
-    }
-
-    // get throttle output
-    float throttle = motors.get_throttle();
-
-    // calc average throttle if we are in a level hover
-    if (throttle > 0.0f && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
-    	// Can we set the time constant automatically
-    	motors.update_throttle_hover(0.01f);
-    }
-}
-
-// get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
-// used only for manual throttle modes
-// returns throttle output 0 to 1000
-float Sub::get_pilot_desired_throttle(int16_t throttle_control)
-{
-    float throttle_out;
-
-    int16_t mid_stick = channel_throttle->get_control_mid();
-
-    // ensure reasonable throttle values
-    throttle_control = constrain_int16(throttle_control,0,1000);
-
-    // ensure mid throttle is set within a reasonable range
-    float thr_mid = constrain_float(motors.get_throttle_hover(), 0.1f, 0.9f);
-
-    // check throttle is above, below or in the deadband
-    if (throttle_control < mid_stick) {
-        // below the deadband
-        throttle_out = ((float)throttle_control)*thr_mid/(float)mid_stick;
-    }else if(throttle_control > mid_stick) {
-        // above the deadband
-        throttle_out = (thr_mid) + ((float)(throttle_control-mid_stick)) * (1.0f - thr_mid) / (float)(1000-mid_stick);
-    }else{
-        // must be in the deadband
-        throttle_out = thr_mid;
-    }
-
-    return throttle_out;
-}
-
 // get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
 float Sub::get_pilot_desired_climb_rate(float throttle_control)
@@ -228,13 +169,6 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
 #else
     return (float)target_rate;
 #endif
-}
-
-// set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
-void Sub::set_accel_throttle_I_from_pilot_throttle(float pilot_throttle)
-{
-    // shift difference between pilot's throttle and hover throttle into accelerometer I
-	g.pid_accel_z.set_integrator((pilot_throttle-motors.get_throttle_hover()) * 1000.0f);
 }
 
 // updates position controller's maximum altitude using fence and EKF limits
