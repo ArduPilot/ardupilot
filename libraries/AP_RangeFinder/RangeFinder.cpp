@@ -606,14 +606,12 @@ void RangeFinder::detect_instance(uint8_t instance)
         if (AP_RangeFinder_PX4::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_PX4(*this, instance, state[instance]);
-            return;
         }
         break;
     case RangeFinder_TYPE_PX4_PWM:
         if (AP_RangeFinder_PX4_PWM::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_PX4_PWM(*this, instance, state[instance]);
-            return;
         }
         break;
 #endif
@@ -622,7 +620,6 @@ void RangeFinder::detect_instance(uint8_t instance)
         if (AP_RangeFinder_BBB_PRU::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_BBB_PRU(*this, instance, state[instance]);
-            return;
         }
         break;
 #endif
@@ -630,21 +627,18 @@ void RangeFinder::detect_instance(uint8_t instance)
         if (AP_RangeFinder_LightWareSerial::detect(*this, instance, serial_manager)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager);
-            return;
         }
         break;
     case RangeFinder_TYPE_LEDDARONE:
         if (AP_RangeFinder_LeddarOne::detect(*this, instance, serial_manager)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_LeddarOne(*this, instance, state[instance], serial_manager);
-            return;
         }
         break;
     case RangeFinder_TYPE_ULANDING:
         if (AP_RangeFinder_uLanding::detect(*this, instance, serial_manager)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_uLanding(*this, instance, state[instance], serial_manager);
-            return;
         }
         break;
 #if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
@@ -653,7 +647,6 @@ void RangeFinder::detect_instance(uint8_t instance)
         if (AP_RangeFinder_Bebop::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_Bebop(*this, instance, state[instance]);
-            return;
         }
         break;
 #endif
@@ -661,23 +654,19 @@ void RangeFinder::detect_instance(uint8_t instance)
         if (AP_RangeFinder_MAVLink::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_MAVLink(*this, instance, state[instance]);
-            return;
         }
         break;
     case RangeFinder_TYPE_MBSER:
         if (AP_RangeFinder_MaxsonarSerialLV::detect(*this, instance, serial_manager)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_MaxsonarSerialLV(*this, instance, state[instance], serial_manager);
-            return;
         }
         break;
     case RangeFinder_TYPE_ANALOG:
-        // note that analog must be the last to be checked, as it will
-        // always come back as present if the pin is valid
+        // note that analog will always come back as present if the pin is valid
         if (AP_RangeFinder_analog::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_analog(*this, instance, state[instance]);
-            return;
         }
         break;
     default:
