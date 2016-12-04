@@ -84,14 +84,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Increment: .5
     GSCALAR(throttle_filt,  "PILOT_THR_FILT",     0),
 
-    // @Param: PILOT_THR_BHV
-    // @DisplayName: Throttle stick behavior
-    // @Description: Bitmask containing various throttle stick options. Add up the values for options that you want.
-    // @User: Standard
-	// @Values: 0:None,1:Feedback from mid stick,2:High throttle cancels landing,4:Disarm on land detection
-	// @Bitmask: 0:Feedback from mid stick,1:High throttle cancels landing,2:Disarm on land detection
-    GSCALAR(throttle_behavior, "PILOT_THR_BHV", 0),
-
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
