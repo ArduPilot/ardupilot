@@ -24,7 +24,6 @@ void Sub::stabilize_run()
 	uint32_t tnow = AP_HAL::millis();
     float target_roll, target_pitch;
     float target_yaw_rate;
-    float pilot_throttle_scaled;
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed() || !motors.get_interlock()) {
