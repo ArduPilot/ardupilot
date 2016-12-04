@@ -86,6 +86,10 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    float wind_alignment(const float heading_deg);
+    float head_wind(void);
+    int32_t get_target_airspeed_cm(const AP_SpdHgtControl::FlightStage flight_stage);
+
     // accessor functions for the params
     int16_t get_pitch_cd(void) const { return pitch_cd; }
     float get_flare_sec(void) const { return flare_sec; }

@@ -188,9 +188,8 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
 
         // is projected slope too steep?
         if (new_slope_deg - initial_slope_deg > slope_recalc_steep_threshold_to_abort) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Steep landing slope (%.0fm %.1fdeg)",
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing slope too steep, aborting (%.0fm %.1fdeg)",
                                              (double)rangefinder_state.correction, (double)(new_slope_deg - initial_slope_deg));
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "aborting landing!");
             alt_offset = rangefinder_state.correction;
             commanded_go_around = true;
             has_aborted_due_to_slope_recalc = true; // only allow this once.
