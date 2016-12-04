@@ -183,7 +183,10 @@ void Sub::init_ardupilot()
 	Location_Class::set_terrain(&terrain);
 	wp_nav.set_terrain(&terrain);
 #endif
+
+#if AVOIDANCE_ENABLED == ENABLED
 	wp_nav.set_avoidance(&avoid);
+#endif
 
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
