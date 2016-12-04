@@ -64,7 +64,7 @@
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
-#include <AP_Proximity/AP_Proximity.h>
+
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
@@ -79,7 +79,7 @@
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AC_Fence/AC_Fence.h>           // ArduCopter Fence library
-#include <AC_Avoidance/AC_Avoid.h>           // Arducopter stop at fence library
+
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
@@ -104,6 +104,14 @@
 
 #if GRIPPER_ENABLED == ENABLED
 #include <AP_Gripper/AP_Gripper.h>             // gripper stuff
+#endif
+
+#if PROXIMITY_ENABLED == ENABLED
+#include <AP_Proximity/AP_Proximity.h>
+#endif
+
+#if AVOIDANCE_ENABLED == ENABLED
+#include <AC_Avoidance/AC_Avoid.h>           // Arducopter stop at fence library
 #endif
 
 // Local modules
@@ -417,7 +425,11 @@ private:
     AC_AttitudeControl_Multi attitude_control;
 
     AC_PosControl pos_control;
+
+#if AVOIDANCE_ENABLED == ENABLED
     AC_Avoid avoid;
+#endif
+
     AC_WPNav wp_nav;
     AC_Circle circle_nav;
 

@@ -96,7 +96,7 @@ public:
         k_param_terrain, // Terrain database
         k_param_rally, // Disabled
         k_param_circle_nav, // Disabled
-		k_param_avoid,
+		k_param_avoid, // Relies on proximity and fence
 
 
 		// Other external hardware interfaces
