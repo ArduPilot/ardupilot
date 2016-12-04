@@ -24,7 +24,6 @@ bool Sub::acro_init(bool ignore_checks)
 void Sub::acro_run()
 {
     float target_roll, target_pitch, target_yaw;
-    float pilot_throttle_scaled;
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed() || !motors.get_interlock()) {
