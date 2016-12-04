@@ -24,6 +24,7 @@ def build(bld):
             'AP_ServoRelayEvents',
             'AP_Proximity',
             'AP_Gripper',
+            'AP_Beacon',
         ],
     )
 
