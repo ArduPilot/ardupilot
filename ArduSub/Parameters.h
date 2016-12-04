@@ -240,9 +240,6 @@ public:
         k_param_autotune_axis_bitmask, // Disabled
         k_param_autotune_aggressiveness, // Disabled
         k_param_autotune_min_d, // Disabled
-
-
-        k_param_throttle_behavior, // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Remove
     };
 
     AP_Int16        format_version;
@@ -257,7 +254,6 @@ public:
 #endif
 
     AP_Float        throttle_filt;
-    AP_Int16        throttle_behavior;
 
     AP_Float        rangefinder_gain;
 
