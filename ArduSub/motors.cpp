@@ -7,47 +7,33 @@
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
-static uint32_t auto_disarm_begin;
+//static uint32_t auto_disarm_begin;
 
-// auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds
+// auto_disarm_check
+// Automatically disarm the vehicle under some set of conditions
+// What those conditions should be TBD
 void Sub::auto_disarm_check()
 {
-    uint32_t tnow_ms = millis();
-    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
+	// Disable for now
 
-    // exit immediately if we are already disarmed, or if auto
-    // disarming is disabled
-    if (!motors.armed() || disarm_delay_ms == 0) {
-        auto_disarm_begin = tnow_ms;
-        return;
-    }
-
-    // always allow auto disarm if using interlock switch or motors are Emergency Stopped
-    if ((ap.using_interlock && !motors.get_interlock()) || ap.motor_emergency_stop) {
-        // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
-        // obvious the copter is armed as the motors will not be spinning
-        disarm_delay_ms /= 2;
-    } else {
-        bool sprung_throttle_stick = (g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0;
-        bool thr_low;
-        if (mode_has_manual_throttle(control_mode) || !sprung_throttle_stick) {
-            thr_low = ap.throttle_zero;
-        } else {
-            float deadband_top = g.rc_3.get_control_mid() + g.throttle_deadzone;
-            thr_low = g.rc_3.get_control_in() <= deadband_top;
-        }
-
-        if (!thr_low) {
-            // reset timer
-            auto_disarm_begin = tnow_ms;
-        }
-    }
-
-    // disarm once timer expires
-    if ((tnow_ms-auto_disarm_begin) >= disarm_delay_ms) {
-        init_disarm_motors();
-        auto_disarm_begin = tnow_ms;
-    }
+//    uint32_t tnow_ms = millis();
+//    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
+//
+//    // exit immediately if we are already disarmed, or if auto
+//    // disarming is disabled
+//    if (!motors.armed() || disarm_delay_ms == 0) {
+//        auto_disarm_begin = tnow_ms;
+//        return;
+//    }
+//
+//    if(!mode_has_manual_throttle(control_mode) || !ap.throttle_zero) {
+//    	auto_disarm_begin = tnow_ms;
+//    }
+//
+//    if(tnow > auto_disarm_begin + disarm_delay_ms) {
+//    	init_disarm_motors();
+//    	auto_disarm_begin = tnow_ms;
+//    }
 }
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
