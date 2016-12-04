@@ -822,9 +822,11 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(fence,      "FENCE_",   AC_Fence),
 #endif
 
+#if AVOIDANCE_ENABLED == ENABLED
 	// @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
     GOBJECT(avoid,      "AVOID_",   AC_Avoid),
+#endif
 
 #if AC_RALLY == ENABLED
     // @Group: RALLY_
@@ -958,7 +960,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
   constructor for g2 object
  */
 ParametersG2::ParametersG2(void)
-    : proximity(sub.serial_manager)
+#if PROXIMITY_ENABLED == ENABLED
+   : proximity(sub.serial_manager)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
