@@ -311,8 +311,9 @@ bool AP_GPS_NMEA::_term_complete()
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
                     } if (_gps_status == 4) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    } if (_gps_status == 3) {
                     //} else {                  
-                    //state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    state.status        = AP_GPS::GPS_OK_FIX_3D;
                     }
                     //
                     fill_3d_velocity();
@@ -329,8 +330,9 @@ bool AP_GPS_NMEA::_term_complete()
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
                     } if (_gps_status == 4) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    } if (_gps_status == 3) {
                     //} else {                  
-                    //state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    state.status        = AP_GPS::GPS_OK_FIX_3D;
                     }
                     break;
                 case _GPS_SENTENCE_VTG:
