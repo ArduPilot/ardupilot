@@ -312,7 +312,7 @@ void AP_GPS_VecNAV::MakeGPSTime(AP_GPS::GPS_State &_state,struct BinGroup4* msg)
     uint8_t year, mon, day, hour, min, sec;
     uint16_t msec;
 
-    year = 2000 + msg->year;
+    year = msg->year;
     mon  = msg->month;
     day  = msg->day;
 
