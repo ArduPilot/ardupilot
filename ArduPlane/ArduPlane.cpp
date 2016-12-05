@@ -978,10 +978,11 @@ void Plane::update_flight_stage(void)
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
-                if ((landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) ||
-                        landing.commanded_go_around ||
-                        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT){
+                if (landing.commanded_go_around || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
+                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
+                } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) {
+                    plane.gcs_send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
                 } else if (landing.complete == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
