@@ -35,11 +35,9 @@ bool Copter::loiter_init(bool ignore_checks)
     }
 }
 
+#if PRECISION_LANDING == ENABLED
 bool Copter::do_precision_loiter() const
 {
-#if PRECISION_LANDING != ENABLED
-    return false;
-#else
     if (!_precision_loiter_enabled) {
         return false;
     }
@@ -54,7 +52,6 @@ bool Copter::do_precision_loiter() const
         return false; // we don't have a good vector
     }
     return true;
-#endif
 }
 
 void Copter::precision_loiter_xy()
@@ -72,6 +69,7 @@ void Copter::precision_loiter_xy()
     pos_control.set_xy_target(target_pos.x, target_pos.y);
     pos_control.override_vehicle_velocity_xy(-target_vel_rel);
 }
+#endif
 
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
@@ -196,9 +194,11 @@ void Copter::loiter_run()
         // set motors to full range
         motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
+#if PRECISION_LANDING == ENABLED
         if (do_precision_loiter()) {
             precision_loiter_xy();
         }
+#endif
 
         // run loiter controller
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
