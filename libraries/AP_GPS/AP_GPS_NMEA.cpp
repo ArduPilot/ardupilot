@@ -326,15 +326,21 @@ bool AP_GPS_NMEA::_term_complete()
                     state.num_sats      = _new_satellite_count;
                     state.hdop          = _new_hdop;
                     // To-Do: add support for proper reporting of 2D and 3D fix
-                    if (_gps_status == 5) {
-                    state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
-                    } if (_gps_status == 4) {
-                    state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
-                    } else {                  
-                    state.status        = AP_GPS::GPS_OK_FIX_3D;
-                    }
+                    //if (_gps_status == 5) {
+                    //state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    //} if (_gps_status == 4) {
+                    //state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    //} else {                  
+                    //state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    //}
                     //
                     //state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    //
+                    if ((_gps_status != 4) && (_gps_status != 5)) {
+                    state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    } else {
+                    state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    }
                     break;
                 case _GPS_SENTENCE_VTG:
                     _last_VTG_ms = now;
