@@ -550,6 +550,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_PRECISION_LOITER:
+#if PRECISION_LANDING == ENABLED
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH:
                     set_precision_loiter_enabled(true);
@@ -558,6 +559,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     set_precision_loiter_enabled(false);
                     break;
             }
+#endif
             break;
 
     }
