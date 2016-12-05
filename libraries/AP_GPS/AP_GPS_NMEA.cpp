@@ -333,7 +333,7 @@ bool AP_GPS_NMEA::_term_complete()
                     } if (_gps_status == 3) {                  
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
                     } else 
-                    sate.status         = AP_GPS::NO_FIX;
+                    state.status         = AP_GPS::NO_FIX;
                     }
                     break;
                 case _GPS_SENTENCE_VTG:
