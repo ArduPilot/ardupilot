@@ -463,8 +463,7 @@ bool AP_GPS_NMEA::_term_complete()
   matches a NMEA string
  */
 bool
-AP_GPS_NMEA::_detect(struct NMEA_detect_
-                     &state, uint8_t data)
+AP_GPS_NMEA::_detect(struct NMEA_detect_state &state, uint8_t data)
 {
 	switch (state.step) {
 	case 0:
