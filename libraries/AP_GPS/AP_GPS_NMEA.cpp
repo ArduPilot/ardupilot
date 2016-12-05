@@ -332,7 +332,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
                     } if (_gps_status == 3) {                  
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
-                    } else if ((_gps_status !=3) && (_gps_status != 4) && (_gps_status != 5))
+                    } else 
                     sate.status         = AP_GPS::NO_FIX;
                     }
                     break;
