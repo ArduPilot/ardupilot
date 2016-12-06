@@ -305,9 +305,9 @@ bool AP_GPS_NMEA::_term_complete()
                     state.ground_course    = wrap_360(_new_course*0.01f);
                     make_gps_time(_new_date, _new_time * 10);
                     state.last_gps_time_ms = now;
-                    // To-Do: add support for proper reporting of 2D and 3D fix //////////////not in RMC/////////////
+                    // To-Do: add support for proper reporting of 2D and 3D fix //////////////not in RMC ?/////////////
                     if (_gps_status == 4) { state.status = AP_GPS::GPS_OK_FIX_3D_RTK;}
-                    else if (_gps_status == 5) {state.status = AP_GPS::GPS_OK_FIX_3D_RTK;} ////////Change to float//////
+                    else if (_gps_status == 5) {state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;} 
                     else { state.status = AP_GPS::GPS_OK_FIX_3D;}
                     fill_3d_velocity();
                     break;
@@ -320,7 +320,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.hdop          = _new_hdop;
                     // To-Do: add support for proper reporting of 2D and 3D fix
                     if (_gps_status == 4) { state.status = AP_GPS::GPS_OK_FIX_3D_RTK;}
-                    else if (_gps_status == 5) {state.status = AP_GPS::GPS_OK_FIX_3D_RTK;} ////////Change to float//////
+                    else if (_gps_status == 5) {state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;}
                     else { state.status = AP_GPS::GPS_OK_FIX_3D;}
                     break;
                 case _GPS_SENTENCE_VTG:
