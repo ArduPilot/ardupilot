@@ -89,6 +89,7 @@ public:
     int8_t get_abort_throttle_enable(void) const { return abort_throttle_enable; }
     int8_t get_flap_percent(void) const { return flap_percent; }
     int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
+    void init_start_nav_cmd(void);
 
 
     // Flag to indicate if we have landed.
@@ -110,13 +111,13 @@ public:
     // landing altitude offset (meters)
     float alt_offset;
 
-    // once landed, post some landing statistics to the GCS
-    bool post_stats;
-
     // denotes if a go-around has been commanded for landing
     bool commanded_go_around;
 
 private:
+
+    // once landed, post some landing statistics to the GCS
+    bool post_stats;
 
     bool has_aborted_due_to_slope_recalc;
 
@@ -157,5 +158,6 @@ private:
 
     void type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
     void type_slope_check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
+    void type_slope_init_start_nav_cmd(void);
 
 };
