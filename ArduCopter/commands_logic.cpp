@@ -772,14 +772,14 @@ bool Copter::verify_payload_place()
             return false; // we'll do any cleanups required next time through the loop
         }
         // see if we've been descending long enough to calibrate a descend-throttle-level:
-        if (nav_payload_place.descend_throttle_level == 0 &&
+        if (is_zero(nav_payload_place.descend_throttle_level) &&
             now - nav_payload_place.descend_start_timestamp > descend_throttle_calibrate_time) {
             nav_payload_place.descend_throttle_level = current_throttle_level;
         }
         // watch the throttle to determine whether the load has been placed
         // debug("hover ratio: %f   descend ratio: %f\n", current_throttle_level/nav_payload_place.hover_throttle_level, ((nav_payload_place.descend_throttle_level == 0) ? -1.0f : current_throttle_level/nav_payload_place.descend_throttle_level));
         if (current_throttle_level/nav_payload_place.hover_throttle_level > hover_throttle_placed_fraction &&
-            (nav_payload_place.descend_throttle_level == 0 ||
+            (is_zero(nav_payload_place.descend_throttle_level) ||
              current_throttle_level/nav_payload_place.descend_throttle_level > descent_throttle_placed_fraction)) {
             // throttle is above both threshold ratios (or above hover threshold ration and descent threshold ratio not yet valid)
             nav_payload_place.place_start_timestamp = 0;
