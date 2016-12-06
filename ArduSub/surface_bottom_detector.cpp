@@ -1,5 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-// Code by Jacob Walser: jwalser90@gmail.com
+// Jacob Walser: jacob@bluerobotics.com
 
 #include "Sub.h"
 
@@ -87,10 +87,11 @@ void Sub::set_surfaced(bool at_surface) {
 
 	ap.at_surface = at_surface;
 
-	if(!ap.at_surface) {
+	surface_detector_count = 0;
+
+	if(ap.at_surface) {
 	    Log_Write_Event(DATA_SURFACED);
 	} else {
-		surface_detector_count = 0;
 		Log_Write_Event(DATA_NOT_SURFACED);
 	}
 }
@@ -103,10 +104,11 @@ void Sub::set_bottomed(bool at_bottom) {
 
 	ap.at_bottom = at_bottom;
 
-	if(!ap.at_bottom) {
+	bottom_detector_count = 0;
+
+	if(ap.at_bottom) {
 		Log_Write_Event(DATA_BOTTOMED);
 	} else {
-		bottom_detector_count = 0;
 		Log_Write_Event(DATA_NOT_BOTTOMED);
 	}
 }
