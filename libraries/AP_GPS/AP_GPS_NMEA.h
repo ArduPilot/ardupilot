@@ -123,7 +123,7 @@ private:
     uint8_t _sentence_type;                                     ///< the sentence type currently being processed
     uint8_t _term_number;                                       ///< term index within the current sentence
     uint8_t _term_offset;                                       ///< character offset with the term being received
-    uint8_t _gps_status;                                        ///< fix status
+    uint8_t _gps_status;                                        ///< fix status/////////////////////////////////////////////////////
     bool _gps_data_good;                                        ///< set when the sentence indicates data is good
     
     
@@ -139,8 +139,7 @@ private:
     int32_t _new_course;                                        ///< course parsed from a term
     uint16_t _new_hdop;                                                 ///< HDOP parsed from a term
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
-    uint8_t _new_gps_status;                            ///< 02/12/16
-    
+        
     uint32_t _last_RMC_ms = 0;
     uint32_t _last_GGA_ms = 0;
     uint32_t _last_VTG_ms = 0;
