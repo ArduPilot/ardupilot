@@ -183,17 +183,6 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
         break;
-
-/*
- * initialize state for new nav command
- */
-void AP_Landing::init_start_nav_cmd(void)
-{
-    switch (type) {
-    default:
-    case TYPE_STANDARD_GLIDE_SLOPE:
-        type_slope_init_start_nav_cmd();
-        break;
     }
 }
 
