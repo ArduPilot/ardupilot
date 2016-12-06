@@ -311,9 +311,9 @@ bool AP_GPS_NMEA::_term_complete()
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;    //// change to float
                     } if (_gps_status == 4) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
-                    } else {                  
-                    state.status        = AP_GPS::GPS_OK_FIX_3D;
-                    }
+                    } //else {                  
+                    //state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    //}
                     fill_3d_velocity();
                     break;
                 case _GPS_SENTENCE_GGA:
@@ -328,9 +328,9 @@ bool AP_GPS_NMEA::_term_complete()
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;      //// change to float  
                     } if (_gps_status == 4) {
                     state.status        = AP_GPS::GPS_OK_FIX_3D_RTK;
-                    } else {                  
-                    state.status        = AP_GPS::GPS_OK_FIX_3D;
-                    }
+                    } //else {                  
+                    //state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    //}
                     break;
                 case _GPS_SENTENCE_VTG:
                     _last_VTG_ms = now;
