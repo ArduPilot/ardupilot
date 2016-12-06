@@ -197,6 +197,13 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
     }
 }
 
+
+bool AP_Landing::type_slope_request_go_around(void)
+{
+    commanded_go_around = true;
+    return true;
+}
+
 /*
   a special glide slope calculation for the landing approach
 

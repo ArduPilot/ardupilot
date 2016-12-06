@@ -73,6 +73,7 @@ public:
 
     void setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
     void check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
+    bool request_go_around(void);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -90,6 +91,7 @@ public:
     int8_t get_flap_percent(void) const { return flap_percent; }
     int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
     void init_start_nav_cmd(void);
+    bool is_commanded_go_around(void) const { return commanded_go_around; }
 
 
     // Flag to indicate if we have landed.
@@ -111,15 +113,15 @@ public:
     // landing altitude offset (meters)
     float alt_offset;
 
-    // denotes if a go-around has been commanded for landing
-    bool commanded_go_around;
-
 private:
 
     // once landed, post some landing statistics to the GCS
     bool post_stats;
 
     bool has_aborted_due_to_slope_recalc;
+
+    // denotes if a go-around has been commanded for landing
+    bool commanded_go_around;
 
     AP_Mission &mission;
     AP_AHRS &ahrs;
@@ -159,5 +161,6 @@ private:
     void type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
     void type_slope_check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
     void type_slope_init_start_nav_cmd(void);
+    bool type_slope_request_go_around(void);
 
 };

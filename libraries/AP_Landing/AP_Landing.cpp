@@ -322,3 +322,18 @@ int32_t AP_Landing::get_target_airspeed_cm(const AP_SpdHgtControl::FlightStage f
     // Do not lower it or exceed cruise speed
     return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_cruise_cm);
 }
+
+/*
+ * request a landing abort given the landing type
+ * return true on success
+ */
+bool AP_Landing::request_go_around(void)
+{
+    switch (type) {
+    default:
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_request_go_around();
+    }
+}
+
+
