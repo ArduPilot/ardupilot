@@ -25,6 +25,7 @@ public:
         numwords((num_bits+31)/32) {
         bits = new uint32_t[numwords];
         clearall();
+        _count_of_set_bits = 0;
     }
     ~Bitmask(void) {
         delete[] bits;
@@ -38,7 +39,11 @@ public:
         }
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
-        bits[word] |= (1U << ofs);
+        const uint32_t mask = (1U << ofs);
+        if (!(bits[word] & mask)) {
+            _count_of_set_bits++;
+        }
+        bits[word] |= mask;
     }
 
     // set all bits
@@ -56,12 +61,17 @@ public:
     void clear(uint16_t bit) {
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
-        bits[word] &= ~(1U << ofs);
+        const uint32_t mask = (1U << ofs);
+        if (bits[word] & (1U << ofs)) {
+            _count_of_set_bits--;
+        }
+        bits[word] &= ~mask;
     }
 
     // clear all bits
     void clearall(void) {
         memset(bits, 0, numwords*sizeof(bits[0]));
+        _count_of_set_bits = 0;
     }
 
     // return true if given bitnumber is set
@@ -73,12 +83,7 @@ public:
 
     // return true if all bits are clear
     bool empty(void) const {
-        for (uint16_t i=0; i<numwords; i++) {
-            if (bits[i] != 0) {
-                return false;
-            }
-        }
-        return true;
+        return (_count_of_set_bits == 0);
     }
 
     // return number of bits set
@@ -101,8 +106,14 @@ public:
         return numbits;
     }
 
+    // return true if all bits are clear
+    uint16_t count_of_set_bits(void) const {
+        return _count_of_set_bits;
+    }
+
 private:
     uint16_t numbits;
     uint16_t numwords;
     uint32_t *bits;
+    uint16_t _count_of_set_bits;
 };
