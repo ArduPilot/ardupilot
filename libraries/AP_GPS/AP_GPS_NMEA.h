@@ -122,7 +122,8 @@ private:
     uint8_t _term_number;                                       ///< term index within the current sentence
     uint8_t _term_offset;                                       ///< character offset with the term being received
     bool _gps_data_good;                                        ///< set when the sentence indicates data is good
-
+    uint8_t _gps_status;                                        /////////////////////////////////////////////////////////////////////////
+    
     // The result of parsing terms within a message is stored temporarily until
     // the message is completely processed and the checksum validated.
     // This avoids the need to buffer the entire message.
