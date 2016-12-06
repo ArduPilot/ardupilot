@@ -16,16 +16,23 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
         // set land_complete to false to stop us zeroing the throttle
-        landing.init_start_nav_cmd();
+        landing.complete = false;
+        landing.pre_flare = false;
         auto_state.sink_rate = 0;
 
         // set takeoff_complete to true so we don't add extra elevator
         // except in a takeoff
         auto_state.takeoff_complete = true;
 
+        // if a go around had been commanded, clear it now.
+        landing.commanded_go_around = false;
+
         // start non-idle
         auto_state.idle_mode = false;
         
+        // once landed, post some landing statistics to the GCS
+        landing.post_stats = false;
+
         nav_controller->set_data_is_stale();
 
         // reset loiter start time. New command is a new loiter
