@@ -505,7 +505,7 @@ bool AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
             _fifo_reset();
             return false;
         }
-        float temp = t2/340.0 + 36.53;
+        float temp = t2/340.0f + 36.53f;
         
         gyro = Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
@@ -595,7 +595,7 @@ bool AP_InertialSensor_MPU6000::_accumulate_fast_sampling(uint8_t *samples, uint
     }
 
     if (ret) {
-        float temp = (tsum/n_samples)/340.0 + 36.53;
+        float temp = (static_cast<float>(tsum)/n_samples)/340.0f + 36.53f;
         _temp_filtered = _temp_filter.apply(temp);
     }
     

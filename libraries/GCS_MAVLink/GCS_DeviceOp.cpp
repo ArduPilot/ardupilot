@@ -17,6 +17,7 @@
  */
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
+#include <AP_HAL/I2CDevice.h>
 #include "GCS.h"
 #include <stdio.h>
 

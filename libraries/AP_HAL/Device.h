@@ -61,6 +61,11 @@ public:
         return _bus_id.devid;
     }
 
+    // return address on bus
+    uint8_t get_bus_address(void) const {
+        return _bus_id.devid_s.address;
+    }
+    
     // set device type within a device class (eg. AP_COMPASS_TYPE_LSM303D)
     void set_device_type(uint8_t devtype) {
         _bus_id.devid_s.devtype = devtype;
@@ -105,6 +110,20 @@ public:
         return transfer(&first_reg, 1, recv, recv_len);
     }
 
+    /**
+     * read 16 bit unsigned integer, little endian
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
+    bool read_uint16_le(uint8_t first_reg, uint16_t &value);
+
+    /**
+     * read 16 bit unsigned integer, big endian
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
+    bool read_uint16_be(uint8_t first_reg, uint16_t &value);
+    
     /**
      * Wrapper function over #transfer() to write a byte to the register reg.
      * The transfer is done by sending reg and val in that order.

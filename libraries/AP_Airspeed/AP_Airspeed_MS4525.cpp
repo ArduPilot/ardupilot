@@ -16,7 +16,7 @@
 /*
   backend driver for airspeed from a I2C MS4525D0 sensor
  */
-#include "AP_Airspeed_I2C.h"
+#include "AP_Airspeed_MS4525.h"
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -35,42 +35,61 @@ extern const AP_HAL::HAL &hal;
 #define MS4525D0_I2C_BUS 1
 #endif
 
-AP_Airspeed_I2C::AP_Airspeed_I2C(const AP_Float &psi_range) :
-    _psi_range(psi_range)
+AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend) :
+    AP_Airspeed_Backend(_frontend)
 {
 }
 
 // probe and initialise the sensor
-bool AP_Airspeed_I2C::init()
+bool AP_Airspeed_MS4525::init()
 {
-    _dev = hal.i2c_mgr->get_device(MS4525D0_I2C_BUS, MS4525D0_I2C_ADDR);
+    const struct {
+        uint8_t bus;
+        uint8_t addr;
+    } addresses[] = {
+        { 1, MS4525D0_I2C_ADDR },
+        { 0, MS4525D0_I2C_ADDR },
+    };
+    bool found = false;
+    for (uint8_t i=0; i<ARRAY_SIZE(addresses); i++) {
+        _dev = hal.i2c_mgr->get_device(addresses[i].bus, addresses[i].addr);
+        if (!_dev) {
+            continue;
+        }
+        if (!_dev->get_semaphore()->take(0)) {
+            continue;
+        }
 
-    // take i2c bus sempahore
-    if (!_dev || !_dev->get_semaphore()->take(200)) {
+        // lots of retries during probe
+        _dev->set_retries(10);
+    
+        _measure();
+        hal.scheduler->delay(10);
+        _collect();
+
+        _dev->get_semaphore()->give();
+
+        found = (_last_sample_time_ms != 0);
+        if (found) {
+            printf("MS4525: Found sensor on bus %u address 0x%02x\n", addresses[i].bus, addresses[i].addr);
+            break;
+        }
+    }
+    if (!found) {
+        printf("MS4525: no sensor found\n");
         return false;
     }
-
-    // lots of retries during probe
-    _dev->set_retries(5);
-    
-    _measure();
-    hal.scheduler->delay(10);
-    _collect();
-    _dev->get_semaphore()->give();
 
     // drop to 2 retries for runtime
     _dev->set_retries(2);
     
-    if (_last_sample_time_ms != 0) {
-        _dev->register_periodic_callback(20000,
-                                         FUNCTOR_BIND_MEMBER(&AP_Airspeed_I2C::_timer, bool));
-        return true;
-    }
-    return false;
+    _dev->register_periodic_callback(20000,
+                                     FUNCTOR_BIND_MEMBER(&AP_Airspeed_MS4525::_timer, bool));
+    return true;
 }
 
 // start a measurement
-void AP_Airspeed_I2C::_measure()
+void AP_Airspeed_MS4525::_measure()
 {
     _measurement_started_ms = 0;
     uint8_t cmd = 0;
@@ -80,7 +99,7 @@ void AP_Airspeed_I2C::_measure()
 }
 
 // read the values from the sensor
-void AP_Airspeed_I2C::_collect()
+void AP_Airspeed_MS4525::_collect()
 {
     uint8_t data[4];
 
@@ -101,7 +120,7 @@ void AP_Airspeed_I2C::_collect()
     dT_raw = (data[2] << 8) + data[3];
     dT_raw = (0xFFE0 & dT_raw) >> 5;
 
-    const float P_max = _psi_range.get();
+    const float P_max = get_psi_range();
     const float P_min = - P_max;
     const float PSI_to_Pa = 6894.757f;
     /*
@@ -114,10 +133,18 @@ void AP_Airspeed_I2C::_collect()
      */
     float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
 
-    _pressure = diff_press_PSI * PSI_to_Pa;
-    _temperature = ((200.0f * dT_raw) / 2047) - 50;
+    float press = diff_press_PSI * PSI_to_Pa;
+    float temp = ((200.0f * dT_raw) / 2047) - 50;
+    
+    _voltage_correction(press, temp);
 
-    _voltage_correction(_pressure, _temperature);
+    if (sem->take(0)) {
+        _press_sum += press;
+        _temp_sum += temp;
+        _press_count++;
+        _temp_count++;
+        sem->give();
+    }
     
     _last_sample_time_ms = AP_HAL::millis();
 }
@@ -129,7 +156,7 @@ void AP_Airspeed_I2C::_collect()
    See http://uav.tridgell.net/MS4525/MS4525-offset.png for a graph of
    offset versus voltage for 3 sensors
  */
-void AP_Airspeed_I2C::_voltage_correction(float &diff_press_pa, float &temperature)
+void AP_Airspeed_MS4525::_voltage_correction(float &diff_press_pa, float &temperature)
 {
 	const float slope = 65.0f;
 	const float temp_slope = 0.887f;
@@ -146,7 +173,7 @@ void AP_Airspeed_I2C::_voltage_correction(float &diff_press_pa, float &temperatu
 }
 
 // 50Hz timer
-bool AP_Airspeed_I2C::_timer()
+bool AP_Airspeed_MS4525::_timer()
 {
     if (_measurement_started_ms == 0) {
         _measure();
@@ -161,20 +188,36 @@ bool AP_Airspeed_I2C::_timer()
 }
 
 // return the current differential_pressure in Pascal
-bool AP_Airspeed_I2C::get_differential_pressure(float &pressure)
+bool AP_Airspeed_MS4525::get_differential_pressure(float &pressure)
 {
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
+    }
+    if (sem->take(0)) {
+        if (_press_count > 0) {
+            _pressure = _press_sum / _press_count;
+            _press_count = 0;
+            _press_sum = 0;
+        }
+        sem->give();
     }
     pressure = _pressure;
     return true;
 }
 
 // return the current temperature in degrees C, if available
-bool AP_Airspeed_I2C::get_temperature(float &temperature)
+bool AP_Airspeed_MS4525::get_temperature(float &temperature)
 {
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
+    }
+    if (sem->take(0)) {
+        if (_temp_count > 0) {
+            _temperature = _temp_sum / _temp_count;
+            _temp_count = 0;
+            _temp_sum = 0;
+        }
+        sem->give();
     }
     temperature = _temperature;
     return true;

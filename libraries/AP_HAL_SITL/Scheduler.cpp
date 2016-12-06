@@ -38,14 +38,17 @@ void Scheduler::init()
 void Scheduler::delay_microseconds(uint16_t usec)
 {
     uint64_t start = AP_HAL::micros64();
-    uint64_t dtime;
-    while ((dtime=(AP_HAL::micros64() - start) < usec)) {
+    do {
+        uint64_t dtime = AP_HAL::micros64() - start;
+        if (dtime >= usec) {
+            break;
+        }
         if (_stopped_clock_usec) {
-            _sitlState->wait_clock(start+usec);
+            _sitlState->wait_clock(start + usec);
         } else {
             usleep(usec - dtime);
         }
-    }
+    } while (true);
 }
 
 void Scheduler::delay(uint16_t ms)

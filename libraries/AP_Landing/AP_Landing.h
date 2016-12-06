@@ -28,30 +28,12 @@ class AP_Landing
 {
 public:
 
-    enum Landing_Type {
-        TYPE_STANDARD_GLIDE_SLOPE = 0,
-//      TODO: TYPE_DEEPSTALL,
-//      TODO: TYPE_PARACHUTE,
-//      TODO: TYPE_HELICAL,
-    };
-
     FUNCTOR_TYPEDEF(set_target_altitude_proportion_fn_t, void, const Location&, float);
-    set_target_altitude_proportion_fn_t set_target_altitude_proportion_fn;
-
     FUNCTOR_TYPEDEF(constrain_target_altitude_location_fn_t, void, const Location&, const Location&);
-    constrain_target_altitude_location_fn_t constrain_target_altitude_location_fn;
-
     FUNCTOR_TYPEDEF(adjusted_altitude_cm_fn_t, int32_t);
-    adjusted_altitude_cm_fn_t adjusted_altitude_cm_fn;
-
     FUNCTOR_TYPEDEF(adjusted_relative_altitude_cm_fn_t, int32_t);
-    adjusted_relative_altitude_cm_fn_t adjusted_relative_altitude_cm_fn;
-
     FUNCTOR_TYPEDEF(disarm_if_autoland_complete_fn_t, void);
-    disarm_if_autoland_complete_fn_t disarm_if_autoland_complete_fn;
-
     FUNCTOR_TYPEDEF(update_flight_stage_fn_t, void);
-    update_flight_stage_fn_t update_flight_stage_fn;
 
     // constructor
     AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_SpdHgt_Controller, AP_Navigation *_nav_controller, AP_Vehicle::FixedWing &_aparm,
@@ -71,9 +53,17 @@ public:
             ,adjusted_altitude_cm_fn(_adjusted_altitude_cm_fn)
             ,adjusted_relative_altitude_cm_fn(_adjusted_relative_altitude_cm_fn)
             ,disarm_if_autoland_complete_fn(_disarm_if_autoland_complete_fn)
-            ,update_flight_stage_fn(_update_flight_stage_fn) {
+            ,update_flight_stage_fn(_update_flight_stage_fn)
+    {
         AP_Param::setup_object_defaults(this, var_info);
     }
+
+    enum Landing_Type {
+        TYPE_STANDARD_GLIDE_SLOPE = 0,
+//      TODO: TYPE_DEEPSTALL,
+//      TODO: TYPE_PARACHUTE,
+//      TODO: TYPE_HELICAL,
+    };
 
     bool restart_landing_sequence();
     bool verify_land(const AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
@@ -137,6 +127,13 @@ private:
 
     AP_Vehicle::FixedWing &aparm;
 
+    set_target_altitude_proportion_fn_t set_target_altitude_proportion_fn;
+    constrain_target_altitude_location_fn_t constrain_target_altitude_location_fn;
+    adjusted_altitude_cm_fn_t adjusted_altitude_cm_fn;
+    adjusted_relative_altitude_cm_fn_t adjusted_relative_altitude_cm_fn;
+    disarm_if_autoland_complete_fn_t disarm_if_autoland_complete_fn;
+    update_flight_stage_fn_t update_flight_stage_fn;
+
     AP_Int16 pitch_cd;
     AP_Float flare_alt;
     AP_Float flare_sec;
@@ -151,8 +148,6 @@ private:
     AP_Int8 flap_percent;
     AP_Int8 throttle_slewrate;
     AP_Int8 type;
-
-
 
     // Land Type STANDARD GLIDE SLOPE
     bool type_slope_verify_land(const AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
