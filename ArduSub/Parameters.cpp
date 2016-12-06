@@ -655,6 +655,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @Increment: 10
     // @Units: cm/s/s
     // @User: Advanced
+
+    // @Param: VEL_XY_FILT_HZ
+    // @DisplayName: Velocity (horizontal) integrator maximum
+    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
     GGROUP(pi_vel_xy,   "VEL_XY_",  AC_PI_2D),
 
     // @Param: VEL_Z_P
@@ -690,7 +698,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 0.000 0.400
     // @User: Standard
 
-    // @Param: ACCEL_Z_FILT_HZ
+    // @Param: ACCEL_Z_FILT
     // @DisplayName: Throttle acceleration filter
     // @Description: Filter applied to acceleration to reduce noise.  Lower values reduce noise but add delay.
     // @Range: 1.000 100.000
@@ -752,7 +760,7 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Multi),
 
-    // @Group: POSCON_
+    // @Group: PSC
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     GOBJECT(pos_control, "PSC", AC_PosControl),
 
@@ -836,7 +844,7 @@ const AP_Param::Info Sub::var_info[] = {
 
 //#if (FRAME_CONFIG == VECTORED_FRAME || FRAME_CONFIG == BLUEROV_FRAME || FRAME_CONFIG == VECTORED6DOF_FRAME || FRAME_CONFIG == SIMPLEROV || FRAME_CONFIG == VECTORED90_FRAME)
 	// @Group: MOT_
-	// @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp
+	// @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp
 	GOBJECT(motors, "MOT_",         AP_Motors6DOF),
 
 //#else
