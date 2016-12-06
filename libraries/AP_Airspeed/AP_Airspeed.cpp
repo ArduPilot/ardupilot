@@ -217,7 +217,7 @@ void AP_Airspeed::calibrate(bool in_startup)
 */
 void AP_Airspeed::update_calibration(float raw_pressure)
 {
-    // consider calibration complete when we have at least 10 samples
+    // consider calibration complete when we have at least 15 samples
     // over at least 1 second
     if (AP_HAL::millis() - _cal.start_ms >= 1000 &&
         _cal.read_count > 15) {
