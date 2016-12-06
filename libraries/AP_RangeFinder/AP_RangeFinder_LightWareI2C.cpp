@@ -28,12 +28,7 @@ extern const AP_HAL::HAL& hal;
 */
 AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_RangeFinder_Backend(_ranger, instance, _state)
-    , _dev(std::move(dev))
-{
-    // call timer() at 20Hz
-    _dev->register_periodic_callback(50000,
-                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_LightWareI2C::timer, bool));
-}
+    , _dev(std::move(dev)) {}
 
 /*
    detect if a Lightware rangefinder is connected. We'll detect by
@@ -60,7 +55,16 @@ AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder &_ranger
         sensor->_dev->get_semaphore()->give();
     }
 
+    sensor->init();
+
     return sensor;
+}
+
+void AP_RangeFinder_LightWareI2C::init()
+{
+    // call timer() at 20Hz
+    _dev->register_periodic_callback(50000,
+                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_LightWareI2C::timer, bool));
 }
 
 // read - return last value measured by sensor
