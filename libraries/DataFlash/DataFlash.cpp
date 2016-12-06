@@ -456,6 +456,50 @@ void DataFlash_Class::setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_
     _vehicle_messages = writer;
 }
 
+bool DataFlash_Class::msg_type_for_msg_name(uint8_t &msg_type, const char *name) const
+{
+    for (uint8_t i=0; i<_num_types; i++) {
+        const LogStructure *logstruct = structure(i);
+        if (!strncmp(name, logstruct->name, 4)) {
+            msg_type = logstruct->msg_type;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool DataFlash_Class::log_filter_want_message(const uint8_t msg_id) const
+{
+    return _filter.bitmask.get(msg_id);
+}
+
+void DataFlash_Class::log_filter_clear()
+{
+    _filter.bitmask.clearall();
+}
+
+bool DataFlash_Class::log_filter_add(const char *field)
+{
+    if (_next_backend == 0 ||
+        !backends[0]->supports_filtering()) {
+        return false;
+    }
+    uint8_t msg_type;
+    if (!msg_type_for_msg_name(msg_type, field)) {
+        // bad!
+        return false;
+    }
+    _filter.bitmask.set(msg_type);
+    return true;
+}
+
+int16_t DataFlash_Class::get_filtered_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data)
+{
+    return backends[0]->get_filtered_log_data(log_num, page, offset, len, data);
+}
+
+
 void DataFlash_Class::set_vehicle_armed(const bool armed_state)
 {
     if (armed_state == _armed) {
@@ -533,6 +577,9 @@ void DataFlash_Class::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &t
 int16_t DataFlash_Class::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) {
     if (_next_backend == 0) {
         return 0;
+    }
+    if (_filter.bitmask.count_of_set_bits() != 0) {
+        return get_filtered_log_data(log_num, page, offset, len, data);
     }
     return backends[0]->get_log_data(log_num, page, offset, len, data);
 }

@@ -63,6 +63,12 @@ protected:
     bool WritesOK() const override;
     bool StartNewLogOK() const override;
 
+    bool supports_filtering() override { return true; }
+    char *_log_filtered_file_name(const uint16_t log_num) const;
+    void stop_filtering() override;
+    bool filter_more_data();
+    int16_t get_filtered_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override;
+
 private:
     int _write_fd;
     char *_write_filename;
@@ -81,6 +87,29 @@ private:
 
     uint16_t _cached_oldest_log;
 
+    enum log_filter_state {
+        SOURCE_FILTER_WANT_SIG1,
+        SOURCE_FILTER_WANT_SIG2,
+        SOURCE_FILTER_WANT_MSG_ID,
+        SOURCE_FILTER_FMT_WANT_MSGID,
+        SOURCE_FILTER_FMT_WANT_LEN,
+        SOURCE_FILTER_COPY_BODY,
+        SOURCE_FILTER_DISCARD_BODY,
+    };
+
+
+    struct {
+        int32_t fd;
+        uint16_t list_entry;
+        int32_t source_offset;
+        enum log_filter_state state;
+        uint8_t msg_id;
+        uint8_t msg_len;
+        uint16_t source_fd_log_num; //TODO: check type
+        ssize_t fd_bytes_written;
+        uint8_t msg_size[256]; // map msg_id -> size
+        uint8_t fmt_msgid;
+    } _filter_file;
     /*
       read a block
     */

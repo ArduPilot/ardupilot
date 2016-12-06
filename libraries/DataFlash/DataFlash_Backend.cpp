@@ -371,3 +371,8 @@ bool DataFlash_Backend::Log_Write_MessageF(const char *fmt, ...)
 
     return Log_Write_Message(msg);
 }
+
+bool DataFlash_Backend::filter_want_message_id(uint8_t msg_id) const
+{
+    return _front.log_filter_want_message(msg_id);
+}

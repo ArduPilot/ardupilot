@@ -58,6 +58,12 @@ void DataFlash_Class::handle_log_message(GCS_MAVLINK &link, mavlink_message_t *m
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         handle_log_request_end(link, msg);
         break;
+    case MAVLINK_MSG_ID_LOG_FILTER_CLEAR:
+        handle_log_filter_clear(link, msg);
+        break;
+    case MAVLINK_MSG_ID_LOG_FILTER_ADD:
+        handle_log_filter_add(link, msg);
+        break;
     }
 }
 
@@ -301,4 +307,37 @@ bool DataFlash_Class::handle_log_send_data()
         _log_sending_link = nullptr;
     }
     return true;
+}
+
+void DataFlash_Class::handle_log_filter_clear(GCS_MAVLINK &link, mavlink_message_t *msg)
+{
+    log_filter_clear();
+}
+
+void DataFlash_Class::handle_log_filter_add(GCS_MAVLINK &link, mavlink_message_t *msg)
+{
+    mavlink_log_filter_add_t packet;
+    mavlink_msg_log_filter_add_decode(msg, &packet);
+
+    // copy fields into a mungible string, ensure null-termination:
+    // this puts several hundred bytes in the stack.
+    char fields[MAVLINK_MSG_LOG_FILTER_ADD_FIELD_FIELDS_LEN+1];
+    memcpy(fields, packet.fields, MAVLINK_MSG_LOG_FILTER_ADD_FIELD_FIELDS_LEN);
+    fields[MAVLINK_MSG_LOG_FILTER_ADD_FIELD_FIELDS_LEN] = '\0';
+
+    // step through string, null-terminating fields as we find them
+    char *current_field = fields;
+    for(uint8_t i=0;i<MAVLINK_MSG_ID_LOG_FILTER_ADD_LEN+1;i++) {
+        if (fields[i] == '\0') {
+            break;
+        }
+        if (fields[i] == ',') {
+            fields[i] = '\0'; // null-terminate current field
+            log_filter_add(current_field);
+            current_field = &fields[i+1]; // careful here!
+        }
+    }
+    if (strlen(current_field)) {
+        log_filter_add(current_field);
+    }
 }

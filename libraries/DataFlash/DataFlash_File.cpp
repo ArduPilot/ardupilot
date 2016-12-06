@@ -451,6 +451,15 @@ char *DataFlash_File::_log_file_name_long(const uint16_t log_num) const
     return buf;
 }
 
+char *DataFlash_File::_log_filtered_file_name(const uint16_t log_num) const
+{
+    char *buf = nullptr;
+    if (asprintf(&buf, "%s/%u.FIN", _log_directory, (unsigned)log_num) == 0) {
+        return nullptr;
+    }
+    return buf;
+}
+
 /*
   return a log filename appropriate for the supplied log_num if a
   filename exists with the short (not-zero-padded name) then it is the
@@ -716,6 +725,159 @@ void DataFlash_File::get_log_boundaries(const uint16_t list_entry, uint16_t & st
     start_page = 0;
     end_page = _get_log_size(log_num) / DATAFLASH_PAGE_SIZE;
 }
+
+bool DataFlash_File::filter_more_data()
+{
+    const uint16_t page = 0;
+
+    uint8_t buf_in[512];
+    uint8_t buf_out[512];
+
+    const int16_t bytes_read = get_log_data(_filter_file.list_entry, page, _filter_file.source_offset, sizeof(buf_in), buf_in);
+    if (bytes_read <= 0) {
+        return false;
+    }
+    _filter_file.source_offset += bytes_read;
+
+    uint16_t buf_out_ofs = 0;
+    for (uint16_t i=0; i<bytes_read; i++) {
+        const uint8_t x  = buf_in[i];
+        // ::fprintf(stderr, "i=%u x=%02x state=%u msg_len=%u\n", i, x, (uint8_t)_filter_file.state, _filter_file.msg_len);
+        switch(_filter_file.state) {
+        case SOURCE_FILTER_WANT_SIG1:
+            if (x != HEAD_BYTE1) {
+                break;
+            }
+            _filter_file.state = SOURCE_FILTER_WANT_SIG2;
+            break;
+        case SOURCE_FILTER_WANT_SIG2:
+            if (x != HEAD_BYTE2) {
+                _filter_file.state = SOURCE_FILTER_WANT_SIG1;
+                break;
+            }
+            _filter_file.state = SOURCE_FILTER_WANT_MSG_ID;
+            break;
+        case SOURCE_FILTER_WANT_MSG_ID: {
+            _filter_file.msg_id = x;
+            if (x == LOG_FORMAT_MSG) { // format message!
+                _filter_file.state = SOURCE_FILTER_FMT_WANT_MSGID;
+                break;
+            }
+            _filter_file.msg_len = _filter_file.msg_size[x] - 3;
+            if (filter_want_message_id(x)) {
+                buf_out[buf_out_ofs++] = HEAD_BYTE1;
+                buf_out[buf_out_ofs++] = HEAD_BYTE2;
+                buf_out[buf_out_ofs++] = x;
+                _filter_file.state = SOURCE_FILTER_COPY_BODY;
+            } else {
+                _filter_file.state = SOURCE_FILTER_DISCARD_BODY;
+            }
+            if (_filter_file.msg_len == 0) {
+                _filter_file.state = SOURCE_FILTER_WANT_SIG1;
+                break;
+            }
+            break;
+        }
+        case SOURCE_FILTER_FMT_WANT_MSGID: {
+            _filter_file.fmt_msgid = x;
+            _filter_file.state = SOURCE_FILTER_FMT_WANT_LEN;
+            break;
+        };
+        case SOURCE_FILTER_FMT_WANT_LEN: {
+            _filter_file.msg_size[_filter_file.fmt_msgid] = x;
+            buf_out[buf_out_ofs++] = HEAD_BYTE1;
+            buf_out[buf_out_ofs++] = HEAD_BYTE2;
+            buf_out[buf_out_ofs++] = LOG_FORMAT_MSG;
+            buf_out[buf_out_ofs++] = _filter_file.fmt_msgid;
+            buf_out[buf_out_ofs++] = x; // length
+            _filter_file.msg_len = _filter_file.msg_size[LOG_FORMAT_MSG] - 5;
+            _filter_file.state = SOURCE_FILTER_COPY_BODY;
+            break;
+        };
+        case SOURCE_FILTER_COPY_BODY:
+            buf_out[buf_out_ofs++] = x;
+            // no break; gratuitous fall-through
+        case SOURCE_FILTER_DISCARD_BODY:
+            _filter_file.msg_len--;
+            if (_filter_file.msg_len == 0) {
+                _filter_file.state = SOURCE_FILTER_WANT_SIG1;
+                break;
+            }
+        }
+    }
+    if (::lseek(_filter_file.fd, 0, SEEK_END) == (off_t)-1) {
+        return false;
+    }
+    const ssize_t written = write(_filter_file.fd, buf_out, buf_out_ofs);
+    if (written < buf_out_ofs) {
+        stop_filtering();
+        return false;
+    }
+    _filter_file.fd_bytes_written += written;
+    return true;
+}
+
+int16_t DataFlash_File::get_filtered_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
+{
+    if (!_initialised || _open_error) {
+        return -1;
+    }
+
+    const uint16_t log_num = _log_num_from_list_entry(list_entry);
+    if (log_num == 0) {
+        // that failed - probably no logs
+        return -1;
+    }
+
+    if (_filter_file.fd != -1 && log_num != _filter_file.source_fd_log_num) {
+        stop_filtering();
+    }
+
+    if (_filter_file.fd == -1) {
+        char *fname = _log_filtered_file_name(log_num);
+        if (fname == nullptr) {
+            return -1;
+        }
+        _filter_file.fd = ::open(fname, O_RDWR|O_CLOEXEC|O_CREAT|O_TRUNC, 0777);
+        if (_filter_file.fd == -1) {
+            // emit error message here
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to open filter file (%s) (%s)", fname, strerror(errno));
+            free(fname);
+            return -1;
+        }
+        free(fname);
+        _filter_file.source_fd_log_num = log_num;
+        _filter_file.list_entry = list_entry;
+    }
+
+    uint32_t ofs = page * (uint32_t)DATAFLASH_PAGE_SIZE + offset;
+    while (_filter_file.fd_bytes_written < ofs+len) {
+        // need to filter more data...
+        if (!filter_more_data()) {
+            // hope that's end-of-file....
+            break;
+        }
+    }
+    if (::lseek(_filter_file.fd, ofs, SEEK_SET) == (off_t)-1) {
+        stop_filtering();
+        return -1;
+    }
+    int16_t bytes_read = (int16_t)::read(_filter_file.fd, data, len);
+    if (bytes_read < 0) {
+        stop_filtering();
+        return -1;
+    }
+    return bytes_read;
+}
+
+void DataFlash_File::stop_filtering()
+{
+    if (_filter_file.fd != -1) {
+        close(_filter_file.fd);
+    }
+    _filter_file.fd = -1;
+}
+
 
 /*
   retrieve data from a log file

@@ -25,6 +25,7 @@
 #include <AP_InertialSensor/AP_InertialSensor_Backend.h>
 
 #include <stdint.h>
+#include <AP_Common/Bitmask.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <uORB/topics/esc_status.h>
@@ -82,6 +83,11 @@ public:
     uint16_t find_last_log() const;
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
     uint16_t get_num_logs(void);
+
+    int16_t get_filtered_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
+    bool log_filter_add(const char *field);
+    void log_filter_clear();
+    bool log_filter_want_message(uint8_t msgid) const;
 
     void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
 
@@ -154,6 +160,7 @@ public:
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
     void Log_Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
     void Log_WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list);
+
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
@@ -305,6 +312,8 @@ private:
 
     void backend_starting_new_log(const DataFlash_Backend *backend);
 
+    bool msg_type_for_msg_name(uint8_t &msg_type, const char *name) const;
+
 private:
     static DataFlash_Class *_instance;
 
@@ -374,10 +383,16 @@ private:
     void handle_log_send_listing();
     bool handle_log_send_data();
 
+    void handle_log_filter_clear(class GCS_MAVLINK &, mavlink_message_t *msg);
+    void handle_log_filter_add(class GCS_MAVLINK &, mavlink_message_t *msg);
+
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
 
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
 
     /* end support for retrieving logs via mavlink: */
 
+    struct {
+        Bitmask bitmask{256};
+    } _filter;
 };
