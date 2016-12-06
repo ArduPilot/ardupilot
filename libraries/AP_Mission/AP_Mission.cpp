@@ -575,7 +575,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:                  // MAV ID: 20
-        copy_location = true;
         break;
 
     case MAV_CMD_NAV_LAND:                              // MAV ID: 21
@@ -994,10 +993,9 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_NAV_LOITER_UNLIM:                      // MAV ID: 17
         copy_location = true;
+        packet.param3 = (float)cmd.p1;
         if (cmd.content.location.flags.loiter_ccw) {
-            packet.param3 = -1;
-        }else{
-            packet.param3 = 1;
+            packet.param3 *= -1;
         }
         break;
 
@@ -1023,7 +1021,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:                  // MAV ID: 20
-        copy_location = true;
         break;
 
     case MAV_CMD_NAV_LAND:                              // MAV ID: 21
