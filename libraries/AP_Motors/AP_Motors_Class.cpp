@@ -206,3 +206,22 @@ void AP_Motors::add_motor_num(int8_t motor_num)
         }
     }
 }
+
+/*
+  add a motor, setting up _motor_map and _motor_map_mask as needed
+ */
+void AP_Motors::add_motor_num(int8_t motor_num)
+{
+    // ensure valid motor number is provided
+    if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
+        uint8_t chan;
+        if (RC_Channel_aux::find_channel((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+motor_num),
+                                         chan)) {
+            _motor_map[motor_num] = chan;
+            _motor_map_mask |= 1U<<motor_num;
+        } else {
+            // disable this channel from being used by RC_Channel_aux
+            RC_Channel_aux::disable_aux_channel(motor_num);
+        }
+    }
+}
