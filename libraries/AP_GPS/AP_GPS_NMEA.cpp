@@ -100,8 +100,9 @@ AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDr
     _sentence_type(0),
     _term_number(0),
     _term_offset(0),
+    _gps_status(0),  /////////////////////////////////////////////////////////////////////////////////
     _gps_data_good(false)
-    _gps_status(0),/////////////////////////////////////////////////////////////////////////////////
+    
 {
     gps.send_blob_start(state.instance, _initialisation_blob, sizeof(_initialisation_blob));
     // this guarantees that _term is always nul terminated
