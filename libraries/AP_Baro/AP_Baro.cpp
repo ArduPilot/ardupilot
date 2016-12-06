@@ -78,6 +78,13 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PRIMARY", 6, AP_Baro, _primary_baro, 0),
 
+    // @Param: EXT_BUS
+    // @DisplayName: External baro bus
+    // @Description: This selects the bus number for looking for an I2C barometer
+    // @Values: -1:Disabled,0:Bus0:1:Bus1
+    // @User: Advanced
+    AP_GROUPINFO("EXT_BUS", 7, AP_Baro, _ext_bus, -1),
+    
     AP_GROUPEND
 };
 
@@ -331,11 +338,6 @@ void AP_Baro::init(void)
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-        // can have baro on I2C too
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(0, HAL_BARO_MS5611_I2C_ADDR))));
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(1, HAL_BARO_MS5611_I2C_ADDR))));
     } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME))));
@@ -372,6 +374,12 @@ void AP_Baro::init(void)
     _num_drivers = 1;
 #endif
 
+    // can optionally have baro on I2C too
+    if (_ext_bus >= 0) {
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
+    }
+    
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_HAL::panic("Baro: unable to initialise driver");
     }

@@ -163,6 +163,7 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
     default:
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, wp_distance, target_altitude_offset_cm);
+        break;
     }
 }
 
@@ -181,6 +182,7 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
     default:
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
+        break;
     }
 }
 
