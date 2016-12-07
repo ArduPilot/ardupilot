@@ -1441,7 +1441,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 }
             } else if (is_equal(packet.param6,1.0f)) {
                 // compassmot calibration
-                result = sub.mavlink_compassmot(chan);
+                //result = sub.mavlink_compassmot(chan);
+            	sub.gcs_send_text(MAV_SEVERITY_INFO, "#CompassMot calibration not supported");
+            	result = MAV_RESULT_UNSUPPORTED;
             }
             break;
 
