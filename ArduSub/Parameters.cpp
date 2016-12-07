@@ -524,6 +524,13 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Range: 0.5 4.0
 	GSCALAR(throttle_gain, "JS_THR_GAIN", 1.0f),
 
+	// @Param: CAM_TILT_CENTER
+	// @DisplayName: Camera tilt mount center
+	// @Description: Servo PWM at camera center position
+	// @User: Standard
+	// @Range: 1000 2000
+	GSCALAR(cam_tilt_center, "CAM_CENTER", 1500),
+
 	// @Group: BTN0_
 	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
 	GGROUP(jbtn_0,                   "BTN0_", JSButton),
