@@ -2,48 +2,6 @@
 
 #include "Sub.h"
 
-/*
- *       This event will be called when the failsafe changes
- *       boolean failsafe reflects the current state
- */
-void Sub::failsafe_radio_on_event()
-{
-//    // if motors are not armed there is nothing to do
-//    if( !motors.armed() ) {
-//        return;
-//    }
-//
-//    if (should_disarm_on_failsafe()) {
-//        init_disarm_motors();
-//    } else {
-//        if (control_mode == AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
-//            // continue mission
-//        } else if (control_mode == LAND && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
-//            // continue landing
-//        } else {
-//            if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-//                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
-//            } else {
-//                set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
-//            }
-//        }
-//    }
-//
-//    // log the error to the dataflash
-//    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_OCCURRED);
-
-}
-
-// failsafe_off_event - respond to radio contact being regained
-// we must be in AUTO, LAND or RTL modes
-// or Stabilize or ACRO mode but with motors disarmed
-void Sub::failsafe_radio_off_event()
-{
-    // no need to do anything except log the error as resolved
-    // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_RESOLVED);
-}
-
 void Sub::failsafe_battery_event(void)
 {
 //    // return immediately if low battery event has already been triggered

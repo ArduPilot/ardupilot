@@ -98,8 +98,7 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "Throttle");
     }
 
-    // disable throttle and battery failsafe
-    g.failsafe_throttle = FS_THR_DISABLED;
+    // disable battery failsafe
     g.failsafe_battery_enabled = FS_BATT_DISABLED;
 
     // disable motor compensation
@@ -256,7 +255,6 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
     failsafe_enable();
 
     // re-enable failsafes
-    g.failsafe_throttle.load();
     g.failsafe_battery_enabled.load();
 
     // flag we have completed

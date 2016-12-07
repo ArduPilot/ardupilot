@@ -282,17 +282,6 @@ bool Sub::pre_arm_checks(bool display_failure)
             return false;
         }
 
-        // failsafe parameter checks
-        if (g.failsafe_throttle) {
-            // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
-            if (channel_throttle->get_radio_min() <= g.failsafe_throttle_value+10 || g.failsafe_throttle_value < 910) {
-                if (display_failure) {
-                    gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check FS_THR_VALUE");
-                }
-                return false;
-            }
-        }
-
         // lean angle parameter check
         if (aparm.angle_max < 1000 || aparm.angle_max > 8000) {
             if (display_failure) {
@@ -323,17 +312,6 @@ bool Sub::pre_arm_checks(bool display_failure)
 		if (!pre_arm_terrain_check(display_failure)) {
 			return false;
 		}
-    }
-
-    // check throttle is above failsafe throttle
-    // this is near the bottom to allow other failures to be displayed before checking pilot throttle
-    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
-        if (g.failsafe_throttle != FS_THR_DISABLED && channel_throttle->get_radio_in() < g.failsafe_throttle_value) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Throttle below Failsafe");
-            }
-            return false;
-        }
     }
 
     return true;
@@ -648,12 +626,6 @@ bool Sub::arm_checks(bool display_failure, bool arming_from_gcs)
     // check throttle
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
         // check throttle is not too low - must be above failsafe throttle
-        if (g.failsafe_throttle != FS_THR_DISABLED && channel_throttle->get_radio_in() < g.failsafe_throttle_value) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Throttle below Failsafe");
-            }
-            return false;
-        }
 
         // check throttle is not too high - skips checks if arming from GCS in Guided
         if (!(arming_from_gcs && control_mode == GUIDED)) {

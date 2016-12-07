@@ -114,7 +114,6 @@ void Sub::read_radio()
         ap.new_radio_frame = true;
         RC_Channel::set_pwm_all();
 
-        set_throttle_and_failsafe(channel_throttle->get_radio_in());
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
         // flag we must have an rc receiver attached
@@ -131,56 +130,6 @@ void Sub::read_radio()
         float dt = (tnow_ms - last_update_ms)*1.0e-3f;
         rc_throttle_control_in_filter.apply(g.rc_3.get_control_in(), dt);
         last_update_ms = tnow_ms;
-    }else{
-        uint32_t elapsed = tnow_ms - last_update_ms;
-        // turn on throttle failsafe if no update from the RC Radio for 500ms or 2000ms if we are using RC_OVERRIDE
-        if (((!failsafe.rc_override_active && (elapsed >= FS_RADIO_TIMEOUT_MS)) || (failsafe.rc_override_active && (elapsed >= FS_RADIO_RC_OVERRIDE_TIMEOUT_MS))) &&
-            (g.failsafe_throttle && (ap.rc_receiver_present||motors.armed()) && !failsafe.radio)) {
-            Log_Write_Error(ERROR_SUBSYSTEM_RADIO, ERROR_CODE_RADIO_LATE_FRAME);
-            set_failsafe_radio(true);
-        }
-    }
-}
-
-#define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values below failsafe_throttle_value
-void Sub::set_throttle_and_failsafe(uint16_t throttle_pwm)
-{
-    // if failsafe not enabled pass through throttle and exit
-    if(g.failsafe_throttle == FS_THR_DISABLED) {
-        channel_throttle->set_pwm(throttle_pwm);
-        return;
-    }
-
-    //check for low throttle value
-    if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
-
-        // if we are already in failsafe or motors not armed pass through throttle and exit
-        if (failsafe.radio || !(ap.rc_receiver_present || motors.armed())) {
-            channel_throttle->set_pwm(throttle_pwm);
-            return;
-        }
-
-        // check for 3 low throttle values
-        // Note: we do not pass through the low throttle until 3 low throttle values are recieved
-        failsafe.radio_counter++;
-        if( failsafe.radio_counter >= FS_COUNTER ) {
-            failsafe.radio_counter = FS_COUNTER;  // check to ensure we don't overflow the counter
-            set_failsafe_radio(true);
-            channel_throttle->set_pwm(throttle_pwm);   // pass through failsafe throttle
-        }
-    }else{
-        // we have a good throttle so reduce failsafe counter
-        failsafe.radio_counter--;
-        if( failsafe.radio_counter <= 0 ) {
-            failsafe.radio_counter = 0;   // check to ensure we don't underflow the counter
-
-            // disengage failsafe after three (nearly) consecutive valid throttle values
-            if (failsafe.radio) {
-                set_failsafe_radio(false);
-            }
-        }
-        // pass through throttle
-        channel_throttle->set_pwm(throttle_pwm);
     }
 }
 
