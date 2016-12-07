@@ -222,22 +222,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(pilot_accel_z,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
 
-    // @Param: FS_THR_ENABLE
-    // @DisplayName: Throttle Failsafe Enable
-    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
-    // @Values: 0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode,3:Enabled always LAND
-    // @User: Standard
-    GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   FS_THR_DISABLED),
-
-    // @Param: FS_THR_VALUE
-    // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
-    // @Range: 925 1100
-    // @Units: pwm
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",      FS_THR_VALUE_DEFAULT),
-
     // @Param: THR_DZ
     // @DisplayName: Throttle deadzone
     // @Description: The deadzone above and below mid throttle.  Used in AltHold, Loiter, PosHold flight modes

@@ -58,33 +58,6 @@ void Sub::set_simple_mode(uint8_t b)
 }
 
 // ---------------------------------------------
-void Sub::set_failsafe_radio(bool b)
-{
-    // only act on changes
-    // -------------------
-    if(failsafe.radio != b) {
-
-        // store the value so we don't trip the gate twice
-        // -----------------------------------------------
-        failsafe.radio = b;
-
-        if (failsafe.radio == false) {
-            // We've regained radio contact
-            // ----------------------------
-            failsafe_radio_off_event();
-        }else{
-            // We've lost radio contact
-            // ------------------------
-            failsafe_radio_on_event();
-        }
-
-        // update AP_Notify
-        AP_Notify::flags.failsafe_radio = b;
-    }
-}
-
-
-// ---------------------------------------------
 void Sub::set_failsafe_battery(bool b)
 {
     failsafe.battery = b;

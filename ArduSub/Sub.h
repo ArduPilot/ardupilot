@@ -288,8 +288,6 @@ private:
         uint32_t last_leak_warn_ms;      // last time a leak warning was sent to gcs
         uint32_t last_gcs_warn_ms;
 
-        int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
-
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
@@ -522,7 +520,6 @@ private:
     bool home_is_set();
     void set_auto_armed(bool b);
     void set_simple_mode(uint8_t b);
-    void set_failsafe_radio(bool b);
     void set_failsafe_battery(bool b);
     void set_pre_arm_check(bool b);
     void set_pre_arm_rc_check(bool b);
@@ -708,8 +705,6 @@ private:
     void esc_calibration_passthrough();
     void esc_calibration_auto();
     bool should_disarm_on_failsafe();
-    void failsafe_radio_on_event();
-    void failsafe_radio_off_event();
     void failsafe_battery_event(void);
     void failsafe_gcs_check();
     void failsafe_terrain_check();
@@ -784,7 +779,6 @@ private:
     void handle_jsbutton_press(uint8_t button,bool shift=false,bool held=false);
     void camera_tilt_smooth();
     JSButton* get_button(uint8_t index);
-    void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
     void radio_passthrough_to_motors();
     void init_barometer(bool full_calibration);

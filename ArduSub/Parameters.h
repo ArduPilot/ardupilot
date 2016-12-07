@@ -182,8 +182,6 @@ public:
         k_param_failsafe_battery_enabled,
         k_param_fs_batt_mah,
         k_param_fs_batt_voltage,
-        k_param_failsafe_throttle,
-        k_param_failsafe_throttle_value,
 
 
         // Misc Sub settings
@@ -286,8 +284,6 @@ public:
 
     // Throttle
     //
-    AP_Int8         failsafe_throttle;
-    AP_Int16        failsafe_throttle_value;
     AP_Int16        throttle_deadzone;
 
     // Flight modes
