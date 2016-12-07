@@ -1770,6 +1770,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
     case MAVLINK_MSG_ID_GPS_INPUT:
+    case MAVLINK_MSG_ID_HIL_GPS:
     {
       result = MAV_RESULT_ACCEPTED;
       copter.gps.handle_msg(msg);
