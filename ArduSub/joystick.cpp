@@ -22,6 +22,7 @@ namespace {
 	int16_t x_last, y_last, z_last;
 	uint16_t buttons_prev;
 	float gain;
+	bool toggle_mode = true;
 }
 
 void Sub::init_joystick() {
@@ -114,31 +115,41 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 			init_disarm_motors();
 			break;
 		case JSButton::button_function_t::k_mode_toggle:
-			init_disarm_motors();
+			if( !held ) {
+				next_mode = (control_mode_t)flight_modes[toggle_mode?1:0].get();
+				next_mode_switch_pwm = toggle_mode?1300:1100;
+				toggle_mode = !toggle_mode;
+			}
 			break;
 		case JSButton::button_function_t::k_mode_1:
 			next_mode = (control_mode_t)flight_modes[0].get();
 			next_mode_switch_pwm = 1100;
+			toggle_mode = true;
 			break;
 		case JSButton::button_function_t::k_mode_2:
 			next_mode = (control_mode_t)flight_modes[1].get();
 			next_mode_switch_pwm = 1300;
+			toggle_mode = false;
 			break;
 		case JSButton::button_function_t::k_mode_3:
 			next_mode = (control_mode_t)flight_modes[2].get();
 			next_mode_switch_pwm = 1420;
+			toggle_mode = false;
 			break;
 		case JSButton::button_function_t::k_mode_4:
 			next_mode = (control_mode_t)flight_modes[3].get();
 			next_mode_switch_pwm = 1550;
+			toggle_mode = false;
 			break;
 		case JSButton::button_function_t::k_mode_5:
 			next_mode = (control_mode_t)flight_modes[4].get();
 			next_mode_switch_pwm = 1690;
+			toggle_mode = false;
 			break;
 		case JSButton::button_function_t::k_mode_6:
 			next_mode = (control_mode_t)flight_modes[5].get();
 			next_mode_switch_pwm = 1900;
+			toggle_mode = false;
 			break;
 		case JSButton::button_function_t::k_mount_center:
 			cam_tilt_goal = 1500;
