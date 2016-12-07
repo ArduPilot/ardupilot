@@ -865,6 +865,7 @@ mission_failed:
 
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
     case MAVLINK_MSG_ID_GPS_INPUT:
+    case MAVLINK_MSG_ID_HIL_GPS:
         tracker.gps.handle_msg(msg);
         break;
 
