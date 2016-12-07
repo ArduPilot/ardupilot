@@ -125,7 +125,7 @@ void Sub::read_aux_switches()
     uint8_t switch_position;
 
     // exit immediately during radio failsafe
-    if (failsafe.radio || failsafe.radio_counter != 0) {
+    if (failsafe.radio) {
         return;
     }
 
