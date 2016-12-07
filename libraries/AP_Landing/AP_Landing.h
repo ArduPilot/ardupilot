@@ -74,6 +74,7 @@ public:
 
 
     // helper functions
+    void reset(void);
     bool restart_landing_sequence(void);
     float wind_alignment(const float heading_deg);
     float head_wind(void);
@@ -89,8 +90,8 @@ public:
     int8_t get_abort_throttle_enable(void) const { return abort_throttle_enable; }
     int8_t get_flap_percent(void) const { return flap_percent; }
     int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
-    void init_start_nav_cmd(void);
     bool is_commanded_go_around(void) const { return commanded_go_around; }
+    void set_initial_slope() { initial_slope = slope; }
 
 
     // Flag to indicate if we have landed.
@@ -102,12 +103,6 @@ public:
 
     // are we in auto and flight mode is approach || pre-flare || final (flare)
     bool in_progress;
-
-    // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
-    float slope;
-
-    // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
-    float initial_slope;
 
     // landing altitude offset (meters)
     float alt_offset;
@@ -121,6 +116,12 @@ private:
 
     // denotes if a go-around has been commanded for landing
     bool commanded_go_around;
+
+    // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
+    float initial_slope;
+
+    // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
+    float slope;
 
     AP_Mission &mission;
     AP_AHRS &ahrs;
@@ -159,7 +160,6 @@ private:
 
     void type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
     void type_slope_check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
-    void type_slope_init_start_nav_cmd(void);
     bool type_slope_request_go_around(void);
 
 };

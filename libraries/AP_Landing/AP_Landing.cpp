@@ -189,14 +189,16 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
 /*
  * initialize state for new nav command
  */
-void AP_Landing::init_start_nav_cmd(void)
+void AP_Landing::reset(void)
 {
-    switch (type) {
-    default:
-    case TYPE_STANDARD_GLIDE_SLOPE:
-        type_slope_init_start_nav_cmd();
-        break;
-    }
+    complete = false;
+    pre_flare = false;
+    commanded_go_around = false;
+    initial_slope = 0;
+    slope = 0;
+
+    // once landed, post some landing statistics to the GCS
+    post_stats = false;
 }
 
 /*
