@@ -112,7 +112,6 @@ uint8_t Sub::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq,
             }
 
             // disable throttle, battery and gps failsafe
-            g.failsafe_throttle = FS_THR_DISABLED;
             g.failsafe_battery_enabled = FS_BATT_DISABLED;
             g.failsafe_gcs = FS_GCS_DISABLED;
 
@@ -153,7 +152,6 @@ void Sub::motor_test_stop()
     motor_test_timeout_ms = 0;
 
     // re-enable failsafes
-    g.failsafe_throttle.load();
     g.failsafe_battery_enabled.load();
     g.failsafe_gcs.load();
 
