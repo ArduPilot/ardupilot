@@ -27,7 +27,7 @@ Sub::Sub(void) :
             FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void)),
-    control_mode(STABILIZE),
+    control_mode(MANUAL),
     motors(MAIN_LOOP_RATE),
     scaleLongDown(1),
     wp_bearing(0),
