@@ -132,7 +132,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Controls what action to take when GCS heartbeat is lost.
     // @Values: 0:Disabled,1:Warn only,2:Disarm,3:Enter depth hold mode,4:Enter surface mode
     // @User: Standard
-    GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_DISABLED),
+    GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_DISARM),
 
     // @Param: FS_LEAK_ENABLE
     // @DisplayName: Leak Failsafe Enable
