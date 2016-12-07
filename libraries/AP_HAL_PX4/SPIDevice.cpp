@@ -187,18 +187,15 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
 bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-    // Check input parameters
-    if(0 == send_len || nullptr == send || (nullptr == recv && 0 != recv_len)) {
-        return false;
-    }
     if (send_len == recv_len && send == recv) {
         // simplest cases, needed for DMA
         do_transfer(send, recv, recv_len);
         return true;
     }
     uint8_t buf[send_len+recv_len];
-    memcpy(buf, send, send_len);  // Set Register number, etc..
-
+    if (send_len > 0) {
+        memcpy(buf, send, send_len);
+    }
     if (recv_len > 0) {
         memset(&buf[send_len], 0, recv_len);
     }
