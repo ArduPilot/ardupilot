@@ -380,6 +380,7 @@ void Scheduler::_run_uarts()
 #else
     UARTDriver::from(hal.uartC)->_timer_tick();
 #endif
+    UARTDriver::from(hal.uartD)->_timer_tick();
     UARTDriver::from(hal.uartE)->_timer_tick();
     UARTDriver::from(hal.uartF)->_timer_tick();
 }
