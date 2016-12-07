@@ -25,6 +25,8 @@ namespace {
 }
 
 void Sub::init_joystick() {
+	set_mode((control_mode_t)flight_modes[0].get(), MODE_REASON_TX_COMMAND); // Initialize flight mode
+
     if(g.numGainSettings < 1) g.numGainSettings.set_and_save(1);
 
     if(g.numGainSettings == 1 || (g.gain_default < g.maxGain + 0.01 && g.gain_default > g.minGain - 0.01)) {
