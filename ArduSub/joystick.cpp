@@ -152,7 +152,7 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 			toggle_mode = false;
 			break;
 		case JSButton::button_function_t::k_mount_center:
-			cam_tilt_goal = 1500;
+			cam_tilt_goal = g.cam_tilt_center;
 			break;
 		case JSButton::button_function_t::k_mount_tilt_up: {
 			uint8_t i;
