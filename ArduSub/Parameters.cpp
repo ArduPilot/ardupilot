@@ -517,6 +517,13 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Range: 30 400
 	GSCALAR(lights_step, "JS_LIGHTS_STEP", 100),
 
+	// @Param: JS_THR_GAIN
+	// @DisplayName: Throttle gain scalar
+	// @Description: Scalar for gain on the throttle channel
+	// @User: Standard
+	// @Range: 0.5 4.0
+	GSCALAR(throttle_gain, "JS_THR_GAIN", 1.0f),
+
 	// @Group: BTN0_
 	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
 	GGROUP(jbtn_0,                   "BTN0_", JSButton),

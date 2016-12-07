@@ -206,7 +206,7 @@ public:
         k_param_disarm_delay,
 		k_param_terrain_follow,
         k_param_rc_feel_rp,
-
+		k_param_throttle_gain,
 
 		// Acro Mode parameters
         k_param_acro_yaw_p = 220, // Used in all modes for get_pilot_desired_yaw_rate
@@ -345,6 +345,7 @@ public:
 	AP_Float				maxGain;
 	AP_Float				minGain;
 	AP_Int8					numGainSettings;
+	AP_Float				throttle_gain;
 
 	AP_Int16					cam_tilt_step;
 	AP_Int16					lights_step;
