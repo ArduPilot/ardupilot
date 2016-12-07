@@ -569,8 +569,6 @@ void Plane::handle_auto_mode(void)
         if (nav_cmd_id != MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT) {
             steer_state.hold_course_cd = -1;
         }
-        landing.complete = false;
-        landing.pre_flare = false;
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();

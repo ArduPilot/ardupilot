@@ -337,11 +337,8 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     // reset landing check
     auto_state.checked_for_autoland = false;
 
-    // reset go around command
-    landing.commanded_go_around = false;
-
-    // not in pre-flare
-    landing.pre_flare = false;
+    // reset landing
+    landing.reset();
     
     // zero locked course
     steer_state.locked_course_err = 0;

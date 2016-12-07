@@ -13,10 +13,11 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
+    landing.reset();
+
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
         // set land_complete to false to stop us zeroing the throttle
-        landing.init_start_nav_cmd();
         auto_state.sink_rate = 0;
 
         // set takeoff_complete to true so we don't add extra elevator
@@ -137,8 +138,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_LAND_START:
-        //ensure go around hasn't been set
-        landing.commanded_go_around = false;
+        // handled in landing.reset()
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:
@@ -382,7 +382,6 @@ void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 {
-    landing.commanded_go_around = false;
     set_next_WP(cmd.content.location);
 
     // configure abort altitude and pitch
@@ -397,8 +396,6 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         // If no takeoff command has ever been used, default to a conservative 10deg
         auto_state.takeoff_pitch_cd = 1000;
     }
-
-    landing.slope = 0;
 
     // zero rangefinder state, start to accumulate good samples now
     memset(&rangefinder_state, 0, sizeof(rangefinder_state));
