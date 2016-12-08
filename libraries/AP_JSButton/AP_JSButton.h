@@ -82,6 +82,11 @@ public:
 		k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
 	} button_function_t;
 
+	void set_default(button_function_t f, button_function_t sf) {
+		_function.set_default(f);
+		_sfunction.set_default(sf);
+	}
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
