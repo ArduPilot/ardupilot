@@ -26,6 +26,8 @@ namespace {
 }
 
 void Sub::init_joystick() {
+	default_js_buttons();
+
 	set_mode((control_mode_t)flight_modes[0].get(), MODE_REASON_TX_COMMAND); // Initialize flight mode
 
     if(g.numGainSettings < 1) g.numGainSettings.set_and_save(1);
@@ -405,4 +407,32 @@ void Sub::camera_tilt_smooth() {
 	channels[7] = cam_tilt;
 
 	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
+}
+
+void Sub::default_js_buttons() {
+	JSButton::button_function_t defaults[16][2] = {
+			{JSButton::button_function_t::k_none, 					JSButton::button_function_t::k_none},
+			{JSButton::button_function_t::k_mode_1, 				JSButton::button_function_t::k_none},
+			{JSButton::button_function_t::k_mode_3, 				JSButton::button_function_t::k_none},
+			{JSButton::button_function_t::k_mode_2, 				JSButton::button_function_t::k_none},
+
+			{JSButton::button_function_t::k_disarm, 				JSButton::button_function_t::k_none},
+			{JSButton::button_function_t::k_shift, 					JSButton::button_function_t::k_none},
+			{JSButton::button_function_t::k_arm, 					JSButton::button_function_t::k_none},
+			{JSButton::button_function_t::k_mount_center, 			JSButton::button_function_t::k_none},
+
+			{JSButton::button_function_t::k_input_hold_toggle, 		JSButton::button_function_t::k_none},
+			{JSButton::button_function_t::k_mount_tilt_down, 		JSButton::button_function_t::k_none},
+			{JSButton::button_function_t::k_mount_tilt_up, 			JSButton::button_function_t::k_none},
+			{JSButton::button_function_t::k_gain_inc, 				JSButton::button_function_t::k_trim_pitch_dec},
+
+			{JSButton::button_function_t::k_gain_dec, 				JSButton::button_function_t::k_trim_pitch_inc},
+			{JSButton::button_function_t::k_lights1_dimmer, 		JSButton::button_function_t::k_trim_roll_dec},
+			{JSButton::button_function_t::k_lights1_brighter, 		JSButton::button_function_t::k_trim_roll_inc},
+			{JSButton::button_function_t::k_none, 					JSButton::button_function_t::k_none},
+	};
+
+	for(int i = 0; i < 16; i++) {
+		get_button(i)->set_default(defaults[i][0], defaults[i][1]);
+	}
 }
