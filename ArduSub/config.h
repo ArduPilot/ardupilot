@@ -320,13 +320,13 @@
 //
 
 #ifndef FLIGHT_MODE_1
- # define FLIGHT_MODE_1                  STABILIZE
+ # define FLIGHT_MODE_1                  MANUAL
 #endif
 #ifndef FLIGHT_MODE_2
  # define FLIGHT_MODE_2                  STABILIZE
 #endif
 #ifndef FLIGHT_MODE_3
- # define FLIGHT_MODE_3                  STABILIZE
+ # define FLIGHT_MODE_3                  ALT_HOLD
 #endif
 #ifndef FLIGHT_MODE_4
  # define FLIGHT_MODE_4                  STABILIZE
