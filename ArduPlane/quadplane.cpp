@@ -857,7 +857,7 @@ float QuadPlane::assist_climb_rate_cms(void)
     float climb_rate;
     if (plane.auto_throttle_mode) {
         // use altitude_error_cm, spread over 10s interval
-        climb_rate = plane.altitude_error_cm / 10;
+        climb_rate = plane.altitude_error_cm / 10.0f;
     } else {
         // otherwise estimate from pilot input
         climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(float)plane.aparm.pitch_limit_max_cd);
@@ -1822,7 +1822,7 @@ void QuadPlane::check_land_complete(void)
     poscontrol.state = QPOS_LAND_COMPLETE;
     plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
     // reload target airspeed which could have been modified by the mission
-    plane.g.airspeed_cruise_cm.load();
+    plane.aparm.airspeed_cruise_cm.load();
 }
 
 /*

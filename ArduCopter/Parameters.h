@@ -569,6 +569,9 @@ public:
     AP_Proximity proximity;
 #endif
 
+    // beacon (non-GPS positioning) library
+    AP_Beacon beacon;
+
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
     

@@ -11,7 +11,7 @@ void Tracker::Log_Write_Attitude()
     targets.y = nav_status.pitch * 100.0f;
     targets.z = wrap_360_cd(nav_status.bearing * 100.0f);
     DataFlash.Log_Write_Attitude(ahrs, targets);
-    DataFlash.Log_Write_EKF(ahrs,false);
+    DataFlash.Log_Write_EKF2(ahrs,false);
     DataFlash.Log_Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE(&DataFlash);
@@ -102,7 +102,6 @@ void Tracker::log_init(void)
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
         gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
-        g.log_bitmask.set(0);
     } else if (DataFlash.NeedPrep()) {
         gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
         DataFlash.Prep();

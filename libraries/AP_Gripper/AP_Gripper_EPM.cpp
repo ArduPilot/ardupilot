@@ -54,7 +54,7 @@ void AP_Gripper_EPM::grab()
     else
 #endif
     {
-        // move the servo to the release position
+        // move the servo output to the grab position
         RC_Channel_aux::set_radio(RC_Channel_aux::k_gripper, config.grab_pwm);
     }
 }
@@ -121,3 +121,17 @@ UAVCANCommand AP_Gripper_EPM::make_uavcan_command(uint16_t command) const
     return cmd;
 }
 
+
+bool AP_Gripper_EPM::released() const
+{
+    // we assume instanteous releasing ATM:
+    return (config.state == AP_Gripper::STATE_GRABBED ||
+            config.state == AP_Gripper::STATE_GRABBING);
+}
+
+bool AP_Gripper_EPM::grabbed() const
+{
+    // we assume instanteous grabbing ATM:
+    return (config.state == AP_Gripper::STATE_GRABBED ||
+            config.state == AP_Gripper::STATE_GRABBING);
+}

@@ -26,7 +26,10 @@ ORB_DEFINE(uavcan_parameter_value, struct uavcan_parameter_value_s);
 
 param_t param_find(const char *name)
 {
+#if 0
+    // useful for driver debugging
     ::printf("PX4: param_find(%s)\n", name);
+#endif
     return PARAM_INVALID;
 }
 

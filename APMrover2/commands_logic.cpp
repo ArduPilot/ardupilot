@@ -375,7 +375,8 @@ void Rover::nav_set_yaw_speed()
         return;
     }
 
-    channel_steer->set_servo_out(steerController.get_steering_out_angle_error(guided_yaw_speed.turn_angle));
+    int32_t steering = steerController.get_steering_out_angle_error(guided_yaw_speed.turn_angle);
+    channel_steer->set_servo_out(steering);
 
     // speed param in the message gives speed as a proportion of cruise speed.
     // 0.5 would set speed to the cruise speed
@@ -383,6 +384,7 @@ void Rover::nav_set_yaw_speed()
     float target_speed = g.speed_cruise * guided_yaw_speed.target_speed * 2;
     calc_throttle(target_speed);
 
+    Log_Write_GuidedTarget(guided_mode, Vector3f(steering, 0, 0), Vector3f(target_speed, 0, 0));
     return;
 }
 

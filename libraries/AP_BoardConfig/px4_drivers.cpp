@@ -228,7 +228,7 @@ void AP_BoardConfig::px4_setup_canbus(void)
             hal.console->printf("UAVCAN: failed to start\n");
         }
         // give time for canbus drivers to register themselves
-        hal.scheduler->delay(1000);
+        hal.scheduler->delay(2000);
     }
     if (px4.can_enable >= 2) {
         if (px4_start_driver(uavcan_main, "uavcan", "start fw")) {

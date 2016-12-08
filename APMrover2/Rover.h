@@ -57,7 +57,6 @@
 #include <DataFlash/DataFlash.h>
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
-#include <stdarg.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <APM_Control/APM_Control.h>
 #include <AP_L1_Control/AP_L1_Control.h>
@@ -73,6 +72,7 @@
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <AP_Button/AP_Button.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
+#include <AP_Beacon/AP_Beacon.h>
 
 // Configuration
 #include "config.h"
@@ -389,7 +389,6 @@ private:
     // Guided
     GuidedMode guided_mode;  // stores which GUIDED mode the vehicle is in
 
-
 private:
     // private member functions
     void ahrs_update();
@@ -439,6 +438,7 @@ private:
     void Log_Write_Current();
     void Log_Write_Attitude();
     void Log_Write_RC(void);
+    void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
     void Log_Write_Home_And_Origin();
     void Log_Write_Vehicle_Startup_Messages();
@@ -546,6 +546,8 @@ private:
     void nav_set_yaw_speed();
     bool in_stationary_loiter(void);
     void set_loiter_active(const AP_Mission::Mission_Command& cmd);
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
+    void crash_check();
 
 public:
     bool print_log_menu(void);
@@ -579,6 +581,7 @@ public:
 #endif
 
     void dataflash_periodic(void);
+    void update_soft_armed();
 };
 
 #define MENU_FUNC(func) FUNCTOR_BIND(&rover, &Rover::func, int8_t, uint8_t, const Menu::arg *)

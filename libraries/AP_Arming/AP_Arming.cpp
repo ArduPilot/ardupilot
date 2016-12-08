@@ -82,7 +82,6 @@ AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &comp
     _battery(battery),
     home_is_set(home_set),
     armed(false),
-    logging_available(false),
     arming_method(NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -144,9 +143,15 @@ bool AP_Arming::logging_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        if (!logging_available) {
+        if (DataFlash_Class::instance()->logging_failed()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Logging not available");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Logging failed");
+            }
+            return false;
+        }
+        if (!DataFlash_Class::instance()->CardInserted()) {
+            if (report) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: No SD card");
             }
             return false;
         }
@@ -440,24 +445,33 @@ bool AP_Arming::board_voltage_checks(bool report)
 
 bool AP_Arming::pre_arm_checks(bool report)
 {
-    bool ret = true;
     if (armed || require == NONE) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
     }
 
-    ret &= hardware_safety_check(report);
-    ret &= barometer_checks(report);
-    ret &= ins_checks(report);
-    ret &= compass_checks(report);
-    ret &= gps_checks(report);
-    ret &= battery_checks(report);
-    ret &= logging_checks(report);
-    ret &= manual_transmitter_checks(report);
-    ret &= board_voltage_checks(report);
+    return hardware_safety_check(report)
+        &  barometer_checks(report)
+        &  ins_checks(report)
+        &  compass_checks(report)
+        &  gps_checks(report)
+        &  battery_checks(report)
+        &  logging_checks(report)
+        &  manual_transmitter_checks(report)
+        &  board_voltage_checks(report);
+}
 
-    return ret;
+bool AP_Arming::arm_checks(uint8_t method)
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_LOGGING)) {
+        if (!DataFlash_Class::instance()->logging_started()) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Arm: Logging not started");
+            return false;
+        }
+    }
+    return true;
 }
 
 //returns true if arming occurred successfully
@@ -475,7 +489,7 @@ bool AP_Arming::arm(uint8_t method)
         return true;
     }
 
-    if (pre_arm_checks(true)) {
+    if (pre_arm_checks(true) && arm_checks(method)) {
         armed = true;
         arming_method = method;
 

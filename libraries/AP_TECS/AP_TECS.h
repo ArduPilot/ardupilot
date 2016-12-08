@@ -24,12 +24,14 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <DataFlash/DataFlash.h>
+#include <AP_Landing/AP_Landing.h>
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
+    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing) :
         _ahrs(ahrs),
-        aparm(parms)
+        aparm(parms),
+        _landing(landing)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -124,6 +126,9 @@ private:
     AP_AHRS &_ahrs;
 
     const AP_Vehicle::FixedWing &aparm;
+
+    // reference to const AP_Landing to access it's params
+    const AP_Landing &_landing;
 
     // TECS tuning parameters
     AP_Float _hgtCompFiltOmega;

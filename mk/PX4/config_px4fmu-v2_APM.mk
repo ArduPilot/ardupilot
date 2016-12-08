@@ -11,5 +11,4 @@ MODULES		+= drivers/pwm_input
 MODULES         += modules/uavcan
 MODULES         += lib/mathlib
 MODULES		+= drivers/px4io
-MODULES		+= drivers/px4flow
 MODULES		+= drivers/oreoled

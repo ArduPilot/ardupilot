@@ -89,6 +89,7 @@ public:
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
         SerialProtocol_Lidar360 = 11,
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
+        SerialProtocol_Beacon = 13
     };
 
     // Constructor

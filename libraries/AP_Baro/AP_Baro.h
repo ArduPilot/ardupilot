@@ -10,7 +10,7 @@
 
 // maximum number of drivers. Note that a single driver can provide
 // multiple sensor instances
-#define BARO_MAX_DRIVERS 2
+#define BARO_MAX_DRIVERS 3
 
 class AP_Baro_Backend;
 
@@ -161,6 +161,7 @@ private:
     AP_Float                            _alt_offset;
     float                               _alt_offset_active;
     AP_Int8                             _primary_baro; // primary chosen by user
+    AP_Int8                             _ext_bus; // bus number for external barometer
     float                               _last_altitude_EAS2TAS;
     float                               _EAS2TAS;
     float                               _external_temperature;
@@ -172,4 +173,5 @@ private:
     uint32_t                            _last_notify_ms;
 
     void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
+    bool _add_backend(AP_Baro_Backend *backend);
 };

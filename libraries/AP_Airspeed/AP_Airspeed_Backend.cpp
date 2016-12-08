@@ -14,23 +14,38 @@
  */
 
 /*
- * AP_OpticalFlow_HIL.cpp - HIL emulation of optical flow sensor.
- * This is a dummy class, with the work done in setHIL()
+  backend driver class for airspeed
  */
 
+#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include "OpticalFlow.h"
+#include "AP_Airspeed.h"
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
-AP_OpticalFlow_HIL::AP_OpticalFlow_HIL(OpticalFlow &_frontend) : 
-    OpticalFlow_backend(_frontend) 
-{}
-
-void AP_OpticalFlow_HIL::init(void)
+AP_Airspeed_Backend::AP_Airspeed_Backend(AP_Airspeed &_frontend) :
+    frontend(_frontend)
 {
+    sem = hal.util->new_semaphore();
 }
 
-void AP_OpticalFlow_HIL::update(void)
+AP_Airspeed_Backend::~AP_Airspeed_Backend(void)
 {
+    delete sem;
+}
+ 
+
+int8_t AP_Airspeed_Backend::get_pin(void) const
+{
+    return frontend._pin;
+}
+
+float AP_Airspeed_Backend::get_psi_range(void) const
+{
+    return frontend._psi_range;
+}
+
+uint8_t AP_Airspeed_Backend::get_bus(void) const
+{
+    return frontend._bus;
 }

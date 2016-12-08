@@ -27,31 +27,34 @@
 #include "AP_Airspeed_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
-class AP_Airspeed_I2C : public AP_Airspeed_Backend
+class AP_Airspeed_MS4525 : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_I2C(const AP_Float &psi_range);
-    ~AP_Airspeed_I2C(void) {}
+    AP_Airspeed_MS4525(AP_Airspeed &frontend);
+    ~AP_Airspeed_MS4525(void) {}
     
     // probe and initialise the sensor
-    bool init();
+    bool init() override;
 
     // return the current differential_pressure in Pascal
-    bool get_differential_pressure(float &pressure);
+    bool get_differential_pressure(float &pressure) override;
 
     // return the current temperature in degrees C, if available
-    bool get_temperature(float &temperature);
+    bool get_temperature(float &temperature) override;
 
 private:
     void _measure();
     void _collect();
     bool _timer();
     void _voltage_correction(float &diff_press_pa, float &temperature);
-    
+
+    float _temp_sum;
+    float _press_sum;
+    uint32_t _temp_count;
+    uint32_t _press_count;
     float _temperature;
     float _pressure;
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
-    const AP_Float &_psi_range;
 };

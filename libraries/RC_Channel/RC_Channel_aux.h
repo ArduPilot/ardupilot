@@ -107,6 +107,9 @@ public:
 	// set radio_out for a function channel
 	static void set_radio(Aux_servo_function_t function, int16_t value);
 
+    // get radio_out for *first* channel matching the given function type.
+    static bool get_radio(RC_Channel_aux::Aux_servo_function_t function, int16_t &value);
+
 	// set radio_out for all channels matching the given function type, allow radio_trim to center servo
 	static void set_radio_trimmed(Aux_servo_function_t function, int16_t value);
 

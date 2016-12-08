@@ -69,7 +69,7 @@ int8_t Copter::setup_set(uint8_t argc, const Menu::arg *argv)
 
     if(argc!=3)
     {
-        cliSerial->printf("Invalid command. Usage: set <name> <value>\n");
+        cliSerial->println("Invalid command. Usage: set <name> <value>");
         return 0;
     }
 
@@ -178,7 +178,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	
     set_mask = strtol (argv[1].str, nullptr, 2);
 	if (set_mask == 0)
-		cliSerial->printf("no channels chosen");
+		cliSerial->print("no channels chosen");
     //cliSerial->printf("\n%d\n",set_mask);
     set_mask<<=1;
 	/* wait 50 ms */
@@ -224,7 +224,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	motors.armed(true);
 
 
-	cliSerial->printf("Outputs armed\n");
+	cliSerial->println("Outputs armed");
 
 
 	/* wait for user confirmation */
@@ -286,7 +286,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	/* disarm */
 	motors.armed(false);
     
-	cliSerial->printf("Outputs disarmed\n");
+	cliSerial->println("Outputs disarmed");
 
 	cliSerial->printf("%s finished\n", strEscCalib);
 
@@ -305,30 +305,30 @@ void Copter::report_batt_monitor()
     if (battery.num_instances() == 0) {
         print_enabled(false);
     } else if (!battery.has_current()) {
-        cliSerial->printf("volts");
+        cliSerial->print("volts");
     } else {
-        cliSerial->printf("volts and cur");
+        cliSerial->print("volts and cur");
     }
     print_blanks(2);
 }
 
 void Copter::report_frame()
 {
-    cliSerial->printf("Frame\n");
+    cliSerial->println("Frame");
     print_divider();
 
  #if FRAME_CONFIG == QUAD_FRAME
-    cliSerial->printf("Quad frame\n");
+    cliSerial->println("Quad frame");
  #elif FRAME_CONFIG == TRI_FRAME
-    cliSerial->printf("TRI frame\n");
+    cliSerial->println("TRI frame");
  #elif FRAME_CONFIG == HEXA_FRAME
-    cliSerial->printf("Hexa frame\n");
+    cliSerial->println("Hexa frame");
  #elif FRAME_CONFIG == Y6_FRAME
-    cliSerial->printf("Y6 frame\n");
+    cliSerial->println("Y6 frame");
  #elif FRAME_CONFIG == OCTA_FRAME
-    cliSerial->printf("Octa frame\n");
+    cliSerial->println("Octa frame");
  #elif FRAME_CONFIG == HELI_FRAME
-    cliSerial->printf("Heli frame\n");
+    cliSerial->println("Heli frame");
  #endif
 
     print_blanks(2);
@@ -336,7 +336,7 @@ void Copter::report_frame()
 
 void Copter::report_radio()
 {
-    cliSerial->printf("Radio\n");
+    cliSerial->println("Radio");
     print_divider();
     // radio
     print_radio_values();
@@ -345,7 +345,7 @@ void Copter::report_radio()
 
 void Copter::report_ins()
 {
-    cliSerial->printf("INS\n");
+    cliSerial->println("INS");
     print_divider();
 
     print_gyro_offsets();
@@ -355,7 +355,7 @@ void Copter::report_ins()
 
 void Copter::report_flight_modes()
 {
-    cliSerial->printf("Flight modes\n");
+    cliSerial->println("Flight modes");
     print_divider();
 
     for(int16_t i = 0; i < 6; i++ ) {
@@ -367,7 +367,7 @@ void Copter::report_flight_modes()
 void Copter::report_optflow()
 {
  #if OPTFLOW == ENABLED
-    cliSerial->printf("OptFlow\n");
+    cliSerial->println("OptFlow");
     print_divider();
 
     print_enabled(optflow.enabled());
@@ -398,9 +398,9 @@ void Copter::print_switch(uint8_t p, uint8_t m, bool b)
     print_flight_mode(cliSerial, m);
     cliSerial->printf(",\t\tSimple: ");
     if(b)
-        cliSerial->printf("ON\n");
+        cliSerial->println("ON");
     else
-        cliSerial->printf("OFF\n");
+        cliSerial->println("OFF");
 }
 
 void Copter::print_accel_offsets_and_scaling(void)
@@ -430,7 +430,7 @@ void Copter::print_gyro_offsets(void)
 // report_compass - displays compass information.  Also called by compassmot.pde
 void Copter::report_compass()
 {
-    cliSerial->printf("Compass\n");
+    cliSerial->println("Compass");
     print_divider();
 
     print_enabled(g.compass_enabled);
@@ -454,7 +454,7 @@ void Copter::report_compass()
     // motor compensation
     cliSerial->print("Motor Comp: ");
     if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_DISABLED ) {
-        cliSerial->print("Off\n");
+        cliSerial->println("Off");
     }else{
         if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_THROTTLE ) {
             cliSerial->print("Throttle");
@@ -497,7 +497,7 @@ void Copter::print_enabled(bool b)
         cliSerial->print("en");
     else
         cliSerial->print("dis");
-    cliSerial->print("abled\n");
+    cliSerial->println("abled");
 }
 
 void Copter::report_version()

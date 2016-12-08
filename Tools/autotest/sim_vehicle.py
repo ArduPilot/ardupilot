@@ -247,6 +247,11 @@ _options_for_frame = {
         "waf_target": "bin/arducopter-hexa",
         "default_params_filename": "default_params/copter.parm",
     },
+    "octa-quad": {
+        "make_target": "sitl-octa-quad",
+        "waf_target": "bin/arducopter-octa-quad",
+        "default_params_filename": "default_params/copter.parm",
+    },
     "octa": {
         "make_target": "sitl-octa",
         "waf_target": "bin/arducopter-octa",

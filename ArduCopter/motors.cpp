@@ -130,12 +130,20 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     }
     in_arm_motors = true;
 
+    // return true if already armed
+    if (motors.armed()) {
+        return true;
+    }
+
     // run pre-arm-checks and display failures
     if (!all_arming_checks_passing(arming_from_gcs)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;
     }
+
+    // let dataflash know that we're armed (it may open logs e.g.)
+    DataFlash_Class::instance()->set_vehicle_armed(true);
 
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
@@ -254,6 +262,7 @@ void Copter::init_disarm_motors()
     if (!DataFlash.log_while_disarmed()) {
         DataFlash.EnableWrites(false);
     }
+    DataFlash_Class::instance()->set_vehicle_armed(false);
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);

@@ -59,6 +59,9 @@ public:
     // true when motors are active
     bool motors_on;
 
+    // height above ground
+    float height_agl;
+    
     static const struct AP_Param::GroupInfo var_info[];
 
     // noise levels for simulated sensors
