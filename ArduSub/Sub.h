@@ -779,6 +779,7 @@ private:
     void handle_jsbutton_press(uint8_t button,bool shift=false,bool held=false);
     void camera_tilt_smooth();
     JSButton* get_button(uint8_t index);
+    void default_js_buttons(void);
     void set_throttle_zero_flag(int16_t throttle_control);
     void radio_passthrough_to_motors();
     void init_barometer(bool full_calibration);
