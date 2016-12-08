@@ -887,7 +887,7 @@ private:
     bool loiter_init(bool ignore_checks);
     void loiter_run();
 #if PRECISION_LANDING == ENABLED
-    bool do_precision_loiter() const;
+    bool do_precision_loiter();
     void precision_loiter_xy();
     void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
     bool _precision_loiter_enabled;

@@ -36,7 +36,7 @@ bool Copter::loiter_init(bool ignore_checks)
 }
 
 #if PRECISION_LANDING == ENABLED
-bool Copter::do_precision_loiter() const
+bool Copter::do_precision_loiter()
 {
     if (!_precision_loiter_enabled) {
         return false;
