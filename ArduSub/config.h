@@ -555,13 +555,13 @@
  # define ACCEL_Z_P     0.50f
 #endif
 #ifndef ACCEL_Z_I
- # define ACCEL_Z_I     1.00f
+ # define ACCEL_Z_I     0.0f
 #endif
 #ifndef ACCEL_Z_D
  # define ACCEL_Z_D     0.0f
 #endif
 #ifndef ACCEL_Z_IMAX
- # define ACCEL_Z_IMAX  800
+ # define ACCEL_Z_IMAX  0
 #endif
 #ifndef ACCEL_Z_FILT_HZ
  # define ACCEL_Z_FILT_HZ   20.0f
@@ -569,10 +569,10 @@
 
 // default maximum vertical velocity and acceleration the pilot may request
 #ifndef PILOT_VELZ_MAX
- # define PILOT_VELZ_MAX    50     // maximum vertical velocity in cm/s
+ # define PILOT_VELZ_MAX    500     // maximum vertical velocity in cm/s
 #endif
 #ifndef PILOT_ACCEL_Z_DEFAULT
- # define PILOT_ACCEL_Z_DEFAULT 50 // vertical acceleration in cm/s/s while altitude is under pilot control
+ # define PILOT_ACCEL_Z_DEFAULT 100 // vertical acceleration in cm/s/s while altitude is under pilot control
 #endif
 
 // max distance in cm above or below current location that will be used for the alt target when transitioning to alt-hold mode
