@@ -135,17 +135,24 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     setvbuf(stderr, (char *)0, _IONBF, 0);
 
     _synthetic_clock_mode = false;
-    _base_port = 5760;
-    _rcout_port = 5502;
-    _rcin_port = 5501;
-    _fg_view_port = 5503;
+    const int BASE_PORT = 5760;
+    const int RCOUT_PORT = 5502;
+    const int RCIN_PORT = 5501;
+    const int FG_VIEW_PORT = 5503;
+    const int GAZEBO_IN_PORT = 9003;
+    const int GAZEBO_OUT_PORT = 9002;
+    const int IRLOCK_PORT = 9005;
+    _base_port = BASE_PORT;
+    _rcout_port = RCOUT_PORT;
+    _rcin_port = RCIN_PORT;
+    _fg_view_port = FG_VIEW_PORT;
     _fdm_address = "127.0.0.1";
     _client_address = nullptr;
     _use_fg_view = true;
     _gazebo_address = "127.0.0.1";
-    _gazebo_port_in = 9003;
-    _gazebo_port_out = 9002;
-    _irlock_port = 9005;
+    _gazebo_port_in = GAZEBO_IN_PORT;
+    _gazebo_port_out = GAZEBO_OUT_PORT;
+    _irlock_port = IRLOCK_PORT;
     _instance = 0;
 
     enum long_options {
@@ -192,12 +199,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
-        {"gazebo-address",  true,  0, CMDLINE_GAZEBO_ADDRESS},
-        {"gazebo-port-in",  true,  0, CMDLINE_GAZEBO_PORT_IN},
-        {"gazebo-port-out", true,  0, CMDLINE_GAZEBO_PORT_OUT},
-        {"base-port",       true,  0, CMDLINE_BASE_PORT},
-        {"irlock-port",     true,  0, CMDLINE_IRLOCK_PORT},
-        {"rc-in-port",       true,  0, CMDLINE_RCIN_PORT},
+        {"gazebo-address",  true,   0, CMDLINE_GAZEBO_ADDRESS},
+        {"gazebo-port-in",  true,   0, CMDLINE_GAZEBO_PORT_IN},
+        {"gazebo-port-out", true,   0, CMDLINE_GAZEBO_PORT_OUT},
+        {"base-port",       true,   0, CMDLINE_BASE_PORT},
+        {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
+        {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
         {0, false, 0, 0}
     };
 
@@ -221,13 +228,27 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 'I': {
             _instance = atoi(gopt.optarg);
-            _base_port  += _instance * 10;
-            _rcout_port += _instance * 10;
-            _rcin_port  += _instance * 10;
-            _fg_view_port += _instance * 10;
-            _gazebo_port_in += _instance * 10;
-            _gazebo_port_out += _instance * 10;
-            _irlock_port += _instance * 10;
+            if (_base_port == BASE_PORT) {
+                _base_port += _instance * 10;
+            }
+            if (_rcout_port == RCOUT_PORT) {
+                _rcout_port += _instance * 10;
+            }
+            if (_rcin_port == RCIN_PORT) {
+                _rcin_port += _instance * 10;
+            }
+            if (_fg_view_port == FG_VIEW_PORT) {
+                _fg_view_port += _instance * 10;
+            }
+            if (_gazebo_port_in == GAZEBO_IN_PORT) {
+                _gazebo_port_in += _instance * 10;
+            }
+            if (_gazebo_port_out == GAZEBO_OUT_PORT) {
+                _gazebo_port_out += _instance * 10;
+            }
+            if (_irlock_port == IRLOCK_PORT) {
+                _irlock_port += _instance * 10;
+            }
         }
         break;
         case 'P':
