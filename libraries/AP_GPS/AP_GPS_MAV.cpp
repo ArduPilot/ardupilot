@@ -130,13 +130,15 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
             }
             Vector3f vel(packet.vn/100.0f, packet.ve/100.0f, packet.vd/100.0f);
             state.velocity = vel;
-            if (packet.cog < 65535) {
+            if (packet.cog < 36000) {
                 state.ground_course = packet.cog / 100.0f;
             }
             state.have_speed_accuracy = 0;
             state.have_horizontal_accuracy = 0;
             state.have_vertical_accuracy = 0;
-            state.num_sats = packet.satellites_visible;
+            if (packet.satellites_visible < 255) {
+                state.num_sats = packet.satellites_visible;
+            }
             state.last_gps_time_ms = AP_HAL::millis();
             _new_data = true;
             break;
