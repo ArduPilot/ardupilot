@@ -713,7 +713,7 @@ void NavEKF2_core::selectHeightForFusion()
             // used as a height reference in combination with a range finder
             // apply a hysteresis to the speed check to prevent rapid switching
             float horizSpeed = norm(stateStruct.velocity.x, stateStruct.velocity.y);
-            bool dontTrustTerrain = (horizSpeed > frontend->_useRngSwSpd) || !terrainHgtStable;
+            bool dontTrustTerrain = ((horizSpeed > frontend->_useRngSwSpd) && filterStatus.flags.horiz_vel) || !terrainHgtStable;
             float trust_spd_trigger = MAX((frontend->_useRngSwSpd - 1.0f),(frontend->_useRngSwSpd * 0.5f));
             bool trustTerrain = (horizSpeed < trust_spd_trigger) && terrainHgtStable;
 
