@@ -1,7 +1,7 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
 Copter 3.4.3 08-Dec-2016 / Copter 3.4.3-rc1 01-Dec-2016
-Changes from 3.4.1
+Changes from 3.4.2
 1) Bug Fixes:
     a) reduce unnecessary EKF core switching and fix position reset
     b) attitude control does not limit rate if ATC_ACCEL_MAX is zero
