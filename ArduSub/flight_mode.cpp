@@ -15,7 +15,7 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 {
     // boolean to record if flight mode could be set
     bool success = false;
-    bool ignore_checks = !motors.armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
+    bool ignore_checks = false; // Always check for now
 
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {

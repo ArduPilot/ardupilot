@@ -10,10 +10,10 @@
 // poshold_init - initialise PosHold controller
 bool Sub::poshold_init(bool ignore_checks)
 {
-    // fail to initialise PosHold mode if no GPS lock
-//    if (!position_ok() && !ignore_checks) {
-//        return false;
-//    }
+	// fail to initialise PosHold mode if no GPS lock
+    if (!position_ok() && !ignore_checks) {
+        return false;
+    }
 
     // initialize vertical speeds and acceleration
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);

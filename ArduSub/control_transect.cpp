@@ -27,9 +27,9 @@ namespace {
 bool Sub::transect_init(bool ignore_checks)
 {
     // fail to initialise transect mode if no GPS lock
-//    if (!position_ok() && !ignore_checks) {
-//        return false;
-//    }
+    if (!position_ok() && !ignore_checks) {
+        return false;
+    }
 
     pos_control.init_xy_controller();
 
