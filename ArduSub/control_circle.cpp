@@ -9,23 +9,25 @@
 // circle_init - initialise circle controller flight mode
 bool Sub::circle_init(bool ignore_checks)
 {
-    if (position_ok() || ignore_checks) {
-        circle_pilot_yaw_override = false;
+	return false; // Not implemented
 
-        // initialize speeds and accelerations
-        pos_control.set_speed_xy(wp_nav.get_speed_xy());
-        pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
-        pos_control.set_jerk_xy_to_default();
-        pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-        pos_control.set_accel_z(g.pilot_accel_z);
-
-        // initialise circle controller including setting the circle center based on vehicle speed
-        circle_nav.init();
-
-        return true;
-    }else{
-        return false;
-    }
+//    if (position_ok() || ignore_checks) {
+//        circle_pilot_yaw_override = false;
+//
+//        // initialize speeds and accelerations
+//        pos_control.set_speed_xy(wp_nav.get_speed_xy());
+//        pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
+//        pos_control.set_jerk_xy_to_default();
+//        pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+//        pos_control.set_accel_z(g.pilot_accel_z);
+//
+//        // initialise circle controller including setting the circle center based on vehicle speed
+//        circle_nav.init();
+//
+//        return true;
+//    }else{
+//        return false;
+//    }
 }
 
 // circle_run - runs the circle flight mode

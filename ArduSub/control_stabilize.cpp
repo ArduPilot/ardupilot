@@ -13,7 +13,6 @@ bool Sub::stabilize_init(bool ignore_checks)
     pos_control.set_alt_target(0);
     last_pilot_heading = ahrs.yaw_sensor;
 
-
     return true;
 }
 
