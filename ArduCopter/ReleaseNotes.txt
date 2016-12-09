@@ -7,6 +7,7 @@ Changes from 3.4.2
     b) attitude control does not limit rate if ATC_ACCEL_MAX is zero
     c) ignore arm command from GCS if already armed
     d) set land-complete to false during auto takeoff 
+    e) onboard compass calibration memory init fix that could lead to failure to complete
 2) Minor Improvements:
     a) LeddarOne driver robustness improvements
     b) allow MOT_THR_MIX_MAX to be as high as 2.0
