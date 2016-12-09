@@ -38,15 +38,17 @@ struct Guided_Limit {
 // guided_init - initialise guided controller
 bool Sub::guided_init(bool ignore_checks)
 {
-    if (position_ok() || ignore_checks) {
-        // initialise yaw
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-        // start in position control mode
-        guided_pos_control_start();
-        return true;
-    }else{
-        return false;
-    }
+	return false; // Not implemented
+
+//    if (position_ok() || ignore_checks) {
+//        // initialise yaw
+//        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+//        // start in position control mode
+//        guided_pos_control_start();
+//        return true;
+//    }else{
+//        return false;
+//    }
 }
 
 
