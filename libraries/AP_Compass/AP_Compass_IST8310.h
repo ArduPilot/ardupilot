@@ -38,20 +38,17 @@ public:
 
 private:
     AP_Compass_IST8310(Compass &compass,
-                        AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                        enum Rotation rotation);
+                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                       enum Rotation rotation);
 
     bool timer();
     bool init();
-    bool check_id();
-    bool setup_sampling();
     void start_conversion();
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
-    Vector3f mag_accum = Vector3f();
-    uint32_t accum_count = 0;
-    uint8_t compass_instance;
-    enum Rotation rotation;
-
+    Vector3f _accum = Vector3f();
+    uint32_t _accum_count = 0;
+    enum Rotation _rotation;
+    uint8_t _instance;
 };

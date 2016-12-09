@@ -16,14 +16,12 @@
  *
  * Driver by Georgii Staroselskii, Sep 2016
  */
-
 #include "AP_Compass_IST8310.h"
 
-#include <AP_HAL/AP_HAL.h>
-
-#include <utility>
 #include <stdio.h>
+#include <utility>
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
 
@@ -47,10 +45,13 @@
 extern const AP_HAL::HAL &hal;
 
 AP_Compass_Backend *AP_Compass_IST8310::probe(Compass &compass,
-                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                             enum Rotation rotation
-                                             )
+                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                              enum Rotation rotation)
 {
+    if (!dev) {
+        return nullptr;
+    }
+
     AP_Compass_IST8310 *sensor = new AP_Compass_IST8310(compass, std::move(dev), rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
@@ -61,76 +62,62 @@ AP_Compass_Backend *AP_Compass_IST8310::probe(Compass &compass,
 }
 
 AP_Compass_IST8310::AP_Compass_IST8310(Compass &compass,
-                                     AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                     enum Rotation _rotation)
+                                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                       enum Rotation rotation)
     : AP_Compass_Backend(compass)
     , _dev(std::move(dev))
-    , rotation(_rotation)
+    , _rotation(rotation)
 {
 }
 
 bool AP_Compass_IST8310::init()
 {
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.console->printf("IST8310: Unable to get bus semaphore\n");
-        goto fail_sem;
+        return false;
     }
 
-    if (!check_id()) {
-        hal.console->printf("IST8310: Not a IST device\n");
+    // high retries for init
+    _dev->set_retries(10);
+
+    uint8_t whoami;
+    if (!_dev->read_registers(WAI_REG, &whoami, 1) ||
+        whoami != DEVICE_ID) {
+        // not an IST8310
         goto fail;
     }
 
-    if (!setup_sampling()) {
+    if (!_dev->write_register(AVGCNTL_REG, AVERAGING_Y_BY_2 | AVERAGING_XZ_BY_4) ||
+        !_dev->write_register(PDCNTL_REG, NORMAL_PULSE_DURATION)) {
+        fprintf(stderr, "IST8310: found device but could not set it up\n");
         goto fail;
     }
 
+    // lower retries for run
+    _dev->set_retries(3);
+
+    // start state machine: request a sample
     start_conversion();
 
     _dev->get_semaphore()->give();
 
-    printf("%s found on bus %u address 0x%02x\n", name, _dev->bus_num(), _dev->get_bus_address());
+    _instance = register_compass();
 
-    compass_instance = register_compass();
+    printf("%s found on bus %u id %u address 0x%02x\n", name,
+           _dev->bus_num(), _dev->get_bus_id(), _dev->get_bus_address());
 
-    hal.console->printf("Found a IST8310 on 0x%x as compass %u\n", _dev->get_bus_id(), compass_instance);
+    set_rotation(_instance, _rotation);
 
-    set_rotation(compass_instance, rotation);
-
-    /* register the compass instance in the frontend */
     _dev->set_device_type(DEVTYPE_IST8310);
-    set_dev_id(compass_instance, _dev->get_bus_id());
+    set_dev_id(_instance, _dev->get_bus_id());
 
-    _dev->register_periodic_callback(10 * USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Compass_IST8310::timer, bool));
+    _dev->register_periodic_callback(10 * USEC_PER_MSEC,
+                                     FUNCTOR_BIND_MEMBER(&AP_Compass_IST8310::timer, bool));
 
     return true;
 
 fail:
     _dev->get_semaphore()->give();
-fail_sem:
     return false;
-}
-
-bool AP_Compass_IST8310::check_id()
-{
-    uint8_t val = 0;
-
-    if (!_dev->read_registers(WAI_REG, &val, 1)) {
-        return false;
-    }
-
-    if (val != DEVICE_ID) {
-        return false;
-    }
-
-    return true;
-}
-
-bool AP_Compass_IST8310::setup_sampling()
-{
-    bool ret = _dev->write_register(AVGCNTL_REG, AVERAGING_Y_BY_2 | AVERAGING_XZ_BY_4);
-
-    return ret && _dev->write_register(PDCNTL_REG, NORMAL_PULSE_DURATION);
 }
 
 void AP_Compass_IST8310::start_conversion()
@@ -153,9 +140,9 @@ bool AP_Compass_IST8310::timer()
 
 
     ret = _dev->read_registers(STAT1_REG, (uint8_t *) &buffer, sizeof(buffer));
-
     if (!ret) {
-        return true; /* We're going to be back on the next iteration either way */
+        /* We're going to be back on the next iteration either way */
+        return true;
     }
 
     auto status = buffer.status;
@@ -173,22 +160,19 @@ bool AP_Compass_IST8310::timer()
     Vector3f field = Vector3f{x * 3.0f, y * 3.0f, z * 3.0f};
 
     /* rotate raw_field from sensor frame to body frame */
-    rotate_field(field, compass_instance);
-
-    const auto now = AP_HAL::micros();
+    rotate_field(field, _instance);
 
     /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, now, compass_instance);
+    publish_raw_field(field, AP_HAL::micros(), _instance);
 
     /* correct raw_field for known errors */
-    correct_field(field, compass_instance);
+    correct_field(field, _instance);
 
     if (_sem->take(0)) {
-        mag_accum += field;
-        accum_count++;
+        _accum += field;
+        _accum_count++;
         _sem->give();
     }
-
 
     start_conversion();
 
@@ -201,18 +185,18 @@ void AP_Compass_IST8310::read()
         return;
     }
 
-    if (accum_count == 0) {
+    if (_accum_count == 0) {
         _sem->give();
         return;
     }
 
-    Vector3f field(mag_accum);
-    field /= accum_count;
-    mag_accum.zero();
-    accum_count = 0;
+    Vector3f field(_accum);
+    field /= _accum_count;
+
+    publish_filtered_field(field, _instance);
+
+    _accum.zero();
+    _accum_count = 0;
 
     _sem->give();
-
-    publish_filtered_field(field, compass_instance);
-
 }
