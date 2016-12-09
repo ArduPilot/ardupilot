@@ -542,12 +542,12 @@
 #endif
 
 #ifndef ALT_HOLD_P
- # define ALT_HOLD_P            1.0f
+ # define ALT_HOLD_P            3.0f
 #endif
 
 // Velocity (vertical) control gains
 #ifndef VEL_Z_P
- # define VEL_Z_P       5.0f
+ # define VEL_Z_P       8.0f
 #endif
 
 // Accel (vertical) control gains
@@ -555,13 +555,13 @@
  # define ACCEL_Z_P     0.50f
 #endif
 #ifndef ACCEL_Z_I
- # define ACCEL_Z_I     0.0f
+ # define ACCEL_Z_I     0.1f
 #endif
 #ifndef ACCEL_Z_D
  # define ACCEL_Z_D     0.0f
 #endif
 #ifndef ACCEL_Z_IMAX
- # define ACCEL_Z_IMAX  0
+ # define ACCEL_Z_IMAX  100
 #endif
 #ifndef ACCEL_Z_FILT_HZ
  # define ACCEL_Z_FILT_HZ   20.0f
