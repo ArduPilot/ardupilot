@@ -62,6 +62,9 @@ public:
     /* See Device::adjust_periodic_callback() */
     virtual bool adjust_periodic_callback(
         Device::PeriodicHandle h, uint32_t period_usec) override = 0;
+
+    /* force I2C transfers to be split between send and receive */
+    virtual void set_split_transfers(bool set) {};    
 };
 
 class I2CDeviceManager {
