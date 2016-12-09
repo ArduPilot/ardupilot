@@ -164,48 +164,50 @@ static float    tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, tune_yaw_accel;
 // autotune_init - should be called when autotune mode is selected
 bool Copter::autotune_init(bool ignore_checks)
 {
-    bool success = true;
+	return false; // Not implemented
 
-    switch (autotune_state.mode) {
-        case AUTOTUNE_MODE_FAILED:
-        // autotune has been run but failed so reset state to uninitialized
-            autotune_state.mode = AUTOTUNE_MODE_UNINITIALISED;
-            // no break to allow fall through to restart the tuning
-
-        case AUTOTUNE_MODE_UNINITIALISED:
-            // autotune has never been run
-            success = autotune_start(false);
-            if (success) {
-                // so store current gains as original gains
-                autotune_backup_gains_and_initialise();
-                // advance mode to tuning
-                autotune_state.mode = AUTOTUNE_MODE_TUNING;
-                // send message to ground station that we've started tuning
-                autotune_update_gcs(AUTOTUNE_MESSAGE_STARTED);
-            }
-            break;
-
-        case AUTOTUNE_MODE_TUNING:
-            // we are restarting tuning after the user must have switched ch7/ch8 off so we restart tuning where we left off
-            success = autotune_start(false);
-            if (success) {
-                // reset gains to tuning-start gains (i.e. low I term)
-                autotune_load_intra_test_gains();
-                // write dataflash log even and send message to ground station
-                Log_Write_Event(DATA_AUTOTUNE_RESTART);
-                autotune_update_gcs(AUTOTUNE_MESSAGE_STARTED);
-            }
-            break;
-
-        case AUTOTUNE_MODE_SUCCESS:
-            // we have completed a tune and the pilot wishes to test the new gains in the current flight mode
-            // so simply apply tuning gains (i.e. do not change flight mode)
-            autotune_load_tuned_gains();
-            Log_Write_Event(DATA_AUTOTUNE_PILOT_TESTING);
-            break;
-    }
-
-    return success;
+//    bool success = true;
+//
+//    switch (autotune_state.mode) {
+//        case AUTOTUNE_MODE_FAILED:
+//        // autotune has been run but failed so reset state to uninitialized
+//            autotune_state.mode = AUTOTUNE_MODE_UNINITIALISED;
+//            // no break to allow fall through to restart the tuning
+//
+//        case AUTOTUNE_MODE_UNINITIALISED:
+//            // autotune has never been run
+//            success = autotune_start(false);
+//            if (success) {
+//                // so store current gains as original gains
+//                autotune_backup_gains_and_initialise();
+//                // advance mode to tuning
+//                autotune_state.mode = AUTOTUNE_MODE_TUNING;
+//                // send message to ground station that we've started tuning
+//                autotune_update_gcs(AUTOTUNE_MESSAGE_STARTED);
+//            }
+//            break;
+//
+//        case AUTOTUNE_MODE_TUNING:
+//            // we are restarting tuning after the user must have switched ch7/ch8 off so we restart tuning where we left off
+//            success = autotune_start(false);
+//            if (success) {
+//                // reset gains to tuning-start gains (i.e. low I term)
+//                autotune_load_intra_test_gains();
+//                // write dataflash log even and send message to ground station
+//                Log_Write_Event(DATA_AUTOTUNE_RESTART);
+//                autotune_update_gcs(AUTOTUNE_MESSAGE_STARTED);
+//            }
+//            break;
+//
+//        case AUTOTUNE_MODE_SUCCESS:
+//            // we have completed a tune and the pilot wishes to test the new gains in the current flight mode
+//            // so simply apply tuning gains (i.e. do not change flight mode)
+//            autotune_load_tuned_gains();
+//            Log_Write_Event(DATA_AUTOTUNE_PILOT_TESTING);
+//            break;
+//    }
+//
+//    return success;
 }
 
 // autotune_stop - should be called when the ch7/ch8 switch is switched OFF
