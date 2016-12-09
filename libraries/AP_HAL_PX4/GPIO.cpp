@@ -270,15 +270,15 @@ void PX4GPIO::toggle(uint8_t pin)
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V4
         case HAL_GPIO_A_LED_PIN:    // Arming LED
-                ioctl(_led_fd, LED_TOGGLE, LED_RED);
+            ioctl(_led_fd, LED_TOGGLE, LED_RED);
             break;
 
         case HAL_GPIO_B_LED_PIN:    // not used yet
-                ioctl(_led_fd, LED_TOGGLE, LED_GREEN);
+            ioctl(_led_fd, LED_TOGGLE, LED_GREEN);
             break;
 
         case HAL_GPIO_C_LED_PIN:    // GPS LED
-                ioctl(_led_fd, LED_TOGGLE, LED_BLUE);
+            ioctl(_led_fd, LED_TOGGLE, LED_BLUE);
             break;
 #endif
         default:
