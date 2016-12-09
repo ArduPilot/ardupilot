@@ -106,7 +106,7 @@ uint8_t AP_Compass_Backend::register_compass(void) const
 */
 void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 {
-    _compass._state[instance].dev_id.set(dev_id);
+    _compass._state[instance].dev_id.set_and_notify(dev_id);
 }
 
 /*
@@ -115,7 +115,7 @@ void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 void AP_Compass_Backend::set_external(uint8_t instance, bool external)
 {
     if (_compass._state[instance].external != 2) {
-        _compass._state[instance].external.set(external);
+        _compass._state[instance].external.set_and_notify(external);
     }
 }
 
