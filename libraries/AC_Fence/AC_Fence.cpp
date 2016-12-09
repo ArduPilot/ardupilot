@@ -401,13 +401,12 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
     // check if we need to create array
     if (!_boundary_create_attempted) {
         _boundary = (Vector2f *)_poly_loader.create_point_array(sizeof(Vector2f));
-
-        // exit if we could not allocate RAM for the boundary
-        if (_boundary == nullptr) {
-            return false;
-        }
-
         _boundary_create_attempted = true;
+    }
+
+    // exit if we could not allocate RAM for the boundary
+    if (_boundary == nullptr) {
+        return false;
     }
 
     // get current location from EKF
