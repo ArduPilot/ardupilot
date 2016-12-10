@@ -169,3 +169,7 @@
 #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
 #endif
 
+#ifndef HAL_WITH_UAVCAN
+#define HAL_WITH_UAVCAN 0
+#endif
+
