@@ -468,6 +468,12 @@ class px4_v2(px4):
         super(px4_v2, self).__init__()
         self.version = '2'
 
+class px4_v3(px4):
+    name = 'px4-v3'
+    def __init__(self):
+        super(px4_v3, self).__init__()
+        self.version = '3'
+
 class px4_v4(px4):
     name = 'px4-v4'
     def __init__(self):

@@ -230,6 +230,8 @@ def configure(cfg):
 
     if env.PX4_VERSION == '1':
         bootloader_name = 'px4fmu_bl.bin'
+    elif env.PX4_VERSION in ['2','3']:
+        bootloader_name = 'px4fmuv2_bl.bin'
     else:
         bootloader_name = 'px4fmuv%s_bl.bin' % env.get_flat('PX4_VERSION')
 
