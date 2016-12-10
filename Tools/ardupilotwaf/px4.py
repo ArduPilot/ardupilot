@@ -211,6 +211,11 @@ def _process_romfs(self):
             src = bld.srcnode.make_node(item[0])
             dst = romfs_bld.make_node(item[1])
 
+        bname = os.path.basename(str(src))
+        if bname in bld.env.ROMFS_EXCLUDE:
+            print("Excluding %s" % bname)
+            continue
+
         dst.parent.mkdir()
         self.create_task('px4_copy', src, dst)
 
