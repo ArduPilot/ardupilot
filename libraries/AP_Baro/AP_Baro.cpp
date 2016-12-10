@@ -89,14 +89,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @DisplayName: Base Pressure (For water depth measurement)
     // @Description: Base diving pressure. This is the ambient air pressure at launch site, and is persistent between boots.
     // @Units: pascals
-    AP_GROUPINFO("BASE_PRESS", 8, AP_Baro, _base_pressure, 0.0),
+    AP_GROUPINFO("BASE_PRESS", 8, AP_Baro, _base_pressure, 101325),
 
     // @Param: BASE_RESET
     // @DisplayName: Reset Base Pressure (For water depth measurement)
     // @Description: Set to 1 (reset) to reset base pressure on next boot
     // @Values: 0:Keep, 1:Reset
 	// @RebootRequired: True
-    AP_GROUPINFO("BASE_RESET", 9, AP_Baro, _reset_base_pressure, 1),
+    AP_GROUPINFO("BASE_RESET", 9, AP_Baro, _reset_base_pressure, 0),
 
     AP_GROUPEND
 };
