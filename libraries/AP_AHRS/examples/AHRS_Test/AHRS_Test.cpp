@@ -21,10 +21,10 @@ AP_SerialManager serial_manager;
 class DummyVehicle {
 public:
     RangeFinder sonar {serial_manager};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF, EKF2,
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF2, EKF3,
                         AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
-    NavEKF EKF{&ahrs, barometer, sonar};
     NavEKF2 EKF2{&ahrs, barometer, sonar};
+    NavEKF3 EKF3{&ahrs, barometer, sonar};
 };
 
 static DummyVehicle vehicle;
