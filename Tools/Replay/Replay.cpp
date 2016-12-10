@@ -90,7 +90,6 @@ void ReplayVehicle::load_parameters(void)
     if (!AP_Param::check_var_info()) {
         AP_HAL::panic("Bad parameter table");
     }
-    AP_Param::set_default_by_name("EKF_ENABLE", 1);
     AP_Param::set_default_by_name("EK2_ENABLE", 1);
     AP_Param::set_default_by_name("EK2_IMU_MASK", 1);
     AP_Param::set_default_by_name("EK3_ENABLE", 1);
