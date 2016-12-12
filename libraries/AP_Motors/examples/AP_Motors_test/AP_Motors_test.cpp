@@ -48,11 +48,7 @@ RC_Channel rc7(6), rsc(8), h1(0), h2(1), h3(2), h4(3);
 
 // uncomment the row below depending upon what frame you are using
 //AP_MotorsTri	motors(400);
-AP_MotorsQuad   motors(400);
-//AP_MotorsHexa	motors(400);
-//AP_MotorsY6	motors(400);
-//AP_MotorsOcta	motors(400);
-//AP_MotorsOctaQuad	motors(400);
+AP_MotorsMatrix   motors(400);
 //AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
 //AP_MotorsSingle motors(400);
 //AP_MotorsCoax motors(400);
@@ -64,11 +60,11 @@ void setup()
 
     // motor initialisation
     motors.set_update_rate(490);
-    motors.set_frame_orientation(AP_MOTORS_X_FRAME);
+    motors.set_frame_class_and_type(AP_Motors::MOTOR_FRAME_QUAD, AP_Motors::MOTOR_FRAME_TYPE_X);
     motors.Init();
 #if HELI_TEST == 0
     motors.set_throttle_range(1000,2000);
-    motors.set_hover_throttle(500);
+    motors.set_throttle_avg_max(0.5f);
 #endif
     motors.enable();
     motors.output_min();
