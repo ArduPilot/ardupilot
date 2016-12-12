@@ -548,7 +548,8 @@ NavEKF3::NavEKF3(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gndEffectTimeout_ms(1000),      // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
     gndGradientSigma(50),           // RMS terrain gradient percentage assumed by the terrain height estimation
-    fusionTimeStep_ms(10)           // The minimum number of msec between covariance prediction and fusion operations
+    fusionTimeStep_ms(10),          // The minimum number of msec between covariance prediction and fusion operations
+    runCoreSelection(false)         // true when the default primary core has stabilised after startup and core selection can run
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -683,8 +684,17 @@ void NavEKF3::UpdateFilter(void)
     }
 
     // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
+    // Don't start running the check until the primary core has started returned healthy for at least 10 seconds to avoid switching
+    // due to initial alignment fluctuations and race conditions
+    if (!runCoreSelection) {
+        static uint64_t lastUnhealthyTime_us = 0;
+        if (!core[primary].healthy() || lastUnhealthyTime_us == 0) {
+            lastUnhealthyTime_us = imuSampleTime_us;
+        }
+        runCoreSelection = (imuSampleTime_us - lastUnhealthyTime_us) > 1E7;
+    }
     float primaryErrorScore = core[primary].errorScore();
-    if (primaryErrorScore > 1.0f || !core[primary].healthy()) {
+    if ((primaryErrorScore > 1.0f || !core[primary].healthy()) && runCoreSelection) {
         float lowestErrorScore = 0.67f * primaryErrorScore;
         uint8_t newPrimaryIndex = primary; // index for new primary
         for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
