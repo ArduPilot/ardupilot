@@ -423,6 +423,8 @@ private:
         float core_delta;             // the amount of D position change between cores when a change happened
     } pos_down_reset_data;
 
+    bool runCoreSelection; // true when the primary core has stabilised and the core selection logic can be started
+
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
