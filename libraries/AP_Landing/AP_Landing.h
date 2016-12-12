@@ -91,7 +91,9 @@ public:
     int8_t get_flap_percent(void) const { return flap_percent; }
     int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
     bool is_commanded_go_around(void) const { return commanded_go_around; }
+    bool is_complete(void) const { return complete; }
     void set_initial_slope() { initial_slope = slope; }
+
 
 
     // Flag to indicate if we have landed.
