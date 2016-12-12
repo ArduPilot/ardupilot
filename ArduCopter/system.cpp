@@ -157,8 +157,10 @@ void Copter::init_ardupilot()
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
-    frsky_telemetry.init(serial_manager, FIRMWARE_STRING " " FRAME_CONFIG_STRING,
-                         FRAME_MAV_TYPE,
+    char firmware_buf[40];
+    sprintf(firmware_buf, FIRMWARE_STRING " %s", get_frame_string());
+    frsky_telemetry.init(serial_manager, firmware_buf,
+                         get_frame_mav_type(),
                          &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value);
 #endif
 
@@ -457,3 +459,59 @@ bool Copter::should_log(uint32_t mask)
     return false;
 #endif
 }
+
+// return MAV_TYPE corresponding to frame class
+uint8_t Copter::get_frame_mav_type()
+{
+    switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
+        case AP_Motors::MOTOR_FRAME_QUAD:
+            return MAV_TYPE_QUADROTOR;
+        case AP_Motors::MOTOR_FRAME_HEXA:
+        case AP_Motors::MOTOR_FRAME_Y6:
+            return MAV_TYPE_HEXAROTOR;
+        case AP_Motors::MOTOR_FRAME_OCTA:
+        case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+            return MAV_TYPE_OCTOROTOR;
+        case AP_Motors::MOTOR_FRAME_HELI:
+            return MAV_TYPE_HELICOPTER;
+        case AP_Motors::MOTOR_FRAME_TRI:
+            return MAV_TYPE_TRICOPTER;
+        case AP_Motors::MOTOR_FRAME_SINGLE:
+        case AP_Motors::MOTOR_FRAME_COAX:
+            return MAV_TYPE_COAXIAL;
+        case AP_Motors::MOTOR_FRAME_UNDEFINED:
+        default:
+            return MAV_TYPE_GENERIC;
+    }
+    // we should never get this far
+    return MAV_TYPE_GENERIC;
+}
+
+// return string corresponding to frame_class
+const char* Copter::get_frame_string()
+{
+    switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
+        case AP_Motors::MOTOR_FRAME_QUAD:
+            return "QUAD";
+        case AP_Motors::MOTOR_FRAME_HEXA:
+            return "HEXA";
+        case AP_Motors::MOTOR_FRAME_Y6:
+            return "Y6";
+        case AP_Motors::MOTOR_FRAME_OCTA:
+            return "OCTA";
+        case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+            return "OCTA_QUAD";
+        case AP_Motors::MOTOR_FRAME_HELI:
+            return "HELI";
+        case AP_Motors::MOTOR_FRAME_TRI:
+            return "TRI";
+        case AP_Motors::MOTOR_FRAME_SINGLE:
+            return "SINGLE";
+        case AP_Motors::MOTOR_FRAME_COAX:
+            return "COAX";
+        case AP_Motors::MOTOR_FRAME_UNDEFINED:
+        default:
+            return "UNKNOWN";
+    }
+}
+

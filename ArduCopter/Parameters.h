@@ -586,6 +586,9 @@ public:
     // acro exponent parameters
     AP_Float acro_y_expo;
     AP_Float acro_thr_mid;
+
+    // frame class
+    AP_Int8 frame_class;
 };
 
 extern const AP_Param::Info        var_info[];
