@@ -828,7 +828,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(rally,      "RALLY_",   AP_Rally_Copter),
 #endif
 
-#if FRAME_CONFIG ==     HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
     // @Group: H_
     // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp
     GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
