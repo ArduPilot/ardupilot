@@ -555,13 +555,12 @@ void Plane::handle_auto_mode(void)
             // during final approach constrain roll to the range
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
-        }
-        calc_throttle();
-        
-        if (landing.complete) {
+
             // we are in the final stage of a landing - force
             // zero throttle
             channel_throttle->set_servo_out(0);
+        } else {
+            calc_throttle();
         }
     } else {
         // we are doing normal AUTO flight, the special cases
