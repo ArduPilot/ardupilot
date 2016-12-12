@@ -30,6 +30,7 @@ private:
     /* override state */
     uint16_t _override[RC_INPUT_MAX_CHANNELS];
     struct rc_input_values _rcin;
+    struct rc_input_values _new_rcin;
     int _rc_sub;
     uint64_t _last_read;
     bool _override_valid;
