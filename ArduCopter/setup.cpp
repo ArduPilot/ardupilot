@@ -316,20 +316,7 @@ void Copter::report_frame()
 {
     cliSerial->println("Frame");
     print_divider();
-
- #if FRAME_CONFIG == QUAD_FRAME
-    cliSerial->println("Quad frame");
- #elif FRAME_CONFIG == TRI_FRAME
-    cliSerial->println("TRI frame");
- #elif FRAME_CONFIG == HEXA_FRAME
-    cliSerial->println("Hexa frame");
- #elif FRAME_CONFIG == Y6_FRAME
-    cliSerial->println("Y6 frame");
- #elif FRAME_CONFIG == OCTA_FRAME
-    cliSerial->println("Octa frame");
- #elif FRAME_CONFIG == HELI_FRAME
-    cliSerial->println("Heli frame");
- #endif
+    cliSerial->println(get_frame_string());
 
     print_blanks(2);
 }
