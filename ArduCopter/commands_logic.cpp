@@ -735,14 +735,14 @@ bool Copter::verify_payload_place()
         // we're there; set loiter target
         auto_payload_place_start(wp_nav.get_wp_destination());
         nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
-        // fall through
+        // no break
     case PayloadPlaceStateType_Calibrating_Hover_Start:
         // hover for 1 second to get an idea of what our hover
         // throttle looks like
         debug("Calibrate start");
         nav_payload_place.hover_start_timestamp = now;
         nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover;
-        // fall through
+        // no break
     case PayloadPlaceStateType_Calibrating_Hover: {
         if (now - nav_payload_place.hover_start_timestamp < hover_throttle_calibrate_time) {
             // still calibrating...
@@ -754,14 +754,14 @@ bool Copter::verify_payload_place()
         const float hover_throttle_delta = fabsf(nav_payload_place.hover_throttle_level - motors.get_throttle_hover());
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "hover throttle delta: %f", static_cast<double>(hover_throttle_delta));
         nav_payload_place.state = PayloadPlaceStateType_Descending_Start;
-        // fall through
-    };
+        // no break
+        }
     case PayloadPlaceStateType_Descending_Start:
         nav_payload_place.descend_start_timestamp = now;
         nav_payload_place.descend_start_altitude = inertial_nav.get_altitude();
         nav_payload_place.descend_throttle_level = 0;
         nav_payload_place.state = PayloadPlaceStateType_Descending;
-        // fall through
+        // no break
     case PayloadPlaceStateType_Descending:
         // make sure we don't descend too far:
         debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()), nav_payload_place.descend_max);
@@ -795,7 +795,7 @@ bool Copter::verify_payload_place()
             return false;
         }
         nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
-        // fall through
+        // no break
     case PayloadPlaceStateType_Releasing_Start:
         if (g2.gripper.valid()) {
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Releasing the gripper");
@@ -804,30 +804,30 @@ bool Copter::verify_payload_place()
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Gripper not valid");
         }
         nav_payload_place.state = PayloadPlaceStateType_Releasing;
-        // fall through
+        // no break
     case PayloadPlaceStateType_Releasing:
         if (g2.gripper.valid() && !g2.gripper.released()) {
             return false;
         }
         nav_payload_place.state = PayloadPlaceStateType_Released;
-        // fall through
+        // no break
     case PayloadPlaceStateType_Released: {
         nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
-    }
-        // fall through
+        }
+        // no break
     case PayloadPlaceStateType_Ascending_Start: {
         Location_Class target_loc = inertial_nav.get_position();
         target_loc.alt = nav_payload_place.descend_start_altitude;
         auto_wp_start(target_loc);
         nav_payload_place.state = PayloadPlaceStateType_Ascending;
-    }
-        //fall through
+        }
+        // no break
     case PayloadPlaceStateType_Ascending:
         if (!wp_nav.reached_wp_destination()) {
             return false;
         }
         nav_payload_place.state = PayloadPlaceStateType_Done;
-        // fall through
+        // no break
     case PayloadPlaceStateType_Done:
         return true;
     default:
