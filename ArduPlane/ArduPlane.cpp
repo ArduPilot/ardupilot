@@ -611,7 +611,7 @@ void Plane::update_flight_mode(void)
             quadplane.guided_update();
             break;
         }
-        // fall through
+        // no break
 
     case RTL:
     case LOITER:
@@ -834,7 +834,7 @@ void Plane::update_navigation()
         if (radius > 0) {
             loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
         }
-        // fall through to LOITER
+        // no break, fall through to LOITER
 
     case LOITER:
     case AVOID_ADSB:
