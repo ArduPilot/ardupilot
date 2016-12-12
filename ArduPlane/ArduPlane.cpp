@@ -551,7 +551,7 @@ void Plane::handle_auto_mode(void)
         calc_nav_roll();
         calc_nav_pitch();
         
-        if (landing.complete) {
+        if (landing.is_complete()) {
             // during final approach constrain roll to the range
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
@@ -981,7 +981,7 @@ void Plane::update_flight_stage(void)
                 } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) {
                     plane.gcs_send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
-                } else if (landing.complete == true) {
+                } else if (landing.is_complete()) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
                 } else if (landing.pre_flare == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
@@ -1057,7 +1057,7 @@ void Plane::update_optical_flow(void)
 void Plane::disarm_if_autoland_complete()
 {
     if (landing.get_disarm_delay() > 0 &&
-        landing.complete &&
+        landing.is_complete() &&
         !is_flying() &&
         arming.arming_required() != AP_Arming::NO &&
         arming.is_armed()) {
