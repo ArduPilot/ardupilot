@@ -187,6 +187,19 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
 }
 
 /*
+ * initialize state for new nav command
+ */
+void AP_Landing::init_start_nav_cmd(void)
+{
+    switch (type) {
+    default:
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        type_slope_init_start_nav_cmd();
+        break;
+    }
+}
+
+/*
      Restart a landing by first checking for a DO_LAND_START and
      jump there. Otherwise decrement waypoint so we would re-start
      from the top with same glide slope. Return true if successful.

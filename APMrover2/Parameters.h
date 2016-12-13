@@ -136,6 +136,7 @@ public:
         k_param_fs_throttle_enabled,
         k_param_fs_throttle_value,
         k_param_fs_gcs_enabled,
+        k_param_fs_crash_check,
 
         // obstacle control
         k_param_sonar_enabled = 190, // deprecated, can be removed
@@ -271,6 +272,7 @@ public:
     AP_Int8     fs_throttle_enabled;
     AP_Int16    fs_throttle_value;
 	AP_Int8	    fs_gcs_enabled;
+    AP_Int8     fs_crash_check;
 
     // obstacle control
     AP_Int16    sonar_trigger_cm;
