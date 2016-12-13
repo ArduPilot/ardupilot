@@ -1011,7 +1011,7 @@ private:
     uint8_t N_beacons;                  // Number of range beacons in use
     float maxBcnPosD;                   // maximum position of all beacons in the down direction (m)
     float minBcnPosD;                   // minimum position of all beacons in the down direction (m)
-    float bcnPosOffset;                 // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
+    float bcnPosDownOffset;             // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     bool usingMinHypothesis;            // true when the min beacob constellatio offset hyopthesis is being used
 
     float bcnPosDownOffsetMax;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)

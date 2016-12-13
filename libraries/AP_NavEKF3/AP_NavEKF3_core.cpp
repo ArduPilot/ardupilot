@@ -294,7 +294,7 @@ void NavEKF3_core::InitialiseVariables()
     N_beacons = 0;
     maxBcnPosD = 0.0f;
     minBcnPosD = 0.0f;
-    bcnPosOffset = 0.0f;
+    bcnPosDownOffset = 0.0f;
     bcnPosDownOffsetMax = 0.0f;
     bcnPosOffsetMaxVar = 0.0f;
     OffsetMaxInnovFilt = 0.0f;
