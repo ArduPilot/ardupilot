@@ -449,20 +449,17 @@ bool NavEKF3_core::checkGyroCalStatus(void)
 }
 
 // Commands the EKF to not use GPS.
-// This command must be sent prior to arming
-// This command is forgotten by the EKF each time the vehicle disarms
+// This command must be sent prior to vehicle arming and EKF commencement of GPS usage
 // Returns 0 if command rejected
-// Returns 1 if attitude, vertical velocity and vertical position will be provided
-// Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
+// Returns 1 if command accepted
 uint8_t NavEKF3_core::setInhibitGPS(void)
 {
-    if((PV_AidingMode == AID_ABSOLUTE) && motorsArmed) {
+    if((PV_AidingMode == AID_ABSOLUTE) || motorsArmed) {
         return 0;
     } else {
         gpsInhibit = true;
         return 1;
     }
-    // option 2 is not yet implemented as it requires a deeper integration of optical flow and GPS operation
 }
 
 // Update the filter status
