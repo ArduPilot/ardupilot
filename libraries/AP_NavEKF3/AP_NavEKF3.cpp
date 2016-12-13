@@ -874,11 +874,9 @@ bool NavEKF3::resetHeightDatum(void)
 }
 
 // Commands the EKF to not use GPS.
-// This command must be sent prior to arming as it will only be actioned when the filter is in static mode
-// This command is forgotten by the EKF each time it goes back into static mode (eg the vehicle disarms)
+// This command must be sent prior to vehicle arming and EKF commencement of GPS usage
 // Returns 0 if command rejected
-// Returns 1 if attitude, vertical velocity and vertical position will be provided
-// Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
+// Returns 1 if command accepted
 uint8_t NavEKF3::setInhibitGPS(void)
 {
     if (!core) {
