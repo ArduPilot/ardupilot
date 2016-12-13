@@ -389,7 +389,6 @@ private:
     // Guided
     GuidedMode guided_mode;  // stores which GUIDED mode the vehicle is in
 
-
 private:
     // private member functions
     void ahrs_update();
@@ -439,6 +438,7 @@ private:
     void Log_Write_Current();
     void Log_Write_Attitude();
     void Log_Write_RC(void);
+    void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
     void Log_Write_Home_And_Origin();
     void Log_Write_Vehicle_Startup_Messages();
@@ -547,6 +547,7 @@ private:
     bool in_stationary_loiter(void);
     void set_loiter_active(const AP_Mission::Mission_Command& cmd);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
+    void crash_check();
 
 public:
     bool print_log_menu(void);

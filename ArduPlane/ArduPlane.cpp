@@ -978,10 +978,11 @@ void Plane::update_flight_stage(void)
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
-                if ((landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) ||
-                        landing.commanded_go_around ||
-                        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT){
+                if (landing.commanded_go_around || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
+                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
+                } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) {
+                    plane.gcs_send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
                 } else if (landing.complete == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
@@ -989,7 +990,7 @@ void Plane::update_flight_stage(void)
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
                 } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
                     bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
-                    bool on_flight_line = abs(nav_controller->crosstrack_error() < 5) && !nav_controller->data_is_stale();
+                    const bool on_flight_line = fabsf(nav_controller->crosstrack_error()) < 5.0f && !nav_controller->data_is_stale();
                     bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
                     if ((mission.get_prev_nav_cmd_id() == MAV_CMD_NAV_LOITER_TO_ALT) ||
                         (auto_state.wp_proportion >= 0 && heading_lined_up && on_flight_line) ||

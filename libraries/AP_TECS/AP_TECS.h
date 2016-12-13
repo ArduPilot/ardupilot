@@ -125,10 +125,10 @@ private:
     // reference to the AHRS object
     AP_AHRS &_ahrs;
 
+    const AP_Vehicle::FixedWing &aparm;
+
     // reference to const AP_Landing to access it's params
     const AP_Landing &_landing;
-
-    const AP_Vehicle::FixedWing &aparm;
 
     // TECS tuning parameters
     AP_Float _hgtCompFiltOmega;

@@ -54,6 +54,6 @@ private:
     uint8_t compass_instance;
     Vector3f accum;
     uint16_t accum_count;
-    enum Rotation rotation;
     bool force_external;
+    enum Rotation rotation;
 };

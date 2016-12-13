@@ -163,6 +163,7 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
     default:
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, wp_distance, target_altitude_offset_cm);
+        break;
     }
 }
 
@@ -181,6 +182,20 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
     default:
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
+        break;
+    }
+}
+
+/*
+ * initialize state for new nav command
+ */
+void AP_Landing::init_start_nav_cmd(void)
+{
+    switch (type) {
+    default:
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        type_slope_init_start_nav_cmd();
+        break;
     }
 }
 
@@ -236,3 +251,74 @@ bool AP_Landing::restart_landing_sequence()
     return success;
 }
 
+/*
+ * Determine how aligned heading_deg is with the wind. Return result
+ * is 1.0 when perfectly aligned heading into wind, -1 when perfectly
+ * aligned with-wind, and zero when perfect cross-wind. There is no
+ * distinction between a left or right cross-wind. Wind speed is ignored
+ */
+float AP_Landing::wind_alignment(const float heading_deg)
+{
+    const Vector3f wind = ahrs.wind_estimate();
+    const float wind_heading_rad = atan2f(-wind.y, -wind.x);
+    return cosf(wind_heading_rad - radians(heading_deg));
+}
+
+/*
+ * returns head-wind in m/s, 0 for tail-wind.
+ */
+float AP_Landing::head_wind(void)
+{
+    const float alignment = wind_alignment(ahrs.yaw_sensor*0.01f);
+
+    if (alignment <= 0) {
+        return 0;
+    }
+
+    return alignment * ahrs.wind_estimate().length();
+}
+
+/*
+ * returns target airspeed in cm/s depending on flight stage
+ */
+int32_t AP_Landing::get_target_airspeed_cm(const AP_SpdHgtControl::FlightStage flight_stage)
+{
+    int32_t target_airspeed_cm = aparm.airspeed_cruise_cm;
+
+    if (!in_progress) {
+        // not landing, use regular cruise airspeed
+        return target_airspeed_cm;
+    }
+
+    // we're landing, check for custom approach and
+    // pre-flare airspeeds. Also increase for head-winds
+
+    const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+
+    switch (flight_stage) {
+    case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+        if (land_airspeed >= 0) {
+            target_airspeed_cm = land_airspeed * 100;
+        }
+        break;
+
+    case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
+    case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+        if (pre_flare && get_pre_flare_airspeed() > 0) {
+            // if we just preflared then continue using the pre-flare airspeed during final flare
+            target_airspeed_cm = get_pre_flare_airspeed() * 100;
+        } else if (land_airspeed >= 0) {
+            target_airspeed_cm = land_airspeed * 100;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    // when landing, add half of head-wind.
+    const int32_t head_wind_compensation_cm = head_wind() * 0.5f * 100;
+
+    // Do not lower it or exceed cruise speed
+    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_cruise_cm);
+}

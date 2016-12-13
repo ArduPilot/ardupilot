@@ -38,7 +38,7 @@ void AP_Beacon_Backend::set_vehicle_position(const Vector3f& pos, float accuracy
 void AP_Beacon_Backend::set_beacon_distance(uint8_t beacon_instance, float distance)
 {
     // sanity check instance
-    if (beacon_instance > AP_BEACON_MAX_BEACONS) {
+    if (beacon_instance >= AP_BEACON_MAX_BEACONS) {
         return;
     }
 
@@ -57,7 +57,7 @@ void AP_Beacon_Backend::set_beacon_distance(uint8_t beacon_instance, float dista
 void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vector3f& pos)
 {
     // sanity check instance
-    if (beacon_instance > AP_BEACON_MAX_BEACONS) {
+    if (beacon_instance >= AP_BEACON_MAX_BEACONS) {
         return;
     }
 

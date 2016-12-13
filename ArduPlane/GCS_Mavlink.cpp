@@ -1765,6 +1765,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
     case MAVLINK_MSG_ID_GPS_INPUT:
+    case MAVLINK_MSG_ID_HIL_GPS:
     {
         plane.gps.handle_msg(msg);
         break;
