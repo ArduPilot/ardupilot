@@ -128,14 +128,14 @@ uint8_t AC_Fence::check_fence(float curr_alt)
 
     // return immediately if disabled
     if (!_enabled || _enabled_fences == AC_FENCE_TYPE_NONE) {
-        return AC_FENCE_TYPE_NONE;
+        return ret;
     }
 
     // check if pilot is attempting to recover manually
     if (_manual_recovery_start_ms != 0) {
         // we ignore any fence breaches during the manual recovery period which is about 10 seconds
         if ((AP_HAL::millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
-            return AC_FENCE_TYPE_NONE;
+            return ret;
         } else {
             // recovery period has passed so reset manual recovery time and continue with fence breach checks
             _manual_recovery_start_ms = 0;
@@ -156,7 +156,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
 
                 // record that we have breached the upper limit
                 record_breach(AC_FENCE_TYPE_ALT_MAX);
-                ret = ret | AC_FENCE_TYPE_ALT_MAX;
+                ret |= AC_FENCE_TYPE_ALT_MAX;
 
                 // create a backup fence 20m higher up
                 _alt_max_backup = curr_alt + AC_FENCE_ALT_MAX_BACKUP_DISTANCE;
@@ -185,7 +185,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
 
                 // record that we have breached the circular distance limit
                 record_breach(AC_FENCE_TYPE_CIRCLE);
-                ret = ret | AC_FENCE_TYPE_CIRCLE;
+                ret |= AC_FENCE_TYPE_CIRCLE;
 
                 // create a backup fence 20m further out
                 _circle_radius_backup = _home_distance + AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE;
@@ -217,7 +217,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
                 if ((_breached_fences & AC_FENCE_TYPE_POLYGON) == 0) {
                     // record that we have breached the polygon
                     record_breach(AC_FENCE_TYPE_POLYGON);
-                    ret = ret | AC_FENCE_TYPE_POLYGON;
+                    ret |= AC_FENCE_TYPE_POLYGON;
                 }
             } else {
                 // clear breach if present
