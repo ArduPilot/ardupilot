@@ -699,8 +699,7 @@ const struct LogStructure Sub::log_structure[] = {
 void Sub::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
 {
     cliSerial->printf("\n" FIRMWARE_STRING
-                             "\nFree RAM: %u\n"
-                             "\nFrame: " FRAME_CONFIG_STRING "\n",
+                             "\nFree RAM: %u\n",
                         (unsigned) hal.util->available_memory());
 
     cliSerial->println(HAL_BOARD_NAME);
@@ -714,7 +713,6 @@ void Sub::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
 void Sub::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
-    DataFlash.Log_Write_Message("Frame: " FRAME_CONFIG_STRING);
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 }
 
