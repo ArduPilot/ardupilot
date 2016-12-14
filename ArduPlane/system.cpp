@@ -497,10 +497,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     if (should_log(MASK_LOG_MODE))
         DataFlash.Log_Write_Mode(control_mode);
 
-    // reset attitude integrators on mode change
-    rollController.reset_I();
-    pitchController.reset_I();
-    yawController.reset_I();    
+    // reset steering integrator on mode change
     steerController.reset_I();    
 }
 
