@@ -63,6 +63,7 @@ void SITL_State::_usage(void)
            "\t--gazebo-port-out PORT   set port num for gazebo out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
+           "\t--rc-out-port PORT       set port num for rc out\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--defaults path          set path to defaults file\n"
         );
@@ -173,6 +174,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_BASE_PORT,
         CMDLINE_IRLOCK_PORT,
         CMDLINE_RCIN_PORT,
+        CMDLINE_RCOUT_PORT,
         CMDLINE_DEFAULTS
     };
 
@@ -205,6 +207,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
+        {"rc-out-port",     true,   0, CMDLINE_RCOUT_PORT},
         {0, false, 0, 0}
     };
 
@@ -310,6 +313,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case CMDLINE_RCIN_PORT:
             _rcin_port = atoi(gopt.optarg);
+            break;
+        case CMDLINE_RCOUT_PORT:
+            _rcout_port = atoi(gopt.optarg);
             break;
         case CMDLINE_BASE_PORT:
             _base_port = atoi(gopt.optarg);
