@@ -1083,9 +1083,7 @@ float Plane::tecs_hgt_afe(void)
       coming.
     */
     float hgt_afe;
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL ||
-        flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE ||
-        flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH) {
+    if (landing.in_progress) {
         hgt_afe = height_above_target();
         hgt_afe -= rangefinder_correction();
     } else {

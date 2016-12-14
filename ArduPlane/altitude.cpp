@@ -380,9 +380,7 @@ void Plane::set_offset_altitude_location(const Location &loc)
     }
 #endif
 
-    if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE &&
-        flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH &&
-        flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) {
+    if (!landing.in_progress) {
         // if we are within GLIDE_SLOPE_MIN meters of the target altitude
         // then reset the offset to not use a glide slope. This allows for
         // more accurate flight of missions where the aircraft may lose or
@@ -577,9 +575,7 @@ float Plane::rangefinder_correction(void)
     // for now we only support the rangefinder for landing 
     bool using_rangefinder = (g.rangefinder_landing &&
                               control_mode == AUTO && 
-                              (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH ||
-                               flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE ||
-                               flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL));
+                              landing.in_progress);
     if (!using_rangefinder) {
         return 0;
     }
@@ -620,9 +616,7 @@ void Plane::rangefinder_height_update(void)
         } else {
             rangefinder_state.in_range = true;
             if (!rangefinder_state.in_use &&
-                (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH ||
-                 flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE ||
-                 flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL ||
+                (landing.in_progress ||
                  control_mode == QLAND ||
                  control_mode == QRTL ||
                  (control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND)) &&
