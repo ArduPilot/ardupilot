@@ -126,9 +126,9 @@ void Sub::set_leak_status(bool status) {
 // failsafe_gcs_check - check for ground station failsafe
 void Sub::failsafe_gcs_check()
 {
-    // return immediately if gcs failsafe action is disabled
+    // return immediately if we have never had contact with a gcs, or if gcs failsafe action is disabled
     // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
-    if (!g.failsafe_gcs && g.failsafe_gcs == FS_GCS_DISABLED) {
+    if (failsafe.last_heartbeat_ms == 0 || (!g.failsafe_gcs && g.failsafe_gcs == FS_GCS_DISABLED)) {
     	return;
     }
 
