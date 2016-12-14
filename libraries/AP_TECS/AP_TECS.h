@@ -44,7 +44,7 @@ public:
     // Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm,
                                int32_t EAS_dem_cm,
-                               enum FlightStage flight_stage,
+                               enum AP_Vehicle::FixedWing::FlightStage flight_stage,
                                bool is_doing_auto_land,
                                float distance_beyond_land_wp,
                                int32_t ptchMinCO_cd,
@@ -262,7 +262,7 @@ private:
     uint32_t _underspeed_start_ms;
 
     // auto mode flightstage
-    enum FlightStage _flight_stage;
+    enum AP_Vehicle::FixedWing::FlightStage _flight_stage;
 
     // pitch demand before limiting
     float _pitch_dem_unc;

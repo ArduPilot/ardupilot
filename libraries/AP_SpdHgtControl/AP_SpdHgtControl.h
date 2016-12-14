@@ -13,6 +13,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <DataFlash/DataFlash.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 class AP_SpdHgtControl {
 public:
@@ -21,25 +22,12 @@ public:
 	// Should be called at 50Hz or faster
 	virtual void update_50hz(void) = 0;
 
-	/**
-	   stages of flight so the altitude controller can choose to
-	   prioritise height or speed
-	 */
-	enum FlightStage {
-		FLIGHT_TAKEOFF       = 1,
-        FLIGHT_VTOL          = 2,
-        FLIGHT_NORMAL        = 3,
-		FLIGHT_LAND_APPROACH = 4,
-		FLIGHT_LAND_PREFLARE = 5,
-        FLIGHT_LAND_FINAL    = 6,
-        FLIGHT_LAND_ABORT    = 7
-	};
 
 	// Update of the pitch and throttle demands
 	// Should be called at 10Hz or faster
 	virtual void update_pitch_throttle( int32_t hgt_dem_cm,
 										int32_t EAS_dem_cm,
-										enum FlightStage flight_stage,
+										enum AP_Vehicle::FixedWing::FlightStage flight_stage,
                                         bool is_doing_auto_land,
                                         float distance_beyond_land_wp,
 										int32_t ptchMinCO_cd,
