@@ -20,14 +20,14 @@ public:
     {};
 
     // init
-    void                Init();
+    void                init(motor_frame_class frame_class, motor_frame_type frame_type);
+
+    // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+    void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // set update rate to motors - a value in hertz
     // you must have setup_motors before calling this
     void                set_update_rate(uint16_t speed_hz);
-
-    // set frame orientation (normally + or X)
-    void                set_frame_orientation(uint8_t new_orientation);
 
     // enable - starts allowing signals to be sent to motors
     void                enable();
@@ -39,9 +39,6 @@ public:
 
     // output_to_motors - sends minimum values out to the motors
     void                output_to_motors();
-
-    // setup_motors - configures the motors for a given frame type - should be overwritten by child classes
-    virtual void        setup_motors() { remove_all_motors(); };
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -63,6 +60,9 @@ protected:
     // remove_motor
     void                remove_motor(int8_t motor_num);
 
+    // configures the motors for the defined frame_class and frame_type
+    void                setup_motors(motor_frame_class frame_class, motor_frame_type frame_type);
+
     // normalizes the roll, pitch and yaw factors so maximum magnitude is 0.5
     void                normalise_rpy_factors();
 
@@ -74,4 +74,6 @@ protected:
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
     float               _thrust_rpyt_out[AP_MOTORS_MAX_NUM_MOTORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
+    motor_frame_class   _last_frame_class; // most recently requested frame class (i.e. quad, hexa, octa, etc)
+    motor_frame_type    _last_frame_type; // most recently requested frame type (i.e. plus, x, v, etc)
 };
