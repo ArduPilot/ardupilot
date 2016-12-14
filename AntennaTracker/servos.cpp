@@ -214,7 +214,7 @@ void Tracker::update_yaw_position_servo()
 
     channel_yaw.set_servo_out(new_servo_out);
 
-    if(yaw_servo_out_filt_init){
+    if (yaw_servo_out_filt_init) {
         yaw_servo_out_filt.apply(new_servo_out, G_Dt);
     } else {
         yaw_servo_out_filt.reset(new_servo_out);
