@@ -83,10 +83,11 @@ bool Rover::in_stationary_loiter()
     // Confirm we are in AUTO mode and need to loiter for a time period
     if ((loiter_start_time > 0) && (control_mode == AUTO)) {
         // Check if active loiter is enabled AND we are outside the waypoint loiter radius
-        // then NOT the result for the if logic
-        if (!(active_loiter && (wp_distance > g.waypoint_radius))) {
-            return true;
+        // then the vehicle still needs to move so return false
+        if (active_loiter && (wp_distance > g.waypoint_radius)) {
+            return false;
         }
+        return true;
     }
 
     return false;

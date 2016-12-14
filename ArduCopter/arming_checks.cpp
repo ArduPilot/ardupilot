@@ -620,9 +620,9 @@ bool Copter::pre_arm_proximity_check(bool display_failure)
         return false;
     }
 
-    // get closest object
+    // get closest object if we might use it for avoidance
     float angle_deg, distance;
-    if (g2.proximity.get_closest_object(angle_deg, distance)) {
+    if (avoid.proximity_avoidance_enabled() && g2.proximity.get_closest_object(angle_deg, distance)) {
         // display error if something is within 60cm
         if (distance <= 0.6f) {
             if (display_failure) {

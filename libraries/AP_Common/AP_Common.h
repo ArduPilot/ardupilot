@@ -23,7 +23,6 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 // used to pack structures
 #define PACKED __attribute__((__packed__))

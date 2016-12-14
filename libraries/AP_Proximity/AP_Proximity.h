@@ -80,6 +80,10 @@ public:
     //   returns true on success, false if no valid readings
     bool get_closest_object(float& angle_deg, float &distance) const;
 
+    // get number of objects, angle and distance - used for non-GPS avoidance
+    uint8_t get_object_count() const;
+    bool get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
+
     // stucture holding distances in 8 directions
     struct Proximity_Distance_Array {
         uint8_t orientation[8]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)

@@ -39,13 +39,9 @@ AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
    declare driver main entry points
  */
 extern "C" {
-    int mpu6000_main(int , char **);
-    int mpu9250_main(int , char **);
-    int ms5611_main(int , char **);
-    int l3gd20_main(int , char **);
-    int lsm303d_main(int , char **);
-    int hmc5883_main(int , char **);
+#if HAL_WITH_UAVCAN
     int uavcan_main(int, char **);
+#endif
     int fmu_main(int, char **);
     int px4io_main(int, char **);
     int adc_main(int, char **);
@@ -214,7 +210,7 @@ void AP_BoardConfig::px4_setup_sbus(void)
  */
 void AP_BoardConfig::px4_setup_canbus(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+#if HAL_WITH_UAVCAN
     if (px4.can_enable >= 1) {
         // give time for other drivers to fully start before we start
         // canbus. This prevents a race where a canbus mag comes up
@@ -292,239 +288,6 @@ bool AP_BoardConfig::px4_start_driver(main_fn_t main_function, const char *name,
     return (status >> 8) == 0;
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-/*
-  setup sensors for PX4v2
- */
-void AP_BoardConfig::px4_start_fmuv2_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    bool have_FMUV3 = false;
-    
-    printf("Starting FMUv2 sensors\n");
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -I -R 4 start")) {
-        printf("Have internal hmc5883\n");
-    } else {
-        printf("No internal hmc5883\n");
-    }
-
-    // external MPU6000 is rotated YAW_180 from standard
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-X -R 4 start")) {
-        printf("Found MPU6000 external\n");
-        have_FMUV3 = true;
-    } else {
-        if (px4_start_driver(mpu9250_main, "mpu9250", "-X -R 4 start")) {
-            printf("Found MPU9250 external\n");
-            have_FMUV3 = true;
-        } else {
-            printf("No MPU6000 or MPU9250 external\n");
-        }
-    }
-    if (have_FMUV3) {
-        // external L3GD20 is rotated YAW_180 from standard
-        if (px4_start_driver(l3gd20_main, "l3gd20", "-X -R 4 start")) {
-            printf("l3gd20 external started OK\n");
-        } else {
-            px4_sensor_error("No l3gd20");
-        }
-        // external LSM303D is rotated YAW_270 from standard
-        if (px4_start_driver(lsm303d_main, "lsm303d", "-a 16 -X -R 6 start")) {
-            printf("lsm303d external started OK\n");
-        } else {
-            px4_sensor_error("No lsm303d");
-        }
-        // internal MPU6000 is rotated ROLL_180_YAW_270 from standard
-        if (px4_start_driver(mpu6000_main, "mpu6000", "-R 14 start")) {
-            printf("Found MPU6000 internal\n");
-        } else {
-            if (px4_start_driver(mpu9250_main, "mpu9250", "-R 14 start")) {
-                printf("Found MPU9250 internal\n");
-            } else {
-                px4_sensor_error("No MPU6000 or MPU9250");
-            }
-        }
-        if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -S -R 8 start")) {
-            printf("Found SPI hmc5883\n");
-        }
-    } else {
-        // not FMUV3 (ie. not a pixhawk2)
-        if (px4_start_driver(mpu6000_main, "mpu6000", "start")) {
-            printf("Found MPU6000\n");
-        } else {
-            if (px4_start_driver(mpu9250_main, "mpu9250", "start")) {
-                printf("Found MPU9250\n");
-            } else {
-                printf("No MPU6000 or MPU9250\n");
-            }
-        }
-        if (px4_start_driver(l3gd20_main, "l3gd20", "start")) {
-            printf("l3gd20 started OK\n");
-        } else {
-            px4_sensor_error("no l3gd20 found");
-        }
-        if (px4_start_driver(lsm303d_main, "lsm303d", "-a 16 start")) {
-            printf("lsm303d started OK\n");
-        } else {
-            px4_sensor_error("no lsm303d found");
-        }
-    }
-
-    if (have_FMUV3) {
-        // on Pixhawk2 default IMU temperature to 60
-        _imu_target_temperature.set_default(60);
-    }
-    
-    printf("FMUv2 sensors started\n");
-#endif // CONFIG_ARCH_BOARD_PX4FMU_V2
-}
-
-
-/*
-  setup sensors for PX4v1
- */
-void AP_BoardConfig::px4_start_fmuv1_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    printf("Starting FMUv1 sensors\n");
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -I start")) {
-        printf("Have internal hmc5883\n");
-    } else {
-        printf("No internal hmc5883\n");
-    }
-    if (px4_start_driver(mpu6000_main, "mpu6000", "start")) {
-        printf("mpu6000 started OK\n");
-    } else {
-        px4_sensor_error("mpu6000");
-    }
-#endif // CONFIG_ARCH_BOARD_PX4FMU_V1
-}
-
-/*
-  setup common sensors
- */
-void AP_BoardConfig::px4_start_common_sensors(void)
-{
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V4
-    if (px4_start_driver(ms5611_main, "ms5611", "start")) {
-        printf("ms5611 started OK\n");
-    } else {
-        px4_sensor_error("no ms5611 found");
-    }
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -X start")) {
-        printf("Have external hmc5883\n");
-    } else {
-        printf("No external hmc5883\n");
-    }
-#endif
-}
-
-#endif // CONFIG_HAL_BOARD
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-void AP_BoardConfig::vrx_start_brain51_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -R 12 -I start")) {
-        printf("HMC5883 Internal GPS started OK\n");
-    } else {
-        printf("HMC5883 Internal GPS start failed\n");
-    }
-
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 12 start")) {
-        printf("MPU6000 Internal started OK\n");
-    } else {
-        px4_sensor_error("MPU6000 Internal start failed");
-    }
-#endif
-}
-
-void AP_BoardConfig::vrx_start_brain52_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -R 12 -I start")) {
-        printf("HMC5883 Internal GPS started OK\n");
-    } else {
-        printf("HMC5883 Internal GPS start failed\n");
-    }
-
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 12 start")) {
-        printf("MPU6000 Internal started OK\n");
-    } else {
-        px4_sensor_error("MPU6000 Internal start failed");
-    }
-#endif
-}
-
-void AP_BoardConfig::vrx_start_ubrain51_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 12 start")) {
-        printf("MPU6000 Internal started OK\n");
-    } else {
-        px4_sensor_error("MPU6000 Internal start failed");
-    }
-#endif
-}
-
-void AP_BoardConfig::vrx_start_ubrain52_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 12 start")) {
-        printf("MPU6000 Internal started OK\n");
-    } else {
-        px4_sensor_error("MPU6000 Internal start failed");
-    }
-#endif
-}
-
-void AP_BoardConfig::vrx_start_core10_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_VRCORE_V10)
-    if (px4_start_driver(mpu9250_main, "mpu9250", "-R 4 start")) {
-        printf("MPU9250 Internal started OK\n");
-    } else {
-        px4_sensor_error("MPU9250 Internal start failed");
-    }
-#endif
-}
-
-void AP_BoardConfig::vrx_start_brain54_sensors(void)
-{
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -R 12 -I start")) {
-        printf("HMC5883 Internal GPS started OK\n");
-    } else {
-        printf("HMC5883 Internal GPS start failed\n");
-    }
-
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 12 start")) {
-        printf("MPU6000 Internal started OK\n");
-    } else {
-        px4_sensor_error("MPU6000 Internal start failed");
-    }
-#endif
-}
-
-/*
-  setup common sensors
- */
-void AP_BoardConfig::vrx_start_common_sensors(void)
-{
-    if (px4_start_driver(ms5611_main, "ms5611", "-s start")) {
-        printf("MS5611 Internal started OK\n");
-    } else {
-        px4_sensor_error("MS5611 Internal start failed");
-    }
-
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -X start")) {
-        printf("HMC5883 External GPS started OK\n");
-    } else {
-        printf("HMC5883 External GPS start failed\n");
-    }
-}
-
-#endif // CONFIG_HAL_BOARD
-
 void AP_BoardConfig::px4_setup_drivers(void)
 {
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
@@ -538,6 +301,11 @@ void AP_BoardConfig::px4_setup_drivers(void)
     }
 #endif
 
+    if (px4.board_type == PX4_BOARD_OLDDRIVERS) {
+        printf("Old drivers no longer supported\n");
+        px4.board_type = PX4_BOARD_AUTO;
+    }
+    
     // run board auto-detection
     px4_autodetect();
 
@@ -546,63 +314,20 @@ void AP_BoardConfig::px4_setup_drivers(void)
         _imu_target_temperature.set_default(60);
     }
     
-    if (px4.board_type == PX4_BOARD_PX4V1 ||
-        px4.board_type == PX4_BOARD_PHMINI ||
-        px4.board_type == PX4_BOARD_PH2SLIM ||
-        px4.board_type == PX4_BOARD_PIXRACER ||
-        px4.board_type == PX4_BOARD_PIXHAWK ||
-        px4.board_type == PX4_BOARD_PIXHAWK2) {
-        // use in-tree drivers
-        printf("Using in-tree drivers\n");
-        px4_configured_board = (enum px4_board_type)px4.board_type.get();
-        return;
-    }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    px4_start_common_sensors();
-    switch ((px4_board_type)px4.board_type.get()) {
-    case PX4_BOARD_AUTO:
-    default:
-        px4_start_fmuv1_sensors();
-        px4_start_fmuv2_sensors();
-        break;
-    }
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    vrx_start_common_sensors();
-    switch ((px4_board_type)px4.board_type.get()) {
-    case VRX_BOARD_BRAIN51:
-        vrx_start_brain51_sensors();
-        break;
-
-    case VRX_BOARD_BRAIN52:
-        vrx_start_brain52_sensors();
-        break;
-
-    case VRX_BOARD_UBRAIN51:
-        vrx_start_ubrain51_sensors();
-        break;
-
-    case VRX_BOARD_UBRAIN52:
-        vrx_start_ubrain52_sensors();
-        break;
-
-    case VRX_BOARD_CORE10:
-        vrx_start_core10_sensors();
-        break;
-
-    case VRX_BOARD_BRAIN54:
-        vrx_start_brain54_sensors();
-        break;
-
-    default:
-        break;
-    }
-#endif // HAL_BOARD_PX4
-
     px4_configured_board = (enum px4_board_type)px4.board_type.get();
-    
-    // delay for 1 second to give time for drivers to initialise
-    hal.scheduler->delay(1000);
+
+    switch (px4_configured_board) {
+    case PX4_BOARD_PX4V1:
+    case PX4_BOARD_PIXHAWK:
+    case PX4_BOARD_PIXHAWK2:
+    case PX4_BOARD_PIXRACER:
+    case PX4_BOARD_PHMINI:
+    case PX4_BOARD_PH2SLIM:
+        break;
+    default:
+        px4_sensor_error("Unknown board type");
+        break;
+    }
 }
 
 /*

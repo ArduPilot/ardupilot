@@ -17,6 +17,10 @@
 #define AC_AVOID_USE_PROXIMITY_SENSOR   2       // stop based on proximity sensor output
 #define AC_AVOID_ALL                    3       // use fence and promiximity sensor
 
+// definitions for non-GPS avoidance
+#define AC_AVOID_NONGPS_DIST_MAX_DEFAULT    10.0f   // objects over 10m away are ignored (default value for DIST_MAX parameter)
+#define AC_AVOID_ANGLE_MAX_PERCENT          0.75f   // object avoidance max lean angle as a percentage (expressed in 0 ~ 1 range) of total vehicle max lean angle
+
 /*
  * This class prevents the vehicle from leaving a polygon fence in
  * 2 dimensions by limiting velocity (adjust_velocity).
@@ -34,6 +38,15 @@ public:
      */
     void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel);
     void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel);
+
+    // adjust roll-pitch to push vehicle away from objects
+    // roll and pitch value are in centi-degrees
+    // angle_max is the user defined maximum lean angle for the vehicle in centi-degrees
+    void adjust_roll_pitch(float &roll, float &pitch, float angle_max);
+
+    // enable/disable proximity based avoidance
+    void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
+    bool proximity_avoidance_enabled() { return _proximity_enabled; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -90,6 +103,16 @@ private:
      */
     float get_margin() const { return _fence.get_margin() * 100.0f; }
 
+    /*
+     * methods for avoidance in non-GPS flight modes
+     */
+
+    // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
+    float distance_to_lean_pct(float dist_m);
+
+    // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
+    void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
+
     // external references
     const AP_AHRS& _ahrs;
     const AP_InertialNav& _inav;
@@ -98,4 +121,8 @@ private:
 
     // parameters
     AP_Int8 _enabled;
+    AP_Int16 _angle_max;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+    AP_Float _dist_max;         // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
+
+    bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
 };

@@ -29,14 +29,11 @@ set(config_module_list
     systemcmds/bl_update
     systemcmds/mixer
     systemcmds/perf
-    systemcmds/pwm
     systemcmds/reboot
     systemcmds/top
     systemcmds/nshterm
     systemcmds/mtd
     systemcmds/ver
-    systemcmds/reflect
-    systemcmds/motor_test
     systemcmds/usb_connected
     systemcmds/otp
 
@@ -46,12 +43,9 @@ set(config_module_list
     modules/systemlib
     modules/systemlib/mixer
     modules/uORB
-    lib/mathlib/math/filter
-    lib/conversion
 )
 
 set(config_extra_builtin_cmds
-    serdis
     sercon
     ArduPilot
 )
@@ -65,12 +59,6 @@ set(config_uavcan_num_ifaces 2)
 add_custom_target(sercon)
 set_target_properties(sercon PROPERTIES
     MAIN "sercon"
-    STACK "2048"
-)
-
-add_custom_target(serdis)
-set_target_properties(serdis PROPERTIES
-    MAIN "serdis"
     STACK "2048"
 )
 

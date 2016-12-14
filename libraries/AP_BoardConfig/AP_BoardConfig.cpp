@@ -120,7 +120,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+#if HAL_WITH_UAVCAN
     // @Param: CAN_ENABLE
     // @DisplayName:  Enable use of UAVCAN devices
     // @Description: Enabling this option on a Pixhawk enables UAVCAN devices. Note that this uses about 25k of memory

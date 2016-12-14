@@ -46,8 +46,8 @@
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>         // Mission command library
 #include <AC_PID/AC_PID.h>             // PID library
 #include <AC_PID/AC_PI_2D.h>           // PID library (2-axis)
@@ -202,9 +202,9 @@ private:
     AP_RPM rpm_sensor;
 
     // Inertial Navigation EKF
-    NavEKF EKF{&ahrs, barometer, rangefinder};
     NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rangefinder, EKF, EKF2, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rangefinder, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;

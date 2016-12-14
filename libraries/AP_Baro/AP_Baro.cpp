@@ -323,27 +323,37 @@ void AP_Baro::init(void)
     }
 
 #if HAL_BARO_DEFAULT == HAL_BARO_PX4 || HAL_BARO_DEFAULT == HAL_BARO_VRBRAIN
-    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PX4V1) {
+    switch (AP_BoardConfig::get_board_type()) {
+    case AP_BoardConfig::PX4_BOARD_PX4V1:
 #ifdef HAL_BARO_MS5611_I2C_BUS
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR))));
 #endif
-    } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK ||
-               AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PHMINI ||
-               AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PH2SLIM) {
+        break;
+
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK:
+    case AP_BoardConfig::PX4_BOARD_PHMINI:
+    case AP_BoardConfig::PX4_BOARD_PH2SLIM:
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-    } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
+        break;
+
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-    } else if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXRACER) {
+        break;
+
+    case AP_BoardConfig::PX4_BOARD_PIXRACER:
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME))));
-    } else {
+        break;
+
+    default:
         drivers[0] = new AP_Baro_PX4(*this);
         _num_drivers = 1;
+        break;
     }
 #elif HAL_BARO_DEFAULT == HAL_BARO_HIL
     drivers[0] = new AP_Baro_HIL(*this);

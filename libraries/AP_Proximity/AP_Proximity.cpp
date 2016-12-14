@@ -307,6 +307,27 @@ bool AP_Proximity::get_closest_object(float& angle_deg, float &distance) const
     return drivers[primary_instance]->get_closest_object(angle_deg, distance);
 }
 
+// get number of objects, used for non-GPS avoidance
+uint8_t AP_Proximity::get_object_count() const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return 0;
+    }
+    // get count from backend
+    return drivers[primary_instance]->get_object_count();
+}
+
+// get an object's angle and distance, used for non-GPS avoidance
+// returns false if no angle or distance could be returned for some reason
+bool AP_Proximity::get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return false;
+    }
+    // get angle and distance from backend
+    return drivers[primary_instance]->get_object_angle_and_distance(object_number, angle_deg, distance);
+}
+
 // get distances in 8 directions. used for sending distances to ground station
 bool AP_Proximity::get_distances(Proximity_Distance_Array &prx_dist_array) const
 {
