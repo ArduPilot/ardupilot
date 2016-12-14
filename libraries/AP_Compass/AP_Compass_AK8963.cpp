@@ -19,7 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_Compass_AK8963.h"
-#include <AP_InertialSensor/AP_InertialSensor_MPU9250.h>
+#include <AP_InertialSensor/AP_InertialSensor_Invensense.h>
 
 #define AK8963_I2C_ADDR                                 0x0c
 
