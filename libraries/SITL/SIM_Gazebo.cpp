@@ -130,6 +130,21 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
     }
     last_timestamp = pkt.timestamp;
 
+    //Approimation
+    double meters_per_degree = 111319.9;
+
+    // Set the location too
+    location.lat = home.lat + degrees(pkt.position_xyz[0] / meters_per_degree ) * 1.0e7;
+    location.lng = home.lng + degrees(pkt.position_xyz[1] / meters_per_degree * cos(location.lat) * 1.0e7);
+    location.alt = home.alt + pkt.position_xyz[0] * 100;
+    // printf("location: %d %d %d\n", location.lat, location.lng, location.alt);
+    // Approximate airspeed as gps velocity
+    airspeed = sqrt(speedN * speedN + speedE * speedE + speedD * speedD);
+    airspeed_pitot = airspeed;
+
+    // update magnetic field
+    // Implicitly uses the location
+    update_mag_field_bf();
 }
 
 /*
