@@ -86,23 +86,6 @@ enum aux_sw_func {
     AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
 };
 
-// Frame types
-#define UNDEFINED_FRAME 0
-#define QUAD_FRAME 1
-#define TRI_FRAME 2
-#define HEXA_FRAME 3
-#define Y6_FRAME 4
-#define OCTA_FRAME 5
-#define HELI_FRAME 6
-#define OCTA_QUAD_FRAME 7
-#define SINGLE_FRAME 8
-#define COAX_FRAME 9
-#define BLUEROV_FRAME 10
-#define VECTORED_FRAME 11
-#define VECTORED6DOF_FRAME 12
-#define SIMPLEROV_FRAME 13
-#define VECTORED90_FRAME 14
-
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_SENSORS                1

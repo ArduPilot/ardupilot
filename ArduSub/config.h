@@ -54,27 +54,6 @@
 # define MAIN_LOOP_SECONDS 0.0025f
 # define MAIN_LOOP_MICROS  2500
 
-//////////////////////////////////////////////////////////////////////////////
-// FRAME_CONFIG
-//
-#ifndef FRAME_CONFIG
- # define FRAME_CONFIG   VECTORED6DOF_FRAME
-#endif
-
-#if FRAME_CONFIG == BLUEROV_FRAME
- # define FRAME_CONFIG_STRING "ROV_BLUEROV_FRAME"
-#elif FRAME_CONFIG == VECTORED_FRAME
- # define FRAME_CONFIG_STRING "ROV_VECTORED_FRAME"
-#elif FRAME_CONFIG == VECTORED6DOF_FRAME
- # define FRAME_CONFIG_STRING "ROV_VECTORED6DOF_FRAME"
-#elif FRAME_CONFIG == SIMPLEROV_FRAME
- # define FRAME_CONFIG_STRING "ROV_SIMPLEROV_FRAME"
-#elif FRAME_CONFIG == VECTORED90_FRAME
-# define FRAME_CONFIG_STRING "ROV_VECTORED90_FRAME"
-#else
- # define FRAME_CONFIG_STRING "UNKNOWN"
-#endif
-
 #ifndef SURFACE_DEPTH_DEFAULT
  # define SURFACE_DEPTH_DEFAULT -10.0f // pressure sensor reading 10cm depth means craft is considered surfaced
 #endif
