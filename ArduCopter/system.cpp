@@ -460,6 +460,36 @@ bool Copter::should_log(uint32_t mask)
 #endif
 }
 
+// default frame_class to match firmware if possible
+void Copter::set_default_frame_class()
+{
+    switch (FRAME_CONFIG) {
+        case QUAD_FRAME:
+        case HEXA_FRAME:
+        case OCTA_FRAME:
+        case OCTA_QUAD_FRAME:
+        case Y6_FRAME:
+            // reset frame_class to undefined if firmware does not match
+            // Note: this assumes that Y6 is the highest numbered frame to be supported by the AP_Motors_Matrix class
+            if (g2.frame_class > AP_Motors::MOTOR_FRAME_Y6) {
+                g2.frame_class = AP_Motors::MOTOR_FRAME_UNDEFINED;
+            }
+            break;
+        case TRI_FRAME:
+            g2.frame_class = AP_Motors::MOTOR_FRAME_TRI;
+            break;
+        case HELI_FRAME:
+            g2.frame_class = AP_Motors::MOTOR_FRAME_HELI;
+            break;
+        case SINGLE_FRAME:
+            g2.frame_class = AP_Motors::MOTOR_FRAME_SINGLE;
+            break;
+        case COAX_FRAME:
+            g2.frame_class = AP_Motors::MOTOR_FRAME_COAX;
+            break;
+    }
+}
+
 // return MAV_TYPE corresponding to frame class
 uint8_t Copter::get_frame_mav_type()
 {

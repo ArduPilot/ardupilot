@@ -1083,6 +1083,7 @@ private:
     void update_auto_armed();
     void check_usb_mux(void);
     bool should_log(uint32_t mask);
+    void set_default_frame_class();
     uint8_t get_frame_mav_type();
     const char* get_frame_string();
     bool current_mode_has_user_takeoff(bool must_navigate);
