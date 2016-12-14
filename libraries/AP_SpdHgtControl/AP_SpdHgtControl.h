@@ -28,7 +28,6 @@ public:
 	virtual void update_pitch_throttle( int32_t hgt_dem_cm,
 										int32_t EAS_dem_cm,
 										enum AP_Vehicle::FixedWing::FlightStage flight_stage,
-                                        bool is_doing_auto_land,
                                         float distance_beyond_land_wp,
 										int32_t ptchMinCO_cd,
 										int16_t throttle_nudge,

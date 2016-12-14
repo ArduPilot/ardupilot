@@ -952,7 +952,6 @@ void Plane::update_alt()
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
                                                  flight_stage,
-                                                 landing.in_progress,
                                                  distance_beyond_land_wp,
                                                  get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
