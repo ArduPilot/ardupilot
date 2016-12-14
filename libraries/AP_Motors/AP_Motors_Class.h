@@ -41,9 +41,6 @@ public:
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
-    // set update rate to motors - a value in hertz
-    virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; }
-
     // set frame orientation (normally + or X)
     virtual void        set_frame_orientation( uint8_t new_orientation ) { _flags.frame_orientation = new_orientation; }
 
@@ -107,6 +104,9 @@ public:
     // virtual functions that should be implemented by child classes
     //
 
+    // set update rate to motors - a value in hertz
+    virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; }
+
     // init
     virtual void        Init() = 0;
 
@@ -149,7 +149,7 @@ protected:
     void add_motor_num(int8_t motor_num);
     
     // update the throttle input filter
-    virtual void        update_throttle_filter() = 0;
+    virtual void update_throttle_filter() = 0;
 
     // save parameters as part of disarming
     virtual void save_params_on_disarm() {}
