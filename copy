@@ -1,0 +1,2 @@
+scp build/linux/examples/* root@192.168.1.119:/root/build
+

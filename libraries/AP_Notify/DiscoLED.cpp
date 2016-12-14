@@ -1,3 +1,5 @@
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
 /*
    Copyright (C) 2016 Mathieu Othacehe. All rights reserved.
 
@@ -14,6 +16,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <limits.h>
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX

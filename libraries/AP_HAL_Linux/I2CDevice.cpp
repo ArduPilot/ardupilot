@@ -1,3 +1,6 @@
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
+#include <limits.h>
 /*
  * Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
  *

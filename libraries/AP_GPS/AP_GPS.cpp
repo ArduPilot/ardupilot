@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: Navigation filter engine setting
     // @Values: 0:Portable,2:Stationary,3:Pedestrian,4:Automotive,5:Sea,6:Airborne1G,7:Airborne2G,8:Airborne4G
     // @User: Advanced
-    AP_GROUPINFO("NAVFILTER", 2, AP_GPS, _navfilter, GPS_ENGINE_AIRBORNE_4G),
+    AP_GROUPINFO("NAVFILTER", 2, AP_GPS, _navfilter,4),
 
     // @Param: AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
@@ -293,6 +293,7 @@ AP_GPS::detect_instance(uint8_t instance)
     }
 
     if (_port[instance] == nullptr) {
+        hal.console->printf("UART not available\n");
         // UART not available
         return;
     }

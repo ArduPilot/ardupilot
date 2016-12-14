@@ -233,6 +233,7 @@ class linux(Board):
 
         env.LIB += [
             'm',
+            'mraa',
         ]
 
         cfg.check_librt(env)

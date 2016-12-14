@@ -2,6 +2,7 @@
 
 #include "AP_HAL_Namespace.h"
 
+#include <limits.h>
 #include "AnalogIn.h"
 #include "GPIO.h"
 #include "RCInput.h"
