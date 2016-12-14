@@ -40,18 +40,6 @@ public:
     // output_to_motors - sends minimum values out to the motors
     void                output_to_motors();
 
-    // add_motor using just position and yaw_factor (or prop direction)
-    void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order);
-
-    // add_motor using separate roll and pitch factors (for asymmetrical frames) and prop direction
-    void                add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order);
-
-    // remove_motor
-    void                remove_motor(int8_t motor_num);
-
-    // remove_all_motors - removes all motor definitions
-    void                remove_all_motors();
-
     // setup_motors - configures the motors for a given frame type - should be overwritten by child classes
     virtual void        setup_motors() { remove_all_motors(); };
 
@@ -65,6 +53,15 @@ protected:
 
     // add_motor using raw roll, pitch, throttle and yaw factors
     void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
+
+    // add_motor using just position and yaw_factor (or prop direction)
+    void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order);
+
+    // add_motor using separate roll and pitch factors (for asymmetrical frames) and prop direction
+    void                add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order);
+
+    // remove_motor
+    void                remove_motor(int8_t motor_num);
 
     // normalizes the roll, pitch and yaw factors so maximum magnitude is 0.5
     void                normalise_rpy_factors();
