@@ -5,15 +5,6 @@
 // If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer
 // valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
-//#define FRAME_CONFIG VECTORED_FRAME
-/*  options:
- *  BLUEROV_FRAME
- *  VECTORED_FRAME
- *  VECTORED6DOF_FRAME
- *  SIMPLEROV_FRAME
- *  VECTORED90_FRAME
- */
-
 // uncomment the lines below to disable features (flash sizes listed are for APM2 boards and will underestimate savings on Pixhawk and other boards)
 //#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
 //#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space

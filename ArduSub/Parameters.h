@@ -206,6 +206,7 @@ public:
         k_param_rc_feel_rp,
 		k_param_throttle_gain,
 		k_param_cam_tilt_center,
+		k_param_frame_configuration,
 
 		// Acro Mode parameters
         k_param_acro_yaw_p = 220, // Used in all modes for get_pilot_desired_yaw_rate
@@ -399,6 +400,7 @@ public:
 #endif
 
     AP_Float				surface_depth;
+    AP_Int8					frame_configuration;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

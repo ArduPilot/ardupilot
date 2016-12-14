@@ -968,7 +968,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
         send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
 #endif
-        send_text(MAV_SEVERITY_INFO, "Frame: " FRAME_CONFIG_STRING);
         handle_param_request_list(msg);
         break;
     }
@@ -1501,8 +1500,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
             send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
             #endif
-
-            send_text(MAV_SEVERITY_INFO, "Frame: " FRAME_CONFIG_STRING);
 
             // send system ID if we can
             char sysid[40];

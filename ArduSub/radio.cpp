@@ -69,6 +69,7 @@ void Sub::init_rc_in()
 void Sub::init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
+    motors.set_frame_orientation(g.frame_configuration);
     motors.set_loop_rate(scheduler.get_loop_rate_hz());
     motors.Init();                                              // motor initialisation
 
