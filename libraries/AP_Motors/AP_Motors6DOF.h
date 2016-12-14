@@ -24,6 +24,8 @@ public:
     	AP_Param::setup_object_defaults(this, var_info);
     };
 
+    void setup_motors();
+
     void output_min() override;
 
     int16_t calc_thrust_to_pwm(float thrust_in) const;
@@ -40,6 +42,8 @@ protected:
     void add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, float lat_fac, uint8_t testing_order);
 
     void output_armed_stabilizing() override;
+    void output_armed_stabilizing_vectored();
+    void output_armed_stabilizing_vectored_6dof();
 
     // Parameters
     AP_Int8             _motor_reverse[8];
