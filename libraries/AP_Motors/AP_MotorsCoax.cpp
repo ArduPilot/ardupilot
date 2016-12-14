@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_MotorsCoax::var_info[] = {
     AP_GROUPEND
 };
 // init
-void AP_MotorsCoax::Init()
+void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
@@ -78,6 +78,15 @@ void AP_MotorsCoax::Init()
     _servo2.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
     _servo3.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
     _servo4.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+
+    // record successful initialisation if what we setup was the desired frame_class
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_COAX);
+}
+
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+void AP_MotorsCoax::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+{
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_COAX);
 }
 
 // set update rate to motors - a value in hertz
