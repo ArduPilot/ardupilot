@@ -19,7 +19,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Navigation/AP_Navigation.h>
 
 /// @class  AP_Landing
@@ -58,6 +57,14 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     }
 
+    // stages of flight
+    enum LandingStage {
+        STAGE_UNKNOWN       = 0,
+        STAGE_APPROACH      = 4,
+        STAGE_PREFLARE      = 5,
+        STAGE_FINAL         = 6,
+    };
+
     enum Landing_Type {
         TYPE_STANDARD_GLIDE_SLOPE = 0,
 //      TODO: TYPE_DEEPSTALL,
@@ -65,7 +72,7 @@ public:
 //      TODO: TYPE_HELICAL,
     };
 
-    bool verify_land(const AP_Vehicle::FixedWing::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+    bool verify_land(const bool is_aborting, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
             const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed);
     void adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm);
     void setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
@@ -78,7 +85,7 @@ public:
     bool restart_landing_sequence(void);
     float wind_alignment(const float heading_deg);
     float head_wind(void);
-    int32_t get_target_airspeed_cm(const AP_Vehicle::FixedWing::FlightStage flight_stage);
+    int32_t get_target_airspeed_cm(void);
 
     // accessor functions for the params and states
     static const struct AP_Param::GroupInfo var_info[];
@@ -93,6 +100,8 @@ public:
     bool is_commanded_go_around(void) const { return commanded_go_around; }
     bool is_complete(void) const { return complete; }
     void set_initial_slope() { initial_slope = slope; }
+    void set_stage(LandingStage _stage) { stage = _stage; }
+    LandingStage get_stage() const { return stage; }
 
 
 
@@ -125,6 +134,9 @@ private:
     // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
     float slope;
 
+    // flight stages for landing
+    LandingStage stage;
+
     AP_Mission &mission;
     AP_AHRS &ahrs;
     AP_SpdHgtControl *SpdHgt_Controller;
@@ -155,7 +167,7 @@ private:
     AP_Int8 type;
 
     // Land Type STANDARD GLIDE SLOPE
-    bool type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+    bool type_slope_verify_land(const bool is_aborting, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
             const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed);
 
     void type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm);

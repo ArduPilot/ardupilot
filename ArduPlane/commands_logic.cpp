@@ -251,7 +251,8 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         // use rangefinder to correct if possible
         float height = height_above_target() - rangefinder_correction();
 
-        return landing.verify_land(flight_stage, prev_WP_loc, next_WP_loc, current_loc,
+        const bool is_aborting = (flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
+        return landing.verify_land(is_aborting, prev_WP_loc, next_WP_loc, current_loc,
                 auto_state.takeoff_altitude_rel_cm, height, auto_state.sink_rate, auto_state.wp_proportion, auto_state.last_flying_ms, arming.is_armed(), is_flying(), rangefinder_state.in_range, throttle_suppressed);
         }
 
