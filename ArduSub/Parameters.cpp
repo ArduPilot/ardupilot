@@ -515,6 +515,14 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Range: 1000 2000
 	GSCALAR(cam_tilt_center, "CAM_CENTER", 1500),
 
+	// @Param: FRAME_CONFIG
+	// @DisplayName: Frame configuration
+	// @Description: Set this parameter according to your vehicle/motor configuration
+	// @User: Standard
+    // @RebootRequired: True
+	// @Values: 0:BlueROV1, 1:SimpleROV, 2:BlueROV2/Vectored, 3:Vectored6DOF, 4:Vectored90
+	GSCALAR(frame_configuration, "FRAME_CONFIG", AS_MOTORS_VECTORED_FRAME),
+
 	// @Group: BTN0_
 	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
 	GGROUP(jbtn_0,                   "BTN0_", JSButton),
@@ -840,16 +848,9 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(rally,      "RALLY_",   AP_Rally),
 #endif
 
-//#if (FRAME_CONFIG == VECTORED_FRAME || FRAME_CONFIG == BLUEROV_FRAME || FRAME_CONFIG == VECTORED6DOF_FRAME || FRAME_CONFIG == SIMPLEROV || FRAME_CONFIG == VECTORED90_FRAME)
 	// @Group: MOT_
 	// @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp
 	GOBJECT(motors, "MOT_",         AP_Motors6DOF),
-
-//#else
-//    // @Group: MOT_
-//    // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
-//    GOBJECT(motors, "MOT_",         AP_MotorsMulticopter),
-//#endif
 
 #if RCMAP_ENABLED == ENABLED
     // @Group: RCMAP_

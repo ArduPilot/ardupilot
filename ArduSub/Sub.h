@@ -299,23 +299,7 @@ private:
         uint8_t compass     : 1;    // true if compass is healthy
     } sensor_health;
 
-    // Motor Output
-#if FRAME_CONFIG == BLUEROV_FRAME
- #define MOTOR_CLASS AP_MotorsBlueROV6DOF
-#elif FRAME_CONFIG == VECTORED_FRAME
- #define MOTOR_CLASS AP_MotorsVectoredROV
-#elif FRAME_CONFIG == VECTORED6DOF_FRAME
- #define MOTOR_CLASS AP_MotorsVectored6DOF
-#elif FRAME_CONFIG == SIMPLEROV_FRAME
- #define MOTOR_CLASS AP_MotorsSimpleROV
-#elif FRAME_CONFIG == VECTORED90_FRAME
- #define MOTOR_CLASS AP_MotorsVectored90
-
-#else
- #error Unrecognised frame type
-#endif
-
-    MOTOR_CLASS motors;
+    AP_Motors6DOF motors;
 
     // GPS variables
     // Sometimes we need to remove the scaling for distance calcs
