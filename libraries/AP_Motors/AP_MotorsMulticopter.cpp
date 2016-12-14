@@ -294,7 +294,7 @@ void AP_MotorsMulticopter::update_battery_resistance()
         _batt_voltage_resting = _batt_voltage;
         _batt_current_resting = _batt_current;
         _batt_timer = 0;
-    } else if(_batt_voltage_resting < _batt_voltage && _batt_current_resting > _batt_current) {
+    } else if (_batt_voltage_resting > _batt_voltage && _batt_current_resting < _batt_current) {
         // update battery resistance when throttle is over hover throttle
         float batt_resistance = (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting);
         if ((_batt_timer < 400) && ((_batt_current_resting*2.0f) < _batt_current)) {
