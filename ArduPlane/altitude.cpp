@@ -29,14 +29,21 @@ void Plane::adjust_altitude_target()
         control_mode == CRUISE) {
         return;
     }
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) {
-        // in land final TECS uses TECS_LAND_SINK as a target sink
-        // rate, and ignores the target altitude
-        set_target_altitude_location(next_WP_loc);
-    } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH ||
-            flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE) {
-        landing.setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude.offset_cm);
-        landing.adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, auto_state.wp_distance, target_altitude.offset_cm);
+    if (landing.in_progress) {
+        switch (landing.get_stage()) {
+        case AP_Landing::STAGE_FINAL:
+            // in land final TECS uses TECS_LAND_SINK as a target sink
+            // rate, and ignores the target altitude
+            set_target_altitude_location(next_WP_loc);
+        break;
+
+        case AP_Landing::STAGE_UNKNOWN:
+        case AP_Landing::STAGE_APPROACH:
+        case AP_Landing::STAGE_PREFLARE:
+            landing.setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude.offset_cm);
+            landing.adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, auto_state.wp_distance, target_altitude.offset_cm);
+            break;
+        }
     } else if (reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
         // altitude target

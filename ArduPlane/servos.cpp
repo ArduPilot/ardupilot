@@ -465,7 +465,7 @@ void Plane::set_servos_controlled(void)
     }
     
     if (control_mode == AUTO) {
-        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) {
+        if (landing.get_stage() == AP_Landing::STAGE_FINAL) {
             min_throttle = 0;
         }
         
@@ -571,9 +571,7 @@ void Plane::set_servos_flaps(void)
                     auto_flap_percent = g.takeoff_flap_percent;
                 }
                 break;
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH:
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE:
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL:
+            case AP_Vehicle::FixedWing::FLIGHT_LAND:
                 if (landing.get_flap_percent() != 0) {
                     auto_flap_percent = landing.get_flap_percent();
                 }
