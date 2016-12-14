@@ -224,7 +224,7 @@ void Plane::stabilize_stick_mixing_fbw()
  */
 void Plane::stabilize_yaw(float speed_scaler)
 {
-    if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+    if (control_mode == AUTO && flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) {
         // in land final setup for ground steering
         steering_control.ground_steering = true;
     } else {
@@ -233,8 +233,8 @@ void Plane::stabilize_yaw(float speed_scaler)
         steering_control.ground_steering = (channel_roll->get_control_in() == 0 && 
                                             fabsf(relative_altitude()) < g.ground_steer_alt);
         if (control_mode == AUTO &&
-                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE)) {
+                (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH ||
+                flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE)) {
             // don't use ground steering on landing approach
             steering_control.ground_steering = false;
         }
@@ -248,7 +248,7 @@ void Plane::stabilize_yaw(float speed_scaler)
       final stage of landing (when the wings are help level) or when
       in course hold in FBWA mode (when we are below GROUND_STEER_ALT)
      */
-    if ((control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) ||
+    if ((control_mode == AUTO && flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) ||
         (steer_state.hold_course_cd != -1 && steering_control.ground_steering)) {
         calc_nav_yaw_course();
     } else if (steering_control.ground_steering) {
@@ -493,8 +493,8 @@ void Plane::calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
         channel_throttle->get_control_in() == 0 &&
-        flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF &&
-        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
+        flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
+        flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT) {
         // manual rudder control while still
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
@@ -503,8 +503,8 @@ void Plane::calc_nav_yaw_ground(void)
     }
 
     float steer_rate = (rudder_input/4500.0f) * g.ground_steer_dps;
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF ||
+        flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT) {
         steer_rate = 0;
     }
     if (!is_zero(steer_rate)) {
@@ -513,8 +513,8 @@ void Plane::calc_nav_yaw_ground(void)
     } else if (!steer_state.locked_course) {
         // pilot has released the rudder stick or we are still - lock the course
         steer_state.locked_course = true;
-        if (flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
+        if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
+            flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT) {
             steer_state.locked_course_err = 0;
         }
     }
@@ -651,7 +651,7 @@ bool Plane::allow_reverse_thrust(void)
 void Plane::adjust_nav_pitch_throttle(void)
 {
     int8_t throttle = throttle_percentage();
-    if (throttle >= 0 && throttle < aparm.throttle_cruise && flight_stage != AP_SpdHgtControl::FLIGHT_VTOL) {
+    if (throttle >= 0 && throttle < aparm.throttle_cruise && flight_stage != AP_Vehicle::FixedWing::FLIGHT_VTOL) {
         float p = (aparm.throttle_cruise - throttle) / (float)aparm.throttle_cruise;
         nav_pitch_cd -= g.stab_pitch_down * 100.0f * p;
     }
