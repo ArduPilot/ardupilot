@@ -494,7 +494,7 @@ void Plane::calc_nav_yaw_ground(void)
     if (gps.ground_speed() < 1 && 
         channel_throttle->get_control_in() == 0 &&
         flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
-        flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT) {
+        flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         // manual rudder control while still
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
@@ -504,7 +504,7 @@ void Plane::calc_nav_yaw_ground(void)
 
     float steer_rate = (rudder_input/4500.0f) * g.ground_steer_dps;
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF ||
-        flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT) {
+        flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         steer_rate = 0;
     }
     if (!is_zero(steer_rate)) {
@@ -514,7 +514,7 @@ void Plane::calc_nav_yaw_ground(void)
         // pilot has released the rudder stick or we are still - lock the course
         steer_state.locked_course = true;
         if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
-            flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT) {
+            flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
             steer_state.locked_course_err = 0;
         }
     }

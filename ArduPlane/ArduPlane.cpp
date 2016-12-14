@@ -543,7 +543,7 @@ void Plane::handle_auto_mode(void)
     if (quadplane.in_vtol_auto()) {
         quadplane.control_auto(next_WP_loc);
     } else if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
-        (nav_cmd_id == MAV_CMD_NAV_LAND && flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT)) {
+        (nav_cmd_id == MAV_CMD_NAV_LAND && flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND)) {
         takeoff_calc_roll();
         takeoff_calc_pitch();
         calc_throttle();
@@ -892,7 +892,7 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
 #endif
         break;
 
-    case AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT:
+    case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
         gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
         landing.in_progress = false;
         break;
@@ -974,12 +974,12 @@ void Plane::update_flight_stage(void)
                 set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
-                if (landing.is_commanded_go_around() || flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT) {
+                if (landing.is_commanded_go_around() || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
-                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT);
+                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
                 } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) {
                     plane.gcs_send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
-                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT);
+                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
                 } else if (landing.is_complete()) {
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL);
                 } else if (landing.pre_flare == true) {

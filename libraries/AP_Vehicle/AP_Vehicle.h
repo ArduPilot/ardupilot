@@ -67,7 +67,7 @@ public:
             FLIGHT_LAND_APPROACH = 4,
             FLIGHT_LAND_PREFLARE = 5,
             FLIGHT_LAND_FINAL    = 6,
-            FLIGHT_LAND_ABORT    = 7
+            FLIGHT_ABORT_LAND    = 7
         };
     };
 

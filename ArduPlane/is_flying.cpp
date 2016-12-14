@@ -99,7 +99,7 @@ void Plane::update_is_flying_5Hz(void)
             case AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL:
                 break;
 
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT:
+            case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
                 if (auto_state.sink_rate < -0.5f) {
                     // steep climb
                     is_flying_bool = true;

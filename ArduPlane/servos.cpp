@@ -469,7 +469,7 @@ void Plane::set_servos_controlled(void)
             min_throttle = 0;
         }
         
-        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT) {
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
             if(aparm.takeoff_throttle_max != 0) {
                 max_throttle = aparm.takeoff_throttle_max;
             } else {
@@ -560,7 +560,7 @@ void Plane::set_servos_flaps(void)
         if (control_mode == AUTO) {
             switch (flight_stage) {
             case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT:
+            case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
                 if (g.takeoff_flap_percent != 0) {
                     auto_flap_percent = g.takeoff_flap_percent;
                 }

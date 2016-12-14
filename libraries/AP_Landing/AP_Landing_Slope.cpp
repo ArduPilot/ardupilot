@@ -35,11 +35,9 @@ bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage
 
     // when aborting a landing, mimic the verify_takeoff with steering hold. Once
     // the altitude has been reached, restart the landing sequence
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_ABORT) {
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
 
         throttle_suppressed = false;
-
-
         complete = false;
         pre_flare = false;
         nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
