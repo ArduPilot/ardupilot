@@ -59,8 +59,7 @@ void setup()
 
     // motor initialisation
     motors.set_update_rate(490);
-    motors.set_frame_class_and_type(AP_Motors::MOTOR_FRAME_QUAD, AP_Motors::MOTOR_FRAME_TYPE_X);
-    motors.Init();
+    motors.init(AP_Motors::MOTOR_FRAME_QUAD, AP_Motors::MOTOR_FRAME_TYPE_X);
 #if HELI_TEST == 0
     motors.set_throttle_range(1000,2000);
     motors.set_throttle_avg_max(0.5f);
@@ -69,7 +68,7 @@ void setup()
     motors.output_min();
 
     // setup radio
-	 rc3.set_radio_min(1000);
+	rc3.set_radio_min(1000);
     rc3.set_radio_max(2000);
 
     // set rc channel ranges
