@@ -389,25 +389,22 @@ bool QuadPlane::setup(void)
     switch ((enum AP_Motors::motor_frame_class)frame_class.get()) {
     case AP_Motors::MOTOR_FRAME_QUAD:
         setup_default_channels(4);
-        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
         break;
     case AP_Motors::MOTOR_FRAME_HEXA:
         setup_default_channels(6);
-        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
         break;
     case AP_Motors::MOTOR_FRAME_OCTA:
     case AP_Motors::MOTOR_FRAME_OCTAQUAD:
         setup_default_channels(8);
-        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
         break;
     case AP_Motors::MOTOR_FRAME_Y6:
         setup_default_channels(7);
-        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
         break;
     default:
         hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
         goto failed;
     }
+    motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
 #endif // AP_MOTORS_CLASS
     const static char *strUnableToAllocate = "Unable to allocate";
     if (!motors) {
