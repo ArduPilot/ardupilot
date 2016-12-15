@@ -578,7 +578,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
 
         case MOTOR_FRAME_Y6:
             switch (frame_type) {
-                case MOTOR_FRAME_TYPE_NEW_PLUS:
+                case MOTOR_FRAME_TYPE_Y6B:
                     // Y6 motor definition with all top motors spinning clockwise, all bottom motors counter clockwise
                     add_motor_raw(AP_MOTORS_MOT_1, -1.0f,  0.500f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
                     add_motor_raw(AP_MOTORS_MOT_2, -1.0f,  0.500f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
