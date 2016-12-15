@@ -23,9 +23,13 @@
 
 extern const AP_HAL::HAL& hal;
 
-// Init
+// init
 void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
+    // record requested frame class and type
+    _last_frame_class = frame_class;
+    _last_frame_type = frame_type;
+
     // setup the motors
     setup_motors(frame_class, frame_type);
 
