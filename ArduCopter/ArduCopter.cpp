@@ -490,7 +490,7 @@ void Copter::one_hz_loop()
         update_using_interlock();
 
         // check the user hasn't updated the frame class or type
-        motors.set_frame_class_and_type((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_orientation.get());
+        motors.set_frame_class_and_type((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
 
 #if FRAME_CONFIG != HELI_FRAME
         // set all throttle channel settings
