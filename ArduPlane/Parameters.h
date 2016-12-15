@@ -562,6 +562,15 @@ public:
  */
 class ParametersG2 {
 public:
+
+	enum {
+	        k_param_2_button = 1,
+	        k_param_2_ice_control,
+	        k_param_2_servo_channels,
+	        k_param_2_sysid_enforce,
+	        k_param_2_stats,
+	};
+
     ParametersG2(void);
 
     // var_info for holding Parameter information
