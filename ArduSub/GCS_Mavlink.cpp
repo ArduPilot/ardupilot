@@ -1513,7 +1513,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             	// For that matter, send an invalid signal to all channels to prevent undesired/unexpected behavior
                 hal.rcout->cork();
                 for(int i=0; i<RC_MAX_CHANNELS; i++ ) {
-                        hal.rcout->write(i, 0);
+                	// Set to 1 because 0 is interpreted as flag to ignore update
+                	hal.rcout->write(i, 1);
                 }
                 hal.rcout->push();
 
