@@ -44,8 +44,7 @@ public:
         MOTOR_FRAME_TYPE_H = 3,
         MOTOR_FRAME_TYPE_VTAIL = 4,
         MOTOR_FRAME_TYPE_ATAIL = 5,
-        MOTOR_FRAME_TYPE_Y6B = 6,
-        MOTOR_FRAME_TYPE_NEW_PLUS = 10
+        MOTOR_FRAME_TYPE_Y6B = 10
     };
 
     // Constructor
