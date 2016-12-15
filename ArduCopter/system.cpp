@@ -511,9 +511,9 @@ uint8_t Copter::get_frame_mav_type()
             return MAV_TYPE_COAXIAL;
         case AP_Motors::MOTOR_FRAME_UNDEFINED:
         default:
-            return MAV_TYPE_GENERIC;
+            break;
     }
-    // we should never get this far
+    // unknown frame so return generic
     return MAV_TYPE_GENERIC;
 }
 
