@@ -1,4 +1,11 @@
 #pragma once
+/*
+  driver for the invensense range of IMUs, including:
+
+  MPU6000
+  MPU9250
+  ICM-20608
+ */
 
 #include <stdint.h>
 
@@ -15,19 +22,19 @@
 #include "AP_InertialSensor_Backend.h"
 #include "AuxiliaryBus.h"
 
-class AP_MPU6000_AuxiliaryBus;
-class AP_MPU6000_AuxiliaryBusSlave;
+class AP_Invensense_AuxiliaryBus;
+class AP_Invensense_AuxiliaryBusSlave;
 
-class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
+class AP_InertialSensor_Invensense : public AP_InertialSensor_Backend
 {
-    friend AP_MPU6000_AuxiliaryBus;
-    friend AP_MPU6000_AuxiliaryBusSlave;
+    friend AP_Invensense_AuxiliaryBus;
+    friend AP_Invensense_AuxiliaryBusSlave;
 
 public:
-    virtual ~AP_InertialSensor_MPU6000();
+    virtual ~AP_InertialSensor_Invensense();
 
-    static AP_InertialSensor_MPU6000 &from(AP_InertialSensor_Backend &backend) {
-        return static_cast<AP_InertialSensor_MPU6000&>(backend);
+    static AP_InertialSensor_Invensense &from(AP_InertialSensor_Backend &backend) {
+        return static_cast<AP_InertialSensor_Invensense&>(backend);
     }
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
@@ -49,8 +56,14 @@ public:
 
     void start() override;
 
+    enum Invensense_Type {
+        Invensense_MPU6000=0,
+        Invensense_MPU9250,
+        Invensense_ICM20608,
+    };
+    
 private:
-    AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
+    AP_InertialSensor_Invensense(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
                               enum Rotation rotation);
 
@@ -99,10 +112,10 @@ private:
 
     AP_HAL::DigitalSource *_drdy_pin;
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
-    AP_MPU6000_AuxiliaryBus *_auxiliary_bus;
+    AP_Invensense_AuxiliaryBus *_auxiliary_bus;
 
-    // is this an ICM-20608?
-    bool _is_icm_device;
+    // which sensor type this is
+    enum Invensense_Type _mpu_type;
 
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
@@ -126,9 +139,9 @@ private:
     } _accum;
 };
 
-class AP_MPU6000_AuxiliaryBusSlave : public AuxiliaryBusSlave
+class AP_Invensense_AuxiliaryBusSlave : public AuxiliaryBusSlave
 {
-    friend class AP_MPU6000_AuxiliaryBus;
+    friend class AP_Invensense_AuxiliaryBus;
 
 public:
     int passthrough_read(uint8_t reg, uint8_t *buf, uint8_t size) override;
@@ -137,27 +150,27 @@ public:
     int read(uint8_t *buf) override;
 
 protected:
-    AP_MPU6000_AuxiliaryBusSlave(AuxiliaryBus &bus, uint8_t addr, uint8_t instance);
+    AP_Invensense_AuxiliaryBusSlave(AuxiliaryBus &bus, uint8_t addr, uint8_t instance);
     int _set_passthrough(uint8_t reg, uint8_t size, uint8_t *out = nullptr);
 
 private:
-    const uint8_t _mpu6000_addr;
-    const uint8_t _mpu6000_reg;
-    const uint8_t _mpu6000_ctrl;
-    const uint8_t _mpu6000_do;
+    const uint8_t _mpu_addr;
+    const uint8_t _mpu_reg;
+    const uint8_t _mpu_ctrl;
+    const uint8_t _mpu_do;
 
     uint8_t _ext_sens_data = 0;
 };
 
-class AP_MPU6000_AuxiliaryBus : public AuxiliaryBus
+class AP_Invensense_AuxiliaryBus : public AuxiliaryBus
 {
-    friend class AP_InertialSensor_MPU6000;
+    friend class AP_InertialSensor_Invensense;
 
 public:
     AP_HAL::Semaphore *get_semaphore() override;
 
 protected:
-    AP_MPU6000_AuxiliaryBus(AP_InertialSensor_MPU6000 &backend, uint32_t devid);
+    AP_Invensense_AuxiliaryBus(AP_InertialSensor_Invensense &backend, uint32_t devid);
 
     AuxiliaryBusSlave *_instantiate_slave(uint8_t addr, uint8_t instance) override;
     int _configure_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg,
