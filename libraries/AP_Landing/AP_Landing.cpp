@@ -149,22 +149,15 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
 bool AP_Landing::verify_land(const AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
         const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed)
 {
-    switch (type) {
-    default:
-    case TYPE_STANDARD_GLIDE_SLOPE:
-        return type_slope_verify_land(flight_stage,prev_WP_loc, next_WP_loc, current_loc,
-                auto_state_takeoff_altitude_rel_cm, height,sink_rate, wp_proportion, last_flying_ms, is_armed, is_flying, rangefinder_state_in_range, throttle_suppressed);
-    }
+    // type is TYPE_STANDARD_GLIDE_SLOPE or etc.
+    return type_slope_verify_land(flight_stage,prev_WP_loc, next_WP_loc, current_loc,
+            auto_state_takeoff_altitude_rel_cm, height,sink_rate, wp_proportion, last_flying_ms, is_armed, is_flying, rangefinder_state_in_range, throttle_suppressed);
 }
 
 void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm)
 {
-    switch (type) {
-    default:
-    case TYPE_STANDARD_GLIDE_SLOPE:
-        type_slope_adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, wp_distance, target_altitude_offset_cm);
-        break;
-    }
+    // type is TYPE_STANDARD_GLIDE_SLOPE or etc.
+    type_slope_adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, wp_distance, target_altitude_offset_cm);
 }
 
 /*
@@ -178,12 +171,8 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
 
 void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm)
 {
-    switch (type) {
-    default:
-    case TYPE_STANDARD_GLIDE_SLOPE:
-        type_slope_setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
-        break;
-    }
+    // type is TYPE_STANDARD_GLIDE_SLOPE or etc.
+    type_slope_setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
 }
 
 /*
@@ -331,11 +320,8 @@ int32_t AP_Landing::get_target_airspeed_cm(const AP_SpdHgtControl::FlightStage f
  */
 bool AP_Landing::request_go_around(void)
 {
-    switch (type) {
-    default:
-    case TYPE_STANDARD_GLIDE_SLOPE:
-        return type_slope_request_go_around();
-    }
+    // type is TYPE_STANDARD_GLIDE_SLOPE or etc.
+    return type_slope_request_go_around();
 }
 
 
