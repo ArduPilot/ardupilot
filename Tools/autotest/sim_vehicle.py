@@ -462,6 +462,9 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     if opts.valgrind:
         cmd_name += " (valgrind)"
         cmd.append("valgrind")
+    if opts.callgrind:
+        cmd_name += " (callgrind)"
+        cmd.append("valgrind --tool=callgrind")
     if opts.gdb:
         cmd_name += " (gdb)"
         cmd.append("gdb")
@@ -609,6 +612,7 @@ parser.add_option_group(group_build)
 group_sim = optparse.OptionGroup(parser, "Simulation options")
 group_sim.add_option("-I", "--instance", default=0, type='int', help="instance of simulator")
 group_sim.add_option("-V", "--valgrind", action='store_true', default=False, help="enable valgrind for memory access checking (very slow!)")
+group_sim.add_option("", "--callgrind", action='store_true', default=False, help="enable valgrind for performance analysis (very very slow!)")
 group_sim.add_option("-T", "--tracker", action='store_true', default=False, help="start an antenna tracker instance")
 group_sim.add_option("-A", "--sitl-instance-args", type='string', default=None, help="pass arguments to SITL instance")
 # group_sim.add_option("-R", "--reverse-throttle", action='store_true', default=False, help="reverse throttle in plane")
@@ -654,6 +658,9 @@ if cmd_opts.hil:
     if cmd_opts.valgrind:
         print("May not use valgrind with hil")
         sys.exit(1)
+    if cmd_opts.callgrind:
+        print("May not use callgrind with hil")
+        sys.exit(1)
     if cmd_opts.gdb or cmd_opts.gdb_stopped:
         print("May not use gdb with hil")
         sys.exit(1)
@@ -665,12 +672,19 @@ if cmd_opts.valgrind and (cmd_opts.gdb or cmd_opts.gdb_stopped):
     print("May not use valgrind with gdb")
     sys.exit(1)
 
+if cmd_opts.valgrind and opts.callgrind:
+    print("May not use valgrind with callgrind")
+    sys.exit(1)
+
 if cmd_opts.strace and (cmd_opts.gdb or cmd_opts.gdb_stopped):
     print("May not use strace with gdb")
     sys.exit(1)
 
 if cmd_opts.strace and cmd_opts.valgrind:
     print("valgrind and strace almost certainly not a good idea")
+
+if cmd_opts.strace and cmd_opts.callgrind:
+    print("callgrind and strace almost certainly not a good idea")
 
 # magically determine vehicle type (if required):
 if cmd_opts.vehicle is None:
