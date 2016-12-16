@@ -27,6 +27,7 @@
 #include "AP_RangeFinder_MAVLink.h"
 #include "AP_RangeFinder_LeddarOne.h"
 #include "AP_RangeFinder_uLanding.h"
+#include "AP_RangeFinder_trone.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
@@ -599,6 +600,11 @@ void RangeFinder::detect_instance(uint8_t instance)
         if (_address[instance]) {
             _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
                 hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, _address[instance])));
+        }
+        break;
+    case RangeFinder_TYPE_TRONE:
+        if (!_add_backend(AP_RangeFinder_trone::detect(0, *this, instance, state[instance]))) {
+            _add_backend(AP_RangeFinder_trone::detect(1, *this, instance, state[instance]));
         }
         break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
