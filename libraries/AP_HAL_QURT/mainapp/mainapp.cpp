@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <time.h>
 #include <errno.h>
 #include <AP_HAL/utility/Socket.h>
