@@ -9,6 +9,7 @@ based on sim_vehicle.sh by Andrew Tridgell, October 2011
 from __future__ import print_function
 
 import atexit
+import errno
 import getpass
 import optparse
 import os
@@ -750,6 +751,7 @@ group_sim.add_option("-w", "--wipe-eeprom", action='store_true', default=False, 
 group_sim.add_option("-m", "--mavproxy-args", default=None, type='string', help="additional arguments to pass to mavproxy.py")
 group_sim.add_option("", "--strace", action='store_true', default=False, help="strace the ArduPilot binary")
 group_sim.add_option("", "--model", type='string', default=None, help="Override simulation model to use")
+group_sim.add_option("", "--use-dir", type='string', default=None, help="Store SITL state and output in named directory")
 parser.add_option_group(group_sim)
 
 
@@ -855,6 +857,15 @@ if cmd_opts.custom_location:
 else:
     location = find_location_by_name(find_autotest_dir(), cmd_opts.location)
     progress("Starting up at %s (%s)" % (location, cmd_opts.location))
+
+if cmd_opts.use_dir is not None:
+    new_dir = cmd_opts.use_dir
+    try:
+        os.makedirs(os.path.realpath(new_dir))
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+    os.chdir(new_dir)
 
 if cmd_opts.hil:
     # (unlikely)
