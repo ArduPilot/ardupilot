@@ -37,6 +37,9 @@ public:
         return new Gazebo(home_str, frame_str);
     }
 
+    /*  Create and set in/out socket for Gazebo simulator */
+    void set_interface_ports(const char* address, const int port_in, const int port_out);
+
 private:
     /*
       packet sent to Gazebo
@@ -64,6 +67,9 @@ private:
 
     double last_timestamp;
 
+    SocketAPM socket_sitl;
+    const char *_gazebo_address = "127.0.0.1";
+    int _gazebo_port = 9002;
 };
 
 } // namespace SITL

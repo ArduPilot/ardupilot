@@ -68,8 +68,8 @@ public:
         autotest_dir = _autotest_dir;
     }
 
-    /*  Create and set in/out socket */
-    void set_interface_ports(const char* address, const int port_in, const int port_out);
+    /*  Create and set in/out socket for extenal simulator */
+    virtual void set_interface_ports(const char* address, const int port_in, const int port_out) {};
 
     /*
       step the FDM by one time step
@@ -163,9 +163,6 @@ protected:
     const char *frame;
     bool use_time_sync = true;
     float last_speedup = -1;
-
-    SocketAPM socket_in;
-    SocketAPM socket_out;
 
     enum {
         GROUND_BEHAVIOR_NONE = 0,

@@ -55,8 +55,6 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     rate_hz(1200.0f),
     autotest_dir(nullptr),
     frame(frame_str),
-    socket_in(true),
-    socket_out(true),
 #ifdef __CYGWIN__
     min_sleep_time(20000)
 #else
@@ -410,30 +408,6 @@ uint64_t Aircraft::get_wall_time_us() const
 void Aircraft::set_speedup(float speedup)
 {
     setup_frame_time(rate_hz, speedup);
-}
-
-/*
-  Create and set in/out socket
-*/
-void Aircraft::set_interface_ports(const char* address, const int port_in, const int port_out)
-{
-    if (!socket_in.bind("127.0.0.1", port_in)) {
-        fprintf(stderr, "SITL: socket in bind failed on sim in : %d  - %s\n", port_in, strerror(errno));
-        fprintf(stderr, "Abording launch...\n");
-        exit(1);
-    }
-    printf("Bind %s:%d for SITL in\n", "127.0.0.1", port_in);
-    socket_in.reuseaddress();
-    socket_in.set_blocking(false);
-
-    if (!socket_out.connect(address, port_out)) {
-        fprintf(stderr, "SITL: socket out bind failed on sim out : %d  - %s\n", port_out, strerror(errno));
-        fprintf(stderr, "Abording launch...\n");
-        exit(1);
-    }
-    printf("Bind %s:%d for SITL out\n", address, port_out);
-    socket_out.reuseaddress();
-    socket_out.set_blocking(false);
 }
 
 /*
