@@ -29,13 +29,33 @@ namespace SITL {
 
 Gazebo::Gazebo(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
-    last_timestamp(0)
+    last_timestamp(0),
+    socket_sitl{true}
 {
     // try to bind to a specific port so that if we restart ArduPilot
     // Gazebo keeps sending us packets. Not strictly necessary but
     // useful for debugging
     fprintf(stdout, "Starting SITL Gazebo\n");
 
+}
+
+/*
+  Create and set in/out socket
+*/
+void Gazebo::set_interface_ports(const char* address, const int port_in, const int port_out)
+{
+    if (!socket_sitl.bind("0.0.0.0", port_in)) {
+        fprintf(stderr, "SITL: socket in bind failed on sim in : %d  - %s\n", port_in, strerror(errno));
+        fprintf(stderr, "Abording launch...\n");
+        exit(1);
+    }
+    printf("Bind %s:%d for SITL in\n", "127.0.0.1", port_in);
+    socket_sitl.reuseaddress();
+    socket_sitl.set_blocking(false);
+
+    _gazebo_address = address;
+    _gazebo_port = port_out;
+    printf("Setting Gazebo interface to %s:%d \n", _gazebo_address, _gazebo_port);
 }
 
 /*
@@ -50,7 +70,7 @@ void Gazebo::send_servos(const struct sitl_input &input)
     {
       pkt.motor_speed[i] = (input.servos[i]-1000) / 1000.0f;
     }
-    socket_out.send(&pkt, sizeof(pkt));
+    socket_sitl.sendto(&pkt, sizeof(pkt), _gazebo_address, _gazebo_port);
 }
 
 /*
@@ -65,7 +85,7 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    while (socket_in.recv(&pkt, sizeof(pkt), 100) != sizeof(pkt)) {
+    while (socket_sitl.recv(&pkt, sizeof(pkt), 100) != sizeof(pkt)) {
         send_servos(input);
     }
 
@@ -123,7 +143,7 @@ void Gazebo::drain_sockets()
     ssize_t received;
     errno = 0;
     do {
-        received = socket_in.recv(buf, buflen, 0);
+        received = socket_sitl.recv(buf, buflen, 0);
         if (received < 0) {
             if (errno != EAGAIN && errno != EWOULDBLOCK && errno != 0) {
                 fprintf(stderr, "error recv on socket in: %s \n",

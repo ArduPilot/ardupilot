@@ -58,9 +58,9 @@ void SITL_State::_usage(void)
            "\t--uartC device           set device string for UARTC\n"
            "\t--uartD device           set device string for UARTD\n"
            "\t--uartE device           set device string for UARTE\n"
-           "\t--gazebo-address ADDR    set address string for gazebo\n"
-           "\t--gazebo-port-in PORT    set port num for gazebo in\n"
-           "\t--gazebo-port-out PORT   set port num for gazebo out\n"
+           "\t--sim-address ADDR       set address string for simulator\n"
+           "\t--sim-port-in PORT       set port num for simulator in\n"
+           "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
            "\t--rc-out-port PORT       set port num for rc out\n"
@@ -140,8 +140,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const int RCOUT_PORT = 5502;
     const int RCIN_PORT = 5501;
     const int FG_VIEW_PORT = 5503;
-    const int GAZEBO_IN_PORT = 9003;
-    const int GAZEBO_OUT_PORT = 9002;
+    const int SIM_IN_PORT = 9003;
+    const int SIM_OUT_PORT = 9002;
     const int IRLOCK_PORT = 9005;
     _base_port = BASE_PORT;
     _rcout_port = RCOUT_PORT;
@@ -150,9 +150,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _fdm_address = "127.0.0.1";
     _client_address = nullptr;
     _use_fg_view = true;
-    _gazebo_address = "127.0.0.1";
-    _gazebo_port_in = GAZEBO_IN_PORT;
-    _gazebo_port_out = GAZEBO_OUT_PORT;
+    _simulator_address = "127.0.0.1";
+    _simulator_port_in = SIM_IN_PORT;
+    _simulator_port_out = SIM_OUT_PORT;
     _irlock_port = IRLOCK_PORT;
     _instance = 0;
 
@@ -168,9 +168,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTF,
         CMDLINE_RTSCTS,
         CMDLINE_FGVIEW,
-        CMDLINE_GAZEBO_ADDRESS,
-        CMDLINE_GAZEBO_PORT_IN,
-        CMDLINE_GAZEBO_PORT_OUT,
+        CMDLINE_SIM_ADDRESS,
+        CMDLINE_SIM_PORT_IN,
+        CMDLINE_SIM_PORT_OUT,
         CMDLINE_BASE_PORT,
         CMDLINE_IRLOCK_PORT,
         CMDLINE_RCIN_PORT,
@@ -201,9 +201,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
-        {"gazebo-address",  true,   0, CMDLINE_GAZEBO_ADDRESS},
-        {"gazebo-port-in",  true,   0, CMDLINE_GAZEBO_PORT_IN},
-        {"gazebo-port-out", true,   0, CMDLINE_GAZEBO_PORT_OUT},
+        {"sim-address",     true,   0, CMDLINE_SIM_ADDRESS},
+        {"sim-port-in",     true,   0, CMDLINE_SIM_PORT_IN},
+        {"sim-port-out",    true,   0, CMDLINE_SIM_PORT_OUT},
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
@@ -243,11 +243,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             if (_fg_view_port == FG_VIEW_PORT) {
                 _fg_view_port += _instance * 10;
             }
-            if (_gazebo_port_in == GAZEBO_IN_PORT) {
-                _gazebo_port_in += _instance * 10;
+            if (_simulator_port_in == SIM_IN_PORT) {
+                _simulator_port_in += _instance * 10;
             }
-            if (_gazebo_port_out == GAZEBO_OUT_PORT) {
-                _gazebo_port_out += _instance * 10;
+            if (_simulator_port_out == SIM_OUT_PORT) {
+                _simulator_port_out += _instance * 10;
             }
             if (_irlock_port == IRLOCK_PORT) {
                 _irlock_port += _instance * 10;
@@ -299,14 +299,14 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_FGVIEW:
             _use_fg_view = false;
             break;
-        case CMDLINE_GAZEBO_ADDRESS:
-            _gazebo_address = gopt.optarg;
+        case CMDLINE_SIM_ADDRESS:
+            _simulator_address = gopt.optarg;
             break;
-        case CMDLINE_GAZEBO_PORT_IN:
-            _gazebo_port_in = atoi(gopt.optarg);
+        case CMDLINE_SIM_PORT_IN:
+            _simulator_port_in = atoi(gopt.optarg);
             break;
-        case CMDLINE_GAZEBO_PORT_OUT:
-            _gazebo_port_out = atoi(gopt.optarg);
+        case CMDLINE_SIM_PORT_OUT:
+            _simulator_port_out = atoi(gopt.optarg);
             break;
         case CMDLINE_IRLOCK_PORT:
             _irlock_port = atoi(gopt.optarg);
@@ -334,9 +334,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
         if (strncasecmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
             sitl_model = model_constructors[i].constructor(home_str, model_str);
-            if (strncasecmp("gazebo", model_str, strlen("gazebo")) == 0) {
-              sitl_model->set_interface_ports(_gazebo_address, _gazebo_port_in, _gazebo_port_out);
-            }
+            sitl_model->set_interface_ports(_simulator_address, _simulator_port_in, _simulator_port_out);
             sitl_model->set_speedup(speedup);
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
