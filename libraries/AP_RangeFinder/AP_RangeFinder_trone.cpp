@@ -19,6 +19,7 @@
 
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -72,6 +73,13 @@ bool AP_RangeFinder_trone::init(void)
 
     dev->set_retries(10);
 
+    // check WHOAMI
+    uint8_t whoami;
+    if (!dev->read_registers(TRONE_WHOAMI, &whoami, 1) ||
+        whoami != TRONE_WHOAMI_VALUE) {
+        return false;
+    }
+    
     if (!measure()) {
         dev->get_semaphore()->give();
         return false;
@@ -113,6 +121,11 @@ bool AP_RangeFinder_trone::collect(uint16_t &distance_cm)
         return false;
     }
 
+    if (d[2] != crc_crc8(d, 2)) {
+        // bad CRC
+        return false;
+    }
+    
     distance_cm = ((uint16_t(d[0]) << 8) | d[1]) / 10;
 
     return true;
