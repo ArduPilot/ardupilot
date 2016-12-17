@@ -74,6 +74,8 @@ TEST(MathTest, IsZero)
 
 TEST(MathTest, IsEqual)
 {
+    EXPECT_FALSE(is_equal(1, 0));
+    EXPECT_TRUE(is_equal(1, 1));
     EXPECT_FALSE(is_equal(0.1,  0.10001));
     EXPECT_FALSE(is_equal(0.1, -0.1001));
     EXPECT_TRUE(is_equal(0.f,   0.0f));
