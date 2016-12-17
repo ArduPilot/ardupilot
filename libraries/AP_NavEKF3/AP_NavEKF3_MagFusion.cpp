@@ -178,8 +178,10 @@ void NavEKF3_core::realignYawGPS()
             // calculate new filter quaternion states from Euler angles
             stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
 
-            // reset the velocity and posiiton states as they will be inaccurate due to bad yaw
+            // reset the velocity and position states as they will be inaccurate due to bad yaw
+            velResetSource = GPS;
             ResetVelocity();
+            posResetSource = GPS;
             ResetPosition();
 
             // set the yaw angle variance to a larger value to reflect the uncertainty in yaw

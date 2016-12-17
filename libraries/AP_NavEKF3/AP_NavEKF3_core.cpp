@@ -265,6 +265,8 @@ void NavEKF3_core::InitialiseVariables()
     ekfOriginHgtVar = 0.0f;
     velOffsetNED.zero();
     posOffsetNED.zero();
+    posResetSource = DEFAULT;
+    velResetSource = DEFAULT;
 
     // range beacon fusion variables
     memset(&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
@@ -294,7 +296,6 @@ void NavEKF3_core::InitialiseVariables()
     N_beacons = 0;
     maxBcnPosD = 0.0f;
     minBcnPosD = 0.0f;
-    bcnPosDownOffset = 0.0f;
     bcnPosDownOffsetMax = 0.0f;
     bcnPosOffsetMaxVar = 0.0f;
     OffsetMaxInnovFilt = 0.0f;
@@ -303,6 +304,8 @@ void NavEKF3_core::InitialiseVariables()
     OffsetMinInnovFilt = 0.0f;
     rngBcnFuseDataReportIndex = 0;
     memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
+    bcnPosOffsetNED.zero();
+    bcnOriginEstInit = false;
 
     // zero data buffers
     storedIMU.reset();
@@ -588,6 +591,11 @@ void NavEKF3_core::UpdateStrapdownEquationsNED()
 
     // limit states to protect against divergence
     ConstrainStates();
+
+    // If main filter velocity states are valid, update the range beacon receiver position states
+    if (filterStatus.flags.horiz_vel) {
+        receiverPos += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
+    }
 }
 
 /*
