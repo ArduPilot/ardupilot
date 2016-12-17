@@ -184,7 +184,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: GPS_DELAY
     // @DisplayName: GPS measurement delay (msec)
-    // @Description: This is the number of msec that the GPS measurements lag behind the inertial measurements.
+    // @Description: This is the number of msec that the GPS measurements lag behind the inertial measurements. The autpilot should be restarted after adjusting this parameter.
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
@@ -219,7 +219,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: HGT_DELAY
     // @DisplayName: Height measurement delay (msec)
-    // @Description: This is the number of msec that the Height measurements lag behind the inertial measurements.
+    // @Description: This is the number of msec that the Height measurements lag behind the inertial measurements. The autpilot should be restarted after adjusting this parameter.
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
@@ -320,7 +320,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
-    // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
+    // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.  The autpilot should be restarted after adjusting this parameter.
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
@@ -501,7 +501,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: BCN_DELAY
     // @DisplayName: Range beacon measurement delay (msec)
-    // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
+    // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements. The autpilot should be restarted after adjusting this parameter.
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
@@ -559,6 +559,7 @@ NavEKF3::NavEKF3(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
     gndGradientSigma(50),           // RMS terrain gradient percentage assumed by the terrain height estimation
     fusionTimeStep_ms(10),          // The minimum number of msec between covariance prediction and fusion operations
+    sensorIntervalMin_ms(50),       // The minimum allowed time between measurements from any non-IMU sensor (msec)
     runCoreSelection(false)         // true when the default primary core has stabilised after startup and core selection can run
 {
     AP_Param::setup_object_defaults(this, var_info);

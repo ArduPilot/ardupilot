@@ -22,6 +22,12 @@ extern const AP_HAL::HAL& hal;
 // select fusion of optical flow measurements
 void NavEKF3_core::SelectFlowFusion()
 {
+    // start performance timer
+    hal.util->perf_begin(_perf_FuseOptFlow);
+
+    // Check for data at the fusion time horizon
+    flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
+
     // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
     // If so, don't fuse measurements on this time step to reduce frame over-runs
     // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
@@ -32,8 +38,6 @@ void NavEKF3_core::SelectFlowFusion()
         optFlowFusionDelayed = false;
     }
 
-    // start performance timer
-    hal.util->perf_begin(_perf_FuseOptFlow);
     // Perform Data Checks
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
