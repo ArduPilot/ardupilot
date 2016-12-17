@@ -1420,7 +1420,10 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
                     beaconPosE : (int16_t)(100*beaconPosNED.y),
                     beaconPosD : (int16_t)(100*beaconPosNED.z),
                     offsetHigh : (int16_t)(100*bcnPosOffsetHigh),
-                    offsetLow : (int16_t)(100*bcnPosOffsetLow)
+                    offsetLow : (int16_t)(100*bcnPosOffsetLow),
+                    posN : 0,
+                    posE : 0,
+                    posD : 0
                 };
                 WriteBlock(&pkt10, sizeof(pkt10));
             }
@@ -1695,7 +1698,8 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector3f beaconPosNED;
     float bcnPosOffsetHigh;
     float bcnPosOffsetLow;
-     if (ahrs.get_NavEKF3().getRangeBeaconDebug(-1, ID, rng, innov, innovVar, testRatio, beaconPosNED, bcnPosOffsetHigh, bcnPosOffsetLow)) {
+    Vector3f posNED;
+     if (ahrs.get_NavEKF3().getRangeBeaconDebug(-1, ID, rng, innov, innovVar, testRatio, beaconPosNED, bcnPosOffsetHigh, bcnPosOffsetLow, posNED)) {
         if (rng > 0.0f) {
             struct log_RngBcnDebug pkt10 = {
                 LOG_PACKET_HEADER_INIT(LOG_XKF10_MSG),
@@ -1709,7 +1713,11 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
                 beaconPosE : (int16_t)(100*beaconPosNED.y),
                 beaconPosD : (int16_t)(100*beaconPosNED.z),
                 offsetHigh : (int16_t)(100*bcnPosOffsetHigh),
-                offsetLow : (int16_t)(100*bcnPosOffsetLow)
+                offsetLow : (int16_t)(100*bcnPosOffsetLow),
+                posN : (int16_t)(100*posNED.x),
+                posE : (int16_t)(100*posNED.y),
+                posD : (int16_t)(100*posNED.z)
+
              };
             WriteBlock(&pkt10, sizeof(pkt10));
         }
