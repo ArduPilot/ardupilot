@@ -755,6 +755,11 @@ void NavEKF3_core::readRngBcnData()
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
     rngBcnDataToFuse = storedRangeBeacon.recall(rngBcnDataDelayed,imuDataDelayed.time_ms);
 
+    // Correct the range beacon earth frame origin for estimated offset relative to the EKF earth frame origin
+    if (rngBcnDataToFuse) {
+        rngBcnDataDelayed.beacon_posNED += bcnPosOffsetNED;
+    }
+
 }
 
 #endif // HAL_CPU_CLASS

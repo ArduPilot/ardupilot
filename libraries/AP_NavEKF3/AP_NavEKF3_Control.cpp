@@ -182,15 +182,16 @@ void NavEKF3_core::setAidingMode()
     // Save the previous status so we can detect when it has changed
     PV_AidingModePrev = PV_AidingMode;
 
+    bool filterIsStable = tiltAlignComplete && yawAlignComplete && checkGyroCalStatus();
+    bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit);
+    bool canUseRangeBeacon = readyToUseRangeBeacon() && filterIsStable;
+
     // Determine if we should change aiding mode
      if (PV_AidingMode == AID_NONE) {
         // Don't allow filter to start position or velocity aiding until the tilt and yaw alignment is complete
         // and IMU gyro bias estimates have stabilised
-        bool filterIsStable = tiltAlignComplete && yawAlignComplete && checkGyroCalStatus();
         // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
         // GPS aiding is the preferred option unless excluded by the user
-        bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit);
-        bool canUseRangeBeacon = readyToUseRangeBeacon() && filterIsStable;
         if(canUseGPS || canUseRangeBeacon) {
             PV_AidingMode = AID_ABSOLUTE;
         } else if (optFlowDataPresent() && filterIsStable) {
@@ -201,9 +202,9 @@ void NavEKF3_core::setAidingMode()
          bool flowSensorTimeout = ((imuSampleTime_ms - flowValidMeaTime_ms) > 5000);
          // Check if the fusion has timed out (flow measurements have been rejected for too long)
          bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
-         // Enable switch to absolute position mode if GPS is available
-         // If GPS is not available and flow fusion has timed out, then fall-back to no-aiding
-         if((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && !gpsInhibit) {
+         // Enable switch to absolute position mode if GPS or range beacon data is available
+         // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
+         if(canUseGPS || canUseRangeBeacon) {
              PV_AidingMode = AID_ABSOLUTE;
          } else if (flowSensorTimeout || flowFusionTimeout) {
              PV_AidingMode = AID_NONE;
@@ -306,20 +307,24 @@ void NavEKF3_core::setAidingMode()
             // Reset the last valid flow fusion time
             prevFlowFuseTime_ms = imuSampleTime_ms;
         } else if (PV_AidingMode == AID_ABSOLUTE) {
-            bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && !gpsInhibit);
-            bool canUseRangeBeacon = readyToUseRangeBeacon();
-            // We have commenced aiding and GPS usage is allowed
             if (canUseGPS) {
+                // We are commencing aiding using GPS - this is the preferred method
+                posResetSource = GPS;
+                velResetSource = GPS;
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
-            }
-            posTimeout = false;
-            velTimeout = false;
-            // We have commenced aiding and range beacon usage is allowed
-            if (canUseRangeBeacon) {
+            } else if (canUseRangeBeacon) {
+                // We are commencing aiding using range beacons
+                posResetSource = RNGBCN;
+                velResetSource = DEFAULT;
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u is using range beacons",(unsigned)imu_index);
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosDownOffset);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffsetNED.z);
             }
+
+            // clear timeout flags as a precaution to avoid triggering any additional transitions
+            posTimeout = false;
+            velTimeout = false;
+
             // reset the last fusion accepted times to prevent unwanted activation of timeout logic
             lastPosPassTime_ms = imuSampleTime_ms;
             lastVelPassTime_ms = imuSampleTime_ms;
