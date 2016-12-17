@@ -673,7 +673,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 0.000 0.400
     // @User: Standard
 
-    // @Param: ACCEL_Z_FILT_HZ
+    // @Param: ACCEL_Z_FILT
     // @DisplayName: Throttle acceleration filter
     // @Description: Filter applied to acceleration to reduce noise.  Lower values reduce noise but add delay.
     // @Range: 1.000 100.000
