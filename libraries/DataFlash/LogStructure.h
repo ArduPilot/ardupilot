@@ -401,6 +401,9 @@ struct PACKED log_RngBcnDebug {
     int16_t beaconPosD;     // beacon down position (cm)
     int16_t offsetHigh;     // high estimate of vertical position offset of beacons rel to EKF origin (cm)
     int16_t offsetLow;      // low estimate of vertical position offset of beacons rel to EKF origin (cm)
+    int16_t posN;           // North position of receiver rel to EKF origin (cm)
+    int16_t posE;           // East position of receiver rel to EKF origin (cm)
+    int16_t posD;           // Down position of receiver rel to EKF origin (cm)
 };
 
 struct PACKED log_Cmd {
@@ -854,7 +857,7 @@ Format characters in the format string for binary log messages
     { LOG_NKF9_MSG, sizeof(log_NKF4), \
       "NKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
-      "NKF0","QBccCCccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL" }, \
+      "NKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD" }, \
     { LOG_XKF1_MSG, sizeof(log_EKF1), \
       "XKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
     { LOG_XKF2_MSG, sizeof(log_NKF2a), \
@@ -874,7 +877,7 @@ Format characters in the format string for binary log messages
     { LOG_XKF9_MSG, sizeof(log_NKF4), \
       "XKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_XKF10_MSG, sizeof(log_RngBcnDebug), \
-      "XKF0","QBccCCccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL" }, \
+      "XKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
