@@ -189,7 +189,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Increment: 10
     // @User: Advanced
     // @Units: msec
-    AP_GROUPINFO("GPS_DELAY", 8, NavEKF3, _gpsDelay_ms, 220),
+    AP_GROUPINFO("GPS_DELAY", 8, NavEKF3, _gpsDelay_ms, 150),
 
     // Height measurement parameters
 
