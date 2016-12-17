@@ -134,6 +134,10 @@ void Copter::althold_run()
 
     case AltHold_Flying:
         motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+        // apply avoidance
+        avoid.adjust_roll_pitch(target_roll, target_pitch, aparm.angle_max);
+
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
