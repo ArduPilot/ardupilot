@@ -210,8 +210,14 @@ public:
         innovVar : innovation variance (m^2)
         testRatio : innovation consistency test ratio
         beaconPosNED : beacon NED position (m)
+        offsetHigh : high hypothesis for range beacons system vertical offset (m)
+        offsetLow : low hypothesis for range beacons system vertical offset (m)
+        posNED : North,East,Down position estimate of receiver from 3-state filter
+
+        returns true if data could be found, false if it could not
     */
-    bool getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow);
+    bool getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED,
+                             float &offsetHigh, float &offsetLow, Vector3f &posNED);
 
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to ground effect

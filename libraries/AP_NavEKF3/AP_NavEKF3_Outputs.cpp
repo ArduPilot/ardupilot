@@ -70,7 +70,8 @@ void NavEKF3_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
 }
 
 // return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
-bool NavEKF3_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow)
+bool NavEKF3_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED,
+                                       float &offsetHigh, float &offsetLow, Vector3f &posNED)
 {
     // if the states have not been initialised or we have not received any beacon updates then return zeros
     if (!statesInitialised || N_beacons == 0) {
@@ -88,10 +89,12 @@ bool NavEKF3_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, fl
     innov = rngBcnFusionReport[rngBcnFuseDataReportIndex].innov;                // range innovation (m)
     innovVar = rngBcnFusionReport[rngBcnFuseDataReportIndex].innovVar;          // innovation variance (m^2)
     testRatio = rngBcnFusionReport[rngBcnFuseDataReportIndex].testRatio;        // innovation consistency test ratio
-    beaconPosNED = rngBcnFusionReport[rngBcnFuseDataReportIndex].beaconPosNED;  // beacon NED position
-    offsetHigh = bcnPosDownOffsetMax;                                           // beacon system vertical pos offset upper estimate
-    offsetLow = bcnPosDownOffsetMin;                                            // beacon system vertical pos offset lower estimate
+    beaconPosNED = rngBcnFusionReport[rngBcnFuseDataReportIndex].beaconPosNED;  // beacon receiver NED position (m)
+    offsetHigh = bcnPosDownOffsetMax;                                           // beacon system vertical pos offset upper estimate (m)
+    offsetLow = bcnPosDownOffsetMin;                                            // beacon system vertical pos offset lower estimate (m)
+    posNED = receiverPos;                                                      // beacon system NED offset (m)
     rngBcnFuseDataReportIndex++;
+    printf("%6.2f\n",(double)receiverPos.x);
     return true;
 }
 

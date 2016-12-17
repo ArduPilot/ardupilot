@@ -201,17 +201,21 @@ public:
     void getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr);
 
     /*
-        Returns the following data for debugging range beacon fusion from the specified instance
-        An out of range instance (eg -1) returns data for the the primary instance
+        Returns the following data for debugging range beacon fusion
         ID : beacon identifier
         rng : measured range to beacon (m)
         innov : range innovation (m)
         innovVar : innovation variance (m^2)
         testRatio : innovation consistency test ratio
         beaconPosNED : beacon NED position (m)
+        offsetHigh : high hypothesis for range beacons system vertical offset (m)
+        offsetLow : low hypothesis for range beacons system vertical offset (m)
+        posNED : North,East,Down position estimate of receiver from 3-state filter
+
         returns true if data could be found, false if it could not
     */
-    bool getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow);
+    bool getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED,
+                             float &offsetHigh, float &offsetLow, Vector3f &posNED);
 
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to ground effect
