@@ -25,11 +25,27 @@ void NavEKF3_core::SelectRngBcnFusion()
     // Determine if we need to fuse range beacon data on this time step
     if (rngBcnDataToFuse) {
         if (PV_AidingMode == AID_ABSOLUTE) {
-            // Normal operating mode is to fuse the range data into the main filter
-            FuseRngBcn();
+            if (!filterStatus.flags.using_gps) {
+                if (!bcnOriginEstInit && rngBcnAlignmentCompleted) {
+                    bcnOriginEstInit = true;
+                    bcnPosOffsetNED.x = receiverPos.x - stateStruct.position.x;
+                    bcnPosOffsetNED.y = receiverPos.y - stateStruct.position.y;
+                }
+                // If we aren't using GPS, then the beacons are used as the primary means of position reference
+                FuseRngBcn();
+            } else {
+                // If we are using GPS, then GPS is the primary reference, but we continue to use the beacon data
+                // to calculate an indpendant position that is used to update the beacon position offset if we need to
+                // start using beacon data as the primary reference.
+                FuseRngBcnStatic();
+                // record that the beacon origin needs to be initialised
+                bcnOriginEstInit = false;
+            }
         } else {
-            // If we aren't able to use the data in the main filter, use a simple 3-state filter to estimte position only
+            // If we aren't able to use the data in the main filter, use a simple 3-state filter to estimate position only
             FuseRngBcnStatic();
+            // record that the beacon origin needs to be initialised
+            bcnOriginEstInit = false;
         }
     }
 }
@@ -53,7 +69,7 @@ void NavEKF3_core::FuseRngBcn()
         // calculate the vertical offset from EKF datum to beacon datum
         CalcRangeBeaconPosDownOffset(R_BCN, stateStruct.position, false);
     } else {
-        bcnPosDownOffset = 0.0f;
+        bcnPosOffsetNED.z = 0.0f;
     }
 
     // copy required states to local variable names
@@ -62,7 +78,7 @@ void NavEKF3_core::FuseRngBcn()
     pd = stateStruct.position.z;
     bcn_pn = rngBcnDataDelayed.beacon_posNED.x;
     bcn_pe = rngBcnDataDelayed.beacon_posNED.y;
-    bcn_pd = rngBcnDataDelayed.beacon_posNED.z + bcnPosDownOffset;
+    bcn_pd = rngBcnDataDelayed.beacon_posNED.z + bcnPosOffsetNED.z;
 
     // predicted range
     Vector3f deltaPosNED = stateStruct.position - rngBcnDataDelayed.beacon_posNED;
@@ -313,7 +329,7 @@ void NavEKF3_core::FuseRngBcnStatic()
 
             } else {
                 // we are using the beacons as the primary height source, so don't modify their vertical position
-                bcnPosDownOffset = 0.0f;
+                bcnPosOffsetNED.z = 0.0f;
 
             }
         } else {
@@ -344,7 +360,7 @@ void NavEKF3_core::FuseRngBcnStatic()
                 bcnPosDownOffsetMin = stateStruct.position.z - receverPosDownMax;
             } else {
                 // We are using the beacons as the primary height reference, so don't modify their vertical position
-                bcnPosDownOffset = 0.0f;
+                bcnPosOffsetNED.z = 0.0f;
             }
         }
 
@@ -354,7 +370,7 @@ void NavEKF3_core::FuseRngBcnStatic()
         }
 
         // calculate the observation jacobian
-        float t2 = rngBcnDataDelayed.beacon_posNED.z - receiverPos.z + bcnPosDownOffset;
+        float t2 = rngBcnDataDelayed.beacon_posNED.z - receiverPos.z + bcnPosOffsetNED.z;
         float t3 = rngBcnDataDelayed.beacon_posNED.y - receiverPos.y;
         float t4 = rngBcnDataDelayed.beacon_posNED.x - receiverPos.x;
         float t5 = t2*t2;
@@ -405,14 +421,13 @@ void NavEKF3_core::FuseRngBcnStatic()
 
         // calculate range measurement innovation
         Vector3f deltaPosNED = receiverPos - rngBcnDataDelayed.beacon_posNED;
-        deltaPosNED.z -= bcnPosDownOffset;
+        deltaPosNED.z -= bcnPosOffsetNED.z;
         innovRngBcn = deltaPosNED.length() - rngBcnDataDelayed.rng;
 
         // update the state
         receiverPos.x -= K_RNG[0] * innovRngBcn;
         receiverPos.y -= K_RNG[1] * innovRngBcn;
         receiverPos.z -= K_RNG[2] * innovRngBcn;
-        receiverPos.z = MAX(receiverPos.z, minBcnPosD + 1.2f);
 
         // calculate the covariance correction
         for (unsigned i = 0; i<=2; i++) {
@@ -571,10 +586,10 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
     // calculate the innovation for the main filter using the offset with the smallest innovation history
     // apply hysteresis to prevent rapid switching
     if (!usingMinHypothesis && OffsetMinInnovFilt < 0.8f * OffsetMaxInnovFilt) {
-        bcnPosDownOffset = bcnPosDownOffsetMin;
+        bcnPosOffsetNED.z = bcnPosDownOffsetMin;
         usingMinHypothesis = true;
     } else if (usingMinHypothesis && OffsetMaxInnovFilt < 0.8f * OffsetMinInnovFilt) {
-        bcnPosDownOffset = bcnPosDownOffsetMax;
+        bcnPosOffsetNED.z = bcnPosDownOffsetMax;
         usingMinHypothesis = false;
     }
 

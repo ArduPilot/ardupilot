@@ -468,7 +468,7 @@ private:
     // use range beaon measurements to calculate a static position
     void FuseRngBcnStatic();
 
-    // calculate the offset from EKF vetical position datum to the range beacon system datum
+    // calculate the offset from EKF vertical position datum to the range beacon system datum
     void CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehiclePosNED, bool aligning);
 
     // fuse magnetometer measurements
@@ -894,6 +894,19 @@ private:
     Vector3f velOffsetNED;          // This adds to the earth frame velocity estimate at the IMU to give the velocity at the body origin (m/s)
     Vector3f posOffsetNED;          // This adds to the earth frame position estimate at the IMU to give the position at the body origin (m)
 
+    // Specify preferred source of data to be used for a state reset
+    enum resetDataSource {
+                    DEFAULT=0,      // Use best available data
+                    GPS=1,          // Use GPS if available
+                    RNGBCN=2,       // Use beacon range data if available
+                    FLOW=3,         // Use optical flow rates if available
+                    BARO=4,         // Use Baro height if available
+                    MAG=5,          // Use magnetometer data if available
+                    RNGFND=6        // Use rangefinder data if available
+                        };
+    resetDataSource posResetSource; // preferred soure of data for position reset
+    resetDataSource velResetSource; // preferred source of data for a velocity reset
+
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
     float posDown;                  // Down position state used in calculation of posDownRate
@@ -1009,7 +1022,6 @@ private:
     uint8_t N_beacons;                  // Number of range beacons in use
     float maxBcnPosD;                   // maximum position of all beacons in the down direction (m)
     float minBcnPosD;                   // minimum position of all beacons in the down direction (m)
-    float bcnPosDownOffset;             // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     bool usingMinHypothesis;            // true when the min beacob constellatio offset hyopthesis is being used
 
     float bcnPosDownOffsetMax;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
@@ -1019,6 +1031,9 @@ private:
     float bcnPosDownOffsetMin;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     float bcnPosOffsetMinVar;           // Variance of the bcnPosDownOffsetMin state (m)
     float OffsetMinInnovFilt;           // Filtered magnitude of the range innovations using bcnPosOffsetLow
+
+    Vector3f bcnPosOffsetNED;           // NED position of the beacon origin in earth frame (m)
+    bool bcnOriginEstInit;              // True when the beacon origin has been initialised
 
     // Range Beacon Fusion Debug Reporting
     uint8_t rngBcnFuseDataReportIndex;// index of range beacon fusion data last reported
