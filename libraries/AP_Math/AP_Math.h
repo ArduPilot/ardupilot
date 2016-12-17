@@ -24,8 +24,13 @@ AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 /*
  * Check whether two floats are equal
  */
-template <class FloatOne, class FloatTwo>
-bool is_equal(const FloatOne, const FloatTwo);
+template <class Arithmetic1, class Arithmetic2>
+typename std::enable_if<std::is_integral<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value ,bool>::type
+is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2);
+
+template <class Arithmetic1, class Arithmetic2>
+typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
+is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2);
 
 /* 
  * @brief: Check whether a float is zero
