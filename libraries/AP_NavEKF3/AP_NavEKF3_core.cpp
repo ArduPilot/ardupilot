@@ -8,8 +8,7 @@
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-
-#include <stdio.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -47,34 +46,62 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     _ahrs = frontend->_ahrs;
 
     /*
-      the imu_buffer_length needs to cope with a 260ms delay at a
-      maximum fusion rate of 100Hz. Non-imu data coming in at faster
-      than 100Hz is downsampled. For 50Hz main loop rate we need a
-      shorter buffer.
+      The imu_buffer_length needs to cope with the worst case sensor delay at the
+      maximum fusion rate of 100Hz. Non-imu data coming in at faster than 100Hz is
+      downsampled. For 50Hz main loop rate we need a shorter buffer.
      */
-    if (_ahrs->get_ins().get_sample_rate() < 100) {
-        imu_buffer_length = 13;
+
+    // Calculate the expected EKF time step
+    if (_ahrs->get_ins().get_sample_rate() > 0) {
+        dtEkfAvg = 1.0f / _ahrs->get_ins().get_sample_rate();
+        dtEkfAvg = fmaxf(dtEkfAvg,EKF_TARGET_DT);
     } else {
-        // maximum 260 msec delay at 100 Hz fusion rate
-        imu_buffer_length = 26;
-    }
-    if(!storedGPS.init(OBS_BUFFER_LENGTH)) {
         return false;
     }
-    if(!storedMag.init(OBS_BUFFER_LENGTH)) {
+
+    // find the maximum time delay for all potential sensors
+    uint16_t maxTimeDelay_ms = MAX(_frontend->_gpsDelay_ms  ,
+        MAX(_frontend->_hgtDelay_ms ,
+            MAX(_frontend->_flowDelay_ms ,
+                MAX(_frontend->_rngBcnDelay_ms ,
+                    MAX(_frontend->magDelay_ms ,
+                        (uint16_t)(dtEkfAvg*1000.0f)
+                                  )))));
+
+    // airspeed sensing can have large delays and should not be included if disabled
+    if (_ahrs->airspeed_sensor_enabled()) {
+        maxTimeDelay_ms = MAX(maxTimeDelay_ms , _frontend->tasDelay_ms);
+    }
+
+    // calculate the IMU buffer length required to accomodate the maximum delay with some allowance for jitter
+    imu_buffer_length = (maxTimeDelay_ms / (uint16_t)(dtEkfAvg*1000.0f)) + 1;
+
+    // set the observaton buffer length to handle the minimum time of arrival between observations in combination
+    // with the worst case delay from current time to ekf fusion time
+    // allow for worst case 50% extension of the ekf fusion time horizon delay due to timing jitter
+    uint16_t ekf_delay_ms = maxTimeDelay_ms + (int)(ceil((float)maxTimeDelay_ms * 0.5f));
+    obs_buffer_length = (ekf_delay_ms / _frontend->sensorIntervalMin_ms) + 1;
+
+    // limit to be no longer than the IMU buffer (we can't process data faster than the EKF prediction rate)
+    obs_buffer_length = MIN(obs_buffer_length,imu_buffer_length);
+
+    if(!storedGPS.init(obs_buffer_length)) {
         return false;
     }
-    if(!storedBaro.init(OBS_BUFFER_LENGTH)) {
+    if(!storedMag.init(obs_buffer_length)) {
         return false;
     }
-    if(!storedTAS.init(OBS_BUFFER_LENGTH)) {
+    if(!storedBaro.init(obs_buffer_length)) {
         return false;
     }
-    if(!storedOF.init(OBS_BUFFER_LENGTH)) {
+    if(!storedTAS.init(obs_buffer_length)) {
         return false;
     }
-    // Note: the use of dual range finders potentially doubles the amount of to be stored
-    if(!storedRange.init(2*OBS_BUFFER_LENGTH)) {
+    if(!storedOF.init(obs_buffer_length)) {
+        return false;
+    }
+    // Note: the use of dual range finders potentially doubles the amount of data to be stored
+    if(!storedRange.init(MIN(2*obs_buffer_length , imu_buffer_length))) {
         return false;
     }
     // Note: range beacon data is read one beacon at a time and can arrive at a high rate
@@ -87,7 +114,7 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
-
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 buffers, IMU=%u , OBS=%u , dt=%6.4f",(unsigned)imu_buffer_length,(unsigned)obs_buffer_length,dtEkfAvg);
     return true;
 }
     

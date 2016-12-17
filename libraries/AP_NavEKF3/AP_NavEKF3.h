@@ -386,7 +386,8 @@ private:
     const uint16_t gndEffectTimeout_ms; // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t gndGradientSigma;     // RMS terrain gradient percentage assumed by the terrain height estimation
-    const uint8_t fusionTimeStep_ms;    // The minimum time interval between covariance predictions and measurement fusions in msec
+    const uint16_t fusionTimeStep_ms;   // The minimum time interval between covariance predictions and measurement fusions in msec
+    const uint8_t sensorIntervalMin_ms; // The minimum allowed time between measurements from any non-IMU sensor (msec)
 
     struct {
         bool enabled:1;

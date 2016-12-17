@@ -315,6 +315,7 @@ private:
     uint8_t imu_index;
     uint8_t core_index;
     uint8_t imu_buffer_length;
+    uint8_t obs_buffer_length;
 
     typedef float ftype;
 #if MATH_CHECK_INDEXES
@@ -720,10 +721,6 @@ private:
     
     // initialise the quaternion covariances using rotation vector variances
     void initialiseQuatCovariances(Vector3f &rotVarVec);
-
-    // Length of FIFO buffers used for non-IMU sensor data.
-    // Must be larger than the time period defined by IMU_BUFFER_LENGTH
-    static const uint32_t OBS_BUFFER_LENGTH = 5;
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
