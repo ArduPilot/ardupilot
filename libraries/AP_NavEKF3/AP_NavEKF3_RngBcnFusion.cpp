@@ -424,48 +424,62 @@ void NavEKF3_core::FuseRngBcnStatic()
         deltaPosNED.z -= bcnPosOffsetNED.z;
         innovRngBcn = deltaPosNED.length() - rngBcnDataDelayed.rng;
 
-        // update the state
-        receiverPos.x -= K_RNG[0] * innovRngBcn;
-        receiverPos.y -= K_RNG[1] * innovRngBcn;
-        receiverPos.z -= K_RNG[2] * innovRngBcn;
+        // calculate the innovation consistency test ratio
+        rngBcnTestRatio = sq(innovRngBcn) / (sq(MAX(0.01f * (float)frontend->_rngBcnInnovGate, 1.0f)) * varInnovRngBcn);
 
-        // calculate the covariance correction
-        for (unsigned i = 0; i<=2; i++) {
-            for (unsigned j = 0; j<=2; j++) {
-                KH[i][j] = K_RNG[i] * H_RNG[j];
-            }
-        }
-        for (unsigned j = 0; j<=2; j++) {
+        // fail if the ratio is > 1, but don't fail if bad IMU data
+        rngBcnHealth = ((rngBcnTestRatio < 1.0f) || badIMUdata || !rngBcnAlignmentCompleted);
+
+        // test the ratio before fusing data
+        if (rngBcnHealth) {
+
+            // update the state
+            receiverPos.x -= K_RNG[0] * innovRngBcn;
+            receiverPos.y -= K_RNG[1] * innovRngBcn;
+            receiverPos.z -= K_RNG[2] * innovRngBcn;
+
+            // calculate the covariance correction
             for (unsigned i = 0; i<=2; i++) {
-                ftype res = 0;
-                res += KH[i][0] * receiverPosCov[0][j];
-                res += KH[i][1] * receiverPosCov[1][j];
-                res += KH[i][2] * receiverPosCov[2][j];
-                KHP[i][j] = res;
+                for (unsigned j = 0; j<=2; j++) {
+                    KH[i][j] = K_RNG[i] * H_RNG[j];
+                }
             }
-        }
-        // prevent negative variances
-        for (uint8_t i= 0; i<=2; i++) {
-            if (receiverPosCov[i][i] < 0.0f) {
-                receiverPosCov[i][i] = 0.0f;
-                KHP[i][i] = 0.0f;
-            } else if (KHP[i][i] > receiverPosCov[i][i]) {
-                KHP[i][i] = receiverPosCov[i][i];
+            for (unsigned j = 0; j<=2; j++) {
+                for (unsigned i = 0; i<=2; i++) {
+                    ftype res = 0;
+                    res += KH[i][0] * receiverPosCov[0][j];
+                    res += KH[i][1] * receiverPosCov[1][j];
+                    res += KH[i][2] * receiverPosCov[2][j];
+                    KHP[i][j] = res;
+                }
             }
-        }
-        // apply the covariance correction
-        for (uint8_t i= 0; i<=2; i++) {
-            for (uint8_t j= 0; j<=2; j++) {
-                receiverPosCov[i][j] -= KHP[i][j];
+
+            // prevent negative variances
+            for (uint8_t i= 0; i<=2; i++) {
+                if (receiverPosCov[i][i] < 0.0f) {
+                    receiverPosCov[i][i] = 0.0f;
+                    KHP[i][i] = 0.0f;
+                } else if (KHP[i][i] > receiverPosCov[i][i]) {
+                    KHP[i][i] = receiverPosCov[i][i];
+                }
             }
-        }
-        // ensure the covariance matrix is symmetric
-        for (uint8_t i=1; i<=2; i++) {
-            for (uint8_t j=0; j<=i-1; j++) {
-                float temp = 0.5f*(receiverPosCov[i][j] + receiverPosCov[j][i]);
-                receiverPosCov[i][j] = temp;
-                receiverPosCov[j][i] = temp;
+
+            // apply the covariance correction
+            for (uint8_t i= 0; i<=2; i++) {
+                for (uint8_t j= 0; j<=2; j++) {
+                    receiverPosCov[i][j] -= KHP[i][j];
+                }
             }
+
+            // ensure the covariance matrix is symmetric
+            for (uint8_t i=1; i<=2; i++) {
+                for (uint8_t j=0; j<=i-1; j++) {
+                    float temp = 0.5f*(receiverPosCov[i][j] + receiverPosCov[j][i]);
+                    receiverPosCov[i][j] = temp;
+                    receiverPosCov[j][i] = temp;
+                }
+            }
+
         }
 
         if (numBcnMeas >= 100) {
@@ -473,6 +487,12 @@ void NavEKF3_core::FuseRngBcnStatic()
             // TODO monitor stability of the position estimate
             rngBcnAlignmentCompleted = true;
         }
+        // Update the fusion report
+        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].beaconPosNED = rngBcnDataDelayed.beacon_posNED;
+        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innov = innovRngBcn;
+        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innovVar = varInnovRngBcn;
+        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].rng = rngBcnDataDelayed.rng;
+        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].testRatio = rngBcnTestRatio;
     }
 }
 
