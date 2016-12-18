@@ -537,7 +537,7 @@ NavEKF3::NavEKF3(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gpsDVelVarAccScale(0.07f),      // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
     gpsPosVarAccScale(0.05f),       // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     magDelay_ms(60),                // Magnetometer measurement delay (msec)
-    tasDelay_ms(240),               // Airspeed measurement delay (msec)
+    tasDelay_ms(100),               // Airspeed measurement delay (msec)
     tiltDriftTimeMax_ms(15000),      // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
     posRetryTimeUseVel_ms(10000),   // Position aiding retry time with velocity measurements (msec)
     posRetryTimeNoVel_ms(7000),     // Position aiding retry time without velocity measurements (msec)
