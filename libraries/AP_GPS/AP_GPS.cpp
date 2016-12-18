@@ -841,3 +841,15 @@ void AP_GPS::inject_data_all(const uint8_t *data, uint16_t len)
     }
     
 }
+
+/*
+  return expected lag from a GPS
+ */
+float AP_GPS::get_lag(uint8_t instance) const
+{
+    if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
+        // return default;
+        return 0.2f;
+    }
+    return drivers[instance]->get_lag();
+}

@@ -310,7 +310,8 @@ public:
     }
 
     // the expected lag (in seconds) in the position and velocity readings from the gps
-    float get_lag() const { return 0.2f; }
+    float get_lag(uint8_t instance) const;
+    float get_lag(void) const { return get_lag(primary_instance); }
 
     // return a 3D vector defining the offset of the GPS antenna in metres relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const {

@@ -52,6 +52,9 @@ public:
 
     virtual void handle_msg(const mavlink_message_t *msg) { return ; }
 
+    // driver specific lag
+    virtual float get_lag(void) const { return 0.2f; }
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)

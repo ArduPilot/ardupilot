@@ -1192,3 +1192,21 @@ AP_GPS_UBLOX::broadcast_configuration_failure_reason(void) const {
         }
     }
 }
+
+/*
+  return velocity lag in seconds
+ */
+float AP_GPS_UBLOX::get_lag(void) const
+{
+    switch (_hardware_generation) {
+    case UBLOX_5:
+    case UBLOX_6:
+    default:
+        return 0.22f;
+    case UBLOX_7:
+    case UBLOX_M8:
+        // based on flight logs the 7 and 8 series seem to produce about 120ms lag
+        return 0.12f;
+        break;
+    };
+}
