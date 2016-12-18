@@ -516,6 +516,15 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m
     AP_GROUPINFO("RNG_USE_SPD", 47, NavEKF3, _useRngSwSpd, 2.0f),
 
+    // @Param: ACC_BIAS_LIM
+    // @DisplayName: Accelerometer bias limit
+    // @Description: The accelerometer bias state will be limited to +- this vlaue
+    // @Range: 0.5 2.5
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m/s/s
+    AP_GROUPINFO("ACC_BIAS_LIM", 48, NavEKF3, _accBiasLim, 1.0f),
+
     AP_GROUPEND
 };
 

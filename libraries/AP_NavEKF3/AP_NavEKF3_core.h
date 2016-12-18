@@ -52,11 +52,11 @@
 // assume 3m/s to start
 #define STARTUP_WIND_SPEED 3.0f
 
-// initial imu bias error (m/s/s)
-#define INIT_ACCEL_BIAS_UNCERTAINTY 0.2f
-
 // maximum allowed gyro bias (rad/sec)
 #define GYRO_BIAS_LIMIT 0.5f
+
+// initial accel bias uncertainty as a fraction of the state limit
+#define ACCEL_BIAS_LIM_SCALER 0.2f
 
 class AP_AHRS;
 

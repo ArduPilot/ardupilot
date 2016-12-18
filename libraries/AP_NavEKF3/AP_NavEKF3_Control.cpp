@@ -142,7 +142,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
         // activate the states
         inhibitDelVelBiasStates = false;
         // set the initial covariance values
-        P[13][13] = sq(INIT_ACCEL_BIAS_UNCERTAINTY * dtEkfAvg);
+        P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
         P[14][14] = P[13][13];
         P[15][15] = P[13][13];
     }

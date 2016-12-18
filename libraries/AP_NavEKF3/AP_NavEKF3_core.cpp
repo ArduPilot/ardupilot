@@ -425,7 +425,7 @@ void NavEKF3_core::CovarianceInit()
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
     // delta velocity biases
-    P[13][13] = sq(INIT_ACCEL_BIAS_UNCERTAINTY * dtEkfAvg);
+    P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
     P[14][14] = P[13][13];
     P[15][15] = P[13][13];
     // earth magnetic field
@@ -1370,8 +1370,8 @@ void NavEKF3_core::ConstrainStates()
     stateStruct.position.z = constrain_float(stateStruct.position.z,-4.0e4f,1.0e4f);
     // gyro bias limit (this needs to be set based on manufacturers specs)
     for (uint8_t i=10; i<=12; i++) statesArray[i] = constrain_float(statesArray[i],-GYRO_BIAS_LIMIT*dtEkfAvg,GYRO_BIAS_LIMIT*dtEkfAvg);
-    // accel bias limit 1.0 m/s^2	(this needs to be finalised from test data)
-    for (uint8_t i=13; i<=15; i++) statesArray[i] = constrain_float(statesArray[i],-1.0f*dtEkfAvg,1.0f*dtEkfAvg);
+    // the accelerometer bias limit is controlled by a user adjustable parameter
+    for (uint8_t i=13; i<=15; i++) statesArray[i] = constrain_float(statesArray[i],-frontend->_accBiasLim*dtEkfAvg,frontend->_accBiasLim*dtEkfAvg);
     // earth magnetic field limit
     for (uint8_t i=16; i<=18; i++) statesArray[i] = constrain_float(statesArray[i],-1.0f,1.0f);
     // body magnetic field limit
