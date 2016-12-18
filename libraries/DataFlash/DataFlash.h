@@ -124,8 +124,6 @@ public:
     void Log_Write_POS(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
     void Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
-    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
-    void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
@@ -264,6 +262,11 @@ private:
 
     bool _armed;
 
+#if AP_AHRS_NAVEKF_AVAILABLE
+    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+    void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+#endif
+    
 private:
     static DataFlash_Class *_instance;
 };
