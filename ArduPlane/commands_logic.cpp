@@ -555,40 +555,62 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     steer_state.hold_course_cd = -1;
 
+    // depending on the pass by flag either go to waypoint in regular manner or
+    // fly past it for set distance along the line of waypoints
+    Location flex_next_WP_loc = next_WP_loc;
+
+    if (HIGHBYTE(cmd.p1) != 0) {
+        float dist = get_distance(prev_WP_loc, flex_next_WP_loc);
+        float factor = (dist + abs(HIGHBYTE(cmd.p1))) / dist;
+
+        flex_next_WP_loc.lat = flex_next_WP_loc.lat + (flex_next_WP_loc.lat - prev_WP_loc.lat) * (factor - 1.0);
+        flex_next_WP_loc.lng = flex_next_WP_loc.lng + (flex_next_WP_loc.lng - prev_WP_loc.lng) * (factor - 1.0);
+    }
+
     if (auto_state.no_crosstrack) {
-        nav_controller->update_waypoint(current_loc, next_WP_loc);
+        nav_controller->update_waypoint(current_loc, flex_next_WP_loc);
     } else {
-        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+        nav_controller->update_waypoint(prev_WP_loc, flex_next_WP_loc);
     }
 
     // see if the user has specified a maximum distance to waypoint
-    if (g.waypoint_max_radius > 0 && 
+    // If override with p3 - then this is not used as it will overfly badly
+    if (g.waypoint_max_radius > 0 &&
         auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
-        if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+        if (location_passed_point(current_loc, prev_WP_loc, flex_next_WP_loc)) {
             // this is needed to ensure completion of the waypoint
-            prev_WP_loc = current_loc;
+            if (HIGHBYTE(cmd.p1) == 0) {
+                prev_WP_loc = current_loc;
+            }
         }
         return false;
     }
 
-    float acceptance_distance = nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle);
-    if (cmd.p1 > 0) {
+    float acceptance_distance;
+    if (LOWBYTE(cmd.p1) > 0) {
         // allow user to override acceptance radius
-        acceptance_distance = cmd.p1;
+        acceptance_distance = LOWBYTE(cmd.p1);
+    } else {
+        if (HIGHBYTE(cmd.p1) == 0) {
+            acceptance_distance = nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle);
+        } else {
+            // If overflown - let it fly up to the point
+            acceptance_distance = 0;
+        }
     }
     
     if (auto_state.wp_distance <= acceptance_distance) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, next_WP_loc));
+                          (unsigned)get_distance(current_loc, flex_next_WP_loc));
         return true;
 	}
 
     // have we flown past the waypoint?
-    if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+    if (location_passed_point(current_loc, prev_WP_loc, flex_next_WP_loc)) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, next_WP_loc));
+                          (unsigned)get_distance(current_loc, flex_next_WP_loc));
         return true;
     }
 
