@@ -217,6 +217,12 @@ def find_root_dir():
     """Return path to root directory"""
     return os.path.realpath(os.path.join(find_autotest_dir(), '../..'))
 
+
+def wait_unlimited():
+    """Wait until signal received"""
+    time.sleep(987654321987654321)
+
+
 """
 make_target: option passed to make to create binaries.  Usually sitl, and "-debug" may be appended if -D is passed to sim_vehicle.py
 default_params_filename: filename of default parameters file.  Taken to be relative to autotest dir.
@@ -752,6 +758,7 @@ group_sim.add_option("-m", "--mavproxy-args", default=None, type='string', help=
 group_sim.add_option("", "--strace", action='store_true', default=False, help="strace the ArduPilot binary")
 group_sim.add_option("", "--model", type='string', default=None, help="Override simulation model to use")
 group_sim.add_option("", "--use-dir", type='string', default=None, help="Store SITL state and output in named directory")
+group_sim.add_option("", "--no-mavproxy", action='store_true', default=False, help="Don't launch MAVProxy")
 parser.add_option_group(group_sim)
 
 
@@ -893,6 +900,14 @@ if cmd_opts.delay_start:
     progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))
     time.sleep(float(cmd_opts.delay_start))
 
-start_mavproxy(cmd_opts, frame_infos)
+try:
+    if cmd_opts.no_mavproxy:
+        time.sleep(3)  # Just wait to output the last command after run_in_terminal_window.sh
+        progress("Waiting for SITL to exit")
+        wait_unlimited()
+    else:
+        start_mavproxy(cmd_opts, frame_infos)
+except KeyboardInterrupt:
+    progress("Keyboard Interrupt received ...")
 
 sys.exit(0)
