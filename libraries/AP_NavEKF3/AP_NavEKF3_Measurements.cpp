@@ -618,7 +618,7 @@ void NavEKF3_core::calcFiltGpsHgtOffset()
     // correct the EKF origin and variance estimate if the innovation variance ratio is < 5-sigma
     if (ratio < 5.0f) {
         EKF_origin.alt -= (int)(100.0f * gain * innovation);
-        ekfOriginHgtVar -= fmaxf(gain * ekfOriginHgtVar , 0.0f);
+        ekfOriginHgtVar -= MAX(gain * ekfOriginHgtVar , 0.0f);
     }
 }
 

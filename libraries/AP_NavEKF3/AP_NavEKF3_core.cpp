@@ -56,7 +56,7 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     // Calculate the expected EKF time step
     if (_ahrs->get_ins().get_sample_rate() > 0) {
         dtEkfAvg = 1.0f / _ahrs->get_ins().get_sample_rate();
-        dtEkfAvg = fmaxf(dtEkfAvg,EKF_TARGET_DT);
+        dtEkfAvg = MAX(dtEkfAvg,EKF_TARGET_DT);
     } else {
         return false;
     }
@@ -738,7 +738,7 @@ void NavEKF3_core::calcOutputStates()
         // calculate a gain that provides tight tracking of the estimator states and
         // adjust for changes in time delay to maintain consistent damping ratio of ~0.7
         float timeDelay = 1e-3f * (float)(imuDataNew.time_ms - imuDataDelayed.time_ms);
-        timeDelay = fmaxf(timeDelay, dtIMUavg);
+        timeDelay = MAX(timeDelay, dtIMUavg);
         float errorGain = 0.5f / timeDelay;
 
         // calculate a corrrection to the delta angle

@@ -214,9 +214,10 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: HGT_DELAY
     // @DisplayName: Height measurement delay (msec)
-    // @Description: This is the number of msec that the Height measurements lag behind the inertial measurements. The autpilot should be restarted after adjusting this parameter.
+    // @Description: This is the number of msec that the Height measurements lag behind the inertial measurements.
     // @Range: 0 250
     // @Increment: 10
+    // @RebootRequired: True
     // @User: Advanced
     // @Units: msec
     AP_GROUPINFO("HGT_DELAY", 12, NavEKF3, _hgtDelay_ms, 60),
@@ -315,9 +316,10 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
-    // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.  The autpilot should be restarted after adjusting this parameter.
+    // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
     // @Range: 0 250
     // @Increment: 10
+    // @RebootRequired: True
     // @User: Advanced
     // @Units: msec
     AP_GROUPINFO("FLOW_DELAY", 23, NavEKF3, _flowDelay_ms, FLOW_MEAS_DELAY),
@@ -496,9 +498,10 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: BCN_DELAY
     // @DisplayName: Range beacon measurement delay (msec)
-    // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements. The autpilot should be restarted after adjusting this parameter.
+    // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements.
     // @Range: 0 250
     // @Increment: 10
+    // @RebootRequired: True
     // @User: Advanced
     // @Units: msec
     AP_GROUPINFO("BCN_DELAY", 46, NavEKF3, _rngBcnDelay_ms, 50),
