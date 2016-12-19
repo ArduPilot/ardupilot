@@ -21,7 +21,7 @@
 
 #pragma GCC optimize("O3")
 
-#define EK2_DISABLE_INTERRUPTS 0
+#define EK3_DISABLE_INTERRUPTS 0
 
 
 #include <AP_Math/AP_Math.h>
