@@ -192,6 +192,8 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_LANDING_GEAR:
         case AUXSW_MOTOR_ESTOP:
         case AUXSW_MOTOR_INTERLOCK:
+        case AUXSW_AVOID_ADSB:
+        case AUXSW_PRECISION_LOITER:
             do_aux_switch_function(ch_option, ch_flag);
             break;
     }
