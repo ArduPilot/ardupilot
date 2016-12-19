@@ -221,7 +221,7 @@ public:
     bool getGpsGlitchStatus();
 
     // used by Replay to force start at right timestamp
-    void force_ekf_start(void) { force_ekf = true; }
+    void force_ekf_start(void) { _force_ekf = true; }
 
     // is the EKF backend doing its own sensor logging?
     bool have_ekf_logging(void) const override;
@@ -248,10 +248,9 @@ private:
 
     NavEKF2 &EKF2;
     NavEKF3 &EKF3;
-    bool ekf1_started:1;
-    bool ekf2_started:1;
-    bool ekf3_started:1;
-    bool force_ekf:1;
+    bool _ekf2_started;
+    bool _ekf3_started;
+    bool _force_ekf;
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
     Vector3f _gyro_bias;
