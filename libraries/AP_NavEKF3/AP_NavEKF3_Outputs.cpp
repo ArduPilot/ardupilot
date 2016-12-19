@@ -92,9 +92,8 @@ bool NavEKF3_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, fl
     beaconPosNED = rngBcnFusionReport[rngBcnFuseDataReportIndex].beaconPosNED;  // beacon receiver NED position (m)
     offsetHigh = bcnPosDownOffsetMax;                                           // beacon system vertical pos offset upper estimate (m)
     offsetLow = bcnPosDownOffsetMin;                                            // beacon system vertical pos offset lower estimate (m)
-    posNED = receiverPos;                                                      // beacon system NED offset (m)
+    posNED = receiverPos;                                                       // beacon system NED offset (m)
     rngBcnFuseDataReportIndex++;
-    printf("%6.2f\n",(double)receiverPos.x);
     return true;
 }
 

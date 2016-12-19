@@ -110,7 +110,7 @@ void NavEKF3_core::controlMagYawReset()
             stateStruct.quat = newQuat;
 
             // update the yaw angle variance using the variance of the measurement
-            angleErrVarVec.z = sq(fmaxf(frontend->_yawNoise, 1.0e-2f));
+            angleErrVarVec.z = sq(MAX(frontend->_yawNoise, 1.0e-2f));
 
             // reset the quaternion covariances using the rotation vector variances
             initialiseQuatCovariances(angleErrVarVec);
