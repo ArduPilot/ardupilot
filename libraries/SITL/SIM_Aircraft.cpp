@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <errno.h>
 
 
 #ifdef __CYGWIN__
