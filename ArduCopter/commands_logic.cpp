@@ -754,8 +754,8 @@ bool Copter::verify_payload_place()
         const float hover_throttle_delta = fabsf(nav_payload_place.hover_throttle_level - motors.get_throttle_hover());
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "hover throttle delta: %f", static_cast<double>(hover_throttle_delta));
         nav_payload_place.state = PayloadPlaceStateType_Descending_Start;
-        // no break
         }
+        // no break
     case PayloadPlaceStateType_Descending_Start:
         nav_payload_place.descend_start_timestamp = now;
         nav_payload_place.descend_start_altitude = inertial_nav.get_altitude();
