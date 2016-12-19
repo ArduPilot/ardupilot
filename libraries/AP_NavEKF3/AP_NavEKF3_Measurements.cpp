@@ -417,8 +417,8 @@ void NavEKF3_core::readGpsData()
             // Correct for the average intersampling delay due to the filter updaterate
             gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
 
-            // Prevent time delay exceeding age of oldest IMU data in the buffer
-            gpsDataNew.time_ms = MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms);
+            // Prevent the time stamp falling outside the oldest and newest IMU data in the buffer
+            gpsDataNew.time_ms = MIN(MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms),imuDataDownSampledNew.time_ms);
 
             // Get which GPS we are using for position information
             gpsDataNew.sensor_idx = _ahrs->get_gps().primary_sensor();
