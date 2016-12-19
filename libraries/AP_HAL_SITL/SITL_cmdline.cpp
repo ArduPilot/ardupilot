@@ -150,9 +150,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _fdm_address = "127.0.0.1";
     _client_address = nullptr;
     _use_fg_view = true;
-    _simulator_address = "127.0.0.1";
-    _simulator_port_in = SIM_IN_PORT;
-    _simulator_port_out = SIM_OUT_PORT;
+    const char * _simulator_address = "127.0.0.1";
+    uint16_t _simulator_port_in = SIM_IN_PORT;
+    uint16_t _simulator_port_out = SIM_OUT_PORT;
     _irlock_port = IRLOCK_PORT;
     _instance = 0;
 

@@ -20,7 +20,6 @@
 
 #include <AP_Math/AP_Math.h>
 
-#include <AP_HAL/utility/Socket.h>
 #include "SITL.h"
 #include <AP_Terrain/AP_Terrain.h>
 
