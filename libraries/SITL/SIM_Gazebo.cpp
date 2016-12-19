@@ -36,7 +36,6 @@ Gazebo::Gazebo(const char *home_str, const char *frame_str) :
     // Gazebo keeps sending us packets. Not strictly necessary but
     // useful for debugging
     fprintf(stdout, "Starting SITL Gazebo\n");
-
 }
 
 /*
@@ -90,37 +89,36 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
     }
 
     // get imu stuff
-    accel_body = Vector3f(pkt.imu_linear_acceleration_xyz[0],
-                          pkt.imu_linear_acceleration_xyz[1],
-                          pkt.imu_linear_acceleration_xyz[2]);
+    accel_body = Vector3f(static_cast<float>(pkt.imu_linear_acceleration_xyz[0]),
+                          static_cast<float>(pkt.imu_linear_acceleration_xyz[1]),
+                          static_cast<float>(pkt.imu_linear_acceleration_xyz[2]));
 
-    gyro = Vector3f(pkt.imu_angular_velocity_rpy[0],
-                    pkt.imu_angular_velocity_rpy[1],
-                    pkt.imu_angular_velocity_rpy[2]);
+    gyro = Vector3f(static_cast<float>(pkt.imu_angular_velocity_rpy[0]),
+                    static_cast<float>(pkt.imu_angular_velocity_rpy[1]),
+                    static_cast<float>(pkt.imu_angular_velocity_rpy[2]));
 
     // compute dcm from imu orientation
-    Quaternion quat(pkt.imu_orientation_quat[0],
-                    pkt.imu_orientation_quat[1],
-                    pkt.imu_orientation_quat[2],
-                    pkt.imu_orientation_quat[3]);
+    Quaternion quat(static_cast<float>(pkt.imu_orientation_quat[0]),
+                    static_cast<float>(pkt.imu_orientation_quat[1]),
+                    static_cast<float>(pkt.imu_orientation_quat[2]),
+                    static_cast<float>(pkt.imu_orientation_quat[3]));
     quat.rotation_matrix(dcm);
 
-    double speedN =  pkt.velocity_xyz[0];
-    double speedE =  pkt.velocity_xyz[1];
-    double speedD =  pkt.velocity_xyz[2];
-    velocity_ef = Vector3f(speedN, speedE, speedD);
+    velocity_ef = Vector3f(static_cast<float>(pkt.velocity_xyz[0]),
+                           static_cast<float>(pkt.velocity_xyz[1]),
+                           static_cast<float>(pkt.velocity_xyz[2]));
 
-    position = Vector3f(pkt.position_xyz[0],
-                        pkt.position_xyz[1],
-                        pkt.position_xyz[2]);
+    position = Vector3f(static_cast<float>(pkt.position_xyz[0]),
+                        static_cast<float>(pkt.position_xyz[1]),
+                        static_cast<float>(pkt.position_xyz[2]));
 
 
     // auto-adjust to simulation frame rate
     double deltat = pkt.timestamp - last_timestamp;
-    time_now_us += deltat * 1.0e6;
+    time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
     if (deltat < 0.01 && deltat > 0) {
-        adjust_frame_time(1.0/deltat);
+        adjust_frame_time(static_cast<float>(1.0/deltat));
     }
     last_timestamp = pkt.timestamp;
 
@@ -170,4 +168,4 @@ void Gazebo::update(const struct sitl_input &input)
     drain_sockets();
 }
 
-} // namespace SITL
+}  // namespace SITL

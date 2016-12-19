@@ -73,4 +73,4 @@ private:
     int _gazebo_port = 9002;
 };
 
-} // namespace SITL
+}  // namespace SITL
