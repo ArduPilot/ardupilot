@@ -73,14 +73,12 @@ bool AP_Compass_MMC3416::init()
         goto fail;
     }
 
-    dev->setup_checked_registers(2);
-
     // reset sensor
     dev->write_register(REG_CONTROL1, 0x80);
     hal.scheduler->delay(10);
     
-    dev->write_register(REG_CONTROL0, 0x0E, true); // continuous 50Hz
-    dev->write_register(REG_CONTROL1, 0x00, true); // 16 bit, 7.92ms
+    dev->write_register(REG_CONTROL0, 0x00); // single shot
+    dev->write_register(REG_CONTROL1, 0x00); // 16 bit, 7.92ms
     
     dev->get_semaphore()->give();
 
@@ -100,8 +98,8 @@ bool AP_Compass_MMC3416::init()
 
     dev->set_retries(1);
     
-    // call timer() at 50Hz
-    dev->register_periodic_callback(20000,
+    // call timer() at 100Hz
+    dev->register_periodic_callback(10000,
                                     FUNCTOR_BIND_MEMBER(&AP_Compass_MMC3416::timer, bool));
 
     return true;
@@ -113,41 +111,96 @@ fail:
 
 bool AP_Compass_MMC3416::timer()
 {
-    struct PACKED {
-        uint16_t magx;
-        uint16_t magy;
-        uint16_t magz;
-    } data;
-    const uint16_t zero_offset = 32768; // 16 bit mode
-    const uint16_t sensitivity = 2048; // counts per Gauss, 16 bit mode
-    const float counts_to_milliGauss = 1.0e3f / sensitivity;
-    Vector3f field;
+    uint32_t now = AP_HAL::millis();
+    
+    switch (state) {
+    case STATE_REFILL1:
+        if (dev->write_register(REG_CONTROL0, 0x80)) { // REFILL
+            state = STATE_REFILL1_WAIT;
+        }
+        break;
 
-    if (!dev->read_registers(REG_XOUT_L, (uint8_t *)&data, sizeof(data))) {
-        goto check_registers;
+    case STATE_REFILL1_WAIT:
+        if (now - last_state_ms >= 50) {
+            if (!dev->write_register(REG_CONTROL0, 0x20) || // SET
+                !dev->write_register(REG_CONTROL0, 0x01)) { // Take Measurement
+                state = STATE_REFILL1;
+            } else {
+                state = STATE_MEASURE_WAIT1;
+            }
+        }
+        break;
+        
+    case STATE_MEASURE_WAIT1: {
+        uint8_t status;
+        if (dev->read_registers(REG_STATUS, &status, 1) && (status & 1)) {
+            if (!dev->read_registers(REG_XOUT_L, (uint8_t *)&data0[0], 6)) {
+                state = STATE_REFILL1;
+                break;
+            }
+            if (!dev->write_register(REG_CONTROL0, 0x80)) { // REFILL
+                state = STATE_REFILL1;
+            } else {
+                state = STATE_REFILL2_WAIT;
+            }
+        }
+        break;
     }
 
-    // this assumes 16 bit output, which gives zero of 32768
-    field(float(data.magx) - zero_offset, float(data.magy) - zero_offset, float(data.magz) - zero_offset);
-    field *= counts_to_milliGauss;
+    case STATE_REFILL2_WAIT:
+        if (now - last_state_ms >= 50) {
+            if (!dev->write_register(REG_CONTROL0, 0x40) || // RESET
+                !dev->write_register(REG_CONTROL0, 0x01)) { // Take Measurement
+                state = STATE_REFILL1;
+            } else {
+                state = STATE_MEASURE_WAIT2;
+            }
+        }
+        break;
 
-    /* rotate raw_field from sensor frame to body frame */
-    rotate_field(field, compass_instance);
-
-    /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, AP_HAL::micros(), compass_instance);
-
-    /* correct raw_field for known errors */
-    correct_field(field, compass_instance);
-
-    if (_sem->take(0)) {
-        accum += field;
-        accum_count++;
-        _sem->give();
+    case STATE_MEASURE_WAIT2: {
+        uint8_t status;
+        if (!dev->read_registers(REG_STATUS, &status, 1) || !(status & 1)) {
+            break;
+        }
+        uint16_t data1[3];
+        if (!dev->read_registers(REG_XOUT_L, (uint8_t *)&data1[0], 6)) {
+            state = STATE_REFILL1;
+            break;
+        }
+        const uint16_t zero_offset = 32768; // 16 bit mode
+        const uint16_t sensitivity = 2048; // counts per Gauss, 16 bit mode
+        const float counts_to_milliGauss = 1.0e3f / sensitivity;
+        Vector3f field;
+    
+        Vector3f f1(float(data0[0]) - zero_offset,
+                    float(data0[1]) - zero_offset,
+                    float(data0[2]) - zero_offset);
+        Vector3f f2(float(data1[0]) - zero_offset,
+                    float(data1[1]) - zero_offset,
+                    float(data1[2]) - zero_offset);
+        field = (f1 - f2) / 2;
+        field * counts_to_milliGauss;
+        
+        /* rotate raw_field from sensor frame to body frame */
+        rotate_field(field, compass_instance);
+        
+        /* publish raw_field (uncorrected point sample) for calibration use */
+        publish_raw_field(field, AP_HAL::micros(), compass_instance);
+        
+        /* correct raw_field for known errors */
+        correct_field(field, compass_instance);
+        
+        if (_sem->take(0)) {
+            accum += field;
+            accum_count++;
+            _sem->give();
+        }
+        state = STATE_REFILL1;
+        break;
     }
-
-check_registers:
-    dev->check_next_register();
+    }
+        
     return true;
 }
 
