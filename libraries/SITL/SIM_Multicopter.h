@@ -48,8 +48,7 @@ protected:
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
     Frame *frame;
 
-    // The numbers here are offsets into the input servos array
-    // (generally output-servo-number-1 e.g. 2 for throttle)
+    // The numbers below are the pwm output channels with "0" meaning the first output (aka RC1)
     Sprayer sprayer{6, 7};
     Gripper_Servo gripper{8};
     Gripper_EPM gripper_epm{9};
