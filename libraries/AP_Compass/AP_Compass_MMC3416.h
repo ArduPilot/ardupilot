@@ -51,6 +51,7 @@ private:
         STATE_MEASURE_WAIT1,
         STATE_REFILL2_WAIT,
         STATE_MEASURE_WAIT2,
+        STATE_MEASURE_WAIT3,
     } state;
     
     /**
@@ -58,11 +59,15 @@ private:
      */
     bool init();
     bool timer();
+    void accumulate_field(Vector3f &field);
 
     uint8_t compass_instance;
     Vector3f accum;
     uint16_t accum_count;
     bool force_external;
+    Vector3f offset;
+    uint8_t measure_count;
+    bool have_initial_offset;
 
     uint16_t data0[3];
     uint32_t last_state_ms;
