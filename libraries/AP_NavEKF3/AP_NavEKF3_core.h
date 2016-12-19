@@ -896,6 +896,7 @@ private:
     Vector3f outputTrackError;      // attitude (rad), velocity (m/s) and position (m) tracking error magnitudes from the output observer
     Vector3f velOffsetNED;          // This adds to the earth frame velocity estimate at the IMU to give the velocity at the body origin (m/s)
     Vector3f posOffsetNED;          // This adds to the earth frame position estimate at the IMU to give the position at the body origin (m)
+    uint32_t firstInitTime_ms;      // First time the initialise function was called (msec)
 
     // Specify preferred source of data to be used for a state reset
     enum resetDataSource {
