@@ -69,6 +69,7 @@ enum aux_sw_func {
     AUXSW_THROW =               37,  // change to THROW flight mode
     AUXSW_AVOID_ADSB =          38,  // enable AP_Avoidance library
     AUXSW_PRECISION_LOITER =    39,  // enable precision loiter
+    AUXSW_AVOID_PROXIMITY =     40,  // enable object avoidance using proximity sensors (ie. horizontal lidar)
     AUXSW_SWITCH_MAX,
 };
 
@@ -396,6 +397,8 @@ enum DevOptions {
 #define DATA_EKF_YAW_RESET                  62
 #define DATA_AVOIDANCE_ADSB_ENABLE          63
 #define DATA_AVOIDANCE_ADSB_DISABLE         64
+#define DATA_AVOIDANCE_PROXIMITY_ENABLE     65
+#define DATA_AVOIDANCE_PROXIMITY_DISABLE    66
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
