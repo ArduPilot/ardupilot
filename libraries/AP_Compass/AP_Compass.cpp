@@ -20,6 +20,7 @@
 #if HAL_WITH_UAVCAN
 #include "AP_Compass_UAVCAN.h"
 #endif
+#include "AP_Compass_MMC3416.h"
 #include "AP_Compass.h"
 
 extern AP_HAL::HAL& hal;
