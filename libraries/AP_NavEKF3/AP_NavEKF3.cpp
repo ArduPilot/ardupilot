@@ -182,14 +182,9 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m
     AP_GROUPINFO("GLITCH_RAD", 7, NavEKF3, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
 
-    // @Param: GPS_DELAY
-    // @DisplayName: GPS measurement delay (msec)
-    // @Description: This is the number of msec that the GPS measurements lag behind the inertial measurements. The autpilot should be restarted after adjusting this parameter.
-    // @Range: 0 250
-    // @Increment: 10
-    // @User: Advanced
-    // @Units: msec
-    AP_GROUPINFO("GPS_DELAY", 8, NavEKF3, _gpsDelay_ms, 150),
+    // 8 previously used for EKF3_GPS_DELAY parameter that has been deprecated.
+    // The EKF now takes its GPs delay form the GPS library with the default delays
+    // specified by the GPS_DELAY and GPS_DELAY2 parameters.
 
     // Height measurement parameters
 
@@ -605,33 +600,43 @@ bool NavEKF3::InitialiseFilter(void)
 
     imuSampleTime_us = AP_HAL::micros64();
 
-    // see if we will be doing logging
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
-    if (dataflash != nullptr) {
-        logging.enabled = dataflash->log_replay();
-    }
-    
     if (core == nullptr) {
+
+        // see if we will be doing logging
+        DataFlash_Class *dataflash = DataFlash_Class::instance();
+        if (dataflash != nullptr) {
+            logging.enabled = dataflash->log_replay();
+        }
 
         // don't run multiple filters for 1 IMU
         const AP_InertialSensor &ins = _ahrs->get_ins();
         uint8_t mask = (1U<<ins.get_accel_count())-1;
         _imuMask.set(_imuMask.get() & mask);
         
-        // count IMUs from mask
+        // initialise the setup variables
+        for (uint8_t i=0; i<7; i++) {
+            coreSetupRequired[i] = false;
+            coreImuIndex[i] = 0;
+        }
         num_cores = 0;
+
+        // count IMUs from mask
         for (uint8_t i=0; i<7; i++) {
             if (_imuMask & (1U<<i)) {
+                coreSetupRequired[num_cores] = true;
+                coreImuIndex[num_cores] = i;
                 num_cores++;
             }
         }
 
+        // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF3: not enough memory");
             _enable.set(0);
             return false;
         }
         
+        // create the cores
         core = new NavEKF3_core[num_cores];
         if (core == nullptr) {
             _enable.set(0);
@@ -639,22 +644,24 @@ bool NavEKF3::InitialiseFilter(void)
             return false;
         }
 
-        // set the IMU index for the cores
-        num_cores = 0;
-        for (uint8_t i=0; i<7; i++) {
-            if (_imuMask & (1U<<i)) {
-                if(!core[num_cores].setup_core(this, i, num_cores)) {
-                    return false;
-                }
-                num_cores++;
-            }
-        }
-
-        // Set the primary initially to be the lowest index
-        primary = 0;
     }
 
-    // initialse the cores. We return success only if all cores
+    // Set up any cores that have been created
+    // This specifies the IMU to be used and creates the data buffers
+    // If we are unble to set up a core, return false and try again next time the function is called
+    for (uint8_t core_index=0; core_index<num_cores; core_index++) {
+        if (coreSetupRequired[core_index]) {
+            coreSetupRequired[core_index] = !core[core_index].setup_core(this, coreImuIndex[core_index], core_index);
+            if(coreSetupRequired[core_index]) {
+                return false;
+            }
+        }
+    }
+
+    // Set the primary initially to be the lowest index
+    primary = 0;
+
+    // initialise the cores. We return success only if all cores
     // initialise successfully
     bool ret = true;
     for (uint8_t i=0; i<num_cores; i++) {

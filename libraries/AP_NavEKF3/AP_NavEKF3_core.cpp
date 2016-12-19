@@ -36,6 +36,7 @@ NavEKF3_core::NavEKF3_core(void) :
     _perf_test[8] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test8");
     _perf_test[9] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test9");
     firstInitTime_ms = 0;
+    lastInitFailReport_ms = 0;
 }
 
 // setup this core backend
@@ -60,8 +61,21 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
         return false;
     }
 
+    // Wait up to 30 seconds for all GPS units to finish their configuration.
+    // Until this has occurred we will not know what type of GPS is being used
+    // and what its time delay is
+    if (!_ahrs->get_gps().all_configured() && (AP_HAL::millis() < 30E3)) {
+        if (AP_HAL::millis() - lastInitFailReport_ms > 5000) {
+            lastInitFailReport_ms = AP_HAL::millis();
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 waiting for GPS config data");
+        }
+        return false;
+    } else if (!_ahrs->get_gps().all_configured()) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 GPS config unavailable - using default time delay");
+    }
+
     // find the maximum time delay for all potential sensors
-    uint16_t maxTimeDelay_ms = MAX(_frontend->_gpsDelay_ms  ,
+    uint16_t maxTimeDelay_ms = MAX((uint16_t)(_ahrs->get_gps().get_lag() * 1000.0f) ,
         MAX(_frontend->_hgtDelay_ms ,
             MAX(_frontend->_flowDelay_ms ,
                 MAX(_frontend->_rngBcnDelay_ms ,
