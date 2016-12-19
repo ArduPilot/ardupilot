@@ -69,7 +69,7 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel
 
 // adjust roll-pitch to push vehicle away from objects
 // roll and pitch value are in centi-degrees
-void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float angle_max)
+void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
 {
     // exit immediately if proximity based avoidance is disabled
     if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) == 0 || !_proximity_enabled) {
@@ -77,7 +77,7 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float angle_max)
     }
 
     // exit immediately if angle max is zero
-    if (_angle_max <= 0.0f || angle_max <= 0.0f) {
+    if (_angle_max <= 0.0f || veh_angle_max <= 0.0f) {
         return;
     }
 
@@ -94,7 +94,7 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float angle_max)
 
     // apply avoidance angular limits
     // the object avoidance lean angle is never more than 75% of the total angle-limit to allow the pilot to override
-    float angle_limit = constrain_float(_angle_max, 0.0f, angle_max * AC_AVOID_ANGLE_MAX_PERCENT);
+    const float angle_limit = constrain_float(_angle_max, 0.0f, veh_angle_max * AC_AVOID_ANGLE_MAX_PERCENT);
     float vec_len = rp_out.length();
     if (vec_len > angle_limit) {
         rp_out *= (angle_limit / vec_len);
@@ -106,8 +106,8 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float angle_max)
 
     // apply total angular limits
     vec_len = rp_out.length();
-    if (vec_len > angle_max) {
-        rp_out *= (angle_max / vec_len);
+    if (vec_len > veh_angle_max) {
+        rp_out *= (veh_angle_max / vec_len);
     }
 
     // return adjusted roll, pitch
@@ -332,12 +332,8 @@ float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed) c
 float AC_Avoid::distance_to_lean_pct(float dist_m)
 {
     // ignore objects beyond DIST_MAX
-    if (dist_m <= 0.0f || dist_m >= _dist_max || _dist_max <= 0.0f) {
+    if (dist_m < 0.0f || dist_m >= _dist_max || _dist_max <= 0.0f) {
         return 0.0f;
-    }
-    // objects at 0m cause maximum lean
-    if (dist_m <= 0.0f) {
-        return 1.0f;
     }
     // inverted but linear response
     return 1.0f - (dist_m / _dist_max);
@@ -364,11 +360,11 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
         if (_proximity.get_object_angle_and_distance(i, ang_deg, dist_m)) {
             if (dist_m < _dist_max) {
                 // convert distance to lean angle (in 0 to 1 range)
-                float lean_pct = distance_to_lean_pct(dist_m);
+                const float lean_pct = distance_to_lean_pct(dist_m);
                 // convert angle to roll and pitch lean percentages
-                float angle_rad = radians(ang_deg);
-                float roll_pct = -sinf(angle_rad) * lean_pct;
-                float pitch_pct = cosf(angle_rad) * lean_pct;
+                const float angle_rad = radians(ang_deg);
+                const float roll_pct = -sinf(angle_rad) * lean_pct;
+                const float pitch_pct = cosf(angle_rad) * lean_pct;
                 // update roll, pitch maximums
                 if (roll_pct > 0.0f) {
                     roll_positive = MAX(roll_positive, roll_pct);
