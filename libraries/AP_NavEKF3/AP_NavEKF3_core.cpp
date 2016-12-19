@@ -115,7 +115,7 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 buffers, IMU=%u , OBS=%u , dt=%6.4f",(unsigned)imu_buffer_length,(unsigned)obs_buffer_length,dtEkfAvg);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u buffers, IMU=%u , OBS=%u , dt=%6.4f",(unsigned)imu_index,(unsigned)imu_buffer_length,(unsigned)obs_buffer_length,dtEkfAvg);
     return true;
 }
     
