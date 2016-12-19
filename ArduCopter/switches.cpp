@@ -27,7 +27,7 @@ void Copter::read_control_switch()
     else switch_position = 5;
 
     // store time that switch last moved
-    if(control_switch_state.last_switch_position != switch_position) {
+    if (control_switch_state.last_switch_position != switch_position) {
         control_switch_state.last_edge_time_ms = tnow_ms;
     }
 
@@ -47,12 +47,12 @@ void Copter::read_control_switch()
                 }
             }
 
-            if(!check_if_auxsw_mode_used(AUXSW_SIMPLE_MODE) && !check_if_auxsw_mode_used(AUXSW_SUPERSIMPLE_MODE)) {
+            if (!check_if_auxsw_mode_used(AUXSW_SIMPLE_MODE) && !check_if_auxsw_mode_used(AUXSW_SUPERSIMPLE_MODE)) {
                 // if none of the Aux Switches are set to Simple or Super Simple Mode then
                 // set Simple Mode using stored parameters from EEPROM
                 if (BIT_IS_SET(g.super_simple, switch_position)) {
                     set_simple_mode(2);
-                }else{
+                } else {
                     set_simple_mode(BIT_IS_SET(g.simple_modes, switch_position));
                 }
             }
@@ -204,7 +204,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
     switch(ch_function) {
         case AUXSW_FLIP:
             // flip if switch is on, positive throttle and we're actually flying
-            if(ch_flag == AUX_SWITCH_HIGH) {
+            if (ch_flag == AUX_SWITCH_HIGH) {
                 set_mode(FLIP, MODE_REASON_TX_COMMAND);
             }
             break;
@@ -223,7 +223,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             if (ch_flag == AUX_SWITCH_HIGH) {
                 // engage RTL (if not possible we remain in current flight mode)
                 set_mode(RTL, MODE_REASON_TX_COMMAND);
-            }else{
+            } else {
                 // return to flight mode switch's flight mode if we are currently in RTL
                 if (control_mode == RTL) {
                     reset_control_switch();
@@ -242,12 +242,12 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             if (ch_flag == AUX_SWITCH_HIGH) {
 
                 // do not allow saving new waypoints while we're in auto or disarmed
-                if(control_mode == AUTO || !motors.armed()) {
+                if (control_mode == AUTO || !motors.armed()) {
                     return;
                 }
 
                 // do not allow saving the first waypoint with zero throttle
-                if((mission.num_commands() == 0) && (channel_throttle->get_control_in() == 0)){
+                if ((mission.num_commands() == 0) && (channel_throttle->get_control_in() == 0)) {
                     return;
                 }
 
@@ -255,7 +255,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 AP_Mission::Mission_Command cmd  = {};
 
                 // if the mission is empty save a takeoff command
-                if(mission.num_commands() == 0) {
+                if (mission.num_commands() == 0) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
                     cmd.id = MAV_CMD_NAV_TAKEOFF;
                     cmd.content.location.options = 0;
@@ -266,7 +266,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
                     // use the current altitude for the target alt for takeoff.
                     // only altitude will matter to the AP mission script for takeoff.
-                    if(mission.add_cmd(cmd)) {
+                    if (mission.add_cmd(cmd)) {
                         // log event
                         Log_Write_Event(DATA_SAVEWP_ADD_WP);
                     }
@@ -276,15 +276,15 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 cmd.content.location = current_loc;
 
                 // if throttle is above zero, create waypoint command
-                if(channel_throttle->get_control_in() > 0) {
+                if (channel_throttle->get_control_in() > 0) {
                     cmd.id = MAV_CMD_NAV_WAYPOINT;
-                }else{
+                } else {
                     // with zero throttle, create LAND command
                     cmd.id = MAV_CMD_NAV_LAND;
                 }
 
                 // save command
-                if(mission.add_cmd(cmd)) {
+                if (mission.add_cmd(cmd)) {
                     // log event
                     Log_Write_Event(DATA_SAVEWP_ADD_WP);
                 }
@@ -304,7 +304,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 #if RANGEFINDER_ENABLED == ENABLED
             if ((ch_flag == AUX_SWITCH_HIGH) && (rangefinder.num_sensors() >= 1)) {
                 rangefinder_state.enabled = true;
-            }else{
+            } else {
                 rangefinder_state.enabled = false;
             }
 #endif
@@ -316,7 +316,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             if (ch_flag == AUX_SWITCH_HIGH) {
                 fence.enable(true);
                 Log_Write_Event(DATA_FENCE_ENABLE);
-            }else{
+            } else {
                 fence.enable(false);
                 Log_Write_Event(DATA_FENCE_DISABLE);
             }
@@ -364,7 +364,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_AUTO:
             if (ch_flag == AUX_SWITCH_HIGH) {
                 set_mode(AUTO, MODE_REASON_TX_COMMAND);
-            }else{
+            } else {
                 // return to flight mode switch's flight mode if we are currently in AUTO
                 if (control_mode == AUTO) {
                     reset_control_switch();
@@ -394,7 +394,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_LAND:
             if (ch_flag == AUX_SWITCH_HIGH) {
                 set_mode(LAND, MODE_REASON_TX_COMMAND);
-            }else{
+            } else {
                 // return to flight mode switch's flight mode if we are currently in LAND
                 if (control_mode == LAND) {
                     reset_control_switch();
@@ -518,7 +518,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // brake flight mode
             if (ch_flag == AUX_SWITCH_HIGH) {
                 set_mode(BRAKE, MODE_REASON_TX_COMMAND);
-            }else{
+            } else {
                 // return to flight mode switch's flight mode if we are currently in BRAKE
                 if (control_mode == BRAKE) {
                     reset_control_switch();
@@ -543,7 +543,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             if (ch_flag == AUX_SWITCH_HIGH) {
                 avoidance_adsb.enable();
                 Log_Write_Event(DATA_AVOIDANCE_ADSB_ENABLE);
-            }else{
+            } else {
                 avoidance_adsb.disable();
                 Log_Write_Event(DATA_AVOIDANCE_ADSB_DISABLE);
             }
@@ -580,7 +580,7 @@ void Copter::save_trim()
 // meant to be called continuously while the pilot attempts to keep the copter level
 void Copter::auto_trim()
 {
-    if(auto_trim_counter > 0) {
+    if (auto_trim_counter > 0) {
         auto_trim_counter--;
 
         // flash the leds
@@ -597,7 +597,7 @@ void Copter::auto_trim()
         ahrs.add_trim(roll_trim_adjustment, pitch_trim_adjustment, (auto_trim_counter == 0));
 
         // on last iteration restore leds and accel gains to normal
-        if(auto_trim_counter == 0) {
+        if (auto_trim_counter == 0) {
             AP_Notify::flags.save_trim = false;
         }
     }
