@@ -899,15 +899,16 @@ private:
     uint32_t firstInitTime_ms;      // First time the initialise function was called (msec)
     uint32_t lastInitFailReport_ms; // Last time the buffer initialisation failure report wass sent (msec)
 
-    // Specify preferred source of data to be used for a state reset
+    // Specify source of data to be used for a partial state reset
+    // Checking the availability and quality of the data source specified is the responsibility of the caller
     enum resetDataSource {
-                    DEFAULT=0,      // Use best available data
-                    GPS=1,          // Use GPS if available
-                    RNGBCN=2,       // Use beacon range data if available
-                    FLOW=3,         // Use optical flow rates if available
-                    BARO=4,         // Use Baro height if available
-                    MAG=5,          // Use magnetometer data if available
-                    RNGFND=6        // Use rangefinder data if available
+                    DEFAULT=0,      // Use data source selected by reset function internal rules
+                    GPS=1,          // Use GPS
+                    RNGBCN=2,       // Use beacon range data
+                    FLOW=3,         // Use optical flow rates
+                    BARO=4,         // Use Baro height
+                    MAG=5,          // Use magnetometer data
+                    RNGFND=6        // Use rangefinder data
                         };
     resetDataSource posResetSource; // preferred soure of data for position reset
     resetDataSource velResetSource; // preferred source of data for a velocity reset
