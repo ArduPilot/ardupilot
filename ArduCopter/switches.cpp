@@ -194,6 +194,7 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_MOTOR_INTERLOCK:
         case AUXSW_AVOID_ADSB:
         case AUXSW_PRECISION_LOITER:
+        case AUXSW_AVOID_PROXIMITY:
             do_aux_switch_function(ch_option, ch_flag);
             break;
     }
@@ -570,6 +571,20 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 #endif
             break;
 
+        case AUXSW_AVOID_PROXIMITY:
+#if PROXIMITY_ENABLED == ENABLED
+            switch (ch_flag) {
+                case AUX_SWITCH_HIGH:
+                    avoid.proximity_avoidance_enable(true);
+                    Log_Write_Event(DATA_AVOIDANCE_PROXIMITY_ENABLE);
+                    break;
+                case AUX_SWITCH_LOW:
+                    avoid.proximity_avoidance_enable(false);
+                    Log_Write_Event(DATA_AVOIDANCE_PROXIMITY_DISABLE);
+                    break;
+            }
+#endif
+            break;
     }
 }
 
