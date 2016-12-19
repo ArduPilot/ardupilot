@@ -373,6 +373,11 @@ public:
     uint8_t first_unconfigured_gps(void) const;
     void broadcast_first_configuration_failure_reason(void) const;
 
+    // return true if all GPS instances have finished configuration
+    bool all_configured(void) const {
+        return first_unconfigured_gps() == GPS_ALL_CONFIGURED;
+    }
+    
 private:
     struct GPS_timing {
         // the time we got our last fix in system milliseconds
