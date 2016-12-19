@@ -88,7 +88,7 @@ bool Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n)
 template <typename T>
 bool Polygon_complete(const Vector2<T> *V, unsigned n)
 {
-    return (n >= 4 && V[n-1] == V[0]);
+    return (n >= 4 && V[n-1].x == V[0].x && V[n-1].y == V[0].y);
 }
 
 // Necessary to avoid linker errors
