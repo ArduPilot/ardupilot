@@ -291,13 +291,13 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
 
-#if CAMERA == ENABLED
         case AUXSW_CAMERA_TRIGGER:
+#if CAMERA == ENABLED
             if (ch_flag == AUX_SWITCH_HIGH) {
                 do_take_picture();
             }
-            break;
 #endif
+            break;
 
         case AUXSW_RANGEFINDER:
             // enable or disable the rangefinder
@@ -310,8 +310,8 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 #endif
             break;
 
-#if AC_FENCE == ENABLED
         case AUXSW_FENCE:
+#if AC_FENCE == ENABLED
             // enable or disable the fence
             if (ch_flag == AUX_SWITCH_HIGH) {
                 fence.enable(true);
@@ -320,8 +320,8 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 fence.enable(false);
                 Log_Write_Event(DATA_FENCE_DISABLE);
             }
-            break;
 #endif
+            break;
 
         case AUXSW_ACRO_TRAINER:
             switch(ch_flag) {
@@ -339,8 +339,9 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     break;
             }
             break;
-#if GRIPPER_ENABLED == ENABLED
+
         case AUXSW_GRIPPER:
+#if GRIPPER_ENABLED == ENABLED
             switch(ch_flag) {
                 case AUX_SWITCH_LOW:
                     g2.gripper.release();
@@ -351,15 +352,16 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     Log_Write_Event(DATA_GRIPPER_GRAB);
                     break;
             }
-            break;
 #endif
-#if SPRAYER == ENABLED
+            break;
+
         case AUXSW_SPRAYER:
+#if SPRAYER == ENABLED
             sprayer.run(ch_flag == AUX_SWITCH_HIGH);
             // if we are disarmed the pilot must want to test the pump
             sprayer.test_pump((ch_flag == AUX_SWITCH_HIGH) && !motors.armed());
-            break;
 #endif
+            break;
 
         case AUXSW_AUTO:
             if (ch_flag == AUX_SWITCH_HIGH) {
@@ -372,8 +374,8 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
 
-#if AUTOTUNE_ENABLED == ENABLED
         case AUXSW_AUTOTUNE:
+#if AUTOTUNE_ENABLED == ENABLED
             // turn on auto tuner
             switch(ch_flag) {
                 case AUX_SWITCH_LOW:
@@ -388,8 +390,8 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     set_mode(AUTOTUNE, MODE_REASON_TX_COMMAND);
                     break;
             }
-            break;
 #endif
+            break;
 
         case AUXSW_LAND:
             if (ch_flag == AUX_SWITCH_HIGH) {
@@ -402,19 +404,23 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
 
-#if PARACHUTE == ENABLED
         case AUXSW_PARACHUTE_ENABLE:
+#if PARACHUTE == ENABLED
             // Parachute enable/disable
             parachute.enabled(ch_flag == AUX_SWITCH_HIGH);
+#endif
             break;
 
         case AUXSW_PARACHUTE_RELEASE:
+#if PARACHUTE == ENABLED
             if (ch_flag == AUX_SWITCH_HIGH) {
                 parachute_manual_release();
             }
+#endif
             break;
 
         case AUXSW_PARACHUTE_3POS:
+#if PARACHUTE == ENABLED
             // Parachute disable, enable, release with 3 position switch
             switch (ch_flag) {
                 case AUX_SWITCH_LOW:
@@ -430,8 +436,8 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     parachute_manual_release();
                     break;
             }
-            break;
 #endif
+            break;
 
         case AUXSW_MISSION_RESET:
             if (ch_flag == AUX_SWITCH_HIGH) {
@@ -448,9 +454,9 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // enable or disable accel limiting by restoring defaults
             attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
             break;
-        
-#if MOUNT == ENABLE
+
         case AUXSW_RETRACT_MOUNT:
+#if MOUNT == ENABLE
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH:
                     camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
@@ -459,8 +465,8 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     camera_mount.set_mode_to_default();
                     break;
             }
-            break;
 #endif
+            break;
 
         case AUXSW_RELAY:
             ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
@@ -478,7 +484,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             ServoRelayEvents.do_set_relay(3, ch_flag == AUX_SWITCH_HIGH);
             break;
 
-		case AUXSW_LANDING_GEAR:
+       case AUXSW_LANDING_GEAR:
             switch (ch_flag) {
                 case AUX_SWITCH_LOW:
                     landinggear.set_cmd_mode(LandingGear_Deploy);
