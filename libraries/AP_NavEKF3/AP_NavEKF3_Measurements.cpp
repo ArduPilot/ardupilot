@@ -283,7 +283,7 @@ void NavEKF3_core::readIMUData()
     dtIMUavg = ins.get_loop_delta_t();
 
     // the imu sample time is used as a common time reference throughout the filter
-    imuSampleTime_ms = AP_HAL::millis();
+    imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
 
     // use the nominated imu or primary if not available
     if (ins.use_accel(imu_index)) {

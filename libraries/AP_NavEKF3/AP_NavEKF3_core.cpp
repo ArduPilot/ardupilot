@@ -498,9 +498,6 @@ void NavEKF3_core::UpdateFilter(bool predict)
 
     // TODO - in-flight restart method
 
-    //get starting time for update step
-    imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
-
     // Check arm status and perform required checks and mode changes
     controlFilterModes();
 
