@@ -162,6 +162,7 @@ private:
     uint16_t _rcout_port;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
+    uint16_t _irlock_port;
     float _current;
 
     bool _synthetic_clock_mode;
@@ -170,6 +171,9 @@ private:
     bool _use_fg_view;
     
     const char *_fdm_address;
+    const char *_gazebo_address;
+    int _gazebo_port_in;
+    int _gazebo_port_out;
 
     // delay buffer variables
     static const uint8_t mag_buffer_length = 250;

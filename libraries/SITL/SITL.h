@@ -138,6 +138,8 @@ public:
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
 
+    uint16_t irlock_port;
+
     void simstate_send(mavlink_channel_t chan);
 
     void Log_Write_SIMSTATE(DataFlash_Class *dataflash);

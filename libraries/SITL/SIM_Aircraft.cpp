@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <errno.h>
+
 
 #ifdef __CYGWIN__
 #include <windows.h>
@@ -53,6 +55,8 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     rate_hz(1200),
     autotest_dir(nullptr),
     frame(frame_str),
+    socket_in(true),
+    socket_out(true),
 #ifdef __CYGWIN__
     min_sleep_time(20000)
 #else
@@ -415,6 +419,29 @@ void Aircraft::set_speedup(float speedup)
 }
 
 /*
+  Create and set in/out socket
+*/
+void Aircraft::set_interface_ports(const char* local_address, const char* simulation_address, const int port_in, const int port_out)
+{
+    if (!socket_in.bind(local_address, port_in)) {
+        fprintf(stderr, "SITL: socket in bind failed on sim in [%s:%d] - %s\n", local_address, port_in, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
+    }
+    printf("Bind [%s:%d] for SITL in\n", local_address, port_in);
+    socket_in.reuseaddress();
+    socket_in.set_blocking(false);
+
+    if (!socket_out.connect(simulation_address, port_out)) {
+        fprintf(stderr, "SITL: socket out connect failed on sim out [%s:%d]- %s\n", simulation_address, port_out, strerror(errno));
+        exit(1);
+    }
+    printf("Bind %s:%d for SITL out\n", simulation_address, port_out);
+    socket_out.reuseaddress();
+    socket_out.set_blocking(false);
+}
+
+/*
   update the simulation attitude and relative position
  */
 void Aircraft::update_dynamics(const Vector3f &rot_accel)
@@ -744,5 +771,3 @@ float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx
 }
     
 } // namespace SITL
-
-

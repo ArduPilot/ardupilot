@@ -38,10 +38,11 @@ AP_IRLock_SITL::AP_IRLock_SITL() :
 
 void AP_IRLock_SITL::init()
 {
+    sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     // try to bind to a specific port so that if we restart ArduPilot
     // Gazebo keeps sending us packets. Not strictly necessary but
     // useful for debugging
-    sock.bind("127.0.0.1", 9005);
+    sock.bind("127.0.0.1", sitl->irlock_port);
 
     sock.reuseaddress();
     sock.set_blocking(false);

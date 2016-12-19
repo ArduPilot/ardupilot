@@ -19,6 +19,7 @@
 #include "SIM_Gazebo.h"
 
 #include <stdio.h>
+#include <errno.h>
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -28,17 +29,13 @@ namespace SITL {
 
 Gazebo::Gazebo(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
-    last_timestamp(0),
-    sock(true)
+    last_timestamp(0)
 {
     // try to bind to a specific port so that if we restart ArduPilot
     // Gazebo keeps sending us packets. Not strictly necessary but
     // useful for debugging
-    sock.bind("127.0.0.1", 9003);
+    fprintf(stdout, "Starting SITL Gazebo\n");
 
-    sock.reuseaddress();
-    sock.set_blocking(false);
-    fprintf(stdout, "bind\n");
 }
 
 /*
@@ -53,7 +50,7 @@ void Gazebo::send_servos(const struct sitl_input &input)
     {
       pkt.motor_speed[i] = (input.servos[i]-1000) / 1000.0f;
     }
-    sock.sendto(&pkt, sizeof(servo_packet), "127.0.0.1", 9002);
+    socket_out.send(&pkt, sizeof(pkt));
 }
 
 /*
@@ -68,7 +65,7 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    while (sock.recv(&pkt, sizeof(pkt), 100) != sizeof(pkt)) {
+    while (socket_in.recv(&pkt, sizeof(pkt), 100) != sizeof(pkt)) {
         send_servos(input);
     }
 
@@ -119,6 +116,26 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
     */
 }
 
+void Gazebo::drain_sockets()
+{
+    const uint16_t buflen = 1024;
+    char buf[buflen];
+    ssize_t received;
+    errno = 0;
+    do {
+        received = socket_in.recv(buf, buflen, 0);
+        if (received < 0) {
+            if (errno != EAGAIN && errno != EWOULDBLOCK && errno != 0) {
+                fprintf(stderr, "error recv on socket in: %s \n",
+                        strerror(errno));
+            }
+        } else {
+            // fprintf(stderr, "received from control socket: %s\n", buf);
+        }
+    } while (received > 0);
+
+}
+
 /*
   update the Gazebo simulation by one time step
  */
@@ -130,6 +147,7 @@ void Gazebo::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+    drain_sockets();
 }
 
 } // namespace SITL
