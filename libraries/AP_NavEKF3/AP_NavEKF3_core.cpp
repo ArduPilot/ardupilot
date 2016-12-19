@@ -35,6 +35,7 @@ NavEKF3_core::NavEKF3_core(void) :
     _perf_test[7] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test7");
     _perf_test[8] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test8");
     _perf_test[9] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test9");
+    firstInitTime_ms = 0;
 }
 
 // setup this core backend
@@ -355,23 +356,28 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
         return false;
     }
 
+    // read all the sensors required to start the EKF the states
+    readIMUData();
+    readMagData();
+    readGpsData();
+    readBaroData();
+
+    // accumulate enough sensor data to fill the buffers
+    if (firstInitTime_ms == 0) {
+        firstInitTime_ms = imuSampleTime_ms;
+        return false;
+    } else if (imuSampleTime_ms - firstInitTime_ms < 1000) {
+        return false;
+    }
+
     // set re-used variables to zero
     InitialiseVariables();
-
-    // Initialise IMU data
-    dtIMUavg = _ahrs->get_ins().get_loop_delta_t();
-    readIMUData();
-    storedIMU.reset_history(imuDataNew);
-    imuDataDelayed = imuDataNew;
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
     Vector3f initAccVec;
 
     // TODO we should average accel readings over several cycles
     initAccVec = _ahrs->get_ins().get_accel(imu_index);
-
-    // read the magnetometer data
-    readMagData();
 
     // normalise the acceleration vector
     float pitch=0, roll=0;
@@ -399,13 +405,9 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     stateStruct.earth_magfield.zero();
     stateStruct.body_magfield.zero();
 
-    // read the GPS and set the position and velocity states
-    readGpsData();
+    // set the position, velocity and height
     ResetVelocity();
     ResetPosition();
-
-    // read the barometer and set the height state
-    readBaroData();
     ResetHeight();
 
     // define Earth rotation vector in the NED navigation frame
@@ -414,11 +416,12 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     // initialise the covariance matrix
     CovarianceInit();
 
-    // reset output states
+    // reset the output predictor states
     StoreOutputReset();
 
     // set to true now that states have be initialised
     statesInitialised = true;
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
 
     return true;
 }
