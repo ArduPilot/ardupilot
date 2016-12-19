@@ -76,7 +76,7 @@ public:
 
     /* smooth sensors to provide kinematic consistancy */
     void smooth_sensors(void);
-    
+
     /* return normal distribution random numbers */
     static double rand_normal(double mean, double stddev);
 
@@ -84,7 +84,7 @@ public:
     static bool parse_home(const char *home_str, Location &loc, float &yaw_degrees);
 
     // get frame rate of model in Hz
-    float get_rate_hz(void) const { return rate_hz; }       
+    float get_rate_hz(void) const { return rate_hz; }
 
     const Vector3f &get_gyro(void) const {
         return gyro;
@@ -97,7 +97,7 @@ public:
     const Vector3f &get_velocity_air_ef(void) const {
         return velocity_air_ef;
     }
-    
+
     const Matrix3f &get_dcm(void) const {
         return dcm;
     }
@@ -116,19 +116,19 @@ protected:
     float ground_level;
     float home_yaw;
     float frame_height;
-    Matrix3f dcm;  // rotation matrix, APM conventions, from body to earth
-    Vector3f gyro; // rad/s
-    Vector3f gyro_prev; // rad/s
-    Vector3f ang_accel; // rad/s/s
-    Vector3f velocity_ef; // m/s, earth frame
-    Vector3f wind_ef; // m/s, earth frame
-    Vector3f velocity_air_ef; // velocity relative to airmass, earth frame
-    Vector3f velocity_air_bf; // velocity relative to airmass, body frame
-    Vector3f position; // meters, NED from origin
-    float mass; // kg
-    Vector3f accel_body; // m/s/s NED, body frame
-    float airspeed; // m/s, apparent airspeed
-    float airspeed_pitot; // m/s, apparent airspeed, as seen by fwd pitot tube
+    Matrix3f dcm;              // rotation matrix, APM conventions, from body to earth
+    Vector3f gyro;             // rad/s
+    Vector3f gyro_prev;        // rad/s
+    Vector3f ang_accel;        // rad/s/s
+    Vector3f velocity_ef;      // m/s, earth frame
+    Vector3f wind_ef;          // m/s, earth frame
+    Vector3f velocity_air_ef;  // velocity relative to airmass, earth frame
+    Vector3f velocity_air_bf;  // velocity relative to airmass, body frame
+    Vector3f position;         // meters, NED from origin
+    float mass;                // kg
+    Vector3f accel_body;       // m/s/s NED, body frame
+    float airspeed;            // m/s, apparent airspeed
+    float airspeed_pitot;      // m/s, apparent airspeed, as seen by fwd pitot tube
     float battery_voltage = -1;
     float battery_current = 0;
     float rpm1 = 0;
@@ -136,12 +136,12 @@ protected:
     uint8_t rcin_chan_count = 0;
     float rcin[8];
 
-    //Wind Turbulence simulated Data
+    // Wind Turbulence simulated Data
     float turbulence_azimuth = 0;
-    float turbulence_horizontal_speed = 0; // m/s
-    float turbulence_vertical_speed =0; // m/s
+    float turbulence_horizontal_speed = 0;  // m/s
+    float turbulence_vertical_speed = 0;    // m/s
 
-    Vector3f mag_bf; // local earth magnetic field vector in Gauss, earth frame
+    Vector3f mag_bf;  // local earth magnetic field vector in Gauss, earth frame
 
     uint64_t time_now_us;
 
@@ -160,13 +160,13 @@ protected:
     float last_speedup = -1;
 
     enum {
-        GROUND_BEHAVIOR_NONE=0,
+        GROUND_BEHAVIOR_NONE = 0,
         GROUND_BEHAVIOR_NO_MOVEMENT,
         GROUND_BEHAVIOR_FWD_ONLY,
     } ground_behavior;
 
     bool use_smoothing;
-    
+
     AP_Terrain *terrain;
     float ground_height_difference() const;
 
@@ -176,7 +176,7 @@ protected:
     bool on_ground() const;
 
     // returns height above ground level in metres
-    float hagl() const; // metres
+    float hagl() const;  // metres
 
     /* update location from position */
     void update_position(void);
@@ -223,7 +223,7 @@ protected:
     float filtered_idx(float v, uint8_t idx);
     float filtered_servo_angle(const struct sitl_input &input, uint8_t idx);
     float filtered_servo_range(const struct sitl_input &input, uint8_t idx);
-    
+
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;
@@ -242,13 +242,13 @@ private:
     } smoothing;
 
     LowPassFilterFloat servo_filter[4];
-    
+
     /* set this always to the sampling in degrees for the table below */
-    #define SAMPLING_RES		10.0f
-    #define SAMPLING_MIN_LAT	-60.0f
-    #define SAMPLING_MAX_LAT	60.0f
-    #define SAMPLING_MIN_LON	-180.0f
-    #define SAMPLING_MAX_LON	180.0f
+    #define SAMPLING_RES        10.0f
+    #define SAMPLING_MIN_LAT    -60.0f
+    #define SAMPLING_MAX_LAT    60.0f
+    #define SAMPLING_MIN_LON    -180.0f
+    #define SAMPLING_MAX_LON    180.0f
 
     /* table data containing magnetic declination angle in degrees */
     const float declination_table[13][37] =
