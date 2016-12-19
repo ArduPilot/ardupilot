@@ -360,7 +360,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF3, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
 
-    // 29 previously used for EK2_MAG_P_NSE parameter that has been replaced with EK2_MAGE_P_NSE and EK2_MAGB_P_NSE
+    // 29 previously used for EK2_MAG_P_NSE parameter that has been replaced with EK3_MAGE_P_NSE and EK3_MAGB_P_NSE
 
     // @Param: WIND_P_NSE
     // @DisplayName: Wind velocity process noise (m/s^2)
