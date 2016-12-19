@@ -21,6 +21,7 @@
 #include <utility>
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -34,7 +35,11 @@ extern const AP_HAL::HAL &hal;
 #define REG_CONTROL0_REFILL 0x80
 #define REG_CONTROL0_RESET  0x40
 #define REG_CONTROL0_SET    0x20
+#define REG_CONTROL0_NB     0x10
 #define REG_CONTROL0_TM     0x01
+
+// datasheet says 50ms min for refill
+#define MIN_DELAY_SET_RESET 50
 
 AP_Compass_Backend *AP_Compass_MMC3416::probe(Compass &compass,
                                               AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
@@ -76,7 +81,8 @@ bool AP_Compass_MMC3416::init()
     if (!dev->read_registers(REG_PRODUCT_ID, &whoami, 1) ||
         whoami != 0x06) {
         // not a MMC3416
-        goto fail;
+        dev->get_semaphore()->give();
+        return false;
     }
 
     // reset sensor
@@ -112,19 +118,21 @@ bool AP_Compass_MMC3416::init()
     hal.scheduler->delay(250);
     
     return true;
-
-fail:
-    dev->get_semaphore()->give();
-    return false;
 }
 
 bool AP_Compass_MMC3416::timer()
 {
-    uint32_t now = AP_HAL::millis();
-    const uint8_t measure_count_limit = 50;
+    const uint16_t measure_count_limit = 50;
     const uint16_t zero_offset = 32768; // 16 bit mode
     const uint16_t sensitivity = 2048; // counts per Gauss, 16 bit mode
     const float counts_to_milliGauss = 1.0e3f / sensitivity;
+
+    uint32_t now = AP_HAL::millis();
+    if (now - last_sample_ms > 500) {
+        // seems to be stuck or on first sample, reset state machine
+        state = STATE_REFILL1;
+        last_sample_ms = now;
+    }
     
     /*
       we use the SET/RESET method to remove bridge offset every
@@ -136,12 +144,15 @@ bool AP_Compass_MMC3416::timer()
     case STATE_REFILL1:
         if (dev->write_register(REG_CONTROL0, REG_CONTROL0_REFILL)) {
             state = STATE_REFILL1_WAIT;
-            last_state_ms = AP_HAL::millis();
+            refill_start_ms = AP_HAL::millis();
         }
         break;
 
-    case STATE_REFILL1_WAIT:
-        if (now - last_state_ms >= 50) {
+    case STATE_REFILL1_WAIT: {
+        uint8_t status;
+        if (AP_HAL::millis() - refill_start_ms > MIN_DELAY_SET_RESET &&
+            dev->read_registers(REG_STATUS, &status, 1) &&
+            (status & 0x02) == 0) {
             if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_SET) ||
                 !dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) { // Take Measurement
                 state = STATE_REFILL1;
@@ -150,6 +161,7 @@ bool AP_Compass_MMC3416::timer()
             }
         }
         break;
+    }
         
     case STATE_MEASURE_WAIT1: {
         uint8_t status;
@@ -162,14 +174,17 @@ bool AP_Compass_MMC3416::timer()
                 state = STATE_REFILL1;
             } else {
                 state = STATE_REFILL2_WAIT;
-                last_state_ms = AP_HAL::millis();
+                refill_start_ms = AP_HAL::millis();
             }
         }
         break;
     }
 
-    case STATE_REFILL2_WAIT:
-        if (now - last_state_ms >= 50) {
+    case STATE_REFILL2_WAIT: {
+        uint8_t status;
+        if (AP_HAL::millis() - refill_start_ms > MIN_DELAY_SET_RESET &&
+            dev->read_registers(REG_STATUS, &status, 1) &&
+            (status & 0x02) == 0) {
             if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_RESET) ||
                 !dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) { // Take Measurement
                 state = STATE_REFILL1;
@@ -178,6 +193,7 @@ bool AP_Compass_MMC3416::timer()
             }
         }
         break;
+    }
 
     case STATE_MEASURE_WAIT2: {
         uint8_t status;
@@ -204,12 +220,21 @@ bool AP_Compass_MMC3416::timer()
         Vector3f new_offset = (f1 + f2) * (counts_to_milliGauss / 2);
         if (!have_initial_offset) {
             offset = new_offset;
+            have_initial_offset = true;
         } else {
             // low pass changes to the offset
             offset = offset * 0.95 + new_offset * 0.05;
         }
 
 #if 0
+        DataFlash_Class::instance()->Log_Write("MMO", "TimeUS,Nx,Ny,Nz,Ox,Oy,Oz", "Qffffff",
+                                               AP_HAL::micros64(),
+                                               (double)new_offset.x,
+                                               (double)new_offset.y,
+                                               (double)new_offset.z,
+                                               (double)offset.x,
+                                               (double)offset.y,
+                                               (double)offset.z);
         printf("F(%.1f %.1f %.1f) O(%.1f %.1f %.1f)\n",
                field.x, field.y, field.z,
                offset.x, offset.y, offset.z);
@@ -217,7 +242,7 @@ bool AP_Compass_MMC3416::timer()
 
         accumulate_field(field);
 
-        if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) { // Take Measurement
+        if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) {
             state = STATE_REFILL1;
         } else {
             state = STATE_MEASURE_WAIT3;
@@ -264,6 +289,13 @@ bool AP_Compass_MMC3416::timer()
  */
 void AP_Compass_MMC3416::accumulate_field(Vector3f &field)
 {
+#if 0
+    DataFlash_Class::instance()->Log_Write("MMC", "TimeUS,X,Y,Z", "Qfff",
+                                           AP_HAL::micros64(),
+                                           (double)field.x,
+                                           (double)field.y,
+                                           (double)field.z);
+#endif
     /* rotate raw_field from sensor frame to body frame */
     rotate_field(field, compass_instance);
         
@@ -278,6 +310,8 @@ void AP_Compass_MMC3416::accumulate_field(Vector3f &field)
         accum_count++;
         _sem->give();
     }
+
+    last_sample_ms = AP_HAL::millis();
 }
 
 void AP_Compass_MMC3416::read()
