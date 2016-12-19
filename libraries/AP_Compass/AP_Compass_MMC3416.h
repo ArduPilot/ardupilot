@@ -44,6 +44,14 @@ private:
                        enum Rotation rotation);
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
+
+    enum {
+        STATE_REFILL1,
+        STATE_REFILL1_WAIT,
+        STATE_MEASURE_WAIT1,
+        STATE_REFILL2_WAIT,
+        STATE_MEASURE_WAIT2,
+    } state;
     
     /**
      * Device periodic callback to read data from the sensor.
@@ -55,5 +63,9 @@ private:
     Vector3f accum;
     uint16_t accum_count;
     bool force_external;
+
+    uint16_t data0[3];
+    uint32_t last_state_ms;
+    
     enum Rotation rotation;
 };
