@@ -67,6 +67,19 @@ def ap_common_checks(cfg):
         mandatory=False,
     )
 
+    cfg.check(
+        compiler='cxx',
+        fragment='''
+        #include <termios.h>
+
+        int main() {
+          return cfsetspeed(nullptr, 0);
+        }''',
+        define_name="HAVE_TERMIOS_CFSETSPEED",
+        msg="Checking for HAVE_TERMIOS_CFSETSPEED",
+        mandatory=False,
+    )
+
     # NEED_CMATH_FUNCTION_STD_NAMESPACE checks are needed due to
     # new gcc versions being more restrictive.
     #
