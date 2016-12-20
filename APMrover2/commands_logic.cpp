@@ -288,7 +288,10 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // have we gone past the waypoint?
     // We should always go through the waypoint i.e. the above code
     // first before we go past it but sometimes we don't.
-    if (location_passed_point(current_loc, prev_WP, next_WP)) {
+    // OR have we reached the waypoint previously be we aren't actively loitering
+    // This second check is required for when we roll past the waypoint radius
+    if (location_passed_point(current_loc, prev_WP, next_WP) ||
+        (!active_loiter && previously_reached_wp)) {
         // As we have passed the waypoint navigation needs to be done from current location
         prev_WP = current_loc;
         // Check if this is the first time we have reached the waypoint even though we have gone past it
