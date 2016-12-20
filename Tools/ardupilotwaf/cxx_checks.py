@@ -128,6 +128,8 @@ def ap_common_checks(cfg):
 
     cfg.check(header_name='byteswap.h', mandatory=False)
 
+    cfg.check(header_name='stdbool.h', mandatory=False)
+
 @conf
 def check_librt(cfg, env):
     if cfg.env.DEST_OS == 'darwin':
