@@ -176,7 +176,7 @@
 // Battery monitoring
 //
 #ifndef FS_BATT_VOLTAGE_DEFAULT
- # define FS_BATT_VOLTAGE_DEFAULT       10.5f       // default battery voltage below which failsafe will be triggered
+ # define FS_BATT_VOLTAGE_DEFAULT       0       // default battery voltage below which failsafe will be triggered
 #endif
 
 #ifndef FS_BATT_MAH_DEFAULT
@@ -241,7 +241,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_ACTION_DEFAULT
- # define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_LAND  // EKF failsafe triggers land by default
+ # define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_DISABLED  // EKF failsafe triggers land by default
 #endif
 #ifndef FS_EKF_THRESHOLD_DEFAULT
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
