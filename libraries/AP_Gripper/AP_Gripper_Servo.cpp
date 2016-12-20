@@ -55,3 +55,14 @@ bool AP_Gripper_Servo::grabbed() const
 
 // type-specific periodic updates:
 void AP_Gripper_Servo::update_gripper() { };
+
+bool AP_Gripper_Servo::valid() const
+{
+    if (!AP_Gripper_Backend::valid()) {
+        return false;
+    }
+    if (!RC_Channel_aux::function_assigned(RC_Channel_aux::k_gripper)) {
+        return false;
+    }
+    return true;
+}
