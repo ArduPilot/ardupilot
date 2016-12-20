@@ -802,6 +802,7 @@ bool Copter::verify_payload_place()
             g2.gripper.release();
         } else {
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Gripper not valid");
+            nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
         }
         nav_payload_place.state = PayloadPlaceStateType_Releasing;
         // no break
