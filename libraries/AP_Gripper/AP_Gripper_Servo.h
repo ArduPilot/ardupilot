@@ -36,6 +36,9 @@ public:
     // released - returns true if gripper in released state
     bool released() const override;
 
+    // valid - returns true if the backend should be working
+    bool valid() const;
+
 protected:
 
     // type-specific intiailisations:
