@@ -18,7 +18,7 @@
  */
 
 /*
- *  ArduCopter parameter definitions
+ *  ArduSub parameter definitions
  *
  */
 
@@ -98,7 +98,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: RNGFND_GAIN
     // @DisplayName: Rangefinder gain
-    // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the copter
+    // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the sub
     // @Range: 0.01 2.0
     // @Increment: 0.01
     // @User: Standard
@@ -107,13 +107,13 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_BATT_ENABLE
     // @DisplayName: Battery Failsafe Enable
     // @Description: Controls whether failsafe will be invoked when battery voltage or current runs low
-    // @Values: 0:Disabled,1:Land,2:RTL
+    // @Values: 0:Disabled
     // @User: Standard
     GSCALAR(failsafe_battery_enabled, "FS_BATT_ENABLE", FS_BATT_DISABLED),
 
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
-    // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage then the copter will RTL
+    // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe.
     // @Units: Volts
     // @Increment: 0.1
     // @User: Standard
@@ -121,7 +121,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: FS_BATT_MAH
     // @DisplayName: Failsafe battery milliAmpHours
-    // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe. If the battery remaining drops below this level then the copter will RTL
+    // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe.
     // @Units: mAh
     // @Increment: 50
     // @User: Standard
@@ -283,7 +283,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: ESC_CALIBRATION
     // @DisplayName: ESC Calibration
-    // @Description: Controls whether ArduCopter will enter ESC calibration on the next restart.  Do not adjust this parameter manually.
+    // @Description: Controls whether ArduSub will enter ESC calibration on the next restart.  Do not adjust this parameter manually.
     // @User: Advanced
     // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle, 9:Disabled
     GSCALAR(esc_calibrate, "ESC_CALIBRATION",       0),
@@ -391,7 +391,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
     // @Description: Controls the action that will be taken when an EKF failsafe is invoked
-    // @Values: 1:Land, 2:AltHold, 3:Land even in Stabilize
+    // @Values: 1:Disabled
     // @User: Advanced
     GSCALAR(fs_ekf_action, "FS_EKF_ACTION",    FS_EKF_ACTION_DEFAULT),
 
@@ -405,7 +405,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_CRASH_CHECK
     // @DisplayName: Crash check enable
     // @Description: This enables automatic crash checking. When enabled the motors will disarm if a crash is detected.
-    // @Values: 0:Disabled, 1:Enabled
+    // @Values: 0:Disabled
     // @User: Advanced
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    0),
 
@@ -508,7 +508,7 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Range: 0.5 4.0
 	GSCALAR(throttle_gain, "JS_THR_GAIN", 1.0f),
 
-	// @Param: CAM_TILT_CENTER
+	// @Param: CAM_CENTER
 	// @DisplayName: Camera tilt mount center
 	// @Description: Servo PWM at camera center position
 	// @User: Standard
@@ -597,7 +597,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: ACRO_YAW_P
     // @DisplayName: Acro Yaw P gain
-    // @Description: Converts pilot yaw input into a desired rate of rotation in ACRO, Stabilize and SPORT modes.  Higher values mean faster rate of rotation.
+    // @Description: Converts pilot yaw input into a desired rate of rotation.  Higher values mean faster rate of rotation.
     // @Range: 1 10
     // @User: Standard
     GSCALAR(acro_yaw_p,                 "ACRO_YAW_P",           ACRO_YAW_P),
