@@ -341,6 +341,26 @@ build_arducopter() {
         test ! -f ArduCopter-v3.px4 || copyit ArduCopter-v3.px4 $ddir $tag &&
         test ! -f ArduCopter-v4.px4 || copyit ArduCopter-v4.px4 $ddir $tag
     done
+    for b in bebop ; do
+        checkout ArduCopter $tag $b || {
+            echo "Failed checkout of ArduCopter $b $tag"
+            error_count=$((error_count+1))
+            continue
+        }
+        skip_board $b && continue
+        echo "Building ArduCopter $b binaries"
+        ddir=$binaries/Copter/$hdate/$b
+        skip_build $tag $ddir && continue
+        make clean || continue
+        make $b -j4 || {
+            echo "Failed build of ArduCopter $b $tag"
+            error_count=$((error_count+1))
+            continue
+        }
+        extension=$(board_extension $b)
+        copyit $BUILDROOT/ArduCopter.$extension $ddir $tag
+        touch $binaries/Copter/$tag
+    done
     checkout ArduCopter "latest" "" ""
     popd
 }
@@ -414,7 +434,7 @@ build_antennatracker() {
     tag="$1"
     echo "Building AntennaTracker $tag binaries from $(pwd)"
     pushd AntennaTracker
-    for b in apm2; do
+    for b in apm2 navio navio2; do
         echo "Building AntennaTracker $b binaries"
         checkout AntennaTracker $tag $b "" || continue
         ddir=$binaries/AntennaTracker/$hdate/$b
