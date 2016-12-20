@@ -650,11 +650,14 @@ bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
     case EKF_TYPE3: {
             Vector2f posNE;
             float posD;
-            bool position_is_valid = (EKF3.getPosNE(-1,posNE) && EKF3.getPosD(-1,posD));
-            vec.x = posNE.x;
-            vec.y = posNE.y;
-            vec.z = posD;
-            return position_is_valid;
+            if (EKF3.getPosNE(-1,posNE) && EKF3.getPosD(-1,posD)) {
+                // position is valid
+                vec.x = posNE.x;
+                vec.y = posNE.y;
+                vec.z = posD;
+                return true;
+            }
+            return false;
         }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
