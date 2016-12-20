@@ -46,6 +46,7 @@ public:
 
     // enable/disable proximity based avoidance
     void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
+    bool proximity_avoidance_enabled() { return _proximity_enabled; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
