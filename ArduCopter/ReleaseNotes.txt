@@ -1,5 +1,15 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.4-rc1 21-Dec-2016
+Changes from 3.4.3
+1) Bug Fixes / Minor Enhancements:
+    a) prevent unwanted EKF core switching at startup
+    b) helicopter prevented from taking off in position hold mode before rotors at full speed
+    c) battery resistance calculations fixed
+    d) avoid unnecessary parameter change notifications to ground station
+    e) default power module definitions for Navio boards
+    f) on-board compass calibration capability bit added (tells ground stations that onboard calibration is supported)
+------------------------------------------------------------------
 Copter 3.4.3 08-Dec-2016 / Copter 3.4.3-rc1 01-Dec-2016
 Changes from 3.4.2
 1) Bug Fixes:
