@@ -7,23 +7,23 @@
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Common for implementation details
 static const struct Menu::command test_menu_commands[] = {
-	{"pwm",				MENU_FUNC(test_radio_pwm)},
-	{"radio",			MENU_FUNC(test_radio)},
-	{"passthru",		MENU_FUNC(test_passthru)},
-	{"failsafe",		MENU_FUNC(test_failsafe)},
-	{"relay",			MENU_FUNC(test_relay)},
-	{"waypoints",		MENU_FUNC(test_wp)},
-	{"modeswitch",		MENU_FUNC(test_modeswitch)},
+    {"pwm",             MENU_FUNC(test_radio_pwm)},
+    {"radio",           MENU_FUNC(test_radio)},
+    {"passthru",        MENU_FUNC(test_passthru)},
+    {"failsafe",        MENU_FUNC(test_failsafe)},
+    {"relay",           MENU_FUNC(test_relay)},
+    {"waypoints",       MENU_FUNC(test_wp)},
+    {"modeswitch",      MENU_FUNC(test_modeswitch)},
 
-	// Tests below here are for hardware sensors only present
-	// when real sensors are attached or they are emulated
-	{"gps",			MENU_FUNC(test_gps)},
-	{"ins",			MENU_FUNC(test_ins)},
-	{"sonartest",	MENU_FUNC(test_sonar)},
-	{"compass",		MENU_FUNC(test_mag)},
-	{"logging",		MENU_FUNC(test_logging)},
+    // Tests below here are for hardware sensors only present
+    // when real sensors are attached or they are emulated
+    {"gps",             MENU_FUNC(test_gps)},
+    {"ins",             MENU_FUNC(test_ins)},
+    {"sonartest",       MENU_FUNC(test_sonar)},
+    {"compass",         MENU_FUNC(test_mag)},
+    {"logging",         MENU_FUNC(test_logging)},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    {"shell", 				MENU_FUNC(test_shell)},
+    {"shell",           MENU_FUNC(test_shell)},
 #endif
 };
 
@@ -32,60 +32,60 @@ MENU(test_menu, "test", test_menu_commands);
 
 int8_t Rover::test_mode(uint8_t argc, const Menu::arg *argv)
 {
-	cliSerial->printf("Test Mode\n\n");
-	test_menu.run();
+    cliSerial->printf("Test Mode\n\n");
+    test_menu.run();
     return 0;
 }
 
 void Rover::print_hit_enter()
 {
-	cliSerial->printf("Hit Enter to exit.\n\n");
+    cliSerial->printf("Hit Enter to exit.\n\n");
 }
 
 int8_t Rover::test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 {
-	print_hit_enter();
-	delay(1000);
+    print_hit_enter();
+    delay(1000);
 
-	while(1){
-		delay(20);
+    while (1) {
+        delay(20);
 
-		// Filters radio input - adjust filters in the radio.cpp file
-		// ----------------------------------------------------------
-		read_radio();
+        // Filters radio input - adjust filters in the radio.cpp file
+        // ----------------------------------------------------------
+        read_radio();
 
-		cliSerial->printf("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
-							channel_steer->get_radio_in(),
-							g.rc_2.get_radio_in(),
-							channel_throttle->get_radio_in(),
-							g.rc_4.get_radio_in(),
-							g.rc_5.get_radio_in(),
-							g.rc_6.get_radio_in(),
-							g.rc_7.get_radio_in(),
-							g.rc_8.get_radio_in());
+        cliSerial->printf("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
+                            channel_steer->get_radio_in(),
+                            g.rc_2.get_radio_in(),
+                            channel_throttle->get_radio_in(),
+                            g.rc_4.get_radio_in(),
+                            g.rc_5.get_radio_in(),
+                            g.rc_6.get_radio_in(),
+                            g.rc_7.get_radio_in(),
+                            g.rc_8.get_radio_in());
 
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-	}
+        if (cliSerial->available() > 0) {
+            return (0);
+        }
+    }
 }
 
 
 int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
 {
-	print_hit_enter();
-	delay(1000);
+    print_hit_enter();
+    delay(1000);
 
-	while(1){
-		delay(20);
+    while (1) {
+        delay(20);
 
         // New radio frame? (we could use also if((millis()- timer) > 20)
         if (hal.rcin->new_input()) {
             cliSerial->print("CH:");
-            for(int i = 0; i < 8; i++){
-                cliSerial->print(hal.rcin->read(i));	// Print channel values
+            for (int i = 0; i < 8; i++) {
+                cliSerial->print(hal.rcin->read(i));    // Print channel values
                 cliSerial->print(",");
-                hal.rcout->write(i, hal.rcin->read(i)); // Copy input to Servos
+                hal.rcout->write(i, hal.rcin->read(i));  // Copy input to Servos
             }
             cliSerial->println();
         }
@@ -98,131 +98,131 @@ int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::test_radio(uint8_t argc, const Menu::arg *argv)
 {
-	print_hit_enter();
-	delay(1000);
+    print_hit_enter();
+    delay(1000);
 
-	// read the radio to set trims
-	// ---------------------------
-	trim_radio();
+    // read the radio to set trims
+    // ---------------------------
+    trim_radio();
 
-	while(1){
-		delay(20);
-		read_radio();
+    while (1) {
+        delay(20);
+        read_radio();
 
-		channel_steer->calc_pwm();
-		channel_throttle->calc_pwm();
+        channel_steer->calc_pwm();
+        channel_throttle->calc_pwm();
 
-		// write out the servo PWM values
-		// ------------------------------
-		set_servos();
+        // write out the servo PWM values
+        // ------------------------------
+        set_servos();
 
-		cliSerial->printf("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
-							channel_steer->get_control_in(),
-							g.rc_2.get_control_in(),
-							channel_throttle->get_control_in(),
-							g.rc_4.get_control_in(),
-							g.rc_5.get_control_in(),
-							g.rc_6.get_control_in(),
-							g.rc_7.get_control_in(),
-							g.rc_8.get_control_in());
+        cliSerial->printf("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
+                            channel_steer->get_control_in(),
+                            g.rc_2.get_control_in(),
+                            channel_throttle->get_control_in(),
+                            g.rc_4.get_control_in(),
+                            g.rc_5.get_control_in(),
+                            g.rc_6.get_control_in(),
+                            g.rc_7.get_control_in(),
+                            g.rc_8.get_control_in());
 
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-	}
+        if (cliSerial->available() > 0) {
+            return (0);
+        }
+    }
 }
 
 int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
-	uint8_t fail_test = 0;
-	print_hit_enter();
-	for(int i = 0; i < 50; i++){
-		delay(20);
-		read_radio();
-	}
+    uint8_t fail_test = 0;
+    print_hit_enter();
+    for (int i = 0; i < 50; i++) {
+        delay(20);
+        read_radio();
+    }
 
-	// read the radio to set trims
-	// ---------------------------
-	trim_radio();
+    // read the radio to set trims
+    // ---------------------------
+    trim_radio();
 
-	oldSwitchPosition = readSwitch();
+    oldSwitchPosition = readSwitch();
 
-	cliSerial->println("Unplug battery, throttle in neutral, turn off radio.");
-	while(channel_throttle->get_control_in() > 0){
-		delay(20);
-		read_radio();
-	}
+    cliSerial->println("Unplug battery, throttle in neutral, turn off radio.");
+    while (channel_throttle->get_control_in() > 0) {
+        delay(20);
+        read_radio();
+    }
 
-	while(1){
-		delay(20);
-		read_radio();
+    while (1) {
+        delay(20);
+        read_radio();
 
-		if(channel_throttle->get_control_in() > 0){
-			cliSerial->printf("THROTTLE CHANGED %d \n", channel_throttle->get_control_in());
-			fail_test++;
-		}
+        if (channel_throttle->get_control_in() > 0) {
+            cliSerial->printf("THROTTLE CHANGED %d \n", channel_throttle->get_control_in());
+            fail_test++;
+        }
 
-		if (oldSwitchPosition != readSwitch()){
-			cliSerial->print("CONTROL MODE CHANGED: ");
+        if (oldSwitchPosition != readSwitch()){
+            cliSerial->print("CONTROL MODE CHANGED: ");
             print_mode(cliSerial, readSwitch());
             cliSerial->println();
-			fail_test++;
-		}
+            fail_test++;
+        }
 
-        if(throttle_failsafe_active()) {
-			cliSerial->printf("THROTTLE FAILSAFE ACTIVATED: %d, ", channel_throttle->get_radio_in());
+        if (throttle_failsafe_active()) {
+            cliSerial->printf("THROTTLE FAILSAFE ACTIVATED: %d, ", channel_throttle->get_radio_in());
             print_mode(cliSerial, readSwitch());
             cliSerial->println();
-			fail_test++;
-		}
+            fail_test++;
+        }
 
-		if(fail_test > 0){
-			return (0);
-		}
-		if(cliSerial->available() > 0){
-			cliSerial->println("LOS caused no change in APM.");
-			return (0);
-		}
-	}
+        if (fail_test > 0) {
+            return (0);
+        }
+        if (cliSerial->available() > 0) {
+            cliSerial->println("LOS caused no change in APM.");
+            return (0);
+        }
+    }
 }
 
 int8_t Rover::test_relay(uint8_t argc, const Menu::arg *argv)
 {
-	print_hit_enter();
-	delay(1000);
+    print_hit_enter();
+    delay(1000);
 
-	while(1){
-		cliSerial->println("Relay on");
-		relay.on(0);
-		delay(3000);
-		if(cliSerial->available() > 0){
-			return (0);
-		}
+    while (1) {
+        cliSerial->println("Relay on");
+        relay.on(0);
+        delay(3000);
+        if (cliSerial->available() > 0) {
+            return (0);
+        }
 
-		cliSerial->println("Relay off");
-		relay.off(0);
-		delay(3000);
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-	}
+        cliSerial->println("Relay off");
+        relay.off(0);
+        delay(3000);
+        if (cliSerial->available() > 0) {
+            return (0);
+        }
+    }
 }
 
 int8_t Rover::test_wp(uint8_t argc, const Menu::arg *argv)
 {
-	delay(1000);
+    delay(1000);
 
-	cliSerial->printf("%u waypoints\n", (unsigned)mission.num_commands());
-	cliSerial->printf("Hit radius: %f\n", (double)g.waypoint_radius.get());
+    cliSerial->printf("%u waypoints\n", (unsigned)mission.num_commands());
+    cliSerial->printf("Hit radius: %f\n", (double)g.waypoint_radius.get());
 
-	for(uint8_t i = 0; i < mission.num_commands(); i++){
+    for (uint8_t i = 0; i < mission.num_commands(); i++) {
         AP_Mission::Mission_Command temp_cmd;
-        if (mission.read_cmd_from_storage(i,temp_cmd)) {
+        if (mission.read_cmd_from_storage(i, temp_cmd)) {
             test_wp_print(temp_cmd);
         }
-	}
+    }
 
-	return (0);
+    return (0);
 }
 
 void Rover::test_wp_print(const AP_Mission::Mission_Command& cmd)
@@ -239,24 +239,24 @@ void Rover::test_wp_print(const AP_Mission::Mission_Command& cmd)
 
 int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
 {
-	print_hit_enter();
-	delay(1000);
+    print_hit_enter();
+    delay(1000);
 
-	cliSerial->print("Control CH ");
+    cliSerial->print("Control CH ");
 
-	cliSerial->println(MODE_CHANNEL, BASE_DEC);
+    cliSerial->println(MODE_CHANNEL, BASE_DEC);
 
-	while(1){
-		delay(20);
-		uint8_t switchPosition = readSwitch();
-		if (oldSwitchPosition != switchPosition){
-			cliSerial->printf("Position %d\n",  switchPosition);
-			oldSwitchPosition = switchPosition;
-		}
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-	}
+    while (1) {
+        delay(20);
+        uint8_t switchPosition = readSwitch();
+        if (oldSwitchPosition != switchPosition){
+            cliSerial->printf("Position %d\n",  switchPosition);
+            oldSwitchPosition = switchPosition;
+        }
+        if (cliSerial->available() > 0) {
+            return (0);
+        }
+    }
 }
 
 /*
@@ -264,7 +264,7 @@ int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
  */
 int8_t Rover::test_logging(uint8_t argc, const Menu::arg *argv)
 {
-	cliSerial->println("Testing dataflash logging");
+    cliSerial->println("Testing dataflash logging");
     DataFlash.ShowDeviceInfo(cliSerial);
     return 0;
 }
@@ -279,7 +279,7 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     uint32_t last_message_time_ms = 0;
-    while(1) {
+    while (1) {
         delay(100);
 
         gps.update();
@@ -295,7 +295,7 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
         } else {
             cliSerial->print(".");
         }
-        if(cliSerial->available() > 0) {
+        if (cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -303,34 +303,34 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 {
-	//cliSerial->print("Calibrating.");
-	ahrs.init();
+    // cliSerial->print("Calibrating.");
+    ahrs.init();
     ahrs.set_fly_forward(true);
 
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
-	print_hit_enter();
-	delay(1000);
+    print_hit_enter();
+    delay(1000);
 
     uint8_t medium_loopCounter = 0;
 
-	while(1){
+    while (1) {
         ins.wait_for_sample();
 
         ahrs.update();
 
-        if(g.compass_enabled) {
+        if (g.compass_enabled) {
             medium_loopCounter++;
-            if(medium_loopCounter >= 5){
+            if (medium_loopCounter >= 5) {
                 compass.read();
                 medium_loopCounter = 0;
             }
         }
-        
+
         // We are using the IMU
         // ---------------------
-        Vector3f gyros 	= ins.get_gyro();
+        Vector3f gyros = ins.get_gyro();
         Vector3f accels = ins.get_accel();
         cliSerial->printf("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n",
                             (int)ahrs.roll_sensor / 100,
@@ -338,7 +338,7 @@ int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
                             (uint16_t)ahrs.yaw_sensor / 100,
                             (double)gyros.x, (double)gyros.y, (double)gyros.z,
                             (double)accels.x, (double)accels.y, (double)accels.z);
-        if(cliSerial->available() > 0){
+        if (cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -346,19 +346,20 @@ int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 
 void Rover::print_enabled(bool b)
 {
-       if(b)
-               cliSerial->print("en");
-       else
-               cliSerial->print("dis");
+       if (b) {
+           cliSerial->print("en");
+       } else {
+           cliSerial->print("dis");
+       }
        cliSerial->println("abled");
 }
 
 int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
 {
-	if (!g.compass_enabled) {
+    if (!g.compass_enabled) {
         cliSerial->print("Compass: ");
-		print_enabled(false);
-		return (0);
+        print_enabled(false);
+        return (0);
     }
 
     if (!compass.init()) {
@@ -373,19 +374,19 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
-	int counter = 0;
+    int counter = 0;
     float heading = 0;
 
     print_hit_enter();
 
     uint8_t medium_loopCounter = 0;
 
-    while(1) {
+    while (1) {
         ins.wait_for_sample();
         ahrs.update();
 
         medium_loopCounter++;
-        if(medium_loopCounter >= 5){
+        if (medium_loopCounter >= 5) {
             if (compass.read()) {
                 // Calculate heading
                 Matrix3f m = ahrs.get_rotation_body_to_ned();
@@ -394,9 +395,9 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
             }
             medium_loopCounter = 0;
         }
-        
+
         counter++;
-        if (counter>20) {
+        if (counter > 20) {
             if (compass.healthy()) {
                 const Vector3f mag_ofs = compass.get_offsets();
                 const Vector3f mag = compass.get_field();
@@ -407,7 +408,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
             } else {
                 cliSerial->println("compass not healthy");
             }
-            counter=0;
+            counter = 0;
         }
         if (cliSerial->available() > 0) {
             break;
@@ -415,7 +416,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
     }
 
     // save offsets. This allows you to get sane offset values using
-    // the CLI before you go flying.    
+    // the CLI before you go flying.
     cliSerial->println("saving offsets");
     compass.save_offsets();
     return (0);
@@ -435,20 +436,20 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
     }
 
     print_hit_enter();
-    
+
     float sonar_dist_cm_min = 0.0f;
     float sonar_dist_cm_max = 0.0f;
-    float voltage_min=0.0f, voltage_max = 0.0f;
+    float voltage_min = 0.0f, voltage_max = 0.0f;
     float sonar2_dist_cm_min = 0.0f;
     float sonar2_dist_cm_max = 0.0f;
-    float voltage2_min=0.0f, voltage2_max = 0.0f;
+    float voltage2_min = 0.0f, voltage2_max = 0.0f;
     uint32_t last_print = 0;
 
-	while (true) {
+    while (true) {
         delay(20);
         sonar.update();
         uint32_t now = millis();
-    
+
         float dist_cm = sonar.distance_cm(0);
         float voltage = sonar.voltage_mv(0);
         if (is_zero(sonar_dist_cm_min)) {
@@ -489,7 +490,7 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
         }
         if (cliSerial->available() > 0) {
             break;
-	    }
+        }
     }
     return (0);
 }
@@ -505,4 +506,4 @@ int8_t Rover::test_shell(uint8_t argc, const Menu::arg *argv)
 }
 #endif
 
-#endif // CLI_ENABLED
+#endif  // CLI_ENABLED
