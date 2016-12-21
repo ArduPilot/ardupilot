@@ -598,6 +598,9 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
         copy_location = true;
         cmd.p1 = fabsf(packet.param2);                  // param2 is radius in meters
+        //param1 is whether or not to verify heading towards next waypoint
+        //before breaking out of loiter
+        cmd.content.location.flags.loiter_hdg_chk = (packet.param1 != 0);
         cmd.content.location.flags.loiter_ccw = (packet.param2 < 0);
         cmd.content.location.flags.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
@@ -1043,6 +1046,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
         copy_location = true;
+        packet.param1 = cmd.content.location.flags.loiter_hdg_chk;
         packet.param2 = cmd.p1;                        // loiter radius(m)
         if (cmd.content.location.flags.loiter_ccw) {
             packet.param2 = -packet.param2;
