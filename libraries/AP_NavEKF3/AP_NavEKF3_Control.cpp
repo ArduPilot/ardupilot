@@ -213,17 +213,17 @@ void NavEKF3_core::setAidingMode()
          uint16_t minTestTime_ms = MIN(frontend->tiltDriftTimeMax_ms, MIN(frontend->posRetryTimeNoVel_ms,frontend->posRetryTimeUseVel_ms));
 
          // Check if optical flow data is being used
-         bool optFlowUsed = (imuSampleTime_ms - prevFlowFuseTime_ms > minTestTime_ms);
+         bool optFlowUsed = (imuSampleTime_ms - prevFlowFuseTime_ms <= minTestTime_ms);
 
          // Check if airspeed data is being used
-         bool airSpdUsed = (imuSampleTime_ms - lastTasPassTime_ms > minTestTime_ms);
+         bool airSpdUsed = (imuSampleTime_ms - lastTasPassTime_ms <= minTestTime_ms);
 
          // Check if range beacon data is being used
-         bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms > minTestTime_ms);
+         bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms <= minTestTime_ms);
 
          // Check if GPS is being used
-         bool gpsPosUsed = (imuSampleTime_ms - lastPosPassTime_ms > minTestTime_ms);
-         bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms > minTestTime_ms);
+         bool gpsPosUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
+         bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
          // Check if attitude drift has been constrained by a measurement source
          bool attAiding = gpsPosUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed;
