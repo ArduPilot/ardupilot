@@ -681,6 +681,11 @@ bool Plane::verify_loiter_to_alt()
         if (labs(condition_value - current_loc.alt) < 500 && loiter.sum_cd > 1) {
             // primary goal completed, initialize secondary heading goal
             condition_value = 0;
+            if (mission.get_current_nav_cmd().content.location.flags.loiter_hdg_chk != 0) {
+                loiter.sum_cd = 3; //don't immediately stop loitering;
+                //wait for heading toward next wp or 3 complete loiters,
+                // whichever comes first.
+            }
             result = verify_loiter_heading(true);
         }
     } else {
