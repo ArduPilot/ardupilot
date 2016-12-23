@@ -8,7 +8,7 @@ A huge thanks to ALL the ArduPilot developers.  The Rover code
 benefits tremendously from all the hard work that goes into the Copter
 and Plane vehicle code.  Most of the code changes in this
 release were not specifically for Rover however because of the
-fantastic architecture of the ArduPilot code Rover automatically get's
+fantastic architecture of the ArduPilot code Rover automatically gets
 those enhancements anyway.
 
 Note that the documentation hasn't yet caught up with all the changes
@@ -57,7 +57,7 @@ Its now possible in a mission to tell the rover to drive in
 Reverse. If using Mission Planner insert a new Waypoint using "Add
 Below" button on the Flight Plan screen and select from the Command
 drop down list you will see a new command "DO_SET_REVERSE". It takes 1
-parameter - 0 for forward, 1 for reverse. Its that simple. Please give
+parameter - 0 for forward, 1 for reverse. It's that simple. Please give
 it a try and report back any success or issues found or any questions
 as well.
 
