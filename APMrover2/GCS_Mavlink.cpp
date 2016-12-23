@@ -1271,20 +1271,27 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             // prepare and send target position
             if (!pos_ignore) {
                 Location loc = rover.current_loc;
-                if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
-                    packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+                switch (packet.coordinate_frame) {
+                case MAV_FRAME_BODY_NED:
+                case MAV_FRAME_BODY_OFFSET_NED: {
                     // rotate from body-frame to NE frame
                     float ne_x = packet.x*rover.ahrs.cos_yaw() - packet.y*rover.ahrs.sin_yaw();
                     float ne_y = packet.x*rover.ahrs.sin_yaw() + packet.y*rover.ahrs.cos_yaw();
                     // add offset to current location
                     location_offset(loc, ne_x, ne_y);
-                } else if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED) {
+                    }
+                    break;
+
+                case MAV_FRAME_LOCAL_OFFSET_NED:
                     // add offset to current location
                     location_offset(loc, packet.x, packet.y);
-                } else {
+                    break;
+
+                default:
                     // MAV_FRAME_LOCAL_NED interpret as an offset from home
                     loc = rover.ahrs.get_home();
                     location_offset(loc, packet.x, packet.y);
+                    break;
                 }
 
                 rover.guided_WP = loc;
