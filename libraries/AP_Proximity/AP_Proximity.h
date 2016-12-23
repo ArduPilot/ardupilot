@@ -38,6 +38,7 @@ public:
     enum Proximity_Type {
         Proximity_Type_None  = 0,
         Proximity_Type_SF40C = 1,
+        Proximity_Type_MAV   = 2,
         Proximity_Type_SITL  = 10,
     };
 
