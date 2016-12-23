@@ -193,7 +193,7 @@ public:
      * #register_periodic_callback. Note that the time will be re-calculated
      * from the moment this call is made and expire after @period_usec.
      *
-     * Return: true if periodic callback was sucessfully adjusted, false otherwise.
+     * Return: true if periodic callback was successfully adjusted, false otherwise.
      */
     virtual bool adjust_periodic_callback(PeriodicHandle h, uint32_t period_usec) = 0;
 
