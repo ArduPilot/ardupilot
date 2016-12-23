@@ -80,7 +80,8 @@ void Rover::read_trim_switch()
 			if (ch7_flag) {
 				ch7_flag = false;
 
-				if (control_mode == MANUAL) {
+				switch (control_mode) {
+				case MANUAL:
                     hal.console->println("Erasing waypoints");
                     // if SW7 is ON in MANUAL = Erase the Flight Plan
 					mission.clear();
@@ -89,7 +90,9 @@ void Rover::read_trim_switch()
                         init_home();
                     }
 					return;
-				} else if (control_mode == LEARNING || control_mode == STEERING) {    
+
+				case LEARNING:
+				case STEERING: {
                     // if SW7 is ON in LEARNING = record the Wp
 
 				    // create new mission command
@@ -105,9 +108,16 @@ void Rover::read_trim_switch()
 				    if(mission.add_cmd(cmd)) {
                         hal.console->printf("Learning waypoint %u", (unsigned)mission.num_commands());
 				    }
-                } else if (control_mode == AUTO) {    
+				    }
+				    break;
+
+				case AUTO:
                     // if SW7 is ON in AUTO = set to RTL  
                     set_mode(RTL);
+                    break;
+
+				default:
+				    break;
                 }
             }
         }
