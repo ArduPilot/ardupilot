@@ -495,8 +495,9 @@ AP_InertialSensor::AP_InertialSensor() :
  */
 AP_InertialSensor *AP_InertialSensor::get_instance()
 {
-    if (!_s_instance)
+    if (!_s_instance) {
         _s_instance = new AP_InertialSensor();
+    }
     return _s_instance;
 }
 
@@ -594,8 +595,9 @@ AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, 
     for (uint8_t i = 0; i < _backend_count; i++) {
         int16_t id = _backends[i]->get_id();
 
-        if (id < 0 || id != backend_id)
+        if (id < 0 || id != backend_id) {
             continue;
+        }
 
         if (instance == found) {
             return _backends[i];
@@ -642,10 +644,12 @@ AP_InertialSensor::init(uint16_t sample_rate)
 
 bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
 {
-    if (!backend)
+    if (!backend) {
         return false;
-    if (_backend_count == INS_MAX_BACKENDS)
+    }
+    if (_backend_count == INS_MAX_BACKENDS) {
         AP_HAL::panic("Too many INS backends");
+    }
     _backends[_backend_count++] = backend;
     return true;
 }
@@ -656,8 +660,9 @@ bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
 void
 AP_InertialSensor::detect_backends(void)
 {
-    if (_backends_detected)
+    if (_backends_detected) {
         return;
+    }
 
     _backends_detected = true;
 
@@ -923,8 +928,9 @@ failed:
 bool AP_InertialSensor::accel_calibrated_ok_all() const
 {
     // calibration is not applicable for HIL mode
-    if (_hil_mode)
+    if (_hil_mode) {
         return true;
+    }
 
     // check each accelerometer has offsets saved
     for (uint8_t i=0; i<get_accel_count(); i++) {
@@ -1473,8 +1479,9 @@ AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id, uint8_t i
     detect_backends();
 
     AP_InertialSensor_Backend *backend = _find_backend(backend_id, instance);
-    if (backend == nullptr)
+    if (backend == nullptr) {
         return nullptr;
+    }
 
     return backend->get_auxiliary_bus();
 }
@@ -1678,7 +1685,7 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
 {
     uint8_t count = 0;
     Vector3f avg = Vector3f(0,0,0);
-    for(uint8_t i=0; i<MIN(_accel_count,2); i++) {
+    for (uint8_t i=0; i<MIN(_accel_count,2); i++) {
         if (_accel_calibrator[i].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[i].get_num_samples_collected()) {
             continue;
         }
@@ -1687,7 +1694,7 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
         avg += sample;
         count++;
     }
-    if(count == 0) {
+    if (count == 0) {
         return false;
     }
     avg /= count;
