@@ -82,5 +82,8 @@ cd jsbsim
 make -j2
 EOF
 
+#Plant a marker for sim_vehicle that we're inside a vagrant box
+touch /ardupilot.vagrant
+
 # Now you can run
 # vagrant ssh -c "screen -d -R"
