@@ -89,6 +89,9 @@ public:
     // return last update time from beacon
     uint32_t beacon_last_update_ms(uint8_t beacon_instance) const;
 
+    // Check if the device is not ready.
+    bool is_device_not_ready(void) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
