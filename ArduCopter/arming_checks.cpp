@@ -512,17 +512,17 @@ bool AP_Arming_Copter::pre_arm_terrain_check(bool display_failure)
 }
 
 // check nothing is too close to vehicle
-bool Copter::pre_arm_proximity_check(bool display_failure)
+bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
 {
 #if PROXIMITY_ENABLED == ENABLED
 
     // return true immediately if no sensor present
-    if (g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+    if (copter.g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
         return true;
     }
 
     // return false if proximity sensor unhealthy
-    if (g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+    if (copter.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
         }
@@ -532,7 +532,7 @@ bool Copter::pre_arm_proximity_check(bool display_failure)
     // get closest object if we might use it for avoidance
 #if AC_AVOID_ENABLED == ENABLED
     float angle_deg, distance;
-    if (avoid.proximity_avoidance_enabled() && g2.proximity.get_closest_object(angle_deg, distance)) {
+    if (copter.avoid.proximity_avoidance_enabled() && copter.g2.proximity.get_closest_object(angle_deg, distance)) {
         // display error if something is within 60cm
         if (distance <= 0.6f) {
             if (display_failure) {
