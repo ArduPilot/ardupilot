@@ -792,6 +792,21 @@ enum HomeState AP_Arming_Copter::home_status() const
     return copter.ap.home_state;
 }
 
+void AP_Arming_Copter::set_pre_arm_check(bool b)
+{
+    if(copter.ap.pre_arm_check != b) {
+        copter.ap.pre_arm_check = b;
+        AP_Notify::flags.pre_arm_check = b;
+    }
+}
+
+void AP_Arming_Copter::set_pre_arm_rc_check(bool b)
+{
+    if(copter.ap.pre_arm_rc_check != b) {
+        copter.ap.pre_arm_rc_check = b;
+    }
+}
+
 void AP_Arming_Copter::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
     copter.gcs_send_text(severity, str);
