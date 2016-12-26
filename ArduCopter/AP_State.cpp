@@ -101,21 +101,6 @@ void Copter::set_failsafe_gcs(bool b)
 
 // ---------------------------------------------
 
-void AP_Arming_Copter::set_pre_arm_check(bool b)
-{
-    if(copter.ap.pre_arm_check != b) {
-        copter.ap.pre_arm_check = b;
-        AP_Notify::flags.pre_arm_check = b;
-    }
-}
-
-void AP_Arming_Copter::set_pre_arm_rc_check(bool b)
-{
-    if(copter.ap.pre_arm_rc_check != b) {
-        copter.ap.pre_arm_rc_check = b;
-    }
-}
-
 void Copter::update_using_interlock()
 {
 #if FRAME_CONFIG == HELI_FRAME
