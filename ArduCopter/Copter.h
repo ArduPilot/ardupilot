@@ -98,7 +98,7 @@
 
 #include "GCS_Mavlink.h"
 #include "AP_Rally.h"           // Rally point library
-#include "arming_checks.h"
+#include "AP_Arming.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if SPRAYER == ENABLED
