@@ -53,8 +53,12 @@ public:
         SEGMENT_END_SPLINE
     };
 
+    FUNCTOR_TYPEDEF(wp_complete_fn_t, void, uint16_t);
+
     /// Constructor
-    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
+    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control,wp_complete_fn_t wp_complete_fn_t_p = Functor<void, uint16_t>());
+    wp_complete_fn_t _wp_complete_fn_t;
+    void setCompleteCallback( wp_complete_fn_t fn ){ _wp_complete_fn_t = fn ;}
 
     /// provide pointer to terrain database
     void set_terrain(AP_Terrain* terrain_ptr) { _terrain = terrain_ptr; }

@@ -74,7 +74,7 @@ Copter::Copter(void) :
     pos_control(ahrs, inertial_nav, motors, attitude_control,
                 g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                 g.p_pos_xy, g.pi_vel_xy),
-    wp_nav(inertial_nav, ahrs, pos_control, attitude_control),
+    wp_nav(inertial_nav, ahrs, pos_control, attitude_control, FUNCTOR_BIND_MEMBER(&Copter::gcs_send_mission_item_reached_message,void, uint16_t)),
     circle_nav(inertial_nav, ahrs, pos_control),
     pmTest1(0),
     fast_loopTimer(0),

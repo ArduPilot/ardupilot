@@ -110,7 +110,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control) :
+AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control, wp_complete_fn_t wp_complete_fn_t ) :
     _inav(inav),
     _ahrs(ahrs),
     _pos_control(pos_control),
@@ -129,7 +129,8 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _spline_time(0.0f),
     _spline_time_scale(0.0f),
     _spline_vel_scaler(0.0f),
-    _yaw(0.0f)
+    _yaw(0.0f),
+    _wp_complete_fn_t(wp_complete_fn_t)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -690,6 +691,11 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
                 Vector3f dist_to_dest = (curr_pos - Vector3f(0,0,terr_offset)) - _destination;
                 if( dist_to_dest.length() <= _wp_radius_cm ) {
                     _flags.reached_destination = true;
+                    //hal.console->println("reached");
+                    if( _wp_complete_fn_t ){
+                        //hal.console->println("call complete fn");
+                        _wp_complete_fn_t(65535);
+                    }
                 }
             }
         }
