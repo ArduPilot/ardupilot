@@ -80,7 +80,7 @@ void AP_Beacon_SITL::update(void)
     Location beacon_loc = beacon_origin;
     switch (beacon_id) {
     case 0:
-        // NW corner
+        // NE corner
         location_offset(beacon_loc, ORIGIN_OFFSET_NORTH + BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST + BEACON_SPACING_EAST/2);
         break;
     case 1:
