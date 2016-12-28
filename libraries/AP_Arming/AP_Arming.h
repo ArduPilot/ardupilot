@@ -40,6 +40,7 @@ public:
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
               const AP_BattMonitor &battery);
 
+    // these functions should not be used by Copter which holds the armed state in the motors library
     ArmingRequired arming_required();
     virtual bool arm(uint8_t method);
     bool disarm();
