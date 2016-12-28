@@ -37,12 +37,6 @@ public:
         YES_ZERO_PWM = 2
     };
 
-    enum ArmingRudder {
-        ARMING_RUDDER_DISABLED  = 0,
-        ARMING_RUDDER_ARMONLY   = 1,
-        ARMING_RUDDER_ARMDISARM = 2
-    };
-
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
               const AP_BattMonitor &battery);
 
@@ -50,7 +44,6 @@ public:
     virtual bool arm(uint8_t method);
     bool disarm();
     bool is_armed();
-    ArmingRudder rudder_arming() const { return (ArmingRudder)rudder_arming_value.get(); }
     uint16_t get_enabled_checks();
 
     /*
@@ -70,7 +63,6 @@ public:
 protected:
     // Parameters
     AP_Int8                 require;
-    AP_Int8                 rudder_arming_value;
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Float                _min_voltage[AP_BATT_MONITOR_MAX_INSTANCES];
