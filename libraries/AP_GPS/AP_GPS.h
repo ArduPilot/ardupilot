@@ -354,6 +354,7 @@ public:
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
     AP_Vector3f _antenna_offset[2];
+    AP_Int16 _delay_ms[2];
 
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
