@@ -61,27 +61,33 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
         return false;
     }
 
-    // Wait up to 30 seconds for all GPS units to finish their configuration.
-    // Until this has occurred we will not know what type of GPS is being used
-    // and what its time delay is
-    if (!_ahrs->get_gps().all_configured() && (AP_HAL::millis() < 30E3)) {
-        if (AP_HAL::millis() - lastInitFailReport_ms > 5000) {
-            lastInitFailReport_ms = AP_HAL::millis();
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 waiting for GPS config data");
-        }
-        return false;
-    } else if (!_ahrs->get_gps().all_configured()) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 GPS config unavailable - using default time delay");
-    }
-
     // find the maximum time delay for all potential sensors
-    uint16_t maxTimeDelay_ms = MAX((uint16_t)(_ahrs->get_gps().get_lag() * 1000.0f) ,
-        MAX(_frontend->_hgtDelay_ms ,
+    uint16_t maxTimeDelay_ms = MAX(_frontend->_hgtDelay_ms ,
             MAX(_frontend->_flowDelay_ms ,
                 MAX(_frontend->_rngBcnDelay_ms ,
                     MAX(_frontend->magDelay_ms ,
                         (uint16_t)(dtEkfAvg*1000.0f)
-                                  )))));
+                                  ))));
+
+    // GPS sensing can have large delays and should not be included if disabled
+    if (_frontend->_fusionModeGPS != 3) {
+        // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
+        if (!_ahrs->get_gps().all_configured()) {
+            if (AP_HAL::millis() - lastInitFailReport_ms > 10000) {
+                lastInitFailReport_ms = AP_HAL::millis();
+                // provide an escalating series of messages
+                if (AP_HAL::millis() > 30000) {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "EKF3 waiting for GPS config data");
+                } else if (AP_HAL::millis() > 15000) {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 waiting for GPS config data");
+                } else  {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 waiting for GPS config data");
+                }
+            }
+            return false;
+        }
+        maxTimeDelay_ms = MAX(maxTimeDelay_ms , (uint16_t)(_ahrs->get_gps().get_lag() * 1000.0f));
+    }
 
     // airspeed sensing can have large delays and should not be included if disabled
     if (_ahrs->airspeed_sensor_enabled()) {
