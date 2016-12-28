@@ -274,10 +274,11 @@ void NavEKF3_core::SelectMagFusion()
         }
     }
 
-    // If we have no magnetometer and are on the ground, fuse in a synthetic heading measurement to prevent the
-    // filter covariances from becoming badly conditioned
+    // If we have no magnetometer, fuse in a synthetic heading measurement at 7Hz to prevent the filter covariances
+    // from becoming badly conditioned. For planes we only do this on-ground because they can align the yaw from GPS when
+    // airborne. For other platform types we do this all the time.
     if (!use_compass()) {
-        if (onGround && (imuSampleTime_ms - lastSynthYawTime_ms > 1000)) {
+        if ((onGround || assume_zero_sideslip()) && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
             fuseEulerYaw();
             magTestRatio.zero();
             yawTestRatio = 0.0f;
@@ -807,7 +808,7 @@ void NavEKF3_core::fuseEulerYaw()
     // If we can't use compass data, set the  meaurement to the predicted
     // to prevent uncontrolled variance growth whilst on ground without magnetometer
     float measured_yaw;
-    if (use_compass() && yawAlignComplete && magStateInitComplete) {
+    if (use_compass() && yawAlignComplete) {
         measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
     } else {
         measured_yaw = predicted_yaw;

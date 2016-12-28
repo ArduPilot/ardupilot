@@ -620,8 +620,8 @@ private:
     // Calculate weighting that is applied to IMU1 accel data to blend data from IMU's 1 and 2
     void calcIMU_Weighting(float K1, float K2);
 
-    // return true if optical flow data is available
-    bool optFlowDataPresent(void) const;
+    // return true if the filter is ready to start using optical flow measurements
+    bool readyToUseOptFlow(void) const;
 
     // return true if we should use the range finder sensor
     bool useRngFinder(void) const;
@@ -667,8 +667,8 @@ private:
     // Assess GPS data quality and return true if good enough to align the EKF
     bool calcGpsGoodToAlign(void);
 
-    // return true and set the class variable true if the delta angle bias has been learned
-    bool checkGyroCalStatus(void);
+    // set the class variable true if the delta angle bias variances are sufficiently small
+    void checkGyroCalStatus(void);
 
     // update inflight calculaton that determines if GPS data is good enough for reliable navigation
     void calcGpsGoodForFlight(void);
