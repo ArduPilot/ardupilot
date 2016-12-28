@@ -278,7 +278,7 @@ void NavEKF3_core::SelectMagFusion()
     // from becoming badly conditioned. For planes we only do this on-ground because they can align the yaw from GPS when
     // airborne. For other platform types we do this all the time.
     if (!use_compass()) {
-        if ((onGround || assume_zero_sideslip()) && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
+        if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
             fuseEulerYaw();
             magTestRatio.zero();
             yawTestRatio = 0.0f;
