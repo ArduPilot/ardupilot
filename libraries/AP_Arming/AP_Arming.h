@@ -82,8 +82,6 @@ protected:
     uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
     uint32_t                last_gyro_pass_ms[INS_MAX_INSTANCES];
 
-    void set_enabled_checks(uint16_t);
-
     bool barometer_checks(bool report);
 
     bool airspeed_checks(bool report);

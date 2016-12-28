@@ -115,11 +115,6 @@ uint16_t AP_Arming::get_enabled_checks()
     return checks_to_perform;
 }
 
-void AP_Arming::set_enabled_checks(uint16_t ap)
-{
-    checks_to_perform = ap;
-}
-
 bool AP_Arming::barometer_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
