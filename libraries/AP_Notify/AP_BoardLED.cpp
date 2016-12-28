@@ -97,46 +97,36 @@ void AP_BoardLED::update(void)
 	if (AP_Notify::flags.armed) {
         // red led solid
         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-    }else{
+    } else {
         if ((counter2 & 0x2) == 0) {
             arm_counter++;
         }
         if (AP_Notify::flags.pre_arm_check) {
             // passed pre-arm checks so slower single flash
-            switch(arm_counter) {
-                case 0:
-                case 1:
-                case 2:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-                    break;
-                case 3:
-                case 4:
-                case 5:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
-                    break;
-                default:
-                    // reset counter to restart the sequence
-                    arm_counter = -1;
-                    break;
+            if (arm_counter < 3) {
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+            } else if (arm_counter < 6) {
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
+            } else {
+                // reset counter to restart the sequence
+                arm_counter = -1;
             }
         }else{
             // failed pre-arm checks so double flash
-            switch(arm_counter) {
+            switch (arm_counter) {
                 case 0:
                 case 1:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-                    break;
-                case 2:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
-                    break;
                 case 3:
                 case 4:
                     hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
                     break;
+
+                case 2:
                 case 5:
                 case 6:
                     hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
                     break;
+
                 default:
                     arm_counter = -1;
                     break;
@@ -168,7 +158,7 @@ void AP_BoardLED::update(void)
         default:
             // solid blue on gps lock
             hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
-            break;        
+            break;
     }
 }
 #else
