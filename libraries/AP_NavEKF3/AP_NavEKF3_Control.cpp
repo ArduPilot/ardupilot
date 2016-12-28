@@ -180,9 +180,8 @@ void NavEKF3_core::setAidingMode()
     // Save the previous status so we can detect when it has changed
     PV_AidingModePrev = PV_AidingMode;
 
-    bool filterIsStable = tiltAlignComplete && yawAlignComplete && checkGyroCalStatus();
-    bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit);
-    bool canUseRangeBeacon = readyToUseRangeBeacon() && filterIsStable;
+    // Check that the gyro bias variance has converged
+    checkGyroCalStatus();
 
     // Determine if we should change aiding mode
      if (PV_AidingMode == AID_NONE) {
@@ -190,9 +189,9 @@ void NavEKF3_core::setAidingMode()
         // and IMU gyro bias estimates have stabilised
         // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
         // GPS aiding is the preferred option unless excluded by the user
-        if(canUseGPS || canUseRangeBeacon) {
+        if(readyToUseGPS() || readyToUseRangeBeacon()) {
             PV_AidingMode = AID_ABSOLUTE;
-        } else if (optFlowDataPresent() && filterIsStable) {
+        } else if (readyToUseOptFlow()) {
             PV_AidingMode = AID_RELATIVE;
         }
     } else if (PV_AidingMode == AID_RELATIVE) {
@@ -202,7 +201,7 @@ void NavEKF3_core::setAidingMode()
          bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
          // Enable switch to absolute position mode if GPS or range beacon data is available
          // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
-         if(canUseGPS || canUseRangeBeacon) {
+         if(readyToUseGPS() || readyToUseRangeBeacon()) {
              PV_AidingMode = AID_ABSOLUTE;
          } else if (flowSensorTimeout || flowFusionTimeout) {
              PV_AidingMode = AID_NONE;
@@ -305,12 +304,12 @@ void NavEKF3_core::setAidingMode()
             // Reset the last valid flow fusion time
             prevFlowFuseTime_ms = imuSampleTime_ms;
         } else if (PV_AidingMode == AID_ABSOLUTE) {
-            if (canUseGPS) {
+            if (readyToUseGPS()) {
                 // We are commencing aiding using GPS - this is the preferred method
                 posResetSource = GPS;
                 velResetSource = GPS;
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
-            } else if (canUseRangeBeacon) {
+            } else if (readyToUseRangeBeacon()) {
                 // We are commencing aiding using range beacons
                 posResetSource = RNGBCN;
                 velResetSource = DEFAULT;
@@ -342,20 +341,14 @@ void NavEKF3_core::setAidingMode()
 void NavEKF3_core::checkAttitudeAlignmentStatus()
 {
     // Check for tilt convergence - used during initial alignment
-    if (norm(P[0][0],P[1][1],P[2][2],P[3][3]) < sq(0.03f) && !tiltAlignComplete) {
+    if (norm(P[0][0],P[1][1],P[2][2],P[3][3]) < sq(0.035f) && !tiltAlignComplete) {
         tiltAlignComplete = true;
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete\n",(unsigned)imu_index);
     }
 
-    // submit yaw and magnetic field reset requests depending on whether we have compass data
-    if (tiltAlignComplete && !yawAlignComplete) {
-        if (use_compass()) {
+    // submit yaw and magnetic field reset request depending on whether we have compass data
+    if (use_compass()&& !yawAlignComplete  && tiltAlignComplete) {
             magYawResetRequest = true;
-            gpsYawResetRequest = false;
-        } else {
-            magYawResetRequest = false;
-            gpsYawResetRequest = true;
-        }
     }
 }
 
@@ -372,22 +365,23 @@ bool NavEKF3_core::useRngFinder(void) const
     return true;
 }
 
-// return true if optical flow data is available
-bool NavEKF3_core::optFlowDataPresent(void) const
+// return true if the filter is ready to start using optical flow measurements
+bool NavEKF3_core::readyToUseOptFlow(void) const
 {
-    return (imuSampleTime_ms - flowMeaTime_ms < 200);
+    // We need stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use optical flow
+    return (imuSampleTime_ms - flowMeaTime_ms < 200) && tiltAlignComplete && delAngBiasLearned;
 }
 
 // return true if the filter to be ready to use gps
 bool NavEKF3_core::readyToUseGPS(void) const
 {
-    return validOrigin && tiltAlignComplete && yawAlignComplete && gpsGoodToAlign && (frontend->_fusionModeGPS != 3) && gpsDataToFuse;
+    return validOrigin && tiltAlignComplete && yawAlignComplete && delAngBiasLearned && gpsGoodToAlign && (frontend->_fusionModeGPS != 3) && gpsDataToFuse && !gpsInhibit;
 }
 
 // return true if the filter to be ready to use the beacon range measurements
 bool NavEKF3_core::readyToUseRangeBeacon(void) const
 {
-    return tiltAlignComplete && yawAlignComplete && rngBcnGoodToAlign && rngBcnDataToFuse;
+    return tiltAlignComplete && yawAlignComplete && delAngBiasLearned && rngBcnGoodToAlign && rngBcnDataToFuse;
 }
 
 // return true if we should use the compass
@@ -440,15 +434,14 @@ void NavEKF3_core::recordYawReset()
     }
 }
 
-// return true and set the class variable true if the delta angle bias has been learned
-bool NavEKF3_core::checkGyroCalStatus(void)
+// set the class variable true if the delta angle bias variances are sufficiently small
+void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
     delAngBiasLearned = (P[10][10] <= delAngBiasVarMax) &&
                         (P[11][11] <= delAngBiasVarMax) &&
                         (P[12][12] <= delAngBiasVarMax);
-    return delAngBiasLearned;
 }
 
 // Commands the EKF to not use GPS.
@@ -477,7 +470,8 @@ void  NavEKF3_core::updateFilterStatus(void)
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && delAngBiasLearned;
     bool gpsNavPossible = !gpsNotAvailable && gpsGoodToAlign && delAngBiasLearned;
-    bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode == AID_NONE)));
+    bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
+
     // If GPS height usage is specified, height is considered to be inaccurate until the GPS passes all checks
     bool hgtNotAccurate = (frontend->_altSource == 2) && !validOrigin;
 
