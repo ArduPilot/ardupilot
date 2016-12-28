@@ -198,6 +198,21 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("POS2", 17, AP_GPS, _antenna_offset[1], 0.0f),
 
+    // @Param: DELAY_MS
+    // @DisplayName: GPS delay in milliseconds
+    // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.
+    // @Units: msec
+    // @Range: 0 250
+    // @User: Advanced
+    AP_GROUPINFO("DELAY_MS", 18, AP_GPS, _delay_ms[0], 0),
+
+    // @Param: DELAY_MS2
+    // @DisplayName: GPS 2 delay in milliseconds
+    // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.
+    // @Units: msec
+    // @Range: 0 250
+    // @User: Advanced
+    AP_GROUPINFO("DELAY_MS2", 19, AP_GPS, _delay_ms[1], 0),
     AP_GROUPEND
 };
 
@@ -867,9 +882,15 @@ void AP_GPS::inject_data_all(const uint8_t *data, uint16_t len)
  */
 float AP_GPS::get_lag(uint8_t instance) const
 {
-    if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
-        // return default;
-        return 0.2f;
+    if (_delay_ms[instance] > 0) {
+        // if the user has specified a non zero time delay, always return that value
+        return 0.001f * (float)_delay_ms[instance];
+    } else if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
+        // the user has not specified a value and we cannot determine it from the GPS type
+        // so return a default delay of 1 measurement interval
+        return 0.001f * (float)_rate_ms[instance];
+    } else {
+        // the user has not specified a delay so we determine it from the GPS type
+        return drivers[instance]->get_lag();
     }
-    return drivers[instance]->get_lag();
 }
