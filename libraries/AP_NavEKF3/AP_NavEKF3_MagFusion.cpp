@@ -8,8 +8,6 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 
-#include <stdio.h>
-
 extern const AP_HAL::HAL& hal;
 
 /********************************************************
