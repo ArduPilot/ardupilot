@@ -45,21 +45,22 @@ public:
     virtual bool arm(uint8_t method);
     bool disarm();
     bool is_armed();
+
+    // get bitmask of enabled checks
     uint16_t get_enabled_checks();
 
-    /*
-      pre_arm_checks() is virtual so it can be modified
-      in a vehicle specific subclass
-    */
+    // pre_arm_checks() is virtual so it can be modified in a vehicle specific subclass
     virtual bool pre_arm_checks(bool report);
+
     // some arming checks have side-effects, or require some form of state
-    // change to have occured, and thus should not be done as pre-arm
+    // change to have occurred, and thus should not be done as pre-arm
     // checks.  Those go here:
     bool arm_checks(uint8_t method);
 
-    static const struct AP_Param::GroupInfo        var_info[];
-
+    // get expected magnetic field strength
     uint16_t compass_magfield_expected() const;
+
+    static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
     // Parameters
