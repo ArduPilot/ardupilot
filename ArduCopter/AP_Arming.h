@@ -21,7 +21,7 @@ public:
 
 protected:
 
-    bool pre_arm_checks(bool display_failure);
+    bool pre_arm_checks(bool display_failure) override;
     bool pre_arm_gps_checks(bool display_failure);
     bool pre_arm_ekf_attitude_check();
     bool pre_arm_terrain_check(bool display_failure);
