@@ -27,6 +27,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "AP_Baro_BMP085.h"
+#include "AP_Baro_BMP280.h"
 #include "AP_Baro_HIL.h"
 #include "AP_Baro_MS5611.h"
 #include "AP_Baro_PX4.h"
@@ -361,6 +362,10 @@ void AP_Baro::init(void)
 #elif HAL_BARO_DEFAULT == HAL_BARO_BMP085
     drivers[0] = new AP_Baro_BMP085(*this,
         std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR)));
+    _num_drivers = 1;
+#elif HAL_BARO_DEFAULT == HAL_BARO_BMP280
+    drivers[0] = new AP_Baro_BMP280(*this,
+        std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP280_BUS, HAL_BARO_BMP280_I2C_ADDR)));
     _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_I2C
     ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
