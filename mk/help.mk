@@ -30,6 +30,7 @@ help:
 	@echo "  vrbrain - the VRBrain boards"
 	@echo "  sitl - the SITL Software In The Loop simulation"
 	@echo "  bbbmini - the Beagle Bone Black mini"
+	@echo "  bbblue - the BeagleBone Blue"
 	@echo "  bebop - the Parrot Bebop"
 	@echo "  raspilot - the RaspberryPi + pilot cape combination"
 	@echo "  erleboard - the ErleBoard legacy design"

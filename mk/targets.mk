@@ -72,6 +72,11 @@ bbbmini: TOOLCHAIN = BBONE
 bbbmini: BUILDSYS_DEPRECATED  = 1
 bbbmini: all
 
+bbblue: HAL_BOARD = HAL_BOARD_LINUX
+bbblue: TOOLCHAIN = BBONE
+bbblue: BUILDSYS_DEPRECATED  = 1
+bbblue: all
+
 bhat: HAL_BOARD = HAL_BOARD_LINUX
 bhat: TOOLCHAIN = RPI
 bhat: BUILDSYS_DEPRECATED  = 1
@@ -113,7 +118,7 @@ qurt: all
 
 # cope with copter and hil targets
 FRAMES = quad tri hexa y6 octa octa-quad heli single coax obc nologging
-BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 px4-v4 sitl flymaple linux erle pxf navio navio2 raspilot bbbmini minlure erlebrain2 bhat qflight pxfmini
+BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 px4-v4 sitl flymaple linux erle pxf navio navio2 raspilot bbbmini bbblue minlure erlebrain2 bhat qflight pxfmini
 BOARDS += vrbrain
 BOARDS += vrbrain-v51 vrbrain-v52 vrbrain-v54
 BOARDS += vrcore-v10
