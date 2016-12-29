@@ -82,6 +82,7 @@
 #define HAL_BARO_MS5637_I2C  8
 #define HAL_BARO_QFLIGHT     9
 #define HAL_BARO_QURT       10
+#define HAL_BARO_BMP280     11
 
 /* Compass driver types */
 #define HAL_COMPASS_HMC5843             1
