@@ -481,7 +481,7 @@ void Copter::one_hz_loop()
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
-    update_arming_checks();
+    arming.update();
 
     if (!motors.armed()) {
         // make it possible to change ahrs orientation at runtime during initial config

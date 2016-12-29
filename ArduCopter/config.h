@@ -227,16 +227,6 @@
  # define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters
 #endif
 
-// arming check's maximum acceptable accelerometer vector difference (in m/s/s) between primary and backup accelerometers
-#ifndef PREARM_MAX_ACCEL_VECTOR_DIFF
-  #define PREARM_MAX_ACCEL_VECTOR_DIFF      0.70f    // pre arm accel check will fail if primary and backup accelerometer vectors differ by 0.7m/s/s
-#endif
-
-// arming check's maximum acceptable rotation rate difference (in rad/sec) between primary and backup gyros
-#ifndef PREARM_MAX_GYRO_VECTOR_DIFF
-  #define PREARM_MAX_GYRO_VECTOR_DIFF       0.0873f  // pre arm gyro check will fail if primary and backup gyro vectors differ by 0.0873 rad/sec (=5deg/sec)
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_ACTION_DEFAULT
@@ -254,22 +244,6 @@
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
  # define MAGNETOMETER                   ENABLED
-#endif
-
-// expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
-#ifndef COMPASS_MAGFIELD_EXPECTED
- #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 874 or < 185
-#endif
-
-// max compass offset length (i.e. sqrt(offs_x^2+offs_y^2+offs_Z^2))
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
- #ifndef COMPASS_OFFSETS_MAX
-  # define COMPASS_OFFSETS_MAX          600         // PX4 onboard compass has high offsets
- #endif
-#else   // SITL, etc
- #ifndef COMPASS_OFFSETS_MAX
-  # define COMPASS_OFFSETS_MAX          500
- #endif
 #endif
 
 #ifndef COMPASS_CAL_STICK_GESTURE_TIME
