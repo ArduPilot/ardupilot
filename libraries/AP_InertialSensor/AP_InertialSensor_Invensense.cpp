@@ -118,6 +118,7 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_I2C_SLV2_ADDR                    0x2B
 #define MPUREG_I2C_SLV3_ADDR                    0x2E
 #define MPUREG_INT_PIN_CFG                      0x37
+#       define BIT_BYPASS_EN                        0x02
 #       define BIT_INT_RD_CLEAR                     0x10    // clear the interrupt when any read occurs
 #       define BIT_LATCH_INT_EN                     0x20    // latch data ready pin
 #define MPUREG_I2C_SLV4_CTRL                    0x34
@@ -444,7 +445,7 @@ void AP_InertialSensor_Invensense::start()
 
     // clear interrupt on any read, and hold the data ready pin high
     // until we clear the interrupt
-    _register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
+    _register_write(MPUREG_INT_PIN_CFG, _register_read(MPUREG_INT_PIN_CFG) | BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
 
     // now that we have initialised, we set the bus speed to high
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
@@ -863,6 +864,12 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
              * done just after the device is reset) */
             _last_stat_user_ctrl |= BIT_USER_CTRL_I2C_IF_DIS;
             _register_write(MPUREG_USER_CTRL, _last_stat_user_ctrl);
+        }
+
+        /* bus-dependent initialization */
+        if ((_dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C) && (_mpu_type == Invensense_MPU9250)) {
+            /* Enable I2C bypass to access internal AK8963 */
+            _register_write(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN);
         }
 
         // Wake up device and select GyroZ clock. Note that the
