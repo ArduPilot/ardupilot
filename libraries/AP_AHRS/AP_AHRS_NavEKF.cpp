@@ -1013,6 +1013,13 @@ void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVel
         EKF3.getEkfControlLimits(ekfGndSpdLimit,ekfNavVelGainScaler);
         break;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL:
+        // same as EKF2 for no optical flow
+        ekfGndSpdLimit = 400.0f;
+        ekfNavVelGainScaler = 1.0f;
+        break;
+#endif
     }
 }
 
