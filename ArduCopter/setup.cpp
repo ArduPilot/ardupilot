@@ -173,10 +173,9 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
                                     "\tusage: esc_calib 1010 - enables calibration for 2nd and 4th Motor\n");
         return(0);
 	}
-    
 
-	
-    set_mask = strtol (argv[1].str, nullptr, 2);
+
+  set_mask = strtol (argv[1].str, nullptr, 2);
 	if (set_mask == 0)
 		cliSerial->print("no channels chosen");
     //cliSerial->printf("\n%d\n",set_mask);
@@ -210,7 +209,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 				cliSerial->printf("%s aborted\n", strEscCalib);
 				return(0);
 
-			} 
+			}
 
 		/* rate limit to ~ 20 Hz */
 		hal.scheduler->delay(50);
@@ -242,7 +241,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 			}
 		}
         c = cliSerial->read();
-            
+
 		if (c == 'c') {
             break;
 
@@ -250,7 +249,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 			cliSerial->printf("%s exited\n", strEscCalib);
 			return(0);
 		}
-        
+
 		/* rate limit to ~ 20 Hz */
 		hal.scheduler->delay(50);
 	}
@@ -278,14 +277,14 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 			cliSerial->printf("%s exited\n", strEscCalib);
 			return(0);
 		}
-		
+
 		/* rate limit to ~ 20 Hz */
 		hal.scheduler->delay(50);
 	}
 
 	/* disarm */
 	motors.armed(false);
-    
+
 	cliSerial->println("Outputs disarmed");
 
 	cliSerial->printf("%s finished\n", strEscCalib);
@@ -329,6 +328,8 @@ void Copter::report_frame()
     cliSerial->println("Octa frame");
  #elif FRAME_CONFIG == HELI_FRAME
     cliSerial->println("Heli frame");
+ #elif FRAME_CONFIG == HELI_DUAL_FRAME
+    cliSerial->println("HeliDual frame");
  #endif
 
     print_blanks(2);

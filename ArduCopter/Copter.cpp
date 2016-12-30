@@ -23,16 +23,12 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 Copter::Copter(void) :
     DataFlash{FIRMWARE_STRING},
     flight_modes(&g.flight_mode1),
-    mission(ahrs, 
+    mission(ahrs,
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
     control_mode(STABILIZE),
-#if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-    motors(g.rc_7, MAIN_LOOP_RATE),
-#else
     motors(MAIN_LOOP_RATE),
-#endif
     scaleLongDown(1),
     wp_bearing(0),
     home_bearing(0),
@@ -107,7 +103,7 @@ Copter::Copter(void) :
 #if PRECISION_LANDING == ENABLED
     precland(ahrs, inertial_nav),
 #endif
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
     // ToDo: Input Manager is only used by Heli for 3.3, but will be used by all frames for 3.4
     input_manager(MAIN_LOOP_RATE),
 #endif

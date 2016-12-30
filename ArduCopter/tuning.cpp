@@ -111,7 +111,9 @@ void Copter::tuning() {
     case TUNING_HELI_EXTERNAL_GYRO:
         motors.ext_gyro_gain((float)g.rc_6.get_control_in() / 1000.0f);
         break;
+#endif
 
+#if FRAME_TYPE == HELICOPTER
     case TUNING_RATE_PITCH_FF:
         attitude_control.get_heli_rate_pitch_pid().ff(tuning_value);
         break;
@@ -200,7 +202,7 @@ void Copter::tuning() {
         attitude_control.get_rate_roll_pid().kD(tuning_value);
         break;
 
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_TYPE == MULTICOPTER
     case TUNING_RATE_MOT_YAW_HEADROOM:
         motors.set_yaw_headroom(tuning_value*1000);
         break;

@@ -36,7 +36,7 @@ void Copter::motor_test_output()
 
             case MOTOR_TEST_THROTTLE_PERCENT:
                 // sanity check motor_test_throttle value
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_TYPE == MULTICOPTER
                 if (motor_test_throttle_value <= 100) {
                     int16_t pwm_min = motors.get_pwm_output_min();
                     int16_t pwm_max = motors.get_pwm_output_max();
