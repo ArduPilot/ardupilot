@@ -113,10 +113,10 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
         // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
         // that may differ from the baro height due to baro drift.
-        nav_filter_status filt_status = inertial_nav.get_filter_status();
+        nav_filter_status filt_status = _inav.get_filter_status();
         bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
         if (using_baro_ref) {
-            if (fabsf(inertial_nav.get_altitude() - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+            if (fabsf(_inav.get_altitude() - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
                 if (display_failure) {
                     gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Altitude disparity");
                 }
@@ -422,7 +422,7 @@ bool AP_Arming_Copter::pre_arm_gps_checks(bool display_failure)
     float vel_variance, pos_variance, hgt_variance, tas_variance;
     Vector3f mag_variance;
     Vector2f offset;
-    ahrs_navekf.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
+    _ahrs_navekf.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
     if (mag_variance.length() >= copter.g.fs_ekf_thresh) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: EKF compass variance");
@@ -477,7 +477,7 @@ bool AP_Arming_Copter::pre_arm_gps_checks(bool display_failure)
 bool AP_Arming_Copter::pre_arm_ekf_attitude_check()
 {
     // get ekf filter status
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
+    nav_filter_status filt_status = _inav.get_filter_status();
 
     return filt_status.flags.attitude;
 }
@@ -559,25 +559,23 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     copter.start_logging();
     #endif
 
-    const AP_InertialSensor &ins = _ins;
-
     // check accels and gyro are healthy
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_INS)) {
         //check if accelerometers have calibrated and require reboot
-        if (ins.accel_cal_requires_reboot()) {
+        if (_ins.accel_cal_requires_reboot()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers calibrated requires reboot");
             }
             return false;
         }
 
-        if (!ins.get_accel_health_all()) {
+        if (!_ins.get_accel_health_all()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Accelerometers not healthy");
             }
             return false;
         }
-        if (!ins.get_gyro_health_all()) {
+        if (!_ins.get_gyro_health_all()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Gyros not healthy");
             }
@@ -677,9 +675,9 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
         // that may differ from the baro height due to baro drift.
-        nav_filter_status filt_status = inertial_nav.get_filter_status();
+        nav_filter_status filt_status = _inav.get_filter_status();
         bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
-        if (using_baro_ref && (fabsf(inertial_nav.get_altitude() - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM)) {
+        if (using_baro_ref && (fabsf(_inav.get_altitude() - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM)) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Altitude disparity");
             }

@@ -9,9 +9,9 @@ public:
                      const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav,
                      const AP_InertialSensor &ins) :
         AP_Arming(ahrs_ref, baro, compass, battery),
-        inertial_nav(inav),
+        _inav(inav),
         _ins(ins),
-        ahrs_navekf(ahrs_ref)
+        _ahrs_navekf(ahrs_ref)
         {
     }
 
@@ -51,8 +51,8 @@ private:
 
     void gcs_send_text(MAV_SEVERITY severity, const char *str);
 
-    const AP_InertialNav_NavEKF &inertial_nav;
+    const AP_InertialNav_NavEKF &_inav;
     const AP_InertialSensor &_ins;
-    const AP_AHRS_NavEKF &ahrs_navekf;
+    const AP_AHRS_NavEKF &_ahrs_navekf;
 
 };
