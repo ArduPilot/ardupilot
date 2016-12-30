@@ -770,6 +770,7 @@ void NavEKF2_core::fuseEulerYaw()
         // Get the 321 euler angles
         Vector3f euler321;
         stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
+        euler321 = euler321 - _ahrs->get_trim();
         predicted_yaw = euler321.z;
 
         // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
@@ -807,6 +808,7 @@ void NavEKF2_core::fuseEulerYaw()
 
         // Get the 321 euler angles
         Vector3f euler312 = stateStruct.quat.to_vector312();
+        euler312 = euler312 - _ahrs->get_trim();
         predicted_yaw = euler312.z;
 
         // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
