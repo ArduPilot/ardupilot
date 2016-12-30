@@ -208,12 +208,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("TRAN_PIT_MAX", 29, QuadPlane, transition_pitch_max, 3),
 
+    // frame class was moved from 30 when consolidating AP_Motors classes
+#define FRAME_CLASS_OLD_IDX 30
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
     // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri
     // @User: Standard
-    AP_GROUPINFO("FRAME_CLASS", 30, QuadPlane, frame_class, 1),
+    AP_GROUPINFO("FRAME_CLASS", 46, QuadPlane, frame_class, 1),
 
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X or V)
@@ -366,6 +368,36 @@ bool QuadPlane::setup(void)
         return false;
     }
     float loop_delta_t = 1.0 / plane.scheduler.get_loop_rate_hz();
+
+#if FRAME_CONFIG != TRI_FRAME
+    /*
+      cope with upgrade from old AP_Motors values for frame_class
+     */
+    AP_Int8 old_class;
+    const AP_Param::ConversionInfo cinfo { Parameters::k_param_quadplane, FRAME_CLASS_OLD_IDX, AP_PARAM_INT8, nullptr };
+    if (AP_Param::find_old_parameter(&cinfo, &old_class) && !frame_class.load()) {
+        uint8_t new_value = 0;
+        // map from old values to new values
+        switch (old_class.get()) {
+        case 0:
+            new_value = AP_Motors::MOTOR_FRAME_QUAD;
+            break;
+        case 1:
+            new_value = AP_Motors::MOTOR_FRAME_HEXA;
+            break;
+        case 2:
+            new_value = AP_Motors::MOTOR_FRAME_OCTA;
+            break;
+        case 3:
+            new_value = AP_Motors::MOTOR_FRAME_OCTAQUAD;
+            break;
+        case 4:
+            new_value = AP_Motors::MOTOR_FRAME_Y6;
+            break;
+        }
+        frame_class.set_and_save(new_value);
+    }
+#endif
     
     if (hal.util->available_memory() <
         4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav)) {
@@ -378,7 +410,7 @@ bool QuadPlane::setup(void)
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor4, CH_8);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor7, CH_11);
-    frame_class = AP_Motors::MOTOR_FRAME_TRI;
+    frame_class.set(AP_Motors::MOTOR_FRAME_TRI);
     motors = new AP_MOTORS_CLASS(plane.scheduler.get_loop_rate_hz());
 #else
     /*
