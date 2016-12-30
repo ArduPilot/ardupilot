@@ -32,6 +32,7 @@
 #include "AP_GPS_SBP.h"
 #include "AP_GPS_SIRF.h"
 #include "AP_GPS_UBLOX.h"
+#include "AP_GPS_VecNAV.h"
 #include "AP_GPS_MAV.h"
 #include "GPS_Backend.h"
 
@@ -298,6 +299,7 @@ AP_GPS::detect_instance(uint8_t instance)
     }
 
     if (_port[instance] == nullptr) {
+
         // UART not available
         return;
     }
@@ -341,6 +343,8 @@ AP_GPS::detect_instance(uint8_t instance)
         if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
             dstate->current_baud = 0;
         }
+
+        
         uint32_t baudrate = _baudrates[dstate->current_baud];
         _port[instance]->begin(baudrate);
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
@@ -406,6 +410,10 @@ AP_GPS::detect_instance(uint8_t instance)
                 new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
             }
         }
+        else if(_type[instance] == GPS_TYPE_VECNAV){
+            _broadcast_gps_type("VECNAV", instance, dstate->current_baud); // baud rate isn't valid
+             new_gps = new AP_GPS_VecNAV(*this, state[instance], _port[instance]);                  
+        }
     }
 
 found_gps:
@@ -468,6 +476,7 @@ AP_GPS::update_instance(uint8_t instance)
     }
 
     // we have an active driver for this instance
+    
     bool result = drivers[instance]->read();
     uint32_t tnow = AP_HAL::millis();
 
