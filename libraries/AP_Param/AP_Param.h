@@ -288,6 +288,9 @@ public:
     // does not recurse into the sub-objects    
     static void         setup_sketch_defaults(void);
 
+    // find an old parameter and return it.
+    static bool find_old_parameter(const struct ConversionInfo *info, AP_Param *value);
+    
     // convert old vehicle parameters to new object parameters
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size);
 

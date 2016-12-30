@@ -1560,10 +1560,10 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
     }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat"
-// convert one old vehicle parameter to new object parameter
-void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float scaler)
+/*
+  find an old parameter and return it.
+ */
+bool AP_Param::find_old_parameter(const struct ConversionInfo *info, AP_Param *value)
 {
     // find the old value in EEPROM.
     uint16_t pofs;
@@ -1572,16 +1572,30 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
     set_key(header, info->old_key);
     header.group_element = info->old_group_element;
     if (!scan(&header, &pofs)) {
+        // the old parameter isn't saved in the EEPROM.
+        return false;
+    }
+
+    // load the old value from EEPROM
+    _storage.read_block(value, pofs+sizeof(header), type_size((enum ap_var_type)header.type));
+    return true;
+}
+
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
+// convert one old vehicle parameter to new object parameter
+void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float scaler)
+{
+    uint8_t old_value[type_size(info->type)];
+    AP_Param *ap = (AP_Param *)&old_value[0];
+
+    if (!find_old_parameter(info, ap)) {
         // the old parameter isn't saved in the EEPROM. It was
         // probably still set to the default value, which isn't stored
         // no need to convert
         return;
     }
-
-    // load the old value from EEPROM
-    uint8_t old_value[type_size((enum ap_var_type)header.type)];
-    _storage.read_block(old_value, pofs+sizeof(header), sizeof(old_value));
-    const AP_Param *ap = (const AP_Param *)&old_value[0];
 
     // find the new variable in the variable structures
     enum ap_var_type ptype;
@@ -1600,7 +1614,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
     }
 
     // see if they are the same type and no scaling applied
-    if (ptype == (ap_var_type)header.type && is_equal(scaler, 1.0f)) {
+    if (ptype == info->type && is_equal(scaler, 1.0f)) {
         // copy the value over only if the new parameter does not already
         // have the old value (via a default).
         if (memcmp(ap2, ap, sizeof(old_value)) != 0) {
@@ -1608,9 +1622,9 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
             // and save
             ap2->save();
         }
-    } else if (ptype <= AP_PARAM_FLOAT && header.type <= AP_PARAM_FLOAT) {
+    } else if (ptype <= AP_PARAM_FLOAT && info->type <= AP_PARAM_FLOAT) {
         // perform scalar->scalar conversion
-        float v = ap->cast_to_float((enum ap_var_type)header.type);
+        float v = ap->cast_to_float(info->type);
         if (!is_equal(v,ap2->cast_to_float(ptype))) {
             // the value needs to change
             set_value(ptype, ap2, v * scaler);
@@ -1631,6 +1645,7 @@ void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_ta
         convert_old_parameter(&conversion_table[i], 1.0f);
     }
 }
+
 
 /*
   set a parameter to a float value
