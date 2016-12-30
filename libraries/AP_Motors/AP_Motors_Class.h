@@ -31,11 +31,14 @@
 #define AP_MOTORS_NEW_H_FRAME       13   // same as X frame but motors spin in opposite direction
 #define AP_MOTORS_QUADPLANE         14   // motors on 5..8
 
-#define AS_MOTORS_BLUEROV1_FRAME		0
-#define AS_MOTORS_SIMPLEROV_FRAME		1
-#define AS_MOTORS_VECTORED_FRAME		2
-#define AS_MOTORS_VECTORED_6DOF_FRAME	3
-#define AS_MOTORS_VECTORED90_FRAME		4
+#define AS_MOTORS_BLUEROV1_FRAME				0
+#define AS_MOTORS_VECTORED_FRAME				1
+#define AS_MOTORS_VECTORED_6DOF_FRAME			2
+#define AS_MOTORS_VECTORED_6DOF_90DEG_FRAME		3
+#define AS_MOTORS_SIMPLEROV_3_FRAME				4
+#define AS_MOTORS_SIMPLEROV_4_FRAME				5
+#define AS_MOTORS_SIMPLEROV_5_FRAME				6
+#define AS_MOTORS_CUSTOM_FRAME					7
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors

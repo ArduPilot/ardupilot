@@ -110,7 +110,8 @@ void AP_Motors6DOF::setup_motors() {
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_5,		0,				-1.0f,			0,				1.0f,				0,					0,				5);
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_6,		-0.25f,			0,				0,				0,					0,					1.0f,			6);
 	    	break;
-	    case AS_MOTORS_VECTORED90_FRAME:
+
+	    case AS_MOTORS_VECTORED_6DOF_90DEG_FRAME:
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_1,		1.0f,			1.0f,			0,				1.0f,				0,					0,				1);
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_2,		0,				0,				1.0f,			0,					1.0f,				0,				2);
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_3,		1.0f,			-1.0f,			0,				1.0f,				0,					0, 				3);
@@ -120,6 +121,7 @@ void AP_Motors6DOF::setup_motors() {
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_7,		0,				0,				-1.0f,			0,					1.0f,				0,				7);
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_8,		-1.0f,			-1.0f,			0,				1.0f,				0,					0,				8);
 	    	break;
+
 	    case AS_MOTORS_VECTORED_6DOF_FRAME:
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_1,		0,				0,				1.0f,			0,					1.0f,				-1.0f,			1);
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_2,		0,				0,				-1.0f,			0,					1.0f,				1.0f,			2);
@@ -130,6 +132,7 @@ void AP_Motors6DOF::setup_motors() {
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_7,		-1.0f,			-1.0f,			0,				-1.0f,				0,					0,				7);
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_8,		1.0f,			-1.0f,			0,				-1.0f,				0,					0,				8);
 	    	break;
+
 	    case AS_MOTORS_VECTORED_FRAME:
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_1,		0,				0,				1.0f,			0,					-1.0f,				1.0f,			1);
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_2,		0,				0,				-1.0f,			0,					-1.0f,				-1.0f,			2);
@@ -138,7 +141,14 @@ void AP_Motors6DOF::setup_motors() {
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_5,		1.0f,			0,				0,				-1.0f,				0,					0,				5);
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_6,		-1.0f,			0,				0,				-1.0f,				0,					0,				6);
 	    	break;
-	    case AS_MOTORS_SIMPLEROV_FRAME:
+
+	    case AS_MOTORS_CUSTOM_FRAME:
+	    	// Put your custom motor setup here
+	    	//break;
+
+	    case AS_MOTORS_SIMPLEROV_3_FRAME:
+	    case AS_MOTORS_SIMPLEROV_4_FRAME:
+	    case AS_MOTORS_SIMPLEROV_5_FRAME:
 	    default:
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_1,		0,				0,				-1.0f,			0,					1.0f,				0,				1);
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_2,		0,				0,				1.0f,			0,					1.0f,				0,				2);
