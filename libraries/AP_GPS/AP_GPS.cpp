@@ -201,7 +201,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: DELAY_MS
     // @DisplayName: GPS delay in milliseconds
     // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.
-    // @Units: msec
+    // @Units: milliseconds
     // @Range: 0 250
     // @User: Advanced
     AP_GROUPINFO("DELAY_MS", 18, AP_GPS, _delay_ms[0], 0),
@@ -209,7 +209,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: DELAY_MS2
     // @DisplayName: GPS 2 delay in milliseconds
     // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.
-    // @Units: msec
+    // @Units: milliseconds
     // @Range: 0 250
     // @User: Advanced
     AP_GROUPINFO("DELAY_MS2", 19, AP_GPS, _delay_ms[1], 0),
