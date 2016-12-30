@@ -80,7 +80,7 @@ void Copter::auto_disarm_check()
         return;
     }
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
     // if the rotor is still spinning, don't initiate auto disarm
     if (motors.rotor_speed_above_critical()) {
         auto_disarm_begin = tnow_ms;
@@ -90,7 +90,7 @@ void Copter::auto_disarm_check()
 
     // always allow auto disarm if using interlock switch or motors are Emergency Stopped
     if ((ap.using_interlock && !motors.get_interlock()) || ap.motor_emergency_stop) {
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_TYPE == MULTICOPTER
         // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
         // obvious the copter is armed as the motors will not be spinning
         disarm_delay_ms /= 2;

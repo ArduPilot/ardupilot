@@ -18,7 +18,7 @@ enum ESCCalibrationModes {
 // check if we should enter esc calibration mode
 void Copter::esc_calibration_startup_check()
 {
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_TYPE == MULTICOPTER
     // exit immediately if pre-arm rc checks fail
     pre_arm_rc_checks();
     if (!ap.pre_arm_rc_check) {
@@ -69,13 +69,13 @@ void Copter::esc_calibration_startup_check()
     if (g.esc_calibrate != ESCCAL_DISABLED) {
         g.esc_calibrate.set_and_save(ESCCAL_NONE);
     }
-#endif  // FRAME_CONFIG != HELI_FRAME
+#endif
 }
 
 // esc_calibration_passthrough - pass through pilot throttle to escs
 void Copter::esc_calibration_passthrough()
 {
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_TYPE == MULTICOPTER
     // clear esc flag for next time
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
@@ -93,7 +93,7 @@ void Copter::esc_calibration_passthrough()
     // arm motors
     motors.armed(true);
     motors.enable();
-    
+
     while(1) {
         // flash LEDS
         AP_Notify::flags.esc_calibration = true;
@@ -108,13 +108,13 @@ void Copter::esc_calibration_passthrough()
         // pass through to motors
         motors.set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
     }
-#endif  // FRAME_CONFIG != HELI_FRAME
+#endif
 }
 
 // esc_calibration_auto - calibrate the ESCs automatically using a timer and no pilot input
 void Copter::esc_calibration_auto()
 {
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_TYPE == MULTICOPTER
     bool printed_msg = false;
 
     if (motors.get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
@@ -166,5 +166,5 @@ void Copter::esc_calibration_auto()
         delay(3);
         motors.set_throttle_passthrough_for_esc_calibration(0.0f);
     }
-#endif // FRAME_CONFIG != HELI_FRAME
+#endif
 }

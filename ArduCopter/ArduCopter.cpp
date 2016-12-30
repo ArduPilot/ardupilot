@@ -16,8 +16,8 @@
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
- *  Lead Tester:    Marco Robustini 
- *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen, 
+ *  Lead Tester:    Marco Robustini
+ *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen,
                                                       Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
                                                       Jean-Louis Naudin, Mike Smith, and more
  *  Thanks to:	Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
@@ -104,7 +104,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if PRECISION_LANDING == ENABLED
     SCHED_TASK(update_precland,      400,     50),
 #endif
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
     SCHED_TASK(check_dynamic_flight,  50,     75),
 #endif
     SCHED_TASK(update_notify,         50,     90),
@@ -156,7 +156,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 };
 
 
-void Copter::setup() 
+void Copter::setup()
 {
     cliSerial = hal.console;
 
@@ -261,10 +261,10 @@ void Copter::fast_loop()
 
     // run low level rate controllers that only require IMU data
     attitude_control.rate_controller_run();
-    
-#if FRAME_CONFIG == HELI_FRAME
+
+#if FRAME_TYPE == HELICOPTER
     update_heli_control_dynamics();
-#endif //HELI_FRAME
+#endif
 
     // send outputs to the motors library
     motors_output();
@@ -316,7 +316,7 @@ void Copter::throttle_loop()
     // check auto_armed status
     update_auto_armed();
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
     // update rotor speed
     heli_update_rotor_speed_targets();
 
@@ -348,7 +348,7 @@ void Copter::update_trigger(void)
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
-    }    
+    }
 #endif
 }
 
@@ -408,7 +408,8 @@ void Copter::ten_hz_logging_loop()
         Log_Write_Proximity();
         Log_Write_Beacon();
     }
-#if FRAME_CONFIG == HELI_FRAME
+
+#if FRAME_TYPE == HELICOPTER
     Log_Write_Heli();
 #endif
 }
@@ -489,7 +490,7 @@ void Copter::one_hz_loop()
 
         update_using_interlock();
 
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_TYPE == MULTICOPTER
         // check the user hasn't updated the frame orientation
         motors.set_frame_orientation(g.frame_orientation);
 

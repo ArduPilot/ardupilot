@@ -85,6 +85,11 @@ enum aux_sw_func {
 #define SINGLE_FRAME 8
 #define COAX_FRAME 9
 
+// Frame types
+
+#define MULTICOPTER 0
+#define HELICOPTER 1
+
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_SENSORS                1

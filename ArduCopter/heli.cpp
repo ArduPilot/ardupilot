@@ -2,7 +2,7 @@
 
 // Traditional helicopter variables and functions
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
 
 #ifndef HELI_DYNAMIC_FLIGHT_SPEED_MIN
  #define HELI_DYNAMIC_FLIGHT_SPEED_MIN      500     // we are in "dynamic flight" when the speed is over 1m/s for 2 seconds
@@ -47,7 +47,7 @@ void Copter::check_dynamic_flight(void)
         // rangefinder lock consider it to be dynamic flight
         moving = (rangefinder.distance_cm() > 200);
     }
-    
+
     if (moving) {
         // if moving for 2 seconds, set the dynamic flight flag
         if (!heli_flags.dynamic_flight) {
@@ -78,7 +78,7 @@ void Copter::update_heli_control_dynamics(void)
 
     if (ap.land_complete || (is_zero(motors.get_desired_rotor_speed()))){
         // if we are landed or there is no rotor power demanded, decrement slew scalar
-        hover_roll_trim_scalar_slew--;        
+        hover_roll_trim_scalar_slew--;
     } else {
         // if we are not landed and motor power is demanded, increment slew scalar
         hover_roll_trim_scalar_slew++;
@@ -176,4 +176,4 @@ void Copter::heli_update_rotor_speed_targets()
     rotor_runup_complete_last = motors.rotor_runup_complete();
 }
 
-#endif  // FRAME_CONFIG == HELI_FRAME
+#endif

@@ -118,7 +118,7 @@ void Copter::set_pre_arm_rc_check(bool b)
 
 void Copter::update_using_interlock()
 {
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
     // helicopters are always using motor interlock
     ap.using_interlock = true;
 #else

@@ -86,9 +86,19 @@
  # define FRAME_CONFIG_STRING "UNKNOWN"
 #endif
 
+// FRAME_TYPE
+
+#ifndef FRAME_TYPE
+ #if FRAME_CONFIG == HELI_FRAME
+  # define FRAME_TYPE HELICOPTER
+ #else
+  # define FRAME_TYPE MULTICOPTER
+ #endif
+#endif
+
 /////////////////////////////////////////////////////////////////////////////////
 // TradHeli defaults
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
   # define RC_FAST_SPEED                        125
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
   # define THR_MIN_DEFAULT                      0
