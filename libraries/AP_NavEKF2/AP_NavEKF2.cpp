@@ -192,7 +192,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: milliseconds
     AP_GROUPINFO("GPS_DELAY", 8, NavEKF2, _gpsDelay_ms, 220),
 
     // Height measurement parameters
@@ -227,7 +227,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: milliseconds
     AP_GROUPINFO("HGT_DELAY", 12, NavEKF2, _hgtDelay_ms, 60),
 
     // Magnetometer measurement parameters
@@ -328,7 +328,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: milliseconds
     AP_GROUPINFO("FLOW_DELAY", 23, NavEKF2, _flowDelay_ms, FLOW_MEAS_DELAY),
 
     // State and Covariance Predition Parameters
@@ -515,7 +515,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: milliseconds
     AP_GROUPINFO("BCN_DELAY", 46, NavEKF2, _rngBcnDelay_ms, 50),
 
     // @Param: RNG_USE_SPD
