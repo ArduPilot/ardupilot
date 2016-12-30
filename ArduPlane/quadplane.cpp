@@ -26,7 +26,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: TRANSITION_MS
     // @DisplayName: Transition time
     // @Description: Transition time in milliseconds after minimum airspeed is reached
-    // @Units: milli-seconds
+    // @Units: milliseconds
     // @Range: 0 30000
     // @User: Advanced
     AP_GROUPINFO("TRANSITION_MS", 11, QuadPlane, transition_time_ms, 5000),
