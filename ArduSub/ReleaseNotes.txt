@@ -1,3 +1,54 @@
+APM:Sub Release Notes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.4 30-Dec-2016 / Sub 3.4-rc3 14-Dec-2016
+First Stable Release
+
+Changes from 3.4-rc2:
+1) Bug fix for GCS (ground control station) failsafe, suppress warning message
+   until after first contact.
+
+Notes:
+ArduSub v3.4 is the first official stable release of ArduSub. After nearly a 
+year of steady development, testing, and improvement, ArduSub has become one
+of the most capable ROV control systems available.
+  
+Important Note for ArduSub-3.4: Many unused and inapplicable parameters that 
+ArduSub inherited from ArduCopter have been removed. As a consequence, after 
+upgrading to V3.4 and later, all of the parameters will be erased, and the 
+default parameters will be loaded. You should save your parameters before 
+flashing this firmware. After upgrading the firmware, you can load your saved 
+parameter file through QGroundControl. When loading your old parameter file 
+through QGroundControl, you will see many errors about parameters that have 
+been removed, this is okay. After you load your parameter file, you need to 
+change the SYSID_SW_MREV parameter to 1 before rebooting in order to prevent 
+the default parameters from being reloaded. This procedure will only have to 
+be done when upgrading from firmware version 3.4-dev. Subsequent releases will 
+keep the same parameter format, so this will only have to be done once.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.4-rc2 13-Dec-2016
+Changes from 3.4-rc1:
+1) Bug fix on external barometer initialization. BRD_TYPE parameter should 
+   remain set to 2.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.4-rc1 11-Dec-2016
+Notes:
+- Due to parameter reorganization, all parameters will be overwritten when updating
+- Must be used with QGroundControl daily builds or stable version 3.1 (once released)
+- Joystick buttons are configured by default
+- PX4Firmware sensor drivers have been replaced with in-tree APM drivers. On some 
+hardware, the barometer driver will sometimes hang until a reboot. If your pressure 
+sensor is not detected after rebooting, set the BRD_TYPE parameter to 100 and reboot 
+to fall back to the PX4Firmware driver. Please report back if you experience an issue 
+with the pressure sensor and the new driver.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~ArduSub Development Begins Here~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 APM:Copter Release Notes:
 ------------------------------------------------------------------
 Copter 3.3.2 01-Dec-2015 / 3.3.2-rc2 18-Nov-2015
