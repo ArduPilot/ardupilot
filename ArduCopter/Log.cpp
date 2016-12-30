@@ -903,9 +903,10 @@ const struct LogStructure Copter::log_structure[] = {
 void Copter::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
 {
     cliSerial->printf("\n" FIRMWARE_STRING
-                             "\nFree RAM: %u\n"
-                             "\nFrame: " FRAME_CONFIG_STRING "\n",
-                        (unsigned) hal.util->available_memory());
+                        "\nFree RAM: %u\n"
+                        "\nFrame: %s\n",
+                        (unsigned) hal.util->available_memory(),
+                        get_frame_string());
 
     cliSerial->println(HAL_BOARD_NAME);
 
@@ -918,7 +919,9 @@ void Copter::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_pag
 void Copter::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
-    DataFlash.Log_Write_Message("Frame: " FRAME_CONFIG_STRING);
+    char frame_buf[20];
+    sprintf(frame_buf, "Frame: %s", get_frame_string());
+    DataFlash.Log_Write_Message(frame_buf);
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
     DataFlash.Log_Write_Rally(rally);
 }

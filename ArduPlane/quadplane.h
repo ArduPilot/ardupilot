@@ -121,9 +121,7 @@ private:
     AC_PID                  pid_accel_z{0.3, 1, 0, 800, 10, 0.02};
     AC_PI_2D                pi_vel_xy{0.7, 0.35, 1000, 5, 0.02};
 
-#if FRAME_CONFIG == MULTICOPTER_FRAME
     AP_Int8 frame_class;
-#endif
     AP_Int8 frame_type;
     
     AP_MOTORS_CLASS *motors;
@@ -306,14 +304,6 @@ private:
         Vector3f target;
         bool slow_descent:1;
     } poscontrol;
-
-    enum frame_class {
-        FRAME_CLASS_QUAD=0,
-        FRAME_CLASS_HEXA=1,
-        FRAME_CLASS_OCTA=2,
-        FRAME_CLASS_OCTAQUAD=3,
-        FRAME_CLASS_Y6=4,
-    };
 
     struct {
         bool running;

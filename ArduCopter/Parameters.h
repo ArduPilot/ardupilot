@@ -236,7 +236,7 @@ public:
         k_param_compass_enabled,
         k_param_compass,
         k_param_rangefinder_enabled_old, // deprecated
-        k_param_frame_orientation,
+        k_param_frame_type,
         k_param_optflow_enabled,    // deprecated
         k_param_fs_batt_voltage,
         k_param_ch7_option,
@@ -441,7 +441,7 @@ public:
     AP_Int8         radio_tuning;
     AP_Int16        radio_tuning_high;
     AP_Int16        radio_tuning_low;
-    AP_Int8         frame_orientation;
+    AP_Int8         frame_type;
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
     AP_Int8         ch9_option;
@@ -587,6 +587,9 @@ public:
     // acro exponent parameters
     AP_Float acro_y_expo;
     AP_Float acro_thr_mid;
+
+    // frame class
+    AP_Int8 frame_class;
 };
 
 extern const AP_Param::Info        var_info[];

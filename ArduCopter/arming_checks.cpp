@@ -81,6 +81,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         & ins_checks(display_failure)
         & board_voltage_checks(display_failure)
         & parameter_checks(display_failure)
+        & motor_checks(display_failure)
         & pilot_throttle_checks(display_failure);
 }
 
@@ -405,6 +406,19 @@ bool Copter::parameter_checks(bool display_failure)
     return true;
 }
 
+// check motor setup was successful
+bool Copter::motor_checks(bool display_failure)
+{
+    // check motors initialised  correctly
+    if (!motors.initialised_ok()) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check firmware or FRAME_CLASS");
+        }
+        return false;
+    }
+    return true;
+}
+
 bool Copter::pilot_throttle_checks(bool display_failure)
 {
     // check throttle is above failsafe throttle
@@ -720,6 +734,11 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     // always check gps
     if (!pre_arm_gps_checks(display_failure)) {
+        return false;
+    }
+
+    // always check motors
+    if (!motor_checks(display_failure)) {
         return false;
     }
 

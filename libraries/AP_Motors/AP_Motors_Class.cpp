@@ -42,8 +42,8 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
 {
     // init other flags
     _flags.armed = false;
-    _flags.frame_orientation = AP_MOTORS_X_FRAME;
     _flags.interlock = false;
+    _flags.initialised_ok = false;
 
     // setup throttle filtering
     _throttle_filter.set_cutoff_frequency(0.0f);
