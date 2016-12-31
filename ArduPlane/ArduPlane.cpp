@@ -273,8 +273,9 @@ void Plane::update_logging1(void)
         Log_Write_Attitude();
     }
 
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU)) {
         Log_Write_IMU();
+    }
 }
 
 /*
@@ -282,17 +283,21 @@ void Plane::update_logging1(void)
  */
 void Plane::update_logging2(void)
 {
-    if (should_log(MASK_LOG_CTUN))
+    if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
+    }
     
-    if (should_log(MASK_LOG_NTUN))
+    if (should_log(MASK_LOG_NTUN)) {
         Log_Write_Nav_Tuning();
+    }
 
-    if (should_log(MASK_LOG_RC))
+    if (should_log(MASK_LOG_RC)) {
         Log_Write_RC();
+    }
 
-    if (should_log(MASK_LOG_IMU))
+    if (should_log(MASK_LOG_IMU)) {
         DataFlash.Log_Write_Vibration(ins);
+    }
 }
 
 
@@ -1084,15 +1089,19 @@ float Plane::tecs_hgt_afe(void)
       coming.
     */
     float hgt_afe;
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+    switch (flight_stage) {
+    case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+    case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
+    case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
         hgt_afe = height_above_target();
         hgt_afe -= rangefinder_correction();
-    } else {
+        break;
+
+    default:
         // when in normal flight we pass the hgt_afe as relative
         // altitude to home
         hgt_afe = relative_altitude();
+        break;
     }
     return hgt_afe;
 }
