@@ -68,13 +68,16 @@ void AP_Beacon_Pozyx::update(void)
 
             case ParseState_WaitingForMsgId:
                 parse_msg_id = c;
-                if (parse_msg_id == AP_BEACON_POZYX_MSGID_BEACON_CONFIG ||
-                    parse_msg_id == AP_BEACON_POZYX_MSGID_BEACON_DIST ||
-                    parse_msg_id == AP_BEACON_POZYX_MSGID_POSITION) {
+                switch (parse_msg_id) {
+                case AP_BEACON_POZYX_MSGID_BEACON_CONFIG:
+                case AP_BEACON_POZYX_MSGID_BEACON_DIST:
+                case AP_BEACON_POZYX_MSGID_POSITION:
                     parse_state = ParseState_WaitingForLen;
-                } else {
+                    break;
+                default:
                     // invalid message id
                     parse_state = ParseState_WaitingForHeader;
+                    break;
                 }
                 break;
 
