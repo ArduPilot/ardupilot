@@ -278,12 +278,31 @@ uint8_t AP_BattMonitor::capacity_remaining_pct(uint8_t instance) const
     }
  }
  
- /// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
-bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_capacity_mah)
+ /// status - returns BattMonitor_STATUS_CRITICAL if the voltage remains below the critical_voltage
+ ///                  for 10 seconds or remaining capacity falls below critical_capacity_mah.
+ ///          returns BattMonitor_STATUS_LOW if the voltage remains below the low_voltage for 10 
+ ///                  seconds or remaining capacity falls below min_capacity_mah.
+ ///          returns BattMonitor_STATUS_NORMAL otherwise.
+AP_BattMonitor::BattMonitor_Status AP_BattMonitor::status(uint8_t instance, float low_voltage, 
+                    float critical_voltage, float min_capacity_mah, float critical_capacity_mah)
 {
     // exit immediately if no monitors setup
     if (_num_instances == 0 || instance >= _num_instances) {
-        return false;
+        return BattMonitor_STATUS_NORMAL;
+    }
+
+    if((state[instance].voltage > 0) && (critical_voltage > 0) && (state[instance].voltage < critical_voltage)) {
+        // this is the first time our voltage has dropped below minimum so start timer
+        if (state[instance].critical_voltage_start_ms == 0) {
+            state[instance].critical_voltage_start_ms = AP_HAL::millis();
+        } else if (AP_HAL::millis() - state[instance].critical_voltage_start_ms > AP_BATT_LOW_VOLT_TIMEOUT_MS) {
+            return BattMonitor_STATUS_CRITICAL;
+        }
+    }
+
+    // check capacity if current monitoring is enabled
+    if (has_current(instance) && (critical_capacity_mah > 0) && (_pack_capacity[instance] - state[instance].current_total_mah < critical_capacity_mah)) {
+        return BattMonitor_STATUS_CRITICAL;
     }
 
     // check voltage
@@ -292,20 +311,20 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
         if (state[instance].low_voltage_start_ms == 0) {
             state[instance].low_voltage_start_ms = AP_HAL::millis();
         } else if (AP_HAL::millis() - state[instance].low_voltage_start_ms > AP_BATT_LOW_VOLT_TIMEOUT_MS) {
-            return true;
+            return BattMonitor_STATUS_LOW;
         }
     } else {
         // acceptable voltage so reset timer
         state[instance].low_voltage_start_ms = 0;
+        state[instance].critical_voltage_start_ms = 0;
     }
 
-    // check capacity if current monitoring is enabled
     if (has_current(instance) && (min_capacity_mah > 0) && (_pack_capacity[instance] - state[instance].current_total_mah < min_capacity_mah)) {
-        return true;
+        return BattMonitor_STATUS_LOW;
     }
 
     // if we've gotten this far then battery is ok
-    return false;
+    return BattMonitor_STATUS_NORMAL;
 }
 
 // return true if any battery is pushing too much power

@@ -344,6 +344,9 @@ private:
         // flag to hold whether battery low voltage threshold has been breached
         uint8_t low_battery:1;
 
+        // flag to hold whether battery critical voltage threshold has been breached
+        uint8_t critical_battery:1;
+
         // true if an adsb related failsafe has occurred
         uint8_t adsb:1;
 
@@ -906,6 +909,7 @@ private:
     void failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason);
     void failsafe_short_off_event(mode_reason_t reason);
     void low_battery_event(void);
+    void critical_battery_event(void);
     void update_events(void);
     uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);

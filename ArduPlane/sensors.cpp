@@ -120,10 +120,18 @@ void Plane::read_battery(void)
     battery.read();
     compass.set_current(battery.current_amps());
 
-    if (!usb_connected && 
-        hal.util->get_soft_armed() &&
-        battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
-        low_battery_event();
+    if (!usb_connected && hal.util->get_soft_armed()) {
+
+        switch(battery.status(g.fs_batt_voltage, g.fs_batt_critical_voltage, g.fs_batt_mah, g.fs_batt_critical_mah)){
+            case AP_BattMonitor::BattMonitor_STATUS_NORMAL:
+                break;
+            case AP_BattMonitor::BattMonitor_STATUS_LOW:
+                low_battery_event();
+                break;
+            case AP_BattMonitor::BattMonitor_STATUS_CRITICAL:
+                critical_battery_event();
+                break;
+        }
     }
     
     if (should_log(MASK_LOG_CURRENT)) {
