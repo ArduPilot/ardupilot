@@ -896,14 +896,19 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
                 }
             }
     #endif
-        break;
+            break;
 
-        case AP_Landing::STAGE_UNKNOWN:
         case AP_Landing::STAGE_PREFLARE:
         case AP_Landing::STAGE_FINAL:
             landing.in_progress = true;
-        break;
+            break;
+
+        case AP_Landing::STAGE_UNKNOWN:
+        default:
+            landing.in_progress = false;
+            break;
         }
+        break;
 
     case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
         gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
