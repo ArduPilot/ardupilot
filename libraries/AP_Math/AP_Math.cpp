@@ -183,15 +183,26 @@ template float constrain_value<float>(const float amt, const float low, const fl
 template double constrain_value<double>(const double amt, const double low, const double high);
 
 
-/*
-  simple 16 bit random number generator
+/**
+ * simple 16 bit random number generator
+ *
+ * @return 16 bit random number
  */
 uint16_t get_random16(void)
+{
+    return static_cast<uint16_t>(get_random32() & 0xFFFF);
+}
+
+/**
+ * simple 32 bit random number generator
+ *
+ * @return 32 bit random number
+ */
+uint32_t get_random32(void)
 {
     static uint32_t m_z = 1234;
     static uint32_t m_w = 76542;
     m_z = 36969 * (m_z & 0xFFFFu) + (m_z >> 16);
     m_w = 18000 * (m_w & 0xFFFFu) + (m_w >> 16);
-    return ((m_z << 16) + m_w) & 0xFFFF;
+    return (m_z << 16) + m_w;
 }
-
