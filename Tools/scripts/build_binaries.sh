@@ -292,7 +292,11 @@ build_arduplane() {
 build_arducopter() {
     tag="$1"
     echo "Building ArduCopter $tag binaries from $(pwd)"
-    frames="quad tri hexa y6 octa octa-quad heli"
+    if grep -q FRAME_CLASS ArduCopter/Parameters.cpp; then
+        frames="quad tri heli"
+    else
+        frames="quad tri hexa y6 octa octa-quad heli"
+    fi
     for b in erlebrain2 navio navio2 pxf pxfmini bebop; do
         for f in $frames; do
             checkout ArduCopter $tag $b $f || {
