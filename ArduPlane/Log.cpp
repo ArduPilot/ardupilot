@@ -560,6 +560,7 @@ int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 
 void Plane::do_erase_logs(void) {}
 void Plane::Log_Write_Attitude(void) {}
+void Plane::Log_Write_Fast(void) {}
 void Plane::Log_Write_Performance() {}
 void Plane::Log_Write_Startup(uint8_t type) {}
 void Plane::Log_Write_Control_Tuning() {}
