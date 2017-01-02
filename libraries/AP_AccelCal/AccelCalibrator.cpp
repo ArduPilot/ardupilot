@@ -56,11 +56,16 @@ void AccelCalibrator::start(enum accel_cal_fit_type_t fit_type, uint8_t num_samp
 }
 
 void AccelCalibrator::start(enum accel_cal_fit_type_t fit_type, uint8_t num_samples, float sample_time, Vector3f offset, Vector3f diag, Vector3f offdiag) {
-    if (_status == ACCEL_CAL_FAILED || _status == ACCEL_CAL_SUCCESS) {
+    switch (_status) {
+    case ACCEL_CAL_FAILED:
+    case ACCEL_CAL_SUCCESS:
         clear();
-    }
-    if (_status != ACCEL_CAL_NOT_STARTED) {
+        // no break
+    default:
         return;
+
+    case ACCEL_CAL_NOT_STARTED:
+        break;
     }
 
     _conf_num_samples = num_samples;
