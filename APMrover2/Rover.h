@@ -464,8 +464,10 @@ private:
     bool verify_RTL();
     bool verify_wait_delay();
     bool verify_within_distance();
+#if CAMERA == ENABLED
     void do_take_picture();
     void log_picture();
+#endif
     void update_commands(void);
     void delay(uint32_t ms);
     void mavlink_delay(uint32_t ms);
@@ -532,8 +534,10 @@ private:
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
+#if CAMERA == ENABLED
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
+#endif
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
     void init_capabilities(void);
     void rudder_arm_disarm_check();
