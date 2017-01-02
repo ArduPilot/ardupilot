@@ -82,18 +82,18 @@ void AccelCalibrator::start(enum accel_cal_fit_type_t fit_type, uint8_t num_samp
     _param.s.offdiag = offdiag;
 
     switch (_conf_fit_type) {
-        case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
-            if (_conf_num_samples < 6) {
-                set_status(ACCEL_CAL_FAILED);
-                return;
-            }
-            break;
-        case ACCEL_CAL_ELLIPSOID:
-            if (_conf_num_samples < 8) {
-                set_status(ACCEL_CAL_FAILED);
-                return;
-            }
-            break;
+    case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
+        if (_conf_num_samples < 6) {
+            set_status(ACCEL_CAL_FAILED);
+            return;
+        }
+        break;
+    case ACCEL_CAL_ELLIPSOID:
+        if (_conf_num_samples < 8) {
+            set_status(ACCEL_CAL_FAILED);
+            return;
+        }
+        break;
     }
 
     set_status(ACCEL_CAL_WAITING_FOR_ORIENTATION);
@@ -262,66 +262,66 @@ bool AccelCalibrator::accept_sample(const Vector3f& sample)
 // sets status of calibrator and takes appropriate actions
 void AccelCalibrator::set_status(enum accel_cal_status_t status) {
     switch (status) {
-        case ACCEL_CAL_NOT_STARTED:                 
-            //Calibrator not started
-            _status = ACCEL_CAL_NOT_STARTED;
+    case ACCEL_CAL_NOT_STARTED:
+        //Calibrator not started
+        _status = ACCEL_CAL_NOT_STARTED;
 
+        _samples_collected = 0;
+        if (_sample_buffer != nullptr) {
+            free(_sample_buffer);
+            _sample_buffer = nullptr;
+        }
+
+        break;
+
+    case ACCEL_CAL_WAITING_FOR_ORIENTATION:
+        //Callibrator has been started and is waiting for user to ack after orientation setting
+        if (!running()) {
             _samples_collected = 0;
-            if (_sample_buffer != nullptr) {
-                free(_sample_buffer);
-                _sample_buffer = nullptr;
-            }
-
-            break;
-
-        case ACCEL_CAL_WAITING_FOR_ORIENTATION:     
-            //Callibrator has been started and is waiting for user to ack after orientation setting
-            if (!running()) {
-                _samples_collected = 0;
+            if (_sample_buffer == nullptr) {
+                _sample_buffer = (struct AccelSample*)calloc(_conf_num_samples,sizeof(struct AccelSample));
                 if (_sample_buffer == nullptr) {
-                    _sample_buffer = (struct AccelSample*)calloc(_conf_num_samples,sizeof(struct AccelSample));
-                    if (_sample_buffer == nullptr) {
-                        set_status(ACCEL_CAL_FAILED);
-                        break;
-                    }
+                    set_status(ACCEL_CAL_FAILED);
+                    break;
                 }
             }
-            if (_samples_collected >= _conf_num_samples) {
-                break;
-            }
-            _status = ACCEL_CAL_WAITING_FOR_ORIENTATION;
+        }
+        if (_samples_collected >= _conf_num_samples) {
             break;
+        }
+        _status = ACCEL_CAL_WAITING_FOR_ORIENTATION;
+        break;
 
-        case ACCEL_CAL_COLLECTING_SAMPLE:
-            // Calibrator is waiting on collecting samples from acceleromter for amount of 
-            // time as requested by user/GCS
-            if (_status != ACCEL_CAL_WAITING_FOR_ORIENTATION) {
-                break;
-            }
-            _last_samp_frag_collected_ms = AP_HAL::millis();
-            _status = ACCEL_CAL_COLLECTING_SAMPLE;
+    case ACCEL_CAL_COLLECTING_SAMPLE:
+        // Calibrator is waiting on collecting samples from acceleromter for amount of
+        // time as requested by user/GCS
+        if (_status != ACCEL_CAL_WAITING_FOR_ORIENTATION) {
             break;
+        }
+        _last_samp_frag_collected_ms = AP_HAL::millis();
+        _status = ACCEL_CAL_COLLECTING_SAMPLE;
+        break;
 
-        case ACCEL_CAL_SUCCESS:
-            // Calibrator has successfully fitted the samples to user requested surface model 
-            // and has passed tolerance test
-            if (_status != ACCEL_CAL_COLLECTING_SAMPLE) {
-                break;
-            }
-
-            _status = ACCEL_CAL_SUCCESS;
+    case ACCEL_CAL_SUCCESS:
+        // Calibrator has successfully fitted the samples to user requested surface model
+        // and has passed tolerance test
+        if (_status != ACCEL_CAL_COLLECTING_SAMPLE) {
             break;
+        }
 
-        case ACCEL_CAL_FAILED:
-            // Calibration has failed with reasons that can range from 
-            // bad sample data leading to faillure in tolerance test to lack of distinct samples
-            if (_status == ACCEL_CAL_NOT_STARTED) {
-                break;
-            }
+        _status = ACCEL_CAL_SUCCESS;
+        break;
 
-            _status = ACCEL_CAL_FAILED;
+    case ACCEL_CAL_FAILED:
+        // Calibration has failed with reasons that can range from
+        // bad sample data leading to faillure in tolerance test to lack of distinct samples
+        if (_status == ACCEL_CAL_NOT_STARTED) {
             break;
-    };
+        }
+
+        _status = ACCEL_CAL_FAILED;
+        break;
+    }
 }
 
 /*
@@ -425,47 +425,47 @@ float AccelCalibrator::calc_mean_squared_residuals(const struct param_t& params)
 // this is used in LSq estimator to adjust variation in parameter to be used for next iteration of LSq
 void AccelCalibrator::calc_jacob(const Vector3f& sample, const struct param_t& params, VectorP &ret) const {
     switch (_conf_fit_type) {
-        case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
-        case ACCEL_CAL_ELLIPSOID: {
-            const Vector3f &offset = params.offset;
-            const Vector3f &diag = params.diag;
-            const Vector3f &offdiag = params.offdiag;
-            Matrix3f M(
-                diag.x    , offdiag.x , offdiag.y,
-                offdiag.x , diag.y    , offdiag.z,
-                offdiag.y , offdiag.z , diag.z
-            );
+    case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
+    case ACCEL_CAL_ELLIPSOID: {
+        const Vector3f &offset = params.offset;
+        const Vector3f &diag = params.diag;
+        const Vector3f &offdiag = params.offdiag;
+        Matrix3f M(
+            diag.x    , offdiag.x , offdiag.y,
+            offdiag.x , diag.y    , offdiag.z,
+            offdiag.y , offdiag.z , diag.z
+        );
 
-            float A =  (diag.x    * (sample.x + offset.x)) + (offdiag.x * (sample.y + offset.y)) + (offdiag.y * (sample.z + offset.z));
-            float B =  (offdiag.x * (sample.x + offset.x)) + (diag.y    * (sample.y + offset.y)) + (offdiag.z * (sample.z + offset.z));
-            float C =  (offdiag.y * (sample.x + offset.x)) + (offdiag.z * (sample.y + offset.y)) + (diag.z    * (sample.z + offset.z));
-            float length = (M*(sample+offset)).length();
+        float A =  (diag.x    * (sample.x + offset.x)) + (offdiag.x * (sample.y + offset.y)) + (offdiag.y * (sample.z + offset.z));
+        float B =  (offdiag.x * (sample.x + offset.x)) + (diag.y    * (sample.y + offset.y)) + (offdiag.z * (sample.z + offset.z));
+        float C =  (offdiag.y * (sample.x + offset.x)) + (offdiag.z * (sample.y + offset.y)) + (diag.z    * (sample.z + offset.z));
+        float length = (M*(sample+offset)).length();
 
-            // 0-2: offsets
-            ret[0] = -1.0f * (((diag.x    * A) + (offdiag.x * B) + (offdiag.y * C))/length);
-            ret[1] = -1.0f * (((offdiag.x * A) + (diag.y    * B) + (offdiag.z * C))/length);
-            ret[2] = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
-            // 3-5: diagonals
-            ret[3] = -1.0f * ((sample.x + offset.x) * A)/length;
-            ret[4] = -1.0f * ((sample.y + offset.y) * B)/length;
-            ret[5] = -1.0f * ((sample.z + offset.z) * C)/length;
-            // 6-8: off-diagonals
-            ret[6] = -1.0f * (((sample.y + offset.y) * A) + ((sample.x + offset.x) * B))/length;
-            ret[7] = -1.0f * (((sample.z + offset.z) * A) + ((sample.x + offset.x) * C))/length;
-            ret[8] = -1.0f * (((sample.z + offset.z) * B) + ((sample.y + offset.y) * C))/length;
-            return;
+        // 0-2: offsets
+        ret[0] = -1.0f * (((diag.x    * A) + (offdiag.x * B) + (offdiag.y * C))/length);
+        ret[1] = -1.0f * (((offdiag.x * A) + (diag.y    * B) + (offdiag.z * C))/length);
+        ret[2] = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
+        // 3-5: diagonals
+        ret[3] = -1.0f * ((sample.x + offset.x) * A)/length;
+        ret[4] = -1.0f * ((sample.y + offset.y) * B)/length;
+        ret[5] = -1.0f * ((sample.z + offset.z) * C)/length;
+        // 6-8: off-diagonals
+        ret[6] = -1.0f * (((sample.y + offset.y) * A) + ((sample.x + offset.x) * B))/length;
+        ret[7] = -1.0f * (((sample.z + offset.z) * A) + ((sample.x + offset.x) * C))/length;
+        ret[8] = -1.0f * (((sample.z + offset.z) * B) + ((sample.y + offset.y) * C))/length;
+        return;
         }
-    };
+    }
 }
 
 // returns number of parameters are required for selected Fit type
 uint8_t AccelCalibrator::get_num_params() const {
     switch (_conf_fit_type) {
-        case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
-            return 6;
-        case ACCEL_CAL_ELLIPSOID:
-            return 9;
-        default:
-            return 6;
+    case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
+        return 6;
+    case ACCEL_CAL_ELLIPSOID:
+        return 9;
+    default:
+        return 6;
     }
 }
