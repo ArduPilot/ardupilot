@@ -656,9 +656,10 @@
 
 #ifndef AC_TERRAIN
  #define AC_TERRAIN ENABLED
- #if !AC_RALLY
-  #error Terrain relies on Rally which is disabled
- #endif
+#endif
+
+#if AC_TERRAIN && !AC_RALLY
+ #error Terrain relies on Rally which is disabled
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
