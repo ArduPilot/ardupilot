@@ -923,7 +923,9 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
     sprintf(frame_buf, "Frame: %s", get_frame_string());
     DataFlash.Log_Write_Message(frame_buf);
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+#if AC_RALLY
     DataFlash.Log_Write_Rally(rally);
+#endif
 }
 
 
