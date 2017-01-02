@@ -485,7 +485,8 @@ bool Plane::geofence_set_floor_enabled(bool floor_enable) {
     return false;
 }
 
-bool geofence_breached(void) {
+bool Plane::geofence_breached(void)
+{
     return false;
 }
 
