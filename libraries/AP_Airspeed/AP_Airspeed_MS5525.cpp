@@ -27,27 +27,28 @@
 
 extern const AP_HAL::HAL &hal;
 
-#define MS5525D0_I2C_ADDR_1 0x76
-#define MS5525D0_I2C_ADDR_2 0x77
+enum {
+    MS5525D0_I2C_ADDR_1 = 0x76,
+    MS5525D0_I2C_ADDR_2 = 0x77,
 
-#define REG_RESET               0x1E
-#define REG_CONVERT_D1_OSR_256  0x40
-#define REG_CONVERT_D1_OSR_512  0x42
-#define REG_CONVERT_D1_OSR_1024 0x44
-#define REG_CONVERT_D1_OSR_2048 0x46
-#define REG_CONVERT_D1_OSR_4096 0x48
-#define REG_CONVERT_D2_OSR_256  0x50
-#define REG_CONVERT_D2_OSR_512  0x52
-#define REG_CONVERT_D2_OSR_1024 0x54
-#define REG_CONVERT_D2_OSR_2048 0x56
-#define REG_CONVERT_D2_OSR_4096 0x58
-#define REG_ADC_READ            0x00
-#define REG_PROM_BASE           0xA0
-
-// go for 1024 oversampling. This should be fast enough to reduce
-// noise but low enough to keep self-heating small
-#define REG_CONVERT_PRESSURE    REG_CONVERT_D1_OSR_1024
-#define REG_CONVERT_TEMPERATURE REG_CONVERT_D2_OSR_1024
+    REG_RESET               = 0x1E,
+    REG_CONVERT_D1_OSR_256  = 0x40,
+    REG_CONVERT_D1_OSR_512  = 0x42,
+    REG_CONVERT_D1_OSR_1024 = 0x44,
+    REG_CONVERT_D1_OSR_2048 = 0x46,
+    REG_CONVERT_D1_OSR_4096 = 0x48,
+    REG_CONVERT_D2_OSR_256  = 0x50,
+    REG_CONVERT_D2_OSR_512  = 0x52,
+    REG_CONVERT_D2_OSR_1024 = 0x54,
+    REG_CONVERT_D2_OSR_2048 = 0x56,
+    REG_CONVERT_D2_OSR_4096 = 0x58,
+    REG_ADC_READ            = 0x00,
+    REG_PROM_BASE           = 0xA0,
+    // go for 1024 oversampling. This should be fast enough to reduce
+    // noise but low enough to keep self-heating small
+    REG_CONVERT_PRESSURE    = REG_CONVERT_D1_OSR_1024,
+    REG_CONVERT_TEMPERATURE = REG_CONVERT_D2_OSR_1024,
+};
 
 AP_Airspeed_MS5525::AP_Airspeed_MS5525(AP_Airspeed &_frontend) :
     AP_Airspeed_Backend(_frontend)
