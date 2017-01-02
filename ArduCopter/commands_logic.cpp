@@ -797,6 +797,7 @@ bool Copter::verify_payload_place()
         nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
         // no break
     case PayloadPlaceStateType_Releasing_Start:
+#if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid()) {
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Releasing the gripper");
             g2.gripper.release();
@@ -805,12 +806,17 @@ bool Copter::verify_payload_place()
             nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
             break;
         }
+#else
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Gripper code disabled");
+#endif
         nav_payload_place.state = PayloadPlaceStateType_Releasing;
         // no break
     case PayloadPlaceStateType_Releasing:
+#if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid() && !g2.gripper.released()) {
             return false;
         }
+#endif
         nav_payload_place.state = PayloadPlaceStateType_Released;
         // no break
     case PayloadPlaceStateType_Released: {
