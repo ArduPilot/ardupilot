@@ -526,5 +526,11 @@ void Rover::Log_Write_Sonar() {}
 void Rover::Log_Write_Attitude() {}
 void Rover::start_logging() {}
 void Rover::Log_Write_RC(void) {}
+void Rover::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
+void Rover::Log_Write_Home_And_Origin() {}
+void Rover::Log_Write_Baro(void) {}
+void Rover::Log_Arm_Disarm() {}
+void Rover::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
+void Rover::Log_Write_Steering() {}
 
 #endif  // LOGGING_ENABLED
