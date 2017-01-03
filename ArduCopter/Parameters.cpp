@@ -820,7 +820,9 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
+#if AC_AVOID_ENABLED == ENABLED
     GOBJECT(avoid,      "AVOID_",   AC_Avoid),
+#endif
 
 #if AC_RALLY == ENABLED
     // @Group: RALLY_
@@ -1001,6 +1003,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
 
+    // @Group: BCN
+    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
+    AP_SUBGROUPINFO(beacon, "BCN", 14, ParametersG2, AP_Beacon),
+
 #if PROXIMITY_ENABLED == ENABLED
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
@@ -1039,10 +1045,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 13, ParametersG2, AP_Gripper),
 #endif
 
-    // @Group: BCN
-    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
-    AP_SUBGROUPINFO(beacon, "BCN", 14, ParametersG2, AP_Beacon),
-
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
@@ -1058,8 +1060,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
   constructor for g2 object
  */
 ParametersG2::ParametersG2(void)
-    : proximity(copter.serial_manager),
-      beacon(copter.serial_manager)
+    : beacon(copter.serial_manager)
+#if PROXIMITY_ENABLED == ENABLED
+    , proximity(copter.serial_manager)
+#endif
 #if ADVANCED_FAILSAFE == ENABLED
      ,afs(copter.mission, copter.barometer, copter.gps, copter.rcmap)
 #endif
