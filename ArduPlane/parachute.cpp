@@ -6,8 +6,12 @@
 */
 void Plane::parachute_check()
 {
+#if PARACHUTE == ENABLED
     parachute.update();
+#endif
 }
+
+#if PARACHUTE == ENABLED
 
 /*
   parachute_release - trigger the release of the parachute
@@ -49,3 +53,5 @@ bool Plane::parachute_manual_release()
 
     return true;
 }
+
+#endif

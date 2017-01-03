@@ -1092,10 +1092,12 @@ private:
     void init_capabilities(void);
     void dataflash_periodic(void);
     uint16_t throttle_min(void) const;
-    void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_check();
+#if PARACHUTE == ENABLED
+    void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_release();
     bool parachute_manual_release();
+#endif
     void accel_cal_update(void);
     void update_soft_armed();
 
