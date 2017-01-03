@@ -45,7 +45,7 @@ void RCOutput::disable_ch(uint8_t ch)
 
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
-    if (ch < SITL_NUM_CHANNELS) {
+    if (ch < SITL_NUM_CHANNELS && (_enable_mask & (1U<<ch))) {
         if (_corked) {
             _pending[ch] = period_us;
         } else {
