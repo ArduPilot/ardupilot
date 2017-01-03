@@ -538,8 +538,9 @@ private:
 #if AC_FENCE == ENABLED
     AC_Fence    fence;
 #endif
+#if AC_AVOID_ENABLED == ENABLED
     AC_Avoid avoid;
-
+#endif
     // Rally library
 #if AC_RALLY == ENABLED
     AP_Rally_Copter rally;

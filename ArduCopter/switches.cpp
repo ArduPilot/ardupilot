@@ -572,7 +572,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_AVOID_PROXIMITY:
-#if PROXIMITY_ENABLED == ENABLED
+#if PROXIMITY_ENABLED == ENABLED && AC_AVOID_ENABLED == ENABLED
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH:
                     avoid.proximity_avoidance_enable(true);
