@@ -22,7 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_AdvancedFailsafe.h"
 #include <RC_Channel/RC_Channel.h>
-#include <RC_Channel/RC_Channel_aux.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
