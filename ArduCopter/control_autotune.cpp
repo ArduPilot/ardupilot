@@ -343,7 +343,7 @@ void Copter::autotune_run()
 
         if (zero_rp_input) {
             // pilot input on throttle and yaw will still use position hold if enabled
-            autotune_get_poshold_attitude(target_roll, target_pitch);
+            autotune_get_poshold_attitude(target_roll, target_pitch, autotune_desired_yaw);
         }
 
         // set motors to full range
@@ -379,7 +379,7 @@ void Copter::autotune_attitude_control()
         attitude_control->use_ff_and_input_shaping(true);
 
         float autotune_roll_cd, autotune_pitch_cd;
-        autotune_get_poshold_attitude(autotune_roll_cd, autotune_pitch_cd);
+        autotune_get_poshold_attitude(autotune_roll_cd, autotune_pitch_cd, autotune_desired_yaw);
         
         // hold level attitude
         attitude_control->input_euler_angle_roll_pitch_yaw(autotune_roll_cd, autotune_pitch_cd, autotune_desired_yaw, true, get_smoothing_gain());
@@ -1340,7 +1340,7 @@ void Copter::autotune_twitching_measure_acceleration(float &rate_of_change, floa
 }
 
 // get attitude for slow position hold in autotune mode
-void Copter::autotune_get_poshold_attitude(float &roll_cd, float &pitch_cd)
+void Copter::autotune_get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd)
 {
     roll_cd = pitch_cd = 0;
 
@@ -1364,6 +1364,10 @@ void Copter::autotune_get_poshold_attitude(float &roll_cd, float &pitch_cd)
 
     // hit the 10 degree limit at 20 meters position error
     const float dist_limit_cm = 2000;
+
+    // we only start adjusting yaw if we are more than 5m from the
+    // target position. That corresponds to a lean angle of 2.5 degrees
+    const float yaw_dist_limit_cm = 500;
     
     Vector3f pdiff = inertial_nav.get_position() - autotune_state.start_position;
     pdiff.z = 0;
@@ -1383,6 +1387,30 @@ void Copter::autotune_get_poshold_attitude(float &roll_cd, float &pitch_cd)
     // rotate into body frame
     pitch_cd = angle_ne.x * ahrs.cos_yaw() + angle_ne.y * ahrs.sin_yaw();
     roll_cd  = angle_ne.x * ahrs.sin_yaw() - angle_ne.y * ahrs.cos_yaw();
+
+    if (dist_cm < yaw_dist_limit_cm) {
+        // no yaw adjustment
+        return;
+    }
+
+    /*
+      also point so that twitching occurs perpendicular to the wind,
+      if we have drifted more than yaw_dist_limit_cm from the desired
+      position. This ensures that autotune doesn't have to deal with
+      more than 2.5 degrees of attitude on the axis it is tuning
+     */
+    float target_yaw_cd = degrees(atan2f(pdiff.y, pdiff.x)) * 100;
+    if (autotune_state.axis == AUTOTUNE_AXIS_PITCH) {
+        // for roll and yaw tuning we point along the wind, for pitch
+        // we point across the wind
+        target_yaw_cd += 9000;
+    }
+    // go to the nearest 180 degree mark, with 5 degree slop to prevent oscillation
+    if (fabsf(yaw_cd - target_yaw_cd) > 9500) {
+        target_yaw_cd += 18000;
+    }
+
+    yaw_cd = target_yaw_cd;
 }
 
 #endif  // AUTOTUNE_ENABLED == ENABLED
