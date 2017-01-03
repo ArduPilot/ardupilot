@@ -22,6 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_MotorsCoax.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -44,19 +45,6 @@ const AP_Param::GroupInfo AP_MotorsCoax::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("SV_SPEED", 43, AP_MotorsCoax, _servo_speed, AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS),
 
-    // @Group: SV1_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo1, "SV1_", 44, AP_MotorsCoax, RC_Channel),
-    // @Group: SV2_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo2, "SV2_", 45, AP_MotorsCoax, RC_Channel),
-    // @Group: SV3_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo3, "SV3_", 46, AP_MotorsCoax, RC_Channel),
-    // @Group: SV4_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo4, "SV4_", 47, AP_MotorsCoax, RC_Channel),
-
     AP_GROUPEND
 };
 // init
@@ -65,19 +53,25 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
 
+    _servo1 = SRV_Channels::get_channel_for(SRV_Channel::k_motor1, CH_1);
+    _servo2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
+    _servo3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
+    _servo4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
+    if (!_servo1 || !_servo2 || !_servo3 || !_servo4) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "MotorsCoax: unable to setup output channels");
+        // don't set initialised_ok
+        return;
+    }
+    
     // set the motor_enabled flag so that the main ESC can be calibrated like other frame types
     motor_enabled[AP_MOTORS_MOT_5] = true;
     motor_enabled[AP_MOTORS_MOT_6] = true;
 
     // we set four servos to angle
-    _servo1.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo2.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo3.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo4.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo1.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-    _servo2.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-    _servo3.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-    _servo4.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    _servo1->set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    _servo2->set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    _servo3->set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    _servo4->set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
 
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_COAX);
