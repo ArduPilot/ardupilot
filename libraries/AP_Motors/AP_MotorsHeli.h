@@ -6,7 +6,8 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>      // RC Channel Library
+#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_Motors_Class.h"
 #include "AP_MotorsHeli_RSC.h"
 
@@ -160,10 +161,10 @@ protected:
     virtual void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) = 0;
 
     // reset_swash_servo - free up swash servo for maximum movement
-    void reset_swash_servo(RC_Channel& servo);
+    void reset_swash_servo(SRV_Channel *servo);
 
     // init_outputs - initialise Servo/PWM ranges and endpoints
-    virtual void init_outputs() = 0;
+    virtual bool init_outputs() = 0;
 
     // calculate_armed_scalars - must be implemented by child classes
     virtual void calculate_armed_scalars() = 0;

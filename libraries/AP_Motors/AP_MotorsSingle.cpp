@@ -22,6 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_MotorsSingle.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -44,19 +45,6 @@ const AP_Param::GroupInfo AP_MotorsSingle::var_info[] = {
     // @Values: 50, 125, 250
     AP_GROUPINFO("SV_SPEED", 43, AP_MotorsSingle, _servo_speed, AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS),
 
-    // @Group: SV1_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo1, "SV1_", 44, AP_MotorsSingle, RC_Channel),
-    // @Group: SV2_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo2, "SV2_", 45, AP_MotorsSingle, RC_Channel),
-    // @Group: SV3_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo3, "SV3_", 46, AP_MotorsSingle, RC_Channel),
-    // @Group: SV4_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo4, "SV4_", 47, AP_MotorsSingle, RC_Channel),
-
     AP_GROUPEND
 };
 // init
@@ -69,15 +57,21 @@ void AP_MotorsSingle::init(motor_frame_class frame_class, motor_frame_type frame
     motor_enabled[AP_MOTORS_MOT_5] = true;
     motor_enabled[AP_MOTORS_MOT_6] = true;
 
+    _servo1 = SRV_Channels::get_channel_for(SRV_Channel::k_motor1, CH_1);
+    _servo2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
+    _servo3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
+    _servo4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
+    if (!_servo1 || !_servo2 || !_servo3 || !_servo4) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "MotorsSingle: unable to setup output channels");
+        // don't set initialised_ok
+        return;
+    }
+    
     // we set four servos to angle
-    _servo1.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo2.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo3.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo4.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo1.set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
-    _servo2.set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
-    _servo3.set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
-    _servo4.set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo1->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo2->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo3->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo4->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
 
     // allow mapping of motor7
     add_motor_num(CH_7);
@@ -89,7 +83,7 @@ void AP_MotorsSingle::init(motor_frame_class frame_class, motor_frame_type frame
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
 void AP_MotorsSingle::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
-    _flags.initialised_ok = (frame_class == MOTOR_FRAME_SINGLE);
+    // nothing to do
 }
 
 // set update rate to motors - a value in hertz
@@ -125,6 +119,9 @@ void AP_MotorsSingle::enable()
 
 void AP_MotorsSingle::output_to_motors()
 {
+    if (!_flags.initialised_ok) {
+        return;
+    }
     switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors

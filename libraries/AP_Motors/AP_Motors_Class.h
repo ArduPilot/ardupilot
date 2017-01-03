@@ -3,7 +3,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Notify/AP_Notify.h>      // Notify library
-#include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include <SRV_Channel/SRV_Channel.h>
 #include <Filter/Filter.h>         // filter library
 
 // offsets for motors in motor_out and _motor_filtered arrays
@@ -167,10 +167,10 @@ protected:
     virtual void save_params_on_disarm() {}
 
     // convert input in -1 to +1 range to pwm output
-    int16_t calc_pwm_output_1to1(float input, const RC_Channel& servo);
+    int16_t calc_pwm_output_1to1(float input, const SRV_Channel *servo);
 
     // convert input in 0 to +1 range to pwm output
-    int16_t calc_pwm_output_0to1(float input, const RC_Channel& servo);
+    int16_t calc_pwm_output_0to1(float input, const SRV_Channel *servo);
 
     // flag bitmask
     struct AP_Motors_flags {

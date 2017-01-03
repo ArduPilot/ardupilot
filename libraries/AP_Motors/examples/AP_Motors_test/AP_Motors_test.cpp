@@ -74,7 +74,7 @@ void setup()
     // set rc channel ranges
     rc1.set_angle(4500);
     rc2.set_angle(4500);
-    rc3.set_range(130, 1000);
+    rc3.set_range(1000);
     rc4.set_angle(4500);
 
     hal.scheduler->delay(1000);

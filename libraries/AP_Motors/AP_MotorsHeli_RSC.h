@@ -2,7 +2,8 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>      // RC Channel Library
+#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 // rotor controller states
 enum RotorControlState {
@@ -24,7 +25,7 @@ class AP_MotorsHeli_RSC {
 public:
     friend class AP_MotorsHeli_Single;
     
-    AP_MotorsHeli_RSC(RC_Channel_aux::Aux_servo_function_t aux_fn,
+    AP_MotorsHeli_RSC(SRV_Channel::Aux_servo_function_t aux_fn,
                       uint8_t default_channel) :
         _aux_fn(aux_fn),
         _default_channel(default_channel)
@@ -80,7 +81,7 @@ private:
     uint64_t        _last_update_us;
     
     // channel setup for aux function
-    RC_Channel_aux::Aux_servo_function_t _aux_fn;
+    SRV_Channel::Aux_servo_function_t _aux_fn;
     uint8_t         _default_channel;
     
     // internal variables

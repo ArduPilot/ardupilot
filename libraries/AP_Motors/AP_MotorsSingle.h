@@ -4,7 +4,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsMulticopter.h"
 
 // feedback direction
@@ -24,8 +24,7 @@ public:
 
     /// Constructor
     AP_MotorsSingle(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(loop_rate, speed_hz),
-        _servo1(CH_NONE), _servo2(CH_NONE), _servo3(CH_NONE), _servo4(CH_NONE)
+        AP_MotorsMulticopter(loop_rate, speed_hz)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -64,12 +63,11 @@ protected:
     // servo speed
     AP_Int16            _servo_speed;
 
-    RC_Channel          _servo1;
-    RC_Channel          _servo2;
-    RC_Channel          _servo3;
-    RC_Channel          _servo4;
-
     int16_t             _throttle_radio_output;   // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
     float               _actuator_out[NUM_ACTUATORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     float               _thrust_out;
+    SRV_Channel         *_servo1;
+    SRV_Channel         *_servo2;
+    SRV_Channel         *_servo3;
+    SRV_Channel         *_servo4;
 };
