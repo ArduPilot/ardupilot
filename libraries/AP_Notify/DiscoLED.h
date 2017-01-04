@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/PWM_Sysfs.h>
+#include <AP_HAL_Linux/Led_Sysfs.h>
 #include "RGBLed.h"
 
 class DiscoLED: public RGBLed
@@ -32,8 +33,19 @@ private:
     Linux::PWM_Sysfs_Bebop green_pwm;
     Linux::PWM_Sysfs_Bebop blue_pwm;
 
+    Linux::Led_Sysfs red_led;
+    Linux::Led_Sysfs green_led;
+    Linux::Led_Sysfs blue_led;
+
     uint32_t red_pwm_period;
     uint32_t green_pwm_period;
     uint32_t blue_pwm_period;
+
+    enum led_backend {
+        LED_SYSFS,
+        PWM_SYSFS
+    };
+
+    enum led_backend backend;
 };
 #endif
