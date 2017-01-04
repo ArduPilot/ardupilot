@@ -92,7 +92,7 @@ public:
 
     // get last time sample was taken (in ms)
     uint32_t get_last_update(void) const { return get_last_update(_primary); }
-    uint32_t get_last_update(uint8_t instance) const { return sensors[_primary].last_update_ms; }
+    uint32_t get_last_update(uint8_t instance) const { return sensors[instance].last_update_ms; }
 
     // settable parameters
     static const struct AP_Param::GroupInfo var_info[];
