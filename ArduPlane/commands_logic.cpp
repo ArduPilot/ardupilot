@@ -555,41 +555,60 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     steer_state.hold_course_cd = -1;
 
-    if (auto_state.no_crosstrack) {
-        nav_controller->update_waypoint(current_loc, next_WP_loc);
-    } else {
-        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
-    }
+    int32_t next_wp_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
 
-    // see if the user has specified a maximum distance to waypoint
-    if (g.waypoint_max_radius > 0 && 
-        auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
-        if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-            // this is needed to ensure completion of the waypoint
-            prev_WP_loc = current_loc;
+    // depending on the pass by flag either go to waypoint in regular manner or
+    // fly past it for set distance along the line of waypoints
+    if (HIGHBYTE(cmd.p1) == 0 ||
+       (HIGHBYTE(cmd.p1) != 0 && !location_passed_point(current_loc, prev_WP_loc, next_WP_loc))) {
+        if (auto_state.no_crosstrack) {
+            nav_controller->update_waypoint(current_loc, next_WP_loc);
+        } else {
+            nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
         }
-        return false;
+
+        // see if the user has specified a maximum distance to waypoint
+        if (g.waypoint_max_radius > 0 &&
+            auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
+            if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+                // this is needed to ensure completion of the waypoint
+                prev_WP_loc = current_loc;
+            }
+            return false;
+        }
+    } else {
+        nav_controller->update_heading_hold(next_wp_bearing_cd);
     }
 
     float acceptance_distance = nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle);
-    if (cmd.p1 > 0) {
+    if (LOWBYTE(cmd.p1) > 0) {
         // allow user to override acceptance radius
-        acceptance_distance = cmd.p1;
+        acceptance_distance = LOWBYTE(cmd.p1);
     }
     
-    if (auto_state.wp_distance <= acceptance_distance) {
+    if (auto_state.wp_distance <= acceptance_distance && HIGHBYTE(cmd.p1) == 0) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)get_distance(current_loc, next_WP_loc));
         return true;
 	}
 
-    // have we flown past the waypoint?
+    // have we flown past the waypoint? Maybe that is good!
+    // If the pass_by is more than 0 - make the plane fly over the point by specified distance
     if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
-                          (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, next_WP_loc));
-        return true;
+        if (HIGHBYTE(cmd.p1) == 0) {
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
+                              (unsigned)mission.get_current_nav_cmd().index,
+                              (unsigned)get_distance(current_loc, next_WP_loc));
+            return true;
+        } else {
+            if ((unsigned)get_distance(current_loc, next_WP_loc) > HIGHBYTE(cmd.p1)) {
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
+                                  (unsigned)mission.get_current_nav_cmd().index,
+                                  (unsigned)get_distance(current_loc, next_WP_loc));
+                return true;
+            }
+        }
     }
 
     return false;
