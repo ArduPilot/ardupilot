@@ -41,6 +41,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _YAW_CORR
     // @DisplayName: Proximity sensor yaw correction
     // @Description: Proximity sensor yaw correction
+    // @Units: °
     // @Range: -180 180
     // @User: Standard
     AP_GROUPINFO("_YAW_CORR", 3, AP_Proximity, _yaw_correction[0], PROXIMITY_YAW_CORRECTION_DEFAULT),
@@ -147,6 +148,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _YAW_CORR
     // @DisplayName: Second Proximity sensor yaw correction
     // @Description: Second Proximity sensor yaw correction
+    // @Units: °
     // @Range: -180 180
     // @User: Standard
     AP_GROUPINFO("2_YAW_CORR", 18, AP_Proximity, _yaw_correction[1], PROXIMITY_YAW_CORRECTION_DEFAULT),

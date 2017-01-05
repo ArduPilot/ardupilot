@@ -77,7 +77,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: Telemetry startup delay
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
     // @User: Standard
-    // @Units: seconds
+    // @Units: s
     // @Range: 0 30
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
@@ -107,7 +107,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: AUTO_KICKSTART
     // @DisplayName: Auto mode trigger kickstart acceleration
     // @Description: X acceleration in meters/second/second to use to trigger the motor start in auto mode. If set to zero then auto throttle starts immediately when the mode switch happens, otherwise the rover waits for the X acceleration to go above this value before it will start the motor
-    // @Units: m/s/s
+    // @Units: m/s²
     // @Range: 0 20
     // @Increment: 0.1
     // @User: standard
@@ -125,7 +125,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: SPEED_TURN_GAIN
     // @DisplayName: Target speed reduction while turning
     // @Description: The percentage to reduce the throttle while turning. If this is 100% then the target speed is not reduced while turning. If this is 50% then the target speed is reduced in proportion to the turn rate, with a reduction of 50% when the steering is maximally deflected.
-    // @Units: percent
+    // @Units: %
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -134,7 +134,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: SPEED_TURN_DIST
     // @DisplayName: Distance to turn to start reducing speed
     // @Description: The distance to the next turn at which the rover reduces its target speed by the SPEED_TURN_GAIN
-    // @Units: meters
+    // @Units: m
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
@@ -143,7 +143,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: BRAKING_PERCENT
     // @DisplayName: Percentage braking to apply
     // @Description: The maximum reverse throttle braking percentage to apply when cornering
-    // @Units: percent
+    // @Units: %
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -161,7 +161,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: PIVOT_TURN_ANGLE
     // @DisplayName: Pivot turn angle
     // @Description: Navigation angle threshold in degrees to switch to pivot steering when SKID_STEER_OUT is 1. This allows you to setup a skid steering rover to turn on the spot in auto mode when the angle it needs to turn it greater than this angle. An angle of zero means to disable pivot turning. Note that you will probably also want to set a low value for WP_RADIUS to get neat turns.
-    // @Units: degrees
+    // @Units: °
     // @Range: 0 360
     // @Increment: 1
     // @User: Standard
@@ -233,7 +233,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
     // @Description: The minimum throttle setting to which the autopilot will apply. This is mostly useful for rovers with internal combustion motors, to prevent the motor from cutting out in auto mode.
-    // @Units: Percent
+    // @Units: %
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -242,7 +242,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
     // @Description: The maximum throttle setting to which the autopilot will apply. This can be used to prevent overheating a ESC or motor on an electric rover.
-    // @Units: Percent
+    // @Units: %
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -251,7 +251,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: CRUISE_THROTTLE
     // @DisplayName: Base throttle percentage in auto
     // @Description: The base throttle percentage to use in auto mode. The CRUISE_SPEED parameter controls the target speed, but the rover starts with the CRUISE_THROTTLE setting as the initial estimate for how much throttle is needed to achieve that speed. It then adjusts the throttle based on how fast the rover is actually going.
-    // @Units: Percent
+    // @Units: %
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -260,7 +260,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate
     // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. A value of zero means no limit. A value of 100 means the throttle can change over its full range in one second. Note that for some NiMH powered rovers setting a lower value like 40 or 50 may be worthwhile as the sudden current demand on the battery of a big rise in throttle may cause a brownout.
-    // @Units: Percent
+    // @Units: %/s
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -290,7 +290,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_TIMEOUT
     // @DisplayName: Failsafe timeout
     // @Description: How long a failsafe event need to happen for before we trigger the failsafe action
-    // @Units: seconds
+    // @Units: s
     // @User: Standard
     GSCALAR(fs_timeout,    "FS_TIMEOUT",     5),
 
@@ -326,7 +326,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: RNGFND_TRIGGR_CM
     // @DisplayName: Rangefinder trigger distance
     // @Description: The distance from an obstacle in centimeters at which the rangefinder triggers a turn to avoid the obstacle
-    // @Units: centimeters
+    // @Units: cm
     // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
@@ -335,7 +335,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: RNGFND_TURN_ANGL
     // @DisplayName: Rangefinder trigger angle
     // @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the rangefinder. A positive number means to turn right, and a negative angle means to turn left.
-    // @Units: centimeters
+    // @Units: cm
     // @Range: -45 45
     // @Increment: 1
     // @User: Standard
@@ -344,7 +344,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: RNGFND_TURN_TIME
     // @DisplayName: Rangefinder turn time
     // @Description: The amount of time in seconds to apply the RNGFND_TURN_ANGL after detecting an obstacle.
-    // @Units: seconds
+    // @Units: s
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
@@ -415,7 +415,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: WP_RADIUS
     // @DisplayName: Waypoint radius
     // @Description: The distance in meters from a waypoint when we consider the waypoint has been reached. This determines when the rover will turn along the next waypoint path.
-    // @Units: meters
+    // @Units: m
     // @Range: 0 1000
     // @Increment: 0.1
     // @User: Standard

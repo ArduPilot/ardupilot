@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: SLEW_YAW
     // @DisplayName: Yaw target slew rate
     // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
-    // @Units: Centi-Degrees/Sec
+    // @Units: c°/s
     // @Range: 500 18000
     // @Increment: 100
     // @User: Advanced
@@ -21,7 +21,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: ACCEL_Y_MAX
     // @DisplayName: Acceleration Max for Yaw
     // @Description: Maximum acceleration in yaw axis
-    // @Units: Centi-Degrees/Sec/Sec
+    // @Units: c°/s²
     // @Range: 0 72000
     // @Values: 0:Disabled, 18000:Slow, 36000:Medium, 54000:Fast
     // @Increment: 1000
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: ACCEL_R_MAX
     // @DisplayName: Acceleration Max for Roll
     // @Description: Maximum acceleration in roll axis
-    // @Units: Centi-Degrees/Sec/Sec
+    // @Units: c°/s²
     // @Range: 0 180000
     // @Increment: 1000
     // @Values: 0:Disabled, 72000:Slow, 108000:Medium, 162000:Fast
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: ACCEL_P_MAX
     // @DisplayName: Acceleration Max for Pitch
     // @Description: Maximum acceleration in pitch axis
-    // @Units: Centi-Degrees/Sec/Sec
+    // @Units: c°/s²
     // @Range: 0 180000
     // @Increment: 1000
     // @Values: 0:Disabled, 72000:Slow, 108000:Medium, 162000:Fast

@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // @DisplayName: Yaw Servo Trim/Center
     // @Description: Trim or center position of yaw servo
     // @Range: 1250 1750
-    // @Units: PWM
+    // @Units: µs
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("YAW_SV_TRIM", 32,     AP_MotorsTri,  _yaw_servo_trim, 1500),
@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // @DisplayName: Yaw Servo Min PWM
     // @Description: Yaw servo's minimum pwm value
     // @Range: 1000 1400
-    // @Units: PWM
+    // @Units: µs
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("YAW_SV_MIN", 33,     AP_MotorsTri,  _yaw_servo_min, 1250),
@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // @DisplayName: Yaw Servo Max PWM
     // @Description: Yaw servo's maximum pwm value
     // @Range: 1600 2000
-    // @Units: PWM
+    // @Units: µs
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("YAW_SV_MAX", 34,     AP_MotorsTri,  _yaw_servo_max, 1750),
@@ -70,7 +70,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // @DisplayName: Yaw Servo Max Lean Angle
     // @Description: Yaw servo's maximum lean angle
     // @Range: 5 80
-    // @Units: Degrees
+    // @Units: °
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("YAW_SV_ANGLE", 35,   AP_MotorsTri,  _yaw_servo_angle_max_deg, 30),
