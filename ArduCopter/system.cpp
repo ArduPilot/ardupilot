@@ -158,7 +158,7 @@ void Copter::init_ardupilot()
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
     char firmware_buf[50];
-    sprintf(firmware_buf, FIRMWARE_STRING " %s", get_frame_string());
+    snprintf(firmware_buf, sizeof(firmware_buf), FIRMWARE_STRING " %s", get_frame_string());
     frsky_telemetry.init(serial_manager, firmware_buf,
                          get_frame_mav_type(),
                          &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value);
@@ -407,7 +407,7 @@ void Copter::update_auto_armed()
         if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
-#if FRAME_CONFIG == HELI_FRAME 
+#if FRAME_CONFIG == HELI_FRAME
         // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
         // so that rotor runup is checked again before attempting to take-off
         if(ap.land_complete && !motors.rotor_runup_complete()) {
