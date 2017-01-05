@@ -67,6 +67,41 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel
     desired_vel.y = des_vel_xy.y;
 }
 
+// adjust vertical climb rate so vehicle does not break the vertical fence
+void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms)
+{
+    // exit immediately if disabled
+    if (_enabled == AC_AVOID_DISABLED) {
+        return;
+    }
+
+    // do not adjust climb_rate if level or descending
+    if (climb_rate_cms <= 0.0f) {
+        return;
+    }
+
+    // limit acceleration
+    float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
+
+    // stop before breaching fence altitude
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
+
+        // calculate distance from vehicle to safe altitude
+        float veh_alt = get_alt_above_home();
+        float alt_diff_cm = _fence.get_safe_alt() * 100.0f - veh_alt;
+
+        // do not allow climbing if we've breached the safe altitude
+        if (alt_diff_cm <= 0.0f) {
+            climb_rate_cms = MIN(climb_rate_cms, 0.0f);
+            return;
+        }
+
+        // limit climb rate
+        const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_diff_cm);
+        climb_rate_cms = MIN(max_speed, climb_rate_cms);
+    }
+}
+
 // adjust roll-pitch to push vehicle away from objects
 // roll and pitch value are in centi-degrees
 void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
@@ -295,6 +330,15 @@ Vector2f AC_Avoid::get_position() const
     const Vector2f position_xy(position_xyz.x,position_xyz.y);
     const Vector2f diff = location_diff(_inav.get_origin(),_ahrs.get_home()) * 100.0f;
     return position_xy - diff;
+}
+
+/*
+ * Gets the altitude above home in cm
+ */
+float AC_Avoid::get_alt_above_home() const
+{
+    // vehicle's alt above ekf origin + ekf origin's alt above sea level - home's alt above sea level
+    return _inav.get_altitude() + _inav.get_origin().alt - _ahrs.get_home().alt;
 }
 
 /*

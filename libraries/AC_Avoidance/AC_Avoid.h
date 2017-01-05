@@ -39,6 +39,9 @@ public:
     void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel);
     void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel);
 
+    // adjust vertical climb rate so vehicle does not break the vertical fence
+    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms);
+
     // adjust roll-pitch to push vehicle away from objects
     // roll and pitch value are in centi-degrees
     // angle_max is the user defined maximum lean angle for the vehicle in centi-degrees
@@ -83,9 +86,10 @@ private:
     void limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance) const;
 
     /*
-     * Gets the current position, relative to home (not relative to EKF origin)
+     * Gets the current position or altitude, relative to home (not relative to EKF origin) in cm
      */
     Vector2f get_position() const;
+    float get_alt_above_home() const;
 
     /*
      * Computes the speed such that the stopping distance
