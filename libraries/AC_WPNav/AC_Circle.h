@@ -93,7 +93,7 @@ private:
     Vector3f    _center;        // center of circle in cm from home
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)
-    float       _angle_total;   // total angle travelled in radians
+    float       _angle_total;   // total angle traveled in radians
     float       _angular_vel;   // angular velocity in radians/sec
     float       _angular_vel_max;   // maximum velocity in radians/sec
     float       _angular_accel; // angular acceleration in radians/sec/sec

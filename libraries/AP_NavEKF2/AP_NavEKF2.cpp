@@ -797,7 +797,7 @@ void NavEKF2::getVelNED(int8_t instance, Vector3f &vel)
     }
 }
 
-// Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+// Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF2::getPosDownDerivative(int8_t instance)
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
@@ -986,7 +986,7 @@ bool NavEKF2::getOriginLLH(struct Location &loc) const
 }
 
 // set the latitude and longitude and height used to set the NED origin
-// All NED positions calcualted by the filter will be relative to this location
+// All NED positions calculated by the filter will be relative to this location
 // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF2::setOriginLLH(struct Location &loc)
