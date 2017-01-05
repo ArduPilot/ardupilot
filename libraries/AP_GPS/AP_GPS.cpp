@@ -269,7 +269,7 @@ AP_GPS::detect_instance(uint8_t instance)
     switch (_type[instance]) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     case GPS_TYPE_PX4:
-        // check for explicitely chosen PX4 GPS beforehand
+        // check for explicitly chosen PX4 GPS beforehand
         // it is not possible to autodetect it, nor does it require a real UART
         _broadcast_gps_type("PX4", instance, -1); // baud rate isn't valid
         new_gps = new AP_GPS_PX4(*this, state[instance], _port[instance]);

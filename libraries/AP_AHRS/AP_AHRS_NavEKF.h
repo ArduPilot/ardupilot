@@ -68,7 +68,7 @@ public:
     // dead-reckoning support
     bool get_position(struct Location &loc) const;
 
-    // get latest altitude estimate above ground level in metres and validity flag
+    // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const;
 
     // status reporting of estimated error
@@ -138,13 +138,13 @@ public:
     bool get_relative_position_D(float &posD) const;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
     bool get_vert_pos_rate(float &velocity);
 
     // write optical flow measurements to EKF
     void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
 
-    // inibit GPS usage
+    // inhibit GPS usage
     uint8_t setInhibitGPS(void);
 
     // get speed limit
@@ -172,11 +172,11 @@ public:
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     uint32_t getLastYawResetAngle(float &yawAng) const;
 
-    // return the amount of NE position change in metres due to the last reset
+    // return the amount of NE position change in meters due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosNorthEastReset(Vector2f &pos) const;
 
-    // return the amount of NE velocity change in metres/sec due to the last reset
+    // return the amount of NE velocity change in meters/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
 
@@ -194,7 +194,7 @@ public:
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(mavlink_channel_t chan);
     
-    // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
+    // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
     // it will return invalid when no limiting is required
     bool get_hgt_ctrl_limit(float &limit) const;
@@ -204,8 +204,8 @@ public:
     bool get_location(struct Location &loc) const;
 
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
-    // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
-    // inconsistency that will be accpeted by the filter
+    // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
+    // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const override;
 
