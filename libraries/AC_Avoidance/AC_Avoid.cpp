@@ -289,7 +289,7 @@ void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel,
 /*
  * Gets the current xy-position, relative to home (not relative to EKF origin)
  */
-Vector2f AC_Avoid::get_position()
+Vector2f AC_Avoid::get_position() const
 {
     const Vector3f position_xyz = _inav.get_position();
     const Vector2f position_xy(position_xyz.x,position_xyz.y);
