@@ -434,6 +434,8 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/APM_Control/AP_SteerController.cpp
     GOBJECT(steerController,        "STEER2SRV_",   AP_SteerController),
 
+    // @Group: SPEED2THR_
+    // @Path: ../libraries/PID/PID.cpp
     GGROUP(pidSpeedThrottle,        "SPEED2THR_", PID),
 
     // variables not in the g class which contain EEPROM saved variables
