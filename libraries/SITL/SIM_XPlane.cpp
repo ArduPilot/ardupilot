@@ -394,8 +394,8 @@ void XPlane::send_data(const struct sitl_input &input)
     throttle = ((uint32_t)(throttle * 1000)) * 1.0e-3f + throttle_magic;
     
     uint8_t flap_chan;
-    if (RC_Channel_aux::find_channel(RC_Channel_aux::k_flap, flap_chan) ||
-        RC_Channel_aux::find_channel(RC_Channel_aux::k_flap_auto, flap_chan)) {
+    if (SRV_Channels::find_channel(SRV_Channel::k_flap, flap_chan) ||
+        SRV_Channels::find_channel(SRV_Channel::k_flap_auto, flap_chan)) {
         float flap = (input.servos[flap_chan]-1000)/1000.0;
         if (flap != last_flap) {
             send_dref("sim/flightmodel/controls/flaprqst", flap);
