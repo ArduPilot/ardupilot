@@ -627,7 +627,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Param: RAW_SENS
     // @DisplayName: Raw sensor stream rate
-    // @Description: Stream rate of RAW_IMU, SCALED_IMU2, SCALED_PRESSURE, and SENSOR_OFFSETS to ground station
+    // @Description: Stream rate of IMU1 (RAW_IMU, RAW_COMPASS), IMU2 (SCALED_PRESSURE) and IMU3 (SENSOR_OFFSETS) to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
@@ -636,7 +636,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
     // @Param: EXT_STAT
     // @DisplayName: Extended status stream rate to ground station
-    // @Description: Stream rate of SYS_STATUS, MEMINFO, MISSION_CURRENT, GPS_RAW_INT, NAV_CONTROLLER_OUTPUT, and LIMITS_STATUS to ground station
+    // @Description: Stream rate of SYS_STATUS, POWER_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, NAV_CONTROLLER_OUTPUT, and LIMITS_STATUS to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
@@ -663,7 +663,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
     // @Param: POSITION
     // @DisplayName: Position stream rate to ground station
-    // @Description: Stream rate of GLOBAL_POSITION_INT to ground station
+    // @Description: Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
@@ -672,7 +672,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
     // @Param: EXTRA1
     // @DisplayName: Extra data type 1 stream rate to ground station
-    // @Description: Stream rate of ATTITUDE and SIMSTATE (SITL only) to ground station
+    // @Description: Stream rate of ATTITUDE, SIMSTATE (SITL only) and PID_TUNING to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
@@ -690,7 +690,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
     // @Param: EXTRA3
     // @DisplayName: Extra data type 3 stream rate to ground station
-    // @Description: Stream rate of AHRS, HWSTATUS, and SYSTEM_TIME to ground station
+    // @Description: Stream rate of AHRS, HWSTATUS, SYSTEM_TIME, RANGEFINDER, RANGEFINDER, TERRAIN, BATTERY2, MOUNT_STATUS, OPTICAL_FLOW, GIMBAL_REPORT, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION and RPM to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
@@ -750,16 +750,16 @@ GCS_MAVLINK_Copter::data_stream_send(void)
     }
 
     if (stream_trigger(STREAM_RAW_SENSORS)) {
-        send_message(MSG_RAW_IMU1);
-        send_message(MSG_RAW_IMU2);
-        send_message(MSG_RAW_IMU3);
+        send_message(MSG_RAW_IMU1);  // RAW_IMU, RAW_COMPASS
+        send_message(MSG_RAW_IMU2);  // SCALED_PRESSURE
+        send_message(MSG_RAW_IMU3);  // SENSOR_OFFSETS
     }
 
     if (copter.gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
-        send_message(MSG_EXTENDED_STATUS1);
-        send_message(MSG_EXTENDED_STATUS2);
+        send_message(MSG_EXTENDED_STATUS1); // SYS_STATUS, POWER_STATUS
+        send_message(MSG_EXTENDED_STATUS2); // MEMINFO
         send_message(MSG_CURRENT_WAYPOINT);
         send_message(MSG_GPS_RAW);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
