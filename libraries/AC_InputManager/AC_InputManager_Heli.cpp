@@ -13,7 +13,7 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
     // @DisplayName: Stabilize Mode Collective Point 1
     // @Description: Helicopter's minimum collective pitch setting at zero throttle input in Stabilize mode
     // @Range: 0 500
-    // @Units: Percent*10
+    // @Units: d%
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("STAB_COL_1",    1, AC_InputManager_Heli, _heli_stab_col_min, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MIN_DEFAULT),
@@ -22,7 +22,7 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
     // @DisplayName: Stabilize Mode Collective Point 2
     // @Description: Helicopter's collective pitch setting at mid-low throttle input in Stabilize mode
     // @Range: 0 500
-    // @Units: Percent*10
+    // @Units: d%
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("STAB_COL_2",    2, AC_InputManager_Heli, _heli_stab_col_low, AC_ATTITUDE_HELI_STAB_COLLECTIVE_LOW_DEFAULT),
@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
     // @DisplayName: Stabilize Mode Collective Point 3
     // @Description: Helicopter's collective pitch setting at mid-high throttle input in Stabilize mode
     // @Range: 500 1000
-    // @Units: Percent*10
+    // @Units: d%
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("STAB_COL_3",    3, AC_InputManager_Heli, _heli_stab_col_high, AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT),
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
     // @DisplayName: Stabilize Mode Collective Point 4
     // @Description: Helicopter's maximum collective pitch setting at full throttle input in Stabilize mode
     // @Range: 500 1000
-    // @Units: Percent*10
+    // @Units: d%
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("STAB_COL_4",    4, AC_InputManager_Heli, _heli_stab_col_max, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT),

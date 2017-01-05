@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @DisplayName: Matrix Yaw Min
     // @Description: Yaw control is given at least this pwm range
     // @Range: 0 500
-    // @Units: pwm
+    // @Units: µs
     // @User: Advanced
     AP_GROUPINFO("YAW_HEADROOM", 6, AP_MotorsMulticopter, _yaw_headroom, AP_MOTORS_YAW_HEADROOM_DEFAULT),
 
@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @DisplayName: Battery voltage compensation maximum voltage
     // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.4 * cell count, 0 = Disabled
     // @Range: 6 35
-    // @Units: Volts
+    // @Units: V
     // @User: Advanced
     AP_GROUPINFO("BAT_VOLT_MAX", 10, AP_MotorsMulticopter, _batt_voltage_max, AP_MOTORS_BAT_VOLT_MAX_DEFAULT),
 
@@ -66,7 +66,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @DisplayName: Battery voltage compensation minimum voltage
     // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled
     // @Range: 6 35
-    // @Units: Volts
+    // @Units: V
     // @User: Advanced
     AP_GROUPINFO("BAT_VOLT_MIN", 11, AP_MotorsMulticopter, _batt_voltage_min, AP_MOTORS_BAT_VOLT_MIN_DEFAULT),
 
@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @DisplayName: Motor Current Max
     // @Description: Maximum current over which maximum throttle is limited (0 = Disabled)
     // @Range: 0 200
-    // @Units: Amps
+    // @Units: A
     // @User: Advanced
     AP_GROUPINFO("BAT_CURR_MAX", 12, AP_MotorsMulticopter, _batt_current_max, AP_MOTORS_BAT_CURR_MAX_DEFAULT),
 
@@ -120,7 +120,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @DisplayName: Motor Current Max Time Constant
     // @Description: Time constant used to limit the maximum current
     // @Range: 0 10
-    // @Units: Seconds
+    // @Units: s
     // @User: Advanced
     AP_GROUPINFO("BAT_CURR_TC", 20, AP_MotorsMulticopter, _batt_current_time_constant, AP_MOTORS_BAT_CURR_TC_DEFAULT),
 

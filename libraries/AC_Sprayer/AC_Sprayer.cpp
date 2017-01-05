@@ -16,7 +16,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: PUMP_RATE
     // @DisplayName: Pump speed
     // @Description: Desired pump speed when traveling 1m/s expressed as a percentage
-    // @Units: percentage
+    // @Units: %
     // @Range: 0 100
     // @User: Standard
     AP_GROUPINFO("PUMP_RATE",   1, AC_Sprayer, _pump_pct_1ms, AC_SPRAYER_DEFAULT_PUMP_RATE),
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: PUMP_MIN
     // @DisplayName: Pump speed minimum
     // @Description: Minimum pump speed expressed as a percentage
-    // @Units: percentage
+    // @Units: %
     // @Range: 0 100
     // @User: Standard
     AP_GROUPINFO("PUMP_MIN",   4, AC_Sprayer, _pump_min_pct, AC_SPRAYER_DEFAULT_PUMP_MIN),
