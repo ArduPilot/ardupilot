@@ -85,7 +85,7 @@ private:
     /*
      * Gets the current position, relative to home (not relative to EKF origin)
      */
-    Vector2f get_position();
+    Vector2f get_position() const;
 
     /*
      * Computes the speed such that the stopping distance
