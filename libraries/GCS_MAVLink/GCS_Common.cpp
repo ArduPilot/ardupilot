@@ -1607,7 +1607,7 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
 }
 
 /*
-  send LOCAL_POSITION_NED message
+  send VIBRATION message
  */
 void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
 {
