@@ -855,9 +855,7 @@ void Copter::auto_payload_place_run_loiter()
     const float target_yaw_rate = 0;
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
 
-    // update altitude target and call position controller
-    // const float target_climb_rate = 0;
-    // pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+    // call position controller
     pos_control->update_z_controller();
 }
 
