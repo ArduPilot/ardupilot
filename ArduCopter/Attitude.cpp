@@ -282,6 +282,17 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 #endif
 }
 
+// get target climb rate reduced to avoid obstacles and altitude fence
+float Copter::get_avoidance_adjusted_climbrate(float target_rate)
+{
+#if AC_AVOID_ENABLED == ENABLED
+    avoid.adjust_velocity_z(pos_control->get_pos_z_kP(), pos_control->get_accel_z(), target_rate);
+    return target_rate;
+#else
+    return target_rate;
+#endif
+}
+
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
 void Copter::set_accel_throttle_I_from_pilot_throttle()
 {
@@ -294,25 +305,12 @@ void Copter::set_accel_throttle_I_from_pilot_throttle()
 // updates position controller's maximum altitude using fence and EKF limits
 void Copter::update_poscon_alt_max()
 {
-    float alt_limit_cm = 0.0f;  // interpreted as no limit if left as zero
-
-#if AC_FENCE == ENABLED
-    // set fence altitude limit in position controller
-    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        alt_limit_cm = pv_alt_above_origin(fence.get_safe_alt()*100.0f);
-    }
-#endif
-
     // get alt limit from EKF (limited during optical flow flight)
-    float ekf_limit_cm = 0.0f;
+    float ekf_limit_cm;
     if (inertial_nav.get_hgt_ctrl_limit(ekf_limit_cm)) {
-        if ((alt_limit_cm <= 0.0f) || (ekf_limit_cm < alt_limit_cm)) {
-            alt_limit_cm = ekf_limit_cm;
-        }
+        // pass limit to pos controller
+        pos_control->set_alt_max(ekf_limit_cm);
     }
-
-    // pass limit to pos controller
-    pos_control->set_alt_max(alt_limit_cm);
 }
 
 // rotate vector from vehicle's perspective to North-East frame
