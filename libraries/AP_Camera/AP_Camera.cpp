@@ -106,7 +106,7 @@ volatile bool   AP_Camera::_camera_triggered;
 void
 AP_Camera::servo_pic()
 {
-	RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_on_pwm);
+	SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_on_pwm);
 
 	// leave a message that it should be active for this many loops (assumes 50hz loops)
 	_trigger_counter = constrain_int16(_trigger_duration*5,0,255);
@@ -169,7 +169,7 @@ AP_Camera::trigger_pic_cleanup()
     } else {
         switch (_trigger_type) {
             case AP_CAMERA_TRIGGER_TYPE_SERVO:
-                RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
+                SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_off_pwm);
                 break;
             case AP_CAMERA_TRIGGER_TYPE_RELAY:
                 if (_relay_on) {
