@@ -64,7 +64,7 @@ int16_t AP_GPS_Backend::swap_int16(int16_t v) const
 uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
 {
     const uint64_t ms_per_week = 7000ULL*86400ULL;
-    const uint64_t unix_offset = 17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL;
+    const uint64_t unix_offset = 17000ULL*86400ULL + 52*10*7000ULL*86400ULL; // DO NOT subtract leap seconds here! Unix epoch does not have leap seconds
     uint64_t fix_time_ms = unix_offset + gps_week*ms_per_week + gps_ms;
     return fix_time_ms;
 }
