@@ -172,6 +172,9 @@ public:
     float get_leash_down_z() const { return _leash_down_z; }
     float get_leash_up_z() const { return _leash_up_z; }
 
+    /// get_pos_z_kP - returns z position controller's kP gain
+    float get_pos_z_kP() const { return _p_pos_z.kP(); }
+
     ///
     /// xy position controller
     ///
