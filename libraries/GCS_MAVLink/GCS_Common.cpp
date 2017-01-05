@@ -1710,7 +1710,7 @@ void GCS_MAVLINK::send_servo_output_raw(bool hil)
     uint16_t values[16] {};
     if (hil) {
         for (uint8_t i=0; i<16; i++) {
-            values[i] = RC_Channel::rc_channel(i)->get_radio_out();
+            values[i] = SRV_Channels::srv_channel(i)->get_output_pwm();
         }
     } else {
         hal.rcout->read(values, 16);
