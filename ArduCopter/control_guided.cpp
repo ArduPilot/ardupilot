@@ -580,6 +580,9 @@ void Copter::guided_angle_control_run()
     // constrain climb rate
     float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav->get_speed_down()), wp_nav->get_speed_up());
 
+    // get avoidance adjusted climb rate
+    climb_rate_cms = get_avoidance_adjusted_climbrate(climb_rate_cms);
+
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - guided_angle_state.update_time_ms > GUIDED_ATTITUDE_TIMEOUT_MS) {

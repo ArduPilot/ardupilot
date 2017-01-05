@@ -285,6 +285,9 @@ void Copter::autotune_run()
     // get pilot desired climb rate
     target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
 
+    // get avoidance adjusted climb rate
+    target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
     // check for pilot requested take-off - this should not actually be possible because of autotune_init() checks
     if (ap.land_complete && target_climb_rate > 0) {
         // indicate we are taking off

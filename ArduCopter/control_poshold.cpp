@@ -538,6 +538,10 @@ void Copter::poshold_run()
             // if rangefinder is ok, use surface tracking
             target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
         }
+
+        // get avoidance adjusted climb rate
+        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
         // update altitude target and call position controller
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control->add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
