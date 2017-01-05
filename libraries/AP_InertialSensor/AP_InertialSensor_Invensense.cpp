@@ -809,6 +809,7 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
     switch (whoami) {
     case MPU_WHOAMI_6000:
         _mpu_type = Invensense_MPU6000;
+        return true;
     case MPU_WHOAMI_MPU9250:
     case MPU_WHOAMI_MPU9255:
         _mpu_type = Invensense_MPU9250;
