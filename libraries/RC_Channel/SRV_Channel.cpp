@@ -35,7 +35,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 1_MIN
     // @DisplayName: Servo1 min PWM
     // @Description: servo1 minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -44,7 +44,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 1_MAX
     // @DisplayName: Servo1 max PWM
     // @Description: servo1 maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -53,7 +53,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 1_TRIM
     // @DisplayName: Servo1 trim PWM
     // @Description: servo1 trim PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -69,7 +69,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 2_MIN
     // @DisplayName: Servo1 min PWM
     // @Description: servo1 minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -78,7 +78,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 2_MAX
     // @DisplayName: Servo1 max PWM
     // @Description: servo1 maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 2_TRIM
     // @DisplayName: Servo1 trim PWM
     // @Description: servo1 trim PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -103,7 +103,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 3_MIN
     // @DisplayName: Servo1 min PWM
     // @Description: servo1 minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -112,7 +112,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 3_MAX
     // @DisplayName: Servo1 max PWM
     // @Description: servo1 maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -121,7 +121,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 3_TRIM
     // @DisplayName: Servo1 trim PWM
     // @Description: servo1 trim PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -137,7 +137,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 4_MIN
     // @DisplayName: Servo1 min PWM
     // @Description: servo1 minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -146,7 +146,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 4_MAX
     // @DisplayName: Servo1 max PWM
     // @Description: servo1 maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -155,7 +155,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: 4_TRIM
     // @DisplayName: Servo1 trim PWM
     // @Description: servo1 trim PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: 탎
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced

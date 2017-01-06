@@ -78,7 +78,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Pilot takeoff altitude
     // @Description: Altitude that altitude control modes will climb to when a takeoff is triggered with the throttle stick.
     // @User: Standard
-    // @Units: Centimeters
+    // @Units: cm
     // @Range: 0.0 1000.0
     // @Increment: 10
     GSCALAR(pilot_takeoff_alt,  "PILOT_TKOFF_ALT",  PILOT_TKOFF_ALT_DEFAULT),
@@ -107,7 +107,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Telemetry startup delay
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
     // @User: Advanced
-    // @Units: seconds
+    // @Units: s
     // @Range: 0 30
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
@@ -123,7 +123,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: RTL_ALT
     // @DisplayName: RTL Altitude
     // @Description: The minimum relative altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
-    // @Units: Centimeters
+    // @Units: cm
     // @Range: 0 8000
     // @Increment: 1
     // @User: Standard
@@ -165,7 +165,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
     // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage then the copter will RTL
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", FS_BATT_VOLTAGE_DEFAULT),
@@ -209,7 +209,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: RTL_ALT_FINAL
     // @DisplayName: RTL Final Altitude
     // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission.  Set to zero to land.
-    // @Units: Centimeters
+    // @Units: cm
     // @Range: -1 1000
     // @Increment: 1
     // @User: Standard
@@ -218,7 +218,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: RTL_CLIMB_MIN
     // @DisplayName: RTL minimum climb
     // @Description: The vehicle will climb this many cm during the initial climb portion of the RTL
-    // @Units: Centimeters
+    // @Units: cm
     // @Range: 0 3000
     // @Increment: 10
     // @User: Standard
@@ -261,7 +261,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: PILOT_VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
-    // @Units: Centimeters/Second
+    // @Units: cm/s
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -270,7 +270,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
     // @Description: The vertical acceleration used when pilot is controlling the altitude
-    // @Units: cm/s/s
+    // @Units: cm/s²
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -287,7 +287,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on channel 3 below which throttle failsafe triggers
     // @Range: 925 1100
-    // @Units: pwm
+    // @Units: µs
     // @Increment: 1
     // @User: Standard
     GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",      FS_THR_VALUE_DEFAULT),
@@ -297,7 +297,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: The deadzone above and below mid throttle.  Used in AltHold, Loiter, PosHold flight modes
     // @User: Standard
     // @Range: 0 300
-    // @Units: pwm
+    // @Units: µs
     // @Increment: 1
     GSCALAR(throttle_deadzone,  "THR_DZ",    THR_DZ_DEFAULT),
 
@@ -445,7 +445,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: DISARM_DELAY
     // @DisplayName: Disarm delay
     // @Description: Delay before automatic disarm in seconds. A value of zero disables auto disarm.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0 127
     // @User: Advanced
     GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),
@@ -453,7 +453,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
-    // @Units: Centi-degrees
+    // @Units: c°
     // @Range: 1000 8000
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
@@ -471,7 +471,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: PHLD_BRAKE_RATE
     // @DisplayName: PosHold braking rate
     // @Description: PosHold flight mode's rotation rate during braking in deg/sec
-    // @Units: deg/sec
+    // @Units: °/s
     // @Range: 4 12
     // @User: Advanced
     GSCALAR(poshold_brake_rate, "PHLD_BRAKE_RATE",  POSHOLD_BRAKE_RATE_DEFAULT),
@@ -479,7 +479,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: PHLD_BRAKE_ANGLE
     // @DisplayName: PosHold braking angle max
     // @Description: PosHold flight mode's max lean angle during braking in centi-degrees
-    // @Units: Centi-degrees
+    // @Units: c°
     // @Range: 2000 4500
     // @User: Advanced
     GSCALAR(poshold_brake_angle_max, "PHLD_BRAKE_ANGLE",  POSHOLD_BRAKE_ANGLE_DEFAULT),
@@ -636,7 +636,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: cm/s²
     // @User: Advanced
     GGROUP(pi_vel_xy,   "VEL_XY_",  AC_PI_2D),
 
@@ -664,7 +664,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 1000
-    // @Units: Percent*10
+    // @Units: d%
     // @User: Standard
 
     // @Param: ACCEL_Z_D

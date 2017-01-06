@@ -26,7 +26,7 @@
 
 /**
    maximum number of GPS instances available on this platform. If more
-   than 1 then redundent sensors may be available
+   than 1 then redundant sensors may be available
  */
 #define GPS_MAX_INSTANCES 2
 #define GPS_RTK_INJECT_TO_ALL 127
@@ -312,7 +312,7 @@ public:
     // the expected lag (in seconds) in the position and velocity readings from the gps
     float get_lag() const { return 0.2f; }
 
-    // return a 3D vector defining the offset of the GPS antenna in metres relative to the body frame origin
+    // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const {
         return _antenna_offset[instance];
     }
@@ -444,7 +444,7 @@ private:
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t *msg);
 
-    // ibject data into all backends
+    // inject data into all backends
     void inject_data_all(const uint8_t *data, uint16_t len);
 };
 

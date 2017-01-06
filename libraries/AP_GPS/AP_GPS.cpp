@@ -50,7 +50,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN,10:SBF,11:GSOF
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
@@ -88,7 +88,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: Minimum elevation
     // @Description: This sets the minimum elevation of satellites above the horizon for them to be used for navigation. Setting this to -100 leaves the minimum elevation set to the GPS modules default.
     // @Range: -100 90
-    // @Units: Degrees
+    // @Units: °
     // @User: Advanced
     AP_GROUPINFO("MIN_ELEV", 6, AP_GPS, _min_elevation, -100),
 
@@ -147,6 +147,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: RATE_MS
     // @DisplayName: GPS update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
+    // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @User: Advanced
     AP_GROUPINFO("RATE_MS", 14, AP_GPS, _rate_ms[0], 200),
@@ -154,6 +155,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: RATE_MS2
     // @DisplayName: GPS 2 update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
+    // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @User: Advanced
     AP_GROUPINFO("RATE_MS2", 15, AP_GPS, _rate_ms[1], 200),
@@ -269,7 +271,7 @@ AP_GPS::detect_instance(uint8_t instance)
     switch (_type[instance]) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     case GPS_TYPE_PX4:
-        // check for explicitely chosen PX4 GPS beforehand
+        // check for explicitly chosen PX4 GPS beforehand
         // it is not possible to autodetect it, nor does it require a real UART
         _broadcast_gps_type("PX4", instance, -1); // baud rate isn't valid
         new_gps = new AP_GPS_PX4(*this, state[instance], _port[instance]);

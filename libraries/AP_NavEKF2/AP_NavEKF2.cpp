@@ -192,7 +192,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: ms
     AP_GROUPINFO("GPS_DELAY", 8, NavEKF2, _gpsDelay_ms, 220),
 
     // Height measurement parameters
@@ -227,7 +227,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: ms
     AP_GROUPINFO("HGT_DELAY", 12, NavEKF2, _hgtDelay_ms, 60),
 
     // Magnetometer measurement parameters
@@ -328,7 +328,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: ms
     AP_GROUPINFO("FLOW_DELAY", 23, NavEKF2, _flowDelay_ms, FLOW_MEAS_DELAY),
 
     // State and Covariance Predition Parameters
@@ -348,7 +348,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0.01 1.0
     // @Increment: 0.01
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("ACC_P_NSE", 25, NavEKF2, _accNoise, ACC_P_NSE_DEFAULT),
 
     // @Param: GBIAS_P_NSE
@@ -356,7 +356,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This state  process noise controls growth of the gyro delta angle bias state error estimate. Increasing it makes rate gyro bias estimation faster and noisier.
     // @Range: 0.00001 0.001
     // @User: Advanced
-    // @Units: rad/s/s
+    // @Units: rad/s²
     AP_GROUPINFO("GBIAS_P_NSE", 26, NavEKF2, _gyroBiasProcessNoise, GBIAS_P_NSE_DEFAULT),
 
     // @Param: GSCL_P_NSE
@@ -364,7 +364,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This noise controls the rate of gyro scale factor learning. Increasing it makes rate gyro scale factor estimation faster and noisier.
     // @Range: 0.000001 0.001
     // @User: Advanced
-    // @Units: 1/s
+    // @Units: Hz
     AP_GROUPINFO("GSCL_P_NSE", 27, NavEKF2, _gyroScaleProcessNoise, GSCALE_P_NSE_DEFAULT),
 
     // @Param: ABIAS_P_NSE
@@ -372,7 +372,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.00001 0.001
     // @User: Advanced
-    // @Units: m/s/s/s
+    // @Units: m/s³
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
 
     // 29 previously used for EK2_MAG_P_NSE parameter that has been replaced with EK2_MAGE_P_NSE and EK2_MAGB_P_NSE
@@ -383,7 +383,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0.01 1.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: m/s²
     AP_GROUPINFO("WIND_P_NSE", 30, NavEKF2, _windVelProcessNoise, 0.1f),
 
     // @Param: WIND_PSCALE
@@ -797,7 +797,7 @@ void NavEKF2::getVelNED(int8_t instance, Vector3f &vel)
     }
 }
 
-// Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+// Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF2::getPosDownDerivative(int8_t instance)
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
@@ -986,7 +986,7 @@ bool NavEKF2::getOriginLLH(struct Location &loc) const
 }
 
 // set the latitude and longitude and height used to set the NED origin
-// All NED positions calcualted by the filter will be relative to this location
+// All NED positions calculated by the filter will be relative to this location
 // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF2::setOriginLLH(struct Location &loc)

@@ -50,7 +50,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _SCALING
     // @DisplayName: Rangefinder scaling
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
+    // @Units: m/V
     // @Increment: 0.001
     // @User: Standard
     AP_GROUPINFO("_SCALING", 2, RangeFinder, _scaling[0], 3.0f),
@@ -58,7 +58,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM and I2C Lidars
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.001
     // @User: Standard
     AP_GROUPINFO("_OFFSET",  3, RangeFinder, _offset[0], 0.0f),
@@ -73,7 +73,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_MIN_CM",  5, RangeFinder, _min_distance_cm[0], 20),
@@ -81,7 +81,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_MAX_CM",  6, RangeFinder, _max_distance_cm[0], 700),
@@ -96,7 +96,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _SETTLE
     // @DisplayName: Rangefinder settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
+    // @Units: ms
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_SETTLE", 8, RangeFinder, _settle_time_ms[0], 0),
@@ -111,7 +111,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _PWRRNG
     // @DisplayName: Powersave range
     // @Description: This parameter sets the estimated terrain distance in meters above which the sensor will be put into a power saving mode (if available). A value of zero means power saving is not enabled
-    // @Units: meters
+    // @Units: m
     // @Range: 0 32767
     // @User: Standard
     AP_GROUPINFO("_PWRRNG", 10, RangeFinder, _powersave_range, 0),
@@ -119,7 +119,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _GNDCLEAR
     // @DisplayName: Distance (in cm) from the range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
+    // @Units: cm
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
@@ -170,7 +170,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_SCALING
     // @DisplayName: Rangefinder scaling
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
+    // @Units: m/V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("2_SCALING", 14, RangeFinder, _scaling[1], 3.0f),
@@ -178,7 +178,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("2_OFFSET",  15, RangeFinder, _offset[1], 0.0f),
@@ -193,7 +193,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_MIN_CM",  17, RangeFinder, _min_distance_cm[1], 20),
@@ -201,7 +201,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_MAX_CM",  18, RangeFinder, _max_distance_cm[1], 700),
@@ -216,7 +216,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_SETTLE
     // @DisplayName: Sonar settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
+    // @Units: ms
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_SETTLE", 20, RangeFinder, _settle_time_ms[1], 0),
@@ -231,7 +231,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_GNDCLEAR
     // @DisplayName: Distance (in cm) from the second range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
+    // @Units: cm
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
@@ -285,7 +285,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_SCALING
     // @DisplayName: Rangefinder scaling
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
+    // @Units: m/V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("3_SCALING", 27, RangeFinder, _scaling[2], 3.0f),
@@ -293,7 +293,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("3_OFFSET",  28, RangeFinder, _offset[2], 0.0f),
@@ -308,7 +308,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_MIN_CM",  30, RangeFinder, _min_distance_cm[2], 20),
@@ -316,7 +316,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_MAX_CM",  31, RangeFinder, _max_distance_cm[2], 700),
@@ -331,7 +331,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_SETTLE
     // @DisplayName: Sonar settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
+    // @Units: ms
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_SETTLE", 33, RangeFinder, _settle_time_ms[2], 0),
@@ -346,7 +346,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_GNDCLEAR
     // @DisplayName: Distance (in cm) from the third range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the third range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
+    // @Units: cm
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
@@ -400,7 +400,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_SCALING
     // @DisplayName: Rangefinder scaling
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
+    // @Units: m/V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("4_SCALING", 39, RangeFinder, _scaling[3], 3.0f),
@@ -408,7 +408,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("4_OFFSET",  40, RangeFinder, _offset[3], 0.0f),
@@ -423,7 +423,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("4_MIN_CM",  42, RangeFinder, _min_distance_cm[3], 20),
@@ -431,7 +431,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("4_MAX_CM",  43, RangeFinder, _max_distance_cm[3], 700),
@@ -446,7 +446,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_SETTLE
     // @DisplayName: Sonar settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
+    // @Units: ms
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("4_SETTLE", 45, RangeFinder, _settle_time_ms[3], 0),
@@ -461,7 +461,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_GNDCLEAR
     // @DisplayName: Distance (in cm) from the fourth range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the fourth range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
+    // @Units: cm
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced

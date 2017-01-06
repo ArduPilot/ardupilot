@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Servo 1 Position
     // @Description: Angular location of swash servo #1
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: °
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV1_POS", 1, AP_MotorsHeli_Single, _servo1_pos, AP_MOTORS_HELI_SINGLE_SERVO1_POS),
@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Servo 2 Position
     // @Description: Angular location of swash servo #2
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: °
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV2_POS", 2, AP_MotorsHeli_Single, _servo2_pos, AP_MOTORS_HELI_SINGLE_SERVO2_POS),
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Servo 3 Position
     // @Description: Angular location of swash servo #3
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: °
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeli_Single, _servo3_pos, AP_MOTORS_HELI_SINGLE_SERVO3_POS),
@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: External Gyro Gain
     // @Description: PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
     // @Range: 0 1000
-    // @Units: PWM
+    // @Units: µs
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("GYR_GAIN", 6, AP_MotorsHeli_Single, _ext_gyro_gain_std, AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN),
@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Swashplate Phase Angle Compensation
     // @Description: Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     // @Range: -90 90
-    // @Units: Degrees
+    // @Units: °
     // @User: Advanced
     // @Increment: 1
     AP_GROUPINFO("PHANG", 7, AP_MotorsHeli_Single, _phase_angle, 0),
@@ -102,7 +102,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Direct Drive VarPitch Tail ESC speed
     // @Description: Direct Drive VarPitch Tail ESC speed.  Only used when TailType is DirectDrive VarPitch
     // @Range: 0 1000
-    // @Units: PWM
+    // @Units: µs
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("TAIL_SPEED", 10, AP_MotorsHeli_Single, _direct_drive_tailspeed, AP_MOTORS_HELI_SINGLE_DDVPT_SPEED_DEFAULT),
@@ -111,7 +111,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: External Gyro Gain for ACRO
     // @Description: PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro. A value of zero means to use H_GYR_GAIN
     // @Range: 0 1000
-    // @Units: PWM
+    // @Units: µs
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),

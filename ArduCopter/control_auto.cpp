@@ -23,7 +23,7 @@ bool Copter::auto_init(bool ignore_checks)
     if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
         auto_mode = Auto_Loiter;
 
-        // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce change of flips)
+        // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
         if (motors.armed() && ap.land_complete && !mission.starts_with_takeoff_cmd()) {
             gcs_send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
             return false;
@@ -168,10 +168,10 @@ void Copter::auto_takeoff_run()
     }
 
     // process pilot's yaw input
-    float target_yaw_rate = 0;
+    float target_yaw_rate_cdps = 0; // centi-degrees / sec
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate_cdps = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -196,7 +196,7 @@ void Copter::auto_takeoff_run()
     pos_control.update_z_controller();
 
     // call attitude controller
-    auto_takeoff_attitude_run(target_yaw_rate);
+    auto_takeoff_attitude_run(target_yaw_rate_cdps);
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
@@ -255,11 +255,11 @@ void Copter::auto_wp_run()
     }
 
     // process pilot's yaw input
-    float target_yaw_rate = 0;
+    float target_yaw_rate_cdps = 0; // centi-degrees / sec
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-        if (!is_zero(target_yaw_rate)) {
+        target_yaw_rate_cdps = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate_cdps)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
@@ -276,7 +276,10 @@ void Copter::auto_wp_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate_cdps, get_smoothing_gain());
+    }else if (auto_yaw_mode == AUTO_YAW_LOOK_AT_HEADING) {
+        // roll & pitch from waypoint controller, yaw rate from MAV_CMD_CONDITION_YAW
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), yaw_look_at_heading_slew_cdps, get_smoothing_gain());
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true, get_smoothing_gain());
@@ -327,11 +330,11 @@ void Copter::auto_spline_run()
     }
 
     // process pilot's yaw input
-    float target_yaw_rate = 0;
+    float target_yaw_rate_cdps = 0; // centi-degrees / sec
     if (!failsafe.radio) {
         // get pilot's desired yaw rat
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-        if (!is_zero(target_yaw_rate)) {
+        target_yaw_rate_cdps = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate_cdps)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
@@ -348,7 +351,7 @@ void Copter::auto_spline_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate_cdps, get_smoothing_gain());
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
@@ -573,9 +576,9 @@ void Copter::auto_loiter_run()
     }
 
     // accept pilot input of yaw
-    float target_yaw_rate = 0;
+    float target_yaw_rate_cdps = 0; // centi-degrees / sec
     if(!failsafe.radio) {
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate_cdps = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
     // set motors to full range
@@ -585,7 +588,7 @@ void Copter::auto_loiter_run()
     failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     pos_control.update_z_controller();
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate_cdps, get_smoothing_gain());
 }
 
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter
@@ -671,10 +674,9 @@ void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, 
     // get turn speed
     if (is_zero(turn_rate_dps)) {
         // default to regular auto slew rate
-        yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
+        yaw_look_at_heading_slew_cdps = AUTO_YAW_SLEW_RATE * 100;
     }else{
-        int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / turn_rate_dps;
-        yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
+        yaw_look_at_heading_slew_cdps = constrain_int16(turn_rate_dps * 100, 100, 32000); // centideg / sec
     }
 
     // set yaw mode

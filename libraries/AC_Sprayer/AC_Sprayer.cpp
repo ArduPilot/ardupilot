@@ -15,8 +15,8 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
 
     // @Param: PUMP_RATE
     // @DisplayName: Pump speed
-    // @Description: Desired pump speed when travelling 1m/s expressed as a percentage
-    // @Units: percentage
+    // @Description: Desired pump speed when traveling 1m/s expressed as a percentage
+    // @Units: %
     // @Range: 0 100
     // @User: Standard
     AP_GROUPINFO("PUMP_RATE",   1, AC_Sprayer, _pump_pct_1ms, AC_SPRAYER_DEFAULT_PUMP_RATE),
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: PUMP_MIN
     // @DisplayName: Pump speed minimum
     // @Description: Minimum pump speed expressed as a percentage
-    // @Units: percentage
+    // @Units: %
     // @Range: 0 100
     // @User: Standard
     AP_GROUPINFO("PUMP_MIN",   4, AC_Sprayer, _pump_min_pct, AC_SPRAYER_DEFAULT_PUMP_MIN),
@@ -152,7 +152,7 @@ AC_Sprayer::update()
         _speed_over_min_time = 0;
     }
 
-    // if testing pump output speed as if travelling at 1m/s
+    // if testing pump output speed as if traveling at 1m/s
     if (_flags.testing) {
         ground_speed = 100.0f;
         should_be_spraying = true;

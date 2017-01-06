@@ -64,7 +64,7 @@ Copter::Copter(void) :
     auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
     yaw_look_at_WP_bearing(0.0f),
     yaw_look_at_heading(0),
-    yaw_look_at_heading_slew(0),
+    yaw_look_at_heading_slew_cdps(0),
     yaw_look_ahead_bearing(0.0f),
     condition_value(0),
     condition_start(0),

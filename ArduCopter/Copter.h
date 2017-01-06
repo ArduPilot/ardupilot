@@ -471,8 +471,8 @@ private:
     // yaw used for YAW_LOOK_AT_HEADING yaw_mode
     int32_t yaw_look_at_heading;
 
-    // Deg/s we should turn
-    int16_t yaw_look_at_heading_slew;
+    // centi-degrees / sec we should turn
+    int16_t yaw_look_at_heading_slew_cdps;
 
     // heading when in yaw_look_ahead_bearing
     float yaw_look_ahead_bearing;
