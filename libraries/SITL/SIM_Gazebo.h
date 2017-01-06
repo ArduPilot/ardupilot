@@ -54,7 +54,7 @@ private:
       reply packet sent from Gazebo to ArduPilot
      */
     struct fdm_packet {
-      double timestamp;
+      double timestamp;  // in seconds
       double imu_angular_velocity_rpy[3];
       double imu_linear_acceleration_xyz[3];
       double imu_orientation_quat[4];
