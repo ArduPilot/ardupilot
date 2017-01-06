@@ -1,6 +1,6 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.4.4-rc1 21-Dec-2016
+Copter 3.4.4 06-Jan-2017 / Copter 3.4.4-rc1 21-Dec-2016
 Changes from 3.4.3
 1) Bug Fixes / Minor Enhancements:
     a) prevent unwanted EKF core switching at startup
