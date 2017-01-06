@@ -88,6 +88,11 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
         send_servos(input);
     }
 
+    double deltat = pkt.timestamp - last_timestamp;  // in seconds
+    if (deltat < 0) {  // don't use old paquet
+        time_now_us += 1;
+        return;
+    }
     // get imu stuff
     accel_body = Vector3f(static_cast<float>(pkt.imu_linear_acceleration_xyz[0]),
                           static_cast<float>(pkt.imu_linear_acceleration_xyz[1]),
@@ -114,7 +119,6 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
 
 
     // auto-adjust to simulation frame rate
-    double deltat = pkt.timestamp - last_timestamp;
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
     if (deltat < 0.01 && deltat > 0) {
@@ -122,18 +126,11 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
     }
     last_timestamp = pkt.timestamp;
 
-    /* copied below from iris_ros.py */
-    /*
-    bearing = to_degrees(atan2(position.y, position.x));
-    distance = math.sqrt(self.position.x**2 + self.position.y**2)
-    (self.latitude, self.longitude) = util.gps_newpos(
-      self.home_latitude, self.home_longitude, bearing, distance)
-    self.altitude  = self.home_altitude - self.position.z
-    velocity_body = self.dcm.transposed() * self.velocity
-    self.accelerometer = self.accel_body.copy()
-    */
 }
 
+/*
+  Drain remaining data on the socket to prevent phase lag.
+ */
 void Gazebo::drain_sockets()
 {
     const uint16_t buflen = 1024;
