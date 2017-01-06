@@ -219,7 +219,7 @@ void AP_Proximity_LightWareSF40C::set_forward_direction()
     // set forward direction
     char request_str[15];
     int16_t yaw_corr = frontend.get_yaw_correction(state.instance);
-    sprintf(request_str, "#MBF,%d\r\n", (int)yaw_corr);
+    snprintf(request_str, sizeof(request_str), "#MBF,%d\r\n", (int)yaw_corr);
     uart->write(request_str);
 
     // request update on motor direction
@@ -283,7 +283,7 @@ bool AP_Proximity_LightWareSF40C::send_request_for_distance()
 
     // prepare request
     char request_str[15];
-    sprintf(request_str, "?TS,%d,%d\r\n", (int)(_sector_width_deg[_last_sector]), (int)(_sector_middle_deg[_last_sector]));
+    snprintf(request_str, sizeof(request_str), "?TS,%d,%d\r\n", (int)(_sector_width_deg[_last_sector]), (int)(_sector_middle_deg[_last_sector]));
     uart->write(request_str);
 
 
