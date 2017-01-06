@@ -475,7 +475,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: TERR_GRAD
     // @DisplayName: Maximum terrain gradient
-    // @Description: Specifies the maxium gradient of the terrain below the vehicle when it is using range finder as a height reference
+    // @Description: Specifies the maximum gradient of the terrain below the vehicle when it is using range finder as a height reference
     // @Range: 0 0.2
     // @Increment: 0.01
     // @User: Advanced
@@ -518,7 +518,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: ACC_BIAS_LIM
     // @DisplayName: Accelerometer bias limit
-    // @Description: The accelerometer bias state will be limited to +- this vlaue
+    // @Description: The accelerometer bias state will be limited to +- this value
     // @Range: 0.5 2.5
     // @Increment: 0.1
     // @User: Advanced
@@ -796,7 +796,7 @@ void NavEKF3::getVelNED(int8_t instance, Vector3f &vel)
     }
 }
 
-// Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+// Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF3::getPosDownDerivative(int8_t instance)
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
@@ -976,7 +976,7 @@ bool NavEKF3::getOriginLLH(struct Location &loc) const
 }
 
 // set the latitude and longitude and height used to set the NED origin
-// All NED positions calcualted by the filter will be relative to this location
+// All NED positions calculated by the filter will be relative to this location
 // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF3::setOriginLLH(struct Location &loc)
