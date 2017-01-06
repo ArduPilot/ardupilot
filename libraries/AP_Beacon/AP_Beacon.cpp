@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @Param: _ALT
     // @DisplayName: Beacon origin's altitude above sealevel in meters
     // @Description: Beacon origin's altitude above sealevel in meters
-    // @Units: meters
+    // @Units: m
     // @Increment: 1
     // @Range: 0 10000
     // @User: Advanced

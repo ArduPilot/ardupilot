@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: RSC Ramp Time
     // @Description: Time in seconds for the output to the main rotor's ESC to reach full speed
     // @Range: 0 60
-    // @Units: Seconds
+    // @Units: s
     // @User: Standard
     AP_GROUPINFO("RSC_RAMP_TIME", 10, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
 
@@ -102,7 +102,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: RSC Runup Time
     // @Description: Time in seconds for the main rotor to reach full speed.  Must be longer than RSC_RAMP_TIME
     // @Range: 0 60
-    // @Units: Seconds
+    // @Units: s
     // @User: Standard
     AP_GROUPINFO("RSC_RUNUP_TIME", 11, AP_MotorsHeli, _rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
 

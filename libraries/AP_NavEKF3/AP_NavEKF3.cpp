@@ -188,15 +188,15 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: ms
     AP_GROUPINFO("GPS_DELAY", 8, NavEKF3, _gpsDelay_ms, 220),
 
     // Height measurement parameters
 
     // @Param: ALT_SOURCE
+    // @DisplayName: Primary height source
     // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS. Setting 3 uses the range beacon data. NOTE - the EK2_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
     // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon
-    // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF3, _altSource, 0),
 
@@ -223,7 +223,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: ms
     AP_GROUPINFO("HGT_DELAY", 12, NavEKF3, _hgtDelay_ms, 60),
 
     // Magnetometer measurement parameters
@@ -324,7 +324,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: ms
     AP_GROUPINFO("FLOW_DELAY", 23, NavEKF3, _flowDelay_ms, FLOW_MEAS_DELAY),
 
     // State and Covariance Predition Parameters
@@ -411,7 +411,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This sets the amount of position variation that the EKF allows for when operating without external measurements (eg GPS or optical flow). Increasing this parameter makes the EKF attitude estimate less sensitive to vehicle manoeuvres but more sensitive to IMU errors.
     // @Range: 0.5 50.0
     // @User: Advanced
-    // @Units: m/s
+    // @Units: m
     AP_GROUPINFO("NOAID_M_NSE", 35, NavEKF3, _noaidHorizNoise, 10.0f),
 
     // @Param: LOG_MASK
@@ -429,7 +429,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
-    // @Units: gauss
+    // @Units: rad
     AP_GROUPINFO("YAW_M_NSE", 37, NavEKF3, _yawNoise, 0.5f),
 
     // @Param: YAW_I_GATE
@@ -446,6 +446,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 10 50
     // @Increment: 5
     // @User: Advanced
+    // @Units: cs
     AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF3, _tauVelPosOutput, 25),
 
     // @Param: MAGE_P_NSE
@@ -504,7 +505,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: msec
+    // @Units: ms
     AP_GROUPINFO("BCN_DELAY", 46, NavEKF3, _rngBcnDelay_ms, 50),
 
     // @Param: RNG_USE_SPD
@@ -513,7 +514,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 2.0 6.0
     // @Increment: 0.5
     // @User: Advanced
-    // @Units: m
+    // @Units: m/s
     AP_GROUPINFO("RNG_USE_SPD", 47, NavEKF3, _useRngSwSpd, 2.0f),
 
     // @Param: ACC_BIAS_LIM

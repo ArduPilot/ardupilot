@@ -78,7 +78,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Pilot takeoff altitude
     // @Description: Altitude that altitude control modes will climb to when a takeoff is triggered with the throttle stick.
     // @User: Standard
-    // @Units: Centimeters
+    // @Units: cm
     // @Range: 0.0 1000.0
     // @Increment: 10
     GSCALAR(pilot_takeoff_alt,  "PILOT_TKOFF_ALT",  PILOT_TKOFF_ALT_DEFAULT),
@@ -107,7 +107,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Telemetry startup delay
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
     // @User: Advanced
-    // @Units: seconds
+    // @Units: s
     // @Range: 0 30
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
@@ -123,7 +123,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: RTL_ALT
     // @DisplayName: RTL Altitude
     // @Description: The minimum relative altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
-    // @Units: Centimeters
+    // @Units: cm
     // @Range: 0 8000
     // @Increment: 1
     // @User: Standard
@@ -165,7 +165,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
     // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage then the copter will RTL
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", FS_BATT_VOLTAGE_DEFAULT),
@@ -209,7 +209,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: RTL_ALT_FINAL
     // @DisplayName: RTL Final Altitude
     // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission.  Set to zero to land.
-    // @Units: Centimeters
+    // @Units: cm
     // @Range: -1 1000
     // @Increment: 1
     // @User: Standard
@@ -218,7 +218,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: RTL_CLIMB_MIN
     // @DisplayName: RTL minimum climb
     // @Description: The vehicle will climb this many cm during the initial climb portion of the RTL
-    // @Units: Centimeters
+    // @Units: cm
     // @Range: 0 3000
     // @Increment: 10
     // @User: Standard
@@ -261,7 +261,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: PILOT_VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
-    // @Units: Centimeters/Second
+    // @Units: cm/s
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -445,7 +445,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: DISARM_DELAY
     // @DisplayName: Disarm delay
     // @Description: Delay before automatic disarm in seconds. A value of zero disables auto disarm.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0 127
     // @User: Advanced
     GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),

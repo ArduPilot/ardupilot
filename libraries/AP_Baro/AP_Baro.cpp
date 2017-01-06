@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Param: ABS_PRESS
     // @DisplayName: Absolute Pressure
     // @Description: calibrated ground pressure in Pascals
-    // @Units: pascals
+    // @Units: Pa
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
@@ -66,7 +66,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Param: ALT_OFFSET
     // @DisplayName: altitude offset
     // @Description: altitude offset in meters added to barometric altitude. This is used to allow for automatic adjustment of the base barometric altitude by a ground station equipped with a barometer. The value is added to the barometric altitude read by the aircraft. It is automatically reset to 0 when the barometer is calibrated on each reboot or when a preflight calibration is performed.
-    // @Units: meters
+    // @Units: m
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("ALT_OFFSET", 5, AP_Baro, _alt_offset, 0),

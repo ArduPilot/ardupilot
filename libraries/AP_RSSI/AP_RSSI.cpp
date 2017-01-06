@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: PIN_LOW
     // @DisplayName: Receiver RSSI voltage low
     // @Description: This is the voltage value that the radio receiver will put on the RSSI_ANA_PIN when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_PIN_HIGH. 
-    // @Units: Volt
+    // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
     // @User: Standard
@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: PIN_HIGH
     // @DisplayName: Receiver RSSI voltage high
     // @Description: This is the voltage value that the radio receiver will put on the RSSI_ANA_PIN when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_PIN_LOW. 
-    // @Units: Volt
+    // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
     // @User: Standard
