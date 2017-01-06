@@ -57,7 +57,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: YAW_SLEW_TIME
     // @DisplayName: Time for yaw to slew through its full range
     // @Description: This controls how rapidly the tracker will change the servo output for yaw. It is set as the number of seconds to do a full rotation. You can use this parameter to slow the trackers movements, which may help with some types of trackers. A value of zero will allow for unlimited servo movement per update.
-    // @Units: seconds
+    // @Units: s
     // @Increment: 0.1
     // @Range: 0 20
     // @User: Standard
@@ -66,7 +66,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH_SLEW_TIME
     // @DisplayName: Time for pitch to slew through its full range
     // @Description: This controls how rapidly the tracker will change the servo output for pitch. It is set as the number of seconds to do a full range of pitch movement. You can use this parameter to slow the trackers movements, which may help with some types of trackers. A value of zero will allow for unlimited servo movement per update.
-    // @Units: seconds
+    // @Units: s
     // @Increment: 0.1
     // @Range: 0 20
     // @User: Standard
@@ -84,7 +84,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: MIN_REVERSE_TIME
     // @DisplayName: Minimum time to apply a yaw reversal
     // @Description: When the tracker detects it has reached the limit of servo movement in yaw it will reverse and try moving to the other extreme of yaw. This parameter controls the minimum time it should reverse for. It is used to cope with trackers that have a significant lag in movement to ensure they do move all the way around.
-    // @Units: seconds
+    // @Units: s
     // @Increment: 1
     // @Range: 0 20
     // @User: Standard
@@ -111,7 +111,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: STARTUP_DELAY
     // @DisplayName: Delay before first servo movement from trim
     // @Description: This parameter can be used to force the servos to their trim value for a time on startup. This can help with some servo types
-    // @Units: seconds
+    // @Units: s
     // @Increment: 0.1
     // @Range: 0 10
     // @User: Standard
@@ -152,7 +152,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: ONOFF_YAW_MINT
     // @DisplayName: Yaw minimum movement time
     // @Description: Minimum amount of time in seconds to move in yaw
-    // @Units: seconds
+    // @Units: s
     // @Increment: 0.01
     // @Range: 0 2
     // @User: Standard
@@ -161,7 +161,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: ONOFF_PITCH_MINT
     // @DisplayName: Pitch minimum movement time
     // @Description: Minimim amount of time in seconds to move in pitch
-    // @Units: seconds
+    // @Units: s
     // @Increment: 0.01
     // @Range: 0 2
     // @User: Standard
@@ -197,7 +197,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: DISTANCE_MIN
     // @DisplayName: Distance minimum to target
     // @Description: Tracker will track targets at least this distance away
-    // @Units: meters
+    // @Units: m
     // @Increment: 1
     // @Range: 0 100
     // @User: Standard

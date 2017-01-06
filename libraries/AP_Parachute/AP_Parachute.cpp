@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @DisplayName: Parachute min altitude in meters above home
     // @Description: Parachute min altitude above home.  Parachute will not be released below this altitude.  0 to disable alt check.
     // @Range: 0 32000
-    // @Units: Meters
+    // @Units: m
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("ALT_MIN", 4, AP_Parachute, _alt_min, AP_PARACHUTE_ALT_MIN_DEFAULT),
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @DisplayName: Parachute release delay
     // @Description: Delay in millseconds between motor stop and chute release
     // @Range: 0 5000
-    // @Units: Milliseconds
+    // @Units: ms
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("DELAY_MS", 5, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),

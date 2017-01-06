@@ -115,7 +115,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
-    // @Units: Centimeters/Second
+    // @Units: cm/s
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard

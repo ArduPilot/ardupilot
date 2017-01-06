@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Param: DURATION
     // @DisplayName: Duration that shutter is held open
     // @Description: How long the shutter will be held open in 10ths of a second (i.e. enter 10 for 1second, 50 for 5seconds)
-    // @Units: seconds
+    // @Units: s
     // @Range: 0 50
     // @User: Standard
     AP_GROUPINFO("DURATION",    1, AP_Camera, _trigger_duration, AP_CAMERA_TRIGGER_DEFAULT_DURATION),
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @DisplayName: Camera trigger distance
     // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the GPS position changes by this number of meters regardless of what mode the APM is in. Note that this parameter can also be set in an auto mission using the DO_SET_CAM_TRIGG_DIST command, allowing you to enable/disable the triggering of the camera during the flight.
     // @User: Standard
-    // @Units: meters
+    // @Units: m
     // @Range: 0 1000
     AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
 
@@ -66,7 +66,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @DisplayName: Minimum time between photos
     // @Description: Postpone shooting if previous picture was taken less than preset time(ms) ago.
     // @User: Standard
-    // @Units: milliseconds
+    // @Units: ms
     // @Range: 0 10000
     AP_GROUPINFO("MIN_INTERVAL",  6, AP_Camera, _min_interval, 0),
 

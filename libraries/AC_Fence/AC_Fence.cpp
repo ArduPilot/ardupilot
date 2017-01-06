@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: ALT_MAX
     // @DisplayName: Fence Maximum Altitude
     // @Description: Maximum altitude allowed before geofence triggers
-    // @Units: Meters
+    // @Units: m
     // @Range: 10 1000
     // @Increment: 1
     // @User: Standard
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: RADIUS
     // @DisplayName: Circular Fence Radius
     // @Description: Circle fence radius which when breached will cause an RTL
-    // @Units: Meters
+    // @Units: m
     // @Range: 30 10000
     // @User: Standard
     AP_GROUPINFO("RADIUS",      4,  AC_Fence,   _circle_radius, AC_FENCE_CIRCLE_RADIUS_DEFAULT),
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: MARGIN
     // @DisplayName: Fence Margin
     // @Description: Distance that autopilot's should maintain from the fence to avoid a breach
-    // @Units: Meters
+    // @Units: m
     // @Range: 1 10
     // @User: Standard
     AP_GROUPINFO("MARGIN",      5,  AC_Fence,   _margin, AC_FENCE_MARGIN_DEFAULT),

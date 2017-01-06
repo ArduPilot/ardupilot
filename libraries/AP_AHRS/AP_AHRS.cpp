@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_X
     // @DisplayName: AHRS Trim Roll
     // @Description: Compensates for the roll angle difference between the control board and the frame. Positive values make the vehicle roll right.
-    // @Units: Radians
+    // @Units: rad
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Standard
@@ -75,7 +75,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_Y
     // @DisplayName: AHRS Trim Pitch
     // @Description: Compensates for the pitch angle difference between the control board and the frame. Positive values make the vehicle pitch up/back.
-    // @Units: Radians
+    // @Units: rad
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Standard
@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_Z
     // @DisplayName: AHRS Trim Yaw
     // @Description: Not Used
-    // @Units: Radians
+    // @Units: rad
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Advanced

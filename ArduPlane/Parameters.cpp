@@ -64,7 +64,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Telemetry startup delay 
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
     // @User: Standard
-    // @Units: seconds
+    // @Units: s
     // @Range: 0 30
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
@@ -106,7 +106,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: This controls the minimum altitude change for a waypoint before a glide slope will be used instead of an immediate altitude change. The default value is 15 meters, which helps to smooth out waypoint missions where small altitude changes happen near waypoints. If you don't want glide slopes to be used in missions then you can set this to zero, which will disable glide slope calculations. Otherwise you can set it to a minimum number of meters of altitude error to the destination waypoint before a glide slope will be used to change altitude.
     // @Range: 0 1000
     // @Increment: 1
-    // @Units: meters
+    // @Units: m
     // @User: Advanced
     GSCALAR(glide_slope_min, "GLIDE_SLOPE_MIN", 15),
 
@@ -115,7 +115,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: This controls the height above the glide slope the plane may be before rebuilding a glide slope. This is useful for smoothing out an autotakeoff
     // @Range: 0 100
     // @Increment: 1
-    // @Units: meters
+    // @Units: m
     // @User: Advanced
     GSCALAR(glide_slope_threshold, "GLIDE_SLOPE_THR", 5.0),
 
@@ -163,7 +163,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_TDRAG_ELEV
     // @DisplayName: Takeoff tail dragger elevator
     // @Description: This parameter sets the amount of elevator to apply during the initial stage of a takeoff. It is used to hold the tail wheel of a taildragger on the ground during the initial takeoff stage to give maximum steering. This option should be combined with the TKOFF_TDRAG_SPD1 option and the GROUND_STEER_ALT option along with tuning of the ground steering controller. A value of zero means to bypass the initial "tail hold" stage of takeoff. Set to zero for hand and catapult launch. For tail-draggers you should normally set this to 100, meaning full up elevator during the initial stage of takeoff. For most tricycle undercarriage aircraft a value of zero will work well, but for some tricycle aircraft a small negative value (say around -20 to -30) will apply down elevator which will hold the nose wheel firmly on the ground during initial acceleration. Only use a negative value if you find that the nosewheel doesn't grip well during takeoff. Too much down elevator on a tricycle undercarriage may cause instability in steering as the plane pivots around the nosewheel. Add down elevator 10 percent at a time.
-    // @Units: Percent
+    // @Units: %
     // @Range: -100 100
     // @Increment: 1
     // @User: User
@@ -199,7 +199,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_PLIM_SEC
     // @DisplayName: Takeoff pitch limit reduction
     // @Description: This parameter reduces the pitch minimum limit of an auto-takeoff just a few seconds before it reaches the target altitude. This reduces overshoot by allowing the flight controller to start leveling off a few seconds before reaching the target height. When set to zero, the mission pitch min is enforced all the way to and through the target altitude, otherwise the pitch min slowly reduces to zero in the final segment. This is the pitch_min, not the demand. The flight controller should still be commanding to gain altitude to finish the takeoff but with this param it is not forcing it higher than it wants to be.
-    // @Units: seconds
+    // @Units: s
     // @Range: 0 10
     // @Increment: 0.5
     // @User: Advanced
@@ -209,7 +209,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Takeoff flap percentage
     // @Description: The amount of flaps (as a percentage) to apply in automatic takeoff
     // @Range: 0 100
-    // @Units: Percent
+    // @Units: %
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
@@ -261,7 +261,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: ALT_OFFSET
     // @DisplayName: Altitude offset
     // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission
-    // @Units: Meters
+    // @Units: m
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Advanced
@@ -270,7 +270,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: WP_RADIUS
     // @DisplayName: Waypoint Radius
     // @Description: Defines the maximum distance from a waypoint that when crossed indicates the waypoint may be complete. To avoid the aircraft looping around the waypoint in case it misses by more than the WP_RADIUS an additional check is made to see if the aircraft has crossed a "finish line" passing through the waypoint and perpendicular to the flight path from the previous waypoint. If that finish line is crossed then the waypoint is considered complete. Note that the navigation controller may decide to turn later than WP_RADIUS before a waypoint, based on how sharp the turn is and the speed of the aircraft. It is safe to set WP_RADIUS much larger than the usual turn radius of your aircraft and the navigation controller will work out when to turn. If you set WP_RADIUS too small then you will tend to overshoot the turns.
-    // @Units: Meters
+    // @Units: m
     // @Range: 1 32767
     // @Increment: 1
     // @User: Standard
@@ -279,7 +279,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: WP_MAX_RADIUS
     // @DisplayName: Waypoint Maximum Radius
     // @Description: Sets the maximum distance to a waypoint for the waypoint to be considered complete. This overrides the "cross the finish line" logic that is normally used to consider a waypoint complete. For normal AUTO behaviour this parameter should be set to zero. Using a non-zero value is only recommended when it is critical that the aircraft does approach within the given radius, and should loop around until it has done so. This can cause the aircraft to loop forever if its turn radius is greater than the maximum radius set.
-    // @Units: Meters
+    // @Units: m
     // @Range: 0 32767
     // @Increment: 1
     // @User: Standard
@@ -288,7 +288,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: WP_LOITER_RAD
     // @DisplayName: Waypoint Loiter Radius
     // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise.
-    // @Units: Meters
+    // @Units: m
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Standard
@@ -297,7 +297,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: RTL_RADIUS
     // @DisplayName: RTL loiter radius
     // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used.
-    // @Units: Meters
+    // @Units: m
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Standard
@@ -326,7 +326,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FENCE_MINALT
     // @DisplayName: Fence Minimum Altitude
     // @Description: Minimum altitude allowed before geofence triggers
-    // @Units: meters
+    // @Units: m
     // @Range: 0 32767
     // @Increment: 1
     // @User: Standard
@@ -335,7 +335,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FENCE_MAXALT
     // @DisplayName: Fence Maximum Altitude
     // @Description: Maximum altitude allowed before geofence triggers
-    // @Units: meters
+    // @Units: m
     // @Range: 0 32767
     // @Increment: 1
     // @User: Standard
@@ -344,7 +344,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FENCE_RETALT
     // @DisplayName: Fence Return Altitude
     // @Description: Altitude the aircraft will transit to when a fence breach occurs.  If FENCE_RETALT is <= 0 then the midpoint between FENCE_MAXALT and FENCE_MINALT is used, unless FENCE_MAXALT < FENCE_MINALT.  If FENCE_MAXALT < FENCE_MINALT AND FENCE_RETALT is <= 0 then ALT_HOLD_RTL is the altitude used on a fence breach.
-    // @Units: meters
+    // @Units: m
     // @Range: 0 32767
     // @Increment: 1
     // @User: Standard
@@ -409,7 +409,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Terrain lookahead
     // @Description: This controls how far ahead the terrain following code looks to ensure it stays above upcoming terrain. A value of zero means no lookahead, so the controller will track only the terrain directly below the aircraft. The lookahead will never extend beyond the next waypoint when in AUTO mode.
     // @Range: 0 10000
-    // @Units: meters
+    // @Units: m
     // @User: Standard
     GSCALAR(terrain_lookahead, "TERRAIN_LOOKAHD",  2000),
 #endif
@@ -426,7 +426,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
     // @Description: The minimum throttle setting (as a percentage) which the autopilot will apply. For the final stage of an automatic landing this is always zero. If your ESC supports reverse, use a negative value to configure for reverse thrust.
-    // @Units: Percent
+    // @Units: %
     // @Range: -100 100
     // @Increment: 1
     // @User: Standard
@@ -435,7 +435,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
     // @Description: The maximum throttle setting (as a percentage) which the autopilot will apply.
-    // @Units: Percent
+    // @Units: %
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -444,7 +444,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_THR_MAX
     // @DisplayName: Maximum Throttle for takeoff
     // @Description: The maximum throttle setting during automatic takeoff. If this is zero then THR_MAX is used for takeoff as well.
-    // @Units: Percent
+    // @Units: %
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
@@ -453,7 +453,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate
     // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second.
-    // @Units: Percent
+    // @Units: %/s
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
@@ -462,7 +462,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FLAP_SLEWRATE
     // @DisplayName: Flap slew rate
     // @Description: maximum percentage change in flap output per second. A setting of 25 means to not change the flap by more than 25% of the full flap range in one second. A value of 0 means no rate limiting.
-    // @Units: Percent
+    // @Units: %/s
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
@@ -501,7 +501,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TRIM_THROTTLE
     // @DisplayName: Throttle cruise percentage
     // @Description: The target percentage of throttle to apply for normal flight
-    // @Units: Percent
+    // @Units: %
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -524,7 +524,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FS_SHORT_TIMEOUT
     // @DisplayName: Short failsafe timeout
     // @Description: The time in seconds that a failsafe condition has to persist before a short failsafe event will occur. This defaults to 1.5 seconds
-    // @Units: seconds
+    // @Units: s
     // @Range: 1 100
     // @Increment: 0.5
     // @User: Standard
@@ -540,7 +540,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FS_LONG_TIMEOUT
     // @DisplayName: Long failsafe timeout
     // @Description: The time in seconds that a failsafe condition has to persist before a long failsafe event will occur. This defaults to 5 seconds.
-    // @Units: seconds
+    // @Units: s
     // @Range: 1 300
     // @Increment: 0.5
     // @User: Standard
@@ -549,7 +549,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
     // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage continuously for 10 seconds then the plane will switch to RTL mode.
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", 0),
@@ -679,7 +679,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: GROUND_STEER_ALT
     // @DisplayName: Ground steer altitude
     // @Description: Altitude at which to use the ground steering controller on the rudder. If non-zero then the STEER2SRV controller will be used to control the rudder for altitudes within this limit of the home altitude.
-    // @Units: Meters
+    // @Units: m
     // @Range: -100 100
     // @Increment: 0.1
     // @User: Standard
@@ -831,14 +831,14 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: ALT_HOLD_RTL
     // @DisplayName: RTL altitude
     // @Description: Return to launch target altitude. This is the relative altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL. Note that when transiting to a Rally Point the altitude of the Rally Point is used instead of ALT_HOLD_RTL.
-    // @Units: centimeters
+    // @Units: cm
     // @User: User
     GSCALAR(RTL_altitude_cm,        "ALT_HOLD_RTL",   ALT_HOLD_HOME_CM),
 
     // @Param: ALT_HOLD_FBWCM
     // @DisplayName: Minimum altitude for FBWB mode
     // @Description: This is the minimum altitude in centimeters that FBWB and CRUISE modes will allow. If you attempt to descend below this altitude then the plane will level off. A value of zero means no limit.
-    // @Units: centimeters
+    // @Units: cm
     // @User: User
     GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
 
@@ -866,7 +866,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Flap 1 percentage
     // @Description: The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps
     // @Range: 0 100
-    // @Units: Percent
+    // @Units: %
     // @User: Advanced
     GSCALAR(flap_1_percent,         "FLAP_1_PERCNT",  FLAP_1_PERCENT),
 
@@ -883,7 +883,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Flap 2 percentage
     // @Description: The percentage change in flap position when FLAP_2_SPEED is reached. Use zero to disable flaps
     // @Range: 0 100
-	// @Units: Percent
+	// @Units: %
     // @User: Advanced
     GSCALAR(flap_2_percent,         "FLAP_2_PERCNT",  FLAP_2_PERCENT),
 

@@ -175,7 +175,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _LEAD_RLL
     // @DisplayName: Roll stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate, compensating for servo delay. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -184,7 +184,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _LEAD_PTCH
     // @DisplayName: Pitch stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -367,7 +367,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_LEAD_RLL
     // @DisplayName: Mount2's Roll stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate, compensating for servo delay. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -376,7 +376,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_LEAD_PTCH
     // @DisplayName: Mount2's Pitch stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard

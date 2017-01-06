@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: MIN_VOLT
     // @DisplayName: Minimum arming voltage on the first battery
     // @Description: The minimum voltage on the first battery to arm, 0 disabes the check
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.1 
     // @User: Standard
     AP_GROUPINFO("MIN_VOLT",      4,     AP_Arming,  _min_voltage[0],  0),
@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: MIN_VOLT2
     // @DisplayName: Minimum arming voltage on the second battery
     // @Description: The minimum voltage on the first battery to arm, 0 disabes the check
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.1 
     // @User: Standard
     AP_GROUPINFO("MIN_VOLT2",     5,     AP_Arming,  _min_voltage[1],  0),
