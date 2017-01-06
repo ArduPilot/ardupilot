@@ -639,7 +639,7 @@ void AP_ADSB::set_callsign(const char* str, const bool append_icao)
     } // for i
 
     if (append_icao) {
-        sprintf(&out_state.cfg.callsign[4], "%04X", out_state.cfg.ICAO_id % 0x10000);
+        snprintf(&out_state.cfg.callsign[4], 5, "%04X", out_state.cfg.ICAO_id % 0x10000);
     }
 }
 
