@@ -5,13 +5,19 @@
  */
 void Rover::set_control_channels(void)
 {
-    channel_steer    = RC_Channel::rc_channel(rcmap.roll()-1);
-    channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
-    channel_learn    = RC_Channel::rc_channel(g.learn_channel-1);
+    channel_steer    = RC_Channels::rc_channel(rcmap.roll()-1);
+    channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
+    channel_learn    = RC_Channels::rc_channel(g.learn_channel-1);
 
+    SRV_Channels::set_default_function(CH_1, SRV_Channel::k_steering);
+    SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttle);
+    
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
     channel_throttle->set_angle(100);
+
+    SRV_Channels::set_angle(SRV_Channel::k_steering, SERVO_MAX);
+    SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
 
     // For a rover safety is TRIM throttle
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
@@ -37,20 +43,10 @@ void Rover::init_rc_in()
 
 void Rover::init_rc_out()
 {
-    RC_Channel::rc_channel(CH_1)->enable_out();
-    RC_Channel::rc_channel(CH_3)->enable_out();
-
-    if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
-        channel_throttle->enable_out();
-        if (g.skid_steer_out) {
-            channel_steer->enable_out();
-        }
-    }
-
-    RC_Channel::output_trim_all();
+    SRV_Channels::output_trim_all();
 
     // setup PWM values to send if the FMU firmware dies
-    RC_Channel::setup_failsafe_trim_all();
+    SRV_Channels::setup_failsafe_trim_all();
 
     // output throttle trim when safety off if arming
     // is setup for min on disarm.  MIN is from plane where MIN is effectively no throttle.
@@ -134,17 +130,17 @@ void Rover::read_radio()
 
     failsafe.last_valid_rc_ms = AP_HAL::millis();
 
-    RC_Channel::set_pwm_all();
+    RC_Channels::set_pwm_all();
 
     control_failsafe(channel_throttle->get_radio_in());
 
-    channel_throttle->set_servo_out(channel_throttle->get_control_in());
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,channel_throttle->get_control_in());
 
     // Check if the throttle value is above 50% and we need to nudge
     // Make sure its above 50% in the direction we are travelling
-    if ((abs(channel_throttle->get_servo_out()) > 50) &&
-        (((channel_throttle->get_servo_out() < 0) && in_reverse) ||
-         ((channel_throttle->get_servo_out() > 0) && !in_reverse))) {
+    if ((abs(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)) > 50) &&
+        (((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) && in_reverse) ||
+         ((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 0) && !in_reverse))) {
             throttle_nudge = (g.throttle_max - g.throttle_cruise) *
                 ((fabsf(channel_throttle->norm_input())-0.5f) / 0.5f);
     } else {

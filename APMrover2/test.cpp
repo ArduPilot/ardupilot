@@ -7,8 +7,6 @@
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Common for implementation details
 static const struct Menu::command test_menu_commands[] = {
-    {"pwm",             MENU_FUNC(test_radio_pwm)},
-    {"radio",           MENU_FUNC(test_radio)},
     {"passthru",        MENU_FUNC(test_passthru)},
     {"failsafe",        MENU_FUNC(test_failsafe)},
     {"relay",           MENU_FUNC(test_relay)},
@@ -42,35 +40,6 @@ void Rover::print_hit_enter()
     cliSerial->printf("Hit Enter to exit.\n\n");
 }
 
-int8_t Rover::test_radio_pwm(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    delay(1000);
-
-    while (1) {
-        delay(20);
-
-        // Filters radio input - adjust filters in the radio.cpp file
-        // ----------------------------------------------------------
-        read_radio();
-
-        cliSerial->printf("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
-                            channel_steer->get_radio_in(),
-                            g.rc_2.get_radio_in(),
-                            channel_throttle->get_radio_in(),
-                            g.rc_4.get_radio_in(),
-                            g.rc_5.get_radio_in(),
-                            g.rc_6.get_radio_in(),
-                            g.rc_7.get_radio_in(),
-                            g.rc_8.get_radio_in());
-
-        if (cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-
-
 int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
@@ -96,41 +65,6 @@ int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-int8_t Rover::test_radio(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    delay(1000);
-
-    // read the radio to set trims
-    // ---------------------------
-    trim_radio();
-
-    while (1) {
-        delay(20);
-        read_radio();
-
-        channel_steer->calc_pwm();
-        channel_throttle->calc_pwm();
-
-        // write out the servo PWM values
-        // ------------------------------
-        set_servos();
-
-        cliSerial->printf("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
-                            channel_steer->get_control_in(),
-                            g.rc_2.get_control_in(),
-                            channel_throttle->get_control_in(),
-                            g.rc_4.get_control_in(),
-                            g.rc_5.get_control_in(),
-                            g.rc_6.get_control_in(),
-                            g.rc_7.get_control_in(),
-                            g.rc_8.get_control_in());
-
-        if (cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
 
 int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
