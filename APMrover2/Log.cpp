@@ -238,10 +238,10 @@ void Rover::Log_Write_Control_Tuning()
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
         time_us         : AP_HAL::micros64(),
-        steer_out       : (int16_t)channel_steer->get_servo_out(),
+        steer_out       : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_steering),
         roll            : (int16_t)ahrs.roll_sensor,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        throttle_out    : (int16_t)channel_throttle->get_servo_out(),
+        throttle_out    : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
         accel_y         : accel.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -268,7 +268,7 @@ void Rover::Log_Write_Nav_Tuning()
         wp_distance         : wp_distance,
         target_bearing_cd   : (uint16_t)nav_controller->target_bearing_cd(),
         nav_bearing_cd      : (uint16_t)nav_controller->nav_bearing_cd(),
-        throttle            : (int8_t)(100 * channel_throttle->norm_output()),
+        throttle            : (int8_t)(100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle)),
         xtrack_error        : nav_controller->crosstrack_error()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -326,7 +326,7 @@ void Rover::Log_Write_Sonar()
         turn_angle      : (int8_t)obstacle.turn_angle,
         turn_time       : turn_time,
         ground_speed    : (uint16_t)(ground_speed*100),
-        throttle        : (int8_t)(100 * channel_throttle->norm_output())
+        throttle        : (int8_t)(100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle))
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }

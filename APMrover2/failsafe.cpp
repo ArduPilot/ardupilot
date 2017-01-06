@@ -46,7 +46,7 @@ void Rover::failsafe_check()
         for (uint8_t ch=start_ch; ch < 4; ch++) {
             hal.rcout->write(ch, hal.rcin->read(ch));
         }
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);
+        SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);
     }
 }
 

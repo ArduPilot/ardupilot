@@ -33,8 +33,8 @@ public:
         k_param_relay,
         k_param_BoardConfig,
         k_param_pivot_turn_angle,
-        k_param_rc_13,
-        k_param_rc_14,
+        k_param_rc_13_old,
+        k_param_rc_14_old,
 
         // IO pins
         k_param_rssi_pin = 20,  // unused, replaced by rssi_ library parameters
@@ -113,14 +113,14 @@ public:
         //
         // 160: Radio settings
         //
-        k_param_rc_1 = 160,
-        k_param_rc_2,
-        k_param_rc_3,
-        k_param_rc_4,
-        k_param_rc_5,
-        k_param_rc_6,
-        k_param_rc_7,
-        k_param_rc_8,
+        k_param_rc_1_old = 160,
+        k_param_rc_2_old,
+        k_param_rc_3_old,
+        k_param_rc_4_old,
+        k_param_rc_5_old,
+        k_param_rc_6_old,
+        k_param_rc_7_old,
+        k_param_rc_8_old,
 
         // throttle control
         k_param_throttle_min = 170,
@@ -182,10 +182,10 @@ public:
         k_param_pidSpeedThrottle,
 
         // high RC channels
-        k_param_rc_9 = 235,
-        k_param_rc_10,
-        k_param_rc_11,
-        k_param_rc_12,
+        k_param_rc_9_old = 235,
+        k_param_rc_10_old,
+        k_param_rc_11_old,
+        k_param_rc_12_old,
 
         // other objects
         k_param_sitl = 240,
@@ -242,22 +242,6 @@ public:
     AP_Int16    pivot_turn_angle;
     AP_Int16    gcs_pid_mask;
 
-    // RC channels
-    RC_Channel      rc_1;
-    RC_Channel_aux  rc_2;
-    RC_Channel      rc_3;
-    RC_Channel_aux  rc_4;
-    RC_Channel_aux  rc_5;
-    RC_Channel_aux  rc_6;
-    RC_Channel_aux  rc_7;
-    RC_Channel_aux  rc_8;
-    RC_Channel_aux  rc_9;
-    RC_Channel_aux  rc_10;
-    RC_Channel_aux  rc_11;
-    RC_Channel_aux  rc_12;
-    RC_Channel_aux  rc_13;
-    RC_Channel_aux  rc_14;
-
     // Throttle
     //
     AP_Int8     throttle_min;
@@ -302,22 +286,6 @@ public:
     PID         pidSpeedThrottle;
 
     Parameters() :
-        // RC channels
-        rc_1(CH_1),
-        rc_2(CH_2),
-        rc_3(CH_3),
-        rc_4(CH_4),
-        rc_5(CH_5),
-        rc_6(CH_6),
-        rc_7(CH_7),
-        rc_8(CH_8),
-        rc_9(CH_9),
-        rc_10(CH_10),
-        rc_11(CH_11),
-        rc_12(CH_12),
-        rc_13(CH_13),
-        rc_14(CH_14),
-
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
         pidSpeedThrottle    (0.7,             0.2,             0.2,             4000)
@@ -329,7 +297,7 @@ public:
  */
 class ParametersG2 {
 public:
-    ParametersG2(void) { AP_Param::setup_object_defaults(this, var_info); }
+    ParametersG2(void);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -339,6 +307,12 @@ public:
 
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
+
+    // RC input channels
+    RC_Channels rc_channels;
+    
+    // control over servo output ranges
+    SRV_Channels servo_channels;
 };
 
 extern const AP_Param::Info var_info[];
