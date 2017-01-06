@@ -21,7 +21,7 @@ void Rover::crash_check()
   // TODO : Check if min vel can be calculated
   // min_vel = ( CRASH_CHECK_THROTTLE_MIN * g.speed_cruise) / g.throttle_cruise;
 
-  if ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN)|| ((100 * fabsf(channel_throttle->norm_output())) < CRASH_CHECK_THROTTLE_MIN)) {
+  if ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN)|| ((100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))) < CRASH_CHECK_THROTTLE_MIN)) {
     crash_counter = 0;
     return;
   }

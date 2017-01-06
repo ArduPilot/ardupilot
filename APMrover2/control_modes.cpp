@@ -140,7 +140,7 @@ bool Rover::motor_active()
 {
     // Check if armed and throttle is not neutral
     if (hal.util->get_soft_armed()) {
-        if (channel_throttle->get_servo_out() != channel_throttle->get_radio_trim()) {
+        if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != channel_throttle->get_radio_trim()) {
             return true;
         }
     }

@@ -300,7 +300,7 @@ void Rover::update_logging2(void)
  */
 void Rover::update_aux(void)
 {
-    RC_Channel_aux::enable_aux_servos();
+    SRV_Channels::enable_aux_servos();
 }
 
 /*
@@ -452,17 +452,18 @@ void Rover::update_current_mode(void)
         case Guided_WP:
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
-                if (channel_throttle->get_servo_out() != g.throttle_min.get()) {
+                if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != g.throttle_min.get()) {
                     gcs_send_mission_item_reached_message(0);
                 }
-                channel_throttle->set_servo_out(g.throttle_min.get());
-                channel_steer->set_servo_out(0);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,g.throttle_min.get());
+                SRV_Channels::set_output_scaled(SRV_Channel::k_steering,0);
                 lateral_acceleration = 0;
             } else {
                 calc_lateral_acceleration();
                 calc_nav_steer();
                 calc_throttle(g.speed_cruise);
-                Log_Write_GuidedTarget(guided_mode, Vector3f(guided_WP.lat, guided_WP.lng, guided_WP.alt), Vector3f(g.speed_cruise, channel_throttle->get_servo_out(), 0));
+                Log_Write_GuidedTarget(guided_mode, Vector3f(guided_WP.lat, guided_WP.lng, guided_WP.alt),
+                                       Vector3f(g.speed_cruise, SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0));
             }
             break;
 
@@ -510,18 +511,18 @@ void Rover::update_current_mode(void)
           we set the exact value in set_servos(), but it helps for
           logging
          */
-        channel_throttle->set_servo_out(channel_throttle->get_control_in());
-        channel_steer->set_servo_out(channel_steer->pwm_to_angle());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,channel_throttle->get_control_in());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering,channel_steer->pwm_to_angle());
 
         // mark us as in_reverse when using a negative throttle to
         // stop AHRS getting off
-        set_reverse(channel_throttle->get_servo_out() < 0);
+        set_reverse(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0);
         break;
 
     case HOLD:
         // hold position - stop motors and center steering
-        channel_throttle->set_servo_out(0);
-        channel_steer->set_servo_out(0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering,0);
         break;
 
     case INITIALISING:
@@ -548,7 +549,7 @@ void Rover::update_navigation()
         calc_lateral_acceleration();
         calc_nav_steer();
         if (verify_RTL()) {
-            channel_throttle->set_servo_out(g.throttle_min.get());
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,g.throttle_min.get());
             set_mode(HOLD);
         }
         break;
@@ -565,8 +566,8 @@ void Rover::update_navigation()
             calc_nav_steer();
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
-                channel_throttle->set_servo_out(g.throttle_min.get());
-                channel_steer->set_servo_out(0);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,g.throttle_min.get());
+                SRV_Channels::set_output_scaled(SRV_Channel::k_steering,0);
                 lateral_acceleration = 0;
             }
             break;

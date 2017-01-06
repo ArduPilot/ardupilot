@@ -510,9 +510,6 @@ bool Rover::arm_motors(AP_Arming::ArmingMethod method)
         return false;
     }
 
-    // only log if arming was successful
-    channel_throttle->enable_out();
-
     change_arm_state();
     return true;
 }
@@ -524,12 +521,6 @@ bool Rover::disarm_motors(void)
 {
     if (!arming.disarm()) {
         return false;
-    }
-    if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
-        channel_throttle->disable_out();
-        if (g.skid_steer_out) {
-            channel_steer->disable_out();
-        }
     }
     if (control_mode != AUTO) {
         // reset the mission on disarm if we are not in auto

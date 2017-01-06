@@ -92,6 +92,7 @@ class Rover : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Rover;
     friend class Parameters;
+    friend class ParametersG2;
     friend class AP_Arming;
 
     Rover(void);
