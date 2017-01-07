@@ -748,12 +748,10 @@ void Plane::update_flight_mode(void)
         break;
 
     case MANUAL:
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->pwm_to_angle());
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->pwm_to_angle());
-        steering_control.steering = steering_control.rudder = channel_rudder->pwm_to_angle();
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->get_control_in_zero_dz());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in_zero_dz());
+        steering_control.steering = steering_control.rudder = channel_rudder->get_control_in_zero_dz();
         break;
-        //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
-
 
     case QSTABILIZE:
     case QHOVER:
