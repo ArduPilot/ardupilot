@@ -537,6 +537,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         // acceptance radius in meters and pass by distance in meters
         uint16_t acp = packet.param2;           // param 2 is acceptance radius in meters is held in low p1
         uint16_t passby = packet.param3;        // param 3 is pass by distance in meters is held in high p1
+
+        // limit to 255 so it does not wrap during the shift or mask operation
+        passby = MIN(0xFF,passby);
+        acp = MIN(0xFF,acp);
+
         cmd.p1 = (passby << 8) | (acp & 0x00FF);
 #else
         // delay at waypoint in seconds (this is for copters???)
