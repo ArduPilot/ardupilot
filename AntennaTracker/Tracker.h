@@ -128,8 +128,8 @@ private:
     /**
        antenna control channels
     */
-    RC_Channel channel_yaw{CH_YAW};
-    RC_Channel channel_pitch{CH_PITCH};
+    RC_Channels rc_channels;
+    SRV_Channels servo_channels;
 
     LowPassFilterFloat yaw_servo_out_filt;
     LowPassFilterFloat pitch_servo_out_filt;

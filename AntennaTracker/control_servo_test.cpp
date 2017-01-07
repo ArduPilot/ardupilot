@@ -25,16 +25,19 @@ bool Tracker::servo_test_set_servo(uint8_t servo_num, uint16_t pwm)
 
     // set yaw servo pwm and send output to servo
     if (servo_num == CH_YAW) {
-        channel_yaw.set_radio_out(constrain_int16(pwm, channel_yaw.get_radio_min(), channel_yaw.get_radio_max()));
-        channel_yaw.output();
+        SRV_Channels::set_output_pwm(SRV_Channel::k_steering, pwm);
+        SRV_Channels::constrain_pwm(SRV_Channel::k_steering);
     }
 
     // set pitch servo pwm and send output to servo
     if (servo_num == CH_PITCH) {
-        channel_pitch.set_radio_out(constrain_int16(pwm, channel_pitch.get_radio_min(), channel_pitch.get_radio_max()));
-        channel_pitch.output();
+        SRV_Channels::set_output_pwm(SRV_Channel::k_elevator, pwm);
+        SRV_Channels::constrain_pwm(SRV_Channel::k_elevator);
     }
 
+    SRV_Channels::calc_pwm();
+    SRV_Channels::output_ch_all();
+    
     // return success
     return true;
 }
