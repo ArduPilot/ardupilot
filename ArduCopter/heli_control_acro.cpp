@@ -58,7 +58,7 @@ void Copter::heli_acro_run()
             // if the tail on a flybar heli has an external gyro then
             // also use no deadzone for the yaw control and
             // pass-through the input direct to output.
-            target_yaw = channel_yaw->pwm_to_angle_dz(0);
+            target_yaw = channel_yaw->get_control_in_zero_dz();
         }
 
         // run attitude controller
@@ -68,15 +68,15 @@ void Copter::heli_acro_run()
           for fly-bar passthrough use control_in values with no
           deadzone. This gives true pass-through.
          */
-        float roll_in = channel_roll->pwm_to_angle_dz(0);
-        float pitch_in = channel_pitch->pwm_to_angle_dz(0);
+        float roll_in = channel_roll->get_control_in_zero_dz();
+        float pitch_in = channel_pitch->get_control_in_zero_dz();
         float yaw_in;
         
         if (motors.supports_yaw_passthrough()) {
             // if the tail on a flybar heli has an external gyro then
             // also use no deadzone for the yaw control and
             // pass-through the input direct to output.
-            yaw_in = channel_yaw->pwm_to_angle_dz(0);
+            yaw_in = channel_yaw->get_control_in_zero_dz();
         } else {
             // if there is no external gyro then run the usual
             // ACRO_YAW_P gain on the input control, including
