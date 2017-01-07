@@ -40,15 +40,13 @@ public:
     // get the center stick position expressed as a control_in value
     int16_t     get_control_mid() const;
 
-    // read input from APM_RC - create a control_in value
+    // read input from hal.rcin - create a control_in value
     void        set_pwm(int16_t pwm);
     void        set_pwm_no_deadzone(int16_t pwm);
 
-    // call after first set_pwm
-    void        trim();
-
+    // calculate an angle given dead_zone and trim. This is used by the quadplane code
+    // for hover throttle
     int16_t     pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim);
-    int16_t     pwm_to_angle();
 
     /*
       return a normalised input for a channel, in range -1 to 1,
@@ -65,11 +63,16 @@ public:
     uint8_t     percent_input();
     int16_t     pwm_to_range();
     int16_t     pwm_to_range_dz(uint16_t dead_zone);
+
+    // read the input value from hal.rcin for this channel
     uint16_t    read() const;
+
+    // read input from hal.rcin and set as pwm input for channel
     void        input();
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // return true if input is within deadzone of trim
     bool       in_trim_dz();
 
     int16_t    get_radio_in() const { return radio_in;}
@@ -117,6 +120,7 @@ private:
     // the input channel this corresponds to
     uint8_t     ch_in;
 
+    int16_t pwm_to_angle();
     int16_t pwm_to_angle_dz(uint16_t dead_zone);
 };
 
