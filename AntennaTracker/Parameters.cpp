@@ -302,16 +302,12 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
-    // RC channel
-    //-----------
-    // @Group: RC1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GOBJECT(channel_yaw,       "RC1_", RC_Channel),
+    GOBJECT(rc_channels,     "RC", RC_Channels),
 
-    // @Group: RC2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GOBJECT(channel_pitch,     "RC2_", RC_Channel),
-
+    // @Path: ../libraries/SRV_Channel/SRV_Channel.cpp
+    GOBJECT(servo_channels,     "SERVO", SRV_Channels),
+    
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager,    "SERIAL",   AP_SerialManager),
