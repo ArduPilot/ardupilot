@@ -124,7 +124,7 @@ void Plane::stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
     ch_inf = MIN(ch_inf, 400.0f);
     ch_inf = ((400.0f - ch_inf) / 400.0f);
     servo_out *= ch_inf;
-    servo_out += channel->pwm_to_angle();
+    servo_out += channel->get_control_in();
 }
 
 /*
