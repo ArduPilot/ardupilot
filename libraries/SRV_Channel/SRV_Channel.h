@@ -110,9 +110,6 @@ public:
         SRV_CHANNEL_LIMIT_ZERO_PWM
     };
 
-    // a special scaled output value that is recognised as meaning no pwm output
-    static const int16_t ZERO_PWM = INT16_MIN;
-
     // set the output value as a pwm value
     void set_output_pwm(uint16_t pwm);
 
@@ -240,10 +237,6 @@ public:
     // call output_ch() on all channels
     static void output_ch_all(void);
 
-    // take current radio_out for first 4 channels and remap using
-    // servo ranges if enabled
-    void remap_servo_output(void);
-
     // setup output ESC scaling based on a channels MIN/MAX
     void set_esc_scaling_for(SRV_Channel::Aux_servo_function_t function);
 
@@ -313,9 +306,6 @@ public:
     // assign and enable auxiliary channels
     static void enable_aux_servos(void);
 
-    // prevent a channel from being used for auxiliary functions
-    static void disable_aux_channel(uint8_t channel);
-
     // return the current function for a channel
     static SRV_Channel::Aux_servo_function_t channel_function(uint8_t channel);
 
@@ -342,10 +332,6 @@ public:
         disabled_passthrough = disable;
     }
 
-    static bool passthrough_disabled(void) {
-        return disabled_passthrough;
-    }
-
     // constrain to output min/max for function
     static void constrain_pwm(SRV_Channel::Aux_servo_function_t function);
     
@@ -363,7 +349,7 @@ private:
 
     static bool disabled_passthrough;
 
-    uint16_t trimmed_mask;
+    SRV_Channel::servo_mask_t trimmed_mask;
 
     static Bitmask function_mask;
     static bool initialised;
@@ -382,6 +368,8 @@ private:
 
     AP_Int8 auto_trim;
 
-    // initialise parameters from RC_Channel
-    void initialise_parameters(void);
+    // return true if passthrough is disabled
+    static bool passthrough_disabled(void) {
+        return disabled_passthrough;
+    }
 };
