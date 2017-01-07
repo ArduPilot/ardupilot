@@ -34,7 +34,7 @@ void Plane::throttle_slew_limit(void)
     }
     // if slew limit rate is set to zero then do not slew limit
     if (slewrate) {                   
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, slewrate);
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, slewrate, G_Dt);
     }
 }
 
@@ -540,8 +540,8 @@ void Plane::set_servos_flaps(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_flap, manual_flap_percent);
 
     if (g.flap_slewrate) {
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_flap_auto, g.flap_slewrate);
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_flap, g.flap_slewrate);
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_flap_auto, g.flap_slewrate, G_Dt);
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_flap, g.flap_slewrate, G_Dt);
     }    
 
     if (g.flaperon_output != MIXING_DISABLED && g.elevon_output == MIXING_DISABLED && g.mix_mode == 0) {
