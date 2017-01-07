@@ -754,6 +754,9 @@ void Plane::servos_output(void)
 {
     hal.rcout->cork();
 
+    // the mixers need pwm to be calculated now
+    SRV_Channels::calc_pwm();
+    
     // run vtail and elevon mixers
     servo_output_mixers();
 
