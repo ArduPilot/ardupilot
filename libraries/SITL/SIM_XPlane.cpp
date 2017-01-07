@@ -79,10 +79,14 @@ void XPlane::select_data(uint64_t usel_mask, uint64_t sel_mask)
         uint32_t data[8] {};
     } usel;
     count = 0;
+
+    // only de-select an output once, so we don't fight the user
+    usel_mask &= ~unselected_mask;
+    unselected_mask |= usel_mask;
+
     for (uint8_t i=0; i<64 && count<8; i++) {
         if ((((uint64_t)1)<<i) & usel_mask) {
             usel.data[count++] = i;
-            printf("i=%u\n", (unsigned)i);
         }
     }
     if (count != 0) {
