@@ -542,11 +542,27 @@ float SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t function)
 }
 
 /*
-  limit slew rate for an output function to given rate in percent per second
+  limit slew rate for an output function to given rate in percent per
+  second. This assumes output has not yet done to the hal
  */
-void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate)
+void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt)
 {
-    // NOT IMPLEMENTED YET
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel &ch = channels[i];
+        if (ch.function == function) {
+            ch.calc_pwm(functions[function].output_scaled);
+            uint16_t last_pwm = hal.rcout->read(ch.ch_num);
+            if (last_pwm == ch.output_pwm) {
+                continue;
+            }
+            uint16_t max_change = (ch.get_output_max() - ch.get_output_min()) * slew_rate * dt * 0.01f;
+            if (max_change == 0) {
+                // always allow some change
+                max_change = 1;
+            }
+            ch.output_pwm = constrain_int16(ch.output_pwm, last_pwm-max_change, last_pwm+max_change);
+        }
+    }
 }
 
 // call set_angle() on matching channels

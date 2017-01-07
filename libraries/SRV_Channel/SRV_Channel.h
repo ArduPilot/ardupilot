@@ -203,6 +203,8 @@ private:
 */
 class SRV_Channels {
 public:
+    friend class SRV_Channel;
+    
     // constructor
     SRV_Channels(void);
 
@@ -232,7 +234,7 @@ public:
     static float get_output_norm(SRV_Channel::Aux_servo_function_t function);
 
     // limit slew rate to given limit in percent per second
-    static void limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate);
+    static void limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt);
 
     // call output_ch() on all channels
     static void output_ch_all(void);
