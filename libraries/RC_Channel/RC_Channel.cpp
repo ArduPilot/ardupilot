@@ -282,10 +282,10 @@ void RC_Channel::save_eeprom(void)
   the current radio_in value using the specified dead_zone
  */
 int16_t
-RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t trim)
+RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim)
 {
-    int16_t radio_trim_high = trim + _dead_zone;
-    int16_t radio_trim_low  = trim - _dead_zone;
+    int16_t radio_trim_high = _trim + _dead_zone;
+    int16_t radio_trim_low  = _trim - _dead_zone;
 
     // prevent div by 0
     if ((radio_trim_low - radio_min) == 0 || (radio_max - radio_trim_high) == 0)
