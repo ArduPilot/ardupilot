@@ -487,12 +487,12 @@ void Rover::update_current_mode(void)
         // constrain to user set TURN_MAX_G
         max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
 
-        lateral_acceleration = max_g_force * (channel_steer->pwm_to_angle()/4500.0f);
+        lateral_acceleration = max_g_force * (channel_steer->get_control_in()/4500.0f);
         calc_nav_steer();
 
         // and throttle gives speed in proportion to cruise speed, up
         // to 50% throttle, then uses nudging above that.
-        float target_speed = channel_throttle->pwm_to_angle() * 0.01f * 2 * g.speed_cruise;
+        float target_speed = channel_throttle->get_control_in() * 0.01f * 2 * g.speed_cruise;
         set_reverse(target_speed < 0);
         if (in_reverse) {
             target_speed = constrain_float(target_speed, -g.speed_cruise, 0);
@@ -512,7 +512,7 @@ void Rover::update_current_mode(void)
           logging
          */
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,channel_throttle->get_control_in());
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering,channel_steer->pwm_to_angle());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering,channel_steer->get_control_in());
 
         // mark us as in_reverse when using a negative throttle to
         // stop AHRS getting off
