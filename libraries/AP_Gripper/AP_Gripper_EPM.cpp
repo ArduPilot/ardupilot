@@ -55,7 +55,7 @@ void AP_Gripper_EPM::grab()
 #endif
     {
         // move the servo output to the grab position
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_gripper, config.grab_pwm);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.grab_pwm);
     }
 }
 
@@ -77,7 +77,7 @@ void AP_Gripper_EPM::release()
 #endif
     {
         // move the servo to the release position
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_gripper, config.release_pwm);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.release_pwm);
     }
 }
 
@@ -86,7 +86,7 @@ void AP_Gripper_EPM::neutral()
 {
     if (!should_use_uavcan()) {
         // move the servo to the off position
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_gripper, config.neutral_pwm);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.neutral_pwm);
     }
 }
 
