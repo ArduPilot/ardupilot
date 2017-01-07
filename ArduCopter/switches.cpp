@@ -19,11 +19,12 @@ void Copter::read_control_switch()
 
     // calculate position of flight mode switch
     int8_t switch_position;
-    if      (g.rc_5.get_radio_in() < 1231) switch_position = 0;
-    else if (g.rc_5.get_radio_in() < 1361) switch_position = 1;
-    else if (g.rc_5.get_radio_in() < 1491) switch_position = 2;
-    else if (g.rc_5.get_radio_in() < 1621) switch_position = 3;
-    else if (g.rc_5.get_radio_in() < 1750) switch_position = 4;
+    uint16_t rc5_in = RC_Channels::rc_channel(CH_5)->get_radio_in();
+    if      (rc5_in < 1231) switch_position = 0;
+    else if (rc5_in < 1361) switch_position = 1;
+    else if (rc5_in < 1491) switch_position = 2;
+    else if (rc5_in < 1621) switch_position = 3;
+    else if (rc5_in < 1750) switch_position = 4;
     else switch_position = 5;
 
     // store time that switch last moved
@@ -107,17 +108,18 @@ void Copter::reset_control_switch()
 }
 
 // read_3pos_switch
-uint8_t Copter::read_3pos_switch(int16_t radio_in)
+uint8_t Copter::read_3pos_switch(uint8_t chan)
 {
+    uint16_t radio_in = RC_Channels::rc_channel(chan)->get_radio_in();
     if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;      // switch is in low position
     if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;    // switch is in high position
     return AUX_SWITCH_MIDDLE;                                       // switch is in middle position
 }
 
 // can't take reference to a bitfield member, thus a #define:
-#define read_aux_switch(rc, flag, option)                           \
+#define read_aux_switch(chan, flag, option)                           \
     do {                                                            \
-        switch_position = read_3pos_switch(rc.get_radio_in());      \
+        switch_position = read_3pos_switch(chan); \
         if (flag != switch_position) {                              \
             flag = switch_position;                                 \
             do_aux_switch_function(option, flag);                   \
@@ -134,14 +136,14 @@ void Copter::read_aux_switches()
         return;
     }
 
-    read_aux_switch(g.rc_7, aux_con.CH7_flag, g.ch7_option);
-    read_aux_switch(g.rc_8, aux_con.CH8_flag, g.ch8_option);
-    read_aux_switch(g.rc_9, aux_con.CH9_flag, g.ch9_option);
-    read_aux_switch(g.rc_10, aux_con.CH10_flag, g.ch10_option);
-    read_aux_switch(g.rc_11, aux_con.CH11_flag, g.ch11_option);
+    read_aux_switch(CH_7, aux_con.CH7_flag, g.ch7_option);
+    read_aux_switch(CH_8, aux_con.CH8_flag, g.ch8_option);
+    read_aux_switch(CH_9, aux_con.CH9_flag, g.ch9_option);
+    read_aux_switch(CH_10, aux_con.CH10_flag, g.ch10_option);
+    read_aux_switch(CH_11, aux_con.CH11_flag, g.ch11_option);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    read_aux_switch(g.rc_12, aux_con.CH12_flag, g.ch12_option);
+    read_aux_switch(CH_12, aux_con.CH12_flag, g.ch12_option);
 #endif
 }
 
@@ -151,14 +153,14 @@ void Copter::read_aux_switches()
 void Copter::init_aux_switches()
 {
     // set the CH7 ~ CH12 flags
-    aux_con.CH7_flag = read_3pos_switch(g.rc_7.get_radio_in());
-    aux_con.CH8_flag = read_3pos_switch(g.rc_8.get_radio_in());
-    aux_con.CH10_flag = read_3pos_switch(g.rc_10.get_radio_in());
-    aux_con.CH11_flag = read_3pos_switch(g.rc_11.get_radio_in());
+    aux_con.CH7_flag = read_3pos_switch(CH_7);
+    aux_con.CH8_flag = read_3pos_switch(CH_8);
+    aux_con.CH10_flag = read_3pos_switch(CH_10);
+    aux_con.CH11_flag = read_3pos_switch(CH_11);
 
     // ch9, ch12 only supported on some boards
-    aux_con.CH9_flag = read_3pos_switch(g.rc_9.get_radio_in());
-    aux_con.CH12_flag = read_3pos_switch(g.rc_12.get_radio_in());
+    aux_con.CH9_flag = read_3pos_switch(CH_9);
+    aux_con.CH12_flag = read_3pos_switch(CH_12);
 
     // initialise functions assigned to switches
     init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
