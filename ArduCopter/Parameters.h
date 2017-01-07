@@ -113,8 +113,8 @@ public:
         k_param_rc_feel_rp,
         k_param_NavEKF,                 // deprecated - remove
         k_param_mission,                // mission library
-        k_param_rc_13,
-        k_param_rc_14,
+        k_param_rc_13_old,
+        k_param_rc_14_old,
         k_param_rally,
         k_param_poshold_brake_rate,
         k_param_poshold_brake_angle_max,
@@ -273,16 +273,16 @@ public:
         //
         // 170: Radio settings
         //
-        k_param_rc_1 = 170,
-        k_param_rc_2,
-        k_param_rc_3,
-        k_param_rc_4,
-        k_param_rc_5,
-        k_param_rc_6,
-        k_param_rc_7,
-        k_param_rc_8,
-        k_param_rc_10,
-        k_param_rc_11,
+        k_param_rc_1_old = 170,
+        k_param_rc_2_old,
+        k_param_rc_3_old,
+        k_param_rc_4_old,
+        k_param_rc_5_old,
+        k_param_rc_6_old,
+        k_param_rc_7_old,
+        k_param_rc_8_old,
+        k_param_rc_10_old,
+        k_param_rc_11_old,
         k_param_throttle_min,           // remove
         k_param_throttle_max,           // remove
         k_param_failsafe_throttle,
@@ -297,8 +297,8 @@ public:
         k_param_failsafe_battery_enabled,
         k_param_throttle_mid,           // remove
         k_param_failsafe_gps_enabled,   // remove
-        k_param_rc_9,
-        k_param_rc_12,
+        k_param_rc_9_old,
+        k_param_rc_12_old,
         k_param_failsafe_gcs,
         k_param_rcmap, // 199
 
@@ -460,22 +460,6 @@ public:
     AP_Int8         throw_motor_start;
     AP_Int8         terrain_follow;
 
-    // RC channels
-    RC_Channel              rc_1;
-    RC_Channel              rc_2;
-    RC_Channel              rc_3;
-    RC_Channel              rc_4;
-    RC_Channel_aux          rc_5;
-    RC_Channel_aux          rc_6;
-    RC_Channel_aux          rc_7;
-    RC_Channel_aux          rc_8;
-    RC_Channel_aux          rc_9;
-    RC_Channel_aux          rc_10;
-    RC_Channel_aux          rc_11;
-    RC_Channel_aux          rc_12;
-    RC_Channel_aux          rc_13;
-    RC_Channel_aux          rc_14;
-
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
     // Acro parameters
@@ -503,22 +487,6 @@ public:
     // Note: keep initializers here in the same order as they are declared
     // above.
     Parameters() :
-
-        rc_1                (CH_1),
-        rc_2                (CH_2),
-        rc_3                (CH_3),
-        rc_4                (CH_4),
-        rc_5                (CH_5),
-        rc_6                (CH_6),
-        rc_7                (CH_7),
-        rc_8                (CH_8),
-        rc_9                (CH_9),
-        rc_10               (CH_10),
-        rc_11               (CH_11),
-        rc_12               (CH_12),
-        rc_13               (CH_13),
-        rc_14               (CH_14),
-
         // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
         //---------------------------------------------------------------------------------------------------------------------------------
         pi_vel_xy               (VEL_XY_P,        VEL_XY_I,                         VEL_XY_IMAX,        VEL_XY_FILT_HZ,     WPNAV_LOITER_UPDATE_TIME),
@@ -590,6 +558,12 @@ public:
 
     // frame class
     AP_Int8 frame_class;
+
+    // RC input channels
+    RC_Channels rc_channels;
+    
+    // control over servo output ranges
+    SRV_Channels servo_channels;
 };
 
 extern const AP_Param::Info        var_info[];
