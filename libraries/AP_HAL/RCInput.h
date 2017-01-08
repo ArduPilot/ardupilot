@@ -17,12 +17,9 @@ public:
     virtual void teardown() {};
 
     /**
-     * Return true if there has been new input since the last read()
-     * call. This call also clears the new_input flag, so once it
-     * returns true it won't return true again until another frame is
-     * received.
+     * Return true if there has been new input since the last call to new_input()
      */
-    virtual bool new_input() = 0;
+    virtual bool new_input(void) = 0;
 
     /**
      * Return the number of valid channels in the last read
