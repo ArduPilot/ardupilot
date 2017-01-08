@@ -47,7 +47,8 @@ protected:
     void _process_rc_pulse(uint16_t width_s0, uint16_t width_s1);
     void _update_periods(uint16_t *periods, uint8_t len);
 
-    volatile bool new_rc_input;
+    volatile uint32_t rc_input_count;
+    uint32_t last_rc_input_count;
 
     uint16_t _pwm_values[LINUX_RC_INPUT_NUM_CHANNELS];
     uint8_t  _num_channels;
