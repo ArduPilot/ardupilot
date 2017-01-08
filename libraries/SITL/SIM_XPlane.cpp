@@ -287,8 +287,13 @@ bool XPlane::receive_data(void)
 
     if (data_mask != required_mask) {
         // ask XPlane to change what data it sends
-        select_data(data_mask & ~required_mask, required_mask & ~data_mask);
-        goto failed;
+        uint64_t usel = data_mask & ~required_mask;
+        uint64_t sel = required_mask & ~data_mask;
+        usel &= ~unselected_mask;
+        if (usel || sel) {
+            select_data(usel, sel);
+            goto failed;
+        }
     }
     position = pos + position_zero;
     update_position();
