@@ -772,7 +772,7 @@ int8_t Plane::throttle_percentage(void)
     // returns a number from -1 to 1.
     float throttle = SRV_Channels::get_output_norm(SRV_Channel::k_throttle);
     if (aparm.throttle_min >= 0) {
-        return constrain_int16(100*throttle, 0, 100);
+        return constrain_int16(50*(throttle+1), 0, 100);
     } else {
         // reverse thrust
         return constrain_int16(100*throttle, -100, 100);
