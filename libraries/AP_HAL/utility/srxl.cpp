@@ -284,8 +284,8 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
             frame_len_full = 0U;
             frame_header = SRXL_HEADER_NOT_IMPL;
             decode_state = STATE_IDLE;
-            ret = 2; /* protocol version not implemented --> no channel data --> unknown packet  */
-            break;
+            buflen = 0;
+            return 2; /* protocol version not implemented --> no channel data --> unknown packet  */
         }
     }
 
@@ -300,6 +300,14 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
         break;
 
     case STATE_COLLECT: /* receive all bytes. After reception decode frame and provide rc channel information to FMU   */
+        if (buflen >= frame_len_full) {
+            // a logic bug in the state machine, this shouldn't happen
+            decode_state = STATE_IDLE;
+            buflen = 0;
+            frame_len_full = 0;
+            frame_header = SRXL_HEADER_NOT_IMPL;
+            return 2;
+        }
         buffer[buflen] = byte;
         buflen++;
         /* CRC not over last 2 frame bytes as these bytes inhabitate the crc */
