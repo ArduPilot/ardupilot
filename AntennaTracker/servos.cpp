@@ -7,14 +7,14 @@
 // init_servos - initialises the servos
 void Tracker::init_servos()
 {
-    SRV_Channels::set_default_function(CH_YAW, SRV_Channel::k_steering);
-    SRV_Channels::set_default_function(CH_PITCH, SRV_Channel::k_elevator);
+    SRV_Channels::set_default_function(CH_YAW, SRV_Channel::k_tracker_yaw);
+    SRV_Channels::set_default_function(CH_PITCH, SRV_Channel::k_tracker_pitch);
 
     // yaw range is +/- (YAW_RANGE parameter/2) converted to centi-degrees
-    SRV_Channels::set_angle(SRV_Channel::k_steering, g.yaw_range * 100/2);        
+    SRV_Channels::set_angle(SRV_Channel::k_tracker_yaw, g.yaw_range * 100/2);        
 
     // pitch range is +/- (PITCH_MIN/MAX parameters/2) converted to centi-degrees
-    SRV_Channels::set_angle(SRV_Channel::k_elevator, (-g.pitch_min+g.pitch_max) * 100/2);
+    SRV_Channels::set_angle(SRV_Channel::k_tracker_pitch, (-g.pitch_min+g.pitch_max) * 100/2);
 
     SRV_Channels::output_trim_all();
     SRV_Channels::calc_pwm();
@@ -77,7 +77,7 @@ void Tracker::update_pitch_position_servo()
 
     // calculate new servo position
     g.pidPitch2Srv.set_input_filter_all(nav_status.angle_error_pitch);
-    int32_t new_servo_out = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) + g.pidPitch2Srv.get_pid();
+    int32_t new_servo_out = SRV_Channels::get_output_scaled(SRV_Channel::k_tracker_pitch) + g.pidPitch2Srv.get_pid();
 
     // position limit pitch servo
     if (new_servo_out <= pitch_min_cd) {
@@ -89,7 +89,7 @@ void Tracker::update_pitch_position_servo()
         g.pidPitch2Srv.reset_I();
     }
     // rate limit pitch servo
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, new_servo_out);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, new_servo_out);
 
     if (pitch_servo_out_filt_init) {
         pitch_servo_out_filt.apply(new_servo_out, G_Dt);
@@ -111,15 +111,15 @@ void Tracker::update_pitch_onoff_servo(float pitch)
 
     float acceptable_error = g.onoff_pitch_rate * g.onoff_pitch_mintime;
     if (fabsf(nav_status.angle_error_pitch) < acceptable_error) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, 0);
     } else if ((nav_status.angle_error_pitch > 0) && (pitch*100>pitch_min_cd)) {
         // positive error means we are pointing too low, so push the
         // servo up
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, -9000);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, -9000);
     } else if (pitch*100<pitch_max_cd) {
         // negative error means we are pointing too high, so push the
         // servo down
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, 9000);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, 9000);
     }
 }
 
@@ -132,7 +132,7 @@ void Tracker::update_pitch_cr_servo(float pitch)
     int32_t pitch_max_cd = g.pitch_max*100;
     if ((pitch>pitch_min_cd) && (pitch<pitch_max_cd)) {
         g.pidPitch2Srv.set_input_filter_all(nav_status.angle_error_pitch);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, g.pidPitch2Srv.get_pid());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, g.pidPitch2Srv.get_pid());
     }
 }
 
@@ -201,7 +201,7 @@ void Tracker::update_yaw_position_servo()
     g.pidYaw2Srv.set_input_filter_all(nav_status.angle_error_yaw);
     float servo_change = g.pidYaw2Srv.get_pid();
     servo_change = constrain_float(servo_change, -18000, 18000);
-    float new_servo_out = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_steering) + servo_change, -18000, 18000);
+    float new_servo_out = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_tracker_yaw) + servo_change, -18000, 18000);
 
     // position limit yaw servo
     if (new_servo_out <= -yaw_limit_cd) {
@@ -213,7 +213,7 @@ void Tracker::update_yaw_position_servo()
         g.pidYaw2Srv.reset_I();
     }
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, new_servo_out);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, new_servo_out);
 
     if (yaw_servo_out_filt_init) {
         yaw_servo_out_filt.apply(new_servo_out, G_Dt);
@@ -233,15 +233,15 @@ void Tracker::update_yaw_onoff_servo(float yaw)
 {
     float acceptable_error = g.onoff_yaw_rate * g.onoff_yaw_mintime;
     if (fabsf(nav_status.angle_error_yaw * 0.01f) < acceptable_error) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, 0);
     } else if (nav_status.angle_error_yaw * 0.01f > 0) {
         // positive error means we are counter-clockwise of the target, so
         // move clockwise
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 18000);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, 18000);
     } else {
         // negative error means we are clockwise of the target, so
         // move counter-clockwise
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, -18000);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, -18000);
     }
 }
 
@@ -251,5 +251,5 @@ void Tracker::update_yaw_onoff_servo(float yaw)
 void Tracker::update_yaw_cr_servo(float yaw)
 {
     g.pidYaw2Srv.set_input_filter_all(nav_status.angle_error_yaw);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, -g.pidYaw2Srv.get_pid());
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, -g.pidYaw2Srv.get_pid());
 }
