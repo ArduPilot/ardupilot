@@ -59,8 +59,8 @@ public:
     AP_Float   &kP() { return _kp; }
     AP_Float   &kI() { return _ki; }
     AP_Float   &kD() { return _kd; }
+    AP_Float   &filt_hz() { return _filt_hz; }
     float       imax() const { return _imax.get(); }
-    float       filt_hz() const { return _filt_hz.get(); }
     float       get_filt_alpha() const;
     float       ff() const { return _vff.get(); }
 
