@@ -377,7 +377,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     AP_GROUPINFO("WIND_P_NSE", 30, NavEKF3, _windVelProcessNoise, 0.1f),
 
     // @Param: WIND_PSCALE
-    // @DisplayName: Height rate to wind procss noise scaler
+    // @DisplayName: Height rate to wind process noise scaler
     // @Description: This controls how much the process noise on the wind states is increased when gaining or losing altitude to take into account changes in wind speed and direction with altitude. Increasing this parameter increases how rapidly the wind states adapt when changing altitude, but does make wind velocity estimation noiser.
     // @Range: 0.0 1.0
     // @Increment: 0.1
@@ -394,7 +394,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: IMU_MASK
     // @DisplayName: Bitmask of active IMUs
     // @Description: 1 byte bitmap of IMUs to use in EKF3. A separate instance of EKF3 will be started for each IMU selected. Set to 1 to use the first IMU only (default), set to 2 to use the second IMU only, set to 3 to use the first and second IMU. Additional IMU's can be used up to a maximum of 6 if memory and processing resources permit. There may be insufficient memory and processing resources to run multiple instances. If this occurs EKF3 will fail to start.
-    // @Range: 1 127
+    // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
     AP_GROUPINFO("IMU_MASK",     33, NavEKF3, _imuMask, 3),
     
@@ -411,13 +411,13 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This sets the amount of position variation that the EKF allows for when operating without external measurements (eg GPS or optical flow). Increasing this parameter makes the EKF attitude estimate less sensitive to vehicle manoeuvres but more sensitive to IMU errors.
     // @Range: 0.5 50.0
     // @User: Advanced
-    // @Units: m/s
+    // @Units: m
     AP_GROUPINFO("NOAID_M_NSE", 35, NavEKF3, _noaidHorizNoise, 10.0f),
 
     // @Param: LOG_MASK
     // @DisplayName: EKF sensor logging IMU mask
     // @Description: This sets the IMU mask of sensors to do full logging for
-    // @Values: 0:Disabled,1:FirstIMU,3:FirstAndSecondIMU,7:AllIMUs
+    // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
     AP_GROUPINFO("LOG_MASK", 36, NavEKF3, _logging_mask, 1),
 
@@ -514,7 +514,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 2.0 6.0
     // @Increment: 0.5
     // @User: Advanced
-    // @Units: m
+    // @Units: m/s
     AP_GROUPINFO("RNG_USE_SPD", 47, NavEKF3, _useRngSwSpd, 2.0f),
 
     // @Param: ACC_BIAS_LIM
