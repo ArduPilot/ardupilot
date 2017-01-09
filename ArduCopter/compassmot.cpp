@@ -134,14 +134,14 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     // enable motors and pass through throttle
     init_rc_out();
     enable_motor_output();
-    motors.armed(true);
+    motors->armed(true);
 
     // initialise run time
     last_run_time = millis();
     last_send_time = millis();
 
     // main run while there is no user input and the compass is healthy
-    while (command_ack_start == command_ack_counter && compass.healthy(compass.get_primary()) && motors.armed()) {
+    while (command_ack_start == command_ack_counter && compass.healthy(compass.get_primary()) && motors->armed()) {
         // 50hz loop
         if (millis() - last_run_time < 20) {
             // grab some compass values
@@ -155,7 +155,7 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         read_radio();
         
         // pass through throttle to motors
-        motors.set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
+        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
         
         // read some compass values
         compass.read();
@@ -237,8 +237,8 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     }
 
     // stop motors
-    motors.output_min();
-    motors.armed(false);
+    motors->output_min();
+    motors->armed(false);
 
     // set and save motor compensation
     if (updated) {

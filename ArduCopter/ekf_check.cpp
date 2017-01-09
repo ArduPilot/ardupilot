@@ -35,7 +35,7 @@ void Copter::ekf_check()
     }
 
     // return immediately if motors are not armed, ekf check is disabled, not using ekf or usb is connected
-    if (!motors.armed() || ap.usb_connected || (g.fs_ekf_thresh <= 0.0f)) {
+    if (!motors->armed() || ap.usb_connected || (g.fs_ekf_thresh <= 0.0f)) {
         ekf_check_state.fail_count = 0;
         ekf_check_state.bad_variance = false;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
@@ -122,7 +122,7 @@ void Copter::failsafe_ekf_event()
     }
 
     // do nothing if motors disarmed
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         return;
     }
 
@@ -174,7 +174,7 @@ void Copter::check_ekf_reset()
     float yaw_angle_change_rad = 0.0f;
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control.shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
+        attitude_control->shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
         ekfYawReset_ms = new_ekfYawReset_ms;
         Log_Write_Event(DATA_EKF_YAW_RESET);
     }

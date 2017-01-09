@@ -221,7 +221,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	max_channels = AP_MOTORS_MAX_NUM_MOTORS;
 
 	/* tell IO/FMU that the system is armed (it will output values if safety is off) */
-	motors.armed(true);
+	motors->armed(true);
 
 
 	cliSerial->println("Outputs armed");
@@ -238,7 +238,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 		for (unsigned i = 0; i < max_channels; i++) {
 
 			if (set_mask & 1<<i) {
-				motors.output_test(i, pwm_high);
+				motors->output_test(i, pwm_high);
 			}
 		}
         c = cliSerial->read();
@@ -265,7 +265,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 		/* set disarmed PWM */
 		for (unsigned i = 0; i < max_channels; i++) {
 			if (set_mask & 1<<i) {
-				motors.output_test(i, pwm_low);
+				motors->output_test(i, pwm_low);
 			}
 		}
 		c = cliSerial->read();
@@ -284,7 +284,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	}
 
 	/* disarm */
-	motors.armed(false);
+	motors->armed(false);
     
 	cliSerial->println("Outputs disarmed");
 

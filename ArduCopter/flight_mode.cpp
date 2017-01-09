@@ -13,7 +13,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 {
     // boolean to record if flight mode could be set
     bool success = false;
-    bool ignore_checks = !motors.armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
+    bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
 
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
@@ -271,7 +271,7 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
     }
 
     // smooth throttle transition when switching from manual to automatic flight modes
-    if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && motors.armed() && !ap.land_complete) {
+    if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && motors->armed() && !ap.land_complete) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
         set_accel_throttle_I_from_pilot_throttle();
     }
@@ -282,8 +282,8 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
     if (old_control_mode == ACRO) {
-        attitude_control.use_flybar_passthrough(false, false);
-        motors.set_acro_tail(false);
+        attitude_control->use_flybar_passthrough(false, false);
+        motors->set_acro_tail(false);
     }
 
     // if we are changing from a mode that did not use manual throttle,

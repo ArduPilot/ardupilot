@@ -27,17 +27,17 @@ void Copter::calc_wp_distance()
     switch (control_mode) {
     case LOITER:
     case CIRCLE:
-        wp_distance = wp_nav.get_loiter_distance_to_target();
+        wp_distance = wp_nav->get_loiter_distance_to_target();
         break;
 
     case AUTO:
     case RTL:
-        wp_distance = wp_nav.get_wp_distance_to_destination();
+        wp_distance = wp_nav->get_wp_distance_to_destination();
         break;
 
     case GUIDED:
         if (guided_mode == Guided_WP) {
-            wp_distance = wp_nav.get_wp_distance_to_destination();
+            wp_distance = wp_nav->get_wp_distance_to_destination();
             break;
         }
         // no break
@@ -54,17 +54,17 @@ void Copter::calc_wp_bearing()
     switch (control_mode) {
     case LOITER:
     case CIRCLE:
-        wp_bearing = wp_nav.get_loiter_bearing_to_target();
+        wp_bearing = wp_nav->get_loiter_bearing_to_target();
         break;
 
     case AUTO:
     case RTL:
-        wp_bearing = wp_nav.get_wp_bearing_to_destination();
+        wp_bearing = wp_nav->get_wp_bearing_to_destination();
         break;
 
     case GUIDED:
         if (guided_mode == Guided_WP) {
-            wp_bearing = wp_nav.get_wp_bearing_to_destination();
+            wp_bearing = wp_nav->get_wp_bearing_to_destination();
             break;
         }
         // no break
