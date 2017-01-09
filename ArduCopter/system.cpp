@@ -542,6 +542,7 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_Y6:
         case AP_Motors::MOTOR_FRAME_OCTA:
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+        default:
             motors = new AP_MotorsMatrix(MAIN_LOOP_RATE);
             break;
         case AP_Motors::MOTOR_FRAME_TRI:
@@ -555,11 +556,10 @@ void Copter::allocate_motors(void)
             break;
 #else // FRAME_CONFIG == HELI_FRAME
         case AP_Motors::MOTOR_FRAME_HELI:
+        default:
             motors = new AP_MotorsHeli_Single(MAIN_LOOP_RATE);
             break;            
 #endif
-        default:
-            break;
     }
     if (motors == nullptr) {
         AP_HAL::panic("Unable to allocate FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
