@@ -241,6 +241,8 @@ void Plane::init_ardupilot()
 
     quadplane.setup();
 
+    AP_Param::reload_defaults_file();
+    
     startup_ground();
 
     // don't initialise aux rc output until after quadplane is setup as
