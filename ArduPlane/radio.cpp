@@ -103,9 +103,9 @@ void Plane::init_rc_out_aux()
 */
 void Plane::rudder_arm_disarm_check()
 {
-    AP_Arming::ArmingRudder arming_rudder = arming.rudder_arming();
+    AP_Arming_Plane::ArmingRudder arming_rudder = arming.rudder_arming();
 
-    if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
+    if (arming_rudder == AP_Arming_Plane::ARMING_RUDDER_DISABLED) {
         //parameter disallows rudder arming/disabling
         return;
     }
@@ -144,7 +144,7 @@ void Plane::rudder_arm_disarm_check()
 			// not at full right rudder
 			rudder_arm_timer = 0;
 		}
-	} else if (arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM && !is_flying()) {
+	} else if (arming_rudder == AP_Arming_Plane::ARMING_RUDDER_ARMDISARM && !is_flying()) {
 		// when armed and not flying, full left rudder starts disarming counter
 		if (channel_rudder->get_control_in() < -4000) {
 			uint32_t now = millis();
