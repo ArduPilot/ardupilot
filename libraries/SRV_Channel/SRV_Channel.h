@@ -346,6 +346,9 @@ public:
         return i<NUM_SERVO_CHANNELS?&channels[i]:nullptr;
     }
 
+    // upgrade RC* parameters into SERVO* parameters
+    static bool upgrade_parameters(const uint8_t old_keys[14], uint16_t aux_channel_mask, RCMapper *rcmap);
+    
 private:
     struct {
         bool k_throttle_reversible:1;
