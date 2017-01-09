@@ -9,9 +9,6 @@ void Rover::set_control_channels(void)
     channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
     channel_learn    = RC_Channels::rc_channel(g.learn_channel-1);
 
-    SRV_Channels::set_default_function(CH_1, SRV_Channel::k_steering);
-    SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttle);
-    
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
     channel_throttle->set_angle(100);
