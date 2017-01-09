@@ -165,8 +165,8 @@ bool XPlane::receive_data(void)
             loc.lat = data[1] * 1e7;
             loc.lng = data[2] * 1e7;
             loc.alt = data[3] * FEET_TO_METERS * 100.0f;
-            float hagl = data[4] * FEET_TO_METERS;
-            ground_level = loc.alt * 0.01f - hagl;
+            const float altitude_above_ground = data[4] * FEET_TO_METERS;
+            ground_level = loc.alt * 0.01f - altitude_above_ground;
             break;
         }
 
