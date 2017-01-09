@@ -696,7 +696,7 @@ def start_mavproxy(opts, stuff):
     env['PYTHONPATH'] = local_mp_modules_dir + os.pathsep + env.get('PYTHONPATH', '')
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
-    progress("MAVProxy exitted")
+    progress("MAVProxy exited")
 
 
 # define and run parser
