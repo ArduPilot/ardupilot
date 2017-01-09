@@ -1209,25 +1209,12 @@ void AP_Param::setup_sketch_defaults(void)
 
 // Load all variables from EEPROM
 //
-bool AP_Param::load_all(void)
+bool AP_Param::load_all(bool check_defaults_file)
 {
     struct Param_header phdr;
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
 
-#if HAL_OS_POSIX_IO == 1
-    /*
-      if the HAL specifies a defaults parameter file then override
-      defaults using that file
-     */
-    const char *default_file = hal.util->get_custom_defaults_file();
-    if (default_file) {
-        if (load_defaults_file(default_file)) {
-            printf("Loaded defaults from %s\n", default_file);
-        } else {
-            printf("Failed to load defaults from %s\n", default_file);
-        }
-    }
-#endif
+    reload_defaults_file(check_defaults_file);
 
     while (ofs < _storage.size()) {
         _storage.read_block(&phdr, ofs, sizeof(phdr));
@@ -1254,6 +1241,26 @@ bool AP_Param::load_all(void)
     return false;
 }
 
+/*
+  reload from hal.util defaults file
+ */
+void AP_Param::reload_defaults_file(bool panic_on_error)
+{
+#if HAL_OS_POSIX_IO == 1
+    /*
+      if the HAL specifies a defaults parameter file then override
+      defaults using that file
+     */
+    const char *default_file = hal.util->get_custom_defaults_file();
+    if (default_file) {
+        if (load_defaults_file(default_file, panic_on_error)) {
+            printf("Loaded defaults from %s\n", default_file);
+        } else {
+            printf("Failed to load defaults from %s\n", default_file);
+        }
+    }
+#endif
+}
 
 
 /* 
@@ -1714,7 +1721,7 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value)
 /*
   load a default set of parameters from a file
  */
-bool AP_Param::load_defaults_file(const char *filename)
+bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
 {
     if (filename == nullptr) {
         return false;
@@ -1736,10 +1743,14 @@ bool AP_Param::load_defaults_file(const char *filename)
             continue;
         }
         if (!find_def_value_ptr(pname)) {
-            fclose(f);
-            ::printf("invalid param %s in defaults file\n", pname);
-            AP_HAL::panic("AP_Param: Invalid param in defaults file");
-            return false;
+            if (panic_on_error) {
+                fclose(f);
+                ::printf("invalid param %s in defaults file\n", pname);
+                AP_HAL::panic("AP_Param: Invalid param in defaults file");
+                return false;
+            } else {
+                continue;
+            }
         }
         num_defaults++;
     }
@@ -1774,9 +1785,7 @@ bool AP_Param::load_defaults_file(const char *filename)
         }
         const float *def_value_ptr = find_def_value_ptr(pname);
         if (!def_value_ptr) {
-            fclose(f);
-            AP_HAL::panic("AP_Param: Invalid param in defaults file");
-            return false;
+            continue;
         }
         param_overrides[idx].def_value_ptr = def_value_ptr;
         param_overrides[idx].value = value;
