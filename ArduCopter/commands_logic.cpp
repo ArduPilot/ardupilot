@@ -336,7 +336,7 @@ void Copter::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // if no delay set the waypoint as "fast"
     if (loiter_time_max == 0 ) {
-        wp_nav.set_fast_waypoint(true);
+        wp_nav->set_fast_waypoint(true);
     }
 }
 
@@ -414,7 +414,7 @@ void Copter::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         // To-Do: make this simpler
         Vector3f temp_pos;
-        wp_nav.get_wp_stopping_point_xy(temp_pos);
+        wp_nav->get_wp_stopping_point_xy(temp_pos);
         Location_Class temp_loc(temp_pos);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
@@ -646,7 +646,7 @@ void Copter::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 bool Copter::verify_takeoff()
 {
     // have we reached our target altitude?
-    return wp_nav.reached_wp_destination();
+    return wp_nav->reached_wp_destination();
 }
 
 // verify_land - returns true if landing has been completed
@@ -657,9 +657,9 @@ bool Copter::verify_land()
     switch (land_state) {
         case LandStateType_FlyToLocation:
             // check if we've reached the location
-            if (wp_nav.reached_wp_destination()) {
+            if (wp_nav->reached_wp_destination()) {
                 // get destination so we can use it for loiter target
-                Vector3f dest = wp_nav.get_wp_destination();
+                Vector3f dest = wp_nav->get_wp_destination();
 
                 // initialise landing controller
                 auto_land_start(dest);
@@ -703,7 +703,7 @@ bool Copter::verify_payload_place()
     const float descent_throttle_placed_fraction = 0.9; // i.e. if throttle is less than 90% of descent throttle we have placed
     const uint16_t placed_time = 500; // how long we have to be below a throttle threshold before considering placed
 
-    const float current_throttle_level = motors.get_throttle();
+    const float current_throttle_level = motors->get_throttle();
     const uint32_t now =  AP_HAL::millis();
 
     // if we discover we've landed then immediately release the load:
@@ -729,11 +729,11 @@ bool Copter::verify_payload_place()
 
     switch (nav_payload_place.state) {
     case PayloadPlaceStateType_FlyToLocation:
-        if (!wp_nav.reached_wp_destination()) {
+        if (!wp_nav->reached_wp_destination()) {
             return false;
         }
         // we're there; set loiter target
-        auto_payload_place_start(wp_nav.get_wp_destination());
+        auto_payload_place_start(wp_nav->get_wp_destination());
         nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
         // no break
     case PayloadPlaceStateType_Calibrating_Hover_Start:
@@ -751,7 +751,7 @@ bool Copter::verify_payload_place()
         }
         // we have a valid calibration.  Hopefully.
         nav_payload_place.hover_throttle_level = current_throttle_level;
-        const float hover_throttle_delta = fabsf(nav_payload_place.hover_throttle_level - motors.get_throttle_hover());
+        const float hover_throttle_delta = fabsf(nav_payload_place.hover_throttle_level - motors->get_throttle_hover());
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "hover throttle delta: %f", static_cast<double>(hover_throttle_delta));
         nav_payload_place.state = PayloadPlaceStateType_Descending_Start;
         }
@@ -831,7 +831,7 @@ bool Copter::verify_payload_place()
         }
         // no break
     case PayloadPlaceStateType_Ascending:
-        if (!wp_nav.reached_wp_destination()) {
+        if (!wp_nav->reached_wp_destination()) {
             return false;
         }
         nav_payload_place.state = PayloadPlaceStateType_Done;
@@ -852,7 +852,7 @@ bool Copter::verify_payload_place()
 bool Copter::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
-    if( !wp_nav.reached_wp_destination() ) {
+    if( !wp_nav->reached_wp_destination() ) {
         return false;
     }
 
@@ -882,7 +882,7 @@ bool Copter::verify_loiter_unlimited()
 bool Copter::verify_loiter_time()
 {
     // return immediately if we haven't reached our destination
-    if (!wp_nav.reached_wp_destination()) {
+    if (!wp_nav->reached_wp_destination()) {
         return false;
     }
 
@@ -900,7 +900,7 @@ bool Copter::verify_circle(const AP_Mission::Mission_Command& cmd)
 {
     // check if we've reached the edge
     if (auto_mode == Auto_CircleMoveToEdge) {
-        if (wp_nav.reached_wp_destination()) {
+        if (wp_nav->reached_wp_destination()) {
             Vector3f curr_pos = inertial_nav.get_position();
             Vector3f circle_center = pv_location_to_vector(cmd.content.location);
 
@@ -922,7 +922,7 @@ bool Copter::verify_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if we have completed circling
-    return fabsf(circle_nav.get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
+    return fabsf(circle_nav->get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
 }
 
 // verify_RTL - handles any state changes required to implement RTL
@@ -937,7 +937,7 @@ bool Copter::verify_RTL()
 bool Copter::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
-    if( !wp_nav.reached_wp_destination() ) {
+    if( !wp_nav->reached_wp_destination() ) {
         return false;
     }
 
@@ -1082,7 +1082,7 @@ bool Copter::do_guided(const AP_Mission::Mission_Command& cmd)
 void Copter::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
-        wp_nav.set_speed_xy(cmd.content.speed.target_ms * 100.0f);
+        wp_nav->set_speed_xy(cmd.content.speed.target_ms * 100.0f);
     }
 }
 

@@ -18,8 +18,8 @@ AP_AdvancedFailsafe_Copter::AP_AdvancedFailsafe_Copter(AP_Mission &_mission, AP_
 void AP_AdvancedFailsafe_Copter::terminate_vehicle(void)
 {
     // stop motors
-    copter.motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-    copter.motors.output();
+    copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+    copter.motors->output();
 
     // disarm as well
     copter.init_disarm_motors();
@@ -47,8 +47,8 @@ void AP_AdvancedFailsafe_Copter::setup_IO_failsafe(void)
 
 #if FRAME_CONFIG != HELI_FRAME
     // setup AP_Motors outputs for failsafe
-    uint16_t mask = copter.motors.get_motor_mask();
-    hal.rcout->set_failsafe_pwm(mask, copter.motors.get_pwm_output_min());
+    uint16_t mask = copter.motors->get_motor_mask();
+    hal.rcout->set_failsafe_pwm(mask, copter.motors->get_pwm_output_min());
 #endif
 }
 

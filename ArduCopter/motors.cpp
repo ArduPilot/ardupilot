@@ -30,7 +30,7 @@ void Copter::arm_motors_check()
         }
 
         // arm the motors and configure for flight
-        if (arming_counter == ARM_DELAY && !motors.armed()) {
+        if (arming_counter == ARM_DELAY && !motors->armed()) {
             // reset arming counter if arming fail
             if (!init_arm_motors(false)) {
                 arming_counter = 0;
@@ -38,7 +38,7 @@ void Copter::arm_motors_check()
         }
 
         // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors.armed() && control_mode == STABILIZE) {
+        if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && control_mode == STABILIZE) {
             auto_trim_counter = 250;
             // ensure auto-disarm doesn't trigger immediately
             auto_disarm_begin = millis();
@@ -57,7 +57,7 @@ void Copter::arm_motors_check()
         }
 
         // disarm the motors
-        if (arming_counter == DISARM_DELAY && motors.armed()) {
+        if (arming_counter == DISARM_DELAY && motors->armed()) {
             init_disarm_motors();
         }
 
@@ -75,21 +75,21 @@ void Copter::auto_disarm_check()
 
     // exit immediately if we are already disarmed, or if auto
     // disarming is disabled
-    if (!motors.armed() || disarm_delay_ms == 0 || control_mode == THROW) {
+    if (!motors->armed() || disarm_delay_ms == 0 || control_mode == THROW) {
         auto_disarm_begin = tnow_ms;
         return;
     }
 
 #if FRAME_CONFIG == HELI_FRAME
     // if the rotor is still spinning, don't initiate auto disarm
-    if (motors.rotor_speed_above_critical()) {
+    if (motors->rotor_speed_above_critical()) {
         auto_disarm_begin = tnow_ms;
         return;
     }
 #endif
 
     // always allow auto disarm if using interlock switch or motors are Emergency Stopped
-    if ((ap.using_interlock && !motors.get_interlock()) || ap.motor_emergency_stop) {
+    if ((ap.using_interlock && !motors->get_interlock()) || ap.motor_emergency_stop) {
 #if FRAME_CONFIG != HELI_FRAME
         // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
         // obvious the copter is armed as the motors will not be spinning
@@ -131,7 +131,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     in_arm_motors = true;
 
     // return true if already armed
-    if (motors.armed()) {
+    if (motors->armed()) {
         in_arm_motors = false;
         return true;
     }
@@ -192,7 +192,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     enable_motor_output();
 
     // finally actually arm the motors
-    motors.armed(true);
+    motors->armed(true);
 
     // log arming to dataflash
     Log_Write_Event(DATA_ARMED);
@@ -223,7 +223,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 void Copter::init_disarm_motors()
 {
     // return immediately if we are already disarmed
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         return;
     }
 
@@ -254,7 +254,7 @@ void Copter::init_disarm_motors()
     Log_Write_Event(DATA_DISARMED);
 
     // send disarm command to motors
-    motors.armed(false);
+    motors->armed(false);
 
     // reset the mission
     mission.reset();
@@ -286,7 +286,7 @@ void Copter::motors_output()
 #endif
 
     // Update arming delay state
-    if (ap.in_arming_delay && (!motors.armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || control_mode == THROW)) {
+    if (ap.in_arming_delay && (!motors->armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || control_mode == THROW)) {
         ap.in_arming_delay = false;
     }
 
@@ -294,17 +294,17 @@ void Copter::motors_output()
     if (ap.motor_test) {
         motor_test_output();
     } else {
-        bool interlock = motors.armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !ap.motor_emergency_stop;
-        if (!motors.get_interlock() && interlock) {
-            motors.set_interlock(true);
+        bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !ap.motor_emergency_stop;
+        if (!motors->get_interlock() && interlock) {
+            motors->set_interlock(true);
             Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
-        } else if (motors.get_interlock() && !interlock) {
-            motors.set_interlock(false);
+        } else if (motors->get_interlock() && !interlock) {
+            motors->set_interlock(false);
             Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
         }
 
         // send output signals to motors
-        motors.output();
+        motors->output();
     }
 }
 
@@ -319,7 +319,7 @@ void Copter::lost_vehicle_check()
     }
 
     // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors.armed() && (channel_roll->get_control_in() > 4000) && (channel_pitch->get_control_in() > 4000)) {
+    if (ap.throttle_zero && !motors->armed() && (channel_roll->get_control_in() > 4000) && (channel_pitch->get_control_in() > 4000)) {
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;

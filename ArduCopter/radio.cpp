@@ -48,14 +48,11 @@ void Copter::init_rc_in()
  // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
 void Copter::init_rc_out()
 {
-    // default frame class to match firmware if possible
-    set_default_frame_class();
-
-    motors.set_update_rate(g.rc_speed);
-    motors.set_loop_rate(scheduler.get_loop_rate_hz());
-    motors.init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
+    motors->set_update_rate(g.rc_speed);
+    motors->set_loop_rate(scheduler.get_loop_rate_hz());
+    motors->init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
 #if FRAME_CONFIG != HELI_FRAME
-    motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+    motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif
 
     for(uint8_t i = 0; i < 5; i++) {
@@ -83,7 +80,7 @@ void Copter::init_rc_out()
     /*
       setup a default safety ignore mask, so that servo gimbals can be active while safety is on
      */
-    uint16_t safety_ignore_mask = (~copter.motors.get_motor_mask()) & 0x3FFF;
+    uint16_t safety_ignore_mask = (~copter.motors->get_motor_mask()) & 0x3FFF;
     BoardConfig.set_default_safety_ignore_mask(safety_ignore_mask);
 #endif
 }
@@ -93,8 +90,8 @@ void Copter::init_rc_out()
 void Copter::enable_motor_output()
 {
     // enable motors
-    motors.enable();
-    motors.output_min();
+    motors->enable();
+    motors->output_min();
 }
 
 void Copter::read_radio()
@@ -126,7 +123,7 @@ void Copter::read_radio()
         uint32_t elapsed = tnow_ms - last_radio_update_ms;
         // turn on throttle failsafe if no update from the RC Radio for 500ms or 2000ms if we are using RC_OVERRIDE
         if (((!failsafe.rc_override_active && (elapsed >= FS_RADIO_TIMEOUT_MS)) || (failsafe.rc_override_active && (elapsed >= FS_RADIO_RC_OVERRIDE_TIMEOUT_MS))) &&
-            (g.failsafe_throttle && (ap.rc_receiver_present||motors.armed()) && !failsafe.radio)) {
+            (g.failsafe_throttle && (ap.rc_receiver_present||motors->armed()) && !failsafe.radio)) {
             Log_Write_Error(ERROR_SUBSYSTEM_RADIO, ERROR_CODE_RADIO_LATE_FRAME);
             set_failsafe_radio(true);
         }
@@ -146,7 +143,7 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
     if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
-        if (failsafe.radio || !(ap.rc_receiver_present || motors.armed())) {
+        if (failsafe.radio || !(ap.rc_receiver_present || motors->armed())) {
             channel_throttle->set_pwm(throttle_pwm);
             return;
         }
@@ -188,7 +185,7 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
     // if not using throttle interlock and non-zero throttle and not E-stopped,
     // or using motor interlock and it's enabled, then motors are running, 
     // and we are flying. Immediately set as non-zero
-    if ((!ap.using_interlock && (throttle_control > 0) && !ap.motor_emergency_stop) || (ap.using_interlock && motors.get_interlock())) {
+    if ((!ap.using_interlock && (throttle_control > 0) && !ap.motor_emergency_stop) || (ap.using_interlock && motors->get_interlock())) {
         last_nonzero_throttle_ms = tnow_ms;
         ap.throttle_zero = false;
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
@@ -199,5 +196,5 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
 // pass pilot's inputs to motors library (used to allow wiggling servos while disarmed on heli, single, coax copters)
 void Copter::radio_passthrough_to_motors()
 {
-    motors.set_radio_passthrough(channel_roll->get_control_in()/1000.0f, channel_pitch->get_control_in()/1000.0f, channel_throttle->get_control_in()/1000.0f, channel_yaw->get_control_in()/1000.0f);
+    motors->set_radio_passthrough(channel_roll->get_control_in()/1000.0f, channel_pitch->get_control_in()/1000.0f, channel_throttle->get_control_in()/1000.0f, channel_yaw->get_control_in()/1000.0f);
 }

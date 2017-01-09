@@ -34,7 +34,7 @@ bool Copter::all_arming_checks_passing(bool arming_from_gcs)
 bool Copter::pre_arm_checks(bool display_failure)
 {
     // exit immediately if already armed
-    if (motors.armed()) {
+    if (motors->armed()) {
         return true;
     }
 
@@ -360,7 +360,7 @@ bool Copter::parameter_checks(bool display_failure)
         }
 
         // acro balance parameter check
-        if ((g.acro_balance_roll > attitude_control.get_angle_roll_p().kP()) || (g.acro_balance_pitch > attitude_control.get_angle_pitch_p().kP())) {
+        if ((g.acro_balance_roll > attitude_control->get_angle_roll_p().kP()) || (g.acro_balance_pitch > attitude_control->get_angle_pitch_p().kP())) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: ACRO_BAL_ROLL/PITCH");
             }
@@ -379,7 +379,7 @@ bool Copter::parameter_checks(bool display_failure)
 
         #if FRAME_CONFIG == HELI_FRAME
         // check helicopter parameters
-        if (!motors.parameter_check(display_failure)) {
+        if (!motors->parameter_check(display_failure)) {
             return false;
         }
         #endif // HELI_FRAME
@@ -410,7 +410,7 @@ bool Copter::parameter_checks(bool display_failure)
 bool Copter::motor_checks(bool display_failure)
 {
     // check motors initialised  correctly
-    if (!motors.initialised_ok()) {
+    if (!motors->initialised_ok()) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check firmware or FRAME_CLASS");
         }
@@ -746,7 +746,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     // if we are using motor interlock switch and it's enabled, fail to arm
     // skip check in Throw mode which takes control of the motor interlock
-    if (ap.using_interlock && motors.get_interlock()) {
+    if (ap.using_interlock && motors->get_interlock()) {
         gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Motor Interlock Enabled");
         return false;
     }

@@ -21,7 +21,7 @@ void Copter::read_barometer(void)
     baro_alt = barometer.get_altitude() * 100.0f;
     baro_climbrate = barometer.get_climb_rate() * 100.0f;
 
-    motors.set_air_density_ratio(barometer.get_air_density_ratio());
+    motors->set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
 void Copter::init_rangefinder(void)
@@ -69,7 +69,7 @@ void Copter::read_rangefinder(void)
     }
 
     // send rangefinder altitude and health to waypoint navigation library
-    wp_nav.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+    wp_nav->set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
 
 #else
     rangefinder_state.enabled = false;
@@ -165,10 +165,10 @@ void Copter::read_battery(void)
 
     // update motors with voltage and current
     if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
-        motors.set_voltage(battery.voltage());
+        motors->set_voltage(battery.voltage());
     }
     if (battery.has_current()) {
-        motors.set_current(battery.current_amps());
+        motors->set_current(battery.current_amps());
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
@@ -203,7 +203,7 @@ void Copter::compass_cal_update()
             compass.cancel_calibration_all();
         }
     } else {
-        bool stick_gesture_detected = compass_cal_stick_gesture_begin != 0 && !motors.armed() && channel_yaw->get_control_in() > 4000 && channel_throttle->get_control_in() > 900;
+        bool stick_gesture_detected = compass_cal_stick_gesture_begin != 0 && !motors->armed() && channel_yaw->get_control_in() > 4000 && channel_throttle->get_control_in() > 900;
         uint32_t tnow = millis();
 
         if (!stick_gesture_detected) {

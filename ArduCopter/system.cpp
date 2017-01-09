@@ -56,9 +56,9 @@ void Copter::run_cli(AP_HAL::UARTDriver *port)
     failsafe_disable();
 
     // cut the engines
-    if(motors.armed()) {
-        motors.armed(false);
-        motors.output();
+    if(motors->armed()) {
+        motors->armed(false);
+        motors->output();
     }
 
     while (1) {
@@ -177,10 +177,17 @@ void Copter::init_ardupilot()
 #endif
     
     init_rc_in();               // sets up rc channels from radio
+
+    // default frame class to match firmware if possible
+    set_default_frame_class();
+
+    // allocate the motors class
+    allocate_motors();
+
     init_rc_out();              // sets up motors and output to escs
 
     // initialise which outputs Servo and Relay events can use
-    ServoRelayEvents.set_channel_mask(~motors.get_motor_mask());
+    ServoRelayEvents.set_channel_mask(~motors->get_motor_mask());
 
     relay.init();
 
@@ -208,14 +215,14 @@ void Copter::init_ardupilot()
     Location_Class::set_ahrs(&ahrs);
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     Location_Class::set_terrain(&terrain);
-    wp_nav.set_terrain(&terrain);
+    wp_nav->set_terrain(&terrain);
 #endif
 #if AC_AVOID_ENABLED == ENABLED
-    wp_nav.set_avoidance(&avoid);
+    wp_nav->set_avoidance(&avoid);
 #endif
 
-    attitude_control.parameter_sanity_check();
-    pos_control.set_dt(MAIN_LOOP_SECONDS);
+    attitude_control->parameter_sanity_check();
+    pos_control->set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
     init_optflow();
@@ -362,7 +369,7 @@ bool Copter::ekf_position_ok()
     nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal position
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
     } else {
         // once armed we require a good absolute position and EKF must not be in const_pos_mode
@@ -385,7 +392,7 @@ bool Copter::optflow_position_ok()
     nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal relative position
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         return (filt_status.flags.pred_horiz_pos_rel);
     } else {
         return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
@@ -399,7 +406,7 @@ void Copter::update_auto_armed()
     // disarm checks
     if(ap.auto_armed){
         // if motors are disarmed, auto_armed should also be false
-        if(!motors.armed()) {
+        if(!motors->armed()) {
             set_auto_armed(false);
             return;
         }
@@ -410,7 +417,7 @@ void Copter::update_auto_armed()
 #if FRAME_CONFIG == HELI_FRAME 
         // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
         // so that rotor runup is checked again before attempting to take-off
-        if(ap.land_complete && !motors.rotor_runup_complete()) {
+        if(ap.land_complete && !motors->rotor_runup_complete()) {
             set_auto_armed(false);
         }
 #endif // HELI_FRAME
@@ -419,13 +426,13 @@ void Copter::update_auto_armed()
         
 #if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        if(motors.armed() && !ap.throttle_zero && motors.rotor_runup_complete()) {
+        if(motors->armed() && !ap.throttle_zero && motors->rotor_runup_complete()) {
             set_auto_armed(true);
         }
 #else
         // if motors are armed and throttle is above zero auto_armed should be true
         // if motors are armed and we are in throw mode, then auto_ermed should be true
-        if(motors.armed() && (!ap.throttle_zero || control_mode == THROW)) {
+        if(motors->armed() && (!ap.throttle_zero || control_mode == THROW)) {
             set_auto_armed(true);
         }
 #endif // HELI_FRAME
@@ -452,7 +459,7 @@ bool Copter::should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = motors.armed() || DataFlash.log_while_disarmed();
+    bool ret = motors->armed() || DataFlash.log_while_disarmed();
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         start_logging();
     }
@@ -465,30 +472,8 @@ bool Copter::should_log(uint32_t mask)
 // default frame_class to match firmware if possible
 void Copter::set_default_frame_class()
 {
-    switch (FRAME_CONFIG) {
-        case QUAD_FRAME:
-        case HEXA_FRAME:
-        case OCTA_FRAME:
-        case OCTA_QUAD_FRAME:
-        case Y6_FRAME:
-            // reset frame_class to undefined if firmware does not match
-            // Note: this assumes that Y6 is the highest numbered frame to be supported by the AP_Motors_Matrix class
-            if (g2.frame_class > AP_Motors::MOTOR_FRAME_Y6) {
-                g2.frame_class = AP_Motors::MOTOR_FRAME_UNDEFINED;
-            }
-            break;
-        case TRI_FRAME:
-            g2.frame_class = AP_Motors::MOTOR_FRAME_TRI;
-            break;
-        case HELI_FRAME:
-            g2.frame_class = AP_Motors::MOTOR_FRAME_HELI;
-            break;
-        case SINGLE_FRAME:
-            g2.frame_class = AP_Motors::MOTOR_FRAME_SINGLE;
-            break;
-        case COAX_FRAME:
-            g2.frame_class = AP_Motors::MOTOR_FRAME_COAX;
-            break;
+    if (FRAME_CONFIG == HELI_FRAME) {
+        g2.frame_class.set(AP_Motors::MOTOR_FRAME_HELI);
     }
 }
 
@@ -547,3 +532,64 @@ const char* Copter::get_frame_string()
     }
 }
 
+/*
+  allocate the motors class
+ */
+void Copter::allocate_motors(void)
+{
+    switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
+#if FRAME_CONFIG != HELI_FRAME
+        case AP_Motors::MOTOR_FRAME_QUAD:
+        case AP_Motors::MOTOR_FRAME_HEXA:
+        case AP_Motors::MOTOR_FRAME_Y6:
+        case AP_Motors::MOTOR_FRAME_OCTA:
+        case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+            motors = new AP_MotorsMatrix(MAIN_LOOP_RATE);
+            break;
+        case AP_Motors::MOTOR_FRAME_TRI:
+            motors = new AP_MotorsTri(MAIN_LOOP_RATE);
+            break;
+        case AP_Motors::MOTOR_FRAME_SINGLE:
+            motors = new AP_MotorsSingle(MAIN_LOOP_RATE);
+            break;
+        case AP_Motors::MOTOR_FRAME_COAX:
+            motors = new AP_MotorsCoax(MAIN_LOOP_RATE);
+            break;
+#else // FRAME_CONFIG == HELI_FRAME
+        case AP_Motors::MOTOR_FRAME_HELI:
+            motors = new AP_MotorsHeli_Single(MAIN_LOOP_RATE);
+            break;            
+#endif
+        default:
+            break;
+    }
+    if (motors == nullptr) {
+        AP_HAL::panic("Unable to allocate FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
+    }
+
+#if FRAME_CONFIG != HELI_FRAME
+    attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, MAIN_LOOP_SECONDS);
+#else
+    attitude_control = new AC_AttitudeControl_Heli(ahrs, aparm, *motors, MAIN_LOOP_SECONDS);
+#endif
+    if (attitude_control == nullptr) {
+        AP_HAL::panic("Unable to allocate AttitudeControl");
+    }
+        
+    pos_control = new AC_PosControl(ahrs, inertial_nav, *motors, *attitude_control,
+                                    g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
+                                    g.p_pos_xy, g.pi_vel_xy);
+    if (pos_control == nullptr) {
+        AP_HAL::panic("Unable to allocate PosControl");
+    }
+
+    wp_nav = new AC_WPNav(inertial_nav, ahrs, *pos_control, *attitude_control);
+    if (wp_nav == nullptr) {
+        AP_HAL::panic("Unable to allocate WPNav");
+    }
+
+    circle_nav = new AC_Circle(inertial_nav, ahrs, *pos_control);
+    if (wp_nav == nullptr) {
+        AP_HAL::panic("Unable to allocate CircleNav");
+    }
+}

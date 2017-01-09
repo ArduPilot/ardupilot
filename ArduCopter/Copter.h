@@ -326,21 +326,13 @@ private:
     } sensor_health;
 
     // Motor Output
-#if FRAME_CONFIG == QUAD_FRAME || FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME || FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
- #define MOTOR_CLASS AP_MotorsMatrix
-#elif FRAME_CONFIG == TRI_FRAME
- #define MOTOR_CLASS AP_MotorsTri
-#elif FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
  #define MOTOR_CLASS AP_MotorsHeli_Single
-#elif FRAME_CONFIG == SINGLE_FRAME
- #define MOTOR_CLASS AP_MotorsSingle
-#elif FRAME_CONFIG == COAX_FRAME
- #define MOTOR_CLASS AP_MotorsCoax
 #else
- #error Unrecognised frame type
+ #define MOTOR_CLASS AP_MotorsMulticopter
 #endif
 
-    MOTOR_CLASS motors;
+    MOTOR_CLASS *motors;
 
     // GPS variables
     // Sometimes we need to remove the scaling for distance calcs
@@ -491,14 +483,10 @@ private:
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
-#if FRAME_CONFIG == HELI_FRAME
-    AC_AttitudeControl_Heli attitude_control;
-#else
-    AC_AttitudeControl_Multi attitude_control;
-#endif
-    AC_PosControl pos_control;
-    AC_WPNav wp_nav;
-    AC_Circle circle_nav;
+    AC_AttitudeControl *attitude_control;
+    AC_PosControl *pos_control;
+    AC_WPNav *wp_nav;
+    AC_Circle *circle_nav;
 
     // Performance monitoring
     int16_t pmTest1;
@@ -1085,6 +1073,7 @@ private:
     void check_usb_mux(void);
     bool should_log(uint32_t mask);
     void set_default_frame_class();
+    void allocate_motors(void);
     uint8_t get_frame_mav_type();
     const char* get_frame_string();
     bool current_mode_has_user_takeoff(bool must_navigate);
