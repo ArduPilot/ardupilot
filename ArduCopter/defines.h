@@ -75,15 +75,8 @@ enum aux_sw_func {
 
 // Frame types
 #define UNDEFINED_FRAME 0
-#define QUAD_FRAME 1
-#define TRI_FRAME 2
-#define HEXA_FRAME 3
-#define Y6_FRAME 4
-#define OCTA_FRAME 5
-#define HELI_FRAME 6
-#define OCTA_QUAD_FRAME 7
-#define SINGLE_FRAME 8
-#define COAX_FRAME 9
+#define MULTICOPTER_FRAME 1
+#define HELI_FRAME 2
 
 // HIL enumerations
 #define HIL_MODE_DISABLED               0

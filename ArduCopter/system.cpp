@@ -590,4 +590,24 @@ void Copter::allocate_motors(void)
     if (wp_nav == nullptr) {
         AP_HAL::panic("Unable to allocate CircleNav");
     }
+
+    // reload lines from the defaults file that may now be accessible
+    AP_Param::reload_defaults_file();
+    
+    // now setup some frame-class specific defaults
+    switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
+    case AP_Motors::MOTOR_FRAME_Y6:
+        attitude_control->get_rate_roll_pid().kP().set_default(0.1);
+        attitude_control->get_rate_roll_pid().kD().set_default(0.006);
+        attitude_control->get_rate_pitch_pid().kP().set_default(0.1);
+        attitude_control->get_rate_pitch_pid().kD().set_default(0.006);
+        attitude_control->get_rate_yaw_pid().kP().set_default(0.15);
+        attitude_control->get_rate_yaw_pid().kI().set_default(0.015);
+        break;
+    case AP_Motors::MOTOR_FRAME_TRI:
+        attitude_control->get_rate_yaw_pid().filt_hz().set_default(100);
+        break;
+    default:
+        break;
+    }
 }

@@ -61,7 +61,7 @@
 // FRAME_CONFIG
 //
 #ifndef FRAME_CONFIG
- # define FRAME_CONFIG   QUAD_FRAME
+ # define FRAME_CONFIG   MULTICOPTER_FRAME
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -71,23 +71,6 @@
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
   # define THR_MIN_DEFAULT                      0
   # define AUTOTUNE_ENABLED                     DISABLED
-#endif
-
-/////////////////////////////////////////////////////////////////////////////////
-// Y6 defaults
-#if FRAME_CONFIG == Y6_FRAME
-  # define RATE_ROLL_P                  0.1f
-  # define RATE_ROLL_D                  0.006f
-  # define RATE_PITCH_P                 0.1f
-  # define RATE_PITCH_D                 0.006f
-  # define RATE_YAW_P                   0.150f
-  # define RATE_YAW_I                   0.015f
-#endif
-
-/////////////////////////////////////////////////////////////////////////////////
-// Tri defaults
-#if FRAME_CONFIG == TRI_FRAME
-  # define RATE_YAW_FILT_HZ             100.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
