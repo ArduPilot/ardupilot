@@ -27,26 +27,6 @@
 extern const AP_HAL::HAL& hal;
 
 
-const AP_Param::GroupInfo AP_MotorsSingle::var_info[] = {
-    // variables from parent vehicle
-    AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
-
-    // parameters 1 ~ 29 were reserved for tradheli
-    // parameters 30 ~ 39 reserved for tricopter
-    // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
-
-    // 40 was ROLL_SV_REV
-    // 41 was PITCH_SV_REV
-	// 42 was YAW_SV_REV
-
-	// @Param: SV_SPEED
-    // @DisplayName: Servo speed 
-    // @Description: Servo update speed in hz
-    // @Values: 50, 125, 250
-    AP_GROUPINFO("SV_SPEED", 43, AP_MotorsSingle, _servo_speed, AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS),
-
-    AP_GROUPEND
-};
 // init
 void AP_MotorsSingle::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
@@ -92,17 +72,10 @@ void AP_MotorsSingle::set_update_rate( uint16_t speed_hz )
     // record requested speed
     _speed_hz = speed_hz;
 
-    // set update rate for the 3 motors (but not the servo on channel 7)
-    uint32_t mask = 
-        1U << AP_MOTORS_MOT_1 |
-        1U << AP_MOTORS_MOT_2 |
-        1U << AP_MOTORS_MOT_3 |
-        1U << AP_MOTORS_MOT_4 ;
-    rc_set_freq(mask, _servo_speed);
-    uint32_t mask2 =
+    uint32_t mask =
         1U << AP_MOTORS_MOT_5 |
         1U << AP_MOTORS_MOT_6 ;
-    rc_set_freq(mask2, _speed_hz);
+    rc_set_freq(mask, _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors

@@ -163,6 +163,9 @@ protected:
     AP_Int8             _throttle_hover_learn;  // enable/disabled hover thrust learning
     AP_Int8             _disarm_disable_pwm;    // disable PWM output while disarmed
 
+    // Maximum lean angle of yaw servo in degrees. This is specific to tricopter
+    AP_Float            _yaw_servo_angle_max_deg;
+    
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
     int16_t             _throttle_radio_min;        // minimum PWM from RC input's throttle channel (i.e. minimum PWM input from receiver, RC3_MIN)

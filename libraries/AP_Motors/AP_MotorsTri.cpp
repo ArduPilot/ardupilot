@@ -33,15 +33,6 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // parameters 30 ~ 39 reserved for tricopter
     // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
 
-    // @Param: YAW_SV_ANGLE
-    // @DisplayName: Yaw Servo Max Lean Angle
-    // @Description: Yaw servo's maximum lean angle
-    // @Range: 5 80
-    // @Units: Degrees
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("YAW_SV_ANGLE", 35,   AP_MotorsTri,  _yaw_servo_angle_max_deg, 30),
-
     AP_GROUPEND
 };
 

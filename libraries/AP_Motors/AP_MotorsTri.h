@@ -64,7 +64,6 @@ protected:
     // parameters
 
     SRV_Channel     *_yaw_servo; // yaw output channel
-    AP_Float        _yaw_servo_angle_max_deg;           // Maximum lean angle of yaw servo in degrees
     float           _pivot_angle;                       // Angle of yaw pivot
     float           _thrust_right;
     float           _thrust_rear;
