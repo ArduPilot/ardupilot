@@ -296,7 +296,7 @@ build_arducopter() {
     # work out what frames to build by looking for FRAME_CLASS parameter
     checkout ArduCopter $tag "" ""
     if grep -q FRAME_CLASS ArduCopter/Parameters.cpp; then
-        frames="quad tri heli"
+        frames="quad heli"
     else
         frames="quad tri hexa y6 octa octa-quad heli"
     fi
