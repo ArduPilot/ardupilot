@@ -7,7 +7,7 @@
 void Copter::failsafe_radio_on_event()
 {
     // if motors are not armed there is nothing to do
-    if( !motors.armed() ) {
+    if( !motors->armed() ) {
         return;
     }
 
@@ -50,7 +50,7 @@ void Copter::failsafe_battery_event(void)
     }
 
     // failsafe check
-    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
+    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors->armed()) {
         if (should_disarm_on_failsafe()) {
             init_disarm_motors();
         } else {
@@ -97,7 +97,7 @@ void Copter::failsafe_gcs_check()
     }
 
     // do nothing if gcs failsafe already triggered or motors disarmed
-    if (failsafe.gcs || !motors.armed()) {
+    if (failsafe.gcs || !motors->armed()) {
         return;
     }
 

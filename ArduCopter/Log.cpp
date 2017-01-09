@@ -271,9 +271,9 @@ struct PACKED log_Nav_Tuning {
 // Write an Nav Tuning packet
 void Copter::Log_Write_Nav_Tuning()
 {
-    const Vector3f &pos_target = pos_control.get_pos_target();
-    const Vector3f &vel_target = pos_control.get_vel_target();
-    const Vector3f &accel_target = pos_control.get_accel_target();
+    const Vector3f &pos_target = pos_control->get_pos_target();
+    const Vector3f &vel_target = pos_control->get_vel_target();
+    const Vector3f &accel_target = pos_control->get_accel_target();
     const Vector3f &position = inertial_nav.get_position();
     const Vector3f &velocity = inertial_nav.get_velocity();
 
@@ -325,17 +325,17 @@ void Copter::Log_Write_Control_Tuning()
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         time_us             : AP_HAL::micros64(),
-        throttle_in         : attitude_control.get_throttle_in(),
-        angle_boost         : attitude_control.angle_boost(),
-        throttle_out        : motors.get_throttle(),
-        throttle_hover      : motors.get_throttle_hover(),
-        desired_alt         : pos_control.get_alt_target() / 100.0f,
+        throttle_in         : attitude_control->get_throttle_in(),
+        angle_boost         : attitude_control->angle_boost(),
+        throttle_out        : motors->get_throttle(),
+        throttle_hover      : motors->get_throttle_hover(),
+        desired_alt         : pos_control->get_alt_target() / 100.0f,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
         desired_rangefinder_alt : (int16_t)target_rangefinder_alt,
         rangefinder_alt     : rangefinder_state.alt_cm,
         terr_alt            : terr_alt,
-        target_climb_rate   : (int16_t)pos_control.get_vel_target_z(),
+        target_climb_rate   : (int16_t)pos_control->get_vel_target_z(),
         climb_rate          : climb_rate
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -373,7 +373,7 @@ void Copter::Log_Write_Performance()
 // Write an attitude packet
 void Copter::Log_Write_Attitude()
 {
-    Vector3f targets = attitude_control.get_att_target_euler_cd();
+    Vector3f targets = attitude_control->get_att_target_euler_cd();
     targets.z = wrap_360_cd(targets.z);
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
@@ -405,10 +405,10 @@ void Copter::Log_Write_MotBatt()
     struct log_MotBatt pkt_mot = {
         LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
         time_us         : AP_HAL::micros64(),
-        lift_max        : (float)(motors.get_lift_max()),
-        bat_volt        : (float)(motors.get_batt_voltage_filt()),
-        bat_res         : (float)(motors.get_batt_resistance()),
-        th_limit        : (float)(motors.get_throttle_limit())
+        lift_max        : (float)(motors->get_lift_max()),
+        bat_volt        : (float)(motors->get_batt_voltage_filt()),
+        bat_res         : (float)(motors->get_batt_resistance()),
+        th_limit        : (float)(motors->get_throttle_limit())
     };
     DataFlash.WriteBlock(&pkt_mot, sizeof(pkt_mot));
 #endif
@@ -637,8 +637,8 @@ void Copter::Log_Write_Heli()
     struct log_Heli pkt_heli = {
         LOG_PACKET_HEADER_INIT(LOG_HELI_MSG),
         time_us                 : AP_HAL::micros64(),
-        desired_rotor_speed     : motors.get_desired_rotor_speed(),
-        main_rotor_speed        : motors.get_main_rotor_speed(),
+        desired_rotor_speed     : motors->get_desired_rotor_speed(),
+        main_rotor_speed        : motors->get_main_rotor_speed(),
     };
     DataFlash.WriteBlock(&pkt_heli, sizeof(pkt_heli));
 }

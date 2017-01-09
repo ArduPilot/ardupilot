@@ -2,7 +2,7 @@
 
 void Copter::update_ground_effect_detector(void)
 {
-    if(!g2.gndeffect_comp_enabled || !motors.armed()) {
+    if(!g2.gndeffect_comp_enabled || !motors->armed()) {
         // disarmed - disable ground effect and return
         gndeffect_state.takeoff_expected = false;
         gndeffect_state.touchdown_expected = false;
@@ -15,10 +15,10 @@ void Copter::update_ground_effect_detector(void)
     uint32_t tnow_ms = millis();
     float xy_des_speed_cms = 0.0f;
     float xy_speed_cms = 0.0f;
-    float des_climb_rate_cms = pos_control.get_desired_velocity().z;
+    float des_climb_rate_cms = pos_control->get_desired_velocity().z;
 
-    if (pos_control.is_active_xy()) {
-        Vector3f vel_target = pos_control.get_vel_target();
+    if (pos_control->is_active_xy()) {
+        Vector3f vel_target = pos_control->get_vel_target();
         vel_target.z = 0.0f;
         xy_des_speed_cms = vel_target.length();
     }
@@ -32,7 +32,7 @@ void Copter::update_ground_effect_detector(void)
     // takeoff logic
 
     // if we are armed and haven't yet taken off
-    if (motors.armed() && ap.land_complete && !gndeffect_state.takeoff_expected) {
+    if (motors->armed() && ap.land_complete && !gndeffect_state.takeoff_expected) {
         gndeffect_state.takeoff_expected = true;
     }
 
@@ -50,13 +50,13 @@ void Copter::update_ground_effect_detector(void)
     }
 
     // landing logic
-    Vector3f angle_target_rad = attitude_control.get_att_target_euler_cd() * radians(0.01f);
+    Vector3f angle_target_rad = attitude_control->get_att_target_euler_cd() * radians(0.01f);
     bool small_angle_request = cosf(angle_target_rad.x)*cosf(angle_target_rad.y) > cosf(radians(7.5f));
     bool xy_speed_low = (position_ok() || optflow_position_ok()) && xy_speed_cms <= 125.0f;
-    bool xy_speed_demand_low = pos_control.is_active_xy() && xy_des_speed_cms <= 125.0f;
-    bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control.is_active_xy()) || (control_mode == ALT_HOLD && small_angle_request);
+    bool xy_speed_demand_low = pos_control->is_active_xy() && xy_des_speed_cms <= 125.0f;
+    bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control->is_active_xy()) || (control_mode == ALT_HOLD && small_angle_request);
 
-    bool descent_demanded = pos_control.is_active_z() && des_climb_rate_cms < 0.0f;
+    bool descent_demanded = pos_control->is_active_z() && des_climb_rate_cms < 0.0f;
     bool slow_descent_demanded = descent_demanded && des_climb_rate_cms >= -100.0f;
     bool z_speed_low = abs(inertial_nav.get_velocity_z()) <= 60.0f;
     bool slow_descent = (slow_descent_demanded || (z_speed_low && descent_demanded));
