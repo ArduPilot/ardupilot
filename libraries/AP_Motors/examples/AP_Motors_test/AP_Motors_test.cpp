@@ -26,7 +26,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_Terrain/AP_Terrain.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Scheduler/AP_Scheduler.h>

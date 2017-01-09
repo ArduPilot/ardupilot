@@ -187,7 +187,7 @@ void Tracker::prepare_servos()
 
 void Tracker::set_mode(enum ControlMode mode)
 {
-    if(control_mode == mode) {
+    if (control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
         return;
     }

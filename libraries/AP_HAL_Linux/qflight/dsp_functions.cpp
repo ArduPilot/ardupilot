@@ -29,7 +29,6 @@ extern "C" {
 #include <types.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <sys/timespec.h>

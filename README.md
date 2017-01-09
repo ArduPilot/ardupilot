@@ -68,7 +68,9 @@
 >> - [Matthias Badaire](https://github.com/badzz)
 >>   - ***Subsystem***: FRSky
 >> - [Paul Riseborough](https://github.com/priseborough)
->>   - ***Subsystem***: AP_NavEKF
+>>   - ***Subsystem***: AP_NavEKF2
+>> - [Paul Riseborough](https://github.com/priseborough)
+>>   - ***Subsystem***: AP_NavEKF2
 >> - [Lucas De Marchi](https://github.com/lucasdemarchi)
 >>   - ***Subsystem***: Linux
 >> - [Peter Barker](https://github.com/peterbarker)

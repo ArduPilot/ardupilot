@@ -105,11 +105,15 @@ def px4_firmware(self):
 
     if self.env.PX4_USE_PX4IO and not _cp_px4io:
         px4io_task = self.create_cmake_build_task('px4', 'fw_io')
+        if version == '3':
+            px4io_version = '2'
+        else:
+            px4io_version = version
         px4io = px4io_task.cmake.bldnode.make_node(
-            'src/modules/px4iofirmware/px4io-v%s.bin' % version,
+            'src/modules/px4iofirmware/px4io-v%s.bin' % px4io_version,
         )
         px4io_elf = px4.bldnode.make_node(
-            'src/modules/px4iofirmware/px4io-v%s' % version
+            'src/modules/px4iofirmware/px4io-v%s' % px4io_version
         )
         px4io_task.set_outputs([px4io, px4io_elf])
 
@@ -207,6 +211,11 @@ def _process_romfs(self):
             src = bld.srcnode.make_node(item[0])
             dst = romfs_bld.make_node(item[1])
 
+        bname = os.path.basename(str(src))
+        if bname in bld.env.ROMFS_EXCLUDE:
+            print("Excluding %s" % bname)
+            continue
+
         dst.parent.mkdir()
         self.create_task('px4_copy', src, dst)
 
@@ -228,10 +237,14 @@ def configure(cfg):
     def bldpath(path):
         return bldnode.make_node(path).abspath()
 
+    version = env.get_flat('PX4_VERSION')
+    
     if env.PX4_VERSION == '1':
         bootloader_name = 'px4fmu_bl.bin'
+    elif env.PX4_VERSION in ['2','3']:
+        bootloader_name = 'px4fmuv2_bl.bin'
     else:
-        bootloader_name = 'px4fmuv%s_bl.bin' % env.get_flat('PX4_VERSION')
+        bootloader_name = 'px4fmuv%s_bl.bin' % version
 
     # TODO: we should move stuff from mk/PX4 to Tools/ardupilotwaf/px4 after
     # stop using the make-based build system
@@ -248,8 +261,10 @@ def configure(cfg):
     if env.PX4_USE_PX4IO:
         env.PX4IO_ELF_DEST = 'px4-extra-files/px4io'
 
+    nuttx_config='nuttx_px4fmu-v%s_apm' % version
+        
     env.PX4_CMAKE_VARS = dict(
-        CONFIG='nuttx_px4fmu-v%s_apm' % env.get_flat('PX4_VERSION'),
+        CONFIG=nuttx_config,
         CMAKE_MODULE_PATH=srcpath('Tools/ardupilotwaf/px4/cmake'),
         UAVCAN_LIBUAVCAN_PATH=env.PX4_UAVCAN_ROOT,
         NUTTX_SRC=env.PX4_NUTTX_ROOT,

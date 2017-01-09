@@ -828,7 +828,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(rally,      "RALLY_",   AP_Rally_Copter),
 #endif
 
-#if FRAME_CONFIG ==     HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
     // @Group: H_
     // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp
     GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
@@ -852,14 +852,14 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
     GOBJECT(rcmap, "RCMAP_",        RCMapper),
 
-    // @Group: EKF_
-    // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
-    GOBJECTN(EKF, NavEKF, "EKF_", NavEKF),
-
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
     GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
     
+    // @Group: EK3_
+    // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
+    GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
+
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),

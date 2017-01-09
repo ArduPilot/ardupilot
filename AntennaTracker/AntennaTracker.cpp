@@ -107,7 +107,7 @@ void Tracker::one_second_loop()
     one_second_counter++;
 
     if (one_second_counter >= 60) {
-        if(g.compass_enabled) {
+        if (g.compass_enabled) {
             compass.save_offsets();
         }
         one_second_counter = 0;

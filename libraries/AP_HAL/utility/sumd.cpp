@@ -43,7 +43,6 @@
  * @author Marco Bauer <marco@wtns.de>
  */
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include "sumd.h"

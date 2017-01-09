@@ -197,6 +197,13 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
     }
 }
 
+
+bool AP_Landing::type_slope_request_go_around(void)
+{
+    commanded_go_around = true;
+    return true;
+}
+
 /*
   a special glide slope calculation for the landing approach
 
@@ -293,14 +300,4 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     constrain_target_altitude_location_fn(loc, prev_WP_loc);
 }
 
-void AP_Landing::type_slope_init_start_nav_cmd(void)
-{
-    complete = false;
-    pre_flare = false;
 
-    // if a go around had been commanded, clear it now.
-    commanded_go_around = false;
-
-    // once landed, post some landing statistics to the GCS
-    post_stats = false;
-}

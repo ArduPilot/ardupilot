@@ -551,17 +551,16 @@ void Plane::handle_auto_mode(void)
         calc_nav_roll();
         calc_nav_pitch();
         
-        if (landing.complete) {
+        if (landing.is_complete()) {
             // during final approach constrain roll to the range
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
-        }
-        calc_throttle();
-        
-        if (landing.complete) {
+
             // we are in the final stage of a landing - force
             // zero throttle
             channel_throttle->set_servo_out(0);
+        } else {
+            calc_throttle();
         }
     } else {
         // we are doing normal AUTO flight, the special cases
@@ -569,8 +568,6 @@ void Plane::handle_auto_mode(void)
         if (nav_cmd_id != MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT) {
             steer_state.hold_course_cd = -1;
         }
-        landing.complete = false;
-        landing.pre_flare = false;
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();
@@ -611,7 +608,7 @@ void Plane::update_flight_mode(void)
             quadplane.guided_update();
             break;
         }
-        // fall through
+        // no break
 
     case RTL:
     case LOITER:
@@ -834,7 +831,7 @@ void Plane::update_navigation()
         if (radius > 0) {
             loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
         }
-        // fall through to LOITER
+        // no break, fall through to LOITER
 
     case LOITER:
     case AVOID_ADSB:
@@ -978,13 +975,13 @@ void Plane::update_flight_stage(void)
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
-                if (landing.commanded_go_around || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
+                if (landing.is_commanded_go_around() || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
                 } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) {
                     plane.gcs_send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
-                } else if (landing.complete == true) {
+                } else if (landing.is_complete()) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
                 } else if (landing.pre_flare == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
@@ -1060,7 +1057,7 @@ void Plane::update_optical_flow(void)
 void Plane::disarm_if_autoland_complete()
 {
     if (landing.get_disarm_delay() > 0 &&
-        landing.complete &&
+        landing.is_complete() &&
         !is_flying() &&
         arming.arming_required() != AP_Arming::NO &&
         arming.is_armed()) {

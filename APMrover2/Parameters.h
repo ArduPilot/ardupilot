@@ -81,11 +81,12 @@ public:
         //
         k_param_compass_enabled = 130,
         k_param_steering_learn, // unused
-        k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
+        k_param_NavEKF, // deprecated - remove
         k_param_mission, // mission library
-        k_param_NavEKF2_old, // deprecated
+        k_param_NavEKF2_old, // deprecated - remove
         k_param_NavEKF2,
         k_param_g2, // 2nd block of parameters
+        k_param_NavEKF3,
 
         // 140: battery controls
         k_param_battery_monitoring = 140,   // deprecated, can be deleted

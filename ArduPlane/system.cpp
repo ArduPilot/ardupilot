@@ -337,11 +337,8 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     // reset landing check
     auto_state.checked_for_autoland = false;
 
-    // reset go around command
-    landing.commanded_go_around = false;
-
-    // not in pre-flare
-    landing.pre_flare = false;
+    // reset landing
+    landing.reset();
     
     // zero locked course
     steer_state.locked_course_err = 0;
@@ -497,10 +494,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     if (should_log(MASK_LOG_MODE))
         DataFlash.Log_Write_Mode(control_mode);
 
-    // reset attitude integrators on mode change
-    rollController.reset_I();
-    pitchController.reset_I();
-    yawController.reset_I();    
+    // reset steering integrator on mode change
     steerController.reset_I();    
 }
 

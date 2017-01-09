@@ -517,6 +517,15 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: msec
     AP_GROUPINFO("BCN_DELAY", 46, NavEKF2, _rngBcnDelay_ms, 50),
 
+    // @Param: RNG_USE_SPD
+    // @DisplayName: Range finder max ground speed
+    // @Description: The range finder will not be used as the primary height source when the horizontal ground speed is greater than this value.
+    // @Range: 2.0 6.0
+    // @Increment: 0.5
+    // @User: Advanced
+    // @Units: m
+    AP_GROUPINFO("RNG_USE_SPD", 47, NavEKF2, _useRngSwSpd, 2.0f),
+
     AP_GROUPEND
 };
 
@@ -549,7 +558,8 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gndEffectTimeout_ms(1000),      // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
     gndGradientSigma(50),           // RMS terrain gradient percentage assumed by the terrain height estimation
-    fusionTimeStep_ms(10)           // The minimum number of msec between covariance prediction and fusion operations
+    fusionTimeStep_ms(10),          // The minimum number of msec between covariance prediction and fusion operations
+    runCoreSelection(false)         // true when the default primary core has stabilised after startup and core selection can run
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -684,8 +694,17 @@ void NavEKF2::UpdateFilter(void)
     }
 
     // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
+    // Don't start running the check until the primary core has started returned healthy for at least 10 seconds to avoid switching
+    // due to initial alignment fluctuations and race conditions
+    if (!runCoreSelection) {
+        static uint64_t lastUnhealthyTime_us = 0;
+        if (!core[primary].healthy() || lastUnhealthyTime_us == 0) {
+            lastUnhealthyTime_us = imuSampleTime_us;
+        }
+        runCoreSelection = (imuSampleTime_us - lastUnhealthyTime_us) > 1E7;
+    }
     float primaryErrorScore = core[primary].errorScore();
-    if (primaryErrorScore > 1.0f || !core[primary].healthy()) {
+    if ((primaryErrorScore > 1.0f || !core[primary].healthy()) && runCoreSelection) {
         float lowestErrorScore = 0.67f * primaryErrorScore;
         uint8_t newPrimaryIndex = primary; // index for new primary
         for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {

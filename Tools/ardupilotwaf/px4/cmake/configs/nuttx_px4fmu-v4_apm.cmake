@@ -4,7 +4,6 @@ list(APPEND config_module_list
     drivers/boards/px4fmu-v4
     drivers/pwm_input
     modules/uavcan
-    lib/mathlib
     lib/rc
 )
 

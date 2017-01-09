@@ -164,7 +164,7 @@ bool Copter::autotune_init(bool ignore_checks)
 
     switch (autotune_state.mode) {
         case AUTOTUNE_MODE_FAILED:
-        // autotune has been run but failed so reset state to uninitialized
+            // autotune has been run but failed so reset state to uninitialized
             autotune_state.mode = AUTOTUNE_MODE_UNINITIALISED;
             // no break to allow fall through to restart the tuning
 

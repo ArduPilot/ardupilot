@@ -29,25 +29,12 @@
 #endif
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 #define AP_AHRS_NAVEKF_AVAILABLE 1
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
-
-/*
-  we are too close to running out of flash on px4, so disable
-  it. Leave it enabled on V4 for now as that has sufficient flash
-  space
- */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && (defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2))
-#define AP_AHRS_WITH_EKF1 0
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && !defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
-#define AP_AHRS_WITH_EKF1 0
-#else
-#define AP_AHRS_WITH_EKF1 1
-#endif
 
 class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
@@ -59,7 +46,7 @@ public:
 
     // Constructor
     AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-                   NavEKF &_EKF1, NavEKF2 &_EKF2, Flags flags = FLAG_NONE);
+                   NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const override;
@@ -99,13 +86,6 @@ public:
     bool use_compass(void);
 
     // we will need to remove these to fully hide which EKF we are using
-    NavEKF &get_NavEKF(void) {
-        return EKF1;
-    }
-    const NavEKF &get_NavEKF_const(void) const {
-        return EKF1;
-    }
-
     NavEKF2 &get_NavEKF2(void) {
         return EKF2;
     }
@@ -113,6 +93,13 @@ public:
         return EKF2;
     }
 
+    NavEKF3 &get_NavEKF3(void) {
+        return EKF3;
+    }
+    const NavEKF3 &get_NavEKF3_const(void) const {
+        return EKF3;
+    }
+    
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers);
 
@@ -247,9 +234,7 @@ public:
     
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
-#if AP_AHRS_WITH_EKF1
-                   EKF_TYPE1=1,
-#endif
+                   EKF_TYPE3=3,
                    EKF_TYPE2=2
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                    ,EKF_TYPE_SITL=10
@@ -261,10 +246,11 @@ private:
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
     }
 
-    NavEKF &EKF1;
     NavEKF2 &EKF2;
+    NavEKF3 &EKF3;
     bool ekf1_started:1;
     bool ekf2_started:1;
+    bool ekf3_started:1;
     bool force_ekf:1;
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
@@ -278,8 +264,8 @@ private:
 
     uint8_t ekf_type(void) const;
     void update_DCM(void);
-    void update_EKF1(void);
     void update_EKF2(void);
+    void update_EKF3(void);
 
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;

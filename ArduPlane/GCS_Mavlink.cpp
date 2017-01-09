@@ -1360,9 +1360,12 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 if (!is_zero(packet.param1)) {
                     plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
                 }
-                plane.landing.commanded_go_around = true;
-               
-                result = MAV_RESULT_ACCEPTED;
+                if (plane.landing.request_go_around()) {
+                    result = MAV_RESULT_ACCEPTED;
+                }
+            }
+
+            if (result == MAV_RESULT_ACCEPTED) {
                 plane.gcs_send_text(MAV_SEVERITY_INFO,"Go around command accepted");
             } else {
                 plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Rejected go around command");

@@ -65,22 +65,23 @@ public:
 //      TODO: TYPE_HELICAL,
     };
 
-    bool restart_landing_sequence();
     bool verify_land(const AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
             const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed);
-
     void adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm);
-
     void setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
     void check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
+    bool request_go_around(void);
 
-    static const struct AP_Param::GroupInfo var_info[];
 
+    // helper functions
+    void reset(void);
+    bool restart_landing_sequence(void);
     float wind_alignment(const float heading_deg);
     float head_wind(void);
     int32_t get_target_airspeed_cm(const AP_SpdHgtControl::FlightStage flight_stage);
 
-    // accessor functions for the params
+    // accessor functions for the params and states
+    static const struct AP_Param::GroupInfo var_info[];
     int16_t get_pitch_cd(void) const { return pitch_cd; }
     float get_flare_sec(void) const { return flare_sec; }
     float get_pre_flare_airspeed(void) const { return pre_flare_airspeed; }
@@ -89,7 +90,10 @@ public:
     int8_t get_abort_throttle_enable(void) const { return abort_throttle_enable; }
     int8_t get_flap_percent(void) const { return flap_percent; }
     int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
-    void init_start_nav_cmd(void);
+    bool is_commanded_go_around(void) const { return commanded_go_around; }
+    bool is_complete(void) const { return complete; }
+    void set_initial_slope() { initial_slope = slope; }
+
 
 
     // Flag to indicate if we have landed.
@@ -102,17 +106,8 @@ public:
     // are we in auto and flight mode is approach || pre-flare || final (flare)
     bool in_progress;
 
-    // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
-    float slope;
-
-    // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
-    float initial_slope;
-
     // landing altitude offset (meters)
     float alt_offset;
-
-    // denotes if a go-around has been commanded for landing
-    bool commanded_go_around;
 
 private:
 
@@ -120,6 +115,15 @@ private:
     bool post_stats;
 
     bool has_aborted_due_to_slope_recalc;
+
+    // denotes if a go-around has been commanded for landing
+    bool commanded_go_around;
+
+    // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
+    float initial_slope;
+
+    // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
+    float slope;
 
     AP_Mission &mission;
     AP_AHRS &ahrs;
@@ -158,6 +162,6 @@ private:
 
     void type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
     void type_slope_check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
-    void type_slope_init_start_nav_cmd(void);
+    bool type_slope_request_go_around(void);
 
 };
