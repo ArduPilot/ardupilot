@@ -128,7 +128,7 @@ static uint16_t srxl_crc16 (uint16_t crc, uint8_t new_byte)
  * @param[out]  num_values - number of RC channels extracted from srxl frame
  * @param[out]  values - array of RC channels with refreshed information as pulsewidth in microseconds Range: 800us - 2200us
  * @param[out]  failsafe_state - true: RC-receiver is in failsafe state, false: RC-receiver is not in failsafe state
- * @return      0: success
+ * @retval 0 success
  */
 static int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state)
 {
@@ -174,7 +174,7 @@ static int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint
  * @param[out] num_values - number of RC channels extracted from srxl frame
  * @param[out] values - array of RC channels with refreshed information as pulsewidth in microseconds Range: 800us - 2200us
  * @param[out] failsafe_state - true: RC-receiver is in failsafe state, false: RC-receiver is not in failsafe state
- * @return 0: success
+ * @retval 0 success
  */
 static int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state)
 {
@@ -254,7 +254,10 @@ static int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16
  * @param[out] values - array of RC channels with refreshed information as pulsewidth in microseconds Range: 800us - 2200us
  * @param[in] maximum number of values supported by pixhawk
  * @param[out] failsafe_state - true: RC-receiver is in failsafe state, false: RC-receiver is not in failsafe state
- * @return 0: success
+ * @retval 0 success (a decoded packet)
+ * @retval 1 no packet yet (accumulating)
+ * @retval 2 unknown packet
+ * @retval 4 checksum error
  */
 int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16_t *values, uint16_t max_values, bool *failsafe_state)
 {
