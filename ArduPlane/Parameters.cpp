@@ -1323,16 +1323,26 @@ void Plane::load_parameters(void)
     AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
-    if (quadplane.enable) {
-        // quadplanes needs a higher loop rate
-        AP_Param::set_default_by_name("SCHED_LOOP_RATE", 300);
-    }
-
     // setup defaults in SRV_Channels
     g2.servo_channels.set_default_function(CH_1, SRV_Channel::k_aileron);
     g2.servo_channels.set_default_function(CH_2, SRV_Channel::k_elevator);
     g2.servo_channels.set_default_function(CH_3, SRV_Channel::k_throttle);
     g2.servo_channels.set_default_function(CH_4, SRV_Channel::k_rudder);
-    
+        
+    const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
+                                      Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
+                                      Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
+                                      Parameters::k_param_rc_7_old,  Parameters::k_param_rc_8_old,
+                                      Parameters::k_param_rc_9_old,  Parameters::k_param_rc_10_old,
+                                      Parameters::k_param_rc_11_old, Parameters::k_param_rc_12_old,
+                                      Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old };
+    const uint16_t old_aux_chan_mask = 0x3FF0;
+    SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, &rcmap);
+
+    if (quadplane.enable) {
+        // quadplanes needs a higher loop rate
+        AP_Param::set_default_by_name("SCHED_LOOP_RATE", 300);
+    }
+
     cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }
