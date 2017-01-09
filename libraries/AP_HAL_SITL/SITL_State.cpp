@@ -90,6 +90,7 @@ void SITL_State::_sitl_setup(const char *home_str)
         _update_ins(0);
         _update_compass();
         _update_gps(0, 0, 0, 0, 0, 0, false);
+        _update_rangefinder(0);
 #endif
         if (enable_gimbal) {
             gimbal = new SITL::Gimbal(_sitl->state);
@@ -167,6 +168,7 @@ void SITL_State::_fdm_input_step(void)
                     !_sitl->gps_disable);
         _update_ins(_sitl->state.airspeed);
         _update_compass();
+        _update_rangefinder(_sitl->state.range);
 
         if (_sitl->adsb_plane_count >= 0 &&
             adsb == nullptr) {
