@@ -227,49 +227,49 @@ _options_for_frame = {
     },
     # COPTER
     "+": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "quad": {
         "model": "+",
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "X": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         # this param set FRAME doesn't actually work because mavproxy
         # won't set a parameter unless it knows of it, and the param fetch happens asynchronously
         "default_params_filename": "default_params/copter.parm",
         "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
     },
     "hexa": {
-        "make_target": "sitl-hexa",
-        "waf_target": "bin/arducopter-hexa",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "octa-quad": {
-        "make_target": "sitl-octa-quad",
-        "waf_target": "bin/arducopter-octa-quad",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "octa": {
-        "make_target": "sitl-octa",
-        "waf_target": "bin/arducopter-octa",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "tri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arducopter-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-tri.parm",
     },
     "y6": {
-        "make_target": "sitl-y6",
-        "waf_target": "bin/arducopter-y6",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-y6.parm",
     },
     # COPTER TYPES
     "IrisRos": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "firefly": {
@@ -279,7 +279,7 @@ _options_for_frame = {
     # HELICOPTER
     "heli": {
         "make_target": "sitl-heli",
-        "waf_target": "bin/arducopter-heli",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-heli.parm",
     },
     "heli-dual": {
@@ -291,24 +291,24 @@ _options_for_frame = {
         "waf_target": "bin/arducopter-coax",  # is this correct? -pb201604301447
     },
     "singlecopter": {
-        "make_target": "sitl-single",
-        "waf_target": "bin/arducopter-single",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-single.parm",
     },
     "coaxcopter": {
-        "make_target": "sitl-coax",
-        "waf_target": "bin/arducopter-coax",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-coax.parm",
     },
     # PLANE
     "quadplane-tilttri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arduplane-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/quadplane-tilttri.parm",
     },
     "quadplane-tri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arduplane-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/quadplane-tri.parm",
     },
     "quadplane": {
@@ -338,7 +338,7 @@ _options_for_frame = {
     },
     # SIM
     "gazebo-iris": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/gazebo-iris.parm",
     },
     "gazebo-zephyr": {
@@ -359,7 +359,7 @@ _options_for_frame = {
 
 _default_waf_target = {
     "ArduPlane": "bin/arduplane",
-    "ArduCopter": "bin/arducopter-quad",
+    "ArduCopter": "bin/arducopter",
     "APMrover2": "bin/ardurover",
     "AntennaTracker": "bin/antennatracker",
 }
