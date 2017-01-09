@@ -297,10 +297,10 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 }
 
 // check motor setup was successful
-bool Copter::motor_checks(bool display_failure)
+bool AP_Arming_Copter::motor_checks(bool display_failure)
 {
     // check motors initialised  correctly
-    if (!motors->initialised_ok()) {
+    if (!copter.motors->initialised_ok()) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check firmware or FRAME_CLASS");
         }
