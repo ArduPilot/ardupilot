@@ -59,20 +59,20 @@ waf() {
 # checkout the right version of the tree
 checkout() {
     vehicle="$1"
-    tag="$2"
-    board="$3"
-    frame="$4"
-    echo "Trying checkout $vehicle $tag $board $frame"
+    ctag="$2"
+    cboard="$3"
+    cframe="$4"
+    echo "Trying checkout $vehicle $ctag $cboard $cframe"
     git stash
-    if [ "$tag" = "latest" ]; then
+    if [ "$ctag" = "latest" ]; then
         vtag="master"
     else
-        vtag="$vehicle-$tag"
+        vtag="$vehicle-$ctag"
     fi
 
     # try frame specific tag
-    if [ -n "$frame" ]; then
-        vtag2="$vtag-$frame"
+    if [ -n "$cframe" ]; then
+        vtag2="$vtag-$cframe"
 
         git checkout -f "$vtag2" && {
             echo "Using frame specific tag $vtag2"
@@ -83,7 +83,7 @@ checkout() {
     fi
 
     # try board type specific branch extension
-    vtag2="$vtag"$(board_branch $board)
+    vtag2="$vtag"$(board_branch $cboard)
 
     git checkout -f "$vtag2" && {
         echo "Using board specific tag $vtag2"
@@ -99,7 +99,7 @@ checkout() {
         return 0
     }
 
-    echo "Failed to find tag for $vehicle $tag $board $frame"
+    echo "Failed to find tag for $vehicle $ctag $cboard $cframe"
     return 1
 }
 
@@ -126,10 +126,10 @@ skip_board_waf() {
 }
 
 skip_frame() {
-    board=$1
-    frame=$2
-    if [ "$board" = "bebop" ]; then
-        if [ "$frame" != "quad" ]; then
+    sboard=$1
+    sframe=$2
+    if [ "$sboard" = "bebop" ]; then
+        if [ "$sframe" != "quad" ]; then
             return 0
         fi
     fi
