@@ -5,7 +5,6 @@
 #include "Scheduler.h"
 #include "UARTDriver.h"
 #include <sys/time.h>
-#include <unistd.h>
 #include <fenv.h>
 
 using namespace HALSITL;
@@ -43,11 +42,7 @@ void Scheduler::delay_microseconds(uint16_t usec)
         if (dtime >= usec) {
             break;
         }
-        if (_stopped_clock_usec) {
-            _sitlState->wait_clock(start + usec);
-        } else {
-            usleep(usec - dtime);
-        }
+        _sitlState->wait_clock(start + usec);
     } while (true);
 }
 
@@ -83,7 +78,6 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
         _timer_proc[_num_timer_procs] = proc;
         _num_timer_procs++;
     }
-
 }
 
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
@@ -98,7 +92,6 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc)
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
     }
-
 }
 
 void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
@@ -141,10 +134,11 @@ void Scheduler::system_initialized() {
 }
 
 void Scheduler::sitl_end_atomic() {
-    if (_nested_atomic_ctr == 0)
+    if (_nested_atomic_ctr == 0) {
         hal.uartA->println("NESTED ATOMIC ERROR");
-    else
+    } else {
         _nested_atomic_ctr--;
+    }
 }
 
 void Scheduler::reboot(bool hold_in_bootloader)
