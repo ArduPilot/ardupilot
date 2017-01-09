@@ -106,33 +106,11 @@
 
 #include "Parameters.h"
 #include "avoidance_adsb.h"
+#include "AP_Arming.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
-
-/*
-  a plane specific arming class
- */
-class AP_Arming_Plane : public AP_Arming
-{
-public:
-    AP_Arming_Plane(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                    const AP_BattMonitor &battery) :
-        AP_Arming(ahrs_ref, baro, compass, battery) {
-            AP_Param::setup_object_defaults(this, var_info);
-    }
-    bool pre_arm_checks(bool report);
-    bool arm(uint8_t method) override;
-
-    // var_info for holding Parameter information
-    static const struct AP_Param::GroupInfo var_info[];
-
-protected:
-    bool ins_checks(bool report);
-    enum HomeState home_status() const override;
-};
-
 
 /*
   a plane specific AP_AdvancedFailsafe class

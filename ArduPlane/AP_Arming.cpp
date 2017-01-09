@@ -1,6 +1,7 @@
 /*
   additional arming checks for plane
  */
+#include "AP_Arming.h"
 #include "Plane.h"
 
 const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
