@@ -102,7 +102,7 @@ public:
         k_param_circle_rate,                // deprecated - remove
         k_param_rangefinder_gain,
         k_param_ch8_option,
-        k_param_arming_check,
+        k_param_arming_check_old,       // deprecated - remove
         k_param_sprayer,
         k_param_angle_max,
         k_param_gps_hdop_good,
@@ -362,6 +362,7 @@ public:
         k_param_rtl_climb_min,
         k_param_rpm_sensor,
         k_param_autotune_min_d, // 251
+        k_param_arming, // 252  - AP_Arming
         k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
@@ -448,7 +449,6 @@ public:
     AP_Int8         ch10_option;
     AP_Int8         ch11_option;
     AP_Int8         ch12_option;
-    AP_Int8         arming_check;
     AP_Int8         disarm_delay;
 
     AP_Int8         land_repositioning;
