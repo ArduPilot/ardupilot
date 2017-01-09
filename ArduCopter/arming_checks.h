@@ -37,6 +37,7 @@ protected:
     bool fence_checks(bool display_failure);
     bool board_voltage_checks(bool display_failure);
     bool parameter_checks(bool display_failure);
+    bool motor_checks(bool display_failure);
     bool pilot_throttle_checks(bool display_failure);
     bool barometer_checks(bool display_failure);
     bool rc_calibration_checks(bool display_failure);
