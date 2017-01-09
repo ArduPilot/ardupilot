@@ -24,6 +24,7 @@
 #define ASCALAR(v, name, def) { copter.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&copter.aparm.v, {def_value : def} }
 #define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &copter.g.v, {group_info : class::var_info} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&copter.v, {group_info : class::var_info} }
+#define GOBJECTPTR(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&copter.v, {group_info : class::var_info}, AP_PARAM_FLAG_POINTER }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&copter.v, {group_info : class::var_info} }
 
 const AP_Param::Info Copter::var_info[] = {
@@ -683,23 +684,19 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: WPNAV_
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
-    GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
+    GOBJECTPTR(wp_nav, "WPNAV_",       AC_WPNav),
 
     // @Group: CIRCLE_
     // @Path: ../libraries/AC_WPNav/AC_Circle.cpp
-    GOBJECT(circle_nav, "CIRCLE_",  AC_Circle),
+    GOBJECTPTR(circle_nav, "CIRCLE_",  AC_Circle),
 
-#if FRAME_CONFIG == HELI_FRAME
-    GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Heli),
-#else
     // @Group: ATC_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
-    GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Multi),
-#endif
+    GOBJECTPTR(attitude_control, "ATC_", AC_AttitudeControl_Multi),
 
     // @Group: POSCON_
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
-    GOBJECT(pos_control, "PSC", AC_PosControl),
+    GOBJECTPTR(pos_control, "PSC", AC_PosControl),
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
@@ -783,21 +780,11 @@ const AP_Param::Info Copter::var_info[] = {
 #if FRAME_CONFIG == HELI_FRAME
     // @Group: H_
     // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp
-    GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
-
-#elif FRAME_CONFIG == SINGLE_FRAME
-    GOBJECT(motors, "MOT_",           AP_MotorsSingle),
-
-#elif FRAME_CONFIG == COAX_FRAME
-    GOBJECT(motors, "MOT_",           AP_MotorsCoax),
-
-#elif FRAME_CONFIG == TRI_FRAME
-    GOBJECT(motors, "MOT_",           AP_MotorsTri),
-
+    GOBJECTPTR(motors, "H_",           AP_MotorsHeli_Single),
 #else
     // @Group: MOT_
     // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
-    GOBJECT(motors, "MOT_",         AP_MotorsMulticopter),
+    GOBJECTPTR(motors, "MOT_",         AP_MotorsMulticopter),
 #endif
 
     // @Group: RCMAP_
@@ -1080,7 +1067,7 @@ void Copter::load_parameters(void)
 
     uint32_t before = micros();
     // Load all auto-loaded EEPROM variables
-    AP_Param::load_all();
+    AP_Param::load_all(false);
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
     cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
 
@@ -1135,7 +1122,7 @@ void Copter::convert_pid_parameters(void)
     // and motor libraries switch to accept inputs in -1 to +1 range instead of -4500 ~ +4500
     float pid_scaler = 1.27f;
 
-#if FRAME_CONFIG == QUAD_FRAME || FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME  || FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
+#if FRAME_CONFIG != HELI_FRAME
     // Multicopter x-frame gains are 40% lower because -1 or +1 input to motors now results in maximum rotation
     if (g.frame_type == AP_Motors::MOTOR_FRAME_TYPE_X || g.frame_type == AP_Motors::MOTOR_FRAME_TYPE_V || g.frame_type == AP_Motors::MOTOR_FRAME_TYPE_H) {
         pid_scaler = 0.9f;
