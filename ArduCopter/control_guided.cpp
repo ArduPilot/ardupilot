@@ -258,9 +258,10 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
     posvel_update_time_ms = millis();
     guided_pos_target_cm = destination;
     guided_vel_target_cms = velocity;
-
+    
     pos_control.set_pos_target(guided_pos_target_cm);
-
+    pos_control.set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
+    
     // log target
     Log_Write_GuidedTarget(guided_mode, destination, velocity);
 }
@@ -507,6 +508,7 @@ void Copter::guided_posvel_control_run()
     uint32_t tnow = millis();
     if (tnow - posvel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !guided_vel_target_cms.is_zero()) {
         guided_vel_target_cms.zero();
+        pos_control.set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
     }
 
     // calculate dt
@@ -518,13 +520,6 @@ void Copter::guided_posvel_control_run()
         if (dt >= 0.2f) {
             dt = 0.0f;
         }
-
-        // advance position target using velocity target
-        guided_pos_target_cm += guided_vel_target_cms * dt;
-
-        // send position and velocity targets to position controller
-        pos_control.set_pos_target(guided_pos_target_cm);
-        pos_control.set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
 
         // run position controller
         pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_AND_VEL_FF, ekfNavVelGainScaler, false);
