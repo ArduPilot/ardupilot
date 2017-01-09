@@ -78,49 +78,6 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
     return airspeed_raw/4;
 }
 
-
-/*
-  emulate an analog rangefinder
- */
-uint16_t SITL_State::_ground_sonar(void)
-{
-    float altitude = _sitl->height_agl;
-
-    // sensor position offset in body frame
-    Vector3f relPosSensorBF = _sitl->rngfnd_pos_offset;
-
-    // adjust altitude for position of the sensor on the vehicle if position offset is non-zero
-    if (!relPosSensorBF.is_zero()) {
-        // get a rotation matrix following DCM conventions (body to earth)
-        Matrix3f rotmat;
-        _sitl->state.quaternion.rotation_matrix(rotmat);
-
-        // rotate the offset into earth frame
-        Vector3f relPosSensorEF = rotmat * relPosSensorBF;
-        // correct the altitude at the sensor
-        altitude -= relPosSensorEF.z;
-    }
-
-    float voltage = 5.0f;
-    if (fabs(_sitl->state.rollDeg) < 90 &&
-        fabs(_sitl->state.pitchDeg) < 90) {
-        // adjust for apparent altitude with roll
-        altitude /= cosf(radians(_sitl->state.rollDeg)) * cosf(radians(_sitl->state.pitchDeg));
-
-        altitude += _sitl->sonar_noise * rand_float();
-
-        // Altitude in in m, scaler in meters/volt
-        voltage = altitude / _sitl->sonar_scale;
-        voltage = constrain_float(voltage, 0, 5.0f);
-
-        if (_sitl->sonar_glitch >= (rand_float() + 1.0f)/2.0f) {
-            voltage = 5.0f;
-        }
-    }
-
-    return 1023*(voltage / 5.0f);
-}
-
 /*
   setup the INS input channels with new input
  */
@@ -131,7 +88,6 @@ void SITL_State::_update_ins(float airspeed)
         return;
     }
 
-    sonar_pin_value    = _ground_sonar();
     float airspeed_simulated = (fabsf(_sitl->arspd_fail) > 1.0e-6f) ? _sitl->arspd_fail : airspeed;
     airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->arspd_noise * rand_float()));
 }

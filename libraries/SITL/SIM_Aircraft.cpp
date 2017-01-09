@@ -161,6 +161,7 @@ void Aircraft::update_position(void)
 
     // we only advance time if it hasn't been advanced already by the
     // backend
+    // TODO : make this a function
     if (last_time_us == time_now_us) {
         time_now_us += frame_time_us;
     }
@@ -362,6 +363,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.rpm1 = rpm1;
     fdm.rpm2 = rpm2;
     fdm.rcin_chan_count = rcin_chan_count;
+    fdm.range = range;
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
 
