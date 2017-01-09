@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     AP_NESTEDGROUPINFO(AP_MotorsHeli, 0),
-    
+
     // @Param: SV1_POS
     // @DisplayName: Servo 1 Position
     // @Description: Angular location of swash servo #1
@@ -50,7 +50,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeli_Single, _servo3_pos, AP_MOTORS_HELI_SINGLE_SERVO3_POS),
-  
+
     // @Param: TAIL_TYPE
     // @DisplayName: Tail Type
     // @Description: Tail type selection.  Simpler yaw controller used if external gyro is selected
@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Values: 0:NoFlybar,1:Flybar
     // @User: Standard
     AP_GROUPINFO("FLYBAR_MODE", 9, AP_MotorsHeli_Single, _flybar_mode, AP_MOTORS_HELI_NOFLYBAR),
-  
+
     // @Param: TAIL_SPEED
     // @DisplayName: Direct Drive VarPitch Tail ESC speed
     // @Description: Direct Drive VarPitch Tail ESC speed.  Only used when TailType is DirectDrive VarPitch
@@ -152,8 +152,10 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Values: -1:Reversed,1:Normal
     // @User: Standard
     AP_GROUPINFO("RSC_PWM_REV", 18, AP_MotorsHeli_Single, _main_rotor._pwm_rev, 1),
-    
-    // parameters up to and including 29 are reserved for tradheli
+
+    // @Group: AUX_
+    // @Path: ../RC_Channel/RC_Channel.cpp
+    AP_SUBGROUPINFO(_servo_aux, "AUX_", 19, AP_MotorsHeli_Single, RC_Channel),
 
     AP_GROUPEND
 };
@@ -165,7 +167,7 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // setup fast channels
-    uint32_t mask = 
+    uint32_t mask =
         1U << AP_MOTORS_MOT_1 |
         1U << AP_MOTORS_MOT_2 |
         1U << AP_MOTORS_MOT_3 |
@@ -284,7 +286,7 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // send setpoints to main rotor controller and trigger recalculation of scalars
     _main_rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
     calculate_armed_scalars();
-    
+
     // send setpoints to tail rotor controller and trigger recalculation of scalars
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SPEED_SETPOINT);
@@ -557,7 +559,7 @@ void AP_MotorsHeli_Single::servo_test()
 // parameter_check - check if helicopter specific parameters are sensible
 bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
 {
-    // returns false if Phase Angle is outside of range 
+    // returns false if Phase Angle is outside of range
     if ((_phase_angle > 90) || (_phase_angle < -90)){
         if (display_msg) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_PHANG out of range");
