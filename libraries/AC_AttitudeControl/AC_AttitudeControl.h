@@ -238,6 +238,26 @@ public:
     // sanity check parameters.  should be called once before take-off
     virtual void parameter_sanity_check() {}
 
+    // return true if the rpy mix is at lowest value
+    virtual bool is_throttle_mix_min() const { return true; }
+
+    // control rpy throttle mix
+    virtual void set_throttle_mix_min() {}
+    virtual void set_throttle_mix_mid() {}
+    virtual void set_throttle_mix_max() {}
+
+    // enable use of flybass passthrough on heli
+    virtual void use_flybar_passthrough(bool passthrough, bool tail_passthrough) {}
+
+	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage on heli
+	virtual void use_leaky_i(bool leaky_i) {}
+
+    // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
+    virtual void set_hover_roll_trim_scalar(float scalar) {}
+
+    // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
+    virtual void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) {};
+    
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

@@ -63,12 +63,12 @@ public:
     // set desired throttle vs attitude mixing (actual mix is slewed towards this value over 1~2 seconds)
     //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
     //  has no effect when throttle is above hover throttle
-    void set_throttle_mix_min() { _throttle_rpy_mix_desired = _thr_mix_min; }
-    void set_throttle_mix_mid() { _throttle_rpy_mix_desired = AC_ATTITUDE_CONTROL_MID_DEFAULT; }
-    void set_throttle_mix_max() { _throttle_rpy_mix_desired = _thr_mix_max; }
+    void set_throttle_mix_min() override { _throttle_rpy_mix_desired = _thr_mix_min; }
+    void set_throttle_mix_mid() override { _throttle_rpy_mix_desired = AC_ATTITUDE_CONTROL_MID_DEFAULT; }
+    void set_throttle_mix_max() override { _throttle_rpy_mix_desired = _thr_mix_max; }
 
-    // get_throttle_rpy_mix - get low throttle compensation value
-    bool is_throttle_mix_min() const { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
+    // are we producing min throttle?
+    bool is_throttle_mix_min() const override { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
 
     // run lowest level body-frame rate controller and send outputs to the motors
     void rate_controller_run();
