@@ -262,8 +262,12 @@ public:
     ///
     /// @return                False if any variable failed to load
     ///
-    static bool load_all(void);
+    static bool load_all(bool check_defaults_file=true);
 
+    /// reoad the hal.util defaults file. Called after pointer parameters have been allocated
+    ///
+    static void reload_defaults_file(bool panic_on_error=true);
+    
     static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
     
     // set a AP_Param variable to a specified value
@@ -473,9 +477,9 @@ private:
       load a parameter defaults file. This happens as part of load_all()
      */
     static bool parse_param_line(char *line, char **vname, float &value);
-    static bool load_defaults_file(const char *filename);
+    static bool load_defaults_file(const char *filename, bool panic_on_error);
 #endif
-
+    
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
     
