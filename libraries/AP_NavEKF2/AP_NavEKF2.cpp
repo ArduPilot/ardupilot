@@ -439,7 +439,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
-    // @Units: gauss
+    // @Units: rad
     AP_GROUPINFO("YAW_M_NSE", 37, NavEKF2, _yawNoise, 0.5f),
 
     // @Param: YAW_I_GATE
@@ -456,6 +456,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 10 50
     // @Increment: 5
     // @User: Advanced
+    // @Units: cs
     AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, 25),
 
     // @Param: MAGE_P_NSE
