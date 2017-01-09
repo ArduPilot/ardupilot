@@ -292,11 +292,16 @@ build_arduplane() {
 build_arducopter() {
     tag="$1"
     echo "Building ArduCopter $tag binaries from $(pwd)"
+
+    # work out what frames to build by looking for FRAME_CLASS parameter
+    checkout ArduCopter $tag "" ""
     if grep -q FRAME_CLASS ArduCopter/Parameters.cpp; then
         frames="quad tri heli"
     else
         frames="quad tri hexa y6 octa octa-quad heli"
     fi
+    checkout ArduCopter "latest" "" ""
+    
     for b in erlebrain2 navio navio2 pxf pxfmini bebop; do
         for f in $frames; do
             checkout ArduCopter $tag $b $f || {
