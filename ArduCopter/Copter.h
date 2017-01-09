@@ -90,6 +90,7 @@
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 #include <AP_Button/AP_Button.h>
+#include <AP_Arming/AP_Arming.h>
 
 // Configuration
 #include "defines.h"
@@ -97,6 +98,7 @@
 
 #include "GCS_Mavlink.h"
 #include "AP_Rally.h"           // Rally point library
+#include "arming_checks.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if SPRAYER == ENABLED
@@ -139,6 +141,7 @@ public:
 #if ADVANCED_FAILSAFE == ENABLED
     friend class AP_AdvancedFailsafe_Copter;
 #endif
+    friend class AP_Arming_Copter;
 
     Copter(void);
 
@@ -212,6 +215,9 @@ private:
 
     // Mission library
     AP_Mission mission;
+
+    // Arming/Disarming mangement class
+    AP_Arming_Copter arming {ahrs, barometer, compass, battery, inertial_nav, ins};
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
@@ -644,18 +650,6 @@ private:
     void set_failsafe_gcs(bool b);
     void set_land_complete(bool b);
     void set_land_complete_maybe(bool b);
-    void set_pre_arm_check(bool b);
-    void set_pre_arm_rc_check(bool b);
-    bool rc_calibration_checks(bool display_failure);
-    bool gps_checks(bool display_failure);
-    bool fence_checks(bool display_failure);
-    bool compass_checks(bool display_failure);
-    bool ins_checks(bool display_failure);
-    bool board_voltage_checks(bool display_failure);
-    bool parameter_checks(bool display_failure);
-    bool motor_checks(bool display_failure);
-    bool pilot_throttle_checks(bool display_failure);
-    bool barometer_checks(bool display_failure);
     void update_using_interlock();
     void set_motor_emergency_stop(bool b);
     float get_smoothing_gain();
@@ -983,15 +977,6 @@ private:
     void arm_motors_check();
     void auto_disarm_check();
     bool init_arm_motors(bool arming_from_gcs);
-    void update_arming_checks(void);
-    bool all_arming_checks_passing(bool arming_from_gcs);
-    bool pre_arm_checks(bool display_failure);
-    void pre_arm_rc_checks();
-    bool pre_arm_gps_checks(bool display_failure);
-    bool pre_arm_ekf_attitude_check();
-    bool pre_arm_terrain_check(bool display_failure);
-    bool pre_arm_proximity_check(bool display_failure);
-    bool arm_checks(bool display_failure, bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
     void lost_vehicle_check();
