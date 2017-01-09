@@ -9,24 +9,6 @@
 #include <AP_Proximity/AP_Proximity.h>
 
 /*
-  frame types for quadplane build. Most case be set with
-  parameters. Those that can't are listed here and chosen with a build
-  time FRAME_CONFIG parameter
- */
-#define MULTICOPTER_FRAME 1
-#define TRI_FRAME 2
-
-#ifndef FRAME_CONFIG
-# define FRAME_CONFIG MULTICOPTER_FRAME
-#endif
-
-#if FRAME_CONFIG == TRI_FRAME
-#define AP_MOTORS_CLASS AP_MotorsTri
-#else
-#define AP_MOTORS_CLASS AP_MotorsMulticopter
-#endif
-
-/*
   QuadPlane specific functionality
  */
 class QuadPlane
@@ -124,7 +106,7 @@ private:
     AP_Int8 frame_class;
     AP_Int8 frame_type;
     
-    AP_MOTORS_CLASS *motors;
+    AP_MotorsMulticopter *motors;
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
