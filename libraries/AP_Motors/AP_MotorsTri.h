@@ -4,7 +4,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsMulticopter.h"
 
 // tail servo uses channel 7
@@ -62,10 +62,8 @@ protected:
     int16_t             calc_yaw_radio_output(float yaw_input, float yaw_input_max);        // calculate radio output for yaw servo, typically in range of 1100-1900
 
     // parameters
-    AP_Int8         _yaw_reverse;                       // Reverse yaw output
-    AP_Int16        _yaw_servo_trim;                    // Trim or center position of yaw servo
-    AP_Int16        _yaw_servo_min;                     // Minimum pwm of yaw servo
-    AP_Int16        _yaw_servo_max;                     // Maximum pwm of yaw servo
+
+    SRV_Channel     *_yaw_servo; // yaw output channel
     AP_Float        _yaw_servo_angle_max_deg;           // Maximum lean angle of yaw servo in degrees
     float           _pivot_angle;                       // Angle of yaw pivot
     float           _thrust_right;
