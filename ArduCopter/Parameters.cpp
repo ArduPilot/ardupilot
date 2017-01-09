@@ -691,9 +691,13 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECTPTR(circle_nav, "CIRCLE_",  AC_Circle),
 
     // @Group: ATC_
-    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
+    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp,,../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
+#if FRAME_CONFIG == HELI_FRAME
+    GOBJECTPTR(attitude_control, "ATC_", AC_AttitudeControl_Heli),
+#else
     GOBJECTPTR(attitude_control, "ATC_", AC_AttitudeControl_Multi),
-
+#endif
+    
     // @Group: POSCON_
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     GOBJECTPTR(pos_control, "PSC", AC_PosControl),
@@ -779,7 +783,7 @@ const AP_Param::Info Copter::var_info[] = {
 
 #if FRAME_CONFIG == HELI_FRAME
     // @Group: H_
-    // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp
+    // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp,../libraries/AP_Motors/AP_MotorsHeli.cpp
     GOBJECTPTR(motors, "H_",           AP_MotorsHeli_Single),
 #else
     // @Group: MOT_
