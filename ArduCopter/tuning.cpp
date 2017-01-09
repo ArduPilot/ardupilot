@@ -116,15 +116,15 @@ void Copter::tuning() {
         break;
 
     case TUNING_RATE_PITCH_FF:
-        attitude_control->get_heli_rate_pitch_pid().ff(tuning_value);
+        attitude_control->get_rate_pitch_pid().ff(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_FF:
-        attitude_control->get_heli_rate_roll_pid().ff(tuning_value);
+        attitude_control->get_rate_roll_pid().ff(tuning_value);
         break;
 
     case TUNING_RATE_YAW_FF:
-        attitude_control->get_heli_rate_yaw_pid().ff(tuning_value);
+        attitude_control->get_rate_yaw_pid().ff(tuning_value);
         break;
 #endif
 
