@@ -190,7 +190,7 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         send_radio_in(0);
         break;
 
-    case MSG_RADIO_OUT:
+    case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         send_servo_output_raw(false);
         break;
@@ -404,7 +404,7 @@ GCS_MAVLINK_Tracker::data_stream_send(void)
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_RADIO_IN);
-        send_message(MSG_RADIO_OUT);
+        send_message(MSG_SERVO_OUTPUT_RAW);
     }
 
     if (stream_trigger(STREAM_EXTRA1)) {

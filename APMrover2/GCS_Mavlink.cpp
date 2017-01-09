@@ -360,7 +360,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         send_radio_in(rover.receiver_rssi);
         break;
 
-    case MSG_RADIO_OUT:
+    case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         send_servo_output_raw(false);
         break;
@@ -605,7 +605,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
             send_message(MSG_SERVO_OUT);
         }
         if (stream_trigger(STREAM_RC_CHANNELS)) {
-            send_message(MSG_RADIO_OUT);
+            send_message(MSG_SERVO_OUTPUT_RAW);
         }
 #endif
         // don't send any other stream types while in the delay callback
@@ -656,7 +656,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
     }
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
-        send_message(MSG_RADIO_OUT);
+        send_message(MSG_SERVO_OUTPUT_RAW);
         send_message(MSG_RADIO_IN);
     }
 
