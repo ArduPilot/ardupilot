@@ -31,7 +31,8 @@ def build(bld):
             'AP_Proximity',
             'AP_Stats',
             'AP_Gripper',
-            'AP_Beacon'
+            'AP_Beacon',
+            'AP_Arming',
         ],
     )
 
