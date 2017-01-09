@@ -453,7 +453,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         send_radio_in(copter.receiver_rssi);
         break;
 
-    case MSG_RADIO_OUT:
+    case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         send_servo_output_raw(false);
         break;
@@ -782,7 +782,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
     if (copter.gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
-        send_message(MSG_RADIO_OUT);
+        send_message(MSG_SERVO_OUTPUT_RAW);
         send_message(MSG_RADIO_IN);
     }
 
