@@ -208,14 +208,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("TRAN_PIT_MAX", 29, QuadPlane, transition_pitch_max, 3),
 
-#if FRAME_CONFIG == MULTICOPTER_FRAME
+    // frame class was moved from 30 when consolidating AP_Motors classes
+#define FRAME_CLASS_OLD_IDX 30
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Quad, 1:Hexa, 2:Octa, 3:OctaQuad, 4:Y6
+    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri
     // @User: Standard
-    AP_GROUPINFO("FRAME_CLASS", 30, QuadPlane, frame_class, 0),
-#endif
+    AP_GROUPINFO("FRAME_CLASS", 46, QuadPlane, frame_class, 1),
 
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X or V)
@@ -368,6 +368,36 @@ bool QuadPlane::setup(void)
         return false;
     }
     float loop_delta_t = 1.0 / plane.scheduler.get_loop_rate_hz();
+
+#if FRAME_CONFIG != TRI_FRAME
+    /*
+      cope with upgrade from old AP_Motors values for frame_class
+     */
+    AP_Int8 old_class;
+    const AP_Param::ConversionInfo cinfo { Parameters::k_param_quadplane, FRAME_CLASS_OLD_IDX, AP_PARAM_INT8, nullptr };
+    if (AP_Param::find_old_parameter(&cinfo, &old_class) && !frame_class.load()) {
+        uint8_t new_value = 0;
+        // map from old values to new values
+        switch (old_class.get()) {
+        case 0:
+            new_value = AP_Motors::MOTOR_FRAME_QUAD;
+            break;
+        case 1:
+            new_value = AP_Motors::MOTOR_FRAME_HEXA;
+            break;
+        case 2:
+            new_value = AP_Motors::MOTOR_FRAME_OCTA;
+            break;
+        case 3:
+            new_value = AP_Motors::MOTOR_FRAME_OCTAQUAD;
+            break;
+        case 4:
+            new_value = AP_Motors::MOTOR_FRAME_Y6;
+            break;
+        }
+        frame_class.set_and_save(new_value);
+    }
+#endif
     
     if (hal.util->available_memory() <
         4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav)) {
@@ -380,6 +410,7 @@ bool QuadPlane::setup(void)
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor4, CH_8);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor7, CH_11);
+    frame_class.set(AP_Motors::MOTOR_FRAME_TRI);
     motors = new AP_MOTORS_CLASS(plane.scheduler.get_loop_rate_hz());
 #else
     /*
@@ -387,31 +418,25 @@ bool QuadPlane::setup(void)
       that the objects don't affect the vehicle unless enabled and
       also saves memory when not in use
      */
-    switch ((enum frame_class)frame_class.get()) {
-    case FRAME_CLASS_QUAD:
+    switch ((enum AP_Motors::motor_frame_class)frame_class.get()) {
+    case AP_Motors::MOTOR_FRAME_QUAD:
         setup_default_channels(4);
-        motors = new AP_MotorsQuad(plane.scheduler.get_loop_rate_hz());
         break;
-    case FRAME_CLASS_HEXA:
+    case AP_Motors::MOTOR_FRAME_HEXA:
         setup_default_channels(6);
-        motors = new AP_MotorsHexa(plane.scheduler.get_loop_rate_hz());
         break;
-    case FRAME_CLASS_OCTA:
+    case AP_Motors::MOTOR_FRAME_OCTA:
+    case AP_Motors::MOTOR_FRAME_OCTAQUAD:
         setup_default_channels(8);
-        motors = new AP_MotorsOcta(plane.scheduler.get_loop_rate_hz());
         break;
-    case FRAME_CLASS_OCTAQUAD:
-        setup_default_channels(8);
-        motors = new AP_MotorsOctaQuad(plane.scheduler.get_loop_rate_hz());
-        break;
-    case FRAME_CLASS_Y6:
+    case AP_Motors::MOTOR_FRAME_Y6:
         setup_default_channels(7);
-        motors = new AP_MotorsY6(plane.scheduler.get_loop_rate_hz());
         break;
     default:
         hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
         goto failed;
     }
+    motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
 #endif // AP_MOTORS_CLASS
     const static char *strUnableToAllocate = "Unable to allocate";
     if (!motors) {
@@ -441,8 +466,7 @@ bool QuadPlane::setup(void)
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
-    motors->set_frame_orientation(frame_type);
-    motors->Init();
+    motors->init((AP_Motors::motor_frame_class)frame_class.get(), (AP_Motors::motor_frame_type)frame_type.get());
     motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);

@@ -50,6 +50,10 @@ public:
     //   returns true on success, false if no valid readings
     bool get_closest_object(float& angle_deg, float &distance) const;
 
+    // get number of objects, angle and distance - used for non-GPS avoidance
+    uint8_t get_object_count() const;
+    bool get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
+
     // get distances in 8 directions. used for sending distances to ground station
     bool get_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
 

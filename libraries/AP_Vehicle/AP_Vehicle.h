@@ -57,6 +57,18 @@ public:
             float height_estimate;
             float last_distance;
         };
+
+
+        // stages of flight
+        enum FlightStage {
+            FLIGHT_TAKEOFF       = 1,
+            FLIGHT_VTOL          = 2,
+            FLIGHT_NORMAL        = 3,
+            FLIGHT_LAND_APPROACH = 4,
+            FLIGHT_LAND_PREFLARE = 5,
+            FLIGHT_LAND_FINAL    = 6,
+            FLIGHT_ABORT_LAND    = 7
+        };
     };
 
     /*

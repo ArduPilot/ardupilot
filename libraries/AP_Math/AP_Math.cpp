@@ -1,11 +1,18 @@
 #include "AP_Math.h"
 #include <float.h>
 
-template <class FloatOne, class FloatTwo>
-bool is_equal(const FloatOne v_1, const FloatTwo v_2)
+template <class Arithmetic1, class Arithmetic2>
+typename std::enable_if<std::is_integral<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value ,bool>::type
+is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 {
-    static_assert(std::is_arithmetic<FloatOne>::value, "template parameter not of type float or int");
-    static_assert(std::is_arithmetic<FloatTwo>::value, "template parameter not of type float or int");
+    typedef typename std::common_type<Arithmetic1, Arithmetic2>::type common_type;
+    return static_cast<common_type>(v_1) == static_cast<common_type>(v_2);
+}
+
+template <class Arithmetic1, class Arithmetic2>
+typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
+is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
+{
     return fabsf(v_1 - v_2) < std::numeric_limits<decltype(v_1 - v_2)>::epsilon();
 }
 

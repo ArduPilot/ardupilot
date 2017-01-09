@@ -15,13 +15,13 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Executing command ID #%i",cmd.id);
+    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Executing command ID #%i", cmd.id);
 
     // remember the course of our next navigation leg
     next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
 
     switch (cmd.id) {
-    case MAV_CMD_NAV_WAYPOINT:	// Navigate to Waypoint
+    case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
         do_nav_wp(cmd);
         break;
 
@@ -161,7 +161,6 @@ Return true if we do not recognize the command so that we move on to the next co
 bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 {
     switch (cmd.id) {
-
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
 
@@ -197,11 +196,10 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 
     default:
         // error message
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Skipping invalid cmd #%i", cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
-
 }
 
 /********************************************************************************/
@@ -211,7 +209,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 void Rover::do_RTL(void)
 {
     prev_WP = current_loc;
-    control_mode 	= RTL;
+    control_mode = RTL;
     next_WP = home;
 }
 
@@ -238,7 +236,7 @@ void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
     active_loiter = true;
     do_nav_wp(cmd);
-    loiter_duration = 100; // an arbitrary large loiter time
+    loiter_duration = 100;  // an arbitrary large loiter time
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
@@ -288,7 +286,10 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // have we gone past the waypoint?
     // We should always go through the waypoint i.e. the above code
     // first before we go past it but sometimes we don't.
-    if (location_passed_point(current_loc, prev_WP, next_WP)) {
+    // OR have we reached the waypoint previously be we aren't actively loitering
+    // This second check is required for when we roll past the waypoint radius
+    if (location_passed_point(current_loc, prev_WP, next_WP) ||
+        (!active_loiter && previously_reached_wp)) {
         // As we have passed the waypoint navigation needs to be done from current location
         prev_WP = current_loc;
         // Check if this is the first time we have reached the waypoint even though we have gone past it
@@ -328,7 +329,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 bool Rover::verify_RTL()
 {
     if (wp_distance <= g.waypoint_radius) {
-        gcs_send_text(MAV_SEVERITY_INFO,"Reached destination");
+        gcs_send_text(MAV_SEVERITY_INFO, "Reached destination");
         rtl_complete = true;
         return true;
     }
@@ -410,7 +411,7 @@ void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 bool Rover::verify_wait_delay()
 {
     if ((uint32_t)(millis() - condition_start) > (uint32_t)condition_value) {
-        condition_value 	= 0;
+        condition_value = 0;
         return true;
     }
     return false;
@@ -454,10 +455,11 @@ void Rover::do_set_home(const AP_Mission::Mission_Command& cmd)
     }
 }
 
+#if CAMERA == ENABLED
+
 // do_digicam_configure Send Digicam Configure message with the camera library
 void Rover::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 {
-#if CAMERA == ENABLED
     camera.configure(cmd.content.digicam_configure.shooting_mode,
                      cmd.content.digicam_configure.shutter_speed,
                      cmd.content.digicam_configure.aperture,
@@ -465,13 +467,11 @@ void Rover::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
                      cmd.content.digicam_configure.exposure_type,
                      cmd.content.digicam_configure.cmd_id,
                      cmd.content.digicam_configure.engine_cutoff_time);
-#endif
 }
 
 // do_digicam_control Send Digicam Control message with the camera library
 void Rover::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
-#if CAMERA == ENABLED
     if (camera.control(cmd.content.digicam_control.session,
                        cmd.content.digicam_control.zoom_pos,
                        cmd.content.digicam_control.zoom_step,
@@ -480,16 +480,13 @@ void Rover::do_digicam_control(const AP_Mission::Mission_Command& cmd)
                        cmd.content.digicam_control.cmd_id)) {
         log_picture();
     }
-#endif
 }
 
 // do_take_picture - take a picture with the camera library
 void Rover::do_take_picture()
 {
-#if CAMERA == ENABLED
     camera.trigger_pic(true);
     log_picture();
-#endif
 }
 
 // log_picture - log picture taken and send feedback to GCS
@@ -506,6 +503,8 @@ void Rover::log_picture()
         }
     }
 }
+
+#endif
 
 void Rover::do_set_reverse(const AP_Mission::Mission_Command& cmd)
 {

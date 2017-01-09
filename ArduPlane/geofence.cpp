@@ -310,7 +310,7 @@ void Plane::geofence_check(bool altitude_check_only)
     struct Location loc;
 
     // Never trigger a fence breach in the final stage of landing
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE) {
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL || flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE) {
         return;
     }
 
@@ -485,7 +485,8 @@ bool Plane::geofence_set_floor_enabled(bool floor_enable) {
     return false;
 }
 
-bool geofence_breached(void) {
+bool Plane::geofence_breached(void)
+{
     return false;
 }
 

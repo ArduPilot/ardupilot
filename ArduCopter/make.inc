@@ -1,5 +1,6 @@
 LIBRARIES += AP_Common
 LIBRARIES += AP_Menu
+LIBRARIES += AP_AdvancedFailsafe
 LIBRARIES += AP_Param
 LIBRARIES += StorageManager
 LIBRARIES += GCS

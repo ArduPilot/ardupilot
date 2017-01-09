@@ -103,7 +103,7 @@ bool AP_Beacon::enabled(void)
 // return true if sensor is basically healthy (we are receiving data)
 bool AP_Beacon::healthy(void)
 {
-    if (_driver == nullptr || _type == AP_BeaconType_None) {
+    if (!device_ready()) {
         return false;
     }
     return _driver->healthy();
@@ -112,7 +112,7 @@ bool AP_Beacon::healthy(void)
 // update state. This should be called often from the main loop
 void AP_Beacon::update(void)
 {
-    if (_driver == nullptr || _type == AP_BeaconType_None) {
+    if (!device_ready()) {
         return;
     }
     _driver->update();
@@ -121,7 +121,7 @@ void AP_Beacon::update(void)
 // return origin of position estimate system
 bool AP_Beacon::get_origin(Location &origin_loc) const
 {
-    if (_driver == nullptr || _type == AP_BeaconType_None) {
+    if (!device_ready()) {
         return false;
     }
 
@@ -142,7 +142,7 @@ bool AP_Beacon::get_origin(Location &origin_loc) const
 // return position in NED from position estimate system's origin
 bool AP_Beacon::get_vehicle_position_ned(Vector3f &position, float& accuracy_estimate) const
 {
-    if (_driver == nullptr || _type == AP_BeaconType_None) {
+    if (!device_ready()) {
         return false;
     }
 
@@ -160,7 +160,7 @@ bool AP_Beacon::get_vehicle_position_ned(Vector3f &position, float& accuracy_est
 // return the number of beacons
 uint8_t AP_Beacon::count() const
 {
-    if (_driver == nullptr || _type == AP_BeaconType_None) {
+    if (!device_ready()) {
         return 0;
     }
     return num_beacons;
@@ -169,7 +169,7 @@ uint8_t AP_Beacon::count() const
 // return all beacon data
 bool AP_Beacon::get_beacon_data(uint8_t beacon_instance, struct BeaconState& state) const
 {
-    if (_driver == nullptr || _type == AP_BeaconType_None || beacon_instance >= num_beacons) {
+    if (!device_ready() || beacon_instance >= num_beacons) {
         return false;
     }
     state = beacon_state[beacon_instance];
@@ -206,7 +206,7 @@ float AP_Beacon::beacon_distance(uint8_t beacon_instance) const
 // return beacon position
 Vector3f AP_Beacon::beacon_position(uint8_t beacon_instance) const
 {
-    if (_driver == nullptr || _type == AP_BeaconType_None || beacon_instance >= num_beacons) {
+    if (!device_ready() || beacon_instance >= num_beacons) {
         Vector3f temp = {};
         return temp;
     }
@@ -220,4 +220,10 @@ uint32_t AP_Beacon::beacon_last_update_ms(uint8_t beacon_instance) const
         return 0;
     }
     return beacon_state[beacon_instance].distance_update_ms;
+}
+
+// check if the device is ready
+bool AP_Beacon::device_ready(void) const
+{
+    return ((_driver != nullptr) && (_type != AP_BeaconType_None));
 }

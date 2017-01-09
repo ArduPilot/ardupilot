@@ -50,6 +50,9 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Units: Centimeters
     AP_GROUPINFO("LAND_OFS_Y",    4, AC_PrecLand, _land_ofs_cm_y, 0),
 
+    // 5 RESERVED for EKF_TYPE
+    // 6 RESERVED for ACC_NSE
+
     AP_GROUPEND
 };
 

@@ -32,7 +32,7 @@ bool AP_Gripper_Servo::has_state_pwm(const uint16_t pwm) const
     }
     if (current_pwm != pwm) {
         // last action did not set pwm to the current value
-        // (e.g. last action was a grabm not a release)
+        // (e.g. last action was a grab not a release)
         return false;
     }
     if (AP_HAL::millis() - action_timestamp < action_time) {
@@ -55,3 +55,14 @@ bool AP_Gripper_Servo::grabbed() const
 
 // type-specific periodic updates:
 void AP_Gripper_Servo::update_gripper() { };
+
+bool AP_Gripper_Servo::valid() const
+{
+    if (!AP_Gripper_Backend::valid()) {
+        return false;
+    }
+    if (!RC_Channel_aux::function_assigned(RC_Channel_aux::k_gripper)) {
+        return false;
+    }
+    return true;
+}

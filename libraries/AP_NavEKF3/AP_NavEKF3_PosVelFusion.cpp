@@ -197,7 +197,7 @@ void NavEKF3_core::ResetHeight(void)
 bool NavEKF3_core::resetHeightDatum(void)
 {
     if (activeHgtSource == HGT_SOURCE_RNG) {
-        // by definition the height dataum is at ground level so cannot perform the reset
+        // by definition the height datum is at ground level so cannot perform the reset
         return false;
     }
     // record the old height estimate
@@ -206,7 +206,7 @@ bool NavEKF3_core::resetHeightDatum(void)
     frontend->_baro.update_calibration();
     // reset the height state
     stateStruct.position.z = 0.0f;
-    // adjust the height of the EKF origin so that the origin plus baro height before and afer the reset is the same
+    // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
     if (validOrigin) {
         EKF_origin.alt += oldHgt*100;
     }

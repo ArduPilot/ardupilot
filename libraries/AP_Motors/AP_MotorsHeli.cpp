@@ -179,7 +179,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 //
 
 // init
-void AP_MotorsHeli::Init()
+void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // set update rate
     set_update_rate(_speed_hz);
@@ -198,6 +198,15 @@ void AP_MotorsHeli::Init()
 
     // calculate all scalars
     calculate_scalars();
+
+    // record successful initialisation if what we setup was the desired frame_class
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
+}
+
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+void AP_MotorsHeli::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+{
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
 }
 
 // output_min - sets servos to neutral point with motors stopped

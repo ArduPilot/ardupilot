@@ -30,13 +30,13 @@ extern const AP_HAL::HAL& hal;
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/GPIO.h>
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
-#define Invensense_DRDY_PIN BBB_P8_14
+#define INVENSENSE_DRDY_PIN BBB_P8_14
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-#define Invensense_DRDY_PIN RPI_GPIO_24
+#define INVENSENSE_DRDY_PIN RPI_GPIO_24
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-#define Invensense_DRDY_PIN MINNOW_GPIO_I2S_CLK
+#define INVENSENSE_DRDY_PIN MINNOW_GPIO_I2S_CLK
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-#define Invensense_EXT_SYNC_ENABLE 1
+#define INVENSENSE_EXT_SYNC_ENABLE 1
 #endif
 #endif
 
@@ -46,8 +46,8 @@ extern const AP_HAL::HAL& hal;
   EXT_SYNC allows for frame synchronisation with an external device
   such as a camera. When enabled the LSB of AccelZ holds the FSYNC bit
  */
-#ifndef Invensense_EXT_SYNC_ENABLE
-#define Invensense_EXT_SYNC_ENABLE 0
+#ifndef INVENSENSE_EXT_SYNC_ENABLE
+#define INVENSENSE_EXT_SYNC_ENABLE 0
 #endif
 
 // common registers
@@ -338,8 +338,8 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensense::probe(AP_InertialSensor
 
 bool AP_InertialSensor_Invensense::_init()
 {
-#ifdef Invensense_DRDY_PIN
-    _drdy_pin = hal.gpio->channel(Invensense_DRDY_PIN);
+#ifdef INVENSENSE_DRDY_PIN
+    _drdy_pin = hal.gpio->channel(INVENSENSE_DRDY_PIN);
     _drdy_pin->mode(HAL_GPIO_INPUT);
 #endif
 
@@ -531,7 +531,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         Vector3f accel, gyro;
         bool fsync_set = false;
 
-#if Invensense_EXT_SYNC_ENABLE
+#if INVENSENSE_EXT_SYNC_ENABLE
         fsync_set = (int16_val(data, 2) & 1U) != 0;
 #endif
         
@@ -765,7 +765,7 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
 {
     uint8_t config;
 
-#if Invensense_EXT_SYNC_ENABLE
+#if INVENSENSE_EXT_SYNC_ENABLE
     // add in EXT_SYNC bit if enabled
     config = (MPUREG_CONFIG_EXT_SYNC_AZ << MPUREG_CONFIG_EXT_SYNC_SHIFT);
 #else
@@ -809,6 +809,7 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
     switch (whoami) {
     case MPU_WHOAMI_6000:
         _mpu_type = Invensense_MPU6000;
+        return true;
     case MPU_WHOAMI_MPU9250:
     case MPU_WHOAMI_MPU9255:
         _mpu_type = Invensense_MPU9250;

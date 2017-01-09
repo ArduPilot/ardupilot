@@ -128,7 +128,7 @@ static uint16_t srxl_crc16 (uint16_t crc, uint8_t new_byte)
  * @param[out]  num_values - number of RC channels extracted from srxl frame
  * @param[out]  values - array of RC channels with refreshed information as pulsewidth in microseconds Range: 800us - 2200us
  * @param[out]  failsafe_state - true: RC-receiver is in failsafe state, false: RC-receiver is not in failsafe state
- * @return      0: success
+ * @retval 0 success
  */
 static int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state)
 {
@@ -174,7 +174,7 @@ static int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint
  * @param[out] num_values - number of RC channels extracted from srxl frame
  * @param[out] values - array of RC channels with refreshed information as pulsewidth in microseconds Range: 800us - 2200us
  * @param[out] failsafe_state - true: RC-receiver is in failsafe state, false: RC-receiver is not in failsafe state
- * @return 0: success
+ * @retval 0 success
  */
 static int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state)
 {
@@ -254,7 +254,10 @@ static int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16
  * @param[out] values - array of RC channels with refreshed information as pulsewidth in microseconds Range: 800us - 2200us
  * @param[in] maximum number of values supported by pixhawk
  * @param[out] failsafe_state - true: RC-receiver is in failsafe state, false: RC-receiver is not in failsafe state
- * @return 0: success
+ * @retval 0 success (a decoded packet)
+ * @retval 1 no packet yet (accumulating)
+ * @retval 2 unknown packet
+ * @retval 4 checksum error
  */
 int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16_t *values, uint16_t max_values, bool *failsafe_state)
 {
@@ -284,8 +287,8 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
             frame_len_full = 0U;
             frame_header = SRXL_HEADER_NOT_IMPL;
             decode_state = STATE_IDLE;
-            ret = 2; /* protocol version not implemented --> no channel data --> unknown packet  */
-            break;
+            buflen = 0;
+            return 2; /* protocol version not implemented --> no channel data --> unknown packet  */
         }
     }
 
@@ -300,6 +303,14 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
         break;
 
     case STATE_COLLECT: /* receive all bytes. After reception decode frame and provide rc channel information to FMU   */
+        if (buflen >= frame_len_full) {
+            // a logic bug in the state machine, this shouldn't happen
+            decode_state = STATE_IDLE;
+            buflen = 0;
+            frame_len_full = 0;
+            frame_header = SRXL_HEADER_NOT_IMPL;
+            return 2;
+        }
         buffer[buflen] = byte;
         buflen++;
         /* CRC not over last 2 frame bytes as these bytes inhabitate the crc */

@@ -71,12 +71,12 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(compass_accumulate,     50,    900),
     SCHED_TASK(update_notify,          50,    300),
     SCHED_TASK(one_second_loop,         1,   3000),
-    SCHED_TASK(compass_cal_update,     50,    100), 
+    SCHED_TASK(compass_cal_update,     50,    100),
     SCHED_TASK(accel_cal_update,       10,    100),
     SCHED_TASK(dataflash_periodic,     50,    300),
-    SCHED_TASK(button_update,          5,     100),
-    SCHED_TASK(stats_update,           1,     100),
-    SCHED_TASK(crash_check,           10,    1000),
+    SCHED_TASK(button_update,           5,    100),
+    SCHED_TASK(stats_update,            1,    100),
+    SCHED_TASK(crash_check,            10,   1000),
 };
 
 /*
@@ -91,7 +91,7 @@ void Rover::stats_update(void)
 /*
   setup is called when the sketch starts
  */
-void Rover::setup() 
+void Rover::setup()
 {
     cliSerial = hal.console;
 
@@ -101,7 +101,7 @@ void Rover::setup()
     notify.init(false);
 
     AP_Notify::flags.failsafe_battery = false;
-    
+
     rssi.init();
 
     init_ardupilot();
@@ -124,8 +124,9 @@ void Rover::loop()
     G_Dt                = delta_us_fast_loop * 1.0e-6f;
     fast_loopTimer_us   = timer;
 
-    if (delta_us_fast_loop > G_Dt_max)
+    if (delta_us_fast_loop > G_Dt_max) {
         G_Dt_max = delta_us_fast_loop;
+    }
 
     mainLoop_count++;
 
@@ -175,8 +176,9 @@ void Rover::ahrs_update()
         ground_speed = norm(velocity.x, velocity.y);
     }
 
-    if (should_log(MASK_LOG_ATTITUDE_FAST))
+    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
+    }
 
     if (should_log(MASK_LOG_IMU)) {
         DataFlash.Log_Write_IMU(ins);
@@ -205,7 +207,7 @@ void Rover::update_trigger(void)
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
-    } 
+    }
 #endif
 }
 
@@ -259,14 +261,17 @@ void Rover::update_compass(void)
  */
 void Rover::update_logging1(void)
 {
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST))
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
+    }
 
-    if (should_log(MASK_LOG_CTUN))
+    if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
+    }
 
-    if (should_log(MASK_LOG_NTUN))
+    if (should_log(MASK_LOG_NTUN)) {
         Log_Write_Nav_Tuning();
+    }
 }
 
 /*
@@ -280,8 +285,9 @@ void Rover::update_logging2(void)
         }
     }
 
-    if (should_log(MASK_LOG_RC))
+    if (should_log(MASK_LOG_RC)) {
         Log_Write_RC();
+    }
 
     if (should_log(MASK_LOG_IMU)) {
         DataFlash.Log_Write_Vibration(ins);
@@ -302,8 +308,9 @@ void Rover::update_aux(void)
  */
 void Rover::one_second_loop(void)
 {
-    if (should_log(MASK_LOG_CURRENT))
+    if (should_log(MASK_LOG_CURRENT)) {
         Log_Write_Current();
+    }
     // send a heartbeat
     gcs_send_message(MSG_HEARTBEAT);
 
@@ -332,8 +339,9 @@ void Rover::one_second_loop(void)
         if (scheduler.debug() != 0) {
             hal.console->printf("G_Dt_max=%lu\n", (unsigned long)G_Dt_max);
         }
-        if (should_log(MASK_LOG_PM))
+        if (should_log(MASK_LOG_PM)) {
             Log_Write_Performance();
+        }
         G_Dt_max = 0;
         resetPerfData();
     }
@@ -347,7 +355,7 @@ void Rover::one_second_loop(void)
     }
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    
+
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
@@ -365,7 +373,7 @@ void Rover::update_GPS_50Hz(void)
     static uint32_t last_gps_reading[GPS_MAX_INSTANCES];
     gps.update();
 
-    for (uint8_t i=0; i<gps.num_sensors(); i++) {
+    for (uint8_t i=0; i < gps.num_sensors(); i++) {
         if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
             last_gps_reading[i] = gps.last_message_time_ms(i);
             if (should_log(MASK_LOG_GPS)) {
@@ -383,7 +391,7 @@ void Rover::update_GPS_10Hz(void)
     if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         last_gps_msg_ms = gps.last_message_time_ms();
 
-        if (ground_start_count > 1){
+        if (ground_start_count > 1) {
             ground_start_count--;
 
         } else if (ground_start_count == 1) {
@@ -397,9 +405,9 @@ void Rover::update_GPS_10Hz(void)
 
                 // set system clock for log timestamps
                 uint64_t gps_timestamp = gps.time_epoch_usec();
-                
+
                 hal.util->set_system_clock(gps_timestamp);
-                
+
                 // update signing timestamp
                 GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
 

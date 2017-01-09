@@ -325,36 +325,11 @@ private:
         uint8_t compass     : 1;    // true if compass is healthy
     } sensor_health;
 
-    // setup FRAME_MAV_TYPE
-#if (FRAME_CONFIG == QUAD_FRAME)
- #define FRAME_MAV_TYPE MAV_TYPE_QUADROTOR
-#elif (FRAME_CONFIG == TRI_FRAME)
- #define FRAME_MAV_TYPE MAV_TYPE_TRICOPTER
-#elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
- #define FRAME_MAV_TYPE MAV_TYPE_HEXAROTOR
-#elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
- #define FRAME_MAV_TYPE MAV_TYPE_OCTOROTOR
-#elif (FRAME_CONFIG == HELI_FRAME)
- #define FRAME_MAV_TYPE MAV_TYPE_HELICOPTER
-#elif (FRAME_CONFIG == SINGLE_FRAME || FRAME_CONFIG == COAX_FRAME)  //because mavlink did not define a singlecopter, we use a quad
- #define FRAME_MAV_TYPE MAV_TYPE_QUADROTOR
-#else
- #error Unrecognised frame type
-#endif
-
     // Motor Output
-#if FRAME_CONFIG == QUAD_FRAME
- #define MOTOR_CLASS AP_MotorsQuad
+#if FRAME_CONFIG == QUAD_FRAME || FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME || FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
+ #define MOTOR_CLASS AP_MotorsMatrix
 #elif FRAME_CONFIG == TRI_FRAME
  #define MOTOR_CLASS AP_MotorsTri
-#elif FRAME_CONFIG == HEXA_FRAME
- #define MOTOR_CLASS AP_MotorsHexa
-#elif FRAME_CONFIG == Y6_FRAME
- #define MOTOR_CLASS AP_MotorsY6
-#elif FRAME_CONFIG == OCTA_FRAME
- #define MOTOR_CLASS AP_MotorsOcta
-#elif FRAME_CONFIG == OCTA_QUAD_FRAME
- #define MOTOR_CLASS AP_MotorsOctaQuad
 #elif FRAME_CONFIG == HELI_FRAME
  #define MOTOR_CLASS AP_MotorsHeli_Single
 #elif FRAME_CONFIG == SINGLE_FRAME
@@ -563,8 +538,9 @@ private:
 #if AC_FENCE == ENABLED
     AC_Fence    fence;
 #endif
+#if AC_AVOID_ENABLED == ENABLED
     AC_Avoid avoid;
-
+#endif
     // Rally library
 #if AC_RALLY == ENABLED
     AP_Rally_Copter rally;
@@ -686,6 +662,7 @@ private:
     bool ins_checks(bool display_failure);
     bool board_voltage_checks(bool display_failure);
     bool parameter_checks(bool display_failure);
+    bool motor_checks(bool display_failure);
     bool pilot_throttle_checks(bool display_failure);
     bool barometer_checks(bool display_failure);
     void update_using_interlock();
@@ -1108,6 +1085,9 @@ private:
     void update_auto_armed();
     void check_usb_mux(void);
     bool should_log(uint32_t mask);
+    void set_default_frame_class();
+    uint8_t get_frame_mav_type();
+    const char* get_frame_string();
     bool current_mode_has_user_takeoff(bool must_navigate);
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
     void takeoff_timer_start(float alt_cm);

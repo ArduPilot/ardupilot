@@ -439,7 +439,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
-    // @Units: gauss
+    // @Units: rad
     AP_GROUPINFO("YAW_M_NSE", 37, NavEKF2, _yawNoise, 0.5f),
 
     // @Param: YAW_I_GATE
@@ -456,6 +456,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 10 50
     // @Increment: 5
     // @User: Advanced
+    // @Units: cs
     AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, 25),
 
     // @Param: MAGE_P_NSE
@@ -485,7 +486,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: TERR_GRAD
     // @DisplayName: Maximum terrain gradient
-    // @Description: Specifies the maxium gradient of the terrain below the vehicle when it is using range finder as a height reference
+    // @Description: Specifies the maximum gradient of the terrain below the vehicle when it is using range finder as a height reference
     // @Range: 0 0.2
     // @Increment: 0.01
     // @User: Advanced
@@ -797,7 +798,7 @@ void NavEKF2::getVelNED(int8_t instance, Vector3f &vel)
     }
 }
 
-// Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+// Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF2::getPosDownDerivative(int8_t instance)
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
@@ -986,7 +987,7 @@ bool NavEKF2::getOriginLLH(struct Location &loc) const
 }
 
 // set the latitude and longitude and height used to set the NED origin
-// All NED positions calcualted by the filter will be relative to this location
+// All NED positions calculated by the filter will be relative to this location
 // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF2::setOriginLLH(struct Location &loc)

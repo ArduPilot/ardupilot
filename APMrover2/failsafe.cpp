@@ -31,19 +31,19 @@ void Rover::failsafe_check()
 
     if (tnow - last_timestamp > 200000) {
         // we have gone at least 0.2 seconds since the main loop
-        // ran. That means we're in trouble, or perhaps are in 
+        // ran. That means we're in trouble, or perhaps are in
         // an initialisation routine or log erase. Start passing RC
         // inputs through to outputs
         in_failsafe = true;
     }
 
-    if (in_failsafe && tnow - last_timestamp > 20000 && 
+    if (in_failsafe && tnow - last_timestamp > 20000 &&
         channel_throttle->read() >= (uint16_t)g.fs_throttle_value) {
-        // pass RC inputs to outputs every 20ms        
+        // pass RC inputs to outputs every 20ms
         last_timestamp = tnow;
         hal.rcin->clear_overrides();
         uint8_t start_ch = 0;
-        for (uint8_t ch=start_ch; ch<4; ch++) {
+        for (uint8_t ch=start_ch; ch < 4; ch++) {
             hal.rcout->write(ch, hal.rcin->read(ch));
         }
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);

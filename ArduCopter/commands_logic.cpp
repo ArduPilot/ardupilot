@@ -699,7 +699,7 @@ bool Copter::verify_payload_place()
 {
     const uint16_t hover_throttle_calibrate_time = 2000; // milliseconds
     const uint16_t descend_throttle_calibrate_time = 2000; // milliseconds
-    const float hover_throttle_placed_fraction = 0.8; // i.e. if throttle is less than 80% of hover we have placed
+    const float hover_throttle_placed_fraction = 0.7; // i.e. if throttle is less than 70% of hover we have placed
     const float descent_throttle_placed_fraction = 0.9; // i.e. if throttle is less than 90% of descent throttle we have placed
     const uint16_t placed_time = 500; // how long we have to be below a throttle threshold before considering placed
 
@@ -754,8 +754,8 @@ bool Copter::verify_payload_place()
         const float hover_throttle_delta = fabsf(nav_payload_place.hover_throttle_level - motors.get_throttle_hover());
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "hover throttle delta: %f", static_cast<double>(hover_throttle_delta));
         nav_payload_place.state = PayloadPlaceStateType_Descending_Start;
-        // no break
         }
+        // no break
     case PayloadPlaceStateType_Descending_Start:
         nav_payload_place.descend_start_timestamp = now;
         nav_payload_place.descend_start_altitude = inertial_nav.get_altitude();
@@ -797,18 +797,26 @@ bool Copter::verify_payload_place()
         nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
         // no break
     case PayloadPlaceStateType_Releasing_Start:
+#if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid()) {
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Releasing the gripper");
             g2.gripper.release();
         } else {
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Gripper not valid");
+            nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
+            break;
         }
+#else
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Gripper code disabled");
+#endif
         nav_payload_place.state = PayloadPlaceStateType_Releasing;
         // no break
     case PayloadPlaceStateType_Releasing:
+#if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid() && !g2.gripper.released()) {
             return false;
         }
+#endif
         nav_payload_place.state = PayloadPlaceStateType_Released;
         // no break
     case PayloadPlaceStateType_Released: {
@@ -1098,10 +1106,11 @@ void Copter::do_roi(const AP_Mission::Mission_Command& cmd)
     set_auto_yaw_roi(cmd.content.location);
 }
 
+#if CAMERA == ENABLED
+
 // do_digicam_configure Send Digicam Configure message with the camera library
 void Copter::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 {
-#if CAMERA == ENABLED
     camera.configure(cmd.content.digicam_configure.shooting_mode,
                      cmd.content.digicam_configure.shutter_speed,
                      cmd.content.digicam_configure.aperture,
@@ -1109,13 +1118,11 @@ void Copter::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
                      cmd.content.digicam_configure.exposure_type,
                      cmd.content.digicam_configure.cmd_id,
                      cmd.content.digicam_configure.engine_cutoff_time);
-#endif
 }
 
 // do_digicam_control Send Digicam Control message with the camera library
 void Copter::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
-#if CAMERA == ENABLED
     if (camera.control(cmd.content.digicam_control.session,
                        cmd.content.digicam_control.zoom_pos,
                        cmd.content.digicam_control.zoom_step,
@@ -1124,16 +1131,13 @@ void Copter::do_digicam_control(const AP_Mission::Mission_Command& cmd)
                        cmd.content.digicam_control.cmd_id)) {
         log_picture();
     }
-#endif
 }
 
 // do_take_picture - take a picture with the camera library
 void Copter::do_take_picture()
 {
-#if CAMERA == ENABLED
     camera.trigger_pic(true);
     log_picture();
-#endif
 }
 
 // log_picture - log picture taken and send feedback to GCS
@@ -1150,6 +1154,8 @@ void Copter::log_picture()
         }      
     }
 }
+
+#endif
 
 // point the camera to a specified angle
 void Copter::do_mount_control(const AP_Mission::Mission_Command& cmd)

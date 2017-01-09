@@ -12,7 +12,7 @@ void Rover::throttle_slew_limit(int16_t last_throttle) {
         if (temp < 1) {
             temp = 1;
         }
-        channel_throttle->set_radio_out (constrain_int16(channel_throttle->get_radio_out(), last_throttle - temp, last_throttle + temp));
+        channel_throttle->set_radio_out(constrain_int16(channel_throttle->get_radio_out(), last_throttle - temp, last_throttle + temp));
     }
 }
 
@@ -83,10 +83,11 @@ bool Rover::in_stationary_loiter()
     // Confirm we are in AUTO mode and need to loiter for a time period
     if ((loiter_start_time > 0) && (control_mode == AUTO)) {
         // Check if active loiter is enabled AND we are outside the waypoint loiter radius
-        // then NOT the result for the if logic
-        if (!(active_loiter && (wp_distance > g.waypoint_radius))) {
-            return true;
+        // then the vehicle still needs to move so return false
+        if (active_loiter && (wp_distance > g.waypoint_radius)) {
+            return false;
         }
+        return true;
     }
 
     return false;
@@ -313,12 +314,12 @@ void Rover::set_servos(void) {
     }
 
     if (!arming.is_armed()) {
-        //Some ESCs get noisy (beep error msgs) if PWM == 0.
-        //This little segment aims to avoid this.
+        // Some ESCs get noisy (beep error msgs) if PWM == 0.
+        // This little segment aims to avoid this.
         switch (arming.arming_required()) {
         case AP_Arming::NO:
-            //keep existing behavior: do nothing to radio_out
-            //(don't disarm throttle channel even if AP_Arming class is)
+            // keep existing behavior: do nothing to radio_out
+            // (don't disarm throttle channel even if AP_Arming class is)
             break;
 
         case AP_Arming::YES_ZERO_PWM:

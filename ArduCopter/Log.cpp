@@ -903,9 +903,10 @@ const struct LogStructure Copter::log_structure[] = {
 void Copter::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
 {
     cliSerial->printf("\n" FIRMWARE_STRING
-                             "\nFree RAM: %u\n"
-                             "\nFrame: " FRAME_CONFIG_STRING "\n",
-                        (unsigned) hal.util->available_memory());
+                        "\nFree RAM: %u\n"
+                        "\nFrame: %s\n",
+                        (unsigned) hal.util->available_memory(),
+                        get_frame_string());
 
     cliSerial->println(HAL_BOARD_NAME);
 
@@ -918,9 +919,13 @@ void Copter::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_pag
 void Copter::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
-    DataFlash.Log_Write_Message("Frame: " FRAME_CONFIG_STRING);
+    char frame_buf[20];
+    snprintf(frame_buf, sizeof(frame_buf), "Frame: %s", get_frame_string());
+    DataFlash.Log_Write_Message(frame_buf);
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+#if AC_RALLY
     DataFlash.Log_Write_Rally(rally);
+#endif
 }
 
 
@@ -992,6 +997,10 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t
 void Copter::Log_Write_Home_And_Origin() {}
 void Copter::Log_Sensor_Health() {}
 void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
+void Copter::Log_Write_Proximity() {}
+void Copter::Log_Write_Beacon() {}
+void Copter::Log_Write_Precland() {}
+void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool pos_ok) {}
 
 #if FRAME_CONFIG == HELI_FRAME
 void Copter::Log_Write_Heli() {}

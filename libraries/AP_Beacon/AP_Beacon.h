@@ -92,6 +92,10 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+
+    // check if device is ready
+    bool device_ready(void) const;
+
     // parameters
     AP_Int8 _type;
     AP_Float origin_lat;

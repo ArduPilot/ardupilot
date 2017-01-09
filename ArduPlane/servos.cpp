@@ -28,8 +28,7 @@ void Plane::throttle_slew_limit(int16_t last_throttle)
     if (control_mode==AUTO) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
             slewrate = g.takeoff_throttle_slewrate;
-        } else if (landing.get_throttle_slewrate() != 0 &&
-                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE)) {
+        } else if (landing.get_throttle_slewrate() != 0 && landing.in_progress) {
             slewrate = landing.get_throttle_slewrate();
         }
     }
@@ -466,11 +465,11 @@ void Plane::set_servos_controlled(void)
     }
     
     if (control_mode == AUTO) {
-        if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) {
             min_throttle = 0;
         }
         
-        if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
             if(aparm.takeoff_throttle_max != 0) {
                 max_throttle = aparm.takeoff_throttle_max;
             } else {
@@ -560,21 +559,21 @@ void Plane::set_servos_flaps(void)
          */
         if (control_mode == AUTO) {
             switch (flight_stage) {
-            case AP_SpdHgtControl::FLIGHT_TAKEOFF:
-            case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
+            case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
+            case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
                 if (g.takeoff_flap_percent != 0) {
                     auto_flap_percent = g.takeoff_flap_percent;
                 }
                 break;
-            case AP_SpdHgtControl::FLIGHT_NORMAL:
+            case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
                 if (auto_flap_percent != 0 && in_preLaunch_flight_stage()) {
                     // TODO: move this to a new FLIGHT_PRE_TAKEOFF stage
                     auto_flap_percent = g.takeoff_flap_percent;
                 }
                 break;
-            case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
-            case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
-            case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+            case AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH:
+            case AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE:
+            case AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL:
                 if (landing.get_flap_percent() != 0) {
                     auto_flap_percent = landing.get_flap_percent();
                 }

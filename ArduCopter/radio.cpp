@@ -52,10 +52,12 @@ void Copter::init_rc_in()
  // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
 void Copter::init_rc_out()
 {
+    // default frame class to match firmware if possible
+    set_default_frame_class();
+
     motors.set_update_rate(g.rc_speed);
-    motors.set_frame_orientation(g.frame_orientation);
     motors.set_loop_rate(scheduler.get_loop_rate_hz());
-    motors.Init();                                              // motor initialisation
+    motors.init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
 #if FRAME_CONFIG != HELI_FRAME
     motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif

@@ -38,7 +38,7 @@ void AP_InertialNav_NavEKF::update(float dt)
     }
 
     // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
     if (_ahrs_ekf.get_vert_pos_rate(_pos_z_rate)) {
         _pos_z_rate *= 100; // convert to cm/s
         _pos_z_rate = - _pos_z_rate; // InertialNav is NEU

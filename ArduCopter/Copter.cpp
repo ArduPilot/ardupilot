@@ -91,7 +91,9 @@ Copter::Copter(void) :
 #if AC_FENCE == ENABLED
     fence(ahrs, inertial_nav),
 #endif
+#if AC_AVOID_ENABLED == ENABLED
     avoid(ahrs, inertial_nav, fence, g2.proximity),
+#endif
 #if AC_RALLY == ENABLED
     rally(ahrs),
 #endif

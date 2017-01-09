@@ -194,9 +194,9 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // Height measurement parameters
 
     // @Param: ALT_SOURCE
+    // @DisplayName: Primary altitude sensor source
     // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS. Setting 3 uses the range beacon data. NOTE - the EK2_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
     // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon
-    // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF3, _altSource, 0),
 
@@ -429,7 +429,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
-    // @Units: gauss
+    // @Units: rad
     AP_GROUPINFO("YAW_M_NSE", 37, NavEKF3, _yawNoise, 0.5f),
 
     // @Param: YAW_I_GATE
@@ -446,6 +446,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 10 50
     // @Increment: 5
     // @User: Advanced
+    // @Units: cs
     AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF3, _tauVelPosOutput, 25),
 
     // @Param: MAGE_P_NSE
@@ -475,7 +476,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: TERR_GRAD
     // @DisplayName: Maximum terrain gradient
-    // @Description: Specifies the maxium gradient of the terrain below the vehicle when it is using range finder as a height reference
+    // @Description: Specifies the maximum gradient of the terrain below the vehicle when it is using range finder as a height reference
     // @Range: 0 0.2
     // @Increment: 0.01
     // @User: Advanced
@@ -518,7 +519,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: ACC_BIAS_LIM
     // @DisplayName: Accelerometer bias limit
-    // @Description: The accelerometer bias state will be limited to +- this vlaue
+    // @Description: The accelerometer bias state will be limited to +- this value
     // @Range: 0.5 2.5
     // @Increment: 0.1
     // @User: Advanced
@@ -796,7 +797,7 @@ void NavEKF3::getVelNED(int8_t instance, Vector3f &vel)
     }
 }
 
-// Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+// Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF3::getPosDownDerivative(int8_t instance)
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
@@ -976,7 +977,7 @@ bool NavEKF3::getOriginLLH(struct Location &loc) const
 }
 
 // set the latitude and longitude and height used to set the NED origin
-// All NED positions calcualted by the filter will be relative to this location
+// All NED positions calculated by the filter will be relative to this location
 // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF3::setOriginLLH(struct Location &loc)
