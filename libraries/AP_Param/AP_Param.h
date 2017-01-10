@@ -121,7 +121,7 @@ public:
     };
     struct ConversionInfo {
         uint16_t old_key; // k_param_*
-        uint8_t old_group_element; // index in old object
+        uint32_t old_group_element; // index in old object
         enum ap_var_type type; // AP_PARAM_*
         const char *new_name;
     };
@@ -305,6 +305,10 @@ public:
     };
     static void         convert_old_parameter(const struct ConversionInfo *info, float scaler, uint8_t flags=0);
 
+    // move old class variables for a class that was sub-classed to one that isn't
+    static void         convert_parent_class(uint8_t param_key, void *object_pointer,
+                                             const struct AP_Param::GroupInfo *group_info);
+    
     /// Erase all variables in EEPROM.
     ///
     static void         erase_all(void);
