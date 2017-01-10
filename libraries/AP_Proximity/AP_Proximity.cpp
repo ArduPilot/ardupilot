@@ -242,6 +242,16 @@ AP_Proximity::Proximity_Status AP_Proximity::get_status() const
     return get_status(primary_instance);
 }
 
+// handle mavlink DISTANCE_SENSOR messages
+void AP_Proximity::handle_msg(mavlink_message_t *msg)
+{
+    for (uint8_t i=0; i<num_instances; i++) {
+        if ((drivers[i] != nullptr) && (_type[i] != Proximity_Type_None)) {
+            drivers[i]->handle_msg(msg);
+        }
+    }
+}
+
 //  detect if an instance of a proximity sensor is connected.
 void AP_Proximity::detect_instance(uint8_t instance)
 {
@@ -340,7 +350,7 @@ bool AP_Proximity::get_distances(Proximity_Distance_Array &prx_dist_array) const
     if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
         return 0.0f;
     }
-    // get maximum distance from backend
+    // get distances from backend
     return drivers[primary_instance]->get_distances(prx_dist_array);
 }
 

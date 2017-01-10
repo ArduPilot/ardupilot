@@ -20,7 +20,7 @@ public:
     float distance_min() const { return _distance_min; };
 
     // handle mavlink DISTANCE_SENSOR messages
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(mavlink_message_t *msg) override;
 
 private:
 
