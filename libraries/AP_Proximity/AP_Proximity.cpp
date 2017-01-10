@@ -41,6 +41,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _YAW_CORR
     // @DisplayName: Proximity sensor yaw correction
     // @Description: Proximity sensor yaw correction
+    // @Units: degrees
     // @Range: -180 180
     // @User: Standard
     AP_GROUPINFO("_YAW_CORR", 3, AP_Proximity, _yaw_correction[0], PROXIMITY_YAW_CORRECTION_DEFAULT),
@@ -48,6 +49,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_ANG1
     // @DisplayName: Proximity sensor ignore angle 1
     // @Description: Proximity sensor ignore angle 1
+    // @Units: degrees
     // @Range: 0 360
     // @User: Standard
     AP_GROUPINFO("_IGN_ANG1", 4, AP_Proximity, _ignore_angle_deg[0], 0),
@@ -55,6 +57,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_WID1
     // @DisplayName: Proximity sensor ignore width 1
     // @Description: Proximity sensor ignore width 1
+    // @Units: degrees
     // @Range: 0 45
     // @User: Standard
     AP_GROUPINFO("_IGN_WID1", 5, AP_Proximity, _ignore_width_deg[0], 0),
@@ -62,6 +65,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_ANG2
     // @DisplayName: Proximity sensor ignore angle 2
     // @Description: Proximity sensor ignore angle 2
+    // @Units: degrees
     // @Range: 0 360
     // @User: Standard
     AP_GROUPINFO("_IGN_ANG2", 6, AP_Proximity, _ignore_angle_deg[1], 0),
@@ -69,6 +73,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_WID1
     // @DisplayName: Proximity sensor ignore width 2
     // @Description: Proximity sensor ignore width 2
+    // @Units: degrees
     // @Range: 0 45
     // @User: Standard
     AP_GROUPINFO("_IGN_WID2", 7, AP_Proximity, _ignore_width_deg[1], 0),
@@ -76,6 +81,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_ANG3
     // @DisplayName: Proximity sensor ignore angle 3
     // @Description: Proximity sensor ignore angle 3
+    // @Units: degrees
     // @Range: 0 360
     // @User: Standard
     AP_GROUPINFO("_IGN_ANG3", 8, AP_Proximity, _ignore_angle_deg[2], 0),
@@ -83,6 +89,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_WID3
     // @DisplayName: Proximity sensor ignore width 3
     // @Description: Proximity sensor ignore width 3
+    // @Units: degrees
     // @Range: 0 45
     // @User: Standard
     AP_GROUPINFO("_IGN_WID3", 9, AP_Proximity, _ignore_width_deg[2], 0),
@@ -90,6 +97,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_ANG4
     // @DisplayName: Proximity sensor ignore angle 4
     // @Description: Proximity sensor ignore angle 4
+    // @Units: degrees
     // @Range: 0 360
     // @User: Standard
     AP_GROUPINFO("_IGN_ANG4", 10, AP_Proximity, _ignore_angle_deg[3], 0),
@@ -97,6 +105,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_WID4
     // @DisplayName: Proximity sensor ignore width 4
     // @Description: Proximity sensor ignore width 4
+    // @Units: degrees
     // @Range: 0 45
     // @User: Standard
     AP_GROUPINFO("_IGN_WID4", 11, AP_Proximity, _ignore_width_deg[3], 0),
@@ -104,6 +113,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_ANG5
     // @DisplayName: Proximity sensor ignore angle 5
     // @Description: Proximity sensor ignore angle 5
+    // @Units: degrees
     // @Range: 0 360
     // @User: Standard
     AP_GROUPINFO("_IGN_ANG5", 12, AP_Proximity, _ignore_angle_deg[4], 0),
@@ -111,6 +121,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_WID5
     // @DisplayName: Proximity sensor ignore width 5
     // @Description: Proximity sensor ignore width 5
+    // @Units: degrees
     // @Range: 0 45
     // @User: Standard
     AP_GROUPINFO("_IGN_WID5", 13, AP_Proximity, _ignore_width_deg[4], 0),
@@ -118,6 +129,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_ANG6
     // @DisplayName: Proximity sensor ignore angle 6
     // @Description: Proximity sensor ignore angle 6
+    // @Units: degrees
     // @Range: 0 360
     // @User: Standard
     AP_GROUPINFO("_IGN_ANG6", 14, AP_Proximity, _ignore_angle_deg[5], 0),
@@ -125,6 +137,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _IGN_WID6
     // @DisplayName: Proximity sensor ignore width 6
     // @Description: Proximity sensor ignore width 6
+    // @Units: degrees
     // @Range: 0 45
     // @User: Standard
     AP_GROUPINFO("_IGN_WID6", 15, AP_Proximity, _ignore_width_deg[5], 0),
@@ -147,6 +160,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: 2_YAW_CORR
     // @DisplayName: Second Proximity sensor yaw correction
     // @Description: Second Proximity sensor yaw correction
+    // @Units: degrees
     // @Range: -180 180
     // @User: Standard
     AP_GROUPINFO("2_YAW_CORR", 18, AP_Proximity, _yaw_correction[1], PROXIMITY_YAW_CORRECTION_DEFAULT),
