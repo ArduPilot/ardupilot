@@ -21,40 +21,27 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
 
+void AP_Landing::type_slope_verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, bool &throttle_suppressed)
+{
+    // when aborting a landing, mimic the verify_takeoff with steering hold. Once
+    // the altitude has been reached, restart the landing sequence
+    throttle_suppressed = false;
+    complete = false;
+    pre_flare = false;
+    nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
+}
+
 
 /*
   update navigation for landing. Called when on landing approach or
   final flare
  */
-bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
-        const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed)
+bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+        const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range)
 {
     // we don't 'verify' landing in the sense that it never completes,
     // so we don't verify command completion. Instead we use this to
     // adjust final landing parameters
-
-    // when aborting a landing, mimic the verify_takeoff with steering hold. Once
-    // the altitude has been reached, restart the landing sequence
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
-
-    throttle_suppressed = false;
-    complete = false;
-    pre_flare = false;
-    nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
-
-        // see if we have reached abort altitude
-        if (adjusted_relative_altitude_cm_fn() > auto_state_takeoff_altitude_rel_cm) {
-            next_WP_loc = current_loc;
-            mission.stop();
-            if (restart_landing_sequence()) {
-                mission.resume();
-            }
-            // else we're in AUTO with a stopped mission and handle_auto_mode() will set RTL
-        }
-        // make sure to return false so it leaves the mission index alone
-        return false;
-}
-
 
     /* Set land_complete (which starts the flare) under 3 conditions:
        1) we are within LAND_FLARE_ALT meters of the landing altitude
@@ -72,11 +59,10 @@ bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage
     // 2) passed land point and don't have an accurate AGL
     // 3) probably crashed (ensures motor gets turned off)
 
-    bool on_approach_stage = (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH ||
-                              flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE);
-    bool below_flare_alt = (height <= flare_alt);
-    bool below_flare_sec = (flare_sec > 0 && height <= sink_rate * flare_sec);
-    bool probably_crashed = (aparm.crash_detection_enable && fabsf(sink_rate) < 0.2f && !is_flying);
+    const bool on_approach_stage = type_slope_is_on_approach();
+    const bool below_flare_alt = (height <= flare_alt);
+    const bool below_flare_sec = (flare_sec > 0 && height <= sink_rate * flare_sec);
+    const bool probably_crashed = (aparm.crash_detection_enable && fabsf(sink_rate) < 0.2f && !is_flying);
 
     if ((on_approach_stage && below_flare_alt) ||
         (on_approach_stage && below_flare_sec && (wp_proportion > 0.5)) ||
