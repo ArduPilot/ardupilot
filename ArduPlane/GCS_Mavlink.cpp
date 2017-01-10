@@ -489,7 +489,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_radio_in(plane.receiver_rssi);
         break;
 
-    case MSG_RADIO_OUT:
+    case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
 #if HIL_SUPPORT
         send_servo_output_raw(plane.g.hil_mode);
@@ -790,7 +790,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
                 send_message(MSG_SERVO_OUT);
             }
             if (stream_trigger(STREAM_RC_CHANNELS)) {
-                send_message(MSG_RADIO_OUT);
+                send_message(MSG_SERVO_OUTPUT_RAW);
             }
         }
 #endif
@@ -835,7 +835,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
     if (plane.gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
-        send_message(MSG_RADIO_OUT);
+        send_message(MSG_SERVO_OUTPUT_RAW);
         send_message(MSG_RADIO_IN);
     }
 
