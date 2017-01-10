@@ -279,7 +279,7 @@ _options_for_frame = {
     # HELICOPTER
     "heli": {
         "make_target": "sitl-heli",
-        "waf_target": "bin/arducopter",
+        "waf_target": "bin/arducopter-heli",
         "default_params_filename": "default_params/copter-heli.parm",
     },
     "heli-dual": {
