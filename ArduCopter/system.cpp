@@ -615,4 +615,29 @@ void Copter::allocate_motors(void)
     default:
         break;
     }
+
+    if (upgrading_frame_params) {
+        // do frame specific upgrade. This is only done the first time we run the new firmware
+#if FRAME_CONFIG == HELI_FRAME
+        SRV_Channels::upgrade_motors_servo(Parameters::k_param_motors, 12, CH_1);
+        SRV_Channels::upgrade_motors_servo(Parameters::k_param_motors, 13, CH_2);
+        SRV_Channels::upgrade_motors_servo(Parameters::k_param_motors, 14, CH_3);
+        SRV_Channels::upgrade_motors_servo(Parameters::k_param_motors, 15, CH_4);
+#else
+        if (g2.frame_class == AP_Motors::MOTOR_FRAME_TRI) {
+            const AP_Param::ConversionInfo tri_conversion_info[] = {
+                { Parameters::k_param_motors, 32, AP_PARAM_INT16, "SERVO7_TRIM" },
+                { Parameters::k_param_motors, 33, AP_PARAM_INT16, "SERVO7_MIN" },
+                { Parameters::k_param_motors, 34, AP_PARAM_INT16, "SERVO7_MAX" },
+                { Parameters::k_param_motors, 35, AP_PARAM_FLOAT, "MOT_YAW_SV_ANGLE" },
+            };
+            // we need to use CONVERT_FLAG_FORCE as the SERVO7_* parameters will already be set from RC7_*
+            AP_Param::convert_old_parameters(tri_conversion_info, ARRAY_SIZE(tri_conversion_info), AP_Param::CONVERT_FLAG_FORCE);
+            const AP_Param::ConversionInfo tri_conversion_info_rev { Parameters::k_param_motors, 31, AP_PARAM_INT8,  "SERVO7_REVERSED" };
+            AP_Param::convert_old_parameter(&tri_conversion_info_rev, 1, AP_Param::CONVERT_FLAG_REVERSE | AP_Param::CONVERT_FLAG_FORCE);
+            // AP_MotorsTri was converted from having nested var_info to one level
+            AP_Param::convert_parent_class(Parameters::k_param_motors, motors, motors->var_info);
+        }
+#endif
+    }
 }
