@@ -38,6 +38,9 @@ public:
     virtual float distance_max() const = 0;
     virtual float distance_min() const = 0;
 
+    // handle mavlink DISTANCE_SENSOR messages
+    virtual void handle_msg(mavlink_message_t *msg) {}
+
     // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
     // returns true on successful read and places distance in distance
     bool get_horizontal_distance(float angle_deg, float &distance) const;
