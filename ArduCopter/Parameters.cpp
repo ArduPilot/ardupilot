@@ -1163,5 +1163,13 @@ void Copter::convert_pid_parameters(void)
                                       Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old };
     const uint16_t old_aux_chan_mask = 0x3FF0;
     // note that we don't pass in rcmap as we don't want output channel functions changed based on rcmap
-    SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, nullptr);
+    if (SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, nullptr)) {
+        // do frame specific upgrade
+#if FRAME_CONFIG == HELI_FRAME
+        SRV_Channels::upgrade_motors_servo(Parameters::k_param_motors, 12, CH_1);
+        SRV_Channels::upgrade_motors_servo(Parameters::k_param_motors, 13, CH_2);
+        SRV_Channels::upgrade_motors_servo(Parameters::k_param_motors, 14, CH_3);
+        SRV_Channels::upgrade_motors_servo(Parameters::k_param_motors, 15, CH_4);
+#endif
+    }
 }
