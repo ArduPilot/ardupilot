@@ -296,10 +296,14 @@ public:
     static bool find_old_parameter(const struct ConversionInfo *info, AP_Param *value);
     
     // convert old vehicle parameters to new object parameters
-    static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size);
+    static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
 
     // convert a single parameter with scaling
-    static void         convert_old_parameter(const struct ConversionInfo *info, float scaler);
+    enum {
+        CONVERT_FLAG_REVERSE=1, // handle _REV -> _REVERSED conversion
+        CONVERT_FLAG_FORCE=2    // store new value even if configured in eeprom already
+    };
+    static void         convert_old_parameter(const struct ConversionInfo *info, float scaler, uint8_t flags=0);
 
     /// Erase all variables in EEPROM.
     ///
