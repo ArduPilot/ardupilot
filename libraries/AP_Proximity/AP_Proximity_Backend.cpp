@@ -26,6 +26,8 @@ AP_Proximity_Backend::AP_Proximity_Backend(AP_Proximity &_frontend, AP_Proximity
         frontend(_frontend),
         state(_state)
 {
+    // initialise sector edge vector used for building the boundary fence
+    init_boundary();
 }
 
 // get distance in meters in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
@@ -142,17 +144,34 @@ const Vector2f* AP_Proximity_Backend::get_boundary_points(uint16_t& num_points) 
         return nullptr;
     }
 
-    // check all sectors have valid data, if not, exit
+    // check at least one sector has valid data, if not, exit
+    bool some_valid = false;
     for (uint8_t i=0; i<_num_sectors; i++) {
-        if (!_distance_valid[i]) {
-            num_points = 0;
-            return nullptr;
+        if (_distance_valid[i]) {
+            some_valid = true;
+            break;
         }
+    }
+    if (!some_valid) {
+        num_points = 0;
+        return nullptr;
     }
 
     // return boundary points
     num_points = _num_sectors;
     return _boundary_point;
+}
+
+// initialise the boundary and sector_edge_vector array used for object avoidance
+//   should be called if the sector_middle_deg or _setor_width_deg arrays are changed
+void AP_Proximity_Backend::init_boundary()
+{
+    for (uint8_t sector=0; sector < _num_sectors; sector++) {
+        float angle_rad = radians((float)_sector_middle_deg[sector]+(float)_sector_width_deg[sector]/2.0f);
+        _sector_edge_vector[sector].x = cosf(angle_rad) * 100.0f;
+        _sector_edge_vector[sector].y = sinf(angle_rad) * 100.0f;
+        _boundary_point[sector] = _sector_edge_vector[sector] * PROXIMITY_BOUNDARY_DIST_DEFAULT;
+    }
 }
 
 // update boundary points used for object avoidance based on a single sector's distance changing
@@ -165,13 +184,6 @@ void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
         return;
     }
 
-    // initialise sector_edge_vector if necessary
-    if (_sector_edge_vector[sector].is_zero()) {
-        float angle_rad = radians((float)_sector_middle_deg[sector]+(float)_sector_width_deg[sector]/2.0f);
-        _sector_edge_vector[sector].x = cosf(angle_rad) * 100.0f;
-        _sector_edge_vector[sector].y = sinf(angle_rad) * 100.0f;
-    }
-
     // find adjacent sector (clockwise)
     uint8_t next_sector = sector + 1;
     if (next_sector >= _num_sectors) {
@@ -179,19 +191,40 @@ void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
     }
 
     // boundary point lies on the line between the two sectors at the shorter distance found in the two sectors
+    float shortest_distance = PROXIMITY_BOUNDARY_DIST_DEFAULT;
     if (_distance_valid[sector] && _distance_valid[next_sector]) {
-        float shortest_distance = MIN(_distance[sector], _distance[next_sector]);
-        if (shortest_distance < PROXIMITY_BOUNDARY_DIST_MIN) {
-            shortest_distance = PROXIMITY_BOUNDARY_DIST_MIN;
-        }
-        _boundary_point[sector] = _sector_edge_vector[sector] * shortest_distance;
+        shortest_distance = MIN(_distance[sector], _distance[next_sector]);
+    } else if (_distance_valid[sector]) {
+        shortest_distance = _distance[sector];
+    } else if (_distance_valid[next_sector]) {
+        shortest_distance = _distance[next_sector];
+    }
+    if (shortest_distance < PROXIMITY_BOUNDARY_DIST_MIN) {
+        shortest_distance = PROXIMITY_BOUNDARY_DIST_MIN;
+    }
+    _boundary_point[sector] = _sector_edge_vector[sector] * shortest_distance;
+
+    // if the next sector (clockwise) has an invalid distance, set boundary to create a cup like boundary
+    if (!_distance_valid[next_sector]) {
+        _boundary_point[next_sector] = _sector_edge_vector[next_sector] * shortest_distance;
     }
 
     // repeat for edge between sector and previous sector
     uint8_t prev_sector = (sector == 0) ? _num_sectors-1 : sector-1;
+    shortest_distance = PROXIMITY_BOUNDARY_DIST_DEFAULT;
     if (_distance_valid[prev_sector] && _distance_valid[sector]) {
-        float shortest_distance = MIN(_distance[prev_sector], _distance[sector]);
-        _boundary_point[prev_sector] = _sector_edge_vector[prev_sector] * shortest_distance;
+        shortest_distance = MIN(_distance[prev_sector], _distance[sector]);
+    } else if (_distance_valid[prev_sector]) {
+        shortest_distance = _distance[prev_sector];
+    } else if (_distance_valid[sector]) {
+        shortest_distance = _distance[sector];
+    }
+    _boundary_point[prev_sector] = _sector_edge_vector[prev_sector] * shortest_distance;
+
+    // if the sector counter-clockwise from the previous sector has an invalid distance, set boundary to create a cup like boundary
+    uint8_t prev_sector_ccw = (prev_sector == 0) ? _num_sectors-1 : prev_sector-1;
+    if (!_distance_valid[prev_sector_ccw]) {
+        _boundary_point[prev_sector_ccw] = _sector_edge_vector[prev_sector_ccw] * shortest_distance;
     }
 }
 
