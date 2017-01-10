@@ -13,7 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
- *  ArduCopter Version 3.0
+ *  ArduCopter (also known as APM, APM:Copter or just Copter)
+ *  Wiki:           copter.ardupilot.org
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
  *  Lead Tester:    Marco Robustini 
