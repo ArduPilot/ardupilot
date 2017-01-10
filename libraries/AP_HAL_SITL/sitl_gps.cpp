@@ -177,7 +177,7 @@ static void gps_time(uint16_t *time_week, uint32_t *time_week_ms)
 {
     struct timeval tv;
     simulation_timeval(&tv);
-    const uint32_t epoch = 86400*(10*365 + (1980-1969)/4 + 1 + 6 - 2) - 15;
+    const uint32_t epoch = 86400*(10*365 + (1980-1969)/4 + 1 + 6 - 2) - (GPS_LEAPSECONDS_MILLIS / 1000ULL);
     uint32_t epoch_seconds = tv.tv_sec - epoch;
     *time_week = epoch_seconds / (86400*7UL);
     uint32_t t_ms = tv.tv_usec / 1000;
