@@ -31,6 +31,9 @@
 #define GPS_MAX_INSTANCES 2
 #define GPS_RTK_INJECT_TO_ALL 127
 
+// the number of GPS leap seconds
+#define GPS_LEAPSECONDS_MILLIS 18000ULL
+
 class DataFlash_Class;
 class AP_GPS_Backend;
 

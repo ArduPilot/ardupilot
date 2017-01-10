@@ -64,7 +64,7 @@ int16_t AP_GPS_Backend::swap_int16(int16_t v) const
 uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
 {
     const uint64_t ms_per_week = 7000ULL*86400ULL;
-    const uint64_t unix_offset = 17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL;
+    const uint64_t unix_offset = 17000ULL*86400ULL + 52*10*7000ULL*86400ULL - GPS_LEAPSECONDS_MILLIS;
     uint64_t fix_time_ms = unix_offset + gps_week*ms_per_week + gps_ms;
     return fix_time_ms;
 }
@@ -110,7 +110,7 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     }
 
     // get time in seconds since unix epoch
-    uint32_t ret = (year/4) - 15 + 367*rmon/12 + day;
+    uint32_t ret = (year/4) - (GPS_LEAPSECONDS_MILLIS / 1000UL) + 367*rmon/12 + day;
     ret += year*365 + 10501;
     ret = ret*24 + hour;
     ret = ret*60 + min;
