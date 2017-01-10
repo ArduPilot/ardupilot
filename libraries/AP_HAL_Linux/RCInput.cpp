@@ -38,7 +38,7 @@ bool RCInput::new_input()
 {
     bool ret = rc_input_count != last_rc_input_count;
     if (ret) {
-        last_rc_input_count = rc_input_count;
+        last_rc_input_count.store(rc_input_count);
     }
     return ret;
 }
