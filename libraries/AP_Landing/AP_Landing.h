@@ -58,6 +58,9 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     }
 
+
+
+    // NOTE: make sure to update is_type_valid()
     enum Landing_Type {
         TYPE_STANDARD_GLIDE_SLOPE = 0,
 //      TODO: TYPE_DEEPSTALL,
