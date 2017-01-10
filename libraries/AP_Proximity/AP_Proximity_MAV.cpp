@@ -58,5 +58,6 @@ void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
         _distance_min = packet.min_distance / 100.0f;
         _distance_max = packet.max_distance / 100.0f;
         _last_update_ms = AP_HAL::millis();
+        update_boundary_for_sector(sector);
     }
 }
