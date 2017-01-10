@@ -264,7 +264,6 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
 void AP_Landing::reset(void)
 {
     complete = false;
-    pre_flare = false;
     commanded_go_around = false;
     initial_slope = 0;
     slope = 0;
@@ -355,46 +354,15 @@ float AP_Landing::head_wind(void)
 /*
  * returns target airspeed in cm/s depending on flight stage
  */
-int32_t AP_Landing::get_target_airspeed_cm(const AP_Vehicle::FixedWing::FlightStage flight_stage)
+int32_t AP_Landing::get_target_airspeed_cm(void)
 {
-    int32_t target_airspeed_cm = aparm.airspeed_cruise_cm;
-
-    if (!in_progress) {
-        // not landing, use regular cruise airspeed
-        return target_airspeed_cm;
-    }
-
-    // we're landing, check for custom approach and
-    // pre-flare airspeeds. Also increase for head-winds
-
-    const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
-
-    switch (flight_stage) {
-    case AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH:
-        if (land_airspeed >= 0) {
-            target_airspeed_cm = land_airspeed * 100;
-        }
-        break;
-
-    case AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE:
-    case AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL:
-        if (pre_flare && get_pre_flare_airspeed() > 0) {
-            // if we just preflared then continue using the pre-flare airspeed during final flare
-            target_airspeed_cm = get_pre_flare_airspeed() * 100;
-        } else if (land_airspeed >= 0) {
-            target_airspeed_cm = land_airspeed * 100;
-        }
-        break;
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_get_target_airspeed_cm();
 
     default:
-        break;
+        return SpdHgt_Controller->get_land_airspeed();
     }
-
-    // when landing, add half of head-wind.
-    const int32_t head_wind_compensation_cm = head_wind() * 0.5f * 100;
-
-    // Do not lower it or exceed cruise speed
-    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_cruise_cm);
 }
 
 /*
