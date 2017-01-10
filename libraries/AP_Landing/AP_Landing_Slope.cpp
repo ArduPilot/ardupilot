@@ -37,10 +37,10 @@ bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage
     // the altitude has been reached, restart the landing sequence
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
 
-        throttle_suppressed = false;
-        complete = false;
-        pre_flare = false;
-        nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
+    throttle_suppressed = false;
+    complete = false;
+    pre_flare = false;
+    nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
 
         // see if we have reached abort altitude
         if (adjusted_relative_altitude_cm_fn() > auto_state_takeoff_altitude_rel_cm) {
@@ -53,7 +53,7 @@ bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage
         }
         // make sure to return false so it leaves the mission index alone
         return false;
-    }
+}
 
 
     /* Set land_complete (which starts the flare) under 3 conditions:
@@ -310,3 +310,8 @@ bool AP_Landing::type_slope_is_on_approach(void) const
             stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE);
 }
 
+bool AP_Landing::type_slope_is_expecting_impact(void) const
+{
+    return (stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE ||
+            stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL);
+}

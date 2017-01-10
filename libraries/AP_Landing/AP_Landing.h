@@ -97,7 +97,8 @@ public:
     int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
     bool is_commanded_go_around(void) const { return commanded_go_around; }
     bool is_complete(void) const { return complete; }
-    void set_initial_slope() { initial_slope = slope; }
+    void set_initial_slope(void) { initial_slope = slope; }
+    bool is_expecting_impact(void) const;
 
     AP_Vehicle::FixedWing::FlightStage stage;
 
@@ -170,6 +171,7 @@ private:
     bool type_slope_request_go_around(void);
     bool type_slope_is_flaring(void) const;
     bool type_slope_is_on_approach(void) const;
+    bool type_slope_is_expecting_impact(void) const;
 
 
 };

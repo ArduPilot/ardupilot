@@ -197,6 +197,18 @@ bool AP_Landing::is_on_approach(void) const
     }
 }
 
+// return true when at the last stages of a land when an impact with the ground is expected soon
+bool AP_Landing::is_expecting_impact(void) const
+{
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_expecting_impact();
+
+    default:
+        return false;
+    }
+}
+
 
 /*
   a special glide slope calculation for the landing approach
