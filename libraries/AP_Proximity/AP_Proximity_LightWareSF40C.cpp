@@ -162,6 +162,9 @@ void AP_Proximity_LightWareSF40C::init_sectors()
     // set num sectors
     _num_sectors = sector;
 
+    // re-initialise boundary because sector locations have changed
+    init_boundary();
+
     // record success
     _sector_initialised = true;
 }
