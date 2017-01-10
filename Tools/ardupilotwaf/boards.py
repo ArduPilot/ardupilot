@@ -243,6 +243,7 @@ class linux(Board):
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES = [
             'AP_HAL_Linux',
+            'AP_HAL_Common',
         ]
 
 
@@ -439,6 +440,7 @@ class px4(Board):
         ]
         env.AP_LIBRARIES += [
             'AP_HAL_PX4',
+            'AP_HAL_Common',
         ]
         env.GIT_SUBMODULES += [
             'PX4Firmware',
