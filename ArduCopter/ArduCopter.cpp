@@ -418,7 +418,7 @@ void Copter::twentyfive_hz_logging()
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     // HIL for a copter needs very fast update of the servo values
-    gcs_send_message(MSG_RADIO_OUT);
+    gcs_send_message(MSG_SERVO_OUTPUT_RAW);
 #endif
 
 #if HIL_MODE == HIL_MODE_DISABLED
