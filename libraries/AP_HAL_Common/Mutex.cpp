@@ -17,6 +17,7 @@
 #include "Mutex.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/Mutex.h>
 
 using namespace AP;
 
@@ -60,7 +61,7 @@ void Mutex::unlock()
 }
 
 
-static AP_HAL::Mutex *AP_HAL::create()
+AP_HAL::Mutex *AP_HAL::Mutex::create()
 {
-    return new Mutex{};
+    return new AP::Mutex{};
 }

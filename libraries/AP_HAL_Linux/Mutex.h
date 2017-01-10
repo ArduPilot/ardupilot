@@ -16,21 +16,15 @@
  */
 #pragma once
 
-#include <inttypes.h>
+#include <AP_HAL_Common/Mutex.h>
 
-#include <AP_HAL/AP_HAL_Macros.h>
+/*
+ * This uses the common arch and OS independent implementation from
+ * AP_HAL_Common
+ */
 
-namespace AP_HAL {
+namespace Linux {
 
-class Mutex {
-public:
-    virtual void lock() = 0;
-    virtual bool try_lock() WARN_IF_UNUSED = 0;
-    virtual bool try_lock(uint32_t timeout_msec) WARN_IF_UNUSED = 0;
-    virtual void unlock();
-    virtual ~Mutex() { }
-
-    static Mutex *create();
-};
+using Mutex = ap::Mutex
 
 }
