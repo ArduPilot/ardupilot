@@ -1765,6 +1765,9 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     {
         result = MAV_RESULT_ACCEPTED;
         copter.rangefinder.handle_msg(msg);
+#if PROXIMITY_ENABLED == ENABLED
+        copter.g2.proximity.handle_msg(msg);
+#endif
         break;
     }
 
