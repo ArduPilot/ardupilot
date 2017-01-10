@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,1:LightWareSF40C
+    // @Values: 0:None,1:LightWareSF40C,2:MAVLink
     // @User: Standard
     AP_GROUPINFO("_TYPE",   1, AP_Proximity, _type[0], 0),
 
@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,1:LightWareSF40C
+    // @Values: 0:None,1:LightWareSF40C,2:MAVLink
     // @User: Advanced
     AP_GROUPINFO("2_TYPE", 16, AP_Proximity, _type[1], 0),
 
