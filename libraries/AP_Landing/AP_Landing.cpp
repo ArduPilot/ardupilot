@@ -141,6 +141,16 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     AP_GROUPEND
 };
 
+void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude) {
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        type_slope_do_land(cmd, relative_altitude);
+        break;
+    default:
+        // a incorrect type is handled in the verify_land
+        break;
+    }
+}
 
 /*
   update navigation for landing. Called when on landing approach or

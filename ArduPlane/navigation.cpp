@@ -95,7 +95,7 @@ void Plane::calc_airspeed_errors()
 
     } else if (control_mode == AUTO && landing.in_progress) {
         // Landing airspeed target
-        target_airspeed_cm = landing.get_target_airspeed_cm(flight_stage);
+        target_airspeed_cm = landing.get_target_airspeed_cm();
 
     } else {
         // Normal airspeed target
