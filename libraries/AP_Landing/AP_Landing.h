@@ -58,6 +58,9 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     }
 
+
+
+    // NOTE: make sure to update is_type_valid()
     enum Landing_Type {
         TYPE_STANDARD_GLIDE_SLOPE = 0,
 //      TODO: TYPE_DEEPSTALL,
@@ -71,6 +74,8 @@ public:
     void setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
     void check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
     bool request_go_around(void);
+    bool is_flaring(void) const;
+    bool is_on_approach(void) const;
 
 
     // helper functions
@@ -92,9 +97,10 @@ public:
     int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
     bool is_commanded_go_around(void) const { return commanded_go_around; }
     bool is_complete(void) const { return complete; }
-    void set_initial_slope() { initial_slope = slope; }
+    void set_initial_slope(void) { initial_slope = slope; }
+    bool is_expecting_impact(void) const;
 
-
+    AP_Vehicle::FixedWing::FlightStage stage;
 
     // Flag to indicate if we have landed.
     // Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
@@ -163,5 +169,9 @@ private:
     void type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
     void type_slope_check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
     bool type_slope_request_go_around(void);
+    bool type_slope_is_flaring(void) const;
+    bool type_slope_is_on_approach(void) const;
+    bool type_slope_is_expecting_impact(void) const;
+
 
 };
