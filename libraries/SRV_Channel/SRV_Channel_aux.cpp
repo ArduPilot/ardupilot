@@ -632,18 +632,23 @@ bool SRV_Channels::upgrade_parameters(const uint8_t rc_keys[14], uint16_t aux_ch
         }
         SRV_Channel &srv_chan = channels[i];
         RC_Channel &rc_chan = RC_Channels::channels[i];
+        enum {
+            FLAG_NONE=0,
+            FLAG_IS_REVERSE=1,
+            FLAG_AUX_ONLY=2
+        };
         const struct mapping {
             uint8_t old_index;
             AP_Param *new_srv_param;
             AP_Param *new_rc_param;
             enum ap_var_type type;
-            bool is_reverse;
+            uint8_t flags;
         } mapping[] = {
-            { 0, &srv_chan.servo_min,  &rc_chan.radio_min,  AP_PARAM_INT16, false },
-            { 1, &srv_chan.servo_trim, &rc_chan.radio_trim, AP_PARAM_INT16, false },
-            { 2, &srv_chan.servo_max,  &rc_chan.radio_max,  AP_PARAM_INT16, false },
-            { 3, &srv_chan.reversed,   &rc_chan.reversed,   AP_PARAM_INT8,  true },
-            { 1, &srv_chan.function,   nullptr,             AP_PARAM_INT8,  false },
+            { 0, &srv_chan.servo_min,  &rc_chan.radio_min,  AP_PARAM_INT16, FLAG_NONE },
+            { 1, &srv_chan.servo_trim, &rc_chan.radio_trim, AP_PARAM_INT16, FLAG_NONE },
+            { 2, &srv_chan.servo_max,  &rc_chan.radio_max,  AP_PARAM_INT16, FLAG_NONE },
+            { 3, &srv_chan.reversed,   &rc_chan.reversed,   AP_PARAM_INT8,  FLAG_IS_REVERSE },
+            { 1, &srv_chan.function,   nullptr,             AP_PARAM_INT8,  FLAG_AUX_ONLY },
         };
         bool is_aux = aux_channel_mask & (1U<<i);
         
@@ -653,18 +658,23 @@ bool SRV_Channels::upgrade_parameters(const uint8_t rc_keys[14], uint16_t aux_ch
             AP_Int8 v8;
             AP_Int16 v16;
             AP_Param *v = m.type == AP_PARAM_INT16?(AP_Param*)&v16:(AP_Param*)&v8;
+            bool aux_only = (m.flags & FLAG_AUX_ONLY)!=0;
+            if (!is_aux && aux_only) {
+                continue;
+            }
             info.old_key = k;
             info.type = m.type;
             info.new_name = nullptr;
+
             // if this was an aux channel we need to shift by 6 bits, but not for RCn_FUNCTION
-            info.old_group_element = (is_aux && m.new_rc_param)?(m.old_index<<6):m.old_index;
+            info.old_group_element = (is_aux && !aux_only)?(m.old_index<<6):m.old_index;
             
             if (!AP_Param::find_old_parameter(&info, v)) {
                 // the parameter wasn't set in the old eeprom
                 continue;
             }
 
-            if (m.is_reverse) {
+            if (m.flags & FLAG_IS_REVERSE) {
                 // special mapping from RCn_REV to RCn_REVERSED
                 v8.set(v8.get() == -1?1:0);
             }
@@ -708,5 +718,64 @@ bool SRV_Channels::upgrade_parameters(const uint8_t rc_keys[14], uint16_t aux_ch
     channels[15].function.set_and_save(channels[15].function.get());
 
     return true;
+}
+
+
+
+/*
+  Upgrade servo MIN/MAX/TRIM/REVERSE parameters for a single AP_Motors
+  RC_Channel servo from previous firmwares, setting the equivalent
+  parameter in the new SRV_Channels object
+*/
+void SRV_Channels::upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors_idx, uint8_t new_channel)
+{
+    SRV_Channel &srv_chan = channels[new_channel];
+    enum {
+        FLAG_NONE=0,
+        FLAG_IS_REVERSE=1
+    };
+    const struct mapping {
+        uint8_t old_index;
+        AP_Param *new_srv_param;
+        enum ap_var_type type;
+        uint8_t flags;
+    } mapping[] = {
+            { 0, &srv_chan.servo_min,  AP_PARAM_INT16, FLAG_NONE },
+            { 1, &srv_chan.servo_trim, AP_PARAM_INT16, FLAG_NONE },
+            { 2, &srv_chan.servo_max,  AP_PARAM_INT16, FLAG_NONE },
+            { 3, &srv_chan.reversed,   AP_PARAM_INT8,  FLAG_IS_REVERSE },
+    };
+        
+    for (uint8_t j=0; j<ARRAY_SIZE(mapping); j++) {
+        const struct mapping &m = mapping[j];
+        AP_Param::ConversionInfo info;
+        AP_Int8 v8;
+        AP_Int16 v16;
+        AP_Param *v = m.type == AP_PARAM_INT16?(AP_Param*)&v16:(AP_Param*)&v8;
+
+        info.old_key = ap_motors_key;
+        info.type = m.type;
+        info.new_name = nullptr;
+        info.old_group_element = ap_motors_idx | (m.old_index<<6);
+        
+        if (!AP_Param::find_old_parameter(&info, v)) {
+            // the parameter wasn't set in the old eeprom
+            continue;
+        }
+
+        if (m.flags & FLAG_IS_REVERSE) {
+            // special mapping from RCn_REV to RCn_REVERSED
+            v8.set(v8.get() == -1?1:0);
+        }
+
+        // we save even if there is already a value in the new eeprom,
+        // as that may come from the equivalent RC channel, not the
+        // old motor servo channel
+        if (m.type == AP_PARAM_INT16) {
+            ((AP_Int16 *)m.new_srv_param)->set_and_save_ifchanged(v16.get());
+        } else {
+            ((AP_Int8 *)m.new_srv_param)->set_and_save_ifchanged(v8.get());
+        }
+    }
 }
 

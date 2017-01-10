@@ -348,6 +348,7 @@ public:
 
     // upgrade RC* parameters into SERVO* parameters
     static bool upgrade_parameters(const uint8_t old_keys[14], uint16_t aux_channel_mask, RCMapper *rcmap);
+    static void upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors_idx, uint8_t new_channel);
     
 private:
     struct {
