@@ -167,6 +167,30 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
     }
 }
 
+// return true while the aircraft should be in a flaring state
+bool AP_Landing::is_flaring(void) const
+{
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_flaring();
+
+    default:
+        return false;
+    }
+}
+
+// return true while the aircraft is performing a landing approach
+bool AP_Landing::is_on_approach(void) const
+{
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_on_approach();
+    default:
+        return false;
+    }
+}
+
+
 /*
   a special glide slope calculation for the landing approach
 

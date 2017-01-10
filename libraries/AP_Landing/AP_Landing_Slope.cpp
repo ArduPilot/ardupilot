@@ -298,4 +298,15 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     constrain_target_altitude_location_fn(loc, prev_WP_loc);
 }
 
+bool AP_Landing::type_slope_is_flaring(void) const
+{
+    return (stage == AP_Vehicle::FixedWing::FlightStage::FLIGHT_LAND_FINAL);
+}
+
+
+bool AP_Landing::type_slope_is_on_approach(void) const
+{
+    return (stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH ||
+            stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE);
+}
 
