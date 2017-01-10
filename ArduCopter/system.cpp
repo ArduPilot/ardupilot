@@ -566,6 +566,7 @@ void Copter::allocate_motors(void)
     if (motors == nullptr) {
         AP_HAL::panic("Unable to allocate FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
     }
+    AP_Param::load_object_from_eeprom(motors, motors->var_info);
 
 #if FRAME_CONFIG != HELI_FRAME
     attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, MAIN_LOOP_SECONDS);
@@ -575,6 +576,7 @@ void Copter::allocate_motors(void)
     if (attitude_control == nullptr) {
         AP_HAL::panic("Unable to allocate AttitudeControl");
     }
+    AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
         
     pos_control = new AC_PosControl(ahrs, inertial_nav, *motors, *attitude_control,
                                     g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
@@ -582,16 +584,19 @@ void Copter::allocate_motors(void)
     if (pos_control == nullptr) {
         AP_HAL::panic("Unable to allocate PosControl");
     }
+    AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
 
     wp_nav = new AC_WPNav(inertial_nav, ahrs, *pos_control, *attitude_control);
     if (wp_nav == nullptr) {
         AP_HAL::panic("Unable to allocate WPNav");
     }
+    AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
     circle_nav = new AC_Circle(inertial_nav, ahrs, *pos_control);
     if (wp_nav == nullptr) {
         AP_HAL::panic("Unable to allocate CircleNav");
     }
+    AP_Param::load_object_from_eeprom(circle_nav, circle_nav->var_info);
 
     // reload lines from the defaults file that may now be accessible
     AP_Param::reload_defaults_file();
