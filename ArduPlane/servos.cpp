@@ -417,18 +417,14 @@ void Plane::set_servos_controlled(void)
         min_throttle = 0;
     }
     
-    if (control_mode == AUTO) {
-        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) {
-            min_throttle = 0;
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+        if(aparm.takeoff_throttle_max != 0) {
+            max_throttle = aparm.takeoff_throttle_max;
+        } else {
+            max_throttle = aparm.throttle_max;
         }
-        
-        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
-            if(aparm.takeoff_throttle_max != 0) {
-                max_throttle = aparm.takeoff_throttle_max;
-            } else {
-                max_throttle = aparm.throttle_max;
-            }
-        }
+    } else if (landing.is_flaring()) {
+        min_throttle = 0;
     }
     
     // apply watt limiter
@@ -499,6 +495,10 @@ void Plane::set_servos_flaps(void)
             auto_flap_percent = g.flap_1_percent;
         } //else flaps stay at default zero deflection
 
+        if (landing.in_progress && landing.get_flap_percent() != 0) {
+            auto_flap_percent = landing.get_flap_percent();
+        }
+
         /*
           special flap levels for takeoff and landing. This works
           better than speed based flaps as it leads to less
@@ -516,13 +516,6 @@ void Plane::set_servos_flaps(void)
                 if (auto_flap_percent != 0 && in_preLaunch_flight_stage()) {
                     // TODO: move this to a new FLIGHT_PRE_TAKEOFF stage
                     auto_flap_percent = g.takeoff_flap_percent;
-                }
-                break;
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH:
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE:
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL:
-                if (landing.get_flap_percent() != 0) {
-                    auto_flap_percent = landing.get_flap_percent();
                 }
                 break;
             default:
