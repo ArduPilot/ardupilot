@@ -1592,7 +1592,7 @@ bool AP_Param::find_old_parameter(const struct ConversionInfo *info, AP_Param *v
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat"
 // convert one old vehicle parameter to new object parameter
-void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float scaler)
+void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float scaler, uint8_t flags)
 {
     uint8_t old_value[type_size(info->type)];
     AP_Param *ap = (AP_Param *)&old_value[0];
@@ -1614,14 +1614,14 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
     }
 
     // see if we can load it from EEPROM
-    if (ap2->load()) {
+    if (!(flags & CONVERT_FLAG_FORCE) && ap2->configured_in_storage()) {
         // the new parameter already has a value set by the user, or
         // has already been converted
         return;
     }
 
     // see if they are the same type and no scaling applied
-    if (ptype == info->type && is_equal(scaler, 1.0f)) {
+    if (ptype == info->type && is_equal(scaler, 1.0f) && flags == 0) {
         // copy the value over only if the new parameter does not already
         // have the old value (via a default).
         if (memcmp(ap2, ap, sizeof(old_value)) != 0) {
@@ -1632,6 +1632,10 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
     } else if (ptype <= AP_PARAM_FLOAT && info->type <= AP_PARAM_FLOAT) {
         // perform scalar->scalar conversion
         float v = ap->cast_to_float(info->type);
+        if (flags & CONVERT_FLAG_REVERSE) {
+            // convert a _REV parameter to a _REVERSED parameter
+            v = is_equal(v, -1.0f)?1:0;
+        }
         if (!is_equal(v,ap2->cast_to_float(ptype))) {
             // the value needs to change
             set_value(ptype, ap2, v * scaler);
@@ -1646,10 +1650,10 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
 
 
 // convert old vehicle parameters to new object parametersv
-void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size)
+void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags)
 {
     for (uint8_t i=0; i<table_size; i++) {
-        convert_old_parameter(&conversion_table[i], 1.0f);
+        convert_old_parameter(&conversion_table[i], 1.0f, flags);
     }
 }
 
