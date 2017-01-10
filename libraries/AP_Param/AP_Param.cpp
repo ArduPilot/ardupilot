@@ -1797,7 +1797,9 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
             AP_HAL::panic("AP_Param: Failed to set param default");
             return false;
         }
-        vp->set_float(value, var_type);
+        if (!vp->configured_in_storage()) {
+            vp->set_float(value, var_type);
+        }
     }
     fclose(f);
 
