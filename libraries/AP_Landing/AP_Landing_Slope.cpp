@@ -145,7 +145,9 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     }
 
     // check if we should auto-disarm after a confirmed landing
-    disarm_if_autoland_complete_fn();
+    if (complete) {
+        disarm_if_autoland_complete_fn();
+    }
 
     /*
       we return false as a landing mission item never completes
@@ -342,6 +344,14 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void) {
 
     // Do not lower it or exceed cruise speed
     return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_cruise_cm);
+}
+
+int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd) {
+    if (type_slope_stage == SLOPE_STAGE_FINAL) {
+        return constrain_int32(desired_roll_cd, level_roll_limit_cd * -1, level_roll_limit_cd);
+    } else {
+        return desired_roll_cd;
+    }
 }
 
 bool AP_Landing::type_slope_is_flaring(void) const
