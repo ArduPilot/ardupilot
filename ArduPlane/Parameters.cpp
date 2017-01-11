@@ -1261,26 +1261,26 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Group: BTN_
     // @Path: ../libraries/AP_Button/AP_Button.cpp
-    AP_SUBGROUPINFO(button, "BTN_", 1, ParametersG2, AP_Button),
+    AP_SUBGROUPINFO(button, "BTN_", k_param_2_button, ParametersG2, AP_Button),
 
     // @Group: ICE_
     // @Path: ../libraries/AP_ICEngine/AP_ICEngine.cpp
-    AP_SUBGROUPINFO(ice_control, "ICE_", 2, ParametersG2, AP_ICEngine),
+    AP_SUBGROUPINFO(ice_control, "ICE_", k_param_2_ice_control, ParametersG2, AP_ICEngine),
 
     // @Group: SERVO_
     // @Path: ../libraries/RC_Channel/SRV_Channel.cpp
-    AP_SUBGROUPINFO(servo_channels, "SERVO", 3, ParametersG2, SRV_Channels),
+    AP_SUBGROUPINFO(servo_channels, "SERVO", k_param_2_servo_channels, ParametersG2, SRV_Channels),
 
     // @Group: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
     // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
     // @Values: 0:NotEnforced,1:Enforced
     // @User: Advanced
-    AP_GROUPINFO("SYSID_ENFORCE", 4, ParametersG2, sysid_enforce, 0),
+    AP_GROUPINFO("SYSID_ENFORCE", k_param_2_sysid_enforce, ParametersG2, sysid_enforce, 0),
 
     // @Group: STAT
     // @Path: ../libraries/AP_Stats/AP_Stats.cpp
-    AP_SUBGROUPINFO(stats, "STAT", 5, ParametersG2, AP_Stats),
+    AP_SUBGROUPINFO(stats, "STAT", k_param_2_stats, ParametersG2, AP_Stats),
 
     AP_GROUPEND
 };
