@@ -682,7 +682,7 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 float AP_TECS::_get_i_gain(void)
 {
     float i_gain = _integGain;
-    if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF) {
+    if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         if (!is_zero(_integGain_takeoff)) {
             i_gain = _integGain_takeoff;
         }
