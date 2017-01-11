@@ -29,7 +29,7 @@ void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, cons
     // once landed, post some landing statistics to the GCS
     post_stats = false;
 
-    type_slope_stage = SLOPE_APPROACH;
+    type_slope_stage = SLOPE_STAGE_NORMAL;
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude);
 }
 
@@ -50,10 +50,23 @@ void AP_Landing::type_slope_verify_abort_landing(const Location &prev_WP_loc, Lo
 bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
         const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range)
 {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Stage: %d Complete: %d", type_slope_stage, complete);
     // we don't 'verify' landing in the sense that it never completes,
     // so we don't verify command completion. Instead we use this to
     // adjust final landing parameters
+
+    // determine stage
+    if (type_slope_stage == SLOPE_STAGE_NORMAL) {
+        const bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
+        const bool on_flight_line = fabsf(nav_controller->crosstrack_error()) < 5.0f && !nav_controller->data_is_stale();
+        const bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
+        if ((mission.get_prev_nav_cmd_id() == MAV_CMD_NAV_LOITER_TO_ALT) ||
+            (wp_proportion >= 0 && heading_lined_up && on_flight_line) ||
+            (wp_proportion > 0.15f && heading_lined_up && below_prev_WP) ||
+            (wp_proportion > 0.5f)) {
+            type_slope_stage = SLOPE_STAGE_APPROACH;
+        }
+    }
+
 
     /* Set land_complete (which starts the flare) under 3 conditions:
        1) we are within LAND_FLARE_ALT meters of the landing altitude
@@ -92,7 +105,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
                                   (double)get_distance(current_loc, next_WP_loc));
             }
             complete = true;
-            type_slope_stage = SLOPE_FINAL;
+            type_slope_stage = SLOPE_STAGE_FINAL;
         }
 
 
@@ -105,11 +118,11 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             aparm.min_gndspeed_cm.load();
             aparm.throttle_cruise.load();
         }
-    } else if (!complete && type_slope_stage != SLOPE_PREFLARE && pre_flare_airspeed > 0) {
+    } else if (!complete && type_slope_stage == SLOPE_STAGE_APPROACH && pre_flare_airspeed > 0) {
         bool reached_pre_flare_alt = pre_flare_alt > 0 && (height <= pre_flare_alt);
         bool reached_pre_flare_sec = pre_flare_sec > 0 && (height <= sink_rate * pre_flare_sec);
         if (reached_pre_flare_alt || reached_pre_flare_sec) {
-            type_slope_stage = SLOPE_PREFLARE;
+            type_slope_stage = SLOPE_STAGE_PREFLARE;
         }
     }
 
@@ -296,27 +309,22 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
 }
 
 int32_t AP_Landing::type_slope_get_target_airspeed_cm(void) {
-    int32_t target_airspeed_cm = aparm.airspeed_cruise_cm;
-
-    if (!in_progress) {
-        // not landing, use regular cruise airspeed
-        return target_airspeed_cm;
-    }
 
     // we're landing, check for custom approach and
     // pre-flare airspeeds. Also increase for head-winds
 
     const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+    int32_t target_airspeed_cm = aparm.airspeed_cruise_cm;
 
     switch (type_slope_stage) {
-    case SLOPE_APPROACH:
+    case SLOPE_STAGE_APPROACH:
         if (land_airspeed >= 0) {
             target_airspeed_cm = land_airspeed * 100;
         }
         break;
 
-    case SLOPE_PREFLARE:
-    case SLOPE_FINAL:
+    case SLOPE_STAGE_PREFLARE:
+    case SLOPE_STAGE_FINAL:
         if (pre_flare_airspeed > 0) {
             // if we just preflared then continue using the pre-flare airspeed during final flare
             target_airspeed_cm = pre_flare_airspeed * 100;
@@ -338,20 +346,18 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void) {
 
 bool AP_Landing::type_slope_is_flaring(void) const
 {
-    return in_progress && type_slope_stage == SLOPE_FINAL;
+    return (type_slope_stage == SLOPE_STAGE_FINAL);
 }
 
 
 bool AP_Landing::type_slope_is_on_approach(void) const
 {
-    return in_progress &&
-           (type_slope_stage == SLOPE_APPROACH ||
-            type_slope_stage == SLOPE_PREFLARE);
+    return (type_slope_stage == SLOPE_STAGE_APPROACH ||
+            type_slope_stage == SLOPE_STAGE_PREFLARE);
 }
 
 bool AP_Landing::type_slope_is_expecting_impact(void) const
 {
-    return in_progress &&
-            (type_slope_stage == SLOPE_PREFLARE ||
-            type_slope_stage == SLOPE_FINAL);
+    return (type_slope_stage == SLOPE_STAGE_PREFLARE ||
+            type_slope_stage == SLOPE_STAGE_FINAL);
 }
