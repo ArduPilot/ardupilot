@@ -132,6 +132,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
     // return true if already armed
     if (motors.armed()) {
+        in_arm_motors = false;
         return true;
     }
 
