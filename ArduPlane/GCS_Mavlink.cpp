@@ -1359,6 +1359,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
                 }
                 if (plane.landing.request_go_around()) {
+                    plane.auto_state.next_wp_no_crosstrack = true;
                     result = MAV_RESULT_ACCEPTED;
                 }
             }
