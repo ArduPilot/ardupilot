@@ -869,10 +869,10 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
 
     landing.set_in_progress(fs == AP_Vehicle::FixedWing::FLIGHT_LAND);
 
-        if (fs == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
-            gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
-                              auto_state.takeoff_altitude_rel_cm/100);
-        }
+    if (fs == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
+                          auto_state.takeoff_altitude_rel_cm/100);
+    }
 
     flight_stage = fs;
 
@@ -978,10 +978,6 @@ void Plane::update_flight_stage(void)
         set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
     } else {
         set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
-    }
-
-    if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
-        landing.reset();
     }
 
     // tell AHRS the airspeed to true airspeed ratio

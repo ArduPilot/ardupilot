@@ -141,7 +141,11 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     AP_GROUPEND
 };
 
-void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude) {
+void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
+{
+    complete = false;
+    commanded_go_around = false;
+
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_do_land(cmd, relative_altitude);
@@ -266,20 +270,6 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
     default:
         break;
     }
-}
-
-/*
- * initialize state for new nav command
- */
-void AP_Landing::reset(void)
-{
-    complete = false;
-    commanded_go_around = false;
-    initial_slope = 0;
-    slope = 0;
-
-    // once landed, post some landing statistics to the GCS
-    post_stats = false;
 }
 
 /*

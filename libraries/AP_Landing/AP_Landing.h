@@ -81,7 +81,6 @@ public:
     void set_in_progress(const bool _in_progress) { in_progress = _in_progress; }
 
     // helper functions
-    void reset(void);
     bool restart_landing_sequence(void);
     float wind_alignment(const float heading_deg);
     float head_wind(void);
