@@ -92,7 +92,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
                                   (double)get_distance(current_loc, next_WP_loc));
             }
             complete = true;
-            type_slope_stage = SLOPE_FINAL;
+            type_slope_stage = SLOPE_STAGE_FINAL;
         }
 
 
@@ -105,11 +105,11 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             aparm.min_gndspeed_cm.load();
             aparm.throttle_cruise.load();
         }
-    } else if (!complete && type_slope_stage != SLOPE_PREFLARE && pre_flare_airspeed > 0) {
+    } else if (!complete && type_slope_stage == SLOPE_STAGE_APPROACH && pre_flare_airspeed > 0) {
         bool reached_pre_flare_alt = pre_flare_alt > 0 && (height <= pre_flare_alt);
         bool reached_pre_flare_sec = pre_flare_sec > 0 && (height <= sink_rate * pre_flare_sec);
         if (reached_pre_flare_alt || reached_pre_flare_sec) {
-            type_slope_stage = SLOPE_PREFLARE;
+            type_slope_stage = SLOPE_STAGE_PREFLARE;
         }
     }
 
@@ -309,14 +309,14 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void) {
     const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
 
     switch (type_slope_stage) {
-    case SLOPE_APPROACH:
+    case SLOPE_STAGE_APPROACH:
         if (land_airspeed >= 0) {
             target_airspeed_cm = land_airspeed * 100;
         }
         break;
 
-    case SLOPE_PREFLARE:
-    case SLOPE_FINAL:
+    case SLOPE_STAGE_PREFLARE:
+    case SLOPE_STAGE_FINAL:
         if (pre_flare_airspeed > 0) {
             // if we just preflared then continue using the pre-flare airspeed during final flare
             target_airspeed_cm = pre_flare_airspeed * 100;
@@ -338,20 +338,20 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void) {
 
 bool AP_Landing::type_slope_is_flaring(void) const
 {
-    return in_progress && type_slope_stage == SLOPE_FINAL;
+    return in_progress && type_slope_stage == SLOPE_STAGE_FINAL;
 }
 
 
 bool AP_Landing::type_slope_is_on_approach(void) const
 {
     return in_progress &&
-           (type_slope_stage == SLOPE_APPROACH ||
-            type_slope_stage == SLOPE_PREFLARE);
+           (type_slope_stage == SLOPE_STAGE_APPROACH ||
+            type_slope_stage == SLOPE_STAGE_PREFLARE);
 }
 
 bool AP_Landing::type_slope_is_expecting_impact(void) const
 {
     return in_progress &&
-            (type_slope_stage == SLOPE_PREFLARE ||
-            type_slope_stage == SLOPE_FINAL);
+            (type_slope_stage == SLOPE_STAGE_PREFLARE ||
+             type_slope_stage == SLOPE_STAGE_FINAL);
 }

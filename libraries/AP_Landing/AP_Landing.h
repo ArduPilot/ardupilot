@@ -157,9 +157,9 @@ private:
 
     // Land Type STANDARD GLIDE SLOPE
     enum slope_stage {
-        SLOPE_APPROACH,
-        SLOPE_PREFLARE,
-        SLOPE_FINAL
+        SLOPE_STAGE_APPROACH,
+        SLOPE_STAGE_PREFLARE,
+        SLOPE_STAGE_FINAL
     };
     slope_stage type_slope_stage;
     void type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
