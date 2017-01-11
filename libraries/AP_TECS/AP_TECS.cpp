@@ -936,7 +936,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _DT = (now - _update_pitch_throttle_last_usec) * 1.0e-6f;
     _update_pitch_throttle_last_usec = now;
 
-    _flags.is_doing_auto_land = _landing.in_progress;
+    _flags.is_doing_auto_land = (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND);
     _distance_beyond_land_wp = distance_beyond_land_wp;
     _flight_stage = flight_stage;
 

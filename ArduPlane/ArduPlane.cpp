@@ -867,15 +867,12 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
         return;
     }
 
-    if (fs == AP_Vehicle::FixedWing::FLIGHT_LAND) {
-        landing.in_progress = true;
-    } else {
-        landing.in_progress = false;
+    landing.set_in_progress(fs == AP_Vehicle::FixedWing::FLIGHT_LAND);
+
         if (fs == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
             gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
                               auto_state.takeoff_altitude_rel_cm/100);
         }
-    }
 
     flight_stage = fs;
 
@@ -912,7 +909,7 @@ void Plane::update_alt()
     if (auto_throttle_mode && !throttle_suppressed) {        
 
         float distance_beyond_land_wp = 0;
-        if (landing.in_progress && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
             distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
         }
 
@@ -1055,7 +1052,7 @@ float Plane::tecs_hgt_afe(void)
       coming.
     */
     float hgt_afe;
-    if (landing.in_progress) {
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         hgt_afe = height_above_target();
         hgt_afe -= rangefinder_correction();
     } else {
