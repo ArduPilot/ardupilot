@@ -110,6 +110,9 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         Buzzer buzzer;
         Display_SSD1306_I2C display;
         NotifyDevice *AP_Notify::_devices[] = {&display, &buzzer};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBLUE
+        AP_BoardLED boardled;
+        NotifyDevice *AP_Notify::_devices[] = {&boardled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
         ToshibaLED_I2C toshibaled;
         ToneAlarm_Linux tonealarm;

@@ -1,0 +1,33 @@
+#pragma once
+
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/utility/OwnPtr.h>
+
+#include "AP_Baro_Backend.h"
+
+class AP_Baro_BMP280 : public AP_Baro_Backend
+{
+public:
+    AP_Baro_BMP280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+
+    /* AP_Baro public interface: */
+    void update();
+
+private:
+    void _update_temperature(int32_t);
+    void _update_pressure(int32_t);
+    bool _timer(void);
+    
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+
+    bool _has_sample;
+    uint8_t _instance;
+    int32_t _t_fine;
+    float _pressure;
+    float _temperature;
+
+    // Internal calibration registers
+    int16_t _t2, _t3, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9;
+    uint16_t _t1, _p1;    
+};

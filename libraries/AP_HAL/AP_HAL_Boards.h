@@ -36,6 +36,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_AERO       1015
 #define HAL_BOARD_SUBTYPE_LINUX_DARK       1016
 #define HAL_BOARD_SUBTYPE_LINUX_URUS       1017
+#define HAL_BOARD_SUBTYPE_LINUX_BBBLUE     1018
 
 /* HAL PX4 sub-types, starting at 2000 */
 #define HAL_BOARD_SUBTYPE_PX4_V1           2000
@@ -81,6 +82,7 @@
 #define HAL_BARO_MS5637_I2C  8
 #define HAL_BARO_QFLIGHT     9
 #define HAL_BARO_QURT       10
+#define HAL_BARO_BMP280     11
 
 /* Compass driver types */
 #define HAL_COMPASS_HMC5843             1

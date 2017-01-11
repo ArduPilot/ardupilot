@@ -20,7 +20,11 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_bin.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBLUE
+#include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_BBBLUE_bin.h"
+#else
+#include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_BBBMINI_bin.h"
+#endif
 
 using namespace Linux;
 
