@@ -19,7 +19,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Navigation/AP_Navigation.h>
 
 /// @class  AP_Landing
@@ -79,7 +78,7 @@ public:
     bool request_go_around(void);
     bool is_flaring(void) const;
     bool is_on_approach(void) const;
-
+    void set_in_progress(const bool _in_progress) { in_progress = _in_progress; }
 
     // helper functions
     void reset(void);
@@ -106,9 +105,6 @@ public:
     // Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
     bool complete;
 
-    // are we in auto and flight mode is approach || pre-flare || final (flare)
-    bool in_progress;
-
     // landing altitude offset (meters)
     float alt_offset;
 
@@ -127,6 +123,9 @@ private:
 
     // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
     float slope;
+
+    // are we in auto and flight_stage is LAND
+    bool in_progress;
 
     AP_Mission &mission;
     AP_AHRS &ahrs;
