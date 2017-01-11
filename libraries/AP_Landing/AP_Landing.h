@@ -78,7 +78,7 @@ public:
     bool request_go_around(void);
     bool is_flaring(void) const;
     bool is_on_approach(void) const;
-    void set_in_progress(const bool _in_progress) { in_progress = _in_progress; }
+    void handle_flight_stage_change(const bool _in_landing_stage);
 
     // helper functions
     bool restart_landing_sequence(void);
@@ -157,6 +157,7 @@ private:
 
     // Land Type STANDARD GLIDE SLOPE
     enum slope_stage {
+        SLOPE_STAGE_NORMAL,
         SLOPE_STAGE_APPROACH,
         SLOPE_STAGE_PREFLARE,
         SLOPE_STAGE_FINAL

@@ -867,7 +867,7 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
         return;
     }
 
-    landing.set_in_progress(fs == AP_Vehicle::FixedWing::FLIGHT_LAND);
+    landing.handle_flight_stage_change(fs == AP_Vehicle::FixedWing::FLIGHT_LAND);
 
     if (fs == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
