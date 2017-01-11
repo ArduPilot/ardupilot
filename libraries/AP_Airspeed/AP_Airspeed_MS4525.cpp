@@ -56,7 +56,7 @@ bool AP_Airspeed_MS4525::init()
         if (!_dev) {
             continue;
         }
-        if (!_dev->get_semaphore()->take(0)) {
+        if (!_dev->get_semaphore()->lock()) {
             continue;
         }
 
@@ -138,12 +138,12 @@ void AP_Airspeed_MS4525::_collect()
     
     _voltage_correction(press, temp);
 
-    if (sem->take(0)) {
+    if (lock->lock()) {
         _press_sum += press;
         _temp_sum += temp;
         _press_count++;
         _temp_count++;
-        sem->give();
+        lock->give();
     }
     
     _last_sample_time_ms = AP_HAL::millis();
@@ -193,13 +193,13 @@ bool AP_Airspeed_MS4525::get_differential_pressure(float &pressure)
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(0)) {
+    if (lock->lock()) {
         if (_press_count > 0) {
             _pressure = _press_sum / _press_count;
             _press_count = 0;
             _press_sum = 0;
         }
-        sem->give();
+        lock->give();
     }
     pressure = _pressure;
     return true;
@@ -211,13 +211,13 @@ bool AP_Airspeed_MS4525::get_temperature(float &temperature)
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(0)) {
+    if (lock->lock()) {
         if (_temp_count > 0) {
             _temperature = _temp_sum / _temp_count;
             _temp_count = 0;
             _temp_sum = 0;
         }
-        sem->give();
+        lock->give();
     }
     temperature = _temperature;
     return true;
