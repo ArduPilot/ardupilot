@@ -93,7 +93,7 @@ void Plane::calc_airspeed_errors()
                               channel_throttle->get_control_in()) +
                              ((int32_t)aparm.airspeed_min * 100);
 
-    } else if (control_mode == AUTO && landing.in_progress) {
+    } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
 
