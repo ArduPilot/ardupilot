@@ -68,6 +68,7 @@ public:
 //      TODO: TYPE_HELICAL,
     };
 
+    void do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
     bool verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
             const int32_t auto_state_takeoff_altitude_rel_cm, bool &throttle_suppressed);
     bool verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
@@ -161,6 +162,7 @@ private:
                        SLOPE_PREFLARE,
                        SLOPE_FINAL};
     slope_stage type_slope_stage;
+    void type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
     void type_slope_verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, bool &throttle_suppressed);
     bool type_slope_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
             const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range);

@@ -141,6 +141,18 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     AP_GROUPEND
 };
 
+void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude) {
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        type_slope_do_land(cmd, relative_altitude);
+        break;
+    default:
+        // returning TRUE while executing verify_land() will increment the
+        // mission index which in many cases will trigger an RTL for end-of-mission
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Landing configuration error, invalid LAND_TYPE");
+        break;
+    }
+}
 
 /*
   update navigation for landing. Called when on landing approach or

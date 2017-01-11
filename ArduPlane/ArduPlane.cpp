@@ -867,48 +867,15 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
         return;
     }
 
-    // if we are changing away from a landing stage then reset all the internal state
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+    if (fs == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        landing.in_progress = true;
+    } else {
         landing.in_progress = false;
-        // FIXME: Is this safe for abort reasons?
-        landing.reset();
-    }
-
-    switch (fs) {
-/*
-   // FIXME: move this into AP_Landing
-    case AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH:
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude());
-        landing.in_progress = true;
-#if GEOFENCE_ENABLED == ENABLED 
-        if (g.fence_autoenable == 1) {
-            if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
-            } else {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
-            }
-        } else if (g.fence_autoenable == 2) {
-            if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
-            } else {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
-            }
+        if (fs == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+            gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
+                              auto_state.takeoff_altitude_rel_cm/100);
         }
-#endif
-        break;
-*/
-    case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
-        break;
-
-    case AP_Vehicle::FixedWing::FLIGHT_LAND:
-        landing.in_progress = true;
-        break;
-
-    default:
-        break;
     }
-    
 
     flight_stage = fs;
 

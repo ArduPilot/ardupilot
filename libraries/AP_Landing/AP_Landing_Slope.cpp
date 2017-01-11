@@ -21,6 +21,12 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
 
+void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
+{
+        type_slope_stage = SLOPE_APPROACH;
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude);
+}
+
 void AP_Landing::type_slope_verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, bool &throttle_suppressed)
 {
     // when aborting a landing, mimic the verify_takeoff with steering hold. Once
@@ -38,6 +44,7 @@ void AP_Landing::type_slope_verify_abort_landing(const Location &prev_WP_loc, Lo
 bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
         const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range)
 {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Stage: %d Complete: %d", type_slope_stage, complete);
     // we don't 'verify' landing in the sense that it never completes,
     // so we don't verify command completion. Instead we use this to
     // adjust final landing parameters
@@ -325,18 +332,20 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void) {
 
 bool AP_Landing::type_slope_is_flaring(void) const
 {
-    return type_slope_stage == SLOPE_FINAL;
+    return in_progress && type_slope_stage == SLOPE_FINAL;
 }
 
 
 bool AP_Landing::type_slope_is_on_approach(void) const
 {
-    return (type_slope_stage == SLOPE_APPROACH ||
+    return in_progress &&
+           (type_slope_stage == SLOPE_APPROACH ||
             type_slope_stage == SLOPE_PREFLARE);
 }
 
 bool AP_Landing::type_slope_is_expecting_impact(void) const
 {
-    return (type_slope_stage == SLOPE_PREFLARE ||
+    return in_progress &&
+            (type_slope_stage == SLOPE_PREFLARE ||
             type_slope_stage == SLOPE_FINAL);
 }
