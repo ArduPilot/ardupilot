@@ -147,9 +147,7 @@ void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float rel
         type_slope_do_land(cmd, relative_altitude);
         break;
     default:
-        // returning TRUE while executing verify_land() will increment the
-        // mission index which in many cases will trigger an RTL for end-of-mission
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Landing configuration error, invalid LAND_TYPE");
+        // a incorrect type is handled in the verify_land
         break;
     }
 }

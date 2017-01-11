@@ -158,9 +158,11 @@ private:
     AP_Int8 type;
 
     // Land Type STANDARD GLIDE SLOPE
-    enum slope_stage {SLOPE_APPROACH,
-                       SLOPE_PREFLARE,
-                       SLOPE_FINAL};
+    enum slope_stage {
+        SLOPE_APPROACH,
+        SLOPE_PREFLARE,
+        SLOPE_FINAL
+    };
     slope_stage type_slope_stage;
     void type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
     void type_slope_verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, bool &throttle_suppressed);
