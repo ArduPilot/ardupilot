@@ -551,13 +551,11 @@ void Plane::handle_auto_mode(void)
         calc_nav_roll();
         calc_nav_pitch();
         
-        if (landing.is_complete()) {
-            // during final approach constrain roll to the range
-            // allowed for level flight
-            nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
+        // allow landing to restrict the roll limits
+        nav_roll_cd = landing.constrain_roll(nav_roll_cd, g.level_roll_limit*100UL);
 
-            // we are in the final stage of a landing - force
-            // zero throttle
+        if (landing.is_complete()) {
+            // if landing is considered complete throttle is never allowed, regardless of landing type
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
         } else {
             calc_throttle();
@@ -1017,11 +1015,12 @@ void Plane::update_optical_flow(void)
 
 /*
     If land_DisarmDelay is enabled (non-zero), check for a landing then auto-disarm after time expires
+
+    only called from AP_Landing, when the landing library is ready to disarm
  */
 void Plane::disarm_if_autoland_complete()
 {
     if (landing.get_disarm_delay() > 0 &&
-        landing.is_complete() &&
         !is_flying() &&
         arming.arming_required() != AP_Arming::NO &&
         arming.is_armed()) {
