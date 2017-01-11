@@ -336,6 +336,16 @@ bool AP_Landing::restart_landing_sequence()
     return success;
 }
 
+int32_t AP_Landing::constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd)
+{
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_constrain_roll(desired_roll_cd, level_roll_limit_cd);
+    default:
+        return desired_roll_cd;
+    }
+}
+
 /*
  * Determine how aligned heading_deg is with the wind. Return result
  * is 1.0 when perfectly aligned heading into wind, -1 when perfectly
