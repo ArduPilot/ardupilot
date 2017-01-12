@@ -99,7 +99,7 @@ NOINLINE void Copter::send_attitude(mavlink_channel_t chan)
 }
 
 #if AC_FENCE == ENABLED
-NOINLINE void Copter::send_limits_status(mavlink_channel_t chan)
+NOINLINE void Copter::send_fence_status(mavlink_channel_t chan)
 {
     fence_send_mavlink_status(chan);
 }
@@ -525,10 +525,10 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         // depreciated, use GCS_MAVLINK::send_statustext*
         return false;
 
-    case MSG_LIMITS_STATUS:
+    case MSG_FENCE_STATUS:
 #if AC_FENCE == ENABLED
-        CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
-        copter.send_limits_status(chan);
+        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
+        copter.send_fence_status(chan);
 #endif
         break;
 
@@ -582,7 +582,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         copter.ahrs.send_ekf_status_report(chan);
         break;
 
-    case MSG_FENCE_STATUS:
+    case MSG_LIMITS_STATUS:
     case MSG_WIND:
     case MSG_POSITION_TARGET_GLOBAL_INT:
         // unused
@@ -763,7 +763,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
         send_message(MSG_CURRENT_WAYPOINT);
         send_message(MSG_GPS_RAW);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
-        send_message(MSG_LIMITS_STATUS);
+        send_message(MSG_FENCE_STATUS);
     }
 
     if (copter.gcs_out_of_time) return;
