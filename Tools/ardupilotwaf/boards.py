@@ -260,6 +260,16 @@ class urussitl(urushal):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
         )
 
+class urusandroid(urushal):
+    toolchain = 'arm-linux-androideabi'
+
+    def configure_env(self, cfg, env):
+        super(urusandroid, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+        )
+
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
