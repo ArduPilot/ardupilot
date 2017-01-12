@@ -8,6 +8,8 @@ THR_MAX		100
 RC3_MAX         2000
 RC3_MIN         1000
 RC3_TRIM        1500
+SERVO3_MIN      1000
+SERVO3_MAX      2000
 RC1_MAX         2000
 RC1_MIN         1000
 RC1_TRIM        1500

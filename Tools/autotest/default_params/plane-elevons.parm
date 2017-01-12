@@ -27,6 +27,8 @@ RC2_TRIM        1500
 RC3_MAX         2000
 RC3_MIN         1000
 RC3_TRIM        1000
+SERVO3_MIN      1000
+SERVO3_MAX      2000
 RC4_MAX         2000
 RC4_MIN         1000
 RC4_TRIM        1500
