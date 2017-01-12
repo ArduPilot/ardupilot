@@ -145,7 +145,7 @@ void Copter::update_throttle_thr_mix()
         if(channel_throttle->get_control_in() <= 0) {
             attitude_control.set_throttle_mix_min();
         } else {
-            attitude_control.set_throttle_mix_mid();
+            attitude_control.set_throttle_mix_man();
         }
     } else {
         // autopilot controlled throttle
