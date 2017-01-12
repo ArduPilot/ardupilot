@@ -1,4 +1,4 @@
-#if defined(HAVE_BYTESWAP_H) && HAVE_BYTESWAP_H
+#if (defined(HAVE_BYTESWAP_H) && HAVE_BYTESWAP_H) && !defined(__ANDROID__)
 #include_next <byteswap.h>
 #else
 
