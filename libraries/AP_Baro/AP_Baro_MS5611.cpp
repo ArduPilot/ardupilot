@@ -173,7 +173,7 @@ uint16_t AP_Baro_MS56XX::_read_prom_word(uint8_t word)
 {
     const uint8_t reg = CMD_MS56XX_PROM + (word << 1);
     uint8_t val[2];
-    if (!_dev->transfer(&reg, 1, val, 2)) {
+    if (!_dev->transfer(&reg, 1, val, sizeof(val))) {
         return 0;
     }
     return (val[0] << 8) | val[1];
@@ -182,7 +182,7 @@ uint16_t AP_Baro_MS56XX::_read_prom_word(uint8_t word)
 uint32_t AP_Baro_MS56XX::_read_adc()
 {
     uint8_t val[3];
-    if (!_dev->transfer(&CMD_MS56XX_READ_ADC, 1, val, 3)) {
+    if (!_dev->transfer(&CMD_MS56XX_READ_ADC, 1, val, sizeof(val))) {
         return 0;
     }
     return (val[0] << 16) | (val[1] << 8) | val[2];
