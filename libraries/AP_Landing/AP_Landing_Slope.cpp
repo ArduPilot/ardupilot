@@ -38,7 +38,6 @@ void AP_Landing::type_slope_verify_abort_landing(const Location &prev_WP_loc, Lo
     // when aborting a landing, mimic the verify_takeoff with steering hold. Once
     // the altitude has been reached, restart the landing sequence
     throttle_suppressed = false;
-    complete = false;
     nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
 }
 
@@ -94,7 +93,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
         (!rangefinder_state_in_range && wp_proportion >= 1) ||
         probably_crashed) {
 
-        if (!complete) {
+        if (type_slope_stage != SLOPE_STAGE_FINAL) {
             post_stats = true;
             if (is_flying && (AP_HAL::millis()-last_flying_ms) > 3000) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)ahrs.get_gps().ground_speed());
@@ -104,7 +103,6 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
                                   (double)ahrs.get_gps().ground_speed(),
                                   (double)get_distance(current_loc, next_WP_loc));
             }
-            complete = true;
             type_slope_stage = SLOPE_STAGE_FINAL;
         }
 
@@ -118,7 +116,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             aparm.min_gndspeed_cm.load();
             aparm.throttle_cruise.load();
         }
-    } else if (!complete && type_slope_stage == SLOPE_STAGE_APPROACH && pre_flare_airspeed > 0) {
+    } else if (type_slope_stage == SLOPE_STAGE_APPROACH && pre_flare_airspeed > 0) {
         bool reached_pre_flare_alt = pre_flare_alt > 0 && (height <= pre_flare_alt);
         bool reached_pre_flare_sec = pre_flare_sec > 0 && (height <= sink_rate * pre_flare_sec);
         if (reached_pre_flare_alt || reached_pre_flare_sec) {
@@ -145,7 +143,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     }
 
     // check if we should auto-disarm after a confirmed landing
-    if (complete) {
+    if (type_slope_stage == SLOPE_STAGE_FINAL) {
         disarm_if_autoland_complete_fn();
     }
 
@@ -371,3 +369,9 @@ bool AP_Landing::type_slope_is_expecting_impact(void) const
     return (type_slope_stage == SLOPE_STAGE_PREFLARE ||
             type_slope_stage == SLOPE_STAGE_FINAL);
 }
+
+bool AP_Landing::type_slope_is_complete(void) const
+{
+    return (type_slope_stage == SLOPE_STAGE_FINAL);
+}
+

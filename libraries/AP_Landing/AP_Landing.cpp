@@ -143,7 +143,6 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
 
 void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
-    complete = false;
     commanded_go_around = false;
 
     switch (type) {
@@ -183,7 +182,6 @@ bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &nex
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_verify_abort_landing(prev_WP_loc, next_WP_loc, throttle_suppressed);
         break;
-
     default:
         break;
     }
@@ -208,7 +206,6 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, wp_distance, target_altitude_offset_cm);
         break;
-
     default:
         break;
     }
@@ -224,7 +221,6 @@ bool AP_Landing::is_flaring(void) const
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_flaring();
-
     default:
         return false;
     }
@@ -240,7 +236,6 @@ bool AP_Landing::is_on_approach(void) const
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_on_approach();
-
     default:
         return false;
     }
@@ -256,7 +251,6 @@ bool AP_Landing::is_expecting_impact(void) const
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_expecting_impact();
-
     default:
         return false;
     }
@@ -278,7 +272,6 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
         break;
-
     default:
         break;
     }
@@ -386,7 +379,6 @@ int32_t AP_Landing::get_target_airspeed_cm(void)
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_get_target_airspeed_cm();
-
     default:
         return SpdHgt_Controller->get_land_airspeed();
     }
@@ -401,7 +393,6 @@ bool AP_Landing::request_go_around(void)
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_request_go_around();
-
     default:
         return false;
     }
@@ -411,6 +402,19 @@ void AP_Landing::handle_flight_stage_change(const bool _in_landing_stage)
 {
     in_progress = _in_landing_stage;
     commanded_go_around = false;
+}
+
+/*
+ * returns true when a landing is complete, usually used to disable throttle
+ */
+bool AP_Landing::is_complete(void) const
+{
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_complete();
+    default:
+        return true;
+    }
 }
 
 
