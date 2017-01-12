@@ -55,7 +55,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _num_cfg_save_tries(0),
     _last_config_time(0),
     _delay_time(0),
-    _next_message(STEP_RATE_NAV),
+    _next_message(STEP_PVT),
     _ublox_port(255),
     _have_version(false),
     _unconfigured_messages(CONFIG_ALL),
@@ -91,17 +91,11 @@ AP_GPS_UBLOX::_request_next_config(void)
 
    Debug("Unconfigured messages: %d Current message: %d\n", _unconfigured_messages, _next_message);
 
+   // check AP_GPS_UBLOX.h for the enum that controls the order.
+   // This switch statement isn't maintained against the enum in order to reduce code churn
     switch (_next_message++) {
-    case STEP_RATE_NAV:
-        _configure_rate();
-        break;
-    case STEP_RATE_POSLLH:
-        if(!havePvtMsg && !_configure_message_rate(CLASS_NAV, MSG_POSLLH, RATE_POSLLH)) {
-            _next_message--;
-        }
-        break;
-    case STEP_RATE_VELNED:
-        if(!havePvtMsg && !_configure_message_rate(CLASS_NAV, MSG_VELNED, RATE_VELNED)) {
+    case STEP_PVT:
+        if(!_request_message_rate(CLASS_NAV, MSG_PVT)) {
             _next_message--;
         }
         break;
@@ -131,12 +125,12 @@ AP_GPS_UBLOX::_request_next_config(void)
         _send_message(CLASS_CFG, MSG_CFG_RATE, nullptr, 0);
         break;
     case STEP_POSLLH:
-        if(!havePvtMsg && !_request_message_rate(CLASS_NAV, MSG_POSLLH)) {
+        if(!_request_message_rate(CLASS_NAV, MSG_POSLLH)) {
             _next_message--;
         }
         break;
     case STEP_STATUS:
-        if(!havePvtMsg && !_request_message_rate(CLASS_NAV, MSG_STATUS)) {
+        if(!_request_message_rate(CLASS_NAV, MSG_STATUS)) {
             _next_message--;
         }
         break;
@@ -145,13 +139,8 @@ AP_GPS_UBLOX::_request_next_config(void)
             _next_message--;
         }
         break;
-    case STEP_PVT:
-        if(!_request_message_rate(CLASS_NAV, MSG_PVT)) {
-            _next_message--;
-        }
-        break;
     case STEP_VELNED:
-        if(!havePvtMsg && !_request_message_rate(CLASS_NAV, MSG_VELNED)) {
+        if(!_request_message_rate(CLASS_NAV, MSG_VELNED)) {
             _next_message--;
         }
         break;
@@ -199,35 +188,38 @@ AP_GPS_UBLOX::_request_next_config(void)
             _unconfigured_messages &= ~CONFIG_VERSION;
         }
         // no need to send the initial rates, move to checking only
-        _next_message = STEP_PORT;
+        _next_message = STEP_PVT;
         break;
     default:
         // this case should never be reached, do a full reset if it is hit
-        _next_message = STEP_RATE_NAV;
+        _next_message = STEP_PVT;
         break;
     }
 }
 
 void
 AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
-    Debug("class=%u id=%u rate=%u",msg_class,msg_id,rate);
+    uint8_t desired_rate;
+
     switch(msg_class) {
     case CLASS_NAV:
         switch(msg_id) {
         case MSG_POSLLH:
-            if(rate == RATE_POSLLH) {
+            desired_rate = havePvtMsg ? 0 : RATE_POSLLH;
+            if(rate == desired_rate) {
                 _unconfigured_messages &= ~CONFIG_RATE_POSLLH;
             } else {
-                _configure_message_rate(msg_class, msg_id, RATE_POSLLH);
+                _configure_message_rate(msg_class, msg_id, desired_rate);
                 _unconfigured_messages |= CONFIG_RATE_POSLLH;
                 _cfg_needs_save = true;
             }
             break;
         case MSG_STATUS:
-            if(rate == RATE_STATUS) {
+            desired_rate = havePvtMsg ? 0 : RATE_STATUS;
+            if(rate == desired_rate) {
                 _unconfigured_messages &= ~CONFIG_RATE_STATUS;
             } else {
-                _configure_message_rate(msg_class, msg_id, RATE_STATUS);
+                _configure_message_rate(msg_class, msg_id, desired_rate);
                 _unconfigured_messages |= CONFIG_RATE_STATUS;
                 _cfg_needs_save = true;
             }
@@ -251,10 +243,11 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             }
             break;
         case MSG_VELNED:
-            if(rate == RATE_VELNED) {
+            desired_rate = havePvtMsg ? 0 : RATE_VELNED;
+            if(rate == desired_rate) {
                 _unconfigured_messages &= ~CONFIG_RATE_VELNED;
             } else {
-                _configure_message_rate(msg_class, msg_id, RATE_VELNED);
+                _configure_message_rate(msg_class, msg_id, desired_rate);
                 _unconfigured_messages |= CONFIG_RATE_VELNED;
                 _cfg_needs_save = true;
             }
@@ -352,11 +345,7 @@ AP_GPS_UBLOX::read(void)
         _request_next_config();
         _last_config_time = millis_now;
         if (_unconfigured_messages) { // send the updates faster until fully configured
-            if (_next_message < STEP_PORT) { // blast the initial settings out
-                _delay_time = 0;
-            } else {
-                _delay_time = 750;
-            }
+            _delay_time = 750;
         } else {
             _delay_time = 2000;
         }
@@ -840,7 +829,7 @@ AP_GPS_UBLOX::_parse_gps(void)
     case MSG_POSLLH:
         Debug("MSG_POSLLH next_fix=%u", next_fix);
         if (havePvtMsg) {
-            _configure_message_rate(_class, _msg_id, 0);
+            _unconfigured_messages |= CONFIG_RATE_POSLLH;
             break;
         }
         _last_pos_time        = _buffer.posllh.time;
@@ -866,7 +855,7 @@ AP_GPS_UBLOX::_parse_gps(void)
               _buffer.status.fix_status,
               _buffer.status.fix_type);
         if (havePvtMsg) {
-            _configure_message_rate(_class, _msg_id, 0);
+            _unconfigured_messages |= CONFIG_RATE_STATUS;
             break;
         }
         if (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) {
@@ -945,10 +934,6 @@ AP_GPS_UBLOX::_parse_gps(void)
     case MSG_PVT:
         Debug("MSG_PVT");
         havePvtMsg = true;
-        //unsubscribe to these messages
-        _unconfigured_messages &= ~CONFIG_RATE_POSLLH;
-        _unconfigured_messages &= ~CONFIG_RATE_VELNED;
-        _unconfigured_messages &= ~CONFIG_RATE_STATUS;
         // position
         _last_pos_time        = _buffer.pvt.itow;
         state.location.lng    = _buffer.pvt.lon;
@@ -1019,7 +1004,7 @@ AP_GPS_UBLOX::_parse_gps(void)
     case MSG_VELNED:
         Debug("MSG_VELNED");
         if (havePvtMsg) {
-            _configure_message_rate(_class, _msg_id, 0);
+            _unconfigured_messages |= CONFIG_RATE_VELNED;
             break;
         }
         _last_vel_time         = _buffer.velned.time;
