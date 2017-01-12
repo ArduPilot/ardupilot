@@ -76,7 +76,7 @@
 
 #define CONFIG_ALL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_SOL | CONFIG_RATE_VELNED \
                     | CONFIG_RATE_DOP | CONFIG_RATE_MON_HW | CONFIG_RATE_MON_HW2 | CONFIG_RATE_RAW | CONFIG_VERSION \
-                    | CONFIG_NAV_SETTINGS | CONFIG_GNSS | CONFIG_SBAS | CONFIG_RATE_PVT)
+                    | CONFIG_NAV_SETTINGS | CONFIG_GNSS | CONFIG_SBAS)
 
 //Configuration Sub-Sections
 #define SAVE_CFG_IO     (1<<0)
@@ -471,20 +471,17 @@ private:
     };
 
     enum config_step {
-        STEP_RATE_NAV = 0,
-        STEP_PORT,
+        STEP_PVT = 0,
         STEP_SOL,
-        STEP_PVT,
+        STEP_PORT,
+        STEP_POSLLH,
+        STEP_STATUS,
+        STEP_VELNED,
         STEP_POLL_SVINFO, // poll svinfo
         STEP_POLL_SBAS, // poll SBAS
         STEP_POLL_NAV, // poll NAV settings
         STEP_POLL_GNSS, // poll GNSS
         STEP_NAV_RATE, // poll NAV rate
-        STEP_RATE_POSLLH,
-        STEP_RATE_VELNED,  
-        STEP_POSLLH,
-        STEP_STATUS,
-        STEP_VELNED,
         STEP_DOP,
         STEP_MON_HW,
         STEP_MON_HW2,

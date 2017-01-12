@@ -77,13 +77,13 @@ public:
 
     /// GPS status codes
     enum GPS_Status {
-        NO_GPS = GPS_FIX_TYPE_NO_GPS,             ///< No GPS connected/detected
-        NO_FIX = GPS_FIX_TYPE_NO_FIX,             ///< Receiving valid GPS messages but no lock
-        GPS_OK_FIX_2D = GPS_FIX_TYPE_2D_FIX,      ///< Receiving valid messages and 2D lock
-        GPS_OK_FIX_3D = GPS_FIX_TYPE_3D_FIX,      ///< Receiving valid messages and 3D lock
-        GPS_OK_FIX_3D_DGPS = GPS_FIX_TYPE_DGPS, ///< Receiving valid messages and 3D lock with differential improvements
-        GPS_OK_FIX_3D_RTK_FLOAT = GPS_FIX_TYPE_RTK_FLOAT,  ///< Receiving valid messages and 3D RTK Float
-        GPS_OK_FIX_3D_RTK_FIXED = GPS_FIX_TYPE_RTK_FIXED,  ///< Receiving valid messages and 3D RTK Fixed
+        NO_GPS = GPS_FIX_TYPE_NO_GPS,                     ///< No GPS connected/detected
+        NO_FIX = GPS_FIX_TYPE_NO_FIX,                     ///< Receiving valid GPS messages but no lock
+        GPS_OK_FIX_2D = GPS_FIX_TYPE_2D_FIX,              ///< Receiving valid messages and 2D lock
+        GPS_OK_FIX_3D = GPS_FIX_TYPE_3D_FIX,              ///< Receiving valid messages and 3D lock
+        GPS_OK_FIX_3D_DGPS = GPS_FIX_TYPE_DGPS,           ///< Receiving valid messages and 3D lock with differential improvements
+        GPS_OK_FIX_3D_RTK_FLOAT = GPS_FIX_TYPE_RTK_FLOAT, ///< Receiving valid messages and 3D RTK Float
+        GPS_OK_FIX_3D_RTK_FIXED = GPS_FIX_TYPE_RTK_FIXED, ///< Receiving valid messages and 3D RTK Fixed
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
