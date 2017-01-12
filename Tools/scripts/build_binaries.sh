@@ -129,7 +129,7 @@ skip_frame() {
     sboard=$1
     sframe=$2
     if [ "$sboard" = "bebop" ]; then
-        if [ "$sframe" != "quad" ]; then
+        if [ "$sframe" != "quad" -a "$sframe" != "none" ]; then
             return 0
         fi
     fi
@@ -296,7 +296,7 @@ build_arducopter() {
     # work out what frames to build by looking for FRAME_CLASS parameter
     checkout ArduCopter $tag "" ""
     if grep -q FRAME_CLASS ArduCopter/Parameters.cpp; then
-        frames="quad heli"
+        frames="none heli"
     else
         frames="quad tri hexa y6 octa octa-quad heli"
     fi
@@ -308,6 +308,11 @@ build_arducopter() {
     for b in erlebrain2 navio navio2 pxf pxfmini bebop; do
         echo "Building board: $b"
         for f in $frames; do
+            if [ "$f" = "none" ]; then
+                framesuffix=""
+            else
+                framesuffix="-$f"
+            fi
             echo "Building frame $f for board $b"
             checkout ArduCopter $tag $b $f || {
                 echo "Failed checkout of ArduCopter $b $tag $f"
@@ -316,23 +321,28 @@ build_arducopter() {
             }
             skip_board_waf $b && continue
             echo "Building ArduCopter $tag $b binaries $f"
-            ddir=$binaries/Copter/$hdate/$b-$f
+            ddir=$binaries/Copter/$hdate/$b$framesuffix
             skip_build $tag $ddir && continue
             skip_frame $b $f && continue
             options=$(board_options $b)
             waf configure --board $b $options --out $BUILDROOT clean \
-                    build --targets bin/arducopter-$f || {
-                echo "Failed build of ArduCopter $b-$f $tag"
+                    build --targets bin/arducopter$framesuffix || {
+                echo "Failed build of ArduCopter $b$framesuffix $tag"
                 error_count=$((error_count+1))
                 continue
             }
-            copyit $BUILDROOT/$b/bin/arducopter-$f $ddir $tag "ArduCopter"
+            copyit $BUILDROOT/$b/bin/arducopter$framesuffix $ddir $tag "ArduCopter"
             touch $binaries/Copter/$tag
         done
     done
     pushd ArduCopter
     for f in $frames; do
         echo "Building frame $f for board PX4"
+        if [ "$f" = "none" ]; then
+            framesuffix=""
+        else
+            framesuffix="-$f"
+        fi
         checkout ArduCopter $tag PX4 $f || {
             echo "Failed checkout of ArduCopter PX4 $tag $f"
             error_count=$((error_count+1))
@@ -340,12 +350,12 @@ build_arducopter() {
             continue
         }
         rm -rf ../Build.ArduCopter
-        echo "Building ArduCopter $tag PX4-$f binaries"
-        ddir="$binaries/Copter/$hdate/PX4-$f"
+        echo "Building ArduCopter $tag PX4$framesuffix binaries"
+        ddir="$binaries/Copter/$hdate/PX4$framesuffix"
         skip_build $tag $ddir && continue
         for v in v1 v2 v3 v4; do
             make px4-clean
-            make px4-$v-$f -j2 || {
+            make px4-$v$framesuffix -j2 || {
                 echo "Failed build of ArduCopter PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
