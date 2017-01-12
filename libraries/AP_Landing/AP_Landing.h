@@ -97,13 +97,9 @@ public:
     int8_t get_flap_percent(void) const { return flap_percent; }
     int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
     bool is_commanded_go_around(void) const { return commanded_go_around; }
-    bool is_complete(void) const { return complete; }
+    bool is_complete(void) const;
     void set_initial_slope(void) { initial_slope = slope; }
     bool is_expecting_impact(void) const;
-
-    // Flag to indicate if we have landed.
-    // Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
-    bool complete;
 
     // landing altitude offset (meters)
     float alt_offset;
@@ -176,6 +172,7 @@ private:
     void type_slope_check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
     int32_t type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
     bool type_slope_request_go_around(void);
+    bool type_slope_is_complete(void) const;
     bool type_slope_is_flaring(void) const;
     bool type_slope_is_on_approach(void) const;
     bool type_slope_is_expecting_impact(void) const;
