@@ -35,10 +35,10 @@ void PX4GPIO::init()
         AP_HAL::panic("Unable to open " LED0_DEVICE_PATH);
     }
     if (ioctl(_led_fd, LED_OFF, LED_BLUE) != 0) {
-        hal.console->printf("GPIO: Unable to setup GPIO LED BLUE\n");
+        hal.console->println("GPIO: Unable to setup GPIO LED BLUE");
     }
     if (ioctl(_led_fd, LED_OFF, LED_RED) != 0) {
-         hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
+         hal.console->println("GPIO: Unable to setup GPIO LED RED");
     }
 #endif
     _tone_alarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
@@ -52,7 +52,7 @@ void PX4GPIO::init()
     }
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
     if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_EXT_1) != 0) {
-        hal.console->printf("GPIO: Unable to setup GPIO_1\n");
+        hal.console->println("GPIO: Unable to setup GPIO_1");
     }
 #endif
 
@@ -60,7 +60,7 @@ void PX4GPIO::init()
     // also try to setup for the relay pins on the IO board
     _gpio_io_fd = open(PX4IO_DEVICE_PATH, O_RDWR);
     if (_gpio_io_fd == -1) {
-        hal.console->printf("GPIO: Unable to open px4io\n");
+        hal.console->println("GPIO: Unable to open px4io");
     }
 #endif
 }
