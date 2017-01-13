@@ -18,12 +18,14 @@
  */
 #include "AP_Airspeed_MS5525.h"
 
+#include <stdio.h>
+#include <utility>
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
-#include <stdio.h>
-#include <utility>
 
 extern const AP_HAL::HAL &hal;
 
@@ -140,9 +142,12 @@ bool AP_Airspeed_MS5525::read_prom(void)
 
     bool all_zero = true;
     for (uint8_t i = 0; i < 8; i++) {
-        if (!dev->read_uint16_be(REG_PROM_BASE+i*2, prom[i])) {
+        be16_t val;
+        if (!dev->read_registers(REG_PROM_BASE+i*2, (uint8_t *) &val,
+                                 sizeof(uint16_t))) {
             return false;
         }
+        prom[i] = be16toh(val);
         if (prom[i] != 0) {
             all_zero = false;
         }
