@@ -99,7 +99,6 @@ void SITL_State::_sitl_setup(const char *home_str)
         if (_use_fg_view) {
             fg_socket.connect("127.0.0.1", _fg_view_port);
         }
-
     }
 
     if (_synthetic_clock_mode) {
@@ -200,18 +199,16 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
  */
 void SITL_State::_check_rc_input(void)
 {
-    ssize_t size;
     struct pwm_packet {
         uint16_t pwm[16];
     } pwm_pkt;
 
-    size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
+    ssize_t size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
     switch (size) {
     case 8*2:
     case 16*2: {
         // a packet giving the receiver PWM inputs
-        uint8_t i;
-        for (i=0; i<size/2; i++) {
+        for (uint8_t i=0; i < size/2; i++) {
             // setup the pwm input for the RC channel inputs
             if (i < _sitl->state.rcin_chan_count) {
                 // we're using rc from simulator
@@ -223,6 +220,8 @@ void SITL_State::_check_rc_input(void)
         }
         break;
     }
+    default:
+        break;
     }
 }
 
@@ -245,7 +244,7 @@ void SITL_State::_output_to_flightgear(void)
     fdm.psi   = radians(sfdm.yawDeg);
     if (_vehicle == ArduCopter) {
         fdm.num_engines = 4;
-        for (uint8_t i=0; i<4; i++) {
+        for (uint8_t i=0; i < 4; i++) {
             fdm.rpm[i] = constrain_float((pwm_output[i]-1000), 0, 1000);
         }
     } else {
@@ -284,7 +283,7 @@ void SITL_State::_fdm_input_local(void)
 
         if (_sitl->rc_fail == 0) {
             for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
-                pwm_input[i] = 1000 + _sitl->state.rcin[i]*1000;
+                pwm_input[i] = 1000 + _sitl->state.rcin[i] * 1000;
             }
         }
     }
@@ -304,7 +303,7 @@ void SITL_State::_fdm_input_local(void)
     if (_sitl) {
         hal.scheduler->stop_clock(_sitl->state.timestamp_us);
     } else {
-        hal.scheduler->stop_clock(AP_HAL::micros64()+100);
+        hal.scheduler->stop_clock(AP_HAL::micros64() + 100);
     }
 
     set_height_agl();
@@ -324,10 +323,8 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     /* this maps the registers used for PWM outputs. The RC
      * driver updates these whenever it wants the channel output
      * to change */
-    uint8_t i;
-
     if (last_update_usec == 0) {
-        for (i=0; i<SITL_NUM_CHANNELS; i++) {
+        for (uint8_t i = 0; i < SITL_RC_OUTPUT_CHANNELS; i++) {
             pwm_output[i] = 1000;
         }
         if (_vehicle == ArduPlane) {
@@ -343,27 +340,27 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     last_update_usec = now;
 
     // pass wind into simulators, using a wind gradient below 60m
-    float altitude = _barometer?_barometer->get_altitude():0;
+    float altitude = _barometer ? _barometer->get_altitude() : 0.0f;
     float wind_speed = 0;
     float wind_direction = 0;
     if (_sitl) {
         // The EKF does not like step inputs so this LPF keeps it happy.
-        wind_speed = _sitl->wind_speed_active = (0.95f*_sitl->wind_speed_active) + (0.05f*_sitl->wind_speed);
-        wind_direction = _sitl->wind_direction_active = (0.95f*_sitl->wind_direction_active) + (0.05f*_sitl->wind_direction);
+        wind_speed = _sitl->wind_speed_active = (0.95f * _sitl->wind_speed_active) + (0.05f * _sitl->wind_speed);
+        wind_direction = _sitl->wind_direction_active = (0.95f * _sitl->wind_direction_active) + (0.05f * _sitl->wind_direction);
     }
 
-    if (altitude < 0) {
-        altitude = 0;
+    if (altitude < 0.0f) {
+        altitude = 0.0f;
     }
-    if (altitude < 60) {
-        wind_speed *= sqrtf(MAX(altitude / 60, 0));
+    if (altitude < 60.0f) {
+        wind_speed *= sqrtf(MAX(altitude / 60.0f, 0.0f));
     }
 
     input.wind.speed = wind_speed;
     input.wind.direction = wind_direction;
-    input.wind.turbulence = _sitl?_sitl->wind_turbulance:0;
+    input.wind.turbulence = _sitl ? _sitl->wind_turbulance : 0.0f;
 
-    for (i=0; i<SITL_NUM_CHANNELS; i++) {
+    for (uint8_t i = 0; i < SITL_RC_OUTPUT_CHANNELS; i++) {
         if (pwm_output[i] == 0xFFFF) {
             input.servos[i] = 0;
         } else {
@@ -373,33 +370,43 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
 
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
     bool motors_on = false;
-    
+
     if (_vehicle == ArduPlane) {
         // add in engine multiplier
         if (input.servos[2] > 1000) {
-            input.servos[2] = ((input.servos[2]-1000) * engine_mul) + 1000;
-            if (input.servos[2] > 2000) input.servos[2] = 2000;
+            input.servos[2] = ((input.servos[2] - 1000) * engine_mul) + 1000;
+            if (input.servos[2] > 2000) {
+                input.servos[2] = 2000;
+            }
         }
-        motors_on = ((input.servos[2]-1000)/1000.0f) > 0;
+        motors_on = ((input.servos[2] - 1000) / 1000.0f) > 0.0f;
     } else if (_vehicle == APMrover2) {
         // add in engine multiplier
         if (input.servos[2] != 1500) {
-            input.servos[2] = ((input.servos[2]-1500) * engine_mul) + 1500;
-            if (input.servos[2] > 2000) input.servos[2] = 2000;
-            if (input.servos[2] < 1000) input.servos[2] = 1000;
+            input.servos[2] = ((input.servos[2] - 1500) * engine_mul) + 1500;
+            if (input.servos[2] > 2000) {
+                input.servos[2] = 2000;
+            }
+            if (input.servos[2] < 1000) {
+                input.servos[2] = 1000;
+            }
         }
-        motors_on = ((input.servos[2]-1500)/500.0f) != 0;
+        motors_on = ((input.servos[2] - 1500) / 500.0f) != 0.0f;
     } else {
         motors_on = false;
         // apply engine multiplier to first motor
-        input.servos[0] = ((input.servos[0]-1000) * engine_mul) + 1000;
+        input.servos[0] = ((input.servos[0] - 1000) * engine_mul) + 1000;
         // run checks on each motor
-        for (i=0; i<4; i++) {
+        for (uint8_t i = 0; i < 4; i++) {
             // check motors do not exceed their limits
-            if (input.servos[i] > 2000) input.servos[i] = 2000;
-            if (input.servos[i] < 1000) input.servos[i] = 1000;
+            if (input.servos[i] > 2000) {
+                input.servos[i] = 2000;
+            }
+            if (input.servos[i] < 1000) {
+                input.servos[i] = 1000;
+            }
             // update motor_on flag
-            if ((input.servos[i]-1000)/1000.0f > 0) {
+            if ((input.servos[i] - 1000) / 1000.0f > 0.0f) {
                 motors_on = true;
             }
         }
@@ -408,16 +415,16 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         _sitl->motors_on = motors_on;
     }
 
-    float voltage = 0;
+    float voltage = 0.0f;
     _current = 0;
-    
+
     if (_sitl != nullptr) {
         if (_sitl->state.battery_voltage <= 0) {
             // simulate simple battery setup
-            float throttle = motors_on?(input.servos[2]-1000) / 1000.0f:0;
+            float throttle = motors_on ? (input.servos[2] - 1000) / 1000.0f : 0;
             // lose 0.7V at full throttle
-            voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
-            
+            voltage = _sitl->batt_voltage - 0.7f * fabsf(throttle);
+
             // assume 50A at full throttle
             _current = 50.0f * fabsf(throttle);
         } else {
@@ -467,9 +474,9 @@ void SITL_State::init(int argc, char * const argv[])
  */
 void SITL_State::set_height_agl(void)
 {
-    static float home_alt = -1;
+    static float home_alt = -1.0f;
 
-    if (home_alt == -1 && _sitl->state.altitude > 0) {
+    if (home_alt == -1.0f && _sitl->state.altitude > 0.0) {
         // remember home altitude as first non-zero altitude
         home_alt = _sitl->state.altitude;
     }

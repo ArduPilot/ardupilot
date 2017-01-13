@@ -53,12 +53,12 @@ public:
     bool use_rtscts(void) const {
         return _use_rtscts;
     }
-    
+
     // simulated airspeed, sonar and battery monitor
-    uint16_t sonar_pin_value;    // pin 0
-    uint16_t airspeed_pin_value; // pin 1
-    uint16_t voltage_pin_value;  // pin 13
-    uint16_t current_pin_value;  // pin 12
+    uint16_t sonar_pin_value;     // pin 0
+    uint16_t airspeed_pin_value;  // pin 1
+    uint16_t voltage_pin_value;   // pin 13
+    uint16_t current_pin_value;   // pin 12
 
     // return TCP client address for uartC
     const char *get_client_address(void) const { return _client_address; }
@@ -72,7 +72,7 @@ public:
         "GPS2",
         "tcp:4",
     };
-    
+
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
@@ -123,10 +123,10 @@ private:
     void _update_gps(double latitude, double longitude, float altitude,
                      double speedN, double speedE, double speedD, bool have_lock);
 
-    void _update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
-                     double rollRate, 	double pitchRate,double yawRate,	// Local to plane
-                     double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
-                     float airspeed,	float altitude);
+    void _update_ins(float roll, float pitch, float yaw,  // Relative to earth
+                     double rollRate, double pitchRate, double yawRate,  // Local to plane
+                     double xAccel, double yAccel, double zAccel,  // Local to plane
+                     float airspeed, float altitude);
     void _check_rc_input(void);
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
@@ -168,7 +168,7 @@ private:
 
     bool _use_rtscts;
     bool _use_fg_view;
-    
+
     const char *_fdm_address;
 
     // delay buffer variables
@@ -183,7 +183,7 @@ private:
     };
     uint8_t store_index_mag;
     uint32_t last_store_time_mag;
-    VectorN<readings_mag,mag_buffer_length> buffer_mag;
+    VectorN<readings_mag, mag_buffer_length> buffer_mag;
     uint32_t time_delta_mag;
     uint32_t delayed_time_mag;
 
@@ -194,7 +194,7 @@ private:
     };
     uint8_t store_index_wind;
     uint32_t last_store_time_wind;
-    VectorN<readings_wind,wind_buffer_length> buffer_wind;
+    VectorN<readings_wind, wind_buffer_length> buffer_wind;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
 
@@ -205,7 +205,7 @@ private:
     };
     uint8_t store_index_baro;
     uint32_t last_store_time_baro;
-    VectorN<readings_baro,baro_buffer_length> buffer_baro;
+    VectorN<readings_baro, baro_buffer_length> buffer_baro;
     uint32_t time_delta_baro;
     uint32_t delayed_time_baro;
 
@@ -221,7 +221,7 @@ private:
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
-    
+
     // TCP address to connect uartC to
     const char *_client_address;
 
@@ -230,4 +230,4 @@ private:
     const char *_home_str;
 };
 
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
