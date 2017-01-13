@@ -31,7 +31,7 @@ void panic(const char *errormsg, ...)
     va_end(ap);
     printf("\n");
 
-    for(;;);
+    for (;;) {}
 }
 
 uint32_t micros()
@@ -70,10 +70,10 @@ uint64_t millis64()
 
     struct timeval tp;
     gettimeofday(&tp, nullptr);
-    uint64_t ret = 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) -
+    uint64_t ret = 1.0e3*((tp.tv_sec + (tp.tv_usec * 1.0e-6)) -
                           (state.start_time.tv_sec +
-                           (state.start_time.tv_usec*1.0e-6)));
+                           (state.start_time.tv_usec * 1.0e-6)));
     return ret;
 }
 
-} // namespace AP_HAL
+}  // namespace AP_HAL
