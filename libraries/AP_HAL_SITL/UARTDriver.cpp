@@ -84,7 +84,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             uint16_t port = atoi(args2);
             _tcp_start_client(args1, port);
         } else if (strcmp(devtype, "uart") == 0) {
-            uint32_t baudrate = args2? atoi(args2) : baud;
+            uint32_t baudrate = args2 ? atoi(args2) : baud;
             ::printf("UART connection %s:%u\n", args1, baudrate);
             _uart_path = strdup(args1);
             _uart_baudrate = baudrate;
@@ -169,14 +169,13 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     return size;
 }
 
-    
 /*
   start a TCP connection for the serial port. If wait_for_connection
   is true then block until a client connects
  */
 void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 {
-    int one=1;
+    int one = 1;
     struct sockaddr_in sockaddr;
     int ret;
 
@@ -200,7 +199,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
     }
 
     if (_listen_fd == -1) {
-        memset(&sockaddr,0,sizeof(sockaddr));
+        memset(&sockaddr, 0, sizeof(sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
         sockaddr.sin_len = sizeof(sockaddr);
@@ -264,21 +263,20 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
  */
 void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 {
-    int one=1;
+    int one = 1;
     struct sockaddr_in sockaddr;
-    int ret;
 
     if (_connected) {
         return;
     }
 
     _use_send_recv = true;
-    
+
     if (_fd != -1) {
         close(_fd);
     }
 
-    memset(&sockaddr,0,sizeof(sockaddr));
+    memset(&sockaddr, 0, sizeof(sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
     sockaddr.sin_len = sizeof(sockaddr);
@@ -296,7 +294,7 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
     /* we want to be able to re-use ports quickly */
     setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
-    ret = connect(_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    int ret = connect(_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret == -1) {
         fprintf(stderr, "connect failed on port %u - %s\n",
                 (unsigned)ntohs(sockaddr.sin_port),
@@ -457,11 +455,11 @@ void UARTDriver::_timer_tick(void)
     if (space == 0) {
         return;
     }
-    
+
     char buf[space];
     ssize_t nread = 0;
     if (!_use_send_recv) {
-        int fd = _console?0:_fd;
+        int fd = _console ? 0 : _fd;
         nread = ::read(fd, buf, space);
         if (nread == -1 && errno != EAGAIN && _uart_path) {
             close(_fd);
@@ -488,5 +486,4 @@ void UARTDriver::_timer_tick(void)
     }
 }
 
-#endif // CONFIG_HAL_BOARD
-
+#endif  // CONFIG_HAL_BOARD

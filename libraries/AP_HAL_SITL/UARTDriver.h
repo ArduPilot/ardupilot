@@ -24,7 +24,7 @@ public:
     static UARTDriver *from(AP_HAL::UARTDriver *uart) {
         return static_cast<UARTDriver*>(uart);
     }
-    
+
     /* Implementations of UARTDriver virtual methods */
     void begin(uint32_t b) {
         begin(b, 0, 0);
@@ -67,10 +67,10 @@ public:
     bool set_unbuffered_writes(bool on);
 
     void _timer_tick(void);
-    
+
 private:
     uint8_t _portNumber;
-    bool _connected = false; // true if a client has connected
+    bool _connected = false;  // true if a client has connected
     bool _use_send_recv = false;
     int _listen_fd;  // socket we are listening on
     int _serial_port;
@@ -90,11 +90,10 @@ private:
     void _check_reconnect();
     void _tcp_start_client(const char *address, uint16_t port);
     void _check_connection(void);
-    static bool _select_check(int );
-    static void _set_nonblocking(int );
+    static bool _select_check(int fd);
+    static void _set_nonblocking(int fd);
 
     SITL_State *_sitlState;
-
 };
 
 #endif
