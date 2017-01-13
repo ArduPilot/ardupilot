@@ -125,7 +125,7 @@ bool AP_Compass_LIS3MDL::init()
 
     // call timer() at 155Hz
     dev->register_periodic_callback(1000000U/155U,
-                                    FUNCTOR_BIND_MEMBER(&AP_Compass_LIS3MDL::timer, bool));
+                                    FUNCTOR_BIND_MEMBER(&AP_Compass_LIS3MDL::timer, void));
 
     return true;
 
@@ -134,7 +134,7 @@ fail:
     return false;
 }
 
-bool AP_Compass_LIS3MDL::timer()
+void AP_Compass_LIS3MDL::timer()
 {
     struct PACKED {
         int16_t magx;
@@ -177,7 +177,6 @@ bool AP_Compass_LIS3MDL::timer()
 
 check_registers:
     dev->check_next_register();
-    return true;
 }
 
 void AP_Compass_LIS3MDL::read()

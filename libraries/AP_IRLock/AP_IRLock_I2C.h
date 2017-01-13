@@ -31,7 +31,7 @@ private:
 
     bool sync_frame_start(void);
     bool read_block(struct frame &irframe);
-    bool read_frames(void);
+    void read_frames(void);
 
     void pixel_to_1M_plane(float pix_x, float pix_y, float &ret_x, float &ret_y);
 

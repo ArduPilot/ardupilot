@@ -26,7 +26,7 @@ protected:
 private:
     bool _in_timer;
 
-    bool _bus_timer(void);
+    void _bus_timer(void);
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 

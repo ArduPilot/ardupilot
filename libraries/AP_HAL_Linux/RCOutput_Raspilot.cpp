@@ -27,7 +27,7 @@ void RCOutput_Raspilot::init()
 {
     _dev = hal.spi->get_device("raspio");
 
-    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&RCOutput_Raspilot::_update, bool));
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&RCOutput_Raspilot::_update, void));
 }
 
 void RCOutput_Raspilot::set_freq(uint32_t chmask, uint16_t freq_hz)
@@ -74,12 +74,12 @@ void RCOutput_Raspilot::read(uint16_t* period_us, uint8_t len)
         period_us[i] = read(0 + i);
 }
 
-bool RCOutput_Raspilot::_update(void)
+void RCOutput_Raspilot::_update(void)
 {
     int i;
 
     if (_corked) {
-        return true;
+        return;
     }
 
     if (_new_frequency) {
@@ -129,7 +129,6 @@ bool RCOutput_Raspilot::_update(void)
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
     _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
                    (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
-    return true;
 }
 
 void RCOutput_Raspilot::cork(void)

@@ -27,7 +27,7 @@ public:
 
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
-    bool _timer(void);
+    void _timer(void);
     bool _need_update;
     struct {
         uint8_t r, g, b;

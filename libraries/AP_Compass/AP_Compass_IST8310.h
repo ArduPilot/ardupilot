@@ -41,7 +41,7 @@ private:
                        AP_HAL::OwnPtr<AP_HAL::Device> dev,
                        enum Rotation rotation);
 
-    bool timer();
+    void timer();
     bool init();
     void start_conversion();
 

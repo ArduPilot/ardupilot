@@ -137,7 +137,7 @@ bool AP_Baro_MS56XX::_init()
 
     /* Request 100Hz update */
     _dev->register_periodic_callback(10 * USEC_PER_MSEC,
-                                     FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, bool));
+                                     FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void));
     return true;
 }
 
@@ -259,7 +259,7 @@ bool AP_Baro_MS56XX::_read_prom_5637(uint16_t prom[8])
  * as fast as pressure. Hence we reuse the same temperature for 4 samples of
  * pressure.
 */
-bool AP_Baro_MS56XX::_timer(void)
+void AP_Baro_MS56XX::_timer(void)
 {
     uint8_t next_cmd;
     uint8_t next_state;
@@ -278,7 +278,7 @@ bool AP_Baro_MS56XX::_timer(void)
     next_cmd = next_state == 0 ? ADDR_CMD_CONVERT_TEMPERATURE
                                : ADDR_CMD_CONVERT_PRESSURE;
     if (!_dev->transfer(&next_cmd, 1, nullptr, 0)) {
-        return true;
+        return;
     }
 
     /* if we had a failed read we are all done */
@@ -286,13 +286,13 @@ bool AP_Baro_MS56XX::_timer(void)
         // a failed read can mean the next returned value will be
         // corrupt, we must discard it
         _discard_next = true;
-        return true;
+        return;
     }
 
     if (_discard_next) {
         _discard_next = false;
         _state = next_state;
-        return true;
+        return;
     }
 
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
@@ -306,8 +306,6 @@ bool AP_Baro_MS56XX::_timer(void)
         _sem->give();
         _state = next_state;
     }
-
-    return true;
 }
 
 void AP_Baro_MS56XX::_update_and_wrap_accumulator(uint32_t *accum, uint32_t val,
