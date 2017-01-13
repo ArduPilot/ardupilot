@@ -238,13 +238,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             speedup = strtof(gopt.optarg, nullptr);
             break;
         case 'r':
-            _framerate = (unsigned)atoi(gopt.optarg);
+            _framerate = static_cast<uint16_t>(atoi(gopt.optarg));
             break;
         case 'C':
             HALSITL::UARTDriver::_console = true;
             break;
         case 'I': {
-            _instance = atoi(gopt.optarg);
+            _instance = static_cast<uint8_t>(atoi(gopt.optarg));
             if (_base_port == BASE_PORT) {
                 _base_port += _instance * 10;
             }
