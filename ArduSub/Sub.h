@@ -88,6 +88,7 @@
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include "../libraries/AP_LeakDetector/AP_LeakDetector.h" // Leak detector
+#include <AP_TemperatureSensor/TSYS01.h>
 #include "defines.h"
 #include "config.h"
 
@@ -176,6 +177,7 @@ private:
     // flight modes convenience array
     AP_Int8 *flight_modes;
 
+    TSYS01 celsius;
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
@@ -538,6 +540,7 @@ private:
     void send_rpm(mavlink_channel_t chan);
     void rpm_update();
 #endif
+    void send_temperature(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
     void gcs_send_mission_item_reached_message(uint16_t mission_index);

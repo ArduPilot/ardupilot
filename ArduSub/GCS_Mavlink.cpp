@@ -448,6 +448,18 @@ void NOINLINE Sub::send_rpm(mavlink_channel_t chan)
 }
 #endif
 
+// Work around to get temperature sensor data out
+void NOINLINE Sub::send_temperature(mavlink_channel_t chan) {
+	if(!celsius.healthy()) {
+		return;
+	}
+	mavlink_msg_scaled_pressure3_send(
+			chan,
+			AP_HAL::millis(),
+			0,
+			0,
+			celsius.temperature() * 100);
+}
 
 /*
   send PID tuning message
@@ -622,6 +634,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
         send_scaled_pressure(sub.barometer);
+        sub.send_temperature(chan);
         break;
 
     case MSG_RAW_IMU3:
