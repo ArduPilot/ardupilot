@@ -15,7 +15,7 @@ public:
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
-    bool _poll_data(void);
+    void _poll_data(void);
 };
 
 }

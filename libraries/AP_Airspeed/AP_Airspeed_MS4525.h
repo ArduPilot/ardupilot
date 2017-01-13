@@ -45,7 +45,7 @@ public:
 private:
     void _measure();
     void _collect();
-    bool _timer();
+    void _timer();
     void _voltage_correction(float &diff_press_pa, float &temperature);
 
     float _temp_sum;

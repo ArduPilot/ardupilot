@@ -528,7 +528,7 @@ void AP_InertialSensor_LSM9DS0::start(void)
     _set_accel_max_abs_offset(_accel_instance, 5.0f);
 
     /* start the timer process to read samples */
-    _dev_gyro->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS0::_poll_data, bool));
+    _dev_gyro->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS0::_poll_data, void));
 }
 
 
@@ -685,7 +685,7 @@ void AP_InertialSensor_LSM9DS0::_set_accel_scale(accel_scale scale)
 /**
  * Timer process to poll for new data from the LSM9DS0.
  */
-bool AP_InertialSensor_LSM9DS0::_poll_data()
+void AP_InertialSensor_LSM9DS0::_poll_data()
 {
     if (_gyro_data_ready()) {
         _read_data_transaction_g();
@@ -701,8 +701,6 @@ bool AP_InertialSensor_LSM9DS0::_poll_data()
     if (!_dev_accel->check_next_register()) {
         _inc_accel_error_count(_accel_instance);
     }
-    
-    return true;
 }
 
 bool AP_InertialSensor_LSM9DS0::_accel_data_ready()

@@ -103,7 +103,7 @@ bool AP_Compass_AK09916::init()
 
     // call timer() at 100Hz
     dev->register_periodic_callback(10000,
-                                    FUNCTOR_BIND_MEMBER(&AP_Compass_AK09916::timer, bool));
+                                    FUNCTOR_BIND_MEMBER(&AP_Compass_AK09916::timer, void));
 
     return true;
 
@@ -112,7 +112,7 @@ fail:
     return false;
 }
 
-bool AP_Compass_AK09916::timer()
+void AP_Compass_AK09916::timer()
 {
     struct PACKED {
         int16_t magx;
@@ -131,7 +131,7 @@ bool AP_Compass_AK09916::timer()
     if (!dev->read_registers(REG_ST1, &st1, 1) || !(st1 & 1)) {
         goto check_registers;
     }
-    
+
     if (!dev->read_registers(REG_HXL, (uint8_t *)&data, sizeof(data))) {
         goto check_registers;
     }
@@ -155,7 +155,6 @@ bool AP_Compass_AK09916::timer()
 
 check_registers:
     dev->check_next_register();
-    return true;
 }
 
 void AP_Compass_AK09916::read()

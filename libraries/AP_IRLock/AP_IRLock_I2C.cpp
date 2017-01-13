@@ -44,7 +44,7 @@ void AP_IRLock_I2C::init()
     // read at 50Hz
     printf("Starting IRLock on I2C\n");
 
-    dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_IRLock_I2C::read_frames, bool));
+    dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_IRLock_I2C::read_frames, void));
 }
 
 /*
@@ -108,15 +108,15 @@ bool AP_IRLock_I2C::read_block(struct frame &irframe)
     return true;
 }
 
-bool AP_IRLock_I2C::read_frames(void)
+void AP_IRLock_I2C::read_frames(void)
 {
     if (!sync_frame_start()) {
-        return true;
+        return;
     }
     struct frame irframe;
     
     if (!read_block(irframe)) {
-        return true;
+        return;
     }
 
     int16_t corner1_pix_x = irframe.pixel_x - irframe.pixel_size_x/2;
@@ -148,8 +148,6 @@ bool AP_IRLock_I2C::read_frames(void)
                _target_info.size_x, _target_info.size_y);
     }
 #endif
-
-    return true;
 }
 
 // retrieve latest sensor data - returns true if new data is available

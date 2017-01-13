@@ -81,10 +81,10 @@ void AnalogIn_Raspilot::init()
         return;
     }
 
-    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AnalogIn_Raspilot::_update, bool));
+    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AnalogIn_Raspilot::_update, void));
 }
 
-bool AnalogIn_Raspilot::_update()
+void AnalogIn_Raspilot::_update()
 {
     struct IOPacket tx = { }, rx = { };
     uint16_t count = RASPILOT_ADC_MAX_CHANNELS;
@@ -120,5 +120,4 @@ bool AnalogIn_Raspilot::_update()
             }
         }
     }
-    return true;
 }

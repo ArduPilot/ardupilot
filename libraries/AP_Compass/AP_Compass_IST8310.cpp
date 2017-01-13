@@ -111,7 +111,7 @@ bool AP_Compass_IST8310::init()
     set_dev_id(_instance, _dev->get_bus_id());
 
     _dev->register_periodic_callback(10 * USEC_PER_MSEC,
-                                     FUNCTOR_BIND_MEMBER(&AP_Compass_IST8310::timer, bool));
+                                     FUNCTOR_BIND_MEMBER(&AP_Compass_IST8310::timer, void));
 
     return true;
 
@@ -126,9 +126,8 @@ void AP_Compass_IST8310::start_conversion()
             SINGLE_MEASUREMENT_MODE);
 }
 
-bool AP_Compass_IST8310::timer()
+void AP_Compass_IST8310::timer()
 {
-
     bool ret = false;
 
     struct PACKED {
@@ -142,14 +141,14 @@ bool AP_Compass_IST8310::timer()
     ret = _dev->read_registers(STAT1_REG, (uint8_t *) &buffer, sizeof(buffer));
     if (!ret) {
         /* We're going to be back on the next iteration either way */
-        return true;
+        return;
     }
 
     auto status = buffer.status;
 
     if (!(status & 0x01)) {
         /* We're not ready yet */
-       return true;
+       return;
     }
 
     auto x = static_cast<int16_t>(le16toh(buffer.rx));
@@ -175,8 +174,6 @@ bool AP_Compass_IST8310::timer()
     }
 
     start_conversion();
-
-    return true;
 }
 
 void AP_Compass_IST8310::read()

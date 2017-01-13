@@ -284,7 +284,7 @@ bool AP_Compass_LSM303D::init(enum Rotation rotation)
 #endif
 
     // read at 100Hz
-    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, bool));
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, void));
 
     return true;
 }
@@ -343,10 +343,10 @@ fail_whoami:
     return false;
 }
 
-bool AP_Compass_LSM303D::_update()
+void AP_Compass_LSM303D::_update()
 {
     if (!_read_sample()) {
-        return true;
+        return;
     }
 
     Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z) * _mag_range_scale;
@@ -373,7 +373,6 @@ bool AP_Compass_LSM303D::_update()
         }
         _sem->give();
     }
-    return true;
 }
 
 // Read Sensor data

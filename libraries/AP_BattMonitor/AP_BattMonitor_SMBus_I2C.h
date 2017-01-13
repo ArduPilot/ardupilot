@@ -23,7 +23,7 @@ public:
 
 private:
 
-    bool timer(void);
+    void timer(void);
 
     // read word from register
     // returns true if read was successful, false if failed
