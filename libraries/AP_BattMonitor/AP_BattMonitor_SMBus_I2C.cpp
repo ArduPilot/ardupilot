@@ -30,7 +30,7 @@ AP_BattMonitor_SMBus_I2C::AP_BattMonitor_SMBus_I2C(AP_BattMonitor &mon, uint8_t 
     : AP_BattMonitor_SMBus(mon, instance, mon_state)
     , _dev(std::move(dev))
 {
-    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_I2C::timer, bool));
+    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_I2C::timer, void));
 }
 
 /// Read the battery voltage and current.  Should be called at 10hz
@@ -39,7 +39,7 @@ void AP_BattMonitor_SMBus_I2C::read()
     // nothing to do - all done in timer()
 }
 
-bool AP_BattMonitor_SMBus_I2C::timer()
+void AP_BattMonitor_SMBus_I2C::timer()
 {
     uint16_t data;
     uint8_t buff[4];
@@ -62,7 +62,6 @@ bool AP_BattMonitor_SMBus_I2C::timer()
     if ((tnow - _state.last_time_micros) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
         _state.healthy = false;
     }
-    return true;
 }
 
 // read word from register

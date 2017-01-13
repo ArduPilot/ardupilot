@@ -28,8 +28,8 @@ private:
     AP_RangeFinder_MaxsonarI2CXL(RangeFinder &ranger, uint8_t instance,
                                  RangeFinder::RangeFinder_State &_state);
 
-    bool _init(void);    
-    bool _timer(void);
+    bool _init(void);
+    void _timer(void);
 
     uint16_t distance;
     bool new_distance;

@@ -38,7 +38,7 @@ public:
         SPEED_LOW,
     };
 
-    FUNCTOR_TYPEDEF(PeriodicCb, bool);
+    FUNCTOR_TYPEDEF(PeriodicCb, void);
     typedef void* PeriodicHandle;
 
     Device(enum BusType type)

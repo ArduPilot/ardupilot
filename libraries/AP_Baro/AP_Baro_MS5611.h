@@ -46,7 +46,7 @@ private:
     uint16_t _read_prom_word(uint8_t word);
     uint32_t _read_adc();
 
-    bool _timer();
+    void _timer();
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 

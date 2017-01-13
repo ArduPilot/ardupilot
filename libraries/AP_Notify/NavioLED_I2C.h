@@ -27,7 +27,7 @@ protected:
 
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
-    bool _timer(void);
+    void _timer(void);
     struct {
         uint8_t r, g, b;
     } rgb;

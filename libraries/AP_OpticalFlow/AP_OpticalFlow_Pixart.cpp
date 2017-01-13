@@ -149,8 +149,8 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
     _dev->get_semaphore()->give();
 
     integral.last_frame_us = AP_HAL::micros();
-    
-    _dev->register_periodic_callback(2000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Pixart::timer, bool));
+
+    _dev->register_periodic_callback(2000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Pixart::timer, void));
     return true;
 
 failed:
@@ -266,10 +266,10 @@ void AP_OpticalFlow_Pixart::motion_burst(void)
     _dev->set_chip_select(false);
 }
 
-bool AP_OpticalFlow_Pixart::timer(void)
+void AP_OpticalFlow_Pixart::timer(void)
 {
     if (AP_HAL::micros() - last_burst_us < 500) {
-        return true;
+        return;
     }
     motion_burst();
     last_burst_us = AP_HAL::micros();
@@ -301,7 +301,6 @@ bool AP_OpticalFlow_Pixart::timer(void)
         sum_x = sum_y = 0;
     }
 #endif
-    return true;
 }
 
 // update - read latest values from sensor and fill in x,y and totals.

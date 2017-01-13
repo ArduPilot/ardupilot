@@ -66,7 +66,7 @@ void RPIOUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     if (!_registered_callback) {
         _dev = hal.spi->get_device("raspio");
         _registered_callback = true;
-        _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&RPIOUARTDriver::_bus_timer, bool));
+        _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&RPIOUARTDriver::_bus_timer, void));
     }
 
     /* set baudrate */
@@ -105,7 +105,7 @@ void RPIOUARTDriver::_timer_tick(void)
     }
 }
 
-bool RPIOUARTDriver::_bus_timer(void)
+void RPIOUARTDriver::_bus_timer(void)
 {
     /* set the baudrate of raspilotio */
     if (_need_set_baud) {
@@ -129,7 +129,7 @@ bool RPIOUARTDriver::_bus_timer(void)
     /* finish set */
 
     if (!_initialised) {
-        return true;
+        return;
     }
 
     _in_timer = true;
@@ -172,6 +172,4 @@ bool RPIOUARTDriver::_bus_timer(void)
     }
 
     _in_timer = false;
-
-    return true;
 }

@@ -71,7 +71,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_PulsedLightLRF::detect(uint8_t bus, Range
 /*
   called at 50Hz
  */
-bool AP_RangeFinder_PulsedLightLRF::timer(void)
+void AP_RangeFinder_PulsedLightLRF::timer(void)
 {
     if (check_reg_counter++ == 10) {
         check_reg_counter = 0;
@@ -110,7 +110,6 @@ bool AP_RangeFinder_PulsedLightLRF::timer(void)
         break;
     }
     }
-    return true;
 }
 
 
@@ -181,7 +180,7 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
     }
 
     _dev->register_periodic_callback(20000,
-                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_PulsedLightLRF::timer, bool));
+                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_PulsedLightLRF::timer, void));
     return true;
 }
 

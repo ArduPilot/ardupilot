@@ -62,7 +62,7 @@ private:
     void srom_download(void);
     void load_configuration(void);
 
-    bool timer(void);
+    void timer(void);
     void motion_burst(void);
 
     int32_t sum_x;

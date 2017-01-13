@@ -83,7 +83,7 @@ private:
     bool _data_ready();
 
     /* Poll for new data (non-blocking) */
-    bool _poll_data();
+    void _poll_data();
 
     /* Read and write functions taking the differences between buses into
      * account */

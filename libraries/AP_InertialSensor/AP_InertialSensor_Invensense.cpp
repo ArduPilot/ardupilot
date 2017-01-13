@@ -463,7 +463,7 @@ void AP_InertialSensor_Invensense::start()
     }
 
     // start the timer process to read samples
-    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, bool));
+    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
 }
 
 
@@ -519,10 +519,9 @@ bool AP_InertialSensor_Invensense::_data_ready()
 /*
  * Timer process to poll for new data from the Invensense. Called from bus thread with semaphore held
  */
-bool AP_InertialSensor_Invensense::_poll_data()
+void AP_InertialSensor_Invensense::_poll_data()
 {
     _read_fifo();
-    return true;
 }
 
 bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_samples)
