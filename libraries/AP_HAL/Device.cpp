@@ -90,7 +90,7 @@ bool AP_HAL::Device::check_next_register(void)
         return true;
     }
     _checked.counter = 0;
-    
+
     struct checkreg &reg = _checked.regs[_checked.next];
     uint8_t v;
     if (!read_registers(reg.regnum, &v, 1) || v != reg.value) {

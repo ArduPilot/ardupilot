@@ -55,7 +55,7 @@ public:
     uint8_t bus_num(void) const {
         return _bus_id.devid_s.bus;
     }
-    
+
     // return 24 bit bus identifier
     uint32_t get_bus_id(void) const {
         return _bus_id.devid;
@@ -65,13 +65,13 @@ public:
     uint8_t get_bus_address(void) const {
         return _bus_id.devid_s.address;
     }
-    
+
     // set device type within a device class (eg. AP_COMPASS_TYPE_LSM303D)
     void set_device_type(uint8_t devtype) {
         _bus_id.devid_s.devtype = devtype;
     }
-    
-    
+
+
     virtual ~Device() {
         if (_checked.regs != nullptr) {
             delete[] _checked.regs;
@@ -123,7 +123,7 @@ public:
      * Return: true on a successful transfer, false on failure.
      */
     bool read_uint16_be(uint8_t first_reg, uint16_t &value);
-    
+
     /**
      * Wrapper function over #transfer() to write a byte to the register reg.
      * The transfer is done by sending reg and val in that order.
@@ -155,7 +155,7 @@ public:
      * or register checking has not been setup
      */
     bool check_next_register(void);
-    
+
     /**
      * Wrapper function over #transfer() to read a sequence of bytes from
      * device. No value is written, differently from the #read_registers()
@@ -211,7 +211,7 @@ public:
      * specific delays
      */
     virtual bool set_chip_select(bool set) { return false; }
-    
+
     /**
      * Some devices connected on the I2C or SPI bus require a bit to be set on
      * the register address in order to perform a read operation. This sets a
@@ -257,7 +257,7 @@ public:
 
     /* set number of retries on transfers */
     virtual void set_retries(uint8_t retries) {};
-    
+
 protected:
     uint8_t _read_flag = 0;
 
@@ -278,7 +278,7 @@ protected:
         struct DeviceStructure devid_s;
         uint32_t devid;
     };
-    
+
     union DeviceId _bus_id;
 
     // set device address (eg. i2c bus address or spi CS)
