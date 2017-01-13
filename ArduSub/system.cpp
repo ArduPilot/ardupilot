@@ -124,6 +124,8 @@ void Sub::init_ardupilot()
     
     barometer.init();
 
+    celsius.init();
+
     // Register the mavlink service callback. This will run
     // anytime there are more than 5ms remaining in a call to
     // hal.scheduler->delay.

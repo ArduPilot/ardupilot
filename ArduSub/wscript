@@ -30,6 +30,7 @@ def build(bld):
             'AP_Proximity',
             'AP_Gripper',
             'AP_Beacon',
+            'AP_TemperatureSensor'
         ],
         use='mavlink',
     )
