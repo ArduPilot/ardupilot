@@ -22,7 +22,7 @@ CLCoreUrusTimers_Cygwin::CLCoreUrusTimers_Cygwin() :
 {
     gettimeofday(&state_tv.start_time, nullptr);
 
-#if 0
+#if 1
     _measure_time_proccess();
 #endif
 
@@ -72,7 +72,7 @@ void CLCoreUrusTimers_Cygwin::_measure_time_proccess()
 
     while ((clk < 1000) || (counter == 0)) {
         clock_gettime(CLOCK_MONOTONIC, &ts3);
-        clk = (ts3.tv_nsec - ts1.tv_nsec) - clk;
+        clk = ts3.tv_nsec - ts1.tv_nsec;
         counter++;
     }
 
