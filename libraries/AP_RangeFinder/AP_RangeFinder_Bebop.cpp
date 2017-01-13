@@ -241,12 +241,12 @@ void AP_RangeFinder_Bebop::_loop(void)
         _capture();
 
         if (_apply_averaging_filter() < 0) {
-            hal.console->printf(
+            hal.console->print(
                     "AR_RangeFinder_Bebop: could not apply averaging filter");
         }
 
         if (_search_local_maxima() < 0) {
-            hal.console->printf("Did not find any local maximum");
+            hal.console->print("Did not find any local maximum");
         }
 
         max_index = _search_maximum_with_max_amplitude();
@@ -305,9 +305,9 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
     /* configure the output buffer for a purge */
     /* perform a purge */
     if (_launch_purge() < 0)
-        hal.console->printf("purge could not send data overspi");
+        hal.console->print("purge could not send data overspi");
     if (_capture() < 0)
-        hal.console->printf("purge could not capture data");
+        hal.console->print("purge could not capture data");
 
     switch (_mode) {
     case 1: /* low voltage */
@@ -317,7 +317,7 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
         _configure_gpio(1);
         break;
     default:
-        hal.console->printf("WARNING, invalid value to configure gpio\n");
+        hal.console->println("WARNING, invalid value to configure gpio");
         break;
     }
 }
@@ -364,7 +364,7 @@ int AP_RangeFinder_Bebop::_configure_capture()
     /* Create input buffer */
     _adc.buffer_size = RNFD_BEBOP_P7_COUNT;
     if (iio_device_set_kernel_buffers_count(_adc.device, 1)) {
-        hal.console->printf("cannot set buffer count");
+        hal.console->print("cannot set buffer count");
         goto error_destroy_context;
     }
     _adc.buffer = iio_device_create_buffer(_adc.device,
