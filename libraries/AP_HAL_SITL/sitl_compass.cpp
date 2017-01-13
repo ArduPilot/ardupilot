@@ -48,33 +48,34 @@ void SITL_State::_update_compass(void)
     Vector3f new_mag_data = _sitl->state.bodyMagField + noise;
 
     // add delay
-    uint32_t best_time_delta_mag = 1000; // initialise large time representing buffer entry closest to current time - delay.
-    uint8_t best_index_mag = 0; // initialise number representing the index of the entry in buffer closest to delay.
+    uint32_t best_time_delta_mag = 1000;  // initialise large time representing buffer entry closest to current time - delay.
+    uint8_t best_index_mag = 0;           // initialise number representing the index of the entry in buffer closest to delay.
 
     // storing data from sensor to buffer
-    if (now - last_store_time_mag >= 10) { // store data every 10 ms.
+    if (now - last_store_time_mag >= 10) {  // store data every 10 ms.
         last_store_time_mag = now;
-        if (store_index_mag > mag_buffer_length-1) { // reset buffer index if index greater than size of buffer
+        if (store_index_mag > mag_buffer_length - 1) {  // reset buffer index if index greater than size of buffer
             store_index_mag = 0;
         }
-        buffer_mag[store_index_mag].data = new_mag_data; // add data to current index
-        buffer_mag[store_index_mag].time = last_store_time_mag; // add time to current index
-        store_index_mag = store_index_mag + 1; // increment index
+        buffer_mag[store_index_mag].data = new_mag_data;  // add data to current index
+        buffer_mag[store_index_mag].time = last_store_time_mag;  // add time to current index
+        store_index_mag = store_index_mag + 1;  // increment index
     }
 
     // return delayed measurement
-    delayed_time_mag = now - _sitl->mag_delay; // get time corresponding to delay
+    delayed_time_mag = now - _sitl->mag_delay;  // get time corresponding to delay
     // find data corresponding to delayed time in buffer
-    for (uint8_t i=0; i<=mag_buffer_length-1; i++) {
+    for (uint8_t i=0; i <= (mag_buffer_length - 1); i++) {
         // find difference between delayed time and time stamp in buffer
-        time_delta_mag = abs((int32_t)(delayed_time_mag - buffer_mag[i].time));
+        time_delta_mag = static_cast<uint32_t>(abs(
+                static_cast<int32_t>(delayed_time_mag - buffer_mag[i].time)));
         // if this difference is smaller than last delta, store this time
         if (time_delta_mag < best_time_delta_mag) {
             best_index_mag = i;
             best_time_delta_mag = time_delta_mag;
         }
     }
-    if (best_time_delta_mag < 1000) { // only output stored state if < 1 sec retrieval error
+    if (best_time_delta_mag < 1000) {  // only output stored state if < 1 sec retrieval error
         new_mag_data = buffer_mag[best_index_mag].data;
     }
 
