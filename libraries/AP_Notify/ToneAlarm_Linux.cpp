@@ -39,7 +39,7 @@ bool ToneAlarm_Linux::init()
     // open the tone alarm device
     _initialized = hal.util->toneAlarm_init();
     if (!_initialized) {
-        hal.console->printf("AP_Notify: Failed to initialise ToneAlarm");
+        hal.console->print("AP_Notify: Failed to initialise ToneAlarm");
         return false;
     }
 
