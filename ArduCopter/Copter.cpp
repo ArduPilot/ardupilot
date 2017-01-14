@@ -27,6 +27,7 @@ Copter::Copter(void) :
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
+    flightmode(&flightmode_stabilize),
     control_mode(STABILIZE),
     scaleLongDown(1),
     wp_bearing(0),
