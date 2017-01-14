@@ -729,7 +729,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
     const uint8_t reg = OUT_X_L_A | 0xC0;
 
     if (!_dev_accel->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data))) {
-        hal.console->printf("LSM9DS0: error reading accelerometer\n");
+        hal.console->println("LSM9DS0: error reading accelerometer");
         return;
     }
 
@@ -749,7 +749,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     const uint8_t reg = OUT_X_L_G | 0xC0;
 
     if (!_dev_gyro->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data))) {
-        hal.console->printf("LSM9DS0: error reading gyroscope\n");
+        hal.console->println("LSM9DS0: error reading gyroscope");
         return;
     }
 
