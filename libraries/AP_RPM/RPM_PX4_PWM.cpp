@@ -48,7 +48,7 @@ AP_RPM_PX4_PWM::AP_RPM_PX4_PWM(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_St
 {
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     if (AP_BoardConfig::px4_start_driver(pwm_input_main, "pwm_input", "start")) {
-        hal.console->printf("started pwm_input driver\n");
+        hal.console->println("started pwm_input driver");
     }
 #endif
     _fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
@@ -59,7 +59,7 @@ AP_RPM_PX4_PWM::AP_RPM_PX4_PWM(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_St
 
     // keep a queue of 5 samples to reduce noise by averaging
     if (ioctl(_fd, SENSORIOCSQUEUEDEPTH, 5) != 0) {
-        hal.console->printf("Failed to setup RPM queue\n");
+        hal.console->println("Failed to setup RPM queue");
         close(_fd);
         _fd = -1;
         return;
