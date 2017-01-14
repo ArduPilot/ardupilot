@@ -195,7 +195,7 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 
     // print output including the minus sign
     if( lat_or_lon < 0 ) {
-        s->printf("-");
+        s->print("-");
     }
     s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
 }
