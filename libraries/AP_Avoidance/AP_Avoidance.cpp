@@ -136,7 +136,7 @@ void AP_Avoidance::init(void)
 
         if (_obstacles == nullptr) {
             // dynamic RAM allocation of _obstacles[] failed, disable gracefully
-            hal.console->printf("Unable to initialize Avoidance obstacle list\n");
+            hal.console->println("Unable to initialize Avoidance obstacle list");
             // disable ourselves to avoid repeated allocation attempts
             _enabled.set(0);
             return;
