@@ -43,7 +43,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
 #endif
         }
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open DataFlash_File");
+            hal.console->print("Unable to open DataFlash_File");
         } else {
             _next_backend++;
         }
@@ -64,7 +64,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
                                                             message_writer);
         }
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open DataFlash_MAVLink");
+            hal.console->print("Unable to open DataFlash_MAVLink");
         } else {
             _next_backend++;
         }
@@ -494,7 +494,7 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
             break;
         }
         if (ofs < msg_len) {
-            port->printf(", ");
+            port->print(", ");
         }
     }
     port->println();
