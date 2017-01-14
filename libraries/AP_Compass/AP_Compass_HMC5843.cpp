@@ -155,7 +155,7 @@ bool AP_Compass_HMC5843::init()
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
     if (!bus_sem || !bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.console->printf("HMC5843: Unable to get bus semaphore\n");
+        hal.console->println("HMC5843: Unable to get bus semaphore");
         return false;
     }
 
@@ -163,17 +163,17 @@ bool AP_Compass_HMC5843::init()
     _bus->set_retries(10);
     
     if (!_bus->configure()) {
-        hal.console->printf("HMC5843: Could not configure the bus\n");
+        hal.console->println("HMC5843: Could not configure the bus");
         goto errout;
     }
 
     if (!_check_whoami()) {
-        hal.console->printf("HMC5843: not a HMC device\n");
+        hal.console->println("HMC5843: not a HMC device");
         goto errout;
     }
 
     if (!_calibrate()) {
-        hal.console->printf("HMC5843: Could not calibrate sensor\n");
+        hal.console->println("HMC5843: Could not calibrate sensor");
         goto errout;
     }
 
@@ -182,7 +182,7 @@ bool AP_Compass_HMC5843::init()
     }
 
     if (!_bus->start_measurements()) {
-        hal.console->printf("HMC5843: Could not start measurements on bus\n");
+        hal.console->println("HMC5843: Could not start measurements on bus");
         goto errout;
     }
 

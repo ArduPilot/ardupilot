@@ -126,32 +126,32 @@ bool AP_Compass_AK8963::init()
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
     if (!bus_sem || !_bus->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.console->printf("AK8963: Unable to get bus semaphore\n");
+        hal.console->println("AK8963: Unable to get bus semaphore");
         return false;
     }
 
     if (!_bus->configure()) {
-        hal.console->printf("AK8963: Could not configure the bus\n");
+        hal.console->println("AK8963: Could not configure the bus");
         goto fail;
     }
 
     if (!_check_id()) {
-        hal.console->printf("AK8963: Wrong id\n");
+        hal.console->println("AK8963: Wrong id");
         goto fail;
     }
 
     if (!_calibrate()) {
-        hal.console->printf("AK8963: Could not read calibration data\n");
+        hal.console->println("AK8963: Could not read calibration data");
         goto fail;
     }
 
     if (!_setup_mode()) {
-        hal.console->printf("AK8963: Could not setup mode\n");
+        hal.console->println("AK8963: Could not setup mode");
         goto fail;
     }
 
     if (!_bus->start_measurements()) {
-        hal.console->printf("AK8963: Could not start measurements\n");
+        hal.console->println("AK8963: Could not start measurements");
         goto fail;
     }
 
