@@ -80,7 +80,7 @@ bool VideoIn::open_device(const char *device_path, uint32_t memtype)
     memset(&cap, 0, sizeof cap);
     ret = ioctl(_fd, VIDIOC_QUERYCAP, &cap);
     if (ret < 0) {
-        hal.console->printf("Error querying caps\n");
+        hal.console->println("Error querying caps");
         return false;
     }
 
@@ -116,7 +116,7 @@ bool VideoIn::allocate_buffers(uint32_t nbufs)
 
     buffers = (struct buffer *)malloc(rb.count * sizeof buffers[0]);
     if (buffers == nullptr) {
-        hal.console->printf("Unable to allocate buffers\n");
+        hal.console->println("Unable to allocate buffers");
         return false;
     }
 

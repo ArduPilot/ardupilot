@@ -50,7 +50,7 @@ bool ToneAlarm::init()
 {
     tune_num = 0;                    //play startup tune
     if((period_fd == -1) || (duty_fd == -1) || (run_fd == -1)){
-        hal.console->printf("ToneAlarm: Error!! please check if PWM overlays are loaded correctly");
+        hal.console->print("ToneAlarm: Error!! please check if PWM overlays are loaded correctly");
         return false;
     }
     return true;

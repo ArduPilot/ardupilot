@@ -40,7 +40,7 @@ bool RPIOUARTDriver::isExternal()
 
 void RPIOUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    //hal.console->printf("[RPIOUARTDriver]: begin \n");
+    //hal.console->println("[RPIOUARTDriver]: begin ");
 
     if (device_path != nullptr) {
         UARTDriver::begin(b,rxS,txS);
