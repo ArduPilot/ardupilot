@@ -57,7 +57,7 @@ AP_RangeFinder_PX4::AP_RangeFinder_PX4(RangeFinder &_ranger, uint8_t instance, R
 
     // average over up to 20 samples
     if (ioctl(_fd, SENSORIOCSQUEUEDEPTH, 20) != 0) {
-        hal.console->printf("Failed to setup range finder queue\n");
+        hal.console->println("Failed to setup range finder queue");
         set_status(RangeFinder::RangeFinder_NotConnected);
         return;
     }
@@ -92,16 +92,16 @@ int AP_RangeFinder_PX4::open_driver(void)
           we start the px4 rangefinder drivers on demand
         */
         if (AP_BoardConfig::px4_start_driver(ll40ls_main, "ll40ls", "-X start")) {
-            hal.console->printf("Found external ll40ls sensor\n");
+            hal.console->println("Found external ll40ls sensor");
         }
         if (AP_BoardConfig::px4_start_driver(ll40ls_main, "ll40ls", "-I start")) {
-            hal.console->printf("Found internal ll40ls sensor\n");
+            hal.console->println("Found internal ll40ls sensor");
         }
         if (AP_BoardConfig::px4_start_driver(trone_main, "trone", "start")) {
-            hal.console->printf("Found trone sensor\n");
+            hal.console->println("Found trone sensor");
         }
         if (AP_BoardConfig::px4_start_driver(mb12xx_main, "mb12xx", "start")) {
-            hal.console->printf("Found mb12xx sensor\n");
+            hal.console->println("Found mb12xx sensor");
         }
     }
     // work out the device path based on how many PX4 drivers we have loaded

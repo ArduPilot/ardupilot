@@ -53,14 +53,14 @@ AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder &_ranger, uint8_t ins
 {
     _fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
     if (_fd == -1) {
-        hal.console->printf("Unable to open PX4 PWM rangefinder\n");
+        hal.console->println("Unable to open PX4 PWM rangefinder");
         set_status(RangeFinder::RangeFinder_NotConnected);
         return;
     }
 
     // keep a queue of 20 samples
     if (ioctl(_fd, SENSORIOCSQUEUEDEPTH, 20) != 0) {
-        hal.console->printf("Failed to setup range finder queue\n");
+        hal.console->println("Failed to setup range finder queue");
         set_status(RangeFinder::RangeFinder_NotConnected);
         return;
     }
@@ -87,7 +87,7 @@ bool AP_RangeFinder_PX4_PWM::detect(RangeFinder &_ranger, uint8_t instance)
 {
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     if (AP_BoardConfig::px4_start_driver(pwm_input_main, "pwm_input", "start")) {
-        hal.console->printf("started pwm_input driver\n");
+        hal.console->println("started pwm_input driver");
     }
 #endif
     int fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
