@@ -46,7 +46,7 @@ void AP_IRLock_SITL::init()
     sock.reuseaddress();
     sock.set_blocking(false);
 
-    hal.console->printf("AP_IRLock_SITL::init()\n");
+    hal.console->println("AP_IRLock_SITL::init()");
 
     _flags.healthy = true;
 }
