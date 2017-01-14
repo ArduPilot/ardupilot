@@ -1783,10 +1783,10 @@ uint8_t GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packe
                 // disable OVERRIDES so we don't run the mixer while
                 // rebooting
                 if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
-                    hal.console->printf("SET_OVERRIDE_OK failed\n");
+                    hal.console->println("SET_OVERRIDE_OK failed");
                 }
                 if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 0) != 0) {
-                    hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
+                    hal.console->println("SET_OVERRIDE_IMMEDIATE failed");
                 }
                 close(px4io_fd);
             }
