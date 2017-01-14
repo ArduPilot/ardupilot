@@ -115,7 +115,7 @@ bool AP_Baro_BMP280::_init()
     _dev->get_semaphore()->give();
 
     // request 50Hz update
-    _dev->register_periodic_callback(20 * USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, bool));
+    _dev->register_periodic_callback(20 * USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
 
     return true;
 }
@@ -123,7 +123,7 @@ bool AP_Baro_BMP280::_init()
 
 
 //  acumulate a new sensor reading
-bool AP_Baro_BMP280::_timer(void)
+void AP_Baro_BMP280::_timer(void)
 {
     uint8_t buf[6];
 
@@ -131,8 +131,6 @@ bool AP_Baro_BMP280::_timer(void)
 
     _update_temperature((buf[3] << 12) | (buf[4] << 4) | (buf[5] >> 4));
     _update_pressure((buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4));
-
-    return true;
 }
 
 // transfer data to the frontend

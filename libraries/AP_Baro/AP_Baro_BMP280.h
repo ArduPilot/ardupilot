@@ -20,7 +20,7 @@ private:
     virtual ~AP_Baro_BMP280(void) {};
 
     bool _init(void);
-    bool _timer(void);
+    void _timer(void);
     void _update_temperature(int32_t);
     void _update_pressure(int32_t);
 
