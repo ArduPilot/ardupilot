@@ -44,14 +44,14 @@ void NSHShellStream::start_shell(void)
     if (hal.util->available_memory() < 8192) {
         if (!showed_memory_warning) {
             showed_memory_warning = true;
-            hal.console->printf("Not enough memory for shell\n");
+            hal.console->println("Not enough memory for shell");
         }
         return;
     }
     if (hal.util->get_soft_armed()) {
         if (!showed_armed_warning) {
             showed_armed_warning = true;
-            hal.console->printf("Disarm to start nsh shell\n");
+            hal.console->println("Disarm to start nsh shell");
         }
         // don't allow shell start when armed
         return;

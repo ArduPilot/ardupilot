@@ -32,10 +32,10 @@ void VRBRAINRCOutput::init()
         AP_HAL::panic("Unable to open " PWM_OUTPUT0_DEVICE_PATH);
     }
     if (ioctl(_pwm_fd, PWM_SERVO_ARM, 0) != 0) {
-        hal.console->printf("RCOutput: Unable to setup IO arming\n");
+        hal.console->println("RCOutput: Unable to setup IO arming");
     }
     if (ioctl(_pwm_fd, PWM_SERVO_SET_ARM_OK, 0) != 0) {
-        hal.console->printf("RCOutput: Unable to setup IO arming OK\n");
+        hal.console->println("RCOutput: Unable to setup IO arming OK");
     }
 
     _rate_mask = 0;
@@ -44,7 +44,7 @@ void VRBRAINRCOutput::init()
     _alt_servo_count = 0;
 
     if (ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get servo count\n");        
+        hal.console->println("RCOutput: Unable to get servo count");
         return;
     }
 
@@ -55,7 +55,7 @@ void VRBRAINRCOutput::init()
 
 //    _alt_fd = open("/dev/px4fmu", O_RDWR);
 //    if (_alt_fd == -1) {
-//        hal.console->printf("RCOutput: failed to open /dev/px4fmu");
+//        hal.console->print("RCOutput: failed to open /dev/px4fmu");
 //        return;
 //    }
 
@@ -80,15 +80,15 @@ void VRBRAINRCOutput::_init_alt_channels(void)
         return;
     }
     if (ioctl(_alt_fd, PWM_SERVO_ARM, 0) != 0) {
-        hal.console->printf("RCOutput: Unable to setup alt IO arming\n");
+        hal.console->println("RCOutput: Unable to setup alt IO arming");
         return;
     }
     if (ioctl(_alt_fd, PWM_SERVO_SET_ARM_OK, 0) != 0) {
-        hal.console->printf("RCOutput: Unable to setup alt IO arming OK\n");
+        hal.console->println("RCOutput: Unable to setup alt IO arming OK");
         return;
     }
     if (ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get servo count\n");        
+        hal.console->println("RCOutput: Unable to get servo count");
     }
 }
 
@@ -177,11 +177,11 @@ void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 
     // re-fetch servo count as it might have changed due to a change in BRD_PWM_COUNT
     if (_pwm_fd != -1 && ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get servo count\n");        
+        hal.console->println("RCOutput: Unable to get servo count");
         return;
     }
     if (_alt_fd != -1 && ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get alt servo count\n");        
+        hal.console->println("RCOutput: Unable to get alt servo count");
         return;
     }
     
