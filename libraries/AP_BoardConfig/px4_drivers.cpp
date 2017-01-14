@@ -133,7 +133,7 @@ void AP_BoardConfig::px4_setup_safety_mask()
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd != -1) {
         if (ioctl(px4io_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)px4.ignore_safety_channels) != 0) {
-            hal.console->printf("IGNORE_SAFETY failed\n");
+            hal.console->println("IGNORE_SAFETY failed");
         }
     }
     int px4fmu_fd = open("/dev/px4fmu", 0);
@@ -143,7 +143,7 @@ void AP_BoardConfig::px4_setup_safety_mask()
             mask >>= 8;
         }
         if (ioctl(px4fmu_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)mask) != 0) {
-            hal.console->printf("IGNORE_SAFETY failed\n");
+            hal.console->println("IGNORE_SAFETY failed");
         }
         close(px4fmu_fd);
     }
@@ -198,7 +198,7 @@ void AP_BoardConfig::px4_setup_sbus(void)
             }
         }
         if (!hal.rcout->enable_sbus_out(rate)) {
-            hal.console->printf("Failed to enable SBUS out\n");
+            hal.console->println("Failed to enable SBUS out");
         }
     }
 #endif
@@ -217,11 +217,11 @@ void AP_BoardConfig::px4_setup_canbus(void)
         // before the hmc5883
         hal.scheduler->delay(500);
         if (px4_start_driver(uavcan_main, "uavcan", "start")) {
-            hal.console->printf("UAVCAN: started\n");            
+            hal.console->println("UAVCAN: started");
             // give some time for CAN bus initialisation
             hal.scheduler->delay(2000);
         } else {
-            hal.console->printf("UAVCAN: failed to start\n");
+            hal.console->println("UAVCAN: failed to start");
         }
         // give time for canbus drivers to register themselves
         hal.scheduler->delay(2000);
@@ -239,7 +239,7 @@ void AP_BoardConfig::px4_setup_canbus(void)
                    AP_HAL::millis() - start_wait_ms < 7000) {
                 hal.scheduler->delay(500);
             }
-            hal.console->printf("UAVCAN: node discovery complete\n");
+            hal.console->println("UAVCAN: node discovery complete");
             close(fd);
         }
     }
@@ -470,7 +470,7 @@ void AP_BoardConfig::px4_autodetect(void)
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     // only one choice
     px4.board_type.set(PX4_BOARD_PX4V1);
-    hal.console->printf("Detected PX4v1\n");
+    hal.console->println("Detected PX4v1");
 
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
     if ((spi_check_register(HAL_INS_MPU60x0_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
@@ -479,26 +479,26 @@ void AP_BoardConfig::px4_autodetect(void)
         spi_check_register(HAL_INS_LSM9DS0_EXT_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
         // Pixhawk2 has LSM303D and MPUxxxx on external bus
         px4.board_type.set(PX4_BOARD_PIXHAWK2);
-        hal.console->printf("Detected PIXHAWK2\n");
+        hal.console->println("Detected PIXHAWK2");
     } else if (spi_check_register(HAL_INS_ICM20608_AM_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) &&
                spi_check_register(HAL_INS_MPU9250_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) {
         // PHMINI has an ICM20608 and MPU9250 on sensor bus
         px4.board_type.set(PX4_BOARD_PHMINI);
-        hal.console->printf("Detected PixhawkMini\n");
+        hal.console->println("Detected PixhawkMini");
     } else if (spi_check_register(HAL_INS_LSM9DS0_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) &&
                (spi_check_register(HAL_INS_MPU60x0_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
                 spi_check_register(HAL_INS_ICM20608_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
                 spi_check_register(HAL_INS_MPU9250_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250))) {
         // classic or upgraded Pixhawk1
         px4.board_type.set(PX4_BOARD_PIXHAWK);
-        hal.console->printf("Detected Pixhawk\n");
+        hal.console->println("Detected Pixhawk");
     } else {
         px4_sensor_error("Unable to detect board type");
     }
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     // only one choice
     px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);    
-    hal.console->printf("Detected Pixracer\n");
+    hal.console->println("Detected Pixracer");
 #endif
     
 }
