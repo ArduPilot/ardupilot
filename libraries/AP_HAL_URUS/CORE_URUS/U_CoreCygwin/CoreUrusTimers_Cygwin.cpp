@@ -22,7 +22,7 @@ CLCoreUrusTimers_Cygwin::CLCoreUrusTimers_Cygwin() :
 {
     gettimeofday(&state_tv.start_time, nullptr);
 
-#if 1
+#if 0
     _measure_time_proccess();
 #endif
 
