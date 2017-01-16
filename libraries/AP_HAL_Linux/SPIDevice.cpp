@@ -209,6 +209,7 @@ SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
 {
     set_device_bus(_bus.bus);
     set_device_address(_desc.subdev);
+    _speed = _desc.highspeed;
     
     if (_desc.cs_pin != SPI_CS_KERNEL) {
         _cs = hal.gpio->channel(_desc.cs_pin);
