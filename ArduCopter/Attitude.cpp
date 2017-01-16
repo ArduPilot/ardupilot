@@ -302,17 +302,6 @@ void Copter::set_accel_throttle_I_from_pilot_throttle()
     g.pid_accel_z.set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0f);
 }
 
-// updates position controller's maximum altitude using fence and EKF limits
-void Copter::update_poscon_alt_max()
-{
-    // get alt limit from EKF (limited during optical flow flight)
-    float ekf_limit_cm;
-    if (inertial_nav.get_hgt_ctrl_limit(ekf_limit_cm)) {
-        // pass limit to pos controller
-        pos_control->set_alt_max(ekf_limit_cm);
-    }
-}
-
 // rotate vector from vehicle's perspective to North-East frame
 void Copter::rotate_body_frame_to_NE(float &x, float &y)
 {
