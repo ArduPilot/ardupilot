@@ -76,11 +76,6 @@ public:
     /// z position controller
     ///
 
-    /// set_alt_max - sets maximum altitude above the ekf origin in cm
-    ///   only enforced when set_alt_target_from_climb_rate is used
-    ///   set to zero to disable limit
-    void set_alt_max(float alt) { _alt_max = alt; }
-
     /// set_speed_z - sets maximum climb and descent rates
     ///     speed_down can be positive or negative but will always be interpreted as a descent speed
     ///     leash length will be recalculated the next time update_z_controller() is called
@@ -417,7 +412,6 @@ private:
     Vector3f    _accel_error;           // desired acceleration in cm/s/s  // To-Do: are xy actually required?
     Vector3f    _accel_feedforward;     // feedforward acceleration in cm/s/s
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
-    float       _alt_max;               // max altitude - should be updated from the main code with altitude limit from fence
     float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
 
