@@ -327,6 +327,7 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
  */
 int AP_RangeFinder_Bebop::_configure_wave()
 {
+    _spi->set_speed(AP_HAL::Device::SPEED_HIGH);
     _configure_gpio(0);
     return 0;
 }
