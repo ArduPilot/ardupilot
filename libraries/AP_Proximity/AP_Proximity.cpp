@@ -304,7 +304,7 @@ const Vector2f* AP_Proximity::get_boundary_points(uint8_t instance, uint16_t& nu
         return nullptr;
     }
     // get boundary from backend
-    return drivers[primary_instance]->get_boundary_points(num_points);
+    return drivers[instance]->get_boundary_points(num_points);
 }
 
 const Vector2f* AP_Proximity::get_boundary_points(uint16_t& num_points) const
