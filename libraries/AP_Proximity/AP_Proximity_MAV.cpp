@@ -43,6 +43,16 @@ void AP_Proximity_MAV::update(void)
     }
 }
 
+// get distance upwards in meters. returns true on success
+bool AP_Proximity_MAV::get_upward_distance(float &distance) const
+{
+    if ((_last_upward_update_ms != 0) && (AP_HAL::millis() - _last_upward_update_ms <= PROXIMITY_MAV_TIMEOUT_MS)) {
+        distance = _distance_upward;
+        return true;
+    }
+    return false;
+}
+
 // handle mavlink DISTANCE_SENSOR messages
 void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
 {
@@ -59,5 +69,11 @@ void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
         _distance_max = packet.max_distance / 100.0f;
         _last_update_ms = AP_HAL::millis();
         update_boundary_for_sector(sector);
+    }
+
+    // store upward distance
+    if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_90) {
+        _distance_upward = packet.current_distance / 100.0f;
+        _last_upward_update_ms = AP_HAL::millis();
     }
 }
