@@ -242,6 +242,7 @@ void Rover::calc_nav_steer() {
 *****************************************/
 void Rover::set_servos(void) {
     static uint16_t last_throttle;
+    bool apply_skid_mix = true;  // Normaly true, false when the mixage is done by the controler with skid_steer_in = 1
 
     if (control_mode == MANUAL || control_mode == LEARNING) {
         // do a direct pass through of radio values
@@ -254,6 +255,9 @@ void Rover::set_servos(void) {
             if (g.skid_steer_out) {
                 SRV_Channels::set_output_pwm(SRV_Channel::k_steering, channel_steer->get_radio_trim());
             }
+        }
+        if (g.skid_steer_in) {
+            apply_skid_mix = false;
         }
     } else {
         if (in_reverse) {
@@ -303,6 +307,11 @@ void Rover::set_servos(void) {
         const float throttle_scaled = SRV_Channels::get_output_norm(SRV_Channel::k_throttle);
         float motor1 = throttle_scaled + 0.5f * steering_scaled;
         float motor2 = throttle_scaled - 0.5f * steering_scaled;
+
+        if (!apply_skid_mix) {  // Mixage is already done by a controller so just pass the value to motor
+            motor1 = steering_scaled;
+            motor2 = throttle_scaled;
+        }
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 4500 * motor1);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100 * motor2);
     }
