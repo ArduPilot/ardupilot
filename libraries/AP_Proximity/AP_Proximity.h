@@ -107,6 +107,14 @@ public:
         enum Proximity_Status   status;     // sensor status
     };
 
+    //
+    // support for upwardward facing sensors
+    //
+
+    // get distance upwards in meters. returns true on success
+    bool get_upward_distance(uint8_t instance, float &distance) const;
+    bool get_upward_distance(float &distance) const;
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
