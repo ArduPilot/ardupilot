@@ -83,13 +83,29 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     // limit acceleration
     float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
-    // stop before breaching fence altitude
-    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
+    bool limit_alt = false;
+    float alt_diff_cm = 0.0f;   // distance from altitude limit to vehicle in cm (positive means vehicle is below limit)
 
+    // calculate distance below fence
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
         // calculate distance from vehicle to safe altitude
         float veh_alt = get_alt_above_home();
-        float alt_diff_cm = _fence.get_safe_alt() * 100.0f - veh_alt;
+        alt_diff_cm = _fence.get_safe_alt() * 100.0f - veh_alt;
+        limit_alt = true;
+    }
 
+    // calculate distance to optical flow altitude limit
+    float ekf_alt_limit_cm;
+    if (_inav.get_hgt_ctrl_limit(ekf_alt_limit_cm)) {
+        float ekf_alt_diff_cm = ekf_alt_limit_cm - _inav.get_altitude();
+        if (!limit_alt || ekf_alt_diff_cm < alt_diff_cm) {
+            alt_diff_cm = ekf_alt_diff_cm;
+        }
+        limit_alt = true;
+    }
+
+    // limit climb rate
+    if (limit_alt) {
         // do not allow climbing if we've breached the safe altitude
         if (alt_diff_cm <= 0.0f) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
