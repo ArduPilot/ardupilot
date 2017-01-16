@@ -253,8 +253,8 @@ void AP_RangeFinder_Bebop::_loop(void)
         if (max_index >= 0) {
             _altitude = (float)(max_index * RNFD_BEBOP_SOUND_SPEED) /
                 (2 * (RNFD_BEBOP_DEFAULT_ADC_FREQ / _filter_average));
-            _mode = _update_mode(_altitude);
         }
+        _mode = _update_mode(_altitude);
     }
 }
 
@@ -309,6 +309,7 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
     if (_capture() < 0)
         hal.console->printf("purge could not capture data");
 
+    _tx_buf = _tx[_mode];
     switch (_mode) {
     case 1: /* low voltage */
         _configure_gpio(0);
@@ -450,7 +451,7 @@ int AP_RangeFinder_Bebop::_update_mode(float altitude)
     default:
     case 1:
         if (altitude > RNFD_BEBOP_TRANSITION_LOW_TO_HIGH
-                || !is_zero(altitude)) {
+                || is_zero(altitude)) {
             if (_hysteresis_counter > RNFD_BEBOP_TRANSITION_COUNT) {
                 _mode = 0;
                 _hysteresis_counter = 0;
