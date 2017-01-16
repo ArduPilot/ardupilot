@@ -371,3 +371,18 @@ float AP_Proximity::distance_min() const
     // get minimum distance from backend
     return drivers[primary_instance]->distance_min();
 }
+
+// get distance in meters upwards, returns true on success
+bool AP_Proximity::get_upward_distance(uint8_t instance, float &distance) const
+{
+    if ((drivers[instance] == nullptr) || (_type[instance] == Proximity_Type_None)) {
+        return false;
+    }
+    // get upward distance from backend
+    return drivers[instance]->get_upward_distance(distance);
+}
+
+bool AP_Proximity::get_upward_distance(float &distance) const
+{
+    return get_upward_distance(primary_instance, distance);
+}
