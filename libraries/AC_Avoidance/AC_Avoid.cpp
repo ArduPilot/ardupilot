@@ -104,6 +104,16 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         limit_alt = true;
     }
 
+    // get distance from proximity sensor (in meters, convert to cm)
+    float proximity_alt_diff_m;
+    if (_proximity.get_upward_distance(proximity_alt_diff_m)) {
+        float proximity_alt_diff_cm = proximity_alt_diff_m * 100.0f;
+        if (!limit_alt || proximity_alt_diff_cm < alt_diff_cm) {
+            alt_diff_cm = proximity_alt_diff_cm;
+        }
+        limit_alt = true;
+    }
+
     // limit climb rate
     if (limit_alt) {
         // do not allow climbing if we've breached the safe altitude
