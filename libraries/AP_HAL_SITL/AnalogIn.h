@@ -15,7 +15,7 @@ public:
     /* implement AnalogSource virtual api: */
     float read_average();
     float read_latest();
-    void set_pin(uint8_t p);
+    void set_pin(uint8_t pin);
     float voltage_average();
     float voltage_latest();
     float voltage_average_ratiometric() {
@@ -35,7 +35,7 @@ class HALSITL::AnalogIn : public AP_HAL::AnalogIn {
 public:
     explicit AnalogIn(SITL_State *sitlState): _sitlState(sitlState) {}
     void init();
-    AP_HAL::AnalogSource* channel(int16_t n);
+    AP_HAL::AnalogSource* channel(int16_t pin);
     float board_voltage(void) {
         return 5.0f;
     }
