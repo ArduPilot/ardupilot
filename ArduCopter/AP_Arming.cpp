@@ -408,7 +408,7 @@ bool AP_Arming_Copter::pre_arm_gps_checks(bool display_failure)
     }
 
     // check if flight mode requires GPS
-    bool gps_required = copter.mode_requires_GPS();
+    bool gps_required = copter.flightmode->requires_GPS();
 
     #if AC_FENCE == ENABLED
     // if circular fence is enabled we need GPS
