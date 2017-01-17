@@ -803,7 +803,6 @@ private:
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     void update_flight_mode();
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
-    bool mode_requires_GPS();
     bool mode_has_manual_throttle(control_mode_t mode);
     void notify_flight_mode();
     void heli_init();
