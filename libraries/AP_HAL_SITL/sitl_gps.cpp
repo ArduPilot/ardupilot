@@ -93,7 +93,7 @@ void SITL_State::_gps_write(const uint8_t *p, uint16_t size)
 {
     while (size--) {
         if (_sitl->gps_byteloss > 0.0f) {
-            float r = (((static_cast<uint32_t>(random())) % 1000000)) / 1.0e4f;
+            const float r = (((static_cast<uint32_t>(random())) % 1000000)) / 1.0e4f;
             if (r < _sitl->gps_byteloss) {
                 // lose the byte
                 p++;
@@ -117,7 +117,7 @@ void SITL_State::_gps_write(const uint8_t *p, uint16_t size)
  */
 static void simulation_timeval(struct timeval *tv)
 {
-    uint64_t now = AP_HAL::micros64();
+    const uint64_t now = AP_HAL::micros64();
     static uint64_t first_usec;
     static struct timeval first_tv;
     if (first_usec == 0) {
@@ -150,7 +150,7 @@ void SITL_State::_gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
     chk[1] += (chk[0] += hdr[3]);
     chk[1] += (chk[0] += hdr[4]);
     chk[1] += (chk[0] += hdr[5]);
-    for (uint8_t i=0; i < size; i++) {
+    for (uint16_t i=0; i < size; i++) {
         chk[1] += (chk[0] += buf[i]);
     }
     _gps_write(hdr, sizeof(hdr));
@@ -166,9 +166,9 @@ static void gps_time(uint16_t *time_week, uint32_t *time_week_ms)
     struct timeval tv;
     simulation_timeval(&tv);
     const uint32_t epoch = 86400 * (10 * 365 + (1980 - 1969)/4 + 1 + 6 - 2) - (GPS_LEAPSECONDS_MILLIS / 1000ULL);
-    uint32_t epoch_seconds = tv.tv_sec - epoch;
+    const uint32_t epoch_seconds = tv.tv_sec - epoch;
     *time_week = epoch_seconds / (86400 * 7UL);
-    uint32_t t_ms = tv.tv_usec / 1000;
+    const uint32_t t_ms = tv.tv_usec / 1000;
     // round time to nearest 200ms
     *time_week_ms = (epoch_seconds % (86400 * 7UL)) * 1000 + ((t_ms/200) * 200);
 }
@@ -624,7 +624,7 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d)
                      d->have_lock ? _sitl->gps_numsats : 3,
                      2.0,
                      d->altitude);
-    float speed_knots = norm(d->speedN, d->speedE) * 1.94384449f;
+    const float speed_knots = norm(d->speedN, d->speedE) * 1.94384449f;
     float heading = ToDeg(atan2f(d->speedE, d->speedN));
     if (heading < 0) {
         heading += 360.0f;
@@ -965,7 +965,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 {
     struct gps_data d;
     char c;
-    Vector3f glitch_offsets = _sitl->gps_glitch;
+    const Vector3f glitch_offsets = _sitl->gps_glitch;
 
     // Capture current position as basestation location for
     if (!_gps_has_basestation_position) {
@@ -1009,7 +1009,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 
     // correct the latitude, longitude, hiehgt and NED velocity for the offset between
     // the vehicle c.g. and GPs antenna
-    Vector3f posRelOffsetBF = _sitl->gps_pos_offset;
+    const Vector3f posRelOffsetBF = _sitl->gps_pos_offset;
     if (!posRelOffsetBF.is_zero()) {
         // get a rotation matrix following DCM conventions (body to earth)
         Matrix3f rotmat;
@@ -1018,24 +1018,24 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
                           radians(_sitl->state.yawDeg));
 
         // rotate the antenna offset into the earth frame
-        Vector3f posRelOffsetEF = rotmat * posRelOffsetBF;
+        const Vector3f posRelOffsetEF = rotmat * posRelOffsetBF;
 
         // Add the offset to the latitude, longitude and height using a spherical earth approximation
-        double const earth_rad_inv = 1.569612305760477e-7;  // use Authalic/Volumetric radius
-        double lng_scale_factor = earth_rad_inv / cos(radians(d.latitude));
+        const double earth_rad_inv = 1.569612305760477e-7;  // use Authalic/Volumetric radius
+        const double lng_scale_factor = earth_rad_inv / cos(radians(d.latitude));
         d.latitude += degrees(posRelOffsetEF.x * earth_rad_inv);
         d.longitude += degrees(posRelOffsetEF.y * lng_scale_factor);
         d.altitude -= posRelOffsetEF.z;
 
         // calculate a velocity offset due to the antenna position offset and body rotation rate
         // note: % operator is overloaded for cross product
-        Vector3f gyro(radians(_sitl->state.rollRate),
+        const Vector3f gyro(radians(_sitl->state.rollRate),
              radians(_sitl->state.pitchRate),
              radians(_sitl->state.yawRate));
-        Vector3f velRelOffsetBF = gyro % posRelOffsetBF;
+        const Vector3f velRelOffsetBF = gyro % posRelOffsetBF;
 
         // rotate the velocity offset into earth frame and add to the c.g. velocity
-        Vector3f velRelOffsetEF = rotmat * velRelOffsetBF;
+        const Vector3f velRelOffsetEF = rotmat * velRelOffsetBF;
         d.speedN += velRelOffsetEF.x;
         d.speedE += velRelOffsetEF.y;
         d.speedD += velRelOffsetEF.z;
