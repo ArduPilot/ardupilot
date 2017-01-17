@@ -34,7 +34,7 @@ void Scheduler::init()
 
 void Scheduler::delay_microseconds(uint16_t usec)
 {
-    uint64_t start = AP_HAL::micros64();
+    const uint64_t start = AP_HAL::micros64();
     do {
         uint64_t dtime = AP_HAL::micros64() - start;
         if (dtime >= usec) {
@@ -162,7 +162,7 @@ void Scheduler::_run_timer_procs(bool called_from_isr)
 
     if (!_timer_suspended) {
         // now call the timer based drivers
-        for (int i = 0; i < _num_timer_procs; i++) {
+        for (uint8_t i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i]) {
                 _timer_proc[i]();
             }
@@ -188,7 +188,7 @@ void Scheduler::_run_io_procs(bool called_from_isr)
 
     if (!_timer_suspended) {
         // now call the IO based drivers
-        for (int i = 0; i < _num_io_procs; i++) {
+        for (uint8_t i = 0; i < _num_io_procs; i++) {
             if (_io_proc[i]) {
                 _io_proc[i]();
             }
