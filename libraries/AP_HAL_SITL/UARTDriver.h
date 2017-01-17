@@ -71,7 +71,6 @@ private:
     bool _connected = false;  // true if a client has connected
     bool _use_send_recv = false;
     int _listen_fd;  // socket we are listening on
-    int _serial_port;
     static bool _console;
     bool _nonblocking_writes;
     ByteBuffer _readbuffer{16384};
@@ -79,9 +78,6 @@ private:
 
     const char *_uart_path;
     uint32_t _uart_baudrate;
-
-    // IPv4 address of target for uartC
-    const char *_tcp_client_addr;
 
     void _tcp_start_connection(uint16_t port, bool wait_for_connection);
     void _uart_start_connection(void);
