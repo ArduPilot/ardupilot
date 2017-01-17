@@ -11,11 +11,11 @@
 class Display_SSD1306_I2C: public Display_OLED_I2C {
 
 protected:
-    virtual bool hw_init();
-    virtual bool hw_update();
-    virtual bool set_pixel(uint16_t x, uint16_t y);
-    virtual bool clear_pixel(uint16_t x, uint16_t y);
-    virtual bool clear_screen();
+    bool hw_init() override;
+    bool hw_update() override;
+    bool set_pixel(uint16_t x, uint16_t y) override;
+    bool clear_pixel(uint16_t x, uint16_t y) override;
+    bool clear_screen() override;
 
     void _update_timer() override;
 
