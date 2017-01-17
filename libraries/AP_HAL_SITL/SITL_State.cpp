@@ -20,7 +20,7 @@ void SITL_State::_set_param_default(const char *parm)
         printf("Please specify parameter as NAME=VALUE");
         exit(1);
     }
-    float value = strtof(p+1, nullptr);
+    const float value = strtof(p+1, nullptr);
     *p = 0;
     enum ap_var_type var_type;
     AP_Param *vp = AP_Param::find(pdup, &var_type);
@@ -324,7 +324,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     }
 
     // output at chosen framerate
-    uint32_t now = AP_HAL::micros();
+    const uint32_t now = AP_HAL::micros();
     last_update_usec = now;
 
     // pass wind into simulators, using a wind gradient below 60m
@@ -356,8 +356,8 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         }
     }
 
-    float engine_mul = _sitl?_sitl->engine_mul.get():1;
-    uint8_t engine_fail = _sitl?_sitl->engine_fail.get():0;
+    const float engine_mul = _sitl ? _sitl->engine_mul.get() : 1.0f;
+    uint8_t engine_fail = _sitl ? _sitl->engine_fail.get() : 0;
     bool motors_on;
 
     if (engine_fail >= ARRAY_SIZE(input.servos)) {
