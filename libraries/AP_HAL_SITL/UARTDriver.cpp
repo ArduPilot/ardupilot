@@ -60,16 +60,16 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         char *args2 = strtok_r(nullptr, ":", &saveptr);
         if (strcmp(devtype, "tcp") == 0) {
             uint16_t port = atoi(args1);
-            bool wait = (args2 && strcmp(args2, "wait") == 0);
+            const bool wait = (args2 && strcmp(args2, "wait") == 0);
             _tcp_start_connection(port, wait);
         } else if (strcmp(devtype, "tcpclient") == 0) {
             if (args2 == nullptr) {
                 AP_HAL::panic("Invalid tcp client path: %s", path);
             }
-            uint16_t port = atoi(args2);
+            const uint16_t port = atoi(args2);
             _tcp_start_client(args1, port);
         } else if (strcmp(devtype, "uart") == 0) {
-            uint32_t baudrate = args2 ? atoi(args2) : baud;
+            const uint32_t baudrate = args2 ? atoi(args2) : baud;
             ::printf("UART connection %s:%u\n", args1, baudrate);
             _uart_path = strdup(args1);
             _uart_baudrate = baudrate;
