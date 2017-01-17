@@ -358,7 +358,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     }
 
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
-    bool motors_on = false;
+    bool motors_on;
 
     if (_vehicle == ArduPlane) {
         // add in engine multiplier
