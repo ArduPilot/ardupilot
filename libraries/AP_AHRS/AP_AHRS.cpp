@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: GPS_GAIN
     // @DisplayName: AHRS GPS gain
-    // @Description: This controls how how much to use the GPS to correct the attitude. This should never be set to zero for a plane as it would result in the plane losing control in turns. For a plane please use the default value of 1.0.
+    // @Description: This controls how much to use the GPS to correct the attitude. This should never be set to zero for a plane as it would result in the plane losing control in turns. For a plane please use the default value of 1.0.
     // @Range: 0.0 1.0
     // @Increment: .01
     // @User: Advanced
