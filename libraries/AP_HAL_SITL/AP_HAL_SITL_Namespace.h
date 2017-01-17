@@ -26,4 +26,5 @@ static const uint8_t SITL_RC_INPUT_CHANNELS = 16;
 // Number of rc output channels
 static const uint8_t SITL_RC_OUTPUT_CHANNELS = 16;
 
+static const uint8_t DEFAULT_RCOUTPUT_FREQ = 50;  // PWM RC : 50Hz
 }  // namespace HALSITL
