@@ -37,9 +37,7 @@ AP_OpticalFlow_Onboard::AP_OpticalFlow_Onboard(OpticalFlow &_frontend) :
 void AP_OpticalFlow_Onboard::init(void)
 {
     /* register callback to get gyro data */
-    hal.opticalflow->init(
-            FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Onboard::_get_gyro,
-                                void, float&, float&, float&));
+    hal.opticalflow->init();
 }
 
 void AP_OpticalFlow_Onboard::update()
@@ -100,15 +98,6 @@ void AP_OpticalFlow_Onboard::update()
                         (double)state.bodyRate.y,
                         data_frame.delta_time);
 #endif
-}
-
-void AP_OpticalFlow_Onboard::_get_gyro(float &rate_x, float &rate_y,
-                                       float &rate_z)
-{
-    Vector3f rates = get_ahrs().get_gyro();
-    rate_x = rates.x;
-    rate_y = rates.y;
-    rate_z = rates.z;
 }
 
 #endif

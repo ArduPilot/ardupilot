@@ -28,6 +28,5 @@ public:
     void init(void);
     void update(void);
 private:
-    void _get_gyro(float&, float&, float&);
     uint32_t _last_read_ms;
 };
