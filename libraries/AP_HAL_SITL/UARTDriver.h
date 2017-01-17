@@ -27,7 +27,7 @@ public:
     void begin(uint32_t b) {
         begin(b, 0, 0);
     }
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
+    void begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace);
     void end();
     void flush();
     bool is_initialized() {
