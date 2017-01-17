@@ -358,7 +358,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
 
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
     uint8_t engine_fail = _sitl?_sitl->engine_fail.get():0;
-    bool motors_on = false;
+    bool motors_on;
 
     if (engine_fail >= ARRAY_SIZE(input.servos)) {
         engine_fail = 0;
