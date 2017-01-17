@@ -478,7 +478,7 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d, uint8_t instance)
     struct timeval tv;
 
     simulation_timeval(&tv);
-    tm = *gmtime(&tv.tv_sec);
+    gmtime_r(&tv.tv_sec, &tm);
     uint32_t millisec = (tv.tv_usec / (1000 * 200)) * 200;  // always multiple of 200
 
     p.utc_date = (tm.tm_year - 100) + ((tm.tm_mon + 1) * 100) + (tm.tm_mday * 100 * 100);
@@ -536,7 +536,7 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d, uint8_t instance)
     struct timeval tv;
 
     simulation_timeval(&tv);
-    tm = *gmtime(&tv.tv_sec);
+    gmtime_r(&tv.tv_sec, &tm);
     uint32_t millisec = (tv.tv_usec / (1000 * 200)) * 200;  // always multiple of 200
 
     p.utc_date = (tm.tm_year - 100) + ((tm.tm_mon + 1) * 100) + (tm.tm_mday * 100 * 100);
@@ -590,7 +590,7 @@ void SITL_State::_gps_nmea_printf(uint8_t instance, const char *fmt, ...)
 void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
 {
     struct timeval tv;
-    struct tm *tm;
+    struct tm *tm = nullptr;
     char tstring[20];
     char dstring[20];
     char lat_string[20];
@@ -598,7 +598,7 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
 
     simulation_timeval(&tv);
 
-    tm = gmtime(&tv.tv_sec);
+    gmtime_r(&tv.tv_sec, tm);
 
     // format time string
     snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + tv.tv_usec * 1.0e-6f);
