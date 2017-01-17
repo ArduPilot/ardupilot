@@ -36,7 +36,7 @@ public:
 
 class OpticalFlow_Onboard : public AP_HAL::OpticalFlow {
 public:
-    void init(AP_HAL::OpticalFlow::Gyro_Cb);
+    void init();
     bool read(AP_HAL::OpticalFlow::Data_Frame& frame);
     void push_gyro(float gyro_x, float gyro_y, float dt);
     void push_gyro_bias(float gyro_bias_x, float gyro_bias_y);
@@ -69,7 +69,6 @@ private:
     float _gyro_y_integral;
     uint64_t _integration_timespan;
     uint8_t _surface_quality;
-    AP_HAL::OpticalFlow::Gyro_Cb _get_gyro;
     Vector2f _last_gyro_rate;
     Vector2f _gyro_bias;
     Vector2f _integrated_gyro;
