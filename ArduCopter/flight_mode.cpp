@@ -292,18 +292,6 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
 #endif //HELI_FRAME
 }
 
-// returns true or false whether current control mode requires GPS
-bool Copter::mode_requires_GPS()
-{
-    if (flightmode != nullptr) {
-        return flightmode->requires_GPS();
-    }
-    switch (control_mode) {
-        default:
-            return false;
-    }
-}
-
 // mode_has_manual_throttle - returns true if the flight mode has a manual throttle (i.e. pilot directly controls throttle)
 bool Copter::mode_has_manual_throttle(control_mode_t mode)
 {
