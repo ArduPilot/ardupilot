@@ -54,7 +54,6 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t n) {
     } else {
         return nullptr;
     }
-
 }
 
 /* Interrupt interface: */
