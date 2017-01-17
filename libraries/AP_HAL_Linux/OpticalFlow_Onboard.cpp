@@ -41,7 +41,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
+void OpticalFlow_Onboard::init()
 {
     uint32_t top, left;
     uint32_t crop_width, crop_height;
@@ -57,7 +57,6 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
         return;
     }
 
-    _get_gyro = get_gyro;
     _videoin = new VideoIn;
     const char* device_path = HAL_OPTFLOW_ONBOARD_VDEV_PATH;
     memtype = V4L2_MEMORY_MMAP;
