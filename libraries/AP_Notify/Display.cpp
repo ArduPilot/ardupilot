@@ -496,6 +496,7 @@ void Display::update_gps(uint8_t r)
             break;
         default:
             fixname = gpsfixname[0];
+            break;
     }
     snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%s Sats:%u", fixname, AP_Notify::flags.gps_num_sats) ;
 	draw_text(COLUMN(0), ROW(r), msg);
@@ -520,7 +521,7 @@ void Display::update_ekf(uint8_t r)
 void Display::update_battery(uint8_t r)
 {
 	char msg [DISPLAY_MESSAGE_SIZE];
-	snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", AP_Notify::flags.battery_voltage) ;
+	snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP_Notify::flags.battery_voltage) ;
 	draw_text(COLUMN(0), ROW(r), msg);
  }
 void Display::update_mode(uint8_t r)
