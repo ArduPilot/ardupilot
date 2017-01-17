@@ -90,6 +90,12 @@ void AP_AHRS_NavEKF::update(void)
 
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);
+
+    // push gyros if optical flow present
+    if (hal.opticalflow) {
+        Vector3f exported_gyro_bias = get_gyro_drift();
+        hal.opticalflow->push_gyro_bias(exported_gyro_bias.x, exported_gyro_bias.y);
+    }
 }
 
 void AP_AHRS_NavEKF::update_DCM(void)
