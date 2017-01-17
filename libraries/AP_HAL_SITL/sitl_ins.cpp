@@ -21,7 +21,7 @@ using namespace HALSITL;
 uint16_t SITL_State::_airspeed_sensor(float airspeed)
 {
     const float airspeed_ratio = 1.9936f;
-    const float airspeed_offset = 2013;
+    const float airspeed_offset = 2013.0f;
     float airspeed_pressure, airspeed_raw;
 
     airspeed_pressure = (airspeed * airspeed) / airspeed_ratio;
@@ -74,7 +74,7 @@ uint16_t SITL_State::_ground_sonar(void)
     float altitude = _sitl->height_agl;
 
     // sensor position offset in body frame
-    Vector3f relPosSensorBF = _sitl->rngfnd_pos_offset;
+    const Vector3f relPosSensorBF = _sitl->rngfnd_pos_offset;
 
     // adjust altitude for position of the sensor on the vehicle if position offset is non-zero
     if (!relPosSensorBF.is_zero()) {
@@ -84,7 +84,7 @@ uint16_t SITL_State::_ground_sonar(void)
                           radians(_sitl->state.pitchDeg),
                           radians(_sitl->state.yawDeg));
         // rotate the offset into earth frame
-        Vector3f relPosSensorEF = rotmat * relPosSensorBF;
+        const Vector3f relPosSensorEF = rotmat * relPosSensorBF;
         // correct the altitude at the sensor
         altitude -= relPosSensorEF.z;
     }
@@ -147,7 +147,7 @@ void SITL_State::_update_ins(float roll, float pitch, float yaw,  // Relative to
     }
 
     sonar_pin_value    = _ground_sonar();
-    float airspeed_simulated = (fabsf(_sitl->arspd_fail) > 1.0e-6f) ? _sitl->arspd_fail : airspeed;
+    const float airspeed_simulated = (fabsf(_sitl->arspd_fail) > 1.0e-6f) ? _sitl->arspd_fail : airspeed;
     airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->arspd_noise * _rand_float()));
 }
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
