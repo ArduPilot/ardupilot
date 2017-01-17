@@ -64,6 +64,8 @@ void AP_OpticalFlow_Onboard::update()
         float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
         float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
 
+        // delta_time is in microseconds and flow is in milliradians
+        // per second, so multiply by 1000
         state.flowRate.x = flowScaleFactorX * 1000.0f /
                            float(data_frame.delta_time) *
                            data_frame.pixel_flow_x_integral;
@@ -72,10 +74,11 @@ void AP_OpticalFlow_Onboard::update()
                            float(data_frame.delta_time) *
                            data_frame.pixel_flow_y_integral;
 
-        state.bodyRate.x = 1.0f / float(data_frame.delta_time) *
+        // delta_time is in microseconds so multiply to get back to seconds
+        state.bodyRate.x = 1000000.0f / float(data_frame.delta_time) *
                            data_frame.gyro_x_integral;
 
-        state.bodyRate.y = 1.0f / float(data_frame.delta_time) *
+        state.bodyRate.y = 1000000.0f / float(data_frame.delta_time) *
                            data_frame.gyro_y_integral;
 
         _applyYaw(state.flowRate);
