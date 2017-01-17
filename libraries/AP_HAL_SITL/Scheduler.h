@@ -19,7 +19,7 @@ public:
 
     void init();
     void delay(uint16_t ms);
-    void delay_microseconds(uint16_t us);
+    void delay_microseconds(uint16_t usec);
     void register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
 
     void register_timer_process(AP_HAL::MemberProc);
