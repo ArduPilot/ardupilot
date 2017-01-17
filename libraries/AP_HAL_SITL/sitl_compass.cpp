@@ -29,7 +29,7 @@ void SITL_State::_update_compass(void)
     }
 
     // 100Hz
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if ((now - last_update) < 10) {
         return;
     }
@@ -37,7 +37,7 @@ void SITL_State::_update_compass(void)
 
     // calculate sensor noise and add to 'truth' field in body frame
     // units are milli-Gauss
-    Vector3f noise = _rand_vec3f() * _sitl->mag_noise;
+    const Vector3f noise = _rand_vec3f() * _sitl->mag_noise;
     Vector3f new_mag_data = _sitl->state.bodyMagField + noise;
 
     // add delay
