@@ -20,7 +20,7 @@ void SITL_State::_set_param_default(const char *parm)
         printf("Please specify parameter as NAME=VALUE");
         exit(1);
     }
-    float value = strtof(p+1, nullptr);
+    const float value = strtof(p+1, nullptr);
     *p = 0;
     enum ap_var_type var_type;
     AP_Param *vp = AP_Param::find(pdup, &var_type);
@@ -325,7 +325,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     }
 
     // output at chosen framerate
-    uint32_t now = AP_HAL::micros();
+    const uint32_t now = AP_HAL::micros();
     last_update_usec = now;
 
     // pass wind into simulators, using a wind gradient below 60m
@@ -357,7 +357,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         }
     }
 
-    float engine_mul = _sitl?_sitl->engine_mul.get():1;
+    const float engine_mul = _sitl ? _sitl->engine_mul.get() : 1.0f;
     bool motors_on;
 
     if (_vehicle == ArduPlane) {
@@ -408,9 +408,9 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     _current = 0;
 
     if (_sitl != nullptr) {
-        if (_sitl->state.battery_voltage <= 0) {
+        if (_sitl->state.battery_voltage <= 0.0) {
             // simulate simple battery setup
-            float throttle = motors_on ? (input.servos[2] - 1000) / 1000.0f : 0;
+            const float throttle = motors_on ? (input.servos[2] - 1000) / 1000.0f : 0.0f;
             // lose 0.7V at full throttle
             voltage = _sitl->batt_voltage - 0.7f * fabsf(throttle);
 
@@ -441,7 +441,7 @@ Vector3f SITL_State::_rand_vec3f(void)
     Vector3f v = Vector3f(_rand_float(),
                           _rand_float(),
                           _rand_float());
-    if (v.length() != 0.0f) {
+    if (!is_zero(v.length())) {
         v.normalize();
     }
     return v;
