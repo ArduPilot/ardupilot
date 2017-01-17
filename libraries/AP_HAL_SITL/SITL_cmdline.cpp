@@ -119,8 +119,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     _set_signal_handlers();
 
-    setvbuf(stdout, (char *)0, _IONBF, 0);
-    setvbuf(stderr, (char *)0, _IONBF, 0);
+    setvbuf(stdout, reinterpret_cast<char *>(0), _IONBF, 0);
+    setvbuf(stderr, reinterpret_cast<char *>(0), _IONBF, 0);
 
     _synthetic_clock_mode = false;
     _base_port = 5760;

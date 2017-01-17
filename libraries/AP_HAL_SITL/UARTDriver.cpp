@@ -442,7 +442,7 @@ void UARTDriver::_timer_tick(void)
         }
     }
     if (nread > 0) {
-        _readbuffer.write((uint8_t *)buf, nread);
+        _readbuffer.write(reinterpret_cast<uint8_t *>(buf), nread);
     }
 }
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

@@ -344,12 +344,12 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     pvt.head_acc = 38 * 1.0e5; 
     pvt.p_dop = 65535; 
 
-    _gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
-    _gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
-    _gps_send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
-    _gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
-    _gps_send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop));
-    _gps_send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt));
+    _gps_send_ubx(MSG_POSLLH, reinterpret_cast<uint8_t *>(&pos), sizeof(pos));
+    _gps_send_ubx(MSG_STATUS, reinterpret_cast<uint8_t *>(&status), sizeof(status));
+    _gps_send_ubx(MSG_VELNED, reinterpret_cast<uint8_t *>(&velned), sizeof(velned));
+    _gps_send_ubx(MSG_SOL,    reinterpret_cast<uint8_t *>(&sol), sizeof(sol));
+    _gps_send_ubx(MSG_DOP,    reinterpret_cast<uint8_t *>(&dop), sizeof(dop));
+    _gps_send_ubx(MSG_PVT,    reinterpret_cast<uint8_t *>(&pvt), sizeof(pvt));
 }
 
 static void swap_uint32(uint32_t *v, uint8_t n)
@@ -418,16 +418,15 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d)
     struct timeval tv;
 
     simulation_timeval(&tv);
-    tm = *gmtime(&tv.tv_sec);
+    gmtime_r(&tv.tv_sec, &tm);
     uint32_t hsec = (tv.tv_usec / (10000 * 20)) * 20;  // always multiple of 20
 
     p.utc_time = hsec + tm.tm_sec * 100 + tm.tm_min * 100 * 100 + tm.tm_hour * 100 * 100 * 100;
-
-    swap_uint32((uint32_t *)&p.latitude, 5);
-    swap_uint32((uint32_t *)&p.utc_time, 1);
+    swap_uint32(reinterpret_cast<uint32_t *>(&p.latitude), 5);
+    swap_uint32(reinterpret_cast<uint32_t *>(&p.utc_time), 1);
     mtk_checksum(&p.msg_class, sizeof(p)-4, &p.ck_a, &p.ck_b);
 
-    _gps_write((uint8_t*)&p, sizeof(p));
+    _gps_write(reinterpret_cast<uint8_t *>(&p), sizeof(p));
 }
 
 /*
@@ -476,7 +475,7 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d)
 
     simulation_timeval(&tv);
     gmtime_r(&tv.tv_sec, &tm);
-    uint32_t millisec = (tv.tv_usec / (1000 * 200)) * 200;  // always multiple of 200
+    const uint32_t millisec = (tv.tv_usec / (1000 * 200)) * 200;  // always multiple of 200
 
     p.utc_date = (tm.tm_year - 100) + ((tm.tm_mon + 1) * 100) + (tm.tm_mday * 100 * 100);
     p.utc_time = millisec + tm.tm_sec * 1000 + tm.tm_min * 1000 * 100 + tm.tm_hour * 1000 * 100 * 100;
@@ -485,7 +484,7 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d)
 
     mtk_checksum(&p.size, sizeof(p)-4, &p.ck_a, &p.ck_b);
 
-    _gps_write((uint8_t*)&p, sizeof(p));
+    _gps_write(reinterpret_cast<uint8_t *>(&p), sizeof(p));
 }
 
 /*
@@ -534,7 +533,7 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
 
     simulation_timeval(&tv);
     gmtime_r(&tv.tv_sec, &tm);
-    uint32_t millisec = (tv.tv_usec / (1000 * 200)) * 200;  // always multiple of 200
+    const uint32_t millisec = (tv.tv_usec / (1000 * 200)) * 200;  // always multiple of 200
 
     p.utc_date = (tm.tm_year - 100) + ((tm.tm_mon + 1) * 100) + (tm.tm_mday * 100 * 100);
     p.utc_time = millisec + tm.tm_sec * 1000 + tm.tm_min * 1000 * 100 + tm.tm_hour * 1000 * 100 * 100;
@@ -543,7 +542,7 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
 
     mtk_checksum(&p.size, sizeof(p) - 4, &p.ck_a, &p.ck_b);
 
-    _gps_write((uint8_t*)&p, sizeof(p));
+    _gps_write(reinterpret_cast<uint8_t *>(&p), sizeof(p));
 }
 
 /*
@@ -586,7 +585,7 @@ void SITL_State::_gps_nmea_printf(const char *fmt, ...)
 void SITL_State::_update_gps_nmea(const struct gps_data *d)
 {
     struct timeval tv;
-    struct tm *tm = nullptr;
+    struct tm tm;
     char tstring[20];
     char dstring[20];
     char lat_string[20];
@@ -594,26 +593,26 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d)
 
     simulation_timeval(&tv);
 
-    gmtime_r(&tv.tv_sec, tm);
+    gmtime_r(&tv.tv_sec, &tm);
 
     // format time string
-    snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + tv.tv_usec * 1.0e-6f);
+    snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm.tm_hour, tm.tm_min, tm.tm_sec + tv.tv_usec * 1.0e-6f);
 
     // format date string
-    snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon + 1, tm->tm_year % 100);
+    snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm.tm_mday, tm.tm_mon + 1, tm.tm_year % 100);
 
     // format latitude
     double deg = fabs(d->latitude);
     snprintf(lat_string, sizeof(lat_string), "%02u%08.5f,%c",
-             (unsigned)deg,
-             (deg - int(deg)) * 60,
+            static_cast<uint32_t>(deg),
+             (deg - static_cast<int32_t>(deg)) * 60,
              d->latitude < 0 ? 'S' : 'N');
 
     // format longitude
     deg = fabs(d->longitude);
     snprintf(lng_string, sizeof(lng_string), "%03u%08.5f,%c",
-             (unsigned)deg,
-             (deg - int(deg)) * 60,
+            static_cast<uint32_t>(deg),
+             (deg - static_cast<int32_t>(deg)) * 60,
              d->longitude < 0 ? 'W' : 'E');
 
     _gps_nmea_printf("$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,0.0,M,,",
@@ -647,19 +646,19 @@ void SITL_State::_sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_
 
     uint8_t preamble = 0x55;
     _gps_write(&preamble, 1);
-    _gps_write((uint8_t*)&msg_type, 2);
-    _gps_write((uint8_t*)&sender_id, 2);
+    _gps_write(reinterpret_cast<uint8_t*>(&msg_type), 2);
+    _gps_write(reinterpret_cast<uint8_t*>(&sender_id), 2);
     _gps_write(&len, 1);
     if (len > 0) {
-        _gps_write((uint8_t*)payload, len);
+        _gps_write(reinterpret_cast<uint8_t *>(payload), len);
     }
 
     uint16_t crc;
-    crc = crc16_ccitt((uint8_t*)&(msg_type), 2, 0);
-    crc = crc16_ccitt((uint8_t*)&(sender_id), 2, crc);
+    crc = crc16_ccitt(reinterpret_cast<uint8_t*>(&msg_type), 2, 0);
+    crc = crc16_ccitt(reinterpret_cast<uint8_t*>(&sender_id), 2, crc);
     crc = crc16_ccitt(&(len), 1, crc);
     crc = crc16_ccitt(payload, len, crc);
-    _gps_write((uint8_t*)&crc, 2);
+    _gps_write(reinterpret_cast<uint8_t*>(&crc), 2);
 }
 
 
@@ -715,7 +714,7 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d)
     t.tow = time_week_ms;
     t.ns = 0;
     t.flags = 0;
-    _sbp_send_message(SBP_GPS_TIME_MSGTYPE, 0x2222, sizeof(t), (uint8_t*)&t);
+    _sbp_send_message(SBP_GPS_TIME_MSGTYPE, 0x2222, sizeof(t), reinterpret_cast<uint8_t*>(&t));
 
     if (!d->have_lock) {
         return;
@@ -731,10 +730,10 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d)
 
     // Send single point position solution
     pos.flags = 0;
-    _sbp_send_message(SBP_POS_LLH_MSGTYPE, 0x2222, sizeof(pos), (uint8_t*)&pos);
+    _sbp_send_message(SBP_POS_LLH_MSGTYPE, 0x2222, sizeof(pos), reinterpret_cast<uint8_t*>(&pos));
     // Send "pseudo-absolute" RTK position solution
     pos.flags = 1;
-    _sbp_send_message(SBP_POS_LLH_MSGTYPE, 0x2222, sizeof(pos), (uint8_t*)&pos);
+    _sbp_send_message(SBP_POS_LLH_MSGTYPE, 0x2222, sizeof(pos), reinterpret_cast<uint8_t*>(&pos));
 
     velned.tow = time_week_ms;
     velned.n = 1e3 * d->speedN;
@@ -744,7 +743,7 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d)
     velned.v_accuracy = 5e3;
     velned.n_sats = _sitl->gps_numsats;
     velned.flags = 0;
-    _sbp_send_message(SBP_VEL_NED_MSGTYPE, 0x2222, sizeof(velned), (uint8_t*)&velned);
+    _sbp_send_message(SBP_VEL_NED_MSGTYPE, 0x2222, sizeof(velned), reinterpret_cast<uint8_t*>(&velned));
 
     static uint32_t do_every_count = 0;
     if (do_every_count % 5 == 0) {
@@ -755,12 +754,12 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d)
         dops.hdop = 100;
         dops.vdop = 1;
         _sbp_send_message(SBP_DOPS_MSGTYPE, 0x2222, sizeof(dops),
-                          (uint8_t*)&dops);
+                          reinterpret_cast<uint8_t*>(&dops));
 
         uint32_t system_flags = 0;
         _sbp_send_message(SBP_HEARTBEAT_MSGTYPE, 0x2222,
                           sizeof(system_flags),
-                          (uint8_t*)&system_flags);
+                          reinterpret_cast<uint8_t*>(&system_flags));
     }
     do_every_count++;
 }
@@ -868,7 +867,7 @@ void SITL_State::_update_gps_nova(const struct gps_data *d)
 
     psrdop.hdop = 1.20;
     psrdop.htdop = 1.20;
-    _nova_send_message((uint8_t*)&header, sizeof(header), (uint8_t*)&psrdop, sizeof(psrdop));
+    _nova_send_message(reinterpret_cast<uint8_t*>(&header), sizeof(header), reinterpret_cast<uint8_t*>(&psrdop), sizeof(psrdop));
 
 
     header.messageid = 99;
@@ -879,7 +878,7 @@ void SITL_State::_update_gps_nova(const struct gps_data *d)
     bestvel.trkgnd = ToDeg(atan2f(d->speedE, d->speedN));
     bestvel.vertspd = -d->speedD;
 
-    _nova_send_message((uint8_t*)&header, sizeof(header), (uint8_t*)&bestvel, sizeof(bestvel));
+    _nova_send_message(reinterpret_cast<uint8_t*>(&header), sizeof(header), reinterpret_cast<uint8_t*>(&bestvel), sizeof(bestvel));
 
 
     header.messageid = 42;
@@ -896,7 +895,7 @@ void SITL_State::_update_gps_nova(const struct gps_data *d)
     bestpos.solstat = 0;
     bestpos.postype = 32;
 
-    _nova_send_message((uint8_t*)&header, sizeof(header), (uint8_t*)&bestpos, sizeof(bestpos));
+    _nova_send_message(reinterpret_cast<uint8_t*>(&header), sizeof(header), reinterpret_cast<uint8_t*>(&bestpos), sizeof(bestpos));
 }
 
 void SITL_State::_nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen)
@@ -907,7 +906,7 @@ void SITL_State::_nova_send_message(uint8_t *header, uint8_t headerlength, uint8
     uint32_t crc = CalculateBlockCRC32(headerlength, header, (uint32_t)0);
     crc = CalculateBlockCRC32(payloadlen, payload, crc);
 
-    _gps_write((uint8_t*)&crc, 4);
+    _gps_write(reinterpret_cast<uint8_t*>(&crc), 4);
 }
 
 #define CRC32_POLYNOMIAL 0xEDB88320L

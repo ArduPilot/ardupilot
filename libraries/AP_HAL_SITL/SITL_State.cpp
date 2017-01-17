@@ -29,13 +29,13 @@ void SITL_State::_set_param_default(const char *parm)
         exit(1);
     }
     if (var_type == AP_PARAM_FLOAT) {
-        ((AP_Float *)vp)->set_and_save(value);
+        (reinterpret_cast<AP_Float *>(vp))->set_and_save(value);
     } else if (var_type == AP_PARAM_INT32) {
-        ((AP_Int32 *)vp)->set_and_save(value);
+        (reinterpret_cast<AP_Int32 *>(vp))->set_and_save(value);
     } else if (var_type == AP_PARAM_INT16) {
-        ((AP_Int16 *)vp)->set_and_save(value);
+        (reinterpret_cast<AP_Int16 *>(vp))->set_and_save(value);
     } else if (var_type == AP_PARAM_INT8) {
-        ((AP_Int8 *)vp)->set_and_save(value);
+        (reinterpret_cast<AP_Int8 *>(vp))->set_and_save(value);
     } else {
         printf("Unable to set parameter %s\n", pdup);
         exit(1);
@@ -66,11 +66,11 @@ void SITL_State::_sitl_setup(const char *home_str)
 
     // find the barometer object if it exists
     _sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
-    _barometer = (AP_Baro *)AP_Param::find_object("GND_");
-    _ins = (AP_InertialSensor *)AP_Param::find_object("INS_");
-    _compass = (Compass *)AP_Param::find_object("COMPASS_");
+    _barometer = reinterpret_cast<AP_Baro *>(AP_Param::find_object("GND_"));
+    _ins = reinterpret_cast<AP_InertialSensor *>(AP_Param::find_object("INS_"));
+    _compass = reinterpret_cast<Compass *>(AP_Param::find_object("COMPASS_"));
 #if AP_TERRAIN_AVAILABLE
-    _terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
+    _terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
 #endif
 
     if (_sitl != nullptr) {
