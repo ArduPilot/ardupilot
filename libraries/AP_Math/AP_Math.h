@@ -220,4 +220,5 @@ float linear_interpolate(float low_output, float high_output,
 
 /* simple 16 bit random number generator */
 uint16_t get_random16(void);
-
+/* simple 32 bit random number generator */
+uint32_t get_random32(void);
