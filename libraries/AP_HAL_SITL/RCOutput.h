@@ -7,7 +7,7 @@
 
 class HALSITL::RCOutput : public AP_HAL::RCOutput {
 public:
-    explicit RCOutput(SITL_State *sitlState): _sitlState(sitlState), _freq_hz(50) {}
+    explicit RCOutput(SITL_State *sitlState): _sitlState(sitlState), _freq_hz(DEFAULT_RCOUTPUT_FREQ) {}
     void init() override;
     void set_freq(uint32_t chmask, uint16_t freq_hz) override;
     uint16_t get_freq(uint8_t ch) override;
