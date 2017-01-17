@@ -71,10 +71,10 @@
 #define HAL_PARAM_DEFAULTS_PATH "/data/ftp/internal_000/ardupilot/bebop.parm"
 #define HAL_RCOUT_BEBOP_BLDC_I2C_BUS 1
 #define HAL_RCOUT_BEBOP_BLDC_I2C_ADDR 0x08
-/* focal length 3.6 um, 2x binning in each direction
+/* focal length 2.21mm pixel size 3.6 um, 2x binning in each direction
  * 240x240 crop rescaled to 64x64 */
+#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.21 / (3.6 * 2.0 * 240 / 64))
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
-#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.5 / (3.6 * 2.0 * 240 / 64))
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 #define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
@@ -112,9 +112,9 @@
 #define HAL_RCOUT_DISCO_BLDC_I2C_BUS 1
 #define HAL_RCOUT_DISCO_BLDC_I2C_ADDR 0x08
 #define HAL_PARAM_DEFAULTS_PATH "/data/ftp/internal_000/ardupilot/disco.parm"
-/* focal length 3.6 um, 2x binning in each direction
+/* focal length 2.21mm pixel size 3.6 um, 2x binning in each direction
  * 240x240 crop rescaled to 64x64 */
-#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.5 / (3.6 * 2.0 * 240 / 64))
+#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.21 / (3.6 * 2.0 * 240 / 64))
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
 // the disco has challenges with its magnetic setup
 #define AP_ARMING_COMPASS_OFFSETS_MAX 2200
@@ -143,7 +143,7 @@
 /* ELP-USBFHD01M-L21
  * focal length 2.1 mm, pixel size 3 um
  * 240x240 crop rescaled to 64x64 */
-#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (3.0 / (2.1 * 2.0 * 240 / 64))
+#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.1 / (3.0 * 2.0 * 240 / 64))
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 #define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
@@ -240,7 +240,7 @@
 /* ELP-USBFHD01M-L21
  * focal length 2.1 mm, pixel size 3 um
  * 240x240 crop rescaled to 64x64 */
-#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (3.0 / (2.1 * 2.0 * 240 / 64))
+#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.1 / (3.0 * 2.0 * 240 / 64))
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 2
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 #define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
