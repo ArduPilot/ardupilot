@@ -37,7 +37,7 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
     // storing data from sensor to buffer
     if (now - last_store_time_wind >= 10) {  // store data every 10 ms.
         last_store_time_wind = now;
-        if (store_index_wind > wind_buffer_length-1) {  // reset buffer index if index greater than size of buffer
+        if (store_index_wind > WIND_BUFFER_LENGTH-1) {  // reset buffer index if index greater than size of buffer
             store_index_wind = 0;
         }
         buffer_wind[store_index_wind].data = airspeed_raw;  // add data to current index
@@ -48,7 +48,7 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
     // return delayed measurement
     delayed_time_wind = now - _sitl->wind_delay;  // get time corresponding to delay
     // find data corresponding to delayed time in buffer
-    for (uint8_t i=0; i <= wind_buffer_length-1; i++) {
+    for (uint8_t i=0; i <= WIND_BUFFER_LENGTH - 1; i++) {
         // find difference between delayed time and time stamp in buffer
         time_delta_wind =  static_cast<uint32_t>(abs(
                 static_cast<int32_t>(delayed_time_wind - buffer_wind[i].time)));
