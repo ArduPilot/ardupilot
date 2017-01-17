@@ -77,7 +77,7 @@ private:
     void _setup_adc(void);
 
     void set_height_agl(void);
-    void _update_barometer(float height);
+    void _update_barometer(float altitude);
     void _update_compass(void);
 
     void _set_signal_handlers(void) const;
