@@ -35,7 +35,7 @@ void SITL_State::_update_barometer(float altitude)
     }
 
     // 80Hz
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if ((now - last_update) < 12) {
         return;
     }
