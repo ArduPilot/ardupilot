@@ -166,9 +166,9 @@ private:
     const char *_fdm_address;
 
     // delay buffer variables
-    static const uint8_t mag_buffer_length = 250;
-    static const uint8_t wind_buffer_length = 50;
-    static const uint8_t baro_buffer_length = 50;
+    static const uint8_t MAG_BUFFER_LENGTH = 250;
+    static const uint8_t WIND_BUFFER_LENGTH = 50;
+    static const uint8_t BARO_BUFFER_LENGTH = 50;
 
     // magnetometer delay buffer variables
     struct readings_mag {
@@ -177,7 +177,7 @@ private:
     };
     uint8_t store_index_mag;
     uint32_t last_store_time_mag;
-    VectorN<readings_mag, mag_buffer_length> buffer_mag;
+    VectorN<readings_mag, MAG_BUFFER_LENGTH> buffer_mag;
     uint32_t time_delta_mag;
     uint32_t delayed_time_mag;
 
@@ -188,7 +188,7 @@ private:
     };
     uint8_t store_index_wind;
     uint32_t last_store_time_wind;
-    VectorN<readings_wind, wind_buffer_length> buffer_wind;
+    VectorN<readings_wind, WIND_BUFFER_LENGTH> buffer_wind;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
 
@@ -199,7 +199,7 @@ private:
     };
     uint8_t store_index_baro;
     uint32_t last_store_time_baro;
-    VectorN<readings_baro, baro_buffer_length> buffer_baro;
+    VectorN<readings_baro, BARO_BUFFER_LENGTH> buffer_baro;
     uint32_t time_delta_baro;
     uint32_t delayed_time_baro;
 
