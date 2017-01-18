@@ -1,5 +1,4 @@
 #include <AP_HAL/AP_HAL.h>
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "Semaphores.h"
@@ -36,4 +35,4 @@ bool Semaphore::take_nonblocking()
     return pthread_mutex_trylock(&_lock) == 0;
 }
 
-#endif  // CONFIG_HAL_BOARD
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

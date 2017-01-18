@@ -10,13 +10,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_HAL_SITL.h"
-#include "AP_HAL_SITL_Namespace.h"
-#include "HAL_SITL_Class.h"
-
-#include <AP_Math/AP_Math.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <SITL/SITL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -92,4 +85,4 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
     _compass->setHIL(1, new_mag_data, AP_HAL::micros());
 }
 
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

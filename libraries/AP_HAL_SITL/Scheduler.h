@@ -2,7 +2,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include "AP_HAL_SITL_Namespace.h"
+
+#include "AP_HAL_SITL.h"
 #include <sys/time.h>
 
 #define SITL_SCHEDULER_MAX_TIMER_PROCS 4
@@ -75,4 +76,4 @@ private:
     bool _initialized;
     uint64_t _stopped_clock_usec;
 };
-#endif  // CONFIG_HAL_BOARD
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

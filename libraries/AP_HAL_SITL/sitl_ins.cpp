@@ -10,18 +10,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_HAL_SITL.h"
-#include "AP_HAL_SITL_Namespace.h"
-#include "HAL_SITL_Class.h"
-
-#include <AP_Math/AP_Math.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
-#include <SITL/SITL.h>
-#include "Scheduler.h"
-#include <AP_ADC/AP_ADC.h>
-#include "SITL_State.h"
-#include <fenv.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -162,5 +150,4 @@ void SITL_State::_update_ins(float roll, float pitch, float yaw,  // Relative to
     float airspeed_simulated = (fabsf(_sitl->arspd_fail) > 1.0e-6f) ? _sitl->arspd_fail : airspeed;
     airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->arspd_noise * _rand_float()));
 }
-
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

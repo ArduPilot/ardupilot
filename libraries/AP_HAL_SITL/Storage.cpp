@@ -2,12 +2,10 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <assert.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-
 #include "Storage.h"
+
 using namespace HALSITL;
 
 void EEPROMStorage::_eeprom_open(void)
@@ -31,5 +29,4 @@ void EEPROMStorage::write_block(uint16_t dst, const void *src, size_t n)
     _eeprom_open();
     assert(pwrite(_eeprom_fd, src, n, dst) == (ssize_t)n);
 }
-
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

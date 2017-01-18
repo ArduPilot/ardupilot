@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 #include "AP_HAL_SITL.h"
 
 class HALSITL::RCOutput : public AP_HAL::RCOutput {
@@ -26,4 +27,4 @@ private:
     uint16_t _pending[SITL_NUM_CHANNELS];
 };
 
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

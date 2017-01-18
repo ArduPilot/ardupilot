@@ -1,9 +1,7 @@
-#include <stdarg.h>
-#include <stdio.h>
-
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/system.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
+#include <stdio.h>
 #include "Scheduler.h"
 
 extern const AP_HAL::HAL& hal;
@@ -77,3 +75,4 @@ uint64_t millis64()
 }
 
 }  // namespace AP_HAL
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

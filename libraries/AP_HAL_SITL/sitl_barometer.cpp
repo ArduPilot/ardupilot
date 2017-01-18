@@ -5,10 +5,7 @@
 
   Andrew Tridgell November 2011
  */
-
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_HAL_SITL.h"
@@ -16,12 +13,6 @@
 using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
-
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <cmath>
 
 /*
   setup the barometer with new input
@@ -91,5 +82,4 @@ void SITL_State::_update_barometer(float altitude)
 
     _barometer->setHIL(sim_alt);
 }
-
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

@@ -1,9 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include "AP_HAL_SITL.h"
 #include "AnalogIn.h"
-#include <stdint.h>
 
 using namespace HALSITL;
 
@@ -60,4 +58,4 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin) {
     return new ADCSource(_sitlState, pin);
 }
 
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

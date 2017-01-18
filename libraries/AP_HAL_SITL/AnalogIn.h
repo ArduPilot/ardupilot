@@ -1,7 +1,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_HAL_SITL_Namespace.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
+#include "AP_HAL_SITL.h"
 
 #define SITL_INPUT_MAX_CHANNELS 12
 
@@ -42,3 +44,4 @@ private:
     static ADCSource* _channels[SITL_INPUT_MAX_CHANNELS];
     SITL_State *_sitlState;
 };
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
