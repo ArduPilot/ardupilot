@@ -46,6 +46,10 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         do_within_distance(cmd);
         break;
 
+    case MAV_CMD_CONDITION_YAW:             // 115
+        do_yaw(cmd);
+        break;
+
     // Do commands
     case MAV_CMD_DO_CHANGE_SPEED:
         do_change_speed(cmd);
@@ -178,6 +182,9 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
+
+    case MAV_CMD_CONDITION_YAW:
+        return verify_yaw();
 
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -396,12 +403,65 @@ void Rover::nav_set_yaw_speed()
 void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
     condition_start = millis();
-    condition_value = static_cast<int32_t>(cmd.content.delay.seconds * 1000);    // convert seconds to milliseconds
+    condition_value = static_cast<int32_t>(cmd.content.delay.seconds * 1000);  // convert seconds to milliseconds
 }
 
 void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
     condition_value = cmd.content.distance.meters;
+}
+
+void Rover::do_yaw(const AP_Mission::Mission_Command& cmd)
+{
+    // Only support target yaw for now
+    condition_start = condition_value;  // save condition_value from current navigation wp loaded
+    // get final angle, 1 = Relative, 0 = Absolute
+    if (cmd.content.yaw.relative_angle == 0) {
+        // absolute angle
+        condition_value = cmd.content.yaw.angle_deg * 100;
+    } else {
+        // relative angle
+        condition_value = cmd.content.yaw.angle_deg * 100;
+        if (cmd.content.yaw.direction < 0) {
+            condition_value = -condition_value;
+        }
+
+        condition_value = condition_value + ahrs.yaw_sensor;
+    }
+
+    // absolute angle error
+    const int32_t error_to_target_yaw = abs((condition_value - ahrs.yaw_sensor));
+
+    // Calculate the steering to apply base on error calculated
+    const int32_t steering = steerController.get_steering_out_angle_error(error_to_target_yaw);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
+    next_navigation_leg_cd = condition_value;
+    calc_throttle(g.speed_cruise);
+
+    do_auto_rotation = true;
+}
+
+bool Rover::do_yaw_rotation()
+{
+    // absolute angle error
+    const int32_t error_to_target_yaw = abs(condition_value - ahrs.yaw_sensor);
+
+    // check if we are within 5 degrees of the target heading
+    if (error_to_target_yaw <= 500) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);  // stop the current rotation
+        condition_value = condition_start;  // reset the condition value to its previous value
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
+        do_auto_rotation = false;
+        return true;
+    } else {
+        // Calculate the steering to apply base on error calculated
+        const int32_t steering = steerController.get_steering_out_angle_error(error_to_target_yaw);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
+        calc_throttle(g.speed_cruise);
+        do_auto_rotation = true;
+        return false;
+    }
 }
 
 /********************************************************************************/
@@ -424,6 +484,17 @@ bool Rover::verify_within_distance()
         return true;
     }
     return false;
+}
+
+// verify_yaw - return true if we have reached the desired heading
+bool Rover::verify_yaw()
+{
+    // override by do_yaw_rotation()
+    if (do_auto_rotation) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 /********************************************************************************/
