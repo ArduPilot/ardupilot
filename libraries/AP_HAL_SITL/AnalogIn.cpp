@@ -29,7 +29,7 @@ float ADCSource::voltage_latest() {
 float ADCSource::read_latest() {
     switch (_pin) {
     case ANALOG_INPUT_BOARD_VCC:
-        return 1023;
+        return 1023.0f;
 
     case 0:
         return _sitlState->sonar_pin_value;
