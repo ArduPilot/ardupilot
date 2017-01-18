@@ -10,10 +10,11 @@
 
 const NSCORE_URUS::CLCORE_URUS& _urus_core = NSCORE_URUS::get_CORE();
 static NSCORE_URUS::CLCoreUrusScheduler& urusScheduler = *NSCORE_URUS::get_scheduler();
+static NSCORE_URUS::CLCoreUrusUARTDriver& urusUartA = *NSCORE_URUS::get_uartDriver();
 
 HAL_URUS::HAL_URUS() :
     AP_HAL::HAL(
-        nullptr,  /* uartA */
+        &urusUartA,  /* uartA */
         nullptr,  /* uartB */
         nullptr,  /* uartC */
         nullptr,  /* uartD */
@@ -23,7 +24,7 @@ HAL_URUS::HAL_URUS() :
         nullptr, /* spi */
         nullptr, /* analogin */
         nullptr, /* storage */
-        nullptr, /* console */
+        &urusUartA, /* console */
         nullptr, /* gpio */
         nullptr,  /* rcinput */
         nullptr, /* rcoutput */
@@ -32,14 +33,19 @@ HAL_URUS::HAL_URUS() :
         nullptr) /* onboard optical flow */
 {
     scheduler = NSCORE_URUS::get_scheduler();
+    uartA = NSCORE_URUS::get_uartDriver();
+    console = uartA;
 }
 
 void HAL_URUS::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
 
-    scheduler->init();
     _urus_core.init_core();
+
+    scheduler->init();
+    uartA->begin(115200);
+
     callbacks->setup();
 
     for (;;) {
