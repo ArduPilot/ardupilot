@@ -23,7 +23,7 @@ uint8_t GPIO::read(uint8_t pin)
     if (!_sitlState->_sitl) {
         return 0;
     }
-    uint8_t mask = static_cast<uint8_t>(_sitlState->_sitl->pin_mask.get());
+    const uint8_t mask = static_cast<uint8_t>(_sitlState->_sitl->pin_mask.get());
     return static_cast<uint8_t>((mask & (1U << pin)) ? 1 : 0);
 }
 
@@ -32,7 +32,7 @@ void GPIO::write(uint8_t pin, uint8_t value)
     if (!_sitlState->_sitl) {
         return;
     }
-    uint8_t mask = static_cast<uint8_t>(_sitlState->_sitl->pin_mask.get());
+    const uint8_t mask = static_cast<uint8_t>(_sitlState->_sitl->pin_mask.get());
     uint8_t new_mask = mask;
     if (value) {
         new_mask |= (1U << pin);
