@@ -6,6 +6,7 @@
 
 #include "../CoreUrusScheduler.h"
 #include "CoreUrusScheduler_Cygwin.h"
+#include "CoreUrusUARTDriver_Cygwin.h"
 
 #include <sys/time.h>
 #include <fenv.h>
@@ -200,12 +201,13 @@ void CLCoreUrusScheduler_Cygwin::_run_io_procs(bool called_from_isr)
     }
 
     _in_io_proc = false;
+
+    CLCoreUrusUARTDriver_Cygwin::from(hal.uartA)->_timer_tick();
 /*
-    UARTDriver::from(hal.uartA)->_timer_tick();
-    UARTDriver::from(hal.uartB)->_timer_tick();
-    UARTDriver::from(hal.uartC)->_timer_tick();
-    UARTDriver::from(hal.uartD)->_timer_tick();
-    UARTDriver::from(hal.uartE)->_timer_tick();
+    CLCoreUrusUARTDriver_Cygwin::from(hal.uartB)->_timer_tick();
+    CLCoreUrusUARTDriver_Cygwin::from(hal.uartC)->_timer_tick();
+    CLCoreUrusUARTDriver_Cygwin::from(hal.uartD)->_timer_tick();
+    CLCoreUrusUARTDriver_Cygwin::from(hal.uartE)->_timer_tick();
 */
 }
 
