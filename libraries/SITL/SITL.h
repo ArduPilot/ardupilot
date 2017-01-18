@@ -30,9 +30,6 @@ struct sitl_fdm {
     Vector3f angAccel; // Angular acceleration in degrees/s/s about the XYZ body axes
 };
 
-// number of rc output channels
-#define SITL_NUM_CHANNELS 16
-
 class SITL {
 public:
 

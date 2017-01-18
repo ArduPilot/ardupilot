@@ -5,7 +5,6 @@
 
 #include "AP_HAL_SITL.h"
 
-#define SITL_INPUT_MAX_CHANNELS 12
 
 class HALSITL::ADCSource : public AP_HAL::AnalogSource {
 public:

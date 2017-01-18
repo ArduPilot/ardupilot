@@ -187,7 +187,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
 void SITL_State::_check_rc_input(void)
 {
     struct pwm_packet {
-        uint16_t pwm[16];
+        uint16_t pwm[SITL_RC_INPUT_CHANNELS];
     } pwm_pkt;
 
     ssize_t size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
