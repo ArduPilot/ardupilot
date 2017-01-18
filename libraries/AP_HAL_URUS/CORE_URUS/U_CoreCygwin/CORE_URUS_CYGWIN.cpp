@@ -7,10 +7,12 @@
 
 #include "CoreUrusTimers_Cygwin.h"
 #include "CoreUrusScheduler_Cygwin.h"
+#include "CoreUrusUARTDriver_Cygwin.h"
 #include <stdio.h>
 
 static CLCoreUrusTimers_Cygwin coreTimers;
 static CLCoreUrusScheduler_Cygwin coreScheduler;
+static CLCoreUrusUARTDriver_Cygwin coreUARTDriver(0, true);
 
 CORE_CYGWIN::CORE_CYGWIN() :
     NSCORE_URUS::CLCORE_URUS(
@@ -27,6 +29,11 @@ void CORE_CYGWIN::init_core() const
 NSCORE_URUS::CLCoreUrusScheduler* NSCORE_URUS::get_scheduler()
 {
     return &coreScheduler;
+}
+
+NSCORE_URUS::CLCoreUrusUARTDriver* NSCORE_URUS::get_uartDriver()
+{
+    return &coreUARTDriver;
 }
 
 const NSCORE_URUS::CLCORE_URUS& NSCORE_URUS::get_CORE()
