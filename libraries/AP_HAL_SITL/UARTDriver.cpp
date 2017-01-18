@@ -19,26 +19,11 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <limits.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <AP_Math/AP_Math.h>
-
+#include "UARTDriver.h"
 #include <errno.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <sys/select.h>
+#include <stdio.h>
 #include <termios.h>
 #include <sys/time.h>
-
-#include "UARTDriver.h"
-#include "SITL_State.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -485,5 +470,4 @@ void UARTDriver::_timer_tick(void)
         _readbuffer.write((uint8_t *)buf, nread);
     }
 }
-
-#endif  // CONFIG_HAL_BOARD
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

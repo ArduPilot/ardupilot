@@ -1,14 +1,10 @@
 #include <AP_HAL/AP_HAL.h>
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_HAL_SITL.h"
-#include "AP_HAL_SITL_Namespace.h"
-#include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
 #include <stdio.h>
 #include <signal.h>
-#include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 
 #include <SITL/SIM_Multicopter.h>
@@ -387,4 +383,4 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _sitl_setup(home_str);
 }
 
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

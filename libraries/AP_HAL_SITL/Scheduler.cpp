@@ -1,10 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include "AP_HAL_SITL.h"
 #include "Scheduler.h"
 #include "UARTDriver.h"
-#include <sys/time.h>
 #include <fenv.h>
 
 using namespace HALSITL;
@@ -221,4 +219,4 @@ void Scheduler::stop_clock(uint64_t time_usec)
     }
 }
 
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

@@ -1,13 +1,7 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
+#include <AP_HAL/AP_HAL_Boards.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
-#include "AP_HAL_SITL.h"
-#include "AP_HAL_SITL_Namespace.h"
-#include "HAL_SITL_Class.h"
-#include "RCInput.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -214,5 +208,4 @@ private:
 
     const char *_home_str;
 };
-
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

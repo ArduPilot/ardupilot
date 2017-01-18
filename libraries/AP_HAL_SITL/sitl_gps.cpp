@@ -10,23 +10,11 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_HAL_SITL.h"
-#include "AP_HAL_SITL_Namespace.h"
-#include "HAL_SITL_Class.h"
-
-#include <AP_Math/AP_Math.h>
-#include <SITL/SITL.h>
-#include "Scheduler.h"
 #include "UARTDriver.h"
-#include <AP_GPS/AP_GPS.h>
-#include <AP_GPS/AP_GPS_UBLOX.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
 #include <time.h>
 #include <stdio.h>
 #include <sys/time.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
+
 
 #pragma GCC diagnostic ignored "-Wunused-result"
 
@@ -1285,4 +1273,4 @@ void SITL_State::_update_gps_instance(SITL::SITL::GPSType gps_type, const struct
             break;
     }
 }
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

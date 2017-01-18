@@ -1,6 +1,8 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 #include "AP_HAL_SITL_Namespace.h"
 
 class HALSITL::EEPROMStorage : public AP_HAL::Storage {
@@ -16,3 +18,4 @@ private:
     int _eeprom_fd;
     void _eeprom_open(void);
 };
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

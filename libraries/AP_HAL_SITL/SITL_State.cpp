@@ -1,23 +1,12 @@
 #include <AP_HAL/AP_HAL.h>
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_HAL_SITL.h"
-#include "AP_HAL_SITL_Namespace.h"
-#include "HAL_SITL_Class.h"
-#include "UARTDriver.h"
 #include "Scheduler.h"
-
 #include <stdio.h>
 #include <signal.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <sys/select.h>
-
-#include <AP_Param/AP_Param.h>
 #include <SITL/SIM_JSBSim.h>
-#include <AP_HAL/utility/Socket.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -488,5 +477,4 @@ void SITL_State::set_height_agl(void)
     // fall back to flat earth model
     _sitl->height_agl = _sitl->state.altitude - home_alt;
 }
-
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

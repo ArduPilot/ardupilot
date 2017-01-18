@@ -3,9 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <stdint.h>
-#include <stdarg.h>
-#include "AP_HAL_SITL_Namespace.h"
+#include "AP_HAL_SITL.h"
 #include <AP_HAL/utility/Socket.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
@@ -95,5 +93,4 @@ private:
 
     SITL_State *_sitlState;
 };
-
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

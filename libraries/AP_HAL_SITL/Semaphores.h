@@ -1,8 +1,8 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 #include "AP_HAL_SITL.h"
 #include <pthread.h>
 
@@ -17,5 +17,4 @@ public:
 private:
     pthread_mutex_t _lock;
 };
-#endif  // CONFIG_HAL_BOARD
-
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
