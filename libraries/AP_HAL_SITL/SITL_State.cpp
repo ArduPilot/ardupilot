@@ -31,11 +31,11 @@ void SITL_State::_set_param_default(const char *parm)
     if (var_type == AP_PARAM_FLOAT) {
         (reinterpret_cast<AP_Float *>(vp))->set_and_save(value);
     } else if (var_type == AP_PARAM_INT32) {
-        (reinterpret_cast<AP_Int32 *>(vp))->set_and_save(value);
+        (reinterpret_cast<AP_Int32 *>(vp))->set_and_save(static_cast<int32_t>(value));
     } else if (var_type == AP_PARAM_INT16) {
-        (reinterpret_cast<AP_Int16 *>(vp))->set_and_save(value);
+        (reinterpret_cast<AP_Int16 *>(vp))->set_and_save(static_cast<int16_t>(value));
     } else if (var_type == AP_PARAM_INT8) {
-        (reinterpret_cast<AP_Int8 *>(vp))->set_and_save(value);
+        (reinterpret_cast<AP_Int8 *>(vp))->set_and_save(static_cast<int8_t>(value));
     } else {
         printf("Unable to set parameter %s\n", pdup);
         exit(1);
@@ -224,13 +224,13 @@ void SITL_State::_output_to_flightgear(void)
 
     fdm.version = 0x18;
     fdm.padding = 0;
-    fdm.longitude = radians(sfdm.longitude);
-    fdm.latitude = radians(sfdm.latitude);
+    fdm.longitude = radians(static_cast<float>(sfdm.longitude));
+    fdm.latitude = radians(static_cast<float>(sfdm.latitude));
     fdm.altitude = sfdm.altitude;
-    fdm.agl = sfdm.altitude;
-    fdm.phi   = radians(sfdm.rollDeg);
-    fdm.theta = radians(sfdm.pitchDeg);
-    fdm.psi   = radians(sfdm.yawDeg);
+    fdm.agl = static_cast<float>(sfdm.altitude);
+    fdm.phi   = radians(static_cast<float>(sfdm.rollDeg));
+    fdm.theta = radians(static_cast<float>(sfdm.pitchDeg));
+    fdm.psi   = radians(static_cast<float>(sfdm.yawDeg));
     if (_vehicle == ArduCopter) {
         fdm.num_engines = 4;
         for (uint8_t i=0; i < 4; i++) {
@@ -268,11 +268,11 @@ void SITL_State::_fdm_input_local(void)
     // get FDM output from the model
     if (_sitl) {
         sitl_model->fill_fdm(_sitl->state);
-        _sitl->update_rate_hz = sitl_model->get_rate_hz();
+        _sitl->update_rate_hz = static_cast<uint16_t>(sitl_model->get_rate_hz());
 
         if (_sitl->rc_fail == 0) {
             for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
-                pwm_input[i] = 1000 + _sitl->state.rcin[i] * 1000;
+                pwm_input[i] = static_cast<uint16_t>(1000 + _sitl->state.rcin[i] * 1000);
             }
         }
     }
@@ -363,7 +363,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     if (_vehicle == ArduPlane) {
         // add in engine multiplier
         if (input.servos[2] > 1000) {
-            input.servos[2] = ((input.servos[2] - 1000) * engine_mul) + 1000;
+            input.servos[2] = static_cast<uint16_t>(((input.servos[2] - 1000) * engine_mul) + 1000);
             if (input.servos[2] > 2000) {
                 input.servos[2] = 2000;
             }
@@ -372,7 +372,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     } else if (_vehicle == APMrover2) {
         // add in engine multiplier
         if (input.servos[2] != 1500) {
-            input.servos[2] = ((input.servos[2] - 1500) * engine_mul) + 1500;
+            input.servos[2] = static_cast<uint16_t>(((input.servos[2] - 1500) * engine_mul) + 1500);
             if (input.servos[2] > 2000) {
                 input.servos[2] = 2000;
             }
@@ -384,7 +384,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     } else {
         motors_on = false;
         // apply engine multiplier to first motor
-        input.servos[0] = ((input.servos[0] - 1000) * engine_mul) + 1000;
+        input.servos[0] = static_cast<uint16_t>(((input.servos[0] - 1000) * engine_mul) + 1000);
         // run checks on each motor
         for (uint8_t i = 0; i < 4; i++) {
             // check motors do not exceed their limits
@@ -418,21 +418,21 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
             _current = 50.0f * fabsf(throttle);
         } else {
             // FDM provides voltage and current
-            voltage = _sitl->state.battery_voltage;
-            _current = _sitl->state.battery_current;
+            voltage = static_cast<float>(_sitl->state.battery_voltage);
+            _current = static_cast<float>(_sitl->state.battery_current);
         }
     }
 
     // assume 3DR power brick
-    voltage_pin_value = ((voltage / 10.1f) / 5.0f) * 1024;
-    current_pin_value = ((_current / 17.0f) / 5.0f) * 1024;
+    voltage_pin_value = static_cast<uint16_t>(((voltage / 10.1f) / 5.0f) * 1024);
+    current_pin_value = static_cast<uint16_t>(((_current / 17.0f) / 5.0f) * 1024);
 }
 
 
 // generate a random float between -1 and 1
 float SITL_State::_rand_float(void)
 {
-    return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
+    return static_cast<float>(((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6);
 }
 
 // generate a random Vector3f of size 1
@@ -467,7 +467,7 @@ void SITL_State::set_height_agl(void)
 
     if (home_alt == -1.0f && _sitl->state.altitude > 0.0) {
         // remember home altitude as first non-zero altitude
-        home_alt = _sitl->state.altitude;
+        home_alt = static_cast<float>(_sitl->state.altitude);
     }
 
 #if AP_TERRAIN_AVAILABLE
@@ -477,17 +477,17 @@ void SITL_State::set_height_agl(void)
         // AP_Terrain is working
         float terrain_height_amsl;
         struct Location location;
-        location.lat = _sitl->state.latitude*1.0e7;
-        location.lng = _sitl->state.longitude*1.0e7;
+        location.lat = static_cast<int32_t>(_sitl->state.latitude * 1.0e7);
+        location.lng = static_cast<int32_t>(_sitl->state.longitude * 1.0e7);
 
         if (_terrain->height_amsl(location, terrain_height_amsl, false)) {
-            _sitl->height_agl = _sitl->state.altitude - terrain_height_amsl;
+            _sitl->height_agl = static_cast<float>(_sitl->state.altitude) - terrain_height_amsl;
             return;
         }
     }
 #endif
 
     // fall back to flat earth model
-    _sitl->height_agl = _sitl->state.altitude - home_alt;
+    _sitl->height_agl = static_cast<float>(_sitl->state.altitude - home_alt);  // double to float
 }
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
