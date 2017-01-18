@@ -24,7 +24,7 @@ private:
     uint16_t _freq_hz;
     uint16_t _enable_mask;
     bool _corked;
-    uint16_t _pending[SITL_NUM_CHANNELS];
+    uint16_t _pending[SITL_RC_OUTPUT_CHANNELS];
 };
 
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

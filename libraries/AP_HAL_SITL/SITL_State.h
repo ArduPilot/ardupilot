@@ -36,7 +36,7 @@ public:
     int gps_pipe(void);
     int gps2_pipe(void);
     ssize_t gps_read(int fd, void *buf, size_t count);
-    uint16_t pwm_output[SITL_NUM_CHANNELS];
+    uint16_t pwm_output[SITL_RC_OUTPUT_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
     bool new_rc_input;
     void loop_hook(void);
