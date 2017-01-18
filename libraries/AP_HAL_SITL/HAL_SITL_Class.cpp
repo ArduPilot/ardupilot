@@ -1,11 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <assert.h>
 
-#include "AP_HAL_SITL.h"
-#include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
 #include "Scheduler.h"
 #include "AnalogIn.h"
@@ -14,7 +11,6 @@
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "GPIO.h"
-#include "SITL_State.h"
 #include "Util.h"
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>

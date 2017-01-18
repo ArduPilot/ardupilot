@@ -1,6 +1,8 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 #include "AP_HAL_SITL_Namespace.h"
 #include "Semaphores.h"
 
@@ -32,3 +34,4 @@ public:
 private:
     SITL_State *_sitlState;
 };
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

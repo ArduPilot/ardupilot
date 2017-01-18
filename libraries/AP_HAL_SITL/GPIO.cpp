@@ -1,3 +1,5 @@
+#include <AP_HAL/AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "GPIO.h"
 
@@ -89,3 +91,4 @@ void DigitalSource::toggle()
 {
     return hal.gpio->write(_pin, !hal.gpio->read(_pin));
 }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

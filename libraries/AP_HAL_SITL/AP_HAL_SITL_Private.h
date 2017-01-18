@@ -4,5 +4,4 @@
 #include "Scheduler.h"
 #include "Storage.h"
 #include "UARTDriver.h"
-#include "SITL_State.h"
 #include "Semaphores.h"

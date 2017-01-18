@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
@@ -29,5 +28,4 @@ private:
     uint16_t _override[SITL_RC_INPUT_CHANNELS];
 };
 
-#endif
-
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
