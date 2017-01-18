@@ -46,7 +46,7 @@ void GPIO::write(uint8_t pin, uint8_t value)
 
 void GPIO::toggle(uint8_t pin)
 {
-    write(pin, !read(pin));
+    write(pin, static_cast<uint8_t>(!read(pin)));
 }
 
 /* Alternative interface: */
@@ -89,6 +89,6 @@ void DigitalSource::write(uint8_t value)
 
 void DigitalSource::toggle()
 {
-    return hal.gpio->write(_pin, !hal.gpio->read(_pin));
+    return hal.gpio->write(_pin, static_cast<uint8_t>(!hal.gpio->read(_pin)));
 }
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
