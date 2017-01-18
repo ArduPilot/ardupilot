@@ -34,8 +34,8 @@
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-#define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/APM/logs"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/APM/terrain"
+#define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
 #define HAL_INS_DEFAULT HAL_INS_MPU60XX_I2C
 #define HAL_INS_DEFAULT_ROTATION ROTATION_YAW_270
 #define HAL_INS_MPU60x0_I2C_BUS 2
@@ -76,8 +76,8 @@
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
 #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.5 / (3.6 * 2.0 * 240 / 64))
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-#define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/APM/logs"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/APM/terrain"
+#define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
 #define HAL_INS_DEFAULT HAL_INS_MPU60XX_I2C
 #define HAL_INS_DEFAULT_ROTATION ROTATION_PITCH_180_YAW_90
 #define HAL_INS_MPU60x0_I2C_BUS 2
