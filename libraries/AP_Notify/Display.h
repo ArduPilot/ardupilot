@@ -33,7 +33,6 @@ private:
     void update_text(uint8_t r);
 
     bool _healthy;
-    bool _need_update;
 
     uint8_t _mstartpos;
     uint8_t _movedelay;

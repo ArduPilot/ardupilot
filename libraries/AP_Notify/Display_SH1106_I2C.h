@@ -9,8 +9,6 @@
 #define SH1106_ROWS_PER_PAGE 8
 
 class Display_SH1106_I2C: public Display_OLED_I2C {
-public:
-    static bool hw_autodetect() { return true; }
 
 protected:
     bool hw_init() override;
