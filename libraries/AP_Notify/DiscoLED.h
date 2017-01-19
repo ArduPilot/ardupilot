@@ -17,9 +17,11 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include <AP_HAL_Linux/PWM_Sysfs.h>
 #include <AP_HAL_Linux/Led_Sysfs.h>
+#include <AP_HAL_Linux/PWM_Sysfs.h>
+
 #include "RGBLed.h"
 
 class DiscoLED: public RGBLed
