@@ -64,25 +64,25 @@ void AP_BoardLED::update(void)
         if ((counter2 & 0x2) == 0) {
             save_trim_counter++;
         }
-        switch(save_trim_counter) {
-            case 0:
-                hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
-                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-                break;
+        switch (save_trim_counter) {
+        case 0:
+            hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
+            hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+            break;
 
-            case 1:
-                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
-                hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
-                break;
+        case 1:
+            hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
+            hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
+            break;
 
-            case 2:
-                hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
-                hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
-                break;
+        case 2:
+            hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
+            hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
+            break;
 
-            default:
-                save_trim_counter = -1;
-                break;
+        default:
+            save_trim_counter = -1;
+            break;
         }
         return;
     }
@@ -92,78 +92,68 @@ void AP_BoardLED::update(void)
 	if (AP_Notify::flags.armed) {
         // red led solid
         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-    }else{
+    } else {
         if ((counter2 & 0x2) == 0) {
             arm_counter++;
         }
         if (AP_Notify::flags.pre_arm_check) {
             // passed pre-arm checks so slower single flash
-            switch(arm_counter) {
-                case 0:
-                case 1:
-                case 2:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-                    break;
-                case 3:
-                case 4:
-                case 5:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
-                    break;
-                default:
-                    // reset counter to restart the sequence
-                    arm_counter = -1;
-                    break;
+            if (arm_counter < 3) {
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+            } else if (arm_counter < 6) {
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
+            } else {
+                // reset counter to restart the sequence
+                arm_counter = -1;
             }
-        }else{
+        } else {
             // failed pre-arm checks so double flash
-            switch(arm_counter) {
-                case 0:
-                case 1:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-                    break;
-                case 2:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
-                    break;
-                case 3:
-                case 4:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-                    break;
-                case 5:
-                case 6:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
-                    break;
-                default:
-                    arm_counter = -1;
-                    break;
+            switch (arm_counter) {
+            case 0:
+            case 1:
+            case 3:
+            case 4:
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+                break;
+
+            case 2:
+            case 5:
+            case 6:
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
+                break;
+
+            default:
+                arm_counter = -1;
+                break;
             }
         }
     }
 
     // gps light
     switch (AP_Notify::flags.gps_status) {
-        case 0:
-            // no GPS attached
-            hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
-            break;
+    case 0:
+        // no GPS attached
+        hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
+        break;
 
-        case 1:
-            // GPS attached but no lock, blink at 4Hz
-            if ((counter2 & 0x3) == 0) {
-                hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
-            }
-            break;
+    case 1:
+        // GPS attached but no lock, blink at 4Hz
+        if ((counter2 & 0x3) == 0) {
+            hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
+        }
+        break;
 
-        case 2:
-            // GPS attached but 2D lock, blink more slowly (around 2Hz)
-            if ((counter2 & 0x7) == 0) {
-                hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
-            }
-            break;
+    case 2:
+        // GPS attached but 2D lock, blink more slowly (around 2Hz)
+        if ((counter2 & 0x7) == 0) {
+            hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
+        }
+        break;
 
-        default:
-            // solid blue on gps lock
-            hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
-            break;        
+    default:
+        // solid blue on gps lock
+        hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
+        break;
     }
 }
 #else
