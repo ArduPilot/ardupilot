@@ -57,16 +57,17 @@ bool Display_SH1106_I2C::hw_init()
     }
 
     // init display
-    _dev->transfer((uint8_t *)&init_seq, sizeof(init_seq), nullptr, 0);
+    bool success = _dev->transfer((uint8_t *)&init_seq, sizeof(init_seq), nullptr, 0);
 
     // give back i2c semaphore
     _dev->get_semaphore()->give();
 
-    _need_hw_update = true;
+    if (success) {
+        _need_hw_update = true;
+        _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&Display_SH1106_I2C::_timer, void));
+    }
 
-    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&Display_SH1106_I2C::_update_timer, void));
-
-    return true;
+    return success;
 }
 
 bool Display_SH1106_I2C::hw_update()
@@ -75,7 +76,7 @@ bool Display_SH1106_I2C::hw_update()
     return true;
 }
 
-void Display_SH1106_I2C::_update_timer()
+void Display_SH1106_I2C::_timer()
 {
     if (!_need_hw_update) {
         return;

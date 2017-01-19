@@ -47,7 +47,7 @@
 class AP_Notify
 {
     friend class RGBLed;            // RGBLed needs access to notify parameters
-    friend class Display_OLED_I2C;  // Display_OLED_I2C needs access to notify parameters
+    friend class Display;           // Display needs access to notify parameters
 public:
     // Constructor
     AP_Notify();

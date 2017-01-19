@@ -17,7 +17,7 @@
 
 #include "AP_BoardLED.h"
 #include "Buzzer.h"
-#include "Display_OLED_I2C.h"
+#include "Display.h"
 #include "ExternalLED.h"
 #include "NavioLED_I2C.h"
 #include "OreoLED_PX4.h"
@@ -82,7 +82,7 @@ char AP_Notify::_send_text[NOTIFY_TEXT_BUFFER_SIZE] {};
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_BoardLED boardled;
     ToshibaLED_PX4 toshibaled;
-    Display_OLED_I2C display;
+    Display display;
 
 #if AP_NOTIFY_SOLO_TONES == 1
     ToneAlarm_PX4_Solo tonealarm;
@@ -119,7 +119,7 @@ char AP_Notify::_send_text[NOTIFY_TEXT_BUFFER_SIZE] {};
         NotifyDevice *AP_Notify::_devices[] = {&navioled, &toshibaled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
         Buzzer buzzer;
-        Display_OLED_I2C display;
+        Display display;
         NotifyDevice *AP_Notify::_devices[] = {&display, &buzzer};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
         ToshibaLED_I2C toshibaled;

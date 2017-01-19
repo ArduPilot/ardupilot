@@ -15,6 +15,8 @@
 
 /* Notify display driver for 128 x 64 pixel displays */
 #include "Display.h"
+#include "Display_SH1106_I2C.h"
+#include "Display_SSD1306_I2C.h"
 
 #include "AP_Notify.h"
 
@@ -354,10 +356,32 @@ static const char * _modename[] = {
 
 bool Display::init(void)
 {
+    // exit immediately if already initialised
+    if (_driver != nullptr) {
+        return true;
+    }
+
     _mstartpos = 0; // ticker shift position
     _movedelay = 4; // ticker delay before shifting after new message displayed
 
-    _healthy = hw_init();
+    // initialise driver
+    switch (pNotify->_display_type) {
+        case DISPLAY_SSD1306:
+            _driver = new Display_SSD1306_I2C();
+            break;
+
+        case DISPLAY_SH1106:
+            _driver = new Display_SH1106_I2C();
+            break;
+
+        case DISPLAY_OFF:
+        default:
+            break;
+    }
+
+    if (_driver != nullptr) {
+        _healthy = _driver->hw_init();
+    }
 
     if (!_healthy) {
         return false;
@@ -365,7 +389,7 @@ bool Display::init(void)
 
     // update all on display
     update_all();
-    hw_update();
+    _driver->hw_update();
 
     return true;
 }
@@ -389,22 +413,21 @@ void Display::update()
 
     if (AP_Notify::flags.armed) {
         if (screenpage != 1) {
-            clear_screen();
+            _driver->clear_screen();
             update_arm(3);
             screenpage = 1;
-            hw_update(); //update hw once , do not transmition to display in fly
+            _driver->hw_update(); //update hw once , do not transmition to display in fly
         }
         return;
     }
 
-
     if (screenpage != 2) {
-        clear_screen(); //once clear screen when page changed
+        _driver->clear_screen(); //once clear screen when page changed
         screenpage = 2;
     }
 
     update_all();
-    hw_update(); //update at 2 Hz in disarmed mode
+    _driver->hw_update(); //update at 2 Hz in disarmed mode
 
 }
 
@@ -443,9 +466,9 @@ void Display::draw_char(uint16_t x, uint16_t y, const char c)
 
         for (uint8_t j = 0; j < 8; j++) {
             if (line & 1) {
-                set_pixel(x + i, y + j);
+                _driver->set_pixel(x + i, y + j);
             } else {
-                clear_pixel(x + i, y + j);
+                _driver->clear_pixel(x + i, y + j);
             }
             line >>= 1;
         }
