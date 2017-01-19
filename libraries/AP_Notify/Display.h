@@ -7,17 +7,14 @@
 
 #define DISPLAY_MESSAGE_SIZE 18
 
+class Display_Backend;
+
 class Display: public NotifyDevice {
 public:
+    friend class Display_Backend;
+
     bool init(void);
     void update();
-
-protected:
-    virtual bool hw_init() = 0;
-    virtual bool hw_update() = 0;
-    virtual bool set_pixel(uint16_t x, uint16_t y) = 0;
-    virtual bool clear_pixel(uint16_t x, uint16_t y) = 0;
-    virtual bool clear_screen() = 0;
 
 private:
     void draw_char(uint16_t x, uint16_t y, const char c);
@@ -31,6 +28,8 @@ private:
     void update_battery(uint8_t r);
     void update_mode(uint8_t r);
     void update_text(uint8_t r);
+
+    Display_Backend *_driver;
 
     bool _healthy;
 
