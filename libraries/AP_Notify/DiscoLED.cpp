@@ -14,12 +14,13 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include <AP_HAL/AP_HAL.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include <AP_HAL_Linux/PWM_Sysfs.h>
-#include <AP_HAL_Linux/Led_Sysfs.h>
 #include "DiscoLED.h"
+
+#include <AP_HAL_Linux/Led_Sysfs.h>
+#include <AP_HAL_Linux/PWM_Sysfs.h>
 
 #define RED_PWM_INDEX   9
 #define GREEN_PWM_INDEX 8
@@ -74,7 +75,6 @@ bool DiscoLED::hw_init()
 
 bool DiscoLED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-
     switch (backend) {
     case PWM_SYSFS:
         red_pwm.set_duty_cycle(red / UINT8_MAX * red_pwm_period);
