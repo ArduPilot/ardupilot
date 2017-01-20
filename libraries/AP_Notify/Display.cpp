@@ -379,13 +379,11 @@ bool Display::init(void)
             break;
     }
 
-    if (_driver != nullptr) {
-        _healthy = _driver->hw_init();
-    }
-
-    if (!_healthy) {
+    if (!_driver || !_driver->hw_init()) {
+        _healthy = false;
         return false;
     }
+    _healthy = true;
 
     // update all on display
     update_all();
