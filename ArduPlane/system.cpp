@@ -324,7 +324,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         // don't switch modes if we are already in the correct mode.
         return;
     }
-    AP_Notify::flags.flight_mode = mode;
+
     if(g.auto_trim > 0 && control_mode == MANUAL)
         trim_control_surfaces();
 
@@ -496,6 +496,9 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 
     if (should_log(MASK_LOG_MODE))
         DataFlash.Log_Write_Mode(control_mode);
+
+    // update notify with flight mode change
+    notify_flight_mode(control_mode);
 
     // reset steering integrator on mode change
     steerController.reset_I();    
@@ -733,6 +736,79 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);
+        break;
+    }
+}
+
+// sets notify object flight mode information
+void Plane::notify_flight_mode(enum FlightMode mode)
+{
+    AP_Notify::flags.flight_mode = mode;
+
+    // set flight mode string
+    switch (mode) {
+    case MANUAL:
+        notify.set_flight_mode_str("MANU");
+        break;
+    case CIRCLE:
+        notify.set_flight_mode_str("CIRC");
+        break;
+    case STABILIZE:
+        notify.set_flight_mode_str("STAB");
+        break;
+    case TRAINING:
+        notify.set_flight_mode_str("TRAN");
+        break;
+    case ACRO:
+        notify.set_flight_mode_str("ACRO");
+        break;
+    case FLY_BY_WIRE_A:
+        notify.set_flight_mode_str("FBWA");
+        break;
+    case FLY_BY_WIRE_B:
+        notify.set_flight_mode_str("FBWB");
+        break;
+    case CRUISE:
+        notify.set_flight_mode_str("CRUS");
+        break;
+    case AUTOTUNE:
+        notify.set_flight_mode_str("ATUN");
+        break;
+    case AUTO:
+        notify.set_flight_mode_str("AUTO");
+        break;
+    case RTL:
+        notify.set_flight_mode_str("RTL ");
+        break;
+    case LOITER:
+        notify.set_flight_mode_str("LOITER");
+        break;
+    case AVOID_ADSB:
+        notify.set_flight_mode_str("AVOI");
+        break;
+    case GUIDED:
+        notify.set_flight_mode_str("GUID");
+        break;
+    case INITIALISING:
+        notify.set_flight_mode_str("INIT");
+        break;
+    case QSTABILIZE:
+        notify.set_flight_mode_str("QSTB");
+        break;
+    case QHOVER:
+        notify.set_flight_mode_str("QHOV");
+        break;
+    case QLOITER:
+        notify.set_flight_mode_str("QLOT");
+        break;
+    case QLAND:
+        notify.set_flight_mode_str("QLND");
+        break;
+    case QRTL:
+        notify.set_flight_mode_str("QRTL");
+        break;
+    default:
+        notify.set_flight_mode_str("----");
         break;
     }
 }
