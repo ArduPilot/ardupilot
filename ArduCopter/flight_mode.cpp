@@ -362,6 +362,67 @@ void Copter::notify_flight_mode(control_mode_t mode)
             AP_Notify::flags.autopilot_mode = false;
             break;
     }
+
+    // set flight mode string
+    switch (mode) {
+        case STABILIZE:
+            notify.set_flight_mode_str("STAB");
+            break;
+        case ACRO:
+            notify.set_flight_mode_str("ACRO");
+            break;
+        case ALT_HOLD:
+            notify.set_flight_mode_str("ALTH");
+            break;
+        case AUTO:
+            notify.set_flight_mode_str("AUTO");
+            break;
+        case GUIDED:
+            notify.set_flight_mode_str("GUID");
+            break;
+        case LOITER:
+            notify.set_flight_mode_str("LOIT");
+            break;
+        case RTL:
+            notify.set_flight_mode_str("RTL ");
+            break;
+        case CIRCLE:
+            notify.set_flight_mode_str("CIRC");
+            break;
+        case LAND:
+            notify.set_flight_mode_str("LAND");
+            break;
+        case DRIFT:
+            notify.set_flight_mode_str("DRIF");
+            break;
+        case SPORT:
+            notify.set_flight_mode_str("SPRT");
+            break;
+        case FLIP:
+            notify.set_flight_mode_str("FLIP");
+            break;
+        case AUTOTUNE:
+            notify.set_flight_mode_str("ATUN");
+            break;
+        case POSHOLD:
+            notify.set_flight_mode_str("PHLD");
+            break;
+        case BRAKE:
+            notify.set_flight_mode_str("BRAK");
+            break;
+        case THROW:
+            notify.set_flight_mode_str("THRW");
+            break;
+        case AVOID_ADSB:
+            notify.set_flight_mode_str("AVOI");
+            break;
+        case GUIDED_NOGPS:
+            notify.set_flight_mode_str("GNGP");
+            break;
+        default:
+            notify.set_flight_mode_str("----");
+            break;
+    }
 }
 
 //

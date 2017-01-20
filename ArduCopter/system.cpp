@@ -134,8 +134,8 @@ void Copter::init_ardupilot()
 #endif
 
     // initialise notify system
-    // disable external leds if epm is enabled because of pin conflict on the APM
     notify.init(true);
+    notify_flight_mode(control_mode);
 
     // initialise battery monitor
     battery.init();
