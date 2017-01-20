@@ -20,7 +20,7 @@ void Copter::esc_calibration_startup_check()
 {
 #if FRAME_CONFIG != HELI_FRAME
     // exit immediately if pre-arm rc checks fail
-    arming.pre_arm_rc_checks();
+    arming.pre_arm_rc_checks(true);
     if (!ap.pre_arm_rc_check) {
         // clear esc flag for next time
         if ((g.esc_calibrate != ESCCAL_NONE) && (g.esc_calibrate != ESCCAL_DISABLED)) {

@@ -89,7 +89,7 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
 {
     // pre-arm rc checks a prerequisite
-    pre_arm_rc_checks();
+    pre_arm_rc_checks(display_failure);
     if (!copter.ap.pre_arm_rc_check) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: RC not calibrated");
@@ -330,7 +330,7 @@ bool AP_Arming_Copter::pilot_throttle_checks(bool display_failure)
 }
 
 // perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag
-void AP_Arming_Copter::pre_arm_rc_checks()
+void AP_Arming_Copter::pre_arm_rc_checks(const bool display_failure)
 {
     // exit immediately if we've already successfully performed the pre-arm rc check
     if (copter.ap.pre_arm_rc_check) {
@@ -354,13 +354,21 @@ void AP_Arming_Copter::pre_arm_rc_checks()
         copter.channel_throttle,
         copter.channel_yaw
     };
+    const char *channel_names[] = { "Roll", "Pitch", "Throttle", "Yaw" };
 
     for (uint8_t i=0; i<ARRAY_SIZE(channels);i++) {
         const RC_Channel *channel = channels[i];
+        const char *channel_name = channel_names[i];
         if (channel->get_radio_min() > 1300) {
+            if (display_failure) {
+                copter.gcs_send_text_fmt(MAV_SEVERITY_CRITICAL,"PreArm: %s radio min too high", channel_name);
+            }
             return;
         }
         if (channel->get_radio_max() < 1700) {
+            if (display_failure) {
+                copter.gcs_send_text_fmt(MAV_SEVERITY_CRITICAL,"PreArm: %s radio max too low", channel_name);
+            }
             return;
         }
         if (i == 2) {
@@ -368,9 +376,15 @@ void AP_Arming_Copter::pre_arm_rc_checks()
             continue;
         }
         if (channel->get_radio_trim() < channel->get_radio_min()) {
+            if (display_failure) {
+                copter.gcs_send_text_fmt(MAV_SEVERITY_CRITICAL,"PreArm: %s radio trim below min", channel_name);
+            }
             return;
         }
         if (channel->get_radio_trim() > channel->get_radio_max()) {
+            if (display_failure) {
+                copter.gcs_send_text_fmt(MAV_SEVERITY_CRITICAL,"PreArm: %s radio trim above max", channel_name);
+            }
             return;
         }
     }
