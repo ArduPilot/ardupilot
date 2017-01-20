@@ -35,5 +35,6 @@ private:
 
     uint8_t _mstartpos;
     uint8_t _movedelay;
+    uint8_t _screenpage;
 };
 

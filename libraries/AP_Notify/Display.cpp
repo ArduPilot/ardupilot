@@ -397,8 +397,6 @@ bool Display::init(void)
 void Display::update()
 {
     static uint8_t timer = 0;
-    static uint8_t screenpage =0;
-
     // return immediately if not enabled
     if (!_healthy) {
         return;
@@ -412,18 +410,18 @@ void Display::update()
     timer = 0;
 
     if (AP_Notify::flags.armed) {
-        if (screenpage != 1) {
+        if (_screenpage != 1) {
             _driver->clear_screen();
             update_arm(3);
-            screenpage = 1;
+            _screenpage = 1;
             _driver->hw_update(); //update hw once , do not transmition to display in fly
         }
         return;
     }
 
-    if (screenpage != 2) {
+    if (_screenpage != 2) {
         _driver->clear_screen(); //once clear screen when page changed
-        screenpage = 2;
+        _screenpage = 2;
     }
 
     update_all();
