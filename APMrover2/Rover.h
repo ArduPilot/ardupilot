@@ -522,6 +522,7 @@ private:
     void print_hit_enter();
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
+    void notify_mode(enum mode new_mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
