@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -128,7 +126,7 @@ HAL_VRBRAIN::HAL_VRBRAIN() :
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
         &utilInstance, /* util */
-        NULL)    /* no onboard optical flow */
+        nullptr)    /* no onboard optical flow */
 {}
 
 bool _vrbrain_thread_should_exit = false;        /**< Daemon exit flag */
@@ -207,7 +205,7 @@ static int main_loop(int argc, char **argv)
           will only ever be called if a loop() call runs for more than
           0.1 second
          */
-        hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, NULL);
+        hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, nullptr);
 
         g_callbacks->loop();
 
@@ -285,7 +283,7 @@ void HAL_VRBRAIN::run(int argc, char * const argv[], Callbacks* callbacks) const
                                              APM_MAIN_PRIORITY,
                                              APM_MAIN_THREAD_STACK_SIZE,
                                              main_loop,
-                                             NULL);
+                                             nullptr);
             exit(0);
         }
 

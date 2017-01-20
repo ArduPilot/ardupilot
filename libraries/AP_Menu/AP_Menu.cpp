@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple commandline menu system.
 #include "AP_Menu.h"
@@ -28,10 +26,10 @@ Menu::Menu(const char *prompt, const Menu::command *commands, uint8_t entries, p
     _commandline_max(MENU_COMMANDLINE_MAX),
     _args_max(MENU_ARGS_MAX)
 {
-    // the buffers are initially NULL, then they are allocated on
+    // the buffers are initially nullptr, then they are allocated on
     // first use
-    _inbuf = NULL;
-    _argv = NULL;
+    _inbuf = nullptr;
+    _argv = nullptr;
 }
 
 /**
@@ -91,26 +89,26 @@ Menu::_run_command(bool prompt_on_enter)
     int8_t ret;
     uint8_t i;
     uint8_t argc;
-    char *s = NULL;
+    char *s = nullptr;
 
     _input_len = 0;
 
     // split the input line into tokens
     argc = 0;
-    s = NULL;
+    s = nullptr;
     _argv[argc++].str = strtok_r(_inbuf, " ", &s);
 
     // XXX should an empty line by itself back out of the current menu?
     while (argc <= _args_max) {
-        _argv[argc].str = strtok_r(NULL, " ", &s);
-        if (_argv[argc].str == NULL || '\0' == _argv[argc].str[0])
+        _argv[argc].str = strtok_r(nullptr, " ", &s);
+        if (_argv[argc].str == nullptr || '\0' == _argv[argc].str[0])
             break;
         _argv[argc].i = atol(_argv[argc].str);
         _argv[argc].f = atof(_argv[argc].str);      // calls strtod, > 700B !
         argc++;
     }
     
-    if (_argv[0].str == NULL) {
+    if (_argv[0].str == nullptr) {
         // we got a blank line, re-display the prompt
         if (prompt_on_enter) {
             _display_prompt();
@@ -165,7 +163,7 @@ Menu::_run_command(bool prompt_on_enter)
 void
 Menu::run(void)
 {
-	if (_port == NULL) {
+	if (_port == nullptr) {
 		// default to main serial port
 		_port = hal.console;
 	}
@@ -205,7 +203,7 @@ Menu::run(void)
 bool
 Menu::check_input(void)
 {
-	if (_port == NULL) {
+	if (_port == nullptr) {
 		// default to main serial port
 		_port = hal.console;
 	}
@@ -245,13 +243,13 @@ Menu::_call(uint8_t n, uint8_t argc)
 void
 Menu::set_limits(uint8_t commandline_max, uint8_t args_max)
 {
-    if (_inbuf != NULL) {
+    if (_inbuf != nullptr) {
         delete[] _inbuf;
-        _inbuf = NULL;
+        _inbuf = nullptr;
     }
-    if (_argv != NULL) {
+    if (_argv != nullptr) {
         delete[] _argv;
-        _argv = NULL;
+        _argv = nullptr;
     }
     // remember limits, the buffers will be allocated by allocate_buffers()
     _commandline_max = commandline_max;
@@ -261,12 +259,12 @@ Menu::set_limits(uint8_t commandline_max, uint8_t args_max)
 void
 Menu::_allocate_buffers(void)
 {
-    /* only allocate if the buffers are NULL */
-    if (_inbuf == NULL) {
+    /* only allocate if the buffers are nullptr */
+    if (_inbuf == nullptr) {
         _inbuf = new char[_commandline_max];
         memset(_inbuf, 0, _commandline_max);
     }
-    if (_argv == NULL) {
+    if (_argv == nullptr) {
         _argv = new arg[_args_max+1];
         memset(_argv, 0, (_args_max+1) * sizeof(_argv[0]));
     }

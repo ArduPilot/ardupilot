@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
 
@@ -48,8 +46,8 @@
 #include <DataFlash/DataFlash.h>
 #include <AC_PID/AC_PID.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Mission/AP_Mission.h>
@@ -62,6 +60,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Beacon/AP_Beacon.h>
 
 // Configuration
 #include "config.h"
@@ -115,9 +114,9 @@ private:
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF EKF{&ahrs, barometer, rng};
     NavEKF2 EKF2{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rng, EKF, EKF2};
+    NavEKF3 EKF3{&ahrs, barometer, rng};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rng, EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs{ins, barometer, gps};
 #endif
@@ -129,8 +128,8 @@ private:
     /**
        antenna control channels
     */
-    RC_Channel channel_yaw{CH_YAW};
-    RC_Channel channel_pitch{CH_PITCH};
+    RC_Channels rc_channels;
+    SRV_Channels servo_channels;
 
     LowPassFilterFloat yaw_servo_out_filt;
     LowPassFilterFloat pitch_servo_out_filt;

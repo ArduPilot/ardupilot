@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,8 +24,10 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "AP_Baro_BMP085.h"
+#include "AP_Baro_BMP280.h"
 #include "AP_Baro_HIL.h"
 #include "AP_Baro_MS5611.h"
 #include "AP_Baro_PX4.h"
@@ -47,6 +48,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
+    // @User: Advanced
     AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, sensors[0].ground_pressure, 0),
 
     // @Param: TEMP
@@ -56,6 +58,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
+    // @User: Advanced
     AP_GROUPINFO("TEMP", 3, AP_Baro, sensors[0].ground_temperature, 0),
 
     // index 4 reserved for old AP_Int8 version in legacy FRAM
@@ -66,14 +69,23 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Description: altitude offset in meters added to barometric altitude. This is used to allow for automatic adjustment of the base barometric altitude by a ground station equipped with a barometer. The value is added to the barometric altitude read by the aircraft. It is automatically reset to 0 when the barometer is calibrated on each reboot or when a preflight calibration is performed.
     // @Units: meters
     // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("ALT_OFFSET", 5, AP_Baro, _alt_offset, 0),
 
     // @Param: PRIMARY
     // @DisplayName: Primary barometer
     // @Description: This selects which barometer will be the primary if multiple barometers are found
     // @Values: 0:FirstBaro,1:2ndBaro,2:3rdBaro
+    // @User: Advanced
     AP_GROUPINFO("PRIMARY", 6, AP_Baro, _primary_baro, 0),
 
+    // @Param: EXT_BUS
+    // @DisplayName: External baro bus
+    // @Description: This selects the bus number for looking for an I2C barometer
+    // @Values: -1:Disabled,0:Bus0:1:Bus1
+    // @User: Advanced
+    AP_GROUPINFO("EXT_BUS", 7, AP_Baro, _ext_bus, -1),
+    
     AP_GROUPEND
 };
 
@@ -276,6 +288,30 @@ float AP_Baro::get_calibration_temperature(uint8_t instance) const
 }
 
 
+bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
+{
+    if (!backend) {
+        return false;
+    }
+    if (_num_drivers >= BARO_MAX_DRIVERS) {
+        AP_HAL::panic("Too many barometer drivers");
+    }
+    drivers[_num_drivers++] = backend;
+    return true;
+}
+
+/*
+  macro to add a backend with check for too many sensors
+ We don't try to start more than the maximum allowed
+ */
+#define ADD_BACKEND(backend) \
+    do { _add_backend(backend);     \
+       if (_num_drivers == BARO_MAX_DRIVERS || \
+          _num_sensors == BARO_MAX_INSTANCES) { \
+          return; \
+       } \
+    } while (0)
+
 /*
   initialise the barometer object, loading backend drivers
  */
@@ -288,8 +324,38 @@ void AP_Baro::init(void)
     }
 
 #if HAL_BARO_DEFAULT == HAL_BARO_PX4 || HAL_BARO_DEFAULT == HAL_BARO_VRBRAIN
-    drivers[0] = new AP_Baro_PX4(*this);
-    _num_drivers = 1;
+    switch (AP_BoardConfig::get_board_type()) {
+    case AP_BoardConfig::PX4_BOARD_PX4V1:
+#ifdef HAL_BARO_MS5611_I2C_BUS
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR))));
+#endif
+        break;
+
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK:
+    case AP_BoardConfig::PX4_BOARD_PHMINI:
+    case AP_BoardConfig::PX4_BOARD_PH2SLIM:
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
+        break;
+
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
+        break;
+
+    case AP_BoardConfig::PX4_BOARD_PIXRACER:
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME))));
+        break;
+
+    default:
+        drivers[0] = new AP_Baro_PX4(*this);
+        _num_drivers = 1;
+        break;
+    }
 #elif HAL_BARO_DEFAULT == HAL_BARO_HIL
     drivers[0] = new AP_Baro_HIL(*this);
     _num_drivers = 1;
@@ -297,22 +363,26 @@ void AP_Baro::init(void)
     drivers[0] = new AP_Baro_BMP085(*this,
         std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR)));
     _num_drivers = 1;
+#elif HAL_BARO_DEFAULT == HAL_BARO_BMP280_I2C
+    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
+                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP280_BUS, HAL_BARO_BMP280_I2C_ADDR))));
+#elif HAL_BARO_DEFAULT == HAL_BARO_BMP280_SPI
+    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
+                                      std::move(hal.spi->get_device(HAL_BARO_BMP280_NAME))));
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_I2C
-    drivers[0] = new AP_Baro_MS5611(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR)));
-    _num_drivers = 1;
+    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR))));
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_SPI
-    drivers[0] = new AP_Baro_MS5611(*this,
-        std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
-    _num_drivers = 1;
+    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                      std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5607_I2C
-    drivers[0] = new AP_Baro_MS5607(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)));
-    _num_drivers = 1;
+    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)),
+                                      AP_Baro_MS56XX::BARO_MS5607));
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5637_I2C
-    drivers[0] = new AP_Baro_MS5637(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5637_I2C_BUS, HAL_BARO_MS5637_I2C_ADDR)));
-    _num_drivers = 1;
+    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5637_I2C_BUS, HAL_BARO_MS5637_I2C_ADDR)),
+                                      AP_Baro_MS56XX::BARO_MS5637));
 #elif HAL_BARO_DEFAULT == HAL_BARO_QFLIGHT
     drivers[0] = new AP_Baro_QFLIGHT(*this);
     _num_drivers = 1;
@@ -321,7 +391,13 @@ void AP_Baro::init(void)
     _num_drivers = 1;
 #endif
 
-    if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == NULL) {
+    // can optionally have baro on I2C too
+    if (_ext_bus >= 0) {
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
+    }
+    
+    if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_HAL::panic("Baro: unable to initialise driver");
     }
 }

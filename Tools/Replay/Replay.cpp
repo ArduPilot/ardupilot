@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -65,10 +64,6 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
     GOBJECT(airspeed,                               "ARSPD_",   AP_Airspeed),
 
-    // @Group: EKF_
-    // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
-    GOBJECTN(EKF, NavEKF, "EKF_", NavEKF),
-
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
     GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
@@ -81,6 +76,10 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/DataFlash/DataFlash.cpp
     GOBJECT(dataflash, "LOG", DataFlash_Class),
     
+    // @Group: EK3_
+    // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
+    GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
+
     AP_VAREND
 };
 
@@ -91,8 +90,10 @@ void ReplayVehicle::load_parameters(void)
     if (!AP_Param::check_var_info()) {
         AP_HAL::panic("Bad parameter table");
     }
-    AP_Param::set_default_by_name("EKF_ENABLE", 1);
     AP_Param::set_default_by_name("EK2_ENABLE", 1);
+    AP_Param::set_default_by_name("EK2_IMU_MASK", 1);
+    AP_Param::set_default_by_name("EK3_ENABLE", 1);
+    AP_Param::set_default_by_name("EK3_IMU_MASK", 1);
     AP_Param::set_default_by_name("LOG_REPLAY", 1);
     AP_Param::set_default_by_name("AHRS_EKF_TYPE", 2);
     AP_Param::set_default_by_name("LOG_FILE_BUFSIZE", 60);
@@ -123,7 +124,8 @@ void ReplayVehicle::setup(void)
     ahrs.set_ekf_use(true);
 
     EKF2.set_enable(true);
-                        
+    EKF3.set_enable(true);
+
     printf("Starting disarmed\n");
     hal.util->set_soft_armed(false);
 
@@ -483,6 +485,16 @@ static void _replay_sig_fpe(int signum)
     abort();
 }
 
+FILE *Replay::xfopen(const char *f, const char *mode)
+{
+    FILE *ret = fopen(f, mode);
+    if (ret == nullptr) {
+        ::fprintf(stderr, "Failed to open (%s): %m\n", f);
+        abort();
+    }
+    return ret;
+}
+
 void Replay::setup()
 {
     ::printf("Starting\n");
@@ -532,20 +544,6 @@ void Replay::setup()
     }
     
     set_ins_update_rate(log_info.update_rate);
-
-    plotf = fopen("plot.dat", "w");
-    plotf2 = fopen("plot2.dat", "w");
-    ekf1f = fopen("EKF1.dat", "w");
-    ekf2f = fopen("EKF2.dat", "w");
-    ekf3f = fopen("EKF3.dat", "w");
-    ekf4f = fopen("EKF4.dat", "w");
-
-    fprintf(plotf, "time SIM.Roll SIM.Pitch SIM.Yaw BAR.Alt FLIGHT.Roll FLIGHT.Pitch FLIGHT.Yaw FLIGHT.dN FLIGHT.dE AHR2.Roll AHR2.Pitch AHR2.Yaw DCM.Roll DCM.Pitch DCM.Yaw EKF.Roll EKF.Pitch EKF.Yaw INAV.dN INAV.dE INAV.Alt EKF.dN EKF.dE EKF.Alt\n");
-    fprintf(plotf2, "time E1 E2 E3 VN VE VD PN PE PD GX GY GZ WN WE MN ME MD MX MY MZ E1ref E2ref E3ref\n");
-    fprintf(ekf1f, "timestamp TimeMS Roll Pitch Yaw VN VE VD PN PE PD GX GY GZ\n");
-    fprintf(ekf2f, "timestamp TimeMS AX AY AZ VWN VWE MN ME MD MX MY MZ\n");
-    fprintf(ekf3f, "timestamp TimeMS IVN IVE IVD IPN IPE IPD IMX IMY IMZ IVT\n");
-    fprintf(ekf4f, "timestamp TimeMS SV SP SH SMX SMY SMZ SVT OFN EFE FS DS\n");
 }
 
 void Replay::set_ins_update_rate(uint16_t _update_rate) {
@@ -710,7 +708,7 @@ void Replay::read_sensors(const char *type)
         }
     }
     
-    if (logmatch && streq(type, "NKF1")) {
+    if (logmatch && (streq(type, "NKF1") || streq(type, "XKF1"))) {
         write_ekf_logs();
     }
 }
@@ -725,9 +723,9 @@ void Replay::log_check_generate(void)
     Vector3f velocity;
     Location loc {};
 
-    _vehicle.EKF.getEulerAngles(euler);
-    _vehicle.EKF.getVelNED(velocity);
-    _vehicle.EKF.getLLH(loc);
+    _vehicle.EKF2.getEulerAngles(-1,euler);
+    _vehicle.EKF2.getVelNED(-1,velocity);
+    _vehicle.EKF2.getLLH(loc);
 
     struct log_Chek packet = {
         LOG_PACKET_HEADER_INIT(LOG_CHEK_MSG),
@@ -757,9 +755,9 @@ void Replay::log_check_solution(void)
     Vector3f velocity;
     Location loc {};
 
-    _vehicle.EKF.getEulerAngles(euler);
-    _vehicle.EKF.getVelNED(velocity);
-    _vehicle.EKF.getLLH(loc);
+    _vehicle.EKF2.getEulerAngles(-1,euler);
+    _vehicle.EKF2.getVelNED(-1,velocity);
+    _vehicle.EKF2.getLLH(loc);
 
     float roll_error  = degrees(fabsf(euler.x - check_state.euler.x));
     float pitch_error = degrees(fabsf(euler.y - check_state.euler.y));
@@ -774,253 +772,49 @@ void Replay::log_check_solution(void)
     check_result.max_pos_error   = MAX(check_result.max_pos_error,   pos_error);
 }
 
-
-void Replay::loop()
+void Replay::flush_and_exit()
 {
-    uint64_t last_timestamp = 0;
-    while (true) {
-        char type[5];
-
-        if (arm_time_ms >= 0 && AP_HAL::millis() > (uint32_t)arm_time_ms) {
-            if (!hal.util->get_soft_armed()) {
-                hal.util->set_soft_armed(true);
-                ::printf("Arming at %u ms\n", (unsigned)AP_HAL::millis());
-            }
-        }
-
-        if (!logreader.update(type)) {
-            ::printf("End of log at %.1f seconds\n", AP_HAL::millis()*0.001f);
-            fclose(plotf);
-            break;
-        }
-
-        if (last_timestamp != 0) {
-            uint64_t gap = AP_HAL::micros64() - last_timestamp;
-            if (gap > 40000) {
-                ::printf("Gap in log at timestamp=%lu of length %luus\n",
-                         last_timestamp, gap);
-            }
-        }
-        last_timestamp = AP_HAL::micros64();
-
-        read_sensors(type);
-
-        if (streq(type,"ATT")) {
-            Vector3f ekf_euler;
-            Vector3f velNED;
-            Vector2f posNE;
-            float posD;
-            Vector3f gyroBias;
-            float accelWeighting;
-            float accelZBias1;
-            float accelZBias2;
-            Vector3f windVel;
-            Vector3f magNED;
-            Vector3f magXYZ;
-            Vector3f DCM_attitude;
-            Vector3f velInnov;
-            Vector3f posInnov;
-            Vector3f magInnov;
-            float tasInnov;
-            float velVar;
-            float posVar;
-            float hgtVar;
-            Vector3f magVar;
-            float tasVar;
-            Vector2f offset;
-            uint16_t faultStatus;
-
-            const Matrix3f &dcm_matrix = _vehicle.ahrs.AP_AHRS_DCM::get_rotation_body_to_ned();
-            dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);
-            _vehicle.EKF.getEulerAngles(ekf_euler);
-            _vehicle.EKF.getVelNED(velNED);
-            _vehicle.EKF.getPosNE(posNE);
-            _vehicle.EKF.getPosD(posD);
-            _vehicle.EKF.getGyroBias(gyroBias);
-            _vehicle.EKF.getIMU1Weighting(accelWeighting);
-            _vehicle.EKF.getAccelZBias(accelZBias1, accelZBias2);
-            _vehicle.EKF.getWind(windVel);
-            _vehicle.EKF.getMagNED(magNED);
-            _vehicle.EKF.getMagXYZ(magXYZ);
-            _vehicle.EKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
-            _vehicle.EKF.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-            _vehicle.EKF.getFilterFaults(faultStatus);
-            Vector3f inav_pos = _vehicle.inertial_nav.get_position() * 0.01f;
-            float temp = degrees(ekf_euler.z);
-
-            if (temp < 0.0f) temp = temp + 360.0f;
-            fprintf(plotf, "%.3f %.1f %.1f %.1f %.2f %.1f %.1f %.1f %.2f %.2f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f\n",
-                    AP_HAL::millis() * 0.001f,
-                    logreader.get_sim_attitude().x,
-                    logreader.get_sim_attitude().y,
-                    logreader.get_sim_attitude().z,
-                    _vehicle.barometer.get_altitude(),
-                    logreader.get_attitude().x,
-                    logreader.get_attitude().y,
-                    wrap_180_cd(logreader.get_attitude().z*100)*0.01f,
-                    logreader.get_inavpos().x,
-                    logreader.get_inavpos().y,
-                    logreader.get_ahr2_attitude().x,
-                    logreader.get_ahr2_attitude().y,
-                    wrap_180_cd(logreader.get_ahr2_attitude().z*100)*0.01f,
-                    degrees(DCM_attitude.x),
-                    degrees(DCM_attitude.y),
-                    degrees(DCM_attitude.z),
-                    degrees(ekf_euler.x),
-                    degrees(ekf_euler.y),
-                    degrees(ekf_euler.z),
-                    inav_pos.x,
-                    inav_pos.y,
-                    inav_pos.z,
-                    posNE.x,
-                    posNE.y,
-                    -posD);
-            fprintf(plotf2, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n",
-                    AP_HAL::millis() * 0.001f,
-                    degrees(ekf_euler.x),
-                    degrees(ekf_euler.y),
-                    temp,
-                    velNED.x, 
-                    velNED.y, 
-                    velNED.z, 
-                    posNE.x,
-                    posNE.y,
-                    posD,
-                    60*degrees(gyroBias.x), 
-                    60*degrees(gyroBias.y), 
-                    60*degrees(gyroBias.z), 
-                    windVel.x, 
-                    windVel.y, 
-                    magNED.x,
-                    magNED.y,
-                    magNED.z,
-                    magXYZ.x, 
-                    magXYZ.y, 
-                    magXYZ.z,
-                    logreader.get_attitude().x,
-                    logreader.get_attitude().y,
-                    logreader.get_attitude().z);
-
-            // define messages for EKF1 data packet
-            int16_t     roll  = (int16_t)(100*degrees(ekf_euler.x)); // roll angle (centi-deg)
-            int16_t     pitch = (int16_t)(100*degrees(ekf_euler.y)); // pitch angle (centi-deg)
-            uint16_t    yaw   = (uint16_t)wrap_360_cd(100*degrees(ekf_euler.z)); // yaw angle (centi-deg)
-            float       velN  = (float)(velNED.x); // velocity North (m/s)
-            float       velE  = (float)(velNED.y); // velocity East (m/s)
-            float       velD  = (float)(velNED.z); // velocity Down (m/s)
-            float       posN  = (float)(posNE.x); // metres North
-            float       posE  = (float)(posNE.y); // metres East
-            float       gyrX  = (float)(6000*degrees(gyroBias.x)); // centi-deg/min
-            float       gyrY  = (float)(6000*degrees(gyroBias.y)); // centi-deg/min
-            float       gyrZ  = (float)(6000*degrees(gyroBias.z)); // centi-deg/min
-
-            // print EKF1 data packet
-            fprintf(ekf1f, "%.3f %u %d %d %u %.2f %.2f %.2f %.2f %.2f %.2f %.0f %.0f %.0f\n",
-                    AP_HAL::millis() * 0.001f,
-                    AP_HAL::millis(),
-                    roll, 
-                    pitch, 
-                    yaw, 
-                    velN, 
-                    velE, 
-                    velD, 
-                    posN, 
-                    posE, 
-                    posD, 
-                    gyrX,
-                    gyrY,
-                    gyrZ);
-
-            // define messages for EKF2 data packet
-            int8_t  accWeight  = (int8_t)(100*accelWeighting);
-            int8_t  acc1  = (int8_t)(100*accelZBias1);
-            int8_t  acc2  = (int8_t)(100*accelZBias2);
-            int16_t windN = (int16_t)(100*windVel.x);
-            int16_t windE = (int16_t)(100*windVel.y);
-            int16_t magN  = (int16_t)(magNED.x);
-            int16_t magE  = (int16_t)(magNED.y);
-            int16_t magD  = (int16_t)(magNED.z);
-            int16_t magX  = (int16_t)(magXYZ.x);
-            int16_t magY  = (int16_t)(magXYZ.y);
-            int16_t magZ  = (int16_t)(magXYZ.z);
-
-            // print EKF2 data packet
-            fprintf(ekf2f, "%.3f %d %d %d %d %d %d %d %d %d %d %d %d\n",
-                    AP_HAL::millis() * 0.001f,
-                    AP_HAL::millis(),
-                    accWeight, 
-                    acc1, 
-                    acc2, 
-                    windN, 
-                    windE, 
-                    magN, 
-                    magE, 
-                    magD, 
-                    magX,
-                    magY,
-                    magZ);
-
-            // define messages for EKF3 data packet
-            int16_t innovVN = (int16_t)(100*velInnov.x);
-            int16_t innovVE = (int16_t)(100*velInnov.y);
-            int16_t innovVD = (int16_t)(100*velInnov.z);
-            int16_t innovPN = (int16_t)(100*posInnov.x);
-            int16_t innovPE = (int16_t)(100*posInnov.y);
-            int16_t innovPD = (int16_t)(100*posInnov.z);
-            int16_t innovMX = (int16_t)(magInnov.x);
-            int16_t innovMY = (int16_t)(magInnov.y);
-            int16_t innovMZ = (int16_t)(magInnov.z);
-            int16_t innovVT = (int16_t)(100*tasInnov);
-
-            // print EKF3 data packet
-            fprintf(ekf3f, "%.3f %d %d %d %d %d %d %d %d %d %d %d\n",
-                    AP_HAL::millis() * 0.001f,
-                    AP_HAL::millis(),
-                    innovVN, 
-                    innovVE, 
-                    innovVD, 
-                    innovPN, 
-                    innovPE, 
-                    innovPD, 
-                    innovMX, 
-                    innovMY, 
-                    innovMZ, 
-                    innovVT);
-
-            // define messages for EKF4 data packet
-            int16_t sqrtvarV = (int16_t)(constrain_float(100*velVar,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarP = (int16_t)(constrain_float(100*posVar,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarH = (int16_t)(constrain_float(100*hgtVar,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarMX = (int16_t)(constrain_float(100*magVar.x,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarMY = (int16_t)(constrain_float(100*magVar.y,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarMZ = (int16_t)(constrain_float(100*magVar.z,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarVT = (int16_t)(constrain_float(100*tasVar,INT16_MIN,INT16_MAX));
-            int16_t offsetNorth = (int8_t)(constrain_float(offset.x,INT16_MIN,INT16_MAX));
-            int16_t offsetEast = (int8_t)(constrain_float(offset.y,INT16_MIN,INT16_MAX));
-
-            // print EKF4 data packet
-            fprintf(ekf4f, "%.3f %u %d %d %d %d %d %d %d %d %d %d\n",
-                    AP_HAL::millis() * 0.001f,
-                    (unsigned)AP_HAL::millis(),
-                    (int)sqrtvarV,
-                    (int)sqrtvarP,
-                    (int)sqrtvarH,
-                    (int)sqrtvarMX, 
-                    (int)sqrtvarMY, 
-                    (int)sqrtvarMZ,
-                    (int)sqrtvarVT,
-                    (int)offsetNorth,
-                    (int)offsetEast,
-                    (int)faultStatus);
-        }
-    }
-
     flush_dataflash();
 
     if (check_solution) {
         report_checks();
     }
+
     exit(0);
+}
+
+void Replay::loop()
+{
+    char type[5];
+
+    if (arm_time_ms >= 0 && AP_HAL::millis() > (uint32_t)arm_time_ms) {
+        if (!hal.util->get_soft_armed()) {
+            hal.util->set_soft_armed(true);
+            ::printf("Arming at %u ms\n", (unsigned)AP_HAL::millis());
+        }
+    }
+
+    if (!logreader.update(type)) {
+        ::printf("End of log at %.1f seconds\n", AP_HAL::millis()*0.001f);
+        fclose(plotf);
+        flush_and_exit();
+    }
+
+    if (last_timestamp != 0) {
+        uint64_t gap = AP_HAL::micros64() - last_timestamp;
+        if (gap > 40000) {
+            ::printf("Gap in log at timestamp=%lu of length %luus\n",
+                     last_timestamp, gap);
+        }
+    }
+    last_timestamp = AP_HAL::micros64();
+
+    read_sensors(type);
+
+    if (!streq(type,"ATT")) {
+        return;
+    }
+
 }
 
 

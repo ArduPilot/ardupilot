@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 #pragma once
 
 /// @file    AC_AttitudeControl_Heli.h
@@ -61,13 +60,8 @@ public:
     AC_PID& get_rate_pitch_pid() { return _pid_rate_pitch; }
     AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
 
-    // same as above but allows accessing heli specific pid methods - used only by Copter's tuning.cpp
-    AC_HELI_PID& get_heli_rate_roll_pid() { return _pid_rate_roll; }
-    AC_HELI_PID& get_heli_rate_pitch_pid() { return _pid_rate_pitch; }
-    AC_HELI_PID& get_heli_rate_yaw_pid() { return _pid_rate_yaw; }
-
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
-    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds);
+    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) override;
 
     // Integrate vehicle rate into _att_error_rot_vec_rad
     void integrate_bf_rate_error_to_angle_errors();
@@ -83,11 +77,11 @@ public:
     void update_althold_lean_angle_max(float throttle_in) override;
 
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
-	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
+	void use_leaky_i(bool leaky_i) override {  _flags_heli.leaky_i = leaky_i; }
     
     // use_flybar_passthrough - controls whether we pass-through
     // control inputs to swash-plate and tail
-    void use_flybar_passthrough(bool passthrough, bool tail_passthrough) {  
+    void use_flybar_passthrough(bool passthrough, bool tail_passthrough) override {  
         _flags_heli.flybar_passthrough = passthrough; 
         _flags_heli.tail_passthrough = tail_passthrough; 
     }
@@ -96,7 +90,7 @@ public:
     void do_piro_comp(bool piro_comp) { _flags_heli.do_piro_comp = piro_comp; }
 
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
-    void set_hover_roll_trim_scalar(float scalar) {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
+    void set_hover_roll_trim_scalar(float scalar) override {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
 
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;

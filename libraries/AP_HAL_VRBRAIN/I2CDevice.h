@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
  *
@@ -68,9 +67,6 @@ public:
         /* Not implemented yet */
         return false;
     }
-
-    // this makes no sense on VRBRAIN
-    int get_fd() override { return -1; }
 
     AP_HAL::Semaphore* get_semaphore() override { return &semaphore; }
 

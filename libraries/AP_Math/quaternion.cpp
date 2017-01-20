@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * quaternion.cpp
  * Copyright (C) Andrew Tridgell 2012
@@ -170,6 +169,7 @@ void Quaternion::from_axis_angle(const Vector3f &axis, float theta)
     if (is_zero(theta)) {
         q1 = 1.0f;
         q2=q3=q4=0.0f;
+        return;
     }
     float st2 = sinf(theta/2.0f);
 
@@ -202,6 +202,7 @@ void Quaternion::from_axis_angle_fast(Vector3f v)
     if (is_zero(theta)) {
         q1 = 1.0f;
         q2=q3=q4=0.0f;
+        return;
     }
     v /= theta;
     from_axis_angle_fast(v,theta);

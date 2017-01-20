@@ -5,10 +5,11 @@
 Waf tool for PX4 build
 """
 
-from waflib import Logs, Task, Utils
+from waflib import Errors, Logs, Task, Utils
 from waflib.TaskGen import after_method, before_method, feature
 
 import os
+import shutil
 import sys
 
 _dynamic_env_data = {}
@@ -17,7 +18,7 @@ def _load_dynamic_env_data(bld):
     for name in ('cxx_flags', 'include_dirs', 'definitions'):
         _dynamic_env_data[name] = bldnode.find_node(name).read().split(';')
 
-@feature('px4_ap_stlib', 'px4_ap_program')
+@feature('px4_ap_library', 'px4_ap_program')
 @before_method('process_source')
 def px4_dynamic_env(self):
     # The generated files from configuration possibly don't exist if it's just
@@ -39,7 +40,7 @@ def px4_dynamic_env(self):
 @after_method('apply_link')
 @before_method('process_use')
 def px4_import_objects_from_use(self):
-    queue = Utils.to_list(getattr(self, 'use', []))
+    queue = list(Utils.to_list(getattr(self, 'use', [])))
     names = set()
 
     while queue:
@@ -60,8 +61,10 @@ def px4_import_objects_from_use(self):
         queue.extend(Utils.to_list(getattr(tg, 'use', [])))
 
 class px4_copy(Task.Task):
-    run_str = '${CP} ${SRC} ${TGT}'
     color = 'CYAN'
+
+    def run(self):
+        shutil.copy2(self.inputs[0].abspath(), self.outputs[0].abspath())
 
     def keyword(self):
         return "PX4: Copying %s to" % self.inputs[0].name
@@ -102,11 +105,15 @@ def px4_firmware(self):
 
     if self.env.PX4_USE_PX4IO and not _cp_px4io:
         px4io_task = self.create_cmake_build_task('px4', 'fw_io')
+        if version == '3':
+            px4io_version = '2'
+        else:
+            px4io_version = version
         px4io = px4io_task.cmake.bldnode.make_node(
-            'src/modules/px4iofirmware/px4io-v%s.bin' % version,
+            'src/modules/px4iofirmware/px4io-v%s.bin' % px4io_version,
         )
         px4io_elf = px4.bldnode.make_node(
-            'src/modules/px4iofirmware/px4io-v%s' % version
+            'src/modules/px4iofirmware/px4io-v%s' % px4io_version
         )
         px4io_task.set_outputs([px4io, px4io_elf])
 
@@ -123,6 +130,7 @@ def px4_firmware(self):
         'px4',
         'build_firmware_px4fmu-v%s' % version,
     )
+    fw_task.set_run_after(self.link_task)
 
     # we need to synchronize in order to avoid the output expected by the
     # previous ap_program being overwritten before used
@@ -203,19 +211,25 @@ def _process_romfs(self):
             src = bld.srcnode.make_node(item[0])
             dst = romfs_bld.make_node(item[1])
 
+        bname = os.path.basename(str(src))
+        if bname in bld.env.ROMFS_EXCLUDE:
+            print("Excluding %s" % bname)
+            continue
+
         dst.parent.mkdir()
         self.create_task('px4_copy', src, dst)
 
 def configure(cfg):
     cfg.env.CMAKE_MIN_VERSION = '3.2'
     cfg.load('cmake')
-    cfg.find_program('cp')
 
     bldnode = cfg.bldnode.make_node(cfg.variant)
     env = cfg.env
 
     env.AP_PROGRAM_FEATURES += ['px4_ap_program']
-    env.AP_STLIB_FEATURES += ['px4_ap_stlib']
+
+    kw = env.AP_LIBRARIES_OBJECTS_KW
+    kw['features'] = Utils.to_list(kw.get('features', [])) + ['px4_ap_library']
 
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()
@@ -223,10 +237,14 @@ def configure(cfg):
     def bldpath(path):
         return bldnode.make_node(path).abspath()
 
+    version = env.get_flat('PX4_VERSION')
+    
     if env.PX4_VERSION == '1':
         bootloader_name = 'px4fmu_bl.bin'
+    elif env.PX4_VERSION in ['2','3']:
+        bootloader_name = 'px4fmuv2_bl.bin'
     else:
-        bootloader_name = 'px4fmuv%s_bl.bin' % env.get_flat('PX4_VERSION')
+        bootloader_name = 'px4fmuv%s_bl.bin' % version
 
     # TODO: we should move stuff from mk/PX4 to Tools/ardupilotwaf/px4 after
     # stop using the make-based build system
@@ -243,8 +261,10 @@ def configure(cfg):
     if env.PX4_USE_PX4IO:
         env.PX4IO_ELF_DEST = 'px4-extra-files/px4io'
 
+    nuttx_config='nuttx_px4fmu-v%s_apm' % version
+        
     env.PX4_CMAKE_VARS = dict(
-        CONFIG='nuttx_px4fmu-v%s_apm' % env.get_flat('PX4_VERSION'),
+        CONFIG=nuttx_config,
         CMAKE_MODULE_PATH=srcpath('Tools/ardupilotwaf/px4/cmake'),
         UAVCAN_LIBUAVCAN_PATH=env.PX4_UAVCAN_ROOT,
         NUTTX_SRC=env.PX4_NUTTX_ROOT,

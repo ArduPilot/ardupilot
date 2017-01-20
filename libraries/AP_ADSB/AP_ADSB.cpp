@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -108,7 +107,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Description: Transceiver RF selection for Rx enable and/or Tx enable.
     // @Values: 0:Disabled,1:Rx-Only,2:Tx-Only,3:Rx and Tx Enabled
     // @User: Advanced
-    AP_GROUPINFO("RF_SELECT",   9, AP_ADSB, out_state.cfg.rfSelect, UAVIONIX_ADSB_OUT_RF_SELECT_RX_ENABLED | UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED),
+    AP_GROUPINFO("RF_SELECT",   9, AP_ADSB, out_state.cfg.rfSelect, UAVIONIX_ADSB_OUT_RF_SELECT_RX_ENABLED),
 
 
 
@@ -325,7 +324,7 @@ bool AP_ADSB::find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const
  * Update the vehicle list. If the vehicle is already in the
  * list then it will update it, otherwise it will be added.
  */
-void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
+void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
 {
     if (in_state.vehicle_list == nullptr) {
         // We are only null when disabled. Updating is inhibited.
@@ -346,9 +345,12 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
     vehicle.last_update_ms = now - (vehicle.info.tslc * 1000);
 
     const uint16_t required_flags_position = ADSB_FLAGS_VALID_COORDS | ADSB_FLAGS_VALID_ALTITUDE;
+    const bool detected_ourself = (out_state.cfg.ICAO_id != 0) && ((uint32_t)out_state.cfg.ICAO_id == vehicle.info.ICAO_address);
 
     if (vehicle_loc.is_zero() ||
             out_of_range ||
+            detected_ourself ||
+            (vehicle.info.ICAO_address > 0x00FFFFFF) || // ICAO address is 24bits, so ignore higher values.
             !(vehicle.info.flags & required_flags_position) ||
             now - vehicle.last_update_ms > VEHICLE_TIMEOUT_MS) {
 
@@ -467,7 +469,7 @@ void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
 
     int32_t latitude = _my_loc.lat;
     int32_t longitude = _my_loc.lng;
-    int32_t altGNSS = _my_loc.alt*0.1f; // convert cm to mm
+    int32_t altGNSS = _my_loc.alt * 10; // convert cm to mm
     int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
     int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
     int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
@@ -559,7 +561,7 @@ void AP_ADSB::send_configure(const mavlink_channel_t chan)
  * we determine which channel is on so we don't have to send out_state to all channels
  */
 
-void AP_ADSB::transceiver_report(const mavlink_channel_t chan, const mavlink_message_t* msg)
+void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavlink_message_t* msg)
 {
     mavlink_uavionix_adsb_transceiver_health_report_t packet {};
     mavlink_msg_uavionix_adsb_transceiver_health_report_decode(msg, &packet);
@@ -637,15 +639,8 @@ void AP_ADSB::set_callsign(const char* str, const bool append_icao)
     } // for i
 
     if (append_icao) {
-        char str_icao[5];
-        sprintf(str_icao, "%04X", out_state.cfg.ICAO_id % 0x10000);
-        out_state.cfg.callsign[4] = str_icao[0];
-        out_state.cfg.callsign[5] = str_icao[1];
-        out_state.cfg.callsign[6] = str_icao[2];
-        out_state.cfg.callsign[7] = str_icao[3];
+        snprintf(&out_state.cfg.callsign[4], 5, "%04X", out_state.cfg.ICAO_id % 0x10000);
     }
-
-    out_state.cfg.callsign[sizeof(out_state.cfg.callsign)-1] = 0; // always null terminate just to be sure
 }
 
 
@@ -657,4 +652,23 @@ void AP_ADSB::push_sample(adsb_vehicle_t &vehicle)
 bool AP_ADSB::next_sample(adsb_vehicle_t &vehicle)
 {
     return samples.pop_front(vehicle);
+}
+
+void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg)
+{
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_ADSB_VEHICLE:
+        handle_vehicle(msg);
+        break;
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
+        handle_transceiver_report(chan, msg);
+        break;
+
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
+        // unhandled, these are outbound packets only
+    default:
+        break;
+    }
+
 }

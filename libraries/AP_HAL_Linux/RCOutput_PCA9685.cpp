@@ -61,7 +61,7 @@ RCOutput_PCA9685::RCOutput_PCA9685(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                    uint8_t channel_offset,
                                    int16_t oe_pin_number) :
     _dev(std::move(dev)),
-    _enable_pin(NULL),
+    _enable_pin(nullptr),
     _frequency(50),
     _pulses_buffer(new uint16_t[PWM_CHAN_COUNT - channel_offset]),
     _external_clock(external_clock),

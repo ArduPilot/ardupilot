@@ -78,6 +78,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
 
             // unsupported actions and those that require no response
             case MAV_COLLISION_ACTION_NONE:
+                return actual_action;
             case MAV_COLLISION_ACTION_REPORT:
             default:
                 break;
@@ -101,13 +102,40 @@ void AP_Avoidance_Copter::handle_recovery(uint8_t recovery_action)
         copter.Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_ADSB, ERROR_CODE_ERROR_RESOLVED);
 
         // restore flight mode if requested and user has not changed mode since
-        if (recovery_action == AP_AVOIDANCE_RECOVERY_RETURN_TO_PREVIOUS_FLIGHTMODE && copter.control_mode_reason == MODE_REASON_AVOIDANCE) {
-            if (!copter.set_mode(prev_control_mode, MODE_REASON_AVOIDANCE_RECOVERY)) {
-                // on failure RTL or LAND
-                if (!copter.set_mode(RTL, MODE_REASON_AVOIDANCE_RECOVERY)) {
-                    copter.set_mode(LAND, MODE_REASON_AVOIDANCE_RECOVERY);
+        if (copter.control_mode_reason == MODE_REASON_AVOIDANCE) {
+            switch (recovery_action) {
+
+            case AP_AVOIDANCE_RECOVERY_REMAIN_IN_AVOID_ADSB:
+                // do nothing, we'll stay in the AVOID_ADSB mode which is guided which will loiter forever
+                break;
+
+            case AP_AVOIDANCE_RECOVERY_RESUME_PREVIOUS_FLIGHTMODE:
+                set_mode_else_try_RTL_else_LAND(prev_control_mode);
+                break;
+
+            case AP_AVOIDANCE_RECOVERY_RTL:
+                set_mode_else_try_RTL_else_LAND(RTL);
+                break;
+
+            case AP_AVOIDANCE_RECOVERY_RESUME_IF_AUTO_ELSE_LOITER:
+                if (prev_control_mode == AUTO) {
+                    set_mode_else_try_RTL_else_LAND(AUTO);
                 }
-            }
+                break;
+
+            default:
+                break;
+            } // switch
+        }
+    }
+}
+
+void AP_Avoidance_Copter::set_mode_else_try_RTL_else_LAND(control_mode_t mode)
+{
+    if (!copter.set_mode(mode, MODE_REASON_AVOIDANCE_RECOVERY)) {
+        // on failure RTL or LAND
+        if (!copter.set_mode(RTL, MODE_REASON_AVOIDANCE_RECOVERY)) {
+            copter.set_mode(LAND, MODE_REASON_AVOIDANCE_RECOVERY);
         }
     }
 }
@@ -144,9 +172,9 @@ bool AP_Avoidance_Copter::handle_avoidance_vertical(const AP_Avoidance::Obstacle
     // get best vector away from obstacle
     Vector3f velocity_neu;
     if (should_climb) {
-        velocity_neu.z = copter.wp_nav.get_speed_up();
+        velocity_neu.z = copter.wp_nav->get_speed_up();
     } else {
-        velocity_neu.z = -copter.wp_nav.get_speed_down();
+        velocity_neu.z = -copter.wp_nav->get_speed_down();
         // do not descend if below RTL alt
         if (copter.current_loc.alt < copter.g.rtl_altitude) {
             velocity_neu.z = 0.0f;
@@ -177,8 +205,8 @@ bool AP_Avoidance_Copter::handle_avoidance_horizontal(const AP_Avoidance::Obstac
         // re-normalise
         velocity_neu.normalize();
         // convert horizontal components to velocities
-        velocity_neu.x *= copter.wp_nav.get_speed_xy();
-        velocity_neu.y *= copter.wp_nav.get_speed_xy();
+        velocity_neu.x *= copter.wp_nav->get_speed_xy();
+        velocity_neu.y *= copter.wp_nav->get_speed_xy();
         // send target velocity
         copter.avoid_adsb_set_velocity(velocity_neu);
         return true;
@@ -199,13 +227,13 @@ bool AP_Avoidance_Copter::handle_avoidance_perpendicular(const AP_Avoidance::Obs
     Vector3f velocity_neu;
     if (get_vector_perpendicular(obstacle, velocity_neu)) {
         // convert horizontal components to velocities
-        velocity_neu.x *= copter.wp_nav.get_speed_xy();
-        velocity_neu.y *= copter.wp_nav.get_speed_xy();
+        velocity_neu.x *= copter.wp_nav->get_speed_xy();
+        velocity_neu.y *= copter.wp_nav->get_speed_xy();
         // use up and down waypoint speeds
         if (velocity_neu.z > 0.0f) {
-            velocity_neu.z *= copter.wp_nav.get_speed_up();
+            velocity_neu.z *= copter.wp_nav->get_speed_up();
         } else {
-            velocity_neu.z *= copter.wp_nav.get_speed_down();
+            velocity_neu.z *= copter.wp_nav->get_speed_down();
             // do not descend if below RTL alt
             if (copter.current_loc.alt < copter.g.rtl_altitude) {
                 velocity_neu.z = 0.0f;

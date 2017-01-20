@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Example of DataFlash library.
  * originally based on code by Jordi MuÒoz and Jose Julio

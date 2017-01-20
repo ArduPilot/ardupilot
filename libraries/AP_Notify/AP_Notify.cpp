@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,6 +30,7 @@
 #include "ToshibaLED_PX4.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
+#include "DiscoLED.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
@@ -125,6 +125,10 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         AP_BoardLED boardled;
         RCOutputRGBLed bhled(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);
         NotifyDevice *AP_Notify::_devices[] = {&boardled, &bhled};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+        DiscoLED discoled;
+        ToneAlarm_Linux tonealarm;
+        NotifyDevice *AP_Notify::_devices[] = {&discoled, &tonealarm};
     #else
         AP_BoardLED boardled;
         ToshibaLED_I2C toshibaled;

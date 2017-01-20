@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 // Test for AP_GPS_AUTO
 //
@@ -26,12 +25,12 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/AP_BoardLED.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -51,12 +50,14 @@ void setup()
 {
     hal.console->println("GPS AUTO library test");
 
+    AP_BoardConfig{}.init();
+
     // Initialise the leds
     board_led.init();
 
     // Initialize the UART for GPS system
     serial_manager.init();
-    gps.init(NULL, serial_manager);
+    gps.init(nullptr, serial_manager);
 }
 
 void loop()

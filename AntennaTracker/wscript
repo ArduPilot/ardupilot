@@ -8,8 +8,8 @@ def build(bld):
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AC_PID',
+            'AP_Beacon',
         ],
-        use='mavlink',
     )
 
     bld.ap_program(

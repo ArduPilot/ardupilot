@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *   auto_calibration.cpp - airspeed auto calibration
  *
@@ -15,7 +14,7 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor - fill in all the initial values
-Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms)
+Airspeed_Calibration::Airspeed_Calibration()
     : P(100,   0,         0,
         0,   100,         0,
         0,     0,  0.000001f)
@@ -23,7 +22,6 @@ Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms)
     , Q1(0.0000005f)
     , state(0, 0, 0)
     , DT(1)
-    , aparm(parms)
 {
 }
 
@@ -39,7 +37,7 @@ void Airspeed_Calibration::init(float initial_ratio)
   update the state of the airspeed calibration - needs to be called
   once a second
  */
-float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
+float Airspeed_Calibration::update(float airspeed, const Vector3f &vg, int16_t max_airspeed_allowed_during_cal)
 {
     // Perform the covariance prediction
     // Q is a diagonal matrix so only need to add three terms in
@@ -70,7 +68,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
         -(state.z*SH2*(2*vg.y - 2*state.y))/2,
         1/SH2);
 
-    // Calculate the fusion innovaton covariance assuming a TAS measurement
+    // Calculate the fusion innovation covariance assuming a TAS measurement
     // noise of 1.0 m/s
     // S = H_TAS*P*H_TAS' + 1.0; % [1 x 3] * [3 x 3] * [3 x 1] + [1 x 1]
     Vector3f PH = P * H_TAS;
@@ -101,8 +99,8 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
     P.b.y = MAX(P.b.y, 0.0f);
     P.c.z = MAX(P.c.z, 0.0f);
 
-    state.x = constrain_float(state.x, -aparm.airspeed_max, aparm.airspeed_max);
-    state.y = constrain_float(state.y, -aparm.airspeed_max, aparm.airspeed_max);
+    state.x = constrain_float(state.x, -max_airspeed_allowed_during_cal, max_airspeed_allowed_during_cal);
+    state.y = constrain_float(state.y, -max_airspeed_allowed_during_cal, max_airspeed_allowed_during_cal);
     state.z = constrain_float(state.z, 0.5f, 1.0f);
 
     return state.z;
@@ -112,7 +110,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
 /*
   called once a second to do calibration update
  */
-void AP_Airspeed::update_calibration(const Vector3f &vground)
+void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal)
 {
     if (!_autocal) {
         // auto-calibration not enabled
@@ -130,7 +128,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
     float dpress = get_differential_pressure();
     float true_airspeed = sqrtf(dpress) * _EAS2TAS;
 
-    float zratio = _calibration.update(true_airspeed, vground);
+    float zratio = _calibration.update(true_airspeed, vground, max_airspeed_allowed_during_cal);
 
     if (isnan(zratio) || isinf(zratio)) {
         return;

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -143,13 +142,11 @@ static Frame supported_frames[] =
 
 void Frame::init(float _mass, float hover_throttle, float _terminal_velocity, float _terminal_rotation_rate)
 {
-    mass = _mass;
-
     /*
        scaling from total motor power to Newtons. Allows the copter
        to hover against gravity when each motor is at hover_throttle
     */
-    thrust_scale = (mass * GRAVITY_MSS) / (num_motors * hover_throttle);
+    thrust_scale = (_mass * GRAVITY_MSS) / (num_motors * hover_throttle);
 
     terminal_velocity = _terminal_velocity;
     terminal_rotation_rate = _terminal_rotation_rate;
@@ -166,7 +163,7 @@ Frame *Frame::find_frame(const char *name)
             return &supported_frames[i];
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 // calculate rotational and linear accelerations
@@ -184,7 +181,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         thrust += mthrust;
     }
 
-    body_accel = thrust/mass;
+    body_accel = thrust/aircraft.gross_mass();
 
     if (terminal_rotation_rate > 0) {
         // rotational air resistance

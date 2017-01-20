@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   smaller EKF for simpler estimation applications
 
@@ -27,7 +26,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_NavEKF/AP_NavEKF.h>
+//#include <AP_NavEKF2/AP_NavEKF2.h>
 
 #include <AP_Math/vectorN.h>
 

@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
  
@@ -109,7 +107,7 @@ void Tracker::one_second_loop()
     one_second_counter++;
 
     if (one_second_counter >= 60) {
-        if(g.compass_enabled) {
+        if (g.compass_enabled) {
             compass.save_offsets();
         }
         one_second_counter = 0;

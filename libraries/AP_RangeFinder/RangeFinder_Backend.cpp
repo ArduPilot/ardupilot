@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +18,8 @@
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
 
+extern const AP_HAL::HAL& hal;
+
 /*
   base class constructor. 
   This incorporates initialisation as well.
@@ -27,6 +28,7 @@ AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder &_ranger, uint8_t ins
         ranger(_ranger),
         state(_state) 
 {
+    _sem = hal.util->new_semaphore();    
 }
 
 // update status based on distance measurement

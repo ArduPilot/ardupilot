@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,8 +36,8 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_InertialNav/AP_InertialNav.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -52,7 +51,6 @@
 #include <signal.h>
 #include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 class ReplayVehicle {
 public:
@@ -65,12 +63,12 @@ public:
     Compass compass;
     AP_SerialManager serial_manager;
     RangeFinder rng {serial_manager};
-    NavEKF EKF{&ahrs, barometer, rng};
     NavEKF2 EKF2{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF, EKF2};
+    NavEKF3 EKF3{&ahrs, barometer, rng};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF2, EKF3};
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
-    AP_Airspeed airspeed{aparm};
+    AP_Airspeed airspeed;
     DataFlash_Class dataflash{"Replay v0.1"};
 
 private:
@@ -143,6 +141,7 @@ private:
     uint16_t downsample = 0;
     bool logmatch = false;
     uint32_t output_counter = 0;
+    uint64_t last_timestamp = 0;
 
     struct {
         float max_roll_error;
@@ -177,6 +176,9 @@ private:
     bool parse_param_line(char *line, char **vname, float &value);
     void load_param_file(const char *filename);
     void set_signal_handlers(void);
+    void flush_and_exit();
+
+    FILE *xfopen(const char *f, const char *mode);
 };
 
 enum {

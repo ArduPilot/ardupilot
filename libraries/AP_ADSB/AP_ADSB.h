@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 /*
@@ -52,12 +51,6 @@ public:
     // periodic task that maintains vehicle_list
     void update(void);
 
-    // add or update vehicle_list from inbound mavlink msg
-    void update_vehicle(const mavlink_message_t* msg);
-
-    // handle ADS-B transceiver report
-    void transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
-
     uint16_t get_vehicle_count() { return in_state.vehicle_count; }
 
     // send ADSB_VEHICLE mavlink message, usually as a StreamRate
@@ -77,6 +70,9 @@ public:
         return _enabled;
     }
     bool next_sample(adsb_vehicle_t &obstacle);
+
+    // mavlink message handler
+    void handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg);
 
 private:
 
@@ -107,6 +103,11 @@ private:
     void send_configure(const mavlink_channel_t chan);
     void send_dynamic_out(const mavlink_channel_t chan);
 
+    // add or update vehicle_list from inbound mavlink msg
+    void handle_vehicle(const mavlink_message_t* msg);
+
+    // handle ADS-B transceiver report for ping2020
+    void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
 
     // reference to AHRS, so we can ask for our position,
     // heading and speed

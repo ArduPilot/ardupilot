@@ -47,13 +47,6 @@ def init(ctx):
 
 def options(opt):
     opt.load('compiler_cxx compiler_c waf_unit_test python')
-
-    opt.ap_groups = {
-        'configure': opt.add_option_group('Ardupilot configure options'),
-        'build': opt.add_option_group('Ardupilot build options'),
-        'check': opt.add_option_group('Ardupilot check options'),
-    }
-
     opt.load('ardupilotwaf')
     opt.load('build_summary')
 
@@ -152,6 +145,8 @@ def configure(cfg):
         cfg.msg('Using static linking', 'yes', color='YELLOW')
         cfg.env.STATIC_LINKING = True
 
+    cfg.load('ap_library')
+
     cfg.msg('Setting board to', cfg.options.board)
     cfg.get_board().configure(cfg)
 
@@ -168,12 +163,8 @@ def configure(cfg):
         cfg.end_msg('no')
         cfg.env.SUBMODULE_UPDATE = False
 
-    cfg.start_msg('Update submodules')
-    if cfg.env.SUBMODULE_UPDATE:
-        cfg.end_msg('yes')
-        cfg.load('git_submodule')
-    else:
-        cfg.end_msg('no')
+    cfg.msg('Update submodules', 'yes' if cfg.env.SUBMODULE_UPDATE else 'no')
+    cfg.load('git_submodule')
 
     if cfg.options.enable_benchmarks:
         cfg.load('gbenchmark')
@@ -276,7 +267,6 @@ def _build_common_taskgens(bld):
         name='ap',
         ap_vehicle='UNKNOWN',
         ap_libraries=bld.ap_get_all_libraries(),
-        use='mavlink',
     )
 
     if bld.env.HAS_GTEST:
@@ -305,6 +295,7 @@ def _build_recursion(bld):
     ]
 
     hal_dirs_patterns = [
+        'libraries/%s/tests',
         'libraries/%s/*/tests',
         'libraries/%s/*/benchmarks',
         'libraries/%s/examples/*',
@@ -347,6 +338,11 @@ def build(bld):
     bld.post_mode = Build.POST_LAZY
 
     bld.load('ardupilotwaf')
+
+    bld.env.AP_LIBRARIES_OBJECTS_KW.update(
+        use='mavlink',
+        cxxflags=['-include', 'ap_config.h'],
+    )
 
     _build_cmd_tweaks(bld)
 

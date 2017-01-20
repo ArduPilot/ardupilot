@@ -1,3 +1,200 @@
+Release 3.7.1, 21st October 2016
+--------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.7.1 of APM:Plane. This is a minor bug fix release. A major
+release of 3.8.0 is also being prepared now and will be in beta soon.
+
+Changes in this release:
+
+ - fixed arming check error on FMUv4 (pixracer)
+ - fixed pilot throttle based motor test for quadplane
+ - fixed use of multicopter mix_max in quadplane
+ - fixed AFS termination bugs for quadplanes
+ - added automatic ICE engine cut in QLAND
+ - fixed loiter mode with Q_GUIDED_MODE=1
+ - fixed navigation at lattitude of exactly zero
+ - fixed quadplane transition without airspeed sensor
+ - fixed rudder arming in CRUISE and FBWB modes
+ - fixed throttle slew rate in MANUAL mode for quadplanes
+ - fixed multiple bugs in transmitter tuning for quadplane rates
+ - fixed mavlink system ID in early startup on USB
+ - slow down update of home position
+ - update Disco battery lookup table
+ - improved compass calibration code for larger offsets
+
+Many thanks to everyone who contributed to this release!
+
+Release 3.7.0, 9th September 2016
+---------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.7.0 of APM:Plane. This is a major update so please read the
+notes carefully.
+
+The biggest changes in this release are:
+
+ - more reliable recovery from inverted flight
+ - automatic IC engine support
+ - Q_ASSIST_ANGLE for stall recovery on quadplanes
+ - Pixhawk2 IMU heater support
+ - PH2SLIM support
+ - AP_Module support
+ - Parrot Disco support
+ - major VRBrain support merge
+ - much faster boot time on Pixhawk
+
+I'll give a bit of detail on each of these changes before giving the
+more detailed list of changes.
+
+More reliable recovery from inverted flight
+
+Marc Merlin discovered that on some types of gliders that ArduPilot
+would not reliably recover from inverted flight. The problem turned
+out to be the use of the elevator at high bank angles preventing the
+ailerons from fully recovering attitude. The fix in this release
+prevent excessive elevator use when the aircraft is beyond
+LIM_ROLL_CD. This should help a lot for people using ArduPilot as a
+recovery system for manual FPV flight.
+
+Automatic IC engine support
+
+ArduPilot has supported internal combustion engines for a long time,
+but until now the pilot has had to control the ignition and starter
+manually using transmitter pass throughs. A new "ICE" module in
+ArduPilot now allows for fully automatic internal combustion engine
+support.
+
+Coupled with an RPM sensor you can setup your aircraft to
+automatically control the ignition and starter motor, allowing for one
+touch start of the motor on the ground and automatic restart of the
+motor in flight if needed.
+
+The IC engine support is also integrated into the quadplane code,
+allowing for automatic engine start at a specified altitude above the
+ground. This is useful for tractor engine quadplanes where the
+propeller could strike the ground on takeoff. The engine can also be
+automatically stopped in the final stage of a quadplane landing.
+
+Q_ASSIST_ANGLE for stall recovery
+
+Another new quadplane feature is automatic recovery from fixed wing
+stall. Previously the VTOL motors would only provide assistance in
+fixed wing modes when the aircraft airspeed dropped below
+Q_ASSIST_SPEED. Some stalls can occur with higher airspeed however,
+and this can result in the aircraft losing attitude control without
+triggering a Q_ASSIST_SPEED recovery. A new parameter Q_ASSIST_ANGLE
+allows for automatic assistance when attitude control is lost,
+triggering when the attitude goes outside the defined roll and pitch
+limits and is more than Q_ASSIST_ANGLE degrees from the desired
+attitude. Many thanks to Iskess for the suggestion and good discussion
+around this feature.
+
+Pixhawk2 heated IMU support
+
+This release adds support for the IMU heater in the upcoming Pixhawk2,
+allowing for more stable IMU temperatures. The Pixhawk2 is
+automatically detected and the heater enabled at boot, with the target
+IMU temperature controllable via BRD_IMU_TARGTEMP.
+
+Using an IMU heater should improve IMU stability in environments with
+significant temperature changes.
+
+PH2SLIM Support
+
+This release adds support for the PH2SLIM variant of the Pixhawk2,
+which is a Pixhawk2 cube without the isolated sensor top board. This
+makes for a very compact autopilot for small aircraft. To enable
+PH2SLIM support set the BRD_TYPE parameter to 6 using a GCS connected
+on USB.
+
+AP_Module Support
+
+This is the first release of ArduPilot with loadable module support
+for Linux based boards. The AP_Module system allows for externally
+compiled modules to access sensor data from ArduPilot controlled
+sensors. The initial AP_Module support is aimed at vendors integrating
+high-rate digital image stabilisation using IMU data, but it is
+expected this will be expanded to other use cases in future releases.
+
+Parrot Disco Support
+
+This release adds support for the Parrot C.H.U.C.K autopilot in the
+new Disco airframe. The Disco is a very lightweight flying wing with
+a nicely integrated Linux based autopilot. The Disco flies very nicely
+with ArduPilot, bringing the full set of mission capabilities of
+ArduPilot to this airframe.
+
+Major VRBrain Support Update
+
+This release includes a major merge of support for the VRBrain family
+of autopilots. Many thanks to the great work by Luke Mike in putting
+together this merge!
+
+Much Faster Boot Time
+
+Boot times on Pixhawk are now much faster due to a restructuring of
+the driver startup code, with slow starting drivers not started unless
+they are enabled with the appropriate parameters. The restructuring
+also allows for support of a wide variety of board types, including
+the PH2SLIM above.
+
+This release includes many other updates right across the flight
+stack, including several new features. Some of the changes include:
+
+ - improved quadplane auto-landing
+ - limit roll and pitch by Q_ANGLE_MAX in Q modes
+ - improved ADSB avoidance and MAVLink streaming
+ - smoother throttle control on fixed-wing to VTOL transition
+ - removed "demo servos" movement on boot
+ - fixed a problem with spurious throttle output during boot (thanks
+   to Marco for finding this)
+ - support MAVLink SET_ATTITUDE_TARGET message
+ - log all rally points on startup
+ - fixed use of stick mixing for rudder with STICK_MIXING=0
+ - fixed incorrect tuning warnings when vtol not active
+ - support MAVLink based external GPS device
+ - support LED_CONTROL MAVLink message
+ - prevent baro update while disarmed for large height change
+ - support PLAY_TUNE MAVLink message
+ - added AP_Button support for remote button input reporting
+ - support Ping2020 ADSB transceiver
+ - fixed disarm by rudder in quadplanes
+ - support 16 channel SERVO_OUTPUT_RAW in MAVLink2
+ - added automatic internal combustion engine support
+ - support DO_ENGINE_CONTROL MAVLink message
+ - added ground throttle suppression for quadplanes
+ - added MAVLink reporting of logging subsystem health
+ - prevent motor startup on reboot in quadplanes
+ - added quadplane support for Advanced Failsafe
+ - added support for a 2nd throttle channel
+ - fixed bug in crash detection during auto-land flare
+ - lowered is_flying groundspeed threshold to 1.5m/s
+ - added support for new FrSky telemetry protocol variant
+ - added support for fence auto-enable on takeoff in quadplanes
+ - added Q_ASSIST_ANGLE for using quadplane to catch stalls in fixed wing flight
+ - added BRD_SAFETY_MASK to allow for channel movement for selected channels with safety on
+ - numerous improvements to multicopter stability control for quadplanes
+ - support X-Plane10 as SITL backend
+ - lots of HAL_Linux improvements to bus and thread handling
+ - fixed problem with elevator use at high roll angles that could
+   prevent attitude recovery from inverted flight
+ - improved yaw handling in EKF2 near ground
+ - added IMU heater support on Pixhawk2
+ - allow for faster accel bias learning in EKF2
+ - fixed in-flight yaw reset bug in EKF2
+ - added AP_Module support for loadable modules
+ - support Disco airframe from Parrot
+ - use full throttle in initial takeoff in TECS
+ - added NTF_LED_OVERRIDE support
+ - added terrain based simulation in SITL
+ - merged support for wide range of VRBrain boards
+ - added support for PH2SLIM and PHMINI boards with BRD_TYPE
+ - greatly reduced boot time on Pixhawk and similar boards
+ - fixed magic check for signing key in MAVLink2
+ - fixed averaging of gyros for EKF2 gyro bias estimate
+ 
+
 Release 3.6.0, 6th June 2016
 ----------------------------
 

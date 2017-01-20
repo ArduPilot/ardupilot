@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple test for the AP_AHRS interface
 //
@@ -7,6 +5,7 @@
 #include <AP_ADC/AP_ADC.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -16,12 +15,23 @@ AP_InertialSensor ins;
 Compass compass;
 
 AP_GPS gps;
-AP_Baro baro;
+AP_Baro barometer;
 AP_SerialManager serial_manager;
 
-// choose which AHRS system to use
-AP_AHRS_DCM  ahrs(ins, baro, gps);
+class DummyVehicle {
+public:
+    RangeFinder sonar {serial_manager};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF2, EKF3,
+                        AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF2 EKF2{&ahrs, barometer, sonar};
+    NavEKF3 EKF3{&ahrs, barometer, sonar};
+};
 
+static DummyVehicle vehicle;
+
+// choose which AHRS system to use
+// AP_AHRS_DCM  ahrs(ins, baro, gps);
+AP_AHRS_NavEKF ahrs(vehicle.ahrs);
 
 
 #define HIGH 1
@@ -29,6 +39,8 @@ AP_AHRS_DCM  ahrs(ins, baro, gps);
 
 void setup(void)
 {
+    AP_BoardConfig{}.init();
+
     ins.init(100);
     ahrs.init();
     serial_manager.init();
@@ -39,7 +51,7 @@ void setup(void)
     } else {
         hal.console->printf("No compass detected\n");
     }
-    gps.init(NULL, serial_manager);
+    gps.init(nullptr, serial_manager);
 }
 
 void loop(void)

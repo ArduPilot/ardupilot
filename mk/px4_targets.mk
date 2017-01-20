@@ -34,12 +34,14 @@ EXTRAFLAGS += -D__STDC_FORMAT_MACROS
 EXTRAFLAGS += -DHAVE_STD_NULLPTR_T=0
 EXTRAFLAGS += -DHAVE_ENDIAN_H=0
 EXTRAFLAGS += -DHAVE_BYTESWAP_H=0
+EXTRAFLAGS += -DHAVE_OCLOEXEC=0
 
 EXTRAFLAGS += -I$(BUILDROOT)/libraries/GCS_MAVLink/include/mavlink
 
 # we have different config files for V1 and V2
 PX4_V1_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
 PX4_V2_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v2_APM.mk
+PX4_V3_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v3_APM.mk
 PX4_V4_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v4_APM.mk
 
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
@@ -79,6 +81,7 @@ module_mk:
 	$(v) rm -f $(SKETCHBOOK)/module.mk.new
 
 px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
+	$(v) echo Building px4-v1
 	$(RULEHDR)
 	$(v) cp $(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(v) $(PX4_MAKE) px4fmu-v1_APM
@@ -88,6 +91,7 @@ px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v1.px4"
 
 px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
+	$(v) echo Building px4-v2
 	$(RULEHDR)
 	$(v) cp $(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v2_APM
@@ -96,7 +100,18 @@ px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v2.px4" "$(SKETCH)-v2.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v2.px4"
 
+px4-v3: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v3.export $(SKETCHCPP) module_mk px4-io-v2
+	$(v) echo Building px4-v3
+	$(RULEHDR)
+	$(v) cp $(PX4_V3_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
+	$(PX4_MAKE) px4fmu-v3_APM
+	$(v) arm-none-eabi-size $(PX4_ROOT)/Build/px4fmu-v3_APM.build/firmware.elf
+	$(v) cp $(PX4_ROOT)/Images/px4fmu-v3_APM.px4 $(SKETCH)-v3.px4
+	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v3.px4" "$(SKETCH)-v3.px4"
+	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v3.px4"
+
 px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v4.export $(SKETCHCPP) module_mk
+	$(v) echo Building px4-v4
 	$(RULEHDR)
 	$(v) cp $(PX4_V4_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v4_APM
@@ -107,11 +122,18 @@ px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v4.px4" "$(SKETCH)-v4.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v4.px4"
 
-px4: px4-v1 px4-v2 px4-v4
+# force the 3 build types to not run in parallel. We got bad binaries with incorrect parameter handling
+# when these were allowed to happen in parallel
+px4:
+	$(MAKE) px4-v1
+	$(MAKE) px4-v2
+	$(MAKE) px4-v3
+	$(MAKE) px4-v4
 
 px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build $(PX4_ROOT)/Images/*.px4 $(PX4_ROOT)/Images/*.bin
 	$(v) /bin/rm -rf $(PX4_ROOT)/src/modules/uORB/topics $(PX4_ROOT)/src/platforms/nuttx/px4_messages
+	$(v) /bin/rm -f $(SRCROOT)/*.o
 
 px4-cleandep: clean
 	$(v) mkdir -p $(PX4_ROOT)/Build
@@ -131,6 +153,10 @@ px4-v1-upload: px4-v1
 px4-v2-upload: px4-v2
 	$(RULEHDR)
 	$(v) $(PX4_MAKE) px4fmu-v2_APM upload
+
+px4-v3-upload: px4-v3
+	$(RULEHDR)
+	$(v) $(PX4_MAKE) px4fmu-v3_APM upload
 
 px4-v4-upload: px4-v4
 	$(RULEHDR)
@@ -175,6 +201,7 @@ px4-io: px4-io-v1 px4-io-v2
 .NOTPARALLEL: \
 	$(PX4_ROOT)/Archives/px4fmu-v1.export \
 	$(PX4_ROOT)/Archives/px4fmu-v2.export \
+	$(PX4_ROOT)/Archives/px4fmu-v3.export \
 	$(PX4_ROOT)/Archives/px4fmu-v4.export \
 	$(PX4_ROOT)/Archives/px4io-v1.export \
 	$(PX4_ROOT)/Archives/px4io-v2.export
@@ -184,6 +211,9 @@ $(PX4_ROOT)/Archives/px4fmu-v1.export:
 
 $(PX4_ROOT)/Archives/px4fmu-v2.export:
 	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4fmu-v2"
+
+$(PX4_ROOT)/Archives/px4fmu-v3.export:
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4fmu-v3"
 
 $(PX4_ROOT)/Archives/px4fmu-v4.export:
 	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4fmu-v4"
@@ -195,4 +225,4 @@ $(PX4_ROOT)/Archives/px4io-v2.export:
 	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v2"
 
 px4-archives:
-	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v1 px4io-v2 px4fmu-v1 px4fmu-v2 px4fmu-v4"
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v1 px4io-v2 px4fmu-v1 px4fmu-v2 px4fmu-v3 px4fmu-v4"

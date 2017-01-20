@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,11 +28,6 @@ Copter::Copter(void) :
             FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
     control_mode(STABILIZE),
-#if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-    motors(g.rc_7, MAIN_LOOP_RATE),
-#else
-    motors(MAIN_LOOP_RATE),
-#endif
     scaleLongDown(1),
     wp_bearing(0),
     home_bearing(0),
@@ -55,7 +48,7 @@ Copter::Copter(void) :
     loiter_time_max(0),
     loiter_time(0),
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry(ahrs, battery),
+    frsky_telemetry(ahrs, battery, rangefinder),
 #endif
     climb_rate(0),
     target_rangefinder_alt(0.0f),
@@ -72,13 +65,6 @@ Copter::Copter(void) :
     condition_start(0),
     G_Dt(MAIN_LOOP_SECONDS),
     inertial_nav(ahrs),
-    attitude_control(ahrs, aparm, motors, MAIN_LOOP_SECONDS),
-    pos_control(ahrs, inertial_nav, motors, attitude_control,
-                g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
-                g.p_pos_xy, g.pi_vel_xy),
-    avoid(ahrs, inertial_nav, fence),
-    wp_nav(inertial_nav, ahrs, pos_control, attitude_control),
-    circle_nav(inertial_nav, ahrs, pos_control),
     pmTest1(0),
     fast_loopTimer(0),
     mainLoop_count(0),
@@ -93,6 +79,9 @@ Copter::Copter(void) :
 #endif
 #if AC_FENCE == ENABLED
     fence(ahrs, inertial_nav),
+#endif
+#if AC_AVOID_ENABLED == ENABLED
+    avoid(ahrs, inertial_nav, fence, g2.proximity),
 #endif
 #if AC_RALLY == ENABLED
     rally(ahrs),

@@ -6,18 +6,20 @@ Framework to start a simulated vehicle and connect it to MAVProxy.
 Peter Barker, April 2016
 based on sim_vehicle.sh by Andrew Tridgell, October 2011
 """
+from __future__ import print_function
 
 import atexit
 import getpass
 import optparse
 import os
 import os.path
+import re
 import signal
 import subprocess
 import sys
 import tempfile
 import time
-
+import shlex
 
 # List of open terminal windows for macosx
 windowID = []
@@ -87,9 +89,8 @@ def cygwin_pidof(proc_name):
                 pid = int(line_split[0].strip())
             except:
                 pid = int(line_split[1].strip())
-                str_pid = str(pid)
-            if str_pid not in pids:
-                pids.append(str_pid)
+            if pid not in pids:
+                pids.append(pid)
     return pids
 
 
@@ -143,7 +144,7 @@ def kill_tasks():
     """Clean up stray processes by name.  This is a somewhat shotgun approach"""
     progress("Killing tasks")
     try:
-        victim_names = [
+        victim_names = {
             'JSBSim',
             'lt-JSBSim',
             'ArduPlane.elf',
@@ -154,7 +155,12 @@ def kill_tasks():
             'MAVProxy.exe',
             'runsim.py',
             'AntennaTracker.elf',
-        ]
+        }
+        for frame in _options_for_frame.keys():
+            if "waf_target" not in _options_for_frame[frame]:
+                continue
+            exe_name = os.path.basename(_options_for_frame[frame]["waf_target"])
+            victim_names.add(exe_name)
 
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
@@ -168,9 +174,6 @@ def kill_tasks():
     except Exception as e:
         progress("kill_tasks failed: {}".format(str(e)))
 
-# clean up processes at exit:
-atexit.register(kill_tasks)
-
 
 def check_jsbsim_version():
     """Assert that the JSBSim we will run is the one we expect to run"""
@@ -183,7 +186,7 @@ def check_jsbsim_version():
                                 # check below and produce a reasonable
                                 # error message
     try:
-        jsbsim_version.index("ArduPilot")
+        jsbsim_version.index(b"ArduPilot")
     except ValueError:
         print(r"""
 =========================================================
@@ -213,125 +216,6 @@ def find_root_dir():
     """Return path to root directory"""
     return os.path.realpath(os.path.join(find_autotest_dir(), '../..'))
 
-progress("Start")
-
-# define and run parser
-parser = CompatOptionParser("sim_vehicle.py", epilog="""
-    eeprom.bin in the starting directory contains the parameters for your simulated vehicle. Always start from the same directory. It is recommended that you start in the main vehicle directory for the vehicle you are simulating, for example, start in the ArduPlane directory to simulate ArduPlane
-""")
-
-parser.add_option("-v", "--vehicle", type='string', default=None, help="vehicle type (ArduPlane, ArduCopter or APMrover2)")
-parser.add_option("-f", "--frame", type='string', default=None, help="""set aircraft frame type
-                     for copters can choose +, X, quad or octa
-                     for planes can choose elevon or vtail""")
-parser.add_option("-C", "--sim_vehicle_sh_compatible", action='store_true', default=False, help="be compatible with the way sim_vehicle.sh works; make this the first option")
-parser.add_option("-H", "--hil", action='store_true', default=False, help="start HIL")
-
-group_build = optparse.OptionGroup(parser, "Build options")
-group_build.add_option("-N", "--no-rebuild", action='store_true', default=False, help="don't rebuild before starting ardupilot")
-group_build.add_option("-D", "--debug", action='store_true', default=False, help="build with debugging")
-group_build.add_option("-c", "--clean", action='store_true', default=False, help="do a make clean before building")
-group_build.add_option("-j", "--jobs", default=None, type='int', help="number of processors to use during build (default for waf : number of processor, for make : 1)")
-group_build.add_option("-b", "--build-target", default=None, type='string', help="override SITL build target")
-group_build.add_option("-s", "--build-system", default="waf", type='choice', choices=["make", "waf"], help="build system to use")
-group_build.add_option("", "--no-rebuild-on-failure", dest="rebuild_on_failure", action='store_false', default=True, help="if build fails, do not clean and rebuild")
-parser.add_option_group(group_build)
-
-group_sim = optparse.OptionGroup(parser, "Simulation options")
-group_sim.add_option("-I", "--instance", default=0, type='int', help="instance of simulator")
-group_sim.add_option("-V", "--valgrind", action='store_true', default=False, help="enable valgrind for memory access checking (very slow!)")
-group_sim.add_option("-T", "--tracker", action='store_true', default=False, help="start an antenna tracker instance")
-group_sim.add_option("-A", "--sitl-instance-args", type='string', default=None, help="pass arguments to SITL instance")
-# group_sim.add_option("-R", "--reverse-throttle", action='store_true', default=False, help="reverse throttle in plane")
-group_sim.add_option("-G", "--gdb", action='store_true', default=False, help="use gdb for debugging ardupilot")
-group_sim.add_option("-g", "--gdb-stopped", action='store_true', default=False, help="use gdb for debugging ardupilot (no auto-start)")
-group_sim.add_option("-d", "--delay-start", default=0, type='float', help="delays the start of mavproxy by the number of seconds")
-group_sim.add_option("-B", "--breakpoint", type='string', action="append", default=[], help="add a breakpoint at given location in debugger")
-group_sim.add_option("-M", "--mavlink-gimbal", action='store_true', default=False, help="enable MAVLink gimbal")
-group_sim.add_option("-L", "--location", type='string', default='CMAC', help="select start location from Tools/autotest/locations.txt")
-group_sim.add_option("-l", "--custom-location", type='string', default=None, help="set custom start location")
-group_sim.add_option("-S", "--speedup", default=1, type='int', help="set simulation speedup (1 for wall clock time)")
-group_sim.add_option("-t", "--tracker-location", default='CMAC_PILOTSBOX', type='string', help="set antenna tracker start location")
-group_sim.add_option("-w", "--wipe-eeprom", action='store_true', default=False, help="wipe EEPROM and reload parameters")
-group_sim.add_option("-m", "--mavproxy-args", default=None, type='string', help="additional arguments to pass to mavproxy.py")
-group_sim.add_option("", "--strace", action='store_true', default=False, help="strace the ArduPilot binary")
-group_sim.add_option("", "--model", type='string', default=None, help="Override simulation model to use")
-parser.add_option_group(group_sim)
-
-
-# special-cased parameters for mavproxy, because some people's fingers
-# have long memories, and they don't want to use -C :-)
-group = optparse.OptionGroup(parser, "Compatibility MAVProxy options (consider using --mavproxy-args instead)")
-group.add_option("", "--out", default=[], type='string', action="append", help="create an additional mavlink output")
-group.add_option("", "--map", default=False, action='store_true', help="load map module on startup")
-group.add_option("", "--console", default=False, action='store_true', help="load console module on startup")
-parser.add_option_group(group)
-
-cmd_opts, cmd_args = parser.parse_args()
-
-if cmd_opts.sim_vehicle_sh_compatible and cmd_opts.jobs is None:
-    cmd_opts.jobs = 1
-
-# validate parameters
-if cmd_opts.hil:
-    if cmd_opts.valgrind:
-        print("May not use valgrind with hil")
-        sys.exit(1)
-    if cmd_opts.gdb or cmd_opts.gdb_stopped:
-        print("May not use gdb with hil")
-        sys.exit(1)
-    if cmd_opts.strace:
-        print("May not use strace with hil")
-        sys.exit(1)
-
-if cmd_opts.valgrind and (cmd_opts.gdb or cmd_opts.gdb_stopped):
-    print("May not use valgrind with gdb")
-    sys.exit(1)
-
-if cmd_opts.strace and (cmd_opts.gdb or cmd_opts.gdb_stopped):
-    print("May not use strace with gdb")
-    sys.exit(1)
-
-if cmd_opts.strace and cmd_opts.valgrind:
-    print("valgrind and strace almost certainly not a good idea")
-
-# magically determine vehicle type (if required):
-if cmd_opts.vehicle is None:
-    cwd = os.getcwd()
-    cmd_opts.vehicle = os.path.basename(cwd)
-
-# determine a frame type if not specified:
-default_frame_for_vehicle = {
-    "APMrover2": "rover",
-    "ArduPlane": "jsbsim",
-    "ArduCopter": "quad",
-    "AntennaTracker": "tracker",
-}
-
-if cmd_opts.vehicle not in default_frame_for_vehicle:
-    # try in parent directories, useful for having config in subdirectories
-    cwd = os.getcwd()
-    while cwd:
-        bname = os.path.basename(cwd)
-        if not bname:
-            break
-        if bname in default_frame_for_vehicle:
-            cmd_opts.vehicle = bname
-            break
-        cwd = os.path.dirname(cwd)
-
-# try to validate vehicle
-if cmd_opts.vehicle not in default_frame_for_vehicle:
-    progress("** Is (%s) really your vehicle type?  Try  -v VEHICLETYPE  if not, or be in the e.g. ArduCopter subdirectory" % (cmd_opts.vehicle,))
-
-# determine frame options (e.g. build type might be "sitl")
-if cmd_opts.frame is None:
-    cmd_opts.frame = default_frame_for_vehicle[cmd_opts.vehicle]
-
-# setup ports for this instance
-mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10 * cmd_opts.instance)
-simout_port = "127.0.0.1:" + str(5501 + 10 * cmd_opts.instance)
-
 """
 make_target: option passed to make to create binaries.  Usually sitl, and "-debug" may be appended if -D is passed to sim_vehicle.py
 default_params_filename: filename of default parameters file.  Taken to be relative to autotest dir.
@@ -343,45 +227,50 @@ _options_for_frame = {
     },
     # COPTER
     "+": {
-        "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "default_params/copter_params.parm",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter.parm",
     },
     "quad": {
         "model": "+",
-        "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "default_params/copter_params.parm",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter.parm",
     },
     "X": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         # this param set FRAME doesn't actually work because mavproxy
         # won't set a parameter unless it knows of it, and the param fetch happens asynchronously
-        "default_params_filename": "default_params/copter_params.parm",
+        "default_params_filename": "default_params/copter.parm",
         "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
     },
     "hexa": {
-        "make_target": "sitl-hexa",
-        "waf_target": "bin/arducopter-hexa",
-        "default_params_filename": "default_params/copter_params.parm",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter.parm",
+    },
+    "octa-quad": {
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter.parm",
     },
     "octa": {
-        "make_target": "sitl-octa",
-        "waf_target": "bin/arducopter-octa",
-        "default_params_filename": "default_params/copter_params.parm",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter.parm",
     },
     "tri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arducopter-tri",
-        "default_params_filename": "default_params/tri_params.parm",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter-tri.parm",
     },
     "y6": {
-        "make_target": "sitl-y6",
-        "waf_target": "bin/arducopter-y6",
-        "default_params_filename": "default_params/y6_params.parm",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter-y6.parm",
     },
     # COPTER TYPES
     "IrisRos": {
-        "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "default_params/copter_params.parm",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter.parm",
     },
     "firefly": {
         "waf_target": "bin/arducopter-firefly",
@@ -391,7 +280,7 @@ _options_for_frame = {
     "heli": {
         "make_target": "sitl-heli",
         "waf_target": "bin/arducopter-heli",
-        "default_params_filename": "default_params/Helicopter.parm",
+        "default_params_filename": "default_params/copter-heli.parm",
     },
     "heli-dual": {
         "make_target": "sitl-heli-dual",
@@ -402,24 +291,24 @@ _options_for_frame = {
         "waf_target": "bin/arducopter-coax",  # is this correct? -pb201604301447
     },
     "singlecopter": {
-        "make_target": "sitl-single",
-        "waf_target": "bin/arducopter-single",
-        "default_params_filename": "default_params/SingleCopter.parm",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter-single.parm",
     },
     "coaxcopter": {
-        "make_target": "sitl-coax",
-        "waf_target": "bin/arducopter-coax",
-        "default_params_filename": "default_params/CoaxCopter.parm",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter-coax.parm",
     },
     # PLANE
     "quadplane-tilttri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arduplane-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/quadplane-tilttri.parm",
     },
     "quadplane-tri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arduplane-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/quadplane-tri.parm",
     },
     "quadplane": {
@@ -441,16 +330,20 @@ _options_for_frame = {
     # ROVER
     "rover": {
         "waf_target": "bin/ardurover",
-        "default_params_filename": "default_params/Rover.parm",
+        "default_params_filename": "default_params/rover.parm",
     },
     "rover-skid": {
         "waf_target": "bin/ardurover",
-        "default_params_filename": "default_params/Rover-skid.parm",
+        "default_params_filename": "default_params/rover-skid.parm",
     },
     # SIM
-    "Gazebo": {
-        "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "default_params/copter_params.parm",
+    "gazebo-iris": {
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/gazebo-iris.parm",
+    },
+    "gazebo-zephyr": {
+        "waf_target": "bin/arduplane",
+        "default_params_filename": "default_params/gazebo-zephyr.parm",
     },
     "last_letter": {
         "waf_target": "bin/arduplane",
@@ -460,13 +353,13 @@ _options_for_frame = {
     },
     "jsbsim": {
         "waf_target": "bin/arduplane",
-        "default_params_filename": "default_params/ArduPlane.parm",
+        "default_params_filename": "default_params/plane-jsbsim.parm",
     },
 }
 
 _default_waf_target = {
     "ArduPlane": "bin/arduplane",
-    "ArduCopter": "bin/arducopter-quad",
+    "ArduCopter": "bin/arducopter",
     "APMrover2": "bin/ardurover",
     "AntennaTracker": "bin/antennatracker",
 }
@@ -483,7 +376,7 @@ def options_for_frame(frame, vehicle, opts):
     if frame in _options_for_frame:
         ret = _options_for_frame[frame]
     else:
-        for p in ["octa", "tri", "y6", "firefly", "heli", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
+        for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
             if frame.startswith(p):
                 ret = _options_for_frame[p]
                 break
@@ -531,8 +424,11 @@ def do_build_waf(opts, frame_options):
     cmd_configure = [waf_light, "configure", "--board", "sitl"]
     if opts.debug:
         cmd_configure.append("--debug")
+    pieces = [ shlex.split(x) for x in opts.waf_configure_args ]
+    for piece in pieces:
+        cmd_configure.extend(piece)
 
-    run_cmd_blocking("Configure waf", cmd_configure)
+    run_cmd_blocking("Configure waf", cmd_configure, check=True)
 
     if opts.clean:
         run_cmd_blocking("Building clean", [waf_light, "clean"])
@@ -540,6 +436,9 @@ def do_build_waf(opts, frame_options):
     cmd_build = [waf_light, "build", "--target", frame_options["waf_target"]]
     if opts.jobs is not None:
         cmd_build += ['-j', str(opts.jobs)]
+    pieces = [ shlex.split(x) for x in opts.waf_build_args ]
+    for piece in pieces:
+        cmd_build.extend(piece)
 
     _, sts = run_cmd_blocking("Building", cmd_build)
 
@@ -592,14 +491,42 @@ def do_build(vehicledir, opts, frame_options):
     os.chdir(old_dir)
 
 
+def get_user_locations_path():
+    '''The user locations.txt file is located by default in
+    $XDG_CONFIG_DIR/ardupilot/locations.txt. If $XDG_CONFIG_DIR is
+    not defined, we look in $HOME/.config/ardupilot/locations.txt.  If
+    $HOME is not defined, we look in ./.config/ardpupilot/locations.txt.'''
+
+    config_dir = os.environ.get(
+        'XDG_CONFIG_DIR',
+        os.path.join(os.environ.get('HOME', '.'), '.config'))
+
+    user_locations_path = os.path.join(
+        config_dir, 'ardupilot', 'locations.txt')
+
+    return user_locations_path
+
+
 def find_location_by_name(autotest, locname):
     """Search locations.txt for locname, return GPS coords"""
+    locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
+                                        get_user_locations_path())
     locations_filepath = os.path.join(autotest, "locations.txt")
-    for line in open(locations_filepath, 'r'):
-        line = line.rstrip("\n")
-        (name, loc) = line.split("=")
-        if name == locname:
-            return loc
+    comment_regex = re.compile("\s*#.*")
+    for path in [locations_userpath, locations_filepath]:
+        if not os.path.isfile(path):
+            continue
+
+        with open(path, 'r') as fd:
+            for line in fd:
+                line = re.sub(comment_regex, "", line)
+                line = line.rstrip("\n")
+                if len(line) == 0:
+                    continue
+                (name, loc) = line.split("=")
+                if name == locname:
+                    return loc
+
     print("Failed to find location (%s)" % cmd_opts.location)
     sys.exit(1)
 
@@ -611,11 +538,16 @@ def progress_cmd(what, cmd):
     progress(shell_text)
 
 
-def run_cmd_blocking(what, cmd, quiet=False, **kw):
+def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     if not quiet:
         progress_cmd(what, cmd)
     p = subprocess.Popen(cmd, **kw)
-    return os.waitpid(p.pid, 0)
+    ret = os.waitpid(p.pid, 0)
+    _, sts = ret
+    if check and sts != 0:
+        progress("(%s) exited with code %d" % (what,sts,))
+        sys.exit(1)
+    return ret
 
 
 def run_in_terminal_window(autotest, name, cmd):
@@ -644,7 +576,10 @@ def start_antenna_tracker(autotest, opts):
     progress("Preparing antenna tracker")
     tracker_home = find_location_by_name(find_autotest_dir(), opts.tracker_location)
     vehicledir = os.path.join(autotest, "../../" + "AntennaTracker")
-    do_build(vehicledir, opts, "sitl-debug")
+    tracker_frame_options = {
+        "waf_target": _default_waf_target["AntennaTracker"],
+    }
+    do_build(vehicledir, opts, tracker_frame_options)
     tracker_instance = 1
     os.chdir(vehicledir)
     tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
@@ -719,10 +654,12 @@ def start_mavproxy(opts, stuff):
             cmd.extend(["--sitl", simout_port])
 
     # If running inside of a vagrant guest, then we probably want to forward our mavlink out to the containing host OS
-    if getpass.getuser() == "vagrant":
-        cmd.extend(["--out", "10.0.2.2:14550"])
-    for port in [14550, 14551]:
-        cmd.extend(["--out", "127.0.0.1:" + str(port)])
+    ports = [p + 10 * cmd_opts.instance for p in [14550,14551]]
+    for port in ports:
+        if os.path.isfile("/ardupilot.vagrant"):
+            cmd.extend(["--out", "10.0.2.2:" + str(port)])
+        else:
+            cmd.extend(["--out", "127.0.0.1:" + str(port)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
@@ -747,6 +684,8 @@ def start_mavproxy(opts, stuff):
         cmd.append('--map')
     if opts.console:
         cmd.append('--console')
+    if opts.aircraft is not None:
+        cmd.extend(['--aircraft', opts.aircraft])
 
     if len(extra_cmd):
         cmd.extend(['--cmd', extra_cmd])
@@ -757,7 +696,136 @@ def start_mavproxy(opts, stuff):
     env['PYTHONPATH'] = local_mp_modules_dir + os.pathsep + env.get('PYTHONPATH', '')
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
-    progress("MAVProxy exitted")
+    progress("MAVProxy exited")
+
+
+# define and run parser
+parser = CompatOptionParser("sim_vehicle.py",
+        epilog="eeprom.bin in the starting directory contains the parameters for your " \
+               "simulated vehicle. Always start from the same directory. It is "\
+               "recommended that you start in the main vehicle directory for the vehicle" \
+               "you are simulating, for example, start in the ArduPlane directory to " \
+               "simulate ArduPlane")
+
+parser.add_option("-v", "--vehicle", type='string', default=None, help="vehicle type (ArduPlane, ArduCopter or APMrover2)")
+parser.add_option("-f", "--frame", type='string', default=None, help="""set aircraft frame type
+                     for copters can choose +, X, quad or octa
+                     for planes can choose elevon or vtail""")
+parser.add_option("-C", "--sim_vehicle_sh_compatible", action='store_true', default=False, help="be compatible with the way sim_vehicle.sh works; make this the first option")
+parser.add_option("-H", "--hil", action='store_true', default=False, help="start HIL")
+
+group_build = optparse.OptionGroup(parser, "Build options")
+group_build.add_option("-N", "--no-rebuild", action='store_true', default=False, help="don't rebuild before starting ardupilot")
+group_build.add_option("-D", "--debug", action='store_true', default=False, help="build with debugging")
+group_build.add_option("-c", "--clean", action='store_true', default=False, help="do a make clean before building")
+group_build.add_option("-j", "--jobs", default=None, type='int', help="number of processors to use during build (default for waf : number of processor, for make : 1)")
+group_build.add_option("-b", "--build-target", default=None, type='string', help="override SITL build target")
+group_build.add_option("-s", "--build-system", default="waf", type='choice', choices=["make", "waf"], help="build system to use")
+group_build.add_option("", "--rebuild-on-failure", dest="rebuild_on_failure", action='store_true', default=False, help="if build fails, do not clean and rebuild")
+group_build.add_option("", "--waf-configure-arg", action="append", dest="waf_configure_args", type="string", default=[], help="extra arguments to pass to waf in its configure step")
+group_build.add_option("", "--waf-build-arg", action="append", dest="waf_build_args", type="string", default=[], help="extra arguments to pass to waf in its build step")
+parser.add_option_group(group_build)
+
+group_sim = optparse.OptionGroup(parser, "Simulation options")
+group_sim.add_option("-I", "--instance", default=0, type='int', help="instance of simulator")
+group_sim.add_option("-V", "--valgrind", action='store_true', default=False, help="enable valgrind for memory access checking (very slow!)")
+group_sim.add_option("-T", "--tracker", action='store_true', default=False, help="start an antenna tracker instance")
+group_sim.add_option("-A", "--sitl-instance-args", type='string', default=None, help="pass arguments to SITL instance")
+# group_sim.add_option("-R", "--reverse-throttle", action='store_true', default=False, help="reverse throttle in plane")
+group_sim.add_option("-G", "--gdb", action='store_true', default=False, help="use gdb for debugging ardupilot")
+group_sim.add_option("-g", "--gdb-stopped", action='store_true', default=False, help="use gdb for debugging ardupilot (no auto-start)")
+group_sim.add_option("-d", "--delay-start", default=0, type='float', help="delays the start of mavproxy by the number of seconds")
+group_sim.add_option("-B", "--breakpoint", type='string', action="append", default=[], help="add a breakpoint at given location in debugger")
+group_sim.add_option("-M", "--mavlink-gimbal", action='store_true', default=False, help="enable MAVLink gimbal")
+group_sim.add_option("-L", "--location", type='string', default='CMAC', help="select start location from Tools/autotest/locations.txt")
+group_sim.add_option("-l", "--custom-location", type='string', default=None, help="set custom start location")
+group_sim.add_option("-S", "--speedup", default=1, type='int', help="set simulation speedup (1 for wall clock time)")
+group_sim.add_option("-t", "--tracker-location", default='CMAC_PILOTSBOX', type='string', help="set antenna tracker start location")
+group_sim.add_option("-w", "--wipe-eeprom", action='store_true', default=False, help="wipe EEPROM and reload parameters")
+group_sim.add_option("-m", "--mavproxy-args", default=None, type='string', help="additional arguments to pass to mavproxy.py")
+group_sim.add_option("", "--strace", action='store_true', default=False, help="strace the ArduPilot binary")
+group_sim.add_option("", "--model", type='string', default=None, help="Override simulation model to use")
+parser.add_option_group(group_sim)
+
+
+# special-cased parameters for mavproxy, because some people's fingers
+# have long memories, and they don't want to use -C :-)
+group = optparse.OptionGroup(parser, "Compatibility MAVProxy options (consider using --mavproxy-args instead)")
+group.add_option("", "--out", default=[], type='string', action="append", help="create an additional mavlink output")
+group.add_option("", "--map", default=False, action='store_true', help="load map module on startup")
+group.add_option("", "--console", default=False, action='store_true', help="load console module on startup")
+group.add_option("", "--aircraft", default=None, help="store state and logs in named directory")
+parser.add_option_group(group)
+
+cmd_opts, cmd_args = parser.parse_args()
+
+# clean up processes at exit:
+atexit.register(kill_tasks)
+
+progress("Start")
+
+if cmd_opts.sim_vehicle_sh_compatible and cmd_opts.jobs is None:
+    cmd_opts.jobs = 1
+
+# validate parameters
+if cmd_opts.hil:
+    if cmd_opts.valgrind:
+        print("May not use valgrind with hil")
+        sys.exit(1)
+    if cmd_opts.gdb or cmd_opts.gdb_stopped:
+        print("May not use gdb with hil")
+        sys.exit(1)
+    if cmd_opts.strace:
+        print("May not use strace with hil")
+        sys.exit(1)
+
+if cmd_opts.valgrind and (cmd_opts.gdb or cmd_opts.gdb_stopped):
+    print("May not use valgrind with gdb")
+    sys.exit(1)
+
+if cmd_opts.strace and (cmd_opts.gdb or cmd_opts.gdb_stopped):
+    print("May not use strace with gdb")
+    sys.exit(1)
+
+if cmd_opts.strace and cmd_opts.valgrind:
+    print("valgrind and strace almost certainly not a good idea")
+
+# magically determine vehicle type (if required):
+if cmd_opts.vehicle is None:
+    cwd = os.getcwd()
+    cmd_opts.vehicle = os.path.basename(cwd)
+
+# determine a frame type if not specified:
+default_frame_for_vehicle = {
+    "APMrover2": "rover",
+    "ArduPlane": "jsbsim",
+    "ArduCopter": "quad",
+    "AntennaTracker": "tracker",
+}
+
+if cmd_opts.vehicle not in default_frame_for_vehicle:
+    # try in parent directories, useful for having config in subdirectories
+    cwd = os.getcwd()
+    while cwd:
+        bname = os.path.basename(cwd)
+        if not bname:
+            break
+        if bname in default_frame_for_vehicle:
+            cmd_opts.vehicle = bname
+            break
+        cwd = os.path.dirname(cwd)
+
+# try to validate vehicle
+if cmd_opts.vehicle not in default_frame_for_vehicle:
+    progress("** Is (%s) really your vehicle type?  Try  -v VEHICLETYPE  if not, or be in the e.g. ArduCopter subdirectory" % (cmd_opts.vehicle,))
+
+# determine frame options (e.g. build type might be "sitl")
+if cmd_opts.frame is None:
+    cmd_opts.frame = default_frame_for_vehicle[cmd_opts.vehicle]
+
+# setup ports for this instance
+mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10 * cmd_opts.instance)
+simout_port = "127.0.0.1:" + str(5501 + 10 * cmd_opts.instance)
 
 frame_infos = options_for_frame(cmd_opts.frame, cmd_opts.vehicle, cmd_opts)
 

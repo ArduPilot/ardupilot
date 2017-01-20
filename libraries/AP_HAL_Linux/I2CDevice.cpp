@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
  *
@@ -138,6 +137,14 @@ int I2CBus::open(uint8_t n)
     return fd;
 }
 
+I2CDevice::I2CDevice(I2CBus &bus, uint8_t address)
+    : _bus(bus)
+    , _address(address)
+{
+    set_device_bus(bus.bus);
+    set_device_address(address);
+}
+    
 I2CDevice::~I2CDevice()
 {
     // Unregister itself from the I2CDeviceManager
@@ -168,6 +175,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         nmsgs++;
     }
 
+    /* interpret it as an input error if nothing has to be done */
     if (!nmsgs) {
         return false;
     }
@@ -177,13 +185,13 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     i2c_data.msgs = msgs;
     i2c_data.nmsgs = nmsgs;
 
-    int r = -EINVAL;
+    int r;
     unsigned retries = _retries;
     do {
         r = ::ioctl(_bus.fd, I2C_RDWR, &i2c_data);
-    } while (r < 0 && retries-- > 0);
+    } while (r == -1 && retries-- > 0);
 
-    return r >= 0;
+    return r != -1;
 }
 
 bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
@@ -216,13 +224,13 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
             recv += recv_len;
         };
 
-        int r = -EINVAL;
+        int r;
         unsigned retries = _retries;
         do {
             r = ::ioctl(_bus.fd, I2C_RDWR, &i2c_data);
-        } while (r < 0 && retries-- > 0);
+        } while (r == -1 && retries-- > 0);
 
-        if (r < 0) {
+        if (r == -1) {
             return false;
         }
 
@@ -235,11 +243,6 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
 AP_HAL::Semaphore *I2CDevice::get_semaphore()
 {
     return &_bus.sem;
-}
-
-int I2CDevice::get_fd()
-{
-    return _bus.fd;
 }
 
 AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(
@@ -390,6 +393,19 @@ void I2CDeviceManager::_unregister(I2CBus &b)
             delete &b;
             break;
         }
+    }
+}
+
+void I2CDeviceManager::teardown()
+{
+    for (auto it = _buses.begin(); it != _buses.end(); it++) {
+        /* Try to stop thread - it may not even be started yet */
+        (*it)->thread.stop();
+    }
+
+    for (auto it = _buses.begin(); it != _buses.end(); it++) {
+        /* Try to join thread - failing is normal if thread was not started */
+        (*it)->thread.join();
     }
 }
 

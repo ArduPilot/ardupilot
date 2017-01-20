@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,6 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include "RPM_PX4_PWM.h"
 
 #include <sys/types.h>
@@ -36,12 +36,21 @@
 
 extern const AP_HAL::HAL& hal;
 
+extern "C" {
+    int pwm_input_main(int, char **);
+};
+
 /* 
    open the sensor in constructor
 */
 AP_RPM_PX4_PWM::AP_RPM_PX4_PWM(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state) :
 	AP_RPM_Backend(_ap_rpm, instance, _state)
 {
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+    if (AP_BoardConfig::px4_start_driver(pwm_input_main, "pwm_input", "start")) {
+        hal.console->printf("started pwm_input driver\n");
+    }
+#endif
     _fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
     if (_fd == -1) {
         hal.console->printf("Unable to open %s\n", PWMIN0_DEVICE_PATH);

@@ -283,6 +283,40 @@ void RCOutput_Bebop::_play_sound(uint8_t sound)
     _dev->get_semaphore()->give();
 }
 
+/*
+ * pwm is the pwm power used for the note.
+ *  It has to be >= 3, otherwise it refers to a predefined song
+ * (see _play_sound function)
+ * period is in us and duration in ms.
+ */
+void RCOutput_Bebop::play_note(uint8_t pwm,
+                               uint16_t period_us,
+                               uint16_t duration_ms)
+{
+    struct PACKED {
+        uint8_t header;
+        uint8_t pwm;
+        be16_t period;
+        be16_t duration;
+    } msg;
+
+    if (pwm < 3) {
+        return;
+    }
+
+    msg.header = BEBOP_BLDC_PLAY_SOUND;
+    msg.pwm = pwm;
+    msg.period = htobe16(period_us);
+    msg.duration = htobe16(duration_ms);
+
+    if (!_dev->get_semaphore()->take(0)) {
+        return;
+    }
+
+    _dev->transfer((uint8_t *)&msg, sizeof(msg), nullptr, 0);
+    _dev->get_semaphore()->give();
+}
+
 uint16_t RCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
 {
     period_us = constrain_int16(period_us, _min_pwm, _max_pwm);
@@ -301,7 +335,7 @@ void RCOutput_Bebop::init()
     pthread_condattr_t cond_attr;
 
     /* Initialize thread, cond, and mutex */
-    ret = pthread_mutex_init(&_mutex, NULL);
+    ret = pthread_mutex_init(&_mutex, nullptr);
     if (ret != 0) {
         perror("RCout_Bebop: failed to init mutex\n");
         return;
@@ -419,7 +453,7 @@ void* RCOutput_Bebop::_control_thread(void *arg) {
     RCOutput_Bebop* rcout = (RCOutput_Bebop *) arg;
 
     rcout->_run_rcout();
-    return NULL;
+    return nullptr;
 }
 
 void RCOutput_Bebop::_run_rcout()
@@ -448,7 +482,7 @@ void RCOutput_Bebop::_run_rcout()
      * keep current order. The order changes from version 2 on bebop 1 and
      * remains the same as this for bebop 2
      */
-    if (info.version_maj == 1 || info.version_maj == 5) {
+    if (info.version_maj == 1) {
         bebop_bldc_right_front = BEBOP_BLDC_MOTOR_1;
         bebop_bldc_left_front  = BEBOP_BLDC_MOTOR_2;
         bebop_bldc_left_back   = BEBOP_BLDC_MOTOR_3;
@@ -488,6 +522,7 @@ void RCOutput_Bebop::_run_rcout()
         pthread_mutex_lock(&_mutex);
         ret = clock_gettime(CLOCK_MONOTONIC, &ts);
         if (ret != 0) {
+            pthread_mutex_unlock(&_mutex);
             continue;
         }
 

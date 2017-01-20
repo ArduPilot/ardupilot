@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * matrix3.cpp
  * Copyright (C) Siddharth Bharat Purohit, 3DRobotics Inc. 2015
@@ -76,7 +75,7 @@ static void mat_pivot(float* A, float* pivot, uint8_t n)
 {
     for(uint8_t i = 0;i<n;i++){
         for(uint8_t j=0;j<n;j++) {
-            pivot[i*n+j] = (i==j);
+            pivot[i*n+j] = static_cast<float>(i==j);
         }
     }
 

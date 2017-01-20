@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
@@ -9,8 +8,6 @@
 extern const AP_HAL::HAL& hal;
 
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
 
 #define BATTMONITOR_SMBUS_TEMP      0x08    // temperature register
 #define BATTMONITOR_SMBUS_VOLTAGE   0x09    // voltage register
@@ -32,10 +29,17 @@ AP_BattMonitor_SMBus_I2C::AP_BattMonitor_SMBus_I2C(AP_BattMonitor &mon, uint8_t 
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_BattMonitor_SMBus(mon, instance, mon_state)
     , _dev(std::move(dev))
-{}
+{
+    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_I2C::timer, void));
+}
 
 /// Read the battery voltage and current.  Should be called at 10hz
 void AP_BattMonitor_SMBus_I2C::read()
+{
+    // nothing to do - all done in timer()
+}
+
+void AP_BattMonitor_SMBus_I2C::timer()
 {
     uint16_t data;
     uint8_t buff[4];
@@ -64,31 +68,21 @@ void AP_BattMonitor_SMBus_I2C::read()
 // returns true if read was successful, false if failed
 bool AP_BattMonitor_SMBus_I2C::read_word(uint8_t reg, uint16_t& data) const
 {
-    // take i2c bus semaphore
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return false;
-    }
-
     uint8_t buff[3];    // buffer to hold results
 
     // read three bytes and place in last three bytes of buffer
     if (!_dev->read_registers(reg, buff, sizeof(buff))) {
-        _dev->get_semaphore()->give();
         return false;
     }
 
     // check PEC
     uint8_t pec = get_PEC(BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, 2);
     if (pec != buff[2]) {
-        _dev->get_semaphore()->give();
         return false;
     }
 
     // convert buffer to word
     data = (uint16_t)buff[1]<<8 | (uint16_t)buff[0];
-
-    // give back i2c semaphore
-    _dev->get_semaphore()->give();
 
     // return success
     return true;
@@ -99,19 +93,10 @@ uint8_t AP_BattMonitor_SMBus_I2C::read_block(uint8_t reg, uint8_t* data, uint8_t
 {
     uint8_t buff[max_len+2];    // buffer to hold results (2 extra byte returned holding length and PEC)
 
-    // take i2c bus semaphore
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return 0;
-    }
-
     // read bytes
     if (!_dev->read_registers(reg, buff, sizeof(buff))) {
-        _dev->get_semaphore()->give();
         return 0;
     }
-
-    // give back i2c semaphore
-    _dev->get_semaphore()->give();
 
     // get length
     uint8_t bufflen = buff[0];
@@ -180,4 +165,3 @@ uint8_t AP_BattMonitor_SMBus_I2C::get_PEC(const uint8_t i2c_addr, uint8_t cmd, b
     return crc;
 }
 
-#endif // CONFIG_HAL_BOARD != HAL_BOARD_PX4

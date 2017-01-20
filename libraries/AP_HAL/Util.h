@@ -18,8 +18,8 @@ public:
     void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
     uint64_t get_capabilities() const { return capabilities; }
 
-    virtual const char* get_custom_log_directory() { return NULL; }
-    virtual const char* get_custom_terrain_directory() const { return NULL;  }
+    virtual const char* get_custom_log_directory() { return nullptr; }
+    virtual const char* get_custom_terrain_directory() const { return nullptr;  }
 
     // get path to custom defaults file for AP_Param
     virtual const char* get_custom_defaults_file() const {
@@ -86,7 +86,7 @@ public:
     /*
       return a stream for access to a system shell, if available
      */
-    virtual AP_HAL::Stream *get_shell_stream() { return NULL; }
+    virtual AP_HAL::Stream *get_shell_stream() { return nullptr; }
 
     /* Support for an imu heating system */
     virtual void set_imu_temp(float current) {}
@@ -103,7 +103,7 @@ public:
         PC_INTERVAL      /**< measure the interval between instances of an event */
     };
     typedef void *perf_counter_t;
-    virtual perf_counter_t perf_alloc(perf_counter_type t, const char *name) { return NULL; }
+    virtual perf_counter_t perf_alloc(perf_counter_type t, const char *name) { return nullptr; }
     virtual void perf_begin(perf_counter_t h) {}
     virtual void perf_end(perf_counter_t h) {}
     virtual void perf_count(perf_counter_t h) {}
@@ -111,6 +111,10 @@ public:
     // create a new semaphore
     virtual Semaphore *new_semaphore(void) { return nullptr; }
 
+    // allocate and free DMA-capable memory if possible. Otherwise return normal memory
+    virtual void *dma_allocate(size_t size) { return malloc(size); }
+    virtual void dma_free(void *ptr, size_t size) { return free(ptr); }
+    
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started

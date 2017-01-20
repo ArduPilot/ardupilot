@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -13,10 +12,10 @@ public:
         k_param_ins,
         k_param_ahrs,
         k_param_airspeed,
-        k_param_NavEKF,
         k_param_NavEKF2,
         k_param_compass,
-        k_param_dataflash
+        k_param_dataflash,
+        k_param_NavEKF3
     };
     AP_Int8 dummy;
 };

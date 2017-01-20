@@ -68,7 +68,7 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
     left = (HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH -
             HAL_OPTFLOW_ONBOARD_SENSOR_HEIGHT) / 2;
 
-    if (device_path == NULL ||
+    if (device_path == nullptr ||
         !_videoin->open_device(device_path, memtype)) {
         AP_HAL::panic("OpticalFlow_Onboard: couldn't open "
                       "video device");
@@ -76,6 +76,7 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     _pwm = new PWM_Sysfs_Bebop(BEBOP_CAMV_PWM);
+    _pwm->init();
     _pwm->set_freq(BEBOP_CAMV_PWM_FREQ);
     _pwm->enable(true);
 
@@ -170,7 +171,7 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
 
     /* Create the thread that will be waiting for frames
      * Initialize thread and mutex */
-    ret = pthread_mutex_init(&_mutex, NULL);
+    ret = pthread_mutex_init(&_mutex, nullptr);
     if (ret != 0) {
         AP_HAL::panic("OpticalFlow_Onboard: failed to init mutex");
     }
@@ -222,7 +223,7 @@ void *OpticalFlow_Onboard::_read_thread(void *arg)
     OpticalFlow_Onboard *optflow_onboard = (OpticalFlow_Onboard *) arg;
 
     optflow_onboard->_run_optflow();
-    return NULL;
+    return nullptr;
 }
 
 void OpticalFlow_Onboard::_run_optflow()
@@ -235,7 +236,7 @@ void OpticalFlow_Onboard::_run_optflow()
     uint32_t crop_left = 0, crop_top = 0;
     uint32_t shrink_scale = 0, shrink_width = 0, shrink_height = 0;
     uint32_t shrink_width_offset = 0, shrink_height_offset = 0;
-    uint8_t *convert_buffer = NULL, *output_buffer = NULL;
+    uint8_t *convert_buffer = nullptr, *output_buffer = nullptr;
     uint8_t qual;
 
     if (_format == V4L2_PIX_FMT_YUYV) {
@@ -330,7 +331,7 @@ void OpticalFlow_Onboard::_run_optflow()
 
         /* if it is at least the second frame we receive
          * since we have to compare 2 frames */
-        if (_last_video_frame.data == NULL) {
+        if (_last_video_frame.data == nullptr) {
             _last_video_frame = video_frame;
             continue;
         }
@@ -342,7 +343,7 @@ void OpticalFlow_Onboard::_run_optflow()
         gyro_rate.z = rate_z;
 
 #ifdef OPTICALFLOW_ONBOARD_RECORD_VIDEO
-        int fd = open(OPTICALFLOW_ONBOARD_VIDEO_FILE, O_CREAT | O_WRONLY
+        int fd = open(OPTICALFLOW_ONBOARD_VIDEO_FILE, O_CLOEXEC | O_CREAT | O_WRONLY
                 | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP |
                 S_IWGRP | S_IROTH | S_IWOTH);
 	    if (fd != -1) {

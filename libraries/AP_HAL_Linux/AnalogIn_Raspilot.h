@@ -42,6 +42,5 @@ protected:
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
-    uint32_t _last_update_timestamp;
     uint8_t _channels_number;
 };

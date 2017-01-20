@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Tracker.h"
 
 #if LOGGING_ENABLED == ENABLED
@@ -104,7 +102,6 @@ void Tracker::log_init(void)
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
         gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
-        g.log_bitmask.set(0);
     } else if (DataFlash.NeedPrep()) {
         gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
         DataFlash.Prep();
@@ -122,10 +119,11 @@ void Tracker::log_init(void)
 #else // LOGGING_ENABLED
 
 void Tracker::Log_Write_Attitude(void) {}
-void Tracker::Log_Write_Startup() {}
 void Tracker::Log_Write_Baro(void) {}
 
 void Tracker::start_logging() {}
 void Tracker::log_init(void) {}
+void Tracker::Log_Write_Vehicle_Pos(int32_t lat, int32_t lng, int32_t alt, const Vector3f& vel) {}
+void Tracker::Log_Write_Vehicle_Baro(float pressure, float altitude) {}
 
 #endif // LOGGING_ENABLED

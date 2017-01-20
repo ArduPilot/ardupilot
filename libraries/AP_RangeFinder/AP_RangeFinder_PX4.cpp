@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,6 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_RangeFinder_PX4.h"
 
 #include <sys/types.h>
@@ -76,11 +76,34 @@ AP_RangeFinder_PX4::~AP_RangeFinder_PX4()
     }
 }
 
+extern "C" {
+    int ll40ls_main(int, char **);
+    int trone_main(int, char **);
+    int mb12xx_main(int, char **);
+};
+
 /* 
    open the PX4 driver, returning the file descriptor
 */
 int AP_RangeFinder_PX4::open_driver(void)
 {
+    if (num_px4_instances == 0) {
+        /*
+          we start the px4 rangefinder drivers on demand
+        */
+        if (AP_BoardConfig::px4_start_driver(ll40ls_main, "ll40ls", "-X start")) {
+            hal.console->printf("Found external ll40ls sensor\n");
+        }
+        if (AP_BoardConfig::px4_start_driver(ll40ls_main, "ll40ls", "-I start")) {
+            hal.console->printf("Found internal ll40ls sensor\n");
+        }
+        if (AP_BoardConfig::px4_start_driver(trone_main, "trone", "start")) {
+            hal.console->printf("Found trone sensor\n");
+        }
+        if (AP_BoardConfig::px4_start_driver(mb12xx_main, "mb12xx", "start")) {
+            hal.console->printf("Found mb12xx sensor\n");
+        }
+    }
     // work out the device path based on how many PX4 drivers we have loaded
     char path[] = RANGE_FINDER_BASE_DEVICE_PATH "n";
     path[strlen(path)-1] = '0' + num_px4_instances;

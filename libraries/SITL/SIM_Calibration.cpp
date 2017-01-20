@@ -39,6 +39,8 @@ void SITL::Calibration::update(const struct sitl_input& input)
         _stop_control(input, rot_accel);
     } else if (switcher_pwm < 1200) {
         _attitude_control(input, rot_accel);
+    } else if (switcher_pwm < 1300) {
+        _calibration_poses(rot_accel);
     } else {
         _angular_velocity_control(input, rot_accel);
     }
@@ -68,6 +70,14 @@ void SITL::Calibration::_attitude_control(const struct sitl_input& input,
     float desired_roll = -M_PI + 2 * M_PI * (input.servos[5] - 1000) / 1000.f;
     float desired_pitch = -M_PI + 2 * M_PI * (input.servos[6] - 1000) / 1000.f;
     float desired_yaw = -M_PI + 2 * M_PI * (input.servos[7] - 1000) / 1000.f;
+
+    _attitude_set(desired_roll, desired_pitch, desired_yaw, rot_accel);
+}
+
+
+void SITL::Calibration::_attitude_set(float desired_roll, float desired_pitch, float desired_yaw,
+                                      Vector3f& rot_accel)
+{
     float dt = frame_time_us * 1.0e-6f;
 
     Quaternion desired_q;
@@ -98,10 +108,12 @@ void SITL::Calibration::_angular_velocity_control(const struct sitl_input& in,
     Vector3f axis{(float)(in.servos[5] - 1500),
                   (float)(in.servos[6] - 1500),
                   (float)(in.servos[7] - 1500)};
-    float theta = MAX_ANGULAR_SPEED * (in.servos[4] - 1200) / 800.f;
+    float theta = MAX_ANGULAR_SPEED * (in.servos[4] - 1300) / 700.f;
     float dt = frame_time_us * 1.0e-6f;
 
-    axis.normalize();
+    if (axis.length() > 0) {
+        axis.normalize();
+    }
 
     Vector3f desired_angvel = axis * theta;
     Vector3f error = desired_angvel - gyro;
@@ -109,4 +121,56 @@ void SITL::Calibration::_angular_velocity_control(const struct sitl_input& in,
     rot_accel = error * (1.0f / dt);
     /* Provide a somewhat "smooth" transition */
     rot_accel *= .05f;
+}
+
+/*
+  move continuously through 6 calibration poses, doing a rotation
+  about each pose over 3 seconds
+ */
+void SITL::Calibration::_calibration_poses(Vector3f& rot_accel)
+{
+    const struct pose {
+        int16_t roll, pitch, yaw;
+        uint8_t axis;
+    } poses[] = {
+        {  0,   0,  0, 0 },
+        {  0,   0,  0, 1 },
+        {  0,   0,  0, 2 },
+        { 90,   0,  0, 1 },
+        {  0,  90,  0, 1 },
+        {  0, 180,  0, 2 },
+        { 45,   0,  0, 1 },
+        {  0,  45,  0, 2 },
+        {  0,   0, 45, 0 },
+        { 30,   0,  0, 1 },
+        {  0,  30,  0, 0 },
+        { 30,   0,  0, 1 },
+        {  0,   0, 30, 0 },
+        {  0,   0, 30, 1 },
+        { 60,  20,  0, 1 },
+        {  0,  50, 10, 0 },
+        {  0,  30, 50, 1 },
+        {  0,  30, 50, 2 },
+    };
+    const float secs_per_pose = 6;
+    const float rate = radians(360 / secs_per_pose);
+    float tnow = AP_HAL::millis() * 1.0e-3;
+    float t_in_pose = fmod(tnow, secs_per_pose);
+    uint8_t pose_num = ((unsigned)(tnow / secs_per_pose)) % ARRAY_SIZE(poses);
+    const struct pose &pose = poses[pose_num];
+
+    // let the sensor smoothing create sensible gyro values
+    use_smoothing = true;
+    dcm.identity();
+    dcm.from_euler(radians(pose.roll), radians(pose.pitch), radians(pose.yaw));
+
+    Vector3f axis;
+    axis[pose.axis] = 1;
+    float rot_angle = rate * t_in_pose;
+    Matrix3f r2;
+    r2.from_axis_angle(axis, rot_angle);
+    dcm = r2 * dcm;
+
+    accel_body(0, 0, -GRAVITY_MSS);
+    accel_body = dcm.transposed() * accel_body;
 }

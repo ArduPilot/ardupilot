@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 #if CLI_ENABLED == ENABLED
@@ -65,7 +63,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
     uint8_t medium_loopCounter = 0;
 
     if (!g.compass_enabled) {
-        cliSerial->printf("Compass: ");
+        cliSerial->print("Compass: ");
         print_enabled(false);
         return (0);
     }
@@ -148,12 +146,12 @@ int8_t Copter::test_ins(uint8_t argc, const Menu::arg *argv)
 {
     Vector3f gyro, accel;
     print_hit_enter();
-    cliSerial->printf("INS\n");
+    cliSerial->println("INS");
     delay(1000);
 
     ahrs.init();
     ins.init(scheduler.get_loop_rate_hz());
-    cliSerial->printf("...done\n");
+    cliSerial->println("...done");
 
     delay(50);
 
@@ -197,7 +195,7 @@ int8_t Copter::test_optflow(uint8_t argc, const Menu::arg *argv)
             }
         }
     } else {
-        cliSerial->printf("OptFlow: ");
+        cliSerial->print("OptFlow: ");
         print_enabled(false);
     }
     return (0);
@@ -212,14 +210,14 @@ int8_t Copter::test_relay(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     while(1) {
-        cliSerial->printf("Relay on\n");
+        cliSerial->println("Relay on");
         relay.on(0);
         delay(3000);
         if(cliSerial->available() > 0) {
             return (0);
         }
 
-        cliSerial->printf("Relay off\n");
+        cliSerial->println("Relay off");
         relay.off(0);
         delay(3000);
         if(cliSerial->available() > 0) {

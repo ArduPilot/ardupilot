@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * polygon.cpp
  * Copyright (C) Andrew Tridgell 2011
@@ -89,7 +88,7 @@ bool Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n)
 template <typename T>
 bool Polygon_complete(const Vector2<T> *V, unsigned n)
 {
-    return (n >= 4 && V[n-1].x == V[0].x && V[n-1].y == V[0].y);
+    return (n >= 4 && V[n-1] == V[0]);
 }
 
 // Necessary to avoid linker errors

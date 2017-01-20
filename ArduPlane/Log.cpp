@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 #include "version.h"
 
@@ -72,11 +70,11 @@ int8_t Plane::dump_log(uint8_t argc, const Menu::arg *argv)
         DataFlash.DumpPageInfo(cliSerial);
         return(-1);
     } else if (dump_log_num <= 0) {
-        cliSerial->printf("dumping all\n");
+        cliSerial->println("dumping all");
         Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
-        cliSerial->printf("bad log number\n");
+        cliSerial->println("bad log number");
         return(-1);
     }
 
@@ -98,7 +96,7 @@ int8_t Plane::select_logs(uint8_t argc, const Menu::arg *argv)
     uint32_t bits;
 
     if (argc != 2) {
-        cliSerial->printf("missing log type\n");
+        cliSerial->println("missing log type");
         return(-1);
     }
 
@@ -265,8 +263,8 @@ void Plane::Log_Write_Control_Tuning()
         roll            : (int16_t)ahrs.roll_sensor,
         nav_pitch_cd    : (int16_t)nav_pitch_cd,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        throttle_out    : (int16_t)channel_throttle->get_servo_out(),
-        rudder_out      : (int16_t)channel_rudder->get_servo_out(),
+        throttle_out    : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
+        rudder_out      : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_rudder),
         throttle_dem    : (int16_t)SpdHgt_Controller->get_throttle_demand()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -344,7 +342,6 @@ struct PACKED log_Sonar {
 // Write a sonar packet
 void Plane::Log_Write_Sonar()
 {
-#if RANGEFINDER_ENABLED == ENABLED
     uint16_t distance = 0;
     if (rangefinder.status() == RangeFinder::RangeFinder_Good) {
         distance = rangefinder.distance_cm();
@@ -361,7 +358,6 @@ void Plane::Log_Write_Sonar()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
     DataFlash.Log_Write_RFND(rangefinder);
-#endif
 }
 
 struct PACKED log_Optflow {
@@ -542,7 +538,6 @@ void Plane::log_init(void)
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
         gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
-        g.log_bitmask.set(0);
     } else if (DataFlash.NeedPrep()) {
         gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
         DataFlash.Prep();
@@ -551,8 +546,6 @@ void Plane::log_init(void)
             gcs[i].reset_cli_timeout();
         }
     }
-
-    arming.set_logging_available(DataFlash.CardInserted());
 }
 
 #else // LOGGING_ENABLED
@@ -567,6 +560,7 @@ int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 
 void Plane::do_erase_logs(void) {}
 void Plane::Log_Write_Attitude(void) {}
+void Plane::Log_Write_Fast(void) {}
 void Plane::Log_Write_Performance() {}
 void Plane::Log_Write_Startup(uint8_t type) {}
 void Plane::Log_Write_Control_Tuning() {}

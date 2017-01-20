@@ -58,8 +58,8 @@ private:
     } _outputs[ORB_MULTI_MAX_INSTANCES] {};
     actuator_armed_s _armed;
 
-    orb_advert_t _actuator_direct_pub = NULL;
-    orb_advert_t _actuator_armed_pub = NULL;
+    orb_advert_t _actuator_direct_pub = nullptr;
+    orb_advert_t _actuator_armed_pub = nullptr;
     uint16_t _esc_pwm_min = 0;
     uint16_t _esc_pwm_max = 0;
 

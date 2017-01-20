@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
@@ -131,8 +129,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: GPS_TYPE
     // @DisplayName: GPS mode control
-    // @Description: This controls use of GPS measurements : 0 = use 3D velocity & 2D position, 1 = use 2D velocity and 2D position, 2 = use 2D position, 3 = use no GPS (optical flow will be used if available)
-    // @Values: 0:GPS 3D Vel and 2D Pos, 1:GPS 2D vel and 2D pos, 2:GPS 2D pos, 3:No GPS use optical flow
+    // @Description: This controls use of GPS measurements : 0 = use 3D velocity & 2D position, 1 = use 2D velocity and 2D position, 2 = use 2D position, 3 = Inhibit GPS use - this can be useful when flying with an optical flow sensor in an environment where GPS quality is poor and subject to large multipath errors.
+    // @Values: 0:GPS 3D Vel and 2D Pos, 1:GPS 2D vel and 2D pos, 2:GPS 2D pos, 3:No GPS
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE", 1, NavEKF2, _fusionModeGPS, 0),
 
@@ -200,9 +198,9 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // Height measurement parameters
 
     // @Param: ALT_SOURCE
-    // @DisplayName: Primary height source
-    // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS. NOTE - the EK2_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
-    // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS
+    // @DisplayName: Primary altitude sensor source
+    // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS. Setting 3 uses the range beacon data. NOTE - the EK2_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
+    // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF2, _altSource, 0),
 
@@ -389,7 +387,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     AP_GROUPINFO("WIND_P_NSE", 30, NavEKF2, _windVelProcessNoise, 0.1f),
 
     // @Param: WIND_PSCALE
-    // @DisplayName: Height rate to wind procss noise scaler
+    // @DisplayName: Height rate to wind process noise scaler
     // @Description: This controls how much the process noise on the wind states is increased when gaining or losing altitude to take into account changes in wind speed and direction with altitude. Increasing this parameter increases how rapidly the wind states adapt when changing altitude, but does make wind velocity estimation noiser.
     // @Range: 0.0 1.0
     // @Increment: 0.1
@@ -406,7 +404,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: IMU_MASK
     // @DisplayName: Bitmask of active IMUs
     // @Description: 1 byte bitmap of IMUs to use in EKF2. A separate instance of EKF2 will be started for each IMU selected. Set to 1 to use the first IMU only (default), set to 2 to use the second IMU only, set to 3 to use the first and second IMU. Additional IMU's can be used up to a maximum of 6 if memory and processing resources permit. There may be insufficient memory and processing resources to run multiple instances. If this occurs EKF2 will fail to start.
-    // @Range: 1 127
+    // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
     AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 3),
     
@@ -423,13 +421,13 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This sets the amount of position variation that the EKF allows for when operating without external measurements (eg GPS or optical flow). Increasing this parameter makes the EKF attitude estimate less sensitive to vehicle manoeuvres but more sensitive to IMU errors.
     // @Range: 0.5 50.0
     // @User: Advanced
-    // @Units: m/s
+    // @Units: m
     AP_GROUPINFO("NOAID_M_NSE", 35, NavEKF2, _noaidHorizNoise, 10.0f),
 
     // @Param: LOG_MASK
     // @DisplayName: EKF sensor logging IMU mask
     // @Description: This sets the IMU mask of sensors to do full logging for
-    // @Values: 0:Disabled,1:FirstIMU,3:FirstAndSecondIMU,7:AllIMUs
+    // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
     AP_GROUPINFO("LOG_MASK", 36, NavEKF2, _logging_mask, 1),
 
@@ -441,7 +439,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
-    // @Units: gauss
+    // @Units: rad
     AP_GROUPINFO("YAW_M_NSE", 37, NavEKF2, _yawNoise, 0.5f),
 
     // @Param: YAW_I_GATE
@@ -458,6 +456,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 10 50
     // @Increment: 5
     // @User: Advanced
+    // @Units: cs
     AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, 25),
 
     // @Param: MAGE_P_NSE
@@ -485,6 +484,49 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: %
     AP_GROUPINFO("RNG_USE_HGT", 42, NavEKF2, _useRngSwHgt, -1),
 
+    // @Param: TERR_GRAD
+    // @DisplayName: Maximum terrain gradient
+    // @Description: Specifies the maximum gradient of the terrain below the vehicle when it is using range finder as a height reference
+    // @Range: 0 0.2
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("TERR_GRAD", 43, NavEKF2, _terrGradMax, 0.1f),
+
+    // @Param: BCN_M_NSE
+    // @DisplayName: Range beacon measurement noise (m)
+    // @Description: This is the RMS value of noise in the range beacon measurement. Increasing it reduces the weighting on this measurement.
+    // @Range: 0.1 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m
+    AP_GROUPINFO("BCN_M_NSE", 44, NavEKF2, _rngBcnNoise, 1.0f),
+
+    // @Param: BCN_I_GTE
+    // @DisplayName: Range beacon measurement gate size
+    // @Description: This sets the percentage number of standard deviations applied to the range beacon measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 1000
+    // @Increment: 25
+    // @User: Advanced
+    AP_GROUPINFO("BCN_I_GTE", 45, NavEKF2, _rngBcnInnovGate, 500),
+
+    // @Param: BCN_DELAY
+    // @DisplayName: Range beacon measurement delay (msec)
+    // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
+    // @Range: 0 250
+    // @Increment: 10
+    // @User: Advanced
+    // @Units: msec
+    AP_GROUPINFO("BCN_DELAY", 46, NavEKF2, _rngBcnDelay_ms, 50),
+
+    // @Param: RNG_USE_SPD
+    // @DisplayName: Range finder max ground speed
+    // @Description: The range finder will not be used as the primary height source when the horizontal ground speed is greater than this value.
+    // @Range: 2.0 6.0
+    // @Increment: 0.5
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("RNG_USE_SPD", 47, NavEKF2, _useRngSwSpd, 2.0f),
+
     AP_GROUPEND
 };
 
@@ -497,9 +539,9 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gpsPosVarAccScale(0.05f),       // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     magDelay_ms(60),                // Magnetometer measurement delay (msec)
     tasDelay_ms(240),               // Airspeed measurement delay (msec)
-    gpsRetryTimeUseTAS_ms(10000),   // GPS retry time with airspeed measurements (msec)
-    gpsRetryTimeNoTAS_ms(7000),     // GPS retry time without airspeed measurements (msec)
-    gpsFailTimeWithFlow_ms(1000),   // If we have no GPS for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
+    tiltDriftTimeMax_ms(15000),      // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
+    posRetryTimeUseVel_ms(10000),   // Position aiding retry time with velocity measurements (msec)
+    posRetryTimeNoVel_ms(7000),     // Position aiding retry time without velocity measurements (msec)
     hgtRetryTimeMode0_ms(10000),    // Height retry time with vertical velocity measurement (msec)
     hgtRetryTimeMode12_ms(5000),    // Height retry time without vertical velocity measurement (msec)
     tasRetryTime_ms(5000),          // True airspeed timeout and retry interval (msec)
@@ -517,7 +559,8 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gndEffectTimeout_ms(1000),      // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
     gndGradientSigma(50),           // RMS terrain gradient percentage assumed by the terrain height estimation
-    fusionTimeStep_ms(10)           // The minimum number of msec between covariance prediction and fusion operations
+    fusionTimeStep_ms(10),          // The minimum number of msec between covariance prediction and fusion operations
+    runCoreSelection(false)         // true when the default primary core has stabilised after startup and core selection can run
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -618,6 +661,11 @@ bool NavEKF2::InitialiseFilter(void)
         ret &= core[i].InitialiseFilterBootstrap();
     }
 
+    // zero the structs used capture reset events
+    memset(&yaw_reset_data, 0, sizeof(yaw_reset_data));
+    memset(&pos_reset_data, 0, sizeof(pos_reset_data));
+    memset(&pos_down_reset_data, 0, sizeof(pos_down_reset_data));
+
     check_log_write();
     return ret;
 }
@@ -633,30 +681,55 @@ void NavEKF2::UpdateFilter(void)
     
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
+    bool statePredictEnabled[num_cores];
     for (uint8_t i=0; i<num_cores; i++) {
         // if the previous core has only recently finished a new state prediction cycle, then
         // don't start a new cycle to allow time for fusion operations to complete if the update
         // rate is higher than 200Hz
-        bool statePredictEnabled;
         if ((i > 0) && (core[i-1].getFramesSincePredict() < 2) && (ins.get_sample_rate() > 200)) {
-            statePredictEnabled = false;
+            statePredictEnabled[i] = false;
         } else {
-            statePredictEnabled = true;
+            statePredictEnabled[i] = true;
         }
-        core[i].UpdateFilter(statePredictEnabled);
+        core[i].UpdateFilter(statePredictEnabled[i]);
     }
 
-    // If the current core selected has a bad fault score or is unhealthy, switch to a healthy core with the lowest fault score
-    if (core[primary].faultScore() > 0.0f || !core[primary].healthy()) {
-        float score = 1e9f;
-        for (uint8_t i=0; i<num_cores; i++) {
-            if (core[i].healthy()) {
-                float tempScore = core[i].faultScore();
-                if (tempScore < score) {
-                    primary = i;
-                    score = tempScore;
+    // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
+    // Don't start running the check until the primary core has started returned healthy for at least 10 seconds to avoid switching
+    // due to initial alignment fluctuations and race conditions
+    if (!runCoreSelection) {
+        static uint64_t lastUnhealthyTime_us = 0;
+        if (!core[primary].healthy() || lastUnhealthyTime_us == 0) {
+            lastUnhealthyTime_us = imuSampleTime_us;
+        }
+        runCoreSelection = (imuSampleTime_us - lastUnhealthyTime_us) > 1E7;
+    }
+    float primaryErrorScore = core[primary].errorScore();
+    if ((primaryErrorScore > 1.0f || !core[primary].healthy()) && runCoreSelection) {
+        float lowestErrorScore = 0.67f * primaryErrorScore;
+        uint8_t newPrimaryIndex = primary; // index for new primary
+        for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
+
+            if (coreIndex != primary) {
+                // an alternative core is available for selection only if healthy and if states have been updated on this time step
+                bool altCoreAvailable = core[coreIndex].healthy() && statePredictEnabled[coreIndex];
+
+                // If the primary core is unhealthy and another core is available, then switch now
+                // If the primary core is still healthy,then switching is optional and will only be done if
+                // a core with a significantly lower error score can be found
+                float altErrorScore = core[coreIndex].errorScore();
+                if (altCoreAvailable && (!core[primary].healthy() || altErrorScore < lowestErrorScore)) {
+                    newPrimaryIndex = coreIndex;
+                    lowestErrorScore = altErrorScore;
                 }
             }
+        }
+        // update the yaw and position reset data to capture changes due to the lane switch
+        if (newPrimaryIndex != primary) {
+            updateLaneSwitchYawResetData(newPrimaryIndex, primary);
+            updateLaneSwitchPosResetData(newPrimaryIndex, primary);
+            updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
+            primary = newPrimaryIndex;
         }
     }
 
@@ -680,6 +753,16 @@ int8_t NavEKF2::getPrimaryCoreIndex(void) const
         return -1;
     }
     return primary;
+}
+
+// returns the index of the IMU of the primary core
+// return -1 if no primary core selected
+int8_t NavEKF2::getPrimaryCoreIMUIndex(void) const
+{
+    if (!core) {
+        return -1;
+    }
+    return core[primary].getIMUIndex();
 }
 
 // Write the last calculated NE position relative to the reference point (m).
@@ -715,7 +798,7 @@ void NavEKF2::getVelNED(int8_t instance, Vector3f &vel)
     }
 }
 
-// Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+// Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF2::getPosDownDerivative(int8_t instance)
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
@@ -904,7 +987,7 @@ bool NavEKF2::getOriginLLH(struct Location &loc) const
 }
 
 // set the latitude and longitude and height used to set the NED origin
-// All NED positions calcualted by the filter will be relative to this location
+// All NED positions calculated by the filter will be relative to this location
 // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF2::setOriginLLH(struct Location &loc)
@@ -993,11 +1076,12 @@ bool NavEKF2::use_compass(void) const
 // rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
 // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
 // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
-void NavEKF2::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas)
+// posOffset is the XYZ flow sensor position in the body frame in m
+void NavEKF2::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset)
 {
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas);
+            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
         }
     }
 }
@@ -1009,6 +1093,17 @@ void NavEKF2::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, fl
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         core[instance].getFlowDebug(varFlow, gndOffset, flowInnovX, flowInnovY, auxInnov, HAGL, rngInnov, range, gndOffsetErr);
+    }
+}
+
+// return data for debugging range beacon fusion
+bool NavEKF2::getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow)
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getRangeBeaconDebug(ID, rng, innov, innovVar, testRatio, beaconPosNED, offsetHigh, offsetLow);
+    } else {
+        return false;
     }
 }
 
@@ -1134,24 +1229,80 @@ bool NavEKF2::getHeightControlLimit(float &height) const
     return core[primary].getHeightControlLimit(height);
 }
 
-// return the amount of yaw angle change due to the last yaw angle reset in radians
-// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t NavEKF2::getLastYawResetAngle(float &yawAng) const
+// Returns the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
+// Returns the time of the last yaw angle reset or 0 if no reset or core switch has ever occurred
+// Where there are multiple consumers, they must access this function on the same frame as each other
+uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
 {
     if (!core) {
         return 0;
     }
-    return core[primary].getLastYawResetAngle(yawAng);
+
+    yawAngDelta = 0.0f;
+
+    // Do the conversion to msec in one place
+    uint32_t now_time_ms = imuSampleTime_us / 1000;
+
+    // The last time we switched to the current primary core is the first reset event
+    uint32_t lastYawReset_ms = yaw_reset_data.last_primary_change;
+
+    // There has been a change notification in the primary core that the controller has not consumed
+    // or this is a repeated acce
+    if (yaw_reset_data.core_changed || yaw_reset_data.last_function_call == now_time_ms) {
+        yawAngDelta = yaw_reset_data.core_delta;
+        yaw_reset_data.core_changed = false;
+    }
+
+    // Record last time controller got the yaw reset
+    yaw_reset_data.last_function_call = now_time_ms;
+
+    // There has been a reset inside the core since we switched so update the time and delta
+    float temp_yawAng;
+    uint32_t lastCoreYawReset_ms = core[primary].getLastYawResetAngle(temp_yawAng);
+    if (lastCoreYawReset_ms > lastYawReset_ms) {
+        yawAngDelta = wrap_PI(yawAngDelta + temp_yawAng);
+        lastYawReset_ms = lastCoreYawReset_ms;
+    }
+
+    return lastYawReset_ms;
 }
 
-// return the amount of NE position change due to the last position reset in metres
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF2::getLastPosNorthEastReset(Vector2f &pos) const
+// Returns the amount of NE position change due to the last position reset or core switch in metres
+// Returns the time of the last reset or 0 if no reset or core switch has ever occurred
+// Where there are multiple consumers, they must access this function on the same frame as each other
+uint32_t NavEKF2::getLastPosNorthEastReset(Vector2f &posDelta)
 {
     if (!core) {
         return 0;
     }
-    return core[primary].getLastPosNorthEastReset(pos);
+
+    posDelta.zero();
+
+    // Do the conversion to msec in one place
+    uint32_t now_time_ms = imuSampleTime_us / 1000;
+
+    // The last time we switched to the current primary core is the first reset event
+    uint32_t lastPosReset_ms = pos_reset_data.last_primary_change;
+
+    // There has been a change in the primary core that the controller has not consumed
+    // allow for multiple consumers on the same frame
+    if (pos_reset_data.core_changed || pos_reset_data.last_function_call == now_time_ms) {
+        posDelta = pos_reset_data.core_delta;
+        pos_reset_data.core_changed = false;
+    }
+
+    // Record last time controller got the position reset
+    pos_reset_data.last_function_call = now_time_ms;
+
+    // There has been a reset inside the core since we switched so update the time and delta
+    Vector2f tempPosDelta;
+    uint32_t lastCorePosReset_ms = core[primary].getLastPosNorthEastReset(tempPosDelta);
+    if (lastCorePosReset_ms > lastPosReset_ms) {
+        posDelta = posDelta + tempPosDelta;
+        lastPosReset_ms = lastCorePosReset_ms;
+    }
+
+    return lastPosReset_ms;
 }
 
 // return the amount of NE velocity change due to the last velocity reset in metres/sec
@@ -1171,6 +1322,122 @@ const char *NavEKF2::prearm_failure_reason(void) const
         return nullptr;
     }
     return core[primary].prearm_failure_reason();
+}
+
+// Returns the amount of vertical position change due to the last reset or core switch in metres
+// Returns the time of the last reset or 0 if no reset or core switch has ever occurred
+// Where there are multiple consumers, they must access this function on the same frame as each other
+uint32_t NavEKF2::getLastPosDownReset(float &posDelta)
+{
+    if (!core) {
+        return 0;
+    }
+
+    posDelta = 0.0f;
+
+    // Do the conversion to msec in one place
+    uint32_t now_time_ms = imuSampleTime_us / 1000;
+
+    // The last time we switched to the current primary core is the first reset event
+    uint32_t lastPosReset_ms = pos_down_reset_data.last_primary_change;
+
+    // There has been a change in the primary core that the controller has not consumed
+    // allow for multiple consumers on the same frame
+    if (pos_down_reset_data.core_changed || pos_down_reset_data.last_function_call == now_time_ms) {
+        posDelta = pos_down_reset_data.core_delta;
+        pos_down_reset_data.core_changed = false;
+    }
+
+    // Record last time controller got the position reset
+    pos_down_reset_data.last_function_call = now_time_ms;
+
+    // There has been a reset inside the core since we switched so update the time and delta
+    float tempPosDelta;
+    uint32_t lastCorePosReset_ms = core[primary].getLastPosDownReset(tempPosDelta);
+    if (lastCorePosReset_ms > lastPosReset_ms) {
+        posDelta += tempPosDelta;
+        lastPosReset_ms = lastCorePosReset_ms;
+    }
+
+    return lastPosReset_ms;
+}
+
+// update the yaw reset data to capture changes due to a lane switch
+void NavEKF2::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_primary)
+{
+    Vector3f eulers_old_primary, eulers_new_primary;
+    float old_yaw_delta;
+
+    // If core yaw reset data has been consumed reset delta to zero
+    if (!yaw_reset_data.core_changed) {
+        yaw_reset_data.core_delta = 0;
+    }
+
+    // If current primary has reset yaw after controller got it, add it to the delta
+    if (core[old_primary].getLastYawResetAngle(old_yaw_delta) > yaw_reset_data.last_function_call) {
+        yaw_reset_data.core_delta += old_yaw_delta;
+    }
+
+    // Record the yaw delta between current core and new primary core and the timestamp of the core change
+    // Add current delta in case it hasn't been consumed yet
+    core[old_primary].getEulerAngles(eulers_old_primary);
+    core[new_primary].getEulerAngles(eulers_new_primary);
+    yaw_reset_data.core_delta = wrap_PI(eulers_new_primary.z - eulers_old_primary.z + yaw_reset_data.core_delta);
+    yaw_reset_data.last_primary_change = imuSampleTime_us / 1000;
+    yaw_reset_data.core_changed = true;
+
+}
+
+// update the position reset data to capture changes due to a lane switch
+void NavEKF2::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary)
+{
+    Vector2f pos_old_primary, pos_new_primary, old_pos_delta;
+
+    // If core position reset data has been consumed reset delta to zero
+    if (!pos_reset_data.core_changed) {
+        pos_reset_data.core_delta.zero();
+    }
+
+    // If current primary has reset position after controller got it, add it to the delta
+    if (core[old_primary].getLastPosNorthEastReset(old_pos_delta) > pos_reset_data.last_function_call) {
+        pos_reset_data.core_delta += old_pos_delta;
+    }
+
+    // Record the position delta between current core and new primary core and the timestamp of the core change
+    // Add current delta in case it hasn't been consumed yet
+    core[old_primary].getPosNE(pos_old_primary);
+    core[new_primary].getPosNE(pos_new_primary);
+    pos_reset_data.core_delta = pos_new_primary - pos_old_primary + pos_reset_data.core_delta;
+    pos_reset_data.last_primary_change = imuSampleTime_us / 1000;
+    pos_reset_data.core_changed = true;
+
+}
+
+// Update the vertical position reset data to capture changes due to a core switch
+// This should be called after the decision to switch cores has been made, but before the
+// new primary EKF update has been run
+void NavEKF2::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary)
+{
+    float posDownOldPrimary, posDownNewPrimary, oldPosDownDelta;
+
+    // If core position reset data has been consumed reset delta to zero
+    if (!pos_down_reset_data.core_changed) {
+        pos_down_reset_data.core_delta = 0.0f;
+    }
+
+    // If current primary has reset position after controller got it, add it to the delta
+    if (core[old_primary].getLastPosDownReset(oldPosDownDelta) > pos_down_reset_data.last_function_call) {
+        pos_down_reset_data.core_delta += oldPosDownDelta;
+    }
+
+    // Record the position delta between current core and new primary core and the timestamp of the core change
+    // Add current delta in case it hasn't been consumed yet
+    core[old_primary].getPosD(posDownOldPrimary);
+    core[new_primary].getPosD(posDownNewPrimary);
+    pos_down_reset_data.core_delta = posDownNewPrimary - posDownOldPrimary + pos_down_reset_data.core_delta;
+    pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
+    pos_down_reset_data.core_changed = true;
+
 }
 
 #endif //HAL_CPU_CLASS

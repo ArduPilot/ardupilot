@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 // Code to detect a crash main ArduCopter code
@@ -15,7 +13,7 @@ void Copter::crash_check()
     static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
 
     // return immediately if disarmed, or crash checking disabled
-    if (!motors.armed() || ap.land_complete || g.fs_crash_check == 0) {
+    if (!motors->armed() || ap.land_complete || g.fs_crash_check == 0) {
         crash_counter = 0;
         return;
     }
@@ -33,7 +31,7 @@ void Copter::crash_check()
     }
 
     // check for angle error over 30 degrees
-    const float angle_error = attitude_control.get_att_error_angle_deg();
+    const float angle_error = attitude_control->get_att_error_angle_deg();
     if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
         crash_counter = 0;
         return;
@@ -76,7 +74,7 @@ void Copter::parachute_check()
     parachute.update();
 
     // return immediately if motors are not armed or pilot's throttle is above zero
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         control_loss_count = 0;
         return;
     }
@@ -99,9 +97,11 @@ void Copter::parachute_check()
     }
 
     // check for angle error over 30 degrees
-    const float angle_error = attitude_control.get_att_error_angle_deg();
+    const float angle_error = attitude_control->get_att_error_angle_deg();
     if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
-        control_loss_count = 0;
+        if (control_loss_count > 0) {
+            control_loss_count--;
+        }
         return;
     }
 

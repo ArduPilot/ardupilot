@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -60,8 +58,8 @@ void NavEKF2_core::readRangeFinder(void)
                     minIndex = 1;
                     maxIndex = 0;
                 } else {
-                    maxIndex = 0;
-                    minIndex = 1;
+                    minIndex = 0;
+                    maxIndex = 1;
                 }
                 if (storedRngMeas[sensorIndex][2] > storedRngMeas[sensorIndex][maxIndex]) {
                     midIndex = maxIndex;
@@ -79,8 +77,14 @@ void NavEKF2_core::readRangeFinder(void)
                 // limit the measured range to be no less than the on-ground range
                 rangeDataNew.rng = MAX(storedRngMeas[sensorIndex][midIndex],rngOnGnd);
 
+                // get position in body frame for the current sensor
+                rangeDataNew.sensor_idx = sensorIndex;
+
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
+
+                // indicate we have updated the measurement
+                rngValidMeaTime_ms = imuSampleTime_ms;
 
             } else if (!takeOffDetected && ((imuSampleTime_ms - rngValidMeaTime_ms) > 200)) {
                 // before takeoff we assume on-ground range value if there is no data
@@ -96,17 +100,17 @@ void NavEKF2_core::readRangeFinder(void)
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
 
+                // indicate we have updated the measurement
+                rngValidMeaTime_ms = imuSampleTime_ms;
+
             }
-
-            rngValidMeaTime_ms = imuSampleTime_ms;
-
         }
     }
 }
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas)
+void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset)
 {
     // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
     // The PX4Flow sensor outputs flow rates with the following axis and sign conventions:
@@ -124,24 +128,36 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         delAngBodyOF.zero();
         delTimeOF = 0.0f;
     }
-    // check for takeoff if relying on optical flow and zero measurements until takeoff detected
-    // if we haven't taken off - constrain position and velocity states
-    if (frontend->_fusionModeGPS == 3) {
-        detectOptFlowTakeoff();
-    }
+    // by definition if this function is called, then flow measurements have been provided so we
+    // need to run the optical flow takeoff detection
+    detectOptFlowTakeoff();
+
     // calculate rotation matrices at mid sample time for flow observations
     stateStruct.quat.rotation_matrix(Tbn_flow);
     // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
     if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
-        // correct flow sensor rates for bias
-        omegaAcrossFlowTime.x = rawGyroRates.x - flowGyroBias.x;
-        omegaAcrossFlowTime.y = rawGyroRates.y - flowGyroBias.y;
-        // write uncorrected flow rate measurements that will be used by the focal length scale factor estimator
+        // correct flow sensor body rates for bias and write
+        ofDataNew.bodyRadXYZ.x = rawGyroRates.x - flowGyroBias.x;
+        ofDataNew.bodyRadXYZ.y = rawGyroRates.y - flowGyroBias.y;
+        // the sensor interface doesn't provide a z axis rate so use the rate from the nav sensor instead
+        if (delTimeOF > 0.001f) {
+            // first preference is to use the rate averaged over the same sampling period as the flow sensor
+            ofDataNew.bodyRadXYZ.z = delAngBodyOF.z / delTimeOF;
+        } else if (imuDataNew.delAngDT > 0.001f){
+            // second preference is to use most recent IMU data
+            ofDataNew.bodyRadXYZ.z = imuDataNew.delAng.z / imuDataNew.delAngDT;
+        } else {
+            // third preference is use zero
+            ofDataNew.bodyRadXYZ.z =  0.0f;
+        }
+        // write uncorrected flow rate measurements
         // note correction for different axis and sign conventions used by the px4flow sensor
         ofDataNew.flowRadXY = - rawFlowRates; // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
+        // write the flow sensor position in body frame
+        ofDataNew.body_offset = &posOffset;
         // write flow rate measurements corrected for body rates
-        ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + omegaAcrossFlowTime.x;
-        ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + omegaAcrossFlowTime.y;
+        ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + ofDataNew.bodyRadXYZ.x;
+        ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + ofDataNew.bodyRadXYZ.y;
         // record time last observation was received so we can detect loss of data elsewhere
         flowValidMeaTime_ms = imuSampleTime_ms;
         // estimate sample time of the measurement
@@ -197,7 +213,7 @@ void NavEKF2_core::readMagData()
                 // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
                 if (_ahrs->get_compass()->use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
                     magSelectIndex = tempIndex;
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
                     // reset the timeout flag and timer
                     magTimeout = false;
                     lastHealthyMagTime_ms = imuSampleTime_ms;
@@ -271,8 +287,10 @@ void NavEKF2_core::readIMUData()
     // use the nominated imu or primary if not available
     if (ins.use_accel(imu_index)) {
         readDeltaVelocity(imu_index, imuDataNew.delVel, imuDataNew.delVelDT);
+        accelPosOffset = ins.get_imu_pos_offset(imu_index);
     } else {
         readDeltaVelocity(ins.get_primary_accel(), imuDataNew.delVel, imuDataNew.delVelDT);
+        accelPosOffset = ins.get_imu_pos_offset(ins.get_primary_accel());
     }
 
     // Get delta angle data from primary gyro or primary if not available
@@ -399,6 +417,9 @@ void NavEKF2_core::readGpsData()
 
             // Prevent time delay exceeding age of oldest IMU data in the buffer
             gpsDataNew.time_ms = MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms);
+
+            // Get which GPS we are using for position information
+            gpsDataNew.sensor_idx = _ahrs->get_gps().primary_sensor();
 
             // read the NED velocity from the GPS
             gpsDataNew.vel = _ahrs->get_gps().velocity();
@@ -627,4 +648,112 @@ void NavEKF2_core::readAirSpdData()
     tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
 }
 
+/********************************************************
+*              Range Beacon Measurements                *
+********************************************************/
+
+// check for new airspeed data and update stored measurements if available
+void NavEKF2_core::readRngBcnData()
+{
+    // get the location of the beacon data
+    const AP_Beacon *beacon = _ahrs->get_beacon();
+
+    // exit immediately if no beacon object
+    if (beacon == nullptr) {
+        return;
+    }
+
+    // get the number of beacons in use
+    N_beacons = beacon->count();
+
+    // search through all the beacons for new data and if we find it stop searching and push the data into the observation buffer
+    bool newDataToPush = false;
+    uint8_t numRngBcnsChecked = 0;
+    // start the search one index up from where we left it last time
+    uint8_t index = lastRngBcnChecked;
+    while (!newDataToPush && numRngBcnsChecked < N_beacons) {
+        // track the number of beacons checked
+        numRngBcnsChecked++;
+
+        // move to next beacon, wrap index if necessary
+        index++;
+        if (index >= N_beacons) {
+            index = 0;
+        }
+
+        // check that the beacon is healthy and has new data
+        if (beacon->beacon_healthy(index) &&
+                beacon->beacon_last_update_ms(index) != lastTimeRngBcn_ms[index])
+        {
+            // set the timestamp, correcting for measurement delay and average intersampling delay due to the filter update rate
+            lastTimeRngBcn_ms[index] = beacon->beacon_last_update_ms(index);
+            rngBcnDataNew.time_ms = lastTimeRngBcn_ms[index] - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
+
+            // set the range noise
+            // TODO the range library should provide the noise/accuracy estimate for each beacon
+            rngBcnDataNew.rngErr = frontend->_rngBcnNoise;
+
+            // set the range measurement
+            rngBcnDataNew.rng = beacon->beacon_distance(index);
+
+            // set the beacon position
+            rngBcnDataNew.beacon_posNED = beacon->beacon_position(index);
+
+            // identify the beacon identifier
+            rngBcnDataNew.beacon_ID = index;
+
+            // indicate we have new data to push to the buffer
+            newDataToPush = true;
+
+            // update the last checked index
+            lastRngBcnChecked = index;
+        }
+    }
+
+    // Check if the beacon system has returned a 3D fix
+    if (beacon->get_vehicle_position_ned(beaconVehiclePosNED, beaconVehiclePosErr)) {
+        rngBcnLast3DmeasTime_ms = imuSampleTime_ms;
+    }
+
+    // Check if the range beacon data can be used to align the vehicle position
+    if (imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250 && beaconVehiclePosErr < 1.0f && rngBcnAlignmentCompleted) {
+        // check for consistency between the position reported by the beacon and the position from the 3-State alignment filter
+        float posDiffSq = sq(receiverPos.x - beaconVehiclePosNED.x) + sq(receiverPos.y - beaconVehiclePosNED.y);
+        float posDiffVar = sq(beaconVehiclePosErr) + receiverPosCov[0][0] + receiverPosCov[1][1];
+        if (posDiffSq < 9.0f*posDiffVar) {
+            rngBcnGoodToAlign = true;
+            // Set the EKF origin and magnetic field declination if not previously set
+            if (!validOrigin && PV_AidingMode != AID_ABSOLUTE) {
+                // get origin from beacon system
+                Location origin_loc;
+                if (beacon->get_origin(origin_loc)) {
+                    setOriginLLH(origin_loc);
+
+                    // set the NE earth magnetic field states using the published declination
+                    // and set the corresponding variances and covariances
+                    alignMagStateDeclination();
+
+                    // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+                    EKF_origin.alt = origin_loc.alt - baroDataNew.hgt;
+
+                    // Set the uncertainty of the origin height
+                    ekfOriginHgtVar = sq(beaconVehiclePosErr);
+                }
+            }
+        } else {
+            rngBcnGoodToAlign = false;
+        }
+    } else {
+        rngBcnGoodToAlign = false;
+    }
+
+    // Save data into the buffer to be fused when the fusion time horizon catches up with it
+    if (newDataToPush) {
+        storedRangeBeacon.push(rngBcnDataNew);
+    }
+
+    // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
+    rngBcnDataToFuse = storedRangeBeacon.recall(rngBcnDataDelayed,imuDataDelayed.time_ms);
+
+}
 #endif // HAL_CPU_CLASS

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_TECS.h
 /// @brief   Combined Total Energy Speed & Height Control. This is a instance of an
 /// AP_SpdHgtControl class
@@ -26,12 +24,14 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <DataFlash/DataFlash.h>
+#include <AP_Landing/AP_Landing.h>
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
+    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing) :
         _ahrs(ahrs),
-        aparm(parms)
+        aparm(parms),
+        _landing(landing)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -44,8 +44,7 @@ public:
     // Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm,
                                int32_t EAS_dem_cm,
-                               enum FlightStage flight_stage,
-                               bool is_doing_auto_land,
+                               enum AP_Vehicle::FixedWing::FlightStage flight_stage,
                                float distance_beyond_land_wp,
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
@@ -103,6 +102,11 @@ public:
     void set_pitch_max_limit(int8_t pitch_limit) {
         _pitch_max_limit = pitch_limit;
     }
+
+    // force use of synthetic airspeed for one loop
+    void use_synthetic_airspeed(void) {
+        _use_synthetic_airspeed_once = true;
+    }
     
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -121,6 +125,9 @@ private:
     AP_AHRS &_ahrs;
 
     const AP_Vehicle::FixedWing &aparm;
+
+    // reference to const AP_Landing to access it's params
+    const AP_Landing &_landing;
 
     // TECS tuning parameters
     AP_Float _hgtCompFiltOmega;
@@ -254,7 +261,7 @@ private:
     uint32_t _underspeed_start_ms;
 
     // auto mode flightstage
-    enum FlightStage _flight_stage;
+    enum AP_Vehicle::FixedWing::FlightStage _flight_stage;
 
     // pitch demand before limiting
     float _pitch_dem_unc;
@@ -305,6 +312,11 @@ private:
         float SKE_error;
         float SEB_delta;
     } logging;
+
+    AP_Int8 _use_synthetic_airspeed;
+    
+    // use synthetic airspeed for next loop
+    bool _use_synthetic_airspeed_once;
     
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(float load_factor);

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -80,10 +79,14 @@ void XPlane::select_data(uint64_t usel_mask, uint64_t sel_mask)
         uint32_t data[8] {};
     } usel;
     count = 0;
+
+    // only de-select an output once, so we don't fight the user
+    usel_mask &= ~unselected_mask;
+    unselected_mask |= usel_mask;
+
     for (uint8_t i=0; i<64 && count<8; i++) {
         if ((((uint64_t)1)<<i) & usel_mask) {
             usel.data[count++] = i;
-            printf("i=%u\n", (unsigned)i);
         }
     }
     if (count != 0) {
@@ -162,8 +165,8 @@ bool XPlane::receive_data(void)
             loc.lat = data[1] * 1e7;
             loc.lng = data[2] * 1e7;
             loc.alt = data[3] * FEET_TO_METERS * 100.0f;
-            float hagl = data[4] * FEET_TO_METERS;
-            ground_level = loc.alt * 0.01f - hagl;
+            const float altitude_above_ground = data[4] * FEET_TO_METERS;
+            ground_level = loc.alt * 0.01f - altitude_above_ground;
             break;
         }
 
@@ -284,8 +287,13 @@ bool XPlane::receive_data(void)
 
     if (data_mask != required_mask) {
         // ask XPlane to change what data it sends
-        select_data(data_mask & ~required_mask, required_mask & ~data_mask);
-        goto failed;
+        uint64_t usel = data_mask & ~required_mask;
+        uint64_t sel = required_mask & ~data_mask;
+        usel &= ~unselected_mask;
+        if (usel || sel) {
+            select_data(usel, sel);
+            goto failed;
+        }
     }
     position = pos + position_zero;
     update_position();
@@ -294,7 +302,7 @@ bool XPlane::receive_data(void)
     accel_earth.z += GRAVITY_MSS;
     
     // the position may slowly deviate due to float accuracy and longitude scaling
-    if (get_distance(loc, location) > 4 || fabsf(loc.alt - location.alt)*0.01 > 2) {
+    if (get_distance(loc, location) > 4 || abs(loc.alt - location.alt)*0.01f > 2.0f) {
         printf("X-Plane home reset dist=%f alt=%.1f/%.1f\n",
                get_distance(loc, location), loc.alt*0.01f, location.alt*0.01f);
         // reset home location
@@ -343,7 +351,7 @@ failed:
     // new velocity and position vectors
     velocity_ef += accel_earth * delta_time;
     position += velocity_ef * delta_time;
-    velocity_air_ef = velocity_ef - wind_ef;
+    velocity_air_ef = velocity_ef + wind_ef;
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 
     update_position();
@@ -386,8 +394,8 @@ void XPlane::send_data(const struct sitl_input &input)
     throttle = ((uint32_t)(throttle * 1000)) * 1.0e-3f + throttle_magic;
     
     uint8_t flap_chan;
-    if (RC_Channel_aux::find_channel(RC_Channel_aux::k_flap, flap_chan) ||
-        RC_Channel_aux::find_channel(RC_Channel_aux::k_flap_auto, flap_chan)) {
+    if (SRV_Channels::find_channel(SRV_Channel::k_flap, flap_chan) ||
+        SRV_Channels::find_channel(SRV_Channel::k_flap_auto, flap_chan)) {
         float flap = (input.servos[flap_chan]-1000)/1000.0;
         if (flap != last_flap) {
             send_dref("sim/flightmodel/controls/flaprqst", flap);

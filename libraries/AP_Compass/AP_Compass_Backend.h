@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,9 +31,6 @@ public:
     // override with a custom destructor if need be.
     virtual ~AP_Compass_Backend(void) {}
 
-    // initialize the magnetometers
-    virtual bool init(void) = 0;
-
     // read sensor data
     virtual void read(void) = 0;
 
@@ -42,6 +38,27 @@ public:
     // backends
     virtual void accumulate(void) {};
 
+    /*
+      device driver IDs. These are used to fill in the devtype field
+      of the device ID, which shows up as COMPASS*ID* parameters to
+      users. The values are chosen for compatibility with existing PX4
+      drivers.
+      If a change is made to a driver that would make existing
+      calibration values invalid then this number must be changed.
+     */
+    enum DevTypes {
+        DEVTYPE_HMC5883_OLD = 0x01,
+        DEVTYPE_HMC5883 = 0x07,
+        DEVTYPE_LSM303D = 0x02,
+        DEVTYPE_AK8963  = 0x04,
+        DEVTYPE_BMM150  = 0x05,
+        DEVTYPE_LSM9DS1 = 0x06,
+        DEVTYPE_LIS3MDL = 0x08,
+        DEVTYPE_AK09916 = 0x09,
+        DEVTYPE_IST8310 = 0x0A,
+    };
+    
+    
 protected:
 
     /*
@@ -75,9 +92,15 @@ protected:
     // tell if instance is an external compass
     bool is_external(uint8_t instance);
 
+    // set rotation of an instance
+    void set_rotation(uint8_t instance, enum Rotation rotation);
+    
     // access to frontend
     Compass &_compass;
 
+    // semaphore for access to shared frontend data
+    AP_HAL::Semaphore *_sem;    
+    
 private:
     void apply_corrections(Vector3f &mag, uint8_t i);
 };

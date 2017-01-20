@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -164,7 +163,7 @@ AP_GPS_SBF::parse(uint8_t temp)
 void
 AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
 
@@ -227,9 +226,10 @@ AP_GPS_SBF::process_message(void)
             state.ground_speed = (float)safe_sqrt(ground_vector_sq);
 
             state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
-
-            state.horizontal_accuracy = (float)temp.HAccuracy * 0.01f;
-            state.vertical_accuracy = (float)temp.VAccuracy * 0.01f;
+            
+            // value is expressed as twice the rms error = int16 * 0.01/2
+            state.horizontal_accuracy = (float)temp.HAccuracy * 0.005f;
+            state.vertical_accuracy = (float)temp.VAccuracy * 0.005f;
             state.have_horizontal_accuracy = true;
             state.have_vertical_accuracy = true;
         }
@@ -238,7 +238,7 @@ AP_GPS_SBF::process_message(void)
         if (temp.Latitude > -200000) {
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * 1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * 1e7);
-            state.location.alt = (int32_t)((float)temp.Height * 1e2f);
+            state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f );
         }
 
         if (temp.NrSV != 255) {
@@ -296,7 +296,7 @@ AP_GPS_SBF::process_message(void)
 }
 
 void
-AP_GPS_SBF::inject_data(uint8_t *data, uint8_t len)
+AP_GPS_SBF::inject_data(const uint8_t *data, uint16_t len)
 {
 
     if (port->txspace() > len) {
