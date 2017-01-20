@@ -394,17 +394,16 @@ bool Display::init(void)
 
 void Display::update()
 {
-    static uint8_t timer = 0;
     // return immediately if not enabled
     if (!_healthy) {
         return;
     }
 
     // max update frequency 2Hz
+    static uint8_t timer = 0;
     if (timer++ < 25) {
         return;
     }
-
     timer = 0;
 
     if (AP_Notify::flags.armed) {
