@@ -19,9 +19,11 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 
-#define SH1106_I2C_ADDR 0x3C    // default I2C bus address
-
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+// constructor
+Display_SH1106_I2C::Display_SH1106_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev) :
+    _dev(std::move(dev)) {}
 
 bool Display_SH1106_I2C::hw_init()
 {
@@ -48,7 +50,6 @@ bool Display_SH1106_I2C::hw_init()
             0x02, 0x10    // Column Address
     } };
 
-    _dev = std::move(hal.i2c_mgr->get_device(OLED_I2C_BUS, SH1106_I2C_ADDR));
     memset(_displaybuffer, 0, SH1106_COLUMNS * SH1106_ROWS_PER_PAGE);
 
     // take i2c bus semaphore

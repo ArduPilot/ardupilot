@@ -19,10 +19,11 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 
-#define SSD1306_I2C_ADDR 0x3C    // default I2C bus address
-
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+// constructor
+Display_SSD1306_I2C::Display_SSD1306_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev) :
+    _dev(std::move(dev)) {}
 
 bool Display_SSD1306_I2C::hw_init()
 {
@@ -57,7 +58,6 @@ bool Display_SSD1306_I2C::hw_init()
             0x22, 0, 7    // +++ Page Address: (== start:0, end:7)
     } };
 
-    _dev = std::move(hal.i2c_mgr->get_device(OLED_I2C_BUS, SSD1306_I2C_ADDR));
     memset(_displaybuffer, 0, SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE);
 
     // take i2c bus semaphore
