@@ -25,17 +25,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
-    // variables from parent vehicle
-    AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
-
-    // parameters 1 ~ 29 were reserved for tradheli
-    // parameters 30 ~ 39 reserved for tricopter
-    // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
-
-    AP_GROUPEND
-};
-
 // init
 void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
