@@ -3,6 +3,7 @@ PLND_TYPE       2
 POS_XY_P        2
 VEL_XY_P        0.6
 # Iris is X frame
+FRAME_CLASS	1
 FRAME_TYPE	1
 
 COMPASS_OFS_X   5
