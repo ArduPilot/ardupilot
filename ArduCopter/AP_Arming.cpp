@@ -81,6 +81,7 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
         & fence_checks(display_failure)
         & ins_checks(display_failure)
         & board_voltage_checks(display_failure)
+        & logging_checks(display_failure)
         & parameter_checks(display_failure)
         & motor_checks(display_failure)
         & pilot_throttle_checks(display_failure);
