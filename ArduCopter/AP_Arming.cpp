@@ -343,11 +343,6 @@ void AP_Arming_Copter::pre_arm_rc_checks(const bool display_failure)
         return;
     }
 
-    // check if radio has been calibrated
-    if (!copter.channel_throttle->min_max_configured()) {
-        return;
-    }
-
     const RC_Channel *channels[] = {
         copter.channel_roll,
         copter.channel_pitch,
@@ -359,6 +354,13 @@ void AP_Arming_Copter::pre_arm_rc_checks(const bool display_failure)
     for (uint8_t i=0; i<ARRAY_SIZE(channels);i++) {
         const RC_Channel *channel = channels[i];
         const char *channel_name = channel_names[i];
+        // check if radio has been calibrated
+        if (!channel->min_max_configured()) {
+            if (display_failure) {
+                copter.gcs_send_text_fmt(MAV_SEVERITY_CRITICAL,"PreArm: %s not configured", channel_name);
+            }
+            return;
+        }
         if (channel->get_radio_min() > 1300) {
             if (display_failure) {
                 copter.gcs_send_text_fmt(MAV_SEVERITY_CRITICAL,"PreArm: %s radio min too high", channel_name);
