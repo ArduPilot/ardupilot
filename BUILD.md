@@ -34,7 +34,14 @@ list some basic and more used commands as example.
     ./waf copter
     ```
 
-    The "arducopter" and "arducopter-heli" binaries should appear in the build/<board-name>/bin directory.
+    If building for the bebop2 the binary must be built statically:
+
+    ```sh
+    ./waf configure --board bebop --static
+    ./waf copter
+    ```    
+
+    The "arducopter" and "arducopter-heli" binaries should appear in the `build/<board-name>/bin` directory.
 
 * **List available boards**
 
