@@ -535,6 +535,8 @@ const char* Copter::get_frame_string()
  */
 void Copter::allocate_motors(void)
 {
+    const struct AP_Param::GroupInfo *var_info;
+    
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
 #if FRAME_CONFIG != HELI_FRAME
         case AP_Motors::MOTOR_FRAME_QUAD:
@@ -544,37 +546,44 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
         default:
             motors = new AP_MotorsMatrix(MAIN_LOOP_RATE);
+            var_info = AP_MotorsMatrix::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_TRI:
             motors = new AP_MotorsTri(MAIN_LOOP_RATE);
+            var_info = AP_MotorsTri::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = new AP_MotorsSingle(MAIN_LOOP_RATE);
+            var_info = AP_MotorsSingle::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_COAX:
             motors = new AP_MotorsCoax(MAIN_LOOP_RATE);
+            var_info = AP_MotorsCoax::var_info;
             break;
 #else // FRAME_CONFIG == HELI_FRAME
         case AP_Motors::MOTOR_FRAME_HELI:
         default:
             motors = new AP_MotorsHeli_Single(MAIN_LOOP_RATE);
+            var_info = AP_MotorsHeli::var_info;
             break;            
 #endif
     }
     if (motors == nullptr) {
         AP_HAL::panic("Unable to allocate FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
     }
-    AP_Param::load_object_from_eeprom(motors, motors->var_info);
+    AP_Param::load_object_from_eeprom(motors, var_info);
 
 #if FRAME_CONFIG != HELI_FRAME
     attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, MAIN_LOOP_SECONDS);
+    var_info = AC_AttitudeControl_Multi::var_info;
 #else
     attitude_control = new AC_AttitudeControl_Heli(ahrs, aparm, *motors, MAIN_LOOP_SECONDS);
+    var_info = AC_AttitudeControl_Heli::var_info;
 #endif
     if (attitude_control == nullptr) {
         AP_HAL::panic("Unable to allocate AttitudeControl");
     }
-    AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
+    AP_Param::load_object_from_eeprom(attitude_control, var_info);
         
     pos_control = new AC_PosControl(ahrs, inertial_nav, *motors, *attitude_control,
                                     g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
