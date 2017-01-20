@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * vector3.cpp
  * Copyright (C) Andrew Tridgell 2012
@@ -391,7 +390,7 @@ Matrix3<T> Vector3<T>::mul_rowcol(const Vector3<T> &v2) const
                       v1.z * v2.x, v1.z * v2.y, v1.z * v2.z);
 }
 
-// only define for float
+// define for float
 template void Vector3<float>::rotate(enum Rotation);
 template void Vector3<float>::rotate_inverse(enum Rotation);
 template float Vector3<float>::length(void) const;
@@ -413,6 +412,9 @@ template bool Vector3<float>::operator !=(const Vector3<float> &v) const;
 template bool Vector3<float>::is_nan(void) const;
 template bool Vector3<float>::is_inf(void) const;
 template float Vector3<float>::angle(const Vector3<float> &v) const;
+
+// define needed ops for Vector3l
+template Vector3<int32_t> &Vector3<int32_t>::operator +=(const Vector3<int32_t> &v);
 
 template void Vector3<double>::rotate(enum Rotation);
 template void Vector3<double>::rotate_inverse(enum Rotation);

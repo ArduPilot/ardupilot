@@ -10,19 +10,16 @@ public:
     /**
      * Call init from the platform hal instance init, so that both the type of
      * the RCInput implementation and init argument (e.g. ISRRegistry) are
-     * known to the programmer. (Its too difficult to describe this dependency
+     * known to the programmer. (It's too difficult to describe this dependency
      * in the C++ type system.)
      */
     virtual void init() = 0;
-    virtual void deinit() {};
+    virtual void teardown() {};
 
     /**
-     * Return true if there has been new input since the last read()
-     * call. This call also clears the new_input flag, so once it
-     * returns true it won't return true again until another frame is
-     * received.
+     * Return true if there has been new input since the last call to new_input()
      */
-    virtual bool new_input() = 0;
+    virtual bool new_input(void) = 0;
 
     /**
      * Return the number of valid channels in the last read

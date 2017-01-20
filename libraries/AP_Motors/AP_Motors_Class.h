@@ -1,10 +1,9 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Notify/AP_Notify.h>      // Notify library
-#include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include <SRV_Channel/SRV_Channel.h>
 #include <Filter/Filter.h>         // filter library
 
 // offsets for motors in motor_out and _motor_filtered arrays
@@ -19,19 +18,6 @@
 
 #define AP_MOTORS_MAX_NUM_MOTORS 8
 
-// frame definitions
-#define AP_MOTORS_PLUS_FRAME        0
-#define AP_MOTORS_X_FRAME           1
-#define AP_MOTORS_V_FRAME           2
-#define AP_MOTORS_H_FRAME           3   // same as X frame but motors spin in opposite direction
-#define AP_MOTORS_VTAIL_FRAME       4   // Lynxmotion Hunter VTail 400/500
-#define AP_MOTORS_ATAIL_FRAME       5   // A-Shaped VTail Quads
-#define AP_MOTORS_NEW_PLUS_FRAME    10  // NEW frames are same as original 4 but with motor orders changed to be clockwise from the front
-#define AP_MOTORS_NEW_X_FRAME       11
-#define AP_MOTORS_NEW_V_FRAME       12
-#define AP_MOTORS_NEW_H_FRAME       13   // same as X frame but motors spin in opposite direction
-#define AP_MOTORS_QUADPLANE         14   // motors on 5..8
-
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
 
@@ -39,14 +25,33 @@
 class AP_Motors {
 public:
 
+    enum motor_frame_class {
+        MOTOR_FRAME_UNDEFINED = 0,
+        MOTOR_FRAME_QUAD = 1,
+        MOTOR_FRAME_HEXA = 2,
+        MOTOR_FRAME_OCTA = 3,
+        MOTOR_FRAME_OCTAQUAD = 4,
+        MOTOR_FRAME_Y6 = 5,
+        MOTOR_FRAME_HELI = 6,
+        MOTOR_FRAME_TRI = 7,
+        MOTOR_FRAME_SINGLE = 8,
+        MOTOR_FRAME_COAX = 9
+    };
+    enum motor_frame_type {
+        MOTOR_FRAME_TYPE_PLUS = 0,
+        MOTOR_FRAME_TYPE_X = 1,
+        MOTOR_FRAME_TYPE_V = 2,
+        MOTOR_FRAME_TYPE_H = 3,
+        MOTOR_FRAME_TYPE_VTAIL = 4,
+        MOTOR_FRAME_TYPE_ATAIL = 5,
+        MOTOR_FRAME_TYPE_Y6B = 10
+    };
+
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
-    // set update rate to motors - a value in hertz
-    virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; }
-
-    // set frame orientation (normally + or X)
-    virtual void        set_frame_orientation( uint8_t new_orientation ) { _flags.frame_orientation = new_orientation; }
+    // check initialisation succeeded
+    bool                initialised_ok() const { return _flags.initialised_ok; }
 
     // arm, disarm or check status status of motors
     bool                armed() const { return _flags.armed; }
@@ -108,8 +113,14 @@ public:
     // virtual functions that should be implemented by child classes
     //
 
+    // set update rate to motors - a value in hertz
+    virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; }
+
     // init
-    virtual void        Init() = 0;
+    virtual void        init(motor_frame_class frame_class, motor_frame_type frame_type) = 0;
+
+    // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+    virtual void        set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) = 0;
 
     // enable - starts allowing signals to be sent to motors
     virtual void        enable() = 0;
@@ -134,6 +145,9 @@ public:
 
     // set loop rate. Used to support loop rate as a parameter
     void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
+
+    enum pwm_type { PWM_TYPE_NORMAL=0, PWM_TYPE_ONESHOT=1, PWM_TYPE_ONESHOT125=2, PWM_TYPE_BRUSHED16kHz=3 };
+    pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
     
 protected:
     // output functions that should be overloaded by child classes
@@ -147,22 +161,22 @@ protected:
     void add_motor_num(int8_t motor_num);
     
     // update the throttle input filter
-    virtual void        update_throttle_filter() = 0;
+    virtual void update_throttle_filter() = 0;
 
     // save parameters as part of disarming
     virtual void save_params_on_disarm() {}
 
     // convert input in -1 to +1 range to pwm output
-    int16_t calc_pwm_output_1to1(float input, const RC_Channel& servo);
+    int16_t calc_pwm_output_1to1(float input, const SRV_Channel *servo);
 
     // convert input in 0 to +1 range to pwm output
-    int16_t calc_pwm_output_0to1(float input, const RC_Channel& servo);
+    int16_t calc_pwm_output_0to1(float input, const SRV_Channel *servo);
 
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed              : 1;    // 0 if disarmed, 1 if armed
-        uint8_t frame_orientation  : 4;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3, NEW_PLUS_FRAME 10, NEW_X_FRAME, NEW_V_FRAME, NEW_H_FRAME
         uint8_t interlock          : 1;    // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
+        uint8_t initialised_ok     : 1;    // 1 if initialisation was successful
     } _flags;
 
     // internal variables
@@ -192,6 +206,5 @@ protected:
     float _throttle_radio_passthrough = 0.0f; // throttle/collective input from pilot in 0 ~ 1 range.  used for setup and providing servo feedback while landed
     float _yaw_radio_passthrough = 0.0f;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
 
-    enum pwm_type { PWM_TYPE_NORMAL=0, PWM_TYPE_ONESHOT=1, PWM_TYPE_ONESHOT125=2 };
     AP_Int8             _pwm_type;            // PWM output type
 };

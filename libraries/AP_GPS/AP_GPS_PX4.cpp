@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,6 +35,11 @@ AP_GPS_PX4::AP_GPS_PX4(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriv
     AP_GPS_Backend(_gps, _state, _port)
 {
     _gps_sub = orb_subscribe(ORB_ID(vehicle_gps_position));
+}
+
+AP_GPS_PX4::~AP_GPS_PX4()
+{
+	orb_unsubscribe(_gps_sub);
 }
 
 

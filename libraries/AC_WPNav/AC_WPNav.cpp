@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #include "AC_WPNav.h"
 
@@ -11,7 +10,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @DisplayName: Waypoint Horizontal Speed Target
     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally during a WP mission
     // @Units: cm/s
-    // @Range: 0 2000
+    // @Range: 20 2000
     // @Increment: 50
     // @User: Standard
     AP_GROUPINFO("SPEED",       0, AC_WPNav, _wp_speed_cms, WPNAV_WP_SPEED),
@@ -97,6 +96,13 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LOIT_MINA",   9, AC_WPNav, _loiter_accel_min_cmss, WPNAV_LOITER_ACCEL_MIN),
 
+    // @Param: RFND_USE
+    // @DisplayName: Use rangefinder for terrain following
+    // @Description: This controls the use of a rangefinder for terrain following
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("RFND_USE",   10, AC_WPNav, _rangefinder_use, 1),
+    
     AP_GROUPEND
 };
 
@@ -109,10 +115,8 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _ahrs(ahrs),
     _pos_control(pos_control),
     _attitude_control(attitude_control),
-    _loiter_step(0),
     _pilot_accel_fwd_cms(0),
     _pilot_accel_rgt_cms(0),
-    _loiter_ekf_pos_reset_ms(0),
     _wp_last_update(0),
     _wp_step(0),
     _track_length(0.0f),
@@ -173,9 +177,6 @@ void AC_WPNav::init_loiter_target()
 {
     const Vector3f& curr_pos = _inav.get_position();
     const Vector3f& curr_vel = _inav.get_velocity();
-
-    // initialise ekf position reset check
-    init_ekf_position_reset();
 
     // initialise position controller
     _pos_control.init_xy_controller();
@@ -297,7 +298,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     }
 
     // Limit the velocity to prevent fence violations
-    if (_avoid != NULL) {
+    if (_avoid != nullptr) {
         _avoid->adjust_velocity(_pos_control.get_pos_xy_kP(), _loiter_accel_cmss, desired_vel);
     }
 
@@ -324,8 +325,6 @@ void AC_WPNav::update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler)
         if (dt >= 0.2f) {
             dt = 0.0f;
         }
-        // initialise ekf position reset check
-        check_for_ekf_position_reset();
 
         // initialise pos controller speed and acceleration
         _pos_control.set_speed_xy(_loiter_speed_cms);
@@ -342,9 +341,6 @@ void AC_WPNav::init_brake_target(float accel_cmss)
 {
     const Vector3f& curr_vel = _inav.get_velocity();
     Vector3f stopping_point;
-
-    // initialise ekf position reset check
-    init_ekf_position_reset();
 
     // initialise position controller
     _pos_control.init_xy_controller();
@@ -1153,7 +1149,7 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
 {
 #if AP_TERRAIN_AVAILABLE
     // use range finder if connected
-    if (_rangefinder_use) {
+    if (_rangefinder_available && _rangefinder_use) {
         if (_rangefinder_healthy) {
             offset_cm = _inav.get_altitude() - _rangefinder_alt_cm;
             return true;
@@ -1164,7 +1160,7 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
 
     // use terrain database
     float terr_alt = 0.0f;
-    if (_terrain != NULL && _terrain->height_above_terrain(terr_alt, true)) {
+    if (_terrain != nullptr && _terrain->height_above_terrain(terr_alt, true)) {
         offset_cm = _inav.get_altitude() - (terr_alt * 100.0f);
         return true;
     }
@@ -1251,24 +1247,5 @@ float AC_WPNav::get_slow_down_speed(float dist_from_dest_cm, float accel_cmss)
         return WPNAV_WP_TRACK_SPEED_MIN;
     } else {
         return target_speed;
-    }
-}
-
-/// initialise ekf position reset check
-void AC_WPNav::init_ekf_position_reset()
-{
-    Vector2f pos_shift;
-    _loiter_ekf_pos_reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
-}
-
-/// check for ekf position reset and adjust loiter or brake target position
-void AC_WPNav::check_for_ekf_position_reset()
-{
-    // check for position shift
-    Vector2f pos_shift;
-    uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
-    if (reset_ms != _loiter_ekf_pos_reset_ms) {
-        _pos_control.shift_pos_xy_target(pos_shift.x * 100.0f, pos_shift.y * 100.0f);
-        _loiter_ekf_pos_reset_ms = reset_ms;
     }
 }

@@ -12,6 +12,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/dsm.h>
+#include <AP_HAL/utility/sumd.h>
+#include <AP_HAL/utility/st24.h>
+#include <AP_HAL/utility/srxl.h>
 
 #include "RCInput.h"
 #include "sbus.h"
@@ -22,8 +25,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-RCInput::RCInput() :
-    new_rc_input(false)
+RCInput::RCInput()
 {
     ppm_state._channel_counter = -1;
 }
@@ -34,7 +36,11 @@ void RCInput::init()
 
 bool RCInput::new_input()
 {
-    return new_rc_input;
+    bool ret = rc_input_count != last_rc_input_count;
+    if (ret) {
+        last_rc_input_count.store(rc_input_count);
+    }
+    return ret;
 }
 
 uint8_t RCInput::num_channels()
@@ -44,7 +50,6 @@ uint8_t RCInput::num_channels()
 
 uint16_t RCInput::read(uint8_t ch)
 {
-    new_rc_input = false;
     if (_override[ch]) {
         return _override[ch];
     }
@@ -81,7 +86,7 @@ bool RCInput::set_override(uint8_t channel, int16_t override)
     if (channel < LINUX_RC_INPUT_NUM_CHANNELS) {
         _override[channel] = override;
         if (override != 0) {
-            new_rc_input = true;
+            rc_input_count++;
             return true;
         }
     }
@@ -109,7 +114,7 @@ void RCInput::_process_ppmsum_pulse(uint16_t width_usec)
                 _pwm_values[i] = ppm_state._pulse_capt[i];
             }
             _num_channels = ppm_state._channel_counter;
-            new_rc_input = true;
+            rc_input_count++;
         }
         ppm_state._channel_counter = 0;
         return;
@@ -140,7 +145,7 @@ void RCInput::_process_ppmsum_pulse(uint16_t width_usec)
             _pwm_values[i] = ppm_state._pulse_capt[i];
         }
         _num_channels = ppm_state._channel_counter;
-        new_rc_input = true;
+        rc_input_count++;
         ppm_state._channel_counter = -1;
     }
 }
@@ -217,7 +222,9 @@ void RCInput::_process_sbus_pulse(uint16_t width_s0, uint16_t width_s1)
                 _pwm_values[i] = values[i];
             }
             _num_channels = num_values;
-            new_rc_input = true;
+            if (!sbus_failsafe) {
+                rc_input_count++;
+            }
         }
         goto reset;
     } else if (bits_s1 > 12) {
@@ -286,7 +293,7 @@ void RCInput::_process_dsm_pulse(uint16_t width_s0, uint16_t width_s1)
                     _pwm_values[i] = values[i];
                 }
                 _num_channels = num_values;
-                new_rc_input = true;
+                rc_input_count++;
             }
         }
         memset(&dsm_state, 0, sizeof(dsm_state));
@@ -315,7 +322,7 @@ void RCInput::_process_rc_pulse(uint16_t width_s0, uint16_t width_s1)
 #if 0
     // useful for debugging
     static FILE *rclog;
-    if (rclog == NULL) {
+    if (rclog == nullptr) {
         rclog = fopen("/tmp/rcin.log", "w");
     }
     if (rclog) {
@@ -344,20 +351,21 @@ void RCInput::_update_periods(uint16_t *periods, uint8_t len)
         _pwm_values[i] = periods[i];
     }
     _num_channels = len;
-    new_rc_input = true;
+    rc_input_count++;
 }
 
 
 /*
   add some bytes of input in DSM serial stream format, coping with partial packets
  */
-void RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
+bool RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
 {
     if (nbytes == 0) {
-        return;
+        return false;
     }
     const uint8_t dsm_frame_size = sizeof(dsm.frame);
-
+    bool ret = false;
+    
     uint32_t now = AP_HAL::millis();
     if (now - dsm.last_input_ms > 5) {
         // resync based on time
@@ -381,8 +389,14 @@ void RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
             dsm.partial_frame_count = 0;
             uint16_t values[16] {};
             uint16_t num_values=0;
+            /*
+              we only accept input when nbytes==0 as dsm is highly
+              sensitive to framing, and extra bytes may be an
+              indication this is really SRXL
+             */
             if (dsm_decode(AP_HAL::micros64(), dsm.frame, values, &num_values, 16) &&
-                num_values >= MIN_NUM_CHANNELS) {
+                num_values >= MIN_NUM_CHANNELS &&
+                nbytes == 0) {
                 for (uint8_t i=0; i<num_values; i++) {
                     if (values[i] != 0) {
                         _pwm_values[i] = values[i];
@@ -396,15 +410,108 @@ void RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
                 if (num_values > _num_channels) {
                     _num_channels = num_values;
                 }
-                new_rc_input = true;
+                rc_input_count++;
 #if 0
                 printf("Decoded DSM %u channels %u %u %u %u %u %u %u %u\n",
                        (unsigned)num_values,
                        values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
 #endif
+                ret = true;
             }
         }
     }
+    return ret;
+}
+
+
+/*
+  add some bytes of input in SUMD serial stream format, coping with partial packets
+ */
+bool RCInput::add_sumd_input(const uint8_t *bytes, size_t nbytes)
+{
+    uint16_t values[LINUX_RC_INPUT_NUM_CHANNELS];
+    uint8_t rssi;
+    uint8_t rx_count;
+    uint16_t channel_count;
+    bool ret = false;
+    
+    while (nbytes > 0) {
+        if (sumd_decode(*bytes++, &rssi, &rx_count, &channel_count, values, LINUX_RC_INPUT_NUM_CHANNELS) == 0) {
+            if (channel_count > LINUX_RC_INPUT_NUM_CHANNELS) {
+                continue;
+            }
+            for (uint8_t i=0; i<channel_count; i++) {
+                if (values[i] != 0) {
+                    _pwm_values[i] = values[i];
+                }
+            }
+            _num_channels = channel_count;
+            rc_input_count++;
+            ret = true;
+        }
+        nbytes--;
+    }
+    return ret;
+}
+
+/*
+  add some bytes of input in ST24 serial stream format, coping with partial packets
+ */
+bool RCInput::add_st24_input(const uint8_t *bytes, size_t nbytes)
+{
+    uint16_t values[LINUX_RC_INPUT_NUM_CHANNELS];
+    uint8_t rssi;
+    uint8_t rx_count;
+    uint16_t channel_count;
+    bool ret = false;
+    
+    while (nbytes > 0) {
+        if (st24_decode(*bytes++, &rssi, &rx_count, &channel_count, values, LINUX_RC_INPUT_NUM_CHANNELS) == 0) {
+            if (channel_count > LINUX_RC_INPUT_NUM_CHANNELS) {
+                continue;
+            }
+            for (uint8_t i=0; i<channel_count; i++) {
+                if (values[i] != 0) {
+                    _pwm_values[i] = values[i];
+                }
+            }
+            _num_channels = channel_count;
+            rc_input_count++;
+            ret = true;
+        }
+        nbytes--;
+    }
+    return ret;
+}
+
+/*
+  add some bytes of input in SRXL serial stream format, coping with partial packets
+ */
+bool RCInput::add_srxl_input(const uint8_t *bytes, size_t nbytes)
+{
+    uint16_t values[LINUX_RC_INPUT_NUM_CHANNELS];
+    uint8_t channel_count;
+    uint64_t now = AP_HAL::micros64();
+    bool ret = false;
+    bool failsafe_state;
+    
+    while (nbytes > 0) {
+        if (srxl_decode(now, *bytes++, &channel_count, values, LINUX_RC_INPUT_NUM_CHANNELS, &failsafe_state) == 0) {
+            if (channel_count > LINUX_RC_INPUT_NUM_CHANNELS) {
+                continue;
+            }
+            for (uint8_t i=0; i<channel_count; i++) {
+                _pwm_values[i] = values[i];
+            }
+            _num_channels = channel_count;
+            if (failsafe_state == false) {
+                rc_input_count++;
+            }
+            ret = true;
+        }
+        nbytes--;
+    }
+    return ret;
 }
 
 
@@ -458,11 +565,14 @@ void RCInput::add_sbus_input(const uint8_t *bytes, size_t nbytes)
                 if (num_values > _num_channels) {
                     _num_channels = num_values;
                 }
-                new_rc_input = true;
+                if (!sbus_failsafe) {
+                    rc_input_count++;
+                }
 #if 0
-                printf("Decoded SBUS %u channels %u %u %u %u %u %u %u %u\n",
+                printf("Decoded SBUS %u channels %u %u %u %u %u %u %u %u %s\n",
                        (unsigned)num_values,
-                       values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
+                       values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7],
+                       sbus_failsafe?"FAIL":"OK");
 #endif
             }
         }

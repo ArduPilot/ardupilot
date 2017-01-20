@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 // This file contains the high-level takeoff logic for Loiter, PosHold, AltHold, Sport modes.
@@ -27,11 +25,11 @@ bool Copter::current_mode_has_user_takeoff(bool must_navigate)
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
 bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
-    if (motors.armed() && ap.land_complete && current_mode_has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
+    if (motors->armed() && ap.land_complete && current_mode_has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
 
 #if FRAME_CONFIG == HELI_FRAME
         // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
-        if (!motors.rotor_runup_complete()) {
+        if (!motors->rotor_runup_complete()) {
             return false;
         }
 #endif
@@ -61,7 +59,7 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 void Copter::takeoff_timer_start(float alt_cm)
 {
     // calculate climb rate
-    float speed = MIN(wp_nav.get_speed_up(), MAX(g.pilot_velocity_z_max*2.0f/3.0f, g.pilot_velocity_z_max-50.0f));
+    float speed = MIN(wp_nav->get_speed_up(), MAX(g.pilot_velocity_z_max*2.0f/3.0f, g.pilot_velocity_z_max-50.0f));
 
     // sanity check speed and target
     if (takeoff_state.running || speed <= 0.0f || alt_cm <= 0.0f) {
@@ -149,22 +147,22 @@ void Copter::auto_takeoff_set_start_alt(void)
     // start with our current altitude
     auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude();
     
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
-        // we are not flying, add the takeoff_nav_alt
-        auto_takeoff_no_nav_alt_cm += g2.takeoff_nav_alt * 100;
+    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
+        // we are not flying, add the wp_navalt_min
+        auto_takeoff_no_nav_alt_cm += g2.wp_navalt_min * 100;
     }
 }
 
 
 /*
   call attitude controller for automatic takeoff, limiting roll/pitch
-  if below takeoff_nav_alt
+  if below wp_navalt_min
  */
 void Copter::auto_takeoff_attitude_run(float target_yaw_rate)
 {
     float nav_roll, nav_pitch;
     
-    if (g2.takeoff_nav_alt > 0 && inertial_nav.get_altitude() < auto_takeoff_no_nav_alt_cm) {
+    if (g2.wp_navalt_min > 0 && inertial_nav.get_altitude() < auto_takeoff_no_nav_alt_cm) {
         // we haven't reached the takeoff navigation altitude yet
         nav_roll = 0;
         nav_pitch = 0;
@@ -173,12 +171,12 @@ void Copter::auto_takeoff_attitude_run(float target_yaw_rate)
         hover_roll_trim_scalar_slew = 0;        
 #endif
         // tell the position controller that we have limited roll/pitch demand to prevent integrator buildup
-        pos_control.set_limit_accel_xy();
+        pos_control->set_limit_accel_xy();
     } else {
-        nav_roll = wp_nav.get_roll();
-        nav_pitch = wp_nav.get_pitch();
+        nav_roll = wp_nav->get_roll();
+        nav_pitch = wp_nav->get_pitch();
     }
     
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate, get_smoothing_gain());
 }

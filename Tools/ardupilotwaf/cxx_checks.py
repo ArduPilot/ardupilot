@@ -170,6 +170,10 @@ def check_package(cfg, env, libname):
 
 @conf
 def check_lttng(cfg, env):
+    if cfg.env.STATIC_LINKING:
+        # lttng-ust depends on libdl which means it can't be used in a static build
+        cfg.msg("Checking for 'lttng-ust':", 'disabled for static build', color='YELLOW')
+        return False
     if cfg.options.disable_lttng:
         cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
         return False

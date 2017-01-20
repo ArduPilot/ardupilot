@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
   Alexmos Serial controlled mount backend class
 */
@@ -70,7 +68,7 @@ public:
     //constructor
     AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
         AP_Mount_Backend(frontend, state, instance),
-        _port(NULL),
+        _port(nullptr),
         _initialised(false),
         _board_version(0),
         _current_firmware_version(0.0f),

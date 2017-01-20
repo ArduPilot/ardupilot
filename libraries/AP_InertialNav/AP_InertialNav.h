@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -104,6 +103,14 @@ public:
      * @return
      */
     virtual float       get_altitude() const = 0;
+
+    /**
+     * get_hgt_ctrl_limit - get maximum height to be observed by the control loops in cm and a validity flag
+     * this is used to limit height during optical flow navigation
+     * it will return invalid when no limiting is required
+     * @return
+     */
+    virtual bool       get_hgt_ctrl_limit(float& limit) const = 0;
 
     /**
      * get_velocity_z - returns the current climbrate.

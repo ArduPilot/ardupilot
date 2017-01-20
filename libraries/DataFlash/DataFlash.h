@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /* ************************************************************ */
 /* Test for DataFlash Log library                               */
 /* ************************************************************ */
@@ -126,7 +124,6 @@ public:
     void Log_Write_POS(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
     void Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
-    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
@@ -194,11 +191,21 @@ public:
     struct {
         AP_Int8 backend_types;
         AP_Int8 file_bufsize; // in kilobytes
+        AP_Int8 file_disarm_rot;
         AP_Int8 log_disarmed;
         AP_Int8 log_replay;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
+
+    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    // these methods cover only the first logging backend used -
+    // typically DataFlash_File.
+    bool logging_present() const;
+    bool logging_enabled() const;
+    bool logging_failed() const;
+
+    void set_vehicle_armed(bool armed_state);
 
 protected:
 
@@ -253,6 +260,13 @@ private:
     // fmt; includes the message header
     int16_t Log_Write_calc_msg_len(const char *fmt) const;
 
+    bool _armed;
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+    void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+#endif
+    
 private:
     static DataFlash_Class *_instance;
 };

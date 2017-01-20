@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
@@ -8,24 +6,7 @@
 #include <AC_WPNav/AC_WPNav.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
-
-/*
-  frame types for quadplane build. Most case be set with
-  parameters. Those that can't are listed here and chosen with a build
-  time FRAME_CONFIG parameter
- */
-#define MULTICOPTER_FRAME 1
-#define TRI_FRAME 2
-
-#ifndef FRAME_CONFIG
-# define FRAME_CONFIG MULTICOPTER_FRAME
-#endif
-
-#if FRAME_CONFIG == TRI_FRAME
-#define AP_MOTORS_CLASS AP_MotorsTri
-#else
-#define AP_MOTORS_CLASS AP_MotorsMulticopter
-#endif
+#include <AP_Proximity/AP_Proximity.h>
 
 /*
   QuadPlane specific functionality
@@ -35,6 +16,8 @@ class QuadPlane
 public:
     friend class Plane;
     friend class AP_Tuning_Plane;
+    friend class GCS_MAVLINK_Plane;
+    friend class AP_AdvancedFailsafe_Plane;
     
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
@@ -120,12 +103,10 @@ private:
     AC_PID                  pid_accel_z{0.3, 1, 0, 800, 10, 0.02};
     AC_PI_2D                pi_vel_xy{0.7, 0.35, 1000, 5, 0.02};
 
-#if FRAME_CONFIG == MULTICOPTER_FRAME
     AP_Int8 frame_class;
-#endif
     AP_Int8 frame_type;
     
-    AP_MOTORS_CLASS *motors;
+    AP_MotorsMulticopter *motors;
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
@@ -135,7 +116,10 @@ private:
 
     // vertical acceleration the pilot may request
     AP_Int16 pilot_accel_z;
-    
+
+    // check for quadplane assistance needed
+    bool assistance_needed(float aspeed);
+
     // update transition handling
     void update_transition(void);
 
@@ -163,6 +147,7 @@ private:
 
     void init_hover(void);
     void control_hover(void);
+    void run_rate_controller(void);
 
     void init_loiter(void);
     void init_land(void);
@@ -201,6 +186,10 @@ private:
     // speed below which quad assistance is given
     AP_Float assist_speed;
 
+    // angular error at which quad assistance is given
+    AP_Int8 assist_angle;
+    uint32_t angle_error_start_ms;
+    
     // maximum yaw rate in degrees/second
     AP_Float yaw_rate_max;
 
@@ -269,6 +258,9 @@ private:
     // true when quad is assisting a fixed wing mode
     bool assisted_flight:1;
 
+    // true when in angle assist
+    bool in_angle_assist:1;
+
     struct {
         // time when motors reached lower limit
         uint32_t lower_limit_start_ms;
@@ -294,14 +286,6 @@ private:
         Vector3f target;
         bool slow_descent:1;
     } poscontrol;
-
-    enum frame_class {
-        FRAME_CLASS_QUAD=0,
-        FRAME_CLASS_HEXA=1,
-        FRAME_CLASS_OCTA=2,
-        FRAME_CLASS_OCTAQUAD=3,
-        FRAME_CLASS_Y6=4,
-    };
 
     struct {
         bool running;
@@ -332,6 +316,9 @@ private:
     void tiltrotor_slew(float tilt);
     void tiltrotor_update(void);
     void tilt_compensate(float *thrust, uint8_t num_motors);
+
+    void afs_terminate(void);
+    bool guided_mode_enabled(void);
     
 public:
     void motor_test_output();

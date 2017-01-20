@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,10 +26,13 @@
 
 /**
    maximum number of GPS instances available on this platform. If more
-   than 1 then redundent sensors may be available
+   than 1 then redundant sensors may be available
  */
 #define GPS_MAX_INSTANCES 2
 #define GPS_RTK_INJECT_TO_ALL 127
+
+// the number of GPS leap seconds
+#define GPS_LEAPSECONDS_MILLIS 18000ULL
 
 class DataFlash_Class;
 class AP_GPS_Backend;
@@ -70,6 +72,7 @@ public:
 		GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
         GPS_TYPE_MAV = 14,
+		GPS_TYPE_NOVA = 15,
     };
 
     /// GPS status codes
@@ -129,7 +132,7 @@ public:
     };
 
     // Pass mavlink data to message handlers (for MAV type)
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t *msg);
 
     // Accessor functions
 
@@ -312,6 +315,14 @@ public:
     // the expected lag (in seconds) in the position and velocity readings from the gps
     float get_lag() const { return 0.2f; }
 
+    // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
+    const Vector3f &get_antenna_offset(uint8_t instance) const {
+        return _antenna_offset[instance];
+    }
+    const Vector3f &get_antenna_offset(void) const {
+        return _antenna_offset[primary_instance];
+    }
+
     // set position for HIL
     void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
                 const Location &location, const Vector3f &velocity, uint8_t num_sats,
@@ -337,9 +348,11 @@ public:
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
     AP_Int8 _gnss_mode[2];
+    AP_Int16 _rate_ms[2];
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
-    
+    AP_Vector3f _antenna_offset[2];
+
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
     void send_blob_update(uint8_t instance);
@@ -388,7 +401,7 @@ private:
     struct detect_state {
         uint32_t detect_started_ms;
         uint32_t last_baud_change_ms;
-        uint8_t last_baud;
+        uint8_t current_baud;
         struct UBLOX_detect_state ublox_detect_state;
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
@@ -410,6 +423,32 @@ private:
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
     void _broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index);
+
+    /*
+      buffer for re-assembling RTCM data for GPS injection. 
+      The 8 bit flags field in GPS_RTCM_DATA is interpreted as:
+              1 bit for "is fragmented"
+              2 bits for fragment number
+              5 bits for sequence number
+
+      The rtcm_buffer is allocated on first use. Once a block of data
+      is successfully reassembled it is injected into all active GPS
+      backends. This assumes we don't want more than 4*180=720 bytes
+      in a RTCM data block
+     */
+    struct rtcm_buffer {
+        uint8_t fragments_received:4;
+        uint8_t sequence:5;
+        uint8_t fragment_count;
+        uint16_t total_length;
+        uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
+    } *rtcm_buffer;
+
+    // re-assemble GPS_RTCM_DATA message
+    void handle_gps_rtcm_data(const mavlink_message_t *msg);
+
+    // inject data into all backends
+    void inject_data_all(const uint8_t *data, uint16_t len);
 };
 
 #define GPS_BAUD_TIME_MS 1200

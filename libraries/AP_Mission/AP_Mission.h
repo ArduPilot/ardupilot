@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_Mission.h
 /// @brief   Handles the MAVLINK command mission stack.  Reads and writes mission to storage.
 
@@ -423,6 +421,11 @@ public:
     // return its index.  Returns 0 if no appropriate DO_LAND_START point can
     // be found.
     uint16_t get_landing_sequence_start();
+
+    // find the nearest landing sequence starting point (DO_LAND_START) and
+    // switch to that mission item.  Returns false if no DO_LAND_START
+    // available.
+    bool jump_to_landing_sequence(void);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015  Intel Corporation. All rights reserved.
  *
@@ -58,9 +57,6 @@ public:
     bool adjust_periodic_callback(
         AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
-    /* See AP_HAL::Device::get_fd() */
-    int get_fd() override;
-
 protected:
     SPIBus &_bus;
     SPIDesc &_desc;
@@ -93,7 +89,15 @@ public:
         _buses.reserve(3);
     }
 
+    /* AP_HAL::SPIDeviceManager implementation */
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name);
+
+    /*
+     * Stop all SPI threads and block until they are finalized. This doesn't
+     * free memory because they can still be used by devices, however device
+     * drivers won't receive any new event
+     */
+    void teardown();
 
 protected:
     void _unregister(SPIBus &b);

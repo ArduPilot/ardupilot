@@ -35,7 +35,7 @@ using namespace Linux;
 
 void RCInput_AioPRU::init()
 {
-    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
     if (mem_fd == -1) {
         AP_HAL::panic("Unable to open /dev/mem");
     }

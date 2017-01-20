@@ -30,7 +30,7 @@ bool CameraSensor::set_format(uint32_t width, uint32_t height, uint32_t format)
     struct v4l2_subdev_format fmt;
     int ret, fd;
 
-    fd = open(_device_path, O_RDWR);
+    fd = open(_device_path, O_RDWR | O_CLOEXEC);
     if (fd < 0) {
         return false;
     }

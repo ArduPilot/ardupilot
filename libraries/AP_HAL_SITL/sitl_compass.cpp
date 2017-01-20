@@ -30,7 +30,7 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
 {
     static uint32_t last_update;
 
-    if (_compass == NULL) {
+    if (_compass == nullptr) {
         // no compass in this sketch
         return;
     }

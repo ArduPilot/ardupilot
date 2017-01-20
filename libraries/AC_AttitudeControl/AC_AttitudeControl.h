@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 /// @file    AC_AttitudeControl.h
@@ -19,7 +18,7 @@
 #define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS       radians(720.0f)  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
 #define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS        radians(10.0f)   // minimum body-frame acceleration limit for the stability controller (for yaw axis)
 #define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS        radians(120.0f)  // maximum body-frame acceleration limit for the stability controller (for yaw axis)
-#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS        6000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sed * Stab Rate P so by default will be 45deg/sec.
+#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS        6000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sec * Stab Rate P so by default will be 45deg/sec.
 #define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS   110000.0f // default maximum acceleration for roll/pitch axis in centidegrees/sec/sec
 #define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS    27000.0f  // default maximum acceleration for yaw axis in centidegrees/sec/sec
 
@@ -36,9 +35,10 @@
 #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_TC_DEFAULT      1.0f    // Time constant used to limit lean angle so that vehicle does not lose altitude
 #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX    0.8f    // Max throttle used to limit lean angle so that vehicle does not lose altitude
 
-#define AC_ATTITUDE_CONTROL_MIN_DEFAULT                 0.1f    // minimum throttle mix
-#define AC_ATTITUDE_CONTROL_MID_DEFAULT                 0.5f    // manual throttle mix
+#define AC_ATTITUDE_CONTROL_MIN_DEFAULT                 0.1f    // minimum throttle mix default
+#define AC_ATTITUDE_CONTROL_MAN_DEFAULT                 0.5f    // manual throttle mix default
 #define AC_ATTITUDE_CONTROL_MAX_DEFAULT                 0.5f    // maximum throttle mix default
+#define AC_ATTITUDE_CONTROL_MAX                         5.0f    // maximum throttle mix default
 
 #define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT             0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 
@@ -143,6 +143,8 @@ public:
 
     // Return 321-intrinsic euler angles in centidegrees representing the rotation from NED earth frame to the
     // attitude controller's target attitude.
+    // **NOTE** Using vector3f*deg(100) is more efficient than deg(vector3f)*100 or deg(vector3d*100) because it gives the
+    // same result with the fewest multiplications. Even though it may look like a bug, it is intentional. See issue 4895.
     Vector3f get_att_target_euler_cd() const { return _attitude_target_euler_angle*degrees(100.0f); }
 
     // Return the angle between the target thrust vector and the current thrust vector.
@@ -217,9 +219,6 @@ public:
     // Inverse proportional controller with piecewise sqrt sections to constrain second derivative
     static float stopping_point(float first_ord_mag, float p, float second_ord_lim);
 
-    // User settable parameters
-    static const struct AP_Param::GroupInfo var_info[];
-
     // calculates the velocity correction from an angle error. The angular velocity has acceleration and
     // deceleration limits including basic jerk limiting using smoothing_gain
     float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel);
@@ -237,6 +236,31 @@ public:
     // Calculates the body frame angular velocities to follow the target attitude
     void attitude_controller_run_quat();
 
+    // sanity check parameters.  should be called once before take-off
+    virtual void parameter_sanity_check() {}
+
+    // return true if the rpy mix is at lowest value
+    virtual bool is_throttle_mix_min() const { return true; }
+
+    // control rpy throttle mix
+    virtual void set_throttle_mix_min() {}
+    virtual void set_throttle_mix_man() {}
+    virtual void set_throttle_mix_max() {}
+
+    // enable use of flybass passthrough on heli
+    virtual void use_flybar_passthrough(bool passthrough, bool tail_passthrough) {}
+
+	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage on heli
+	virtual void use_leaky_i(bool leaky_i) {}
+
+    // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
+    virtual void set_hover_roll_trim_scalar(float scalar) {}
+
+    // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
+    virtual void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) {};
+    
+    // User settable parameters
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 

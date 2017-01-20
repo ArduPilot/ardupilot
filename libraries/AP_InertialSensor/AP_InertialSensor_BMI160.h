@@ -96,7 +96,7 @@ private:
     bool _configure_fifo();
 
     /**
-     * Timer routine to read data from the sensors.
+     * Device periodic callback to read data from the sensors.
      */
     void _poll_data();
 

@@ -83,9 +83,9 @@ AP_RangeFinder_Bebop::AP_RangeFinder_Bebop(RangeFinder &_ranger,
 AP_RangeFinder_Bebop::~AP_RangeFinder_Bebop()
 {
     iio_buffer_destroy(_adc.buffer);
-    _adc.buffer = NULL;
+    _adc.buffer = nullptr;
     iio_context_destroy(_iio);
-    _iio = NULL;
+    _iio = nullptr;
 }
 
 bool AP_RangeFinder_Bebop::detect(RangeFinder &_ranger, uint8_t instance)
@@ -253,8 +253,8 @@ void AP_RangeFinder_Bebop::_loop(void)
         if (max_index >= 0) {
             _altitude = (float)(max_index * RNFD_BEBOP_SOUND_SPEED) /
                 (2 * (RNFD_BEBOP_DEFAULT_ADC_FREQ / _filter_average));
-            _mode = _update_mode(_altitude);
         }
+        _mode = _update_mode(_altitude);
     }
 }
 
@@ -309,6 +309,7 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
     if (_capture() < 0)
         hal.console->printf("purge could not capture data");
 
+    _tx_buf = _tx[_mode];
     switch (_mode) {
     case 1: /* low voltage */
         _configure_gpio(0);
@@ -327,6 +328,7 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
  */
 int AP_RangeFinder_Bebop::_configure_wave()
 {
+    _spi->set_speed(AP_HAL::Device::SPEED_HIGH);
     _configure_gpio(0);
     return 0;
 }
@@ -378,9 +380,9 @@ int AP_RangeFinder_Bebop::_configure_capture()
 
 error_destroy_context:
     iio_buffer_destroy(_adc.buffer);
-    _adc.buffer = NULL;
+    _adc.buffer = nullptr;
     iio_context_destroy(_iio);
-    _iio = NULL;
+    _iio = nullptr;
     return -1;
 }
 
@@ -389,7 +391,7 @@ void AP_RangeFinder_Bebop::_init()
     _spi = std::move(hal.spi->get_device("bebop"));
 
     _gpio = AP_HAL::get_HAL().gpio;
-    if (_gpio == NULL) {
+    if (_gpio == nullptr) {
         AP_HAL::panic("Could not find GPIO device for Bebop ultrasound");
     }
 
@@ -449,7 +451,7 @@ int AP_RangeFinder_Bebop::_update_mode(float altitude)
     default:
     case 1:
         if (altitude > RNFD_BEBOP_TRANSITION_LOW_TO_HIGH
-                || !is_zero(altitude)) {
+                || is_zero(altitude)) {
             if (_hysteresis_counter > RNFD_BEBOP_TRANSITION_COUNT) {
                 _mode = 0;
                 _hysteresis_counter = 0;

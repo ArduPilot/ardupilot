@@ -381,13 +381,28 @@ def _check_min_version(cfg):
             cfg.fatal('cmake must be at least at version %s' % minver_str)
         cfg.end_msg(m.group(0))
 
+generators = dict(
+    default=[
+        (['ninja', 'ninja-build'], 'Ninja'),
+        (['make'], 'Unix Makefiles'),
+    ],
+    win32=[
+        (['ninja', 'ninja-build'], 'Ninja'),
+        (['nmake'], 'NMake Makefiles'),
+    ],
+)
+
 def configure(cfg):
     cfg.find_program('cmake')
 
     if cfg.env.CMAKE_MIN_VERSION:
         _check_min_version(cfg)
 
-    cfg.find_program(['ninja', 'ninja-build'], var='NINJA', mandatory=False)
-    cfg.env.CMAKE_GENERATOR_OPTION = ''
-    if cfg.env.NINJA:
-        cfg.env.CMAKE_GENERATOR_OPTION = '-GNinja'
+    l = generators.get(Utils.unversioned_sys_platform(), generators['default'])
+    for names, generator in l:
+        if cfg.find_program(names, mandatory=False):
+            cfg.env.CMAKE_GENERATOR_OPTION = '-G%s' % generator
+            break
+    else:
+        cfg.fatal("cmake: couldn't find a suitable CMake generator. " +
+                  "The ones supported by this Waf tool for this platform are: %s" % ', '.join(g for _, g in l))

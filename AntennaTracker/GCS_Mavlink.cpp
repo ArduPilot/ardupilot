@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "GCS_Mavlink.h"
 
 #include "Tracker.h"
@@ -188,7 +186,7 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         break;
 
     case MSG_RADIO_IN:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
+        CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_radio_in(0);
         break;
 
@@ -241,12 +239,10 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         tracker.send_hwstatus(chan);
         break;
     case MSG_MAG_CAL_PROGRESS:
-        CHECK_PAYLOAD_SIZE(MAG_CAL_PROGRESS);
         tracker.compass.send_mag_cal_progress(chan);
         break;
 
     case MSG_MAG_CAL_REPORT:
-        CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
         tracker.compass.send_mag_cal_report(chan);
         break;
 
@@ -370,7 +366,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 void
 GCS_MAVLINK_Tracker::data_stream_send(void)
 {
-    if (_queued_parameter != NULL) {
+    if (_queued_parameter != nullptr) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
             streamRates[STREAM_PARAMS].set(10);
         }
@@ -523,7 +519,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
     switch (msg->msgid) {
 
     // If we are currently operating as a proxy for a remote, 
-    // alas we have to look inside each packet to see if its for us or for the remote
+    // alas we have to look inside each packet to see if it's for us or for the remote
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
     {
         handle_request_data_stream(msg, false);
@@ -537,15 +533,9 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
-    {
-        handle_param_request_read(msg);
-        break;
-    }
-
     case MAVLINK_MSG_ID_PARAM_SET:
     {
-        handle_param_set(msg, NULL);
+        handle_param_set(msg, nullptr);
         break;
     }
 
@@ -688,6 +678,14 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
             case MAV_CMD_DO_ACCEPT_MAG_CAL:
             case MAV_CMD_DO_CANCEL_MAG_CAL:
                 result = tracker.compass.handle_mag_cal_command(packet);
+                break;
+
+            case MAV_CMD_ACCELCAL_VEHICLE_POS:
+                result = MAV_RESULT_FAILED;
+
+                if (tracker.ins.get_acal()->gcs_vehicle_position(packet.param1)) {
+                    result = MAV_RESULT_ACCEPTED;
+                }
                 break;
 
             default:
@@ -865,12 +863,18 @@ mission_failed:
         handle_gps_inject(msg, tracker.gps);
         break;
 
+    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
+    case MAVLINK_MSG_ID_GPS_INPUT:
+    case MAVLINK_MSG_ID_HIL_GPS:
+        tracker.gps.handle_msg(msg);
+        break;
+
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         send_autopilot_version(FIRMWARE_VERSION);
         break;
 
-    case MAVLINK_MSG_ID_SETUP_SIGNING:
-        handle_setup_signing(msg);
+    default:
+        handle_common_message(msg);
         break;
     } // end switch
 } // end handle mavlink
@@ -939,7 +943,7 @@ void Tracker::gcs_update(void)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
-            gcs[i].update(NULL);
+            gcs[i].update(nullptr);
         }
     }
 }

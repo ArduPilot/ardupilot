@@ -35,7 +35,7 @@ void Storage::_storage_create(void)
 {
     mkdir(STORAGE_DIR, 0777);
     unlink(STORAGE_FILE);
-    int fd = open(STORAGE_FILE, O_RDWR|O_CREAT, 0666);
+    int fd = open(STORAGE_FILE, O_RDWR|O_CREAT|O_CLOEXEC, 0666);
     if (fd == -1) {
         AP_HAL::panic("Failed to create " STORAGE_FILE);
     }
@@ -57,10 +57,10 @@ void Storage::_storage_open(void)
     }
 
     _dirty_mask = 0;
-    int fd = open(STORAGE_FILE, O_RDWR);
+    int fd = open(STORAGE_FILE, O_RDWR|O_CLOEXEC);
     if (fd == -1) {
         _storage_create();
-        fd = open(STORAGE_FILE, O_RDWR);
+        fd = open(STORAGE_FILE, O_RDWR|O_CLOEXEC);
         if (fd == -1) {
             AP_HAL::panic("Failed to open " STORAGE_FILE);
         }
@@ -80,7 +80,7 @@ void Storage::_storage_open(void)
     if (ret != sizeof(_buffer)) {
         close(fd);
         _storage_create();
-        fd = open(STORAGE_FILE, O_RDONLY);
+        fd = open(STORAGE_FILE, O_RDONLY|O_CLOEXEC);
         if (fd == -1) {
             AP_HAL::panic("Failed to open " STORAGE_FILE);
         }
@@ -137,7 +137,7 @@ void Storage::_timer_tick(void)
     }
 
     if (_fd == -1) {
-        _fd = open(STORAGE_FILE, O_WRONLY);
+        _fd = open(STORAGE_FILE, O_WRONLY|O_CLOEXEC);
         if (_fd == -1) {
             return;
         }

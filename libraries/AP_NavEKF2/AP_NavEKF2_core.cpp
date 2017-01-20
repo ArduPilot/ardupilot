@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -85,7 +83,12 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedOF.init(OBS_BUFFER_LENGTH)) {
         return false;
     }
+    // Note: the use of dual range finders potentially doubles the amount of to be stored
     if(!storedRange.init(2*OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    // Note: range beacon data is read one beacon at a time and can arrive at a high rate
+    if(!storedRangeBeacon.init(imu_buffer_length)) {
         return false;
     }
     if(!storedIMU.init(imu_buffer_length)) {
@@ -118,10 +121,10 @@ void NavEKF2_core::InitialiseVariables()
     prevBetaStep_ms = imuSampleTime_ms;
     lastMagUpdate_us = 0;
     lastBaroReceived_ms = imuSampleTime_ms;
-    lastVelPassTime_ms = imuSampleTime_ms;
-    lastPosPassTime_ms = imuSampleTime_ms;
-    lastHgtPassTime_ms = imuSampleTime_ms;
-    lastTasPassTime_ms = imuSampleTime_ms;
+    lastVelPassTime_ms = 0;
+    lastPosPassTime_ms = 0;
+    lastHgtPassTime_ms = 0;
+    lastTasPassTime_ms = 0;
     lastSynthYawTime_ms = imuSampleTime_ms;
     lastTimeGpsReceived_ms = 0;
     secondLastGpsTime_ms = 0;
@@ -130,7 +133,7 @@ void NavEKF2_core::InitialiseVariables()
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = 0;
-    prevFlowFuseTime_ms = imuSampleTime_ms;
+    prevFlowFuseTime_ms = 0;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
@@ -140,6 +143,7 @@ void NavEKF2_core::InitialiseVariables()
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
     lastPosReset_ms = 0;
     lastVelReset_ms = 0;
+    lastPosResetD_ms = 0;
     lastRngMeasTime_ms = 0;
     terrainHgtStableSet_ms = 0;
 
@@ -241,6 +245,7 @@ void NavEKF2_core::InitialiseVariables()
     sideSlipFusionDelayed = false;
     posResetNE.zero();
     velResetNE.zero();
+    posResetD = 0.0f;
     hgtInnovFiltState = 0.0f;
     if (_ahrs->get_compass()) {
         magSelectIndex = _ahrs->get_compass()->get_primary();
@@ -269,6 +274,46 @@ void NavEKF2_core::InitialiseVariables()
     memset(&storedRngMeas, 0, sizeof(storedRngMeas));
     terrainHgtStable = true;
     ekfOriginHgtVar = 0.0f;
+    velOffsetNED.zero();
+    posOffsetNED.zero();
+
+    // range beacon fusion variables
+    memset(&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
+    memset(&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
+    rngBcnStoreIndex = 0;
+    lastRngBcnPassTime_ms = 0;
+    rngBcnTestRatio = 0.0f;
+    rngBcnHealth = false;
+    rngBcnTimeout = true;
+    varInnovRngBcn = 0.0f;
+    innovRngBcn = 0.0f;
+    memset(&lastTimeRngBcn_ms, 0, sizeof(lastTimeRngBcn_ms));
+    rngBcnDataToFuse = false;
+    beaconVehiclePosNED.zero();
+    beaconVehiclePosErr = 1.0f;
+    rngBcnLast3DmeasTime_ms = 0;
+    rngBcnGoodToAlign = false;
+    lastRngBcnChecked = 0;
+    receiverPos.zero();
+    memset(&receiverPosCov, 0, sizeof(receiverPosCov));
+    rngBcnAlignmentStarted =  false;
+    rngBcnAlignmentCompleted = false;
+    lastBeaconIndex = 0;
+    rngBcnPosSum.zero();
+    numBcnMeas = 0;
+    rngSum = 0.0f;
+    N_beacons = 0;
+    maxBcnPosD = 0.0f;
+    minBcnPosD = 0.0f;
+    bcnPosOffset = 0.0f;
+    bcnPosOffsetMax = 0.0f;
+    bcnPosOffsetMaxVar = 0.0f;
+    OffsetMaxInnovFilt = 0.0f;
+    bcnPosOffsetMin = 0.0f;
+    bcnPosOffsetMinVar = 0.0f;
+    OffsetMinInnovFilt = 0.0f;
+    rngBcnFuseDataReportIndex = 0;
+    memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
 
     // zero data buffers
     storedIMU.reset();
@@ -278,6 +323,7 @@ void NavEKF2_core::InitialiseVariables()
     storedTAS.reset();
     storedRange.reset();
     storedOutput.reset();
+    storedRangeBeacon.reset();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -407,10 +453,8 @@ void NavEKF2_core::CovarianceInit()
     P[22][22] = 0.0f;
     P[23][23]  = P[22][22];
 
-
     // optical flow ground height covariance
     Popt = 0.25f;
-
 }
 
 /********************************************************
@@ -457,6 +501,9 @@ void NavEKF2_core::UpdateFilter(bool predict)
 
         // Update states using GPS and altimeter data
         SelectVelPosFusion();
+
+        // Update states using range beacon data
+        SelectRngBcnFusion();
 
         // Update states using optical flow data
         SelectFlowFusion();
@@ -566,7 +613,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
  * The inspiration for using a complementary filter to correct for time delays in the EKF
  * is based on the work by A Khosravian.
  *
- * “Recursive Attitude Estimation in the Presence of Multi-rate and Multi-delay Vector Measurements”
+ * "Recursive Attitude Estimation in the Presence of Multi-rate and Multi-delay Vector Measurements"
  * A Khosravian, J Trumpf, R Mahony, T Hamel, Australian National University
 */
 void NavEKF2_core::calcOutputStates()
@@ -605,6 +652,27 @@ void NavEKF2_core::calcOutputStates()
 
     // apply a trapezoidal integration to velocities to calculate position
     outputDataNew.position += (outputDataNew.velocity + lastVelocity) * (imuDataNew.delVelDT*0.5f);
+
+    // If the IMU accelerometer is offset from the body frame origin, then calculate corrections
+    // that can be added to the EKF velocity and position outputs so that they represent the velocity
+    // and position of the body frame origin.
+    // Note the * operator has been overloaded to operate as a dot product
+    if (!accelPosOffset.is_zero()) {
+        // calculate the average angular rate across the last IMU update
+        // note delAngDT is prevented from being zero in readIMUData()
+        Vector3f angRate = imuDataNew.delAng * (1.0f/imuDataNew.delAngDT);
+
+        // Calculate the velocity of the body frame origin relative to the IMU in body frame
+        // and rotate into earth frame. Note % operator has been overloaded to perform a cross product
+        Vector3f velBodyRelIMU = angRate % (- accelPosOffset);
+        velOffsetNED = Tbn_temp * velBodyRelIMU;
+
+        // calculate the earth frame position of the body frame origin relative to the IMU
+        posOffsetNED = Tbn_temp * (- accelPosOffset);
+    } else {
+        velOffsetNED.zero();
+        posOffsetNED.zero();
+    }
 
     // store INS states in a ring buffer that with the same length and time coordinates as the IMU data buffer
     if (runUpdates) {
@@ -1336,10 +1404,8 @@ void NavEKF2_core::ConstrainStates()
     for (uint8_t i=19; i<=21; i++) statesArray[i] = constrain_float(statesArray[i],-0.5f,0.5f);
     // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
     for (uint8_t i=22; i<=23; i++) statesArray[i] = constrain_float(statesArray[i],-100.0f,100.0f);
-    // constrain the terrain or vertical position state state depending on whether we are using the ground as the height reference
-    if (inhibitGndState) {
-        stateStruct.position.z = MIN(stateStruct.position.z, terrainState - rngOnGnd);
-    } else {
+    // constrain the terrain state to be below the vehicle height unless we are using terrain as the height datum
+    if (!inhibitGndState) {
         terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
     }
 }

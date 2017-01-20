@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,8 +37,7 @@
  * modules are configured with all ubx binary messages off, which
  * would mean we would never detect it.
  */
-#define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,38400,0*26\r\n"
-#define UBLOX_SET_BINARY_RAW_BAUD "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,115200,0*1E\r\n"
+#define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,115200,0*1E\r\n"
 
 #define UBLOX_RXM_RAW_LOGGING 1
 #define UBLOX_MAX_RXM_RAW_SATS 22
@@ -50,7 +48,7 @@
 #define UBX_MSG_TYPES 2
 
 #define UBLOX_MAX_PORTS 6
-#define MEASURE_RATE 200
+#define MINIMUM_MEASURE_RATE_MS 200
 
 #define RATE_POSLLH 1
 #define RATE_STATUS 1
@@ -100,7 +98,7 @@ public:
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
-    void inject_data(uint8_t *data, uint8_t len);
+    void inject_data(const uint8_t *data, uint16_t len) override;
     
     bool is_configured(void) {
         if (!gps._auto_config) {
@@ -507,8 +505,6 @@ private:
     // used to update fix between status and position packets
     AP_GPS::GPS_Status next_fix;
 
-    uint32_t _last_5hz_time;
-
     bool _cfg_needs_save;
 
     bool noReceivedHdop;
@@ -520,7 +516,6 @@ private:
     void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
     void	send_next_rate_update(void);
     bool        _request_message_rate(uint8_t msg_class, uint8_t msg_id);
-    void        _request_navigation_rate(void);
     void        _request_next_config(void);
     void        _request_port(void);
     void        _request_version(void);

@@ -10,7 +10,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
-#include <AP_NavEKF/AP_NavEKF.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
@@ -24,10 +24,10 @@ public:
     AP_InertialSensor ins;
     AP_SerialManager serial_manager;
     RangeFinder sonar {serial_manager};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF, EKF2,
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF2, EKF3,
                         AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
-    NavEKF EKF{&ahrs, barometer, sonar};
     NavEKF2 EKF2{&ahrs, barometer, sonar};
+    NavEKF3 EKF3{&ahrs, barometer, sonar};
 };
 
 static DummyVehicle vehicle;

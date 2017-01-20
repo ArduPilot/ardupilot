@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -65,14 +64,11 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _new_speed(0),
     _disable_counter(0),
     next_fix(AP_GPS::NO_FIX),
-    _last_5hz_time(0),
     _cfg_needs_save(false),
     noReceivedHdop(true)
 {
     // stop any config strings that are pending
-    gps.send_blob_start(state.instance, NULL, 0);
-
-    _last_5hz_time = AP_HAL::millis();
+    gps.send_blob_start(state.instance, nullptr, 0);
 
     // start the process of updating the GPS rates
     _request_next_config();
@@ -118,16 +114,20 @@ AP_GPS_UBLOX::_request_next_config(void)
         }
         break;
     case STEP_POLL_SBAS:
-        _send_message(CLASS_CFG, MSG_CFG_SBAS, NULL, 0);
+        if (gps._sbas_mode != 2) {
+            _send_message(CLASS_CFG, MSG_CFG_SBAS, nullptr, 0);
+        } else {
+            _unconfigured_messages &= ~CONFIG_SBAS;
+        }
 	break;
     case STEP_POLL_NAV:
-        _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
+        _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, nullptr, 0);
         break;
     case STEP_POLL_GNSS:
-        _send_message(CLASS_CFG, MSG_CFG_GNSS, NULL, 0);
+        _send_message(CLASS_CFG, MSG_CFG_GNSS, nullptr, 0);
         break;
     case STEP_NAV_RATE:
-        _request_navigation_rate();
+        _send_message(CLASS_CFG, MSG_CFG_RATE, nullptr, 0);
         break;
     case STEP_POSLLH:
         if(!_request_message_rate(CLASS_NAV, MSG_POSLLH)) {
@@ -311,7 +311,7 @@ AP_GPS_UBLOX::_request_port(void)
         // not enough space - do it next time
         return;
     }
-    _send_message(CLASS_CFG, MSG_CFG_PRT, NULL, 0);
+    _send_message(CLASS_CFG, MSG_CFG_PRT, nullptr, 0);
 }
     // Ensure there is enough space for the largest possible outgoing message
 // Process bytes available from the stream
@@ -466,7 +466,7 @@ AP_GPS_UBLOX::read(void)
 // Private Methods /////////////////////////////////////////////////////////////
 void AP_GPS_UBLOX::log_mon_hw(void)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
     struct log_Ubx1 pkt = {
@@ -489,7 +489,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
 
 void AP_GPS_UBLOX::log_mon_hw2(void)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
 
@@ -508,7 +508,7 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
 #if UBLOX_RXM_RAW_LOGGING
 void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
     uint64_t now = AP_HAL::micros64();
@@ -533,7 +533,7 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 
 void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
     uint64_t now = AP_HAL::micros64();
@@ -611,7 +611,9 @@ AP_GPS_UBLOX::_parse_gps(void)
                     _unconfigured_messages &= ~CONFIG_NAV_SETTINGS;
                     break;
                 case MSG_CFG_RATE:
-                    _unconfigured_messages &= ~CONFIG_RATE_NAV;
+                    // The GPS will ACK a update rate that is invalid. in order to detect this
+                    // only accept the rate as configured by reading the settings back and
+                   //  validating that they all match the target values
                     break;
                 case MSG_CFG_SBAS:
                     _unconfigured_messages &= ~CONFIG_SBAS;
@@ -763,7 +765,7 @@ AP_GPS_UBLOX::_parse_gps(void)
            _ublox_port = _buffer.prt.portID;
            return false;
         case MSG_CFG_RATE:
-            if(_buffer.nav_rate.measure_rate_ms != MEASURE_RATE ||
+            if(_buffer.nav_rate.measure_rate_ms != gps._rate_ms[state.instance] ||
                _buffer.nav_rate.nav_rate != 1 ||
                _buffer.nav_rate.timeref != 0) {
                _configure_rate();
@@ -900,13 +902,6 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.num_sats    = _buffer.solution.satellites;
         if (next_fix >= AP_GPS::GPS_OK_FIX_2D) {
             state.last_gps_time_ms = AP_HAL::millis();
-            if (state.time_week == _buffer.solution.week &&
-                state.time_week_ms + 200 == _buffer.solution.time) {
-                // we got a 5Hz update. This relies on the way
-                // that uBlox gives timestamps that are always
-                // multiples of 200 for 5Hz
-                _last_5hz_time = state.last_gps_time_ms;
-            }
             state.time_week_ms    = _buffer.solution.time;
             state.time_week       = _buffer.solution.week;
         }
@@ -977,17 +972,6 @@ AP_GPS_UBLOX::_parse_gps(void)
     // this ensures we don't use stale data
     if (_new_position && _new_speed && _last_vel_time == _last_pos_time) {
         _new_speed = _new_position = false;
-        // allow the GPS configuration to run through the full loop at least once before throwing this
-        if (state.status != AP_GPS::NO_FIX && AP_HAL::millis() - _last_5hz_time > 20000U) {
-            // the gps seems to be slow, possibly due to a brown out
-            // invalidate the config so it can be reset
-            _last_5hz_time = AP_HAL::millis();
-            _unconfigured_messages = CONFIG_ALL;
-            _request_next_config();
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,
-                                             "GPS: u-blox %d is not maintaining a 5Hz update",
-                                             state.instance);
-        }
         return true;
     }
     return false;
@@ -1075,15 +1059,6 @@ AP_GPS_UBLOX::_configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t
 }
 
 /*
- *  request the current naviation solution rate
- */
-void
-AP_GPS_UBLOX::_request_navigation_rate(void)
-{
-    _send_message(CLASS_CFG, MSG_CFG_RATE, 0, 0);
-}
-
-/*
  * save gps configurations to non-volatile memory sent until the call of
  * this message
  */
@@ -1099,7 +1074,7 @@ AP_GPS_UBLOX::_save_cfg()
     _num_cfg_save_tries++;
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
                                      "GPS: u-blox %d saving config",
-                                     state.instance);
+                                     state.instance + 1);
 }
 
 /*
@@ -1167,21 +1142,22 @@ reset:
 void
 AP_GPS_UBLOX::_request_version(void)
 {
-    _send_message(CLASS_MON, MSG_MON_VER, NULL, 0);
+    _send_message(CLASS_MON, MSG_MON_VER, nullptr, 0);
 }
 
 void
 AP_GPS_UBLOX::_configure_rate(void)
 {
     struct ubx_cfg_nav_rate msg;
-    msg.measure_rate_ms = MEASURE_RATE;
+    // require a minimum measurement rate of 5Hz
+    msg.measure_rate_ms = MIN(gps._rate_ms[state.instance], MINIMUM_MEASURE_RATE_MS);
     msg.nav_rate        = 1;
     msg.timeref         = 0;     // UTC time
     _send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));
 }
 
 void
-AP_GPS_UBLOX::inject_data(uint8_t *data, uint8_t len)
+AP_GPS_UBLOX::inject_data(const uint8_t *data, uint16_t len)
 {
     if (port->txspace() > len) {
         port->write(data, len);

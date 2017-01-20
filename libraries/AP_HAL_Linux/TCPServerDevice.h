@@ -17,7 +17,7 @@ public:
 
 private:
     SocketAPM listener{false};
-    SocketAPM *sock = NULL;
+    SocketAPM *sock = nullptr;
     const char *_ip;
     uint16_t _port;
     bool _wait;

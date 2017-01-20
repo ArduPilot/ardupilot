@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -22,7 +21,7 @@
 #define WPNAV_LOITER_JERK_MAX_DEFAULT  1000.0f      // maximum jerk in cm/s/s/s in loiter mode
 
 #define WPNAV_WP_SPEED                  500.0f      // default horizontal speed between waypoints in cm/s
-#define WPNAV_WP_SPEED_MIN              100.0f      // minimum horizontal speed between waypoints in cm/s
+#define WPNAV_WP_SPEED_MIN               20.0f      // minimum horizontal speed between waypoints in cm/s
 #define WPNAV_WP_TRACK_SPEED_MIN         50.0f      // minimum speed along track of the target point the vehicle is chasing in cm/s (used as target slows down before reaching destination)
 #define WPNAV_WP_RADIUS                 200.0f      // default waypoint radius in cm
 
@@ -64,7 +63,7 @@ public:
     void set_avoidance(AC_Avoid* avoid_ptr) { _avoid = avoid_ptr; }
 
     /// provide rangefinder altitude
-    void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_use = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
+    void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
 
     ///
     /// loiter controller
@@ -85,7 +84,9 @@ public:
 
     /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
     void set_pilot_desired_acceleration(float control_roll, float control_pitch);
-
+    /// get_pilot_desired_acceleration - gets pilot desired
+    /// acceleration, body frame, [forward,right]
+    Vector2f get_pilot_desired_acceleration() const { return Vector2f(_pilot_accel_fwd_cms, _pilot_accel_rgt_cms); }
     /// clear_pilot_desired_acceleration - clear pilot desired acceleration
     void clear_pilot_desired_acceleration() { _pilot_accel_fwd_cms = 0.0f; _pilot_accel_rgt_cms = 0.0f; }
 
@@ -285,10 +286,6 @@ protected:
     /// get_slow_down_speed - returns target speed of target point based on distance from the destination (in cm)
     float get_slow_down_speed(float dist_from_dest_cm, float accel_cmss);
 
-    /// initialise and check for ekf position reset and adjust loiter or brake target position
-    void init_ekf_position_reset();
-    void check_for_ekf_position_reset();
-
     /// spline protected functions
 
     /// update_spline_solution - recalculates hermite_spline_solution grid
@@ -314,8 +311,8 @@ protected:
     const AP_AHRS&          _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
-    AP_Terrain              *_terrain = NULL;
-    AC_Avoid                *_avoid = NULL;
+    AP_Terrain              *_terrain = nullptr;
+    AC_Avoid                *_avoid = nullptr;
 
     // parameters
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
@@ -330,11 +327,9 @@ protected:
     AP_Float    _wp_accel_z_cms;        // vertical acceleration in cm/s/s during missions
 
     // loiter controller internal variables
-    uint8_t     _loiter_step;           // used to decide which portion of loiter controller to run during this iteration
     int16_t     _pilot_accel_fwd_cms; 	// pilot's desired acceleration forward (body-frame)
     int16_t     _pilot_accel_rgt_cms;   // pilot's desired acceleration right (body-frame)
     Vector2f    _loiter_desired_accel;  // slewed pilot's desired acceleration in lat/lon frame
-    uint32_t    _loiter_ekf_pos_reset_ms;   // system time of last recorded ekf position reset
 
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call
@@ -362,7 +357,8 @@ protected:
     // terrain following variables
     bool        _terrain_alt = false;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
     bool        _ekf_origin_terrain_alt_set = false;
-    bool        _rangefinder_use = false;
+    bool        _rangefinder_available;
+    AP_Int8     _rangefinder_use;
     bool        _rangefinder_healthy = false;
     float       _rangefinder_alt_cm = 0.0f;
 };

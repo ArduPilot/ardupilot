@@ -1,11 +1,18 @@
 #include "AP_Math.h"
 #include <float.h>
 
-template <class FloatOne, class FloatTwo>
-bool is_equal(const FloatOne v_1, const FloatTwo v_2)
+template <class Arithmetic1, class Arithmetic2>
+typename std::enable_if<std::is_integral<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value ,bool>::type
+is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 {
-    static_assert(std::is_arithmetic<FloatOne>::value, "template parameter not of type float or int");
-    static_assert(std::is_arithmetic<FloatTwo>::value, "template parameter not of type float or int");
+    typedef typename std::common_type<Arithmetic1, Arithmetic2>::type common_type;
+    return static_cast<common_type>(v_1) == static_cast<common_type>(v_2);
+}
+
+template <class Arithmetic1, class Arithmetic2>
+typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
+is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
+{
     return fabsf(v_1 - v_2) < std::numeric_limits<decltype(v_1 - v_2)>::epsilon();
 }
 
@@ -174,3 +181,17 @@ template int constrain_value<int>(const int amt, const int low, const int high);
 template short constrain_value<short>(const short amt, const short low, const short high);
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
+
+
+/*
+  simple 16 bit random number generator
+ */
+uint16_t get_random16(void)
+{
+    static uint32_t m_z = 1234;
+    static uint32_t m_w = 76542;
+    m_z = 36969 * (m_z & 0xFFFFu) + (m_z >> 16);
+    m_w = 18000 * (m_w & 0xFFFFu) + (m_w >> 16);
+    return ((m_z << 16) + m_w) & 0xFFFF;
+}
+

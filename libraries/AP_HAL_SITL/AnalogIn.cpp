@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -11,7 +9,7 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
-ADCSource::ADCSource(SITL_State *sitlState, uint8_t pin) :
+ADCSource::ADCSource(SITL_State *sitlState, int16_t pin) :
     _sitlState(sitlState),
     _pin(pin)
 {}

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -53,39 +52,24 @@ last_letter::last_letter(const char *home_str, const char *_frame_str) :
 void last_letter::start_last_letter(void)
 {
     pid_t child_pid = fork();
-    if (child_pid != 0) {
-        return;
+    if (child_pid == 0) {
+      // in child
+      close(0);
+      open("/dev/null", O_RDONLY|O_CLOEXEC);
+      for (uint8_t i=3; i<100; i++) {
+          close(i);
+      }
+      int ret = execlp("roslaunch",
+                       "roslaunch",
+                       "last_letter",
+                       "gazebo.launch",
+                       "ArduPlane:=true",
+                       nullptr);
+      if (ret != 0) {
+          perror("roslaunch");
+      }
+      exit(1);
     }
-
-    // in child
-    close(0);
-    open("/dev/null", O_RDONLY);
-    for (uint8_t i=3; i<100; i++) {
-        close(i);
-    }
-
-    char argHome[50];
-    sprintf(argHome,"home:=[%f,%f,%f]",home.lat*1.0e-7,home.lng*1.0e-7,(double)home.alt*1.0e-2);
-
-    const char *uav_name = strchr(frame_str, ':');
-    if (uav_name != NULL) {
-        uav_name++;
-    }
-
-    int ret = execlp("roslaunch",
-                     "roslaunch",
-                     "last_letter",
-                     "launcher.launch",
-                     "ArduPlane:=true",
-                     "simRate:=500",
-                     "deltaT:=0.002",
-                     argHome,
-                     uav_name,
-                     NULL);
-    if (ret != 0) {
-        perror("roslaunch");
-    }
-    exit(1);
 }
 
 /*
@@ -125,8 +109,6 @@ void last_letter::recv_fdm(const struct sitl_input &input)
     airspeed = pkt.airspeed;
     airspeed_pitot = pkt.airspeed;
 
-    // update magnetic field
-    update_mag_field_bf();
     
     // auto-adjust to last_letter frame rate
     uint64_t deltat_us = pkt.timestamp_us - last_timestamp_us;
@@ -146,6 +128,10 @@ void last_letter::update(const struct sitl_input &input)
     send_servos(input);
     recv_fdm(input);
     sync_frame_time();
+
+    update_position();
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 } // namespace SITL

@@ -1,8 +1,9 @@
 # Building ArduPilot #
 
 Ardupilot is gradually moving from the make-based build system to
-[Waf](https://waf.io/). You can read the [Waf Book](https://waf.io/book/) if
-you want to learn more about Waf.
+[Waf](https://waf.io/). The instructions below should be enough for you to
+build Ardupilot, but you can also read more about the build system in the
+[Waf Book](https://waf.io/book/).
 
 Waf should always be called from the ardupilot's root directory. Differently
 from the make-based build, with Waf there's a configure step to choose the
@@ -62,7 +63,7 @@ list some basic and more used commands as example.
     uses the `--targets` option that is explained in the next item.
 
     ```sh
-    ./waf --targets bin/arducopter-quad --upload
+    ./waf --targets bin/arducopter --upload
     ```
 
     Currently Linux boards don't support the upload option, but there's an
@@ -91,7 +92,7 @@ list some basic and more used commands as example.
 
     ```
     # Quad frame of ArduCopter
-    ./waf --targets bin/arducopter-quad
+    ./waf --targets bin/arducopter
 
     # unit test of our math functions
     ./waf --targets tests/test_math
@@ -225,7 +226,7 @@ to `build/<board>/` to the option `--targets`. Example:
 
 ```bash
 # Build arducopter for quad frame
-./waf --targets bin/arducopter-quad
+./waf --targets bin/arducopter
 
 # Build vectors unit test
 ./waf --targets tests/test_vectors

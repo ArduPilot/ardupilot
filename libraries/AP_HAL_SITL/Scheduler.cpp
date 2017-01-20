@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -7,7 +5,6 @@
 #include "Scheduler.h"
 #include "UARTDriver.h"
 #include <sys/time.h>
-#include <unistd.h>
 #include <fenv.h>
 
 using namespace HALSITL;
@@ -15,15 +12,15 @@ using namespace HALSITL;
 extern const AP_HAL::HAL& hal;
 
 
-AP_HAL::Proc Scheduler::_failsafe = NULL;
+AP_HAL::Proc Scheduler::_failsafe = nullptr;
 volatile bool Scheduler::_timer_suspended = false;
 volatile bool Scheduler::_timer_event_missed = false;
 
-AP_HAL::MemberProc Scheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc Scheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_timer_procs = 0;
 bool Scheduler::_in_timer_proc = false;
 
-AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_io_procs = 0;
 bool Scheduler::_in_io_proc = false;
 
@@ -40,14 +37,13 @@ void Scheduler::init()
 void Scheduler::delay_microseconds(uint16_t usec)
 {
     uint64_t start = AP_HAL::micros64();
-    uint64_t dtime;
-    while ((dtime=(AP_HAL::micros64() - start) < usec)) {
-        if (_stopped_clock_usec) {
-            _sitlState->wait_clock(start+usec);
-        } else {
-            usleep(usec - dtime);
+    do {
+        uint64_t dtime = AP_HAL::micros64() - start;
+        if (dtime >= usec) {
+            break;
         }
-    }
+        _sitlState->wait_clock(start + usec);
+    } while (true);
 }
 
 void Scheduler::delay(uint16_t ms)
@@ -82,7 +78,6 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
         _timer_proc[_num_timer_procs] = proc;
         _num_timer_procs++;
     }
-
 }
 
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
@@ -97,7 +92,6 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc)
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
     }
-
 }
 
 void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
@@ -131,7 +125,7 @@ void Scheduler::system_initialized() {
     // i386 with gcc doesn't work with FE_INVALID
     exceptions |= FE_INVALID;
 #endif
-    if (_sitlState->_sitl == NULL || _sitlState->_sitl->float_exception) {
+    if (_sitlState->_sitl == nullptr || _sitlState->_sitl->float_exception) {
         feenableexcept(exceptions);
     } else {
         feclearexcept(exceptions);
@@ -140,10 +134,11 @@ void Scheduler::system_initialized() {
 }
 
 void Scheduler::sitl_end_atomic() {
-    if (_nested_atomic_ctr == 0)
+    if (_nested_atomic_ctr == 0) {
         hal.uartA->println("NESTED ATOMIC ERROR");
-    else
+    } else {
         _nested_atomic_ctr--;
+    }
 }
 
 void Scheduler::reboot(bool hold_in_bootloader)
@@ -164,7 +159,7 @@ void Scheduler::_run_timer_procs(bool called_from_isr)
         // need be.  We assume the failsafe code can't
         // block. If it does then we will recurse and die when
         // we run out of stack
-        if (_failsafe != NULL) {
+        if (_failsafe != nullptr) {
             _failsafe();
         }
         return;
@@ -183,7 +178,7 @@ void Scheduler::_run_timer_procs(bool called_from_isr)
     }
 
     // and the failsafe, if one is setup
-    if (_failsafe != NULL) {
+    if (_failsafe != nullptr) {
         _failsafe();
     }
 

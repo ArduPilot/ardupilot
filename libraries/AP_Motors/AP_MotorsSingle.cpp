@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,45 +22,13 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_MotorsSingle.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
 
-const AP_Param::GroupInfo AP_MotorsSingle::var_info[] = {
-    // variables from parent vehicle
-    AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
-
-    // parameters 1 ~ 29 were reserved for tradheli
-    // parameters 30 ~ 39 reserved for tricopter
-    // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
-
-    // 40 was ROLL_SV_REV
-    // 41 was PITCH_SV_REV
-	// 42 was YAW_SV_REV
-
-	// @Param: SV_SPEED
-    // @DisplayName: Servo speed 
-    // @Description: Servo update speed in hz
-    // @Values: 50, 125, 250
-    AP_GROUPINFO("SV_SPEED", 43, AP_MotorsSingle, _servo_speed, AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS),
-
-    // @Group: SV1_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo1, "SV1_", 44, AP_MotorsSingle, RC_Channel),
-    // @Group: SV2_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo2, "SV2_", 45, AP_MotorsSingle, RC_Channel),
-    // @Group: SV3_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo3, "SV3_", 46, AP_MotorsSingle, RC_Channel),
-    // @Group: SV4_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo4, "SV4_", 47, AP_MotorsSingle, RC_Channel),
-
-    AP_GROUPEND
-};
 // init
-void AP_MotorsSingle::Init()
+void AP_MotorsSingle::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
@@ -70,18 +37,33 @@ void AP_MotorsSingle::Init()
     motor_enabled[AP_MOTORS_MOT_5] = true;
     motor_enabled[AP_MOTORS_MOT_6] = true;
 
+    _servo1 = SRV_Channels::get_channel_for(SRV_Channel::k_motor1, CH_1);
+    _servo2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
+    _servo3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
+    _servo4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
+    if (!_servo1 || !_servo2 || !_servo3 || !_servo4) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "MotorsSingle: unable to setup output channels");
+        // don't set initialised_ok
+        return;
+    }
+    
     // we set four servos to angle
-    _servo1.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo2.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo3.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo4.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo1.set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
-    _servo2.set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
-    _servo3.set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
-    _servo4.set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo1->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo2->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo3->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+    _servo4->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
 
     // allow mapping of motor7
     add_motor_num(CH_7);
+
+    // record successful initialisation if what we setup was the desired frame_class
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_SINGLE);
+}
+
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+void AP_MotorsSingle::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+{
+    // nothing to do
 }
 
 // set update rate to motors - a value in hertz
@@ -90,17 +72,10 @@ void AP_MotorsSingle::set_update_rate( uint16_t speed_hz )
     // record requested speed
     _speed_hz = speed_hz;
 
-    // set update rate for the 3 motors (but not the servo on channel 7)
-    uint32_t mask = 
-        1U << AP_MOTORS_MOT_1 |
-        1U << AP_MOTORS_MOT_2 |
-        1U << AP_MOTORS_MOT_3 |
-        1U << AP_MOTORS_MOT_4 ;
-    rc_set_freq(mask, _servo_speed);
-    uint32_t mask2 =
+    uint32_t mask =
         1U << AP_MOTORS_MOT_5 |
         1U << AP_MOTORS_MOT_6 ;
-    rc_set_freq(mask2, _speed_hz);
+    rc_set_freq(mask, _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors
@@ -117,6 +92,9 @@ void AP_MotorsSingle::enable()
 
 void AP_MotorsSingle::output_to_motors()
 {
+    if (!_flags.initialised_ok) {
+        return;
+    }
     switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors

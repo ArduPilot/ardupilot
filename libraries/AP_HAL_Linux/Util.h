@@ -7,6 +7,8 @@
 #include "Perf.h"
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 #include "ToneAlarm_Raspilot.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+#include "ToneAlarm_Disco.h"
 #endif
 #include "ToneAlarm.h"
 #include "Semaphores.h"
@@ -99,14 +101,16 @@ public:
 private:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
     static ToneAlarm_Raspilot _toneAlarm;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+    static ToneAlarm_Disco _toneAlarm;
 #else
     static ToneAlarm _toneAlarm;
 #endif
     Heat *_heat;
     int saved_argc;
     char* const *saved_argv;
-    const char* custom_log_directory = NULL;
-    const char* custom_terrain_directory = NULL;
+    const char* custom_log_directory = nullptr;
+    const char* custom_terrain_directory = nullptr;
     static const char *_hw_names[UTIL_NUM_HARDWARES];
 };
 

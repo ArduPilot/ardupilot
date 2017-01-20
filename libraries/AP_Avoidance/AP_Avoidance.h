@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #pragma once
 
 /*
@@ -31,8 +29,10 @@
 #include <AP_ADSB/AP_ADSB.h>
 
 // F_RCVRY possible parameter values
-#define AP_AVOIDANCE_RECOVERY_NONE                          0
-#define AP_AVOIDANCE_RECOVERY_RETURN_TO_PREVIOUS_FLIGHTMODE 1
+#define AP_AVOIDANCE_RECOVERY_REMAIN_IN_AVOID_ADSB                  0
+#define AP_AVOIDANCE_RECOVERY_RESUME_PREVIOUS_FLIGHTMODE            1
+#define AP_AVOIDANCE_RECOVERY_RTL                                   2
+#define AP_AVOIDANCE_RECOVERY_RESUME_IF_AUTO_ELSE_LOITER            3
 
 #define AP_AVOIDANCE_STATE_RECOVERY_TIME_MS                 2000    // we will not downgrade state any faster than this (2 seconds)
 

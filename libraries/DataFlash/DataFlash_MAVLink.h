@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /* 
    DataFlash logging - MAVLink variant
 
@@ -127,6 +125,10 @@ protected:
         uint8_t state_sent_max;
     } stats;
 
+    // this method is used when reporting system status over mavlink
+    bool logging_enabled() const { return true; }
+    bool logging_failed() const;
+
 private:
     mavlink_channel_t _chan;
     uint8_t _target_system_id;
@@ -155,7 +157,7 @@ private:
     void Log_Write_DF_MAV(DataFlash_MAVLink &df);
     
     void internal_error();
-    uint16_t bufferspace_available() override; // in bytes
+    uint32_t bufferspace_available() override; // in bytes
     uint8_t remaining_space_in_current_block();
     // write buffer
     uint8_t _blockcount_free;

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "AP_Tuning.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -66,7 +64,7 @@ void AP_Tuning::check_selector_switch(void)
         // no selector switch enabled
         return;
     }
-    RC_Channel *selchan = RC_Channel::rc_channel(selector-1);
+    RC_Channel *selchan = RC_Channels::rc_channel(selector-1);
     if (selchan == nullptr) {
         return;
     }
@@ -174,7 +172,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
         return;
     }
     
-    RC_Channel *chan = RC_Channel::rc_channel(channel-1);
+    RC_Channel *chan = RC_Channels::rc_channel(channel-1);
     if (chan == nullptr) {
         return;
     }

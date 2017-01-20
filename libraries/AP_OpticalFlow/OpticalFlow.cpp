@@ -1,7 +1,9 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include "OpticalFlow.h"
 #include "AP_OpticalFlow_Onboard.h"
+#include "AP_OpticalFlow_SITL.h"
+#include "AP_OpticalFlow_Pixart.h"
+#include "AP_OpticalFlow_PX4Flow.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -37,12 +39,39 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_ORIENT_YAW", 3,  OpticalFlow,    _yawAngle_cd,   0),
 
+    // @Param: _POS_X
+    // @DisplayName:  X position offset
+    // @Description: X position of the optical flow sensor focal point in body frame. Positive X is forward of the origin.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: _POS_Y
+    // @DisplayName: Y position offset
+    // @Description: Y position of the optical flow sensor focal point in body frame. Positive Y is to the right of the origin.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: _POS_Z
+    // @DisplayName: Z position offset
+    // @Description: Z position of the optical flow sensor focal point in body frame. Positive Z is down from the origin.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("_POS", 4, OpticalFlow, _pos_offset, 0.0f),
+
+    // @Param: _BUS_ID
+    // @DisplayName: ID on the bus
+    // @Description: This is used to select between multiple possible bus IDs for some sensor types. For PX4Flow you can choose 0 to 7 for the 8 possible addresses on the I2C bus.
+    // @Range: 0 255
+    // @User: Advanced
+    AP_GROUPINFO("_BUS_ID", 5,  OpticalFlow, _bus_id,   0),
+    
     AP_GROUPEND
 };
 
 // default constructor
 OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
-    : _last_update_ms(0)
+    : _ahrs(ahrs),
+      _last_update_ms(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -50,27 +79,31 @@ OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
 
     // healthy flag will be overwritten on update
     _flags.healthy = false;
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-    backend = new AP_OpticalFlow_Onboard(*this, ahrs);
-#endif
 }
 
 void OpticalFlow::init(void)
 {
     if (!backend) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-        backend = new AP_OpticalFlow_PX4(*this);
+        if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK) {
+            // possibly have pixhart on external SPI
+            backend = AP_OpticalFlow_Pixart::detect(*this);
+        }
+        if (backend == nullptr) {
+            backend = AP_OpticalFlow_PX4Flow::detect(*this);
+        }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        backend = new AP_OpticalFlow_HIL(*this);
+        backend = new AP_OpticalFlow_SITL(*this);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+        backend = new AP_OpticalFlow_Onboard(*this);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-        backend = new AP_OpticalFlow_Linux(*this, hal.i2c_mgr->get_device(HAL_OPTFLOW_PX4FLOW_I2C_BUS, HAL_OPTFLOW_PX4FLOW_I2C_ADDRESS));
+        backend = AP_OpticalFlow_PX4Flow::detect(*this);
 #endif
     }
 
-    if (backend != NULL) {
+    if (backend != nullptr) {
         backend->init();
     } else {
         _enabled = 0;
@@ -79,16 +112,10 @@ void OpticalFlow::init(void)
 
 void OpticalFlow::update(void)
 {
-    if (backend != NULL) {
+    if (backend != nullptr) {
         backend->update();
     }
     // only healthy if the data is less than 0.5s old
     _flags.healthy = (AP_HAL::millis() - _last_update_ms < 500);
 }
 
-void OpticalFlow::setHIL(const struct OpticalFlow::OpticalFlow_state &state)
-{
-    if (backend) {
-        backend->_update_frontend(state);
-    }
-}

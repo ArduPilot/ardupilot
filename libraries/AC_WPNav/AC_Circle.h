@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -91,11 +90,10 @@ private:
     AP_Float    _rate;          // rotation speed in deg/sec
 
     // internal variables
-    uint32_t    _last_update;   // time of last update_loiter call
     Vector3f    _center;        // center of circle in cm from home
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)
-    float       _angle_total;   // total angle travelled in radians
+    float       _angle_total;   // total angle traveled in radians
     float       _angular_vel;   // angular velocity in radians/sec
     float       _angular_vel_max;   // maximum velocity in radians/sec
     float       _angular_accel; // angular acceleration in radians/sec/sec

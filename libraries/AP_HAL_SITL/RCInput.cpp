@@ -37,10 +37,10 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     if (len > SITL_RC_INPUT_CHANNELS) {
         len = SITL_RC_INPUT_CHANNELS;
     }
-    for (uint8_t i=0; i<len; i++) {
+    for (uint8_t i=0; i < len; i++) {
         periods[i] = read(i);
     }
-    return 8;
+    return len;
 }
 
 bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
@@ -57,9 +57,11 @@ bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
 
 bool RCInput::set_override(uint8_t channel, int16_t override)
 {
-    if (override < 0) return false; /* -1: no change. */
+    if (override < 0) {
+        return false;  /* -1: no change. */
+    }
     if (channel < SITL_RC_INPUT_CHANNELS) {
-        _override[channel] = override;
+        _override[channel] = static_cast<uint16_t>(override);
         if (override != 0) {
             return true;
         }

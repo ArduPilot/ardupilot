@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include "AP_Baro.h"
@@ -22,4 +21,7 @@ protected:
     AP_Baro &_frontend;
 
     void _copy_to_frontend(uint8_t instance, float pressure, float temperature);
+
+    // semaphore for access to shared frontend data
+    AP_HAL::Semaphore *_sem;    
 };

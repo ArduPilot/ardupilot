@@ -273,6 +273,23 @@ struct PACKED log_NKF2 {
     uint8_t index;
 };
 
+struct PACKED log_NKF2a {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    int16_t accBiasX;
+    int16_t accBiasY;
+    int16_t accBiasZ;
+    int16_t windN;
+    int16_t windE;
+    int16_t magN;
+    int16_t magE;
+    int16_t magD;
+    int16_t magX;
+    int16_t magY;
+    int16_t magZ;
+    uint8_t index;
+};
+
 struct PACKED log_EKF3 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -369,6 +386,21 @@ struct PACKED log_NKF5 {
     float angErr;
     float velErr;
     float posErr;
+};
+
+struct PACKED log_RngBcnDebug {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t ID;             // beacon identifier
+    int16_t rng;            // beacon range (cm)
+    int16_t innov;          // beacon range innovation (cm)
+    uint16_t sqrtInnovVar;  // sqrt of beacon range innovation variance (cm)
+    uint16_t testRatio;     // beacon range innovation consistency test ratio *100
+    int16_t beaconPosN;     // beacon north position (cm)
+    int16_t beaconPosE;     // beacon east position (cm)
+    int16_t beaconPosD;     // beacon down position (cm)
+    int16_t offsetHigh;     // high estimate of vertical position offset of beacons rel to EKF origin (cm)
+    int16_t offsetLow;      // low estimate of vertical position offset of beacons rel to EKF origin (cm)
 };
 
 struct PACKED log_Cmd {
@@ -757,9 +789,9 @@ Format characters in the format string for binary log messages
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "QZ",     "TimeUS,Message"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
-      "RCIN",  "Qhhhhhhhhhhhhhh",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14" }, \
+      "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14" }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
-      "RCOU",  "Qhhhhhhhhhhhhhh",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14" }, \
+      "RCOU",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14" }, \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qf",     "TimeUS,RXRSSI" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
@@ -803,16 +835,6 @@ Format characters in the format string for binary log messages
       "POS","QLLff","TimeUS,Lat,Lng,Alt,RelAlt" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","QccCfLL","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
-    { LOG_EKF1_MSG, sizeof(log_EKF1), \
-      "EKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
-    { LOG_EKF2_MSG, sizeof(log_EKF2), \
-      "EKF2","Qbbbcchhhhhh","TimeUS,Ratio,AZ1bias,AZ2bias,VWN,VWE,MN,ME,MD,MX,MY,MZ" }, \
-    { LOG_EKF3_MSG, sizeof(log_EKF3), \
-      "EKF3","Qcccccchhhc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
-    { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","QcccccccbbHBHH","TimeUS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,OFE,FS,TS,SS,GPS" }, \
-    { LOG_EKF5_MSG, sizeof(log_EKF5), \
-      "EKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr" }, \
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
       "NKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
     { LOG_NKF2_MSG, sizeof(log_NKF2), \
@@ -831,6 +853,28 @@ Format characters in the format string for binary log messages
       "NKF8","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT" }, \
     { LOG_NKF9_MSG, sizeof(log_NKF4), \
       "NKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
+    { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
+      "NKF0","QBccCCccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL" }, \
+    { LOG_XKF1_MSG, sizeof(log_EKF1), \
+      "XKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+    { LOG_XKF2_MSG, sizeof(log_NKF2a), \
+      "XKF2","QccccchhhhhhB","TimeUS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI" }, \
+    { LOG_XKF3_MSG, sizeof(log_NKF3), \
+      "XKF3","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT" }, \
+    { LOG_XKF4_MSG, sizeof(log_NKF4), \
+      "XKF4","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
+    { LOG_XKF5_MSG, sizeof(log_NKF5), \
+      "XKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos" }, \
+    { LOG_XKF6_MSG, sizeof(log_EKF1), \
+      "XKF6","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+    { LOG_XKF7_MSG, sizeof(log_NKF2a), \
+      "XKF7","QccccchhhhhhB","TimeUS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI" }, \
+    { LOG_XKF8_MSG, sizeof(log_NKF3), \
+      "XKF8","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT" }, \
+    { LOG_XKF9_MSG, sizeof(log_NKF4), \
+      "XKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
+    { LOG_XKF10_MSG, sizeof(log_RngBcnDebug), \
+      "XKF0","QBccCCccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
@@ -894,7 +938,7 @@ Format characters in the format string for binary log messages
     { LOG_BAR2_MSG, sizeof(log_BARO), \
       "BAR2",  "QffcfIf", "TimeUS,Alt,Press,Temp,CRt,SMS,Offset" }, \
     { LOG_BAR3_MSG, sizeof(log_BARO), \
-      "BAR3",  "QffcfI", "TimeUS,Alt,Press,Temp,CRt,SMS" }, \
+      "BAR3",  "QffcfIf", "TimeUS,Alt,Press,Temp,CRt,SMS,Offset" }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
       "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2" }, \
     { LOG_IMUDT_MSG, sizeof(log_IMUDT), \
@@ -948,10 +992,6 @@ enum LogMessages {
     LOG_POWR_MSG,
     LOG_AHR2_MSG,
     LOG_SIMSTATE_MSG,
-    LOG_EKF1_MSG,
-    LOG_EKF2_MSG,
-    LOG_EKF3_MSG,
-    LOG_EKF4_MSG,
     LOG_CMD_MSG,
     LOG_RADIO_MSG,
     LOG_ATRP_MSG,
@@ -970,7 +1010,6 @@ enum LogMessages {
     LOG_ESC6_MSG,
     LOG_ESC7_MSG,
     LOG_ESC8_MSG,
-    LOG_EKF5_MSG,
     LOG_BAR2_MSG,
     LOG_ARSP_MSG,
     LOG_ATTITUDE_MSG,
@@ -1015,6 +1054,17 @@ enum LogMessages {
     LOG_NKF7_MSG,
     LOG_NKF8_MSG,
     LOG_NKF9_MSG,
+    LOG_NKF10_MSG,
+    LOG_XKF1_MSG,
+    LOG_XKF2_MSG,
+    LOG_XKF3_MSG,
+    LOG_XKF4_MSG,
+    LOG_XKF5_MSG,
+    LOG_XKF6_MSG,
+    LOG_XKF7_MSG,
+    LOG_XKF8_MSG,
+    LOG_XKF9_MSG,
+    LOG_XKF10_MSG,
     LOG_DF_MAV_STATS,
 
     LOG_MSG_SBPHEALTH,

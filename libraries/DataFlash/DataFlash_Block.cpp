@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       DataFlash.cpp - DataFlash log library generic code
  */
@@ -13,11 +12,11 @@ extern AP_HAL::HAL& hal;
 // this if (and only if!) the low level format changes
 #define DF_LOGGING_FORMAT    0x28122013
 
-uint16_t DataFlash_Block::bufferspace_available()
+uint32_t DataFlash_Block::bufferspace_available()
 {
     // because DataFlash_Block devices are ring buffers, we *always*
     // have room...
-    return df_NumPages * df_PageSize; 
+    return df_NumPages * df_PageSize;
 }
 
 // *** DATAFLASH PUBLIC FUNCTIONS ***
@@ -73,7 +72,7 @@ bool DataFlash_Block::WritePrioritisedBlock(const void *pBuffer, uint16_t size,
             BlockWrite(df_BufferNum, df_BufferIdx, &ph, sizeof(ph), pBuffer, n);
             df_BufferIdx += n + sizeof(ph);
         } else {
-            BlockWrite(df_BufferNum, df_BufferIdx, NULL, 0, pBuffer, n);
+            BlockWrite(df_BufferNum, df_BufferIdx, nullptr, 0, pBuffer, n);
             df_BufferIdx += n;
         }
 

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,12 +36,12 @@ AP_Compass_HIL::AP_Compass_HIL(Compass &compass):
 AP_Compass_Backend *AP_Compass_HIL::detect(Compass &compass)
 {
     AP_Compass_HIL *sensor = new AP_Compass_HIL(compass);
-    if (sensor == NULL) {
-        return NULL;
+    if (sensor == nullptr) {
+        return nullptr;
     }
     if (!sensor->init()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
     return sensor;
 }

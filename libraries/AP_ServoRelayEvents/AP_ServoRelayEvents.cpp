@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +21,7 @@
 #include <AP_Common/AP_Common.h>
 #include "AP_ServoRelayEvents.h"
 #include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -103,13 +103,17 @@ void AP_ServoRelayEvents::update_events(void)
         return;
     }
 
+    if (channel > NUM_SERVO_CHANNELS || channel == 0) {
+        return;
+    }
+
     start_time_ms = AP_HAL::millis();
 
     switch (type) {
     case EVENT_TYPE_SERVO:
         hal.rcout->enable_ch(channel-1);
         if (repeat & 1) {
-            hal.rcout->write(channel-1, RC_Channel::rc_channel(channel-1)->get_radio_trim());
+            hal.rcout->write(channel-1, SRV_Channels::srv_channel(channel-1)->get_trim());
         } else {
             hal.rcout->write(channel-1, servo_value);
         }

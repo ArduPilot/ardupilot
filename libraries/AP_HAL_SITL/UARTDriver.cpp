@@ -1,4 +1,3 @@
-// -*- Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -68,17 +67,17 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
              tcpclient:192.168.2.15:5762
              uart:/dev/ttyUSB0:57600
          */
-        char *saveptr = NULL;
+        char *saveptr = nullptr;
         char *s = strdup(path);
         char *devtype = strtok_r(s, ":", &saveptr);
-        char *args1 = strtok_r(NULL, ":", &saveptr);
-        char *args2 = strtok_r(NULL, ":", &saveptr);
+        char *args1 = strtok_r(nullptr, ":", &saveptr);
+        char *args2 = strtok_r(nullptr, ":", &saveptr);
         if (strcmp(devtype, "tcp") == 0) {
             uint16_t port = atoi(args1);
             bool wait = (args2 && strcmp(args2, "wait") == 0);
             _tcp_start_connection(port, wait);
         } else if (strcmp(devtype, "tcpclient") == 0) {
-            if (args2 == NULL) {
+            if (args2 == nullptr) {
                 AP_HAL::panic("Invalid tcp client path: %s", path);
             }
             uint16_t port = atoi(args2);
@@ -86,7 +85,9 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         } else if (strcmp(devtype, "uart") == 0) {
             uint32_t baudrate = args2? atoi(args2) : baud;
             ::printf("UART connection %s:%u\n", args1, baudrate);
-            _uart_start_connection(args1, baudrate);
+            _uart_path = strdup(args1);
+            _uart_baudrate = baudrate;
+            _uart_start_connection();
         } else {
             AP_HAL::panic("Invalid device path: %s", path);
         }
@@ -233,7 +234,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
     if (wait_for_connection) {
         fprintf(stdout, "Waiting for connection ....\n");
         fflush(stdout);
-        _fd = accept(_listen_fd, NULL, NULL);
+        _fd = accept(_listen_fd, nullptr, nullptr);
         if (_fd == -1) {
             fprintf(stderr, "accept() error - %s", strerror(errno));
             exit(1);
@@ -299,19 +300,22 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 /*
   start a UART connection for the serial port
  */
-void UARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
+void UARTDriver::_uart_start_connection(void)
 {
     struct termios t {};
     if (!_connected) {
-        ::printf("Opening %s\n", path);
-        _fd = ::open(path, O_RDWR | O_CLOEXEC);
+        _fd = ::open(_uart_path, O_RDWR | O_CLOEXEC);
+        if (_fd == -1) {
+            return;
+        }
         // use much smaller buffer sizes on real UARTs
         _writebuffer.set_size(1024);
         _readbuffer.set_size(512);
+        ::printf("Opened %s\n", _uart_path);
     }
 
     if (_fd == -1) {
-        AP_HAL::panic("Unable to open UART %s", path);
+        AP_HAL::panic("Unable to open UART %s", _uart_path);
     }
 
     // set non-blocking
@@ -332,7 +336,7 @@ void UARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
 
     // set baudrate
     tcgetattr(_fd, &t);
-    cfsetspeed(&t, baudrate);
+    cfsetspeed(&t, _uart_baudrate);
     tcsetattr(_fd, TCSANOW, &t);
 
     _connected = true;
@@ -349,7 +353,7 @@ void UARTDriver::_check_connection(void)
         return;
     }
     if (_select_check(_listen_fd)) {
-        _fd = accept(_listen_fd, NULL, NULL);
+        _fd = accept(_listen_fd, nullptr, nullptr);
         if (_fd != -1) {
             int one = 1;
             _connected = true;
@@ -378,7 +382,7 @@ bool UARTDriver::_select_check(int fd)
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    if (select(fd+1, &fds, NULL, NULL, &tv) == 1) {
+    if (select(fd+1, &fds, nullptr, nullptr, &tv) == 1) {
         return true;
     }
     return false;
@@ -390,9 +394,18 @@ void UARTDriver::_set_nonblocking(int fd)
     fcntl(fd, F_SETFL, v | O_NONBLOCK);
 }
 
+void UARTDriver::_check_reconnect(void)
+{
+    if (!_uart_path) {
+        return;
+    }
+    _uart_start_connection();
+}
+
 void UARTDriver::_timer_tick(void)
 {
     if (!_connected) {
+        _check_reconnect();
         return;
     }
     uint32_t navail;
@@ -402,6 +415,11 @@ void UARTDriver::_timer_tick(void)
     if (readptr && navail > 0) {
         if (!_use_send_recv) {
             nwritten = ::write(_fd, readptr, navail);
+            if (nwritten == -1 && errno != EAGAIN && _uart_path) {
+                close(_fd);
+                _fd = -1;
+                _connected = false;
+            }
         } else {
             nwritten = send(_fd, readptr, navail, MSG_DONTWAIT);
         }
@@ -420,6 +438,11 @@ void UARTDriver::_timer_tick(void)
     if (!_use_send_recv) {
         int fd = _console?0:_fd;
         nread = ::read(fd, buf, space);
+        if (nread == -1 && errno != EAGAIN && _uart_path) {
+            close(_fd);
+            _fd = -1;
+            _connected = false;
+        }
     } else {
         if (_select_check(_fd)) {
             nread = recv(_fd, buf, space, MSG_DONTWAIT);

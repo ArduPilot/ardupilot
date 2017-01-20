@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 /*
@@ -9,7 +7,7 @@
 void Copter::failsafe_radio_on_event()
 {
     // if motors are not armed there is nothing to do
-    if( !motors.armed() ) {
+    if( !motors->armed() ) {
         return;
     }
 
@@ -52,7 +50,7 @@ void Copter::failsafe_battery_event(void)
     }
 
     // failsafe check
-    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
+    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors->armed()) {
         if (should_disarm_on_failsafe()) {
             init_disarm_motors();
         } else {
@@ -99,7 +97,7 @@ void Copter::failsafe_gcs_check()
     }
 
     // do nothing if gcs failsafe already triggered or motors disarmed
-    if (failsafe.gcs || !motors.armed()) {
+    if (failsafe.gcs || !motors->armed()) {
         return;
     }
 
@@ -210,16 +208,13 @@ bool Copter::should_disarm_on_failsafe() {
         case ACRO:
             // if throttle is zero OR vehicle is landed disarm motors
             return ap.throttle_zero || ap.land_complete;
-            break;
         case AUTO:
             // if mission has not started AND vehicle is landed, disarm motors
             return !ap.auto_armed && ap.land_complete;
-            break;
         default:
             // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
             // if landed disarm
             return ap.land_complete;
-            break;
     }
 }
 

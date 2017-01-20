@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,8 +21,13 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
+class AP_Airspeed;
+
 class AP_Airspeed_Backend {
 public:
+    AP_Airspeed_Backend(AP_Airspeed &frontend);
+    virtual ~AP_Airspeed_Backend();
+    
     // probe and initialise the sensor
     virtual bool init(void) = 0;
 
@@ -33,4 +36,15 @@ public:
 
     // return the current temperature in degrees C, if available
     virtual bool get_temperature(float &temperature) = 0;
+
+protected:
+    int8_t get_pin(void) const;
+    float get_psi_range(void) const;
+    uint8_t get_bus(void) const;
+
+    // semaphore for access to shared frontend data
+    AP_HAL::Semaphore *sem;    
+    
+private:
+    AP_Airspeed &frontend;
 };

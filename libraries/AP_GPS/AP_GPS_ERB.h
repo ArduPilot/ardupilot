@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -134,7 +133,7 @@ private:
     // Buffer parse & GPS state update
     bool _parse_gps();
 
-    void inject_data(uint8_t *data, uint8_t len);
+    void inject_data(const uint8_t *data, uint16_t len) override;
 
     // used to update fix between status and position packets
     AP_GPS::GPS_Status next_fix;

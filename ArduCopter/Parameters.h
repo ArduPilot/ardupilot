@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -52,9 +51,10 @@ public:
         k_param_software_type,
         k_param_ins_old,                        // *** Deprecated, remove with next eeprom number change
         k_param_ins,                            // libraries/AP_InertialSensor variables
-        k_param_NavEKF2_old, // deprecated
+        k_param_NavEKF2_old, // deprecated - remove
         k_param_NavEKF2,
         k_param_g2, // 2nd block of parameters
+        k_param_NavEKF3,
 
         // simulation
         k_param_sitl = 10,
@@ -68,8 +68,8 @@ public:
         // relay object
         k_param_relay,
 
-        // EPM object
-        k_param_epm,
+        // (old) EPM object
+        k_param_epm_unused,
 
         // BoardConfig object
         k_param_BoardConfig,
@@ -102,7 +102,7 @@ public:
         k_param_circle_rate,                // deprecated - remove
         k_param_rangefinder_gain,
         k_param_ch8_option,
-        k_param_arming_check,
+        k_param_arming_check_old,       // deprecated - remove
         k_param_sprayer,
         k_param_angle_max,
         k_param_gps_hdop_good,
@@ -111,10 +111,10 @@ public:
         k_param_angle_rate_max,         // remove
         k_param_rssi_range,             // unused, replaced by rssi_ library parameters
         k_param_rc_feel_rp,
-        k_param_NavEKF,                 // Extended Kalman Filter Inertial Navigation Group
+        k_param_NavEKF,                 // deprecated - remove
         k_param_mission,                // mission library
-        k_param_rc_13,
-        k_param_rc_14,
+        k_param_rc_13_old,
+        k_param_rc_14_old,
         k_param_rally,
         k_param_poshold_brake_rate,
         k_param_poshold_brake_angle_max,
@@ -126,7 +126,7 @@ public:
         k_param_rangefinder, // rangefinder object
         k_param_fs_ekf_thresh,
         k_param_terrain,
-        k_param_acro_expo,
+        k_param_acro_rp_expo,
         k_param_throttle_deadzone,
         k_param_optflow,
         k_param_dcmcheck_thresh,        // deprecated - remove
@@ -236,7 +236,7 @@ public:
         k_param_compass_enabled,
         k_param_compass,
         k_param_rangefinder_enabled_old, // deprecated
-        k_param_frame_orientation,
+        k_param_frame_type,
         k_param_optflow_enabled,    // deprecated
         k_param_fs_batt_voltage,
         k_param_ch7_option,
@@ -273,16 +273,16 @@ public:
         //
         // 170: Radio settings
         //
-        k_param_rc_1 = 170,
-        k_param_rc_2,
-        k_param_rc_3,
-        k_param_rc_4,
-        k_param_rc_5,
-        k_param_rc_6,
-        k_param_rc_7,
-        k_param_rc_8,
-        k_param_rc_10,
-        k_param_rc_11,
+        k_param_rc_1_old = 170,
+        k_param_rc_2_old,
+        k_param_rc_3_old,
+        k_param_rc_4_old,
+        k_param_rc_5_old,
+        k_param_rc_6_old,
+        k_param_rc_7_old,
+        k_param_rc_8_old,
+        k_param_rc_10_old,
+        k_param_rc_11_old,
         k_param_throttle_min,           // remove
         k_param_throttle_max,           // remove
         k_param_failsafe_throttle,
@@ -297,8 +297,8 @@ public:
         k_param_failsafe_battery_enabled,
         k_param_throttle_mid,           // remove
         k_param_failsafe_gps_enabled,   // remove
-        k_param_rc_9,
-        k_param_rc_12,
+        k_param_rc_9_old,
+        k_param_rc_12_old,
         k_param_failsafe_gcs,
         k_param_rcmap, // 199
 
@@ -362,6 +362,7 @@ public:
         k_param_rtl_climb_min,
         k_param_rpm_sensor,
         k_param_autotune_min_d, // 251
+        k_param_arming, // 252  - AP_Arming
         k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
@@ -441,14 +442,13 @@ public:
     AP_Int8         radio_tuning;
     AP_Int16        radio_tuning_high;
     AP_Int16        radio_tuning_low;
-    AP_Int8         frame_orientation;
+    AP_Int8         frame_type;
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
     AP_Int8         ch9_option;
     AP_Int8         ch10_option;
     AP_Int8         ch11_option;
     AP_Int8         ch12_option;
-    AP_Int8         arming_check;
     AP_Int8         disarm_delay;
 
     AP_Int8         land_repositioning;
@@ -460,22 +460,6 @@ public:
     AP_Int8         throw_motor_start;
     AP_Int8         terrain_follow;
 
-    // RC channels
-    RC_Channel              rc_1;
-    RC_Channel              rc_2;
-    RC_Channel              rc_3;
-    RC_Channel              rc_4;
-    RC_Channel_aux          rc_5;
-    RC_Channel_aux          rc_6;
-    RC_Channel_aux          rc_7;
-    RC_Channel_aux          rc_8;
-    RC_Channel_aux          rc_9;
-    RC_Channel_aux          rc_10;
-    RC_Channel_aux          rc_11;
-    RC_Channel_aux          rc_12;
-    RC_Channel_aux          rc_13;
-    RC_Channel_aux          rc_14;
-
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
     // Acro parameters
@@ -484,7 +468,7 @@ public:
     AP_Float                acro_balance_roll;
     AP_Float                acro_balance_pitch;
     AP_Int8                 acro_trainer;
-    AP_Float                acro_expo;
+    AP_Float                acro_rp_expo;
 
     // PI/D controllers
     AC_PI_2D                pi_vel_xy;
@@ -503,22 +487,6 @@ public:
     // Note: keep initializers here in the same order as they are declared
     // above.
     Parameters() :
-
-        rc_1                (CH_1),
-        rc_2                (CH_2),
-        rc_3                (CH_3),
-        rc_4                (CH_4),
-        rc_5                (CH_5),
-        rc_6                (CH_6),
-        rc_7                (CH_7),
-        rc_8                (CH_8),
-        rc_9                (CH_9),
-        rc_10               (CH_10),
-        rc_11               (CH_11),
-        rc_12               (CH_12),
-        rc_13               (CH_13),
-        rc_14               (CH_14),
-
         // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
         //---------------------------------------------------------------------------------------------------------------------------------
         pi_vel_xy               (VEL_XY_P,        VEL_XY_I,                         VEL_XY_IMAX,        VEL_XY_FILT_HZ,     WPNAV_LOITER_UPDATE_TIME),
@@ -540,20 +508,62 @@ public:
  */
 class ParametersG2 {
 public:
-    ParametersG2(void) { AP_Param::setup_object_defaults(this, var_info); }
+    ParametersG2(void);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
     // altitude at which nav control can start in takeoff
-    AP_Float takeoff_nav_alt;
+    AP_Float wp_navalt_min;
 
     // button checking
     AP_Button button;
 
+    // vehicle statistics
+    AP_Stats stats;
+
+#if GRIPPER_ENABLED
+    AP_Gripper gripper;
+#endif
+
     // Throw mode parameters
     AP_Int8 throw_nextmode;
     AP_Int8 throw_type;
+
+    // ground effect compensation enable/disable
+    AP_Int8 gndeffect_comp_enabled;
+
+    // beacon (non-GPS positioning) library
+    AP_Beacon beacon;
+
+#if PROXIMITY_ENABLED == ENABLED
+    // proximity (aka object avoidance) library
+    AP_Proximity proximity;
+#endif
+
+    // whether to enforce acceptance of packets only from sysid_my_gcs
+    AP_Int8 sysid_enforce;
+    
+#if ADVANCED_FAILSAFE == ENABLED
+    // advanced failsafe library
+    AP_AdvancedFailsafe_Copter afs;
+#endif
+
+    // developer options
+    AP_Int32 dev_options;
+
+    // acro exponent parameters
+    AP_Float acro_y_expo;
+    AP_Float acro_thr_mid;
+
+    // frame class
+    AP_Int8 frame_class;
+
+    // RC input channels
+    RC_Channels rc_channels;
+    
+    // control over servo output ranges
+    SRV_Channels servo_channels;
 };
 
 extern const AP_Param::Info        var_info[];

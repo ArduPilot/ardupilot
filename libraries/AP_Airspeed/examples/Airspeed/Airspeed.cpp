@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,22 +21,36 @@
 #include <AP_ADC/AP_ADC.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static AP_Vehicle::FixedWing aparm;
-
 float temperature;
 
-AP_Airspeed airspeed(aparm);
+AP_Airspeed airspeed;
+
+namespace {
+// try to set the object value but provide diagnostic if it failed
+void set_object_value(const void *object_pointer,
+                      const struct AP_Param::GroupInfo *group_info,
+                      const char *name, float value)
+{
+    if (!AP_Param::set_object_value(object_pointer, group_info, name, value)) {
+        hal.console->printf("WARNING: AP_Param::set object value \"%s::%s\" Failed.\n",
+                            group_info->name, name);
+    }
+}
+}
 
 void setup()
 {
     hal.console->println("ArduPilot Airspeed library test");
 
-    AP_Param::set_object_value(&airspeed, airspeed.var_info, "_PIN", 65);
-    AP_Param::set_object_value(&airspeed, airspeed.var_info, "_ENABLE", 1);
-    AP_Param::set_object_value(&airspeed, airspeed.var_info, "_USE", 1);
+    set_object_value(&airspeed, airspeed.var_info, "PIN", 65);
+    set_object_value(&airspeed, airspeed.var_info, "ENABLE", 1);
+    set_object_value(&airspeed, airspeed.var_info, "USE", 1);
+
+    AP_BoardConfig{}.init();
 
     airspeed.init();
     airspeed.calibrate(false);
@@ -46,12 +59,13 @@ void setup()
 void loop(void)
 {
     static uint32_t timer;
-    if((AP_HAL::millis() - timer) > 100) {
+    if ((AP_HAL::millis() - timer) > 100) {
         timer = AP_HAL::millis();
         airspeed.read();
         airspeed.get_temperature(temperature);
 
-        hal.console->printf("airspeed %5.2f temperature %6.2f healthy = %u\n", airspeed.get_airspeed(), temperature, airspeed.healthy());
+        hal.console->printf("airspeed %5.2f temperature %6.2f healthy = %u\n",
+                            airspeed.get_airspeed(), temperature, airspeed.healthy());
     }
     hal.scheduler->delay(1);
 }

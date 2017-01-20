@@ -13,6 +13,11 @@ public:
     AP_Avoidance_Copter(AP_AHRS &ahrs, class AP_ADSB &adsb) :
         AP_Avoidance(ahrs, adsb) { }
 
+private:
+
+    // helper function to set modes and always succeed
+    void set_mode_else_try_RTL_else_LAND(control_mode_t mode);
+
 protected:
 
     // override avoidance handler

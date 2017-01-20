@@ -1,17 +1,20 @@
 #!/usr/bin/env python
+"""
+Emit docs in a form acceptable to the old Ardupilot wordpress docs site
+"""
 
-import re
-from param import *
+from param import known_param_fields
 from emit import Emit
 import cgi
 
-# Emit docs in a form acceptable to the APM wordpress docs site
+
 class HtmlEmit(Emit):
-    
+
     def __init__(self):
+        Emit.__init__(self)
         html_fname = 'Parameters.html'
         self.f = open(html_fname, mode='w')
-        self.preamble = '''<!-- Dynamically generated list of documented parameters
+        self.preamble = """<!-- Dynamically generated list of documented parameters
 This page was generated using Tools/autotest/param_metadata/param_parse.py
 
 DO NOT EDIT
@@ -26,7 +29,7 @@ DO NOT EDIT
 <!-- add auto-generated table of contents with "Table of Contents Plus" plugin -->
 [toc exclude="Complete Parameter List"]
 
-'''        
+"""
         self.t = ''
 
     def escape(self, s):
@@ -40,25 +43,25 @@ DO NOT EDIT
         self.f.write(self.preamble)
         self.f.write(self.t)
         self.f.close()
-    
+
     def start_libraries(self):
         pass
-        
-    def emit(self, g, f):    
+
+    def emit(self, g, f):
         tag = '%s Parameters' % g.name
-        t = '\n\n<h1>%s</h1>\n'  % tag
-        
+        t = '\n\n<h1>%s</h1>\n' % tag
+
         for param in g.params:
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue
             d = param.__dict__
             tag = '%s (%s)' % (param.DisplayName, param.name)
             t += '\n\n<h2>%s</h2>' % tag
-            if d.get('User',None) == 'Advanced':
+            if d.get('User', None) == 'Advanced':
                 t += '<em>Note: This parameter is for advanced users</em><br>'
             t += "\n\n<p>%s</p>\n" % cgi.escape(param.Description)
             t += "<ul>\n"
-            
+
             for field in param.__dict__.keys():
                 if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
                     if field == 'Values' and Emit.prog_values_field.match(param.__dict__[field]):
@@ -72,4 +75,3 @@ DO NOT EDIT
                         t += "<li>%s: %s</li>\n" % (field, cgi.escape(param.__dict__[field]))
             t += "</ul>\n"
         self.t += t
-

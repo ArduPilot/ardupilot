@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -41,25 +39,19 @@ bool NavEKF2_core::healthy(void) const
     return true;
 }
 
-// Return a consolidated fault score where higher numbers are less healthy
+// Return a consolidated error score where higher numbers represent larger errors
 // Intended to be used by the front-end to determine which is the primary EKF
-float NavEKF2_core::faultScore(void) const
+float NavEKF2_core::errorScore() const
 {
     float score = 0.0f;
-    // If velocity, position or height measurements are failing consistency checks, this adds to the score
-    if (velTestRatio > 1.0f) {
-        score += velTestRatio-1.0f;
-    }
-    if (posTestRatio > 1.0f) {
-        score += posTestRatio-1.0f;
-    }
-    if (hgtTestRatio > 1.0f) {
-        score += hgtTestRatio-1.0f;
-    }
-    // If the tilt error is excessive this adds to the score
-    const float tiltErrThreshold = 0.05f;
-    if (tiltAlignComplete && yawAlignComplete && tiltErrFilt > tiltErrThreshold) {
-        score += tiltErrFilt / tiltErrThreshold;
+    if (tiltAlignComplete && yawAlignComplete) {
+        // Check GPS fusion performance
+        score = MAX(score, 0.5f * (velTestRatio + posTestRatio));
+        // Check altimeter fusion performance
+        score = MAX(score, hgtTestRatio);
+        // Check attitude corrections
+        const float tiltErrThreshold = 0.05f;
+        score = MAX(score, tiltErrFilt / tiltErrThreshold);
     }
     return score;
 }
@@ -76,6 +68,32 @@ void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
     rngInnov = innovRng;
     range = rangeDataDelayed.rng;
     gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
+}
+
+// return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
+bool NavEKF2_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow)
+{
+    // if the states have not been initialised or we have not received any beacon updates then return zeros
+    if (!statesInitialised || N_beacons == 0) {
+        return false;
+    }
+
+    // Ensure that beacons are not skipped due to calling this function at a rate lower than the updates
+    if (rngBcnFuseDataReportIndex >= N_beacons) {
+        rngBcnFuseDataReportIndex = 0;
+    }
+
+    // Output the fusion status data for the specified beacon
+    ID = rngBcnFuseDataReportIndex;                                             // beacon identifier
+    rng = rngBcnFusionReport[rngBcnFuseDataReportIndex].rng;                    // measured range to beacon (m)
+    innov = rngBcnFusionReport[rngBcnFuseDataReportIndex].innov;                // range innovation (m)
+    innovVar = rngBcnFusionReport[rngBcnFuseDataReportIndex].innovVar;          // innovation variance (m^2)
+    testRatio = rngBcnFusionReport[rngBcnFuseDataReportIndex].testRatio;        // innovation consistency test ratio
+    beaconPosNED = rngBcnFusionReport[rngBcnFuseDataReportIndex].beaconPosNED;  // beacon NED position
+    offsetHigh = bcnPosOffsetMax;                                               // beacon system vertical pos offset upper estimate
+    offsetLow = bcnPosOffsetMin;                                                // beacon system vertical pos offset lower estimate
+    rngBcnFuseDataReportIndex++;
+    return true;
 }
 
 // provides the height limit to be observed by the control loops
@@ -136,9 +154,8 @@ void NavEKF2_core::getTiltError(float &ang) const
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
 {
-    Vector3f trim = _ahrs->get_trim();
     outputDataNew.quat.rotation_matrix(mat);
-    mat.rotateXYinv(trim);
+    mat = mat * _ahrs->get_rotation_vehicle_body_to_autopilot_body();
 }
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
@@ -163,6 +180,14 @@ uint32_t NavEKF2_core::getLastPosNorthEastReset(Vector2f &pos) const
     return lastPosReset_ms;
 }
 
+// return the amount of vertical position change due to the last vertical position reset in metres
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF2_core::getLastPosDownReset(float &posD) const
+{
+    posD = posResetD;
+    return lastPosResetD_ms;
+}
+
 // return the amount of NE velocity change due to the last velocity reset in metres/sec
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t NavEKF2_core::getLastVelNorthEastReset(Vector2f &vel) const
@@ -180,18 +205,20 @@ void NavEKF2_core::getWind(Vector3f &wind) const
 }
 
 
-// return NED velocity in m/s
+// return the NED velocity of the body frame origin in m/s
 //
 void NavEKF2_core::getVelNED(Vector3f &vel) const
 {
-    vel = outputDataNew.velocity;
+    // correct for the IMU position offset (EKF calculations are at the IMU)
+    vel = outputDataNew.velocity + velOffsetNED;
 }
 
-// Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+// Return the rate of change of vertical position in the down diection (dPosD/dt) of the body frame origin in m/s
 float NavEKF2_core::getPosDownDerivative(void) const
 {
-    // return the value calculated from a complmentary filer applied to the EKF height and vertical acceleration
-    return posDownDerivative;
+    // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
+    // correct for the IMU offset (EKF calculations are at the IMU)
+    return posDownDerivative + velOffsetNED.z;
 }
 
 // This returns the specific forces in the NED frame
@@ -209,16 +236,18 @@ void NavEKF2_core::getAccelZBias(float &zbias) const {
     }
 }
 
-// Write the last estimated NE position relative to the reference point (m).
+// Write the last estimated NE position of the body frame origin relative to the reference point (m).
 // Return true if the estimate is valid
 bool NavEKF2_core::getPosNE(Vector2f &posNE) const
 {
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
     if (PV_AidingMode != AID_NONE) {
         // This is the normal mode of operation where we can use the EKF position states
-        posNE.x = outputDataNew.position.x;
-        posNE.y = outputDataNew.position.y;
+        // correct for the IMU offset (EKF calculations are at the IMU)
+        posNE.x = outputDataNew.position.x + posOffsetNED.x;
+        posNE.y = outputDataNew.position.y + posOffsetNED.y;
         return true;
+
     } else {
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
@@ -228,6 +257,11 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
                 Vector2f tempPosNE = location_diff(EKF_origin, gpsloc);
                 posNE.x = tempPosNE.x;
                 posNE.y = tempPosNE.y;
+                return false;
+            } else if (rngBcnAlignmentStarted) {
+                // If we are attempting alignment using range beacon data, then report the position
+                posNE.x = receiverPos.x;
+                posNE.y = receiverPos.y;
                 return false;
             } else {
                 // If no GPS fix is available, all we can do is provide the last known position
@@ -245,27 +279,28 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
     return false;
 }
 
-// Write the last calculated D position relative to the reference point (m).
-// Return true if the estimte is valid
+// Write the last calculated D position of the body frame origin relative to the reference point (m).
+// Return true if the estimate is valid
 bool NavEKF2_core::getPosD(float &posD) const
 {
     // The EKF always has a height estimate regardless of mode of operation
-    posD = outputDataNew.position.z;
+    // correct for the IMU offset (EKF calculations are at the IMU)
+    posD = outputDataNew.position.z + posOffsetNED.z;
 
     // Return the current height solution status
     return filterStatus.flags.vert_pos;
 
 }
-// return the estimated height above ground level
+// return the estimated height of body frame origin above ground level
 bool NavEKF2_core::getHAGL(float &HAGL) const
 {
-    HAGL = terrainState - outputDataNew.position.z;
+    HAGL = terrainState - outputDataNew.position.z - posOffsetNED.z;
     // If we know the terrain offset and altitude, then we have a valid height above ground estimate
     return !hgtTimeout && gndOffsetValid && healthy();
 }
 
 
-// Return the last calculated latitude, longitude and height in WGS-84
+// Return the last calculated latitude, longitude and height of the body frame origin in WGS-84
 // If a calculated location isn't available, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
@@ -281,7 +316,8 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
         if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
             loc.lat = EKF_origin.lat;
             loc.lng = EKF_origin.lng;
-            location_offset(loc, outputDataNew.position.x, outputDataNew.position.y);
+            // correct for IMU offset (EKF calculations are at the IMU position)
+            location_offset(loc, (outputDataNew.position.x + posOffsetNED.x), (outputDataNew.position.y + posOffsetNED.y));
             return true;
         } else {
             // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
@@ -294,7 +330,8 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
                 return true;
             } else {
                 // if no GPS fix, provide last known position before entering the mode
-                location_offset(loc, lastKnownPositionNE.x, lastKnownPositionNE.y);
+                // correct for IMU offset (EKF calculations are at the IMU position)
+                location_offset(loc, (lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
                 return false;
             }
         }
@@ -520,8 +557,18 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
     Vector2f offset;
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 
+    // Only report range finder normalised innovation levels if the EKF needs the data for primary
+    // height estimation or optical flow operation. This prevents false alarms at the GCS if a
+    // range finder is fitted for other applications
+    float temp;
+    if ((frontend->_useRngSwHgt > 0) || PV_AidingMode == AID_RELATIVE || flowDataValid) {
+        temp = sqrtf(auxRngTestRatio);
+    } else {
+        temp = 0.0f;
+    }
+
     // send message
-    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, magVar.length(), sqrtf(auxRngTestRatio));
+    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, magVar.length(), temp);
 
 }
 

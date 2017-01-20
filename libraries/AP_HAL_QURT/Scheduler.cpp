@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
 
@@ -173,7 +171,7 @@ void Scheduler::_run_timers(bool called_from_timer_thread)
     }
 
     // and the failsafe, if one is setup
-    if (_failsafe != NULL) {
+    if (_failsafe != nullptr) {
         _failsafe();
     }
 
@@ -205,7 +203,7 @@ void *Scheduler::_timer_thread(void *arg)
             hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 void Scheduler::_run_io(void)
@@ -244,7 +242,7 @@ void *Scheduler::_uart_thread(void *arg)
         ((UARTDriver *)hal.uartD)->timer_tick();
         ((UARTDriver *)hal.uartE)->timer_tick();
     }
-    return NULL;
+    return nullptr;
 }
 
 void *Scheduler::_io_thread(void *arg)
@@ -260,7 +258,7 @@ void *Scheduler::_io_thread(void *arg)
         // run registered IO processes
         sched->_run_io();
     }
-    return NULL;
+    return nullptr;
 }
 
 bool Scheduler::in_timerprocess() 

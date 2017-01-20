@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
@@ -43,14 +42,14 @@ enum aux_sw_func {
     AUXSW_CAMERA_TRIGGER =       9, // trigger camera servo or relay
     AUXSW_RANGEFINDER =         10, // allow enabling or disabling rangefinder in flight which helps avoid surface tracking when you are far above the ground
     AUXSW_FENCE =               11, // allow enabling or disabling fence in flight
-    AUXSW_RESETTOARMEDYAW =     12, // changes yaw to be same as when quad was armed
+    AUXSW_RESETTOARMEDYAW =     12, // deprecated.  changes yaw to be same as when quad was armed
     AUXSW_SUPERSIMPLE_MODE =    13, // change to simple mode in middle, super simple at top
     AUXSW_ACRO_TRAINER =        14, // low = disabled, middle = leveled, high = leveled and limited
     AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
     AUXSW_AUTO =                16, // change to auto flight mode
     AUXSW_AUTOTUNE =            17, // auto tune
     AUXSW_LAND =                18, // change to LAND flight mode
-    AUXSW_EPM =                 19, // Operate the EPM cargo gripper low=off, middle=neutral, high=on
+    AUXSW_GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
     AUXSW_PARACHUTE_ENABLE  =   21, // Parachute enable/disable
     AUXSW_PARACHUTE_RELEASE =   22, // Parachute release
     AUXSW_PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
@@ -69,19 +68,15 @@ enum aux_sw_func {
     AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
     AUXSW_THROW =               37,  // change to THROW flight mode
     AUXSW_AVOID_ADSB =          38,  // enable AP_Avoidance library
+    AUXSW_PRECISION_LOITER =    39,  // enable precision loiter
+    AUXSW_AVOID_PROXIMITY =     40,  // enable object avoidance using proximity sensors (ie. horizontal lidar)
+    AUXSW_SWITCH_MAX,
 };
 
 // Frame types
 #define UNDEFINED_FRAME 0
-#define QUAD_FRAME 1
-#define TRI_FRAME 2
-#define HEXA_FRAME 3
-#define Y6_FRAME 4
-#define OCTA_FRAME 5
-#define HELI_FRAME 6
-#define OCTA_QUAD_FRAME 7
-#define SINGLE_FRAME 8
-#define COAX_FRAME 9
+#define MULTICOPTER_FRAME 1
+#define HELI_FRAME 2
 
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
@@ -201,7 +196,8 @@ enum AutoMode {
     Auto_Circle,
     Auto_Spline,
     Auto_NavGuided,
-    Auto_Loiter
+    Auto_Loiter,
+    Auto_NavPayloadPlace,
 };
 
 // Guided modes
@@ -276,6 +272,25 @@ enum LandStateType {
     LandStateType_Descending = 1
 };
 
+enum PayloadPlaceStateType {
+    PayloadPlaceStateType_FlyToLocation,
+    PayloadPlaceStateType_Calibrating_Hover_Start,
+    PayloadPlaceStateType_Calibrating_Hover,
+    PayloadPlaceStateType_Descending_Start,
+    PayloadPlaceStateType_Descending,
+    PayloadPlaceStateType_Releasing_Start,
+    PayloadPlaceStateType_Releasing,
+    PayloadPlaceStateType_Released,
+    PayloadPlaceStateType_Ascending_Start,
+    PayloadPlaceStateType_Ascending,
+    PayloadPlaceStateType_Done,
+};
+
+// bit options for DEV_OPTIONS parameter
+enum DevOptions {
+    DevOptionADSBMAVLink = 1,
+};
+
 //  Logging parameters
 #define TYPE_AIRSTART_MSG               0x00
 #define TYPE_GROUNDSTART_MSG            0x01
@@ -301,6 +316,8 @@ enum LandStateType {
 #define LOG_PRECLAND_MSG                0x21
 #define LOG_GUIDEDTARGET_MSG            0x22
 #define LOG_THROW_MSG                   0x23
+#define LOG_PROXIMITY_MSG               0x24
+#define LOG_BEACON_MSG                  0x25
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -355,8 +372,8 @@ enum LandStateType {
 #define DATA_ACRO_TRAINER_DISABLED          43
 #define DATA_ACRO_TRAINER_LEVELING          44
 #define DATA_ACRO_TRAINER_LIMITED           45
-#define DATA_EPM_GRAB                       46
-#define DATA_EPM_RELEASE                    47
+#define DATA_GRIPPER_GRAB                   46
+#define DATA_GRIPPER_RELEASE                47
 #define DATA_PARACHUTE_DISABLED             49
 #define DATA_PARACHUTE_ENABLED              50
 #define DATA_PARACHUTE_RELEASED             51
@@ -373,6 +390,8 @@ enum LandStateType {
 #define DATA_EKF_YAW_RESET                  62
 #define DATA_AVOIDANCE_ADSB_ENABLE          63
 #define DATA_AVOIDANCE_ADSB_DISABLE         64
+#define DATA_AVOIDANCE_PROXIMITY_ENABLE     65
+#define DATA_AVOIDANCE_PROXIMITY_DISABLE    66
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -401,6 +420,7 @@ enum LandStateType {
 #define ERROR_SUBSYSTEM_TERRAIN             21
 #define ERROR_SUBSYSTEM_NAVIGATION          22
 #define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
+#define ERROR_SUBSYSTEM_EKF_PRIMARY         24
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_Rally.h
 /// @brief   Handles rally point storage and retrieval.
 #include "AP_Rally.h"

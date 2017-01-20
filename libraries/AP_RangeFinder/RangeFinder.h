@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -48,7 +47,10 @@ public:
         RangeFinder_TYPE_LWI2C  = 7,
         RangeFinder_TYPE_LWSER  = 8,
         RangeFinder_TYPE_BEBOP  = 9,
-        RangeFinder_TYPE_MAVLink = 10
+        RangeFinder_TYPE_MAVLink = 10,
+        RangeFinder_TYPE_ULANDING= 11,
+        RangeFinder_TYPE_LEDDARONE = 12,
+        RangeFinder_TYPE_MBSER  = 13
     };
 
     enum RangeFinder_Function {
@@ -92,6 +94,7 @@ public:
     AP_Int8  _ground_clearance_cm[RANGEFINDER_MAX_INSTANCES];
     AP_Int8  _address[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _powersave_range;
+    AP_Vector3f _pos_offset[RANGEFINDER_MAX_INSTANCES]; // position offset in body frame
 
     static const struct AP_Param::GroupInfo var_info[];
     
@@ -112,6 +115,10 @@ public:
 
 #define _RangeFinder_STATE(instance) state[instance]
 
+    uint8_t get_primary(void) const {
+        return primary_instance;
+    }
+    
     uint16_t distance_cm(uint8_t instance) const {
         return (instance<num_instances? _RangeFinder_STATE(instance).distance_cm : 0);
     }
@@ -181,6 +188,14 @@ public:
      */
     bool pre_arm_check() const;
 
+    // return a 3D vector defining the position offset of the sensor in metres relative to the body frame origin
+    const Vector3f &get_pos_offset(uint8_t instance) const {
+        return _pos_offset[instance];
+    }
+    const Vector3f &get_pos_offset(void) const {
+        return _pos_offset[primary_instance];
+    }
+
 private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
@@ -193,5 +208,5 @@ private:
     void update_instance(uint8_t instance);  
 
     void update_pre_arm_check(uint8_t instance);
-    void _add_backend(AP_RangeFinder_Backend *driver);
+    bool _add_backend(AP_RangeFinder_Backend *driver);
 };

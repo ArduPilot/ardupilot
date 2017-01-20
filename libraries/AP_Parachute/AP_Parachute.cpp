@@ -1,9 +1,8 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "AP_Parachute.h"
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_HAL/AP_HAL.h>
 
@@ -109,7 +108,7 @@ void AP_Parachute::update()
         if (time_diff >= delay_ms) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
-                RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_on_pwm);
+                SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_on_pwm);
             }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
                 // set relay
                 _relay.on(_release_type);
@@ -120,7 +119,7 @@ void AP_Parachute::update()
     }else if ((_release_time == 0) || time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             // move servo back to off position
-            RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_off_pwm);
+            SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_off_pwm);
         }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
             // set relay back to zero volts
             _relay.off(_release_type);

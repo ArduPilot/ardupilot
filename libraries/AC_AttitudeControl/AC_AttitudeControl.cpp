@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "AC_AttitudeControl.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -482,8 +480,12 @@ float AC_AttitudeControl::input_shaping_angle(float error_angle, float smoothing
     float ang_vel = sqrt_controller(error_angle, smoothing_gain, accel_max);
 
     // Acceleration is limited directly to smooth the beginning of the curve.
-    float delta_ang_vel = accel_max * _dt;
-    return constrain_float(ang_vel, target_ang_vel-delta_ang_vel, target_ang_vel+delta_ang_vel);
+    if (accel_max > 0) {
+        float delta_ang_vel = accel_max * _dt;
+        return constrain_float(ang_vel, target_ang_vel-delta_ang_vel, target_ang_vel+delta_ang_vel);
+    } else {
+        return ang_vel;
+    }
 }
 
 // limits the acceleration and deceleration of a velocity request
@@ -738,7 +740,7 @@ float AC_AttitudeControl::max_rate_step_bf_roll()
 {
     float alpha = get_rate_roll_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_roll_pid().kD())/_dt + get_rate_roll_pid().kP());
+    return 2.0f*_motors.get_throttle_hover()*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_roll_pid().kD())/_dt + get_rate_roll_pid().kP());
 }
 
 // Return pitch rate step size in centidegrees/s that results in maximum output after 4 time steps
@@ -746,7 +748,7 @@ float AC_AttitudeControl::max_rate_step_bf_pitch()
 {
     float alpha = get_rate_pitch_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_pitch_pid().kD())/_dt + get_rate_pitch_pid().kP());
+    return 2.0f*_motors.get_throttle_hover()*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_pitch_pid().kD())/_dt + get_rate_pitch_pid().kP());
 }
 
 // Return yaw rate step size in centidegrees/s that results in maximum output after 4 time steps
@@ -754,5 +756,5 @@ float AC_AttitudeControl::max_rate_step_bf_yaw()
 {
     float alpha = get_rate_yaw_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_yaw_pid().kD())/_dt + get_rate_yaw_pid().kP());
+    return 2.0f*_motors.get_throttle_hover()*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_yaw_pid().kD())/_dt + get_rate_yaw_pid().kP());
 }

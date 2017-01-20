@@ -1,3 +1,163 @@
+Release 3.1.0, 22 December 2016
+===============================
+The ArduPilot development team is proud to announce the release of
+version 3.1.0 of APM:Rover. This is a major release with a lot of
+changes so please read the notes carefully!
+
+A huge thanks to ALL the ArduPilot developers.  The Rover code
+benefits tremendously from all the hard work that goes into the Copter
+and Plane vehicle code.  Most of the code changes in this
+release were not specifically for Rover however because of the
+fantastic architecture of the ArduPilot code Rover automatically gets
+those enhancements anyway.
+
+Note that the documentation hasn't yet caught up with all the changes
+in this release. We are still working on that, but meanwhile if you
+see a feature that interests you and it isn't documented yet then
+please ask.
+
+The PX4-v2 build has had CANBUS support removed due to firmware size
+issues.  If Rover users want CANBUS support you will need to install
+the PX4-v3 build located in the firmware folder here:
+http://firmware.ap.ardupilot.org/Rover/stable/PX4/
+
+EKF1 has been removed as EKF2 has been the long term default and is
+working extremely well and this has allowed room for EKF3.
+
+EKF3 is included in this release but it is not the default.  Should
+you want to experiment with it set the following parameters:
+AHRS_EKF_TYPE=3
+EK3_ENABLE=1
+but note it is still experimental and you must fully understand the
+implications.
+
+New GUIDED Command
+------------------
+Rover now accepts a new message MAV_CMD_NAV_SET_YAW_SPEED which has an
+angle in centidegrees and a speed scale and the rover will drive based
+on these inputs.
+
+The ArduPilot team would like to thank EnRoute for the sponsoring of
+this feature
+http://enroute.co.jp/
+
+COMMAND_INT and ROI Commands
+----------------------------
+COMMAND_INT support has been added to Rover.  This has allowed the
+implementation of SET_POSITION_TARGET_GLOBAL_INT, 
+SET_POSITION_TARGET_LOCAL_NED and DO_SET_ROI as a COMMAND_INT
+
+The ArduPilot team would like to thank EnRoute for the sponsoring of
+this feature
+http://enroute.co.jp/
+
+Reverse
+-------
+Its now possible in a mission to tell the rover to drive in
+Reverse. If using Mission Planner insert a new Waypoint using "Add
+Below" button on the Flight Plan screen and select from the Command
+drop down list you will see a new command "DO_SET_REVERSE". It takes 1
+parameter - 0 for forward, 1 for reverse. It's that simple. Please give
+it a try and report back any success or issues found or any questions
+as well.
+
+The ArduPilot team would like to thank the Institute for Intelligent
+Systems Research at Deakin University
+(http://www.deakin.edu.au/research/iisri16) for the sponsoring of the
+reverse functionality.
+
+Loiter
+------
+This changes brings the LOITER commands in line with other ArduPilot
+vehicles so both NAV_LOITER_UNLIM and NAV_LOITER_TIME are supported and are
+actively loitering. This means for instance if you have set a boat to
+loiter at a particular position and the water current pushes the boat off
+that position once the boat has drifted further then the WP_RADIUS
+parameter distance setting from the position the motor(s) will be
+engaged and the boat will return to the loiter position.
+
+The ArduPilot team would like to thanko MarineTech for sponsoring this
+enhancement.
+http://www.marinetech.fr
+
+Note: if you currently use Param1 of a NAV_WAYPOINT to loiter at a
+waypoint this functionality has not changed and is NOT actively loitering.
+
+Crash Check
+-----------
+Rover can now detect a crash in most circumstances - thanks Pierre
+Kancir. It is enabled by default and will change the vehicle into HOLD
+mode if a crash is detected.  FS_CRASH_CHECK is the parameter used to
+control what action to take on a crash detection and it supports
+0:Disabled, 1:HOLD, 2:HoldAndDisarm
+
+Pixhawk2 heated IMU support
+---------------------------
+This release adds support for the IMU heater in the Pixhawk2,
+allowing for more stable IMU temperatures. The Pixhawk2 is
+automatically detected and the heater enabled at boot, with the target
+IMU temperature controllable via BRD_IMU_TARGTEMP.
+Using an IMU heater should improve IMU stability in environments with
+significant temperature changes.
+
+PH2SLIM Support
+---------------
+This release adds support for the PH2SLIM variant of the Pixhawk2,
+which is a Pixhawk2 cube without the isolated sensor top board. This
+makes for a very compact autopilot for small aircraft. To enable
+PH2SLIM support set the BRD_TYPE parameter to 6 using a GCS connected
+on USB.
+
+AP_Module Support
+-----------------
+This is the first release of ArduPilot with loadable module support
+for Linux based boards. The AP_Module system allows for externally
+compiled modules to access sensor data from ArduPilot controlled
+sensors. The initial AP_Module support is aimed at vendors integrating
+high-rate digital image stabilisation using IMU data, but it is
+expected this will be expanded to other use cases in future releases.
+
+Major VRBrain Support Update
+----------------------------
+This release includes a major merge of support for the VRBrain family
+of autopilots. Many thanks to the great work by Luke Mike in putting
+together this merge!
+
+Much Faster Boot Time
+---------------------
+Boot times on Pixhawk are now much faster due to a restructuring of
+the driver startup code, with slow starting drivers not started unless
+they are enabled with the appropriate parameters. The restructuring
+also allows for support of a wide variety of board types, including
+the PH2SLIM above.
+
+This release includes many other updates right across the flight
+stack, including several new features. Some of the changes include:
+
+ - log all rally points on startup
+ - the armed state is now logged
+ - support added for MAV_CMD_ACCELCAL_VEHICLE_POS
+ - support MAVLink based external GPS device
+ - support LED_CONTROL MAVLink message
+ - support PLAY_TUNE MAVLink message
+ - added AP_Button support for remote button input reporting
+ - support 16 channel SERVO_OUTPUT_RAW in MAVLink2
+ - added MAVLink reporting of logging subsystem health
+ - added BRD_SAFETY_MASK to allow for channel movement for selected channels with safety on
+ - lots of HAL_Linux improvements to bus and thread handling
+ - added IMU heater support on Pixhawk2
+ - allow for faster accel bias learning in EKF2
+ - added AP_Module support for loadable modules
+ - merged support for wide range of VRBrain boards
+ - added support for PH2SLIM and PHMINI boards with BRD_TYPE
+ - greatly reduced boot time on Pixhawk and similar boards
+ - fixed magic check for signing key in MAVLink2
+ - fixed averaging of gyros for EKF2 gyro bias estimate
+ - added support for ParametersG2
+ - support added for the GPS_INPUT mavlink message
+ 
+ 
+
 Release 3.0.1, 17 June 2016
 ===========================
 The ArduPilot development team is proud to announce the release of
