@@ -343,34 +343,36 @@ void AP_Arming_Copter::pre_arm_rc_checks()
         return;
     }
 
-    RC_Channel *&channel_roll = copter.channel_roll;
-    RC_Channel *&channel_pitch = copter.channel_pitch;
-    RC_Channel *&channel_throttle = copter.channel_throttle;
-    RC_Channel *&channel_yaw = copter.channel_yaw;
-
     // check if radio has been calibrated
-    if (!channel_throttle->min_max_configured()) {
+    if (!copter.channel_throttle->min_max_configured()) {
         return;
     }
 
-    // check channels 1 & 2 have min <= 1300 and max >= 1700
-    if (channel_roll->get_radio_min() > 1300 || channel_roll->get_radio_max() < 1700 || channel_pitch->get_radio_min() > 1300 || channel_pitch->get_radio_max() < 1700) {
-        return;
-    }
+    const RC_Channel *channels[] = {
+        copter.channel_roll,
+        copter.channel_pitch,
+        copter.channel_throttle,
+        copter.channel_yaw
+    };
 
-    // check channels 3 & 4 have min <= 1300 and max >= 1700
-    if (channel_throttle->get_radio_min() > 1300 || channel_throttle->get_radio_max() < 1700 || channel_yaw->get_radio_min() > 1300 || channel_yaw->get_radio_max() < 1700) {
-        return;
-    }
-
-    // check channels 1 & 2 have trim >= 1300 and <= 1700
-    if (channel_roll->get_radio_trim() < 1300 || channel_roll->get_radio_trim() > 1700 || channel_pitch->get_radio_trim() < 1300 || channel_pitch->get_radio_trim() > 1700) {
-        return;
-    }
-
-    // check channel 4 has trim >= 1300 and <= 1700
-    if (channel_yaw->get_radio_trim() < 1300 || channel_yaw->get_radio_trim() > 1700) {
-        return;
+    for (uint8_t i=0; i<ARRAY_SIZE(channels);i++) {
+        const RC_Channel *channel = channels[i];
+        if (channel->get_radio_min() > 1300) {
+            return;
+        }
+        if (channel->get_radio_max() < 1700) {
+            return;
+        }
+        if (i == 2) {
+            // skip checking trim for throttle as older code did not check it
+            continue;
+        }
+        if (channel->get_radio_trim() < channel->get_radio_min()) {
+            return;
+        }
+        if (channel->get_radio_trim() > channel->get_radio_max()) {
+            return;
+        }
     }
 
     // if we've gotten this far rc is ok
