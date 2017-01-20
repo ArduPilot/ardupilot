@@ -160,7 +160,8 @@ void AP_Notify::init(bool enable_external_leds)
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
 
-    // clear text buffer
+    // clear flight mode string and text buffer
+    memset(_flight_mode_str, 0, sizeof(_flight_mode_str));
     memset(_send_text, 0, sizeof(_send_text));
 
     AP_Notify::flags.external_leds = enable_external_leds;
@@ -196,6 +197,13 @@ void AP_Notify::handle_play_tune(mavlink_message_t *msg)
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->handle_play_tune(msg);
     }
+}
+
+// set flight mode string
+void AP_Notify::set_flight_mode_str(const char *str)
+{
+    strncpy(_flight_mode_str, str, 4);
+    _flight_mode_str[sizeof(_flight_mode_str)-1] = 0;
 }
 
 void AP_Notify::send_text(const char *str)

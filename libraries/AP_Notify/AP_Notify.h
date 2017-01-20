@@ -120,6 +120,10 @@ public:
 
     bool buzzer_enabled() const { return _buzzer_enable; }
 
+    // set flight mode string
+    void set_flight_mode_str(const char *str);
+    const char* get_flight_mode_str() const { return _flight_mode_str; }
+
     // send text to display
     void send_text(const char *str);
     const char* get_text() const { return _send_text; }
@@ -135,6 +139,7 @@ private:
     AP_Int8 _display_type;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
+    char _flight_mode_str[5];
 
     static NotifyDevice* _devices[];
 };
