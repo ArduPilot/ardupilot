@@ -350,13 +350,13 @@ public:
     static bool             check_var_info(void);
 
     // return true if the parameter is configured in the defaults file
-    bool configured_in_defaults_file(void);
+    bool configured_in_defaults_file(void) const;
 
     // return true if the parameter is configured in EEPROM/FRAM
-    bool configured_in_storage(void);
+    bool configured_in_storage(void) const;
 
     // return true if the parameter is configured
-    bool configured(void) { return configured_in_defaults_file() || configured_in_storage(); }
+    bool configured(void) const { return configured_in_defaults_file() || configured_in_storage(); }
 
     // count of parameters in tree
     static uint16_t count_parameters(void);
