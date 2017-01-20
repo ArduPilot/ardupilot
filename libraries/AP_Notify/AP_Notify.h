@@ -117,8 +117,6 @@ public:
 
     // handle a PLAY_TUNE message
     static void handle_play_tune(mavlink_message_t* msg);
-    
-    static const struct AP_Param::GroupInfo var_info[];
 
     bool buzzer_enabled() const { return _buzzer_enable; }
 
@@ -126,13 +124,17 @@ public:
     void send_text(const char *str);
     const char* get_text() const { return _send_text; }
 
-private:
-    static NotifyDevice* _devices[];
+    static const struct AP_Param::GroupInfo var_info[];
 
+private:
+
+    // parameters
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
     AP_Int8 _display_type;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
+
+    static NotifyDevice* _devices[];
 };
