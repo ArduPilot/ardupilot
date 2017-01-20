@@ -77,7 +77,6 @@ AP_Notify::AP_Notify()
 // static flags, to allow for direct class update from device drivers
 struct AP_Notify::notify_flags_and_values_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
-char AP_Notify::_send_text[NOTIFY_TEXT_BUFFER_SIZE] {};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_BoardLED boardled;

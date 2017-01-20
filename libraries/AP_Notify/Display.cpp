@@ -555,7 +555,7 @@ void Display::update_text(uint8_t r)
     char msg [DISPLAY_MESSAGE_SIZE];
     char txt [NOTIFY_TEXT_BUFFER_SIZE];
 
-    snprintf(txt, NOTIFY_TEXT_BUFFER_SIZE, "%s", AP_Notify::get_text());
+    snprintf(txt, NOTIFY_TEXT_BUFFER_SIZE, "%s", pNotify->get_text());
     _mstartpos++;
     for (uint8_t i = 0; i < sizeof(msg); i++) {
         if (txt[i + _mstartpos - 1] != 0) {
