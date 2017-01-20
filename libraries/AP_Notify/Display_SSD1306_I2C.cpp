@@ -27,7 +27,7 @@ Display_SSD1306_I2C::Display_SSD1306_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev) :
 
 bool Display_SSD1306_I2C::hw_init()
 {
-    struct {
+    struct PACKED {
         uint8_t reg;
         uint8_t seq[31];
     } init_seq = { 0x0,  {
