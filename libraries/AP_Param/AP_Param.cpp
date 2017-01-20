@@ -1070,7 +1070,7 @@ bool AP_Param::load(void)
     return true;
 }
 
-bool AP_Param::configured_in_storage(void)
+bool AP_Param::configured_in_storage(void) const
 {
     uint32_t group_element = 0;
     const struct GroupInfo *ginfo;
@@ -1100,7 +1100,7 @@ bool AP_Param::configured_in_storage(void)
     return scan(&phdr, &ofs) && (phdr.type == AP_PARAM_VECTOR3F || idx == 0);
 }
 
-bool AP_Param::configured_in_defaults_file(void)
+bool AP_Param::configured_in_defaults_file(void) const
 {
     uint32_t group_element = 0;
     const struct GroupInfo *ginfo;
