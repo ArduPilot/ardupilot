@@ -17,7 +17,7 @@ public:
 
     void update(void);
     bool all_checks_passing(bool arming_from_gcs);
-    void pre_arm_rc_checks();
+    void pre_arm_rc_checks(bool display_failure);
 
 protected:
 
