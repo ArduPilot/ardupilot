@@ -124,7 +124,7 @@ void Plane::read_battery(void)
         low_battery_event();
     }
     if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
-        AP_Notify::flags.battery_voltage = battery.voltage(); //for on-board oled display
+        AP_Notify::flags.battery_voltage = battery.voltage();
     }
     
     if (should_log(MASK_LOG_CURRENT)) {
