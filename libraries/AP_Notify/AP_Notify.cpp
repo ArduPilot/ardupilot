@@ -31,7 +31,7 @@
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
-#include <stdio.h>  // for strncpy
+#include <stdio.h>
 
 
 // table of user settable parameters
