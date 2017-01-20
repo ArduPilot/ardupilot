@@ -1064,6 +1064,7 @@ private:
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
+    void notify_flight_mode(enum FlightMode mode);
     void run_cli(AP_HAL::UARTDriver *port);
     void log_init();
     void init_capabilities(void);
