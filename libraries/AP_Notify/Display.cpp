@@ -20,7 +20,7 @@
 
 #include "AP_Notify.h"
 
-#include <stdio.h>  // for snprintf
+#include <stdio.h>
 #include <AP_GPS/AP_GPS.h>
 
 static const uint8_t _font[] = {
