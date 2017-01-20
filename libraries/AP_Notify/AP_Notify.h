@@ -122,16 +122,17 @@ public:
 
     bool buzzer_enabled() const { return _buzzer_enable; }
 
-    static void send_text(const char *str);
-    static char* get_text() { return _send_text; }
+    // send text to display
+    void send_text(const char *str);
+    const char* get_text() const { return _send_text; }
 
 private:
     static NotifyDevice* _devices[];
 
-    static char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
     AP_Int8 _display_type;
 
+    char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
 };
