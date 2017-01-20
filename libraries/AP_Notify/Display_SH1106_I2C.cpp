@@ -86,8 +86,10 @@ void Display_SH1106_I2C::_timer()
 
     struct PACKED {
         uint8_t reg;
-        uint8_t cmd[3];
-    } command = { 0x0, {0x02 /* |= column[0:3] */, 0x10 /* |= column[4:7] */, 0xB0 /* |= page */} };
+        uint8_t column_0_3;
+        uint8_t column_4_7;
+        uint8_t page;
+    } command = { 0x0, 0x2, 0x10, 0xB0 };
 
     struct PACKED {
         uint8_t reg;
@@ -96,7 +98,7 @@ void Display_SH1106_I2C::_timer()
 
     // write buffer to display
     for (uint8_t i = 0; i < (SH1106_ROWS / SH1106_ROWS_PER_PAGE); i++) {
-        command.cmd[2] = 0xB0 | (i & 0x0F);
+        command.page = 0xB0 | (i & 0x0F);
         _dev->transfer((uint8_t *)&command, sizeof(command), nullptr, 0);
 
         memcpy(&display_buffer.db[0], &_displaybuffer[i * SH1106_COLUMNS], SH1106_COLUMNS/2);
