@@ -42,11 +42,6 @@ AP_GPS_PX4::~AP_GPS_PX4()
 	orb_unsubscribe(_gps_sub);
 }
 
-
-const uint64_t MS_PER_WEEK            = ((uint64_t)7)*24*3600*1000;
-const uint64_t DELTA_POSIX_GPS_EPOCH  = ((uint64_t)3657)*24*3600*1000;
-const uint64_t LEAP_MS_GPS_2016       = ((uint64_t)17)*1000;
-
 // update internal state if new GPS information is available
 bool
 AP_GPS_PX4::read(void)
@@ -72,10 +67,12 @@ AP_GPS_PX4::read(void)
 
                 // convert epoch timestamp back to gps epoch - evil hack until we get the genuine
                 // raw week information (or APM switches to Posix epoch ;-) )
+                const uint64_t posix_offset = 3657ULL * 24 * 3600 * 1000 - GPS_LEAPSECONDS_MILLIS;
+                const uint64_t ms_per_week = 7ULL * 24 * 3600 * 1000;
                 uint64_t epoch_ms = _gps_pos.time_utc_usec/1000;
-                uint64_t gps_ms = epoch_ms - DELTA_POSIX_GPS_EPOCH + LEAP_MS_GPS_2016;
-                state.time_week = (uint16_t)(gps_ms / MS_PER_WEEK);
-                state.time_week_ms = (uint32_t)(gps_ms - (state.time_week)*MS_PER_WEEK);
+                uint64_t gps_ms = epoch_ms - posix_offset;
+                state.time_week = (uint16_t)(gps_ms / ms_per_week);
+                state.time_week_ms = (uint32_t)(gps_ms - (state.time_week) * ms_per_week);
 
                 if (_gps_pos.time_utc_usec == 0) {
                   // This is a work-around for https://github.com/PX4/Firmware/issues/1474
