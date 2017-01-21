@@ -21,7 +21,7 @@ void setup(void)
     // setup any board specific drivers
     BoardConfig.init();
 
-    hal.console->println("AP_InertialSensor startup...");
+    hal.console->printf("AP_InertialSensor startup...\n");
 
     ins.init(100);
 
@@ -33,15 +33,15 @@ void setup(void)
     hal.console->printf("Number of detected accels : %u\n", ins.get_accel_count());
     hal.console->printf("Number of detected gyros  : %u\n\n", ins.get_gyro_count());
 
-    hal.console->println("Complete. Reading:");
+    hal.console->printf("Complete. Reading:\n");
 }
 
 void loop(void)
 {
     int16_t user_input;
 
-    hal.console->println();
-    hal.console->println(
+    hal.console->printf("\n");
+    hal.console->printf("%s\n",
     "Menu:\n"
     "    d) display offsets and scaling\n"
     "    l) level (capture offsets from level)\n"
