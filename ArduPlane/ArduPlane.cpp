@@ -103,8 +103,6 @@ void Plane::setup()
 
     AP_Notify::flags.failsafe_battery = false;
 
-    notify.init(false);
-
     rssi.init();
 
     init_ardupilot();

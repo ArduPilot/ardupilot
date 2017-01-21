@@ -131,6 +131,10 @@ void Plane::init_ardupilot()
     // setup any board specific drivers
     BoardConfig.init();
 
+    // initialise notify system
+    notify.init(false);
+    notify_flight_mode(control_mode);
+
     init_rc_out_main();
     
     // allow servo set on all channels except first 4
