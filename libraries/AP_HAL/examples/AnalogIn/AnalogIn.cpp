@@ -15,7 +15,7 @@ void loop (void)
 {
     float v  = ch->voltage_average(); 
     if (pin == 0) {
-	    hal.console->println();
+	    hal.console->printf("\n");
     }
     hal.console->printf("[%u %.3f] ",
 			  (unsigned)pin, v);
