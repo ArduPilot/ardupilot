@@ -1005,7 +1005,7 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
         }
     }
 #endif
-    port->println();    
+    port->printf("\n");
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX

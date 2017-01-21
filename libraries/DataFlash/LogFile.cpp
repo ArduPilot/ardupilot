@@ -119,14 +119,14 @@ uint16_t DataFlash_Block::start_new_log(void)
     uint16_t last_page = find_last_page();
 
     StartRead(last_page);
-    //Serial.print("last page: "); Serial.println(last_page);
-    //Serial.print("file #: ");    Serial.println(GetFileNumber());
-    //Serial.print("file page: "); Serial.println(GetFilePage());
+    //Serial.printf("last page: "); Serial.printf("%u\n", last_page);
+    //Serial.printf("file #: ");    Serial.printf("%u\n", GetFileNumber());
+    //Serial.printf("file page: "); Serial.printf("%u\n", GetFilePage());
 
     if(find_last_log() == 0 || GetFileNumber() == 0xFFFF) {
         SetFileNumber(1);
         StartWrite(1);
-        //Serial.println("start log from 0");
+        //Serial.printf("start log from 0\n");
         log_write_started = true;
         return 1;
     }
@@ -497,7 +497,7 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
             port->printf(", ");
         }
     }
-    port->println();
+    port->printf("\n");
 }
 
 /*
@@ -594,7 +594,7 @@ void DataFlash_Block::DumpPageInfo(AP_HAL::BetterStream *port)
 void DataFlash_Block::ShowDeviceInfo(AP_HAL::BetterStream *port)
 {
     if (!CardInserted()) {
-        port->println("No dataflash inserted");
+        port->printf("No dataflash inserted\n");
         return;
     }
     ReadManufacturerID();
@@ -635,7 +635,7 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
             break;
         }
     }
-    port->println();
+    port->printf("\n");
 }
 
 // This function starts a new log file in the DataFlash, and writes

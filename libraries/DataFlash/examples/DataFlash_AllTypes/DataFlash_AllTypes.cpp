@@ -181,7 +181,7 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 
 void DataFlashTest_AllTypes::setup(void)
 {
-    hal.console->println("Dataflash All Types 1.0");
+    hal.console->printf("Dataflash All Types 1.0\n");
 
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
 
@@ -190,7 +190,7 @@ void DataFlashTest_AllTypes::setup(void)
     dataflash.ShowDeviceInfo(hal.console);
 
     if (dataflash.NeedPrep()) {
-        hal.console->println("Preparing dataflash...");
+        hal.console->printf("Preparing dataflash...\n");
         dataflash.Prep();
     }
 
