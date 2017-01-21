@@ -429,7 +429,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
 bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const
 {
     // exit immediately if index is beyond last command but we always let cmd #0 (i.e. home) be read
-    if (index > (unsigned)_cmd_total && index != 0) {
+    if (index >= (unsigned)_cmd_total && index != 0) {
         return false;
     }
 
