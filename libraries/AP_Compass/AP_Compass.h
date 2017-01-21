@@ -29,6 +29,12 @@
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
 
+// define default compass calibration fitness
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
+# define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
+#else
+# define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 8.0f
+#endif
 /**
    maximum number of compass instances available on this platform. If more
    than 1 then redundant sensors may be available
