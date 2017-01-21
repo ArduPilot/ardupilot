@@ -383,7 +383,7 @@ AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin)
             return _channels[j];
         }
     }
-    hal.console->println("Out of analog channels");
+    hal.console->printf("Out of analog channels\n");
     return nullptr;
 }
 
