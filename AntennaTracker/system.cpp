@@ -62,7 +62,7 @@ void Tracker::init_tracker()
 
     if (g.compass_enabled==true) {
         if (!compass.init() || !compass.read()) {
-            hal.console->println("Compass initialisation failed!");
+            hal.console->printf("Compass initialisation failed!\n");
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
