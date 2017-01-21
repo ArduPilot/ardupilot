@@ -35,7 +35,7 @@ static OpticalFlow optflow(vehicle.ahrs);
 
 void setup()
 {
-    hal.console->println("OpticalFlow library test ver 1.6");
+    hal.console->printf("OpticalFlow library test ver 1.6\n");
 
     hal.scheduler->delay(1000);
 
@@ -43,7 +43,7 @@ void setup()
     optflow.init();
 
     if (!optflow.healthy()) {
-        hal.console->print("Failed to initialise PX4Flow ");
+        hal.console->printf("Failed to initialise PX4Flow ");
     }
 
     hal.scheduler->delay(1000);
@@ -51,7 +51,7 @@ void setup()
 
 void loop()
 {
-    hal.console->println("this only tests compilation succeeds");
+    hal.console->printf("this only tests compilation succeeds\n");
 
     hal.scheduler->delay(5000);
 }
