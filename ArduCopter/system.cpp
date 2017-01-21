@@ -244,12 +244,12 @@ void Copter::init_ardupilot()
 #if CLI_ENABLED == ENABLED
     if (g.cli_enabled) {
         const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        cliSerial->println(msg);
+        cliSerial->printf("%s\n", msg);
         if (gcs[1].initialised && (gcs[1].get_uart() != nullptr)) {
-            gcs[1].get_uart()->println(msg);
+            gcs[1].get_uart()->printf("%s\n", msg);
         }
         if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != nullptr)) {
-            gcs[2].get_uart()->println(msg);
+            gcs[2].get_uart()->printf("%s\n", msg);
         }
     }
 #endif // CLI_ENABLED
@@ -307,7 +307,7 @@ void Copter::init_ardupilot()
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
 
-    cliSerial->print("\nReady to FLY ");
+    cliSerial->printf("\nReady to FLY ");
 
     // flag that initialisation has completed
     ap.initialised = true;

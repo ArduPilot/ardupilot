@@ -69,7 +69,7 @@ int8_t Copter::setup_set(uint8_t argc, const Menu::arg *argv)
 
     if(argc!=3)
     {
-        cliSerial->println("Invalid command. Usage: set <name> <value>");
+        cliSerial->printf("Invalid command. Usage: set <name> <value>\n");
         return 0;
     }
 
@@ -178,7 +178,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	
     set_mask = strtol (argv[1].str, nullptr, 2);
 	if (set_mask == 0)
-		cliSerial->print("no channels chosen");
+		cliSerial->printf("no channels chosen");
     //cliSerial->printf("\n%d\n",set_mask);
     set_mask<<=1;
 	/* wait 50 ms */
@@ -224,7 +224,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	motors->armed(true);
 
 
-	cliSerial->println("Outputs armed");
+	cliSerial->printf("Outputs armed\n");
 
 
 	/* wait for user confirmation */
@@ -286,7 +286,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	/* disarm */
 	motors->armed(false);
     
-	cliSerial->println("Outputs disarmed");
+	cliSerial->printf("Outputs disarmed\n");
 
 	cliSerial->printf("%s finished\n", strEscCalib);
 
@@ -305,25 +305,25 @@ void Copter::report_batt_monitor()
     if (battery.num_instances() == 0) {
         print_enabled(false);
     } else if (!battery.has_current()) {
-        cliSerial->print("volts");
+        cliSerial->printf("volts");
     } else {
-        cliSerial->print("volts and cur");
+        cliSerial->printf("volts and cur");
     }
     print_blanks(2);
 }
 
 void Copter::report_frame()
 {
-    cliSerial->println("Frame");
+    cliSerial->printf("Frame\n");
     print_divider();
-    cliSerial->println(get_frame_string());
+    cliSerial->printf("%s\n", get_frame_string());
 
     print_blanks(2);
 }
 
 void Copter::report_radio()
 {
-    cliSerial->println("Radio");
+    cliSerial->printf("Radio\n");
     print_divider();
     // radio
     print_radio_values();
@@ -332,7 +332,7 @@ void Copter::report_radio()
 
 void Copter::report_ins()
 {
-    cliSerial->println("INS");
+    cliSerial->printf("INS\n");
     print_divider();
 
     print_gyro_offsets();
@@ -342,7 +342,7 @@ void Copter::report_ins()
 
 void Copter::report_flight_modes()
 {
-    cliSerial->println("Flight modes");
+    cliSerial->printf("Flight modes\n");
     print_divider();
 
     for(int16_t i = 0; i < 6; i++ ) {
@@ -354,7 +354,7 @@ void Copter::report_flight_modes()
 void Copter::report_optflow()
 {
  #if OPTFLOW == ENABLED
-    cliSerial->println("OptFlow");
+    cliSerial->printf("OptFlow\n");
     print_divider();
 
     print_enabled(optflow.enabled());
@@ -381,9 +381,9 @@ void Copter::print_switch(uint8_t p, uint8_t m, bool b)
     print_flight_mode(cliSerial, m);
     cliSerial->printf(",\t\tSimple: ");
     if(b)
-        cliSerial->println("ON");
+        cliSerial->printf("ON\n");
     else
-        cliSerial->println("OFF");
+        cliSerial->printf("OFF\n");
 }
 
 void Copter::print_accel_offsets_and_scaling(void)
@@ -413,7 +413,7 @@ void Copter::print_gyro_offsets(void)
 // report_compass - displays compass information.  Also called by compassmot.pde
 void Copter::report_compass()
 {
-    cliSerial->println("Compass");
+    cliSerial->printf("Compass\n");
     print_divider();
 
     print_enabled(g.compass_enabled);
@@ -435,15 +435,15 @@ void Copter::report_compass()
     }
 
     // motor compensation
-    cliSerial->print("Motor Comp: ");
+    cliSerial->printf("Motor Comp: ");
     if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_DISABLED ) {
-        cliSerial->println("Off");
+        cliSerial->printf("Off\n");
     }else{
         if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_THROTTLE ) {
-            cliSerial->print("Throttle");
+            cliSerial->printf("Throttle");
         }
         if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_CURRENT ) {
-            cliSerial->print("Current");
+            cliSerial->printf("Current");
         }
         Vector3f motor_compensation;
         for (uint8_t i=0; i<compass.get_count(); i++) {
@@ -462,25 +462,25 @@ void Copter::print_blanks(int16_t num)
 {
     while(num > 0) {
         num--;
-        cliSerial->println("");
+        cliSerial->printf("\n");
     }
 }
 
 void Copter::print_divider(void)
 {
     for (int i = 0; i < 40; i++) {
-        cliSerial->print("-");
+        cliSerial->printf("-");
     }
-    cliSerial->println();
+    cliSerial->printf("\n");
 }
 
 void Copter::print_enabled(bool b)
 {
     if(b)
-        cliSerial->print("en");
+        cliSerial->printf("en");
     else
-        cliSerial->print("dis");
-    cliSerial->println("abled");
+        cliSerial->printf("dis");
+    cliSerial->printf("abled\n");
 }
 
 void Copter::report_version()

@@ -42,7 +42,7 @@ int8_t Copter::test_baro(uint8_t argc, const Menu::arg *argv)
         read_barometer();
 
         if (!barometer.healthy()) {
-            cliSerial->println("not healthy");
+            cliSerial->printf("not healthy\n");
         } else {
             cliSerial->printf("Alt: %0.2fm, Raw: %f Temperature: %.1f\n",
                                 (double)(baro_alt / 100.0f),
@@ -63,13 +63,13 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
     uint8_t medium_loopCounter = 0;
 
     if (!g.compass_enabled) {
-        cliSerial->print("Compass: ");
+        cliSerial->printf("Compass: ");
         print_enabled(false);
         return (0);
     }
 
     if (!compass.init()) {
-        cliSerial->println("Compass initialisation failed!");
+        cliSerial->printf("Compass initialisation failed!\n");
         return 0;
     }
 
@@ -125,7 +125,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
                                         (double)mag_ofs.y,
                                         (double)mag_ofs.z);
                 } else {
-                    cliSerial->println("compass not healthy");
+                    cliSerial->printf("compass not healthy\n");
                 }
                 counter=0;
             }
@@ -137,7 +137,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
 
     // save offsets. This allows you to get sane offset values using
     // the CLI before you go flying.
-    cliSerial->println("saving offsets");
+    cliSerial->printf("saving offsets\n");
     compass.save_offsets();
     return (0);
 }
@@ -146,12 +146,12 @@ int8_t Copter::test_ins(uint8_t argc, const Menu::arg *argv)
 {
     Vector3f gyro, accel;
     print_hit_enter();
-    cliSerial->println("INS");
+    cliSerial->printf("INS\n");
     delay(1000);
 
     ahrs.init();
     ins.init(scheduler.get_loop_rate_hz());
-    cliSerial->println("...done");
+    cliSerial->printf("...done\n");
 
     delay(50);
 
@@ -195,7 +195,7 @@ int8_t Copter::test_optflow(uint8_t argc, const Menu::arg *argv)
             }
         }
     } else {
-        cliSerial->print("OptFlow: ");
+        cliSerial->printf("OptFlow: ");
         print_enabled(false);
     }
     return (0);
@@ -210,14 +210,14 @@ int8_t Copter::test_relay(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     while(1) {
-        cliSerial->println("Relay on");
+        cliSerial->printf("Relay on\n");
         relay.on(0);
         delay(3000);
         if(cliSerial->available() > 0) {
             return (0);
         }
 
-        cliSerial->println("Relay off");
+        cliSerial->printf("Relay off\n");
         relay.off(0);
         delay(3000);
         if(cliSerial->available() > 0) {

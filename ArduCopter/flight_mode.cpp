@@ -369,58 +369,58 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case STABILIZE:
-        port->print("STABILIZE");
+        port->printf("STABILIZE");
         break;
     case ACRO:
-        port->print("ACRO");
+        port->printf("ACRO");
         break;
     case ALT_HOLD:
-        port->print("ALT_HOLD");
+        port->printf("ALT_HOLD");
         break;
     case AUTO:
-        port->print("AUTO");
+        port->printf("AUTO");
         break;
     case GUIDED:
-        port->print("GUIDED");
+        port->printf("GUIDED");
         break;
     case LOITER:
-        port->print("LOITER");
+        port->printf("LOITER");
         break;
     case RTL:
-        port->print("RTL");
+        port->printf("RTL");
         break;
     case CIRCLE:
-        port->print("CIRCLE");
+        port->printf("CIRCLE");
         break;
     case LAND:
-        port->print("LAND");
+        port->printf("LAND");
         break;
     case DRIFT:
-        port->print("DRIFT");
+        port->printf("DRIFT");
         break;
     case SPORT:
-        port->print("SPORT");
+        port->printf("SPORT");
         break;
     case FLIP:
-        port->print("FLIP");
+        port->printf("FLIP");
         break;
     case AUTOTUNE:
-        port->print("AUTOTUNE");
+        port->printf("AUTOTUNE");
         break;
     case POSHOLD:
-        port->print("POSHOLD");
+        port->printf("POSHOLD");
         break;
     case BRAKE:
-        port->print("BRAKE");
+        port->printf("BRAKE");
         break;
     case THROW:
-        port->print("THROW");
+        port->printf("THROW");
         break;
     case AVOID_ADSB:
-        port->print("AVOID_ADSB");
+        port->printf("AVOID_ADSB");
         break;
     case GUIDED_NOGPS:
-        port->print("GUIDED_NOGPS");
+        port->printf("GUIDED_NOGPS");
         break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);
