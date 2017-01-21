@@ -23,7 +23,7 @@ AP_Parachute parachute(relay);
 
 void setup()
 {
-    hal.console->println("AP_Parachute library test");
+    hal.console->printf("AP_Parachute library test\n");
 }
 
 void loop()
