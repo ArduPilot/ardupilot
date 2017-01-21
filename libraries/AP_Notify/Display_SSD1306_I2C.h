@@ -14,10 +14,10 @@ public:
     Display_SSD1306_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     bool hw_init() override;
-    bool hw_update() override;
-    bool set_pixel(uint16_t x, uint16_t y) override;
-    bool clear_pixel(uint16_t x, uint16_t y) override;
-    bool clear_screen() override;
+    void hw_update() override;
+    void set_pixel(uint16_t x, uint16_t y) override;
+    void clear_pixel(uint16_t x, uint16_t y) override;
+    void clear_screen() override;
 
 private:
     void _timer();

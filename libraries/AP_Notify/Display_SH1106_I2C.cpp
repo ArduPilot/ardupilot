@@ -71,10 +71,9 @@ bool Display_SH1106_I2C::hw_init()
     return success;
 }
 
-bool Display_SH1106_I2C::hw_update()
+void Display_SH1106_I2C::hw_update()
 {
     _need_hw_update = true;
-    return true;
 }
 
 void Display_SH1106_I2C::_timer()
@@ -109,31 +108,29 @@ void Display_SH1106_I2C::_timer()
     }
 }
 
-bool Display_SH1106_I2C::set_pixel(uint16_t x, uint16_t y)
+void Display_SH1106_I2C::set_pixel(uint16_t x, uint16_t y)
 {
     // check x, y range
     if ((x >= SH1106_COLUMNS) || (y >= SH1106_ROWS)) {
-        return false;
+        return;
     }
     // set pixel in buffer
     _displaybuffer[x + (y / 8 * SH1106_COLUMNS)] |= 1 << (y % 8);
 
-    return true;
 }
 
-bool Display_SH1106_I2C::clear_pixel(uint16_t x, uint16_t y)
+void Display_SH1106_I2C::clear_pixel(uint16_t x, uint16_t y)
 {
     // check x, y range
     if ((x >= SH1106_COLUMNS) || (y >= SH1106_ROWS)) {
-        return false;
+        return;
     }
     // clear pixel in buffer
     _displaybuffer[x + (y / 8 * SH1106_COLUMNS)] &= ~(1 << (y % 8));
 
-    return true;
 }
-bool Display_SH1106_I2C::clear_screen()
+void Display_SH1106_I2C::clear_screen()
 {
      memset(_displaybuffer, 0, SH1106_COLUMNS * SH1106_ROWS_PER_PAGE);
-     return true;
+        return;
 }
