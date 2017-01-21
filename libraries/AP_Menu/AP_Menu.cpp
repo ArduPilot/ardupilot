@@ -152,7 +152,7 @@ Menu::_run_command(bool prompt_on_enter)
 
     if (cmd_found==false)
     {
-        _port->println("Invalid command, type 'help'");
+        _port->printf("Invalid command, type 'help'\n");
     }
 
     return false;
@@ -223,7 +223,7 @@ Menu::_help(void)
 {
     int i;
 
-    _port->println("Commands:");
+    _port->printf("Commands:\n");
     for (i = 0; i < _entries; i++) {
 		hal.scheduler->delay(10);
         _port->printf("  %s\n", _commands[i].command);
