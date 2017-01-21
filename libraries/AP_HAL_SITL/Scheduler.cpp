@@ -135,7 +135,7 @@ void Scheduler::system_initialized() {
 
 void Scheduler::sitl_end_atomic() {
     if (_nested_atomic_ctr == 0) {
-        hal.uartA->println("NESTED ATOMIC ERROR");
+        hal.uartA->printf("NESTED ATOMIC ERROR\n");
     } else {
         _nested_atomic_ctr--;
     }
@@ -143,7 +143,7 @@ void Scheduler::sitl_end_atomic() {
 
 void Scheduler::reboot(bool hold_in_bootloader)
 {
-    hal.uartA->println("REBOOT NOT IMPLEMENTED\r\n");
+    hal.uartA->printf("REBOOT NOT IMPLEMENTED\r\n\n");
 }
 
 void Scheduler::_run_timer_procs(bool called_from_isr)
