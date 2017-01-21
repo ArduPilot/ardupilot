@@ -401,7 +401,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 4:Very Strict,8:Default,16:Relaxed,32:Very Relaxed
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, 8.0f),
+    AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, AP_COMPASS_CALIBRATION_FITNESS_DEFAULT),
 
     AP_GROUPEND
 };
