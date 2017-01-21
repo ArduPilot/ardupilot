@@ -184,7 +184,7 @@ void Plane::init_ardupilot()
     }
 #endif
         if (!compass_ok) {
-            cliSerial->println("Compass initialisation failed!");
+            cliSerial->printf("Compass initialisation failed!\n");
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
@@ -227,12 +227,12 @@ void Plane::init_ardupilot()
 #if CLI_ENABLED == ENABLED
     if (g.cli_enabled == 1) {
         const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        cliSerial->println(msg);
+        cliSerial->printf("%s\n", msg);
         if (gcs[1].initialised && (gcs[1].get_uart() != nullptr)) {
-            gcs[1].get_uart()->println(msg);
+            gcs[1].get_uart()->printf("%s\n", msg);
         }
         if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != nullptr)) {
-            gcs[2].get_uart()->println(msg);
+            gcs[2].get_uart()->printf("%s\n", msg);
         }
     }
 #endif // CLI_ENABLED
@@ -674,61 +674,61 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        port->print("Manual");
+        port->printf("Manual");
         break;
     case CIRCLE:
-        port->print("Circle");
+        port->printf("Circle");
         break;
     case STABILIZE:
-        port->print("Stabilize");
+        port->printf("Stabilize");
         break;
     case TRAINING:
-        port->print("Training");
+        port->printf("Training");
         break;
     case ACRO:
-        port->print("ACRO");
+        port->printf("ACRO");
         break;
     case FLY_BY_WIRE_A:
-        port->print("FBW_A");
+        port->printf("FBW_A");
         break;
     case AUTOTUNE:
-        port->print("AUTOTUNE");
+        port->printf("AUTOTUNE");
         break;
     case FLY_BY_WIRE_B:
-        port->print("FBW_B");
+        port->printf("FBW_B");
         break;
     case CRUISE:
-        port->print("CRUISE");
+        port->printf("CRUISE");
         break;
     case AUTO:
-        port->print("AUTO");
+        port->printf("AUTO");
         break;
     case RTL:
-        port->print("RTL");
+        port->printf("RTL");
         break;
     case LOITER:
-        port->print("Loiter");
+        port->printf("Loiter");
         break;
     case AVOID_ADSB:
-        port->print("AVOID_ADSB");
+        port->printf("AVOID_ADSB");
         break;
     case GUIDED:
-        port->print("Guided");
+        port->printf("Guided");
         break;
     case QSTABILIZE:
-        port->print("QStabilize");
+        port->printf("QStabilize");
         break;
     case QHOVER:
-        port->print("QHover");
+        port->printf("QHover");
         break;
     case QLOITER:
-        port->print("QLoiter");
+        port->printf("QLoiter");
         break;
     case QLAND:
-        port->print("QLand");
+        port->printf("QLand");
         break;
     case QRTL:
-        port->print("QRTL");
+        port->printf("QRTL");
         break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);
@@ -739,7 +739,7 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 #if CLI_ENABLED == ENABLED
 void Plane::print_comma(void)
 {
-    cliSerial->print(",");
+    cliSerial->printf(",");
 }
 #endif
 

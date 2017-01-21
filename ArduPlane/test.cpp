@@ -79,7 +79,7 @@ int8_t Plane::test_gps(uint8_t argc, const Menu::arg *argv)
                                 (long)loc.alt/100,
                                 (int)gps.num_sats());
         } else {
-            cliSerial->print(".");
+            cliSerial->printf(".");
         }
         if(cliSerial->available() > 0) {
             return (0);
@@ -89,7 +89,7 @@ int8_t Plane::test_gps(uint8_t argc, const Menu::arg *argv)
 
 int8_t Plane::test_ins(uint8_t argc, const Menu::arg *argv)
 {
-    //cliSerial->print("Calibrating.");
+    //cliSerial->printf("Calibrating.");
     ahrs.init();
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
@@ -140,13 +140,13 @@ int8_t Plane::test_ins(uint8_t argc, const Menu::arg *argv)
 int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
 {
     if (!g.compass_enabled) {
-        cliSerial->print("Compass: ");
+        cliSerial->printf("Compass: ");
         print_enabled(false);
         return (0);
     }
 
     if (!compass.init()) {
-        cliSerial->println("Compass initialisation failed!");
+        cliSerial->printf("Compass initialisation failed!\n");
         return 0;
     }
     ahrs.init();
@@ -191,7 +191,7 @@ int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
                                         (double)mag.x, (double)mag.y, (double)mag.z,
                                         (double)mag_ofs.x, (double)mag_ofs.y, (double)mag_ofs.z);
                 } else {
-                    cliSerial->println("compass not healthy");
+                    cliSerial->printf("compass not healthy\n");
                 }
                 counter=0;
             }
@@ -203,7 +203,7 @@ int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
 
     // save offsets. This allows you to get sane offset values using
     // the CLI before you go flying.
-    cliSerial->println("saving offsets");
+    cliSerial->printf("saving offsets\n");
     compass.save_offsets();
     return (0);
 }
@@ -214,13 +214,13 @@ int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
 int8_t Plane::test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
     if (!airspeed.enabled()) {
-        cliSerial->print("airspeed: ");
+        cliSerial->printf("airspeed: ");
         print_enabled(false);
         return (0);
     }else{
         print_hit_enter();
         zero_airspeed(false);
-        cliSerial->print("airspeed: ");
+        cliSerial->printf("airspeed: ");
         print_enabled(true);
 
         while(1) {
@@ -238,7 +238,7 @@ int8_t Plane::test_airspeed(uint8_t argc, const Menu::arg *argv)
 
 int8_t Plane::test_pressure(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->println("Uncalibrated relative airpressure");
+    cliSerial->printf("Uncalibrated relative airpressure\n");
     print_hit_enter();
 
     init_barometer(true);
@@ -248,7 +248,7 @@ int8_t Plane::test_pressure(uint8_t argc, const Menu::arg *argv)
         barometer.update();
 
         if (!barometer.healthy()) {
-            cliSerial->println("not healthy");
+            cliSerial->printf("not healthy\n");
         } else {
             cliSerial->printf("Alt: %0.2fm, Raw: %f Temperature: %.1f\n",
                                 (double)barometer.get_altitude(),
@@ -265,11 +265,11 @@ int8_t Plane::test_pressure(uint8_t argc, const Menu::arg *argv)
 void Plane::print_enabled(bool b)
 {
     if (b) {
-        cliSerial->print("en");
+        cliSerial->printf("en");
     } else {
-        cliSerial->print("dis");
+        cliSerial->printf("dis");
     }
-    cliSerial->println("abled");
+    cliSerial->printf("abled\n");
 }
 
 #endif // CLI_ENABLED

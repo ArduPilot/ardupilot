@@ -246,7 +246,7 @@ bool Plane::setup_failsafe_mixing(void)
 
     fileSize = create_mixer(buf, buf_size, mixer_filename);
     if (!fileSize) {
-        hal.console->println("Unable to create mixer");
+        hal.console->printf("Unable to create mixer\n");
         goto failed;
     }
 
@@ -280,13 +280,13 @@ bool Plane::setup_failsafe_mixing(void)
     /* reset any existing mixer in px4io. This shouldn't be needed,
      * but is good practice */
     if (ioctl(px4io_fd, MIXERIOCRESET, 0) != 0) {
-        hal.console->println("Unable to reset mixer");
+        hal.console->printf("Unable to reset mixer\n");
         goto failed;
     }
 
 	/* pass the buffer to the device */
     if (ioctl(px4io_fd, MIXERIOCLOADBUF, (unsigned long)buf) != 0) {
-        hal.console->println("Unable to send mixer to IO");
+        hal.console->printf("Unable to send mixer to IO\n");
         goto failed;        
     }
 
@@ -348,7 +348,7 @@ bool Plane::setup_failsafe_mixing(void)
         }
 
         if (ioctl(px4io_fd, PWM_SERVO_SET_RC_CONFIG, (unsigned long)&config) != 0) {
-            hal.console->println("SET_RC_CONFIG failed");
+            hal.console->printf("SET_RC_CONFIG failed\n");
             goto failed;
         }
     }
@@ -362,7 +362,7 @@ bool Plane::setup_failsafe_mixing(void)
         }
     }
     if (ioctl(px4io_fd, PWM_SERVO_SET_MIN_PWM, (long unsigned int)&pwm_values) != 0) {
-        hal.console->println("SET_MIN_PWM failed");
+        hal.console->printf("SET_MIN_PWM failed\n");
         goto failed;
     }
 
@@ -376,16 +376,16 @@ bool Plane::setup_failsafe_mixing(void)
         }
     }
     if (ioctl(px4io_fd, PWM_SERVO_SET_MAX_PWM, (long unsigned int)&pwm_values) != 0) {
-        hal.console->println("SET_MAX_PWM failed");
+        hal.console->printf("SET_MAX_PWM failed\n");
         goto failed;
     }
     if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
-        hal.console->println("SET_OVERRIDE_OK failed");
+        hal.console->printf("SET_OVERRIDE_OK failed\n");
         goto failed;
     }
 
     if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 1) != 0) {
-        hal.console->println("SET_OVERRIDE_IMMEDIATE failed");
+        hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
         goto failed;
     }
 
