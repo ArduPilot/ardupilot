@@ -94,7 +94,7 @@ void Rover::read_trim_switch()
 
                 switch (control_mode) {
                 case MANUAL:
-                    hal.console->println("Erasing waypoints");
+                    hal.console->printf("Erasing waypoints\n");
                     // if SW7 is ON in MANUAL = Erase the Flight Plan
                     mission.clear();
                     if (channel_steer->get_control_in() > 3000) {
