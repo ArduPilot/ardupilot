@@ -15,7 +15,7 @@ uint32_t timer;
 
 static void setup()
 {
-    hal.console->println("Compass library test");
+    hal.console->printf("Compass library test\n");
 
     AP_BoardConfig{}.init(); // initialise the board drivers
 
@@ -53,7 +53,7 @@ static void loop()
             hal.console->printf("Compass #%u: ", i);
 
             if (!compass.healthy()) {
-                hal.console->println("not healthy");
+                hal.console->printf("not healthy\n");
                 continue;
             }
 
@@ -93,7 +93,7 @@ static void loop()
 
             hal.console->printf(" t=%u", (unsigned)read_time);
 
-            hal.console->println();
+            hal.console->printf("\n");
         }
     } else {
         hal.scheduler->delay(1);
