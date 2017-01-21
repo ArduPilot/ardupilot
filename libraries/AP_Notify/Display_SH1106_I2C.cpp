@@ -23,7 +23,10 @@ static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // constructor
 Display_SH1106_I2C::Display_SH1106_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev) :
-    _dev(std::move(dev)) {}
+    _dev(std::move(dev))
+{
+    _displaybuffer_sem = hal.util->new_semaphore();
+}
 
 bool Display_SH1106_I2C::hw_init()
 {
@@ -100,11 +103,17 @@ void Display_SH1106_I2C::_timer()
         command.page = 0xB0 | (i & 0x0F);
         _dev->transfer((uint8_t *)&command, sizeof(command), nullptr, 0);
 
-        memcpy(&display_buffer.db[0], &_displaybuffer[i * SH1106_COLUMNS], SH1106_COLUMNS/2);
-        _dev->transfer((uint8_t *)&display_buffer, SH1106_COLUMNS/2 + 1, nullptr, 0);
+        if (_displaybuffer_sem->take(0)) {
+            memcpy(&display_buffer.db[0], &_displaybuffer[i * SH1106_COLUMNS], SH1106_COLUMNS/2);
+            _displaybuffer_sem->give();
+            _dev->transfer((uint8_t *)&display_buffer, SH1106_COLUMNS/2 + 1, nullptr, 0);
+        }
 
-        memcpy(&display_buffer.db[0], &_displaybuffer[i * SH1106_COLUMNS + SH1106_COLUMNS/2 ], SH1106_COLUMNS/2);
-        _dev->transfer((uint8_t *)&display_buffer, SH1106_COLUMNS/2 + 1, nullptr, 0);
+        if (_displaybuffer_sem->take(0)) {
+            memcpy(&display_buffer.db[0], &_displaybuffer[i * SH1106_COLUMNS + SH1106_COLUMNS/2 ], SH1106_COLUMNS/2);
+            _displaybuffer_sem->give();
+            _dev->transfer((uint8_t *)&display_buffer, SH1106_COLUMNS/2 + 1, nullptr, 0);
+        }
     }
 }
 
@@ -115,8 +124,12 @@ void Display_SH1106_I2C::set_pixel(uint16_t x, uint16_t y)
         return;
     }
     // set pixel in buffer
+    if (!_displaybuffer_sem->take(0)) {
+        return;
+    }
     _displaybuffer[x + (y / 8 * SH1106_COLUMNS)] |= 1 << (y % 8);
 
+    _displaybuffer_sem->give();
 }
 
 void Display_SH1106_I2C::clear_pixel(uint16_t x, uint16_t y)
@@ -125,12 +138,19 @@ void Display_SH1106_I2C::clear_pixel(uint16_t x, uint16_t y)
     if ((x >= SH1106_COLUMNS) || (y >= SH1106_ROWS)) {
         return;
     }
+    if (!_displaybuffer_sem->take(0)) {
+        return;
+    }
     // clear pixel in buffer
     _displaybuffer[x + (y / 8 * SH1106_COLUMNS)] &= ~(1 << (y % 8));
 
+    _displaybuffer_sem->give();
 }
 void Display_SH1106_I2C::clear_screen()
 {
-     memset(_displaybuffer, 0, SH1106_COLUMNS * SH1106_ROWS_PER_PAGE);
+    if (!_displaybuffer_sem->take(0)) {
         return;
+    }
+    memset(_displaybuffer, 0, SH1106_COLUMNS * SH1106_ROWS_PER_PAGE);
+    _displaybuffer_sem->give();
 }
