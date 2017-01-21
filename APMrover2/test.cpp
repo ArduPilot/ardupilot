@@ -50,13 +50,13 @@ int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
 
         // New radio frame? (we could use also if((millis()- timer) > 20)
         if (hal.rcin->new_input()) {
-            cliSerial->print("CH:");
+            cliSerial->printf("CH:");
             for (int i = 0; i < 8; i++) {
-                cliSerial->print(hal.rcin->read(i));    // Print channel values
-                cliSerial->print(",");
+                cliSerial->printf("%u", hal.rcin->read(i));    // Print channel values
+                cliSerial->printf(",");
                 hal.rcout->write(i, hal.rcin->read(i));  // Copy input to Servos
             }
-            cliSerial->println();
+            cliSerial->printf("\n");
         }
         if (cliSerial->available() > 0){
             return (0);
@@ -81,7 +81,7 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 
     oldSwitchPosition = readSwitch();
 
-    cliSerial->println("Unplug battery, throttle in neutral, turn off radio.");
+    cliSerial->printf("Unplug battery, throttle in neutral, turn off radio.\n");
     while (channel_throttle->get_control_in() > 0) {
         delay(20);
         read_radio();
@@ -97,16 +97,16 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
         }
 
         if (oldSwitchPosition != readSwitch()){
-            cliSerial->print("CONTROL MODE CHANGED: ");
+            cliSerial->printf("CONTROL MODE CHANGED: ");
             print_mode(cliSerial, readSwitch());
-            cliSerial->println();
+            cliSerial->printf("\n");
             fail_test++;
         }
 
         if (throttle_failsafe_active()) {
             cliSerial->printf("THROTTLE FAILSAFE ACTIVATED: %d, ", channel_throttle->get_radio_in());
             print_mode(cliSerial, readSwitch());
-            cliSerial->println();
+            cliSerial->printf("\n");
             fail_test++;
         }
 
@@ -114,7 +114,7 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
         if (cliSerial->available() > 0) {
-            cliSerial->println("LOS caused no change in APM.");
+            cliSerial->printf("LOS caused no change in APM.\n");
             return (0);
         }
     }
@@ -126,14 +126,14 @@ int8_t Rover::test_relay(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     while (1) {
-        cliSerial->println("Relay on");
+        cliSerial->printf("Relay on\n");
         relay.on(0);
         delay(3000);
         if (cliSerial->available() > 0) {
             return (0);
         }
 
-        cliSerial->println("Relay off");
+        cliSerial->printf("Relay off\n");
         relay.off(0);
         delay(3000);
         if (cliSerial->available() > 0) {
@@ -176,9 +176,9 @@ int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
     print_hit_enter();
     delay(1000);
 
-    cliSerial->print("Control CH ");
+    cliSerial->printf("Control CH ");
 
-    cliSerial->println(MODE_CHANNEL, BASE_DEC);
+    cliSerial->printf("%d\n", MODE_CHANNEL);
 
     while (1) {
         delay(20);
@@ -198,7 +198,7 @@ int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
  */
 int8_t Rover::test_logging(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->println("Testing dataflash logging");
+    cliSerial->printf("Testing dataflash logging\n");
     DataFlash.ShowDeviceInfo(cliSerial);
     return 0;
 }
@@ -227,7 +227,7 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
                                 (long)loc.alt/100,
                                 (int)gps.num_sats());
         } else {
-            cliSerial->print(".");
+            cliSerial->printf(".");
         }
         if (cliSerial->available() > 0) {
             return (0);
@@ -237,7 +237,7 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 {
-    // cliSerial->print("Calibrating.");
+    // cliSerial->printf("Calibrating.");
     ahrs.init();
     ahrs.set_fly_forward(true);
 
@@ -281,23 +281,23 @@ int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 void Rover::print_enabled(bool b)
 {
        if (b) {
-           cliSerial->print("en");
+           cliSerial->printf("en");
        } else {
-           cliSerial->print("dis");
+           cliSerial->printf("dis");
        }
-       cliSerial->println("abled");
+       cliSerial->printf("abled\n");
 }
 
 int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
 {
     if (!g.compass_enabled) {
-        cliSerial->print("Compass: ");
+        cliSerial->printf("Compass: ");
         print_enabled(false);
         return (0);
     }
 
     if (!compass.init()) {
-        cliSerial->println("Compass initialisation failed!");
+        cliSerial->printf("Compass initialisation failed!\n");
         return 0;
     }
     ahrs.init();
@@ -340,7 +340,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
                                     (double)mag.x, (double)mag.y, (double)mag.z,
                                     (double)mag_ofs.x, (double)mag_ofs.y, (double)mag_ofs.z);
             } else {
-                cliSerial->println("compass not healthy");
+                cliSerial->printf("compass not healthy\n");
             }
             counter = 0;
         }
@@ -351,7 +351,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
 
     // save offsets. This allows you to get sane offset values using
     // the CLI before you go flying.
-    cliSerial->println("saving offsets");
+    cliSerial->printf("saving offsets\n");
     compass.save_offsets();
     return (0);
 }
@@ -366,7 +366,7 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
     sonar.update();
 
     if (sonar.status() == RangeFinder::RangeFinder_NotConnected) {
-        cliSerial->println("WARNING: Sonar is not enabled");
+        cliSerial->printf("WARNING: Sonar is not enabled\n");
     }
 
     print_hit_enter();

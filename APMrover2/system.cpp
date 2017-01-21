@@ -142,7 +142,7 @@ void Rover::init_ardupilot()
 
     if (g.compass_enabled == true) {
         if (!compass.init()|| !compass.read()) {
-            cliSerial->println("Compass initialisation failed!");
+            cliSerial->printf("Compass initialisation failed!\n");
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
@@ -187,12 +187,12 @@ void Rover::init_ardupilot()
     //
     if (g.cli_enabled == 1) {
         const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        cliSerial->println(msg);
+        cliSerial->printf("%s\n", msg);
         if (gcs[1].initialised && (gcs[1].get_uart() != nullptr)) {
-            gcs[1].get_uart()->println(msg);
+            gcs[1].get_uart()->printf("%s\n", msg);
         }
         if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != nullptr)) {
-            gcs[2].get_uart()->println(msg);
+            gcs[2].get_uart()->printf("%s\n", msg);
         }
     }
 #endif
@@ -436,22 +436,22 @@ void Rover::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        port->print("Manual");
+        port->printf("Manual");
         break;
     case HOLD:
-        port->print("HOLD");
+        port->printf("HOLD");
         break;
     case LEARNING:
-        port->print("Learning");
+        port->printf("Learning");
         break;
     case STEERING:
-        port->print("Steering");
+        port->printf("Steering");
         break;
     case AUTO:
-        port->print("AUTO");
+        port->printf("AUTO");
         break;
     case RTL:
-        port->print("RTL");
+        port->printf("RTL");
         break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);
