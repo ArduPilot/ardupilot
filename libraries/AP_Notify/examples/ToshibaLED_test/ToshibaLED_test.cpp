@@ -14,14 +14,14 @@ static ToshibaLED_I2C toshiba_led;
 void setup(void)
 {
     // display welcome message
-    hal.console->print("Toshiba LED test ver 0.1\n");
+    hal.console->printf("Toshiba LED test ver 0.1\n");
 
     // initialise LED
     toshiba_led.init();
 
     // check if healthy
     if (!toshiba_led.healthy()) {
-        hal.console->print("Failed to initialise Toshiba LED\n");
+        hal.console->printf("Failed to initialise Toshiba LED\n");
     }
 
     // turn on initialising notification
@@ -35,11 +35,11 @@ void setup(void)
 void loop(void)
 {
     // blink test
-    //hal.console->print("Blink test\n");
+    //hal.console->printf("Blink test\n");
     //blink();
     /*
     // full spectrum test
-    hal.console->print("Spectrum test\n");
+    hal.console->printf("Spectrum test\n");
     full_spectrum();
     */
 
