@@ -55,7 +55,7 @@ AP_MotorsMatrix   motors(400);
 // setup
 void setup()
 {
-    hal.console->println("AP_Motors library test ver 1.0");
+    hal.console->printf("AP_Motors library test ver 1.0\n");
 
     // motor initialisation
     motors.set_update_rate(490);
@@ -86,7 +86,7 @@ void loop()
     int16_t value;
 
     // display help
-    hal.console->println("Press 't' to run motor orders test, 's' to run stability patch test.  Be careful the motors will spin!");
+    hal.console->printf("Press 't' to run motor orders test, 's' to run stability patch test.  Be careful the motors will spin!\n");
 
     // wait for user to enter something
     while( !hal.console->available() ) {
@@ -108,7 +108,7 @@ void loop()
 // stability_test
 void motor_order_test()
 {
-    hal.console->println("testing motor order");
+    hal.console->printf("testing motor order\n");
     motors.armed(true);
     for (int8_t i=1; i <= AP_MOTORS_MAX_NUM_MOTORS; i++) {
         hal.console->printf("Motor %d\n",(int)i);
@@ -118,7 +118,7 @@ void motor_order_test()
         hal.scheduler->delay(2000);
     }
     motors.armed(false);
-    hal.console->println("finished test.");
+    hal.console->printf("finished test.\n");
 
 }
 
@@ -204,7 +204,7 @@ void stability_test()
     motors.set_throttle(0);
     motors.armed(false);
 
-    hal.console->println("finished test.");
+    hal.console->printf("finished test.\n");
 }
 
 void update_motors()
