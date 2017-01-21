@@ -19,7 +19,7 @@ static void print_radio_values();
 
 void setup()
 {
-    hal.console->println("ArduPilot RC Channel test");
+    hal.console->printf("ArduPilot RC Channel test\n");
 
     rc = RC_Channels::rc_channel(CH_1);
     
