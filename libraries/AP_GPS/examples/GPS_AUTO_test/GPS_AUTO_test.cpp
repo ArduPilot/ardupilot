@@ -48,7 +48,7 @@ AP_SerialManager serial_manager;
 
 void setup()
 {
-    hal.console->println("GPS AUTO library test");
+    hal.console->printf("GPS AUTO library test\n");
 
     AP_BoardConfig{}.init();
 
@@ -79,9 +79,9 @@ void loop()
         const Location &loc = gps.location();
 
         // Print the contents of message
-        hal.console->print("Lat: ");
+        hal.console->printf("Lat: ");
         print_latlon(hal.console, loc.lat);
-        hal.console->print(" Lon: ");
+        hal.console->printf(" Lon: ");
         print_latlon(hal.console, loc.lng);
         hal.console->printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %u/%lu STATUS: %u\n",
                             loc.alt * 0.01f,
