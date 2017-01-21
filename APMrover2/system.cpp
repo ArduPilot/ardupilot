@@ -108,6 +108,11 @@ void Rover::init_ardupilot()
 
     BoardConfig.init();
 
+    // initialise notify system
+    notify.init(false);
+    AP_Notify::flags.failsafe_battery = false;
+    notify_mode(control_mode);
+
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
     set_control_channels();
