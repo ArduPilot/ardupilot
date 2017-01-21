@@ -21,7 +21,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 // setup function
 void setup()
 {
-    hal.console->println("ArduPilot Mega AC_PID library test");
+    hal.console->printf("ArduPilot Mega AC_PID library test\n");
 
     hal.scheduler->delay(1000);
 }
