@@ -45,11 +45,11 @@ void loop()
             return;
         }
         hal.console->printf("Pressure:");
-        hal.console->printf(barometer.get_pressure());
+        hal.console->printf("%f", barometer.get_pressure());
         hal.console->printf(" Temperature:");
-        hal.console->printf(barometer.get_temperature());
+        hal.console->printf("%f", barometer.get_temperature());
         hal.console->printf(" Altitude:");
-        hal.console->printf(alt);
+        hal.console->printf("%f", alt);
         hal.console->printf(" climb=%.2f t=%u",
                             barometer.get_climb_rate(),
                             (unsigned)read_time);
