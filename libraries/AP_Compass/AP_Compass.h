@@ -29,11 +29,17 @@
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
 
-// define default compass calibration fitness
+// define default compass calibration fitness and consistency checks
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
 # define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
+# define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(75.0f)
+# define AP_COMPASS_MAX_XY_ANG_DIFF radians(45.0f)
+# define AP_COMPASS_MAX_XY_LENGTH_DIFF 150.0f
 #else
 # define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 8.0f
+# define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(50.0f)
+# define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
+# define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
 #endif
 /**
    maximum number of compass instances available on this platform. If more
@@ -41,10 +47,6 @@
  */
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3
-
-#define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(50.0f)
-#define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
-#define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
 
 class Compass
 {
