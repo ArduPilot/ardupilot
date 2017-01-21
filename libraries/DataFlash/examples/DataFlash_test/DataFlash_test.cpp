@@ -43,14 +43,14 @@ void DataFlashTest::setup(void)
 {
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
 
-    hal.console->println("Dataflash Log Test 1.0");
+    hal.console->printf("Dataflash Log Test 1.0\n");
 
     // Test
     hal.scheduler->delay(20);
     dataflash.ShowDeviceInfo(hal.console);
 
     if (dataflash.NeedPrep()) {
-        hal.console->println("Preparing dataflash...");
+        hal.console->printf("Preparing dataflash...\n");
         dataflash.Prep();
     }
 
@@ -59,9 +59,9 @@ void DataFlashTest::setup(void)
     dataflash.StartNewLog();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
-    hal.console->println("After testing perform erase before using DataFlash for logging!");
-    hal.console->println("");
-    hal.console->println("Writing to flash... wait...");
+    hal.console->printf("After testing perform erase before using DataFlash for logging!\n");
+    hal.console->printf("\n");
+    hal.console->printf("Writing to flash... wait...\n");
 
     uint32_t total_micros = 0;
     uint16_t i;
