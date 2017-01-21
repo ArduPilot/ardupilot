@@ -56,7 +56,7 @@ AP_HAL::AnalogSource* AnalogIn_ADS1115::channel(int16_t pin)
         }
     }
 
-    hal.console->println("Out of analog channels");
+    hal.console->printf("Out of analog channels\n");
     return nullptr;
 }
 
