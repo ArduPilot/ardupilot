@@ -44,7 +44,7 @@ static struct Location location_from_point(Vector2f pt)
 
 static void test_passed_waypoint(void)
 {
-    hal.console->println("waypoint tests starting");
+    hal.console->printf("waypoint tests starting\n");
     for (uint8_t i=0; i<ARRAY_SIZE(test_points); i++) {
         struct Location loc = location_from_point(test_points[i].location);
         struct Location wp1 = location_from_point(test_points[i].wp1);
@@ -54,7 +54,7 @@ static void test_passed_waypoint(void)
             return;
         }
     }
-    hal.console->println("waypoint tests OK");
+    hal.console->printf("waypoint tests OK\n");
 }
 
 static void test_one_offset(const struct Location &loc,

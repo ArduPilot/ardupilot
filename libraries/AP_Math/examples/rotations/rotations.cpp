@@ -22,7 +22,7 @@ static void test_rotation_accuracy(void)
     int16_t i;
     float rot_angle;
 
-    hal.console->println("\nRotation method accuracy:");
+    hal.console->printf("\nRotation method accuracy:\n");
 
     // test roll
     for( i=0; i<90; i++ ) {
@@ -150,7 +150,7 @@ static void test_euler(enum Rotation rotation, float roll, float pitch, float ya
 
 static void test_rotate_inverse(void)
 {
-    hal.console->println("\nrotate inverse test(Vector (1,1,1)):");
+    hal.console->printf("\nrotate inverse test(Vector (1,1,1)):\n");
     Vector3f vec(1.0f,1.0f,1.0f), cmp_vec(1.0f,1.0f,1.0f);
     for (enum Rotation r=ROTATION_NONE; 
          r<ROTATION_MAX;
@@ -170,7 +170,7 @@ static void test_rotate_inverse(void)
 }
 static void test_eulers(void)
 {
-    hal.console->println("euler tests");
+    hal.console->printf("euler tests\n");
     test_euler(ROTATION_NONE,               0,   0,   0);
     test_euler(ROTATION_YAW_45,             0,   0,  45);
     test_euler(ROTATION_YAW_90,             0,   0,  90);
@@ -231,7 +231,7 @@ static bool have_rotation(const Matrix3f &m)
 
 static void missing_rotations(void)
 {
-    hal.console->println("testing for missing rotations");
+    hal.console->printf("testing for missing rotations\n");
     uint16_t roll, pitch, yaw;
     for (yaw=0; yaw<360; yaw += 90)
         for (pitch=0; pitch<360; pitch += 90)
@@ -249,12 +249,12 @@ static void missing_rotations(void)
  */
 void setup(void)
 {
-    hal.console->println("rotation unit tests\n");
+    hal.console->printf("rotation unit tests\n\n");
     test_rotation_accuracy();
     test_eulers();
     missing_rotations();
     test_rotate_inverse();
-    hal.console->println("rotation unit tests done\n");
+    hal.console->printf("rotation unit tests done\n\n");
 }
 
 void loop(void) {}

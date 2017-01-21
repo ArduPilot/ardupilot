@@ -84,14 +84,14 @@ void test_matrix_eulers(void)
     uint8_t i, j, k;
     uint8_t N = ARRAY_SIZE(angles);
 
-    hal.console->println("rotation matrix unit tests\n");
+    hal.console->printf("rotation matrix unit tests\n\n");
 
     for (i=0; i<N; i++)
         for (j=0; j<N; j++)
             for (k=0; k<N; k++)
                 test_euler(angles[i], angles[j], angles[k]);
 
-    hal.console->println("tests done\n");
+    hal.console->printf("tests done\n\n");
 }
 
 static void test_quaternion(float roll, float pitch, float yaw)
@@ -123,7 +123,7 @@ void test_quaternion_eulers(void)
     uint8_t i, j, k;
     uint8_t N = ARRAY_SIZE(angles);
 
-    hal.console->println("quaternion unit tests\n");
+    hal.console->printf("quaternion unit tests\n\n");
 
     test_quaternion(M_PI/4, 0, 0);
     test_quaternion(0, M_PI/4, 0);
@@ -148,7 +148,7 @@ void test_quaternion_eulers(void)
             for (k=0; k<N; k++)
                 test_quaternion(angles[i], angles[j], angles[k]);
 
-    hal.console->println("tests done\n");
+    hal.console->printf("tests done\n\n");
 }
 
 
@@ -183,7 +183,7 @@ void test_conversions(void)
     uint8_t i, j, k;
     uint8_t N = ARRAY_SIZE(angles);
 
-    hal.console->println("matrix/quaternion tests\n");
+    hal.console->printf("matrix/quaternion tests\n\n");
 
     test_conversion(1, 1.1f, 1.2f);
     test_conversion(1, -1.1f, 1.2f);
@@ -196,7 +196,7 @@ void test_conversions(void)
             for (k=0; k<N; k++)
                 test_conversion(angles[i], angles[j], angles[k]);
 
-    hal.console->println("tests done\n");
+    hal.console->printf("tests done\n\n");
 }
 
 void test_frame_transforms(void)
@@ -205,7 +205,7 @@ void test_frame_transforms(void)
     Quaternion q;
     Matrix3f m;
 
-    hal.console->println("frame transform tests\n");
+    hal.console->printf("frame transform tests\n\n");
 
     q.from_euler(ToRad(45), ToRad(45), ToRad(45));
     q.normalize();
@@ -285,7 +285,7 @@ void test_matrix_rotate(void)
  */
 void setup(void)
 {
-    hal.console->println("euler unit tests\n");
+    hal.console->printf("euler unit tests\n\n");
 
     test_conversion(0, M_PI, 0);
 
