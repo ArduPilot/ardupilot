@@ -79,10 +79,9 @@ bool Display_SSD1306_I2C::hw_init()
     return success;
 }
 
-bool Display_SSD1306_I2C::hw_update()
+void Display_SSD1306_I2C::hw_update()
 {
     _need_hw_update = true;
-    return true;
 }
 
 void Display_SSD1306_I2C::_timer()
@@ -115,31 +114,28 @@ void Display_SSD1306_I2C::_timer()
     }
 }
 
-bool Display_SSD1306_I2C::set_pixel(uint16_t x, uint16_t y)
+void Display_SSD1306_I2C::set_pixel(uint16_t x, uint16_t y)
 {
     // check x, y range
     if ((x >= SSD1306_COLUMNS) || (y >= SSD1306_ROWS)) {
-        return false;
+        return;
     }
     // set pixel in buffer
     _displaybuffer[x + (y / 8 * SSD1306_COLUMNS)] |= 1 << (y % 8);
 
-    return true;
 }
 
-bool Display_SSD1306_I2C::clear_pixel(uint16_t x, uint16_t y)
+void Display_SSD1306_I2C::clear_pixel(uint16_t x, uint16_t y)
 {
     // check x, y range
     if ((x >= SSD1306_COLUMNS) || (y >= SSD1306_ROWS)) {
-        return false;
+        return;
     }
     // clear pixel in buffer
     _displaybuffer[x + (y / 8 * SSD1306_COLUMNS)] &= ~(1 << (y % 8));
 
-    return true;
 }
-bool Display_SSD1306_I2C::clear_screen()
+void Display_SSD1306_I2C::clear_screen()
 {
      memset(_displaybuffer, 0, SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE);
-     return true;
 }
