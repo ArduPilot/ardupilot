@@ -499,7 +499,7 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
 #endif
     }
     if (tries == 5) {
-        hal.console->println("Failed to boot LSM9DS0 5 times\n");
+        hal.console->printf("Failed to boot LSM9DS0 5 times\n\n");
         goto fail_tries;
     }
 
@@ -773,28 +773,28 @@ bool AP_InertialSensor_LSM9DS0::update()
 /* dump all config registers - used for debug */
 void AP_InertialSensor_LSM9DS0::_dump_registers(void)
 {
-    hal.console->println("LSM9DS0 registers:");
-    hal.console->println("Gyroscope registers:");
+    hal.console->printf("LSM9DS0 registers:\n");
+    hal.console->printf("Gyroscope registers:\n");
     const uint8_t first = OUT_TEMP_L_XM;
     const uint8_t last = ACT_DUR;
     for (uint8_t reg=first; reg<=last; reg++) {
         uint8_t v = _register_read_g(reg);
         hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
         if ((reg - (first-1)) % 16 == 0) {
-            hal.console->println();
+            hal.console->printf("\n");
         }
     }
-    hal.console->println();
+    hal.console->printf("\n");
 
-    hal.console->println("Accelerometer and Magnetometers registers:");
+    hal.console->printf("Accelerometer and Magnetometers registers:\n");
     for (uint8_t reg=first; reg<=last; reg++) {
         uint8_t v = _register_read_xm(reg);
         hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
         if ((reg - (first-1)) % 16 == 0) {
-            hal.console->println();
+            hal.console->printf("\n");
         }
     }
-    hal.console->println();
+    hal.console->printf("\n");
 
 }
 #endif
