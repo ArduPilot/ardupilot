@@ -126,15 +126,15 @@ errout:
 
 void AP_Compass_LSM9DS1::_dump_registers()
 {
-    hal.console->println("LSMDS1 registers");
+    hal.console->printf("LSMDS1 registers\n");
     for (uint8_t reg = LSM9DS1M_OFFSET_X_REG_L_M; reg <= LSM9DS1M_INT_THS_H_M; reg++) {
         uint8_t v = _register_read(reg);
         hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
         if ((reg - (LSM9DS1M_OFFSET_X_REG_L_M-1)) % 16 == 0) {
-            hal.console->println();
+            hal.console->printf("\n");
         }
     }
-    hal.console->println();
+    hal.console->printf("\n");
 }
 
 void AP_Compass_LSM9DS1::_update(void)
