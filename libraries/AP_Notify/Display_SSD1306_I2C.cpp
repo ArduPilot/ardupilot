@@ -134,7 +134,6 @@ void Display_SSD1306_I2C::set_pixel(uint16_t x, uint16_t y)
     }
     // set pixel in buffer
     _displaybuffer[x + (y / 8 * SSD1306_COLUMNS)] |= 1 << (y % 8);
-
     _displaybuffer_sem->give();
 }
 
@@ -149,9 +148,9 @@ void Display_SSD1306_I2C::clear_pixel(uint16_t x, uint16_t y)
     }
     // clear pixel in buffer
     _displaybuffer[x + (y / 8 * SSD1306_COLUMNS)] &= ~(1 << (y % 8));
-
     _displaybuffer_sem->give();
 }
+
 void Display_SSD1306_I2C::clear_screen()
 {
     if (!_displaybuffer_sem->take(0)) {
