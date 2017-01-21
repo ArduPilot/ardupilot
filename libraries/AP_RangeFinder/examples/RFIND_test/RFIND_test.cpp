@@ -13,7 +13,7 @@ static RangeFinder sonar {serial_manager};
 void setup()
 {
     // print welcome message
-    hal.console->println("Range Finder library test");
+    hal.console->printf("Range Finder library test\n");
 
     // setup for analog pin 13
     AP_Param::set_object_value(&sonar, sonar.var_info, "_TYPE", RangeFinder::RangeFinder_TYPE_PLI2C);
