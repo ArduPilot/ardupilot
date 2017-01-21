@@ -28,7 +28,7 @@ private:
 void RC_UART::setup()
 {
     hal.scheduler->delay(1000);
-    hal.console->println("RC_UART starting");
+    hal.console->printf("RC_UART starting\n");
     hal.UART->begin(baudrate, 512, 512);
     hal.rcout->set_freq(0xFF, RC_SPEED);
 }
