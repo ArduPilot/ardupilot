@@ -23,10 +23,10 @@ MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&rover, &Rover::print_log
 
 bool Rover::print_log_menu(void)
 {
-    cliSerial->print("logs enabled: ");
+    cliSerial->printf("logs enabled: ");
 
     if (0 == g.log_bitmask) {
-        cliSerial->print("none");
+        cliSerial->printf("none");
     } else {
         // Macro to make the following code a bit easier on the eye.
         // Pass it the capitalised name of the log option, as defined
@@ -50,7 +50,7 @@ bool Rover::print_log_menu(void)
         #undef PLOG
     }
 
-    cliSerial->println();
+    cliSerial->printf("\n");
 
     DataFlash.ListAvailableLogs(cliSerial);
     return(true);
@@ -69,11 +69,11 @@ int8_t Rover::dump_log(uint8_t argc, const Menu::arg *argv)
         DataFlash.DumpPageInfo(cliSerial);
         return(-1);
     } else if (dump_log_num <= 0) {
-        cliSerial->println("dumping all");
+        cliSerial->printf("dumping all\n");
         Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
-        cliSerial->println("bad log number");
+        cliSerial->printf("bad log number\n");
         return(-1);
     }
 
@@ -96,7 +96,7 @@ int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
     uint16_t bits;
 
     if (argc != 2) {
-        cliSerial->println("missing log type");
+        cliSerial->printf("missing log type\n");
         return(-1);
     }
 
@@ -486,7 +486,7 @@ void Rover::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page
                              "\nFree RAM: %u\n",
                         (unsigned)hal.util->available_memory());
 
-    cliSerial->println(HAL_BOARD_NAME);
+    cliSerial->printf("%s\n", HAL_BOARD_NAME);
 
     DataFlash.LogReadProcess(list_entry, start_page, end_page,
                              FUNCTOR_BIND_MEMBER(&Rover::print_mode, void, AP_HAL::BetterStream *, uint8_t),

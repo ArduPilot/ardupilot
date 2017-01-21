@@ -575,19 +575,19 @@ const AP_Param::ConversionInfo conversion_table[] = {
 void Rover::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->println("Bad var table");
+        cliSerial->printf("Bad var table\n");
         AP_HAL::panic("Bad var table");
     }
 
     if (!g.format_version.load() ||
          g.format_version != Parameters::k_format_version) {
         // erase all parameters
-        cliSerial->println("Firmware change: erasing EEPROM...");
+        cliSerial->printf("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        cliSerial->println("done.");
+        cliSerial->printf("done.\n");
     }
 
     unsigned long before = micros();
