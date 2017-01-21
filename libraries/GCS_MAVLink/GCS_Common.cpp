@@ -336,6 +336,12 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
         mavlink_mission_request_t packet;
         mavlink_msg_mission_request_decode(msg, &packet);
 
+        if (packet.seq >= mission.num_commands()) {
+            // try to educate the GCS on the actual size of the mission:
+            mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands());
+            goto mission_item_send_failed;
+        }
+
         // retrieve mission from eeprom
         if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
             goto mission_item_send_failed;
