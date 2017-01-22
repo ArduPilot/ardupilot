@@ -451,7 +451,11 @@ void SRV_Channels::set_trim_to_min_for(SRV_Channel::Aux_servo_function_t functio
 void SRV_Channels::set_default_function(uint8_t chan, SRV_Channel::Aux_servo_function_t function)
 {
     if (chan < NUM_SERVO_CHANNELS) {
+        int8_t old = channels[chan].function;
         channels[chan].function.set_default((uint8_t)function);
+        if (old != channels[chan].function && channels[chan].function == function) {
+            function_mask.set((uint8_t)function);
+        }
     }
 }
 
