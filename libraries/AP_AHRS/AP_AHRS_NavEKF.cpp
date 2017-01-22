@@ -323,7 +323,7 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
     Location origin;
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
-        return false;
+        return AP_AHRS_DCM::get_position(loc);
 
     case EKF_TYPE2:
         if (EKF2.getLLH(loc) && EKF2.getPosD(-1,ned_pos.z) && EKF2.getOriginLLH(origin)) {
