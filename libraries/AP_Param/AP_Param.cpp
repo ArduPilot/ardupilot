@@ -767,31 +767,6 @@ AP_Param::find(const char *name, enum ap_var_type *ptype)
     return nullptr;
 }
 
-/*
-  find the def_value for a variable by name
-*/
-const float *
-AP_Param::find_def_value_ptr(const char *name)
-{
-    enum ap_var_type ptype;
-    AP_Param *vp = find(name, &ptype);
-    if (vp == nullptr) {
-        return nullptr;
-    }
-    uint32_t group_element;
-    const struct GroupInfo *ginfo;
-    struct GroupNesting group_nesting {};
-    uint8_t gidx;
-    const struct AP_Param::Info *info = vp->find_var_info(&group_element, ginfo, group_nesting, &gidx);
-    if (info == nullptr) {
-        return nullptr;
-    }
-    if (ginfo != nullptr) {
-        return &ginfo->def_value;
-    }
-    return &info->def_value;
-}
-
 // Find a variable by index. Note that this is quite slow.
 //
 AP_Param *
@@ -972,9 +947,9 @@ bool AP_Param::save(bool force_save)
         float v1 = cast_to_float((enum ap_var_type)phdr.type);
         float v2;
         if (ginfo != nullptr) {
-            v2 = get_default_value(&ginfo->def_value);
+            v2 = get_default_value(this, &ginfo->def_value);
         } else {
-            v2 = get_default_value(&info->def_value);
+            v2 = get_default_value(this, &info->def_value);
         }
         if (is_equal(v1,v2) && !force_save) {
             GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);
@@ -1046,10 +1021,10 @@ bool AP_Param::load(void)
                 group_offset += group_nesting.group_ret[i]->offset;
             }
             set_value((enum ap_var_type)phdr.type, (void*)(base + ginfo->offset + group_offset),
-                      get_default_value(&ginfo->def_value));
+                      get_default_value(this, &ginfo->def_value));
         } else {
             set_value((enum ap_var_type)phdr.type, (void*)base, 
-                      get_default_value(&info->def_value));
+                      get_default_value(this, &info->def_value));
         }
         return false;
     }
@@ -1112,16 +1087,8 @@ bool AP_Param::configured_in_defaults_file(void) const
         return false;
     }
 
-    const float* def_value_ptr;
-
-    if (ginfo != nullptr) {
-        def_value_ptr = &ginfo->def_value;
-    } else {
-        def_value_ptr = &info->def_value;
-    }
-
     for (uint16_t i=0; i<num_param_overrides; i++) {
-        if (def_value_ptr == param_overrides[i].def_value_ptr) {
+        if (this == param_overrides[i].object_ptr) {
             return true;
         }
     }
@@ -1162,7 +1129,8 @@ void AP_Param::setup_object_defaults(const void *object_pointer, const struct Gr
          i++) {
         if (type <= AP_PARAM_FLOAT) {
             void *ptr = (void *)(base + group_info[i].offset);
-            set_value((enum ap_var_type)type, ptr, get_default_value(&group_info[i].def_value));
+            set_value((enum ap_var_type)type, ptr,
+                      get_default_value((const AP_Param *)ptr, &group_info[i].def_value));
         }
     }
 }
@@ -1200,7 +1168,8 @@ void AP_Param::setup_sketch_defaults(void)
         if (type <= AP_PARAM_FLOAT) {
             ptrdiff_t base;
             if (get_base(_var_info[i], base)) {
-                set_value((enum ap_var_type)type, (void*)base, get_default_value(&_var_info[i].def_value));
+                set_value((enum ap_var_type)type, (void*)base,
+                          get_default_value((const AP_Param *)base, &_var_info[i].def_value));
             }
         }
     }
@@ -1775,7 +1744,8 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
         if (!parse_param_line(line, &pname, value)) {
             continue;
         }
-        if (!find_def_value_ptr(pname)) {
+        enum ap_var_type var_type;
+        if (!find(pname, &var_type)) {
             if (panic_on_error) {
                 fclose(f);
                 ::printf("invalid param %s in defaults file\n", pname);
@@ -1816,20 +1786,14 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
         if (!parse_param_line(line, &pname, value)) {
             continue;
         }
-        const float *def_value_ptr = find_def_value_ptr(pname);
-        if (!def_value_ptr) {
+        enum ap_var_type var_type;
+        AP_Param *vp = find(pname, &var_type);
+        if (!vp) {
             continue;
         }
-        param_overrides[idx].def_value_ptr = def_value_ptr;
+        param_overrides[idx].object_ptr = vp;
         param_overrides[idx].value = value;
         idx++;
-        enum ap_var_type var_type;
-        AP_Param *vp = AP_Param::find(pname, &var_type);
-        if (!vp) {
-            fclose(f);
-            AP_HAL::panic("AP_Param: Failed to set param default");
-            return false;
-        }
         if (!vp->configured_in_storage()) {
             vp->set_float(value, var_type);
         }
@@ -1846,10 +1810,10 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
 /* 
    find a default value given a pointer to a default value in flash
  */
-float AP_Param::get_default_value(const float *def_value_ptr)
+float AP_Param::get_default_value(const AP_Param *vp, const float *def_value_ptr)
 {
     for (uint16_t i=0; i<num_param_overrides; i++) {
-        if (def_value_ptr == param_overrides[i].def_value_ptr) {
+        if (vp == param_overrides[i].object_ptr) {
             return param_overrides[i].value;
         }
     }
