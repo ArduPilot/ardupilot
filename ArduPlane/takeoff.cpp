@@ -61,7 +61,7 @@ bool Plane::auto_takeoff_check(void)
     // Check aircraft attitude for bad launch
     if (ahrs.pitch_sensor <= -3000 ||
         ahrs.pitch_sensor >= 4500 ||
-        labs(ahrs.roll_sensor) > 3000) {
+        (!fly_inverted() && labs(ahrs.roll_sensor) > 3000)) {
         gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad launch AUTO");
         goto no_launch;
     }
