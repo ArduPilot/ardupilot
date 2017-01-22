@@ -104,7 +104,7 @@ void QuadPlane::tiltrotor_continuous_update(void)
  */
 void QuadPlane::tiltrotor_binary_slew(bool forward)
 {
-    RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_motor_tilt, forward?1000:0);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, forward?1000:0);
 
     float max_change = (tilt.max_rate_dps.get() * plane.G_Dt) / 90.0f;
     if (forward) {
@@ -130,7 +130,7 @@ void QuadPlane::tiltrotor_binary_update(void)
         // all the way forward and run them as a forward motor
         tiltrotor_binary_slew(true);
 
-        float new_throttle = plane.channel_throttle->get_servo_out()*0.01f;
+        float new_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f;
         if (tilt.current_tilt >= 1) {
             uint8_t mask = is_zero(new_throttle)?0:(uint8_t)tilt.tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
