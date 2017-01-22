@@ -356,6 +356,9 @@ void Display::update_all()
 
 void Display::draw_text(uint16_t x, uint16_t y, const char* c)
 {
+    if (nullptr == c) {
+        return;
+    }
     while (*c != 0) {
         draw_char(x, y, *c);
         x += 7;
