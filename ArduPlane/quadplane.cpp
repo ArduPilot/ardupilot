@@ -1011,6 +1011,11 @@ void QuadPlane::update_transition(void)
         assisted_flight = false;
     }
 
+    // if rotors are fully forward then we are not transitioning
+    if (tiltrotor_fully_fwd()) {
+        transition_state = TRANSITION_DONE;
+    }
+    
     if (transition_state < TRANSITION_TIMER) {
         // set a single loop pitch limit in TECS
         if (plane.ahrs.groundspeed() < 3) {

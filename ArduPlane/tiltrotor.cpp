@@ -229,3 +229,14 @@ void QuadPlane::tilt_compensate(float *thrust, uint8_t num_motors)
         }
     }
 }
+
+/*
+  return true if the rotors are fully tilted forward
+ */
+bool QuadPlane::tiltrotor_fully_fwd(void)
+{
+    if (tilt.tilt_mask <= 0) {
+        return false;
+    }
+    return (tilt.current_tilt >= 1);
+}
