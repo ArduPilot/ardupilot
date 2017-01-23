@@ -68,9 +68,9 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
     if (strstr(frame_str, "cl84")) {
         // setup retract servos at front
         frame->motors[0].servo_type = Motor::SERVO_RETRACT;
-        frame->motors[0].servo_rate = 4*60.0/90; // 4 seconds to change
+        frame->motors[0].servo_rate = 7*60.0/90; // 7 seconds to change
         frame->motors[1].servo_type = Motor::SERVO_RETRACT;
-        frame->motors[1].servo_rate = 4*60.0/90; // 4 seconds to change
+        frame->motors[1].servo_rate = 7*60.0/90; // 7 seconds to change
     }
     
     // leave first 4 servos free for plane
