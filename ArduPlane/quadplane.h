@@ -323,6 +323,7 @@ private:
     void tiltrotor_continuous_update(void);
     void tiltrotor_binary_update(void);
     void tilt_compensate(float *thrust, uint8_t num_motors);
+    bool tiltrotor_fully_fwd(void);
 
     void afs_terminate(void);
     bool guided_mode_enabled(void);
