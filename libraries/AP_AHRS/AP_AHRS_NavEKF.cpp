@@ -93,7 +93,7 @@ void AP_AHRS_NavEKF::update(void)
 
     // push gyros if optical flow present
     if (hal.opticalflow) {
-        Vector3f exported_gyro_bias = get_gyro_drift();
+        const Vector3f &exported_gyro_bias = get_gyro_drift();
         hal.opticalflow->push_gyro_bias(exported_gyro_bias.x, exported_gyro_bias.y);
     }
 }
