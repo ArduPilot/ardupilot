@@ -487,7 +487,6 @@ bool QuadPlane::setup(void)
     for (uint8_t i=0; i<8; i++) {
         SRV_Channel::Aux_servo_function_t func = (SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+i);
         SRV_Channels::set_failsafe_pwm(func, thr_min_pwm);
-        SRV_Channels::set_trim_to_pwm_for(func, thr_min_pwm);
     }
 
 #if HAVE_PX4_MIXER
