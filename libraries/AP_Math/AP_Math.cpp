@@ -1,6 +1,12 @@
 #include "AP_Math.h"
+
 #include <float.h>
 
+/*
+ * is_equal(): Integer implementation, provided for convenience and
+ * compatibility with old code. Expands to the same as comparing the values
+ * directly
+ */
 template <class Arithmetic1, class Arithmetic2>
 typename std::enable_if<std::is_integral<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value ,bool>::type
 is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
@@ -9,11 +15,20 @@ is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
     return static_cast<common_type>(v_1) == static_cast<common_type>(v_2);
 }
 
+/*
+ * is_equal(): double/float implementation - takes into account
+ * std::numeric_limits<T>::epsilon() to return if 2 values are equal.
+ */
 template <class Arithmetic1, class Arithmetic2>
 typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
 is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 {
-    return fabsf(v_1 - v_2) < std::numeric_limits<decltype(v_1 - v_2)>::epsilon();
+    typedef typename std::common_type<Arithmetic1, Arithmetic2>::type common_type;
+    typedef typename std::remove_cv<common_type>::type common_type_nonconst;
+    if (std::is_same<double, common_type_nonconst>::value) {
+        return fabs(v_1 - v_2) < std::numeric_limits<double>::epsilon();
+    }
+    return fabsf(v_1 - v_2) < std::numeric_limits<float>::epsilon();
 }
 
 template bool is_equal<int>(const int v_1, const int v_2);
