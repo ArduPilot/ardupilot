@@ -285,11 +285,15 @@ void Copter::ModeAuto::circle_movetoedge_start(const Location_Class &circle_cent
         // if we are outside the circle, point at the edge, otherwise hold yaw
         const Vector3f &curr_pos = inertial_nav.get_position();
         float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
-        if (dist_to_center > copter.circle_nav->get_radius() && dist_to_center > 500) {
-            auto_yaw.set_mode_to_default(false);
-        } else {
-            // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        // initialise yaw
+        // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
+        if (auto_yaw.mode() != AUTO_YAW_ROI) {
+            if (dist_to_center > copter.circle_nav->get_radius() && dist_to_center > 500) {
+                auto_yaw.set_mode_to_default(false);
+            } else {
+                // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
+                auto_yaw.set_mode(AUTO_YAW_HOLD);
+            }
         }
     } else {
         circle_start();
@@ -774,7 +778,7 @@ void Copter::ModeAuto::wp_run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
     }
 }
 
@@ -859,8 +863,13 @@ void Copter::ModeAuto::circle_run()
     // call z-axis position controller
     pos_control->update_z_controller();
 
-    // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), copter.circle_nav->get_yaw(), true);
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), copter.circle_nav->get_yaw(), true);
+    } else {
+        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), auto_yaw.yaw(), true);
+    }
 }
 
 #if NAV_GUIDED == ENABLED
