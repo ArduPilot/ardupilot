@@ -39,16 +39,17 @@ template bool is_equal<double>(const double v_1, const double v_2);
 template <class T>
 float safe_asin(const T v)
 {
-    if (isnan(static_cast<float>(v))) {
+    const float f = static_cast<const float>(v);
+    if (isnan(f)) {
         return 0.0f;
     }
-    if (v >= 1.0f) {
+    if (f >= 1.0f) {
         return static_cast<float>(M_PI_2);
     }
-    if (v <= -1.0f) {
+    if (f <= -1.0f) {
         return static_cast<float>(-M_PI_2);
     }
-    return asinf(static_cast<float>(v));
+    return asinf(f);
 }
 
 template float safe_asin<int>(const int v);
