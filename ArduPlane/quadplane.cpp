@@ -1065,8 +1065,10 @@ void QuadPlane::update_transition(void)
         }
         float trans_time_ms = (float)transition_time_ms.get();
         float throttle_scaled = last_throttle * (trans_time_ms - (millis() - transition_start_ms)) / trans_time_ms;
-        if (throttle_scaled < 0) {
-            throttle_scaled = 0;
+        if (throttle_scaled < 0.01) {
+            // ensure we don't drop all the way to zero or the motors
+            // will stop stabilizing
+            throttle_scaled = 0.01;
         }
         assisted_flight = true;
         hold_stabilize(throttle_scaled);
