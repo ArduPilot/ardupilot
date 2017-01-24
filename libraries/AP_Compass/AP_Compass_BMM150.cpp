@@ -58,7 +58,7 @@
 #define DIG_XY2_REG 0x70
 #define DIG_XY1_REG 0x71
 
-#define MEASURE_TIME_USEC 10000
+#define MEASURE_TIME_USEC 16667
 
 extern const AP_HAL::HAL &hal;
 
