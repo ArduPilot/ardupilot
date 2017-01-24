@@ -170,6 +170,15 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(c, constrain_int32(c, -250, 50));
         }
     }
+
+    EXPECT_EQ(20.0, constrain_value(20.0, 19.9, 20.1));
+    EXPECT_EQ(20.0, constrain_value(20.0f, 19.9f, 20.1f));
+
+    EXPECT_EQ(19.9, constrain_value(19.9, 19.9, 20.1));
+    EXPECT_EQ(19.9f, constrain_value(19.9f, 19.9f, 20.1f));
+
+    EXPECT_EQ(19.9, constrain_value(19.8, 19.9, 20.1));
+    EXPECT_EQ(19.9f, constrain_value(19.8f, 19.9f, 20.1f));
 }
 
 TEST(MathWrapTest, Angle180)
