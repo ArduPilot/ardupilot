@@ -364,11 +364,12 @@ AP_GPS::detect_instance(uint8_t instance)
           running a uBlox at less than 38400 will lead to packet
           corruption, as we can't receive the packets in the 200ms
           window for 5Hz fixes. The NMEA startup message should force
-          the uBlox into 38400 no matter what rate it is configured
+          the uBlox into 115200 no matter what rate it is configured
           for.
         */
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_UBLOX) &&
-            _baudrates[dstate->current_baud] >= 38400 &&
+            ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
+             _baudrates[dstate->current_baud] == 115200) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             _broadcast_gps_type("u-blox", instance, dstate->current_baud);
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
