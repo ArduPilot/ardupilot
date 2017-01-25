@@ -26,7 +26,7 @@
   update navigation for landing. Called when on landing approach or
   final flare
  */
-bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+bool AP_Landing::type_slope_verify_land(const bool is_aborting, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
         const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed)
 {
     // we don't 'verify' landing in the sense that it never completes,
@@ -35,7 +35,7 @@ bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage
 
     // when aborting a landing, mimic the verify_takeoff with steering hold. Once
     // the altitude has been reached, restart the landing sequence
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+    if (is_aborting) {
 
         throttle_suppressed = false;
         complete = false;
@@ -72,8 +72,7 @@ bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage
     // 2) passed land point and don't have an accurate AGL
     // 3) probably crashed (ensures motor gets turned off)
 
-    bool on_approach_stage = (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH ||
-                              flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE);
+    bool on_approach_stage = (stage == STAGE_APPROACH || stage == STAGE_PREFLARE);
     bool below_flare_alt = (height <= flare_alt);
     bool below_flare_sec = (flare_sec > 0 && height <= sink_rate * flare_sec);
     bool probably_crashed = (aparm.crash_detection_enable && fabsf(sink_rate) < 0.2f && !is_flying);

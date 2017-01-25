@@ -470,7 +470,7 @@ void AP_TECS::_update_height_demand(void)
     // in final landing stage force height rate demand to the
     // configured sink rate and adjust the demanded height to
     // be kinematically consistent with the height rate.
-    if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) {
+    if (_landing.get_stage() == AP_Landing::STAGE_FINAL) {
         _integSEB_state = 0;
         if (_flare_counter == 0) {
             _hgt_rate_dem = _climb_rate;
@@ -529,7 +529,7 @@ void AP_TECS::_detect_underspeed(void)
         _flags.underspeed = false;
     } else if (((_TAS_state < _TASmin * 0.9f) &&
             (_throttle_dem >= _THRmaxf * 0.95f) &&
-            _flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) ||
+            (_landing.get_stage() != AP_Landing::STAGE_FINAL)) ||
             ((_height < _hgt_dem_adj) && _flags.underspeed))
     {
         _flags.underspeed = true;
@@ -806,7 +806,7 @@ void AP_TECS::_update_pitch(void)
     float integSEB_delta = integSEB_input * _DT;
 
 #if 0
-    if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL && fabsf(_climb_rate) > 0.2f) {
+    if (_landing.get_stage() == AP_Landing::STAGE__FINAL && fabsf(_climb_rate) > 0.2f) {
         ::printf("_hgt_rate_dem=%.1f _hgt_dem_adj=%.1f climb=%.1f _flare_counter=%u _pitch_dem=%.1f SEB_dem=%.2f SEBdot_dem=%.2f SEB_error=%.2f SEBdot_error=%.2f\n",
                  _hgt_rate_dem, _hgt_dem_adj, _climb_rate, _flare_counter, degrees(_pitch_dem),
                  SEB_dem, SEBdot_dem, SEB_error, SEBdot_error);
@@ -825,7 +825,7 @@ void AP_TECS::_update_pitch(void)
     float temp = SEB_error + SEBdot_dem * timeConstant();
 
     float pitch_damp = _ptchDamp;
-    if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) {
+    if (_landing.get_stage() == AP_Landing::STAGE_FINAL) {
         pitch_damp = _landDamp;
     } else if (!is_zero(_land_pitch_damp) && _flags.is_doing_auto_land) {
         pitch_damp = _land_pitch_damp;
@@ -978,7 +978,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _pitch_max_limit = 90;
     }
         
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL) {
+    if (_landing.get_stage() == AP_Landing::STAGE_FINAL) {
         // in flare use min pitch from LAND_PITCH_CD
         _PITCHminf = MAX(_PITCHminf, _landing.get_pitch_cd() * 0.01f);
 
@@ -989,7 +989,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
         // and allow zero throttle
         _THRminf = 0;
-    } else if ((flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH || flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE) && (-_climb_rate) > _land_sink) {
+    } else if ((_landing.get_stage() == AP_Landing::STAGE_APPROACH || _landing.get_stage() == AP_Landing::STAGE_PREFLARE) && (-_climb_rate) > _land_sink) {
         // constrain the pitch in landing as we get close to the flare
         // point. Use a simple linear limit from 15 meters after the
         // landing point

@@ -323,7 +323,7 @@ void Plane::Log_Write_Status()
         ,safety      : static_cast<uint8_t>(hal.util->safety_switch_state())
         ,is_crashed  : crash_state.is_crashed
         ,is_still    : plane.ins.is_still()
-        ,stage       : static_cast<uint8_t>(flight_stage)
+        ,stage       : landing.in_progress ? static_cast<uint8_t>(landing.get_stage()) : static_cast<uint8_t>(flight_stage)
         ,impact      : crash_state.impact_detected
         };
 

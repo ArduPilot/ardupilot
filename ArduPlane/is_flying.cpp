@@ -89,14 +89,19 @@ void Plane::update_is_flying_5Hz(void)
                 // TODO: detect ground impacts
                 break;
 
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH:
-                if (fabsf(auto_state.sink_rate) > 0.2f) {
-                    is_flying_bool = true;
-                }
-                break;
+            case AP_Vehicle::FixedWing::FLIGHT_LAND:
+                switch (landing.get_stage()) {
+                case AP_Landing::STAGE_APPROACH:
+                    if (fabsf(auto_state.sink_rate) > 0.2f) {
+                        is_flying_bool = true;
+                    }
+                    break;
 
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE:
-            case AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL:
+                case AP_Landing::STAGE_UNKNOWN:
+                case AP_Landing::STAGE_PREFLARE:
+                case AP_Landing::STAGE_FINAL:
+                    break;
+                }
                 break;
 
             case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
@@ -116,7 +121,7 @@ void Plane::update_is_flying_5Hz(void)
 
         if ((control_mode == AUTO) &&
             ((flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF) ||
-             (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL)) ) {
+             (landing.get_stage() == AP_Landing::STAGE_FINAL)) ) {
             is_flying_bool = false;
         }
     }
@@ -231,40 +236,47 @@ void Plane::crash_detection_update(void)
             crashed = false;
             break;
             
-        case AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH:
-            if (been_auto_flying) {
-                crashed = true;
-                crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
-            }
-            // when altitude gets low, we automatically progress to FLIGHT_LAND_FINAL
-            // so ground crashes most likely can not be triggered from here. However,
-            // a crash into a tree would be caught here.
-            break;
+        case AP_Vehicle::FixedWing::FLIGHT_LAND:
+            switch (landing.get_stage())
+            {
+            case AP_Landing::STAGE_APPROACH:
+                if (been_auto_flying) {
+                    crashed = true;
+                    crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
+                }
+                // when altitude gets low, we automatically progress to AP_Landing::STAGE_FINAL
+                // so ground crashes most likely can not be triggered from here. However,
+                // a crash into a tree would be caught here.
+                break;
 
-        case AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE:
-        case AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL:
-            // We should be nice and level-ish in this flight stage. If not, we most
-            // likely had a crazy landing. Throttle is inhibited already at the flare
-            // but go ahead and notify GCS and perform any additional post-crash actions.
-            // Declare a crash if we are oriented more that 60deg in pitch or roll
-            if (!crash_state.checkedHardLanding && // only check once
-                been_auto_flying &&
-                (labs(ahrs.roll_sensor) > 6000 || labs(ahrs.pitch_sensor) > 6000)) {
-                crashed = true;
-                crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
+            case AP_Landing::STAGE_PREFLARE:
+            case AP_Landing::STAGE_FINAL:
+                // We should be nice and level-ish in this flight stage. If not, we most
+                // likely had a crazy landing. Throttle is inhibited already at the flare
+                // but go ahead and notify GCS and perform any additional post-crash actions.
+                // Declare a crash if we are oriented more that 60deg in pitch or roll
+                if (!crash_state.checkedHardLanding && // only check once
+                    been_auto_flying &&
+                    (labs(ahrs.roll_sensor) > 6000 || labs(ahrs.pitch_sensor) > 6000)) {
+                    crashed = true;
+                    crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
 
-                // did we "crash" within 75m of the landing location? Probably just a hard landing
-                crashed_near_land_waypoint =
-                        get_distance(current_loc, mission.get_current_nav_cmd().content.location) < 75;
+                    // did we "crash" within 75m of the landing location? Probably just a hard landing
+                    crashed_near_land_waypoint =
+                            get_distance(current_loc, mission.get_current_nav_cmd().content.location) < 75;
 
-                // trigger hard landing event right away, or never again. This inhibits a false hard landing
-                // event when, for example, a minute after a good landing you pick the plane up and
-                // this logic is still running and detects the plane is on its side as you carry it.
-                crash_state.debounce_timer_ms = now_ms + CRASH_DETECTION_DELAY_MS;
-            }
+                    // trigger hard landing event right away, or never again. This inhibits a false hard landing
+                    // event when, for example, a minute after a good landing you pick the plane up and
+                    // this logic is still running and detects the plane is on its side as you carry it.
+                    crash_state.debounce_timer_ms = now_ms + CRASH_DETECTION_DELAY_MS;
+                }
 
-            crash_state.checkedHardLanding = true;
-            break;
+                crash_state.checkedHardLanding = true;
+                break;
+
+            case AP_Landing::STAGE_UNKNOWN:
+                break;
+            } // switch landing.get_stage()
 
         default:
             break;
