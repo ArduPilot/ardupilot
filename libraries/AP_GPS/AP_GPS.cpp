@@ -884,10 +884,6 @@ float AP_GPS::get_lag(uint8_t instance) const
     if (_delay_ms[instance] > 0) {
         // if the user has specified a non zero time delay, always return that value
         return 0.001f * (float)_delay_ms[instance];
-    } else if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
-        // the user has not specified a value and we cannot determine it from the GPS type
-        // so return a default delay of 1 measurement interval
-        return 0.001f * (float)_rate_ms[instance];
     } else {
         // the user has not specified a delay so we determine it from the GPS type
         return drivers[instance]->get_lag();
