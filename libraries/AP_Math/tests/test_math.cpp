@@ -80,6 +80,14 @@ TEST(MathTest, IsEqual)
     EXPECT_FALSE(is_equal(0.1, -0.1001));
     EXPECT_TRUE(is_equal(0.f,   0.0f));
     EXPECT_FALSE(is_equal(1.f,  1.f + FLT_EPSILON));
+    EXPECT_TRUE(is_equal(1.f,  1.f + FLT_EPSILON / 2.f));
+    EXPECT_TRUE(is_equal(1.f, (float)(1.f - DBL_EPSILON)));
+
+    // false because the common type is double
+    EXPECT_FALSE(is_equal(1., 1. + 2 * std::numeric_limits<double>::epsilon()));
+
+    // true because the common type is float
+    EXPECT_TRUE(is_equal(1.f, (float)(1. + std::numeric_limits<double>::epsilon())));
 }
 
 TEST(MathTest, Square)
