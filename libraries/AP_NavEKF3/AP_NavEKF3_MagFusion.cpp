@@ -260,15 +260,16 @@ void NavEKF3_core::SelectMagFusion()
                 FuseDeclination(0.34f);
             }
             // fuse the three magnetometer componenents sequentially
+            hal.util->perf_begin(_perf_test[0]);
             for (mag_state.obsIndex = 0; mag_state.obsIndex <= 2; mag_state.obsIndex++) {
-                hal.util->perf_begin(_perf_test[0]);
                 FuseMagnetometer();
-                hal.util->perf_end(_perf_test[0]);
                 // don't continue fusion if unhealthy
                 if (!magHealth) {
+                    hal.util->perf_end(_perf_test[0]);
                     break;
                 }
             }
+            hal.util->perf_end(_perf_test[0]);
             // zero the test ratio output from the inactive simple magnetometer yaw fusion
             yawTestRatio = 0.0f;
         }
