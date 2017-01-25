@@ -433,6 +433,7 @@ void NavEKF2_core::FuseMagnetometer()
 
         // if the magnetometer is unhealthy, do not proceed further
         if (!magHealth) {
+            hal.util->perf_end(_perf_test[2]);
             return;
         }
 
