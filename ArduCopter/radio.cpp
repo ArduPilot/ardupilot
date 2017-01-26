@@ -55,7 +55,9 @@ void Copter::init_rc_out()
     motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif
 
-    for(uint8_t i = 0; i < 5; i++) {
+    // delay up to 2 second for first radio input
+    uint8_t i = 0;
+    while ((i++ < 100) && (last_radio_update_ms == 0)) {
         delay(20);
         read_radio();
     }
