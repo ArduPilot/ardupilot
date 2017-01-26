@@ -21,6 +21,9 @@
 #include "ExternalLED.h"
 #include "NavioLED_I2C.h"
 #include "OreoLED_PX4.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
+#include "PixRacerLED.h"
+#endif
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm_Linux.h"
 #include "ToneAlarm_PX4.h"
@@ -79,7 +82,11 @@ struct AP_Notify::notify_flags_and_values_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    AP_BoardLED boardled;
+    #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
+        PixRacerLED boardled;
+    #else
+        AP_BoardLED boardled;
+    #endif
     ToshibaLED_PX4 toshibaled;
     Display display;
 
