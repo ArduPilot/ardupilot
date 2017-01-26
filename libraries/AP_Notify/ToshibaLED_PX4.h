@@ -24,9 +24,9 @@
 
 class ToshibaLED_PX4 : public ToshibaLED
 {
-public:
-    bool hw_init(void);
-    bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b);
+protected:
+    bool hw_init(void) override;
+    bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 private:
     int _rgbled_fd;
     void update_timer(void);
