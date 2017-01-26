@@ -549,13 +549,11 @@ void Plane::handle_auto_mode(void)
         calc_nav_roll();
         calc_nav_pitch();
         
-        if (landing.is_complete()) {
-            // during final approach constrain roll to the range
-            // allowed for level flight
-            nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
+        // allow landing to restrict the roll limits
+        nav_roll_cd = landing.constrain_roll(nav_roll_cd, g.level_roll_limit*100UL);
 
-            // we are in the final stage of a landing - force
-            // zero throttle
+        if (landing.is_complete()) {
+            // if landing is considered complete throttle is never allowed, regardless of landing type
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
         } else {
             calc_throttle();
@@ -865,44 +863,12 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
         return;
     }
 
-    switch (fs) {
-    case AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH:
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude());
-        landing.in_progress = true;
-#if GEOFENCE_ENABLED == ENABLED 
-        if (g.fence_autoenable == 1) {
-            if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
-            } else {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
-            }
-        } else if (g.fence_autoenable == 2) {
-            if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
-            } else {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
-            }
-        }
-#endif
-        break;
+    landing.handle_flight_stage_change(fs == AP_Vehicle::FixedWing::FLIGHT_LAND);
 
-    case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
-        landing.in_progress = false;
-        break;
-
-    case AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE:
-    case AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL:
-        landing.in_progress = true;
-        break;
-
-    case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
-    case AP_Vehicle::FixedWing::FLIGHT_VTOL:
-    case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
-        landing.in_progress = false;
-        break;
+    if (fs == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
+                          auto_state.takeoff_altitude_rel_cm/100);
     }
-    
 
     flight_stage = fs;
 
@@ -939,7 +905,7 @@ void Plane::update_alt()
     if (auto_throttle_mode && !throttle_suppressed) {        
 
         float distance_beyond_land_wp = 0;
-        if (landing.in_progress && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
             distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
         }
 
@@ -974,10 +940,11 @@ void Plane::update_flight_stage(void)
                 } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) {
                     plane.gcs_send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
-                } else if (landing.is_complete()) {
-                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL);
-                } else if (landing.pre_flare == true) {
-                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE);
+                } else {
+                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
+                }
+/*
+   // FIXME: lift this into AP_Landing_Slope
                 } else if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH) {
                     bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
                     const bool on_flight_line = fabsf(nav_controller->crosstrack_error()) < 5.0f && !nav_controller->data_is_stale();
@@ -990,7 +957,7 @@ void Plane::update_flight_stage(void)
                     } else {
                         set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
                     }
-                }
+                }*/
             } else if (quadplane.in_assisted_flight()) {
                 set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
             } else {
@@ -1046,11 +1013,12 @@ void Plane::update_optical_flow(void)
 
 /*
     If land_DisarmDelay is enabled (non-zero), check for a landing then auto-disarm after time expires
+
+    only called from AP_Landing, when the landing library is ready to disarm
  */
 void Plane::disarm_if_autoland_complete()
 {
     if (landing.get_disarm_delay() > 0 &&
-        landing.is_complete() &&
         !is_flying() &&
         arming.arming_required() != AP_Arming::NO &&
         arming.is_armed()) {
@@ -1077,7 +1045,7 @@ float Plane::tecs_hgt_afe(void)
       coming.
     */
     float hgt_afe;
-    if (landing.in_progress) {
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         hgt_afe = height_above_target();
         hgt_afe -= rangefinder_correction();
     } else {

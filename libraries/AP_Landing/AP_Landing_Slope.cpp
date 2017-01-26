@@ -21,38 +21,49 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
 
+void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
+{
+    initial_slope = 0;
+    slope = 0;
+
+    // once landed, post some landing statistics to the GCS
+    post_stats = false;
+
+    type_slope_stage = SLOPE_STAGE_NORMAL;
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude);
+}
+
+void AP_Landing::type_slope_verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, bool &throttle_suppressed)
+{
+    // when aborting a landing, mimic the verify_takeoff with steering hold. Once
+    // the altitude has been reached, restart the landing sequence
+    throttle_suppressed = false;
+    nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
+}
+
 
 /*
   update navigation for landing. Called when on landing approach or
   final flare
  */
-bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
-        const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed)
+bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+        const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range)
 {
     // we don't 'verify' landing in the sense that it never completes,
     // so we don't verify command completion. Instead we use this to
     // adjust final landing parameters
 
-    // when aborting a landing, mimic the verify_takeoff with steering hold. Once
-    // the altitude has been reached, restart the landing sequence
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
-
-        throttle_suppressed = false;
-        complete = false;
-        pre_flare = false;
-        nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
-
-        // see if we have reached abort altitude
-        if (adjusted_relative_altitude_cm_fn() > auto_state_takeoff_altitude_rel_cm) {
-            next_WP_loc = current_loc;
-            mission.stop();
-            if (restart_landing_sequence()) {
-                mission.resume();
-            }
-            // else we're in AUTO with a stopped mission and handle_auto_mode() will set RTL
+    // determine stage
+    if (type_slope_stage == SLOPE_STAGE_NORMAL) {
+        const bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
+        const bool on_flight_line = fabsf(nav_controller->crosstrack_error()) < 5.0f && !nav_controller->data_is_stale();
+        const bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
+        if ((mission.get_prev_nav_cmd_id() == MAV_CMD_NAV_LOITER_TO_ALT) ||
+            (wp_proportion >= 0 && heading_lined_up && on_flight_line) ||
+            (wp_proportion > 0.15f && heading_lined_up && below_prev_WP) ||
+            (wp_proportion > 0.5f)) {
+            type_slope_stage = SLOPE_STAGE_APPROACH;
         }
-        // make sure to return false so it leaves the mission index alone
-        return false;
     }
 
 
@@ -72,18 +83,17 @@ bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage
     // 2) passed land point and don't have an accurate AGL
     // 3) probably crashed (ensures motor gets turned off)
 
-    bool on_approach_stage = (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH ||
-                              flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE);
-    bool below_flare_alt = (height <= flare_alt);
-    bool below_flare_sec = (flare_sec > 0 && height <= sink_rate * flare_sec);
-    bool probably_crashed = (aparm.crash_detection_enable && fabsf(sink_rate) < 0.2f && !is_flying);
+    const bool on_approach_stage = type_slope_is_on_approach();
+    const bool below_flare_alt = (height <= flare_alt);
+    const bool below_flare_sec = (flare_sec > 0 && height <= sink_rate * flare_sec);
+    const bool probably_crashed = (aparm.crash_detection_enable && fabsf(sink_rate) < 0.2f && !is_flying);
 
     if ((on_approach_stage && below_flare_alt) ||
         (on_approach_stage && below_flare_sec && (wp_proportion > 0.5)) ||
         (!rangefinder_state_in_range && wp_proportion >= 1) ||
         probably_crashed) {
 
-        if (!complete) {
+        if (type_slope_stage != SLOPE_STAGE_FINAL) {
             post_stats = true;
             if (is_flying && (AP_HAL::millis()-last_flying_ms) > 3000) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)ahrs.get_gps().ground_speed());
@@ -93,8 +103,7 @@ bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage
                                   (double)ahrs.get_gps().ground_speed(),
                                   (double)get_distance(current_loc, next_WP_loc));
             }
-            complete = true;
-            update_flight_stage_fn();
+            type_slope_stage = SLOPE_STAGE_FINAL;
         }
 
 
@@ -107,12 +116,11 @@ bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage
             aparm.min_gndspeed_cm.load();
             aparm.throttle_cruise.load();
         }
-    } else if (!complete && !pre_flare && pre_flare_airspeed > 0) {
+    } else if (type_slope_stage == SLOPE_STAGE_APPROACH && pre_flare_airspeed > 0) {
         bool reached_pre_flare_alt = pre_flare_alt > 0 && (height <= pre_flare_alt);
         bool reached_pre_flare_sec = pre_flare_sec > 0 && (height <= sink_rate * pre_flare_sec);
         if (reached_pre_flare_alt || reached_pre_flare_sec) {
-            pre_flare = true;
-            update_flight_stage_fn();
+            type_slope_stage = SLOPE_STAGE_PREFLARE;
         }
     }
 
@@ -135,7 +143,9 @@ bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage
     }
 
     // check if we should auto-disarm after a confirmed landing
-    disarm_if_autoland_complete_fn();
+    if (type_slope_stage == SLOPE_STAGE_FINAL) {
+        disarm_if_autoland_complete_fn();
+    }
 
     /*
       we return false as a landing mission item never completes
@@ -298,4 +308,70 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     constrain_target_altitude_location_fn(loc, prev_WP_loc);
 }
 
+int32_t AP_Landing::type_slope_get_target_airspeed_cm(void) {
+
+    // we're landing, check for custom approach and
+    // pre-flare airspeeds. Also increase for head-winds
+
+    const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+    int32_t target_airspeed_cm = aparm.airspeed_cruise_cm;
+
+    switch (type_slope_stage) {
+    case SLOPE_STAGE_APPROACH:
+        if (land_airspeed >= 0) {
+            target_airspeed_cm = land_airspeed * 100;
+        }
+        break;
+
+    case SLOPE_STAGE_PREFLARE:
+    case SLOPE_STAGE_FINAL:
+        if (pre_flare_airspeed > 0) {
+            // if we just preflared then continue using the pre-flare airspeed during final flare
+            target_airspeed_cm = pre_flare_airspeed * 100;
+        } else if (land_airspeed >= 0) {
+            target_airspeed_cm = land_airspeed * 100;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    // when landing, add half of head-wind.
+    const int32_t head_wind_compensation_cm = head_wind() * 0.5f * 100;
+
+    // Do not lower it or exceed cruise speed
+    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_cruise_cm);
+}
+
+int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd) {
+    if (type_slope_stage == SLOPE_STAGE_FINAL) {
+        return constrain_int32(desired_roll_cd, level_roll_limit_cd * -1, level_roll_limit_cd);
+    } else {
+        return desired_roll_cd;
+    }
+}
+
+bool AP_Landing::type_slope_is_flaring(void) const
+{
+    return (type_slope_stage == SLOPE_STAGE_FINAL);
+}
+
+
+bool AP_Landing::type_slope_is_on_approach(void) const
+{
+    return (type_slope_stage == SLOPE_STAGE_APPROACH ||
+            type_slope_stage == SLOPE_STAGE_PREFLARE);
+}
+
+bool AP_Landing::type_slope_is_expecting_impact(void) const
+{
+    return (type_slope_stage == SLOPE_STAGE_PREFLARE ||
+            type_slope_stage == SLOPE_STAGE_FINAL);
+}
+
+bool AP_Landing::type_slope_is_complete(void) const
+{
+    return (type_slope_stage == SLOPE_STAGE_FINAL);
+}
 
