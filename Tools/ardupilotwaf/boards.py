@@ -419,12 +419,15 @@ class px4(Board):
 
     def __init__(self):
         self.version = None
+        self.bootloader_name = None
         self.use_px4io = True
         self.ROMFS_EXCLUDE = []
 
     def configure(self, cfg):
         if not self.version:
             cfg.fatal('configure: px4: version required')
+        if not self.bootloader_name:
+            cfg.fatal('configure: px4: bootloader name is required')
 
         super(px4, self).configure(cfg)
         cfg.load('px4')
@@ -458,6 +461,7 @@ class px4(Board):
         env.ROMFS_EXCLUDE = self.ROMFS_EXCLUDE
 
         env.PX4_VERSION = self.version
+        env.PX4_BOOTLOADER_NAME = self.bootloader_name
         env.PX4_USE_PX4IO = True if self.use_px4io else False
 
         env.AP_PROGRAM_AS_STLIB = True
@@ -476,6 +480,7 @@ class px4_v1(px4):
     def __init__(self):
         super(px4_v1, self).__init__()
         self.version = '1'
+        self.bootloader_name = 'px4fmu_bl.bin'
         self.romfs_exclude(['oreoled.bin'])
 
 class px4_v2(px4):
@@ -483,6 +488,7 @@ class px4_v2(px4):
     def __init__(self):
         super(px4_v2, self).__init__()
         self.version = '2'
+        self.bootloader_name = 'px4fmuv2_bl.bin'
         self.romfs_exclude(['oreoled.bin'])
 
 class px4_v3(px4):
@@ -490,11 +496,13 @@ class px4_v3(px4):
     def __init__(self):
         super(px4_v3, self).__init__()
         self.version = '3'
+        self.bootloader_name = 'px4fmuv2_bl.bin'
 
 class px4_v4(px4):
     name = 'px4-v4'
     def __init__(self):
         super(px4_v4, self).__init__()
         self.version = '4'
+        self.bootloader_name = 'px4fmuv4_bl.bin'
         self.use_px4io = False
         self.romfs_exclude(['oreoled.bin', 'px4io.bin'])

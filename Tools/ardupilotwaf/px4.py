@@ -238,19 +238,12 @@ def configure(cfg):
         return bldnode.make_node(path).abspath()
 
     version = env.get_flat('PX4_VERSION')
-    
-    if env.PX4_VERSION == '1':
-        bootloader_name = 'px4fmu_bl.bin'
-    elif env.PX4_VERSION in ['2','3']:
-        bootloader_name = 'px4fmuv2_bl.bin'
-    else:
-        bootloader_name = 'px4fmuv%s_bl.bin' % version
 
     # TODO: we should move stuff from mk/PX4 to Tools/ardupilotwaf/px4 after
     # stop using the make-based build system
     env.PX4_ROMFS_SRC = 'mk/PX4/ROMFS'
     env.PX4_ROMFS_BLD = 'px4-extra-files/ROMFS'
-    env.PX4_BOOTLOADER = 'mk/PX4/bootloader/%s' % bootloader_name
+    env.PX4_BOOTLOADER = 'mk/PX4/bootloader/%s' % env.PX4_BOOTLOADER_NAME
 
     env.PX4_ADD_GIT_HASHES = srcpath('Tools/scripts/add_git_hashes.py')
     env.PX4_APM_ROOT = srcpath('')
