@@ -124,7 +124,7 @@ bool PX4RCInput::rc_bind(int dsmMode)
         fd = open("/dev/px4fmu", 0);
     }
     if (fd == -1) {
-        hal.console->printf("RCInput: failed to open /dev/px4io or /dev/px4fmu\n");
+        hal.console->println("RCInput: failed to open /dev/px4io or /dev/px4fmu");
         return false;
     }
 
@@ -132,7 +132,7 @@ bool PX4RCInput::rc_bind(int dsmMode)
     int ret = ioctl(fd, DSM_BIND_START, mode);
     close(fd);
     if (ret != 0) {
-        hal.console->printf("RCInput: Unable to start DSM bind\n");
+        hal.console->println("RCInput: Unable to start DSM bind");
         return false;
     }
     return true;

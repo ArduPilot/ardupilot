@@ -64,7 +64,7 @@ bool PX4Util::run_debug_shell(AP_HAL::BetterStream *stream)
     nsh_consolemain(0, nullptr);
     
     // this shouldn't happen
-    hal.console->printf("shell exited\n");
+    hal.console->println("shell exited");
     return true;
 }
 
