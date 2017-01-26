@@ -143,6 +143,8 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
 
 void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
+    log(); // log old state so we get a nice transition from old to new here
+
     flags.commanded_go_around = false;
 
     switch (type) {
@@ -153,6 +155,8 @@ void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float rel
         // a incorrect type is handled in the verify_land
         break;
     }
+
+    log();
 }
 
 /*
@@ -162,16 +166,22 @@ void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float rel
 bool AP_Landing::verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
         const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range)
 {
+    bool success = true;
+
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
-        return type_slope_verify_land(prev_WP_loc, next_WP_loc, current_loc,
+        success = type_slope_verify_land(prev_WP_loc, next_WP_loc, current_loc,
                 height, sink_rate, wp_proportion, last_flying_ms, is_armed, is_flying, rangefinder_state_in_range);
+        break;
     default:
         // returning TRUE while executing verify_land() will increment the
         // mission index which in many cases will trigger an RTL for end-of-mission
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Landing configuration error, invalid LAND_TYPE");
-        return true;
+        success = true;
+        break;
     }
+    log();
+    return success;
 }
 
 
@@ -195,6 +205,8 @@ bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &nex
          }
          // else we're in AUTO with a stopped mission and handle_auto_mode() will set RTL
      }
+
+     log();
 
      // make sure to always return false so it leaves the mission index alone
      return false;
@@ -326,6 +338,8 @@ bool AP_Landing::restart_landing_sequence()
         // exit landing stages if we're no longer executing NAV_LAND
         update_flight_stage_fn();
     }
+
+    log();
     return success;
 }
 
@@ -390,18 +404,26 @@ int32_t AP_Landing::get_target_airspeed_cm(void)
  */
 bool AP_Landing::request_go_around(void)
 {
+    bool success = false;
+
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
-        return type_slope_request_go_around();
+        success = type_slope_request_go_around();
+        break;
     default:
-        return false;
+        break;
     }
+
+    log();
+    return success;
 }
 
 void AP_Landing::handle_flight_stage_change(const bool _in_landing_stage)
 {
+    log(); // log old value to plot discrete transitions
     flags.in_progress = _in_landing_stage;
     flags.commanded_go_around = false;
+    log();
 }
 
 /*
@@ -417,4 +439,14 @@ bool AP_Landing::is_complete(void) const
     }
 }
 
+void AP_Landing::log(void) const
+{
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        type_slope_log();
+        break;
+    default:
+        break;
+    }
+}
 
