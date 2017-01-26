@@ -27,7 +27,7 @@ void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, cons
     slope = 0;
 
     // once landed, post some landing statistics to the GCS
-    post_stats = false;
+    type_slope_flags.post_stats = false;
 
     type_slope_stage = SLOPE_STAGE_NORMAL;
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude);
@@ -94,7 +94,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
         probably_crashed) {
 
         if (type_slope_stage != SLOPE_STAGE_FINAL) {
-            post_stats = true;
+            type_slope_flags.post_stats = true;
             if (is_flying && (AP_HAL::millis()-last_flying_ms) > 3000) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)ahrs.get_gps().ground_speed());
             } else {
@@ -137,8 +137,8 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
 
     // once landed and stationary, post some statistics
     // this is done before disarm_if_autoland_complete() so that it happens on the next loop after the disarm
-    if (post_stats && !is_armed) {
-        post_stats = false;
+    if (type_slope_flags.post_stats && !is_armed) {
+        type_slope_flags.post_stats = false;
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Distance from LAND point=%.2fm", (double)get_distance(current_loc, next_WP_loc));
     }
 
@@ -183,7 +183,7 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
         // correction positive means we're too low so we should continue on with
         // the newly computed shallower slope instead of pitching/throttling up
 
-    } else if (slope_recalc_steep_threshold_to_abort > 0 && !has_aborted_due_to_slope_recalc) {
+    } else if (slope_recalc_steep_threshold_to_abort > 0 && !type_slope_flags.has_aborted_due_to_slope_recalc) {
         // correction negative means we're too high and need to point down (and speed up) to re-align
         // to land on target. A large negative correction means we would have to dive down a lot and will
         // generating way too much speed that we can not bleed off in time. It is better to remember
@@ -199,8 +199,8 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing slope too steep, aborting (%.0fm %.1fdeg)",
                                              (double)rangefinder_state.correction, (double)(new_slope_deg - initial_slope_deg));
             alt_offset = rangefinder_state.correction;
-            commanded_go_around = true;
-            has_aborted_due_to_slope_recalc = true; // only allow this once.
+            flags.commanded_go_around = true;
+            type_slope_flags.has_aborted_due_to_slope_recalc = true; // only allow this once.
         }
     }
 }
@@ -208,7 +208,7 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
 
 bool AP_Landing::type_slope_request_go_around(void)
 {
-    commanded_go_around = true;
+    flags.commanded_go_around = true;
     return true;
 }
 

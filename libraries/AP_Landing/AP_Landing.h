@@ -96,7 +96,7 @@ public:
     int8_t get_abort_throttle_enable(void) const { return abort_throttle_enable; }
     int8_t get_flap_percent(void) const { return flap_percent; }
     int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
-    bool is_commanded_go_around(void) const { return commanded_go_around; }
+    bool is_commanded_go_around(void) const { return flags.commanded_go_around; }
     bool is_complete(void) const;
     void set_initial_slope(void) { initial_slope = slope; }
     bool is_expecting_impact(void) const;
@@ -106,13 +106,13 @@ public:
 
 private:
 
-    // once landed, post some landing statistics to the GCS
-    bool post_stats;
-
-    bool has_aborted_due_to_slope_recalc;
-
+    struct {
     // denotes if a go-around has been commanded for landing
-    bool commanded_go_around;
+        bool commanded_go_around:1;
+
+        // are we in auto and flight_stage is LAND
+        bool in_progress:1;
+    } flags;
 
     // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
     float initial_slope;
@@ -120,8 +120,6 @@ private:
     // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
     float slope;
 
-    // are we in auto and flight_stage is LAND
-    bool in_progress;
 
     AP_Mission &mission;
     AP_AHRS &ahrs;
@@ -153,13 +151,21 @@ private:
     AP_Int8 type;
 
     // Land Type STANDARD GLIDE SLOPE
-    enum slope_stage {
+
+    enum  {
         SLOPE_STAGE_NORMAL,
         SLOPE_STAGE_APPROACH,
         SLOPE_STAGE_PREFLARE,
         SLOPE_STAGE_FINAL
-    };
-    slope_stage type_slope_stage;
+    } type_slope_stage;
+
+    struct {
+        // once landed, post some landing statistics to the GCS
+        bool post_stats:1;
+
+        bool has_aborted_due_to_slope_recalc:1;
+    } type_slope_flags;
+
     void type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
     void type_slope_verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, bool &throttle_suppressed);
     bool type_slope_verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
