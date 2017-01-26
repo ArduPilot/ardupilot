@@ -28,7 +28,6 @@
 #include "ToneAlarm_PX4_Solo.h"
 #include "ToshibaLED.h"
 #include "ToshibaLED_I2C.h"
-#include "ToshibaLED_PX4.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
@@ -85,7 +84,7 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #else
     AP_BoardLED boardled;
 #endif
-    ToshibaLED_PX4 toshibaled;
+    ToshibaLED_I2C toshibaled;
     Display display;
 
 #if AP_NOTIFY_SOLO_TONES == 1
@@ -108,7 +107,7 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #else
     VRBoard_LED boardled;
 #endif
-    ToshibaLED_PX4 toshibaled;
+    ToshibaLED_I2C toshibaled;
     ExternalLED externalled;
     NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &externalled, &tonealarm};
 
