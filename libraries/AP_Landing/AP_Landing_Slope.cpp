@@ -201,6 +201,7 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
             alt_offset = rangefinder_state.correction;
             flags.commanded_go_around = true;
             type_slope_flags.has_aborted_due_to_slope_recalc = true; // only allow this once.
+            log();
         }
     }
 }
@@ -375,3 +376,15 @@ bool AP_Landing::type_slope_is_complete(void) const
     return (type_slope_stage == SLOPE_STAGE_FINAL);
 }
 
+void AP_Landing::type_slope_log(void) const
+{
+    // log to DataFlash
+    DataFlash_Class::instance()->Log_Write("LAND", "TimeUS,stage,f1,f2,slope,slopeInit,altO", "QBBBfff",
+                                            AP_HAL::micros64(),
+                                            type_slope_stage,
+                                            flags,
+                                            type_slope_flags,
+                                            slope,
+                                            initial_slope,
+                                            alt_offset);
+}

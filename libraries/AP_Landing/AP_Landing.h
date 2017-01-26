@@ -100,6 +100,7 @@ public:
     bool is_complete(void) const;
     void set_initial_slope(void) { initial_slope = slope; }
     bool is_expecting_impact(void) const;
+    void log(void) const;
 
     // landing altitude offset (meters)
     float alt_offset;
@@ -107,7 +108,7 @@ public:
 private:
 
     struct {
-    // denotes if a go-around has been commanded for landing
+        // denotes if a go-around has been commanded for landing
         bool commanded_go_around:1;
 
         // are we in auto and flight_stage is LAND
@@ -178,6 +179,7 @@ private:
     void type_slope_check_if_need_to_abort(const AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state);
     int32_t type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
     bool type_slope_request_go_around(void);
+    void type_slope_log(void) const;
     bool type_slope_is_complete(void) const;
     bool type_slope_is_flaring(void) const;
     bool type_slope_is_on_approach(void) const;
