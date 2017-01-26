@@ -99,6 +99,7 @@ _upload_task = []
 def px4_firmware(self):
     global _cp_px4io, _firmware_semaphorish_tasks, _upload_task
     version = self.env.get_flat('PX4_VERSION')
+    board_name = self.env.get_flat('PX4_BOARD_NAME')
 
     px4 = self.bld.cmake('px4')
     px4.vars['APM_PROGRAM_LIB'] = self.link_task.outputs[0].abspath()
@@ -128,7 +129,7 @@ def px4_firmware(self):
 
     fw_task = self.create_cmake_build_task(
         'px4',
-        'build_firmware_px4fmu-v%s' % version,
+        'build_firmware_%s' % board_name,
     )
     fw_task.set_run_after(self.link_task)
 
@@ -142,7 +143,7 @@ def px4_firmware(self):
         fw_task.set_run_after(_cp_px4io)
 
     firmware = px4.bldnode.make_node(
-        'src/firmware/nuttx/nuttx-px4fmu-v%s-apm.px4' % version,
+        'src/firmware/nuttx/nuttx-%s-apm.px4' % board_name,
     )
     fw_elf = px4.bldnode.make_node(
         'src/firmware/nuttx/firmware_nuttx',
@@ -237,7 +238,7 @@ def configure(cfg):
     def bldpath(path):
         return bldnode.make_node(path).abspath()
 
-    version = env.get_flat('PX4_VERSION')
+    board_name = env.get_flat('PX4_BOARD_NAME')
 
     # TODO: we should move stuff from mk/PX4 to Tools/ardupilotwaf/px4 after
     # stop using the make-based build system
@@ -254,7 +255,7 @@ def configure(cfg):
     if env.PX4_USE_PX4IO:
         env.PX4IO_ELF_DEST = 'px4-extra-files/px4io'
 
-    nuttx_config='nuttx_px4fmu-v%s_apm' % version
+    nuttx_config='nuttx_%s_apm' % board_name
         
     env.PX4_CMAKE_VARS = dict(
         CONFIG=nuttx_config,
@@ -286,7 +287,7 @@ def configure(cfg):
     )
 
 def build(bld):
-    version = bld.env.get_flat('PX4_VERSION')
+    board_name = bld.env.get_flat('PX4_BOARD_NAME')
     px4 = bld.cmake(
         name='px4',
         cmake_src=bld.srcnode.find_dir('modules/PX4Firmware'),
@@ -301,7 +302,7 @@ def build(bld):
     px4.build(
         'prebuild_targets',
         group='dynamic_sources',
-        cmake_output_patterns='px4fmu-v%s/NuttX/nuttx-export/**/*.h' % version,
+        cmake_output_patterns='%s/NuttX/nuttx-export/**/*.h' % board_name,
     )
 
     bld(
