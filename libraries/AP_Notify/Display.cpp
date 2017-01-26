@@ -459,8 +459,8 @@ void Display::update_gps(uint8_t r)
 void Display::update_gps_sats(uint8_t r)
 {
     draw_text(COLUMN(0), ROW(r), "Sats:");
-    draw_char(COLUMN(8), ROW(r), (AP_Notify::flags.gps_num_sats / 10) + 48);
-    draw_char(COLUMN(9), ROW(r), (AP_Notify::flags.gps_num_sats % 10) + 48);
+    draw_char(COLUMN(8), ROW(r), (AP_Notify::flags.gps_num_sats / 10) + '0');
+    draw_char(COLUMN(9), ROW(r), (AP_Notify::flags.gps_num_sats % 10) + '0');
 }
 
 void Display::update_ekf(uint8_t r)
