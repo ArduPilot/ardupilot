@@ -98,23 +98,18 @@ _upload_task = []
 @after_method('process_source')
 def px4_firmware(self):
     global _cp_px4io, _firmware_semaphorish_tasks, _upload_task
-    version = self.env.get_flat('PX4_VERSION')
     board_name = self.env.get_flat('PX4_BOARD_NAME')
 
     px4 = self.bld.cmake('px4')
     px4.vars['APM_PROGRAM_LIB'] = self.link_task.outputs[0].abspath()
 
-    if self.env.PX4_USE_PX4IO and not _cp_px4io:
+    if self.env.PX4_PX4IO_NAME and not _cp_px4io:
         px4io_task = self.create_cmake_build_task('px4', 'fw_io')
-        if version == '3':
-            px4io_version = '2'
-        else:
-            px4io_version = version
         px4io = px4io_task.cmake.bldnode.make_node(
-            'src/modules/px4iofirmware/px4io-v%s.bin' % px4io_version,
+            'src/modules/px4iofirmware/%s.bin' % self.env.PX4_PX4IO_NAME,
         )
         px4io_elf = px4.bldnode.make_node(
-            'src/modules/px4iofirmware/px4io-v%s' % px4io_version
+            'src/modules/px4iofirmware/%s' % self.env.PX4_PX4IO_NAME
         )
         px4io_task.set_outputs([px4io, px4io_elf])
 
@@ -139,7 +134,7 @@ def px4_firmware(self):
         fw_task.set_run_after(t)
     _firmware_semaphorish_tasks = []
 
-    if self.env.PX4_USE_PX4IO and _cp_px4io.generator is self:
+    if self.env.PX4_PX4IO_NAME and _cp_px4io.generator is self:
         fw_task.set_run_after(_cp_px4io)
 
     firmware = px4.bldnode.make_node(
@@ -252,7 +247,7 @@ def configure(cfg):
     env.PX4_NUTTX_ROOT = srcpath('modules/PX4NuttX')
     env.PX4_UAVCAN_ROOT = srcpath('modules/uavcan')
 
-    if env.PX4_USE_PX4IO:
+    if env.PX4_PX4IO_NAME:
         env.PX4IO_ELF_DEST = 'px4-extra-files/px4io'
 
     nuttx_config='nuttx_%s_apm' % board_name
@@ -327,7 +322,7 @@ the same directory of their corresponding ELF files.
 You can use the option --upload to upload the firmware to the PX4 board if you
 have one connected.''')
 
-    if bld.env.PX4_USE_PX4IO:
+    if bld.env.PX4_PX4IO_NAME:
         build_summary.text('')
         build_summary.text('PX4IO')
         summary_data_list = bld.size_summary([bld.env.PX4IO_ELF_DEST])
