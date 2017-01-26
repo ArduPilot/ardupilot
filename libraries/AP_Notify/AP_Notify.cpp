@@ -16,6 +16,7 @@
 #include "AP_Notify.h"
 
 #include "AP_BoardLED.h"
+#include "PixRacerLED.h"
 #include "Buzzer.h"
 #include "Display.h"
 #include "ExternalLED.h"
@@ -79,7 +80,11 @@ struct AP_Notify::notify_flags_and_values_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
+    PixRacerLED boardled;
+#else
     AP_BoardLED boardled;
+#endif
     ToshibaLED_PX4 toshibaled;
     Display display;
 
