@@ -29,7 +29,7 @@ PX4GPIO::PX4GPIO()
 
 void PX4GPIO::init()
 {
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     _led_fd = open(LED0_DEVICE_PATH, O_RDWR);
     if (_led_fd == -1) {
         AP_HAL::panic("Unable to open " LED0_DEVICE_PATH);
@@ -38,8 +38,13 @@ void PX4GPIO::init()
         hal.console->printf("GPIO: Unable to setup GPIO LED BLUE\n");
     }
     if (ioctl(_led_fd, LED_OFF, LED_RED) != 0) {
-         hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
+        hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
     }
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V4
+    if (ioctl(_led_fd, LED_OFF, LED_GREEN) != 0) {
+        hal.console->printf("GPIO: Unable to setup GPIO LED GREEN\n");
+    }
+#endif
 #endif
     _tone_alarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
     if (_tone_alarm_fd == -1) {
@@ -174,7 +179,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
 {
     switch (pin) {
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
         case HAL_GPIO_A_LED_PIN:    // Arming LED
             if (value == LOW) {
                 ioctl(_led_fd, LED_OFF, LED_RED);
@@ -183,7 +188,12 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case HAL_GPIO_B_LED_PIN:    // not used yet 
+        case HAL_GPIO_B_LED_PIN:    // Green LED
+            if (value == LOW) {
+                ioctl(_led_fd, LED_OFF, LED_GREEN);
+            } else {
+                ioctl(_led_fd, LED_ON, LED_GREEN);
+            }
             break;
 
         case HAL_GPIO_C_LED_PIN:    // GPS LED 
