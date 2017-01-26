@@ -143,7 +143,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
 
 void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
-    commanded_go_around = false;
+    flags.commanded_go_around = false;
 
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
@@ -214,7 +214,7 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
 // return true while the aircraft should be in a flaring state
 bool AP_Landing::is_flaring(void) const
 {
-    if (!in_progress) {
+    if (!flags.in_progress) {
         return false;
     }
 
@@ -229,7 +229,7 @@ bool AP_Landing::is_flaring(void) const
 // return true while the aircraft is performing a landing approach
 bool AP_Landing::is_on_approach(void) const
 {
-    if (!in_progress) {
+    if (!flags.in_progress) {
         return false;
     }
 
@@ -244,7 +244,7 @@ bool AP_Landing::is_on_approach(void) const
 // return true when at the last stages of a land when an impact with the ground is expected soon
 bool AP_Landing::is_expecting_impact(void) const
 {
-    if (!in_progress) {
+    if (!flags.in_progress) {
         return false;
     }
 
@@ -371,7 +371,7 @@ float AP_Landing::head_wind(void)
  */
 int32_t AP_Landing::get_target_airspeed_cm(void)
 {
-    if (!in_progress) {
+    if (!flags.in_progress) {
         // not landing, use regular cruise airspeed
         return aparm.airspeed_cruise_cm;
     }
@@ -400,8 +400,8 @@ bool AP_Landing::request_go_around(void)
 
 void AP_Landing::handle_flight_stage_change(const bool _in_landing_stage)
 {
-    in_progress = _in_landing_stage;
-    commanded_go_around = false;
+    flags.in_progress = _in_landing_stage;
+    flags.commanded_go_around = false;
 }
 
 /*
