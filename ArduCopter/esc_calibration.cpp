@@ -93,10 +93,16 @@ void Copter::esc_calibration_passthrough()
     // arm motors
     motors->armed(true);
     motors->enable();
-    
+
+    uint32_t last_notify_update_ms = 0;
     while(1) {
         // flash LEDS
         AP_Notify::flags.esc_calibration = true;
+        uint32_t now = AP_HAL::millis();
+        if (now - last_notify_update_ms > 20) {
+            last_notify_update_ms = now;
+            update_notify();
+        }
 
         // read pilot input
         read_radio();
