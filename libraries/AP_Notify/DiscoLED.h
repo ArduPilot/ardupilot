@@ -28,8 +28,11 @@ class DiscoLED: public RGBLed
 {
 public:
     DiscoLED();
-    bool hw_init(void);
-    bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b);
+
+protected:
+    bool hw_init(void) override;
+    bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
+
 private:
     Linux::PWM_Sysfs_Bebop red_pwm;
     Linux::PWM_Sysfs_Bebop green_pwm;
