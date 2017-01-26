@@ -56,7 +56,7 @@ void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         /* Do not allocate new buffer, if we're just changing speed */
         _buffer = new uint8_t[rxS];
         if (_buffer == nullptr) {
-            hal.console->printf("Not enough memory\n");
+            hal.console->println("Not enough memory");
             AP_HAL::panic("Not enough memory\n");
         }
     }

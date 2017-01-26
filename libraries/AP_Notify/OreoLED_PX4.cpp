@@ -61,7 +61,7 @@ bool OreoLED_PX4::init()
 {
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
     if (!AP_BoardConfig::px4_start_driver(oreoled_main, "oreoled", "start autoupdate")) {
-        hal.console->printf("Unable to start oreoled driver\n");
+        hal.console->println("Unable to start oreoled driver");
     } else {
         // give it time to initialise
         hal.scheduler->delay(500);

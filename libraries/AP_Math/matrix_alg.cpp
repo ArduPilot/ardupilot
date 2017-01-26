@@ -287,7 +287,7 @@ bool inverse4x4(float m[],float invOut[])
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     int old = fedisableexcept(FE_OVERFLOW);
     if (old < 0) {
-        hal.console->printf("inverse4x4(): warning: error on disabling FE_OVERFLOW floating point exception\n");
+        hal.console->println("inverse4x4(): warning: error on disabling FE_OVERFLOW floating point exception");
     }
 #endif
 
@@ -407,7 +407,7 @@ bool inverse4x4(float m[],float invOut[])
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (old >= 0 && feenableexcept(old) < 0) {
-        hal.console->printf("inverse4x4(): warning: error on restoring floating exception mask\n");
+        hal.console->println("inverse4x4(): warning: error on restoring floating exception mask");
     }
 #endif
 

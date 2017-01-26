@@ -128,7 +128,7 @@ bool AP_Compass_BMM150::init()
     bool ret;
 
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.console->printf("BMM150: Unable to get bus semaphore\n");
+        hal.console->println("BMM150: Unable to get bus semaphore");
         return false;
     }
 
@@ -151,7 +151,7 @@ bool AP_Compass_BMM150::init()
         goto bus_error;
     }
     if (val != CHIP_ID_VAL) {
-        hal.console->printf("BMM150: Wrong id\n");
+        hal.console->println("BMM150: Wrong id");
         goto fail;
     }
 
@@ -195,7 +195,7 @@ bool AP_Compass_BMM150::init()
     return true;
 
 bus_error:
-    hal.console->printf("BMM150: Bus communication error\n");
+    hal.console->println("BMM150: Bus communication error");
 fail:
     _dev->get_semaphore()->give();
     return false;

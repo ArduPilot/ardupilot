@@ -49,7 +49,7 @@ AP_BattMonitor_SMBus_PX4::AP_BattMonitor_SMBus_PX4(AP_BattMonitor &mon, uint8_t 
 void AP_BattMonitor_SMBus_PX4::init()
 {
     if (!AP_BoardConfig::px4_start_driver(batt_smbus_main, "batt_smbus", "-b 2 start")) {
-        hal.console->printf("Unable to start batt_smbus driver\n");
+        hal.console->println("Unable to start batt_smbus driver");
     } else {
         // give it time to initialise
         hal.scheduler->delay(500);

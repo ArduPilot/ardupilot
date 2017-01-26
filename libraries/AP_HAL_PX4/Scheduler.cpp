@@ -179,7 +179,7 @@ void PX4Scheduler::register_timer_process(AP_HAL::MemberProc proc)
         _timer_proc[_num_timer_procs] = proc;
         _num_timer_procs++;
     } else {
-        hal.console->printf("Out of timer processes\n");
+        hal.console->println("Out of timer processes");
     }
 }
 
@@ -195,7 +195,7 @@ void PX4Scheduler::register_io_process(AP_HAL::MemberProc proc)
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
     } else {
-        hal.console->printf("Out of IO processes\n");
+        hal.console->println("Out of IO processes");
     }
 }
 

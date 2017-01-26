@@ -18,7 +18,7 @@ void RCInput_UDP::init()
 {
     _port = RCINPUT_UDP_DEF_PORT;
     if(!_socket.bind("0.0.0.0", _port)) {
-        hal.console->printf("failed to bind UDP socket\n");
+        hal.console->println("failed to bind UDP socket");
     }
 
     _socket.set_blocking(false);
@@ -34,7 +34,7 @@ void RCInput_UDP::_timer_tick(void)
     /* Read from udp */
     while (_socket.recv(&_buf, sizeof(_buf), 10) == sizeof(_buf)) {
         if (_buf.version != RCINPUT_UDP_VERSION) {
-            hal.console->printf("bad protocol version for UDP RCInput\n");
+            hal.console->println("bad protocol version for UDP RCInput");
             return;
         }
         if (_last_buf_ts != 0 &&

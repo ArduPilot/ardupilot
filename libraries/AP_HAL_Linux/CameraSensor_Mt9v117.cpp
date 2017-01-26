@@ -267,7 +267,7 @@ void CameraSensor_Mt9v117::_config_change()
     }
 
     if ((cmd_status & HOST_COMMAND_OK) == 0) {
-        hal.console->printf("mt9v117:config change failed\n");
+        hal.console->println("mt9v117:config change failed");
     }
 }
 
@@ -338,7 +338,7 @@ void CameraSensor_Mt9v117::_apply_patch()
              (timeout > 0));
 
     if ((cmd_status & HOST_COMMAND_OK) == 0) {
-        hal.console->printf("mt9v117:patch apply failed\n");
+        hal.console->println("mt9v117:patch apply failed");
     }
 }
 

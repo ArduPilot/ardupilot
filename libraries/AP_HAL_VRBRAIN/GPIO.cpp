@@ -34,13 +34,13 @@ void VRBRAINGPIO::init()
         AP_HAL::panic("Unable to open " LED0_DEVICE_PATH);
     }
     if (ioctl(_led_fd, LED_OFF, LED_BLUE) != 0) {
-        hal.console->printf("GPIO: Unable to setup GPIO LED BLUE\n");
+        hal.console->println("GPIO: Unable to setup GPIO LED BLUE");
     }
     if (ioctl(_led_fd, LED_OFF, LED_RED) != 0) {
-         hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
+         hal.console->println("GPIO: Unable to setup GPIO LED RED");
     }
     if (ioctl(_led_fd, LED_OFF, LED_GREEN) != 0) {
-         hal.console->printf("GPIO: Unable to setup GPIO LED GREEN\n");
+         hal.console->println("GPIO: Unable to setup GPIO LED GREEN");
     }
 
     _tone_alarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
@@ -54,17 +54,17 @@ void VRBRAINGPIO::init()
     }
 #ifdef GPIO_SERVO_1
     if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_SERVO_1) != 0) {
-        hal.console->printf("GPIO: Unable to setup GPIO_1\n");
+        hal.console->println("GPIO: Unable to setup GPIO_1");
     }
 #endif
 #ifdef GPIO_SERVO_2
     if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_SERVO_2) != 0) {
-        hal.console->printf("GPIO: Unable to setup GPIO_2\n");
+        hal.console->println("GPIO: Unable to setup GPIO_2");
     }
 #endif
 #ifdef GPIO_SERVO_3
     if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_SERVO_3) != 0) {
-        hal.console->printf("GPIO: Unable to setup GPIO_3\n");
+        hal.console->println("GPIO: Unable to setup GPIO_3");
     }
 #endif
 }

@@ -85,7 +85,7 @@ bool AP_Compass_PX4::init(void)
 
         // average over up to 20 samples
         if (ioctl(_mag_fd[i], SENSORIOCSQUEUEDEPTH, 20) != 0) {
-            hal.console->printf("Failed to setup compass queue\n");
+            hal.console->println("Failed to setup compass queue");
             return false;                
         }
 
@@ -100,7 +100,7 @@ bool AP_Compass_PX4::init(void)
     hal.scheduler->delay(40);
     accumulate();
     if (_count[0] == 0) {
-        hal.console->printf("Failed initial compass accumulate\n");        
+        hal.console->println("Failed initial compass accumulate");
     }
 
     return true;
