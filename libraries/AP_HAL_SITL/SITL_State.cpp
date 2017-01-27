@@ -452,7 +452,7 @@ void SITL_State::init(int argc, char * const argv[])
     pwm_input[0] = pwm_input[1] = pwm_input[3] = 1500;
     pwm_input[4] = pwm_input[7] = 1800;
     pwm_input[2] = pwm_input[5] = pwm_input[6] = 1000;
-
+    _home_alt = -1.0f;
     _scheduler = Scheduler::from(hal.scheduler);
     _parse_command_line(argc, argv);
 }
@@ -462,11 +462,9 @@ void SITL_State::init(int argc, char * const argv[])
  */
 void SITL_State::set_height_agl(void)
 {
-    static float home_alt = -1.0f;
-
-    if (home_alt == -1.0f && _sitl->state.altitude > 0.0) {
+    if (_home_alt == -1.0f && _sitl->state.altitude > 0.0) {
         // remember home altitude as first non-zero altitude
-        home_alt = static_cast<float>(_sitl->state.altitude);  // double to float
+        _home_alt = static_cast<float>(_sitl->state.altitude);  // double to float
     }
 
 #if AP_TERRAIN_AVAILABLE
@@ -487,6 +485,6 @@ void SITL_State::set_height_agl(void)
 #endif
 
     // fall back to flat earth model
-    _sitl->height_agl = static_cast<float>(_sitl->state.altitude - home_alt);  // double to float
+    _sitl->height_agl = static_cast<float>(_sitl->state.altitude - _home_alt);  // double to float
 }
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

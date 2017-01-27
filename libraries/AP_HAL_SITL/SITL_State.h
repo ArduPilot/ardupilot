@@ -54,6 +54,9 @@ public:
     float voltage_pin_value;   // pin 13
     float current_pin_value;   // pin 12
 
+    // simulation home altitude
+    float _home_alt;
+
     // return TCP client address for uartC
     const char *get_client_address(void) const { return _client_address; }
 
