@@ -16,9 +16,6 @@ set(config_module_list
     drivers/stm32/tone_alarm
     drivers/led
     drivers/px4fmu
-    drivers/mb12xx
-    drivers/ll40ls
-    drivers/trone
     drivers/mkblctrl
     drivers/batt_smbus
 
