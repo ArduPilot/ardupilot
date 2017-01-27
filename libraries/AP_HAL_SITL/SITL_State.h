@@ -49,7 +49,7 @@ public:
     }
 
     // simulated airspeed, sonar and battery monitor
-    uint16_t sonar_pin_value;     // pin 0
+    float sonar_pin_value;     // pin 0
     float airspeed_pin_value;  // pin 1
     float voltage_pin_value;   // pin 13
     float current_pin_value;   // pin 12
@@ -130,7 +130,7 @@ private:
     void _simulator_servos(SITL::Aircraft::sitl_input &input);
     void _simulator_output(bool synthetic_clock_mode);
     float _airspeed_sensor(float airspeed);
-    uint16_t _ground_sonar();
+    float _ground_sonar();
     float _rand_float(void);
     Vector3f _rand_vec3f(void);
     void _fdm_input_step(void);

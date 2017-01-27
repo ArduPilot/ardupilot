@@ -69,7 +69,7 @@ float SITL_State::_airspeed_sensor(float airspeed)
 /*
   emulate an analog rangefinder
  */
-uint16_t SITL_State::_ground_sonar(void)
+float SITL_State::_ground_sonar(void)
 {
     float altitude = _sitl->height_agl;
 
@@ -106,7 +106,7 @@ uint16_t SITL_State::_ground_sonar(void)
         }
     }
 
-    return static_cast<uint16_t>(1023 * (voltage / 5.0f));
+    return (1023 * (voltage / 5.0f));
 }
 
 /*
