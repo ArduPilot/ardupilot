@@ -31,11 +31,11 @@ void SITL_State::_set_param_default(const char *parm)
     if (var_type == AP_PARAM_FLOAT) {
         (reinterpret_cast<AP_Float *>(vp))->set_and_save(value);
     } else if (var_type == AP_PARAM_INT32) {
-        (reinterpret_cast<AP_Int32 *>(vp))->set_and_save(static_cast<int32_t>(value));
+        (reinterpret_cast<AP_Int32 *>(vp))->set_and_save(static_cast<int32_t>(value));  // put float in int32
     } else if (var_type == AP_PARAM_INT16) {
-        (reinterpret_cast<AP_Int16 *>(vp))->set_and_save(static_cast<int16_t>(value));
+        (reinterpret_cast<AP_Int16 *>(vp))->set_and_save(static_cast<int16_t>(value));  // put float in int16
     } else if (var_type == AP_PARAM_INT8) {
-        (reinterpret_cast<AP_Int8 *>(vp))->set_and_save(static_cast<int8_t>(value));
+        (reinterpret_cast<AP_Int8 *>(vp))->set_and_save(static_cast<int8_t>(value));  // put float in int8
     } else {
         printf("Unable to set parameter %s\n", pdup);
         exit(1);
@@ -224,13 +224,13 @@ void SITL_State::_output_to_flightgear(void)
 
     fdm.version = 0x18;
     fdm.padding = 0;
-    fdm.longitude = radians(static_cast<float>(sfdm.longitude));
-    fdm.latitude = radians(static_cast<float>(sfdm.latitude));
+    fdm.longitude = radians(static_cast<float>(sfdm.longitude));  // radians in/out are float
+    fdm.latitude = radians(static_cast<float>(sfdm.latitude));    // radians in/out are float
     fdm.altitude = sfdm.altitude;
     fdm.agl = static_cast<float>(sfdm.altitude);
-    fdm.phi   = radians(static_cast<float>(sfdm.rollDeg));
-    fdm.theta = radians(static_cast<float>(sfdm.pitchDeg));
-    fdm.psi   = radians(static_cast<float>(sfdm.yawDeg));
+    fdm.phi   = radians(static_cast<float>(sfdm.rollDeg));        // radians in/out are float
+    fdm.theta = radians(static_cast<float>(sfdm.pitchDeg));       // radians in/out are float
+    fdm.psi   = radians(static_cast<float>(sfdm.yawDeg));         // radians in/out are float
     if (_vehicle == ArduCopter) {
         fdm.num_engines = 4;
         for (uint8_t i=0; i < 4; i++) {
@@ -272,7 +272,7 @@ void SITL_State::_fdm_input_local(void)
 
         if (_sitl->rc_fail == 0) {
             for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
-                pwm_input[i] = static_cast<uint16_t>(1000 + _sitl->state.rcin[i] * 1000);
+                pwm_input[i] = static_cast<uint16_t>(1000 + _sitl->state.rcin[i] * 1000);  // rcin is 0..1
             }
         }
     }
@@ -363,7 +363,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     if (_vehicle == ArduPlane) {
         // add in engine multiplier
         if (input.servos[2] > 1000) {
-            input.servos[2] = static_cast<uint16_t>(((input.servos[2] - 1000) * engine_mul) + 1000);
+            input.servos[2] = static_cast<uint16_t>(((input.servos[2] - 1000) * engine_mul) + 1000);  // ENGINE_MUL is float
             if (input.servos[2] > 2000) {
                 input.servos[2] = 2000;
             }
@@ -372,7 +372,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     } else if (_vehicle == APMrover2) {
         // add in engine multiplier
         if (input.servos[2] != 1500) {
-            input.servos[2] = static_cast<uint16_t>(((input.servos[2] - 1500) * engine_mul) + 1500);
+            input.servos[2] = static_cast<uint16_t>(((input.servos[2] - 1500) * engine_mul) + 1500);  // ENGINE_MUL is float
             if (input.servos[2] > 2000) {
                 input.servos[2] = 2000;
             }
@@ -384,7 +384,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     } else {
         motors_on = false;
         // apply engine multiplier to first motor
-        input.servos[0] = static_cast<uint16_t>(((input.servos[0] - 1000) * engine_mul) + 1000);
+        input.servos[0] = static_cast<uint16_t>(((input.servos[0] - 1000) * engine_mul) + 1000);  // ENGINE_MUL is float
         // run checks on each motor
         for (uint8_t i = 0; i < 4; i++) {
             // check motors do not exceed their limits
@@ -432,7 +432,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
 // generate a random float between -1 and 1
 float SITL_State::_rand_float(void)
 {
-    return static_cast<float>(((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6);
+    return static_cast<float>(((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6);  // long -> unsigne int , then double to float
 }
 
 // generate a random Vector3f of size 1
@@ -467,7 +467,7 @@ void SITL_State::set_height_agl(void)
 
     if (home_alt == -1.0f && _sitl->state.altitude > 0.0) {
         // remember home altitude as first non-zero altitude
-        home_alt = static_cast<float>(_sitl->state.altitude);
+        home_alt = static_cast<float>(_sitl->state.altitude);  // double to float
     }
 
 #if AP_TERRAIN_AVAILABLE
@@ -477,11 +477,11 @@ void SITL_State::set_height_agl(void)
         // AP_Terrain is working
         float terrain_height_amsl;
         struct Location location;
-        location.lat = static_cast<int32_t>(_sitl->state.latitude * 1.0e7);
-        location.lng = static_cast<int32_t>(_sitl->state.longitude * 1.0e7);
+        location.lat = static_cast<int32_t>(_sitl->state.latitude * 1.0e7);  // double to int32
+        location.lng = static_cast<int32_t>(_sitl->state.longitude * 1.0e7);  // double to int32
 
         if (_terrain->height_amsl(location, terrain_height_amsl, false)) {
-            _sitl->height_agl = static_cast<float>(_sitl->state.altitude) - terrain_height_amsl;
+            _sitl->height_agl = static_cast<float>(_sitl->state.altitude) - terrain_height_amsl;  // double to float
             return;
         }
     }
