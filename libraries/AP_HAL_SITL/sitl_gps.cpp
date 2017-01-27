@@ -271,28 +271,28 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     gps_time(&time_week, &time_week_ms);
 
     pos.time = time_week_ms;
-    pos.longitude = static_cast<int32_t>(d->longitude * 1.0e7);
-    pos.latitude  = static_cast<int32_t>(d->latitude * 1.0e7);
-    pos.altitude_ellipsoid = static_cast<int32_t>(d->altitude * 1000.0f);
-    pos.altitude_msl = static_cast<int32_t>(d->altitude * 1000.0f);
+    pos.longitude = static_cast<int32_t>(d->longitude * 1.0e7);  // double to int32
+    pos.latitude  = static_cast<int32_t>(d->latitude * 1.0e7);  // double to int32
+    pos.altitude_ellipsoid = static_cast<int32_t>(d->altitude * 1000.0f);  // float to int32
+    pos.altitude_msl = static_cast<int32_t>(d->altitude * 1000.0f);  // float to int32
     pos.horizontal_accuracy = 1500;
     pos.vertical_accuracy = 2000;
 
     status.time = time_week_ms;
-    status.fix_type = static_cast<uint8_t>(d->have_lock ? 3 : 0);
-    status.fix_status = static_cast<uint8_t>(d->have_lock ? 1 : 0);
+    status.fix_type = static_cast<uint8_t>(d->have_lock ? 3 : 0);  // int to uint8
+    status.fix_status = static_cast<uint8_t>(d->have_lock ? 1 : 0);  // int to uint8
     status.differential_status = 0;
     status.res = 0;
     status.time_to_first_fix = 0;
     status.uptime = AP_HAL::millis();
 
     velned.time = time_week_ms;
-    velned.ned_north = static_cast<int32_t>(100.0 * d->speedN);
-    velned.ned_east  = static_cast<int32_t>(100.0 * d->speedE);
-    velned.ned_down  = static_cast<int32_t>(100.0 * d->speedD);
-    velned.speed_2d = static_cast<uint32_t>(norm(d->speedN, d->speedE) * 100);
-    velned.speed_3d = static_cast<uint32_t>(norm(d->speedN, d->speedE, d->speedD) * 100);
-    velned.heading_2d = static_cast<int32_t>(ToDeg(atan2f(static_cast<float>(d->speedE), static_cast<float>(d->speedN))) * 100000.0f);
+    velned.ned_north = static_cast<int32_t>(100.0 * d->speedN);  // double to int32
+    velned.ned_east  = static_cast<int32_t>(100.0 * d->speedE);  // double to int32
+    velned.ned_down  = static_cast<int32_t>(100.0 * d->speedD);  // double to int32
+    velned.speed_2d = static_cast<uint32_t>(norm(d->speedN, d->speedE) * 100);  // float to uint32
+    velned.speed_3d = static_cast<uint32_t>(norm(d->speedN, d->speedE, d->speedD) * 100);  // float to uint32
+    velned.heading_2d = static_cast<int32_t>(ToDeg(atan2f(static_cast<float>(d->speedE), static_cast<float>(d->speedN))) * 100000.0f);  // double to float then float to int32
     if (velned.heading_2d < 0.0f) {
         velned.heading_2d += 360.0f * 100000.0f;
     }
@@ -300,9 +300,9 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     velned.heading_accuracy = 4;
 
     memset(&sol, 0, sizeof(sol));
-    sol.fix_type = static_cast<uint8_t>(d->have_lock ? 3 : 0);
+    sol.fix_type = static_cast<uint8_t>(d->have_lock ? 3 : 0);  // int to uint8
     sol.fix_status = 221;
-    sol.satellites = static_cast<uint8_t>(d->have_lock ? _sitl->gps_numsats : 3);
+    sol.satellites = static_cast<uint8_t>(d->have_lock ? _sitl->gps_numsats : 3);  // int to uint8
     sol.time = time_week_ms;
     sol.week = time_week;
 
@@ -399,11 +399,11 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d)
     p.preamble2     = 0x62;
     p.msg_class     = 1;
     p.msg_id        = 5;
-    p.latitude      = static_cast<int32_t>(d->latitude  * 1.0e6);
-    p.longitude     = static_cast<int32_t>(d->longitude * 1.0e6);
-    p.altitude      = static_cast<int32_t>(d->altitude * 100);
-    p.ground_speed  = static_cast<int32_t>(norm(d->speedN, d->speedE) * 100);
-    p.ground_course = static_cast<int32_t>(ToDeg(atan2f(d->speedE, d->speedN)) * 1000000.0f);
+    p.latitude      = static_cast<int32_t>(d->latitude  * 1.0e6);    // double to int32
+    p.longitude     = static_cast<int32_t>(d->longitude * 1.0e6);    // double to int32
+    p.altitude      = static_cast<int32_t>(d->altitude * 100);    // float to int32
+    p.ground_speed  = static_cast<int32_t>(norm(d->speedN, d->speedE) * 100);     // float to int32
+    p.ground_course = static_cast<int32_t>(ToDeg(atan2f(d->speedE, d->speedN)) * 1000000.0f); // double to float then float to int32
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 1000000.0f;
     }
@@ -604,15 +604,15 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d)
     // format latitude
     double deg = fabs(d->latitude);
     snprintf(lat_string, sizeof(lat_string), "%02u%08.5f,%c",
-            static_cast<uint32_t>(deg),
-             (deg - static_cast<int32_t>(deg)) * 60,
+            static_cast<uint32_t>(deg),  //double to uint32
+             (deg - static_cast<int32_t>(deg)) * 60,  // STRANGE
              d->latitude < 0 ? 'S' : 'N');
 
     // format longitude
     deg = fabs(d->longitude);
     snprintf(lng_string, sizeof(lng_string), "%03u%08.5f,%c",
-            static_cast<uint32_t>(deg),
-             (deg - static_cast<int32_t>(deg)) * 60,
+            static_cast<uint32_t>(deg),  //double to uint32
+             (deg - static_cast<int32_t>(deg)) * 60,  // STRANGE
              d->longitude < 0 ? 'W' : 'E');
 
     _gps_nmea_printf("$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,0.0,M,,",
@@ -736,7 +736,7 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d)
     _sbp_send_message(SBP_POS_LLH_MSGTYPE, 0x2222, sizeof(pos), reinterpret_cast<uint8_t*>(&pos));
 
     velned.tow = time_week_ms;
-    velned.n = static_cast<int32_t>(1e3 * d->speedN);
+    velned.n = static_cast<int32_t>(1e3 * d->speedN);  // doube to int32
     velned.e = static_cast<int32_t>(1e3 * d->speedE);
     velned.d = static_cast<int32_t>(1e3 * d->speedD);
     velned.h_accuracy = static_cast<uint16_t>(5e3);
@@ -887,7 +887,7 @@ void SITL_State::_update_gps_nova(const struct gps_data *d)
 
     bestpos.lat = d->latitude;
     bestpos.lng = d->longitude;
-    bestpos.hgt = static_cast<double>(d->altitude);
+    bestpos.hgt = static_cast<double>(d->altitude);  //float to double
     bestpos.svsused = static_cast<uint8_t>(_sitl->gps_numsats);
     bestpos.latsdev = 0.2f;
     bestpos.lngsdev = 0.2f;
@@ -916,7 +916,7 @@ uint32_t SITL_State::CRC32Value(uint32_t icrc)
     for (uint8_t i = 8 ; i > 0; i--)
     {
         if (crc & 1)
-            crc = (crc >> 1) ^ CRC32_POLYNOMIAL;
+            crc = (crc >> 1) ^ CRC32_POLYNOMIAL;  // long to unint32
         else
             crc >>= 1;
     }
@@ -927,7 +927,7 @@ uint32_t SITL_State::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint3
 {
     while (length-- != 0)
     {
-        crc = ((crc >> 8) & 0x00FFFFFFL) ^ (CRC32Value(((uint32_t) crc ^ *buffer++) & 0xff));
+        crc = ((crc >> 8) & 0x00FFFFFFL) ^ (CRC32Value(((uint32_t) crc ^ *buffer++) & 0xff));  // long to unint32
     }
     return(crc);
 }
@@ -1012,25 +1012,25 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     if (!posRelOffsetBF.is_zero()) {
         // get a rotation matrix following DCM conventions (body to earth)
         Matrix3f rotmat;
-        rotmat.from_euler(radians(static_cast<float>(_sitl->state.rollDeg)),
-                          radians(static_cast<float>(_sitl->state.pitchDeg)),
-                          radians(static_cast<float>(_sitl->state.yawDeg)));
+        rotmat.from_euler(radians(static_cast<float>(_sitl->state.rollDeg)),  // double to float
+                          radians(static_cast<float>(_sitl->state.pitchDeg)),  // double to float
+                          radians(static_cast<float>(_sitl->state.yawDeg)));  // double to float
 
         // rotate the antenna offset into the earth frame
         const Vector3f posRelOffsetEF = rotmat * posRelOffsetBF;
 
         // Add the offset to the latitude, longitude and height using a spherical earth approximation
         const double earth_rad_inv = 1.569612305760477e-7;  // use Authalic/Volumetric radius
-        const double lng_scale_factor = earth_rad_inv / cos(radians(static_cast<float>(d.latitude)));
-        d.latitude += degrees(static_cast<float>(posRelOffsetEF.x * earth_rad_inv));
-        d.longitude += degrees(static_cast<float>(posRelOffsetEF.y * lng_scale_factor));
+        const double lng_scale_factor = earth_rad_inv / cos(radians(static_cast<float>(d.latitude)));  // double to float
+        d.latitude += degrees(static_cast<float>(posRelOffsetEF.x * earth_rad_inv));  // double to float
+        d.longitude += degrees(static_cast<float>(posRelOffsetEF.y * lng_scale_factor));  // double to float
         d.altitude -= posRelOffsetEF.z;
 
         // calculate a velocity offset due to the antenna position offset and body rotation rate
         // note: % operator is overloaded for cross product
-        const Vector3f gyro(radians(static_cast<float>(_sitl->state.rollRate)),
-             radians(static_cast<float>(_sitl->state.pitchRate)),
-             radians(static_cast<float>(_sitl->state.yawRate)));
+        const Vector3f gyro(radians(static_cast<float>(_sitl->state.rollRate)),  // double to float
+             radians(static_cast<float>(_sitl->state.pitchRate)),  // double to float
+             radians(static_cast<float>(_sitl->state.yawRate)));  // double to float
         const Vector3f velRelOffsetBF = gyro % posRelOffsetBF;
 
         // rotate the velocity offset into earth frame and add to the c.g. velocity
