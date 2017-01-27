@@ -18,7 +18,7 @@ using namespace HALSITL;
 /*
   convert airspeed in m/s to an airspeed sensor value
  */
-uint16_t SITL_State::_airspeed_sensor(float airspeed)
+float SITL_State::_airspeed_sensor(float airspeed)
 {
     const float airspeed_ratio = 1.9936f;
     const float airspeed_offset = 2013.0f;
@@ -62,7 +62,7 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
         airspeed_raw = buffer_wind[best_index_wind].data;
     }
 
-    return static_cast<uint16_t>(airspeed_raw / 4);
+    return (airspeed_raw / 4);
 }
 
 
