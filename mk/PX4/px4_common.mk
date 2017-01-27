@@ -19,7 +19,6 @@ MODULES		+= drivers/led
 MODULES		+= drivers/px4fmu
 MODULES		+= drivers/mb12xx
 MODULES		+= drivers/ll40ls
-MODULES		+= drivers/trone
 #MODULES	+= drivers/gps
 #MODULES	+= drivers/hil
 #MODULES	+= drivers/hott_telemetry
