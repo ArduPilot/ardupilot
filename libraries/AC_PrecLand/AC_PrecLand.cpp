@@ -163,8 +163,13 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 
             bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
 
-            if (target_vec_valid && rangefinder_alt_valid && rangefinder_alt_cm > 0.0f) {
-                float alt = MAX(rangefinder_alt_cm*0.01f, 0.0f);
+            if (target_vec_valid && ( (rangefinder_alt_valid && rangefinder_alt_cm > 0.0f) || ((enum PrecLandType)(_type.get()) == PRECLAND_TYPE_COMPANION && _backend->distance_to_target()) ) ) {
+                float alt;
+                if ((enum PrecLandType)(_type.get()) == PRECLAND_TYPE_COMPANION && _backend->distance_to_target()) {
+                    alt = _backend->distance_to_target();
+                } else {
+                    alt = MAX(rangefinder_alt_cm*0.01f, 0.0f);
+                }
                 float dist = alt/target_vec_unit_ned.z;
                 Vector3f targetPosRelMeasNED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt);
 
