@@ -34,12 +34,12 @@ void panic(const char *errormsg, ...)
 
 uint32_t micros()
 {
-    return static_cast<uint32_t>(micros64() & 0xFFFFFFFF);
+    return static_cast<uint32_t>(micros64() & 0xFFFFFFFF);  // unint64 -> uint32
 }
 
 uint32_t millis()
 {
-    return static_cast<uint32_t>(millis64() & 0xFFFFFFFF);
+    return static_cast<uint32_t>(millis64() & 0xFFFFFFFF);  // unint64 -> uint32
 }
 
 uint64_t micros64()
@@ -54,7 +54,7 @@ uint64_t micros64()
     gettimeofday(&tp, nullptr);
     const uint64_t ret = static_cast<uint64_t>(1.0e6 * ((tp.tv_sec + (tp.tv_usec * 1.0e-6)) -
                             (state.start_time.tv_sec +
-                             (state.start_time.tv_usec * 1.0e-6))));
+                             (state.start_time.tv_usec * 1.0e-6))));  // double -> uint64
     return ret;
 }
 
@@ -70,7 +70,7 @@ uint64_t millis64()
     gettimeofday(&tp, nullptr);
     const uint64_t ret = static_cast<uint64_t>(1.0e3*((tp.tv_sec + (tp.tv_usec * 1.0e-6)) -
                           (state.start_time.tv_sec +
-                           (state.start_time.tv_usec * 1.0e-6))));
+                           (state.start_time.tv_usec * 1.0e-6))));  // double -> uint64
     return ret;
 }
 
