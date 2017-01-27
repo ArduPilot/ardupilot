@@ -423,8 +423,8 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     }
 
     // assume 3DR power brick
-    voltage_pin_value = static_cast<uint16_t>(((voltage / 10.1f) / 5.0f) * 1024);
-    current_pin_value = static_cast<uint16_t>(((_current / 17.0f) / 5.0f) * 1024);
+    voltage_pin_value = ((voltage / 10.1f) / 5.0f) * 1024;
+    current_pin_value = ((_current / 17.0f) / 5.0f) * 1024;
 }
 
 

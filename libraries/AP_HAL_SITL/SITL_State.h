@@ -51,8 +51,8 @@ public:
     // simulated airspeed, sonar and battery monitor
     uint16_t sonar_pin_value;     // pin 0
     uint16_t airspeed_pin_value;  // pin 1
-    uint16_t voltage_pin_value;   // pin 13
-    uint16_t current_pin_value;   // pin 12
+    float voltage_pin_value;   // pin 13
+    float current_pin_value;   // pin 12
 
     // return TCP client address for uartC
     const char *get_client_address(void) const { return _client_address; }
