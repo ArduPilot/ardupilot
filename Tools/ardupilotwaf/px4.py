@@ -193,7 +193,6 @@ def _px4_taskgen(bld, **kw):
 def _process_romfs(self):
     bld = self.bld
     file_list = (
-        'firmware/oreoled.bin',
         'init.d/rc.APM',
         'init.d/rc.error',
         'init.d/rcS',
