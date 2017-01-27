@@ -31,6 +31,9 @@ public:
     // return true if there is a valid los measurement available
     bool have_los_meas();
     
+    // return distance to target
+    float distance_to_target();
+    
     // parses a mavlink message from the companion computer
     void handle_msg(mavlink_message_t* msg);
 
