@@ -15,6 +15,8 @@
 
 #include "PixRacerLED.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
+
 extern const AP_HAL::HAL& hal;
 
 PixRacerLED::PixRacerLED() :
@@ -37,3 +39,8 @@ bool PixRacerLED::hw_set_rgb(uint8_t r, uint8_t g, uint8_t b)
     hal.gpio->write(HAL_GPIO_C_LED_PIN, (b > 0));
     return true;
 }
+
+#else
+bool PixRacerLED::hw_init(void) { return true; }
+bool PixRacerLED::hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) { return true; }
+#endif
