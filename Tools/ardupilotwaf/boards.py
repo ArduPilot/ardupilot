@@ -508,3 +508,11 @@ class px4_v4(px4):
         self.bootloader_name = 'px4fmuv4_bl.bin'
         self.board_name = 'px4fmu-v4'
         self.romfs_exclude(['oreoled.bin'])
+
+class aerofc_v1(px4):
+    name = 'aerofc-v1'
+    def __init__(self):
+        super(aerofc_v1, self).__init__()
+        self.bootloader_name = 'aerofcv1_bl.bin'
+        self.board_name = 'aerofc-v1'
+        self.romfs_exclude(['oreoled.bin'])

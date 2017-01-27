@@ -31,6 +31,12 @@
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V4
 #define HAL_STORAGE_SIZE            16384
 #define HAL_WITH_UAVCAN             1
+#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_AEROFC_V1
+#define HAL_STORAGE_SIZE            16384
+#define USE_FLASH_STORAGE           1
+// we don't have any sdcard
+#undef HAL_OS_POSIX_IO
 #else
 #error "Unknown PX4 board type"
 #endif
