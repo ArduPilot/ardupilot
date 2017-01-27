@@ -18,7 +18,6 @@ set(config_module_list
     drivers/px4fmu
     drivers/mb12xx
     drivers/ll40ls
-    drivers/trone
     drivers/mkblctrl
     drivers/batt_smbus
 
