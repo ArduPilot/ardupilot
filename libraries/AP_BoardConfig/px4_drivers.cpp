@@ -402,6 +402,7 @@ void AP_BoardConfig::px4_setup_px4io(void)
  */
 void AP_BoardConfig::px4_setup_peripherals(void)
 {
+#ifndef CONFIG_ARCH_BOARD_AEROFC_V1
     // always start adc
     if (px4_start_driver(adc_main, "adc", "start")) {
         hal.analogin->init();
@@ -409,13 +410,17 @@ void AP_BoardConfig::px4_setup_peripherals(void)
     } else {
         px4_sensor_error("no ADC found");
     }
+#endif
 
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V4
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V4) && \
+    !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     px4_setup_px4io();
 #endif
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     const char *fmu_mode = "mode_serial";
+#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+    const char *fmu_mode = "mode_rcin";
 #else
     const char *fmu_mode = "mode_pwm4";
 #endif
@@ -504,6 +509,9 @@ void AP_BoardConfig::px4_autodetect(void)
     // only one choice
     px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);    
     hal.console->printf("Detected Pixracer\n");
+#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+    px4.board_type.set_and_notify(PX4_BOARD_AEROFC);
+    hal.console->printf("Detected Aero FC\n");
 #endif
     
 }
