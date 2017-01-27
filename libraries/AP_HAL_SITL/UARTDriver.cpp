@@ -58,17 +58,17 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         char *args1 = strtok_r(nullptr, ":", &saveptr);
         char *args2 = strtok_r(nullptr, ":", &saveptr);
         if (strcmp(devtype, "tcp") == 0) {
-            uint16_t port = static_cast<uint16_t>(atoi(args1));
+            uint16_t port = static_cast<uint16_t>(atoi(args1));  // int to unint16
             const bool wait = (args2 && strcmp(args2, "wait") == 0);
             _tcp_start_connection(port, wait);
         } else if (strcmp(devtype, "tcpclient") == 0) {
             if (args2 == nullptr) {
                 AP_HAL::panic("Invalid tcp client path: %s", path);
             }
-            const uint16_t port = static_cast<uint16_t>(atoi(args2));
+            const uint16_t port = static_cast<uint16_t>(atoi(args2));    // int to unint16
             _tcp_start_client(args1, port);
         } else if (strcmp(devtype, "uart") == 0) {
-            const uint32_t baudrate = args2 ? static_cast<uint32_t>(atoi(args2)) : baud;
+            const uint32_t baudrate = args2 ? static_cast<uint32_t>(atoi(args2)) : baud;    // int to unint16
             ::printf("UART connection %s:%u\n", args1, baudrate);
             _uart_path = strdup(args1);
             _uart_baudrate = baudrate;
