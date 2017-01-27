@@ -176,3 +176,9 @@
 #define HAL_WITH_UAVCAN 0
 #endif
 
+// this is used as a general mechanism to make a 'small' build by
+// dropping little used features. We use this to allow us to keep
+// FMUv2 going for as long as possible
+#ifndef HAL_MINIMIZE_FEATURES
+#define HAL_MINIMIZE_FEATURES       0
+#endif

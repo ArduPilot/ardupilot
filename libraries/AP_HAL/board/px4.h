@@ -19,6 +19,8 @@
 #define HAL_STORAGE_SIZE            16384
 #define HAL_HAVE_IMU_HEATER         1 // for Pixhawk2
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
+#define HAL_WITH_UAVCAN             1
+#define HAL_MINIMIZE_FEATURES       1
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V3)
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V3
 #define HAL_STORAGE_SIZE            16384
