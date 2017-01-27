@@ -191,6 +191,7 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
 {
     #if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
     #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+    #ifndef CONFIG_ARCH_BOARD_AEROFC_V1
     // check board voltage
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
         if (hal.analogin->board_voltage() < BOARD_VOLTAGE_MIN || hal.analogin->board_voltage() > BOARD_VOLTAGE_MAX) {
@@ -200,6 +201,7 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
             return false;
         }
     }
+    #endif
     #endif
     #endif
 
