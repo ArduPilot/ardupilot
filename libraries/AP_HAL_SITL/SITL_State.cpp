@@ -268,7 +268,6 @@ void SITL_State::_fdm_input_local(void)
     // get FDM output from the model
     if (_sitl) {
         sitl_model->fill_fdm(_sitl->state);
-        _sitl->update_rate_hz = static_cast<uint16_t>(sitl_model->get_rate_hz());
 
         if (_sitl->rc_fail == 0) {
             for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
