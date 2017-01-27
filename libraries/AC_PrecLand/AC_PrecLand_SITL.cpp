@@ -48,6 +48,11 @@ bool AC_PrecLand_SITL::have_los_meas() {
     return AP_HAL::millis() - _los_meas_time_ms < 1000;
 }
 
+// return distance to target
+float AC_PrecLand_SITL::distance_to_target()
+{
+    return _distance_to_target;
+}
 
 // provides a unit vector towards the target in body frame
 //  returns same as have_los_meas()

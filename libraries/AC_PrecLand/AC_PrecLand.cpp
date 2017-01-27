@@ -163,9 +163,15 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 
             bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
 
-            if (target_vec_valid && rangefinder_alt_valid && rangefinder_alt_cm > 0.0f) {
-                float alt = MAX(rangefinder_alt_cm*0.01f, 0.0f);
+            if (target_vec_valid && ( (rangefinder_alt_valid && rangefinder_alt_cm > 0.0f) || ((enum PrecLandType)(_type.get()) == PRECLAND_TYPE_COMPANION && _backend->distance_to_target()) ) ) {
+                float alt;
+                if ((enum PrecLandType)(_type.get()) == PRECLAND_TYPE_COMPANION && _backend->distance_to_target()) {
+                    alt = _backend->distance_to_target();
+                } else {
+                    alt = MAX(rangefinder_alt_cm*0.01f, 0.0f);
+                }
                 float dist = alt/target_vec_unit_ned.z;
+
                 Vector3f targetPosRelMeasNED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt);
 
                 float xy_pos_var = sq(targetPosRelMeasNED.z*(0.01f + 0.01f*_ahrs.get_gyro().length()) + 0.02f);
@@ -182,6 +188,7 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
                 } else {
                     float NIS_x = _ekf_x.getPosNIS(targetPosRelMeasNED.x, xy_pos_var);
                     float NIS_y = _ekf_y.getPosNIS(targetPosRelMeasNED.y, xy_pos_var);
+
                     if (MAX(NIS_x, NIS_y) < 3.0f || _outlier_reject_count >= 3) {
                         _outlier_reject_count = 0;
                         _ekf_x.fusePos(targetPosRelMeasNED.x, xy_pos_var);

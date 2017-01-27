@@ -58,4 +58,10 @@ bool AC_PrecLand_IRLock::have_los_meas() {
     return _have_los_meas;
 }
 
+// return distance to target
+float AC_PrecLand_IRLock::distance_to_target()
+{
+    return _distance_to_target;
+}
+
 #endif // PX4

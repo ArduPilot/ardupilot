@@ -48,6 +48,12 @@ bool AC_PrecLand_Companion::have_los_meas()
     return _have_los_meas;
 }
 
+// return distance to target
+float AC_PrecLand_Companion::distance_to_target()
+{
+    return _distance_to_target;
+}
+    
 void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg)
 {
     // parse mavlink message
