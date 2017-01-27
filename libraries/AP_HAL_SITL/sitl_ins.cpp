@@ -51,7 +51,7 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
     for (uint8_t i=0; i <= WIND_BUFFER_LENGTH - 1; i++) {
         // find difference between delayed time and time stamp in buffer
         time_delta_wind =  static_cast<uint32_t>(abs(
-                static_cast<int32_t>(delayed_time_wind - buffer_wind[i].time)));
+                static_cast<int32_t>(delayed_time_wind - buffer_wind[i].time)));  // unint32 -> int32 then int32 -> unint32
         // if this difference is smaller than last delta, store this time
         if (time_delta_wind < best_time_delta_wind) {
             best_index_wind = i;
@@ -80,9 +80,9 @@ uint16_t SITL_State::_ground_sonar(void)
     if (!relPosSensorBF.is_zero()) {
         // get a rotation matrix following DCM conventions (body to earth)
         Matrix3f rotmat;
-        rotmat.from_euler(radians(static_cast<float>(_sitl->state.rollDeg)),
-                          radians(static_cast<float>(_sitl->state.pitchDeg)),
-                          radians(static_cast<float>(_sitl->state.yawDeg)));
+        rotmat.from_euler(radians(static_cast<float>(_sitl->state.rollDeg)),  // radians takes only float
+                          radians(static_cast<float>(_sitl->state.pitchDeg)),  // radians takes only float
+                          radians(static_cast<float>(_sitl->state.yawDeg)));  // radians takes only float
         // rotate the offset into earth frame
         const Vector3f relPosSensorEF = rotmat * relPosSensorBF;
         // correct the altitude at the sensor
@@ -93,7 +93,7 @@ uint16_t SITL_State::_ground_sonar(void)
     if (fabs(_sitl->state.rollDeg) < 90 &&
         fabs(_sitl->state.pitchDeg) < 90) {
         // adjust for apparent altitude with roll
-        altitude /= cosf(radians(static_cast<float>(_sitl->state.rollDeg))) * cosf(radians(static_cast<float>(_sitl->state.pitchDeg)));
+        altitude /= cosf(radians(static_cast<float>(_sitl->state.rollDeg))) * cosf(radians(static_cast<float>(_sitl->state.pitchDeg)));  // radians takes only float
 
         altitude += _sitl->sonar_noise * _rand_float();
 
