@@ -10,7 +10,7 @@ Changes from 3.4.4
 4) Sensor and Optional Hardware Improvements:
     a) IMU sampling rate for MPU9250, ICM20608 IMUs to 8kHz for improved vibration resistance (Pixracer, Pixhawk2)
     b) Onboard Display (http://ardupilot.org/copter/docs/common-display-onboard.html)
-    c) UBlox M8P RTK GPS support
+    c) Here+ RTK GPS (UBlox M8P RTK) support
     d) LightWare I2C drivers usable on Copter (thanks to in-tree drivers below)
     e) MaxBotix sonar with serial interface now supported
     f) Bebop optical flow (but sonar not yet operational making this feature currently impossible to use)
@@ -32,6 +32,7 @@ Changes from 3.4.4
     b) better reporting of battery failsafe to ground stations
     c) reduced minimum waypoint speed to 20cm/s
     d) Flight time recorder (http://ardupilot.org/copter/docs/common-flight-time-recorder.html)
+    e) UBlox GPS baud rate fix (was occasionally selecting wrong rate) 
 11) Technical improvements (users may not see a functional change):
     a) in-tree drivers lead to improved sharing of drivers with Linux boards
     b) copter arming checks consolidated with other vehicles
