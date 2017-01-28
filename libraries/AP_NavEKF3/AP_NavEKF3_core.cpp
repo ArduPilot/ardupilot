@@ -249,7 +249,7 @@ void NavEKF3_core::InitialiseVariables()
     baroStoreIndex = 0;
     rangeStoreIndex = 0;
     magStoreIndex = 0;
-    gpsStoreIndex = 0;
+    last_gps_idx = 0;
     tasStoreIndex = 0;
     ofStoreIndex = 0;
     delAngCorrection.zero();

@@ -848,7 +848,7 @@ private:
     uint8_t magStoreIndex;          // Magnetometer data storage index
     gps_elements gpsDataNew;        // GPS data at the current time horizon
     gps_elements gpsDataDelayed;    // GPS data at the fusion time horizon
-    uint8_t gpsStoreIndex;          // GPS data storage index
+    uint8_t last_gps_idx;           // sensor ID of the GPS receiver used for the last fusion or reset
     output_elements outputDataNew;  // output state data at the current time step
     output_elements outputDataDelayed; // output state data at the current time step
     Vector3f delAngCorrection;      // correction applied to delta angles used by output observer to track the EKF

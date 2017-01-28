@@ -92,6 +92,8 @@ void NavEKF3_core::ResetPosition(void)
     } else  {
         // Use GPS data as first preference if fresh data is available
         if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && posResetSource == DEFAULT) || posResetSource == GPS) {
+            // record the ID of the GPS for the data we are using for the reset
+            last_gps_idx = gpsDataNew.sensor_idx;
             // write to state vector and compensate for offset  between last GPS measurement and the EKF time horizon
             stateStruct.position.x = gpsDataNew.pos.x  + 0.001f*gpsDataNew.vel.x*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
             stateStruct.position.y = gpsDataNew.pos.y  + 0.001f*gpsDataNew.vel.y*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
@@ -239,6 +241,38 @@ void NavEKF3_core::SelectVelPosFusion()
     gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
     // Determine if we need to fuse position and velocity data on this time step
     if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
+        // check if the GPS has changed and reset the position if it has
+        if (gpsDataDelayed.sensor_idx != last_gps_idx) {
+            // record the ID of the GPS that we are using for the reset
+            last_gps_idx = gpsDataDelayed.sensor_idx;
+
+            // Store the position before the reset so that we can record the reset delta
+            posResetNE.x = stateStruct.position.x;
+            posResetNE.y = stateStruct.position.y;
+
+            // Set the position states to the position from the new GPS
+            stateStruct.position.x = gpsDataNew.pos.x;
+            stateStruct.position.y = gpsDataNew.pos.y;
+
+            // Calculate the position offset due to the reset
+            posResetNE.x = stateStruct.position.x - posResetNE.x;
+            posResetNE.y = stateStruct.position.y - posResetNE.y;
+
+            // Add the offset to the output observer states
+            for (uint8_t i=0; i<imu_buffer_length; i++) {
+                storedOutput[i].position.x += posResetNE.x;
+                storedOutput[i].position.y += posResetNE.y;
+            }
+            outputDataNew.position.x += posResetNE.x;
+            outputDataNew.position.y += posResetNE.y;
+            outputDataDelayed.position.x += posResetNE.x;
+            outputDataDelayed.position.y += posResetNE.y;
+
+            // store the time of the reset
+            lastPosReset_ms = imuSampleTime_ms;
+
+        }
+
         // Don't fuse velocity data if GPS doesn't support it
         if (frontend->_fusionModeGPS <= 1) {
             fuseVelData = true;
