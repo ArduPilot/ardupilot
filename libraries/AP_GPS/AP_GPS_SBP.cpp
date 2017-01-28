@@ -282,10 +282,10 @@ AP_GPS_SBP::_attempt_state_update()
 
         if (pos_llh->flags == 0)
             state.status = AP_GPS::GPS_OK_FIX_3D;
-        else if (pos_llh->flags == 2)
-            state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
         else if (pos_llh->flags == 1)
             state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+        else if (pos_llh->flags == 2)
+            state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
         
 
         last_full_update_tow = last_vel_ned.tow;
