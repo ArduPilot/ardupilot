@@ -1118,6 +1118,15 @@ void QuadPlane::update_transition(void)
         run_rate_controller();
         motors_output();
         last_throttle = motors->get_throttle();
+
+        // reset integrators while we are below target airspeed as we
+        // may build up too much while still primarily under
+        // multicopter control
+        plane.pitchController.reset_I();
+        plane.rollController.reset_I();
+
+        // give full authority to attitude control
+        attitude_control->set_throttle_mix_max();
         break;
     }
         
@@ -1130,7 +1139,14 @@ void QuadPlane::update_transition(void)
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition done");
         }
         float trans_time_ms = (float)transition_time_ms.get();
-        float throttle_scaled = last_throttle * (trans_time_ms - (millis() - transition_start_ms)) / trans_time_ms;
+        float transition_scale = (trans_time_ms - (millis() - transition_start_ms)) / trans_time_ms;
+        float throttle_scaled = last_throttle * transition_scale;
+
+        // set zero throttle mix, to give full authority to
+        // throttle. This ensures that the fixed wing controllers get
+        // a chance to learn the right integrators during the transition
+        attitude_control->set_throttle_mix_value(0.5*transition_scale);
+
         if (throttle_scaled < 0.01) {
             // ensure we don't drop all the way to zero or the motors
             // will stop stabilizing
@@ -1170,7 +1186,6 @@ void QuadPlane::update_transition(void)
  */
 void QuadPlane::run_rate_controller(void)
 {
-    attitude_control->set_throttle_mix_max();
     attitude_control->rate_controller_run();
 }
 
@@ -1193,12 +1208,15 @@ void QuadPlane::update(void)
         motor_test_output();
         return;
     }
-    
+
     if (!in_vtol_mode()) {
         update_transition();
     } else {
         assisted_flight = false;
         
+        // give full authority to attitude control
+        attitude_control->set_throttle_mix_max();
+
         // run low level rate controllers
         run_rate_controller();
 
