@@ -710,7 +710,12 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, uint64_t time_
     if (time_us == 0) {
         time_us = AP_HAL::micros64();
     }
-    const struct Location &loc = gps.location(i);
+    struct Location loc;
+    if (i >= gps.num_sensors()) {
+        loc = gps.location();
+    } else {
+        loc = gps.location(i);
+    }
     struct log_GPS pkt = {
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPS_MSG+i)),
         time_us       : time_us,
