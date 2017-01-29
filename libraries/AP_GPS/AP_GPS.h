@@ -28,7 +28,8 @@
    maximum number of GPS instances available on this platform. If more
    than 1 then redundant sensors may be available
  */
-#define GPS_MAX_INSTANCES 2
+#define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
+#define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximumum number of GPs instances including the 'virtual' GPS created by blending receiver data
 #define GPS_RTK_INJECT_TO_ALL 127
 
 // the number of GPS leap seconds
@@ -140,11 +141,18 @@ public:
     // Accessor functions
 
     // return number of active GPS sensors. Note that if the first GPS
-    // is not present but the 2nd is then we return 2
+    // is not present but the 2nd is then we return 2. Note that a blended
+    // GPS solution is treated as an addditional sensor.
     uint8_t num_sensors(void) const {
-        return num_instances;
+        if (!_output_is_blended) {
+            return num_instances;
+        } else {
+            return num_instances+1;
+        }
     }
 
+    // Return the index of the primary sensor which is the index of the sensor contributing to
+    // the output. A blended solution is avalable as an additional instance
     uint8_t primary_sensor(void) const {
         return primary_instance;
     }
@@ -321,7 +329,12 @@ public:
 
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const {
-        return _antenna_offset[instance];
+        if (instance == GPS_MAX_RECEIVERS) {
+            // return an offset for the blended GPS solution
+            return _blended_antenna_offset;
+        } else {
+            return _antenna_offset[instance];
+        }
     }
 
     // set position for HIL
@@ -338,7 +351,7 @@ public:
     DataFlash_Class *_DataFlash;
 
     // configuration parameters
-    AP_Int8 _type[GPS_MAX_INSTANCES];
+    AP_Int8 _type[GPS_MAX_RECEIVERS];
     AP_Int8 _navfilter;
     AP_Int8 _auto_switch;
     AP_Int8 _min_dgps;
@@ -348,12 +361,14 @@ public:
     AP_Int8 _sbas_mode;
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
-    AP_Int8 _gnss_mode[2];
-    AP_Int16 _rate_ms[2];
+    AP_Int8 _gnss_mode[GPS_MAX_RECEIVERS];
+    AP_Int16 _rate_ms[GPS_MAX_RECEIVERS];
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
-    AP_Vector3f _antenna_offset[2];
-    AP_Int16 _delay_ms[2];
+    AP_Vector3f _antenna_offset[GPS_MAX_RECEIVERS];
+    AP_Int16 _delay_ms[GPS_MAX_RECEIVERS];
+    AP_Int8 _blend_mask;
+    AP_Float _blend_tc;
 
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
@@ -390,10 +405,11 @@ private:
         // the time we got our last fix in system milliseconds
         uint32_t last_message_time_ms;
     };
-    GPS_timing timing[GPS_MAX_INSTANCES];
-    GPS_State state[GPS_MAX_INSTANCES];
-    AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
-    AP_HAL::UARTDriver *_port[GPS_MAX_INSTANCES];
+    // Note allowance for an additional instance to contain blended data
+    GPS_timing timing[GPS_MAX_RECEIVERS+1];
+    GPS_State state[GPS_MAX_RECEIVERS+1];
+    AP_GPS_Backend *drivers[GPS_MAX_RECEIVERS];
+    AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
 
     /// primary GPS instance
     uint8_t primary_instance:2;
@@ -416,12 +432,12 @@ private:
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
         struct ERB_detect_state erb_detect_state;
-    } detect_state[GPS_MAX_INSTANCES];
+    } detect_state[GPS_MAX_RECEIVERS];
 
     struct {
         const char *blob;
         uint16_t remaining;
-    } initblob_state[GPS_MAX_INSTANCES];
+    } initblob_state[GPS_MAX_RECEIVERS];
 
     static const uint32_t  _baudrates[];
     static const char _initialisation_blob[];
@@ -456,6 +472,21 @@ private:
 
     // inject data into all backends
     void inject_data_all(const uint8_t *data, uint16_t len);
-};
 
-#define GPS_BAUD_TIME_MS 1200
+    // GPS blending and switching
+    Vector2f _NE_pos_offset_m[GPS_MAX_RECEIVERS]; // Filtered North,East position offset from GPS instance to blended solution in _output_state.location (m)
+    float _hgt_offset_cm[GPS_MAX_RECEIVERS]; // Filtered height offset from GPS instance relative to blended solution in _output_state.location (cm)
+    Vector3f _blended_antenna_offset; // blended antenna offset
+    float _blended_lag_sec = 0.001f * GPS_MAX_RATE_MS; // blended receiver lag in seconds
+    float _blend_weights[GPS_MAX_RECEIVERS]; // blend weight for each GPS. The blend weights must sum to 1.0 across all instances.
+    uint32_t _last_time_updated[GPS_MAX_RECEIVERS]; // the last value of state.last_gps_time_ms read for that GPS instance - used to detect new data.
+    float _omega_lpf; // cutoff frequency in rad/sec of LPF applied to position offsets
+    bool _output_is_blended; // true when a blended GPS solution being output
+
+    // calculate the blend weight.  Returns true if blend could be calculated, false if not
+    bool calc_blend_weights(void);
+
+    // calculate the blended state
+    void calc_blended_state(void);
+
+};
