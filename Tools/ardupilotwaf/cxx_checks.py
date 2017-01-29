@@ -160,13 +160,38 @@ def check_librt(cfg, env):
 def check_package(cfg, env, libname):
     '''use pkg-config to look for an installed library that has a LIBNAME.pc file'''
     capsname = libname.upper()
+
+    # we don't want check_cfg() changing the global environment during
+    # this test, in case it fails in the 2nd link step
+    cfg.env.stash()
+
     cfg.check_cfg(package=libname, mandatory=False, global_define=True,
                   args=['--libs', '--cflags'], uselib_store=capsname)
 
-    env.LIB += cfg.env['LIB_%s' % capsname]
-    env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
-    env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
-    env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
+    # we need to also check that we can link against the lib. We may
+    # have a pc file for the package, but its the wrong
+    # architecture. This can happen as PKG_CONFIG_PATH is not
+    # architecture specific
+    cfg.env.LIB += cfg.env['LIB_%s' % capsname]
+    cfg.env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
+    cfg.env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
+    cfg.env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
+
+    ret = cfg.check(
+        compiler='cxx',
+        fragment='''int main() { return 0; }''',
+        msg='Testing link with %s' % libname,
+        mandatory=False,
+        lib='dl'
+    )
+
+    cfg.env.revert()
+
+    if ret:
+        env.LIB += cfg.env['LIB_%s' % capsname]
+        env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
+        env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
+        env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
 
 @conf
 def check_lttng(cfg, env):
