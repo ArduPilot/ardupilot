@@ -138,11 +138,18 @@ public:
     // Accessor functions
 
     // return number of active GPS sensors. Note that if the first GPS
-    // is not present but the 2nd is then we return 2
+    // is not present but the 2nd is then we return 2. Note that a blended
+    // GPS solution is treated as an addditional sensor.
     uint8_t num_sensors(void) const {
-        return num_instances;
+        if (!_output_is_blended) {
+            return num_instances;
+        } else {
+            return num_instances+1;
+        }
     }
 
+    // Return the index of the primary sensor which is the index of the sensor contributing to
+    // the output. A blended solution is avalable as an additional instance
     uint8_t primary_sensor(void) const {
         return primary_instance;
     }
@@ -319,7 +326,12 @@ public:
 
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const {
-        return _antenna_offset[instance];
+        if (instance == GPS_MAX_INSTANCES) {
+            // return an offset for the blended GPS solution
+            return _blended_antenna_offset;
+        } else {
+            return _antenna_offset[instance];
+        }
     }
     const Vector3f &get_antenna_offset(void) const {
         return _antenna_offset[primary_instance];
@@ -349,12 +361,14 @@ public:
     AP_Int8 _sbas_mode;
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
-    AP_Int8 _gnss_mode[2];
-    AP_Int16 _rate_ms[2];
+    AP_Int8 _gnss_mode[GPS_MAX_INSTANCES];
+    AP_Int16 _rate_ms[GPS_MAX_INSTANCES];
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
-    AP_Vector3f _antenna_offset[2];
-    AP_Int16 _delay_ms[2];
+    AP_Vector3f _antenna_offset[GPS_MAX_INSTANCES];
+    AP_Int16 _delay_ms[GPS_MAX_INSTANCES];
+    AP_Int8 _blend_mask;
+    AP_Float _blend_tc;
 
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
@@ -391,8 +405,9 @@ private:
         // the time we got our last fix in system milliseconds
         uint32_t last_message_time_ms;
     };
-    GPS_timing timing[GPS_MAX_INSTANCES];
-    GPS_State state[GPS_MAX_INSTANCES];
+    // Note allowance for an additional instance to contain blended data
+    GPS_timing timing[GPS_MAX_INSTANCES+1];
+    GPS_State state[GPS_MAX_INSTANCES+1];
     AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
     AP_HAL::UARTDriver *_port[GPS_MAX_INSTANCES];
 
@@ -457,6 +472,28 @@ private:
 
     // inject data into all backends
     void inject_data_all(const uint8_t *data, uint16_t len);
+
+    // GPS blending and switching
+    Vector2f _NE_pos_offset_m[GPS_MAX_INSTANCES]; // Filtered North,East position offset from GPS instance to blended solution in _output_state.location (m)
+    float _hgt_offset_cm[GPS_MAX_INSTANCES]; // Filtered height offset from GPS instance relative to blended solution in _output_state.location (cm)
+    Vector3f _blended_antenna_offset; // blended antenna offset
+    float _blend_weights[GPS_MAX_INSTANCES]; // blend weight for each GPS. The blend weights must sum to 1.0 across all instances.
+    Location _output_location_corrected; // output location after application of the  filtered offset corrections _NE_pos_offset_m and _hgt_offset_cm
+    uint32_t _last_time_updated[GPS_MAX_INSTANCES]; // the last value of state.last_gps_time_ms read for that GPS instance - used to detect new data.
+    float _omega_lpf; // cutoff frequency in rad/sec of LPF applied to position offsets
+    bool _output_is_blended; // true when a blended GPS solution being output
+
+    // calculate the blend weight
+    void calc_blend_weights(void);
+
+    // calculate the blended state
+    void calc_blended_state(void);
+
 };
 
 #define GPS_BAUD_TIME_MS 1200
+
+// defines used to specify the mask position for use of different accuracy metrics in the blending algorithm
+#define USE_HPOS_ACC    1
+#define USE_VPOS_ACC    2
+#define USE_SPD_ACC     4
