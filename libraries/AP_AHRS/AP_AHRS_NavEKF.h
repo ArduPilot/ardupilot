@@ -127,15 +127,21 @@ public:
     bool have_inertial_nav(void) const;
 
     bool get_velocity_NED(Vector3f &vec) const;
-    bool get_relative_position_NED(Vector3f &vec) const;
 
-    // return the relative position in North/East order
+    // return the relative position NED to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NE(Vector2f &posNE) const;
+    bool get_relative_position_NED_home(Vector3f &vec) const;
+    bool get_relative_position_NED_origin(Vector3f &vec) const;
 
-    // return the relative position in North/East order
+    // return the relative position NE to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_D(float &posD) const;
+    bool get_relative_position_NE_home(Vector2f &posNE) const;
+    bool get_relative_position_NE_origin(Vector2f &posNE) const;
+
+    // return the relative position down to either home or origin
+    // baro will be used for the _home relative one if the EKF isn't
+    void get_relative_position_D_home(float &posD) const;
+    bool get_relative_position_D_origin(float &posD) const;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
