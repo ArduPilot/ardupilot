@@ -399,7 +399,7 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
     // zero rangefinder state, start to accumulate good samples now
     memset(&rangefinder_state, 0, sizeof(rangefinder_state));
 
-    landing.do_land(cmd, relative_altitude());
+    landing.do_land(cmd, relative_altitude);
 
 #if GEOFENCE_ENABLED == ENABLED 
     if (g.fence_autoenable == 1) {

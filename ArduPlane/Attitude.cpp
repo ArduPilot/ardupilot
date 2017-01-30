@@ -225,7 +225,7 @@ void Plane::stabilize_yaw(float speed_scaler)
         // otherwise use ground steering when no input control and we
         // are below the GROUND_STEER_ALT
         steering_control.ground_steering = (channel_roll->get_control_in() == 0 && 
-                                            fabsf(relative_altitude()) < g.ground_steer_alt);
+                                            fabsf(relative_altitude) < g.ground_steer_alt);
         if (landing.is_on_approach()) {
             // don't use ground steering on landing approach
             steering_control.ground_steering = false;
@@ -390,7 +390,7 @@ void Plane::stabilize()
       see if we should zero the attitude controller integrators. 
      */
     if (channel_throttle->get_control_in() == 0 &&
-        relative_altitude_abs_cm() < 500 && 
+        fabsf(relative_altitude) < 5.0f && 
         fabsf(barometer.get_climb_rate()) < 0.5f &&
         gps.ground_speed() < 3) {
         // we are low, with no climb rate, and zero throttle, and very

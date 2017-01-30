@@ -115,23 +115,6 @@ int32_t Plane::get_RTL_altitude()
     return g.RTL_altitude_cm + home.alt;
 }
 
-
-/*
-  return relative altitude in meters (relative to home)
- */
-float Plane::relative_altitude(void)
-{
-    return (current_loc.alt - home.alt) * 0.01f;
-}
-
-/*
-  return relative altitude in centimeters, absolute value
- */
-int32_t Plane::relative_altitude_abs_cm(void)
-{
-    return labs(current_loc.alt - home.alt);
-}
-
 /*
   return relative altitude in meters (relative to terrain, if available,
   or home otherwise)
@@ -150,7 +133,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
         return altitude;
     }
 #endif
-    return relative_altitude();
+    return relative_altitude;
 }
 
 /*
@@ -456,7 +439,7 @@ int32_t Plane::adjusted_altitude_cm(void)
  */
 int32_t Plane::adjusted_relative_altitude_cm(void)
 {
-    return adjusted_altitude_cm() - home.alt;
+    return (relative_altitude - mission_alt_offset())*100;
 }
 
 
@@ -631,7 +614,7 @@ void Plane::rangefinder_height_update(void)
     if (rangefinder_state.in_range) {
         // base correction is the difference between baro altitude and
         // rangefinder estimate
-        float correction = relative_altitude() - rangefinder_state.height_estimate;
+        float correction = relative_altitude - rangefinder_state.height_estimate;
 
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
