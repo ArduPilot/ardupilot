@@ -76,6 +76,7 @@ public:
     AP_Vector3f accel2_bias; // in m/s/s
     AP_Float arspd_noise;  // in m/s
     AP_Float arspd_fail;   // pitot tube failure
+    AP_Float gps_noise; // amplitude of the gps altitude error
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Float mag_error;   // in degrees
