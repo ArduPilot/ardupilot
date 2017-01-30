@@ -337,7 +337,7 @@ void Plane::do_RTL(int32_t rtl_altitude)
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
-    if (g.loiter_radius < 0) {
+    if (aparm.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -653,7 +653,7 @@ bool Plane::verify_loiter_unlim()
 bool Plane::verify_loiter_time()
 {
     bool result = false;
-    // mission radius is always g.loiter_radius
+    // mission radius is always aparm.loiter_radius
     update_loiter(0);
 
     if (loiter.start_time_ms == 0) {
@@ -861,7 +861,7 @@ bool Plane::verify_within_distance()
 
 void Plane::do_loiter_at_location()
 {
-    if (g.loiter_radius < 0) {
+    if (aparm.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -1031,7 +1031,7 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 
-    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < labs(g.loiter_radius)) {
+    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < labs(aparm.loiter_radius)) {
         /* Whenever next waypoint is within the loiter radius,
            maintaining loiter would prevent us from ever pointing toward the next waypoint.
            Hence break out of loiter immediately
