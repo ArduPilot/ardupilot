@@ -16,14 +16,14 @@ void AP_InertialNav_NavEKF::update(float dt)
 {
     // get the NE position relative to the local earth frame origin
     Vector2f posNE;
-    if (_ahrs_ekf.get_relative_position_NE(posNE)) {
+    if (_ahrs_ekf.get_relative_position_NE_origin(posNE)) {
         _relpos_cm.x = posNE.x * 100; // convert from m to cm
         _relpos_cm.y = posNE.y * 100; // convert from m to cm
     }
 
     // get the D position relative to the local earth frame origin
     float posD;
-    if (_ahrs_ekf.get_relative_position_D(posD)) {
+    if (_ahrs_ekf.get_relative_position_D_origin(posD)) {
         _relpos_cm.z = - posD * 100; // convert from m in NED to cm in NEU
     }
 
