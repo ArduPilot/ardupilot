@@ -1,5 +1,8 @@
 /*
-  24 state EKF based on https://github.com/priseborough/InertialNav
+  24 state EKF based on the derivation in https://github.com/priseborough/
+  InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/
+  GenerateNavFilterEquations.m
+
   Converted from Matlab to C++ by Paul Riseborough
 
   EKF Tuning parameters refactored by Tom Cauchois
