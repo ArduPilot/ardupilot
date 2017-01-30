@@ -31,7 +31,8 @@ extern const AP_HAL::HAL &hal;
 #define LSM9DS0_DRY_G_PIN -1
 #endif
 
-#define LSM9DS0_G_WHOAMI    0xD4
+#define LSM9DS0_G_WHOAMI    0xD4 // L3GD20
+#define LSM9DS0_G_WHOAMI_H  0xD7 // L3GD20H
 #define LSM9DS0_XM_WHOAMI   0x49
 
 ////////////////////////////
@@ -383,7 +384,8 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
                                                      int drdy_pin_num_a,
                                                      int drdy_pin_num_g,
                                                      enum Rotation rotation_a,
-                                                     enum Rotation rotation_g)
+                                                     enum Rotation rotation_g,
+                                                     enum Rotation rotation_gH)
     : AP_InertialSensor_Backend(imu)
     , _dev_gyro(std::move(dev_gyro))
     , _dev_accel(std::move(dev_accel))
@@ -391,6 +393,7 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
     , _drdy_pin_num_g(drdy_pin_num_g)
     , _rotation_a(rotation_a)
     , _rotation_g(rotation_g)
+    , _rotation_gH(rotation_gH)
 {
 }
 
@@ -398,7 +401,8 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
                                                             enum Rotation rotation_a,
-                                                            enum Rotation rotation_g)
+                                                            enum Rotation rotation_g,
+                                                            enum Rotation rotation_gH)
 {
     if (!dev_gyro || !dev_accel) {
         return nullptr;
@@ -406,7 +410,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_
     AP_InertialSensor_LSM9DS0 *sensor =
         new AP_InertialSensor_LSM9DS0(_imu, std::move(dev_gyro), std::move(dev_accel),
                                       LSM9DS0_DRY_X_PIN, LSM9DS0_DRY_G_PIN,
-                                      rotation_a, rotation_g);
+                                      rotation_a, rotation_g, rotation_gH);
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;
@@ -456,16 +460,15 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
         return false;
     }
 
-    uint8_t whoami;
-    uint8_t tries;
+    uint8_t tries, whoami;
 
     // set flag for reading registers
     _dev_gyro->set_read_flag(0x80);
     _dev_accel->set_read_flag(0x80);
     
-    whoami = _register_read_g(WHO_AM_I_G);
-    if (whoami != LSM9DS0_G_WHOAMI) {
-        hal.console->printf("LSM9DS0: unexpected gyro WHOAMI 0x%x\n", (unsigned)whoami);
+    whoami_g = _register_read_g(WHO_AM_I_G);
+    if (whoami_g != LSM9DS0_G_WHOAMI && whoami_g != LSM9DS0_G_WHOAMI_H) {
+        hal.console->printf("LSM9DS0: unexpected gyro WHOAMI 0x%x\n", (unsigned)whoami_g);
         goto fail_whoami;
     }
 
@@ -522,7 +525,11 @@ void AP_InertialSensor_LSM9DS0::start(void)
     _gyro_instance = _imu.register_gyro(760, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_L3GD20));
     _accel_instance = _imu.register_accel(800, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D));
 
-    set_gyro_orientation(_gyro_instance, _rotation_g);
+    if (whoami_g == LSM9DS0_G_WHOAMI_H) {
+        set_gyro_orientation(_gyro_instance, _rotation_gH);
+    } else {
+        set_gyro_orientation(_gyro_instance, _rotation_g);
+    }
     set_accel_orientation(_accel_instance, _rotation_a);
     
     _set_accel_max_abs_offset(_accel_instance, 5.0f);
