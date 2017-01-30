@@ -1015,7 +1015,8 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 
     d.latitude = latitude + glitch_offsets.x;
     d.longitude = longitude + glitch_offsets.y;
-    d.altitude = altitude + glitch_offsets.z;
+    // add an altitude error controlled by a slow sine wave
+    d.altitude = altitude + glitch_offsets.z + _sitl->gps_noise * sinf(AP_HAL::millis() * 0.0005f);
 
     // Add offet to c.g. velocity to get velocity at antenna
     d.speedN = speedN;
