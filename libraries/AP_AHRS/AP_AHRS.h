@@ -314,19 +314,37 @@ public:
     // return a position relative to home in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
-    virtual bool get_relative_position_NED(Vector3f &vec) const {
+    virtual bool get_relative_position_NED_home(Vector3f &vec) const {
         return false;
     }
 
+    // return a position relative to origin in meters, North/East/Down
+    // order. This will only be accurate if have_inertial_nav() is
+    // true
+    virtual bool get_relative_position_NED_origin(Vector3f &vec) const {
+        return false;
+    }
     // return a position relative to home in meters, North/East
     // order. Return true if estimate is valid
-    virtual bool get_relative_position_NE(Vector2f &vecNE) const {
+    virtual bool get_relative_position_NE_home(Vector2f &vecNE) const {
+        return false;
+    }
+
+    // return a position relative to origin in meters, North/East
+    // order. Return true if estimate is valid
+    virtual bool get_relative_position_NE_origin(Vector2f &vecNE) const {
         return false;
     }
 
     // return a Down position relative to home in meters
+    // if EKF is unavailable will return the baro altitude
+    virtual void get_relative_position_D_home(float &posD) const {
+        return;
+    }
+
+    // return a Down position relative to origin in meters
     // Return true if estimate is valid
-    virtual bool get_relative_position_D(float &posD) const {
+    virtual bool get_relative_position_D_origin(float &posD) const {
         return false;
     }
 

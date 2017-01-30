@@ -636,9 +636,9 @@ bool AP_AHRS_NavEKF::get_hagl(float &height) const
     }
 }
 
-// return a relative ground position in meters/second, North/East/Down
-// order. Must only be called if have_inertial_nav() is true
-bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
+// return a relative ground position to the origin in meters
+// North/East/Down order.
+bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
@@ -685,9 +685,28 @@ bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
     }
 }
 
-// write a relative ground position estimate in meters, North/East order
+// return a relative ground position to the home in meters
+// North/East/Down order.
+bool AP_AHRS_NavEKF::get_relative_position_NED_home(Vector3f &vec) const
+{
+    Location originLLH;
+    Vector3f originNED;
+    if (!get_relative_position_NED_origin(originNED) ||
+        !get_origin(originLLH)) {
+        return false;
+    }
+
+    Vector3f offset = location_3d_diff_NED(originLLH, _home);
+
+    vec.x = originNED.x + offset.x;
+    vec.y = originNED.y + offset.y;
+    vec.z = originNED.z - offset.z;
+    return true;
+}
+
+// write a relative ground position estimate to the origin in meters, North/East order
 // return true if estimate is valid
-bool AP_AHRS_NavEKF::get_relative_position_NE(Vector2f &posNE) const
+bool AP_AHRS_NavEKF::get_relative_position_NE_origin(Vector2f &posNE) const
 {
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
@@ -715,9 +734,30 @@ bool AP_AHRS_NavEKF::get_relative_position_NE(Vector2f &posNE) const
     }
 }
 
-// write a relative ground position in meters, Down
+// return a relative ground position to the home in meters
+// North/East order.
+bool AP_AHRS_NavEKF::get_relative_position_NE_home(Vector2f &posNE) const
+{
+    Location originLLH;
+    Vector2f originNE;
+    if (!get_relative_position_NE_origin(originNE) ||
+        !get_origin(originLLH)) {
+        return false;
+    }
+
+    Vector2f offset = location_diff(originLLH, _home);
+
+    posNE.x = originNE.x + offset.x;
+    posNE.y = originNE.y + offset.y;
+    return true;
+}
+
+// write a relative ground position estimate to the origin in meters, North/East order
+
+
+// write a relative ground position to the origin in meters, Down
 // return true if the estimate is valid
-bool AP_AHRS_NavEKF::get_relative_position_D(float &posD) const
+bool AP_AHRS_NavEKF::get_relative_position_D_origin(float &posD) const
 {
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
@@ -744,6 +784,21 @@ bool AP_AHRS_NavEKF::get_relative_position_D(float &posD) const
     }
 }
 
+// write a relative ground position to home in meters, Down
+// will use the barometer if the EKF isn't available
+void AP_AHRS_NavEKF::get_relative_position_D_home(float &posD) const
+{
+    Location originLLH;
+    float originD;
+    if (!get_relative_position_D_origin(originD) ||
+        !get_origin(originLLH)) {
+        posD = -_baro.get_altitude();
+        return;
+    }
+
+    posD = originD - ((originLLH.alt - _home.alt) * 0.01f);
+    return;
+}
 /*
   canonicalise _ekf_type, forcing it to be 0, 2 or 3
   type 1 has been deprecated
