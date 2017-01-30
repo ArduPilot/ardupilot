@@ -1,3 +1,8 @@
+Release 3.1.1, 31 January 2017
+==============================
+
+Minor bugfix release for a crash bug in the SRXL driver
+
 Release 3.1.0, 22 December 2016
 ===============================
 The ArduPilot development team is proud to announce the release of
