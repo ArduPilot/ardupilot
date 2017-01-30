@@ -348,7 +348,7 @@ enum LoiterModeState {
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
-#define ERROR_SUBSYSTEM_RADIO               2
+#define ERROR_SUBSYSTEM_INPUT               2
 #define ERROR_SUBSYSTEM_COMPASS             3
 #define ERROR_SUBSYSTEM_OPTFLOW             4
 #define ERROR_SUBSYSTEM_FAILSAFE_RADIO      5
