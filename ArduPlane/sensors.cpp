@@ -39,7 +39,7 @@ void Plane::read_rangefinder(void)
             height = height_above_target();
         } else {
             // otherwise just use the best available baro estimate above home.
-            height = relative_altitude();
+            height = relative_altitude;
         }
         rangefinder.set_estimated_terrain_height(height);
     }
