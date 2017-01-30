@@ -279,7 +279,7 @@ private:
     // Failsafe
     struct {
         uint8_t rc_override_active   : 1; // 0   // true if rc control are overwritten by ground station
-        uint8_t radio                : 1; // 1   // A status flag for the radio failsafe
+        uint8_t manual_control       : 1; // 1   // A status flag for the radio failsafe
         uint8_t battery              : 1; // 2   // A status flag for the battery failsafe
         uint8_t gcs                  : 1; // 4   // A status flag for the ground station failsafe
         uint8_t ekf                  : 1; // 5   // true if ekf failsafe has occurred
@@ -291,6 +291,7 @@ private:
         uint32_t last_gcs_warn_ms;
 
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
+        uint32_t last_manual_control_ms; // last time MANUAL_CONTROL message arrived from GCS
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
     } failsafe;
@@ -694,6 +695,8 @@ private:
     bool should_disarm_on_failsafe();
     void failsafe_battery_event(void);
     void failsafe_gcs_check();
+    void failsafe_manual_control_check(void);
+    void set_neutral_controls(void);
     void failsafe_terrain_check();
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();

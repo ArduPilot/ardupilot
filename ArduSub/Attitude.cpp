@@ -163,7 +163,7 @@ float Sub::get_pilot_desired_throttle(int16_t throttle_control)
 float Sub::get_pilot_desired_climb_rate(float throttle_control)
 {
     // throttle failsafe check
-    if( failsafe.radio ) {
+    if( failsafe.manual_control ) {
         return 0.0f;
     }
 
