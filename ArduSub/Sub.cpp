@@ -105,6 +105,7 @@ Sub::Sub(void) :
     sensor_health.compass = true;
 
     failsafe.last_heartbeat_ms = 0;
+    failsafe.manual_control = true;
 }
 
 Sub sub;

@@ -43,6 +43,7 @@ void Sub::init_joystick() {
 }
 
 void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons) {
+
 	int16_t channels[11];
 
 	uint32_t tnow_ms = millis();
@@ -397,6 +398,9 @@ JSButton* Sub::get_button(uint8_t index) {
 }
 
 void Sub::camera_tilt_smooth() {
+	if(failsafe.manual_control) {
+		return;
+	}
 	int16_t channels[11];
 
 	for ( uint8_t i = 0 ; i < 11 ; i++ ) {
@@ -435,4 +439,20 @@ void Sub::default_js_buttons() {
 	for(int i = 0; i < 16; i++) {
 		get_button(i)->set_default(defaults[i][0], defaults[i][1]);
 	}
+}
+
+void Sub::set_neutral_controls() {
+	int16_t channels[11];
+
+	for(uint8_t i = 0; i < 7; i++) {
+		channels[i] = 1500;
+	}
+
+	for(uint8_t i = 7; i < 11; i++) {
+		channels[i] = 0xffff;
+	}
+
+	channels[4] = 0xffff; // Leave mode switch where it was
+
+	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
 }

@@ -55,7 +55,7 @@ void Sub::circle_run()
     }
 
     // process pilot inputs
-    if (!failsafe.radio) {
+    if (!failsafe.manual_control) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
         if (!is_zero(target_yaw_rate)) {
