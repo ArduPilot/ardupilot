@@ -272,12 +272,8 @@ void AP_TECS::update_50hz(void)
       if we have a vertical position estimate from the EKF then use
       it, otherwise use barometric altitude
      */
-    Vector3f posned;
-    if (_ahrs.get_relative_position_NED(posned)) {
-        _height = - posned.z;
-    } else {
-        _height = _ahrs.get_baro().get_altitude();
-    }
+    _ahrs.get_relative_position_D_home(_height);
+    _height *= -1.0f;
 
     // Calculate time in seconds since last update
     uint64_t now = AP_HAL::micros64();
