@@ -40,6 +40,7 @@ void Sub::failsafe_manual_control_check() {
 			failsafe.manual_control = true;
 			set_neutral_controls();
 			init_disarm_motors();
+			Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
 			gcs_send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
 		}
 		return;
