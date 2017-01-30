@@ -88,6 +88,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("SONAR_POS",     55, SITL,  rngfnd_pos_offset, 0),
     AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
     AP_GROUPINFO("ACC2_BIAS",     57, SITL,  accel2_bias, 0),
+    AP_GROUPINFO("GPS_NOISE",     58, SITL,  gps_noise, 0),
     AP_GROUPEND
 };
 
