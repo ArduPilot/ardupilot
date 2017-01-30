@@ -980,6 +980,37 @@ void AP_GPS::calc_blend_weights(void)
         return;
     }
 
+    // Use the oldest non-zero time, but if time difference is excessive, use newest to prevent a disconnected receiver from blocking updates
+    uint32_t max_ms = 0; // newest non-zero system time of arrival of a GPS message
+    uint32_t min_ms = -1; // oldest non-zero system time of arrival of a GPS message
+    uint8_t newest_instance = 0; // index of receiver with newest time stamp
+    int16_t max_rate_ms = 0; // largest update interval of a GPS receiver
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        // Find largest and smallest times
+        if (state[i].last_gps_time_ms > max_ms) {
+            max_ms = state[i].last_gps_time_ms;
+            newest_instance = i;
+        }
+        if ((state[i].last_gps_time_ms < min_ms) && (state[i].last_gps_time_ms > 0)) {
+            min_ms = state[i].last_gps_time_ms;
+        }
+        if (_rate_ms[i] > max_rate_ms) {
+            max_rate_ms = _rate_ms[i];
+        }
+    }
+    if ((int32_t)(max_ms - min_ms) < (int32_t)(2 * max_rate_ms)) {
+        // data is not too delayed so use the oldest time_stamp to give a chance for data from that receiver to be updated
+        state[GPS_MAX_INSTANCES].last_gps_time_ms = min_ms;
+    } else {
+        // receiver data has timed out so hard switch to the newest data
+        state[GPS_MAX_INSTANCES].last_gps_time_ms = max_ms;
+        // hard switch to that receiver
+        primary_instance = newest_instance;
+        _output_is_blended = false;
+        _blend_weights[primary_instance] = 1.0f;
+        return;
+    }
+
     // calculate the sum squared speed accuracy across all GPS sensors
     float speed_accuracy_sum_sq = 0.0f;
     if (_blend_mask & USE_SPD_ACC) {
@@ -1141,7 +1172,7 @@ void AP_GPS::calc_blend_weights(void)
 void AP_GPS::calc_blended_state(void)
 {
     // initialise the blended states so we can accumulate the results using the weightings for each GPS receiver
-    state[GPS_MAX_INSTANCES].instance = 255; // set to 255 to indicate this is a blended solution
+    state[GPS_MAX_INSTANCES].instance = GPS_MAX_INSTANCES;
     state[GPS_MAX_INSTANCES].status = NO_GPS;
     state[GPS_MAX_INSTANCES].time_week_ms = 0;
     state[GPS_MAX_INSTANCES].time_week = 0;
@@ -1158,7 +1189,6 @@ void AP_GPS::calc_blended_state(void)
     state[GPS_MAX_INSTANCES].have_speed_accuracy = false;
     state[GPS_MAX_INSTANCES].have_horizontal_accuracy = false;
     state[GPS_MAX_INSTANCES].have_vertical_accuracy = false;
-    state[GPS_MAX_INSTANCES].last_gps_time_ms = -1;
 
     _blended_antenna_offset.zero();
 
@@ -1206,12 +1236,6 @@ void AP_GPS::calc_blended_state(void)
 
         if (state[i].num_sats > 0 && state[i].num_sats > state[GPS_MAX_INSTANCES].num_sats) {
             state[GPS_MAX_INSTANCES].num_sats = state[i].num_sats;
-        }
-
-        // Use oldest update data to prevent use of GPS data by consumers until all instances have had a chance to report
-        // TODO add timeout logic so that we don't wait too long for a faulty receiver to report
-        if (state[i].last_gps_time_ms < state[GPS_MAX_INSTANCES].last_gps_time_ms && state[i].last_gps_time_ms != 0) {
-            state[GPS_MAX_INSTANCES].last_gps_time_ms = state[i].last_gps_time_ms;
         }
 
         // report a blended average GPS antenna position
