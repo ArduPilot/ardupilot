@@ -22,6 +22,10 @@ void Sub::update_arming_checks(void)
 // performs pre-arm checks and arming checks
 bool Sub::all_arming_checks_passing(bool arming_from_gcs)
 {
+	if(failsafe.manual_control) {
+		gcs_send_text(MAV_SEVERITY_WARNING, "Arming requires manual control");
+		return false;
+	}
     if (pre_arm_checks(true)) {
         set_pre_arm_check(true);
     }
