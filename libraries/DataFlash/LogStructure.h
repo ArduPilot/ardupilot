@@ -210,7 +210,8 @@ struct PACKED log_POS {
     int32_t lat;
     int32_t lng;
     float alt;
-    float rel_alt;
+    float rel_home_alt;
+    float rel_origin_alt;
 };
 
 struct PACKED log_POWR {
@@ -835,7 +836,7 @@ Format characters in the format string for binary log messages
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
       "AHR2","QccCfLL","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
-      "POS","QLLff","TimeUS,Lat,Lng,Alt,RelAlt" }, \
+      "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","QccCfLL","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
