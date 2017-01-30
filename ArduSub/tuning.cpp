@@ -12,7 +12,7 @@
 void Sub::tuning() {
 
     // exit immediately if not tuning of when radio failsafe is invoked so tuning values are not set to zero
-    if ((g.radio_tuning <= 0) || failsafe.radio || failsafe.radio_counter != 0) {
+    if ((g.radio_tuning <= 0) || failsafe.manual_control) {
         return;
     }
 

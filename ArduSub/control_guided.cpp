@@ -291,7 +291,7 @@ void Sub::guided_pos_control_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!failsafe.radio) {
+    if (!failsafe.manual_control) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -335,7 +335,7 @@ void Sub::guided_vel_control_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!failsafe.radio) {
+    if (!failsafe.manual_control) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -384,7 +384,7 @@ void Sub::guided_posvel_control_run()
     // process pilot's yaw input
     float target_yaw_rate = 0;
 
-    if (!failsafe.radio) {
+    if (!failsafe.manual_control) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {

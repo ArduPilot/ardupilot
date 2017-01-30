@@ -279,6 +279,7 @@ void Sub::rc_loop()
     // Read radio
     // -----------------------------------------
     read_radio();
+    failsafe_manual_control_check();
 }
 
 // throttle_loop - should be run at 50 hz

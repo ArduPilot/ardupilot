@@ -36,7 +36,7 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     uint32_t custom_mode = control_mode;
 
     // set system as critical if any failsafe have triggered
-    if (failsafe.radio || failsafe.battery || failsafe.gcs || failsafe.ekf || failsafe.terrain)  {
+    if (failsafe.manual_control || failsafe.battery || failsafe.gcs || failsafe.ekf || failsafe.terrain)  {
         system_status = MAV_STATE_CRITICAL;
     }
 
@@ -186,7 +186,7 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
-    if (ap.rc_receiver_present && !failsafe.radio) {
+    if (ap.rc_receiver_present) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
     if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
@@ -955,7 +955,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SET_MODE:       // MAV ID: 11
     {
 #ifdef DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE
-        if (!sub.failsafe.radio) {
+        if (!sub.failsafe.manual_control) {
             handle_set_mode(msg, FUNCTOR_BIND(&sub, &Sub::gcs_set_mode, bool, uint8_t));
         } else {
             // don't allow mode changes while in radio failsafe
@@ -1077,6 +1077,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 
 		sub.transform_manual_control_to_rc_override(packet.x,packet.y,packet.z,packet.r,packet.buttons);
 
+		sub.failsafe.last_manual_control_ms = AP_HAL::millis();
 		// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
 		sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
 		break;
