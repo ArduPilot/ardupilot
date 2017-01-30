@@ -292,7 +292,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Standard
-    GSCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
+    ASCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
 
     // @Param: RTL_RADIUS
     // @DisplayName: RTL loiter radius
