@@ -313,6 +313,12 @@ public:
     
     // control over servo output ranges
     SRV_Channels servo_channels;
+
+#if ADVANCED_FAILSAFE == ENABLED
+    // advanced failsafe library
+    AP_AdvancedFailsafe_Rover afs;
+#endif
+
 };
 
 extern const AP_Param::Info var_info[];

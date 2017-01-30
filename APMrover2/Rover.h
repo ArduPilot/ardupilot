@@ -79,6 +79,9 @@
 
 // Local modules
 #include "defines.h"
+#if ADVANCED_FAILSAFE == ENABLED
+#include "afs_rover.h"
+#endif
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
 
@@ -94,6 +97,9 @@ public:
     friend class Parameters;
     friend class ParametersG2;
     friend class AP_Arming_Rover;
+#if ADVANCED_FAILSAFE == ENABLED
+    friend class AP_AdvancedFailsafe_Rover;
+#endif
 
     Rover(void);
 
@@ -554,6 +560,9 @@ private:
     void set_loiter_active(const AP_Mission::Mission_Command& cmd);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void crash_check();
+#if ADVANCED_FAILSAFE == ENABLED
+    void afs_fs_check(void);
+#endif
 
 public:
     bool print_log_menu(void);
