@@ -536,12 +536,21 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: RC
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     AP_SUBGROUPINFO(rc_channels, "RC", 4, ParametersG2, RC_Channels),
-    
+
+#if ADVANCED_FAILSAFE == ENABLED
+    // @Group: AFS_
+    // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
+    AP_SUBGROUPINFO(afs, "AFS_", 5, ParametersG2, AP_AdvancedFailsafe),
+#endif
+
     AP_GROUPEND
 };
 
 
 ParametersG2::ParametersG2(void)
+#if ADVANCED_FAILSAFE == ENABLED
+    : afs(rover.mission, rover.barometer, rover.gps, rover.rcmap)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
