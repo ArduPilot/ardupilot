@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-  24 state EKF based on https://github.com/priseborough/InertialNav
+  24 state EKF based on the derivation in https://github.com/PX4/ecl/
+  blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
 
   Converted from Matlab to C++ by Paul Riseborough
 

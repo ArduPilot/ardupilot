@@ -1,8 +1,8 @@
 /*
-  24 state EKF based on https://github.com/priseborough/InertialNav
-  Converted from Matlab to C++ by Paul Riseborough
+  24 state EKF based on the derivation in https://github.com/PX4/ecl/
+  blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
 
-  EKF Tuning parameters refactored by Tom Cauchois
+  Converted from Matlab to C++ by Paul Riseborough
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
