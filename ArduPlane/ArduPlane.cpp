@@ -450,6 +450,8 @@ void Plane::update_GPS_50Hz(void)
 {
     // get position from AHRS
     have_position = ahrs.get_position(current_loc);
+    ahrs.get_relative_position_D_home(relative_altitude);
+    relative_altitude *= -1.0f;
 
     static uint32_t last_gps_reading[GPS_MAX_INSTANCES];
     gps.update();
@@ -1037,7 +1039,7 @@ float Plane::tecs_hgt_afe(void)
     } else {
         // when in normal flight we pass the hgt_afe as relative
         // altitude to home
-        hgt_afe = relative_altitude();
+        hgt_afe = relative_altitude;
     }
     return hgt_afe;
 }

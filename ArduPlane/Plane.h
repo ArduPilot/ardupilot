@@ -700,6 +700,8 @@ private:
 #endif
     } target_altitude {};
 
+    float relative_altitude = 0.0f;
+
     // INS variables
     // The main loop execution time.  Seconds
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
@@ -829,8 +831,6 @@ private:
     void adjust_altitude_target();
     void setup_glide_slope(void);
     int32_t get_RTL_altitude();
-    float relative_altitude(void);
-    int32_t relative_altitude_abs_cm(void);
     float relative_ground_altitude(bool use_rangefinder_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
