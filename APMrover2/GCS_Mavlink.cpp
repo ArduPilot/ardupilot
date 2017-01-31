@@ -7,7 +7,7 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
 {
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint8_t system_status = MAV_STATE_ACTIVE;
-    uint32_t custom_mode = control_mode;
+    const uint32_t custom_mode = control_mode;
 
     if (failsafe.triggered != 0) {
         system_status = MAV_STATE_CRITICAL;
@@ -71,7 +71,7 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
 
 void Rover::send_attitude(mavlink_channel_t chan)
 {
-    Vector3f omega = ahrs.get_gyro();
+    const Vector3f omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
         chan,
         millis(),
@@ -1498,7 +1498,7 @@ void Rover::mavlink_delay_cb()
 
     in_mavlink_delay = true;
 
-    uint32_t tnow = millis();
+    const uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs_send_message(MSG_HEARTBEAT);
