@@ -542,11 +542,16 @@ public:
             set(v);
         }
     }
-    
+
     /// Value setter - set value, tell GCS
     ///
     void set_and_notify(const T &v) {
+// We do want to compare each value, even floats, since it being the same here
+// is the result of previously setting it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
         if (v != _value) {
+#pragma GCC diagnostic pop
             set(v);
             notify();
         }
