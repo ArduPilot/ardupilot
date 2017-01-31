@@ -180,6 +180,7 @@ void Rover::send_vfr_hud(mavlink_channel_t chan)
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
         static_cast<uint16_t>(100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))),  // WRONG float to uint16
+        current_loc.alt / 100.0f,
         0);
 }
 
@@ -195,7 +196,7 @@ void Rover::send_hwstatus(mavlink_channel_t chan)
 {
     mavlink_msg_hwstatus_send(
         chan,
-        hal.analogin->board_voltage()*1000,
+        hal.analogin->board_voltage() * 1000,
         0);
 }
 
@@ -978,7 +979,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_REPEAT_SERVO:
-            if (rover.ServoRelayEvents.do_repeat_servo(packet.param1, packet.param2, packet.param3, packet.param4*1000)) {
+            if (rover.ServoRelayEvents.do_repeat_servo(packet.param1, packet.param2, packet.param3, packet.param4 * 1000)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -990,7 +991,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_REPEAT_RELAY:
-            if (rover.ServoRelayEvents.do_repeat_relay(packet.param1, packet.param2, packet.param3*1000)) {
+            if (rover.ServoRelayEvents.do_repeat_relay(packet.param1, packet.param2, packet.param3 * 1000)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;

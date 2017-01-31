@@ -49,6 +49,6 @@ Rover::Rover(void) :
     frsky_telemetry(ahrs, battery, sonar),
 #endif
     home(ahrs.get_home()),
-    G_Dt(0.02)
+    G_Dt(0.02f)
 {
 }
