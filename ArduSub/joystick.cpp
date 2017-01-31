@@ -160,12 +160,12 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 			uint8_t i;
 
 			// Find the first aux channel configured as mount tilt, if any
-			if(RC_Channel_aux::find_channel(RC_Channel_aux::k_mount_tilt, i)) {
+			if(SRV_Channels::find_channel(SRV_Channel::k_mount_tilt, i)) {
 
 				// Get the channel output limits
-				RC_Channel *ch = RC_Channel::rc_channel(i);
-				uint16_t min = ch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN);
-				uint16_t max = ch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
+				SRV_Channel *ch = SRV_Channels::srv_channel(i);
+				uint16_t min = ch->get_output_min();
+				uint16_t max = ch->get_output_max();
 
 				cam_tilt_goal = constrain_int16(cam_tilt_goal-g.cam_tilt_step,min,max);
 			}
@@ -175,12 +175,12 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 			uint8_t i;
 
 			// Find the first aux channel configured as mount tilt, if any
-			if(RC_Channel_aux::find_channel(RC_Channel_aux::k_mount_tilt, i)) {
+			if(SRV_Channels::find_channel(SRV_Channel::k_mount_tilt, i)) {
 
 				// Get the channel output limits
-				RC_Channel *ch = RC_Channel::rc_channel(i);
-				uint16_t min = ch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN);
-				uint16_t max = ch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
+				SRV_Channel *ch = SRV_Channels::srv_channel(i);
+				uint16_t min = ch->get_output_min();
+				uint16_t max = ch->get_output_max();
 
 				cam_tilt_goal = constrain_int16(cam_tilt_goal+g.cam_tilt_step,min,max);
 			}
