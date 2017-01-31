@@ -33,8 +33,8 @@
 // GPS Specific double precision conversions
 // The precision here does matter when using the wsg* functions for converting
 // between LLH and ECEF coordinates.
-#define DEG_TO_RAD_DOUBLE 0.0174532925199432954743716805978692718781530857086181640625
-#define RAD_TO_DEG_DOUBLE 57.29577951308232286464772187173366546630859375
+static const double DEG_TO_RAD_DOUBLE = asin(1) / 90;
+static const double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
 
 #define RadiansToCentiDegrees(x) (static_cast<float>(x) * RAD_TO_DEG * static_cast<float>(100))
 
@@ -50,15 +50,19 @@
 #define LATLON_TO_CM    1.113195f
 
 // Semi-major axis of the Earth, in meters.
-#define WGS84_A         6378137.0
+static const double WGS84_A = 6378137.0;
+
 //Inverse flattening of the Earth
-#define WGS84_IF        298.257223563
+static const double WGS84_IF = 298.257223563;
+
 // The flattening of the Earth
-#define WGS84_F         (1.0 / WGS84_IF)
+static const double WGS84_F = ((double)1.0 / WGS84_IF);
+
 // Semi-minor axis of the Earth in meters
-#define WGS84_B         (WGS84_A * (1 - WGS84_F))
+static const double WGS84_B = (WGS84_A * (1 - WGS84_F));
+
 // Eccentricity of the Earth
-#define WGS84_E         (sqrt(2 * WGS84_F - WGS84_F * WGS84_F))
+static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 
 #define NSEC_PER_SEC    1000000000ULL
 #define NSEC_PER_USEC   1000ULL
