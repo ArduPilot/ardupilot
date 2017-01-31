@@ -28,7 +28,12 @@ This provides some support code and variables for MAVLink enabled sketches
 
 
 #ifdef MAVLINK_SEPARATE_HELPERS
+// Shut up warnings about missing declarations; TODO: should be fixed on
+// mavlink/pymavlink project for when MAVLINK_SEPARATE_HELPERS is defined
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
 #include "include/mavlink/v2.0/mavlink_helpers.h"
+#pragma GCC diagnostic pop
 #endif
 
 AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
