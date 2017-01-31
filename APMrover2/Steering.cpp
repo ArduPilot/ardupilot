@@ -172,7 +172,7 @@ void Rover::calc_throttle(float target_speed) {
     }
 
     if (use_pivot_steering()) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
     }
 }
 

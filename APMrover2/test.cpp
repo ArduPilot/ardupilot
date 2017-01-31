@@ -58,7 +58,7 @@ int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
             }
             cliSerial->printf("\n");
         }
-        if (cliSerial->available() > 0){
+        if (cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -96,7 +96,7 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
             fail_test++;
         }
 
-        if (oldSwitchPosition != readSwitch()){
+        if (oldSwitchPosition != readSwitch()) {
             cliSerial->printf("CONTROL MODE CHANGED: ");
             print_mode(cliSerial, readSwitch());
             cliSerial->printf("\n");
@@ -183,7 +183,7 @@ int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
     while (1) {
         delay(20);
         uint8_t switchPosition = readSwitch();
-        if (oldSwitchPosition != switchPosition){
+        if (oldSwitchPosition != switchPosition) {
             cliSerial->printf("Position %d\n",  switchPosition);
             oldSwitchPosition = switchPosition;
         }
