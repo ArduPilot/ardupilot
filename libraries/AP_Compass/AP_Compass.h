@@ -29,16 +29,18 @@
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
 
+// define default compass calibration fitness and consistency checks
+#define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
+#define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(90.0f)
+#define AP_COMPASS_MAX_XY_ANG_DIFF radians(60.0f)
+#define AP_COMPASS_MAX_XY_LENGTH_DIFF 200.0f
+
 /**
    maximum number of compass instances available on this platform. If more
    than 1 then redundant sensors may be available
  */
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3
-
-#define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(50.0f)
-#define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
-#define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
 
 class Compass
 {

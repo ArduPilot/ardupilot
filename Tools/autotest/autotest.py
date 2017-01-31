@@ -222,7 +222,7 @@ def skip_step(step):
 
 def binary_path(step, debug=False):
     if step.find("ArduCopter") != -1:
-        binary_name = "arducopter-quad"
+        binary_name = "arducopter"
     elif step.find("ArduPlane") != -1:
         binary_name = "arduplane"
     elif step.find("APMrover2") != -1:
@@ -268,7 +268,7 @@ def run_step(step):
         return util.build_SITL('bin/ardurover', j=opts.j, debug=opts.debug)
 
     if step == 'build.ArduCopter':
-        return util.build_SITL('bin/arducopter-quad', j=opts.j, debug=opts.debug)
+        return util.build_SITL('bin/arducopter', j=opts.j, debug=opts.debug)
 
     if step == 'build.AntennaTracker':
         return util.build_SITL('bin/antennatracker', j=opts.j, debug=opts.debug)

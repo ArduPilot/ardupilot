@@ -61,15 +61,16 @@ void AP_InertialSensor_SITL::timer_update(void)
         gyro_noise += ToRad(sitl->gyro_noise);
     }
 
-    // get accel bias (add only to first accelerometer)
+    // add accel bias and noise
     Vector3f accel_bias = sitl->accel_bias.get();
     float xAccel1 = sitl->state.xAccel + accel_noise * rand_float() + accel_bias.x;
     float yAccel1 = sitl->state.yAccel + accel_noise * rand_float() + accel_bias.y;
     float zAccel1 = sitl->state.zAccel + accel_noise * rand_float() + accel_bias.z;
 
-    float xAccel2 = sitl->state.xAccel + accel2_noise * rand_float();
-    float yAccel2 = sitl->state.yAccel + accel2_noise * rand_float();
-    float zAccel2 = sitl->state.zAccel + accel2_noise * rand_float();
+    accel_bias = sitl->accel2_bias.get();
+    float xAccel2 = sitl->state.xAccel + accel2_noise * rand_float() + accel_bias.x;
+    float yAccel2 = sitl->state.yAccel + accel2_noise * rand_float() + accel_bias.y;
+    float zAccel2 = sitl->state.zAccel + accel2_noise * rand_float() + accel_bias.z;
 
     // correct for the acceleration due to the IMU position offset and angular acceleration
     // correct for the centripetal acceleration

@@ -17,5 +17,5 @@ public:
 private:
     pthread_mutex_t _lock;
 };
-#endif // CONFIG_HAL_BOARD
+#endif  // CONFIG_HAL_BOARD
 

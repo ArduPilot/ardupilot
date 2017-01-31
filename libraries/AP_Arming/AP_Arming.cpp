@@ -21,6 +21,7 @@
 // this can also be overridden for specific boards in the HAL
 #define AP_ARMING_COMPASS_OFFSETS_MAX   600
 #endif
+#define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
 #define AP_ARMING_BOARD_VOLTAGE_MIN     4.3f
@@ -30,12 +31,15 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Arming::var_info[] = {
+
+#if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     // @Param: REQUIRE
     // @DisplayName: Require Arming Motors 
-    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and send THR_MIN PWM to throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure.
+    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and send THR_MIN PWM to throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure. This parameter is relevant for ArduPlane only.
     // @Values: 0:Disabled,1:THR_MIN PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
     AP_GROUPINFO_FLAGS("REQUIRE",     0,      AP_Arming,  require,                 1, AP_PARAM_NO_SHIFT),
+#endif
 
     // @Param: CHECK
     // @DisplayName: Arm Checks to Peform (bitmask)
@@ -53,9 +57,10 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ACCTHRESH",    3,     AP_Arming,  accel_error_threshold,  AP_ARMING_ACCEL_ERROR_THRESHOLD),
 
+#if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     // @Param: MIN_VOLT
     // @DisplayName: Minimum arming voltage on the first battery
-    // @Description: The minimum voltage on the first battery to arm, 0 disabes the check
+    // @Description: The minimum voltage on the first battery to arm, 0 disables the check.  This parameter is relevant for ArduPlane only.
     // @Units: Volts
     // @Increment: 0.1 
     // @User: Standard
@@ -63,11 +68,12 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: MIN_VOLT2
     // @DisplayName: Minimum arming voltage on the second battery
-    // @Description: The minimum voltage on the first battery to arm, 0 disabes the check
+    // @Description: The minimum voltage on the first battery to arm, 0 disables the check. This parameter is relevant for ArduPlane only.
     // @Units: Volts
     // @Increment: 0.1 
     // @User: Standard
     AP_GROUPINFO("MIN_VOLT2",     5,     AP_Arming,  _min_voltage[1],  0),
+#endif
 
     AP_GROUPEND
 };
@@ -75,33 +81,38 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
 AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                     const AP_BattMonitor &battery, const enum HomeState &home_set) :
+                     const AP_BattMonitor &battery) :
     ahrs(ahrs_ref),
     barometer(baro),
     _compass(compass),
     _battery(battery),
-    home_is_set(home_set),
     armed(false),
     arming_method(NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    // default REQUIRE parameter to 1 (needed for Copter which is missing the parameter declaration above)
+    require.set_default(YES_MIN_PWM);
+#endif
+
     memset(last_accel_pass_ms, 0, sizeof(last_accel_pass_ms));
     memset(last_gyro_pass_ms, 0, sizeof(last_gyro_pass_ms));
 }
 
+uint16_t AP_Arming::compass_magfield_expected() const
+{
+    return AP_ARMING_COMPASS_MAGFIELD_EXPECTED;
+}
+
 bool AP_Arming::is_armed()
-{ 
-    return require == NONE || armed; 
+{
+    return require == NONE || armed;
 }
 
 uint16_t AP_Arming::get_enabled_checks()
 {
     return checks_to_perform;
-}
-
-void AP_Arming::set_enabled_checks(uint16_t ap)
-{
-    checks_to_perform = ap;
 }
 
 bool AP_Arming::barometer_checks(bool report)
@@ -337,7 +348,7 @@ bool AP_Arming::gps_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
         //GPS OK?
-        if (home_is_set == HOME_UNSET || 
+        if (home_status() == HOME_UNSET ||
             gps.status() < AP_GPS::GPS_OK_FIX_3D) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Bad GPS Position");
@@ -445,11 +456,13 @@ bool AP_Arming::board_voltage_checks(bool report)
 
 bool AP_Arming::pre_arm_checks(bool report)
 {
+#if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     if (armed || require == NONE) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
     }
+#endif
 
     return hardware_safety_check(report)
         &  barometer_checks(report)
@@ -477,6 +490,10 @@ bool AP_Arming::arm_checks(uint8_t method)
 //returns true if arming occurred successfully
 bool AP_Arming::arm(uint8_t method)
 {
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    // Copter should never use this function
+    return false;
+#else
     if (armed) { //already armed
         return false;
     }
@@ -504,11 +521,16 @@ bool AP_Arming::arm(uint8_t method)
     }
 
     return armed;
+#endif
 }
 
 //returns true if disarming occurred successfully
 bool AP_Arming::disarm() 
 {
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    // Copter should never use this function
+    return false;
+#else
     if (!armed) { // already disarmed
         return false;
     }
@@ -520,6 +542,7 @@ bool AP_Arming::disarm()
     //Can't do this from this class until there is a unified logging library.
 
     return true;
+#endif
 }
 
 AP_Arming::ArmingRequired AP_Arming::arming_required() 

@@ -26,10 +26,13 @@
 
 /**
    maximum number of GPS instances available on this platform. If more
-   than 1 then redundent sensors may be available
+   than 1 then redundant sensors may be available
  */
 #define GPS_MAX_INSTANCES 2
 #define GPS_RTK_INJECT_TO_ALL 127
+
+// the number of GPS leap seconds
+#define GPS_LEAPSECONDS_MILLIS 18000ULL
 
 class DataFlash_Class;
 class AP_GPS_Backend;
@@ -65,22 +68,23 @@ public:
         GPS_TYPE_SBP   = 8,
         GPS_TYPE_PX4   = 9,
         GPS_TYPE_SBF   = 10,
-		GPS_TYPE_GSOF  = 11,
-		GPS_TYPE_QURT  = 12,
+        GPS_TYPE_GSOF  = 11,
+        GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
         GPS_TYPE_MAV = 14,
 		GPS_TYPE_NOVA = 15,
-		GPS_TYPE_MAVLINK = 16,
+		GPS_TYPE_MAVLINK = 16
     };
 
     /// GPS status codes
     enum GPS_Status {
-        NO_GPS = 0,             ///< No GPS connected/detected
-        NO_FIX = 1,             ///< Receiving valid GPS messages but no lock
-        GPS_OK_FIX_2D = 2,      ///< Receiving valid messages and 2D lock
-        GPS_OK_FIX_3D = 3,      ///< Receiving valid messages and 3D lock
-        GPS_OK_FIX_3D_DGPS = 4, ///< Receiving valid messages and 3D lock with differential improvements
-        GPS_OK_FIX_3D_RTK = 5,  ///< Receiving valid messages and 3D lock, with relative-positioning improvements
+        NO_GPS = GPS_FIX_TYPE_NO_GPS,                     ///< No GPS connected/detected
+        NO_FIX = GPS_FIX_TYPE_NO_FIX,                     ///< Receiving valid GPS messages but no lock
+        GPS_OK_FIX_2D = GPS_FIX_TYPE_2D_FIX,              ///< Receiving valid messages and 2D lock
+        GPS_OK_FIX_3D = GPS_FIX_TYPE_3D_FIX,              ///< Receiving valid messages and 3D lock
+        GPS_OK_FIX_3D_DGPS = GPS_FIX_TYPE_DGPS,           ///< Receiving valid messages and 3D lock with differential improvements
+        GPS_OK_FIX_3D_RTK_FLOAT = GPS_FIX_TYPE_RTK_FLOAT, ///< Receiving valid messages and 3D RTK Float
+        GPS_OK_FIX_3D_RTK_FIXED = GPS_FIX_TYPE_RTK_FIXED, ///< Receiving valid messages and 3D RTK Fixed
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
@@ -320,9 +324,10 @@ public:
     }
 
     // the expected lag (in seconds) in the position and velocity readings from the gps
-    float get_lag() const { return 0.2f; }
+    float get_lag(uint8_t instance) const;
+    float get_lag(void) const { return get_lag(primary_instance); }
 
-    // return a 3D vector defining the offset of the GPS antenna in metres relative to the body frame origin
+    // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const {
         return _antenna_offset[instance];
     }
@@ -359,6 +364,7 @@ public:
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
     AP_Vector3f _antenna_offset[2];
+    AP_Int16 _delay_ms[2];
 
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
@@ -382,6 +388,11 @@ public:
     uint8_t first_unconfigured_gps(void) const;
     void broadcast_first_configuration_failure_reason(void) const;
 
+    // return true if all GPS instances have finished configuration
+    bool all_configured(void) const {
+        return first_unconfigured_gps() == GPS_ALL_CONFIGURED;
+    }
+    
 private:
     struct GPS_timing {
         // the time we got our last fix in system milliseconds
@@ -454,7 +465,7 @@ private:
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t *msg);
 
-    // ibject data into all backends
+    // inject data into all backends
     void inject_data_all(const uint8_t *data, uint16_t len);
 };
 

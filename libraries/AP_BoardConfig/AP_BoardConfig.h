@@ -76,7 +76,7 @@ private:
         AP_Int8 pwm_count;
         AP_Int8 safety_enable;
         AP_Int32 ignore_safety_channels;
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if HAL_WITH_UAVCAN
         AP_Int8 can_enable;
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -106,21 +106,8 @@ private:
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     void px4_autodetect(void);
-    void px4_start_common_sensors(void);
-    void px4_start_fmuv1_sensors(void);
-    void px4_start_fmuv2_sensors(void);
 #endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    void vrx_start_common_sensors(void);
-    void vrx_start_brain51_sensors(void);
-    void vrx_start_brain52_sensors(void);
-    void vrx_start_ubrain51_sensors(void);
-    void vrx_start_ubrain52_sensors(void);
-    void vrx_start_core10_sensors(void);
-    void vrx_start_brain54_sensors(void);
-#endif
-
+    
 #endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
 
     // target temperarure for IMU in Celsius, or -1 to disable

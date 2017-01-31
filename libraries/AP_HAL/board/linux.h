@@ -34,8 +34,8 @@
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-#define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/APM/logs"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/APM/terrain"
+#define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
 #define HAL_INS_DEFAULT HAL_INS_MPU60XX_I2C
 #define HAL_INS_DEFAULT_ROTATION ROTATION_YAW_270
 #define HAL_INS_MPU60x0_I2C_BUS 2
@@ -68,16 +68,16 @@
 #define HAL_FLOW_PX4_MAX_FLOW_PIXEL 4
 #define HAL_FLOW_PX4_BOTTOM_FLOW_FEATURE_THRESHOLD 30
 #define HAL_FLOW_PX4_BOTTOM_FLOW_VALUE_THRESHOLD 5000
-#define HAL_PARAM_DEFAULTS_PATH "/etc/arducopter/bebop.parm"
+#define HAL_PARAM_DEFAULTS_PATH "/data/ftp/internal_000/ardupilot/bebop.parm"
 #define HAL_RCOUT_BEBOP_BLDC_I2C_BUS 1
 #define HAL_RCOUT_BEBOP_BLDC_I2C_ADDR 0x08
-/* focal length 3.6 um, 2x binning in each direction
+/* focal length 2.21mm pixel size 3.6 um, 2x binning in each direction
  * 240x240 crop rescaled to 64x64 */
+#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.21 / (3.6 * 2.0 * 240 / 64))
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
-#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.5 / (3.6 * 2.0 * 240 / 64))
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-#define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/APM/logs"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/APM/terrain"
+#define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
 #define HAL_INS_DEFAULT HAL_INS_MPU60XX_I2C
 #define HAL_INS_DEFAULT_ROTATION ROTATION_PITCH_180_YAW_90
 #define HAL_INS_MPU60x0_I2C_BUS 2
@@ -111,10 +111,10 @@
 #define HAL_FLOW_PX4_BOTTOM_FLOW_VALUE_THRESHOLD 5000
 #define HAL_RCOUT_DISCO_BLDC_I2C_BUS 1
 #define HAL_RCOUT_DISCO_BLDC_I2C_ADDR 0x08
-#define HAL_PARAM_DEFAULTS_PATH "/etc/arduplane/disco.parm"
-/* focal length 3.6 um, 2x binning in each direction
+#define HAL_PARAM_DEFAULTS_PATH "/data/ftp/internal_000/ardupilot/disco.parm"
+/* focal length 2.21mm pixel size 3.6 um, 2x binning in each direction
  * 240x240 crop rescaled to 64x64 */
-#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.5 / (3.6 * 2.0 * 240 / 64))
+#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.21 / (3.6 * 2.0 * 240 / 64))
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
 // the disco has challenges with its magnetic setup
 #define AP_ARMING_COMPASS_OFFSETS_MAX 2200
@@ -143,7 +143,7 @@
 /* ELP-USBFHD01M-L21
  * focal length 2.1 mm, pixel size 3 um
  * 240x240 crop rescaled to 64x64 */
-#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (3.0 / (2.1 * 2.0 * 240 / 64))
+#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.1 / (3.0 * 2.0 * 240 / 64))
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 #define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
@@ -240,7 +240,30 @@
 /* ELP-USBFHD01M-L21
  * focal length 2.1 mm, pixel size 3 um
  * 240x240 crop rescaled to 64x64 */
-#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (3.0 / (2.1 * 2.0 * 240 / 64))
+#define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.1 / (3.0 * 2.0 * 240 / 64))
+#define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 2
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
+#define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
+#define HAL_GPIO_A_LED_PIN 66
+#define HAL_GPIO_B_LED_PIN 67
+#define HAL_GPIO_C_LED_PIN 67
+#define HAL_GPIO_LED_ON    HIGH
+#define HAL_GPIO_LED_OFF   LOW
+#define HAL_INS_DEFAULT HAL_INS_MPU9250_I2C
+#define HAL_INS_MPU9250_I2C_BUS 2
+#define HAL_INS_MPU9250_I2C_ADDR 0x68
+#define HAL_INS_DEFAULT_ROTATION ROTATION_NONE
+#define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
+#define HAL_BARO_BMP280_BUS 2
+#define HAL_BARO_BMP280_I2C_ADDR 0x76
+#define HAL_COMPASS_DEFAULT HAL_COMPASS_AK8963_MPU9250_I2C
+#define HAL_COMPASS_AK8963_I2C_BUS 2
+#define HAL_COMPASS_AK8963_I2C_ADDR 0x0C
+/* HMC5843 can be an external compass */
+#define HAL_COMPASS_HMC5843_I2C_BUS 2
+#define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+#define HAL_OPTFLOW_PX4FLOW_I2C_BUS 2
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 2
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 #define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"

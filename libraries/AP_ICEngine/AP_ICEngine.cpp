@@ -14,7 +14,7 @@
  */
 
 
-#include <RC_Channel/RC_Channel_aux.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_ICEngine.h"
 
@@ -214,20 +214,20 @@ void AP_ICEngine::update(void)
     /* now set output channels */
     switch (state) {
     case ICE_OFF:
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_ignition, pwm_ignition_off);
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_starter,  pwm_starter_off);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_off);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
         starter_start_time_ms = 0;
         break;
 
     case ICE_START_HEIGHT_DELAY:
     case ICE_START_DELAY:
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_ignition, pwm_ignition_on);
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_starter,  pwm_starter_off);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
         break;
         
     case ICE_STARTING:
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_ignition, pwm_ignition_on);
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_starter,  pwm_starter_on);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_on);
         if (starter_start_time_ms == 0) {
             starter_start_time_ms = now;
         }
@@ -235,8 +235,8 @@ void AP_ICEngine::update(void)
         break;
 
     case ICE_RUNNING:
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_ignition, pwm_ignition_on);
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_starter,  pwm_starter_off);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
         starter_start_time_ms = 0;
         break;
     }

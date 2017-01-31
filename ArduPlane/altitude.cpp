@@ -29,12 +29,11 @@ void Plane::adjust_altitude_target()
         control_mode == CRUISE) {
         return;
     }
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
-        // in land final TECS uses TECS_LAND_SINK as a target sink
+    if (landing.is_flaring()) {
+        // during a landing flare, use TECS_LAND_SINK as a target sink
         // rate, and ignores the target altitude
         set_target_altitude_location(next_WP_loc);
-    } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-            flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE) {
+    } else if (landing.is_on_approach()) {
         landing.setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude.offset_cm);
         landing.adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, auto_state.wp_distance, target_altitude.offset_cm);
     } else if (reached_loiter_target()) {
@@ -380,9 +379,7 @@ void Plane::set_offset_altitude_location(const Location &loc)
     }
 #endif
 
-    if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
-        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
-        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+    if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // if we are within GLIDE_SLOPE_MIN meters of the target altitude
         // then reset the offset to not use a glide slope. This allows for
         // more accurate flight of missions where the aircraft may lose or
@@ -473,7 +470,7 @@ float Plane::mission_alt_offset(void)
 {
     float ret = g.alt_offset;
     if (control_mode == AUTO &&
-            (landing.in_progress || auto_state.wp_is_land_approach)) {
+            (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND || auto_state.wp_is_land_approach)) {
         // when landing after an aborted landing due to too high glide
         // slope we use an offset from the last landing attempt
         ret += landing.alt_offset;
@@ -575,11 +572,7 @@ float Plane::rangefinder_correction(void)
     }
 
     // for now we only support the rangefinder for landing 
-    bool using_rangefinder = (g.rangefinder_landing &&
-                              control_mode == AUTO && 
-                              (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
-                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL));
+    bool using_rangefinder = (g.rangefinder_landing && flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND);
     if (!using_rangefinder) {
         return 0;
     }
@@ -620,9 +613,7 @@ void Plane::rangefinder_height_update(void)
         } else {
             rangefinder_state.in_range = true;
             if (!rangefinder_state.in_use &&
-                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-                 flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
-                 flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+                (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
                  control_mode == QLAND ||
                  control_mode == QRTL ||
                  (control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND)) &&
@@ -657,7 +648,7 @@ void Plane::rangefinder_height_update(void)
         if (now - rangefinder_state.last_correction_time_ms > 5000) {
             rangefinder_state.correction = correction;
             rangefinder_state.initial_correction = correction;
-            landing.initial_slope = landing.slope;
+            landing.set_initial_slope();
             rangefinder_state.last_correction_time_ms = now;
         } else {
             rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;

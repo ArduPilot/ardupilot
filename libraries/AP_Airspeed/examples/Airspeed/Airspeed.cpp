@@ -44,7 +44,7 @@ void set_object_value(const void *object_pointer,
 
 void setup()
 {
-    hal.console->println("ArduPilot Airspeed library test");
+    hal.console->printf("ArduPilot Airspeed library test\n");
 
     set_object_value(&airspeed, airspeed.var_info, "PIN", 65);
     set_object_value(&airspeed, airspeed.var_info, "ENABLE", 1);

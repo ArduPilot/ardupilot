@@ -130,7 +130,7 @@ bool AP_ADC_ADS1115::init()
 
     _gain = ADS1115_PGA_4P096;
 
-    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_ADC_ADS1115::_update, bool));
+    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_ADC_ADS1115::_update, void));
 
     return true;
 }
@@ -200,23 +200,23 @@ float AP_ADC_ADS1115::_convert_register_data_to_mv(int16_t word) const
     return (float) word * pga;
 }
 
-bool AP_ADC_ADS1115::_update()
+void AP_ADC_ADS1115::_update()
 {
     uint8_t config[2];
     be16_t val;
 
     if (!_dev->read_registers(ADS1115_RA_CONFIG, config, sizeof(config))) {
         error("_dev->read_registers failed in ADS1115");
-        return true;
+        return;
     }
 
     /* check rdy bit */
     if ((config[1] & 0x80) != 0x80 ) {
-        return true;
+        return;
     }
 
     if (!_dev->read_registers(ADS1115_RA_CONVERSION, (uint8_t *)&val,  sizeof(val))) {
-        return true;
+        return;
     }
 
     float sample = _convert_register_data_to_mv(be16toh(val));
@@ -227,6 +227,4 @@ bool AP_ADC_ADS1115::_update()
     /* select next channel */
     _channel_to_read = (_channel_to_read + 1) % _channels_number;
     _start_conversion(_channel_to_read);
-
-    return true;
 }

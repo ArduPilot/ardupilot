@@ -13,7 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
- *  ArduCopter Version 3.0
+ *  ArduCopter (also known as APM, APM:Copter or just Copter)
+ *  Wiki:           copter.ardupilot.org
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
  *  Lead Tester:    Marco Robustini 
@@ -260,7 +261,7 @@ void Copter::fast_loop()
     read_AHRS();
 
     // run low level rate controllers that only require IMU data
-    attitude_control.rate_controller_run();
+    attitude_control->rate_controller_run();
     
 #if FRAME_CONFIG == HELI_FRAME
     update_heli_control_dynamics();
@@ -361,7 +362,7 @@ void Copter::update_batt_compass(void)
 
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot
-        compass.set_throttle(motors.get_throttle());
+        compass.set_throttle(motors->get_throttle());
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
@@ -377,11 +378,11 @@ void Copter::ten_hz_logging_loop()
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
+        DataFlash.Log_Write_Rate(ahrs, *motors, *attitude_control, *pos_control);
         if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
             DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
         }
     }
@@ -404,7 +405,7 @@ void Copter::ten_hz_logging_loop()
         DataFlash.Log_Write_Vibration(ins);
     }
     if (should_log(MASK_LOG_CTUN)) {
-        attitude_control.control_monitor_log();
+        attitude_control->control_monitor_log();
         Log_Write_Proximity();
         Log_Write_Beacon();
     }
@@ -424,11 +425,11 @@ void Copter::twentyfive_hz_logging()
 #if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
+        DataFlash.Log_Write_Rate(ahrs, *motors, *attitude_control, *pos_control);
         if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
             DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
         }
     }
@@ -481,30 +482,27 @@ void Copter::one_hz_loop()
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
-    update_arming_checks();
+    arming.update();
 
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         // make it possible to change ahrs orientation at runtime during initial config
         ahrs.set_orientation();
 
         update_using_interlock();
 
-#if FRAME_CONFIG != HELI_FRAME
-        // check the user hasn't updated the frame orientation
-        motors.set_frame_orientation(g.frame_orientation);
+        // check the user hasn't updated the frame class or type
+        motors->set_frame_class_and_type((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
 
+#if FRAME_CONFIG != HELI_FRAME
         // set all throttle channel settings
-        motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+        motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif
     }
 
     // update assigned functions and enable auxiliary servos
-    RC_Channel_aux::enable_aux_servos();
+    SRV_Channels::enable_aux_servos();
 
     check_usb_mux();
-
-    // update position controller alt limits
-    update_poscon_alt_max();
 
     // enable/disable raw gyro/accel logging
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));

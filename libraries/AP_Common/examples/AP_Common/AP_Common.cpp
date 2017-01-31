@@ -32,7 +32,7 @@ void test_high_low_byte(void)
  */
 void setup(void)
 {
-    hal.console->println("AP_Common tests\n");
+    hal.console->printf("AP_Common tests\n\n");
 
     test_high_low_byte();
 }

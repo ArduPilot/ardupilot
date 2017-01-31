@@ -56,7 +56,7 @@ public:
     enum xy_mode {
         XY_MODE_POS_ONLY = 0,           // position correction only (i.e. no velocity feed-forward)
         XY_MODE_POS_LIMITED_AND_VEL_FF, // for loiter - rate-limiting the position correction, velocity feed-forward
-        XY_MODE_POS_AND_VEL_FF          // for velocity controller - unlimied position correction, velocity feed-forward
+        XY_MODE_POS_AND_VEL_FF          // for velocity controller - unlimited position correction, velocity feed-forward
     };
 
     ///
@@ -176,6 +176,9 @@ public:
     // get_leash_down_z, get_leash_up_z - returns vertical leash lengths in cm
     float get_leash_down_z() const { return _leash_down_z; }
     float get_leash_up_z() const { return _leash_up_z; }
+
+    /// get_pos_z_kP - returns z position controller's kP gain
+    float get_pos_z_kP() const { return _p_pos_z.kP(); }
 
     ///
     /// xy position controller

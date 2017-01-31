@@ -7,7 +7,7 @@ void Plane::set_nav_controller(void)
 
     default:
     case AP_Navigation::CONTROLLER_DEFAULT:
-        // fall through to L1 as default controller
+        // no break, fall through to L1 as default controller
 
     case AP_Navigation::CONTROLLER_L1:
         nav_controller = &L1_controller;
@@ -93,9 +93,9 @@ void Plane::calc_airspeed_errors()
                               channel_throttle->get_control_in()) +
                              ((int32_t)aparm.airspeed_min * 100);
 
-    } else if (control_mode == AUTO && landing.in_progress) {
+    } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
-        target_airspeed_cm = landing.get_target_airspeed_cm(flight_stage);
+        target_airspeed_cm = landing.get_target_airspeed_cm();
 
     } else {
         // Normal airspeed target
@@ -143,11 +143,11 @@ void Plane::update_loiter(uint16_t radius)
 {
     if (radius <= 1) {
         // if radius is <=1 then use the general loiter radius. if it's small, use default
-        radius = (abs(g.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(g.loiter_radius);
+        radius = (abs(aparm.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(aparm.loiter_radius);
         if (next_WP_loc.flags.loiter_ccw == 1) {
             loiter.direction = -1;
         } else {
-            loiter.direction = (g.loiter_radius < 0) ? -1 : 1;
+            loiter.direction = (aparm.loiter_radius < 0) ? -1 : 1;
         }
     }
 

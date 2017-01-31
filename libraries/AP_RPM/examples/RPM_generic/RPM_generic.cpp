@@ -29,7 +29,7 @@ char sensor_state;
 
 void setup()
 {
-    hal.console->println("APM RPM library test\n\n");
+    hal.console->printf("APM RPM library test\n\n\n");
     RPM.init();
 
     hal.console->printf("Detected %u RPM sensors\n\n", RPM.num_sensors());

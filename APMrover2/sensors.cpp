@@ -30,7 +30,7 @@ void Rover::read_receiver_rssi(void)
     receiver_rssi = rssi.read_receiver_rssi_uint8();
 }
 
-//Calibrate compass
+// Calibrate compass
 void Rover::compass_cal_update() {
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
@@ -45,8 +45,8 @@ void Rover::accel_cal_update() {
     }
     ins.acal_update();
     // check if new trim values, and set them    float trim_roll, trim_pitch;
-    float trim_roll,trim_pitch;
-    if(ins.get_new_trim(trim_roll, trim_pitch)) {
+    float trim_roll, trim_pitch;
+    if (ins.get_new_trim(trim_roll, trim_pitch)) {
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
 }
@@ -94,7 +94,7 @@ void Rover::read_sonars(void)
         obstacle.sonar1_distance_cm = sonar.distance_cm(0);
         obstacle.sonar2_distance_cm = 0;
         if (obstacle.sonar1_distance_cm < (uint16_t)g.sonar_trigger_cm)  {
-            // obstacle detected in front 
+            // obstacle detected in front
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
@@ -111,7 +111,7 @@ void Rover::read_sonars(void)
 
     // no object detected - reset after the turn time
     if (obstacle.detected_count >= g.sonar_debounce &&
-        AP_HAL::millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
+        AP_HAL::millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Obstacle passed");
         obstacle.detected_count = 0;
         obstacle.turn_angle = 0;
@@ -137,19 +137,24 @@ void Rover::update_sensor_status_flags(void)
 
     // first what sensors/controllers we have
     if (g.compass_enabled) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG; // compass present
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;  // compass present
     }
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 
-    if (rover.DataFlash.logging_present()) { // primary logging only (usually File)
+    if (rover.DataFlash.logging_present()) {  // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
 
 
     // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control and motor output which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_LOGGING);
+    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL &
+                                                         ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION &
+                                                         ~MAV_SYS_STATUS_SENSOR_YAW_POSITION &
+                                                         ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
+                                                         ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
+                                                         ~MAV_SYS_STATUS_LOGGING);
 
     switch (control_mode) {
     case MANUAL:
@@ -158,17 +163,17 @@ void Rover::update_sensor_status_flags(void)
 
     case LEARNING:
     case STEERING:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL;    // 3D angular rate control
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION;  // attitude stabilisation
         break;
 
     case AUTO:
     case RTL:
     case GUIDED:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION; // yaw position
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL; // X/Y position control
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL;    // 3D angular rate control
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION;  // attitude stabilisation
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION;            // yaw position
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;     // X/Y position control
         break;
 
     case INITIALISING:
@@ -223,7 +228,6 @@ void Rover::update_sensor_status_flags(void)
         control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
-    
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry
     frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);

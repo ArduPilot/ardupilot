@@ -37,8 +37,8 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Standard
 
     // @Param: RAT_RLL_FILT
-    // @DisplayName: Roll axis rate conroller input frequency in Hz
-    // @Description: Roll axis rate conroller input frequency in Hz
+    // @DisplayName: Roll axis rate controller input frequency in Hz
+    // @Description: Roll axis rate controller input frequency in Hz
     // @Range: 1 100
     // @Increment: 1
     // @Units: Hz
@@ -75,8 +75,8 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Standard
 
     // @Param: RAT_PIT_FILT
-    // @DisplayName: Pitch axis rate conroller input frequency in Hz
-    // @Description: Pitch axis rate conroller input frequency in Hz
+    // @DisplayName: Pitch axis rate controller input frequency in Hz
+    // @Description: Pitch axis rate controller input frequency in Hz
     // @Range: 1 100
     // @Increment: 1
     // @Units: Hz
@@ -113,8 +113,8 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Standard
 
     // @Param: RAT_YAW_FILT
-    // @DisplayName: Yaw axis rate conroller input frequency in Hz
-    // @Description: Yaw axis rate conroller input frequency in Hz
+    // @DisplayName: Yaw axis rate controller input frequency in Hz
+    // @Description: Yaw axis rate controller input frequency in Hz
     // @Range: 1 100
     // @Increment: 1
     // @Units: Hz
@@ -134,6 +134,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Range: 0.5 0.9
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAX", 5, AC_AttitudeControl_Multi, _thr_mix_max, AC_ATTITUDE_CONTROL_MAX_DEFAULT),
+
+    // @Param: THR_MIX_MAN
+    // @DisplayName: Throttle Mix Manual
+    // @Description: Throttle vs attitude control prioritisation used during manual flight (higher values mean we prioritise attitude control over throttle)
+    // @Range: 0.5 0.9
+    // @User: Advanced
+    AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
     AP_GROUPEND
 };
@@ -224,7 +231,7 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
         _throttle_rpy_mix -= MIN(0.5f*_dt, _throttle_rpy_mix-_throttle_rpy_mix_desired);
     }
-    _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, 1.0f);
+    _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
 
 void AC_AttitudeControl_Multi::rate_controller_run()
@@ -243,12 +250,21 @@ void AC_AttitudeControl_Multi::rate_controller_run()
 void AC_AttitudeControl_Multi::parameter_sanity_check()
 {
     // sanity check throttle mix parameters
-    if (_thr_mix_min < 0.1f || _thr_mix_min > 0.25f) {
-        _thr_mix_min = AC_ATTITUDE_CONTROL_MIN_DEFAULT;
-    }
-    if (_thr_mix_max < 0.5f || _thr_mix_max > 2.0f) {
-        // parameter description recommends thr-mix-max be no higher than 0.9 but we allow up to 2.0
+    if (_thr_mix_man < 0.1f || _thr_mix_man > 4.0f) {
+        // parameter description recommends thr-mix-man be no higher than 0.9 but we allow up to 4.0
         // which can be useful for very high powered copters with very low hover throttle
-        _thr_mix_max = AC_ATTITUDE_CONTROL_MAX_DEFAULT;
+        _thr_mix_man.set_and_save(AC_ATTITUDE_CONTROL_MAN_DEFAULT);
+    }
+    if (_thr_mix_min < 0.1f || _thr_mix_min > 0.25f) {
+        _thr_mix_min.set_and_save(AC_ATTITUDE_CONTROL_MIN_DEFAULT);
+    }
+    if (_thr_mix_max < 0.5f || _thr_mix_max > AC_ATTITUDE_CONTROL_MAX) {
+        // parameter description recommends thr-mix-max be no higher than 0.9 but we allow up to 5.0
+        // which can be useful for very high powered copters with very low hover throttle
+        _thr_mix_max.set_and_save(AC_ATTITUDE_CONTROL_MAX_DEFAULT);
+    }
+    if (_thr_mix_min > _thr_mix_max) {
+        _thr_mix_min.set_and_save(AC_ATTITUDE_CONTROL_MIN_DEFAULT);
+        _thr_mix_max.set_and_save(AC_ATTITUDE_CONTROL_MAX_DEFAULT);
     }
 }

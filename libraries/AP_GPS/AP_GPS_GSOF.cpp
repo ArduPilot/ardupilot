@@ -274,21 +274,20 @@ AP_GPS_GSOF::process_message(void)
                 uint8_t posf2 = gsof_msg.data[a + 8];
 
                 //Debug("POSTIME: " + posf1 + " " + posf2);
-
-                if ((posf1 & 1) == 1)
-                {
+                
+                if ((posf1 & 1)) { // New position
                     state.status = AP_GPS::GPS_OK_FIX_3D;
-                    if ((posf2 & 1) == 1)
-                    {
+                    if ((posf2 & 1)) { // Differential position 
                         state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
-                        if ((posf2 & 4) == 4)
-                        {
-                            state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                        if (posf2 & 2) { // Differential position method
+                            if (posf2 & 4) {// Differential position method
+                                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                            } else {
+                                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                            }
                         }
                     }
-                }
-                else
-                {
+                } else {
                     state.status = AP_GPS::NO_FIX;
                 }
                 valid++;
@@ -346,7 +345,6 @@ AP_GPS_GSOF::process_message(void)
 void
 AP_GPS_GSOF::inject_data(const uint8_t *data, uint16_t len)
 {
-
     if (port->txspace() > len) {
         last_injected_data_ms = AP_HAL::millis();
         port->write(data, len);

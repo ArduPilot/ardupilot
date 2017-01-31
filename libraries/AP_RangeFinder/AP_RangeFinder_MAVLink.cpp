@@ -51,8 +51,11 @@ void AP_RangeFinder_MAVLink::handle_msg(mavlink_message_t *msg)
     mavlink_distance_sensor_t packet;
     mavlink_msg_distance_sensor_decode(msg, &packet);
 
-    last_update_ms = AP_HAL::millis();
-    distance_cm = packet.current_distance;
+    // only accept distances for downward facing sensors
+    if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_270) {
+        last_update_ms = AP_HAL::millis();
+        distance_cm = packet.current_distance;
+    }
 }
 
 /*

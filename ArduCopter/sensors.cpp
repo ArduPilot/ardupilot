@@ -21,7 +21,7 @@ void Copter::read_barometer(void)
     baro_alt = barometer.get_altitude() * 100.0f;
     baro_climbrate = barometer.get_climb_rate() * 100.0f;
 
-    motors.set_air_density_ratio(barometer.get_air_density_ratio());
+    motors->set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
 void Copter::init_rangefinder(void)
@@ -69,7 +69,7 @@ void Copter::read_rangefinder(void)
     }
 
     // send rangefinder altitude and health to waypoint navigation library
-    wp_nav.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+    wp_nav->set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
 
 #else
     rangefinder_state.enabled = false;
@@ -102,7 +102,7 @@ void Copter::init_compass()
 {
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
-        cliSerial->println("COMPASS INIT ERROR");
+        cliSerial->printf("COMPASS INIT ERROR\n");
         Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
         return;
     }
@@ -165,10 +165,11 @@ void Copter::read_battery(void)
 
     // update motors with voltage and current
     if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
-        motors.set_voltage(battery.voltage());
+        motors->set_voltage(battery.voltage());
+        AP_Notify::flags.battery_voltage = battery.voltage();
     }
     if (battery.has_current()) {
-        motors.set_current(battery.current_amps());
+        motors->set_current(battery.current_amps());
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
@@ -203,7 +204,7 @@ void Copter::compass_cal_update()
             compass.cancel_calibration_all();
         }
     } else {
-        bool stick_gesture_detected = compass_cal_stick_gesture_begin != 0 && !motors.armed() && channel_yaw->get_control_in() > 4000 && channel_throttle->get_control_in() > 900;
+        bool stick_gesture_detected = compass_cal_stick_gesture_begin != 0 && !motors->armed() && channel_yaw->get_control_in() > 4000 && channel_throttle->get_control_in() > 900;
         uint32_t tnow = millis();
 
         if (!stick_gesture_detected) {
@@ -307,12 +308,17 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
     }
 #endif
+    if (copter.battery.healthy()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_BATTERY;
+    }
+
 
     // all present sensors enabled by default except altitude and position control and motors which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
-                                                         ~MAV_SYS_STATUS_LOGGING);
+                                                         ~MAV_SYS_STATUS_LOGGING &
+                                                         ~MAV_SYS_STATUS_SENSOR_BATTERY);
 
     switch (control_mode) {
     case AUTO:
@@ -347,6 +353,11 @@ void Copter::update_sensor_status_flags(void)
     if (copter.DataFlash.logging_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
+
+    if (g.fs_batt_voltage > 0 || g.fs_batt_mah > 0) {
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
+    }
+
 
 
     // default to all healthy
@@ -428,6 +439,9 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
+
+    if (copter.failsafe.battery) {
+         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;                                                                    }
     
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry

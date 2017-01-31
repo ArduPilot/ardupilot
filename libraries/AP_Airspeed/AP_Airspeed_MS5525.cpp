@@ -18,12 +18,14 @@
  */
 #include "AP_Airspeed_MS5525.h"
 
+#include <stdio.h>
+#include <utility>
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
-#include <stdio.h>
-#include <utility>
 
 extern const AP_HAL::HAL &hal;
 
@@ -96,7 +98,7 @@ bool AP_Airspeed_MS5525::init()
 
     // read at 80Hz
     dev->register_periodic_callback(1000000UL/80U,
-                                    FUNCTOR_BIND_MEMBER(&AP_Airspeed_MS5525::timer, bool));
+                                    FUNCTOR_BIND_MEMBER(&AP_Airspeed_MS5525::timer, void));
     return true;
 }
 
@@ -140,9 +142,12 @@ bool AP_Airspeed_MS5525::read_prom(void)
 
     bool all_zero = true;
     for (uint8_t i = 0; i < 8; i++) {
-        if (!dev->read_uint16_be(REG_PROM_BASE+i*2, prom[i])) {
+        be16_t val;
+        if (!dev->read_registers(REG_PROM_BASE+i*2, (uint8_t *) &val,
+                                 sizeof(uint16_t))) {
             return false;
         }
+        prom[i] = be16toh(val);
         if (prom[i] != 0) {
             all_zero = false;
         }
@@ -219,7 +224,7 @@ void AP_Airspeed_MS5525::calculate(void)
 }
 
 // 50Hz timer
-bool AP_Airspeed_MS5525::timer()
+void AP_Airspeed_MS5525::timer()
 {
     uint32_t adc_val = read_adc();
 
@@ -241,12 +246,10 @@ bool AP_Airspeed_MS5525::timer()
 
     uint8_t next_cmd = next_state == 0 ? REG_CONVERT_TEMPERATURE : REG_CONVERT_PRESSURE;
     if (!dev->transfer(&next_cmd, 1, nullptr, 0)) {
-        return true;
+        return;
     }
 
     state = next_state;
-    
-    return true;
 }
 
 // return the current differential_pressure in Pascal

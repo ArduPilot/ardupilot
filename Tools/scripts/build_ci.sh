@@ -47,6 +47,8 @@ if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
     Tools/autotest/autotest.py -j2 build.ArduCopter fly.ArduCopter
     echo "Running SITL QuadPlane test"
     Tools/autotest/autotest.py -j2 build.ArduPlane fly.QuadPlane
+    echo "Running SITL Rover test"
+    Tools/autotest/autotest.py -j2 build.APMrover2 drive.APMrover2
     exit 0
 fi
 

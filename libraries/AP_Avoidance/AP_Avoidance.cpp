@@ -76,36 +76,42 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Param: W_TIME
     // @DisplayName: Time Horizon Warn
     // @Description: Aircraft velocity vectors are multiplied by this time to determine closest approach.  If this results in an approach closer than W_DIST_XY or W_DIST_Z then W_ACTION is undertaken (assuming F_ACTION is not undertaken)
+    // @Units: seconds
     // @User: Advanced
     AP_GROUPINFO("W_TIME",      6, AP_Avoidance, _warn_time_horizon, AP_AVOIDANCE_WARN_TIME_DEFAULT),
 
     // @Param: F_TIME
     // @DisplayName: Time Horizon Fail
     // @Description: Aircraft velocity vectors are multiplied by this time to determine closest approach.  If this results in an approach closer than F_DIST_XY or F_DIST_Z then F_ACTION is undertaken
+    // @Units: seconds
     // @User: Advanced
     AP_GROUPINFO("F_TIME",      7, AP_Avoidance, _fail_time_horizon, AP_AVOIDANCE_FAIL_TIME_DEFAULT),
 
     // @Param: W_DIST_XY
     // @DisplayName: Distance Warn XY
     // @Description: Closest allowed projected distance before W_ACTION is undertaken
+    // @Units: meters
     // @User: Advanced
     AP_GROUPINFO("W_DIST_XY",   8, AP_Avoidance, _warn_distance_xy, AP_AVOIDANCE_WARN_DISTANCE_XY_DEFAULT),
 
     // @Param: F_DIST_XY
     // @DisplayName: Distance Fail XY
     // @Description: Closest allowed projected distance before F_ACTION is undertaken
+    // @Units: meters
     // @User: Advanced
     AP_GROUPINFO("F_DIST_XY",   9, AP_Avoidance, _fail_distance_xy, AP_AVOIDANCE_FAIL_DISTANCE_XY_DEFAULT),
 
     // @Param: W_DIST_Z
     // @DisplayName: Distance Warn Z
     // @Description: Closest allowed projected distance before BEHAVIOUR_W is undertaken
+    // @Units: meters
     // @User: Advanced
     AP_GROUPINFO("W_DIST_Z",    10, AP_Avoidance, _warn_distance_z, AP_AVOIDANCE_WARN_DISTANCE_Z_DEFAULT),
 
     // @Param: F_DIST_Z
     // @DisplayName: Distance Fail Z
     // @Description: Closest allowed projected distance before BEHAVIOUR_F is undertaken
+    // @Units: meters
     // @User: Advanced
     AP_GROUPINFO("F_DIST_Z",    11, AP_Avoidance, _fail_distance_z, AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT),
 

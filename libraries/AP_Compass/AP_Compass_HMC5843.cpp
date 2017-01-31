@@ -209,7 +209,7 @@ bool AP_Compass_HMC5843::init()
 
     // read from sensor at 75Hz
     _bus->register_periodic_callback(13333,
-                                     FUNCTOR_BIND_MEMBER(&AP_Compass_HMC5843::_timer, bool));
+                                     FUNCTOR_BIND_MEMBER(&AP_Compass_HMC5843::_timer, void));
 
     hal.console->printf("HMC5843 found on bus 0x%x\n", _bus->get_bus_id());
     
@@ -225,7 +225,7 @@ errout:
  *
  * bus semaphore has been taken already by HAL
  */
-bool AP_Compass_HMC5843::_timer()
+void AP_Compass_HMC5843::_timer()
 {
     bool result = _read_sample();
 
@@ -233,7 +233,7 @@ bool AP_Compass_HMC5843::_timer()
     _take_sample();
     
     if (!result) {
-        return true;
+        return;
     }
 
     uint32_t tnow = AP_HAL::micros();    
@@ -274,8 +274,6 @@ bool AP_Compass_HMC5843::_timer()
         }
         _sem->give();
     }
-    
-    return true;
 }
 
 /*

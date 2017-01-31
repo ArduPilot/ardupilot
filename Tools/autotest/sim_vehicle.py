@@ -229,49 +229,49 @@ _options_for_frame = {
     },
     # COPTER
     "+": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "quad": {
         "model": "+",
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "X": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         # this param set FRAME doesn't actually work because mavproxy
         # won't set a parameter unless it knows of it, and the param fetch happens asynchronously
         "default_params_filename": "default_params/copter.parm",
         "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
     },
     "hexa": {
-        "make_target": "sitl-hexa",
-        "waf_target": "bin/arducopter-hexa",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "octa-quad": {
-        "make_target": "sitl-octa-quad",
-        "waf_target": "bin/arducopter-octa-quad",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "octa": {
-        "make_target": "sitl-octa",
-        "waf_target": "bin/arducopter-octa",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "tri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arducopter-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-tri.parm",
     },
     "y6": {
-        "make_target": "sitl-y6",
-        "waf_target": "bin/arducopter-y6",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-y6.parm",
     },
     # COPTER TYPES
     "IrisRos": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "firefly": {
@@ -293,25 +293,30 @@ _options_for_frame = {
         "waf_target": "bin/arducopter-coax",  # is this correct? -pb201604301447
     },
     "singlecopter": {
-        "make_target": "sitl-single",
-        "waf_target": "bin/arducopter-single",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-single.parm",
     },
     "coaxcopter": {
-        "make_target": "sitl-coax",
-        "waf_target": "bin/arducopter-coax",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-coax.parm",
     },
     # PLANE
     "quadplane-tilttri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arduplane-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/quadplane-tilttri.parm",
     },
     "quadplane-tri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arduplane-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/quadplane-tri.parm",
+    },
+    "quadplane-cl84" : {
+        "make_target" : "sitl",
+        "waf_target" : "bin/arduplane",
+        "default_params_filename": "default_params/quadplane-cl84.parm",
     },
     "quadplane": {
         "waf_target": "bin/arduplane",
@@ -346,7 +351,7 @@ _options_for_frame = {
     },
     # SIM
     "gazebo-iris": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/gazebo-iris.parm",
     },
     "gazebo-zephyr": {
@@ -367,7 +372,7 @@ _options_for_frame = {
 
 _default_waf_target = {
     "ArduPlane": "bin/arduplane",
-    "ArduCopter": "bin/arducopter-quad",
+    "ArduCopter": "bin/arducopter",
     "Ardusub": "bin/ardusub",
     "APMrover2": "bin/ardurover",
     "AntennaTracker": "bin/antennatracker",
@@ -665,7 +670,7 @@ def start_mavproxy(opts, stuff):
     # If running inside of a vagrant guest, then we probably want to forward our mavlink out to the containing host OS
     ports = [p + 10 * cmd_opts.instance for p in [14550,14551]]
     for port in ports:
-        if getpass.getuser() == "vagrant":
+        if os.path.isfile("/ardupilot.vagrant"):
             cmd.extend(["--out", "10.0.2.2:" + str(port)])
         else:
             cmd.extend(["--out", "127.0.0.1:" + str(port)])
@@ -705,7 +710,7 @@ def start_mavproxy(opts, stuff):
     env['PYTHONPATH'] = local_mp_modules_dir + os.pathsep + env.get('PYTHONPATH', '')
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
-    progress("MAVProxy exitted")
+    progress("MAVProxy exited")
 
 
 # define and run parser

@@ -6,7 +6,8 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>      // RC Channel Library
+#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_Motors_Class.h"
 #include "AP_MotorsHeli_RSC.h"
 
@@ -62,10 +63,12 @@ public:
     };
 
     // init
-    void Init();
+    void init(motor_frame_class frame_class, motor_frame_type frame_type);
+
+    // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+    void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // set update rate to motors - a value in hertz
-    // you must have setup_motors before calling this
     virtual void set_update_rate( uint16_t speed_hz ) = 0;
 
     // enable - starts allowing signals to be sent to motors
@@ -77,7 +80,7 @@ public:
     // output_test - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void        output_test(uint8_t motor_seq, int16_t pwm) = 0;
+    virtual void output_test(uint8_t motor_seq, int16_t pwm) = 0;
 
     //
     // heli specific methods
@@ -118,7 +121,7 @@ public:
     virtual uint16_t get_motor_mask() = 0;
 
     // output - sends commands to the motors
-    void    output();
+    void output();
 
     // supports_yaw_passthrough
     virtual bool supports_yaw_passthrough() const { return false; }
@@ -141,9 +144,9 @@ protected:
     };
 
     // output - sends commands to the motors
-    void        output_armed_stabilizing();
-    void        output_armed_zero_throttle();
-    void        output_disarmed();
+    void output_armed_stabilizing();
+    void output_armed_zero_throttle();
+    void output_disarmed();
 
     // update_motor_controls - sends commands to motor controllers
     virtual void update_motor_control(RotorControlState state) = 0;
@@ -152,16 +155,16 @@ protected:
     void reset_flight_controls();
 
     // update the throttle input filter
-    void                update_throttle_filter();
+    void update_throttle_filter();
 
     // move_actuators - moves swash plate and tail rotor
     virtual void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) = 0;
 
     // reset_swash_servo - free up swash servo for maximum movement
-    void reset_swash_servo(RC_Channel& servo);
+    void reset_swash_servo(SRV_Channel *servo);
 
     // init_outputs - initialise Servo/PWM ranges and endpoints
-    virtual void init_outputs() = 0;
+    virtual bool init_outputs() = 0;
 
     // calculate_armed_scalars - must be implemented by child classes
     virtual void calculate_armed_scalars() = 0;

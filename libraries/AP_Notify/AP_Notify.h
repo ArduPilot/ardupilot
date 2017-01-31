@@ -37,18 +37,27 @@
 #define BUZZER_ON       1
 #define BUZZER_OFF      0
 
+#define NOTIFY_TEXT_BUFFER_SIZE 51
+
+//Type of on-board display
+#define DISPLAY_OFF     0
+#define DISPLAY_SSD1306 1
+#define DISPLAY_SH1106  2
+
 class AP_Notify
 {
-    friend class RGBLed;    // RGBLed needs access to notify parameters
+    friend class RGBLed;            // RGBLed needs access to notify parameters
+    friend class Display;           // Display needs access to notify parameters
 public:
     // Constructor
     AP_Notify();
 
     /// notify_flags_type - bitmask of notification flags
-    struct notify_flags_type {
+    struct notify_flags_and_values_type {
         uint32_t initialising       : 1;    // 1 if initialising and copter should not be moved
         uint32_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
         uint32_t gps_num_sats       : 6;    // number of sats
+        uint32_t flight_mode        : 8;    // flight mode
         uint32_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint32_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
         uint32_t pre_arm_gps_check  : 1;    // 0 = failing pre-arm GPS checks, 1 = passed
@@ -62,6 +71,7 @@ public:
         uint32_t firmware_update    : 1;    // 1 just before vehicle firmware is updated
         uint32_t compass_cal_running: 1;    // 1 if a compass calibration is running
         uint32_t leak_detected		: 1;    // 1 if leak detected
+        float    battery_voltage       ;    // battery voltage
 
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
@@ -92,9 +102,9 @@ public:
         uint32_t tune_error             : 1;    // tuning controller error
     };
 
-    // the notify flags are static to allow direct class access
-    // without declaring the object
-    static struct notify_flags_type flags;
+    // The notify flags and values are static to allow direct class access
+    // without declaring the object.
+    static struct notify_flags_and_values_type flags;
     static struct notify_events_type events;
 
     // initialisation
@@ -108,14 +118,29 @@ public:
 
     // handle a PLAY_TUNE message
     static void handle_play_tune(mavlink_message_t* msg);
-    
-    static const struct AP_Param::GroupInfo var_info[];
 
     bool buzzer_enabled() const { return _buzzer_enable; }
-private:
-    static NotifyDevice* _devices[];
 
+    // set flight mode string
+    void set_flight_mode_str(const char *str);
+    const char* get_flight_mode_str() const { return _flight_mode_str; }
+
+    // send text to display
+    void send_text(const char *str);
+    const char* get_text() const { return _send_text; }
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+private:
+
+    // parameters
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
+    AP_Int8 _display_type;
+
+    char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
+    char _flight_mode_str[5];
+
+    static NotifyDevice* _devices[];
 };

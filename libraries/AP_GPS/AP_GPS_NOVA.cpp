@@ -224,9 +224,11 @@ AP_GPS_NOVA::process_message(void)
                 case 32: // l1 float
                 case 33: // iono float
                 case 34: // narrow float
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                    break;
                 case 48: // l1 int
                 case 50: // narrow int
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                     break;
                 case 0: // NONE
                 case 1: // FIXEDPOS

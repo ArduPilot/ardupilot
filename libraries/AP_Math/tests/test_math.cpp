@@ -74,10 +74,20 @@ TEST(MathTest, IsZero)
 
 TEST(MathTest, IsEqual)
 {
+    EXPECT_FALSE(is_equal(1, 0));
+    EXPECT_TRUE(is_equal(1, 1));
     EXPECT_FALSE(is_equal(0.1,  0.10001));
     EXPECT_FALSE(is_equal(0.1, -0.1001));
     EXPECT_TRUE(is_equal(0.f,   0.0f));
     EXPECT_FALSE(is_equal(1.f,  1.f + FLT_EPSILON));
+    EXPECT_TRUE(is_equal(1.f,  1.f + FLT_EPSILON / 2.f));
+    EXPECT_TRUE(is_equal(1.f, (float)(1.f - DBL_EPSILON)));
+
+    // false because the common type is double
+    EXPECT_FALSE(is_equal(1., 1. + 2 * std::numeric_limits<double>::epsilon()));
+
+    // true because the common type is float
+    EXPECT_TRUE(is_equal(1.f, (float)(1. + std::numeric_limits<double>::epsilon())));
 }
 
 TEST(MathTest, Square)
@@ -160,6 +170,15 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(c, constrain_int32(c, -250, 50));
         }
     }
+
+    EXPECT_EQ(20.0, constrain_value(20.0, 19.9, 20.1));
+    EXPECT_EQ(20.0, constrain_value(20.0f, 19.9f, 20.1f));
+
+    EXPECT_EQ(19.9, constrain_value(19.9, 19.9, 20.1));
+    EXPECT_EQ(19.9f, constrain_value(19.9f, 19.9f, 20.1f));
+
+    EXPECT_EQ(19.9, constrain_value(19.8, 19.9, 20.1));
+    EXPECT_EQ(19.9f, constrain_value(19.8f, 19.9f, 20.1f));
 }
 
 TEST(MathWrapTest, Angle180)

@@ -28,7 +28,7 @@ public:
 
 private:
     bool _init_sensor();
-    bool _accumulate();
+    void _accumulate();
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 

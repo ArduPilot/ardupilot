@@ -162,7 +162,7 @@ void Rover::send_servo_out(mavlink_channel_t chan)
         0,  // port 0
         10000 * channel_steer->norm_output(),
         0,
-        10000 * channel_throttle->norm_output(),
+        10000 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle),
         0,
         0,
         0,
@@ -179,7 +179,7 @@ void Rover::send_vfr_hud(mavlink_channel_t chan)
         gps.ground_speed(),
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
-        (uint16_t)(100 * fabsf(channel_throttle->norm_output())),
+        (uint16_t)(100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))),
         current_loc.alt / 100.0,
         0);
 }
@@ -483,7 +483,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_RPM:
     case MSG_POSITION_TARGET_GLOBAL_INT:
         break;  // just here to prevent a warning
-
     }
     return true;
 }
@@ -726,7 +725,6 @@ void GCS_MAVLINK_Rover::handle_change_alt_request(AP_Mission::Mission_Command &c
 void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
-
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
         {
             handle_request_data_stream(msg, true);
@@ -806,7 +804,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             // do command
 
             switch (packet.command) {
-
             case MAV_CMD_START_RX_PAIR:
                 result = handle_rc_bind(packet);
                 break;
@@ -1271,20 +1268,27 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             // prepare and send target position
             if (!pos_ignore) {
                 Location loc = rover.current_loc;
-                if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
-                    packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+                switch (packet.coordinate_frame) {
+                case MAV_FRAME_BODY_NED:
+                case MAV_FRAME_BODY_OFFSET_NED: {
                     // rotate from body-frame to NE frame
                     float ne_x = packet.x*rover.ahrs.cos_yaw() - packet.y*rover.ahrs.sin_yaw();
                     float ne_y = packet.x*rover.ahrs.sin_yaw() + packet.y*rover.ahrs.cos_yaw();
                     // add offset to current location
                     location_offset(loc, ne_x, ne_y);
-                } else if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED) {
+                    }
+                    break;
+
+                case MAV_FRAME_LOCAL_OFFSET_NED:
                     // add offset to current location
                     location_offset(loc, packet.x, packet.y);
-                } else {
+                    break;
+
+                default:
                     // MAV_FRAME_LOCAL_NED interpret as an offset from home
                     loc = rover.ahrs.get_home();
                     location_offset(loc, packet.x, packet.y);
+                    break;
                 }
 
                 rover.guided_WP = loc;
@@ -1469,7 +1473,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
     default:
         handle_common_message(msg);
         break;
-
     }  // end switch
 }  // end handle mavlink
 
@@ -1514,7 +1517,7 @@ void Rover::mavlink_delay_cb()
  */
 void Rover::gcs_send_message(enum ap_message id)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
+    for (uint8_t i=0; i < num_gcs; i++) {
         if (gcs[i].initialised) {
             gcs[i].send_message(id);
         }
@@ -1526,7 +1529,7 @@ void Rover::gcs_send_message(enum ap_message id)
  */
 void Rover::gcs_send_mission_item_reached_message(uint16_t mission_index)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
+    for (uint8_t i=0; i < num_gcs; i++) {
         if (gcs[i].initialised) {
             gcs[i].mission_item_reached_index = mission_index;
             gcs[i].send_message(MSG_MISSION_ITEM_REACHED);
@@ -1539,7 +1542,7 @@ void Rover::gcs_send_mission_item_reached_message(uint16_t mission_index)
  */
 void Rover::gcs_data_stream_send(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
+    for (uint8_t i=0; i < num_gcs; i++) {
         if (gcs[i].initialised) {
             gcs[i].data_stream_send();
         }
@@ -1551,7 +1554,7 @@ void Rover::gcs_data_stream_send(void)
  */
 void Rover::gcs_update(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
+    for (uint8_t i=0; i < num_gcs; i++) {
         if (gcs[i].initialised) {
 #if CLI_ENABLED == ENABLED
             gcs[i].update(g.cli_enabled == 1 ? FUNCTOR_BIND_MEMBER(&Rover::run_cli, void, AP_HAL::UARTDriver *) : nullptr);
@@ -1565,6 +1568,7 @@ void Rover::gcs_update(void)
 void Rover::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
     GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    notify.send_text(str);
 }
 
 /*
@@ -1580,6 +1584,7 @@ void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
     va_end(arg_list);
     GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    notify.send_text(str);
 }
 
 

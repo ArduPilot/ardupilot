@@ -9,12 +9,12 @@
 bool Copter::acro_init(bool ignore_checks)
 {
    // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-   if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) &&
+   if (motors->armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) &&
            (get_pilot_desired_throttle(channel_throttle->get_control_in(), g2.acro_thr_mid) > get_non_takeoff_throttle())) {
        return false;
    }
    // set target altitude to zero for reporting
-   pos_control.set_alt_target(0);
+   pos_control->set_alt_target(0);
 
    return true;
 }
@@ -27,16 +27,16 @@ void Copter::acro_run()
     float pilot_throttle_scaled;
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors.armed() || ap.throttle_zero || !motors.get_interlock()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+    if (!motors->armed() || ap.throttle_zero || !motors->get_interlock()) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        attitude_control->set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
     }
 
     // clear landing flag
     set_land_complete(false);
 
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // convert the input to the desired body frame rate
     get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
@@ -45,10 +45,10 @@ void Copter::acro_run()
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in(), g2.acro_thr_mid);
 
     // run attitude controller
-    attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+    attitude_control->input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
 
     // output pilot's throttle without angle boost
-    attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
+    attitude_control->set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
 }
 
 
@@ -127,7 +127,7 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
         }
 
         // convert earth-frame level rates to body-frame level rates
-        attitude_control.euler_rate_to_ang_vel(attitude_control.get_att_target_euler_cd()*radians(0.01f), rate_ef_level, rate_bf_level);
+        attitude_control->euler_rate_to_ang_vel(attitude_control->get_att_target_euler_cd()*radians(0.01f), rate_ef_level, rate_bf_level);
 
         // combine earth frame rate corrections with rate requests
         if (g.acro_trainer == ACRO_TRAINER_LIMITED) {

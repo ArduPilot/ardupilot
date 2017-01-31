@@ -149,7 +149,7 @@ void Plane::takeoff_calc_pitch(void)
  */
 int16_t Plane::get_takeoff_pitch_min_cd(void)
 {
-    if (flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+    if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF) {
         return auto_state.takeoff_pitch_cd;
     }
 

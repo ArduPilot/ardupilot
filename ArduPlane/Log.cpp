@@ -23,10 +23,10 @@ MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&plane, &Plane::print_log
 
 bool Plane::print_log_menu(void)
 {
-    cliSerial->println("logs enabled: ");
+    cliSerial->printf("logs enabled: \n");
 
     if (0 == g.log_bitmask) {
-        cliSerial->println("none");
+        cliSerial->printf("none\n");
     }else{
         // Macro to make the following code a bit easier on the eye.
         // Pass it the capitalised name of the log option, as defined
@@ -51,7 +51,7 @@ bool Plane::print_log_menu(void)
  #undef PLOG
     }
 
-    cliSerial->println();
+    cliSerial->printf("\n");
 
     DataFlash.ListAvailableLogs(cliSerial);
     return(true);
@@ -70,11 +70,11 @@ int8_t Plane::dump_log(uint8_t argc, const Menu::arg *argv)
         DataFlash.DumpPageInfo(cliSerial);
         return(-1);
     } else if (dump_log_num <= 0) {
-        cliSerial->println("dumping all");
+        cliSerial->printf("dumping all\n");
         Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
-        cliSerial->println("bad log number");
+        cliSerial->printf("bad log number\n");
         return(-1);
     }
 
@@ -96,7 +96,7 @@ int8_t Plane::select_logs(uint8_t argc, const Menu::arg *argv)
     uint32_t bits;
 
     if (argc != 2) {
-        cliSerial->println("missing log type");
+        cliSerial->printf("missing log type\n");
         return(-1);
     }
 
@@ -177,9 +177,9 @@ void Plane::Log_Write_Attitude(void)
 
 #if AP_AHRS_NAVEKF_AVAILABLE
  #if OPTFLOW == ENABLED
-    DataFlash.Log_Write_EKF2(ahrs,optflow.enabled());
+    DataFlash.Log_Write_EKF(ahrs,optflow.enabled());
  #else
-    DataFlash.Log_Write_EKF2(ahrs,false);
+    DataFlash.Log_Write_EKF(ahrs,false);
  #endif
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
@@ -263,8 +263,8 @@ void Plane::Log_Write_Control_Tuning()
         roll            : (int16_t)ahrs.roll_sensor,
         nav_pitch_cd    : (int16_t)nav_pitch_cd,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        throttle_out    : (int16_t)channel_throttle->get_servo_out(),
-        rudder_out      : (int16_t)channel_rudder->get_servo_out(),
+        throttle_out    : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
+        rudder_out      : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_rudder),
         throttle_dem    : (int16_t)SpdHgt_Controller->get_throttle_demand()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -503,7 +503,7 @@ void Plane::Log_Read(uint16_t list_entry, int16_t start_page, int16_t end_page)
                              "\nFree RAM: %u\n",
                         (unsigned)hal.util->available_memory());
 
-    cliSerial->println(HAL_BOARD_NAME);
+    cliSerial->printf("%s\n", HAL_BOARD_NAME);
 
 	DataFlash.LogReadProcess(list_entry, start_page, end_page,
                              FUNCTOR_BIND_MEMBER(&Plane::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),
@@ -560,6 +560,7 @@ int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 
 void Plane::do_erase_logs(void) {}
 void Plane::Log_Write_Attitude(void) {}
+void Plane::Log_Write_Fast(void) {}
 void Plane::Log_Write_Performance() {}
 void Plane::Log_Write_Startup(uint8_t type) {}
 void Plane::Log_Write_Control_Tuning() {}

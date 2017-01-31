@@ -216,10 +216,10 @@ void Plane::send_servo_out(mavlink_channel_t chan)
         chan,
         millis(),
         0, // port 0
-        10000 * channel_roll->norm_output() * (channel_roll->get_reverse()?-1:1),
-        10000 * channel_pitch->norm_output() * (channel_pitch->get_reverse()?-1:1),
-        10000 * channel_throttle->norm_output() * (channel_throttle->get_reverse()?-1:1),
-        10000 * channel_rudder->norm_output() * (channel_rudder->get_reverse()?-1:1),
+        10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) / 4500.0f),
+        10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) / 4500.0f),
+        10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0f),
+        10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / 4500.0f),
         0,
         0,
         0,
@@ -1344,11 +1344,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_DO_GO_AROUND:
             result = MAV_RESULT_FAILED;
 
-            //Not allowing go around at FLIGHT_LAND_FINAL stage on purpose --
-            //if plane is close to the ground a go around could be dangerous.
-            if (plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-                plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
-                plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+            if (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
                 // Initiate an aborted landing. This will trigger a pitch-up and
                 // climb-out to a safe altitude holding heading then one of the
                 // following actions will occur, check for in this order:
@@ -1360,9 +1356,13 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 if (!is_zero(packet.param1)) {
                     plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
                 }
-                plane.landing.commanded_go_around = true;
-               
-                result = MAV_RESULT_ACCEPTED;
+                if (plane.landing.request_go_around()) {
+                    plane.auto_state.next_wp_no_crosstrack = true;
+                    result = MAV_RESULT_ACCEPTED;
+                }
+            }
+
+            if (result == MAV_RESULT_ACCEPTED) {
                 plane.gcs_send_text(MAV_SEVERITY_INFO,"Go around command accepted");
             } else {
                 plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Rejected go around command");
@@ -2179,6 +2179,7 @@ void Plane::gcs_update(void)
 void Plane::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
     GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    notify.send_text(str);
 }
 
 /*
@@ -2194,6 +2195,7 @@ void Plane::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
     va_end(arg_list);
     GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    notify.send_text(str);
 }
 
 /*

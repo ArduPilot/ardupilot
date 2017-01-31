@@ -316,7 +316,7 @@ void AP_Terrain::update(void)
     // update the cached current location height
     Location loc;
     bool pos_valid = ahrs.get_position(loc);
-    bool terrain_valid = height_amsl(loc, height, false);
+    bool terrain_valid = pos_valid && height_amsl(loc, height, false);
     if (pos_valid && terrain_valid) {
         last_current_loc_height = height;
         have_current_loc_height = true;

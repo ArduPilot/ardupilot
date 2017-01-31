@@ -43,7 +43,7 @@
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
-#include <RC_Channel/SRV_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>                     // Filter library
 #include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
@@ -72,8 +72,8 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_TECS/AP_TECS.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
 
 #include <AP_Notify/AP_Notify.h>      // Notify library
@@ -106,31 +106,11 @@
 
 #include "Parameters.h"
 #include "avoidance_adsb.h"
+#include "AP_Arming.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
-
-/*
-  a plane specific arming class
- */
-class AP_Arming_Plane : public AP_Arming
-{
-public:
-    AP_Arming_Plane(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                    const AP_BattMonitor &battery, const enum HomeState &home_set) :
-        AP_Arming(ahrs_ref, baro, compass, battery, home_set) {
-            AP_Param::setup_object_defaults(this, var_info);
-    }
-    bool pre_arm_checks(bool report);
-    bool arm(uint8_t method) override;
-
-    // var_info for holding Parameter information
-    static const struct AP_Param::GroupInfo var_info[];
-protected:
-    bool ins_checks(bool report);
-};
-
 
 /*
   a plane specific AP_AdvancedFailsafe class
@@ -189,7 +169,7 @@ private:
     // board specific config
     AP_BoardConfig BoardConfig;
 
-    // primary control channels
+    // primary input channels
     RC_Channel *channel_roll;
     RC_Channel *channel_pitch;
     RC_Channel *channel_throttle;
@@ -226,9 +206,9 @@ private:
     
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF EKF{&ahrs, barometer, rangefinder};
     NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder, EKF, EKF2};
+    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder, EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs {ins, barometer, gps};
 #endif
@@ -582,7 +562,7 @@ private:
     int8_t  throttle_watt_limit_min; // for reverse thrust
     uint32_t throttle_watt_limit_timer_ms;
 
-    AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL;
+    AP_Vehicle::FixedWing::FlightStage flight_stage = AP_Vehicle::FixedWing::FLIGHT_NORMAL;
 
     // probability of aircraft is currently in flight. range from 0 to
     // 1 where 1 is 100% sure we're in flight
@@ -766,7 +746,7 @@ private:
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming_Plane arming {ahrs, barometer, compass, battery, home_is_set };
+    AP_Arming_Plane arming {ahrs, barometer, compass, battery};
 
     AP_Param param_loader {var_info};
 
@@ -983,7 +963,6 @@ private:
     void resetPerfData(void);
     void check_usb_mux(void);
     void print_comma(void);
-    void servo_write(uint8_t ch, uint16_t pwm);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
     void change_arm_state(void);
@@ -1041,13 +1020,12 @@ private:
     void calc_nav_pitch();
     void update_flight_stage();
     void update_navigation();
-    void set_flight_stage(AP_SpdHgtControl::FlightStage fs);
+    void set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs);
     bool is_flying(void);
     float get_speed_scaler(void);
     bool stick_mixing_enabled(void);
     void stabilize_roll(float speed_scaler);
     void stabilize_pitch(float speed_scaler);
-    static void stick_mix_channel(RC_Channel *channel);
     static void stick_mix_channel(RC_Channel *channel, int16_t &servo_out);
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
@@ -1057,11 +1035,10 @@ private:
     void calc_nav_yaw_coordinated(float speed_scaler);
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
-    void throttle_slew_limit(int16_t last_throttle);
-    void flap_slew_limit(int8_t &last_value, int8_t &new_value);
+    void throttle_slew_limit(void);
     bool suppress_throttle(void);
-    void channel_output_mixer(uint8_t mixing_type, int16_t & chan1, int16_t & chan2)const;
-    void channel_output_mixer(uint8_t mixing_type, RC_Channel* chan1, RC_Channel* chan2)const;
+    void channel_output_mixer_pwm(uint8_t mixing_type, uint16_t & chan1, uint16_t & chan2)const;
+    void channel_output_mixer(uint8_t mixing_type, SRV_Channel::Aux_servo_function_t servo1, SRV_Channel::Aux_servo_function_t servo2);
     void flaperon_update(int8_t flap_percent);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -1087,15 +1064,17 @@ private:
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
+    void notify_flight_mode(enum FlightMode mode);
     void run_cli(AP_HAL::UARTDriver *port);
     void log_init();
     void init_capabilities(void);
     void dataflash_periodic(void);
-    uint16_t throttle_min(void) const;
-    void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_check();
+#if PARACHUTE == ENABLED
+    void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_release();
     bool parachute_manual_release();
+#endif
     void accel_cal_update(void);
     void update_soft_armed();
 
@@ -1118,7 +1097,6 @@ public:
     int8_t reboot_board(uint8_t argc, const Menu::arg *argv);
     int8_t main_menu_help(uint8_t argc, const Menu::arg *argv);
     int8_t test_radio_pwm(uint8_t argc, const Menu::arg *argv);
-    int8_t test_passthru(uint8_t argc, const Menu::arg *argv);
     int8_t test_radio(uint8_t argc, const Menu::arg *argv);
     int8_t test_failsafe(uint8_t argc, const Menu::arg *argv);
     int8_t test_relay(uint8_t argc, const Menu::arg *argv);

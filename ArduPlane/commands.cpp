@@ -70,7 +70,7 @@ void Plane::set_next_WP(const struct Location &loc)
 
 void Plane::set_guided_WP(void)
 {
-    if (g.loiter_radius < 0 || guided_WP_loc.flags.loiter_ccw) {
+    if (aparm.loiter_radius < 0 || guided_WP_loc.flags.loiter_ccw) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -88,7 +88,6 @@ void Plane::set_guided_WP(void)
     // -----------------------------------------------
     set_target_altitude_current();
 
-    update_flight_stage();
     setup_glide_slope();
     setup_turn_angle();
 

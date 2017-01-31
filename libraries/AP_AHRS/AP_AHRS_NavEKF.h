@@ -29,25 +29,12 @@
 #endif
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 #define AP_AHRS_NAVEKF_AVAILABLE 1
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
-
-/*
-  we are too close to running out of flash on px4, so disable
-  it. Leave it enabled on V4 for now as that has sufficient flash
-  space
- */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && (defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2))
-#define AP_AHRS_WITH_EKF1 0
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && !defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
-#define AP_AHRS_WITH_EKF1 0
-#else
-#define AP_AHRS_WITH_EKF1 1
-#endif
 
 class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
@@ -59,7 +46,7 @@ public:
 
     // Constructor
     AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-                   NavEKF &_EKF1, NavEKF2 &_EKF2, Flags flags = FLAG_NONE);
+                   NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const override;
@@ -81,7 +68,7 @@ public:
     // dead-reckoning support
     bool get_position(struct Location &loc) const;
 
-    // get latest altitude estimate above ground level in metres and validity flag
+    // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const;
 
     // status reporting of estimated error
@@ -99,13 +86,6 @@ public:
     bool use_compass(void);
 
     // we will need to remove these to fully hide which EKF we are using
-    NavEKF &get_NavEKF(void) {
-        return EKF1;
-    }
-    const NavEKF &get_NavEKF_const(void) const {
-        return EKF1;
-    }
-
     NavEKF2 &get_NavEKF2(void) {
         return EKF2;
     }
@@ -113,6 +93,13 @@ public:
         return EKF2;
     }
 
+    NavEKF3 &get_NavEKF3(void) {
+        return EKF3;
+    }
+    const NavEKF3 &get_NavEKF3_const(void) const {
+        return EKF3;
+    }
+    
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers);
 
@@ -151,13 +138,13 @@ public:
     bool get_relative_position_D(float &posD) const;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
     bool get_vert_pos_rate(float &velocity);
 
     // write optical flow measurements to EKF
     void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
 
-    // inibit GPS usage
+    // inhibit GPS usage
     uint8_t setInhibitGPS(void);
 
     // get speed limit
@@ -185,11 +172,11 @@ public:
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     uint32_t getLastYawResetAngle(float &yawAng) const;
 
-    // return the amount of NE position change in metres due to the last reset
+    // return the amount of NE position change in meters due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosNorthEastReset(Vector2f &pos) const;
 
-    // return the amount of NE velocity change in metres/sec due to the last reset
+    // return the amount of NE velocity change in meters/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
 
@@ -207,7 +194,7 @@ public:
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(mavlink_channel_t chan);
     
-    // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
+    // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
     // it will return invalid when no limiting is required
     bool get_hgt_ctrl_limit(float &limit) const;
@@ -217,8 +204,8 @@ public:
     bool get_location(struct Location &loc) const;
 
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
-    // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
-    // inconsistency that will be accpeted by the filter
+    // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
+    // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const override;
 
@@ -234,7 +221,7 @@ public:
     bool getGpsGlitchStatus();
 
     // used by Replay to force start at right timestamp
-    void force_ekf_start(void) { force_ekf = true; }
+    void force_ekf_start(void) { _force_ekf = true; }
 
     // is the EKF backend doing its own sensor logging?
     bool have_ekf_logging(void) const override;
@@ -247,9 +234,7 @@ public:
     
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
-#if AP_AHRS_WITH_EKF1
-                   EKF_TYPE1=1,
-#endif
+                   EKF_TYPE3=3,
                    EKF_TYPE2=2
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                    ,EKF_TYPE_SITL=10
@@ -261,11 +246,11 @@ private:
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
     }
 
-    NavEKF &EKF1;
     NavEKF2 &EKF2;
-    bool ekf1_started:1;
-    bool ekf2_started:1;
-    bool force_ekf:1;
+    NavEKF3 &EKF3;
+    bool _ekf2_started;
+    bool _ekf3_started;
+    bool _force_ekf;
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
     Vector3f _gyro_bias;
@@ -278,8 +263,8 @@ private:
 
     uint8_t ekf_type(void) const;
     void update_DCM(void);
-    void update_EKF1(void);
     void update_EKF2(void);
+    void update_EKF3(void);
 
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;

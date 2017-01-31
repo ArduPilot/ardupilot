@@ -41,7 +41,7 @@ static uint8_t pvalue(uint16_t offset)
 
 void setup(void)
 {
-    hal.console->println("StorageTest startup...");
+    hal.console->printf("StorageTest startup...\n");
 #if DO_INITIALISATION
     for (uint8_t type=0; type<4; type++) {
         const StorageAccess &storage = all_storage[type];

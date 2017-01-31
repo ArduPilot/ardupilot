@@ -26,7 +26,6 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
 class NavEKF2_core;
@@ -424,6 +423,8 @@ private:
         uint32_t last_primary_change; // last time a primary has changed
         float core_delta;             // the amount of D position change between cores when a change happened
     } pos_down_reset_data;
+
+    bool runCoreSelection; // true when the primary core has stabilised and the core selection logic can be started
 
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
