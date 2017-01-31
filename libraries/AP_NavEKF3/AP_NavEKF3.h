@@ -297,6 +297,9 @@ public:
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const;
 
+    // set and save the _baroAltNoise parameter
+    void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
+
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set(enable); }
 
