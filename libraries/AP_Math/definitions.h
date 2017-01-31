@@ -4,30 +4,17 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-// Double precision math must be activated
-#if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-  #ifndef M_PI
-    #define M_PI      (3.14159265358979323846)
-  #endif
-
-  #ifndef M_PI_2
-    #define M_PI_2    (M_PI / 2)
-  #endif
-
-  #define M_GOLDEN    1.618033988749894
-#else    // Standard single precision math
-  #ifdef M_PI
-    #undef M_PI
-  #endif
-  #define M_PI      (3.141592653589793f)
-
-  #ifdef M_PI_2
-    #undef M_PI_2
-  #endif
-  #define M_PI_2    (M_PI / 2)
-
-  #define M_GOLDEN  1.6180339f
+#ifdef M_PI
+# undef M_PI
 #endif
+#define M_PI      (3.141592653589793f)
+
+#ifdef M_PI_2
+# undef M_PI_2
+#endif
+#define M_PI_2    (M_PI / 2)
+
+#define M_GOLDEN  1.6180339f
 
 #define M_2PI         (M_PI * 2)
 
