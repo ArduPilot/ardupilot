@@ -86,13 +86,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// INPUT_VOLTAGE
-//
-#ifndef INPUT_VOLTAGE
-  #define INPUT_VOLTAGE    4.68  //  4.68 is the average value for a sample set.  This is the value at the processor with 5.02 applied at the servo rail
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
   #define MAGNETOMETER ENABLED
