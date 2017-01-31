@@ -377,9 +377,9 @@ void Sub::Log_Write_Attitude()
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
  #if OPTFLOW == ENABLED
-    DataFlash.Log_Write_EKF2(ahrs,optflow.enabled());
+    DataFlash.Log_Write_EKF(ahrs,optflow.enabled());
  #else
-    DataFlash.Log_Write_EKF2(ahrs,false);
+    DataFlash.Log_Write_EKF(ahrs,false);
  #endif
     DataFlash.Log_Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
