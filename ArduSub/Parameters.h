@@ -86,7 +86,7 @@ public:
 
 		// Navigation libraries
         k_param_ahrs = 50, // AHRS
-        k_param_NavEKF, // Extended Kalman Filter Inertial Navigation
+        k_param_NavEKF, // Extended Kalman Filter Inertial Navigation             // remove
 		k_param_NavEKF2, // EKF2
         k_param_attitude_control, // Attitude Control
         k_param_pos_control, // Position Control
@@ -97,6 +97,7 @@ public:
         k_param_rally, // Disabled
         k_param_circle_nav, // Disabled
 		k_param_avoid, // Relies on proximity and fence
+		k_param_NavEKF3,
 
 
 		// Other external hardware interfaces
@@ -106,21 +107,21 @@ public:
         k_param_camera_mount, // Camera gimbal
 
 
-		// RC_Channel settings
-        k_param_rc_1 = 75,
-        k_param_rc_2,
-        k_param_rc_3,
-        k_param_rc_4,
-        k_param_rc_5,
-        k_param_rc_6,
-        k_param_rc_7,
-        k_param_rc_8,
-        k_param_rc_9,
-        k_param_rc_10,
-        k_param_rc_11,
-        k_param_rc_12,
-        k_param_rc_13,
-        k_param_rc_14,
+		// RC_Channel settings (deprecated)
+        k_param_rc_1_old = 75,
+        k_param_rc_2_old,
+        k_param_rc_3_old,
+        k_param_rc_4_old,
+        k_param_rc_5_old,
+        k_param_rc_6_old,
+        k_param_rc_7_old,
+        k_param_rc_8_old,
+        k_param_rc_9_old,
+        k_param_rc_10_old,
+        k_param_rc_11_old,
+        k_param_rc_12_old,
+        k_param_rc_13_old,
+        k_param_rc_14_old,
 
 		// Joystick gain parameters
 		k_param_gain_default,
@@ -317,72 +318,56 @@ public:
     AP_Int8         fs_ekf_action;
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
-    AP_Int16        gcs_pid_mask;
+    AP_Int16		gcs_pid_mask;
 
-    AP_Int8         terrain_follow;
+    AP_Int8			terrain_follow;
 
-    // RC channels
-    RC_Channel              rc_1;
-    RC_Channel              rc_2;
-    RC_Channel              rc_3;
-    RC_Channel              rc_4;
-    RC_Channel_aux          rc_5;
-    RC_Channel_aux          rc_6;
-    RC_Channel_aux          rc_7;
-    RC_Channel_aux          rc_8;
-    RC_Channel_aux          rc_9;
-    RC_Channel_aux          rc_10;
-    RC_Channel_aux          rc_11;
-    RC_Channel_aux          rc_12;
-    RC_Channel_aux          rc_13;
-    RC_Channel_aux          rc_14;
+    AP_Int16		rc_speed; // speed of fast RC Channels in Hz
 
-    AP_Int16                rc_speed; // speed of fast RC Channels in Hz
+	AP_Float		gain_default;
+	AP_Float		maxGain;
+	AP_Float		minGain;
+	AP_Int8			numGainSettings;
+	AP_Float		throttle_gain;
+	AP_Int16		cam_tilt_center;
 
-	AP_Float				gain_default;
-	AP_Float				maxGain;
-	AP_Float				minGain;
-	AP_Int8					numGainSettings;
-	AP_Float				throttle_gain;
-	AP_Int16				cam_tilt_center;
-
-	AP_Int16					cam_tilt_step;
-	AP_Int16					lights_step;
+	AP_Int16		cam_tilt_step;
+	AP_Int16		lights_step;
 
     // Joystick button parameters
-    JSButton 				jbtn_0;
-    JSButton 				jbtn_1;
-    JSButton 				jbtn_2;
-    JSButton 				jbtn_3;
-    JSButton 				jbtn_4;
-    JSButton 				jbtn_5;
-    JSButton 				jbtn_6;
-    JSButton 				jbtn_7;
-    JSButton 				jbtn_8;
-    JSButton 				jbtn_9;
-    JSButton 				jbtn_10;
-    JSButton 				jbtn_11;
-    JSButton 				jbtn_12;
-    JSButton 				jbtn_13;
-    JSButton 				jbtn_14;
-    JSButton 				jbtn_15;
+    JSButton 		jbtn_0;
+    JSButton 		jbtn_1;
+    JSButton 		jbtn_2;
+    JSButton 		jbtn_3;
+    JSButton 		jbtn_4;
+    JSButton 		jbtn_5;
+    JSButton 		jbtn_6;
+    JSButton 		jbtn_7;
+    JSButton 		jbtn_8;
+    JSButton 		jbtn_9;
+    JSButton 		jbtn_10;
+    JSButton 		jbtn_11;
+    JSButton 		jbtn_12;
+    JSButton 		jbtn_13;
+    JSButton 		jbtn_14;
+    JSButton 		jbtn_15;
 
     // Acro parameters
-    AP_Float                acro_rp_p;
-    AP_Float                acro_yaw_p;
-    AP_Float                acro_balance_roll;
-    AP_Float                acro_balance_pitch;
-    AP_Int8                 acro_trainer;
-    AP_Float                acro_expo;
+    AP_Float        acro_rp_p;
+    AP_Float        acro_yaw_p;
+    AP_Float        acro_balance_roll;
+    AP_Float        acro_balance_pitch;
+    AP_Int8         acro_trainer;
+    AP_Float        acro_expo;
 
     // PI/D controllers
-    AC_PI_2D                pi_vel_xy;
+    AC_PI_2D        pi_vel_xy;
 
-    AC_P                    p_vel_z;
-    AC_PID                  pid_accel_z;
+    AC_P            p_vel_z;
+    AC_PID          pid_accel_z;
 
-    AC_P                    p_pos_xy;
-    AC_P                    p_alt_hold;
+    AC_P            p_pos_xy;
+    AC_P            p_alt_hold;
 
 
 
@@ -405,21 +390,6 @@ public:
     // Note: keep initializers here in the same order as they are declared
     // above.
     Parameters() :
-
-        rc_1                (CH_1),
-        rc_2                (CH_2),
-        rc_3                (CH_3),
-        rc_4                (CH_4),
-        rc_5                (CH_5),
-        rc_6                (CH_6),
-        rc_7                (CH_7),
-        rc_8                (CH_8),
-        rc_9                (CH_9),
-        rc_10               (CH_10),
-        rc_11               (CH_11),
-        rc_12               (CH_12),
-        rc_13               (CH_13),
-        rc_14               (CH_14),
 
         // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
         //---------------------------------------------------------------------------------------------------------------------------------
@@ -466,6 +436,11 @@ public:
     AP_Proximity proximity;
 #endif
 
+    // RC input channels
+    RC_Channels rc_channels;
+
+    // control over servo output ranges
+    SRV_Channels servo_channels;
 };
 
 extern const AP_Param::Info        var_info[];
