@@ -119,7 +119,7 @@ void Rover::loop()
     // wait for an INS sample
     ins.wait_for_sample();
 
-    uint32_t timer = AP_HAL::micros();
+    const uint32_t timer = AP_HAL::micros();
 
     delta_us_fast_loop  = timer - fast_loopTimer_us;
     G_Dt                = delta_us_fast_loop * 1.0e-6f;
@@ -405,7 +405,7 @@ void Rover::update_GPS_10Hz(void)
                 init_home();
 
                 // set system clock for log timestamps
-                uint64_t gps_timestamp = gps.time_epoch_usec();
+                const uint64_t gps_timestamp = gps.time_epoch_usec();
 
                 hal.util->set_system_clock(gps_timestamp);
 

@@ -78,7 +78,7 @@ void Rover::rudder_arm_disarm_check()
     if (!arming.is_armed()) {
         // when not armed, full right rudder starts arming counter
         if (channel_steer->get_control_in() > 4000) {
-            uint32_t now = millis();
+            const uint32_t now = millis();
 
             if (rudder_arm_timer == 0 ||
                 now - rudder_arm_timer < 3000) {
@@ -99,7 +99,7 @@ void Rover::rudder_arm_disarm_check()
         // This is disabled for skid steering otherwise when tring to turn a skid steering rover around
         // the rover would disarm
         if (channel_steer->get_control_in() < -4000) {
-            uint32_t now = millis();
+            const uint32_t now = millis();
 
             if (rudder_arm_timer == 0 ||
                 now - rudder_arm_timer < 3000) {
@@ -154,10 +154,10 @@ void Rover::read_radio()
           motor2 = throttle - 0.5*steering
         */          
 
-        float motor1 = channel_steer->norm_input();
-        float motor2 = channel_throttle->norm_input();
-        float steering_scaled = motor1 - motor2;
-        float throttle_scaled = 0.5f * (motor1 + motor2);
+        const float motor1 = channel_steer->norm_input();
+        const float motor2 = channel_throttle->norm_input();
+        const float steering_scaled = motor1 - motor2;
+        const float throttle_scaled = 0.5f * (motor1 + motor2);
 
         int16_t steer = channel_steer->get_radio_trim();
         int16_t thr   = channel_throttle->get_radio_trim();

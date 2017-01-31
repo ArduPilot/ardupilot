@@ -54,7 +54,7 @@ bool Rover::auto_check_trigger(void) {
     }
 
     if (!is_zero(g.auto_kickstart)) {
-        float xaccel = ins.get_accel().x;
+        const float xaccel = ins.get_accel().x;
         if (xaccel >= g.auto_kickstart) {
             gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Triggered AUTO xaccel=%.1f", static_cast<double>(xaccel));
             auto_triggered = true;
@@ -70,7 +70,7 @@ bool Rover::auto_check_trigger(void) {
 */
 bool Rover::use_pivot_steering(void) {
     if (control_mode >= AUTO && g.skid_steer_out && g.pivot_turn_angle != 0) {
-        int16_t bearing_error = wrap_180_cd(nav_controller->target_bearing_cd() - ahrs.yaw_sensor) / 100;
+        const int16_t bearing_error = wrap_180_cd(nav_controller->target_bearing_cd() - ahrs.yaw_sensor) / 100;
         if (abs(bearing_error) > g.pivot_turn_angle) {
             return true;
         }
@@ -111,8 +111,8 @@ void Rover::calc_throttle(float target_speed) {
         return;
     }
 
-    float throttle_base = (fabsf(target_speed) / g.speed_cruise) * g.throttle_cruise;
-    int throttle_target = throttle_base + throttle_nudge;
+    const float throttle_base = (fabsf(target_speed) / g.speed_cruise) * g.throttle_cruise;
+    const int throttle_target = throttle_base + throttle_nudge;
 
     /*
         reduce target speed in proportion to turning rate, up to the
@@ -123,15 +123,15 @@ void Rover::calc_throttle(float target_speed) {
 
     // use g.speed_turn_gain for a 90 degree turn, and in proportion
     // for other turn angles
-    int32_t turn_angle = wrap_180_cd(next_navigation_leg_cd - ahrs.yaw_sensor);
-    float speed_turn_ratio = constrain_float(fabsf(turn_angle / 9000.0f), 0, 1);
-    float speed_turn_reduction = (100 - g.speed_turn_gain) * speed_turn_ratio * 0.01f;
+    const int32_t turn_angle = wrap_180_cd(next_navigation_leg_cd - ahrs.yaw_sensor);
+    const float speed_turn_ratio = constrain_float(fabsf(turn_angle / 9000.0f), 0, 1);
+    const float speed_turn_reduction = (100 - g.speed_turn_gain) * speed_turn_ratio * 0.01f;
 
     float reduction = 1.0f - steer_rate * speed_turn_reduction;
 
     if (control_mode >= AUTO && wp_distance <= g.speed_turn_dist) {
         // in auto-modes we reduce speed when approaching waypoints
-        float reduction2 = 1.0f - speed_turn_reduction;
+        const float reduction2 = 1.0f - speed_turn_reduction;
         if (reduction2 < reduction) {
             reduction = reduction2;
         }
@@ -162,8 +162,8 @@ void Rover::calc_throttle(float target_speed) {
         // We use a linear gain, with 0 gain at a ground speed error
         // of braking_speederr, and 100% gain when groundspeed_error
         // is 2*braking_speederr
-        float brake_gain = constrain_float(((-groundspeed_error)-g.braking_speederr)/g.braking_speederr, 0, 1);
-        int16_t braking_throttle = g.throttle_max * (g.braking_percent * 0.01f) * brake_gain;
+        const float brake_gain = constrain_float(((-groundspeed_error)-g.braking_speederr)/g.braking_speederr, 0, 1);
+        const int16_t braking_throttle = g.throttle_max * (g.braking_percent * 0.01f) * brake_gain;
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, constrain_int16(-braking_throttle, -g.throttle_max, -g.throttle_min));
 
         // temporarily set us in reverse to allow the PWM setting to
@@ -207,7 +207,7 @@ void Rover::calc_lateral_acceleration() {
     // positive error = right turn
     lateral_acceleration = nav_controller->lateral_acceleration();
     if (use_pivot_steering()) {
-        int16_t bearing_error = wrap_180_cd(nav_controller->target_bearing_cd() - ahrs.yaw_sensor) / 100;
+        const int16_t bearing_error = wrap_180_cd(nav_controller->target_bearing_cd() - ahrs.yaw_sensor) / 100;
         if (bearing_error > 0) {
             lateral_acceleration = g.turn_max_g * GRAVITY_MSS;
         } else {

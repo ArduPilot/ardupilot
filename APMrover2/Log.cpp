@@ -93,14 +93,12 @@ int8_t Rover::erase_logs(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
 {
-    uint16_t bits;
+    uint16_t bits = 0;
 
     if (argc != 2) {
         cliSerial->printf("missing log type\n");
         return(-1);
     }
-
-    bits = 0;
 
     // Macro to make the following code a bit easier on the eye.
     // Pass it the capitalised name of the log option, as defined
@@ -236,7 +234,7 @@ struct PACKED log_Control_Tuning {
 // Write a control tuning packet. Total length : 22 bytes
 void Rover::Log_Write_Control_Tuning()
 {
-    Vector3f accel = ins.get_accel();
+    const Vector3f accel = ins.get_accel();
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
         time_us         : AP_HAL::micros64(),
@@ -279,7 +277,7 @@ void Rover::Log_Write_Nav_Tuning()
 // Write an attitude packet
 void Rover::Log_Write_Attitude()
 {
-    Vector3f targets(0.0f, 0.0f, 0.0f);  // Rover does not have attitude targets, use place-holder for commonality with Dataflash Log_Write_Attitude message
+    const Vector3f targets(0.0f, 0.0f, 0.0f);  // Rover does not have attitude targets, use place-holder for commonality with Dataflash Log_Write_Attitude message
 
     DataFlash.Log_Write_Attitude(ahrs, targets);
 

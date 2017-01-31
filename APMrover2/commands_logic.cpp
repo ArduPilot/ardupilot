@@ -137,7 +137,7 @@ void Rover::exit_mission()
 bool Rover::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
     if (control_mode == AUTO) {
-        bool cmd_complete = verify_command(cmd);
+        const bool cmd_complete = verify_command(cmd);
 
         // send message to GCS
         if (cmd_complete) {
@@ -304,7 +304,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         }
 
         // check if distance to the WP has changed and output new message if it has
-        float dist_to_wp = get_distance(current_loc, next_WP);
+        const float dist_to_wp = get_distance(current_loc, next_WP);
         if (!is_equal(distance_past_wp, dist_to_wp)) {
             distance_past_wp = dist_to_wp;
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i. Distance %um",
@@ -356,7 +356,7 @@ bool Rover::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 // verify_loiter_time - check if we have loitered long enough
 bool Rover::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
-    bool result = verify_nav_wp(cmd);
+    const bool result = verify_nav_wp(cmd);
     if (result) {
         gcs_send_text(MAV_SEVERITY_WARNING, "Finished active loiter\n");
         // if we have finished active loitering - turn it off
@@ -376,7 +376,7 @@ void Rover::nav_set_yaw_speed()
         return;
     }
 
-    int32_t steering = steerController.get_steering_out_angle_error(guided_yaw_speed.turn_angle);
+    const int32_t steering = steerController.get_steering_out_angle_error(guided_yaw_speed.turn_angle);
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
 
     // speed param in the message gives speed as a proportion of cruise speed.

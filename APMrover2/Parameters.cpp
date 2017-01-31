@@ -599,7 +599,7 @@ void Rover::load_parameters(void)
         cliSerial->printf("done.\n");
     }
 
-    uint32_t before = micros();
+    const uint32_t before = micros();
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
 
