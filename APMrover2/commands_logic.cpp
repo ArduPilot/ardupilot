@@ -305,7 +305,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
         // check if distance to the WP has changed and output new message if it has
         float dist_to_wp = get_distance(current_loc, next_WP);
-        if ((uint32_t)distance_past_wp != (uint32_t)dist_to_wp) {
+        if (!is_equal(distance_past_wp, dist_to_wp)) {
             distance_past_wp = dist_to_wp;
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i. Distance %um",
                     static_cast<uint32_t>(cmd.index),
@@ -370,14 +370,14 @@ void Rover::nav_set_yaw_speed()
     // if we haven't received a MAV_CMD_NAV_SET_YAW_SPEED message within the last 3 seconds bring the rover to a halt
     if ((millis() - guided_yaw_speed.msg_time_ms) > 3000) {
         gcs_send_text(MAV_SEVERITY_WARNING, "NAV_SET_YAW_SPEED not recvd last 3secs, stopping");
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,g.throttle_min.get());
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering,0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
         lateral_acceleration = 0;
         return;
     }
 
     int32_t steering = steerController.get_steering_out_angle_error(guided_yaw_speed.turn_angle);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering,steering);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
 
     // speed param in the message gives speed as a proportion of cruise speed.
     // 0.5 would set speed to the cruise speed
@@ -401,7 +401,7 @@ void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 
 void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
-    condition_value  = cmd.content.distance.meters;
+    condition_value = cmd.content.distance.meters;
 }
 
 /********************************************************************************/
@@ -432,12 +432,12 @@ bool Rover::verify_within_distance()
 
 void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.content.speed.target_ms > 0) {
+    if (cmd.content.speed.target_ms > 0.0f) {
         g.speed_cruise.set(cmd.content.speed.target_ms);
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise speed: %.1f m/s", static_cast<double>(g.speed_cruise.get()));
     }
 
-    if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {
+    if (cmd.content.speed.throttle_pct > 0.0f && cmd.content.speed.throttle_pct <= 100.0f) {
         g.throttle_cruise.set(cmd.content.speed.throttle_pct);
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise throttle: %.1f", g.throttle_cruise.get());
     }

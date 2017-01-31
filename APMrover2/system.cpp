@@ -268,7 +268,7 @@ void Rover::set_reverse(bool reverse)
 
 void Rover::set_mode(enum mode mode)
 {
-    if (control_mode == mode){
+    if (control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
         return;
     }

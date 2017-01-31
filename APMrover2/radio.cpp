@@ -18,9 +18,9 @@ void Rover::set_control_channels(void)
 
     // For a rover safety is TRIM throttle
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->get_radio_trim());
+        hal.rcout->set_safety_pwm(1UL << (rcmap.throttle() - 1), channel_throttle->get_radio_trim());
         if (g.skid_steer_out) {
-            hal.rcout->set_safety_pwm(1UL<<(rcmap.roll()-1),  channel_steer->get_radio_trim());
+            hal.rcout->set_safety_pwm(1UL << (rcmap.roll() - 1),  channel_steer->get_radio_trim());
         }
     }
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
@@ -50,9 +50,9 @@ void Rover::init_rc_out()
     // For Rover's no throttle means TRIM as rovers can go backwards i.e. MIN throttle is
     // full speed backward.
     if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1),  channel_throttle->get_radio_trim());
+        hal.rcout->set_safety_pwm(1UL << (rcmap.throttle() - 1),  channel_throttle->get_radio_trim());
         if (g.skid_steer_out) {
-            hal.rcout->set_safety_pwm(1UL<<(rcmap.roll()-1),  channel_steer->get_radio_trim());
+            hal.rcout->set_safety_pwm(1UL << (rcmap.roll() - 1),  channel_steer->get_radio_trim());
         }
     }
 }
@@ -131,7 +131,7 @@ void Rover::read_radio()
 
     control_failsafe(channel_throttle->get_radio_in());
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,channel_throttle->get_control_in());
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
 
     // Check if the throttle value is above 50% and we need to nudge
     // Make sure its above 50% in the direction we are travelling
@@ -139,7 +139,7 @@ void Rover::read_radio()
         (((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) && in_reverse) ||
          ((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 0) && !in_reverse))) {
             throttle_nudge = (g.throttle_max - g.throttle_cruise) *
-                ((fabsf(channel_throttle->norm_input())-0.5f) / 0.5f);
+                ((fabsf(channel_throttle->norm_input()) - 0.5f) / 0.5f);
     } else {
         throttle_nudge = 0;
     }
@@ -157,18 +157,19 @@ void Rover::read_radio()
         float motor1 = channel_steer->norm_input();
         float motor2 = channel_throttle->norm_input();
         float steering_scaled = motor1 - motor2;
-        float throttle_scaled = 0.5f*(motor1 + motor2);
+        float throttle_scaled = 0.5f * (motor1 + motor2);
+
         int16_t steer = channel_steer->get_radio_trim();
         int16_t thr   = channel_throttle->get_radio_trim();
         if (steering_scaled > 0.0f) {
-            steer += steering_scaled*(channel_steer->get_radio_max()-channel_steer->get_radio_trim());
+            steer += steering_scaled * (channel_steer->get_radio_max()-channel_steer->get_radio_trim());
         } else {
-            steer += steering_scaled*(channel_steer->get_radio_trim()-channel_steer->get_radio_min());
+            steer += steering_scaled * (channel_steer->get_radio_trim()-channel_steer->get_radio_min());
         }
         if (throttle_scaled > 0.0f) {
-            thr += throttle_scaled*(channel_throttle->get_radio_max()-channel_throttle->get_radio_trim());
+            thr += throttle_scaled * (channel_throttle->get_radio_max()-channel_throttle->get_radio_trim());
         } else {
-            thr += throttle_scaled*(channel_throttle->get_radio_trim()-channel_throttle->get_radio_min());
+            thr += throttle_scaled * (channel_throttle->get_radio_trim()-channel_throttle->get_radio_min());
         }
         channel_steer->set_pwm(steer);
         channel_throttle->set_pwm(thr);
