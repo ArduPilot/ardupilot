@@ -926,7 +926,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
             {
-                uint8_t compassNumber = -1;
+                int8_t compassNumber = -1;
                 if (is_equal(packet.param1, 2.0f)) {
                     compassNumber = 0;
                 } else if (is_equal(packet.param1, 5.0f)) {
@@ -934,7 +934,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 } else if (is_equal(packet.param1, 6.0f)) {
                     compassNumber = 2;
                 }
-                if (compassNumber != (uint8_t) -1) {
+                if (compassNumber != static_cast<int8_t>(-1)) {
                     rover.compass.set_and_save_offsets(compassNumber, packet.param2, packet.param3, packet.param4);
                     result = MAV_RESULT_ACCEPTED;
                 }
