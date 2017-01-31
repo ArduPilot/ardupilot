@@ -58,7 +58,7 @@ bool TSYS01::init() {
     /* Request 20Hz update */
     // Max conversion time is 9.04 ms
     _dev->register_periodic_callback(50 * USEC_PER_MSEC,
-                                     FUNCTOR_BIND_MEMBER(&TSYS01::_timer, bool));
+                                     FUNCTOR_BIND_MEMBER(&TSYS01::_timer, void));
 	return true;
 }
 
@@ -109,7 +109,7 @@ uint32_t TSYS01::_read_adc() {
     return (val[0] << 16) | (val[1] << 8) | val[2];
 }
 
-bool TSYS01::_timer(void) {
+void TSYS01::_timer(void) {
 	uint32_t adc = _read_adc();
 	_healthy = adc != 0;
 
@@ -122,7 +122,6 @@ bool TSYS01::_timer(void) {
 	//printf("\nTemperature: %.2lf C", _temperature);
 
 	_convert();
-	return true;
 }
 
 void TSYS01::_calculate(uint32_t adc) {

@@ -29,6 +29,6 @@ private:
 	bool _convert(void); // begin an ADC conversion (min:7.40ms typ:8.22ms max:9.04ms)
 	uint32_t _read_adc(void);
 	uint16_t _read_prom_word(uint8_t word);
-	bool _timer(void); // update the temperature, called at 20Hz
+	void _timer(void); // update the temperature, called at 20Hz
 	void _calculate(uint32_t adc); // calculate temperature using adc reading and internal calibration
 };
