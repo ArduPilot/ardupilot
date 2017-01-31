@@ -196,9 +196,9 @@ AP_GPS_NOVA::process_message(void)
         state.time_week_ms = (uint32_t) nova_msg.header.nova_headeru.tow;
         state.last_gps_time_ms = state.time_week_ms;
 
-        state.location.lat = (int32_t) (bestposu.lat*1e7);
-        state.location.lng = (int32_t) (bestposu.lng*1e7);
-        state.location.alt = (int32_t) (bestposu.hgt*1e2);
+        state.location.lat = (int32_t) (bestposu.lat * (double)1e7);
+        state.location.lng = (int32_t) (bestposu.lng * (double)1e7);
+        state.location.alt = (int32_t) (bestposu.hgt * 100);
 
         state.num_sats = bestposu.svsused;
 
