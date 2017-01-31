@@ -274,9 +274,9 @@ AP_GPS_SBP::_attempt_state_update()
 
         // Update position state
 
-        state.location.lat      = (int32_t) (pos_llh->lat*1e7);
-        state.location.lng      = (int32_t) (pos_llh->lon*1e7);
-        state.location.alt      = (int32_t) (pos_llh->height*1e2);
+        state.location.lat      = (int32_t) (pos_llh->lat * (double)1e7);
+        state.location.lng      = (int32_t) (pos_llh->lon * (double)1e7);
+        state.location.alt      = (int32_t) (pos_llh->height * 100);
         state.num_sats          = pos_llh->n_sats;
 
         if (pos_llh->flags == 0) {
