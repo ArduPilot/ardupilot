@@ -409,56 +409,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    0),
 
-    // RC channel
-    //-----------
-    // @Group: RC1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_1,    "RC1_", RC_Channel),
-    // @Group: RC2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_2,    "RC2_", RC_Channel),
-    // @Group: RC3_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_3,    "RC3_", RC_Channel),
-    // @Group: RC4_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_4,    "RC4_", RC_Channel),
-    // @Group: RC5_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_5,    "RC5_", RC_Channel_aux),
-    // @Group: RC6_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_6,    "RC6_", RC_Channel_aux),
-    // @Group: RC7_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_7,    "RC7_", RC_Channel_aux),
-    // @Group: RC8_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_8,    "RC8_", RC_Channel_aux),
-
-    // @Group: RC9_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
-
-    // @Group: RC10_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
-    // @Group: RC11_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
-
-    // @Group: RC12_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_12,                   "RC12_", RC_Channel_aux),
-
-    // @Group: RC13_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_13,                   "RC13_", RC_Channel_aux),
-
-    // @Group: RC14_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_14,                   "RC14_", RC_Channel_aux),
-
 	// @Param: JS_GAIN_DEFAULT
 	// @DisplayName: Default gain at boot
 	// @Description: Default gain at boot, must be in range [JS_GAIN_MIN , JS_GAIN_MAX]
@@ -521,7 +471,7 @@ const AP_Param::Info Sub::var_info[] = {
 	// @User: Standard
     // @RebootRequired: True
 	// @Values: 0:BlueROV1, 1:Vectored, 2:Vectored_6DOF, 3:Vectored_6DOF_90, 4:SimpleROV-3, 5:SimpleROV-4, 6:SimpleROV-5, 7:Custom
-	GSCALAR(frame_configuration, "FRAME_CONFIG", AS_MOTORS_VECTORED_FRAME),
+	GSCALAR(frame_configuration, "FRAME_CONFIG", AP_Motors6DOF::SUB_FRAME_VECTORED),
 
 	// @Group: BTN0_
 	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
@@ -858,14 +808,14 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(rcmap, "RCMAP_",        RCMapper),
 #endif
 
-    // @Group: EKF_
-    // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
-    GOBJECTN(EKF, NavEKF, "EKF_", NavEKF),
-
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
     GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
     
+    // @Group: EK3_
+    // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
+    GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
+
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
@@ -960,6 +910,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 3, ParametersG2, AP_Gripper),
 #endif
 
+    // @Group: SERVO
+    // @Path: ../libraries/SRV_Channel/SRV_Channel.cpp
+    AP_SUBGROUPINFO(servo_channels, "SERVO", 16, ParametersG2, SRV_Channels),
+
+    // @Group: RC
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels),
+
     AP_GROUPEND
 };
 
@@ -1001,4 +959,22 @@ void Sub::load_parameters(void)
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
     cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
+
+    convert_old_parameters();
+}
+
+void Sub::convert_old_parameters(void) {
+	const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
+			Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
+			Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
+			Parameters::k_param_rc_7_old,  Parameters::k_param_rc_8_old,
+			Parameters::k_param_rc_9_old,  Parameters::k_param_rc_10_old,
+			Parameters::k_param_rc_11_old, Parameters::k_param_rc_12_old,
+			Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old };
+	const uint16_t old_aux_chan_mask = 0x3FF0;
+	// note that we don't pass in rcmap as we don't want output channel functions changed based on rcmap
+	if (SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, nullptr)) {
+		// the rest needs to be done after motors allocation
+		// upgrading_frame_params = true;
+	}
 }

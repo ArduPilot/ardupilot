@@ -245,8 +245,8 @@ void Sub::init_ardupilot()
 		}
 
 
-		EKF.set_baro_alt_noise(0.1f); // Depth readings are very accurate and up-to-date
-		EKF2.set_baro_alt_noise(0.1f);
+		EKF2.set_baro_alt_noise(0.1f); // Depth readings are very accurate and up-to-date
+		EKF3.set_baro_alt_noise(0.1f);
 
 	} else { //We only have onboard baro
 
@@ -258,8 +258,8 @@ void Sub::init_ardupilot()
 			barometer.set_type(i, BARO_TYPE_AIR); // Default fcu air baro
 			barometer.set_precision_multiplier(i, 1); // Use default values
 		}
-		EKF.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
-		EKF2.set_baro_alt_noise(10.0f);
+		EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
+		EKF3.set_baro_alt_noise(10.0f);
 
 
 	}

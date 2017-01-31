@@ -57,6 +57,16 @@ uint8_t Sub::read_3pos_switch(int16_t radio_in)
     return AUX_SWITCH_MIDDLE;                                       // switch is in middle position
 }
 
+// can't take reference to a bitfield member, thus a #define:
+#define read_aux_switch(chan, flag, option)                           \
+    do {                                                            \
+        switch_position = read_3pos_switch(chan); \
+        if (flag != switch_position) {                              \
+            flag = switch_position;                                 \
+            do_aux_switch_function(option, flag);                   \
+        }                                                           \
+    } while (false)
+
 // read_aux_switches - checks aux switch positions and invokes configured actions
 void Sub::read_aux_switches()
 {
@@ -67,85 +77,31 @@ void Sub::read_aux_switches()
         return;
     }
 
-    // check if ch7 switch has changed position
-    switch_position = read_3pos_switch(g.rc_7.get_radio_in());
-    if (aux_con.CH7_flag != switch_position) {
-        // set the CH7 flag
-        aux_con.CH7_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
-    }
-
-    // check if Ch8 switch has changed position
-    switch_position = read_3pos_switch(g.rc_8.get_radio_in());
-    if (aux_con.CH8_flag != switch_position) {
-        // set the CH8 flag
-        aux_con.CH8_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch8_option, aux_con.CH8_flag);
-    }
+    read_aux_switch(CH_7, aux_con.CH7_flag, g.ch7_option);
+    read_aux_switch(CH_8, aux_con.CH8_flag, g.ch8_option);
+    read_aux_switch(CH_9, aux_con.CH9_flag, g.ch9_option);
+    read_aux_switch(CH_10, aux_con.CH10_flag, g.ch10_option);
+    read_aux_switch(CH_11, aux_con.CH11_flag, g.ch11_option);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    // check if Ch9 switch has changed position
-    switch_position = read_3pos_switch(g.rc_9.get_radio_in());
-    if (aux_con.CH9_flag != switch_position) {
-        // set the CH9 flag
-        aux_con.CH9_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
-    }
-#endif
-
-    // check if Ch10 switch has changed position
-    switch_position = read_3pos_switch(g.rc_10.get_radio_in());
-    if (aux_con.CH10_flag != switch_position) {
-        // set the CH10 flag
-        aux_con.CH10_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch10_option, aux_con.CH10_flag);
-    }
-
-    // check if Ch11 switch has changed position
-    switch_position = read_3pos_switch(g.rc_11.get_radio_in());
-    if (aux_con.CH11_flag != switch_position) {
-        // set the CH11 flag
-        aux_con.CH11_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
-    }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    // check if Ch12 switch has changed position
-    switch_position = read_3pos_switch(g.rc_12.get_radio_in());
-    if (aux_con.CH12_flag != switch_position) {
-        // set the CH12 flag
-        aux_con.CH12_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
-    }
+    read_aux_switch(CH_12, aux_con.CH12_flag, g.ch12_option);
 #endif
 }
+
+#undef read_aux_switch
 
 // init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
 void Sub::init_aux_switches()
 {
     // set the CH7 ~ CH12 flags
-    aux_con.CH7_flag = read_3pos_switch(g.rc_7.get_radio_in());
-    aux_con.CH8_flag = read_3pos_switch(g.rc_8.get_radio_in());
-    aux_con.CH10_flag = read_3pos_switch(g.rc_10.get_radio_in());
-    aux_con.CH11_flag = read_3pos_switch(g.rc_11.get_radio_in());
+    aux_con.CH7_flag = read_3pos_switch(CH_7);
+    aux_con.CH8_flag = read_3pos_switch(CH_8);
+    aux_con.CH10_flag = read_3pos_switch(CH_10);
+    aux_con.CH11_flag = read_3pos_switch(CH_11);
 
     // ch9, ch12 only supported on some boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    aux_con.CH9_flag = read_3pos_switch(g.rc_9.get_radio_in());
-    aux_con.CH12_flag = read_3pos_switch(g.rc_12.get_radio_in());
-#endif
+    aux_con.CH9_flag = read_3pos_switch(CH_9);
+    aux_con.CH12_flag = read_3pos_switch(CH_12);
 
     // initialise functions assigned to switches
     init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
@@ -154,10 +110,8 @@ void Sub::init_aux_switches()
     init_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
 
     // ch9, ch12 only supported on some boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     init_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
     init_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
-#endif
 }
 
 // init_aux_switch_function - initialize aux functions
