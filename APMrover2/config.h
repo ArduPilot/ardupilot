@@ -214,24 +214,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Attitude control gains
-//
-#ifndef SERVO_STEER_P
-  #define SERVO_STEER_P          0.4
-#endif
-#ifndef SERVO_STEER_I
-  #define SERVO_STEER_I          0.0
-#endif
-#ifndef SERVO_STEER_D
-  #define SERVO_STEER_D          0.0
-#endif
-#ifndef SERVO_STEER_INT_MAX
-  #define SERVO_STEER_INT_MAX    5
-#endif
-#define SERVO_STEER_INT_MAX_CENTIDEGREE (SERVO_STEER_INT_MAX * 100)
-
-
-//////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
 #ifndef LOGGING_ENABLED
