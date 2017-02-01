@@ -286,6 +286,7 @@ def build(bld):
         name='px4',
         cmake_src=bld.srcnode.find_dir('modules/PX4Firmware'),
         cmake_vars=bld.env.PX4_CMAKE_VARS,
+        cmake_flags=['-Wno-deprecated'],
     )
 
     px4.build(
