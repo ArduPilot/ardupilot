@@ -504,7 +504,7 @@ void PX4RCOutput::_send_outputs(void)
         }
         if (to_send > 0) {
             for (int i=to_send-1; i >= 0; i--) {
-                if (_period[i] == 0 || _period[i] == PWM_IGNORE_THIS_CHANNEL) {
+                if (_period[i] == PWM_IGNORE_THIS_CHANNEL) {
                     to_send = i;
                 } else {
                     break;
