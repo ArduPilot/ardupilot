@@ -2,6 +2,9 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+
 #include "AP_HAL_PX4.h"
 #include "AP_HAL_PX4_Namespace.h"
 #include "HAL_PX4_Class.h"
@@ -35,7 +38,11 @@ using namespace PX4;
 static PX4Scheduler schedulerInstance;
 static PX4Storage storageDriver;
 static PX4RCInput rcinDriver;
+#if !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
 static PX4RCOutput rcoutDriver;
+#else
+static Empty::RCOutput rcoutDriver;
+#endif
 static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
 static PX4GPIO gpioDriver;
