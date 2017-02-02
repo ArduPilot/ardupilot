@@ -84,7 +84,7 @@ TEST(MathTest, IsEqual)
     EXPECT_TRUE(is_equal(1.f, (float)(1.f - DBL_EPSILON)));
 
     // false because the common type is double
-    EXPECT_FALSE(is_equal(1., 1. + 2 * std::numeric_limits<double>::epsilon()));
+    EXPECT_FALSE(is_equal(double(1.), 1 + 2 * std::numeric_limits<double>::epsilon()));
 
     // true because the common type is float
     EXPECT_TRUE(is_equal(1.f, (float)(1. + std::numeric_limits<double>::epsilon())));
