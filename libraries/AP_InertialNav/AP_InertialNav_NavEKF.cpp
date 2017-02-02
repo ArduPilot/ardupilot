@@ -14,13 +14,6 @@
 */
 void AP_InertialNav_NavEKF::update(float dt)
 {
-    // get the position relative to the local earth frame origin
-	// Temporary fix for ArduSub
-	// @ToDo Make ge_relative_position_NED return true for ArduSub
-    //if (_ahrs_ekf.get_relative_position_NED(_relpos_cm) || true) {
-    //    _relpos_cm *= 100; // convert to cm
-    //    _relpos_cm.z = - _relpos_cm.z; // InertialNav is NEU
-
     // get the NE position relative to the local earth frame origin
     Vector2f posNE;
     if (_ahrs_ekf.get_relative_position_NE(posNE)) {
