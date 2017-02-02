@@ -15,8 +15,10 @@
 
 #include "AP_Proximity.h"
 #include "AP_Proximity_LightWareSF40C.h"
+#include "AP_Proximity_TeraRangerTower.h"
 #include "AP_Proximity_MAV.h"
 #include "AP_Proximity_SITL.h"
+
 
 extern const AP_HAL::HAL &hal;
 
@@ -27,7 +29,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,1:LightWareSF40C,2:MAVLink
+    // @Values: 0:None,1:LightWareSF40C,2:MAVLink,3:TeraRangerTower
     // @User: Standard
     AP_GROUPINFO("_TYPE",   1, AP_Proximity, _type[0], 0),
 
@@ -281,6 +283,13 @@ void AP_Proximity::detect_instance(uint8_t instance)
         state[instance].instance = instance;
         drivers[instance] = new AP_Proximity_MAV(*this, state[instance]);
         return;
+    }
+    if (type == Proximity_Type_TRTOWER) {
+        if (AP_Proximity_TeraRangerTower::detect(serial_manager)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_Proximity_TeraRangerTower(*this, state[instance], serial_manager);
+            return;
+        }
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (type == Proximity_Type_SITL) {
