@@ -145,6 +145,21 @@
  # define RANGEFINDER_TILT_CORRECTION ENABLED
 #endif
 
+// Avoidance (relies on Proximity and Fence)
+#ifndef AVOIDANCE_ENABLED
+# define AVOIDANCE_ENABLED DISABLED
+#endif
+
+#if AVOIDANCE_ENABLED == ENABLED // Avoidance Library relies on Proximity and Fence
+# define PROXIMITY_ENABLED ENABLED
+# define FENCE_ENABLED ENABLED
+#endif
+
+// Proximity sensor
+//
+#ifndef PROXIMITY_ENABLED
+ # define PROXIMITY_ENABLED DISABLED
+#endif
 
 #ifndef MAV_SYSTEM_ID
  # define MAV_SYSTEM_ID          1
@@ -265,21 +280,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  Crop Sprayer
-#ifndef SPRAYER
- # define SPRAYER  DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Precision Landing with companion computer or IRLock sensor
-#ifndef PRECISION_LANDING
- # define PRECISION_LANDING ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-//	EPM cargo gripper
-#ifndef EPM_ENABLED
- # define EPM_ENABLED ENABLED
+//	gripper
+#ifndef GRIPPER_ENABLED
+ # define GRIPPER_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -619,17 +622,17 @@
   #  define CLI_ENABLED           ENABLED
 #endif
 
-//use this to completely disable FRSKY TELEM
-#ifndef FRSKY_TELEM_ENABLED
-  #  define FRSKY_TELEM_ENABLED          ENABLED
-#endif
-
-/*
-  build a firmware version string.
-  GIT_VERSION comes from Makefile builds
-*/
-#ifndef GIT_VERSION
-#define FIRMWARE_STRING THISFIRMWARE
-#else
-#define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
+#ifndef XTRACK_P
+#define XTRACK_P			1.0f
+#define XTRACK_I			0.5f
+#define XTRACK_D			0.0f
+#define XTRACK_IMAX			1000
+#define XTRACK_FILT_HZ	5.0f
+#define XTRACK_DT 0.05f
+#define HEAD_P			1.0f
+#define HEAD_I			0.5f
+#define HEAD_D			0.0f
+#define HEAD_IMAX			1000
+#define HEAD_FILT_HZ		5.0f
+#define HEAD_DT			0.05f
 #endif
