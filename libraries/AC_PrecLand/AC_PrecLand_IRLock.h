@@ -39,11 +39,15 @@ public:
     
     // return true if there is a valid los measurement available
     bool have_los_meas();
+    
+    // return distance to target
+    float distance_to_target();
 
 private:
     AP_IRLock_I2C irlock;
 
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
+    float               _distance_to_target;    // distance from the camera to target in meters
     bool                _have_los_meas;         // true if there is a valid measurement from the camera
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
 };
