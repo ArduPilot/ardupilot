@@ -17,7 +17,7 @@ static const struct Menu::command test_menu_commands[] = {
     {"optflow",             MENU_FUNC(test_optflow)},
     {"relay",               MENU_FUNC(test_relay)},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    {"shell", 				MENU_FUNC(test_shell)},
+    {"shell",               MENU_FUNC(test_shell)},
 #endif
 #if HIL_MODE == HIL_MODE_DISABLED
     {"rangefinder",         MENU_FUNC(test_rangefinder)},
@@ -39,19 +39,19 @@ int8_t Sub::test_baro(uint8_t argc, const Menu::arg *argv)
     print_hit_enter();
     init_barometer(true);
 
-    while(1) {
-    	hal.scheduler->delay(100);
+    while (1) {
+        hal.scheduler->delay(100);
         read_barometer();
 
         if (!barometer.healthy()) {
             cliSerial->println("not healthy");
         } else {
             cliSerial->printf("Alt: %0.2fm, Raw: %f Temperature: %.1f\n",
-                                (double)(baro_alt / 100.0f),
-                                (double)barometer.get_pressure(),
-                                (double)barometer.get_temperature());
+                              (double)(baro_alt / 100.0f),
+                              (double)barometer.get_pressure(),
+                              (double)barometer.get_temperature());
         }
-        if(cliSerial->available() > 0) {
+        if (cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -91,8 +91,8 @@ int8_t Sub::test_compass(uint8_t argc, const Menu::arg *argv)
 
     print_hit_enter();
 
-    while(1) {
-    	hal.scheduler->delay(20);
+    while (1) {
+        hal.scheduler->delay(20);
         if (millis() - fast_loopTimer > 19) {
             delta_ms_fast_loop      = millis() - fast_loopTimer;
             G_Dt                    = (float)delta_ms_fast_loop / 1000.0f;                       // used by DCM integrator
@@ -103,7 +103,7 @@ int8_t Sub::test_compass(uint8_t argc, const Menu::arg *argv)
             ahrs.update();
 
             medium_loopCounter++;
-            if(medium_loopCounter == 5) {
+            if (medium_loopCounter == 5) {
                 if (compass.read()) {
                     // Calculate heading
                     const Matrix3f &m = ahrs.get_rotation_body_to_ned();
@@ -120,12 +120,12 @@ int8_t Sub::test_compass(uint8_t argc, const Menu::arg *argv)
                     const Vector3f &mag = compass.get_field();
                     cliSerial->printf("Heading: %d, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n",
                                       (int)(wrap_360_cd(ToDeg(heading) * 100)) /100,
-                                        (double)mag.x,
-                                        (double)mag.y,
-                                        (double)mag.z,
-                                        (double)mag_ofs.x,
-                                        (double)mag_ofs.y,
-                                        (double)mag_ofs.z);
+                                      (double)mag.x,
+                                      (double)mag.y,
+                                      (double)mag.z,
+                                      (double)mag_ofs.x,
+                                      (double)mag_ofs.y,
+                                      (double)mag_ofs.z);
                 } else {
                     cliSerial->println("compass not healthy");
                 }
@@ -157,7 +157,7 @@ int8_t Sub::test_ins(uint8_t argc, const Menu::arg *argv)
 
     hal.scheduler->delay(50);
 
-    while(1) {
+    while (1) {
         ins.update();
         gyro = ins.get_gyro();
         accel = ins.get_accel();
@@ -165,12 +165,12 @@ int8_t Sub::test_ins(uint8_t argc, const Menu::arg *argv)
         float test = accel.length() / GRAVITY_MSS;
 
         cliSerial->printf("a %7.4f %7.4f %7.4f g %7.4f %7.4f %7.4f t %7.4f \n",
-                (double)accel.x, (double)accel.y, (double)accel.z,
-            (double)gyro.x, (double)gyro.y, (double)gyro.z,
-            (double)test);
+                          (double)accel.x, (double)accel.y, (double)accel.z,
+                          (double)gyro.x, (double)gyro.y, (double)gyro.z,
+                          (double)test);
 
         hal.scheduler->delay(40);
-        if(cliSerial->available() > 0) {
+        if (cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -179,20 +179,20 @@ int8_t Sub::test_ins(uint8_t argc, const Menu::arg *argv)
 int8_t Sub::test_optflow(uint8_t argc, const Menu::arg *argv)
 {
 #if OPTFLOW == ENABLED
-    if(optflow.enabled()) {
+    if (optflow.enabled()) {
         cliSerial->printf("dev id: %d\t",(int)optflow.device_id());
         print_hit_enter();
 
-        while(1) {
-        	hal.scheduler->delay(200);
+        while (1) {
+            hal.scheduler->delay(200);
             optflow.update();
             const Vector2f& flowRate = optflow.flowRate();
             cliSerial->printf("flowX : %7.4f\t flowY : %7.4f\t flow qual : %d\n",
-                            (double)flowRate.x,
-                            (double)flowRate.y,
-                            (int)optflow.quality());
+                              (double)flowRate.x,
+                              (double)flowRate.y,
+                              (int)optflow.quality());
 
-            if(cliSerial->available() > 0) {
+            if (cliSerial->available() > 0) {
                 return (0);
             }
         }
@@ -211,18 +211,18 @@ int8_t Sub::test_relay(uint8_t argc, const Menu::arg *argv)
     print_hit_enter();
     hal.scheduler->delay(1000);
 
-    while(1) {
+    while (1) {
         cliSerial->printf("Relay on\n");
         relay.on(0);
         hal.scheduler->delay(3000);
-        if(cliSerial->available() > 0) {
+        if (cliSerial->available() > 0) {
             return (0);
         }
 
         cliSerial->printf("Relay off\n");
         relay.off(0);
         hal.scheduler->delay(3000);
-        if(cliSerial->available() > 0) {
+        if (cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -246,20 +246,20 @@ int8_t Sub::test_shell(uint8_t argc, const Menu::arg *argv)
 int8_t Sub::test_rangefinder(uint8_t argc, const Menu::arg *argv)
 {
 #if RANGEFINDER_ENABLED == ENABLED
-	rangefinder.init();
+    rangefinder.init();
 
     cliSerial->printf("RangeFinder: %d devices detected\n", rangefinder.num_sensors());
 
     print_hit_enter();
-    while(1) {
-    	hal.scheduler->delay(100);
+    while (1) {
+        hal.scheduler->delay(100);
         rangefinder.update();
 
         cliSerial->printf("Primary: status %d distance_cm %d \n", (int)rangefinder.status(), rangefinder.distance_cm());
         cliSerial->printf("All: device_0 type %d status %d distance_cm %d, device_1 type %d status %d distance_cm %d\n",
-        (int)rangefinder._type[0], (int)rangefinder.status(0), rangefinder.distance_cm(0), (int)rangefinder._type[1], (int)rangefinder.status(1), rangefinder.distance_cm(1));
+                          (int)rangefinder._type[0], (int)rangefinder.status(0), rangefinder.distance_cm(0), (int)rangefinder._type[1], (int)rangefinder.status(1), rangefinder.distance_cm(1));
 
-        if(cliSerial->available() > 0) {
+        if (cliSerial->available() > 0) {
             return (0);
         }
     }

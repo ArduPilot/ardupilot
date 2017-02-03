@@ -65,7 +65,7 @@ void Sub::failsafe_check()
     if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
         // disarm motors every second
         failsafe_last_timestamp = tnow;
-        if(motors.armed()) {
+        if (motors.armed()) {
             motors.armed(false);
             motors.output();
         }

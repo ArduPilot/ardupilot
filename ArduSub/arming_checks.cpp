@@ -22,10 +22,10 @@ void Sub::update_arming_checks(void)
 // performs pre-arm checks and arming checks
 bool Sub::all_arming_checks_passing(bool arming_from_gcs)
 {
-	if(failsafe.manual_control) {
-		gcs_send_text(MAV_SEVERITY_WARNING, "Arming requires manual control");
-		return false;
-	}
+    if (failsafe.manual_control) {
+        gcs_send_text(MAV_SEVERITY_WARNING, "Arming requires manual control");
+        return false;
+    }
     if (pre_arm_checks(true)) {
         set_pre_arm_check(true);
     }
@@ -44,7 +44,7 @@ bool Sub::pre_arm_checks(bool display_failure)
 
     // check if motor interlock and Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
-    if (check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) && check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+    if (check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) && check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Interlock/E-Stop Conflict");
         }
@@ -55,7 +55,7 @@ bool Sub::pre_arm_checks(bool display_failure)
     // if it is, switch needs to be in disabled position to arm
     // otherwise exit immediately.  This check to be repeated,
     // as state can change at any time.
-    if (ap.using_interlock && motors.get_interlock()){
+    if (ap.using_interlock && motors.get_interlock()) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Motor Interlock Enabled");
         }
@@ -160,7 +160,7 @@ bool Sub::pre_arm_checks(bool display_failure)
         return false;
     }
 
-    #if AC_FENCE == ENABLED
+#if AC_FENCE == ENABLED
     // check fence is initialised
     if (!fence.pre_arm_check()) {
         if (display_failure) {
@@ -168,7 +168,7 @@ bool Sub::pre_arm_checks(bool display_failure)
         }
         return false;
     }
-    #endif
+#endif
 
     // check INS
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
@@ -199,7 +199,7 @@ bool Sub::pre_arm_checks(bool display_failure)
         // check all accelerometers point in roughly same direction
         if (ins.get_accel_count() > 1) {
             const Vector3f &prime_accel_vec = ins.get_accel();
-            for(uint8_t i=0; i<ins.get_accel_count(); i++) {
+            for (uint8_t i=0; i<ins.get_accel_count(); i++) {
                 // get next accel vector
                 const Vector3f &accel_vec = ins.get_accel(i);
                 Vector3f vec_diff = accel_vec - prime_accel_vec;
@@ -231,7 +231,7 @@ bool Sub::pre_arm_checks(bool display_failure)
 
         // check all gyros are consistent
         if (ins.get_gyro_count() > 1) {
-            for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
+            for (uint8_t i=0; i<ins.get_gyro_count(); i++) {
                 // get rotation rate difference between gyro #i and primary gyro
                 Vector3f vec_diff = ins.get_gyro(i) - ins.get_gyro();
                 if (vec_diff.length() > PREARM_MAX_GYRO_VECTOR_DIFF) {
@@ -251,8 +251,8 @@ bool Sub::pre_arm_checks(bool display_failure)
             return false;
         }
     }
-    #if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
-    #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     // check board voltage
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
         if (hal.analogin->board_voltage() < BOARD_VOLTAGE_MIN || hal.analogin->board_voltage() > BOARD_VOLTAGE_MAX) {
@@ -262,8 +262,8 @@ bool Sub::pre_arm_checks(bool display_failure)
             return false;
         }
     }
-    #endif
-    #endif
+#endif
+#endif
 
     // check battery voltage
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
@@ -295,14 +295,14 @@ bool Sub::pre_arm_checks(bool display_failure)
         }
 
         // acro balance parameter check
-        if ((g.acro_balance_roll > attitude_control.get_angle_roll_p().kP()) || (g.acro_balance_pitch > attitude_control.get_angle_pitch_p().kP())) {             
+        if ((g.acro_balance_roll > attitude_control.get_angle_roll_p().kP()) || (g.acro_balance_pitch > attitude_control.get_angle_pitch_p().kP())) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: ACRO_BAL_ROLL/PITCH");
             }
             return false;
         }
 
-        #if RANGEFINDER_ENABLED == ENABLED && OPTFLOW == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED && OPTFLOW == ENABLED
         // check range finder if optflow enabled
         if (optflow.enabled() && !rangefinder.pre_arm_check()) {
             if (display_failure) {
@@ -310,12 +310,12 @@ bool Sub::pre_arm_checks(bool display_failure)
             }
             return false;
         }
-        #endif
+#endif
 
         // check for missing terrain data
-		if (!pre_arm_terrain_check(display_failure)) {
-			return false;
-		}
+        if (!pre_arm_terrain_check(display_failure)) {
+            return false;
+        }
     }
 
     return true;
@@ -378,12 +378,12 @@ bool Sub::pre_arm_gps_checks(bool display_failure)
     // check if flight mode requires GPS
     bool gps_required = mode_requires_GPS(control_mode);
 
-    #if AC_FENCE == ENABLED
+#if AC_FENCE == ENABLED
     // if circular fence is enabled we need GPS
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) {
         gps_required = true;
     }
-    #endif
+#endif
 
     // return true if GPS is not required
     if (!gps_required) {
@@ -482,10 +482,10 @@ bool Sub::pre_arm_terrain_check(bool display_failure)
 //  has side-effect that logging is started
 bool Sub::arm_checks(bool display_failure, bool arming_from_gcs)
 {
-    #if LOGGING_ENABLED == ENABLED
+#if LOGGING_ENABLED == ENABLED
     // start dataflash
     start_logging();
-    #endif
+#endif
 
     // check accels and gyro are healthy
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
@@ -548,17 +548,17 @@ bool Sub::arm_checks(bool display_failure, bool arming_from_gcs)
     }
 
     // if we are using motor interlock switch and it's enabled, fail to arm
-    if (ap.using_interlock && motors.get_interlock()){
+    if (ap.using_interlock && motors.get_interlock()) {
         gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Motor Interlock Enabled");
         return false;
     }
 
     // if we are not using Emergency Stop switch option, force Estop false to ensure motors
     // can run normally
-    if (!check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+    if (!check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)) {
         set_motor_emergency_stop(false);
         // if we are using motor Estop switch, it must not be in Estop position
-    } else if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_emergency_stop){
+    } else if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_emergency_stop) {
         gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Motor Emergency Stopped");
         return false;
     }
@@ -590,7 +590,7 @@ bool Sub::arm_checks(bool display_failure, bool arming_from_gcs)
         }
     }
 
-    #if AC_FENCE == ENABLED
+#if AC_FENCE == ENABLED
     // check vehicle is within fence
     if (!fence.pre_arm_check()) {
         if (display_failure) {
@@ -598,7 +598,7 @@ bool Sub::arm_checks(bool display_failure, bool arming_from_gcs)
         }
         return false;
     }
-    #endif
+#endif
 
     // check lean angle
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
@@ -621,11 +621,11 @@ bool Sub::arm_checks(bool display_failure, bool arming_from_gcs)
     }
 
     // check for missing terrain data
-	if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
-		if (!pre_arm_terrain_check(display_failure)) {
-			return false;
-		}
-	}
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
+        if (!pre_arm_terrain_check(display_failure)) {
+            return false;
+        }
+    }
 
     // check throttle
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {

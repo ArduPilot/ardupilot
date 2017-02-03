@@ -7,7 +7,7 @@ void Sub::init_barometer(bool full_calibration)
     gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     if (full_calibration) {
         barometer.calibrate();
-    }else{
+    } else {
         barometer.update_calibration();
     }
     gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
@@ -29,9 +29,9 @@ void Sub::read_barometer(void)
 void Sub::init_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
-   rangefinder.init();
-   rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
-   rangefinder_state.enabled = (rangefinder.num_sensors() >= 1);
+    rangefinder.init();
+    rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
+    rangefinder_state.enabled = (rangefinder.num_sensors() >= 1);
 #endif
 }
 
@@ -45,10 +45,10 @@ void Sub::read_rangefinder(void)
 
     int16_t temp_alt = rangefinder.distance_cm();
 
- #if RANGEFINDER_TILT_CORRECTION == ENABLED
+#if RANGEFINDER_TILT_CORRECTION == ENABLED
     // correct alt for angle of the rangefinder
     temp_alt = (float)temp_alt * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
- #endif
+#endif
 
     rangefinder_state.alt_cm = temp_alt;
 
@@ -197,7 +197,7 @@ void Sub::accel_cal_update()
     ins.acal_update();
     // check if new trim values, and set them
     float trim_roll, trim_pitch;
-    if(ins.get_new_trim(trim_roll, trim_pitch)) {
+    if (ins.get_new_trim(trim_roll, trim_pitch)) {
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
 }

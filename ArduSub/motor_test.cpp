@@ -36,26 +36,26 @@ void Sub::motor_test_output()
         // calculate pwm based on throttle type
         switch (motor_test_throttle_type) {
 
-            case MOTOR_TEST_THROTTLE_PERCENT:
-                // sanity check motor_test_throttle value
-                break;
+        case MOTOR_TEST_THROTTLE_PERCENT:
+            // sanity check motor_test_throttle value
+            break;
 
-            case MOTOR_TEST_THROTTLE_PWM:
-                pwm = motor_test_throttle_value;
-                break;
+        case MOTOR_TEST_THROTTLE_PWM:
+            pwm = motor_test_throttle_value;
+            break;
 
-            case MOTOR_TEST_THROTTLE_PILOT:
-                pwm = channel_throttle->get_radio_in();
-                break;
+        case MOTOR_TEST_THROTTLE_PILOT:
+            pwm = channel_throttle->get_radio_in();
+            break;
 
-            default:
-                motor_test_stop();
-                return;
-                break;
+        default:
+            motor_test_stop();
+            return;
+            break;
         }
 
         // sanity check throttle values
-        if (pwm >= MOTOR_TEST_PWM_MIN && pwm <= MOTOR_TEST_PWM_MAX ) {
+        if (pwm >= MOTOR_TEST_PWM_MIN && pwm <= MOTOR_TEST_PWM_MAX) {
             // turn on motor to specified pwm vlaue
             motors.output_test(motor_test_seq, pwm);
         } else {
@@ -70,7 +70,7 @@ bool Sub::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
 {
     // check rc has been calibrated
     pre_arm_rc_checks();
-    if(check_rc && !ap.pre_arm_rc_check) {
+    if (check_rc && !ap.pre_arm_rc_check) {
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: RC not calibrated");
         return false;
     }

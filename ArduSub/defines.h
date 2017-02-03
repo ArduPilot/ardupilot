@@ -23,7 +23,7 @@ enum autopilot_yaw_mode {
     AUTO_YAW_LOOK_AT_HEADING =   3,  // point towards a particular angle (not pilot input accepted)
     AUTO_YAW_LOOK_AHEAD =        4,  // point in the direction the copter is moving
     AUTO_YAW_RESETTOARMEDYAW =   5,  // point towards heading at time motors were armed
-	AUTO_YAW_CORRECT_XTRACK =    6   // steer the sub in order to correct for crosstrack error during line following
+    AUTO_YAW_CORRECT_XTRACK =    6   // steer the sub in order to correct for crosstrack error during line following
 };
 
 // Ch6... Ch12 aux switch control
@@ -40,33 +40,33 @@ enum autopilot_yaw_mode {
 // Aux Switch enumeration
 enum aux_sw_func {
     AUXSW_DO_NOTHING =           0, // aux switch disabled
-//    AUXSW_FLIP =                 2, // flip
+    //    AUXSW_FLIP =                 2, // flip
     AUXSW_SIMPLE_MODE =          3, // change to simple mode
 
-// No RTL mode for Sub
-//    AUXSW_RTL =                  4, // change to RTL flight mode
+    // No RTL mode for Sub
+    //    AUXSW_RTL =                  4, // change to RTL flight mode
 
     AUXSW_SAVE_TRIM =            5, // save current position as level
     AUXSW_SAVE_WP =              7, // save mission waypoint or RTL if in auto mode
     AUXSW_CAMERA_TRIGGER =       9, // trigger camera servo or relay
-	AUXSW_RANGEFINDER =         10, // allow enabling or disabling rangefinder in flight which helps avoid surface tracking when you are far above the ground
-	AUXSW_FENCE =               11, // allow enabling or disabling fence in flight
-	AUXSW_RESETTOARMEDYAW =     12, // changes yaw to be same as when quad was armed
+    AUXSW_RANGEFINDER =         10, // allow enabling or disabling rangefinder in flight which helps avoid surface tracking when you are far above the ground
+    AUXSW_FENCE =               11, // allow enabling or disabling fence in flight
+    AUXSW_RESETTOARMEDYAW =     12, // changes yaw to be same as when quad was armed
     AUXSW_SUPERSIMPLE_MODE =    13, // change to simple mode in middle, super simple at top
     AUXSW_ACRO_TRAINER =        14, // low = disabled, middle = leveled, high = leveled and limited
 
-// No sprayer for Sub, remove
-//    AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
+    // No sprayer for Sub, remove
+    //    AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
 
     AUXSW_AUTO =                16, // change to auto flight mode
     AUXSW_AUTOTUNE =            17, // auto tune
     AUXSW_LAND =                18, // change to LAND flight mode
     AUXSW_GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
 
-// No parachute for Sub, remove
-//    AUXSW_PARACHUTE_ENABLE  =   21, // Parachute enable/disable
-//    AUXSW_PARACHUTE_RELEASE =   22, // Parachute release
-//    AUXSW_PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
+    // No parachute for Sub, remove
+    //    AUXSW_PARACHUTE_ENABLE  =   21, // Parachute enable/disable
+    //    AUXSW_PARACHUTE_RELEASE =   22, // Parachute release
+    //    AUXSW_PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
 
     AUXSW_MISSION_RESET =       24, // Reset auto mission to start from first command
     AUXSW_ATTCON_FEEDFWD =      25, // enable/disable the roll and pitch rate feed forward
@@ -74,14 +74,14 @@ enum aux_sw_func {
     AUXSW_RETRACT_MOUNT =       27, // Retract Mount
     AUXSW_RELAY =               28, // Relay pin on/off (only supports first relay)
 
-// No landing gear for sub, remove
-//    AUXSW_LANDING_GEAR =        29, // Landing gear controller
+    // No landing gear for sub, remove
+    //    AUXSW_LANDING_GEAR =        29, // Landing gear controller
 
     AUXSW_LOST_COPTER_SOUND =   30, // Play lost copter sound
     AUXSW_MOTOR_ESTOP =         31, // Emergency Stop Switch
     AUXSW_MOTOR_INTERLOCK =     32, // Motor On/Off switch
-//    AUXSW_BRAKE =               33, // Brake flight mode
-	AUXSW_RELAY2 =              34, // Relay2 pin on/off (in Mission planner set CH8_OPT  = 34)
+    //    AUXSW_BRAKE =               33, // Brake flight mode
+    AUXSW_RELAY2 =              34, // Relay2 pin on/off (in Mission planner set CH8_OPT  = 34)
     AUXSW_RELAY3 =              35, // Relay3 pin on/off (in Mission planner set CH9_OPT  = 35)
     AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
 };
@@ -98,14 +98,14 @@ enum control_mode_t {
     AUTO =          3,  // not implemented in sub // fully automatic waypoint control using mission commands
     GUIDED =        4,  // not implemented in sub // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
     VELHOLD =       5,  // automatic x/y velocity control and automatic depth/throttle
-//    RTL =           6,  // not implemented in sub // automatic return to launching point
+    //    RTL =           6,  // not implemented in sub // automatic return to launching point
     CIRCLE =        7,  // not implemented in sub // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     OF_LOITER =    10,  // deprecated
     TRANSECT =     13,  // automatic x/y velocity, automatic heading/crosstrack error compensation, automatic depth/throttle
     AUTOTUNE =     15,  // not implemented in sub // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-	MANUAL =	   19   // Pass-through input with no stabilization
+    MANUAL =       19   // Pass-through input with no stabilization
 };
 
 enum mode_reason_t {
@@ -120,9 +120,9 @@ enum mode_reason_t {
     MODE_REASON_MISSION_END,
     MODE_REASON_THROTTLE_LAND_ESCAPE,
     MODE_REASON_FENCE_BREACH,
-	MODE_REASON_TERRAIN_FAILSAFE,
-	MODE_REASON_SURFACE_COMPLETE,
-	MODE_REASON_LEAK_FAILSAFE
+    MODE_REASON_TERRAIN_FAILSAFE,
+    MODE_REASON_SURFACE_COMPLETE,
+    MODE_REASON_LEAK_FAILSAFE
 };
 
 // Tuning enumeration
@@ -151,8 +151,8 @@ enum tuning_func {
     TUNING_DECLINATION =                38, // compass declination in radians
     TUNING_CIRCLE_RATE =                39, // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
     TUNING_ACRO_YAW_KP =                40, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
-	TUNING_RANGEFINDER_GAIN =           41, // rangefinder gain
-	TUNING_EKF_VERTICAL_POS =           42, // EKF's baro vs accel (higher rely on accels more, baro impact is reduced).  Range should be 0.2 ~ 4.0?  2.0 is default
+    TUNING_RANGEFINDER_GAIN =           41, // rangefinder gain
+    TUNING_EKF_VERTICAL_POS =           42, // EKF's baro vs accel (higher rely on accels more, baro impact is reduced).  Range should be 0.2 ~ 4.0?  2.0 is default
     TUNING_EKF_HORIZONTAL_POS =         43, // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
     TUNING_EKF_ACCEL_NOISE =            44, // EKF's accel noise (lower means trust accels more, gps & baro less).  Range should be 0.02 ~ 0.5  0.5 is default (but very robust at that level)
     TUNING_RC_FEEL_RP =                 45, // roll-pitch input smoothing
@@ -186,19 +186,19 @@ enum tuning_func {
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP               1   // auto pilot will face next waypoint or home during rtl
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicotpers)
-#define WP_YAW_BEHAVIOR_CORRECT_XTRACK				  4   // point towards intermediate position target during line following
+#define WP_YAW_BEHAVIOR_CORRECT_XTRACK                4   // point towards intermediate position target during line following
 
 // Auto modes
 enum AutoMode {
     Auto_WP,
     Auto_Land,
-//    Auto_RTL,
+    //    Auto_RTL,
     Auto_CircleMoveToEdge,
     Auto_Circle,
     Auto_Spline,
     Auto_NavGuided,
     Auto_Loiter,
-	Auto_TerrainRecover
+    Auto_TerrainRecover
 };
 
 // Guided modes
@@ -221,7 +221,7 @@ enum RTLState {
 // Alt_Hold states
 enum AltHoldModeState {
     AltHold_MotorStopped,
-	AltHold_NotAutoArmed,
+    AltHold_NotAutoArmed,
     AltHold_Flying,
     AltHold_Landed
 };
@@ -229,7 +229,7 @@ enum AltHoldModeState {
 // Loiter states
 enum LoiterModeState {
     Loiter_MotorStopped,
-	Loiter_NotAutoArmed,
+    Loiter_NotAutoArmed,
     Loiter_Flying,
     Loiter_Landed
 };
@@ -261,7 +261,7 @@ enum LoiterModeState {
 #define LOG_PARAMTUNE_MSG               0x1F
 #define LOG_HELI_MSG                    0x20
 //#define LOG_PRECLAND_MSG                0x21 // Remove
-#define LOG_GUIDEDTARGET_MSG 			0x22
+#define LOG_GUIDEDTARGET_MSG            0x22
 #define LOG_PROXIMITY_MSG               0x24
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -333,10 +333,10 @@ enum LoiterModeState {
 #define DATA_EKF_ALT_RESET                  60
 #define DATA_LAND_CANCELLED_BY_PILOT        61
 #define DATA_EKF_YAW_RESET                  62
-#define DATA_SURFACED						63	// Sub only
-#define DATA_NOT_SURFACED					64	// Sub only
-#define DATA_BOTTOMED						65	// Sub only
-#define DATA_NOT_BOTTOMED					66	// Sub only
+#define DATA_SURFACED                       63  // Sub only
+#define DATA_NOT_SURFACED                   64  // Sub only
+#define DATA_BOTTOMED                       65  // Sub only
+#define DATA_NOT_BOTTOMED                   66  // Sub only
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -419,33 +419,33 @@ enum LoiterModeState {
 #define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
-#define FS_GCS_DISABLED		0 // Disabled
-#define FS_GCS_WARN_ONLY	1 // Only send warning to gcs (only useful with multiple gcs links)
-#define FS_GCS_DISARM		2 // Disarm
-#define FS_GCS_HOLD			3 // Switch depth hold mode or poshold mode if available
-#define FS_GCS_SURFACE		4 // Switch to surface mode
+#define FS_GCS_DISABLED     0 // Disabled
+#define FS_GCS_WARN_ONLY    1 // Only send warning to gcs (only useful with multiple gcs links)
+#define FS_GCS_DISARM       2 // Disarm
+#define FS_GCS_HOLD         3 // Switch depth hold mode or poshold mode if available
+#define FS_GCS_SURFACE      4 // Switch to surface mode
 
 // Leak failsafe definitions (FS_LEAK_ENABLE parameter)
-#define FS_LEAK_DISABLED	0 // Disabled
-#define FS_LEAK_WARN_ONLY	1 // Only send waring to gcs
-#define FS_LEAK_SURFACE		2 // Switch to surface mode
+#define FS_LEAK_DISABLED    0 // Disabled
+#define FS_LEAK_WARN_ONLY   1 // Only send waring to gcs
+#define FS_LEAK_SURFACE     2 // Switch to surface mode
 
 // Internal pressure failsafe threshold (FS_PRESS_MAX parameter)
-#define FS_PRESS_MAX_DEFAULT	105000 // Maximum internal pressure in pascal before failsafe is triggered
+#define FS_PRESS_MAX_DEFAULT    105000 // Maximum internal pressure in pascal before failsafe is triggered
 // Internal pressure failsafe definitions (FS_PRESS_ENABLE parameter)
-#define FS_PRESS_DISABLED		0
-#define FS_PRESS_WARN_ONLY		1
+#define FS_PRESS_DISABLED       0
+#define FS_PRESS_WARN_ONLY      1
 
 // Internal temperature failsafe threshold (FS_TEMP_MAX parameter)
-#define FS_TEMP_MAX_DEFAULT		62	// Maximum internal pressure in degrees C before failsafe is triggered
+#define FS_TEMP_MAX_DEFAULT     62  // Maximum internal pressure in degrees C before failsafe is triggered
 // Internal temperature failsafe definitions (FS_TEMP_ENABLE parameter)
-#define FS_TEMP_DISABLED		0
-#define FS_TEMP_WARN_ONLY		1
+#define FS_TEMP_DISABLED        0
+#define FS_TEMP_WARN_ONLY       1
 
 // Terrain failsafe actions for AUTO mode
-#define FS_TERRAIN_DISARM		0
-#define FS_TERRAIN_HOLD			1
-#define FS_TERRAIN_SURFACE		2
+#define FS_TERRAIN_DISARM       0
+#define FS_TERRAIN_HOLD         1
+#define FS_TERRAIN_SURFACE      2
 
 // Amount of time to attempt recovery of valid rangefinder data before
 // initiating terrain failsafe action

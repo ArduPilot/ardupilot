@@ -18,11 +18,11 @@
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
- *  Lead Tester:    Marco Robustini 
- *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen, 
+ *  Lead Tester:    Marco Robustini
+ *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen,
                                                       Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
                                                       Jean-Louis Naudin, Mike Smith, and more
- *  Thanks to:	Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
+ *  Thanks to:  Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
  *
  *  Special Thanks to contributors (in alphabetical order by first name):
  *
@@ -37,7 +37,7 @@
  *  Christof Schmid     :Alpha testing
  *  Craig Elder         :Release Management, Support
  *  Dani Saez           :V Octo Support
- *  Doug Weibel	        :DCM, Libraries, Control law advice
+ *  Doug Weibel         :DCM, Libraries, Control law advice
  *  Emile Castelnuovo   :VRBrain port, bug fixes
  *  Gregory Fletcher    :Camera mount orientation math
  *  Guntars             :Arming safety suggestion
@@ -48,7 +48,7 @@
  *  James Goppert       :Mavlink Support
  *  Jani Hiriven        :Testing feedback
  *  Jean-Louis Naudin   :Auto Landing
- *  John Arne Birkeland	:PPM Encoder
+ *  John Arne Birkeland :PPM Encoder
  *  Jose Julio          :Stabilization Control laws, MPU6k driver
  *  Julien Dubois       :PosHold flight mode
  *  Julian Oes          :Pixhawk
@@ -93,11 +93,11 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(read_aux_switches,     10,     50),
     SCHED_TASK(auto_disarm_check,     10,     50),
     SCHED_TASK(auto_trim,             10,     75),
-	SCHED_TASK(read_rangefinder,      20,    100),
-	SCHED_TASK(update_altitude,       10,    100),
+    SCHED_TASK(read_rangefinder,      20,    100),
+    SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(three_hz_loop,          3,     75),
-	SCHED_TASK(update_turn_counter,   10,     50),
+    SCHED_TASK(update_turn_counter,   10,     50),
     SCHED_TASK(compass_accumulate,   100,    100),
     SCHED_TASK(barometer_accumulate,  50,     90),
     SCHED_TASK(update_notify,         50,     90),
@@ -109,8 +109,8 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(gcs_send_deferred,     50,    550),
     SCHED_TASK(gcs_data_stream_send,  50,    550),
     SCHED_TASK(update_mount,          50,     75),
-	SCHED_TASK(camera_tilt_smooth,    50,     50),
-	SCHED_TASK(update_trigger,        50,     75),
+    SCHED_TASK(camera_tilt_smooth,    50,     50),
+    SCHED_TASK(update_trigger,        50,     75),
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
     SCHED_TASK(dataflash_periodic,    400,    300),
@@ -120,7 +120,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #endif
     SCHED_TASK(compass_cal_update,   100,    100),
     SCHED_TASK(accel_cal_update,      10,    100),
-	SCHED_TASK(terrain_update,        10,    100),
+    SCHED_TASK(terrain_update,        10,    100),
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK(gripper_update,            10,     75),
 #endif
@@ -182,8 +182,9 @@ void Sub::barometer_accumulate(void)
 
 void Sub::perf_update(void)
 {
-    if (should_log(MASK_LOG_PM))
+    if (should_log(MASK_LOG_PM)) {
         Log_Write_Performance();
+    }
     if (scheduler.debug()) {
         gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu\n",
                           (unsigned)perf_info_get_num_long_running(),
@@ -237,9 +238,9 @@ void Sub::fast_loop()
     // --------------------
     read_AHRS();
 
-    if(control_mode != MANUAL) { //don't run rate controller in manual mode
-		// run low level rate controllers that only require IMU data
-		attitude_control.rate_controller_run();
+    if (control_mode != MANUAL) { //don't run rate controller in manual mode
+        // run low level rate controllers that only require IMU data
+        attitude_control.rate_controller_run();
     }
 
     // send outputs to the motors library
@@ -304,14 +305,14 @@ void Sub::update_mount()
 // update camera trigger
 void Sub::update_trigger(void)
 {
- #if CAMERA == ENABLED
-	camera.trigger_pic_cleanup();
-	if (camera.check_trigger_pin()) {
-		gcs_send_message(MSG_CAMERA_FEEDBACK);
-		if (should_log(MASK_LOG_CAMERA)) {
-			DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-		}
-   }
+#if CAMERA == ENABLED
+    camera.trigger_pic_cleanup();
+    if (camera.check_trigger_pin()) {
+        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        if (should_log(MASK_LOG_CAMERA)) {
+            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+        }
+    }
 #endif
 }
 
@@ -322,7 +323,7 @@ void Sub::update_batt_compass(void)
     // read battery before compass because it may be used for motor interference compensation
     read_battery();
 
-    if(g.compass_enabled) {
+    if (g.compass_enabled) {
         // update compass with throttle value - used for compassmot
         compass.set_throttle(motors.get_throttle());
         compass.read();
@@ -342,10 +343,10 @@ void Sub::ten_hz_logging_loop()
         Log_Write_Attitude();
         DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
         if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info() );
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info() );
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info() );
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
+            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info());
         }
     }
     if (should_log(MASK_LOG_MOTBATT)) {
@@ -382,10 +383,10 @@ void Sub::twentyfive_hz_logging()
         Log_Write_Attitude();
         DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
         if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info() );
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info() );
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info() );
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
+            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info());
         }
     }
 
@@ -404,11 +405,11 @@ void Sub::dataflash_periodic(void)
 // three_hz_loop - 3.3hz loop
 void Sub::three_hz_loop()
 {
-	set_leak_status(leak_detector.update());
+    set_leak_status(leak_detector.update());
 
-	failsafe_internal_pressure_check();
+    failsafe_internal_pressure_check();
 
-	failsafe_internal_temperature_check();
+    failsafe_internal_temperature_check();
 
     // check if we've lost contact with the ground station
     failsafe_gcs_check();
@@ -535,7 +536,7 @@ void Sub::update_simple_mode(void)
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
         rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
         pitchx = channel_roll->get_control_in()*simple_sin_yaw + channel_pitch->get_control_in()*simple_cos_yaw;
-    }else{
+    } else {
         // rotate roll, pitch input by -super simple heading (reverse of heading to home)
         rollx = channel_roll->get_control_in()*super_simple_cos_yaw - channel_pitch->get_control_in()*super_simple_sin_yaw;
         pitchx = channel_roll->get_control_in()*super_simple_sin_yaw + channel_pitch->get_control_in()*super_simple_cos_yaw;
@@ -551,7 +552,7 @@ void Sub::update_simple_mode(void)
 void Sub::update_super_simple_bearing(bool force_update)
 {
     // check if we are in super simple mode and at least 10m from home
-    if(force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
+    if (force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
         // check the bearing to home has changed by at least 5 degrees
         if (labs(super_simple_last_bearing - home_bearing) > 500) {
             super_simple_last_bearing = home_bearing;

@@ -30,18 +30,18 @@
 
 const AP_Param::Info Sub::var_info[] = {
 
-	// @Param: SURFACE_DEPTH
-	// @DisplayName: Depth reading at surface
-	// @Description: The depth the external pressure sensor will read when the vehicle is considered at the surface (in centimeters)
-	// @Range: -100 0
+    // @Param: SURFACE_DEPTH
+    // @DisplayName: Depth reading at surface
+    // @Description: The depth the external pressure sensor will read when the vehicle is considered at the surface (in centimeters)
+    // @Range: -100 0
     // @User: Standard
-	GSCALAR(surface_depth, "SURFACE_DEPTH", SURFACE_DEPTH_DEFAULT),
+    GSCALAR(surface_depth, "SURFACE_DEPTH", SURFACE_DEPTH_DEFAULT),
 
     // @Param: SYSID_SW_MREV
     // @DisplayName: Eeprom format version number
     // @Description: This value is incremented when changes are made to the eeprom format
     // @User: Advanced
-	// @ReadOnly: True
+    // @ReadOnly: True
     GSCALAR(format_version, "SYSID_SW_MREV",   0),
 
     // @Param: SYSID_SW_TYPE
@@ -49,7 +49,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
     // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover,40:ArduSub
     // @User: Advanced
-	// @ReadOnly: True
+    // @ReadOnly: True
     GSCALAR(software_type,  "SYSID_SW_TYPE",   Parameters::k_software_type),
 
     // @Param: SYSID_THISMAV
@@ -181,7 +181,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Maximum allowed angle (in degrees) between current track and desired heading during waypoint navigation
     // @Range: 10 90
     // @User: Standard
-	GSCALAR(xtrack_angle_limit,"XTRACK_ANG_LIM", 45),
+    GSCALAR(xtrack_angle_limit,"XTRACK_ANG_LIM", 45),
 
     // @Param: GPS_HDOP_GOOD
     // @DisplayName: GPS Hdop Good
@@ -234,49 +234,49 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when Channel 5 pwm is <= 1230
-	// @Values: 0:Stabilize,2:DepthHold,19:Manual
+    // @Values: 0:Stabilize,2:DepthHold,19:Manual
     // @User: Standard
     GSCALAR(flight_mode1, "FLTMODE1",               FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @DisplayName: Flight Mode 2
     // @Description: Flight mode when Channel 5 pwm is >1230, <= 1360
-	// @Values: 0:Stabilize,2:DepthHold,19:Manual
+    // @Values: 0:Stabilize,2:DepthHold,19:Manual
     // @User: Standard
     GSCALAR(flight_mode2, "FLTMODE2",               FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @DisplayName: Flight Mode 3
     // @Description: Flight mode when Channel 5 pwm is >1360, <= 1490
-	// @Values: 0:Stabilize,2:DepthHold,19:Manual
+    // @Values: 0:Stabilize,2:DepthHold,19:Manual
     // @User: Standard
     GSCALAR(flight_mode3, "FLTMODE3",               FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @DisplayName: Flight Mode 4
     // @Description: Flight mode when Channel 5 pwm is >1490, <= 1620
-	// @Values: 0:Stabilize,2:DepthHold,19:Manual
+    // @Values: 0:Stabilize,2:DepthHold,19:Manual
     // @User: Standard
     GSCALAR(flight_mode4, "FLTMODE4",               FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @DisplayName: Flight Mode 5
     // @Description: Flight mode when Channel 5 pwm is >1620, <= 1749
-	// @Values: 0:Stabilize,2:DepthHold,19:Manual
+    // @Values: 0:Stabilize,2:DepthHold,19:Manual
     // @User: Standard
     GSCALAR(flight_mode5, "FLTMODE5",               FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @DisplayName: Flight Mode 6
     // @Description: Flight mode when Channel 5 pwm is >=1750
-	// @Values: 0:Stabilize,2:DepthHold,19:Manual
+    // @Values: 0:Stabilize,2:DepthHold,19:Manual
     // @User: Standard
     GSCALAR(flight_mode6, "FLTMODE6",               FLIGHT_MODE_6),
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 4 byte bitmap of log types to enable
-	// @Values: 830:Default,894:Default+RCIN,958:Default+IMU,1854:Default+Motors,-6146:NearlyAll-AC315,45054:NearlyAll,131071:All+FastATT,262142:All+MotBatt,393214:All+FastIMU,397310:All+FastIMU+PID,655358:All+FullIMU,0:Disabled
+    // @Values: 830:Default,894:Default+RCIN,958:Default+IMU,1854:Default+Motors,-6146:NearlyAll-AC315,45054:NearlyAll,131071:All+FastATT,262142:All+MotBatt,393214:All+FastIMU,397310:All+FastIMU+PID,655358:All+FullIMU,0:Disabled
     // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:RCIN,7:IMU,8:CMD,9:CURRENT,10:RCOUT,11:OPTFLOW,12:PID,13:COMPASS,14:INAV,15:CAMERA,17:MOTBATT,18:IMU_FAST,19:IMU_RAW
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
@@ -315,42 +315,42 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: CH7_OPT
     // @DisplayName: Channel 7 option
     // @Description: Select which function if performed when CH7 is above 1800 pwm
-	// @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  AUXSW_DO_NOTHING),
 
     // @Param: CH8_OPT
     // @DisplayName: Channel 8 option
     // @Description: Select which function if performed when CH8 is above 1800 pwm
-	// @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  AUXSW_DO_NOTHING),
 
     // @Param: CH9_OPT
     // @DisplayName: Channel 9 option
     // @Description: Select which function if performed when CH9 is above 1800 pwm
-	// @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
     // @User: Standard
     GSCALAR(ch9_option, "CH9_OPT",                  AUXSW_DO_NOTHING),
 
     // @Param: CH10_OPT
     // @DisplayName: Channel 10 option
     // @Description: Select which function if performed when CH10 is above 1800 pwm
-	// @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
     // @User: Standard
     GSCALAR(ch10_option, "CH10_OPT",                AUXSW_DO_NOTHING),
 
     // @Param: CH11_OPT
     // @DisplayName: Channel 11 option
     // @Description: Select which function if performed when CH11 is above 1800 pwm
-	// @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
     // @User: Standard
     GSCALAR(ch11_option, "CH11_OPT",                AUXSW_DO_NOTHING),
 
     // @Param: CH12_OPT
     // @DisplayName: Channel 12 option
     // @Description: Select which function if performed when CH12 is above 1800 pwm
-	// @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
     // @User: Standard
     GSCALAR(ch12_option, "CH12_OPT",                AUXSW_DO_NOTHING),
 #endif
@@ -370,7 +370,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),
-    
+
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
@@ -409,133 +409,133 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    0),
 
-	// @Param: JS_GAIN_DEFAULT
-	// @DisplayName: Default gain at boot
-	// @Description: Default gain at boot, must be in range [JS_GAIN_MIN , JS_GAIN_MAX]
-	// @User: Standard
-	// @Range: 0.1 1.0
-	GSCALAR(gain_default, "JS_GAIN_DEFAULT", 0.5),
+    // @Param: JS_GAIN_DEFAULT
+    // @DisplayName: Default gain at boot
+    // @Description: Default gain at boot, must be in range [JS_GAIN_MIN , JS_GAIN_MAX]
+    // @User: Standard
+    // @Range: 0.1 1.0
+    GSCALAR(gain_default, "JS_GAIN_DEFAULT", 0.5),
 
-	// @Param: JS_GAIN_MAX
-	// @DisplayName: Maximum joystick gain
-	// @Description: Maximum joystick gain
-	// @User: Standard
-	// @Range: 0.2 1.0
-	GSCALAR(maxGain, "JS_GAIN_MAX", 1.0),
+    // @Param: JS_GAIN_MAX
+    // @DisplayName: Maximum joystick gain
+    // @Description: Maximum joystick gain
+    // @User: Standard
+    // @Range: 0.2 1.0
+    GSCALAR(maxGain, "JS_GAIN_MAX", 1.0),
 
-	// @Param: JS_GAIN_MIN
-	// @DisplayName: Minimum joystick gain
-	// @Description: Minimum joystick gain
-	// @User: Standard
-	// @Range: 0.1 0.8
-	GSCALAR(minGain, "JS_GAIN_MIN", 0.25),
+    // @Param: JS_GAIN_MIN
+    // @DisplayName: Minimum joystick gain
+    // @Description: Minimum joystick gain
+    // @User: Standard
+    // @Range: 0.1 0.8
+    GSCALAR(minGain, "JS_GAIN_MIN", 0.25),
 
-	// @Param: JS_GAIN_STEPS
-	// @DisplayName: Gain steps
-	// @Description: Controls the number of steps between minimum and maximum joystick gain when the gain is adjusted using buttons. Set to 1 to always use JS_GAIN_DEFAULT.
-	// @User: Standard
-	// @Range: 1 10
-	GSCALAR(numGainSettings, "JS_GAIN_STEPS", 4),
+    // @Param: JS_GAIN_STEPS
+    // @DisplayName: Gain steps
+    // @Description: Controls the number of steps between minimum and maximum joystick gain when the gain is adjusted using buttons. Set to 1 to always use JS_GAIN_DEFAULT.
+    // @User: Standard
+    // @Range: 1 10
+    GSCALAR(numGainSettings, "JS_GAIN_STEPS", 4),
 
-	// @Param: JS_CAM_TILT_STEP
-	// @DisplayName: Camera tilt step size
-	// @Description: Size of PWM increment on camera tilt servo
-	// @User: Standard
-	// @Range: 30 400
-	GSCALAR(cam_tilt_step, "JS_CAM_TILT_STEP", 50),
+    // @Param: JS_CAM_TILT_STEP
+    // @DisplayName: Camera tilt step size
+    // @Description: Size of PWM increment on camera tilt servo
+    // @User: Standard
+    // @Range: 30 400
+    GSCALAR(cam_tilt_step, "JS_CAM_TILT_STEP", 50),
 
-	// @Param: JS_LIGHTS_STEP
-	// @DisplayName: Lights step size
-	// @Description: Size of PWM increment on lights servo
-	// @User: Standard
-	// @Range: 30 400
-	GSCALAR(lights_step, "JS_LIGHTS_STEP", 100),
+    // @Param: JS_LIGHTS_STEP
+    // @DisplayName: Lights step size
+    // @Description: Size of PWM increment on lights servo
+    // @User: Standard
+    // @Range: 30 400
+    GSCALAR(lights_step, "JS_LIGHTS_STEP", 100),
 
-	// @Param: JS_THR_GAIN
-	// @DisplayName: Throttle gain scalar
-	// @Description: Scalar for gain on the throttle channel
-	// @User: Standard
-	// @Range: 0.5 4.0
-	GSCALAR(throttle_gain, "JS_THR_GAIN", 1.0f),
+    // @Param: JS_THR_GAIN
+    // @DisplayName: Throttle gain scalar
+    // @Description: Scalar for gain on the throttle channel
+    // @User: Standard
+    // @Range: 0.5 4.0
+    GSCALAR(throttle_gain, "JS_THR_GAIN", 1.0f),
 
-	// @Param: CAM_CENTER
-	// @DisplayName: Camera tilt mount center
-	// @Description: Servo PWM at camera center position
-	// @User: Standard
-	// @Range: 1000 2000
-	GSCALAR(cam_tilt_center, "CAM_CENTER", 1500),
+    // @Param: CAM_CENTER
+    // @DisplayName: Camera tilt mount center
+    // @Description: Servo PWM at camera center position
+    // @User: Standard
+    // @Range: 1000 2000
+    GSCALAR(cam_tilt_center, "CAM_CENTER", 1500),
 
-	// @Param: FRAME_CONFIG
-	// @DisplayName: Frame configuration
-	// @Description: Set this parameter according to your vehicle/motor configuration
-	// @User: Standard
+    // @Param: FRAME_CONFIG
+    // @DisplayName: Frame configuration
+    // @Description: Set this parameter according to your vehicle/motor configuration
+    // @User: Standard
     // @RebootRequired: True
-	// @Values: 0:BlueROV1, 1:Vectored, 2:Vectored_6DOF, 3:Vectored_6DOF_90, 4:SimpleROV-3, 5:SimpleROV-4, 6:SimpleROV-5, 7:Custom
-	GSCALAR(frame_configuration, "FRAME_CONFIG", AP_Motors6DOF::SUB_FRAME_VECTORED),
+    // @Values: 0:BlueROV1, 1:Vectored, 2:Vectored_6DOF, 3:Vectored_6DOF_90, 4:SimpleROV-3, 5:SimpleROV-4, 6:SimpleROV-5, 7:Custom
+    GSCALAR(frame_configuration, "FRAME_CONFIG", AP_Motors6DOF::SUB_FRAME_VECTORED),
 
-	// @Group: BTN0_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_0,                   "BTN0_", JSButton),
+    // @Group: BTN0_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_0,                   "BTN0_", JSButton),
 
-	// @Group: BTN1_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_1,                   "BTN1_", JSButton),
+    // @Group: BTN1_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_1,                   "BTN1_", JSButton),
 
-	// @Group: BTN2_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_2,                   "BTN2_", JSButton),
+    // @Group: BTN2_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_2,                   "BTN2_", JSButton),
 
-	// @Group: BTN3_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_3,                   "BTN3_", JSButton),
+    // @Group: BTN3_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_3,                   "BTN3_", JSButton),
 
-	// @Group: BTN4_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_4,                   "BTN4_", JSButton),
+    // @Group: BTN4_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_4,                   "BTN4_", JSButton),
 
-	// @Group: BTN5_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_5,                   "BTN5_", JSButton),
+    // @Group: BTN5_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_5,                   "BTN5_", JSButton),
 
-	// @Group: BTN6_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_6,                   "BTN6_", JSButton),
+    // @Group: BTN6_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_6,                   "BTN6_", JSButton),
 
-	// @Group: BTN7_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_7,                   "BTN7_", JSButton),
+    // @Group: BTN7_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_7,                   "BTN7_", JSButton),
 
-	// @Group: BTN8_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_8,                   "BTN8_", JSButton),
+    // @Group: BTN8_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_8,                   "BTN8_", JSButton),
 
-	// @Group: BTN9_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_9,                   "BTN9_", JSButton),
+    // @Group: BTN9_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_9,                   "BTN9_", JSButton),
 
-	// @Group: BTN10_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_10,                   "BTN10_", JSButton),
+    // @Group: BTN10_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_10,                   "BTN10_", JSButton),
 
-	// @Group: BTN11_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_11,                   "BTN11_", JSButton),
+    // @Group: BTN11_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_11,                   "BTN11_", JSButton),
 
-	// @Group: BTN12_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_12,                   "BTN12_", JSButton),
+    // @Group: BTN12_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_12,                   "BTN12_", JSButton),
 
-	// @Group: BTN13_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_13,                   "BTN13_", JSButton),
+    // @Group: BTN13_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_13,                   "BTN13_", JSButton),
 
-	// @Group: BTN14_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_14,                   "BTN14_", JSButton),
+    // @Group: BTN14_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_14,                   "BTN14_", JSButton),
 
-	// @Group: BTN15_
-	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
-	GGROUP(jbtn_15,                   "BTN15_", JSButton),
+    // @Group: BTN15_
+    // @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+    GGROUP(jbtn_15,                   "BTN15_", JSButton),
 
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
@@ -632,7 +632,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Throttle acceleration controller P gain
     // @Description: Throttle acceleration controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output
     // @Range: 0.500 1.500
-	// @Increment: 0.05
+    // @Increment: 0.05
     // @User: Standard
 
     // @Param: ACCEL_Z_I
@@ -677,9 +677,9 @@ const AP_Param::Info Sub::var_info[] = {
     GGROUP(p_pos_xy,                "POS_XY_", AC_P),
 
 #if TRANSECT_ENABLED == ENABLED
-	GGROUP(pid_crosstrack_control, "XTRACK_", AC_PID),
+    GGROUP(pid_crosstrack_control, "XTRACK_", AC_PID),
 
-	GGROUP(pid_heading_control, "HEAD_", AC_PID),
+    GGROUP(pid_heading_control, "HEAD_", AC_PID),
 #endif
 
     // variables not in the g class which contain EEPROM saved variables
@@ -713,7 +713,7 @@ const AP_Param::Info Sub::var_info[] = {
 #endif
 
     // @Group: ATC_
-	// @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
+    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Multi),
 
     // @Group: PSC
@@ -774,7 +774,7 @@ const AP_Param::Info Sub::var_info[] = {
     // Leak detector
     // @Group: LEAK
     // @Path: ../libraries/AP_LeakDetector/AP_LeakDetector.cpp
-	GOBJECT(leak_detector, "LEAK", AP_LeakDetector),
+    GOBJECT(leak_detector, "LEAK", AP_LeakDetector),
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
@@ -787,7 +787,7 @@ const AP_Param::Info Sub::var_info[] = {
 #endif
 
 #if AVOIDANCE_ENABLED == ENABLED
-	// @Group: AVOID_
+    // @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
     GOBJECT(avoid,      "AVOID_",   AC_Avoid),
 #endif
@@ -798,9 +798,9 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(rally,      "RALLY_",   AP_Rally),
 #endif
 
-	// @Group: MOT_
-	// @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp
-	GOBJECT(motors, "MOT_",         AP_Motors6DOF),
+    // @Group: MOT_
+    // @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp
+    GOBJECT(motors, "MOT_",         AP_Motors6DOF),
 
 #if RCMAP_ENABLED == ENABLED
     // @Group: RCMAP_
@@ -811,7 +811,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
     GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
-    
+
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
     GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
@@ -819,7 +819,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
-    
+
 #if RANGEFINDER_ENABLED == ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
@@ -868,18 +868,18 @@ const AP_Param::Info Sub::var_info[] = {
     GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.001f),
 #endif
 
-	// @Group: NTF_
-	// @Path: ../libraries/AP_Notify/AP_Notify.cpp
-	GOBJECT(notify, "NTF_",  AP_Notify),
+    // @Group: NTF_
+    // @Path: ../libraries/AP_Notify/AP_Notify.cpp
+    GOBJECT(notify, "NTF_",  AP_Notify),
 
-	// @Param: TERRAIN_FOLLOW
-	// @DisplayName: Terrain Following use control
-	// @Description: This enables terrain following for RTL and LAND flight modes. To use this option TERRAIN_ENABLE must be 1 and the GCS must  support sending terrain data to the aircraft.  In RTL the RTL_ALT will be considered a height above the terrain.  In LAND mode the vehicle will slow to LAND_SPEED 10m above terrain (instead of 10m above home).  This parameter does not affect AUTO and Guided which use a per-command flag to determine if the height is above-home, absolute or above-terrain.
-	// @Values: 0:Do Not Use in RTL and Land,1:Use in RTL and Land
-	// @User: Standard
-	GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
+    // @Param: TERRAIN_FOLLOW
+    // @DisplayName: Terrain Following use control
+    // @Description: This enables terrain following for RTL and LAND flight modes. To use this option TERRAIN_ENABLE must be 1 and the GCS must  support sending terrain data to the aircraft.  In RTL the RTL_ALT will be considered a height above the terrain.  In LAND mode the vehicle will slow to LAND_SPEED 10m above terrain (instead of 10m above home).  This parameter does not affect AUTO and Guided which use a per-command flag to determine if the height is above-home, absolute or above-terrain.
+    // @Values: 0:Do Not Use in RTL and Land,1:Use in RTL and Land
+    // @User: Standard
+    GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 
-	// @Group:
+    // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
 
@@ -891,12 +891,12 @@ const AP_Param::Info Sub::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
-	// @Param: WP_NAVALT_MIN
-	// @DisplayName: Minimum navigation altitude
-	// @Description: This is the altitude in meters above which for navigation can begin. This applies in auto takeoff and auto landing.
-	// @Range: 0 5
-	// @User: Standard
-	AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
+    // @Param: WP_NAVALT_MIN
+    // @DisplayName: Minimum navigation altitude
+    // @Description: This is the altitude in meters above which for navigation can begin. This applies in auto takeoff and auto landing.
+    // @Range: 0 5
+    // @User: Standard
+    AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
 
 #if PROXIMITY_ENABLED == ENABLED
     // @Group: PRX
@@ -905,7 +905,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #endif
 
 #if GRIPPER_ENABLED == ENABLED
-	// @Group: GRIP_
+    // @Group: GRIP_
     // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
     AP_SUBGROUPINFO(gripper, "GRIP_", 3, ParametersG2, AP_Gripper),
 #endif
@@ -926,7 +926,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
  */
 ParametersG2::ParametersG2(void)
 #if PROXIMITY_ENABLED == ENABLED
-   : proximity(sub.serial_manager)
+    : proximity(sub.serial_manager)
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -944,7 +944,7 @@ void Sub::load_parameters(void)
     hal.util->set_soft_armed(false);
 
     if (!g.format_version.load() ||
-        g.format_version != Parameters::k_format_version) {
+            g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
         cliSerial->printf("Firmware change: erasing EEPROM...\n");
@@ -963,18 +963,20 @@ void Sub::load_parameters(void)
     convert_old_parameters();
 }
 
-void Sub::convert_old_parameters(void) {
-	const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
-			Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
-			Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
-			Parameters::k_param_rc_7_old,  Parameters::k_param_rc_8_old,
-			Parameters::k_param_rc_9_old,  Parameters::k_param_rc_10_old,
-			Parameters::k_param_rc_11_old, Parameters::k_param_rc_12_old,
-			Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old };
-	const uint16_t old_aux_chan_mask = 0x3FF0;
-	// note that we don't pass in rcmap as we don't want output channel functions changed based on rcmap
-	if (SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, nullptr)) {
-		// the rest needs to be done after motors allocation
-		// upgrading_frame_params = true;
-	}
+void Sub::convert_old_parameters(void)
+{
+    const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
+                                      Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
+                                      Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
+                                      Parameters::k_param_rc_7_old,  Parameters::k_param_rc_8_old,
+                                      Parameters::k_param_rc_9_old,  Parameters::k_param_rc_10_old,
+                                      Parameters::k_param_rc_11_old, Parameters::k_param_rc_12_old,
+                                      Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old
+                                    };
+    const uint16_t old_aux_chan_mask = 0x3FF0;
+    // note that we don't pass in rcmap as we don't want output channel functions changed based on rcmap
+    if (SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, nullptr)) {
+        // the rest needs to be done after motors allocation
+        // upgrading_frame_params = true;
+    }
 }

@@ -4,141 +4,145 @@
 
 void Sub::failsafe_battery_event(void)
 {
-//    // return immediately if low battery event has already been triggered
-//    if (failsafe.battery) {
-//        return;
-//    }
-//
-//    // failsafe check
-//	if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
-//		if (should_disarm_on_failsafe()) {
-//			init_disarm_motors();
-//		} else {
-//			if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
-//				set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-//			} else {
-//				set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-//			}
-//		}
-//	}
-//
-//    // set the low battery flag
-//    set_failsafe_battery(true);
-//
-//    // warn the ground station and log to dataflash
-//    gcs_send_text(MAV_SEVERITY_WARNING,"Low battery");
-//    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
+    //    // return immediately if low battery event has already been triggered
+    //    if (failsafe.battery) {
+    //        return;
+    //    }
+    //
+    //    // failsafe check
+    //  if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
+    //      if (should_disarm_on_failsafe()) {
+    //          init_disarm_motors();
+    //      } else {
+    //          if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
+    //              set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+    //          } else {
+    //              set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+    //          }
+    //      }
+    //  }
+    //
+    //    // set the low battery flag
+    //    set_failsafe_battery(true);
+    //
+    //    // warn the ground station and log to dataflash
+    //    gcs_send_text(MAV_SEVERITY_WARNING,"Low battery");
+    //    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }
 
-void Sub::failsafe_manual_control_check() {
-	uint32_t tnow = AP_HAL::millis();
+void Sub::failsafe_manual_control_check()
+{
+    uint32_t tnow = AP_HAL::millis();
 
-	// Require at least 2Hz update
-	if(tnow > failsafe.last_manual_control_ms + 500) {
-		if(!failsafe.manual_control) {
-			failsafe.manual_control = true;
-			set_neutral_controls();
-			init_disarm_motors();
-			Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
-			gcs_send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
-		}
-		return;
-	}
+    // Require at least 2Hz update
+    if (tnow > failsafe.last_manual_control_ms + 500) {
+        if (!failsafe.manual_control) {
+            failsafe.manual_control = true;
+            set_neutral_controls();
+            init_disarm_motors();
+            Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
+            gcs_send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
+        }
+        return;
+    }
 
-	failsafe.manual_control = false;
+    failsafe.manual_control = false;
 }
 
-void Sub::failsafe_internal_pressure_check() {
+void Sub::failsafe_internal_pressure_check()
+{
 
-	if(g.failsafe_pressure == FS_PRESS_DISABLED) {
-		return; // Nothing to do
-	}
+    if (g.failsafe_pressure == FS_PRESS_DISABLED) {
+        return; // Nothing to do
+    }
 
-	uint32_t tnow = AP_HAL::millis();
-	static uint32_t last_pressure_warn_ms;
-	static uint32_t last_pressure_good_ms;
-	if(barometer.get_pressure(0) < g.failsafe_pressure_max) {
-		last_pressure_good_ms = tnow;
-		last_pressure_warn_ms = tnow;
-		failsafe.internal_pressure = false;
-		return;
-	}
+    uint32_t tnow = AP_HAL::millis();
+    static uint32_t last_pressure_warn_ms;
+    static uint32_t last_pressure_good_ms;
+    if (barometer.get_pressure(0) < g.failsafe_pressure_max) {
+        last_pressure_good_ms = tnow;
+        last_pressure_warn_ms = tnow;
+        failsafe.internal_pressure = false;
+        return;
+    }
 
-	// 2 seconds with no readings below threshold triggers failsafe
-	if(tnow > last_pressure_good_ms + 2000) {
-		failsafe.internal_pressure = true;
-	}
+    // 2 seconds with no readings below threshold triggers failsafe
+    if (tnow > last_pressure_good_ms + 2000) {
+        failsafe.internal_pressure = true;
+    }
 
-	// Warn every 5 seconds
-	if(failsafe.internal_pressure && tnow > last_pressure_warn_ms + 5000) {
-		last_pressure_warn_ms = tnow;
-		gcs_send_text(MAV_SEVERITY_WARNING, "Internal pressure critical!");
-	}
+    // Warn every 5 seconds
+    if (failsafe.internal_pressure && tnow > last_pressure_warn_ms + 5000) {
+        last_pressure_warn_ms = tnow;
+        gcs_send_text(MAV_SEVERITY_WARNING, "Internal pressure critical!");
+    }
 }
 
-void Sub::failsafe_internal_temperature_check() {
+void Sub::failsafe_internal_temperature_check()
+{
 
-	if(g.failsafe_temperature == FS_TEMP_DISABLED) {
-		return; // Nothing to do
-	}
+    if (g.failsafe_temperature == FS_TEMP_DISABLED) {
+        return; // Nothing to do
+    }
 
-	uint32_t tnow = AP_HAL::millis();
-	static uint32_t last_temperature_warn_ms;
-	static uint32_t last_temperature_good_ms;
-	if(barometer.get_temperature(0) < g.failsafe_temperature_max) {
-		last_temperature_good_ms = tnow;
-		last_temperature_warn_ms = tnow;
-		failsafe.internal_temperature = false;
-		return;
-	}
+    uint32_t tnow = AP_HAL::millis();
+    static uint32_t last_temperature_warn_ms;
+    static uint32_t last_temperature_good_ms;
+    if (barometer.get_temperature(0) < g.failsafe_temperature_max) {
+        last_temperature_good_ms = tnow;
+        last_temperature_warn_ms = tnow;
+        failsafe.internal_temperature = false;
+        return;
+    }
 
-	// 2 seconds with no readings below threshold triggers failsafe
-	if(tnow > last_temperature_good_ms + 2000) {
-		failsafe.internal_temperature = true;
-	}
+    // 2 seconds with no readings below threshold triggers failsafe
+    if (tnow > last_temperature_good_ms + 2000) {
+        failsafe.internal_temperature = true;
+    }
 
-	// Warn every 5 seconds
-	if(failsafe.internal_temperature && tnow > last_temperature_warn_ms + 5000) {
-		last_temperature_warn_ms = tnow;
-		gcs_send_text(MAV_SEVERITY_WARNING, "Internal temperature critical!");
-	}
+    // Warn every 5 seconds
+    if (failsafe.internal_temperature && tnow > last_temperature_warn_ms + 5000) {
+        last_temperature_warn_ms = tnow;
+        gcs_send_text(MAV_SEVERITY_WARNING, "Internal temperature critical!");
+    }
 }
 
-void Sub::set_leak_status(bool status) {
-	AP_Notify::flags.leak_detected = status;
+void Sub::set_leak_status(bool status)
+{
+    AP_Notify::flags.leak_detected = status;
 
-	// Do nothing if we are dry, or if leak failsafe action is disabled
-	if(status == false || g.failsafe_leak == FS_LEAK_DISABLED) {
-		if(failsafe.leak) {
-			Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_LEAK, ERROR_CODE_FAILSAFE_RESOLVED);
-		}
-		failsafe.leak = false;
-		return;
-	}
+    // Do nothing if we are dry, or if leak failsafe action is disabled
+    if (status == false || g.failsafe_leak == FS_LEAK_DISABLED) {
+        if (failsafe.leak) {
+            Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_LEAK, ERROR_CODE_FAILSAFE_RESOLVED);
+        }
+        failsafe.leak = false;
+        return;
+    }
 
-	uint32_t tnow = AP_HAL::millis();
+    uint32_t tnow = AP_HAL::millis();
 
-	// We have a leak
-	// Always send a warning every 5 seconds
-	if(tnow > failsafe.last_leak_warn_ms + 5000) {
-		failsafe.last_leak_warn_ms = tnow;
-		gcs_send_text(MAV_SEVERITY_CRITICAL, "Leak Detected");
-	}
+    // We have a leak
+    // Always send a warning every 5 seconds
+    if (tnow > failsafe.last_leak_warn_ms + 5000) {
+        failsafe.last_leak_warn_ms = tnow;
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "Leak Detected");
+    }
 
-	// Do nothing if we have already triggered the failsafe action, or if the motors are disarmed
-	if(failsafe.leak) {
-		return;
-	}
+    // Do nothing if we have already triggered the failsafe action, or if the motors are disarmed
+    if (failsafe.leak) {
+        return;
+    }
 
-	failsafe.leak = true;
-	
-	Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_LEAK, ERROR_CODE_FAILSAFE_OCCURRED);
+    failsafe.leak = true;
 
-	// Handle failsafe action
-	if(failsafe.leak && g.failsafe_leak == FS_LEAK_SURFACE && motors.armed()) {
-		set_mode(SURFACE, MODE_REASON_LEAK_FAILSAFE);
-	}
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_LEAK, ERROR_CODE_FAILSAFE_OCCURRED);
+
+    // Handle failsafe action
+    if (failsafe.leak && g.failsafe_leak == FS_LEAK_SURFACE && motors.armed()) {
+        set_mode(SURFACE, MODE_REASON_LEAK_FAILSAFE);
+    }
 }
 
 // failsafe_gcs_check - check for ground station failsafe
@@ -147,7 +151,7 @@ void Sub::failsafe_gcs_check()
     // return immediately if we have never had contact with a gcs, or if gcs failsafe action is disabled
     // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
     if (failsafe.last_heartbeat_ms == 0 || (!g.failsafe_gcs && g.failsafe_gcs == FS_GCS_DISABLED)) {
-    	return;
+        return;
     }
 
     uint32_t tnow = AP_HAL::millis();
@@ -166,11 +170,11 @@ void Sub::failsafe_gcs_check()
     // GCS heartbeat has timed out
     //////////////////////////////
 
-	// Send a warning every 5 seconds
-	if(tnow > failsafe.last_gcs_warn_ms + 5000) {
-		failsafe.last_gcs_warn_ms = tnow;
-		gcs_send_text_fmt(MAV_SEVERITY_WARNING, "MYGCS: %d, heartbeat lost", g.sysid_my_gcs);
-	}
+    // Send a warning every 5 seconds
+    if (tnow > failsafe.last_gcs_warn_ms + 5000) {
+        failsafe.last_gcs_warn_ms = tnow;
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "MYGCS: %d, heartbeat lost", g.sysid_my_gcs);
+    }
 
     // do nothing if we have already triggered the failsafe action, or if the motors are disarmed
     if (failsafe.gcs || !motors.armed()) {
@@ -182,12 +186,12 @@ void Sub::failsafe_gcs_check()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // handle failsafe action
-    if(g.failsafe_gcs == FS_GCS_DISARM) {
-    	init_disarm_motors();
+    if (g.failsafe_gcs == FS_GCS_DISARM) {
+        init_disarm_motors();
     } else if (g.failsafe_gcs == FS_GCS_HOLD && motors.armed()) {
-    	set_mode(ALT_HOLD, MODE_REASON_GCS_FAILSAFE);
+        set_mode(ALT_HOLD, MODE_REASON_GCS_FAILSAFE);
     } else if (g.failsafe_gcs == FS_GCS_SURFACE && motors.armed()) {
-    	set_mode(SURFACE, MODE_REASON_GCS_FAILSAFE);
+        set_mode(SURFACE, MODE_REASON_GCS_FAILSAFE);
     }
 }
 
@@ -241,51 +245,53 @@ void Sub::failsafe_terrain_on_event()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // If rangefinder is enabled, we can recover from this failsafe
-    if(!rangefinder_state.enabled || !auto_terrain_recover_start()) {
-    	failsafe_terrain_act();
+    if (!rangefinder_state.enabled || !auto_terrain_recover_start()) {
+        failsafe_terrain_act();
     }
 
 
 }
 
 // Recovery failed, take action
-void Sub::failsafe_terrain_act() {
+void Sub::failsafe_terrain_act()
+{
     switch (g.failsafe_terrain) {
     case FS_TERRAIN_HOLD:
-		if(!set_mode(POSHOLD, MODE_REASON_TERRAIN_FAILSAFE)) {
-			set_mode(ALT_HOLD, MODE_REASON_TERRAIN_FAILSAFE);
-		}
-		AP_Notify::events.failsafe_mode_change = 1;
-		break;
+        if (!set_mode(POSHOLD, MODE_REASON_TERRAIN_FAILSAFE)) {
+            set_mode(ALT_HOLD, MODE_REASON_TERRAIN_FAILSAFE);
+        }
+        AP_Notify::events.failsafe_mode_change = 1;
+        break;
 
     case FS_TERRAIN_SURFACE:
-		set_mode(SURFACE, MODE_REASON_TERRAIN_FAILSAFE);
-    	AP_Notify::events.failsafe_mode_change = 1;
-		break;
+        set_mode(SURFACE, MODE_REASON_TERRAIN_FAILSAFE);
+        AP_Notify::events.failsafe_mode_change = 1;
+        break;
 
     case FS_TERRAIN_DISARM:
     default:
-		init_disarm_motors();
+        init_disarm_motors();
     }
 }
 
-bool Sub::should_disarm_on_failsafe() {
-    switch(control_mode) {
-        case STABILIZE:
-        case ACRO:
-            // if throttle is zero OR vehicle is landed disarm motors
-            return ap.throttle_zero;
-            break;
-        case AUTO:
-            // if mission has not started AND vehicle is landed, disarm motors
-            return !ap.auto_armed;
-            break;
-        default:
-            // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
-            // if landed disarm
-//            return ap.land_complete;
-        	return false;
-            break;
+bool Sub::should_disarm_on_failsafe()
+{
+    switch (control_mode) {
+    case STABILIZE:
+    case ACRO:
+        // if throttle is zero OR vehicle is landed disarm motors
+        return ap.throttle_zero;
+        break;
+    case AUTO:
+        // if mission has not started AND vehicle is landed, disarm motors
+        return !ap.auto_armed;
+        break;
+    default:
+        // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
+        // if landed disarm
+        //            return ap.land_complete;
+        return false;
+        break;
     }
 }
 
