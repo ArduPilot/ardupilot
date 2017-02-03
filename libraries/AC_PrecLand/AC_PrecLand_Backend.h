@@ -32,9 +32,9 @@ public:
     
     // return true if there is a valid los measurement available
     virtual bool have_los_meas() = 0;
-    
-    // return distance to target
-    virtual float distance_to_target() = 0;
+
+    // returns distance to target in meters (0 means distance is not known)
+    virtual float distance_to_target() { return 0.0f; };
 
     // parses a mavlink message from the companion computer
     virtual void handle_msg(mavlink_message_t* msg) {};
