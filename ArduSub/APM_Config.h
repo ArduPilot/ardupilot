@@ -19,8 +19,8 @@
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 
 // features below are disabled by default on all boards
-//#define AVOIDANCE_ENABLED		ENABLED
-//#define PROXIMITY_ENABLED		ENABLED
+//#define AVOIDANCE_ENABLED     ENABLED
+//#define PROXIMITY_ENABLED     ENABLED
 //#define AC_RALLY              ENABLED            // enable rally points library
 //#define AC_TERRAIN            ENABLED            // enable terrain library (Must also enable Rally)
 //#define OPTFLOW               ENABLED // enable optical flow sensor support

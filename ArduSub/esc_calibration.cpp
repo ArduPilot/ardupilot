@@ -32,38 +32,40 @@ void Sub::esc_calibration_startup_check()
 
     // check ESC parameter
     switch (g.esc_calibrate) {
-        case ESCCAL_NONE:
-            // check if throttle is high
-            if (channel_throttle->get_control_in() >= ESC_CALIBRATION_HIGH_THROTTLE) {
-                // we will enter esc_calibrate mode on next reboot
-                g.esc_calibrate.set_and_save(ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH);
-                // send message to gcs
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"ESC calibration: Restart board");
-                // turn on esc calibration notification
-                AP_Notify::flags.esc_calibration = true;
-                // block until we restart
-                while(1) { hal.scheduler->delay(5); }
+    case ESCCAL_NONE:
+        // check if throttle is high
+        if (channel_throttle->get_control_in() >= ESC_CALIBRATION_HIGH_THROTTLE) {
+            // we will enter esc_calibrate mode on next reboot
+            g.esc_calibrate.set_and_save(ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH);
+            // send message to gcs
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"ESC calibration: Restart board");
+            // turn on esc calibration notification
+            AP_Notify::flags.esc_calibration = true;
+            // block until we restart
+            while (1) {
+                hal.scheduler->delay(5);
             }
-            break;
-        case ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH:
-            // check if throttle is high
-            if (channel_throttle->get_control_in() >= ESC_CALIBRATION_HIGH_THROTTLE) {
-                // pass through pilot throttle to escs
-                esc_calibration_passthrough();
-            }
-            break;
-        case ESCCAL_PASSTHROUGH_ALWAYS:
+        }
+        break;
+    case ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH:
+        // check if throttle is high
+        if (channel_throttle->get_control_in() >= ESC_CALIBRATION_HIGH_THROTTLE) {
             // pass through pilot throttle to escs
             esc_calibration_passthrough();
-            break;
-        case ESCCAL_AUTO:
-            // perform automatic ESC calibration
-            esc_calibration_auto();
-            break;
-        case ESCCAL_DISABLED:
-        default:
-            // do nothing
-            break;
+        }
+        break;
+    case ESCCAL_PASSTHROUGH_ALWAYS:
+        // pass through pilot throttle to escs
+        esc_calibration_passthrough();
+        break;
+    case ESCCAL_AUTO:
+        // perform automatic ESC calibration
+        esc_calibration_auto();
+        break;
+    case ESCCAL_DISABLED:
+    default:
+        // do nothing
+        break;
     }
 
     // clear esc flag for next time
@@ -84,7 +86,7 @@ void Sub::esc_calibration_passthrough()
     // send message to GCS
     gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Passing pilot throttle to ESCs");
 
-    while(1) {
+    while (1) {
         // arm motors
         motors.armed(true);
         motors.enable();
@@ -97,7 +99,8 @@ void Sub::esc_calibration_passthrough()
         hal.scheduler->delay(10);
 
         // pass through to motors
-        motors.set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);    }
+        motors.set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
+    }
 }
 
 // esc_calibration_auto - calibrate the ESCs automatically using a timer and no pilot input
@@ -141,5 +144,7 @@ void Sub::esc_calibration_auto()
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
     // block until we restart
-    while(1) { hal.scheduler->delay(5); }
+    while (1) {
+        hal.scheduler->delay(5);
+    }
 }

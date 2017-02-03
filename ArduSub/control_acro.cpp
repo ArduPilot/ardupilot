@@ -61,7 +61,7 @@ void Sub::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16
         roll_in *= ratio;
         pitch_in *= ratio;
     }
-    
+
     // calculate roll, pitch rate requests
     if (g.acro_expo <= 0) {
         rate_bf_request.x = roll_in * g.acro_rp_p;
@@ -107,15 +107,15 @@ void Sub::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16
 
         // Calculate angle limiting earth frame rate commands
         if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-            if (roll_angle > aparm.angle_max){
+            if (roll_angle > aparm.angle_max) {
                 rate_ef_level.x -=  g.acro_balance_roll*(roll_angle-aparm.angle_max);
-            }else if (roll_angle < -aparm.angle_max) {
+            } else if (roll_angle < -aparm.angle_max) {
                 rate_ef_level.x -=  g.acro_balance_roll*(roll_angle+aparm.angle_max);
             }
 
-            if (pitch_angle > aparm.angle_max){
+            if (pitch_angle > aparm.angle_max) {
                 rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle-aparm.angle_max);
-            }else if (pitch_angle < -aparm.angle_max) {
+            } else if (pitch_angle < -aparm.angle_max) {
                 rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle+aparm.angle_max);
             }
         }
@@ -128,7 +128,7 @@ void Sub::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16
             rate_bf_request.x += rate_bf_level.x;
             rate_bf_request.y += rate_bf_level.y;
             rate_bf_request.z += rate_bf_level.z;
-        }else{
+        } else {
             float acro_level_mix = constrain_float(1-MAX(MAX(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0, 0, 1)*ahrs.cos_pitch();
 
             // Scale leveling rates by stick input

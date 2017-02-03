@@ -9,7 +9,8 @@
 
 // tuning - updates parameters based on the ch6 tuning knob's position
 //  should be called at 3.3hz
-void Sub::tuning() {
+void Sub::tuning()
+{
 
     // exit immediately if not tuning of when radio failsafe is invoked so tuning values are not set to zero
     if ((g.radio_tuning <= 0) || failsafe.manual_control) {
@@ -21,9 +22,9 @@ void Sub::tuning() {
 
     Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, g.rc_6.get_control_in(), g.radio_tuning_low, g.radio_tuning_high);
 
-    switch(g.radio_tuning) {
+    switch (g.radio_tuning) {
 
-    // Roll, Pitch tuning
+        // Roll, Pitch tuning
     case TUNING_STABILIZE_ROLL_PITCH_KP:
         attitude_control.get_angle_roll_p().kP(tuning_value);
         attitude_control.get_angle_pitch_p().kP(tuning_value);
@@ -44,7 +45,7 @@ void Sub::tuning() {
         attitude_control.get_rate_pitch_pid().kD(tuning_value);
         break;
 
-    // Yaw tuning
+        // Yaw tuning
     case TUNING_STABILIZE_YAW_KP:
         attitude_control.get_angle_yaw_p().kP(tuning_value);
         break;
@@ -57,7 +58,7 @@ void Sub::tuning() {
         attitude_control.get_rate_yaw_pid().kD(tuning_value);
         break;
 
-    // Altitude and throttle tuning
+        // Altitude and throttle tuning
     case TUNING_ALTITUDE_HOLD_KP:
         g.p_alt_hold.kP(tuning_value);
         break;
@@ -78,7 +79,7 @@ void Sub::tuning() {
         g.pid_accel_z.kD(tuning_value);
         break;
 
-    // Loiter and navigation tuning
+        // Loiter and navigation tuning
     case TUNING_LOITER_POSITION_KP:
         g.p_pos_xy.kP(tuning_value);
         break;
@@ -96,12 +97,12 @@ void Sub::tuning() {
         wp_nav.set_speed_xy(g.rc_6.get_control_in());
         break;
 
-    // Acro roll pitch gain
+        // Acro roll pitch gain
     case TUNING_ACRO_RP_KP:
         g.acro_rp_p = tuning_value;
         break;
 
-    // Acro yaw gain
+        // Acro yaw gain
     case TUNING_ACRO_YAW_KP:
         g.acro_yaw_p = tuning_value;
         break;
@@ -185,9 +186,9 @@ void Sub::tuning() {
         motors.set_yaw_headroom(tuning_value*1000);
         break;
 
-     case TUNING_RATE_YAW_FILT:
-         attitude_control.get_rate_yaw_pid().filt_hz(tuning_value);
-         break;
+    case TUNING_RATE_YAW_FILT:
+        attitude_control.get_rate_yaw_pid().filt_hz(tuning_value);
+        break;
     }
 }
 #endif

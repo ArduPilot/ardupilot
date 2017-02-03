@@ -192,9 +192,9 @@ private:
 #endif
 
     // Inertial Navigation EKF
-    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rangefinder, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF2 EKF2 {&ahrs, barometer, rangefinder};
+    NavEKF3 EKF3 {&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
@@ -205,7 +205,7 @@ private:
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow {ahrs};
 #endif
 
     // gnd speed limit required to observe optical flow sensor limits
@@ -250,9 +250,9 @@ private:
             uint8_t using_interlock     : 1; // 20      // aux switch motor interlock function is in use
             uint8_t motor_emergency_stop: 1; // 21      // motor estop switch, shuts off motors when enabled
             uint8_t land_repo_active    : 1; // 22      // true if the pilot is overriding the landing position
-            uint8_t at_bottom			: 1;			// true if we are at the bottom
-            uint8_t at_surface			: 1;			// true if we are at the surface
-            uint8_t depth_sensor_present: 1;			// true if we have an external baro connected
+            uint8_t at_bottom           : 1;            // true if we are at the bottom
+            uint8_t at_surface          : 1;            // true if we are at the surface
+            uint8_t depth_sensor_present: 1;            // true if we have an external baro connected
         };
         uint32_t value;
     } ap;
@@ -280,7 +280,7 @@ private:
         uint8_t gcs                  : 1; // 4   // A status flag for the ground station failsafe
         uint8_t ekf                  : 1; // 5   // true if ekf failsafe has occurred
         uint8_t terrain              : 1; // 6   // true if the missing terrain data failsafe has occurred
-        uint8_t leak				 : 1; // true if leak recently detected
+        uint8_t leak                 : 1; // true if leak recently detected
         uint8_t internal_pressure    : 1; // true if internal pressure is over threshold
         uint8_t internal_temperature : 1; // true if temperature is over threshold
         uint32_t last_leak_warn_ms;      // last time a leak warning was sent to gcs
@@ -469,9 +469,9 @@ private:
     // setup the var_info table
     AP_Param param_loader;
 
-	uint32_t last_pilot_heading;
-	uint32_t last_pilot_yaw_input_ms;
-	uint32_t fs_terrain_recover_start_ms = 0;
+    uint32_t last_pilot_heading;
+    uint32_t last_pilot_yaw_input_ms;
+    uint32_t fs_terrain_recover_start_ms = 0;
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
@@ -701,7 +701,9 @@ private:
     void fence_check();
     void fence_send_mavlink_status(mavlink_channel_t chan);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
-    bool gcs_set_mode(uint8_t mode) { return set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND); }
+    bool gcs_set_mode(uint8_t mode) {
+        return set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
+    }
     void update_flight_mode();
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
     bool mode_requires_GPS(control_mode_t mode);

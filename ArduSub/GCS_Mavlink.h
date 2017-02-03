@@ -2,8 +2,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 
-class GCS_MAVLINK_Sub : public GCS_MAVLINK
-{
+class GCS_MAVLINK_Sub : public GCS_MAVLINK {
 
 public:
 
@@ -11,7 +10,9 @@ public:
 
 protected:
 
-    uint32_t telem_delay() const override { return 0; };
+    uint32_t telem_delay() const override {
+        return 0;
+    };
 
 private:
 

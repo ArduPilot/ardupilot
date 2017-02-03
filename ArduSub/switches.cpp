@@ -21,8 +21,8 @@ static union {
 // check_if_auxsw_mode_used - Check to see if any of the Aux Switches are set to a given mode.
 bool Sub::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 {
-    bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check 
-                || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check;
+    bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check
+               || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check;
 
     return ret;
 }
@@ -35,14 +35,14 @@ bool Sub::check_duplicate_auxsw(void)
                 g.ch7_option == g.ch11_option || g.ch7_option == g.ch12_option));
 
     ret = ret || ((g.ch8_option != AUXSW_DO_NOTHING) && (g.ch8_option == g.ch9_option ||
-                    g.ch8_option == g.ch10_option || g.ch8_option == g.ch11_option ||
-                    g.ch8_option == g.ch12_option));
+                  g.ch8_option == g.ch10_option || g.ch8_option == g.ch11_option ||
+                  g.ch8_option == g.ch12_option));
 
     ret = ret || ((g.ch9_option != AUXSW_DO_NOTHING) && (g.ch9_option == g.ch10_option ||
-                    g.ch9_option == g.ch11_option || g.ch9_option == g.ch12_option));
+                  g.ch9_option == g.ch11_option || g.ch9_option == g.ch12_option));
 
     ret = ret || ((g.ch10_option != AUXSW_DO_NOTHING) && (g.ch10_option == g.ch11_option ||
-                    g.ch10_option == g.ch12_option));
+                  g.ch10_option == g.ch12_option));
 
     ret = ret || ((g.ch11_option != AUXSW_DO_NOTHING) && (g.ch11_option == g.ch12_option));
 
@@ -52,8 +52,12 @@ bool Sub::check_duplicate_auxsw(void)
 // read_3pos_switch
 uint8_t Sub::read_3pos_switch(int16_t radio_in)
 {
-    if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;      // switch is in low position
-    if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;    // switch is in high position
+    if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) {
+        return AUX_SWITCH_LOW;    // switch is in low position
+    }
+    if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) {
+        return AUX_SWITCH_HIGH;    // switch is in high position
+    }
     return AUX_SWITCH_MIDDLE;                                       // switch is in middle position
 }
 
@@ -116,25 +120,25 @@ void Sub::init_aux_switches()
 
 // init_aux_switch_function - initialize aux functions
 void Sub::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
-{    
+{
     // init channel options
-    switch(ch_option) {
-        case AUXSW_SIMPLE_MODE:
-        case AUXSW_RANGEFINDER:
-        case AUXSW_FENCE:
-        case AUXSW_RESETTOARMEDYAW:
-        case AUXSW_SUPERSIMPLE_MODE:
-        case AUXSW_ACRO_TRAINER:
-        case AUXSW_GRIPPER:
-        case AUXSW_RETRACT_MOUNT:
-        case AUXSW_MISSION_RESET:
-        case AUXSW_ATTCON_FEEDFWD:
-        case AUXSW_ATTCON_ACCEL_LIM:
-        case AUXSW_RELAY:
-        case AUXSW_MOTOR_ESTOP:
-        case AUXSW_MOTOR_INTERLOCK:
-            do_aux_switch_function(ch_option, ch_flag);
-            break;
+    switch (ch_option) {
+    case AUXSW_SIMPLE_MODE:
+    case AUXSW_RANGEFINDER:
+    case AUXSW_FENCE:
+    case AUXSW_RESETTOARMEDYAW:
+    case AUXSW_SUPERSIMPLE_MODE:
+    case AUXSW_ACRO_TRAINER:
+    case AUXSW_GRIPPER:
+    case AUXSW_RETRACT_MOUNT:
+    case AUXSW_MISSION_RESET:
+    case AUXSW_ATTCON_FEEDFWD:
+    case AUXSW_ATTCON_ACCEL_LIM:
+    case AUXSW_RELAY:
+    case AUXSW_MOTOR_ESTOP:
+    case AUXSW_MOTOR_INTERLOCK:
+        do_aux_switch_function(ch_option, ch_flag);
+        break;
     }
 }
 
@@ -142,90 +146,90 @@ void Sub::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
 void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 {
 
-    switch(ch_function) {
+    switch (ch_function) {
 
-        case AUXSW_SIMPLE_MODE:
-            // low = simple mode off, middle or high position turns simple mode on
-            set_simple_mode(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
-            break;
+    case AUXSW_SIMPLE_MODE:
+        // low = simple mode off, middle or high position turns simple mode on
+        set_simple_mode(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+        break;
 
-        case AUXSW_SUPERSIMPLE_MODE:
-            // low = simple mode off, middle = simple mode, high = super simple mode
-            set_simple_mode(ch_flag);
-            break;
+    case AUXSW_SUPERSIMPLE_MODE:
+        // low = simple mode off, middle = simple mode, high = super simple mode
+        set_simple_mode(ch_flag);
+        break;
 
-        case AUXSW_SAVE_TRIM:
-            if ((ch_flag == AUX_SWITCH_HIGH) && (control_mode <= ACRO) && (channel_throttle->get_control_in() == 0)) {
-                save_trim();
+    case AUXSW_SAVE_TRIM:
+        if ((ch_flag == AUX_SWITCH_HIGH) && (control_mode <= ACRO) && (channel_throttle->get_control_in() == 0)) {
+            save_trim();
+        }
+        break;
+
+    case AUXSW_SAVE_WP:
+        // save waypoint when switch is brought high
+        if (ch_flag == AUX_SWITCH_HIGH) {
+
+            // do not allow saving new waypoints while we're in auto or disarmed
+            if (control_mode == AUTO || !motors.armed()) {
+                return;
             }
-            break;
 
-        case AUXSW_SAVE_WP:
-            // save waypoint when switch is brought high
-            if (ch_flag == AUX_SWITCH_HIGH) {
-
-                // do not allow saving new waypoints while we're in auto or disarmed
-                if(control_mode == AUTO || !motors.armed()) {
-                    return;
-                }
-
-                // do not allow saving the first waypoint with zero throttle
-                if((mission.num_commands() == 0) && (channel_throttle->get_control_in() == 0)){
-                    return;
-                }
-
-                // create new mission command
-                AP_Mission::Mission_Command cmd  = {};
-
-                // set new waypoint to current location
-                cmd.content.location = current_loc;
-
-                // if throttle is above zero, create waypoint command
-                if(channel_throttle->get_control_in() > 0) {
-                    cmd.id = MAV_CMD_NAV_WAYPOINT;
-                }else{
-                    // with zero throttle, create LAND command
-                    cmd.id = MAV_CMD_NAV_LAND;
-                }
-
-                // save command
-                if(mission.add_cmd(cmd)) {
-                    // log event
-                    Log_Write_Event(DATA_SAVEWP_ADD_WP);
-                }
+            // do not allow saving the first waypoint with zero throttle
+            if ((mission.num_commands() == 0) && (channel_throttle->get_control_in() == 0)) {
+                return;
             }
-            break;
+
+            // create new mission command
+            AP_Mission::Mission_Command cmd  = {};
+
+            // set new waypoint to current location
+            cmd.content.location = current_loc;
+
+            // if throttle is above zero, create waypoint command
+            if (channel_throttle->get_control_in() > 0) {
+                cmd.id = MAV_CMD_NAV_WAYPOINT;
+            } else {
+                // with zero throttle, create LAND command
+                cmd.id = MAV_CMD_NAV_LAND;
+            }
+
+            // save command
+            if (mission.add_cmd(cmd)) {
+                // log event
+                Log_Write_Event(DATA_SAVEWP_ADD_WP);
+            }
+        }
+        break;
 
 #if CAMERA == ENABLED
-        case AUXSW_CAMERA_TRIGGER:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                do_take_picture();
-            }
-            break;
+    case AUXSW_CAMERA_TRIGGER:
+        if (ch_flag == AUX_SWITCH_HIGH) {
+            do_take_picture();
+        }
+        break;
 #endif
 
-        case AUXSW_RANGEFINDER:
-            // enable or disable the sonar
+    case AUXSW_RANGEFINDER:
+        // enable or disable the sonar
 #if RANGEFINDER_ENABLED == ENABLED
-            if ((ch_flag == AUX_SWITCH_HIGH) && (rangefinder.num_sensors() >= 1)) {
-                rangefinder_state.enabled = true;
-            }else{
-                rangefinder_state.enabled = false;
-			}
+        if ((ch_flag == AUX_SWITCH_HIGH) && (rangefinder.num_sensors() >= 1)) {
+            rangefinder_state.enabled = true;
+        } else {
+            rangefinder_state.enabled = false;
+        }
 #endif
-            break;
+        break;
 
 #if AC_FENCE == ENABLED
-        case AUXSW_FENCE:
-            // enable or disable the fence
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                fence.enable(true);
-                Log_Write_Event(DATA_FENCE_ENABLE);
-            }else{
-                fence.enable(false);
-                Log_Write_Event(DATA_FENCE_DISABLE);
-            }
-            break;
+    case AUXSW_FENCE:
+        // enable or disable the fence
+        if (ch_flag == AUX_SWITCH_HIGH) {
+            fence.enable(true);
+            Log_Write_Event(DATA_FENCE_ENABLE);
+        } else {
+            fence.enable(false);
+            Log_Write_Event(DATA_FENCE_DISABLE);
+        }
+        break;
 #endif
         // To-Do: add back support for this feature
         //case AUXSW_RESETTOARMEDYAW:
@@ -236,141 +240,141 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         //    }
         //    break;
 
-        case AUXSW_ACRO_TRAINER:
-            switch(ch_flag) {
-                case AUX_SWITCH_LOW:
-                    g.acro_trainer = ACRO_TRAINER_DISABLED;
-                    Log_Write_Event(DATA_ACRO_TRAINER_DISABLED);
-                    break;
-                case AUX_SWITCH_MIDDLE:
-                    g.acro_trainer = ACRO_TRAINER_LEVELING;
-                    Log_Write_Event(DATA_ACRO_TRAINER_LEVELING);
-                    break;
-                case AUX_SWITCH_HIGH:
-                    g.acro_trainer = ACRO_TRAINER_LIMITED;
-                    Log_Write_Event(DATA_ACRO_TRAINER_LIMITED);
-                    break;
-            }
+    case AUXSW_ACRO_TRAINER:
+        switch (ch_flag) {
+        case AUX_SWITCH_LOW:
+            g.acro_trainer = ACRO_TRAINER_DISABLED;
+            Log_Write_Event(DATA_ACRO_TRAINER_DISABLED);
             break;
+        case AUX_SWITCH_MIDDLE:
+            g.acro_trainer = ACRO_TRAINER_LEVELING;
+            Log_Write_Event(DATA_ACRO_TRAINER_LEVELING);
+            break;
+        case AUX_SWITCH_HIGH:
+            g.acro_trainer = ACRO_TRAINER_LIMITED;
+            Log_Write_Event(DATA_ACRO_TRAINER_LIMITED);
+            break;
+        }
+        break;
 #if GRIPPER_ENABLED == ENABLED
-        case AUXSW_GRIPPER:
-            switch(ch_flag) {
-                case AUX_SWITCH_LOW:
-                    g2.gripper.release();
-                    Log_Write_Event(DATA_GRIPPER_RELEASE);
-                    break;
-                case AUX_SWITCH_HIGH:
-                    g2.gripper.grab();
-                    Log_Write_Event(DATA_GRIPPER_GRAB);
-                    break;
-            }
+    case AUXSW_GRIPPER:
+        switch (ch_flag) {
+        case AUX_SWITCH_LOW:
+            g2.gripper.release();
+            Log_Write_Event(DATA_GRIPPER_RELEASE);
             break;
+        case AUX_SWITCH_HIGH:
+            g2.gripper.grab();
+            Log_Write_Event(DATA_GRIPPER_GRAB);
+            break;
+        }
+        break;
 #endif
 
-        case AUXSW_AUTO:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(AUTO, MODE_REASON_TX_COMMAND);
-            }else{
-                // return to flight mode switch's flight mode if we are currently in AUTO
-                if (control_mode == AUTO) {
-//                    reset_control_switch();
-                }
+    case AUXSW_AUTO:
+        if (ch_flag == AUX_SWITCH_HIGH) {
+            set_mode(AUTO, MODE_REASON_TX_COMMAND);
+        } else {
+            // return to flight mode switch's flight mode if we are currently in AUTO
+            if (control_mode == AUTO) {
+                //                    reset_control_switch();
             }
-            break;
+        }
+        break;
 
 #if AUTOTUNE_ENABLED == ENABLED
-        case AUXSW_AUTOTUNE:
-            // turn on auto tuner
-            switch(ch_flag) {
-                case AUX_SWITCH_LOW:
-                case AUX_SWITCH_MIDDLE:
-                    // restore flight mode based on flight mode switch position
-                    if (control_mode == AUTOTUNE) {
-//                        reset_control_switch();
-                    }
-                    break;
-                case AUX_SWITCH_HIGH:
-                    // start an autotuning session
-                    set_mode(AUTOTUNE);
-                    break;
+    case AUXSW_AUTOTUNE:
+        // turn on auto tuner
+        switch (ch_flag) {
+        case AUX_SWITCH_LOW:
+        case AUX_SWITCH_MIDDLE:
+            // restore flight mode based on flight mode switch position
+            if (control_mode == AUTOTUNE) {
+                //                        reset_control_switch();
             }
             break;
+        case AUX_SWITCH_HIGH:
+            // start an autotuning session
+            set_mode(AUTOTUNE);
+            break;
+        }
+        break;
 #endif
 
-        case AUXSW_LAND:
-        	// Do nothing for Sub
+    case AUXSW_LAND:
+        // Do nothing for Sub
 
-//            if (ch_flag == AUX_SWITCH_HIGH) {
-//                set_mode(LAND, MODE_REASON_TX_COMMAND);
-//            }else{
-//                // return to flight mode switch's flight mode if we are currently in LAND
-//                if (control_mode == LAND) {
-//                    reset_control_switch();
-//                }
-//            }
-            break;
+        //            if (ch_flag == AUX_SWITCH_HIGH) {
+        //                set_mode(LAND, MODE_REASON_TX_COMMAND);
+        //            }else{
+        //                // return to flight mode switch's flight mode if we are currently in LAND
+        //                if (control_mode == LAND) {
+        //                    reset_control_switch();
+        //                }
+        //            }
+        break;
 
-        case AUXSW_MISSION_RESET:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                mission.reset();
-            }
-            break;
+    case AUXSW_MISSION_RESET:
+        if (ch_flag == AUX_SWITCH_HIGH) {
+            mission.reset();
+        }
+        break;
 
-        case AUXSW_ATTCON_FEEDFWD:
-            // enable or disable feed forward
-            attitude_control.bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
-            break;
+    case AUXSW_ATTCON_FEEDFWD:
+        // enable or disable feed forward
+        attitude_control.bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
+        break;
 
-        case AUXSW_ATTCON_ACCEL_LIM:
-            // enable or disable accel limiting by restoring defaults
-            attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
-            break;
-        
+    case AUXSW_ATTCON_ACCEL_LIM:
+        // enable or disable accel limiting by restoring defaults
+        attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
+        break;
+
 #if MOUNT == ENABLE
-        case AUXSW_RETRACT_MOUNT:
-            switch (ch_flag) {
-                case AUX_SWITCH_HIGH:
-                    camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
-                    break;
-                case AUX_SWITCH_LOW:
-                    camera_mount.set_mode_to_default();
-                    break;
-            }
+    case AUXSW_RETRACT_MOUNT:
+        switch (ch_flag) {
+        case AUX_SWITCH_HIGH:
+            camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
             break;
+        case AUX_SWITCH_LOW:
+            camera_mount.set_mode_to_default();
+            break;
+        }
+        break;
 #endif
 
-        case AUXSW_RELAY:
-            ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
-            break;
+    case AUXSW_RELAY:
+        ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
+        break;
 
-        case AUXSW_LOST_COPTER_SOUND:
-            switch (ch_flag) {
-                case AUX_SWITCH_HIGH:
-                    AP_Notify::flags.vehicle_lost = true;
-                    break;
-                case AUX_SWITCH_LOW:
-                    AP_Notify::flags.vehicle_lost = false;
-                    break;
-            }
+    case AUXSW_LOST_COPTER_SOUND:
+        switch (ch_flag) {
+        case AUX_SWITCH_HIGH:
+            AP_Notify::flags.vehicle_lost = true;
             break;
-
-        case AUXSW_MOTOR_ESTOP:
-            // Turn on Emergency Stop logic when channel is high
-            set_motor_emergency_stop(ch_flag == AUX_SWITCH_HIGH);
+        case AUX_SWITCH_LOW:
+            AP_Notify::flags.vehicle_lost = false;
             break;
+        }
+        break;
 
-        case AUXSW_MOTOR_INTERLOCK:
-            // Turn on when above LOW, because channel will also be used for speed
-            // control signal in tradheli
-            motors.set_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+    case AUXSW_MOTOR_ESTOP:
+        // Turn on Emergency Stop logic when channel is high
+        set_motor_emergency_stop(ch_flag == AUX_SWITCH_HIGH);
+        break;
 
-            // Log new status
-            if (motors.get_interlock()){
-                Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
-            } else {
-                Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
-            }
-            break;
+    case AUXSW_MOTOR_INTERLOCK:
+        // Turn on when above LOW, because channel will also be used for speed
+        // control signal in tradheli
+        motors.set_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+
+        // Log new status
+        if (motors.get_interlock()) {
+            Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
+        } else {
+            Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
+        }
+        break;
     }
 }
 
@@ -389,7 +393,7 @@ void Sub::save_trim()
 // meant to be called continuously while the pilot attempts to keep the copter level
 void Sub::auto_trim()
 {
-    if(auto_trim_counter > 0) {
+    if (auto_trim_counter > 0) {
         auto_trim_counter--;
 
         // flash the leds
@@ -406,7 +410,7 @@ void Sub::auto_trim()
         ahrs.add_trim(roll_trim_adjustment, pitch_trim_adjustment, (auto_trim_counter == 0));
 
         // on last iteration restore leds and accel gains to normal
-        if(auto_trim_counter == 0) {
+        if (auto_trim_counter == 0) {
             AP_Notify::flags.save_trim = false;
         }
     }

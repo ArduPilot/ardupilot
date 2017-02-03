@@ -7,7 +7,7 @@
  */
 
 #ifndef GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM
- # define GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM     500     // point nose at target if it is more than 5m away
+# define GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM     500     // point nose at target if it is more than 5m away
 #endif
 
 #define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
@@ -38,40 +38,40 @@ struct Guided_Limit {
 // guided_init - initialise guided controller
 bool Sub::guided_init(bool ignore_checks)
 {
-	return false; // Not implemented
+    return false; // Not implemented
 
-//    if (position_ok() || ignore_checks) {
-//        // initialise yaw
-//        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-//        // start in position control mode
-//        guided_pos_control_start();
-//        return true;
-//    }else{
-//        return false;
-//    }
+    //    if (position_ok() || ignore_checks) {
+    //        // initialise yaw
+    //        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+    //        // start in position control mode
+    //        guided_pos_control_start();
+    //        return true;
+    //    }else{
+    //        return false;
+    //    }
 }
 
 // initialise guided mode's position controller
 void Sub::guided_pos_control_start()
 {
-	// set to position control mode
-	guided_mode = Guided_WP;
+    // set to position control mode
+    guided_mode = Guided_WP;
 
-	// initialise waypoint and spline controller
-	wp_nav.wp_and_spline_init();
+    // initialise waypoint and spline controller
+    wp_nav.wp_and_spline_init();
 
-	// initialise wpnav to stopping point at current altitude
-	// To-Do: set to current location if disarmed?
-	// To-Do: set to stopping point altitude?
-	Vector3f stopping_point;
-	stopping_point.z = inertial_nav.get_altitude();
-	wp_nav.get_wp_stopping_point_xy(stopping_point);
+    // initialise wpnav to stopping point at current altitude
+    // To-Do: set to current location if disarmed?
+    // To-Do: set to stopping point altitude?
+    Vector3f stopping_point;
+    stopping_point.z = inertial_nav.get_altitude();
+    wp_nav.get_wp_stopping_point_xy(stopping_point);
 
-	// no need to check return status because terrain data is not used
-	wp_nav.set_wp_destination(stopping_point, false);
+    // no need to check return status because terrain data is not used
+    wp_nav.set_wp_destination(stopping_point, false);
 
-	// initialise yaw
-	set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+    // initialise yaw
+    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 }
 
 // initialise guided mode's velocity controller
@@ -153,8 +153,8 @@ bool Sub::guided_set_destination(const Vector3f& destination)
 
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-	Location_Class dest_loc(destination);
-	if (!fence.check_destination_within_fence(dest_loc)) {
+    Location_Class dest_loc(destination);
+    if (!fence.check_destination_within_fence(dest_loc)) {
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -216,7 +216,8 @@ void Sub::guided_set_velocity(const Vector3f& velocity)
 }
 
 // set guided mode posvel target
-void Sub::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity) {
+void Sub::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity)
+{
     // check we are in velocity control mode
     if (guided_mode != Guided_PosVel) {
         guided_posvel_control_start();
@@ -274,7 +275,7 @@ void Sub::guided_run()
         guided_angle_control_run();
         break;
     }
- }
+}
 
 // guided_pos_control_run - runs the guided position controller
 // called from guided_run
@@ -283,7 +284,7 @@ void Sub::guided_pos_control_run()
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-    	// multicopters do not stabilize roll/pitch/yaw when disarmed
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
         return;
@@ -312,7 +313,7 @@ void Sub::guided_pos_control_run()
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
-    }else{
+    } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
     }
@@ -359,7 +360,7 @@ void Sub::guided_vel_control_run()
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(pos_control.get_roll(), pos_control.get_pitch(), target_yaw_rate, get_smoothing_gain());
-    }else{
+    } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
     }
@@ -428,7 +429,7 @@ void Sub::guided_posvel_control_run()
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(pos_control.get_roll(), pos_control.get_pitch(), target_yaw_rate, get_smoothing_gain());
-    }else{
+    } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
     }
@@ -441,7 +442,7 @@ void Sub::guided_angle_control_run()
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-    	// multicopters do not stabilize roll/pitch/yaw when disarmed
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0.0f,true,g.throttle_filt);
 
         pos_control.relax_alt_hold_controllers(0.0f);

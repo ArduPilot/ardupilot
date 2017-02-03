@@ -18,7 +18,7 @@ void Sub::default_dead_zones()
 
 void Sub::init_rc_in()
 {
-	channel_pitch    = RC_Channels::rc_channel(0);
+    channel_pitch    = RC_Channels::rc_channel(0);
     channel_roll     = RC_Channels::rc_channel(1);
     channel_throttle = RC_Channels::rc_channel(2);
     channel_yaw      = RC_Channels::rc_channel(3);
@@ -38,36 +38,36 @@ void Sub::init_rc_in()
     channel_throttle->save_eeprom();
 
     //set auxiliary servo ranges
-//    g.rc_5.set_range(0,1000);
-//    g.rc_6.set_range(0,1000);
-//    g.rc_7.set_range(0,1000);
-//    g.rc_8.set_range(0,1000);
+    //    g.rc_5.set_range(0,1000);
+    //    g.rc_6.set_range(0,1000);
+    //    g.rc_7.set_range(0,1000);
+    //    g.rc_8.set_range(0,1000);
 
     // set default dead zones
     default_dead_zones();
 
     // initialize rc input to 1500 on control channels (rather than 0)
-    for(int i = 0; i < 7; i++) {
-    	if(i == 4) {
-    		hal.rcin->set_override(i, 1100); // Channel 5 mode selection
-    	} else {
-    		hal.rcin->set_override(i, 1500);
-    	}
+    for (int i = 0; i < 7; i++) {
+        if (i == 4) {
+            hal.rcin->set_override(i, 1100); // Channel 5 mode selection
+        } else {
+            hal.rcin->set_override(i, 1500);
+        }
     }
 
     // initialise throttle_zero flag
     ap.throttle_zero = true;
 }
 
- // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
+// init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
 void Sub::init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
     motors.set_loop_rate(scheduler.get_loop_rate_hz());
     motors.init((AP_Motors::motor_frame_class)g.frame_configuration.get(), (AP_Motors::motor_frame_type)0);
 
-    for(uint8_t i = 0; i < 5; i++) {
-    	hal.scheduler->delay(20);
+    for (uint8_t i = 0; i < 5; i++) {
+        hal.scheduler->delay(20);
         read_radio();
     }
 
@@ -135,7 +135,7 @@ void Sub::set_throttle_zero_flag(int16_t throttle_control)
     uint32_t tnow_ms = millis();
 
     // if not using throttle interlock and non-zero throttle and not E-stopped,
-    // or using motor interlock and it's enabled, then motors are running, 
+    // or using motor interlock and it's enabled, then motors are running,
     // and we are flying. Immediately set as non-zero
     if ((!ap.using_interlock && (throttle_control < 475 || throttle_control > 525) &&  !ap.motor_emergency_stop) || (ap.using_interlock && motors.get_interlock())) {
         last_nonzero_throttle_ms = tnow_ms;

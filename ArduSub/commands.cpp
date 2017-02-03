@@ -27,7 +27,8 @@ void Sub::update_home_from_EKF()
 }
 
 // set_home_to_current_location_inflight - set home to current GPS location (horizontally) and EKF origin vertically
-void Sub::set_home_to_current_location_inflight() {
+void Sub::set_home_to_current_location_inflight()
+{
     // get current location from EKF
     Location temp_loc;
     if (inertial_nav.get_location(temp_loc)) {
@@ -38,16 +39,17 @@ void Sub::set_home_to_current_location_inflight() {
 }
 
 // set_home_to_current_location - set home to current GPS location
-bool Sub::set_home_to_current_location() {
+bool Sub::set_home_to_current_location()
+{
     // get current location from EKF
     Location temp_loc;
     if (inertial_nav.get_location(temp_loc)) {
 
-    	// Make home always at the water's surface.
-    	// This allows disarming and arming again at depth.
-    	// This also ensures that mission items with relative altitude frame, are always
-    	// relative to the water's surface, whether in a high elevation lake, or at sea level.
-    	temp_loc.alt -= barometer.get_altitude() * 100.0f;
+        // Make home always at the water's surface.
+        // This allows disarming and arming again at depth.
+        // This also ensures that mission items with relative altitude frame, are always
+        // relative to the water's surface, whether in a high elevation lake, or at sea level.
+        temp_loc.alt -= barometer.get_altitude() * 100.0f;
         return set_home(temp_loc);
     }
     return false;

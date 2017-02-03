@@ -99,7 +99,7 @@ float Sub::get_look_ahead_yaw()
 float Sub::get_pilot_desired_climb_rate(float throttle_control)
 {
     // throttle failsafe check
-    if( failsafe.manual_control ) {
+    if (failsafe.manual_control) {
         return 0.0f;
     }
 
@@ -118,10 +118,10 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
     if (throttle_control < deadband_bottom) {
         // below the deadband
         desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_bottom) / deadband_bottom;
-    }else if (throttle_control > deadband_top) {
+    } else if (throttle_control > deadband_top) {
         // above the deadband
         desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_top) / (1000.0f-deadband_top);
-    }else{
+    } else {
         // must be in the deadband
         desired_rate = 0.0f;
     }
@@ -146,7 +146,7 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
 
     // reset target altitude if this controller has just been engaged
     if (now - last_call_ms > RANGEFINDER_TIMEOUT_MS) {
-    	target_rangefinder_alt = rangefinder_state.alt_cm + current_alt_target - current_alt;
+        target_rangefinder_alt = rangefinder_state.alt_cm + current_alt_target - current_alt;
     }
     last_call_ms = now;
 
@@ -174,13 +174,13 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
 // updates position controller's maximum altitude using fence and EKF limits
 void Sub::update_poscon_alt_max()
 {
-	// minimum altitude, ie. maximum depth
-	// interpreted as no limit if left as zero
-	float min_alt_cm = 0.0;
+    // minimum altitude, ie. maximum depth
+    // interpreted as no limit if left as zero
+    float min_alt_cm = 0.0;
 
-	// no limit if greater than 100, a limit is necessary,
-	// or the vehicle will try to fly out of the water
-	float max_alt_cm = g.surface_depth; // minimum depth
+    // no limit if greater than 100, a limit is necessary,
+    // or the vehicle will try to fly out of the water
+    float max_alt_cm = g.surface_depth; // minimum depth
 
 #if AC_FENCE == ENABLED
     // set fence altitude limit in position controller
