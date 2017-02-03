@@ -60,6 +60,15 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TOTAL",       6,  AC_Fence,   _total, 0),
 
+    // @Param: ALT_MIN
+    // @DisplayName: Fence Minimum Altitude
+    // @Description: Minimum altitude allowed before geofence triggers
+    // @Units: Meters
+    // @Range: -100 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO_FRAME("ALT_MIN",     7,  AC_Fence,   _alt_min,       AC_FENCE_ALT_MIN_DEFAULT, AP_PARAM_FRAME_SUB),
+
     AP_GROUPEND
 };
 
