@@ -16,10 +16,10 @@ void Sub::tuning() {
         return;
     }
 
-    float tuning_value = (float)g.rc_6.control_in / 1000.0f;
+    float tuning_value = (float)g.rc_6.get_control_in() / 1000.0f;
     g.rc_6.set_range(g.radio_tuning_low,g.radio_tuning_high);
 
-    Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, g.rc_6.control_in, g.radio_tuning_low, g.radio_tuning_high);
+    Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, g.rc_6.get_control_in(), g.radio_tuning_low, g.radio_tuning_high);
 
     switch(g.radio_tuning) {
 
@@ -93,7 +93,7 @@ void Sub::tuning() {
 
     case TUNING_WP_SPEED:
         // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
-        wp_nav.set_speed_xy(g.rc_6.control_in);
+        wp_nav.set_speed_xy(g.rc_6.get_control_in());
         break;
 
     // Acro roll pitch gain
@@ -108,12 +108,12 @@ void Sub::tuning() {
 
     case TUNING_DECLINATION:
         // set declination to +-20degrees
-        compass.set_declination(ToRad((2.0f * g.rc_6.control_in - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
+        compass.set_declination(ToRad((2.0f * g.rc_6.get_control_in() - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
         break;
 
     case TUNING_CIRCLE_RATE:
         // set circle rate up to approximately 45 deg/sec in either direction
-        circle_nav.set_rate((float)g.rc_6.control_in/25.0f-20.0f);
+        circle_nav.set_rate((float)g.rc_6.get_control_in()/25.0f-20.0f);
         break;
 
     case TUNING_RANGEFINDER_GAIN:
@@ -154,7 +154,7 @@ void Sub::tuning() {
 
     case TUNING_RC_FEEL_RP:
         // roll-pitch input smoothing
-        g.rc_feel_rp = g.rc_6.control_in / 10;
+        g.rc_feel_rp = g.rc_6.get_control_in() / 10;
         break;
 
     case TUNING_RATE_PITCH_KP:

@@ -53,10 +53,6 @@ void Sub::auto_run()
     // call the correct auto controller
     switch (auto_mode) {
 
-    case Auto_TakeOff:
-        auto_takeoff_run();
-        break;
-
     case Auto_WP:
     case Auto_CircleMoveToEdge:
         auto_wp_run();
@@ -88,87 +84,6 @@ void Sub::auto_run()
     	auto_terrain_recover_run();
     	break;
     }
-}
-
-// auto_takeoff_start - initialises waypoint controller to implement take-off
-void Sub::auto_takeoff_start(const Location& dest_loc)
-{
-    auto_mode = Auto_TakeOff;
-
-    // convert location to class
-	Location_Class dest(dest_loc);
-
-	// set horizontal target
-	dest.lat = current_loc.lat;
-	dest.lng = current_loc.lng;
-
-	// get altitude target
-	int32_t alt_target;
-	if (!dest.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_target)) {
-		// this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
-		Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
-		// fall back to altitude above current altitude
-		alt_target = current_loc.alt + dest.alt;
-	}
-
-	// sanity check target
-	if (alt_target < current_loc.alt) {
-		dest.set_alt_cm(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
-	}
-	// Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
-	if (alt_target < 100) {
-		dest.set_alt_cm(100, Location_Class::ALT_FRAME_ABOVE_HOME);
-	}
-
-	// set waypoint controller target
-	if (!wp_nav.set_wp_destination(dest)) {
-		// failure to set destination can only be because of missing terrain data
-		failsafe_terrain_on_event();
-		return;
-	}
-
-    // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
-
-    // clear i term when we're taking off
-    set_throttle_takeoff();
-}
-
-// auto_takeoff_run - takeoff in auto mode
-//      called by auto_run at 100hz or more
-void Sub::auto_takeoff_run()
-{
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
-        // initialise wpnav targets
-        wp_nav.shift_wp_origin_to_current_pos();
-        // multicopters do not stabilize roll/pitch/yaw when disarmed
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        // reset attitude control targets
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        // clear i term when we're taking off
-        set_throttle_takeoff();
-        return;
-    }
-
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!failsafe.radio) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
-    }
-
-    // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // run waypoint controller
-    failsafe_terrain_set_status(wp_nav.update_wpnav());
-
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control.update_z_controller();
-
-    // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
@@ -218,16 +133,14 @@ void Sub::auto_wp_run()
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
-        // clear i term when we're taking off
-        set_throttle_takeoff();
         return;
     }
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!failsafe.radio) {
+    if (!failsafe.manual_control) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
@@ -306,16 +219,14 @@ void Sub::auto_spline_run()
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
 
-        // clear i term when we're taking off
-        set_throttle_takeoff();
         return;
     }
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!failsafe.radio) {
+    if (!failsafe.manual_control) {
         // get pilot's desired yaw rat
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
@@ -359,8 +270,9 @@ void Sub::auto_land_start(const Vector3f& destination)
     // initialise loiter target destination
     wp_nav.init_loiter_target(destination);
 
-    // initialise altitude target to stopping point
-    pos_control.set_target_to_stopping_point_z();
+    // initialise position and desired velocity
+    pos_control.set_alt_target(inertial_nav.get_altitude());
+    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
@@ -370,11 +282,8 @@ void Sub::auto_land_start(const Vector3f& destination)
 //      called by auto_run at 100hz or more
 void Sub::auto_land_run()
 {
-    int16_t roll_control = 0, pitch_control = 0;
-    float target_yaw_rate = 0;
-
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete) {
+	// if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
+	if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
     	// multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -384,53 +293,12 @@ void Sub::auto_land_run()
         return;
     }
 
-    // relax loiter targets if we might be landed
-    if (ap.land_complete_maybe) {
-        wp_nav.loiter_soften_for_landing();
-    }
-
-    // process pilot's input
-    if (!failsafe.radio) {
-        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
-            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
-            // exit land if throttle is high
-            if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
-                set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
-            }
-        }
-        
-        if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
-            // process pilot's roll and pitch input
-            roll_control = channel_roll->control_in;
-            pitch_control = channel_pitch->control_in;
-        }
-
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
-    }
-
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    // process roll, pitch inputs
-    wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
-
-    // run loiter controller
-    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
-
-    // call z-axis position controller
-    float cmb_rate = get_land_descent_speed();
-    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, true);
-    pos_control.update_z_controller();
-
-    // record desired climb rate for logging
-    desired_climb_rate = cmb_rate;
-
-    // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+// land mode replaced by surface mode, does not have this functionality
+//    land_run_horizontal_control();
+//    land_run_vertical_control();
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
@@ -476,7 +344,7 @@ void Sub::auto_circle_movetoedge_start(const Location_Class &circle_center, floa
 
 		// if we are outside the circle, point at the edge, otherwise hold yaw
 		const Vector3f &curr_pos = inertial_nav.get_position();
-		float dist_to_center = pythagorous2(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
+		float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
 		if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
 			set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 		} else {
@@ -575,8 +443,8 @@ void Sub::auto_loiter_run()
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
-    if(!failsafe.radio) {
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+    if(!failsafe.manual_control) {
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
     // set motors to full range
