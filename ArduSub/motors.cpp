@@ -14,26 +14,26 @@
 // What those conditions should be TBD
 void Sub::auto_disarm_check()
 {
-	// Disable for now
+    // Disable for now
 
-//    uint32_t tnow_ms = millis();
-//    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
-//
-//    // exit immediately if we are already disarmed, or if auto
-//    // disarming is disabled
-//    if (!motors.armed() || disarm_delay_ms == 0) {
-//        auto_disarm_begin = tnow_ms;
-//        return;
-//    }
-//
-//    if(!mode_has_manual_throttle(control_mode) || !ap.throttle_zero) {
-//    	auto_disarm_begin = tnow_ms;
-//    }
-//
-//    if(tnow > auto_disarm_begin + disarm_delay_ms) {
-//    	init_disarm_motors();
-//    	auto_disarm_begin = tnow_ms;
-//    }
+    //    uint32_t tnow_ms = millis();
+    //    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
+    //
+    //    // exit immediately if we are already disarmed, or if auto
+    //    // disarming is disabled
+    //    if (!motors.armed() || disarm_delay_ms == 0) {
+    //        auto_disarm_begin = tnow_ms;
+    //        return;
+    //    }
+    //
+    //    if(!mode_has_manual_throttle(control_mode) || !ap.throttle_zero) {
+    //      auto_disarm_begin = tnow_ms;
+    //    }
+    //
+    //    if(tnow > auto_disarm_begin + disarm_delay_ms) {
+    //      init_disarm_motors();
+    //      auto_disarm_begin = tnow_ms;
+    //    }
 }
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
@@ -80,10 +80,10 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
 
     if (ap.home_state == HOME_UNSET) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        
+
         // Always use absolute altitude for ROV
-		// ahrs.resetHeightDatum();
-		// Log_Write_Event(DATA_EKF_ALT_RESET);
+        // ahrs.resetHeightDatum();
+        // Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location();
@@ -133,13 +133,13 @@ void Sub::init_disarm_motors()
 
     // save compass offsets learned by the EKF if enabled
     if (ahrs.use_compass() && compass.get_learn_type() == Compass::LEARN_EKF) {
-        for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
             Vector3f magOffsets;
             if (ahrs.getMagOffsets(i, magOffsets)) {
                 compass.set_and_save_offsets(i, magOffsets);
             }
         }
-	 }
+    }
 
 #if AUTOTUNE_ENABLED == ENABLED
     // save auto tuned parameters
@@ -172,7 +172,7 @@ void Sub::motors_output()
     if (ap.motor_test) {
         motor_test_output();
     } else {
-        if (!ap.using_interlock){
+        if (!ap.using_interlock) {
             // if not using interlock switch, set according to Emergency Stop status
             // where Emergency Stop is forced false during arming if Emergency Stop switch
             // is not used. Interlock enabled means motors run, so we must
@@ -212,17 +212,18 @@ void Sub::lost_vehicle_check()
 }
 
 // translate wpnav roll/pitch outputs to lateral/forward
-void Sub::translate_wpnav_rp(float &lateral_out, float &forward_out) {
-	   // get roll and pitch targets in centidegrees
-		int32_t lateral = wp_nav.get_roll();
-		int32_t forward = -wp_nav.get_pitch(); // output is reversed
+void Sub::translate_wpnav_rp(float &lateral_out, float &forward_out)
+{
+    // get roll and pitch targets in centidegrees
+    int32_t lateral = wp_nav.get_roll();
+    int32_t forward = -wp_nav.get_pitch(); // output is reversed
 
-		// constrain target forward/lateral values
-		// The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
-		lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);
-		forward = constrain_int16(forward, -aparm.angle_max, aparm.angle_max);
+    // constrain target forward/lateral values
+    // The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
+    lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);
+    forward = constrain_int16(forward, -aparm.angle_max, aparm.angle_max);
 
-		// Normalize
-		lateral_out = (float)lateral/(float)aparm.angle_max;
-		forward_out = (float)forward/(float)aparm.angle_max;
+    // Normalize
+    lateral_out = (float)lateral/(float)aparm.angle_max;
+    forward_out = (float)forward/(float)aparm.angle_max;
 }

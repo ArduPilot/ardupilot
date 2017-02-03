@@ -45,13 +45,13 @@ void Sub::perf_info_check_loop_time(uint32_t time_in_micros)
         return;
     }
 
-    if( time_in_micros > perf_info_max_time) {
+    if (time_in_micros > perf_info_max_time) {
         perf_info_max_time = time_in_micros;
     }
-    if( perf_info_min_time == 0 || time_in_micros < perf_info_min_time) {
+    if (perf_info_min_time == 0 || time_in_micros < perf_info_min_time) {
         perf_info_min_time = time_in_micros;
     }
-    if( time_in_micros > PERF_INFO_OVERTIME_THRESHOLD_MICROS ) {
+    if (time_in_micros > PERF_INFO_OVERTIME_THRESHOLD_MICROS) {
         perf_info_long_running++;
     }
 }

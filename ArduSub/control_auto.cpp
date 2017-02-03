@@ -40,7 +40,7 @@ bool Sub::auto_init(bool ignore_checks)
         // start/resume the mission (based on MIS_RESTART parameter)
         mission.start_or_resume();
         return true;
-    }else{
+    } else {
         return false;
     }
 }
@@ -81,8 +81,8 @@ void Sub::auto_run()
         break;
 
     case Auto_TerrainRecover:
-    	auto_terrain_recover_run();
-    	break;
+        auto_terrain_recover_run();
+        break;
     }
 }
 
@@ -92,26 +92,26 @@ void Sub::auto_wp_start(const Vector3f& destination)
     auto_mode = Auto_WP;
 
     // initialise wpnav (no need to check return status because terrain data is not used)
-	wp_nav.set_wp_destination(destination, false);
+    wp_nav.set_wp_destination(destination, false);
 
-	// initialise yaw
-	// To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-	if (auto_yaw_mode != AUTO_YAW_ROI) {
-		set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-	}
+    // initialise yaw
+    // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
+    if (auto_yaw_mode != AUTO_YAW_ROI) {
+        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+    }
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
 void Sub::auto_wp_start(const Location_Class& dest_loc)
 {
-	auto_mode = Auto_WP;
+    auto_mode = Auto_WP;
 
-	// send target to waypoint controller
-	if (!wp_nav.set_wp_destination(dest_loc)) {
-		// failure to set destination can only be because of missing terrain data
-		failsafe_terrain_on_event();
-		return;
-	}
+    // send target to waypoint controller
+    if (!wp_nav.set_wp_destination(dest_loc)) {
+        // failure to set destination can only be because of missing terrain data
+        failsafe_terrain_on_event();
+        return;
+    }
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
@@ -129,7 +129,7 @@ void Sub::auto_wp_run()
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
         // call attitude controller
-    	// multicopters do not stabilize roll/pitch/yaw when disarmed
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -161,15 +161,15 @@ void Sub::auto_wp_run()
     float lateral_out, forward_out;
     translate_wpnav_rp(lateral_out, forward_out);
 
-	// Send to forward/lateral outputs
-	motors.set_lateral(lateral_out);
-	motors.set_forward(forward_out);
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
 
-	////////////////////////////
-	// update attitude output //
+    ////////////////////////////
+    // update attitude output //
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
@@ -179,7 +179,7 @@ void Sub::auto_wp_run()
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-    }else{
+    } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, get_auto_heading(), true, get_smoothing_gain());
     }
@@ -188,14 +188,14 @@ void Sub::auto_wp_run()
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
 //  seg_end_type can be SEGMENT_END_STOP, SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE.  If Straight or Spline the next_destination should be provided
 void Sub::auto_spline_start(const Location_Class& destination, bool stopped_at_start,
-                               AC_WPNav::spline_segment_end_type seg_end_type, 
-                               const Location_Class& next_destination)
+                            AC_WPNav::spline_segment_end_type seg_end_type,
+                            const Location_Class& next_destination)
 {
     auto_mode = Auto_Spline;
 
     // initialise wpnav
     if (!wp_nav.set_spline_destination(destination, stopped_at_start, seg_end_type, next_destination)) {
-    	// failure to set destination can only be because of missing terrain data
+        // failure to set destination can only be because of missing terrain data
         failsafe_terrain_on_event();
         return;
     }
@@ -215,7 +215,7 @@ void Sub::auto_spline_run()
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
-    	// multicopters do not stabilize roll/pitch/yaw when disarmed
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
 
@@ -245,7 +245,7 @@ void Sub::auto_spline_run()
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
-    }else{
+    } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
     }
@@ -282,10 +282,10 @@ void Sub::auto_land_start(const Vector3f& destination)
 //      called by auto_run at 100hz or more
 void Sub::auto_land_run()
 {
-	// if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-	if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-    	// multicopters do not stabilize roll/pitch/yaw when disarmed
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
         // set target to current position
@@ -296,9 +296,9 @@ void Sub::auto_land_run()
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-// land mode replaced by surface mode, does not have this functionality
-//    land_run_horizontal_control();
-//    land_run_vertical_control();
+    // land mode replaced by surface mode, does not have this functionality
+    //    land_run_horizontal_control();
+    //    land_run_vertical_control();
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
@@ -306,54 +306,54 @@ void Sub::auto_land_run()
 //  we assume the caller has performed all required GPS_ok checks
 void Sub::auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m)
 {
-	// convert location to vector from ekf origin
-	Vector3f circle_center_neu;
-	if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
-		// default to current position and log error
-		circle_center_neu = inertial_nav.get_position();
-		Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_CIRCLE_INIT);
-	}
-	circle_nav.set_center(circle_center_neu);
+    // convert location to vector from ekf origin
+    Vector3f circle_center_neu;
+    if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
+        // default to current position and log error
+        circle_center_neu = inertial_nav.get_position();
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_CIRCLE_INIT);
+    }
+    circle_nav.set_center(circle_center_neu);
 
-	// set circle radius
-	if (!is_zero(radius_m)) {
-		circle_nav.set_radius(radius_m * 100.0f);
-	}
+    // set circle radius
+    if (!is_zero(radius_m)) {
+        circle_nav.set_radius(radius_m * 100.0f);
+    }
 
-	// check our distance from edge of circle
-	Vector3f circle_edge_neu;
-	circle_nav.get_closest_point_on_circle(circle_edge_neu);
-	float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
+    // check our distance from edge of circle
+    Vector3f circle_edge_neu;
+    circle_nav.get_closest_point_on_circle(circle_edge_neu);
+    float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
 
-	// if more than 3m then fly to edge
-	if (dist_to_edge > 300.0f) {
-		// set the state to move to the edge of the circle
-		auto_mode = Auto_CircleMoveToEdge;
+    // if more than 3m then fly to edge
+    if (dist_to_edge > 300.0f) {
+        // set the state to move to the edge of the circle
+        auto_mode = Auto_CircleMoveToEdge;
 
-		// convert circle_edge_neu to Location_Class
-		Location_Class circle_edge(circle_edge_neu);
+        // convert circle_edge_neu to Location_Class
+        Location_Class circle_edge(circle_edge_neu);
 
-		// convert altitude to same as command
-		circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
+        // convert altitude to same as command
+        circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
 
-		// initialise wpnav to move to edge of circle
-		if (!wp_nav.set_wp_destination(circle_edge)) {
-			// failure to set destination can only be because of missing terrain data
-			failsafe_terrain_on_event();
-		}
+        // initialise wpnav to move to edge of circle
+        if (!wp_nav.set_wp_destination(circle_edge)) {
+            // failure to set destination can only be because of missing terrain data
+            failsafe_terrain_on_event();
+        }
 
-		// if we are outside the circle, point at the edge, otherwise hold yaw
-		const Vector3f &curr_pos = inertial_nav.get_position();
-		float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
-		if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
-			set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-		} else {
-			// vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
-			set_auto_yaw_mode(AUTO_YAW_HOLD);
-		}
-	} else {
-		auto_circle_start();
-	}
+        // if we are outside the circle, point at the edge, otherwise hold yaw
+        const Vector3f &curr_pos = inertial_nav.get_position();
+        float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
+        if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
+            set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        } else {
+            // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
+    } else {
+        auto_circle_start();
+    }
 }
 
 // auto_circle_start - initialises controller to fly a circle in AUTO flight mode
@@ -434,7 +434,7 @@ void Sub::auto_loiter_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !motors.get_interlock()) {
-    	motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -443,7 +443,7 @@ void Sub::auto_loiter_run()
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
-    if(!failsafe.manual_control) {
+    if (!failsafe.manual_control) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
@@ -455,12 +455,12 @@ void Sub::auto_loiter_run()
 
     ///////////////////////
     // update xy outputs //
-	float lateral_out, forward_out;
-	translate_wpnav_rp(lateral_out, forward_out);
+    float lateral_out, forward_out;
+    translate_wpnav_rp(lateral_out, forward_out);
 
-	// Send to forward/lateral outputs
-	motors.set_lateral(lateral_out);
-	motors.set_forward(forward_out);
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -469,8 +469,8 @@ void Sub::auto_loiter_run()
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
-	// roll & pitch from waypoint controller, yaw rate from pilot
-	attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    // roll & pitch from waypoint controller, yaw rate from pilot
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 }
 
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter
@@ -479,30 +479,30 @@ uint8_t Sub::get_default_auto_yaw_mode(bool rtl)
 {
     switch (g.wp_yaw_behavior) {
 
-        case WP_YAW_BEHAVIOR_NONE:
+    case WP_YAW_BEHAVIOR_NONE:
+        return AUTO_YAW_HOLD;
+        break;
+
+    case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
+        if (rtl) {
             return AUTO_YAW_HOLD;
-            break;
-
-        case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
-            if (rtl) {
-                return AUTO_YAW_HOLD;
-            }else{
-                return AUTO_YAW_LOOK_AT_NEXT_WP;
-            }
-            break;
-
-        case WP_YAW_BEHAVIOR_LOOK_AHEAD:
-            return AUTO_YAW_LOOK_AHEAD;
-            break;
-
-        case WP_YAW_BEHAVIOR_CORRECT_XTRACK:
-        	return AUTO_YAW_CORRECT_XTRACK;
-        	break;
-
-        case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP:
-        default:
+        } else {
             return AUTO_YAW_LOOK_AT_NEXT_WP;
-            break;
+        }
+        break;
+
+    case WP_YAW_BEHAVIOR_LOOK_AHEAD:
+        return AUTO_YAW_LOOK_AHEAD;
+        break;
+
+    case WP_YAW_BEHAVIOR_CORRECT_XTRACK:
+        return AUTO_YAW_CORRECT_XTRACK;
+        break;
+
+    case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP:
+    default:
+        return AUTO_YAW_LOOK_AT_NEXT_WP;
+        break;
     }
 }
 
@@ -567,7 +567,7 @@ void Sub::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int
     if (is_zero(turn_rate_dps)) {
         // default to regular auto slew rate
         yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
-    }else{
+    } else {
         int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / turn_rate_dps;
         yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
     }
@@ -591,10 +591,10 @@ void Sub::set_auto_yaw_roi(const Location &roi_location)
             camera_mount.set_mode_to_default();
         }
 #endif  // MOUNT == ENABLED
-    }else{
+    } else {
 #if MOUNT == ENABLED
         // check if mount type requires us to rotate the quad
-        if(!camera_mount.has_pan_control()) {
+        if (!camera_mount.has_pan_control()) {
             roi_WP = pv_location_to_vector(roi_location);
             set_auto_yaw_mode(AUTO_YAW_ROI);
         }
@@ -619,7 +619,7 @@ void Sub::set_auto_yaw_roi(const Location &roi_location)
 // 100hz update rate
 float Sub::get_auto_heading(void)
 {
-    switch(auto_yaw_mode) {
+    switch (auto_yaw_mode) {
 
     case AUTO_YAW_ROI:
         // point towards a location held in roi_WP
@@ -641,19 +641,18 @@ float Sub::get_auto_heading(void)
         return initial_armed_bearing;
         break;
 
-    case AUTO_YAW_CORRECT_XTRACK:
-    	{
-    		// Bearing of current track (centidegrees)
-			float track_bearing = wp_nav.get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
+    case AUTO_YAW_CORRECT_XTRACK: {
+        // Bearing of current track (centidegrees)
+        float track_bearing = wp_nav.get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
 
-			// Bearing from current position towards intermediate position target (centidegrees)
-			float desired_angle = wp_nav.get_loiter_bearing_to_target();
+        // Bearing from current position towards intermediate position target (centidegrees)
+        float desired_angle = wp_nav.get_loiter_bearing_to_target();
 
-			float angle_error = wrap_180_cd(desired_angle - track_bearing);
-			float angle_limited = constrain_float(angle_error, -g.xtrack_angle_limit * 100.0f, g.xtrack_angle_limit * 100.0f);
-			return wrap_360_cd(track_bearing + angle_limited);
-    	}
-    	break;
+        float angle_error = wrap_180_cd(desired_angle - track_bearing);
+        float angle_limited = constrain_float(angle_error, -g.xtrack_angle_limit * 100.0f, g.xtrack_angle_limit * 100.0f);
+        return wrap_360_cd(track_bearing + angle_limited);
+    }
+    break;
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
     default:
@@ -665,35 +664,36 @@ float Sub::get_auto_heading(void)
 }
 
 // Return true if it is possible to recover from a rangefinder failure
-bool Sub::auto_terrain_recover_start() {
-	// Check rangefinder status to see if recovery is possible
-	switch(rangefinder.status()) {
+bool Sub::auto_terrain_recover_start()
+{
+    // Check rangefinder status to see if recovery is possible
+    switch (rangefinder.status()) {
 
-	case RangeFinder::RangeFinder_OutOfRangeLow:
-	case RangeFinder::RangeFinder_OutOfRangeHigh:
+    case RangeFinder::RangeFinder_OutOfRangeLow:
+    case RangeFinder::RangeFinder_OutOfRangeHigh:
 
-	// RangeFinder_Good if just one valid sample was obtained recently, but ::rangefinder_state.alt_healthy
-	// requires several consecutive valid readings for wpnav to accept rangefinder data
-	case RangeFinder::RangeFinder_Good:
-		auto_mode = Auto_TerrainRecover;
-		break;
+        // RangeFinder_Good if just one valid sample was obtained recently, but ::rangefinder_state.alt_healthy
+        // requires several consecutive valid readings for wpnav to accept rangefinder data
+    case RangeFinder::RangeFinder_Good:
+        auto_mode = Auto_TerrainRecover;
+        break;
 
-	// Not connected or no data
-	default:
-		return false; // Rangefinder is not connected, or has stopped responding
-	}
+        // Not connected or no data
+    default:
+        return false; // Rangefinder is not connected, or has stopped responding
+    }
 
-	// Initialize recovery timeout time
-	fs_terrain_recover_start_ms = AP_HAL::millis();
+    // Initialize recovery timeout time
+    fs_terrain_recover_start_ms = AP_HAL::millis();
 
-	// Stop mission
-	mission.stop();
+    // Stop mission
+    mission.stop();
 
-	// Reset xy target
-	wp_nav.init_loiter_target();
+    // Reset xy target
+    wp_nav.init_loiter_target();
 
-	// Reset z axis controller
-	pos_control.relax_alt_hold_controllers(0.0);
+    // Reset z axis controller
+    pos_control.relax_alt_hold_controllers(0.0);
 
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
@@ -703,16 +703,17 @@ bool Sub::auto_terrain_recover_start() {
     pos_control.set_alt_target(inertial_nav.get_altitude());
     pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
-	gcs_send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
-	return true;
+    gcs_send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
+    return true;
 }
 
 // Attempt recovery from terrain failsafe
 // If recovery is successful resume mission
 // If recovery fails revert to failsafe action
-void Sub::auto_terrain_recover_run() {
-	float target_climb_rate = 0;
-	static uint32_t rangefinder_recovery_ms = 0;
+void Sub::auto_terrain_recover_run()
+{
+    float target_climb_rate = 0;
+    static uint32_t rangefinder_recovery_ms = 0;
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed() || !motors.get_interlock()) {
@@ -721,88 +722,88 @@ void Sub::auto_terrain_recover_run() {
         return;
     }
 
-	switch(rangefinder.status()) {
+    switch (rangefinder.status()) {
 
-	case RangeFinder::RangeFinder_OutOfRangeLow:
-		target_climb_rate = wp_nav.get_speed_up();
-		rangefinder_recovery_ms = 0;
-		break;
+    case RangeFinder::RangeFinder_OutOfRangeLow:
+        target_climb_rate = wp_nav.get_speed_up();
+        rangefinder_recovery_ms = 0;
+        break;
 
-	case RangeFinder::RangeFinder_OutOfRangeHigh:
-		target_climb_rate = wp_nav.get_speed_down();
-		rangefinder_recovery_ms = 0;
-		break;
+    case RangeFinder::RangeFinder_OutOfRangeHigh:
+        target_climb_rate = wp_nav.get_speed_down();
+        rangefinder_recovery_ms = 0;
+        break;
 
-	case RangeFinder::RangeFinder_Good: // exit on success (recovered rangefinder data)
+    case RangeFinder::RangeFinder_Good: // exit on success (recovered rangefinder data)
 
-		target_climb_rate = 0; // Attempt to hold current depth
+        target_climb_rate = 0; // Attempt to hold current depth
 
-		if(rangefinder_state.alt_healthy) {
+        if (rangefinder_state.alt_healthy) {
 
-			// Start timer as soon as rangefinder is healthy
-			if(rangefinder_recovery_ms == 0) {
-				rangefinder_recovery_ms = AP_HAL::millis();
-				pos_control.relax_alt_hold_controllers(0.0); // Reset alt hold targets
-			}
+            // Start timer as soon as rangefinder is healthy
+            if (rangefinder_recovery_ms == 0) {
+                rangefinder_recovery_ms = AP_HAL::millis();
+                pos_control.relax_alt_hold_controllers(0.0); // Reset alt hold targets
+            }
 
-			// 1.5 seconds of healthy rangefinder means we can resume mission with terrain enabled
-			if(AP_HAL::millis() > rangefinder_recovery_ms + 1500) {
-				gcs_send_text(MAV_SEVERITY_INFO, "Terrain failsafe recovery successful!");
-				failsafe_terrain_set_status(true); // Reset failsafe timers
-				failsafe.terrain = false; // Clear flag
-				auto_mode = Auto_Loiter; // Switch back to loiter for next iteration
-				mission.resume(); // Resume mission
-				rangefinder_recovery_ms = 0; // Reset for subsequent recoveries
-			}
+            // 1.5 seconds of healthy rangefinder means we can resume mission with terrain enabled
+            if (AP_HAL::millis() > rangefinder_recovery_ms + 1500) {
+                gcs_send_text(MAV_SEVERITY_INFO, "Terrain failsafe recovery successful!");
+                failsafe_terrain_set_status(true); // Reset failsafe timers
+                failsafe.terrain = false; // Clear flag
+                auto_mode = Auto_Loiter; // Switch back to loiter for next iteration
+                mission.resume(); // Resume mission
+                rangefinder_recovery_ms = 0; // Reset for subsequent recoveries
+            }
 
-		}
-		break;
+        }
+        break;
 
-	// Not connected, or no data
-	default:
-		// Terrain failsafe recovery has failed, terrain data is not available
-		// and rangefinder is not connected, or has stopped responding
-		gcs_send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");
-		failsafe_terrain_act();
-		rangefinder_recovery_ms = 0;
-		return;
-	}
+        // Not connected, or no data
+    default:
+        // Terrain failsafe recovery has failed, terrain data is not available
+        // and rangefinder is not connected, or has stopped responding
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");
+        failsafe_terrain_act();
+        rangefinder_recovery_ms = 0;
+        return;
+    }
 
-	// exit on failure (timeout)
-	if(AP_HAL::millis() > fs_terrain_recover_start_ms + FS_TERRAIN_RECOVER_TIMEOUT_MS) {
-		// Recovery has failed, revert to failsafe action
-		gcs_send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery timeout!");
-		failsafe_terrain_act();
-	}
+    // exit on failure (timeout)
+    if (AP_HAL::millis() > fs_terrain_recover_start_ms + FS_TERRAIN_RECOVER_TIMEOUT_MS) {
+        // Recovery has failed, revert to failsafe action
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery timeout!");
+        failsafe_terrain_act();
+    }
 
-	// run loiter controller
-	wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+    // run loiter controller
+    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     ///////////////////////
     // update xy targets //
-	float lateral_out, forward_out;
-	translate_wpnav_rp(lateral_out, forward_out);
+    float lateral_out, forward_out;
+    translate_wpnav_rp(lateral_out, forward_out);
 
-	// Send to forward/lateral outputs
-	motors.set_lateral(lateral_out);
-	motors.set_forward(forward_out);
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
 
-	/////////////////////
-	// update z target //
-	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, true);
-	pos_control.update_z_controller();
+    /////////////////////
+    // update z target //
+    pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, true);
+    pos_control.update_z_controller();
 
-	////////////////////////////
-	// update angular targets //
-	float target_roll = 0;
-	float target_pitch = 0;
+    ////////////////////////////
+    // update angular targets //
+    float target_roll = 0;
+    float target_pitch = 0;
 
-	// convert pilot input to lean angles
-	// To-Do: convert get_pilot_desired_lean_angles to return angles as floats
-	get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+    // convert pilot input to lean angles
+    // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
-	float target_yaw_rate = 0;
+    float target_yaw_rate = 0;
 
-	// call attitude controller
-	attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    // call attitude controller
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 }

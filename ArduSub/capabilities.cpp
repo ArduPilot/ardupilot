@@ -12,6 +12,6 @@ void Sub::init_capabilities(void)
     hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION);
     hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET);
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-	 hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
+    hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
 #endif
 }

@@ -10,11 +10,11 @@
  */
 
 #ifndef EKF_CHECK_ITERATIONS_MAX
- # define EKF_CHECK_ITERATIONS_MAX          10      // 1 second (ie. 10 iterations at 10hz) of bad variances signals a failure
+# define EKF_CHECK_ITERATIONS_MAX          10      // 1 second (ie. 10 iterations at 10hz) of bad variances signals a failure
 #endif
 
 #ifndef EKF_CHECK_WARNING_TIME
- # define EKF_CHECK_WARNING_TIME            (30*1000)   // warning text messages are sent to ground no more than every 30 seconds
+# define EKF_CHECK_WARNING_TIME            (30*1000)   // warning text messages are sent to ground no more than every 30 seconds
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -118,42 +118,42 @@ bool Sub::ekf_over_threshold()
 // failsafe_ekf_event - perform ekf failsafe
 void Sub::failsafe_ekf_event()
 {
-//    // return immediately if ekf failsafe already triggered
-//    if (failsafe.ekf) {
-//        return;
-//    }
-//
-//    // do nothing if motors disarmed
-//    if (!motors.armed()) {
-//        return;
-//    }
-//
-//    // do nothing if not in GPS flight mode and ekf-action is not land-even-stabilize
-//    if (!mode_requires_GPS(control_mode) && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
-//        return;
-//    }
-//
-//    // EKF failsafe event has occurred
-//    failsafe.ekf = true;
-//    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
-//
-//    // take action based on fs_ekf_action parameter
-//    switch (g.fs_ekf_action) {
-//        case FS_EKF_ACTION_ALTHOLD:
-//            // AltHold
-//            if (failsafe.manual_control || !set_mode(ALT_HOLD, MODE_REASON_EKF_FAILSAFE)) {
-//                set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
-//            }
-//            break;
-//        default:
-//            set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
-//            break;
-//    }
-//
-//    // if flight mode is already LAND ensure it's not the GPS controlled LAND
-//    if (control_mode == LAND) {
-//        land_do_not_use_GPS();
-//    }
+    //    // return immediately if ekf failsafe already triggered
+    //    if (failsafe.ekf) {
+    //        return;
+    //    }
+    //
+    //    // do nothing if motors disarmed
+    //    if (!motors.armed()) {
+    //        return;
+    //    }
+    //
+    //    // do nothing if not in GPS flight mode and ekf-action is not land-even-stabilize
+    //    if (!mode_requires_GPS(control_mode) && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
+    //        return;
+    //    }
+    //
+    //    // EKF failsafe event has occurred
+    //    failsafe.ekf = true;
+    //    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
+    //
+    //    // take action based on fs_ekf_action parameter
+    //    switch (g.fs_ekf_action) {
+    //        case FS_EKF_ACTION_ALTHOLD:
+    //            // AltHold
+    //            if (failsafe.manual_control || !set_mode(ALT_HOLD, MODE_REASON_EKF_FAILSAFE)) {
+    //                set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
+    //            }
+    //            break;
+    //        default:
+    //            set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
+    //            break;
+    //    }
+    //
+    //    // if flight mode is already LAND ensure it's not the GPS controlled LAND
+    //    if (control_mode == LAND) {
+    //        land_do_not_use_GPS();
+    //    }
 }
 
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared

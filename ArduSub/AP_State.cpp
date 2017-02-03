@@ -6,8 +6,9 @@
 void Sub::set_home_state(enum HomeState new_home_state)
 {
     // if no change, exit immediately
-    if (ap.home_state == new_home_state)
+    if (ap.home_state == new_home_state) {
         return;
+    }
 
     // update state
     ap.home_state = new_home_state;
@@ -28,11 +29,12 @@ bool Sub::home_is_set()
 void Sub::set_auto_armed(bool b)
 {
     // if no change, exit immediately
-    if( ap.auto_armed == b )
+    if (ap.auto_armed == b) {
         return;
+    }
 
     ap.auto_armed = b;
-    if(b){
+    if (b) {
         Log_Write_Event(DATA_AUTO_ARMED);
     }
 }
@@ -40,14 +42,14 @@ void Sub::set_auto_armed(bool b)
 // ---------------------------------------------
 void Sub::set_simple_mode(uint8_t b)
 {
-    if(ap.simple_mode != b){
-        if(b == 0){
+    if (ap.simple_mode != b) {
+        if (b == 0) {
             Log_Write_Event(DATA_SET_SIMPLE_OFF);
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SIMPLE mode off");
-        }else if(b == 1){
+        } else if (b == 1) {
             Log_Write_Event(DATA_SET_SIMPLE_ON);
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SIMPLE mode on");
-        }else{
+        } else {
             // initialise super simple heading
             update_super_simple_bearing(true);
             Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
@@ -68,7 +70,7 @@ void Sub::set_failsafe_battery(bool b)
 
 void Sub::set_pre_arm_check(bool b)
 {
-    if(ap.pre_arm_check != b) {
+    if (ap.pre_arm_check != b) {
         ap.pre_arm_check = b;
         AP_Notify::flags.pre_arm_check = b;
     }
@@ -76,7 +78,7 @@ void Sub::set_pre_arm_check(bool b)
 
 void Sub::set_pre_arm_rc_check(bool b)
 {
-    if(ap.pre_arm_rc_check != b) {
+    if (ap.pre_arm_rc_check != b) {
         ap.pre_arm_rc_check = b;
     }
 }
@@ -89,12 +91,12 @@ void Sub::update_using_interlock()
 
 void Sub::set_motor_emergency_stop(bool b)
 {
-    if(ap.motor_emergency_stop != b) {
+    if (ap.motor_emergency_stop != b) {
         ap.motor_emergency_stop = b;
     }
 
     // Log new status
-    if (ap.motor_emergency_stop){
+    if (ap.motor_emergency_stop) {
         Log_Write_Event(DATA_MOTORS_EMERGENCY_STOPPED);
     } else {
         Log_Write_Event(DATA_MOTORS_EMERGENCY_STOP_CLEARED);

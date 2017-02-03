@@ -4,10 +4,10 @@
 bool Sub::surface_init(bool ignore_checks)
 {
 
-	if(!ap.depth_sensor_present) { // can't hold depth without a depth sensor, exit immediately.
-		gcs_send_text(MAV_SEVERITY_WARNING, "Surface mode requires external pressure sensor.");
-		return false;
-	}
+    if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor, exit immediately.
+        gcs_send_text(MAV_SEVERITY_WARNING, "Surface mode requires external pressure sensor.");
+        return false;
+    }
 
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
@@ -28,15 +28,16 @@ void Sub::surface_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed() || !motors.get_interlock()) {
-    	motors.output_min();
+        motors.output_min();
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
     }
 
     // Already at surface, hold depth at surface
-    if(ap.at_surface)
-    	set_mode(ALT_HOLD, MODE_REASON_SURFACE_COMPLETE);
+    if (ap.at_surface) {
+        set_mode(ALT_HOLD, MODE_REASON_SURFACE_COMPLETE);
+    }
 
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
@@ -49,7 +50,7 @@ void Sub::surface_run()
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // set target climb rate
-	float cmb_rate = constrain_float(abs(wp_nav.get_speed_up()), 1, pos_control.get_speed_up());
+    float cmb_rate = constrain_float(abs(wp_nav.get_speed_up()), 1, pos_control.get_speed_up());
 
     // record desired climb rate for logging
     desired_climb_rate = cmb_rate;

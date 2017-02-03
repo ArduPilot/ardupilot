@@ -27,7 +27,7 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
     if (ap.compass_mot) {
         // ignore restart messages
         return 1;
-    }else{
+    } else {
         ap.compass_mot = true;
     }
 
@@ -78,7 +78,7 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
     // default compensation type to use current if possible
     if (battery.has_current()) {
         comp_type = AP_COMPASS_MOT_COMP_CURRENT;
-    }else{
+    } else {
         comp_type = AP_COMPASS_MOT_COMP_THROTTLE;
     }
 
@@ -94,7 +94,7 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
     // inform what type of compensation we are attempting
     if (comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "Current");
-    } else{
+    } else {
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "Throttle");
     }
 
@@ -109,7 +109,7 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
 
     // get initial compass readings
     last_run_time = millis();
-    while ( millis() - last_run_time < 500 ) {
+    while (millis() - last_run_time < 500) {
         compass.accumulate();
     }
     compass.read();
@@ -143,16 +143,16 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
 
         // read radio input
         read_radio();
-        
+
         // pass through throttle to motors
         motors.set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
-        
+
         // read some compass values
         compass.read();
-        
+
         // read current
         read_battery();
-        
+
         // calculate scaling for throttle
         throttle_pct = (float)channel_throttle->get_control_in() / 1000.0f;
         throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
@@ -187,7 +187,7 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
                 for (uint8_t i=0; i<compass.get_count(); i++) {
                     // current based compensation if more than 3amps being drawn
                     motor_impact_scaled[i] = motor_impact[i] / battery.current_amps();
-                
+
                     // adjust the motor compensation to negate the impact if drawing over 3amps
                     if (battery.current_amps() >= 3.0f) {
                         motor_compensation[i] = motor_compensation[i] * 0.99f - motor_impact_scaled[i] * 0.01f;
@@ -202,7 +202,7 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
                     // interference is impact@fullthrottle / mag field * 100
                     interference_pct[i] = motor_compensation[i].length() / (float)COMPASS_MAGFIELD_EXPECTED * 100.0f;
                 }
-            }else{
+            } else {
                 for (uint8_t i=0; i<compass.get_count(); i++) {
                     // interference is impact/amp * (max current seen / max throttle seen) / mag field * 100
                     interference_pct[i] = motor_compensation[i].length() * (current_amps_max/throttle_pct_max) / (float)COMPASS_MAGFIELD_EXPECTED * 100.0f;
@@ -216,7 +216,7 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
         }
         if (AP_HAL::millis() - last_send_time > 500) {
             last_send_time = AP_HAL::millis();
-            mavlink_msg_compassmot_status_send(chan, 
+            mavlink_msg_compassmot_status_send(chan,
                                                channel_throttle->get_control_in(),
                                                battery.current_amps(),
                                                interference_pct[compass.get_primary()],

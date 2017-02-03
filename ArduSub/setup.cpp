@@ -45,18 +45,19 @@ int8_t Sub::setup_factory(uint8_t argc, const Menu::arg *argv)
         c = cliSerial->read();
     } while (-1 == c);
 
-    if (('y' != c) && ('Y' != c))
-        return(-1);
+    if (('y' != c) && ('Y' != c)) {
+        return (-1);
+    }
 
     AP_Param::erase_all();
     cliSerial->printf("\nReboot board");
 
     hal.scheduler->delay(1000);
 
-    for (;; ) {
+    for (;;) {
     }
     // note, cannot actually return here
-    return(0);
+    return (0);
 }
 
 //Set a parameter to a specified value. It will cast the value to the current type of the
@@ -69,50 +70,45 @@ int8_t Sub::setup_set(uint8_t argc, const Menu::arg *argv)
     AP_Param *param;
     enum ap_var_type p_type;
 
-    if(argc!=3)
-    {
+    if (argc!=3) {
         cliSerial->printf("Invalid command. Usage: set <name> <value>\n");
         return 0;
     }
 
     param = AP_Param::find(argv[1].str, &p_type);
-    if(!param)
-    {
+    if (!param) {
         cliSerial->printf("Param not found: %s\n", argv[1].str);
         return 0;
     }
 
-    switch(p_type)
-    {
-        case AP_PARAM_INT8:
-            value_int8 = (int8_t)(argv[2].i);
-            if(argv[2].i!=value_int8)
-            {
-                cliSerial->printf("Value out of range for type INT8\n");
-                return 0;
-            }
-            ((AP_Int8*)param)->set_and_save(value_int8);
-            break;
-        case AP_PARAM_INT16:
-            value_int16 = (int16_t)(argv[2].i);
-            if(argv[2].i!=value_int16)
-            {
-                cliSerial->printf("Value out of range for type INT16\n");
-                return 0;
-            }
-            ((AP_Int16*)param)->set_and_save(value_int16);
-            break;
+    switch (p_type) {
+    case AP_PARAM_INT8:
+        value_int8 = (int8_t)(argv[2].i);
+        if (argv[2].i!=value_int8) {
+            cliSerial->printf("Value out of range for type INT8\n");
+            return 0;
+        }
+        ((AP_Int8*)param)->set_and_save(value_int8);
+        break;
+    case AP_PARAM_INT16:
+        value_int16 = (int16_t)(argv[2].i);
+        if (argv[2].i!=value_int16) {
+            cliSerial->printf("Value out of range for type INT16\n");
+            return 0;
+        }
+        ((AP_Int16*)param)->set_and_save(value_int16);
+        break;
 
         //int32 and float don't need bounds checking, just use the value provoded by Menu::arg
-        case AP_PARAM_INT32:
-            ((AP_Int32*)param)->set_and_save(argv[2].i);
-            break;
-        case AP_PARAM_FLOAT:
-            ((AP_Float*)param)->set_and_save(argv[2].f);
-            break;
-        default:
-            cliSerial->printf("Cannot set parameter of type %d.\n", p_type);
-            break;
+    case AP_PARAM_INT32:
+        ((AP_Int32*)param)->set_and_save(argv[2].i);
+        break;
+    case AP_PARAM_FLOAT:
+        ((AP_Float*)param)->set_and_save(argv[2].f);
+        break;
+    default:
+        cliSerial->printf("Cannot set parameter of type %d.\n", p_type);
+        break;
     }
 
     return 0;
@@ -126,13 +122,11 @@ int8_t Sub::setup_show(uint8_t argc, const Menu::arg *argv)
     ap_var_type type;
 
     //If a parameter name is given as an argument to show, print only that parameter
-    if(argc>=2)
-    {
+    if (argc>=2) {
 
         param=AP_Param::find(argv[1].str, &type);
 
-        if(!param)
-        {
+        if (!param) {
             cliSerial->printf("Parameter not found: '%s'\n", argv[1].str);
             return 0;
         }
@@ -154,143 +148,144 @@ int8_t Sub::setup_show(uint8_t argc, const Menu::arg *argv)
 
     AP_Param::show_all(cliSerial);
 
-    return(0);
+    return (0);
 }
 
 int8_t Sub::esc_calib(uint8_t argc,const Menu::arg *argv)
 {
 
 
-	char c;
-	unsigned max_channels = 0;
-	uint32_t set_mask = 0;
+    char c;
+    unsigned max_channels = 0;
+    uint32_t set_mask = 0;
 
-	uint16_t pwm_high = PWM_CALIB_MAX;
-	uint16_t pwm_low = PWM_CALIB_MIN;
+    uint16_t pwm_high = PWM_CALIB_MAX;
+    uint16_t pwm_low = PWM_CALIB_MIN;
 
 
-	if (argc < 2) {
-		cliSerial->printf("Pls provide Channel Mask\n"
-                                    "\tusage: esc_calib 1010 - enables calibration for 2nd and 4th Motor\n");
-        return(0);
-	}
-    
+    if (argc < 2) {
+        cliSerial->printf("Pls provide Channel Mask\n"
+                          "\tusage: esc_calib 1010 - enables calibration for 2nd and 4th Motor\n");
+        return (0);
+    }
 
-	
-    set_mask = strtol (argv[1].str, NULL, 2);
-	if (set_mask == 0)
-		cliSerial->printf("no channels chosen");
+
+
+    set_mask = strtol(argv[1].str, NULL, 2);
+    if (set_mask == 0) {
+        cliSerial->printf("no channels chosen");
+    }
     //cliSerial->printf("\n%d\n",set_mask);
     set_mask<<=1;
-	/* wait 50 ms */
-	hal.scheduler->delay(50);
+    /* wait 50 ms */
+    hal.scheduler->delay(50);
 
 
-	cliSerial->printf("\nATTENTION, please remove or fix propellers before starting calibration!\n"
-	       "\n"
-	       "Make sure\n"
-	       "\t - that the ESCs are not powered\n"
-	       "\t - that safety is off\n"
-	       "\t - that the controllers are stopped\n"
-	       "\n"
-	       "Do you want to start calibration now: y or n?\n");
+    cliSerial->printf("\nATTENTION, please remove or fix propellers before starting calibration!\n"
+                      "\n"
+                      "Make sure\n"
+                      "\t - that the ESCs are not powered\n"
+                      "\t - that safety is off\n"
+                      "\t - that the controllers are stopped\n"
+                      "\n"
+                      "Do you want to start calibration now: y or n?\n");
 
-	/* wait for user input */
-	while (1) {
-            c= cliSerial->read();
-			if (c == 'y' || c == 'Y') {
+    /* wait for user input */
+    while (1) {
+        c= cliSerial->read();
+        if (c == 'y' || c == 'Y') {
 
-				break;
-
-			} else if (c == 0x03 || c == 0x63 || c == 'q') {
-				cliSerial->printf("ESC calibration exited\n");
-				return(0);
-
-			} else if (c == 'n' || c == 'N') {
-				cliSerial->printf("ESC calibration aborted\n");
-				return(0);
-
-			} 
-
-		/* rate limit to ~ 20 Hz */
-		hal.scheduler->delay(50);
-	}
-
-
-	/* get number of channels available on the device */
-	max_channels = AP_MOTORS_MAX_NUM_MOTORS;
-
-	/* tell IO/FMU that the system is armed (it will output values if safety is off) */
-	motors.armed(true);
-
-
-	cliSerial->printf("Outputs armed\n");
-
-
-	/* wait for user confirmation */
-	cliSerial->printf("\nHigh PWM set: %d\n"
-	       "\n"
-	       "Connect battery now and hit c+ENTER after the ESCs confirm the first calibration step\n"
-	       "\n", pwm_high);
-
-	while (1) {
-		/* set max PWM */
-		for (unsigned i = 0; i < max_channels; i++) {
-
-			if (set_mask & 1<<i) {
-				motors.output_test(i, pwm_high);
-			}
-		}
-        c = cliSerial->read();
-            
-		if (c == 'c') {
             break;
 
-		} else if (c == 0x03 || c == 0x63 || c == 'q') {
-			cliSerial->printf("ESC calibration exited\n");
-			return(0);
-		}
-        
-		/* rate limit to ~ 20 Hz */
-		hal.scheduler->delay(50);
-	}
+        } else if (c == 0x03 || c == 0x63 || c == 'q') {
+            cliSerial->printf("ESC calibration exited\n");
+            return (0);
 
-	cliSerial->printf("Low PWM set: %d\n"
-	       "\n"
-	       "Hit c+Enter when finished\n"
-	       "\n", pwm_low);
+        } else if (c == 'n' || c == 'N') {
+            cliSerial->printf("ESC calibration aborted\n");
+            return (0);
 
-	while (1) {
+        }
 
-		/* set disarmed PWM */
-		for (unsigned i = 0; i < max_channels; i++) {
-			if (set_mask & 1<<i) {
-				motors.output_test(i, pwm_low);
-			}
-		}
-		c = cliSerial->read();
+        /* rate limit to ~ 20 Hz */
+        hal.scheduler->delay(50);
+    }
 
-		if (c == 'c') {
 
-			break;
+    /* get number of channels available on the device */
+    max_channels = AP_MOTORS_MAX_NUM_MOTORS;
 
-		} else if (c == 0x03 || c == 0x63 || c == 'q') {
-			cliSerial->printf("ESC calibration exited\n");
-			return(0);
-		}
-		
-		/* rate limit to ~ 20 Hz */
-		hal.scheduler->delay(50);
-	}
+    /* tell IO/FMU that the system is armed (it will output values if safety is off) */
+    motors.armed(true);
 
-	/* disarm */
-	motors.armed(false);
-    
-	cliSerial->printf("Outputs disarmed\n");
 
-	cliSerial->printf("ESC calibration finished\n");
+    cliSerial->printf("Outputs armed\n");
 
-	return(0);
+
+    /* wait for user confirmation */
+    cliSerial->printf("\nHigh PWM set: %d\n"
+                      "\n"
+                      "Connect battery now and hit c+ENTER after the ESCs confirm the first calibration step\n"
+                      "\n", pwm_high);
+
+    while (1) {
+        /* set max PWM */
+        for (unsigned i = 0; i < max_channels; i++) {
+
+            if (set_mask & 1<<i) {
+                motors.output_test(i, pwm_high);
+            }
+        }
+        c = cliSerial->read();
+
+        if (c == 'c') {
+            break;
+
+        } else if (c == 0x03 || c == 0x63 || c == 'q') {
+            cliSerial->printf("ESC calibration exited\n");
+            return (0);
+        }
+
+        /* rate limit to ~ 20 Hz */
+        hal.scheduler->delay(50);
+    }
+
+    cliSerial->printf("Low PWM set: %d\n"
+                      "\n"
+                      "Hit c+Enter when finished\n"
+                      "\n", pwm_low);
+
+    while (1) {
+
+        /* set disarmed PWM */
+        for (unsigned i = 0; i < max_channels; i++) {
+            if (set_mask & 1<<i) {
+                motors.output_test(i, pwm_low);
+            }
+        }
+        c = cliSerial->read();
+
+        if (c == 'c') {
+
+            break;
+
+        } else if (c == 0x03 || c == 0x63 || c == 'q') {
+            cliSerial->printf("ESC calibration exited\n");
+            return (0);
+        }
+
+        /* rate limit to ~ 20 Hz */
+        hal.scheduler->delay(50);
+    }
+
+    /* disarm */
+    motors.armed(false);
+
+    cliSerial->printf("Outputs disarmed\n");
+
+    cliSerial->printf("ESC calibration finished\n");
+
+    return (0);
 }
 
 
@@ -317,29 +312,29 @@ void Sub::report_frame()
     cliSerial->printf("Frame\n");
     print_divider();
 
-    switch(g.frame_configuration) {
+    switch (g.frame_configuration) {
     case AP_Motors6DOF::SUB_FRAME_BLUEROV1:
-    	cliSerial->printf("BlueROV1\n");
-    	break;
+        cliSerial->printf("BlueROV1\n");
+        break;
     case AP_Motors6DOF::SUB_FRAME_VECTORED:
-    	cliSerial->printf("Vectored\n");
-    	break;
+        cliSerial->printf("Vectored\n");
+        break;
     case AP_Motors6DOF::SUB_FRAME_VECTORED_6DOF:
-    	cliSerial->printf("Vectored-6DOF\n");
-    	break;
+        cliSerial->printf("Vectored-6DOF\n");
+        break;
     case AP_Motors6DOF::SUB_FRAME_VECTORED_6DOF_90DEG:
-    	cliSerial->printf("Vectored-6DOF-90\n");
-    	break;
+        cliSerial->printf("Vectored-6DOF-90\n");
+        break;
     case AP_Motors6DOF::SUB_FRAME_SIMPLEROV_3:
     case AP_Motors6DOF::SUB_FRAME_SIMPLEROV_4:
     case AP_Motors6DOF::SUB_FRAME_SIMPLEROV_5:
-    	cliSerial->printf("SimpleROV\n");
-    	break;
+        cliSerial->printf("SimpleROV\n");
+        break;
     case AP_Motors6DOF::SUB_FRAME_CUSTOM:
-    	cliSerial->printf("Custom\n");
-    	break;
+        cliSerial->printf("Custom\n");
+        break;
     default:
-    	cliSerial->printf("Unknown\n");
+        cliSerial->printf("Unknown\n");
     }
 
     print_blanks(2);
@@ -369,23 +364,23 @@ void Sub::report_flight_modes()
     cliSerial->printf("Flight modes\n");
     print_divider();
 
-    for(int16_t i = 0; i < 6; i++ ) {
-//    	print_switch(i, (control_mode_t)flight_modes[i].get(), BIT_IS_SET(g.simple_modes, i));
-    	print_switch(i, (control_mode_t)flight_modes[i].get(), BIT_IS_SET(0, i));
+    for (int16_t i = 0; i < 6; i++) {
+        //      print_switch(i, (control_mode_t)flight_modes[i].get(), BIT_IS_SET(g.simple_modes, i));
+        print_switch(i, (control_mode_t)flight_modes[i].get(), BIT_IS_SET(0, i));
     }
     print_blanks(2);
 }
 
 void Sub::report_optflow()
 {
- #if OPTFLOW == ENABLED
+#if OPTFLOW == ENABLED
     cliSerial->printf("OptFlow\n");
     print_divider();
 
     print_enabled(optflow.enabled());
 
     print_blanks(2);
- #endif     // OPTFLOW == ENABLED
+#endif     // OPTFLOW == ENABLED
 }
 
 /***************************************************************************/
@@ -405,10 +400,11 @@ void Sub::print_switch(uint8_t p, uint8_t m, bool b)
     cliSerial->printf("Pos %d:\t",p);
     print_flight_mode(cliSerial, m);
     cliSerial->printf(",\t\tSimple: ");
-    if(b)
+    if (b) {
         cliSerial->printf("ON\n");
-    else
+    } else {
         cliSerial->printf("OFF\n");
+    }
 }
 
 void Sub::print_accel_offsets_and_scaling(void)
@@ -416,21 +412,21 @@ void Sub::print_accel_offsets_and_scaling(void)
     const Vector3f &accel_offsets = ins.get_accel_offsets();
     const Vector3f &accel_scale = ins.get_accel_scale();
     cliSerial->printf("A_off: %4.2f, %4.2f, %4.2f\nA_scale: %4.2f, %4.2f, %4.2f\n",
-                    (double)accel_offsets.x,                           // Pitch
-                    (double)accel_offsets.y,                           // Roll
-                    (double)accel_offsets.z,                           // YAW
-                    (double)accel_scale.x,                             // Pitch
-                    (double)accel_scale.y,                             // Roll
-                    (double)accel_scale.z);                            // YAW
+                      (double)accel_offsets.x,                           // Pitch
+                      (double)accel_offsets.y,                           // Roll
+                      (double)accel_offsets.z,                           // YAW
+                      (double)accel_scale.x,                             // Pitch
+                      (double)accel_scale.y,                             // Roll
+                      (double)accel_scale.z);                            // YAW
 }
 
 void Sub::print_gyro_offsets(void)
 {
     const Vector3f &gyro_offsets = ins.get_gyro_offsets();
     cliSerial->printf("G_off: %4.2f, %4.2f, %4.2f\n",
-                    (double)gyro_offsets.x,
-                    (double)gyro_offsets.y,
-                    (double)gyro_offsets.z);
+                      (double)gyro_offsets.x,
+                      (double)gyro_offsets.y,
+                      (double)gyro_offsets.z);
 }
 
 #endif // CLI_ENABLED
@@ -445,7 +441,7 @@ void Sub::report_compass()
 
     // mag declination
     cliSerial->printf("Mag Dec: %4.4f\n",
-            (double)degrees(compass.get_declination()));
+                      (double)degrees(compass.get_declination()));
 
     // mag offsets
     Vector3f offsets;
@@ -453,31 +449,31 @@ void Sub::report_compass()
         offsets = compass.get_offsets(i);
         // mag offsets
         cliSerial->printf("Mag%d off: %4.4f, %4.4f, %4.4f\n",
-                        (int)i,
-                        (double)offsets.x,
-                        (double)offsets.y,
-                        (double)offsets.z);
+                          (int)i,
+                          (double)offsets.x,
+                          (double)offsets.y,
+                          (double)offsets.z);
     }
 
     // motor compensation
     cliSerial->print("Motor Comp: ");
-    if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_DISABLED ) {
+    if (compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_DISABLED) {
         cliSerial->print("Off\n");
-    }else{
-        if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_THROTTLE ) {
+    } else {
+        if (compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_THROTTLE) {
             cliSerial->print("Throttle");
         }
-        if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_CURRENT ) {
+        if (compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_CURRENT) {
             cliSerial->print("Current");
         }
         Vector3f motor_compensation;
         for (uint8_t i=0; i<compass.get_count(); i++) {
             motor_compensation = compass.get_motor_compensation(i);
             cliSerial->printf("\nComMot%d: %4.2f, %4.2f, %4.2f\n",
-                        (int)i,
-                        (double)motor_compensation.x,
-                        (double)motor_compensation.y,
-                        (double)motor_compensation.z);
+                              (int)i,
+                              (double)motor_compensation.x,
+                              (double)motor_compensation.y,
+                              (double)motor_compensation.z);
         }
     }
     print_blanks(1);
@@ -485,7 +481,7 @@ void Sub::report_compass()
 
 void Sub::print_blanks(int16_t num)
 {
-    while(num > 0) {
+    while (num > 0) {
         num--;
         cliSerial->println("");
     }
@@ -501,10 +497,11 @@ void Sub::print_divider(void)
 
 void Sub::print_enabled(bool b)
 {
-    if(b)
+    if (b) {
         cliSerial->print("en");
-    else
+    } else {
         cliSerial->print("dis");
+    }
     cliSerial->print("abled\n");
 }
 

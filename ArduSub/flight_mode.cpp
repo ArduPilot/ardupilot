@@ -19,71 +19,71 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
-    	prev_control_mode = control_mode;
-    	prev_control_mode_reason = control_mode_reason;
+        prev_control_mode = control_mode;
+        prev_control_mode_reason = control_mode_reason;
 
-    	control_mode_reason = reason;
+        control_mode_reason = reason;
         return true;
     }
 
-    switch(mode) {
-        case ACRO:
-            success = acro_init(ignore_checks);
-            break;
+    switch (mode) {
+    case ACRO:
+        success = acro_init(ignore_checks);
+        break;
 
-        case STABILIZE:
-            success = stabilize_init(ignore_checks);
-            break;
+    case STABILIZE:
+        success = stabilize_init(ignore_checks);
+        break;
 
-        case ALT_HOLD:
-            success = althold_init(ignore_checks);
-            break;
+    case ALT_HOLD:
+        success = althold_init(ignore_checks);
+        break;
 
-        case AUTO:
-            success = auto_init(ignore_checks);
-            break;
+    case AUTO:
+        success = auto_init(ignore_checks);
+        break;
 
-        case CIRCLE:
-            success = circle_init(ignore_checks);
-            break;
+    case CIRCLE:
+        success = circle_init(ignore_checks);
+        break;
 
-        case VELHOLD:
-            success = velhold_init(ignore_checks);
-            break;
+    case VELHOLD:
+        success = velhold_init(ignore_checks);
+        break;
 
-        case GUIDED:
-            success = guided_init(ignore_checks);
-            break;
+    case GUIDED:
+        success = guided_init(ignore_checks);
+        break;
 
-        case SURFACE:
-            success = surface_init(ignore_checks);
-            break;
+    case SURFACE:
+        success = surface_init(ignore_checks);
+        break;
 
 #if TRANSECT_ENABLED == ENABLED
-        case TRANSECT:
-            success = transect_init(ignore_checks);
-            break;
+    case TRANSECT:
+        success = transect_init(ignore_checks);
+        break;
 #endif
 
 #if AUTOTUNE_ENABLED == ENABLED
-        case AUTOTUNE:
-            success = autotune_init(ignore_checks);
-            break;
+    case AUTOTUNE:
+        success = autotune_init(ignore_checks);
+        break;
 #endif
 
 #if POSHOLD_ENABLED == ENABLED
-        case POSHOLD:
-            success = poshold_init(ignore_checks);
-            break;
+    case POSHOLD:
+        success = poshold_init(ignore_checks);
+        break;
 #endif
 
-        case MANUAL:
-        	success = manual_init(ignore_checks);
-        	break;
+    case MANUAL:
+        success = manual_init(ignore_checks);
+        break;
 
-        default:
-            success = false;
-            break;
+    default:
+        success = false;
+        break;
     }
 
     // update flight mode
@@ -104,7 +104,7 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         // but it should be harmless to disable the fence temporarily in these situations as well
         fence.manual_recovery_start();
 #endif
-    }else{
+    } else {
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
     }
@@ -126,62 +126,62 @@ void Sub::update_flight_mode()
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     switch (control_mode) {
-        case ACRO:
-            acro_run();
-            break;
+    case ACRO:
+        acro_run();
+        break;
 
-        case STABILIZE:
-            stabilize_run();
-            break;
+    case STABILIZE:
+        stabilize_run();
+        break;
 
-        case ALT_HOLD:
-            althold_run();
-            break;
+    case ALT_HOLD:
+        althold_run();
+        break;
 
-        case AUTO:
-            auto_run();
-            break;
+    case AUTO:
+        auto_run();
+        break;
 
-        case CIRCLE:
-            circle_run();
-            break;
+    case CIRCLE:
+        circle_run();
+        break;
 
-        case VELHOLD:
-            velhold_run();
-            break;
+    case VELHOLD:
+        velhold_run();
+        break;
 
-        case GUIDED:
-            guided_run();
-            break;
+    case GUIDED:
+        guided_run();
+        break;
 
-        case SURFACE:
-            surface_run();
-            break;
+    case SURFACE:
+        surface_run();
+        break;
 
 #if TRANSECT_ENABLED == ENABLED
-        case TRANSECT:
-            transect_run();
-            break;
+    case TRANSECT:
+        transect_run();
+        break;
 #endif
 
 #if AUTOTUNE_ENABLED == ENABLED
-        case AUTOTUNE:
-            autotune_run();
-            break;
+    case AUTOTUNE:
+        autotune_run();
+        break;
 #endif
 
 #if POSHOLD_ENABLED == ENABLED
-        case POSHOLD:
-            poshold_run();
-            break;
+    case POSHOLD:
+        poshold_run();
+        break;
 #endif
 
-        case MANUAL:
-        	manual_run();
-        	break;
+    case MANUAL:
+        manual_run();
+        break;
 
-        default:
-        	break;
+    default:
+        break;
     }
 }
 
@@ -206,31 +206,33 @@ void Sub::exit_mode(control_mode_t old_control_mode, control_mode_t new_control_
 }
 
 // returns true or false whether mode requires GPS
-bool Sub::mode_requires_GPS(control_mode_t mode) {
-    switch(mode) {
-        case AUTO:
-        case GUIDED:
-        case VELHOLD:
-        case CIRCLE:
-        case POSHOLD:
-        case TRANSECT:
-            return true;
-        default:
-            return false;
+bool Sub::mode_requires_GPS(control_mode_t mode)
+{
+    switch (mode) {
+    case AUTO:
+    case GUIDED:
+    case VELHOLD:
+    case CIRCLE:
+    case POSHOLD:
+    case TRANSECT:
+        return true;
+    default:
+        return false;
     }
 
     return false;
 }
 
 // mode_has_manual_throttle - returns true if the flight mode has a manual throttle (i.e. pilot directly controls throttle)
-bool Sub::mode_has_manual_throttle(control_mode_t mode) {
-    switch(mode) {
-        case ACRO:
-        case STABILIZE:
-        case MANUAL:
-            return true;
-        default:
-            return false;
+bool Sub::mode_has_manual_throttle(control_mode_t mode)
+{
+    switch (mode) {
+    case ACRO:
+    case STABILIZE:
+    case MANUAL:
+        return true;
+    default:
+        return false;
     }
 
     return false;
@@ -238,27 +240,29 @@ bool Sub::mode_has_manual_throttle(control_mode_t mode) {
 
 // mode_allows_arming - returns true if vehicle can be armed in the specified mode
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
-bool Sub::mode_allows_arming(control_mode_t mode, bool arming_from_gcs) {
-	if (mode_has_manual_throttle(mode) || mode == VELHOLD || mode == ALT_HOLD || mode == POSHOLD || mode == TRANSECT || (arming_from_gcs && mode == GUIDED)) {
+bool Sub::mode_allows_arming(control_mode_t mode, bool arming_from_gcs)
+{
+    if (mode_has_manual_throttle(mode) || mode == VELHOLD || mode == ALT_HOLD || mode == POSHOLD || mode == TRANSECT || (arming_from_gcs && mode == GUIDED)) {
         return true;
     }
     return false;
 }
 
 // notify_flight_mode - sets notify object based on flight mode.  Only used for OreoLED notify device
-void Sub::notify_flight_mode(control_mode_t mode) {
-    switch(mode) {
-        case AUTO:
-        case GUIDED:
-        case CIRCLE:
-        case SURFACE:
-            // autopilot modes
-            AP_Notify::flags.autopilot_mode = true;
-            break;
-        default:
-            // all other are manual flight modes
-            AP_Notify::flags.autopilot_mode = false;
-            break;
+void Sub::notify_flight_mode(control_mode_t mode)
+{
+    switch (mode) {
+    case AUTO:
+    case GUIDED:
+    case CIRCLE:
+    case SURFACE:
+        // autopilot modes
+        AP_Notify::flags.autopilot_mode = true;
+        break;
+    default:
+        // all other are manual flight modes
+        AP_Notify::flags.autopilot_mode = false;
+        break;
     }
 }
 
@@ -305,8 +309,8 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->print("POSHOLD");
         break;
     case MANUAL:
-    	port->print("MANUAL");
-    	break;
+        port->print("MANUAL");
+        break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);
         break;

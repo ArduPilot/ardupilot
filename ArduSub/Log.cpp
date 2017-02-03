@@ -30,7 +30,7 @@ bool Sub::print_log_menu(void)
 
     if (0 == g.log_bitmask) {
         cliSerial->printf("none");
-    }else{
+    } else {
         // Macro to make the following code a bit easier on the eye.
         // Pass it the capitalised name of the log option, as defined
         // in defines.h but without the LOG_ prefix.  It will check for
@@ -58,7 +58,7 @@ bool Sub::print_log_menu(void)
 
     DataFlash.ListAvailableLogs(cliSerial);
 
-    return(true);
+    return (true);
 }
 
 #if CLI_ENABLED == ENABLED
@@ -73,14 +73,14 @@ int8_t Sub::dump_log(uint8_t argc, const Menu::arg *argv)
 
     if (dump_log_num == -2) {
         DataFlash.DumpPageInfo(cliSerial);
-        return(-1);
+        return (-1);
     } else if (dump_log_num <= 0) {
         cliSerial->printf("dumping all\n");
         Log_Read(0, 1, 0);
-        return(-1);
+        return (-1);
     } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
         cliSerial->printf("bad log number\n");
-        return(-1);
+        return (-1);
     }
 
     DataFlash.get_log_boundaries(dump_log_num, dump_log_start, dump_log_end);
@@ -103,7 +103,7 @@ int8_t Sub::select_logs(uint8_t argc, const Menu::arg *argv)
 
     if (argc != 2) {
         cliSerial->printf("missing log type\n");
-        return(-1);
+        return (-1);
     }
 
     bits = 0;
@@ -117,7 +117,7 @@ int8_t Sub::select_logs(uint8_t argc, const Menu::arg *argv)
     if (!strcasecmp(argv[1].str, "all")) {
         bits = ~0;
     } else {
- #define TARG(_s)        if (!strcasecmp(argv[1].str, # _s)) bits |= MASK_LOG_ ## _s
+#define TARG(_s)        if (!strcasecmp(argv[1].str, # _s)) bits |= MASK_LOG_ ## _s
         TARG(ATTITUDE_FAST);
         TARG(ATTITUDE_MED);
         TARG(GPS);
@@ -133,16 +133,16 @@ int8_t Sub::select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(COMPASS);
         TARG(CAMERA);
         TARG(PID);
- #undef TARG
+#undef TARG
     }
 
     if (!strcasecmp(argv[0].str, "enable")) {
         g.log_bitmask.set_and_save(g.log_bitmask | bits);
-    }else{
+    } else {
         g.log_bitmask.set_and_save(g.log_bitmask & ~bits);
     }
 
-    return(0);
+    return (0);
 }
 
 int8_t Sub::process_logs(uint8_t argc, const Menu::arg *argv)
@@ -235,7 +235,7 @@ struct PACKED log_Optflow {
 // Write an optical flow packet
 void Sub::Log_Write_Optflow()
 {
- #if OPTFLOW == ENABLED
+#if OPTFLOW == ENABLED
     // exit immediately if not enabled
     if (!optflow.enabled()) {
         return;
@@ -252,7 +252,7 @@ void Sub::Log_Write_Optflow()
         body_y          : bodyRate.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
- #endif     // OPTFLOW == ENABLED
+#endif     // OPTFLOW == ENABLED
 }
 
 struct PACKED log_Nav_Tuning {
@@ -316,10 +316,10 @@ struct PACKED log_Control_Tuning {
 // Write a control tuning packet
 void Sub::Log_Write_Control_Tuning()
 {
-	// get terrain altitude
-	float terr_alt = 0.0f;
+    // get terrain altitude
+    float terr_alt = 0.0f;
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-	terrain.height_above_terrain(terr_alt, true);
+    terrain.height_above_terrain(terr_alt, true);
 #endif
 
     struct log_Control_Tuning pkt = {
@@ -328,13 +328,13 @@ void Sub::Log_Write_Control_Tuning()
         throttle_in         : attitude_control.get_throttle_in(),
         angle_boost         : attitude_control.angle_boost(),
         throttle_out        : motors.get_throttle(),
-		throttle_hover      : motors.get_throttle_hover(),
+        throttle_hover      : motors.get_throttle_hover(),
         desired_alt         : pos_control.get_alt_target() / 100.0f,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
         desired_rangefinder_alt   : (int16_t)target_rangefinder_alt,
         rangefinder_alt           : rangefinder_state.alt_cm,
-		terr_alt			: terr_alt,
+        terr_alt            : terr_alt,
         target_climb_rate   : (int16_t)pos_control.get_vel_target_z(),
         climb_rate          : climb_rate
     };
@@ -365,7 +365,7 @@ void Sub::Log_Write_Performance()
         pm_test          : pmTest1,
         i2c_lockup_count : 0,
         ins_error_count  : ins.error_count(),
-		log_dropped      : DataFlash.num_dropped() - perf_info_get_num_dropped(),
+        log_dropped      : DataFlash.num_dropped() - perf_info_get_num_dropped(),
     };
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -377,11 +377,11 @@ void Sub::Log_Write_Attitude()
     targets.z = wrap_360_cd(targets.z);
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
- #if OPTFLOW == ENABLED
+#if OPTFLOW == ENABLED
     DataFlash.Log_Write_EKF(ahrs,optflow.enabled());
- #else
+#else
     DataFlash.Log_Write_EKF(ahrs,false);
- #endif
+#endif
     DataFlash.Log_Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE(&DataFlash);
@@ -461,7 +461,7 @@ struct PACKED log_Data_UInt16t {
 };
 
 // Write an uint16_t data packet
-UNUSED_FUNCTION 
+UNUSED_FUNCTION
 void Sub::Log_Write_Data(uint8_t id, uint16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
@@ -560,7 +560,7 @@ void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 
 void Sub::Log_Write_Baro(void)
 {
-	if (!ahrs.have_ekf_logging()) {
+    if (!ahrs.have_ekf_logging()) {
         DataFlash.Log_Write_Baro(barometer);
     }
 }
@@ -672,7 +672,7 @@ const struct LogStructure Sub::log_structure[] = {
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-    		"CTUN", "Qffffffeccfhh", "TimeUS,ThrIn,ABst,ThrOut,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt" },
+      "CTUN", "Qffffffeccfhh", "TimeUS,ThrIn,ABst,ThrOut,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "QHHIhBHI",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
@@ -693,8 +693,8 @@ const struct LogStructure Sub::log_structure[] = {
       "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
     { LOG_HELI_MSG, sizeof(log_Heli),
       "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM" },
-	{ LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-	  "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
+    { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
+      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
 };
 
 #if CLI_ENABLED == ENABLED
@@ -702,8 +702,8 @@ const struct LogStructure Sub::log_structure[] = {
 void Sub::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
 {
     cliSerial->printf("\n" FIRMWARE_STRING
-                             "\nFree RAM: %u\n",
-                        (unsigned) hal.util->available_memory());
+                      "\nFree RAM: %u\n",
+                      (unsigned) hal.util->available_memory());
 
     cliSerial->println(HAL_BOARD_NAME);
 
@@ -721,7 +721,7 @@ void Sub::Log_Write_Vehicle_Startup_Messages()
 
 
 // start a new log
-void Sub::start_logging() 
+void Sub::start_logging()
 {
     if (g.log_bitmask != 0) {
         if (!ap.logging_started) {
@@ -764,8 +764,8 @@ void Sub::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page) {}
 
 void Sub::do_erase_logs(void) {}
 void Sub::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, \
-                                float meas_min, float meas_max, float new_gain_rp, \
-                                float new_gain_rd, float new_gain_sp, float new_ddt) {}
+                             float meas_min, float meas_max, float new_gain_rp, \
+                             float new_gain_rd, float new_gain_sp, float new_ddt) {}
 void Sub::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
 void Sub::Log_Write_Current() {}
 void Sub::Log_Write_Nav_Tuning() {}
