@@ -317,19 +317,30 @@ void Sub::report_frame()
     cliSerial->printf("Frame\n");
     print_divider();
 
- #if FRAME_CONFIG == QUAD_FRAME
-    cliSerial->printf("Quad frame\n");
- #elif FRAME_CONFIG == TRI_FRAME
-    cliSerial->printf("TRI frame\n");
- #elif FRAME_CONFIG == HEXA_FRAME
-    cliSerial->printf("Hexa frame\n");
- #elif FRAME_CONFIG == Y6_FRAME
-    cliSerial->printf("Y6 frame\n");
- #elif FRAME_CONFIG == OCTA_FRAME
-    cliSerial->printf("Octa frame\n");
- #elif FRAME_CONFIG == HELI_FRAME
-    cliSerial->printf("Heli frame\n");
- #endif
+    switch(g.frame_configuration) {
+    case AP_Motors6DOF::SUB_FRAME_BLUEROV1:
+    	cliSerial->printf("BlueROV1\n");
+    	break;
+    case AP_Motors6DOF::SUB_FRAME_VECTORED:
+    	cliSerial->printf("Vectored\n");
+    	break;
+    case AP_Motors6DOF::SUB_FRAME_VECTORED_6DOF:
+    	cliSerial->printf("Vectored-6DOF\n");
+    	break;
+    case AP_Motors6DOF::SUB_FRAME_VECTORED_6DOF_90DEG:
+    	cliSerial->printf("Vectored-6DOF-90\n");
+    	break;
+    case AP_Motors6DOF::SUB_FRAME_SIMPLEROV_3:
+    case AP_Motors6DOF::SUB_FRAME_SIMPLEROV_4:
+    case AP_Motors6DOF::SUB_FRAME_SIMPLEROV_5:
+    	cliSerial->printf("SimpleROV\n");
+    	break;
+    case AP_Motors6DOF::SUB_FRAME_CUSTOM:
+    	cliSerial->printf("Custom\n");
+    	break;
+    default:
+    	cliSerial->printf("Unknown\n");
+    }
 
     print_blanks(2);
 }
