@@ -22,6 +22,12 @@ public:
     // constructor
     AP_Baro();
 
+    // barometer types
+    typedef enum {
+        BARO_TYPE_AIR,
+        BARO_TYPE_WATER
+    } baro_type_t;
+
     // initialise the barometer object, loading backend drivers
     void init(void);
 
@@ -50,7 +56,7 @@ public:
 
     // calibrate the barometer. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
-    void calibrate(void);
+    void calibrate(bool save=true);
 
     // update the barometer calibration to the current pressure. Can
     // be used for incremental preflight update of baro
@@ -107,6 +113,15 @@ public:
     // used by Replay
     void setHIL(uint8_t instance, float pressure, float temperature, float altitude, float climb_rate, uint32_t last_update_ms);
 
+    // Set the primary baro
+    void set_primary_baro(uint8_t primary) { _primary_baro.set_and_save(primary); };
+
+    // Set the type (Air or Water) of a particular instance
+    void set_type(uint8_t instance, baro_type_t type) { sensors[instance].type = type; };
+
+    // Get the type (Air or Water) of a particular instance
+    baro_type_t get_type(uint8_t instance) { return sensors[instance].type; };
+
     // HIL variables
     struct {
         float pressure;
@@ -147,6 +162,7 @@ private:
     uint8_t _primary;
 
     struct sensor {
+        baro_type_t type;                   // 0 for air pressure (default), 1 for water pressure
         uint32_t last_update_ms;        // last update time in ms
         bool healthy:1;                 // true if sensor is healthy
         bool alt_ok:1;                  // true if calculated altitude is ok
@@ -167,6 +183,7 @@ private:
     float                               _external_temperature;
     uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
+    AP_Float                            _specific_gravity; // the specific gravity of fluid for an ROV 1.00 for freshwater, 1.024 for salt water
     bool                                _hil_mode:1;
 
     // when did we last notify the GCS of new pressure reference?
