@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Sub.h"
+#include "version.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -229,18 +230,51 @@ void Sub::init_ardupilot()
     ins.set_hil_mode();
 #endif
 
-    if(barometer.num_instances() > 1) {
-    //We have an external MS58XX pressure sensor connected
-    	for(int i = 1; i < barometer.num_instances(); i++) {
-			barometer.set_type(i, BARO_TYPE_WATER); //Altitude (depth) is calculated differently underwater
-			barometer.set_precision_multiplier(i, 10); //The MS58XX values reported need to be multiplied by 10 to match units everywhere else
-    	}
-    	barometer.set_primary_baro(1); //Set the primary baro to external MS58XX
+    barometer.calibrate();
+    barometer.update();
 
-    }
-    // read Baro pressure at ground
-    //-----------------------------
-    init_barometer(true);
+    if(barometer.healthy(1)) { // We have an external MS58XX pressure sensor connected
+
+		barometer.set_primary_baro(1); // Set the primary baro to external MS58XX !!Changes and saves parameter value!!
+
+
+    	ap.depth_sensor_present = true;
+		for(int i = 1; i < barometer.num_instances(); i++) {
+			barometer.set_type(i, BARO_TYPE_WATER); // Altitude (depth) is calculated differently underwater
+			barometer.set_precision_multiplier(i, 40); // The MS58XX values reported need to be multiplied by 10 to match units everywhere else
+		}
+
+
+		EKF2.set_baro_alt_noise(0.1f); // Depth readings are very accurate and up-to-date
+		EKF3.set_baro_alt_noise(0.1f);
+
+	} else { //We only have onboard baro
+
+		// No external underwater depth sensor detected
+		barometer.set_primary_baro(0); // Set the primary baro to default board baro !!Changes and saves parameter value!!
+
+		ap.depth_sensor_present = false;
+		for(int i = 1; i < barometer.num_instances(); i++) {
+			barometer.set_type(i, BARO_TYPE_AIR); // Default fcu air baro
+			barometer.set_precision_multiplier(i, 1); // Use default values
+		}
+		EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
+		EKF3.set_baro_alt_noise(10.0f);
+
+
+	}
+
+    leak_detector.init();
+
+	// read Baro pressure at ground
+	//-----------------------------
+	init_barometer(true);
+
+    // cope with MS5607 in place of MS5611 on fake pixhawks
+	if(barometer.get_pressure(0) < 60000) {
+		barometer.set_precision_multiplier(0, 2);
+		init_barometer(true); // recalibrate with correct scalar
+	}
 
 	// backwards compatibility
 	if(attitude_control.get_accel_yaw_max() < 110000.0f) {
@@ -268,10 +302,6 @@ void Sub::init_ardupilot()
     init_aux_switches();
 
     startup_INS_ground();
-
-    // set landed flags
-    set_land_complete(true);
-    set_land_complete_maybe(true);
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -396,8 +426,8 @@ void Sub::update_auto_armed()
         }
     }else{
         // arm checks
-    	// if motors are armed and we are in throw mode, then auto_ermed should be true
-    	if(motors.armed() && (!ap.throttle_zero || control_mode == THROW)) {
+        // if motors are armed and throttle is above zero auto_armed should be true
+        if(motors.armed()) {
             set_auto_armed(true);
         }
     }
@@ -423,7 +453,7 @@ bool Sub::should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = motors.armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    bool ret = motors.armed() || DataFlash.log_while_disarmed();
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         start_logging();
     }

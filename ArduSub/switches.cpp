@@ -18,62 +18,6 @@ static union {
     uint32_t value;
 } aux_con;
 
-void Sub::read_control_switch()
-{
-    uint32_t tnow_ms = millis();
-
-    // calculate position of flight mode switch
-    int8_t switch_position;
-    if      (g.rc_5.radio_in < 1231) switch_position = 0;
-    else if (g.rc_5.radio_in < 1361) switch_position = 1;
-    else if (g.rc_5.radio_in < 1491) switch_position = 2;
-    else if (g.rc_5.radio_in < 1621) switch_position = 3;
-    else if (g.rc_5.radio_in < 1750) switch_position = 4;
-    else switch_position = 5;
-
-    // store time that switch last moved
-    if(control_switch_state.last_switch_position != switch_position) {
-        control_switch_state.last_edge_time_ms = tnow_ms;
-    }
-
-    // debounce switch
-    bool control_switch_changed = control_switch_state.debounced_switch_position != switch_position;
-    bool sufficient_time_elapsed = tnow_ms - control_switch_state.last_edge_time_ms > CONTROL_SWITCH_DEBOUNCE_TIME_MS;
-    bool failsafe_disengaged = !failsafe.radio && failsafe.radio_counter == 0;
-
-    if (control_switch_changed && sufficient_time_elapsed && failsafe_disengaged) {
-        // set flight mode and simple mode setting
-    	if (set_mode((control_mode_t)flight_modes[switch_position].get(), MODE_REASON_TX_COMMAND)) {
-            // play a tone
-            if (control_switch_state.debounced_switch_position != -1) {
-                // alert user to mode change failure (except if autopilot is just starting up)
-                if (ap.initialised) {
-                    AP_Notify::events.user_mode_change = 1;
-                }
-            }
-
-            if(!check_if_auxsw_mode_used(AUXSW_SIMPLE_MODE) && !check_if_auxsw_mode_used(AUXSW_SUPERSIMPLE_MODE)) {
-                // if none of the Aux Switches are set to Simple or Super Simple Mode then
-                // set Simple Mode using stored parameters from EEPROM
-                if (BIT_IS_SET(g.super_simple, switch_position)) {
-                    set_simple_mode(2);
-                }else{
-                    set_simple_mode(BIT_IS_SET(g.simple_modes, switch_position));
-                }
-            }
-
-        } else if (control_switch_state.last_switch_position != -1) {
-            // alert user to mode change failure
-            AP_Notify::events.user_mode_change_failed = 1;
-        }
-
-        // set the debounced switch position
-        control_switch_state.debounced_switch_position = switch_position;
-    }
-
-    control_switch_state.last_switch_position = switch_position;
-}
-
 // check_if_auxsw_mode_used - Check to see if any of the Aux Switches are set to a given mode.
 bool Sub::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 {
@@ -105,12 +49,6 @@ bool Sub::check_duplicate_auxsw(void)
     return ret;
 }
 
-void Sub::reset_control_switch()
-{
-    control_switch_state.last_switch_position = control_switch_state.debounced_switch_position = -1;
-    read_control_switch();
-}
-
 // read_3pos_switch
 uint8_t Sub::read_3pos_switch(int16_t radio_in)
 {
@@ -118,6 +56,16 @@ uint8_t Sub::read_3pos_switch(int16_t radio_in)
     if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;    // switch is in high position
     return AUX_SWITCH_MIDDLE;                                       // switch is in middle position
 }
+
+// can't take reference to a bitfield member, thus a #define:
+#define read_aux_switch(chan, flag, option)                           \
+    do {                                                            \
+        switch_position = read_3pos_switch(chan); \
+        if (flag != switch_position) {                              \
+            flag = switch_position;                                 \
+            do_aux_switch_function(option, flag);                   \
+        }                                                           \
+    } while (false)
 
 // read_aux_switches - checks aux switch positions and invokes configured actions
 void Sub::read_aux_switches()
@@ -129,85 +77,31 @@ void Sub::read_aux_switches()
         return;
     }
 
-    // check if ch7 switch has changed position
-    switch_position = read_3pos_switch(g.rc_7.radio_in);
-    if (aux_con.CH7_flag != switch_position) {
-        // set the CH7 flag
-        aux_con.CH7_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
-    }
-
-    // check if Ch8 switch has changed position
-    switch_position = read_3pos_switch(g.rc_8.radio_in);
-    if (aux_con.CH8_flag != switch_position) {
-        // set the CH8 flag
-        aux_con.CH8_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch8_option, aux_con.CH8_flag);
-    }
+    read_aux_switch(CH_7, aux_con.CH7_flag, g.ch7_option);
+    read_aux_switch(CH_8, aux_con.CH8_flag, g.ch8_option);
+    read_aux_switch(CH_9, aux_con.CH9_flag, g.ch9_option);
+    read_aux_switch(CH_10, aux_con.CH10_flag, g.ch10_option);
+    read_aux_switch(CH_11, aux_con.CH11_flag, g.ch11_option);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    // check if Ch9 switch has changed position
-    switch_position = read_3pos_switch(g.rc_9.radio_in);
-    if (aux_con.CH9_flag != switch_position) {
-        // set the CH9 flag
-        aux_con.CH9_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
-    }
-#endif
-
-    // check if Ch10 switch has changed position
-    switch_position = read_3pos_switch(g.rc_10.radio_in);
-    if (aux_con.CH10_flag != switch_position) {
-        // set the CH10 flag
-        aux_con.CH10_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch10_option, aux_con.CH10_flag);
-    }
-
-    // check if Ch11 switch has changed position
-    switch_position = read_3pos_switch(g.rc_11.radio_in);
-    if (aux_con.CH11_flag != switch_position) {
-        // set the CH11 flag
-        aux_con.CH11_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
-    }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    // check if Ch12 switch has changed position
-    switch_position = read_3pos_switch(g.rc_12.radio_in);
-    if (aux_con.CH12_flag != switch_position) {
-        // set the CH12 flag
-        aux_con.CH12_flag = switch_position;
-
-        // invoke the appropriate function
-        do_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
-    }
+    read_aux_switch(CH_12, aux_con.CH12_flag, g.ch12_option);
 #endif
 }
+
+#undef read_aux_switch
 
 // init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
 void Sub::init_aux_switches()
 {
     // set the CH7 ~ CH12 flags
-    aux_con.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
-    aux_con.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
-    aux_con.CH10_flag = read_3pos_switch(g.rc_10.radio_in);
-    aux_con.CH11_flag = read_3pos_switch(g.rc_11.radio_in);
+    aux_con.CH7_flag = read_3pos_switch(CH_7);
+    aux_con.CH8_flag = read_3pos_switch(CH_8);
+    aux_con.CH10_flag = read_3pos_switch(CH_10);
+    aux_con.CH11_flag = read_3pos_switch(CH_11);
 
     // ch9, ch12 only supported on some boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    aux_con.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
-    aux_con.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
-#endif
+    aux_con.CH9_flag = read_3pos_switch(CH_9);
+    aux_con.CH12_flag = read_3pos_switch(CH_12);
 
     // initialise functions assigned to switches
     init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
@@ -216,10 +110,8 @@ void Sub::init_aux_switches()
     init_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
 
     // ch9, ch12 only supported on some boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     init_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
     init_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
-#endif
 }
 
 // init_aux_switch_function - initialize aux functions
@@ -262,20 +154,8 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             set_simple_mode(ch_flag);
             break;
 
-        case AUXSW_RTL:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                // engage RTL (if not possible we remain in current flight mode)
-                set_mode(RTL, MODE_REASON_TX_COMMAND);
-            }else{
-                // return to flight mode switch's flight mode if we are currently in RTL
-                if (control_mode == RTL) {
-                    reset_control_switch();
-                }
-            }
-            break;
-
         case AUXSW_SAVE_TRIM:
-            if ((ch_flag == AUX_SWITCH_HIGH) && (control_mode <= ACRO) && (channel_throttle->control_in == 0)) {
+            if ((ch_flag == AUX_SWITCH_HIGH) && (control_mode <= ACRO) && (channel_throttle->get_control_in() == 0)) {
                 save_trim();
             }
             break;
@@ -290,7 +170,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 }
 
                 // do not allow saving the first waypoint with zero throttle
-                if((mission.num_commands() == 0) && (channel_throttle->control_in == 0)){
+                if((mission.num_commands() == 0) && (channel_throttle->get_control_in() == 0)){
                     return;
                 }
 
@@ -301,7 +181,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 cmd.content.location = current_loc;
 
                 // if throttle is above zero, create waypoint command
-                if(channel_throttle->control_in > 0) {
+                if(channel_throttle->get_control_in() > 0) {
                     cmd.id = MAV_CMD_NAV_WAYPOINT;
                 }else{
                     // with zero throttle, create LAND command
@@ -393,7 +273,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }else{
                 // return to flight mode switch's flight mode if we are currently in AUTO
                 if (control_mode == AUTO) {
-                    reset_control_switch();
+//                    reset_control_switch();
                 }
             }
             break;
@@ -406,7 +286,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 case AUX_SWITCH_MIDDLE:
                     // restore flight mode based on flight mode switch position
                     if (control_mode == AUTOTUNE) {
-                        reset_control_switch();
+//                        reset_control_switch();
                     }
                     break;
                 case AUX_SWITCH_HIGH:
@@ -484,38 +364,11 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // control signal in tradheli
             motors.set_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
 
-            // remember the current value of the motor interlock so that this condition can be restored if we exit the throw mode early
-            throw_early_exit_interlock = motors.get_interlock();
-
             // Log new status
             if (motors.get_interlock()){
                 Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
             } else {
                 Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
-            }
-            break;
-
-        case AUXSW_BRAKE:
-            // brake flight mode
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(BRAKE, MODE_REASON_TX_COMMAND);
-            }else{
-                // return to flight mode switch's flight mode if we are currently in BRAKE
-                if (control_mode == BRAKE) {
-                    reset_control_switch();
-                }
-            }
-            break;
-
-        case AUXSW_THROW:
-            // throw flight mode
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(THROW, MODE_REASON_TX_COMMAND);
-            } else {
-                // return to flight mode switch's flight mode if we are currently in throw mode
-                if (control_mode == THROW) {
-                    reset_control_switch();
-                }
             }
             break;
     }
@@ -525,8 +378,8 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 void Sub::save_trim()
 {
     // save roll and pitch trim
-    float roll_trim = ToRad((float)channel_roll->control_in/100.0f);
-    float pitch_trim = ToRad((float)channel_pitch->control_in/100.0f);
+    float roll_trim = ToRad((float)channel_roll->get_control_in()/100.0f);
+    float pitch_trim = ToRad((float)channel_pitch->get_control_in()/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
     Log_Write_Event(DATA_SAVE_TRIM);
     gcs_send_text(MAV_SEVERITY_INFO, "Trim saved");
@@ -543,10 +396,10 @@ void Sub::auto_trim()
         AP_Notify::flags.save_trim = true;
 
         // calculate roll trim adjustment
-        float roll_trim_adjustment = ToRad((float)channel_roll->control_in / 4000.0f);
+        float roll_trim_adjustment = ToRad((float)channel_roll->get_control_in() / 4000.0f);
 
         // calculate pitch trim adjustment
-        float pitch_trim_adjustment = ToRad((float)channel_pitch->control_in / 4000.0f);
+        float pitch_trim_adjustment = ToRad((float)channel_pitch->get_control_in() / 4000.0f);
 
         // add trim to ahrs object
         // save to eeprom on last iteration

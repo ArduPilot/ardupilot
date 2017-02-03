@@ -7,128 +7,33 @@
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
-static uint32_t auto_disarm_begin;
+//static uint32_t auto_disarm_begin;
 
-// arm_motors_check - checks for pilot input to arm or disarm the copter
-// called at 10hz
-void Sub::arm_motors_check()
-{
-<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
-    // Arm motors automatically
-	if ( !motors.armed() ) {
-    	init_arm_motors(false);
-    }
-
-	/*static int16_t arming_counter;
-=======
-    static int16_t arming_counter;
->>>>>>> Changed to ArduCopter as the base code.
-
-    // ensure throttle is down
-    if (channel_throttle->control_in > 0) {
-        arming_counter = 0;
-        return;
-    }
-
-    int16_t tmp = channel_yaw->control_in;
-
-    // full right
-    if (tmp > 4000) {
-
-        // increase the arming counter to a maximum of 1 beyond the auto trim counter
-        if( arming_counter <= AUTO_TRIM_DELAY ) {
-            arming_counter++;
-        }
-
-        // arm the motors and configure for flight
-        if (arming_counter == ARM_DELAY && !motors.armed()) {
-            // reset arming counter if arming fail
-            if (!init_arm_motors(false)) {
-                arming_counter = 0;
-            }
-        }
-
-        // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors.armed() && control_mode == STABILIZE) {
-            auto_trim_counter = 250;
-            // ensure auto-disarm doesn't trigger immediately
-            auto_disarm_begin = millis();
-        }
-
-    // full left
-    }else if (tmp < -4000) {
-        if (!mode_has_manual_throttle(control_mode) && !ap.land_complete) {
-            arming_counter = 0;
-            return;
-        }
-
-        // increase the counter to a maximum of 1 beyond the disarm delay
-        if( arming_counter <= DISARM_DELAY ) {
-            arming_counter++;
-        }
-
-        // disarm the motors
-        if (arming_counter == DISARM_DELAY && motors.armed()) {
-            init_disarm_motors();
-        }
-
-    // Yaw is centered so reset arming counter
-    }else{
-        arming_counter = 0;
-<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
-    }*/
-=======
-    }
->>>>>>> Changed to ArduCopter as the base code.
-}
-
-// auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds
+// auto_disarm_check
+// Automatically disarm the vehicle under some set of conditions
+// What those conditions should be TBD
 void Sub::auto_disarm_check()
 {
-<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
-    /*uint32_t tnow_ms = millis();
-=======
-    uint32_t tnow_ms = millis();
->>>>>>> Changed to ArduCopter as the base code.
-    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
+	// Disable for now
 
-    // exit immediately if we are already disarmed, or if auto
-    // disarming is disabled
-    if (!motors.armed() || disarm_delay_ms == 0) {
-        auto_disarm_begin = tnow_ms;
-        return;
-    }
-
-    // always allow auto disarm if using interlock switch or motors are Emergency Stopped
-    if ((ap.using_interlock && !motors.get_interlock()) || ap.motor_emergency_stop) {
-        // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
-        // obvious the copter is armed as the motors will not be spinning
-        disarm_delay_ms /= 2;
-    } else {
-        bool sprung_throttle_stick = (g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0;
-        bool thr_low;
-        if (mode_has_manual_throttle(control_mode) || !sprung_throttle_stick) {
-            thr_low = ap.throttle_zero;
-        } else {
-            float deadband_top = g.rc_3.get_control_mid() + g.throttle_deadzone;
-            thr_low = g.rc_3.control_in <= deadband_top;
-        }
-
-        if (!thr_low) {
-            // reset timer
-            auto_disarm_begin = tnow_ms;
-        }
-    }
-
-    // disarm once timer expires
-    if ((tnow_ms-auto_disarm_begin) >= disarm_delay_ms) {
-        init_disarm_motors();
-        auto_disarm_begin = tnow_ms;
-<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
-    }*/
-=======
-    }
->>>>>>> Changed to ArduCopter as the base code.
+//    uint32_t tnow_ms = millis();
+//    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
+//
+//    // exit immediately if we are already disarmed, or if auto
+//    // disarming is disabled
+//    if (!motors.armed() || disarm_delay_ms == 0) {
+//        auto_disarm_begin = tnow_ms;
+//        return;
+//    }
+//
+//    if(!mode_has_manual_throttle(control_mode) || !ap.throttle_zero) {
+//    	auto_disarm_begin = tnow_ms;
+//    }
+//
+//    if(tnow > auto_disarm_begin + disarm_delay_ms) {
+//    	init_disarm_motors();
+//    	auto_disarm_begin = tnow_ms;
+//    }
 }
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
@@ -251,7 +156,7 @@ void Sub::init_disarm_motors()
     mission.reset();
 
     // suspend logging
-    if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {
+    if (!DataFlash.log_while_disarmed()) {
         DataFlash.EnableWrites(false);
     }
 
@@ -289,7 +194,7 @@ void Sub::lost_vehicle_check()
     }
 
     // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors.armed() && (channel_roll->control_in > 4000) && (channel_pitch->control_in > 4000)) {
+    if (ap.throttle_zero && !motors.armed() && (channel_roll->get_control_in() > 4000) && (channel_pitch->get_control_in() > 4000)) {
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;

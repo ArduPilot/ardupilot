@@ -2,7 +2,7 @@
 
 #include "Sub.h"
 
-// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth
+// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw
 //      result is a number from 2 to 12 with 2 being very sluggish and 12 being very crisp
 float Sub::get_smoothing_gain()
 {
@@ -25,7 +25,7 @@ void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &ro
     pitch_in *= scaler;
 
     // do circular limit
-    float total_in = pythagorous2((float)pitch_in, (float)roll_in);
+    float total_in = norm(pitch_in, roll_in);
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;
         roll_in *= ratio;
@@ -82,7 +82,7 @@ float Sub::get_roi_yaw()
 float Sub::get_look_ahead_yaw()
 {
     const Vector3f& vel = inertial_nav.get_velocity();
-    float speed = pythagorous2(vel.x,vel.y);
+    float speed = norm(vel.x,vel.y);
     // Commanded Yaw to automatically look ahead.
     if (position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
         yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
@@ -93,70 +93,6 @@ float Sub::get_look_ahead_yaw()
 /*************************************************************
  *  throttle control
  ****************************************************************/
-
-// update_thr_average - update estimated throttle required to hover (if necessary)
-//  should be called at 100hz
-void Sub::update_thr_average()
-{
-    // ensure throttle_average has been initialised
-    if( is_zero(throttle_average) ) {
-        throttle_average = 0.5f;
-        // update position controller
-        pos_control.set_throttle_hover(throttle_average);
-    }
-
-    // if not armed or landed exit
-    if (!motors.armed() || ap.land_complete) {
-        return;
-    }
-
-    // get throttle output
-    float throttle = motors.get_throttle();
-
-    // calc average throttle if we are in a level hover
-    if (throttle > 0.0f && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
-        throttle_average = throttle_average * 0.99f + throttle * 0.01f;
-        // update position controller
-        pos_control.set_throttle_hover(throttle_average);
-    }
-}
-
-// set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared
-void Sub::set_throttle_takeoff()
-{
-    // tell position controller to reset alt target and reset I terms
-    pos_control.init_takeoff();
-}
-
-// get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
-// used only for manual throttle modes
-// returns throttle output 0 to 1000
-float Sub::get_pilot_desired_throttle(int16_t throttle_control)
-{
-    float throttle_out;
-
-    int16_t mid_stick = channel_throttle->get_control_mid();
-
-    // ensure reasonable throttle values
-    throttle_control = constrain_int16(throttle_control,0,1000);
-    // ensure mid throttle is set within a reasonable range
-    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
-    float thr_mid = MAX(0,g.throttle_mid-g.throttle_min) / (float)(1000-g.throttle_min);
-
-    // check throttle is above, below or in the deadband
-    if (throttle_control < mid_stick) {
-        // below the deadband
-        throttle_out = ((float)throttle_control)*thr_mid/(float)mid_stick;
-    }else if(throttle_control > mid_stick) {
-        // above the deadband
-        throttle_out = (thr_mid) + ((float)(throttle_control-mid_stick)) * (1.0f - thr_mid) / (float)(1000-mid_stick);
-    }else{
-        // must be in the deadband
-        throttle_out = thr_mid;
-    }
-
-    return throttle_out;
-}
 
 // get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
@@ -196,51 +132,6 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
     return desired_rate;
 }
 
-// get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
-float Sub::get_non_takeoff_throttle()
-{
-    return (((float)g.throttle_mid/1000.0f)/2.0f);
-}
-
-float Sub::get_takeoff_trigger_throttle()
-{
-    return channel_throttle->get_control_mid() + g.takeoff_trigger_dz;
-}
-
-// get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output (in the range 0 to 1) before take-off
-// used only for althold, loiter, hybrid flight modes
-float Sub::get_throttle_pre_takeoff(float input_thr)
-{
-    // exit immediately if input_thr is zero
-    if (input_thr <= 0.0f) {
-        return 0.0f;
-    }
-
-    // ensure reasonable throttle values
-    input_thr = constrain_float(input_thr,0.0f,1000.0f);
-
-    float in_min = 0.0f;
-    float in_max = get_takeoff_trigger_throttle();
-
-    // multicopters will output between spin-when-armed and 1/2 of mid throttle
-    float out_min = 0.0f;
-    float out_max = get_non_takeoff_throttle();
-
-    if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {
-        in_min = channel_throttle->get_control_mid();
-    }
-
-    float input_range = in_max-in_min;
-    float output_range = out_max-out_min;
-
-    // sanity check ranges
-    if (input_range <= 0.0f || output_range <= 0.0f) {
-        return 0.0f;
-    }
-
-    return constrain_float(out_min + (input_thr-in_min)*output_range/input_range, out_min, out_max);
-}
-
 // get_surface_tracking_climb_rate - hold copter at the desired distance above the ground
 //      returns climb rate (in cm/s) which should be passed to the position controller
 float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
@@ -278,13 +169,6 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
 #else
     return (float)target_rate;
 #endif
-}
-
-// set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
-void Sub::set_accel_throttle_I_from_pilot_throttle(float pilot_throttle)
-{
-    // shift difference between pilot's throttle and hover throttle into accelerometer I
-    g.pid_accel_z.set_integrator((pilot_throttle-throttle_average) * 1000.0f);
 }
 
 // updates position controller's maximum altitude using fence and EKF limits

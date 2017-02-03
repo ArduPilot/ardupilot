@@ -23,8 +23,7 @@ bool Sub::althold_init(bool ignore_checks)
     pos_control.set_alt_target(inertial_nav.get_altitude());
     pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
-    // stop takeoff if running
-    takeoff_stop();
+    last_pilot_heading = ahrs.yaw_sensor;
 
     return true;
 }
@@ -33,133 +32,77 @@ bool Sub::althold_init(bool ignore_checks)
 // should be called at 100hz or more
 void Sub::althold_run()
 {
-    AltHoldModeState althold_state;
-    float takeoff_climb_rate = 0.0f;
+	uint32_t tnow = AP_HAL::millis();
 
     // initialize vertical speeds and acceleration
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
+
+    if(!motors.armed() || !motors.get_interlock()) {
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        // Multicopters do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+        last_pilot_heading = ahrs.yaw_sensor;
+        return;
+    }
+
+	motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // get pilot desired climb rate
-    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
+    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
-    //bool takeoff_triggered = (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()) && motors.spool_up_complete());
+	// call attitude controller
+	if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
+		attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+		last_pilot_heading = ahrs.yaw_sensor;
+		last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 
-//    // Alt Hold State Machine Determination
-    if(!ap.auto_armed) {
-        althold_state = AltHold_Disarmed;
-//    if (!motors.armed() || !motors.get_interlock()) {
-    //      althold_state = AltHold_MotorStop;
-    // } else if (!ap.auto_armed){
-    //     althold_state = AltHold_Disarmed;
-//    } else if (takeoff_state.running || takeoff_triggered){
-//        althold_state = AltHold_Takeoff;
-//    } else if (ap.land_complete){
-//        althold_state = AltHold_Landed;
-    } else {
-        althold_state = AltHold_Flying;
-    }
+	} else { // hold current heading
 
-    // Alt Hold State Machine
-    switch (althold_state) {
+		// this check is required to prevent bounce back after very fast yaw maneuvers
+		// the inertia of the vehicle causes the heading to move slightly past the point when pilot input actually stopped
+		if(tnow < last_pilot_yaw_input_ms + 250) { // give 250ms to slow down, then set target heading
+			target_yaw_rate = 0; // Stop rotation on yaw axis
 
-    case AltHold_Disarmed:
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-    	// Multicopter do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+			// call attitude controller with target yaw rate = 0 to decelerate on yaw axis
+			attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+			last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
 
-        pos_control.relax_alt_hold_controllers(0);
-        break;
+		} else { // call attitude controller holding absolute absolute bearing
+			attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, last_pilot_heading, true, get_smoothing_gain());
+		}
+	}
 
-    case AltHold_MotorStop:
-    	// Multicopter do not stabilize roll/pitch/yaw when motor are stopped
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-        break;
+	// adjust climb rate using rangefinder
+	if (rangefinder_alt_ok()) {
+		// if rangefinder is ok, use surface tracking
+		target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+	}
 
-    case AltHold_Takeoff:
+	// call z axis position controller
+	if(ap.at_bottom) {
+		pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
+		pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+	} else {
+		pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+	}
 
-        // initiate take-off
-        if (!takeoff_state.running) {
-            takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
-            // indicate we are taking off
-            set_land_complete(false);
-            // clear i terms
-            set_throttle_takeoff();
-        }
-
-        // get take-off adjusted pilot and takeoff climb rates
-        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
-
-        // set motors to full range
-        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-
-        // call position controller
-        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
-        pos_control.update_z_controller();
-        break;
-
-    case AltHold_Landed:
-    	// Multicopter do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
-        // if throttle zero reset attitude and exit immediately
-        if (ap.throttle_zero) {
-            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        } else {
-            motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        }
-
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-        break;
-
-    case AltHold_Flying:
-        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-
-        // adjust climb rate using rangefinder
-        if (rangefinder_alt_ok()) {
-            // if rangefinder is ok, use surface tracking
-            target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
-        }
-
-        // call position controller
-        if(ap.at_bottom) {
-        	pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
-            pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
-        } else if(ap.at_surface) {
-        	if(target_climb_rate < 0.0) { // Dive if the pilot wants to
-            	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        	} else if(pos_control.get_vel_target_z() > 0.0) {
-        		pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
-        		pos_control.set_alt_target(g.surface_depth); // set alt target to the same depth that triggers the surface detector.
-        	}
-        } else {
-        	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        }
-
-        pos_control.update_z_controller();
-        break;
-    }
+	pos_control.update_z_controller();
 
     //control_in is range 0-1000
     //radio_in is raw pwm value
-    motors.set_forward(channel_forward->norm_input_dz());
-    motors.set_lateral(channel_lateral->norm_input_dz());
+    motors.set_forward(channel_forward->norm_input());
+    motors.set_lateral(channel_lateral->norm_input());
 }

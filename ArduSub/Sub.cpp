@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Sub.h"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,13 +14,16 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
-  constructor for main Sub class
- */
+#include "Sub.h"
+#include "version.h"
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+/*
+  constructor for main Sub class
+ */
 Sub::Sub(void) :
+	DataFlash{FIRMWARE_STRING},
     flight_modes(&g.flight_mode1),
     mission(ahrs, 
             FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
@@ -89,9 +91,6 @@ Sub::Sub(void) :
 #endif
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     terrain(ahrs, mission, rally),
-#endif
-#if PRECISION_LANDING == ENABLED
-    precland(ahrs, inertial_nav, g.pi_precland, MAIN_LOOP_SECONDS),
 #endif
     in_mavlink_delay(false),
     gcs_out_of_time(false),

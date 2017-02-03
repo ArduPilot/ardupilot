@@ -38,9 +38,6 @@ void Sub::motor_test_output()
 
             case MOTOR_TEST_THROTTLE_PERCENT:
                 // sanity check motor_test_throttle value
-                if (motor_test_throttle_value <= 100) {
-                    pwm = channel_throttle->radio_min + (channel_throttle->radio_max - channel_throttle->radio_min) * (float)motor_test_throttle_value/100.0f;
-                }
                 break;
 
             case MOTOR_TEST_THROTTLE_PWM:
@@ -48,7 +45,7 @@ void Sub::motor_test_output()
                 break;
 
             case MOTOR_TEST_THROTTLE_PILOT:
-                pwm = channel_throttle->radio_in;
+                pwm = channel_throttle->get_radio_in();
                 break;
 
             default:

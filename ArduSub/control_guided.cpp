@@ -51,35 +51,6 @@ bool Sub::guided_init(bool ignore_checks)
 //    }
 }
 
-
-// guided_takeoff_start - initialises waypoint controller to implement take-off
-bool Sub::guided_takeoff_start(float final_alt_above_home)
-{
-	guided_mode = Guided_TakeOff;
-
-	// initialise wpnav destination
-	Location_Class target_loc = current_loc;
-	target_loc.set_alt_cm(final_alt_above_home, Location_Class::ALT_FRAME_ABOVE_HOME);
-
-	if (!wp_nav.set_wp_destination(target_loc)) {
-		// failure to set destination can only be because of missing terrain data
-		Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
-		// failure is propagated to GCS with NAK
-		return false;
-	}
-
-	// initialise yaw
-	set_auto_yaw_mode(AUTO_YAW_HOLD);
-
-	// clear i term when we're taking off
-	set_throttle_takeoff();
-
-	// get initial alt for WP_TKOFF_NAV_ALT
-	auto_takeoff_set_start_alt();
-
-	return true;
-}
-
 // initialise guided mode's position controller
 void Sub::guided_pos_control_start()
 {
@@ -270,7 +241,7 @@ void Sub::guided_set_angle(const Quaternion &q, float climb_rate_cms)
     q.to_euler(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd);
     guided_angle_state.roll_cd = ToDeg(guided_angle_state.roll_cd) * 100.0f;
     guided_angle_state.pitch_cd = ToDeg(guided_angle_state.pitch_cd) * 100.0f;
-    guided_angle_state.yaw_cd = wrap_180_cd_float(ToDeg(guided_angle_state.yaw_cd) * 100.0f);
+    guided_angle_state.yaw_cd = wrap_180_cd(ToDeg(guided_angle_state.yaw_cd) * 100.0f);
 
     guided_angle_state.climb_rate_cms = climb_rate_cms;
     guided_angle_state.update_time_ms = millis();
@@ -282,11 +253,6 @@ void Sub::guided_run()
 {
     // call the correct auto controller
     switch (guided_mode) {
-
-    case Guided_TakeOff:
-        // run takeoff controller
-        guided_takeoff_run();
-        break;
 
     case Guided_WP:
         // run position controller
@@ -310,39 +276,6 @@ void Sub::guided_run()
     }
  }
 
-// guided_takeoff_run - takeoff in guided mode
-//      called by guided_run at 100hz or more
-void Sub::guided_takeoff_run()
-{
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-    	// multicopters do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-
-        return;
-    }
-
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!failsafe.radio) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
-    }
-
-    // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // run waypoint controller
-    failsafe_terrain_set_status(wp_nav.update_wpnav());
-
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control.update_z_controller();
-
-    // call attitude controller
-    auto_takeoff_attitude_run(target_yaw_rate);
-}
-
 // guided_pos_control_run - runs the guided position controller
 // called from guided_run
 void Sub::guided_pos_control_run()
@@ -360,7 +293,7 @@ void Sub::guided_pos_control_run()
     float target_yaw_rate = 0;
     if (!failsafe.manual_control) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
@@ -404,7 +337,7 @@ void Sub::guided_vel_control_run()
     float target_yaw_rate = 0;
     if (!failsafe.manual_control) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
@@ -453,7 +386,7 @@ void Sub::guided_posvel_control_run()
 
     if (!failsafe.manual_control) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
@@ -518,7 +451,7 @@ void Sub::guided_angle_control_run()
     // constrain desired lean angles
     float roll_in = guided_angle_state.roll_cd;
     float pitch_in = guided_angle_state.pitch_cd;
-    float total_in = pythagorous2(roll_in, pitch_in);
+    float total_in = norm(roll_in, pitch_in);
     float angle_max = MIN(attitude_control.get_althold_lean_angle_max(), aparm.angle_max);
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;
@@ -527,7 +460,7 @@ void Sub::guided_angle_control_run()
     }
 
     // wrap yaw request
-    float yaw_in = wrap_180_cd_float(guided_angle_state.yaw_cd);
+    float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
 
     // constrain climb rate
     float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav.get_speed_down()), wp_nav.get_speed_up());
