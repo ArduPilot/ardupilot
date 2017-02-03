@@ -29,15 +29,8 @@ def build(bld):
         ],
     )
 
-    frames = (
-        'bluerov','vectored','vectored6DOF','simplerov','vectored90'
+    bld.ap_program(
+        program_name='ardusub',
+        program_groups=['bin', 'sub'],
+        use=vehicle + '_libs',
     )
-
-    for frame in frames:
-        frame_config = frame.upper().replace('-','_') + '_FRAME'
-        bld.ap_program(
-            program_name='ardusub-%s' % frame,
-            program_groups=['bin', 'sub'],
-            use=vehicle + '_libs',
-            defines=['FRAME_CONFIG=%s' % frame_config],
-        )
