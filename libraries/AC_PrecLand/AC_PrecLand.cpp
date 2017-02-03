@@ -162,10 +162,11 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
             Vector3f target_vec_unit_ned = _attitude_history.front() * Rz * target_vec_unit_body;
 
             bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
+            bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_cm > 0.0f) || (_backend->distance_to_target() > 0.0f);
 
-            if (target_vec_valid && ( (rangefinder_alt_valid && rangefinder_alt_cm > 0.0f) || ((enum PrecLandType)(_type.get()) == PRECLAND_TYPE_COMPANION && _backend->distance_to_target()) ) ) {
+            if (target_vec_valid && alt_valid) {
                 float alt;
-                if ((enum PrecLandType)(_type.get()) == PRECLAND_TYPE_COMPANION && _backend->distance_to_target()) {
+                if (_backend->distance_to_target() > 0.0f) {
                     alt = _backend->distance_to_target();
                 } else {
                     alt = MAX(rangefinder_alt_cm*0.01f, 0.0f);
