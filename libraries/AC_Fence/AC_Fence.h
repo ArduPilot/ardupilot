@@ -22,6 +22,7 @@
 
 // default boundaries
 #define AC_FENCE_ALT_MAX_DEFAULT                    100.0f  // default max altitude is 100m
+#define AC_FENCE_ALT_MIN_DEFAULT                    -10.0f  // default maximum depth in meters
 #define AC_FENCE_CIRCLE_RADIUS_DEFAULT              300.0f  // default circular fence radius is 300m
 #define AC_FENCE_ALT_MAX_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further up
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
@@ -77,7 +78,10 @@ public:
     uint8_t get_action() const { return _action.get(); }
 
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
-    float get_safe_alt() const { return _alt_max - _margin; }
+    float get_safe_alt_max() const { return _alt_max - _margin; }
+
+    /// get_safe_alt_min - returns the minimum safe altitude (i.e. alt_min - margin)
+    float get_safe_alt_min() const { return _alt_min + _margin; }
 
     /// get_radius - returns the fence radius in meters
     float get_radius() const { return _circle_radius.get(); }
@@ -132,6 +136,7 @@ private:
     AP_Int8         _enabled_fences;        // bit mask holding which fences are enabled
     AP_Int8         _action;                // recovery action specified by user
     AP_Float        _alt_max;               // altitude upper limit in meters
+    AP_Float        _alt_min;               // altitude lower limit in meters
     AP_Float        _circle_radius;         // circle fence radius in meters
     AP_Float        _margin;                // distance in meters that autopilot's should maintain from the fence to avoid a breach
     AP_Int8         _total;                 // number of polygon points saved in eeprom
