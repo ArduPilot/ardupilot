@@ -10,6 +10,10 @@
 #define HAL_BARO_MS5611_I2C_ADDR 0x77
 #endif
 
+#ifndef HAL_BARO_MS5837_I2C_ADDR
+#define HAL_BARO_MS5837_I2C_ADDR 0x76
+#endif
+
 class AP_Baro_MS56XX : public AP_Baro_Backend
 {
 public:
@@ -18,7 +22,8 @@ public:
     enum MS56XX_TYPE {
         BARO_MS5611 = 0,
         BARO_MS5607 = 1,
-        BARO_MS5637 = 2
+        BARO_MS5637 = 2,
+        BARO_MS5837 = 3
     };
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, enum MS56XX_TYPE ms56xx_type = BARO_MS5611);
@@ -40,6 +45,7 @@ private:
     void _calculate_5611();
     void _calculate_5607();
     void _calculate_5637();
+    void _calculate_5837();
     bool _read_prom_5611(uint16_t prom[8]);
     bool _read_prom_5637(uint16_t prom[8]);
 
