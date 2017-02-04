@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 #if CLI_ENABLED == ENABLED
@@ -44,7 +42,7 @@ int8_t Copter::test_baro(uint8_t argc, const Menu::arg *argv)
         read_barometer();
 
         if (!barometer.healthy()) {
-            cliSerial->println("not healthy");
+            cliSerial->printf("not healthy\n");
         } else {
             cliSerial->printf("Alt: %0.2fm, Raw: %f Temperature: %.1f\n",
                                 (double)(baro_alt / 100.0f),
@@ -71,7 +69,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
     }
 
     if (!compass.init()) {
-        cliSerial->println("Compass initialisation failed!");
+        cliSerial->printf("Compass initialisation failed!\n");
         return 0;
     }
 
@@ -127,7 +125,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
                                         (double)mag_ofs.y,
                                         (double)mag_ofs.z);
                 } else {
-                    cliSerial->println("compass not healthy");
+                    cliSerial->printf("compass not healthy\n");
                 }
                 counter=0;
             }
@@ -139,7 +137,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
 
     // save offsets. This allows you to get sane offset values using
     // the CLI before you go flying.
-    cliSerial->println("saving offsets");
+    cliSerial->printf("saving offsets\n");
     compass.save_offsets();
     return (0);
 }

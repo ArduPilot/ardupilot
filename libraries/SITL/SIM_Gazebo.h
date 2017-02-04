@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,7 +44,8 @@ private:
       packet sent to Gazebo
      */
     struct servo_packet {
-      float motor_speed[4];
+      // size matches sitl_input upstream
+      float motor_speed[16];
     };
 
     /*

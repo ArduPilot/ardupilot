@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /************************************************************
 * SoloGimbal -- library to control a 3 axis rate gimbal.     *
 *                                                           *
@@ -18,7 +16,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_AccelCal/AP_AccelCal.h>
 
 #include "SoloGimbal_Parameters.h"

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,7 +40,7 @@ public:
     }
 
 private:
-    static const uint16_t fdm_port = 9002;
+    static const uint16_t fdm_port = 5002;
 
     /*
       packet sent to last_letter

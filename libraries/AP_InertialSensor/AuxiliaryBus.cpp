@@ -16,9 +16,10 @@ AuxiliaryBusSlave::~AuxiliaryBusSlave()
 {
 }
 
-AuxiliaryBus::AuxiliaryBus(AP_InertialSensor_Backend &backend, uint8_t max_slaves)
+AuxiliaryBus::AuxiliaryBus(AP_InertialSensor_Backend &backend, uint8_t max_slaves, uint32_t devid)
     : _max_slaves(max_slaves)
     , _ins_backend(backend)
+    , _devid(devid)
 {
     _slaves = (AuxiliaryBusSlave**) calloc(max_slaves, sizeof(AuxiliaryBusSlave*));
 }
@@ -98,4 +99,13 @@ int AuxiliaryBus::register_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg,
     _slaves[_n_slaves++] = slave;
 
     return 0;
+}
+
+/*
+  add a periodic callback. This is added to a list which the backend needs to then process
+ */
+AP_HAL::Device::PeriodicHandle AuxiliaryBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    // not implemented yet
+    return nullptr;
 }

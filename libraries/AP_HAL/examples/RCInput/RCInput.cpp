@@ -39,7 +39,7 @@ void loop(void)
                 for (uint8_t i = 0; i < max_channels_display; i++) {
                     hal.console->printf("%2u:%04u ", (unsigned)i+1, (unsigned)last_value[i]);
                 }
-                hal.console->println();
+                hal.console->printf("\n");
             }
         } else {
             hal.console->printf("Channels detected: %2u\n", nchannels);

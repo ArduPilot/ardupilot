@@ -43,7 +43,6 @@
 #include "Flow_PX4.h"
 
 #include <cmath>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 

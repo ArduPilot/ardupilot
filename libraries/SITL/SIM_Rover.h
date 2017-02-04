@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,8 +40,6 @@ public:
 private:
     float max_speed;
     float max_accel;
-    float wheelbase;
-    float wheeltrack;
     float max_wheel_turn;
     float turning_circle;
     float skid_turn_rate;

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple test for the GCS_MAVLink routing 
 //
@@ -44,7 +42,7 @@ static MAVLink_routing routing;
 
 void setup(void)
 {
-    hal.console->println("routing test startup...");
+    hal.console->printf("routing test startup...\n");
     gcs[0].init(hal.uartA, MAVLINK_COMM_0);
 }
 

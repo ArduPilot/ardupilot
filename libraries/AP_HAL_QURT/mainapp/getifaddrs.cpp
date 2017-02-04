@@ -35,7 +35,7 @@
 
 void freeifaddrs(struct ifaddrs *ifp)
 {
-	if (ifp != NULL) {
+	if (ifp != nullptr) {
 		free(ifp->ifa_name);
 		free(ifp->ifa_addr);
 		free(ifp->ifa_netmask);
@@ -51,8 +51,8 @@ static struct sockaddr *sockaddr_dup(struct sockaddr *sa)
 	socklen_t socklen;
 	socklen = sizeof(struct sockaddr_storage);
 	ret = (struct sockaddr *)calloc(1, socklen);
-	if (ret == NULL)
-		return NULL;
+	if (ret == nullptr)
+		return nullptr;
 	memcpy(ret, sa, socklen);
 	return ret;
 }
@@ -67,11 +67,11 @@ int getifaddrs(struct ifaddrs **ifap)
 	struct ifconf ifc;
 	char buff[8192];
 	int fd, i, n;
-	struct ifreq *ifr=NULL;
+	struct ifreq *ifr=nullptr;
 	struct ifaddrs *curif;
-	struct ifaddrs *lastif = NULL;
+	struct ifaddrs *lastif = nullptr;
 
-	*ifap = NULL;
+	*ifap = nullptr;
 
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 		return -1;
@@ -98,27 +98,27 @@ int getifaddrs(struct ifaddrs **ifap)
 		}
 
 		curif = (struct ifaddrs *)calloc(1, sizeof(struct ifaddrs));
-		if (curif == NULL) {
+		if (curif == nullptr) {
 			freeifaddrs(*ifap);
 			close(fd);
 			return -1;
 		}
 		curif->ifa_name = strdup(ifr[i].ifr_name);
-		if (curif->ifa_name == NULL) {
+		if (curif->ifa_name == nullptr) {
 			free(curif);
 			freeifaddrs(*ifap);
 			close(fd);
 			return -1;
 		}
 		curif->ifa_flags = ifr[i].ifr_flags;
-		curif->ifa_dstaddr = NULL;
-		curif->ifa_data = NULL;
-		curif->ifa_next = NULL;
+		curif->ifa_dstaddr = nullptr;
+		curif->ifa_data = nullptr;
+		curif->ifa_next = nullptr;
 
-		curif->ifa_addr = NULL;
+		curif->ifa_addr = nullptr;
 		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != -1) {
 			curif->ifa_addr = sockaddr_dup(&ifr[i].ifr_addr);
-			if (curif->ifa_addr == NULL) {
+			if (curif->ifa_addr == nullptr) {
 				free(curif->ifa_name);
 				free(curif);
 				freeifaddrs(*ifap);
@@ -127,11 +127,11 @@ int getifaddrs(struct ifaddrs **ifap)
 			}
 		}
 
-		curif->ifa_netmask = NULL;
+		curif->ifa_netmask = nullptr;
 		if (ioctl(fd, SIOCGIFNETMASK, &ifr[i]) != -1) {
 			curif->ifa_netmask = sockaddr_dup(&ifr[i].ifr_addr);
-			if (curif->ifa_netmask == NULL) {
-				if (curif->ifa_addr != NULL) {
+			if (curif->ifa_netmask == nullptr) {
+				if (curif->ifa_addr != nullptr) {
 					free(curif->ifa_addr);
 				}
 				free(curif->ifa_name);
@@ -142,7 +142,7 @@ int getifaddrs(struct ifaddrs **ifap)
 			}
 		}
 
-		if (lastif == NULL) {
+		if (lastif == nullptr) {
 			*ifap = curif;
 		} else {
 			lastif->ifa_next = curif;
@@ -157,9 +157,9 @@ int getifaddrs(struct ifaddrs **ifap)
 
 const char *get_ipv4_broadcast(void)
 {
-    struct ifaddrs *ifap = NULL;
+    struct ifaddrs *ifap = nullptr;
     if (getifaddrs(&ifap) != 0) {
-        return NULL;
+        return nullptr;
     }
     struct ifaddrs *ia;
     for (ia=ifap; ia; ia=ia->ifa_next) {
@@ -175,7 +175,7 @@ const char *get_ipv4_broadcast(void)
         return ret;
     }
     freeifaddrs(ifap);
-    return NULL;
+    return nullptr;
 }
 
 #ifdef MAIN_PROGRAM

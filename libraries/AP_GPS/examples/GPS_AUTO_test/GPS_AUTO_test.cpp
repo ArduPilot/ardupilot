@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 // Test for AP_GPS_AUTO
 //
@@ -26,7 +25,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/AP_BoardLED.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -50,7 +48,7 @@ AP_SerialManager serial_manager;
 
 void setup()
 {
-    hal.console->println("GPS AUTO library test");
+    hal.console->printf("GPS AUTO library test\n");
 
     AP_BoardConfig{}.init();
 
@@ -59,7 +57,7 @@ void setup()
 
     // Initialize the UART for GPS system
     serial_manager.init();
-    gps.init(NULL, serial_manager);
+    gps.init(nullptr, serial_manager);
 }
 
 void loop()
@@ -81,9 +79,9 @@ void loop()
         const Location &loc = gps.location();
 
         // Print the contents of message
-        hal.console->print("Lat: ");
+        hal.console->printf("Lat: ");
         print_latlon(hal.console, loc.lat);
-        hal.console->print(" Lon: ");
+        hal.console->printf(" Lon: ");
         print_latlon(hal.console, loc.lng);
         hal.console->printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %u/%lu STATUS: %u\n",
                             loc.alt * 0.01f,

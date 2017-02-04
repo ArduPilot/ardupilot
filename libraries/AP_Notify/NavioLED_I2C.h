@@ -22,9 +22,14 @@
 class NavioLED_I2C : public NavioLED
 {
 protected:
-    virtual bool hw_init(void);
-    virtual bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b);
+    bool hw_init(void) override;
+    bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    void _timer(void);
+    struct {
+        uint8_t r, g, b;
+    } rgb;
+    bool _need_update;
 };

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #include "AC_Circle.h"
 #include <AP_Math/AP_Math.h>
@@ -35,7 +34,6 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
     _inav(inav),
     _ahrs(ahrs),
     _pos_control(pos_control),
-    _last_update(0),
     _yaw(0.0f),
     _angle(0.0f),
     _angle_total(0.0f),

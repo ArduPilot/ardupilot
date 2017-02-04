@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -66,15 +65,37 @@ public:
     virtual AuxiliaryBus *get_auxiliary_bus() { return nullptr; }
 
     /*
-      return the product ID
+     * Return the unique identifier for this backend: it's the same for
+     * several sensors if the backend registers more gyros/accels
      */
-    int16_t product_id(void) const { return _product_id; }
-
     int16_t get_id() const { return _id; }
 
+    /*
+      device driver IDs. These are used to fill in the devtype field
+      of the device ID, which shows up as INS*ID* parameters to
+      users. The values are chosen for compatibility with existing PX4
+      drivers.
+      If a change is made to a driver that would make existing
+      calibration values invalid then this number must be changed.
+     */
+    enum DevTypes {
+        DEVTYPE_BMI160       = 0x09,
+        DEVTYPE_L3G4200D     = 0x10,
+        DEVTYPE_ACC_LSM303D  = 0x11,
+        DEVTYPE_ACC_BMA180   = 0x12,
+        DEVTYPE_ACC_MPU6000  = 0x13,
+        DEVTYPE_ACC_MPU9250  = 0x16,
+        DEVTYPE_GYR_MPU6000  = 0x21,
+        DEVTYPE_GYR_L3GD20   = 0x22,
+        DEVTYPE_GYR_MPU9250  = 0x24
+    };
+        
 protected:
     // access to frontend
     AP_InertialSensor &_imu;
+
+    // semaphore for access to shared frontend data
+    AP_HAL::Semaphore *_sem;
 
     void _rotate_and_correct_accel(uint8_t instance, Vector3f &accel);
     void _rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro);
@@ -119,9 +140,12 @@ protected:
     // set gyro error_count
     void _set_gyro_error_count(uint8_t instance, uint32_t error_count);
 
-    // backend should fill in its product ID from AP_PRODUCT_ID_*
-    int16_t _product_id;
+    // increment accelerometer error_count
+    void _inc_accel_error_count(uint8_t instance);
 
+    // increment gyro error_count
+    void _inc_gyro_error_count(uint8_t instance);
+    
     // backend unique identifier or -1 if backend doesn't identify itself
     int16_t _id = -1;
 
@@ -136,7 +160,7 @@ protected:
 
     // access to frontend dataflash
     DataFlash_Class *get_dataflash(void) const {
-        return _imu._log_raw_data? _imu._dataflash : NULL;
+        return _imu._log_raw_data? _imu._dataflash : nullptr;
     }
 
     // common gyro update function for all backends
@@ -149,6 +173,25 @@ protected:
     int8_t _last_accel_filter_hz[INS_MAX_INSTANCES];
     int8_t _last_gyro_filter_hz[INS_MAX_INSTANCES];
 
+    void set_gyro_orientation(uint8_t instance, enum Rotation rotation) {
+        _imu._gyro_orientation[instance] = rotation;
+    }
+
+    void set_accel_orientation(uint8_t instance, enum Rotation rotation) {
+        _imu._accel_orientation[instance] = rotation;
+    }
+
+    // increment clipping counted. Used by drivers that do decimation before supplying
+    // samples to the frontend
+    void increment_clip_count(uint8_t instance) {
+        _imu._accel_clip_count[instance]++;
+    }
+
+    // should fast sampling be enabled on this IMU?
+    bool enable_fast_sampling(uint8_t instance) {
+        return (_imu._fast_sampling_mask & (1U<<instance)) != 0;
+    }
+    
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available

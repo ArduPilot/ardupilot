@@ -1,4 +1,110 @@
-APM:Copter Release Notes:
+ArduPilot Copter Release Notes:
+------------------------------------------------------------------
+Copter 3.5-rc1 28-Jan-2017
+Changes from 3.4.4
+1) Multicopter firmware consolidated into single binary, users must set FRAME_CLASS parameter (1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri)
+2) PixRacer specific items:
+    a) board LEDs supported
+    b) ESC calibration start problem resolved (was sometimes not detecting high throttle from pilot)
+3) Relaxed compass calibration and compass consistency checks
+4) Sensor and Optional Hardware Improvements:
+    a) IMU sampling rate for MPU9250, ICM20608 IMUs to 8kHz for improved vibration resistance (Pixracer, Pixhawk2)
+    b) Onboard Display (http://ardupilot.org/copter/docs/common-display-onboard.html)
+    c) Here+ RTK GPS (UBlox M8P RTK) support
+    d) LightWare I2C drivers usable on Copter (thanks to in-tree drivers below)
+    e) MaxBotix sonar with serial interface now supported
+    f) Bebop optical flow (but sonar not yet operational making this feature currently impossible to use)
+5) Precision Loiter using IRLock sensor (set CH7_OPT to 39)
+6) Delivery improvements:
+   a) Servo gripper (http://ardupilot.org/copter/docs/common-gripper-servo.html)
+   b) Package_Place mission command (drops package without vehicle landing) 
+7) Pozyx support for Non-GPS flight (http://ardupilot.org/copter/docs/common-pozyx.html)
+8) EKF improvements:
+    a) improved blending of optical flow and GPS
+    b) EKF3 added in ride-along.  Enable by setting EK3_ENABLE=1
+    c) improvements when using range finder as primary height reference
+9) Object Avoidance improvements (http://ardupilot.org/dev/docs/code-overview-object-avoidance.html):
+    a) uses mini-fence
+    b) accepts MAVLink distance-sensor messages 
+    c) simple avoidance in AltHold mode 
+10) Other improvements:
+    a) pre-arm check that logging is working
+    b) better reporting of battery failsafe to ground stations
+    c) reduced minimum waypoint speed to 20cm/s
+    d) Flight time recorder (http://ardupilot.org/copter/docs/common-flight-time-recorder.html)
+    e) UBlox GPS baud rate fix (was occasionally selecting wrong rate) 
+11) Technical improvements (users may not see a functional change):
+    a) in-tree drivers lead to improved sharing of drivers with Linux boards
+    b) copter arming checks consolidated with other vehicles
+------------------------------------------------------------------
+Copter 3.4.4 06-Jan-2017 / Copter 3.4.4-rc1 21-Dec-2016
+Changes from 3.4.3
+1) Bug Fixes / Minor Enhancements:
+    a) prevent unwanted EKF core switching at startup
+    b) helicopter prevented from taking off in position hold mode before rotors at full speed
+    c) battery resistance calculations fixed
+    d) avoid unnecessary parameter change notifications to ground station
+    e) default power module definitions for Navio boards
+    f) on-board compass calibration capability bit added (tells ground stations that onboard calibration is supported)
+------------------------------------------------------------------
+Copter 3.4.3 08-Dec-2016 / Copter 3.4.3-rc1 01-Dec-2016
+Changes from 3.4.2
+1) Bug Fixes:
+    a) reduce unnecessary EKF core switching and fix position reset
+    b) attitude control does not limit rate if ATC_ACCEL_MAX is zero
+    c) ignore arm command from GCS if already armed
+    d) set land-complete to false during auto takeoff 
+    e) onboard compass calibration memory init fix that could lead to failure to complete
+2) Minor Improvements:
+    a) LeddarOne driver robustness improvements
+    b) allow MOT_THR_MIX_MAX to be as high as 2.0
+    c) uavcan bus settle time increased to 2sec
+    d) helicopters do not hold position during auto takeoff until rotor is at full speed
+------------------------------------------------------------------
+Copter 3.4.2 16-Nov-2016 / Copter 3.4.2-rc1/rc2 07-Nov-2016
+Changes from 3.4.1
+1) Minor Improvements:
+    a) ACRO_Y_EXPO applies to all flight modes (but is defaulted to zero)
+    b) Autotune timeout increased (helps with large copters)
+    c) AltHold filter applied to P (was previously only for D)
+    d) arming check for compass health (was previously only a pre-arm check)
+2) Bug Fixes:
+    a) compass calibration (onboard) fix to return completion status
+    b) LeddarOne driver busy-wait fix 
+    c) SBF GPS altitude and accuracy reporting fix 
+    d) MAV GPS uses existing configured baud rate instead of auto detecting 
+------------------------------------------------------------------
+Copter 3.4.1 01-Nov-2016
+Changes from 3.4.0
+1) Pixracer PPM RC input fix
+------------------------------------------------------------------
+Copter 3.4.0 31-Oct-2016
+Changes from 3.4.0-rc7
+1) Disabled LeddarOne driver (will be fixed in AC3.4.1 within a couple of weeks)
+------------------------------------------------------------------
+Copter 3.4.0-rc7 25-Oct-2016
+Changes from 3.4.0-rc6
+1) Bug fixes, minor improvements:
+    a) more DSM binding fixes for pixracer
+    b) allow non-motor channels to move before safety switch is pressed
+    c) fix Bebop motor order
+    d) fix MAVLink system id for first few messages
+    e) fix throw mode throttle while rotating to level
+------------------------------------------------------------------
+Copter 3.4.0-rc6 15-Oct-2016
+Changes from 3.4.0-rc5
+1) Object Avoidance with SF40c 360 lidar
+2) ACRO_Y_EXPO parameter allows exponential yaw in ACRO mode (slow yaw at mid stick but fast response at full stick)
+3) ACRO_THR_MID parameter allows custom mid throttle for ACRO mode
+4) Precision Landing reliability and accuracy improvements using mini EKF and adding IRLock lens distortion correction 
+5) Bug fixes, minor improvements:
+    a) fix DSM binding on Pixracer
+    b) resolved position jump caused by EKF core change (also added logging and reporting to GCS)
+    c) EKF failsafe while in LAND triggers non-GPS LAND
+    d) small throttle jump removed when switching between AltHold, Loiter
+6) Safety:
+    a) EKF falls back to optical flow if GPS fails
+    b) pre-arm check that GPS configuration has completed
 ------------------------------------------------------------------
 Copter 3.4.0-rc5 14-Sep-2016
 Changes from 3.4.0-rc4

@@ -11,4 +11,6 @@ class Empty::RCOutput : public AP_HAL::RCOutput {
     void     write(uint8_t ch, uint16_t period_us);
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
+    void     cork(void) override {}
+    void     push(void) override {}
 };

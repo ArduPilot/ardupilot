@@ -4,7 +4,8 @@
 set -ex
 
 PKGS="build-essential gawk ccache genromfs libc6-i386 \
-      python-dev python-pip zlib1g-dev gcc-4.9 g++-4.9 cmake cmake-data" # clang-3.7 llvm-3.7"
+      libxml2-dev libxslt1-dev python-dev python-pip zlib1g-dev \
+      gcc-4.9 g++-4.9 cmake cmake-data" # clang-3.7 llvm-3.7"
 
 read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
 

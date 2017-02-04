@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 /*
@@ -55,29 +53,23 @@ void Plane::failsafe_check(void)
 
         // pass RC inputs to outputs every 20ms
         hal.rcin->clear_overrides();
-        channel_roll->set_radio_out(channel_roll->read());
-        channel_pitch->set_radio_out(channel_pitch->read());
-        if (hal.util->get_soft_armed()) {
-            channel_throttle->set_radio_out(channel_throttle->read());
+
+        int16_t roll = channel_roll->get_control_in_zero_dz();
+        int16_t pitch = channel_pitch->get_control_in_zero_dz();
+        int16_t throttle = channel_throttle->get_control_in_zero_dz();
+        int16_t rudder = channel_rudder->get_control_in_zero_dz();
+
+        if (!hal.util->get_soft_armed()) {
+            throttle = 0;
         }
-        channel_rudder->set_radio_out(channel_rudder->read());
-
-        int16_t roll = channel_roll->pwm_to_angle_dz(0);
-        int16_t pitch = channel_pitch->pwm_to_angle_dz(0);
-        int16_t rudder = channel_rudder->pwm_to_angle_dz(0);
-
+        
         // setup secondary output channels that don't have
         // corresponding input channels
-        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_aileron, roll);
-        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_elevator, pitch);
-        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_rudder, rudder);
-        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_steering, rudder);
-
-        if (g.vtail_output != MIXING_DISABLED) {
-            channel_output_mixer(g.vtail_output, channel_pitch, channel_rudder);
-        } else if (g.elevon_output != MIXING_DISABLED) {
-            channel_output_mixer(g.elevon_output, channel_pitch, channel_roll);
-        }
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
 
         // this is to allow the failsafe module to deliberately crash 
         // the plane. Only used in extreme circumstances to meet the
@@ -87,23 +79,16 @@ void Plane::failsafe_check(void)
             return;
         }
 
-        if (!demoing_servos) {
-            channel_roll->output();
-            channel_pitch->output();
-        }
-        channel_throttle->output();
-        if (g.rudder_only == 0) {
-            channel_rudder->output();
-        }
-
         // setup secondary output channels that do have
         // corresponding input channels
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input, true);
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input, true);
-        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_flap, 0);
-        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_flap_auto, 0);
+        SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);
+        SRV_Channels::copy_radio_in_out(SRV_Channel::k_aileron_with_input, true);
+        SRV_Channels::copy_radio_in_out(SRV_Channel::k_elevator_with_input, true);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 0);
 
+        servos_output();
+        
         // setup flaperons
         flaperon_update(0);
     }

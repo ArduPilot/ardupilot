@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 // Unit tests for the AP_Math rotations code
 //
@@ -148,9 +147,9 @@ static void test_matrix_inverse(void)
 
 void setup(void)
 {
-    hal.console->println("Matrix Algebra test\n");
+    hal.console->printf("Matrix Algebra test\n\n");
     test_matrix_inverse();
-    hal.console->println("Matrix Algebra tests done\n");
+    hal.console->printf("Matrix Algebra tests done\n\n");
 }
 
 void loop(void) {}

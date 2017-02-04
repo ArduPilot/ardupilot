@@ -55,7 +55,7 @@ HAL_QURT::HAL_QURT() :
         &uartCDriver,
         &uartDDriver,
         &uartEDriver,
-        NULL, // uartF
+        nullptr, // uartF
         &i2c_mgr_instance,
         &spiDeviceManager,
         &analogIn,
@@ -66,7 +66,7 @@ HAL_QURT::HAL_QURT() :
         &rcoutDriver,
         &schedulerInstance,
         &utilInstance,
-        NULL)
+        nullptr)
 {
 }
 

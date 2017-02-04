@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_AdvancedFailsafe.h"
 #include <RC_Channel/RC_Channel.h>
-#include <RC_Channel/RC_Channel_aux.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;

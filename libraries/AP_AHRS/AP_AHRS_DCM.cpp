@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       APM_AHRS_DCM.cpp
  *
@@ -944,8 +943,7 @@ void AP_AHRS_DCM::estimate_wind(void)
 void
 AP_AHRS_DCM::euler_angles(void)
 {
-    _body_dcm_matrix = _dcm_matrix;
-    _body_dcm_matrix.rotateXYinv(_trim);
+    _body_dcm_matrix = _dcm_matrix * get_rotation_vehicle_body_to_autopilot_body();
     _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
     update_cd_values();

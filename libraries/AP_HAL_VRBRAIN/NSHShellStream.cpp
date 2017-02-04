@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   implementation of NSH shell as a stream, for use in nsh over MAVLink
 
@@ -32,7 +31,7 @@ void NSHShellStream::shell_thread(void *arg)
     dup2(nsh->child.out, 1);
     dup2(nsh->child.out, 2);
 
-    nsh_consolemain(0, NULL);    
+    nsh_consolemain(0, nullptr);
 
     nsh->shell_stdin  = -1;
     nsh->shell_stdout = -1;

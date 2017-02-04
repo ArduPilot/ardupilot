@@ -22,6 +22,8 @@ addons:
       - ccache
       - genromfs
       - libc6-i386
+      - libxml2-dev
+      - libxslt1-dev
       - python-pip
       - python-dev
       - zlib1g-dev
@@ -74,5 +76,7 @@ matrix:
   include:
     - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v2 px4-v4"
+    - compiler: "gcc"
+      env: CI_BUILD_TARGET="px4-v3"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest"

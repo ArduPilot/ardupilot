@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -23,6 +22,8 @@ public:
     void read();
 
 private:
+
+    void timer(void);
 
     // read word from register
     // returns true if read was successful, false if failed

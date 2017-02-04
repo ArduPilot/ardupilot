@@ -1,4 +1,3 @@
-// -*- tab-width: 8; Mode: C++; c-basic-offset: 8; indent-tabs-mode: -*- t -*-
 /*
   st24 decoder, based on PX4Firmware/src/rc/lib/rc/st24.c from PX4Firmware
   modified for use in AP_HAL_* by Andrew Tridgell

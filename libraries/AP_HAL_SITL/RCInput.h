@@ -9,11 +9,9 @@
 
 class HALSITL::RCInput : public AP_HAL::RCInput {
 public:
-    RCInput(SITL_State *sitlState) {
-        _sitlState = sitlState;
-    }
+    explicit RCInput(SITL_State *sitlState): _sitlState(sitlState) {}
     void init() override;
-    bool  new_input() override;
+    bool new_input() override;
     uint8_t num_channels() override {
         return SITL_RC_INPUT_CHANNELS;
     }
@@ -26,7 +24,6 @@ public:
 
 private:
     SITL_State *_sitlState;
-    bool _valid;
 
     /* override state */
     uint16_t _override[SITL_RC_INPUT_CHANNELS];

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "AP_Baro_Backend.h"
 
 extern const AP_HAL::HAL& hal;
@@ -6,7 +5,9 @@ extern const AP_HAL::HAL& hal;
 // constructor
 AP_Baro_Backend::AP_Baro_Backend(AP_Baro &baro) : 
     _frontend(baro) 
-{}
+{
+    _sem = hal.util->new_semaphore();    
+}
 
 /*
   copy latest data to the frontend from a backend

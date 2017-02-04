@@ -2,7 +2,8 @@
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
 
 #include "GPIO.h"
 #include <stdio.h>
@@ -29,7 +30,7 @@ void GPIO_BBB::init()
     // Idea taken from https://groups.google.com/forum/#!msg/beagleboard/OYFp4EXawiI/Mq6s3sg14HoJ
 
     uint8_t bank_enable[3] = { 5, 65, 105 };
-    int export_fd = open("/sys/class/gpio/export", O_WRONLY);
+    int export_fd = open("/sys/class/gpio/export", O_WRONLY | O_CLOEXEC);
     if (export_fd == -1) {
         AP_HAL::panic("unable to open /sys/class/gpio/export");
     }
@@ -40,7 +41,7 @@ void GPIO_BBB::init()
 
 
     /* open /dev/mem */
-    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
+    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC)) < 0) {
             printf("can't open /dev/mem \n");
             exit (-1);
     }
@@ -129,4 +130,5 @@ bool GPIO_BBB::usb_connected(void)
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF ||
        // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD ||
-       // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+       // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI ||
+       // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import math
 import os
 import random
@@ -9,8 +10,12 @@ from subprocess import PIPE, Popen, call, check_call
 
 import pexpect
 
-from rotmat import Matrix3, Vector3
+from . rotmat import Matrix3, Vector3
 
+if (sys.version_info[0] >= 3):
+    ENCODING = 'ascii'
+else:
+    ENCODING = None
 
 def m2ft(x):
     """Meters to feet."""
@@ -178,59 +183,54 @@ def make_safe_filename(text):
     return filename
 
 
-class SITL(pexpect.spawn):
-
-    def __init__(self, binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
-        self.binary = binary
-        self.model = model
-
-        cmd = []
-        if valgrind and os.path.exists('/usr/bin/valgrind'):
-            cmd.extend(['valgrind', '-q', '--log-file=%s' % self.valgrind_log_filepath()])
-        if gdb:
-            f = open("/tmp/x.gdb", "w")
-            f.write("r\n")
-            f.close()
-            cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
-
-        cmd.append(binary)
-        if wipe:
-            cmd.append('-w')
-        if synthetic_clock:
-            cmd.append('-S')
-        if home is not None:
-            cmd.extend(['--home', home])
-        if model is not None:
-            cmd.extend(['--model', model])
-        if speedup != 1:
-            cmd.extend(['--speedup', str(speedup)])
-        if defaults_file is not None:
-            cmd.extend(['--defaults', defaults_file])
-        print("Running: %s" % cmd_as_shell(cmd))
-        first = cmd[0]
-        rest = cmd[1:]
-        super(SITL, self).__init__(first, rest, logfile=sys.stdout, timeout=5)
-        delaybeforesend = 0
-        pexpect_autoclose(self)
-        # give time for parameters to properly setup
-        time.sleep(3)
-        if gdb:
-            # if we run GDB we do so in an xterm.  "Waiting for
-            # connection" is never going to appear on xterm's output.
-            # ... so let's give it another magic second.
-            time.sleep(1)
-            # TODO: have a SITL-compiled ardupilot able to have its
-            # console on an output fd.
-        else:
-            self.expect('Waiting for connection', timeout=300)
-
-    def valgrind_log_filepath(self):
-        return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(self.binary), self.model,))
+def valgrind_log_filepath(binary, model):
+    return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(binary), model,))
 
 
-def start_SITL(binary, **kwargs):
+def start_SITL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None, unhide_parameters=False):
     """Launch a SITL instance."""
-    return SITL(binary, **kwargs)
+    cmd = []
+    if valgrind and os.path.exists('/usr/bin/valgrind'):
+        cmd.extend(['valgrind', '-q', '--log-file=%s' % valgrind_log_filepath(binary=binary, model=model)])
+    if gdb:
+        f = open("/tmp/x.gdb", "w")
+        f.write("r\n")
+        f.close()
+        cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
+    
+    cmd.append(binary)
+    if wipe:
+        cmd.append('-w')
+    if synthetic_clock:
+        cmd.append('-S')
+    if home is not None:
+        cmd.extend(['--home', home])
+    if model is not None:
+        cmd.extend(['--model', model])
+    if speedup != 1:
+        cmd.extend(['--speedup', str(speedup)])
+    if defaults_file is not None:
+        cmd.extend(['--defaults', defaults_file])
+    if unhide_parameters:
+        cmd.extend(['--unhide-groups'])
+    print("Running: %s" % cmd_as_shell(cmd))
+    first = cmd[0]
+    rest = cmd[1:]
+    child = pexpect.spawn(first, rest, logfile=sys.stdout, encoding=ENCODING, timeout=5)
+    delaybeforesend = 0
+    pexpect_autoclose(child)
+    # give time for parameters to properly setup
+    time.sleep(3)
+    if gdb:
+        # if we run GDB we do so in an xterm.  "Waiting for
+        # connection" is never going to appear on xterm's output.
+        # ... so let's give it another magic second.
+        time.sleep(1)
+        # TODO: have a SITL-compiled ardupilot able to have its
+        # console on an output fd.
+    else:
+        child.expect('Waiting for connection', timeout=300)
+    return child
 
 
 def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
@@ -247,7 +247,7 @@ def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1
     cmd += ' --aircraft=%s' % aircraft
     if options is not None:
         cmd += ' ' + options
-    ret = pexpect.spawn(cmd, logfile=logfile, timeout=60)
+    ret = pexpect.spawn(cmd, logfile=logfile, encoding=ENCODING, timeout=60)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret

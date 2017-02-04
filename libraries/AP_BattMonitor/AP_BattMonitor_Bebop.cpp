@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,7 +23,6 @@
 #include <AP_HAL_Linux/RCOutput_Bebop.h>
 #include <AP_HAL_Linux/RCOutput_Disco.h>
 
-#define BATTERY_CAPACITY (1200U) /* mAh */
 #define BATTERY_VOLTAGE_COMPENSATION_LANDED (0.2f)
 
 
@@ -82,7 +80,6 @@ static const struct {
       
 void AP_BattMonitor_Bebop::init(void)
 {
-    set_capacity(BATTERY_CAPACITY);
     _battery_voltage_max = bat_lut[BATTERY_PERCENT_LUT_SIZE - 1].voltage;
     _prev_vbat_raw = bat_lut[BATTERY_PERCENT_LUT_SIZE - 1].voltage;
     _prev_vbat = bat_lut[BATTERY_PERCENT_LUT_SIZE - 1].voltage;
@@ -164,7 +161,7 @@ void AP_BattMonitor_Bebop::read(void)
     int ret;
     uint32_t tnow;
     BebopBLDC_ObsData data;
-    float remaining, vbat, vbat_raw;
+    float capacity, remaining, vbat, vbat_raw;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     auto rcout = Linux::RCOutput_Bebop::from(hal.rcout);
@@ -209,15 +206,15 @@ void AP_BattMonitor_Bebop::read(void)
         _battery_voltage_max = vbat;
     }
 
-    /* compute remaining battery percent */
+    /* compute remaining battery percent and get battery capacity */
     remaining = _compute_battery_percentage(vbat);
+    capacity = (float) get_capacity();
 
     /* fillup battery state */
     _state.voltage = vbat;
     _state.last_time_micros = tnow;
     _state.healthy = true;
-    _state.current_total_mah = BATTERY_CAPACITY -
-                (remaining * BATTERY_CAPACITY) / 100.0f;
+    _state.current_total_mah = capacity - (remaining * capacity) / 100.0f;
 }
 
 #endif

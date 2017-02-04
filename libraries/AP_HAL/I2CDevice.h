@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
  *
@@ -36,9 +35,6 @@ public:
      * does not include the bit for read/write.
      */
     virtual void set_address(uint8_t address) = 0;
-
-    /* set number of retries on transfers */
-    virtual void set_retries(uint8_t retries) = 0;
 
     /* Device implementation */
 

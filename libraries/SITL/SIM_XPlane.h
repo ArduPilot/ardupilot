@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -69,6 +68,8 @@ private:
 
     // are we controlling a heli?
     bool heli_frame;
+
+    uint64_t unselected_mask;
     
     // throttle joystick input is very weird. See comments in the main code
     const float throttle_magic = 0.000123f;

@@ -73,7 +73,7 @@ bool ToneAlarm_Raspilot::init()
 
     // mmap GPIO
     void *pwm_map = mmap(
-        NULL,                 // Any adddress in our space will do
+        nullptr,              // Any adddress in our space will do
         BLOCK_SIZE,           // Map length
         PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
         MAP_SHARED,           // Shared with other processes
@@ -82,7 +82,7 @@ bool ToneAlarm_Raspilot::init()
     );
 
     void *clk_map = mmap(
-        NULL,                 // Any adddress in our space will do
+        nullptr,              // Any adddress in our space will do
         BLOCK_SIZE,           // Map length
         PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
         MAP_SHARED,           // Shared with other processes

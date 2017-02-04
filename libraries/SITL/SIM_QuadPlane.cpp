@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,8 +40,6 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
         frame_type = "hexa";
     } else if (strstr(frame_str, "-plus")) {
         frame_type = "+";
-    } else if (strstr(frame_str, "-plus")) {
-        frame_type = "+";
     } else if (strstr(frame_str, "-y6")) {
         frame_type = "y6";
     } else if (strstr(frame_str, "-tri")) {
@@ -71,9 +68,9 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
     if (strstr(frame_str, "cl84")) {
         // setup retract servos at front
         frame->motors[0].servo_type = Motor::SERVO_RETRACT;
-        frame->motors[0].servo_rate = 4*60.0/90; // 4 seconds to change
+        frame->motors[0].servo_rate = 7*60.0/90; // 7 seconds to change
         frame->motors[1].servo_type = Motor::SERVO_RETRACT;
-        frame->motors[1].servo_rate = 4*60.0/90; // 4 seconds to change
+        frame->motors[1].servo_rate = 7*60.0/90; // 7 seconds to change
     }
     
     // leave first 4 servos free for plane

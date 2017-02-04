@@ -45,13 +45,18 @@ private:
         uint8_t channel;
     } output_table_t;
     const output_table_t output_table[7] = {
-        { sysfs_out, 3 },
-        { sysfs_out, 2 },
-        { bebop_out, 0 },
-        { sysfs_out, 4 },
-        { sysfs_out, 1 },
-        { sysfs_out, 5 },
-        { sysfs_out, 0 },
+        /*
+          servo rail pin numbers are from left to right when looking
+          at the CHUCK from the back, so pin1 on the servo rail is
+          closest to the first 'C' in 'C.H.U.C.K' on the case
+        */
+        { sysfs_out, 3 }, // chan1, servo rail pin 1
+        { sysfs_out, 2 }, // chan2, servo rail pin 6
+        { bebop_out, 0 }, // I2C motor output
+        { sysfs_out, 4 }, // chan4, servo rail pin 2
+        { sysfs_out, 1 }, // chan5, servo rail pin 5
+        { sysfs_out, 5 }, // chan6, servo rail pin 3
+        { sysfs_out, 0 }, // chan7, servo rail pin 4
     };
 };
 

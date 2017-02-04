@@ -1,12 +1,34 @@
 #include "AP_Math.h"
+
 #include <float.h>
 
-template <class FloatOne, class FloatTwo>
-bool is_equal(const FloatOne v_1, const FloatTwo v_2)
+/*
+ * is_equal(): Integer implementation, provided for convenience and
+ * compatibility with old code. Expands to the same as comparing the values
+ * directly
+ */
+template <class Arithmetic1, class Arithmetic2>
+typename std::enable_if<std::is_integral<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value ,bool>::type
+is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 {
-    static_assert(std::is_arithmetic<FloatOne>::value, "template parameter not of type float or int");
-    static_assert(std::is_arithmetic<FloatTwo>::value, "template parameter not of type float or int");
-    return fabsf(v_1 - v_2) < std::numeric_limits<decltype(v_1 - v_2)>::epsilon();
+    typedef typename std::common_type<Arithmetic1, Arithmetic2>::type common_type;
+    return static_cast<common_type>(v_1) == static_cast<common_type>(v_2);
+}
+
+/*
+ * is_equal(): double/float implementation - takes into account
+ * std::numeric_limits<T>::epsilon() to return if 2 values are equal.
+ */
+template <class Arithmetic1, class Arithmetic2>
+typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
+is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
+{
+    typedef typename std::common_type<Arithmetic1, Arithmetic2>::type common_type;
+    typedef typename std::remove_cv<common_type>::type common_type_nonconst;
+    if (std::is_same<double, common_type_nonconst>::value) {
+        return fabs(v_1 - v_2) < std::numeric_limits<double>::epsilon();
+    }
+    return fabsf(v_1 - v_2) < std::numeric_limits<float>::epsilon();
 }
 
 template bool is_equal<int>(const int v_1, const int v_2);
@@ -17,16 +39,17 @@ template bool is_equal<double>(const double v_1, const double v_2);
 template <class T>
 float safe_asin(const T v)
 {
-    if (isnan(static_cast<float>(v))) {
+    const float f = static_cast<const float>(v);
+    if (isnan(f)) {
         return 0.0f;
     }
-    if (v >= 1.0f) {
+    if (f >= 1.0f) {
         return static_cast<float>(M_PI_2);
     }
-    if (v <= -1.0f) {
+    if (f <= -1.0f) {
         return static_cast<float>(-M_PI_2);
     }
-    return asinf(static_cast<float>(v));
+    return asinf(f);
 }
 
 template float safe_asin<int>(const int v);
@@ -153,10 +176,10 @@ template <class T>
 T constrain_value(const T amt, const T low, const T high)
 {
     // the check for NaN as a float prevents propagation of floating point
-    // errors through any function that uses constrain_float(). The normal
+    // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
-        return (low + high) * 0.5f;
+        return (low + high) / 2;
     }
 
     if (amt < low) {
@@ -174,3 +197,17 @@ template int constrain_value<int>(const int amt, const int low, const int high);
 template short constrain_value<short>(const short amt, const short low, const short high);
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
+
+
+/*
+  simple 16 bit random number generator
+ */
+uint16_t get_random16(void)
+{
+    static uint32_t m_z = 1234;
+    static uint32_t m_w = 76542;
+    m_z = 36969 * (m_z & 0xFFFFu) + (m_z >> 16);
+    m_w = 18000 * (m_w & 0xFFFFu) + (m_w >> 16);
+    return ((m_z << 16) + m_w) & 0xFFFF;
+}
+

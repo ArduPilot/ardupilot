@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -52,12 +51,12 @@ AP_Compass_PX4::AP_Compass_PX4(Compass &compass):
 AP_Compass_Backend *AP_Compass_PX4::detect(Compass &compass)
 {
     AP_Compass_PX4 *sensor = new AP_Compass_PX4(compass);
-    if (sensor == NULL) {
-        return NULL;
+    if (sensor == nullptr) {
+        return nullptr;
     }
     if (!sensor->init()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
     return sensor;
 }
@@ -75,7 +74,6 @@ bool AP_Compass_PX4::init(void)
         }
     }    
 	if (_num_sensors == 0) {
-        hal.console->printf("Unable to open " MAG_BASE_DEVICE_PATH"0" "\n");
         return false;
 	}
 

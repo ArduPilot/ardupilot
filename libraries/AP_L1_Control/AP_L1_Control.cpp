@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #include "AP_L1_Control.h"
 
@@ -13,6 +11,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Units: seconds
     // @Range: 1 60
     // @Increment: 1
+    // @User: Standard
     AP_GROUPINFO("PERIOD",    0, AP_L1_Control, _L1_period, 20),
 
     // @Param: DAMPING
@@ -20,6 +19,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Description: Damping ratio for L1 control. Increase this in increments of 0.05 if you are getting overshoot in path tracking. You should not need a value below 0.7 or above 0.85.
     // @Range: 0.6 1.0
     // @Increment: 0.05
+    // @User: Advanced
     AP_GROUPINFO("DAMPING",   1, AP_L1_Control, _L1_damping, 0.75f),
 
     // @Param: XTRACK_I
@@ -27,6 +27,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Description: Crosstrack error integrator gain. This gain is applied to the crosstrack error to ensure it converges to zero. Set to zero to disable. Smaller values converge slower, higher values will cause crosstrack error oscillation.
     // @Range: 0 0.1
     // @Increment: 0.01
+    // @User: Advanced
     AP_GROUPINFO("XTRACK_I",   2, AP_L1_Control, _L1_xtrack_i_gain, 0.02),
 
     AP_GROUPEND

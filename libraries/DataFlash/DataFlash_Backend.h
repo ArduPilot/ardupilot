@@ -60,7 +60,7 @@ public:
 
     void set_mission(const AP_Mission *mission);
 
-    virtual uint16_t bufferspace_available() = 0;
+    virtual uint32_t bufferspace_available() = 0;
 
     virtual uint16_t start_new_log(void) = 0;
     bool log_write_started;
@@ -120,6 +120,8 @@ public:
     // these methods are used when reporting system status over mavlink
     virtual bool logging_enabled() const = 0;
     virtual bool logging_failed() const = 0;
+
+    virtual void vehicle_was_disarmed() { };
 
 protected:
     uint32_t dropped;

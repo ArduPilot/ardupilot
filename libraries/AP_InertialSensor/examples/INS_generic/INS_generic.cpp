@@ -1,10 +1,9 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple test for the AP_InertialSensor driver.
 //
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
@@ -14,9 +13,15 @@ AP_InertialSensor ins;
 static void display_offsets_and_scaling();
 static void run_test();
 
+// board specific config
+AP_BoardConfig BoardConfig;
+
 void setup(void)
 {
-    hal.console->println("AP_InertialSensor startup...");
+    // setup any board specific drivers
+    BoardConfig.init();
+
+    hal.console->printf("AP_InertialSensor startup...\n");
 
     ins.init(100);
 
@@ -28,15 +33,15 @@ void setup(void)
     hal.console->printf("Number of detected accels : %u\n", ins.get_accel_count());
     hal.console->printf("Number of detected gyros  : %u\n\n", ins.get_gyro_count());
 
-    hal.console->println("Complete. Reading:");
+    hal.console->printf("Complete. Reading:\n");
 }
 
 void loop(void)
 {
     int16_t user_input;
 
-    hal.console->println();
-    hal.console->println(
+    hal.console->printf("\n");
+    hal.console->printf("%s\n",
     "Menu:\n"
     "    d) display offsets and scaling\n"
     "    l) level (capture offsets from level)\n"

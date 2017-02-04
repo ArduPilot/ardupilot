@@ -24,8 +24,13 @@ AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 /*
  * Check whether two floats are equal
  */
-template <class FloatOne, class FloatTwo>
-bool is_equal(const FloatOne, const FloatTwo);
+template <class Arithmetic1, class Arithmetic2>
+typename std::enable_if<std::is_integral<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value ,bool>::type
+is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2);
+
+template <class Arithmetic1, class Arithmetic2>
+typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
+is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2);
 
 /* 
  * @brief: Check whether a float is zero
@@ -34,7 +39,7 @@ template <class T>
 inline bool is_zero(const T fVal1) {
     static_assert(std::is_floating_point<T>::value || std::is_base_of<T,AP_Float>::value,
                   "Template parameter not of type float");
-    return fabsf(static_cast<float>(fVal1)) < FLT_EPSILON ? true : false;
+    return (fabsf(static_cast<float>(fVal1)) < FLT_EPSILON);
 }
 
 /*
@@ -212,3 +217,7 @@ inline uint32_t usec_to_hz(uint32_t usec)
 float linear_interpolate(float low_output, float high_output,
                          float var_value,
                          float var_low, float var_high);
+
+/* simple 16 bit random number generator */
+uint16_t get_random16(void);
+

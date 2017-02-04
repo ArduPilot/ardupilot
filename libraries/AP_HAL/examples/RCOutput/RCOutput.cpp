@@ -8,7 +8,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup (void) 
 {
-    hal.console->println("Starting AP_HAL::RCOutput test");
+    hal.console->printf("Starting AP_HAL::RCOutput test\n");
     for (uint8_t i=0; i<14; i++) {
         hal.rcout->enable_ch(i);
     }

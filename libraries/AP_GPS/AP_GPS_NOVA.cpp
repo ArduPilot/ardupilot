@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -225,9 +224,11 @@ AP_GPS_NOVA::process_message(void)
                 case 32: // l1 float
                 case 33: // iono float
                 case 34: // narrow float
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                    break;
                 case 48: // l1 int
                 case 50: // narrow int
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                     break;
                 case 0: // NONE
                 case 1: // FIXEDPOS
@@ -279,7 +280,7 @@ AP_GPS_NOVA::process_message(void)
 }
 
 void
-AP_GPS_NOVA::inject_data(uint8_t *data, uint8_t len)
+AP_GPS_NOVA::inject_data(const uint8_t *data, uint16_t len)
 {
     if (port->txspace() > len) {
         last_injected_data_ms = AP_HAL::millis();

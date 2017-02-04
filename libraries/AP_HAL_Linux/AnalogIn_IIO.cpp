@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "AnalogIn_IIO.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -36,7 +35,7 @@ void AnalogSource_IIO::init_pins(void)
         strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
         strncat(buf, AnalogSource_IIO::analog_sources[i], sizeof(buf) - strlen(buf) - 1);
 
-        fd_analog_sources[i] = open(buf, O_RDONLY | O_NONBLOCK);
+        fd_analog_sources[i] = open(buf, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     }
 }
 
@@ -72,7 +71,10 @@ float AnalogSource_IIO::read_latest()
     }
 
     memset(sbuf, 0, sizeof(sbuf));
-    pread(_pin_fd, sbuf, sizeof(sbuf) - 1, 0);
+    if (pread(_pin_fd, sbuf, sizeof(sbuf) - 1, 0) < 0) {
+        _latest = 0;
+        return 0;
+    }
     _latest = atoi(sbuf) * _voltage_scaling;
     _sum_value += _latest;
     _sum_count++;

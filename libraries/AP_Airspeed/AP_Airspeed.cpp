@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,7 +15,6 @@
 /*
  *   APM_Airspeed.cpp - airspeed (pitot) driver
  */
-#include "AP_Airspeed.h"
 
 #include <AP_ADC/AP_ADC.h>
 #include <AP_Common/AP_Common.h>
@@ -25,52 +23,23 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <utility>
+#include "AP_Airspeed.h"
+#include "AP_Airspeed_MS4525.h"
+#include "AP_Airspeed_MS5525.h"
+#include "AP_Airspeed_analog.h"
 
 extern const AP_HAL::HAL &hal;
 
-// the virtual pin for digital airspeed sensors
-#define AP_AIRSPEED_I2C_PIN 65
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+ #define ARSPD_DEFAULT_TYPE TYPE_ANALOG
  #define ARSPD_DEFAULT_PIN 1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
- #include <sys/stat.h>
- #include <sys/types.h>
- #include <fcntl.h>
- #include <unistd.h>
- #include <systemlib/airspeed.h>
- #include <drivers/drv_airspeed.h>
- #include <uORB/topics/differential_pressure.h>
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRCORE_V10)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
- #define ARSPD_DEFAULT_PIN 11
 #else
+ #define ARSPD_DEFAULT_TYPE TYPE_I2C_MS4525
  #define ARSPD_DEFAULT_PIN 15
 #endif
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-         #define ARSPD_DEFAULT_PIN 5
-    #else
-         #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
-    #endif
-    #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-         #define PSI_RANGE_DEFAULT 0.05
-    #endif
-#else
- #define ARSPD_DEFAULT_PIN 0
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+#define PSI_RANGE_DEFAULT 0.05
 #endif
 
 #ifndef PSI_RANGE_DEFAULT
@@ -80,33 +49,37 @@ extern const AP_HAL::HAL &hal;
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
-    // @Param: ENABLE
-    // @DisplayName: Airspeed enable
-    // @Description: enable airspeed sensor
-    // @Values: 0:Disable,1:Enable
-    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Airspeed, _enable, 1, AP_PARAM_FLAG_ENABLE),
+    // @Param: TYPE
+    // @DisplayName: Airspeed type
+    // @Description: Type of airspeed sensor
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525
+    // @User: Standard
+    AP_GROUPINFO_FLAGS("TYPE", 0, AP_Airspeed, _type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
     // @Param: USE
     // @DisplayName: Airspeed use
     // @Description: use airspeed for flight control
     // @Values: 1:Use,0:Don't Use
+    // @User: Standard
     AP_GROUPINFO("USE",    1, AP_Airspeed, _use, 0),
 
     // @Param: OFFSET
     // @DisplayName: Airspeed offset
     // @Description: Airspeed calibration offset
     // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("OFFSET", 2, AP_Airspeed, _offset, 0),
 
     // @Param: RATIO
     // @DisplayName: Airspeed ratio
     // @Description: Airspeed calibration ratio
     // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("RATIO",  3, AP_Airspeed, _ratio, 1.9936f),
 
     // @Param: PIN
     // @DisplayName: Airspeed pin
-    // @Description: The analog pin number that the airspeed sensor is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated airspeed port on the end of the board. Set to 11 on PX4 for the analog airspeed port. Set to 15 on the Pixhawk for the analog airspeed port. Set to 65 on the PX4 or Pixhawk for an EagleTree or MEAS I2C airspeed sensor.
+    // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Set to 15 on the Pixhawk for the analog airspeed port. 
     // @User: Advanced
     AP_GROUPINFO("PIN",  4, AP_Airspeed, _pin, ARSPD_DEFAULT_PIN),
 
@@ -134,6 +107,13 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: This parameter allows you to to set the PSI (pounds per square inch) range for your sensor. You should not change this unless you examine the datasheet for your device
     // @User: Advanced
     AP_GROUPINFO("PSI_RANGE",  8, AP_Airspeed, _psi_range, PSI_RANGE_DEFAULT),
+
+    // @Param: BUS
+    // @DisplayName: Airspeed I2C bus
+    // @Description: The bus number of the I2C bus to look for the sensor on
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Advanced
+    AP_GROUPINFO("BUS",  9, AP_Airspeed, _bus, 1),
     
     AP_GROUPEND
 };
@@ -156,19 +136,41 @@ AP_Airspeed::AP_Airspeed()
 
 void AP_Airspeed::init()
 {
+    // cope with upgrade from old system
+    if (_pin.load() && _pin.get() != 65) {
+        _type.set_default(TYPE_ANALOG);
+    }
+
     _last_pressure = 0;
     _calibration.init(_ratio);
     _last_saved_ratio = _ratio;
     _counter = 0;
 
-    analog.init();
-    digital.init();
+    switch ((enum airspeed_type)_type.get()) {
+    case TYPE_NONE:
+        // nothing to do
+        break;
+    case TYPE_I2C_MS4525:
+        sensor = new AP_Airspeed_MS4525(*this);
+        break;
+    case TYPE_ANALOG:
+        sensor = new AP_Airspeed_Analog(*this);
+        break;
+    case TYPE_I2C_MS5525:
+        sensor = new AP_Airspeed_MS5525(*this);
+        break;
+    }
+    if (sensor && !sensor->init()) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed init failed");
+        delete sensor;
+        sensor = nullptr;
+    }
 }
 
 // read the airspeed sensor
 float AP_Airspeed::get_pressure(void)
 {
-    if (!_enable) {
+    if (!enabled()) {
         return 0;
     }
     if (_hil_set) {
@@ -176,10 +178,8 @@ float AP_Airspeed::get_pressure(void)
         return _hil_pressure;
     }
     float pressure = 0;
-    if (_pin == AP_AIRSPEED_I2C_PIN) {
-        _healthy = digital.get_differential_pressure(pressure);
-    } else {
-        _healthy = analog.get_differential_pressure(pressure);
+    if (sensor) {
+        _healthy = sensor->get_differential_pressure(pressure);
     }
     return pressure;
 }
@@ -187,11 +187,11 @@ float AP_Airspeed::get_pressure(void)
 // get a temperature reading if possible
 bool AP_Airspeed::get_temperature(float &temperature)
 {
-    if (!_enable) {
+    if (!enabled()) {
         return false;
     }
-    if (_pin == AP_AIRSPEED_I2C_PIN) {
-        return digital.get_temperature(temperature);
+    if (sensor) {
+        return sensor->get_temperature(temperature);
     }
     return false;
 }
@@ -200,14 +200,12 @@ bool AP_Airspeed::get_temperature(float &temperature)
 // the get_airspeed() interface can be used
 void AP_Airspeed::calibrate(bool in_startup)
 {
-    if (!_enable) {
+    if (!enabled()) {
         return;
     }
     if (in_startup && _skip_cal) {
         return;
     }
-    // discard first reading
-    get_pressure();
     _cal.start_ms = AP_HAL::millis();
     _cal.count = 0;
     _cal.sum = 0;
@@ -219,10 +217,10 @@ void AP_Airspeed::calibrate(bool in_startup)
 */
 void AP_Airspeed::update_calibration(float raw_pressure)
 {
-    // consider calibration complete when we have at least 10 samples
+    // consider calibration complete when we have at least 15 samples
     // over at least 1 second
     if (AP_HAL::millis() - _cal.start_ms >= 1000 &&
-        _cal.read_count > 10) {
+        _cal.read_count > 15) {
         if (_cal.count == 0) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor unhealthy");
         } else {
@@ -232,7 +230,8 @@ void AP_Airspeed::update_calibration(float raw_pressure)
         _cal.start_ms = 0;
         return;
     }
-    if (_healthy) {
+    // we discard the first 5 samples
+    if (_healthy && _cal.read_count > 5) {
         _cal.sum += raw_pressure;
         _cal.count++;
     }
@@ -243,7 +242,7 @@ void AP_Airspeed::update_calibration(float raw_pressure)
 void AP_Airspeed::read(void)
 {
     float airspeed_pressure;
-    if (!_enable) {
+    if (!enabled()) {
         return;
     }
     float raw_pressure = get_pressure();

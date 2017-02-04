@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	GCS.h
 /// @brief	Interface definition for the various Ground Control System
 // protocols.
@@ -17,6 +15,7 @@
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_HAL/utility/RingBuffer.h>
+#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -172,6 +171,7 @@ public:
     void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
+    void send_accelcal_vehicle_position(uint8_t position);
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
@@ -213,6 +213,13 @@ public:
         dataflash_p = dataflash;
     }
 
+    /*
+      set a frsky_telem pointer for queueing
+     */
+    static void register_frsky_telemetry_callback(AP_Frsky_Telem *frsky_telemetry) {
+        frsky_telemetry_p = frsky_telemetry;
+    }
+
     // update signing timestamp on GPS lock
     static void update_signing_timestamp(uint64_t timestamp_usec);
 
@@ -225,6 +232,10 @@ public:
 
 protected:
 
+    // overridable method to check for packet acceptance. Allows for
+    // enforcement of GCS sysid
+    virtual bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) { return true; }
+    
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
     uint16_t        waypoint_request_i; // request index
@@ -262,10 +273,15 @@ protected:
 
     void handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps);
 
+    void handle_common_message(mavlink_message_t *msg);
     void handle_log_message(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_setup_signing(const mavlink_message_t *msg);
     uint8_t handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
+    uint8_t handle_rc_bind(const mavlink_command_long_t &packet);
 
+    void handle_device_op_read(mavlink_message_t *msg);
+    void handle_device_op_write(mavlink_message_t *msg);
+    
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
@@ -368,6 +384,9 @@ private:
     // pointer to static dataflash for logging of text messages
     static DataFlash_Class *dataflash_p;
 
+    // pointer to static frsky_telem for queueing of text messages
+    static AP_Frsky_Telem *frsky_telemetry_p;
+ 
     static const AP_SerialManager *serialmanager_p;
 
     // a vehicle can optionally snoop on messages for other systems

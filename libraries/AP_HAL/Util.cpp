@@ -55,12 +55,14 @@ uint64_t AP_HAL::Util::get_system_clock_ms() const
 {
 #if defined(__APPLE__) && defined(__MACH__)
     struct timeval ts;
-    gettimeofday(&ts, NULL);
+    gettimeofday(&ts, nullptr);
     return ((long long)((ts.tv_sec * 1000) + (ts.tv_usec / 1000)));
 #else
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
-    return ((long long)(ts.tv_sec * 1000 + ts.tv_nsec/1000000));
+    const uint64_t seconds = ts.tv_sec;
+    const uint64_t nanoseconds = ts.tv_nsec;
+    return (seconds * 1000UL + nanoseconds/1000000UL);
 #endif
 }
 
@@ -87,13 +89,16 @@ uint32_t AP_HAL::Util::get_time_utc(int32_t hour, int32_t min, int32_t sec, int3
 {
     // determine highest value specified (0=none, 1=ms, 2=sec, 3=min, 4=hour)
     int8_t largest_element = 0;
-    if (ms != -1) largest_element = 1;
-    if (sec != -1) largest_element = 2;
-    if (min != -1) largest_element = 3;
-    if (hour != -1) largest_element = 4;
-
-    // exit immediately if no time specified
-    if (largest_element == 0) {
+    if (hour != -1) {
+        largest_element = 4;
+    } else if (min != -1) {
+        largest_element = 3;
+    } else if (sec != -1) {
+        largest_element = 2;
+    } else if (ms != -1) {
+        largest_element = 1;
+    } else {
+        // exit immediately if no time specified
         return 0;
     }
 
@@ -107,7 +112,7 @@ uint32_t AP_HAL::Util::get_time_utc(int32_t hour, int32_t min, int32_t sec, int3
         total_delay_ms += ms - curr_ms;
     }
     if (largest_element == 1 && total_delay_ms < 0) {
-        total_delay_ms += 1000;
+        return static_cast<uint32_t>(total_delay_ms += 1000);
     }
 
     // calculate sec to target
@@ -115,7 +120,7 @@ uint32_t AP_HAL::Util::get_time_utc(int32_t hour, int32_t min, int32_t sec, int3
         total_delay_ms += (sec - curr_sec)*1000;
     }
     if (largest_element == 2 && total_delay_ms < 0) {
-        total_delay_ms += (60*1000);
+        return static_cast<uint32_t>(total_delay_ms += (60*1000));
     }
 
     // calculate min to target
@@ -123,7 +128,7 @@ uint32_t AP_HAL::Util::get_time_utc(int32_t hour, int32_t min, int32_t sec, int3
         total_delay_ms += (min - curr_min)*60*1000;
     }
     if (largest_element == 3 && total_delay_ms < 0) {
-        total_delay_ms += (60*60*1000);
+        return static_cast<uint32_t>(total_delay_ms += (60*60*1000));
     }
 
     // calculate hours to target
@@ -131,9 +136,9 @@ uint32_t AP_HAL::Util::get_time_utc(int32_t hour, int32_t min, int32_t sec, int3
         total_delay_ms += (hour - curr_hour)*60*60*1000;
     }
     if (largest_element == 4 && total_delay_ms < 0) {
-        total_delay_ms += (24*60*60*1000);
+        return static_cast<uint32_t>(total_delay_ms += (24*60*60*1000));
     }
 
     // total delay in milliseconds
-    return (uint32_t)total_delay_ms;
+    return static_cast<uint32_t>(total_delay_ms);
 }

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "AC_InputManager_Heli.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>

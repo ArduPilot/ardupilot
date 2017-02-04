@@ -35,15 +35,6 @@ endif
 ifeq ($(SKETCHBOOK),)
   SKETCHBOOK		:=	$(shell cd $(SRCROOT)/.. && pwd)
   ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
-    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../.. && pwd)
-  endif
-  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
-    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../../.. && pwd)
-  endif
-  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
-    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../../../.. && pwd)
-  endif
-  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
     $(error ERROR: cannot determine sketchbook location - please specify on the commandline with SKETCHBOOK=<path>)
   endif
 else

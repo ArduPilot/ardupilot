@@ -1,9 +1,0 @@
-LIBRARIES += AP_Common
-LIBRARIES += AP_Compass
-LIBRARIES += AP_Declination
-LIBRARIES += AP_Math
-LIBRARIES += AP_Param
-LIBRARIES += DataFlash
-LIBRARIES += GCS_MAVLink
-LIBRARIES += StorageManager
-LIBRARIES += AP_BoardConfig

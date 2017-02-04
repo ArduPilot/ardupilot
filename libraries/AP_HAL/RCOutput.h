@@ -52,20 +52,14 @@ public:
      * Delay subsequent calls to write() going to the underlying hardware in
      * order to group related writes together. When all the needed writes are
      * done, call push() to commit the changes.
-     *
-     * This method is optional: if the subclass doesn't implement it all calls
-     * to write() are synchronous.
      */
-    virtual void     cork() { }
+    virtual void     cork() = 0;
 
     /*
      * Push pending changes to the underlying hardware. All changes between a
      * call to cork() and push() are pushed together in a single transaction.
-     *
-     * This method is optional: if the subclass doesn't implement it all calls
-     * to write() are synchronous.
      */
-    virtual void     push() { }
+    virtual void     push() = 0;
 
     /* Read back current output state, as either single channel or
      * array of channels. On boards that have a separate IO controller,
@@ -124,7 +118,8 @@ public:
      */
     enum output_mode {
         MODE_PWM_NORMAL,
-        MODE_PWM_ONESHOT
+        MODE_PWM_ONESHOT,
+        MODE_PWM_BRUSHED16KHZ
     };
     virtual void    set_output_mode(enum output_mode mode) {}
 };

@@ -6,12 +6,15 @@ Framework to start a simulated vehicle and connect it to MAVProxy.
 Peter Barker, April 2016
 based on sim_vehicle.sh by Andrew Tridgell, October 2011
 """
+from __future__ import print_function
 
 import atexit
+import errno
 import getpass
 import optparse
 import os
 import os.path
+import re
 import signal
 import subprocess
 import sys
@@ -184,7 +187,7 @@ def check_jsbsim_version():
                                 # check below and produce a reasonable
                                 # error message
     try:
-        jsbsim_version.index("ArduPilot")
+        jsbsim_version.index(b"ArduPilot")
     except ValueError:
         print(r"""
 =========================================================
@@ -225,44 +228,49 @@ _options_for_frame = {
     },
     # COPTER
     "+": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "quad": {
         "model": "+",
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "X": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         # this param set FRAME doesn't actually work because mavproxy
         # won't set a parameter unless it knows of it, and the param fetch happens asynchronously
         "default_params_filename": "default_params/copter.parm",
         "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
     },
     "hexa": {
-        "make_target": "sitl-hexa",
-        "waf_target": "bin/arducopter-hexa",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/copter.parm",
+    },
+    "octa-quad": {
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "octa": {
-        "make_target": "sitl-octa",
-        "waf_target": "bin/arducopter-octa",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "tri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arducopter-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-tri.parm",
     },
     "y6": {
-        "make_target": "sitl-y6",
-        "waf_target": "bin/arducopter-y6",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-y6.parm",
     },
     # COPTER TYPES
     "IrisRos": {
-        "waf_target": "bin/arducopter-quad",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter.parm",
     },
     "firefly": {
@@ -284,25 +292,30 @@ _options_for_frame = {
         "waf_target": "bin/arducopter-coax",  # is this correct? -pb201604301447
     },
     "singlecopter": {
-        "make_target": "sitl-single",
-        "waf_target": "bin/arducopter-single",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-single.parm",
     },
     "coaxcopter": {
-        "make_target": "sitl-coax",
-        "waf_target": "bin/arducopter-coax",
+        "make_target": "sitl",
+        "waf_target": "bin/arducopter",
         "default_params_filename": "default_params/copter-coax.parm",
     },
     # PLANE
     "quadplane-tilttri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arduplane-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/quadplane-tilttri.parm",
     },
     "quadplane-tri": {
-        "make_target": "sitl-tri",
-        "waf_target": "bin/arduplane-tri",
+        "make_target": "sitl",
+        "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/quadplane-tri.parm",
+    },
+    "quadplane-cl84" : {
+        "make_target" : "sitl",
+        "waf_target" : "bin/arduplane",
+        "default_params_filename": "default_params/quadplane-cl84.parm",
     },
     "quadplane": {
         "waf_target": "bin/arduplane",
@@ -330,9 +343,13 @@ _options_for_frame = {
         "default_params_filename": "default_params/rover-skid.parm",
     },
     # SIM
-    "Gazebo": {
-        "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "default_params/copter.parm",
+    "gazebo-iris": {
+        "waf_target": "bin/arducopter",
+        "default_params_filename": "default_params/gazebo-iris.parm",
+    },
+    "gazebo-zephyr": {
+        "waf_target": "bin/arduplane",
+        "default_params_filename": "default_params/gazebo-zephyr.parm",
     },
     "last_letter": {
         "waf_target": "bin/arduplane",
@@ -348,7 +365,7 @@ _options_for_frame = {
 
 _default_waf_target = {
     "ArduPlane": "bin/arduplane",
-    "ArduCopter": "bin/arducopter-quad",
+    "ArduCopter": "bin/arducopter",
     "APMrover2": "bin/ardurover",
     "AntennaTracker": "bin/antennatracker",
 }
@@ -365,7 +382,7 @@ def options_for_frame(frame, vehicle, opts):
     if frame in _options_for_frame:
         ret = _options_for_frame[frame]
     else:
-        for p in ["octa", "tri", "y6", "firefly", "heli", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
+        for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
             if frame.startswith(p):
                 ret = _options_for_frame[p]
                 break
@@ -480,14 +497,42 @@ def do_build(vehicledir, opts, frame_options):
     os.chdir(old_dir)
 
 
+def get_user_locations_path():
+    '''The user locations.txt file is located by default in
+    $XDG_CONFIG_DIR/ardupilot/locations.txt. If $XDG_CONFIG_DIR is
+    not defined, we look in $HOME/.config/ardupilot/locations.txt.  If
+    $HOME is not defined, we look in ./.config/ardpupilot/locations.txt.'''
+
+    config_dir = os.environ.get(
+        'XDG_CONFIG_DIR',
+        os.path.join(os.environ.get('HOME', '.'), '.config'))
+
+    user_locations_path = os.path.join(
+        config_dir, 'ardupilot', 'locations.txt')
+
+    return user_locations_path
+
+
 def find_location_by_name(autotest, locname):
     """Search locations.txt for locname, return GPS coords"""
+    locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
+                                        get_user_locations_path())
     locations_filepath = os.path.join(autotest, "locations.txt")
-    for line in open(locations_filepath, 'r'):
-        line = line.rstrip("\n")
-        (name, loc) = line.split("=")
-        if name == locname:
-            return loc
+    comment_regex = re.compile("\s*#.*")
+    for path in [locations_userpath, locations_filepath]:
+        if not os.path.isfile(path):
+            continue
+
+        with open(path, 'r') as fd:
+            for line in fd:
+                line = re.sub(comment_regex, "", line)
+                line = line.rstrip("\n")
+                if len(line) == 0:
+                    continue
+                (name, loc) = line.split("=")
+                if name == locname:
+                    return loc
+
     print("Failed to find location (%s)" % cmd_opts.location)
     sys.exit(1)
 
@@ -615,10 +660,12 @@ def start_mavproxy(opts, stuff):
             cmd.extend(["--sitl", simout_port])
 
     # If running inside of a vagrant guest, then we probably want to forward our mavlink out to the containing host OS
-    if getpass.getuser() == "vagrant":
-        cmd.extend(["--out", "10.0.2.2:14550"])
-    for port in [14550, 14551]:
-        cmd.extend(["--out", "127.0.0.1:" + str(port)])
+    ports = [p + 10 * cmd_opts.instance for p in [14550,14551]]
+    for port in ports:
+        if os.path.isfile("/ardupilot.vagrant"):
+            cmd.extend(["--out", "10.0.2.2:" + str(port)])
+        else:
+            cmd.extend(["--out", "127.0.0.1:" + str(port)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
@@ -655,7 +702,7 @@ def start_mavproxy(opts, stuff):
     env['PYTHONPATH'] = local_mp_modules_dir + os.pathsep + env.get('PYTHONPATH', '')
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
-    progress("MAVProxy exitted")
+    progress("MAVProxy exited")
 
 
 # define and run parser
@@ -680,7 +727,7 @@ group_build.add_option("-c", "--clean", action='store_true', default=False, help
 group_build.add_option("-j", "--jobs", default=None, type='int', help="number of processors to use during build (default for waf : number of processor, for make : 1)")
 group_build.add_option("-b", "--build-target", default=None, type='string', help="override SITL build target")
 group_build.add_option("-s", "--build-system", default="waf", type='choice', choices=["make", "waf"], help="build system to use")
-group_build.add_option("", "--no-rebuild-on-failure", dest="rebuild_on_failure", action='store_false', default=True, help="if build fails, do not clean and rebuild")
+group_build.add_option("", "--rebuild-on-failure", dest="rebuild_on_failure", action='store_true', default=False, help="if build fails, do not clean and rebuild")
 group_build.add_option("", "--waf-configure-arg", action="append", dest="waf_configure_args", type="string", default=[], help="extra arguments to pass to waf in its configure step")
 group_build.add_option("", "--waf-build-arg", action="append", dest="waf_build_args", type="string", default=[], help="extra arguments to pass to waf in its build step")
 parser.add_option_group(group_build)
@@ -704,6 +751,7 @@ group_sim.add_option("-w", "--wipe-eeprom", action='store_true', default=False, 
 group_sim.add_option("-m", "--mavproxy-args", default=None, type='string', help="additional arguments to pass to mavproxy.py")
 group_sim.add_option("", "--strace", action='store_true', default=False, help="strace the ArduPilot binary")
 group_sim.add_option("", "--model", type='string', default=None, help="Override simulation model to use")
+group_sim.add_option("", "--use-dir", type='string', default=None, help="Store SITL state and output in named directory")
 parser.add_option_group(group_sim)
 
 
@@ -809,6 +857,15 @@ if cmd_opts.custom_location:
 else:
     location = find_location_by_name(find_autotest_dir(), cmd_opts.location)
     progress("Starting up at %s (%s)" % (location, cmd_opts.location))
+
+if cmd_opts.use_dir is not None:
+    new_dir = cmd_opts.use_dir
+    try:
+        os.makedirs(os.path.realpath(new_dir))
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+    os.chdir(new_dir)
 
 if cmd_opts.hil:
     # (unlikely)

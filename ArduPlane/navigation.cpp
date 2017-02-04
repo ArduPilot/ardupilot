@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 // set the nav_controller pointer to the right controller
@@ -9,7 +7,7 @@ void Plane::set_nav_controller(void)
 
     default:
     case AP_Navigation::CONTROLLER_DEFAULT:
-        // fall through to L1 as default controller
+        // no break, fall through to L1 as default controller
 
     case AP_Navigation::CONTROLLER_L1:
         nav_controller = &L1_controller;
@@ -86,8 +84,6 @@ void Plane::calc_airspeed_errors()
 {
     float airspeed_measured_cm = airspeed.get_airspeed_cm();
 
-    // Normal airspeed target
-    target_airspeed_cm = g.airspeed_cruise_cm;
 
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B || 
@@ -96,37 +92,20 @@ void Plane::calc_airspeed_errors()
                                         aparm.airspeed_min) *
                               channel_throttle->get_control_in()) +
                              ((int32_t)aparm.airspeed_min * 100);
-    }
 
-    // Landing airspeed target
-    if (control_mode == AUTO) {
-        float land_airspeed = SpdHgt_Controller->get_land_airspeed();
-        switch (flight_stage) {
-        case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
-            if (land_airspeed >= 0) {
-                target_airspeed_cm = land_airspeed * 100;
-            }
-            break;
+    } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        // Landing airspeed target
+        target_airspeed_cm = landing.get_target_airspeed_cm();
 
-        case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
-        case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-            if (auto_state.land_pre_flare && aparm.land_pre_flare_airspeed > 0) {
-                // if we just preflared then continue using the pre-flare airspeed during final flare
-                target_airspeed_cm = aparm.land_pre_flare_airspeed * 100;
-            } else if (land_airspeed >= 0) {
-                target_airspeed_cm = land_airspeed * 100;
-            }
-            break;
-
-        default:
-            break;
-        }
+    } else {
+        // Normal airspeed target
+        target_airspeed_cm = aparm.airspeed_cruise_cm;
     }
 
     // Set target to current airspeed + ground speed undershoot,
     // but only when this is faster than the target airspeed commanded
     // above.
-    if (control_mode >= FLY_BY_WIRE_B && (g.min_gndspeed_cm > 0)) {
+    if (control_mode >= FLY_BY_WIRE_B && (aparm.min_gndspeed_cm > 0)) {
         int32_t min_gnd_target_airspeed = airspeed_measured_cm + groundspeed_undershoot;
         if (min_gnd_target_airspeed > target_airspeed_cm)
             target_airspeed_cm = min_gnd_target_airspeed;
@@ -156,7 +135,7 @@ void Plane::calc_gndspeed_undershoot()
 		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
 		yawVect.normalize();
 		float gndSpdFwd = yawVect * gndVel;
-        groundspeed_undershoot = (g.min_gndspeed_cm > 0) ? (g.min_gndspeed_cm - gndSpdFwd*100) : 0;
+        groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
     }
 }
 
@@ -164,11 +143,11 @@ void Plane::update_loiter(uint16_t radius)
 {
     if (radius <= 1) {
         // if radius is <=1 then use the general loiter radius. if it's small, use default
-        radius = (abs(g.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(g.loiter_radius);
+        radius = (abs(aparm.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(aparm.loiter_radius);
         if (next_WP_loc.flags.loiter_ccw == 1) {
             loiter.direction = -1;
         } else {
-            loiter.direction = (g.loiter_radius < 0) ? -1 : 1;
+            loiter.direction = (aparm.loiter_radius < 0) ? -1 : 1;
         }
     }
 

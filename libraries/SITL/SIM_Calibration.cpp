@@ -42,7 +42,7 @@ void SITL::Calibration::update(const struct sitl_input& input)
     } else if (switcher_pwm < 1300) {
         _calibration_poses(rot_accel);
     } else {
-        _attitude_control(input, rot_accel);
+        _angular_velocity_control(input, rot_accel);
     }
 
     accel_body(0, 0, 0);
@@ -108,7 +108,7 @@ void SITL::Calibration::_angular_velocity_control(const struct sitl_input& in,
     Vector3f axis{(float)(in.servos[5] - 1500),
                   (float)(in.servos[6] - 1500),
                   (float)(in.servos[7] - 1500)};
-    float theta = MAX_ANGULAR_SPEED * (in.servos[4] - 1200) / 800.f;
+    float theta = MAX_ANGULAR_SPEED * (in.servos[4] - 1300) / 700.f;
     float dt = frame_time_us * 1.0e-6f;
 
     if (axis.length() > 0) {

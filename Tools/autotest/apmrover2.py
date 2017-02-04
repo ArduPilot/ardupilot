@@ -1,5 +1,5 @@
 # drive APMrover2 in SITL
-
+from __future__ import print_function
 import os
 import shutil
 
@@ -18,9 +18,12 @@ HOME = mavutil.location(40.071374969556928, -105.22978898137808, 1583.702759, 24
 homeloc = None
 
 
-def arm_rover(mavproxy, mav):
+def wait_ready_to_arm(mavproxy):
     # wait for EKF and GPS checks to pass
-    wait_seconds(mav, 30)
+    mavproxy.expect('IMU0 is using GPS')
+
+def arm_rover(mavproxy, mav):
+    wait_ready_to_arm(mavproxy);
 
     mavproxy.send('arm throttle\n')
     mavproxy.expect('ARMED')
@@ -186,9 +189,9 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
 
-    valgrind_log = sitl.valgrind_log_filepath()
+    valgrind_log = util.valgrind_log_filepath(binary=binary, model='rover')
     if os.path.exists(valgrind_log):
-        os.chmod(valgrind_log, 0644)
+        os.chmod(valgrind_log, 0o644)
         shutil.copy(valgrind_log, util.reltopdir("../buildlogs/APMrover2-valgrind.log"))
 
     if failed:

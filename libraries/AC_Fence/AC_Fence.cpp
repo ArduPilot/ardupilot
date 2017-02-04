@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #include "AC_Fence.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -157,7 +156,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
 
                 // record that we have breached the upper limit
                 record_breach(AC_FENCE_TYPE_ALT_MAX);
-                ret = ret | AC_FENCE_TYPE_ALT_MAX;
+                ret |= AC_FENCE_TYPE_ALT_MAX;
 
                 // create a backup fence 20m higher up
                 _alt_max_backup = curr_alt + AC_FENCE_ALT_MAX_BACKUP_DISTANCE;
@@ -186,7 +185,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
 
                 // record that we have breached the circular distance limit
                 record_breach(AC_FENCE_TYPE_CIRCLE);
-                ret = ret | AC_FENCE_TYPE_CIRCLE;
+                ret |= AC_FENCE_TYPE_CIRCLE;
 
                 // create a backup fence 20m further out
                 _circle_radius_backup = _home_distance + AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE;
@@ -218,7 +217,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
                 if ((_breached_fences & AC_FENCE_TYPE_POLYGON) == 0) {
                     // record that we have breached the polygon
                     record_breach(AC_FENCE_TYPE_POLYGON);
-                    ret = ret | AC_FENCE_TYPE_POLYGON;
+                    ret |= AC_FENCE_TYPE_POLYGON;
                 }
             } else {
                 // clear breach if present
@@ -346,7 +345,7 @@ bool AC_Fence::boundary_breached(const Vector2f& location, uint16_t num_points, 
 void AC_Fence::handle_msg(mavlink_channel_t chan, mavlink_message_t* msg)
 {
     // exit immediately if null message
-    if (msg == NULL) {
+    if (msg == nullptr) {
         return;
     }
 
@@ -406,7 +405,7 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
     }
 
     // exit if we could not allocate RAM for the boundary
-    if (_boundary == NULL) {
+    if (_boundary == nullptr) {
         return false;
     }
 

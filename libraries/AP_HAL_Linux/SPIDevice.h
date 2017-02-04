@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015  Intel Corporation. All rights reserved.
  *
@@ -90,7 +89,15 @@ public:
         _buses.reserve(3);
     }
 
+    /* AP_HAL::SPIDeviceManager implementation */
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name);
+
+    /*
+     * Stop all SPI threads and block until they are finalized. This doesn't
+     * free memory because they can still be used by devices, however device
+     * drivers won't receive any new event
+     */
+    void teardown();
 
 protected:
     void _unregister(SPIBus &b);

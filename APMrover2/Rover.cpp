@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,9 +21,9 @@
 
 Rover::Rover(void) :
     param_loader(var_info),
-    channel_steer(NULL),
-    channel_throttle(NULL),
-    channel_learn(NULL),
+    channel_steer(nullptr),
+    channel_throttle(nullptr),
+    channel_learn(nullptr),
     DataFlash{FIRMWARE_STRING},
     in_log_download(false),
     modes(&g.mode1),

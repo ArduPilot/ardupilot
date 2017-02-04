@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,7 +44,7 @@ void set_object_value(const void *object_pointer,
 
 void setup()
 {
-    hal.console->println("ArduPilot Airspeed library test");
+    hal.console->printf("ArduPilot Airspeed library test\n");
 
     set_object_value(&airspeed, airspeed.var_info, "PIN", 65);
     set_object_value(&airspeed, airspeed.var_info, "ENABLE", 1);

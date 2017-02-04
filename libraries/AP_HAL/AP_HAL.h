@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #include "AP_HAL_Namespace.h"
 #include "AP_HAL_Boards.h"

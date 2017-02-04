@@ -12,7 +12,7 @@ public:
     uint8_t max_points() const;
 
     // create buffer to hold copy of eeprom points in RAM
-    // returns NULL if not enough memory can be allocated
+    // returns nullptr if not enough memory can be allocated
     void* create_point_array(uint8_t element_size);
 
     // load boundary point from eeprom, returns true on successful load

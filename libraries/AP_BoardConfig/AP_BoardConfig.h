@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
@@ -47,6 +46,7 @@ public:
         PX4_BOARD_PIXRACER = 4,
         PX4_BOARD_PHMINI   = 5,
         PX4_BOARD_PH2SLIM  = 6,
+        PX4_BOARD_OLDDRIVERS = 100,
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         VRX_BOARD_BRAIN51  = 7,
@@ -58,7 +58,16 @@ public:
 #endif
     };
 #endif
-        
+
+    // set default value for BRD_SAFETY_MASK
+    void set_default_safety_ignore_mask(uint16_t mask);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    static enum px4_board_type get_board_type(void) {
+        return px4_configured_board;
+    }
+#endif
+    
 private:
     AP_Int16 vehicleSerialNumber;
 
@@ -67,7 +76,7 @@ private:
         AP_Int8 pwm_count;
         AP_Int8 safety_enable;
         AP_Int32 ignore_safety_channels;
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if HAL_WITH_UAVCAN
         AP_Int8 can_enable;
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -77,37 +86,28 @@ private:
 #endif
         AP_Int8 board_type;
     } px4;
+
+    static enum px4_board_type px4_configured_board;
+    
     void px4_drivers_start(void);
     void px4_setup(void);
     void px4_setup_pwm(void);
     void px4_setup_safety(void);
+    void px4_setup_safety_mask(void);
     void px4_setup_uart(void);
     void px4_setup_sbus(void);
     void px4_setup_canbus(void);
     void px4_setup_drivers(void);
+    void px4_setup_peripherals(void);
+    void px4_setup_px4io(void);
+    void px4_tone_alarm(const char *tone_string);
     void px4_sensor_error(const char *reason);
+    bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    void px4_start_common_sensors(void);
-    void px4_start_fmuv1_sensors(void);
-    void px4_start_fmuv2_sensors(void);
-    void px4_start_fmuv4_sensors(void);
-    void px4_start_pixhawk2slim_sensors(void);
-    void px4_start_phmini_sensors(void);
-    void px4_start_optional_sensors(void);
+    void px4_autodetect(void);
 #endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    void vrx_start_common_sensors(void);
-    void vrx_start_brain51_sensors(void);
-    void vrx_start_brain52_sensors(void);
-    void vrx_start_ubrain51_sensors(void);
-    void vrx_start_ubrain52_sensors(void);
-    void vrx_start_core10_sensors(void);
-    void vrx_start_brain54_sensors(void);
-    void vrx_start_optional_sensors(void);
-#endif
-
+    
 #endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
 
     // target temperarure for IMU in Celsius, or -1 to disable

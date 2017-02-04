@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -16,6 +14,7 @@
 #include "Util.h"
 #include "GPIO.h"
 #include "I2CDevice.h"
+#include "SPIDevice.h"
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
@@ -31,7 +30,6 @@
 
 using namespace PX4;
 
-static Empty::SPIDeviceManager spiDeviceManager;
 //static Empty::GPIO gpioDriver;
 
 static PX4Scheduler schedulerInstance;
@@ -43,6 +41,7 @@ static PX4Util utilInstance;
 static PX4GPIO gpioDriver;
 
 static PX4::I2CDeviceManager i2c_mgr_instance;
+static PX4::SPIDeviceManager spi_mgr_instance;
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
@@ -84,7 +83,7 @@ HAL_PX4::HAL_PX4() :
         &uartEDriver,  /* uartE */
         &uartFDriver,  /* uartF */
         &i2c_mgr_instance,
-        &spiDeviceManager, /* spi */
+        &spi_mgr_instance,
         &analogIn, /* analogin */
         &storageDriver, /* storage */
         &uartADriver, /* console */
@@ -93,7 +92,7 @@ HAL_PX4::HAL_PX4() :
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
         &utilInstance, /* util */
-        NULL)    /* no onboard optical flow */
+        nullptr)    /* no onboard optical flow */
 {}
 
 bool _px4_thread_should_exit = false;        /**< Daemon exit flag */
@@ -135,11 +134,6 @@ static int main_loop(int argc, char **argv)
     hal.uartD->begin(57600);
     hal.uartE->begin(57600);
     hal.scheduler->init();
-    hal.rcin->init();
-    hal.rcout->init();
-    hal.analogin->init();
-    hal.gpio->init();
-
 
     /*
       run setup() at low priority to ensure CLI doesn't hang the
@@ -172,7 +166,7 @@ static int main_loop(int argc, char **argv)
           will only ever be called if a loop() call runs for more than
           0.1 second
          */
-        hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, NULL);
+        hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, nullptr);
 
         g_callbacks->loop();
 
@@ -250,7 +244,7 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
                                              APM_MAIN_PRIORITY,
                                              APM_MAIN_THREAD_STACK_SIZE,
                                              main_loop,
-                                             NULL);
+                                             nullptr);
             exit(0);
         }
 

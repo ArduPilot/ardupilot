@@ -3,7 +3,7 @@
  APM automatic test suite
  Andrew Tridgell, October 2011
 """
-
+from __future__ import print_function
 import atexit
 import fnmatch
 import glob
@@ -38,7 +38,7 @@ def get_default_params(atype, binary):
         frame = "+"
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=10)
+    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=10, unhide_parameters=True)
     mavproxy = util.start_MAVProxy_SITL(atype)
     print("Dumping defaults")
     idx = mavproxy.expect(['Please Run Setup', 'Saved [0-9]+ parameters to (\S+)'])
@@ -222,7 +222,7 @@ def skip_step(step):
 
 def binary_path(step, debug=False):
     if step.find("ArduCopter") != -1:
-        binary_name = "arducopter-quad"
+        binary_name = "arducopter"
     elif step.find("ArduPlane") != -1:
         binary_name = "arduplane"
     elif step.find("APMrover2") != -1:
@@ -268,7 +268,7 @@ def run_step(step):
         return util.build_SITL('bin/ardurover', j=opts.j, debug=opts.debug)
 
     if step == 'build.ArduCopter':
-        return util.build_SITL('bin/arducopter-quad', j=opts.j, debug=opts.debug)
+        return util.build_SITL('bin/arducopter', j=opts.j, debug=opts.debug)
 
     if step == 'build.AntennaTracker':
         return util.build_SITL('bin/antennatracker', j=opts.j, debug=opts.debug)

@@ -69,6 +69,7 @@ ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/clang
 
 exportline="export PATH=$HOME/ccache"
 exportline="${exportline}:$HOME/bin"
+exportline="${exportline}:$HOME/.local/bin"
 exportline="${exportline}:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin"
 exportline="${exportline}:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin"
 exportline="${exportline}:$HOME/opt/$CCACHE_ROOT"
@@ -82,4 +83,5 @@ fi
 
 . ~/.profile
 
-pip install --user argparse empy pyserial pexpect mavproxy
+pip install --user -U argparse empy pyserial pexpect future lxml
+pip install --user -U mavproxy

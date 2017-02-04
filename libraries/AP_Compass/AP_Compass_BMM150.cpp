@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2016  Intel Corporation. All rights reserved.
  *
@@ -18,8 +17,6 @@
 #include "AP_Compass_BMM150.h"
 
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include <utility>
 
@@ -68,6 +65,9 @@ extern const AP_HAL::HAL &hal;
 AP_Compass_Backend *AP_Compass_BMM150::probe(Compass &compass,
                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
+    if (!dev) {
+        return nullptr;
+    }
     AP_Compass_BMM150 *sensor = new AP_Compass_BMM150(compass, std::move(dev));
     if (!sensor || !sensor->init()) {
         delete sensor;
@@ -127,12 +127,6 @@ bool AP_Compass_BMM150::init()
     uint8_t val = 0;
     bool ret;
 
-    _accum_sem = hal.util->new_semaphore();
-    if (!_accum_sem) {
-        hal.console->printf("BMM150: Unable to create semaphore\n");
-        return false;
-    }
-
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.console->printf("BMM150: Unable to get bus semaphore\n");
         return false;
@@ -191,10 +185,12 @@ bool AP_Compass_BMM150::init()
 
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
-    set_dev_id(_compass_instance, AP_COMPASS_TYPE_BMM150);
+
+    _dev->set_device_type(DEVTYPE_BMM150);
+    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     _dev->register_periodic_callback(MEASURE_TIME_USEC,
-            FUNCTOR_BIND_MEMBER(&AP_Compass_BMM150::_update, bool));
+            FUNCTOR_BIND_MEMBER(&AP_Compass_BMM150::_update, void));
 
     return true;
 
@@ -241,20 +237,16 @@ int16_t AP_Compass_BMM150::_compensate_z(int16_t z, uint32_t rhall)
     return constrain_int32(dividend / divisor, -0x8000, 0x8000);
 }
 
-bool AP_Compass_BMM150::_update()
+void AP_Compass_BMM150::_update()
 {
     const uint32_t time_usec = AP_HAL::micros();
-
-    if (time_usec - _last_update_timestamp < MEASURE_TIME_USEC) {
-        return true;
-    }
 
     le16_t data[4];
     bool ret = _dev->read_registers(DATA_X_LSB_REG, (uint8_t *) &data, sizeof(data));
 
     /* Checking data ready status */
     if (!ret || !(data[3] & 0x1)) {
-        return true;
+        return;
     }
 
     const uint16_t rhall = le16toh(data[3] >> 2);
@@ -280,8 +272,8 @@ bool AP_Compass_BMM150::_update()
     /* correct raw_field for known errors */
     correct_field(raw_field, _compass_instance);
 
-    if (!_accum_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return true;
+    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
     }
     _mag_accum += raw_field;
     _accum_count++;
@@ -289,18 +281,16 @@ bool AP_Compass_BMM150::_update()
         _mag_accum /= 2;
         _accum_count = 5;
     }
-    _last_update_timestamp = time_usec;
-    _accum_sem->give();
-    return true;
+    _sem->give();
 }
 
 void AP_Compass_BMM150::read()
 {
-    if (!_accum_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_sem->take_nonblocking()) {
         return;
     }
     if (_accum_count == 0) {
-        _accum_sem->give();
+        _sem->give();
         return;
     }
 
@@ -308,9 +298,8 @@ void AP_Compass_BMM150::read()
     field /= _accum_count;
     _mag_accum.zero();
     _accum_count = 0;
-    _accum_sem->give();
+    _sem->give();
 
     publish_filtered_field(field, _compass_instance);
 }
 
-#endif

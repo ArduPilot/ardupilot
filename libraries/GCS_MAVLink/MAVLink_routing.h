@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	MAVLink_routing.h
 /// @brief	handle routing of MAVLink packets by ID
 #pragma once

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Tracker.h"
 #include "version.h"
 
@@ -30,6 +28,8 @@ void Tracker::init_tracker()
 
     GCS_MAVLINK::set_dataflash(&DataFlash);
 
+    mavlink_system.sysid = g.sysid_this_mav;
+
     // initialise serial ports
     serial_manager.init();
 
@@ -41,6 +41,12 @@ void Tracker::init_tracker()
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
     
     BoardConfig.init();
+
+    // initialise notify
+    notify.init(false);
+    AP_Notify::flags.pre_arm_check = true;
+    AP_Notify::flags.pre_arm_gps_check = true;
+    AP_Notify::flags.failsafe_battery = false;
 
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
@@ -56,15 +62,13 @@ void Tracker::init_tracker()
         gcs[i].set_snoop(mavlink_snoop_static);
     }
 
-    mavlink_system.sysid = g.sysid_this_mav;
-
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
 
     if (g.compass_enabled==true) {
         if (!compass.init() || !compass.read()) {
-            hal.console->println("Compass initialisation failed!");
+            hal.console->printf("Compass initialisation failed!\n");
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
@@ -72,7 +76,7 @@ void Tracker::init_tracker()
     }
 
     // GPS Initialization
-    gps.init(NULL, serial_manager);
+    gps.init(nullptr, serial_manager);
 
     ahrs.init();
     ahrs.set_fly_forward(false);
@@ -164,15 +168,13 @@ void Tracker::set_home(struct Location temp)
 }
 
 void Tracker::arm_servos()
-{    
-    channel_yaw.enable_out();
-    channel_pitch.enable_out();
+{
+    hal.util->set_soft_armed(true);
 }
 
 void Tracker::disarm_servos()
 {
-    channel_yaw.disable_out();
-    channel_pitch.disable_out();
+    hal.util->set_soft_armed(false);
 }
 
 /*
@@ -181,15 +183,15 @@ void Tracker::disarm_servos()
 void Tracker::prepare_servos()
 {
     start_time_ms = AP_HAL::millis();
-    channel_yaw.set_radio_out(channel_yaw.get_radio_trim());
-    channel_pitch.set_radio_out(channel_pitch.get_radio_trim());
-    channel_yaw.output();
-    channel_pitch.output();
+    SRV_Channels::set_output_limit(SRV_Channel::k_tracker_yaw, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    SRV_Channels::set_output_limit(SRV_Channel::k_tracker_pitch, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    SRV_Channels::calc_pwm();
+    SRV_Channels::output_ch_all();
 }
 
 void Tracker::set_mode(enum ControlMode mode)
 {
-    if(control_mode == mode) {
+    if (control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
         return;
     }

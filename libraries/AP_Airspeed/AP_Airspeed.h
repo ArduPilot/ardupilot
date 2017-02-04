@@ -1,16 +1,11 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 #include "AP_Airspeed_Backend.h"
-#include "AP_Airspeed_I2C.h"
-#include "AP_Airspeed_PX4.h"
-#include "AP_Airspeed_analog.h"
 
 class Airspeed_Calibration {
 public:
@@ -37,6 +32,8 @@ private:
 class AP_Airspeed
 {
 public:
+    friend class AP_Airspeed_Backend;
+    
     // constructor
     AP_Airspeed();
 
@@ -79,17 +76,17 @@ public:
 
     // return true if airspeed is enabled, and airspeed use is set
     bool        use(void) const {
-        return _enable && _use;
+        return enabled() && _use;
     }
 
     // return true if airspeed is enabled
     bool        enabled(void) const {
-        return _enable;
+        return _type.get() != TYPE_NONE;
     }
 
     // force disable the airspeed sensor
     void        disable(void) {
-        _enable.set(0);
+        _type.set(TYPE_NONE);
     }
 
     // used by HIL to set the airspeed
@@ -130,7 +127,7 @@ public:
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
 
     // return health status of sensor
-    bool healthy(void) const { return _healthy && fabsf(_offset) > 0 && _enable; }
+    bool healthy(void) const { return _healthy && fabsf(_offset) > 0 && enabled(); }
 
     void setHIL(float pressure) { _healthy=_hil_set=true; _hil_pressure=pressure; }
 
@@ -145,13 +142,21 @@ public:
                             PITOT_TUBE_ORDER_NEGATIVE = 1,
                             PITOT_TUBE_ORDER_AUTO     = 2 };
 
+    enum airspeed_type {
+        TYPE_NONE=0,
+        TYPE_I2C_MS4525=1,
+        TYPE_ANALOG=2,
+        TYPE_I2C_MS5525=3,
+    };
+    
 private:
     AP_Float        _offset;
     AP_Float        _ratio;
     AP_Float        _psi_range;
     AP_Int8         _use;
-    AP_Int8         _enable;
+    AP_Int8         _type;
     AP_Int8         _pin;
+    AP_Int8         _bus;
     AP_Int8         _autocal;
     AP_Int8         _tube_order;
     AP_Int8         _skip_cal;
@@ -180,10 +185,5 @@ private:
     float get_pressure(void);
     void update_calibration(float raw_pressure);
 
-    AP_Airspeed_Analog analog{_pin, _psi_range};
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    AP_Airspeed_PX4    digital{_psi_range};
-#else
-    AP_Airspeed_I2C    digital{_psi_range};
-#endif
+    AP_Airspeed_Backend *sensor;
 };

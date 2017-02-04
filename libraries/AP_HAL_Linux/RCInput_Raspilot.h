@@ -13,8 +13,6 @@ public:
     void init();
 
 private:
-    uint32_t _last_timer;
-
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
     void _poll_data(void);

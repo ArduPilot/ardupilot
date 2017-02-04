@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 // set_home_state - update home state
@@ -102,21 +100,6 @@ void Copter::set_failsafe_gcs(bool b)
 }
 
 // ---------------------------------------------
-
-void Copter::set_pre_arm_check(bool b)
-{
-    if(ap.pre_arm_check != b) {
-        ap.pre_arm_check = b;
-        AP_Notify::flags.pre_arm_check = b;
-    }
-}
-
-void Copter::set_pre_arm_rc_check(bool b)
-{
-    if(ap.pre_arm_rc_check != b) {
-        ap.pre_arm_rc_check = b;
-    }
-}
 
 void Copter::update_using_interlock()
 {

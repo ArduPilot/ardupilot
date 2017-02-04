@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,6 +15,7 @@
 #include "AP_Baro_MS5611.h"
 
 #include <utility>
+#include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
 
@@ -41,11 +41,6 @@ static const uint8_t CMD_MS56XX_PROM = 0xA0;
 #define ADDR_CMD_CONVERT_D2_OSR2048 0x56
 #define ADDR_CMD_CONVERT_D2_OSR4096 0x58
 
-#define CONVERSION_TIME_OSR_4096   9.04 * USEC_PER_MSEC
-#define CONVERSION_TIME_OSR_2048   4.54 * USEC_PER_MSEC
-#define CONVERSION_TIME_OSR_1024   2.28 * USEC_PER_MSEC
-#define CONVERSION_TIME_OSR_0512   1.17 * USEC_PER_MSEC
-#define CONVERSION_TIME_OSR_0256   0.60 * USEC_PER_MSEC
 /*
   use an OSR of 1024 to reduce the self-heating effect of the
   sensor. Information from MS tells us that some individual sensors
@@ -54,40 +49,70 @@ static const uint8_t CMD_MS56XX_PROM = 0xA0;
  */
 static const uint8_t ADDR_CMD_CONVERT_PRESSURE = ADDR_CMD_CONVERT_D1_OSR1024;
 static const uint8_t ADDR_CMD_CONVERT_TEMPERATURE = ADDR_CMD_CONVERT_D2_OSR1024;
-static const uint32_t CONVERSION_TIME = CONVERSION_TIME_OSR_1024;
+
 /*
   constructor
  */
-AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, enum MS56XX_TYPE ms56xx_type)
     : AP_Baro_Backend(baro)
     , _dev(std::move(dev))
+    , _ms56xx_type(ms56xx_type)
 {
 }
 
-void AP_Baro_MS56XX::_init()
+AP_Baro_Backend *AP_Baro_MS56XX::probe(AP_Baro &baro,
+                                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                       enum MS56XX_TYPE ms56xx_type)
+{
+    if (!dev) {
+        return nullptr;
+    }
+    AP_Baro_MS56XX *sensor = new AP_Baro_MS56XX(baro, std::move(dev), ms56xx_type);
+    if (!sensor || !sensor->_init()) {
+        delete sensor;
+        return nullptr;
+    }
+    return sensor;
+}
+
+bool AP_Baro_MS56XX::_init()
 {
     if (!_dev) {
-        AP_HAL::panic("AP_Baro_MS56XX: failed to use device");
+        return false;
     }
 
-    _sem = hal.util->new_semaphore();
-    if (!_sem) {
-        AP_HAL::panic("AP_Baro_MS56XX: failed to create semaphore");
-    }
-
-    _instance = _frontend.register_sensor();
-
-    if (!_dev->get_semaphore()->take(10)) {
+    if (!_dev->get_semaphore()->take(0)) {
         AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
     }
 
+    // high retries for init
+    _dev->set_retries(10);
+    
+    uint16_t prom[8];
+    bool prom_read_ok = false;
+
     _dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0);
     hal.scheduler->delay(4);
-
-    uint16_t prom[8];
-    if (!_read_prom(prom)) {
-        AP_HAL::panic("Can't read PROM");
+    
+    const char *name = "MS5611";
+    switch (_ms56xx_type) {
+    case BARO_MS5607:
+        name = "MS5607";
+    case BARO_MS5611:
+        prom_read_ok = _read_prom_5611(prom);
+        break;
+    case BARO_MS5637:
+        name = "MS5637";
+        prom_read_ok = _read_prom_5637(prom);
+        break;
     }
+
+    if (!prom_read_ok) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
+
+    printf("%s found on bus %u address 0x%02x\n", name, _dev->bus_num(), _dev->get_bus_address());
 
     // Save factory calibration coefficients
     _cal_reg.c1 = prom[1];
@@ -99,16 +124,21 @@ void AP_Baro_MS56XX::_init()
 
     // Send a command to read temperature first
     _dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0);
-    _last_cmd_usec = AP_HAL::micros();
     _state = 0;
 
     memset(&_accum, 0, sizeof(_accum));
 
+    _instance = _frontend.register_sensor();
+
+    // lower retries for run
+    _dev->set_retries(3);
+    
     _dev->get_semaphore()->give();
 
     /* Request 100Hz update */
     _dev->register_periodic_callback(10 * USEC_PER_MSEC,
-                                     FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, bool));
+                                     FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void));
+    return true;
 }
 
 /**
@@ -143,8 +173,7 @@ uint16_t AP_Baro_MS56XX::_read_prom_word(uint8_t word)
 {
     const uint8_t reg = CMD_MS56XX_PROM + (word << 1);
     uint8_t val[2];
-
-    if (!_dev->transfer(&reg, 1, val, 2)) {
+    if (!_dev->transfer(&reg, 1, val, sizeof(val))) {
         return 0;
     }
     return (val[0] << 8) | val[1];
@@ -153,14 +182,13 @@ uint16_t AP_Baro_MS56XX::_read_prom_word(uint8_t word)
 uint32_t AP_Baro_MS56XX::_read_adc()
 {
     uint8_t val[3];
-
-    if (!_dev->transfer(&CMD_MS56XX_READ_ADC, 1, val, 3)) {
+    if (!_dev->transfer(&CMD_MS56XX_READ_ADC, 1, val, sizeof(val))) {
         return 0;
     }
     return (val[0] << 16) | (val[1] << 8) | val[2];
 }
 
-bool AP_Baro_MS56XX::_read_prom(uint16_t prom[8])
+bool AP_Baro_MS56XX::_read_prom_5611(uint16_t prom[8])
 {
     /*
      * MS5611-01BA datasheet, CYCLIC REDUNDANCY CHECK (CRC): "MS5611-01BA
@@ -169,8 +197,16 @@ bool AP_Baro_MS56XX::_read_prom(uint16_t prom[8])
      *
      * CRC field must me removed for CRC-4 calculation.
      */
+    bool all_zero = true;
     for (uint8_t i = 0; i < 8; i++) {
         prom[i] = _read_prom_word(i);
+        if (prom[i] != 0) {
+            all_zero = false;
+        }
+    }
+
+    if (all_zero) {
+        return false;
     }
 
     /* save the read crc */
@@ -182,7 +218,7 @@ bool AP_Baro_MS56XX::_read_prom(uint16_t prom[8])
     return crc_read == crc4(prom);
 }
 
-bool AP_Baro_MS5637::_read_prom(uint16_t prom[8])
+bool AP_Baro_MS56XX::_read_prom_5637(uint16_t prom[8])
 {
     /*
      * MS5637-02BA03 datasheet, CYCLIC REDUNDANCY CHECK (CRC): "MS5637
@@ -192,8 +228,16 @@ bool AP_Baro_MS5637::_read_prom(uint16_t prom[8])
      * 8th PROM word must be zeroed and CRC field removed for CRC-4
      * calculation.
      */
+    bool all_zero = true;
     for (uint8_t i = 0; i < 7; i++) {
         prom[i] = _read_prom_word(i);
+        if (prom[i] != 0) {
+            all_zero = false;
+        }
+    }
+
+    if (all_zero) {
+        return false;
     }
 
     prom[7] = 0;
@@ -215,16 +259,8 @@ bool AP_Baro_MS5637::_read_prom(uint16_t prom[8])
  * as fast as pressure. Hence we reuse the same temperature for 4 samples of
  * pressure.
 */
-bool AP_Baro_MS56XX::_timer(void)
+void AP_Baro_MS56XX::_timer(void)
 {
-    /*
-     * transfer is taking longer than it should or we got stuck by other
-     * sensors: skip one sample
-     */
-    if (AP_HAL::micros() - _last_cmd_usec < CONVERSION_TIME) {
-        return true;
-    }
-
     uint8_t next_cmd;
     uint8_t next_state;
     uint32_t adc_val = _read_adc();
@@ -241,13 +277,22 @@ bool AP_Baro_MS56XX::_timer(void)
 
     next_cmd = next_state == 0 ? ADDR_CMD_CONVERT_TEMPERATURE
                                : ADDR_CMD_CONVERT_PRESSURE;
-    _dev->transfer(&next_cmd, 1, nullptr, 0);
-
-    _last_cmd_usec = AP_HAL::micros();
+    if (!_dev->transfer(&next_cmd, 1, nullptr, 0)) {
+        return;
+    }
 
     /* if we had a failed read we are all done */
     if (adc_val == 0) {
-        return true;
+        // a failed read can mean the next returned value will be
+        // corrupt, we must discard it
+        _discard_next = true;
+        return;
+    }
+
+    if (_discard_next) {
+        _discard_next = false;
+        _state = next_state;
+        return;
     }
 
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
@@ -261,8 +306,6 @@ bool AP_Baro_MS56XX::_timer(void)
         _sem->give();
         _state = next_state;
     }
-
-    return true;
 }
 
 void AP_Baro_MS56XX::_update_and_wrap_accumulator(uint32_t *accum, uint32_t val,
@@ -281,7 +324,7 @@ void AP_Baro_MS56XX::update()
     uint32_t sD1, sD2;
     uint8_t d1count, d2count;
 
-    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_sem->take(0)) {
         return;
     }
 
@@ -304,18 +347,22 @@ void AP_Baro_MS56XX::update()
     if (d2count != 0) {
         _D2 = ((float)sD2) / d2count;
     }
-    _calculate();
-}
 
-/* MS5611 class */
-AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
-    : AP_Baro_MS56XX(baro, std::move(dev))
-{
-    _init();
+    switch (_ms56xx_type) {
+    case BARO_MS5607:
+        _calculate_5607();
+        break;
+    case BARO_MS5611:
+        _calculate_5611();
+        break;
+    case BARO_MS5637:
+        _calculate_5637();
+        break;
+    }
 }
 
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
-void AP_Baro_MS5611::_calculate()
+void AP_Baro_MS56XX::_calculate_5611()
 {
     float dT;
     float TEMP;
@@ -349,15 +396,8 @@ void AP_Baro_MS5611::_calculate()
     _copy_to_frontend(_instance, pressure, temperature);
 }
 
-/* MS5607 Class */
-AP_Baro_MS5607::AP_Baro_MS5607(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
-    : AP_Baro_MS56XX(baro, std::move(dev))
-{
-    _init();
-}
-
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
-void AP_Baro_MS5607::_calculate()
+void AP_Baro_MS56XX::_calculate_5607()
 {
     float dT;
     float TEMP;
@@ -391,15 +431,8 @@ void AP_Baro_MS5607::_calculate()
     _copy_to_frontend(_instance, pressure, temperature);
 }
 
-/* MS5637 Class */
-AP_Baro_MS5637::AP_Baro_MS5637(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
-    : AP_Baro_MS56XX(baro, std::move(dev))
-{
-    _init();
-}
-
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
-void AP_Baro_MS5637::_calculate()
+void AP_Baro_MS56XX::_calculate_5637()
 {
     int32_t dT, TEMP;
     int64_t OFF, SENS;

@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,6 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_RangeFinder_PX4_PWM.h"
 
 #include <sys/types.h>
@@ -33,6 +33,10 @@
 #include <cmath>
 
 extern const AP_HAL::HAL& hal;
+
+extern "C" {
+    int pwm_input_main(int, char **);
+};
 
 /* 
    The constructor also initialises the rangefinder. Note that this
@@ -81,6 +85,11 @@ AP_RangeFinder_PX4_PWM::~AP_RangeFinder_PX4_PWM()
 */
 bool AP_RangeFinder_PX4_PWM::detect(RangeFinder &_ranger, uint8_t instance)
 {
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+    if (AP_BoardConfig::px4_start_driver(pwm_input_main, "pwm_input", "start")) {
+        hal.console->printf("started pwm_input driver\n");
+    }
+#endif
     int fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
     if (fd == -1) {
         return false;

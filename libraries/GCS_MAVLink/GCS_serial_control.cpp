@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   MAVLink SERIAL_CONTROL handling
  */
@@ -33,8 +32,8 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
     mavlink_serial_control_t packet;
     mavlink_msg_serial_control_decode(msg, &packet);
 
-    AP_HAL::UARTDriver *port = NULL;
-    AP_HAL::Stream *stream = NULL;
+    AP_HAL::UARTDriver *port = nullptr;
+    AP_HAL::Stream *stream = nullptr;
 
     if (packet.flags & SERIAL_CONTROL_FLAG_REPLY) {
         // how did this packet get to us?
@@ -68,7 +67,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
         return;
     }
     
-    if (exclusive && port != NULL) {
+    if (exclusive && port != nullptr) {
         // force flow control off for exclusive access. This protocol
         // is used to talk to bootloaders which may not have flow
         // control support
@@ -76,7 +75,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
     }
 
     // optionally change the baudrate
-    if (packet.baudrate != 0 && port != NULL) {
+    if (packet.baudrate != 0 && port != nullptr) {
         port->begin(packet.baudrate);
     }
 

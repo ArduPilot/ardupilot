@@ -1,4 +1,3 @@
-// -*- tab-width: 8; Mode: C++; c-basic-offset: 8; indent-tabs-mode: -*- t -*-
 /*
   SUMD decoder, based on PX4Firmware/src/rc/lib/rc/sumd.c from PX4Firmware
   modified for use in AP_HAL_* by Andrew Tridgell
