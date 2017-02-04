@@ -2,7 +2,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor.h"
-#include "AP_BattMonitor_SMBus_I2C.h"
+#include "AP_BattMonitor_SMBus_Solo.h"
 #include <utility>
 
 extern const AP_HAL::HAL& hal;
@@ -24,22 +24,22 @@ extern const AP_HAL::HAL& hal;
 #define BATTMONITOR_SMBUS_CURRENT               0x2a    // current register
 
 // Constructor
-AP_BattMonitor_SMBus_I2C::AP_BattMonitor_SMBus_I2C(AP_BattMonitor &mon, uint8_t instance,
+AP_BattMonitor_SMBus_Solo::AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon, uint8_t instance,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_BattMonitor_SMBus(mon, instance, mon_state)
     , _dev(std::move(dev))
 {
-    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_I2C::timer, void));
+    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_Solo::timer, void));
 }
 
 /// Read the battery voltage and current.  Should be called at 10hz
-void AP_BattMonitor_SMBus_I2C::read()
+void AP_BattMonitor_SMBus_Solo::read()
 {
     // nothing to do - all done in timer()
 }
 
-void AP_BattMonitor_SMBus_I2C::timer()
+void AP_BattMonitor_SMBus_Solo::timer()
 {
     uint16_t data;
     uint8_t buff[4];
@@ -66,7 +66,7 @@ void AP_BattMonitor_SMBus_I2C::timer()
 
 // read word from register
 // returns true if read was successful, false if failed
-bool AP_BattMonitor_SMBus_I2C::read_word(uint8_t reg, uint16_t& data) const
+bool AP_BattMonitor_SMBus_Solo::read_word(uint8_t reg, uint16_t& data) const
 {
     uint8_t buff[3];    // buffer to hold results
 
@@ -89,7 +89,7 @@ bool AP_BattMonitor_SMBus_I2C::read_word(uint8_t reg, uint16_t& data) const
 }
 
 // read_block - returns number of characters read if successful, zero if unsuccessful
-uint8_t AP_BattMonitor_SMBus_I2C::read_block(uint8_t reg, uint8_t* data, uint8_t max_len, bool append_zero) const
+uint8_t AP_BattMonitor_SMBus_Solo::read_block(uint8_t reg, uint8_t* data, uint8_t max_len, bool append_zero) const
 {
     uint8_t buff[max_len+2];    // buffer to hold results (2 extra byte returned holding length and PEC)
 
@@ -127,7 +127,7 @@ uint8_t AP_BattMonitor_SMBus_I2C::read_block(uint8_t reg, uint8_t* data, uint8_t
 #define SMBUS_PEC_POLYNOME  0x07 // Polynome for CRC generation
 
 /// get_PEC - calculate packet error correction code of buffer
-uint8_t AP_BattMonitor_SMBus_I2C::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool reading, const uint8_t buff[], uint8_t len) const
+uint8_t AP_BattMonitor_SMBus_Solo::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool reading, const uint8_t buff[], uint8_t len) const
 {
     // exit immediately if no data
     if (len <= 0) {
