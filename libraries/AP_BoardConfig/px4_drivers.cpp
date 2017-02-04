@@ -324,6 +324,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
     case PX4_BOARD_PHMINI:
     case PX4_BOARD_AUAV21:
     case PX4_BOARD_PH2SLIM:
+    case PX4_BOARD_AEROFC:
         break;
     default:
         px4_sensor_error("Unknown board type");
