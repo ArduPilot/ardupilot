@@ -405,6 +405,12 @@ void AP_Baro::init(void)
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME))));
         break;
 
+    case AP_BoardConfig::PX4_BOARD_AEROFC:
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)),
+                                          AP_Baro_MS56XX::BARO_MS5607));
+        break;
+
     default:
         drivers[0] = new AP_Baro_PX4(*this);
         _num_drivers = 1;
