@@ -18,16 +18,18 @@
 class AP_BattMonitor_Backend;
 class AP_BattMonitor_Analog;
 class AP_BattMonitor_SMBus;
-class AP_BattMonitor_SMBus_I2C;
+class AP_BattMonitor_SMBus_Solo;
 class AP_BattMonitor_SMBus_PX4;
+class AP_BattMonitor_SMBus_Maxcell;
 
 class AP_BattMonitor
 {
     friend class AP_BattMonitor_Backend;
     friend class AP_BattMonitor_Analog;
     friend class AP_BattMonitor_SMBus;
-    friend class AP_BattMonitor_SMBus_I2C;
+    friend class AP_BattMonitor_SMBus_Solo;
     friend class AP_BattMonitor_SMBus_PX4;
+    friend class AP_BattMonitor_SMBus_Maxcell;
 
 public:
 
@@ -40,7 +42,8 @@ public:
         BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY        = 3,
         BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT = 4,
         BattMonitor_TYPE_SMBUS                      = 5,
-        BattMonitor_TYPE_BEBOP                      = 6
+        BattMonitor_TYPE_BEBOP                      = 6,
+        BattMonitor_TYPE_MAXCELL                    = 7
     };
 
     // The BattMonitor_State structure is filled in by the backend driver

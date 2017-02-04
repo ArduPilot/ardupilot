@@ -9,12 +9,12 @@
 #define BATTMONITOR_SBUS_I2C_BUS 1
 #define BATTMONITOR_SMBUS_I2C_ADDR 0x0B    // default I2C bus address
 
-class AP_BattMonitor_SMBus_I2C : public AP_BattMonitor_SMBus
+class AP_BattMonitor_SMBus_Solo : public AP_BattMonitor_SMBus
 {
 public:
 
     // Constructor
-    AP_BattMonitor_SMBus_I2C(AP_BattMonitor &mon, uint8_t instance,
+    AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon, uint8_t instance,
                              AP_BattMonitor::BattMonitor_State &mon_state,
                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
