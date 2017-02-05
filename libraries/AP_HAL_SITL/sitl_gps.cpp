@@ -355,6 +355,9 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     pvt.s_acc = 40; 
     pvt.head_acc = 38 * 1.0e5; 
     pvt.p_dop = 65535; 
+    memset(pvt.reserved1, '\0', ARRAY_SIZE(pvt.reserved1));
+    pvt.headVeh = 0;
+    memset(pvt.reserved2, '\0', ARRAY_SIZE(pvt.reserved2));
 
     _gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
     _gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
