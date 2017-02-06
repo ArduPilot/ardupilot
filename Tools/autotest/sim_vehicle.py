@@ -274,7 +274,7 @@ _options_for_frame = {
         "default_params_filename": "default_params/copter.parm",
     },
     "firefly": {
-        "waf_target": "bin/arducopter-firefly",
+        "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/firefly.parm",
     },
     # HELICOPTER
