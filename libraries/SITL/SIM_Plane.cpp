@@ -221,6 +221,9 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         aileron  = (ch2-ch1)/2.0f;
         // the minus does away with the need for RC2_REV=-1
         elevator = -(ch2+ch1)/2.0f;
+
+        // assume no rudder
+        rudder = 0;
     } else if (vtail) {
         // fake a vtail plane
         float ch1 = elevator;
