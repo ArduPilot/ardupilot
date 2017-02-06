@@ -2,16 +2,19 @@
   generic Baro driver test
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_HAL/AP_HAL.h>
 
-const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 static AP_Baro barometer;
 
 static uint32_t timer;
 static uint8_t counter;
+
+void setup();
+void loop();
 
 void setup()
 {
@@ -30,7 +33,7 @@ void setup()
 void loop()
 {
     // run accumulate() at 50Hz and update() at 10Hz
-    if((AP_HAL::micros() - timer) > 20*1000UL) {
+    if ((AP_HAL::micros() - timer) > 20 * 1000UL) {
         timer = AP_HAL::micros();
         barometer.accumulate();
         if (counter++ < 5) {
