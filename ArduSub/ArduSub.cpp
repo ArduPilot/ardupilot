@@ -12,64 +12,8 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
- *  ArduCopter Version 3.0
- *  Creator:        Jason Short
- *  Lead Developer: Randy Mackay
- *  Lead Tester:    Marco Robustini
- *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen,
-                                                      Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
-                                                      Jean-Louis Naudin, Mike Smith, and more
- *  Thanks to:  Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
- *
- *  Special Thanks to contributors (in alphabetical order by first name):
- *
- *  Adam M Rivera       :Auto Compass Declination
- *  Amilcar Lucas       :Camera mount library
- *  Andrew Tridgell     :General development, Mavlink Support
- *  Angel Fernandez     :Alpha testing
- *  AndreasAntonopoulous:GeoFence
- *  Arthur Benemann     :DroidPlanner GCS
- *  Benjamin Pelletier  :Libraries
- *  Bill King           :Single Copter
- *  Christof Schmid     :Alpha testing
- *  Craig Elder         :Release Management, Support
- *  Dani Saez           :V Octo Support
- *  Doug Weibel         :DCM, Libraries, Control law advice
- *  Emile Castelnuovo   :VRBrain port, bug fixes
- *  Gregory Fletcher    :Camera mount orientation math
- *  Guntars             :Arming safety suggestion
- *  HappyKillmore       :Mavlink GCS
- *  Hein Hollander      :Octo Support, Heli Testing
- *  Igor van Airde      :Control Law optimization
- *  Jack Dunkle         :Alpha testing
- *  James Goppert       :Mavlink Support
- *  Jani Hiriven        :Testing feedback
- *  Jean-Louis Naudin   :Auto Landing
- *  John Arne Birkeland :PPM Encoder
- *  Jose Julio          :Stabilization Control laws, MPU6k driver
- *  Julien Dubois       :PosHold flight mode
- *  Julian Oes          :Pixhawk
- *  Jonathan Challinger :Inertial Navigation, CompassMot, Spin-When-Armed
- *  Kevin Hester        :Andropilot GCS
- *  Max Levine          :Tri Support, Graphics
- *  Leonard Hall        :Flight Dynamics, Throttle, Loiter and Navigation Controllers
- *  Marco Robustini     :Lead tester
- *  Michael Oborne      :Mission Planner GCS
- *  Mike Smith          :Pixhawk driver, coding support
- *  Olivier Adler       :PPM Encoder, piezo buzzer
- *  Pat Hickey          :Hardware Abstraction Layer (HAL)
- *  Robert Lefebvre     :Heli Support, Copter LEDs
- *  Roberto Navoni      :Library testing, Porting to VRBrain
- *  Sandro Benigno      :Camera support, MinimOSD
- *  Sandro Tognana      :PosHold flight mode
- *  ..and many more.
- *
- *  Code commit statistics can be found here: https://github.com/diydrones/ardupilot/graphs/contributors
- *  Wiki: http://copter.ardupilot.org/
- *  Requires modified version of Arduino, which can be found here: http://ardupilot.com/downloads/?category=6
- *
- */
+
+// ArduSub scheduling, originally copied from ArduCopter
 
 #include "Sub.h"
 
