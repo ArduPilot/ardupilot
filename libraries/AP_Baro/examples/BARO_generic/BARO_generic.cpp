@@ -42,21 +42,21 @@ void loop()
         counter = 0;
         barometer.update();
         uint32_t read_time = AP_HAL::micros() - timer;
-        float alt = barometer.get_altitude();
         if (!barometer.healthy()) {
             hal.console->printf("not healthy\n");
             return;
         }
-        hal.console->printf("Pressure:");
-        hal.console->printf("%f", barometer.get_pressure());
-        hal.console->printf(" Temperature:");
-        hal.console->printf("%f", barometer.get_temperature());
-        hal.console->printf(" Altitude:");
-        hal.console->printf("%f", alt);
-        hal.console->printf(" climb=%.2f t=%u",
-                            barometer.get_climb_rate(),
-                            (unsigned)read_time);
-        hal.console->print("\n");
+        hal.console->printf(" Pressure: %.2f Pa\n"
+                            " Temperature: %.2f degC\n"
+                            " Relative Altitude: %.2f m\n"
+                            " climb=%.2f m/s\n"
+                            " Read + update time: %u usec\n"
+                            "\n",
+                            (double)barometer.get_pressure(),
+                            (double)barometer.get_temperature(),
+                            (double)barometer.get_altitude(),
+                            (double)barometer.get_climb_rate(),
+                            read_time);
     } else {
         hal.scheduler->delay(1);
     }
