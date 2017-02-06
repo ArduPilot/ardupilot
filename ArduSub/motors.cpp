@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Sub.h"
 
 #define ARM_DELAY               20  // called at 10hz so 2 seconds

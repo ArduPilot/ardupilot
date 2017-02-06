@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 // ArduSub transect flight mode
 // Sub follows a line according to current crosstrack error supplied by XTE NMEA sentence
 // Requires GPS providing crosstrack error

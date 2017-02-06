@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Sub.h"
 
 // performs pre-arm checks. expects to be called at 1hz.
