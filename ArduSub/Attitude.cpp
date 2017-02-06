@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Sub.h"
 
 // get_smoothing_gain - returns smoothing gain to be passed into attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw
