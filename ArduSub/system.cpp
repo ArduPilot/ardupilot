@@ -239,7 +239,7 @@ void Sub::init_ardupilot()
 
         ap.depth_sensor_present = true;
         for (int i = 1; i < barometer.num_instances(); i++) {
-            barometer.set_type(i, BARO_TYPE_WATER); // Altitude (depth) is calculated differently underwater
+            barometer.set_type(i, AP_Baro::BARO_TYPE_WATER); // Altitude (depth) is calculated differently underwater
             barometer.set_precision_multiplier(i, 40); // The MS58XX values reported need to be multiplied by 10 to match units everywhere else
         }
 
@@ -254,7 +254,7 @@ void Sub::init_ardupilot()
 
         ap.depth_sensor_present = false;
         for (int i = 1; i < barometer.num_instances(); i++) {
-            barometer.set_type(i, BARO_TYPE_AIR); // Default fcu air baro
+            barometer.set_type(i, AP_Baro::BARO_TYPE_AIR); // Default fcu air baro
             barometer.set_precision_multiplier(i, 1); // Use default values
         }
         EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
