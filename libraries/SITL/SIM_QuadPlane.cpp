@@ -27,7 +27,8 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
 {
     // default to X frame
     const char *frame_type = "x";
-
+    uint8_t motor_offset = 4;
+    
     if (strstr(frame_str, "-octa-quad")) {
         frame_type = "octa-quad";
     } else if (strstr(frame_str, "-octaquad")) {
@@ -54,6 +55,8 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
         elevons = true;
         // fwd motor gives zero thrust
         thrust_scale = 0;
+        // vtol motors start at 2
+        motor_offset = 2;
     } else if (strstr(frame_str, "cl84")) {
         frame_type = "tilttri";
         // fwd motor gives zero thrust
@@ -74,7 +77,7 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
     }
     
     // leave first 4 servos free for plane
-    frame->motor_offset = 4;
+    frame->motor_offset = motor_offset;
 
     // we use zero terminal velocity to let the plane model handle the drag
     frame->init(mass, 0.51, 0, 0);
