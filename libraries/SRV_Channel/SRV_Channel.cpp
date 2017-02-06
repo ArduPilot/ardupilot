@@ -24,11 +24,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-SRV_Channel *SRV_Channels::channels;
-bool SRV_Channels::disabled_passthrough;
-bool SRV_Channels::initialised;
-Bitmask SRV_Channels::function_mask{SRV_Channel::k_nr_aux_servo_functions};
-SRV_Channels::srv_function SRV_Channels::functions[SRV_Channel::k_nr_aux_servo_functions];
 SRV_Channel::servo_mask_t SRV_Channel::have_pwm_mask;
 
 const AP_Param::GroupInfo SRV_Channel::var_info[] = {
@@ -77,81 +72,6 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
 };
 
 
-const AP_Param::GroupInfo SRV_Channels::var_info[] = {
-    // @Group: 1_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[0], "1_",  1, SRV_Channels, SRV_Channel),
-
-    // @Group: 2_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[1], "2_",  2, SRV_Channels, SRV_Channel),
-
-    // @Group: 3_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[2], "3_",  3, SRV_Channels, SRV_Channel),
-
-    // @Group: 4_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[3], "4_",  4, SRV_Channels, SRV_Channel),
-
-    // @Group: 5_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[4], "5_",  5, SRV_Channels, SRV_Channel),
-
-    // @Group: 6_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[5], "6_",  6, SRV_Channels, SRV_Channel),
-
-    // @Group: 7_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[6], "7_",  7, SRV_Channels, SRV_Channel),
-
-    // @Group: 8_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[7], "8_",  8, SRV_Channels, SRV_Channel),
-
-    // @Group: 9_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[8], "9_",  9, SRV_Channels, SRV_Channel),
-
-    // @Group: 10_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[9], "10_",  10, SRV_Channels, SRV_Channel),
-
-    // @Group: 11_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[10], "11_",  11, SRV_Channels, SRV_Channel),
-
-    // @Group: 12_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[11], "12_",  12, SRV_Channels, SRV_Channel),
-
-    // @Group: 13_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[12], "13_",  13, SRV_Channels, SRV_Channel),
-
-    // @Group: 14_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[13], "14_",  14, SRV_Channels, SRV_Channel),
-
-    // @Group: 15_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[14], "15_",  15, SRV_Channels, SRV_Channel),
-
-    // @Group: 16_
-    // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[15], "16_",  16, SRV_Channels, SRV_Channel),
-    
-    // @Param: _AUTO_TRIM
-    // @DisplayName: Automatic servo trim
-    // @Description: This enables automatic servo trim in flight. Servos will be trimed in stabilized flight modes when the aircraft is close to level. Changes to servo trim will be saved every 10 seconds and will persist between flights.
-    // @Values: 0:Disable,1:Enable
-    // @User: Advanced
-    AP_GROUPINFO("_AUTO_TRIM",  17, SRV_Channels, auto_trim, 0),
-    
-    AP_GROUPEND
-};
-
 SRV_Channel::SRV_Channel(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -159,35 +79,6 @@ SRV_Channel::SRV_Channel(void)
     have_pwm_mask = ~uint16_t(0);
 }
 
-
-/*
-  constructor
- */
-SRV_Channels::SRV_Channels(void)
-{
-    channels = obj_channels;
-    
-    // set defaults from the parameter table
-    AP_Param::setup_object_defaults(this, var_info);
-
-    // setup ch_num on channels
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        channels[i].ch_num = i;
-    }
-}
-
-/*
-  save adjusted trims
- */
-void SRV_Channels::save_trim(void)
-{
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (trimmed_mask & (1U<<i)) {
-            channels[i].servo_trim.set_and_save(channels[i].servo_trim.get());
-        }
-    }
-    trimmed_mask = 0;
-}
 
 // convert a 0..range_max to a pwm
 uint16_t SRV_Channel::pwm_from_range(int16_t scaled_value) const
@@ -232,20 +123,6 @@ void SRV_Channel::calc_pwm(int16_t output_scaled)
         pwm = pwm_from_range(output_scaled);
     }
     set_output_pwm(pwm);
-}
-
-void SRV_Channels::output_trim_all(void)
-{
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        channels[i].set_output_pwm(channels[i].servo_trim);
-    }
-}
-
-void SRV_Channels::setup_failsafe_trim_all(void)
-{
-    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        hal.rcout->set_failsafe_pwm(1U<<channels[i].ch_num, channels[i].servo_trim);
-    }
 }
 
 void SRV_Channel::set_output_pwm(uint16_t pwm)
@@ -308,12 +185,3 @@ uint16_t SRV_Channel::get_limit_pwm(LimitValue limit) const
     }
 }
 
-/*
-  run calc_pwm for all channels
- */
-void SRV_Channels::calc_pwm(void)
-{
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        channels[i].calc_pwm(functions[channels[i].function].output_scaled);
-    }
-}
