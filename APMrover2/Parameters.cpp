@@ -530,11 +530,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("SYSID_ENFORCE", 2, ParametersG2, sysid_enforce, 0),
 
     // @Group: SERVO
-    // @Path: ../libraries/SRV_Channel/SRV_Channel.cpp
+    // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     AP_SUBGROUPINFO(servo_channels, "SERVO", 3, ParametersG2, SRV_Channels),
 
     // @Group: RC
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channels.cpp
     AP_SUBGROUPINFO(rc_channels, "RC", 4, ParametersG2, RC_Channels),
 
 #if ADVANCED_FAILSAFE == ENABLED
