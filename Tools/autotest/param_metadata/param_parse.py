@@ -173,8 +173,11 @@ for library in libraries:
 
     debug("Processed %u documented parameters" % len(library.params))
 
-libraries = alllibs
+# sort libraries by name
+alllibs = sorted(alllibs, key=lambda x : x.name)
 
+libraries = alllibs
+    
 def is_number(numberString):
     try:
         float(numberString)
