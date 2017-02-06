@@ -183,8 +183,8 @@ void Sub::update_poscon_alt_max()
 #if AC_FENCE == ENABLED
     // set fence altitude limit in position controller
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        min_alt_cm = fence.get_safe_depth()*100.0f;
-        max_alt_cm = fence.get_safe_alt()*100.0f;
+        min_alt_cm = fence.get_safe_alt_min()*100.0f;
+        max_alt_cm = fence.get_safe_alt_max()*100.0f;
     }
 #endif
     // pass limit to pos controller
