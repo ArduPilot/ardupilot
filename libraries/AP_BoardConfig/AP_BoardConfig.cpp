@@ -20,6 +20,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "AP_BoardConfig.h"
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <sys/types.h>
@@ -31,7 +32,11 @@
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-# define BOARD_SAFETY_ENABLE_DEFAULT 1
+# if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#  define BOARD_SAFETY_ENABLE_DEFAULT 0
+# else
+#  define BOARD_SAFETY_ENABLE_DEFAULT 1
+#endif
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 #define BOARD_PWM_COUNT_DEFAULT 2
 #define BOARD_SER1_RTSCTS_DEFAULT 0 // no flow control on UART5 on FMUv1

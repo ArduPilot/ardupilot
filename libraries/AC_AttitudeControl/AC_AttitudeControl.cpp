@@ -18,6 +18,17 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
     // 3 was for ACCEL_RP_MAX
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    // @Param: ACCEL_Y_MAX
+    // @DisplayName: Acceleration Max for Yaw
+    // @Description: Maximum acceleration in yaw axis
+    // @Units: Centi-Degrees/Sec/Sec
+    // @Range: 0 72000
+    // @Values: 0:Disabled, 18000:Slow, 36000:Medium, 54000:Fast
+    // @Increment: 1000
+    // @User: Advanced
+    AP_GROUPINFO("ACCEL_Y_MAX",  4, AC_AttitudeControl, _accel_yaw_max, AS_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS),
+#else
     // @Param: ACCEL_Y_MAX
     // @DisplayName: Acceleration Max for Yaw
     // @Description: Maximum acceleration in yaw axis
@@ -27,6 +38,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Increment: 1000
     // @User: Advanced
     AP_GROUPINFO("ACCEL_Y_MAX",  4, AC_AttitudeControl, _accel_yaw_max, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS),
+#endif
 
     // @Param: RATE_FF_ENAB
     // @DisplayName: Rate Feedforward Enable
@@ -94,6 +106,31 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
     AP_GROUPEND
 };
+
+AC_AttitudeControl::AC_AttitudeControl( AP_AHRS &ahrs,
+                    const AP_Vehicle::MultiCopter &aparm,
+                    AP_Motors& motors,
+                    float dt) :
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    _p_angle_roll(AS_ATTITUDE_CONTROL_ANGLE_P),
+    _p_angle_pitch(AS_ATTITUDE_CONTROL_ANGLE_P),
+    _p_angle_yaw(AS_ATTITUDE_CONTROL_ANGLE_P),
+#else
+    _p_angle_roll(AC_ATTITUDE_CONTROL_ANGLE_P),
+    _p_angle_pitch(AC_ATTITUDE_CONTROL_ANGLE_P),
+    _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
+#endif
+    _dt(dt),
+    _angle_boost(0),
+    _use_ff_and_input_shaping(true),
+    _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
+    _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
+    _ahrs(ahrs),
+    _aparm(aparm),
+    _motors(motors)
+    {
+        AP_Param::setup_object_defaults(this, var_info);
+    }
 
 // Set output throttle and disable stabilization
 void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)

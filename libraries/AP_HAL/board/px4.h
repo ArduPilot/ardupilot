@@ -41,6 +41,9 @@
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH
 
+#define HAL_BARO_MS5837_BUS 1
+#define HAL_BARO_MS5837_I2C_ADDR 0x76
+
 #define HAL_BARO_MS5611_NAME "ms5611"
 #define HAL_BARO_MS5611_SPI_INT_NAME "ms5611_int"
 #define HAL_BARO_MS5611_SPI_EXT_NAME "ms5611_ext"

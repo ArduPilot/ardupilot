@@ -60,6 +60,17 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TOTAL",       6,  AC_Fence,   _total, 0),
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    // @Param: DEPTH_MAX
+    // @DisplayName: Fence Maximum Depth
+    // @Description: Maximum depth allowed before geofence triggers
+    // @Units: Meters
+    // @Range: 10 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("DEPTH_MAX",     7,  AC_Fence,   _alt_min,       AC_FENCE_DEPTH_MAX_DEFAULT),
+#endif
+
     AP_GROUPEND
 };
 

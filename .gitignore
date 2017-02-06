@@ -58,6 +58,7 @@ ArduPlane/test/*
 ArduPlane/way.txt
 Build.APMrover2/*
 Build.AntennaTracker/*
+Build.ArduSub/*
 Build.ArduCopter/*
 Build.ArduPlane/*
 CMakeCache.txt

@@ -150,6 +150,7 @@ def kill_tasks():
             'lt-JSBSim',
             'ArduPlane.elf',
             'ArduCopter.elf',
+            'ArduSub.elf',
             'APMrover2.elf',
             'AntennaTracker.elf',
             'JSBSIm.exe',
@@ -216,6 +217,7 @@ def find_autotest_dir():
 def find_root_dir():
     """Return path to root directory"""
     return os.path.realpath(os.path.join(find_autotest_dir(), '../..'))
+
 
 """
 make_target: option passed to make to create binaries.  Usually sitl, and "-debug" may be appended if -D is passed to sim_vehicle.py
@@ -342,6 +344,12 @@ _options_for_frame = {
         "waf_target": "bin/ardurover",
         "default_params_filename": "default_params/rover-skid.parm",
     },
+    # SUB
+    "vectored": {
+        "model": "vectored",
+        "waf_target": "bin/ardusub-vectored",
+        "default_params_filename": "Sub.parm",
+    },
     # SIM
     "gazebo-iris": {
         "waf_target": "bin/arducopter",
@@ -366,6 +374,7 @@ _options_for_frame = {
 _default_waf_target = {
     "ArduPlane": "bin/arduplane",
     "ArduCopter": "bin/arducopter",
+    "Ardusub": "bin/ardusub",
     "APMrover2": "bin/ardurover",
     "AntennaTracker": "bin/antennatracker",
 }
@@ -713,7 +722,7 @@ parser = CompatOptionParser("sim_vehicle.py",
                "you are simulating, for example, start in the ArduPlane directory to " \
                "simulate ArduPlane")
 
-parser.add_option("-v", "--vehicle", type='string', default=None, help="vehicle type (ArduPlane, ArduCopter or APMrover2)")
+parser.add_option("-v", "--vehicle", type='string', default=None, help="vehicle type (ArduPlane, ArduCopter, APMrover2 or ArduSub)")
 parser.add_option("-f", "--frame", type='string', default=None, help="""set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail""")
@@ -807,6 +816,7 @@ default_frame_for_vehicle = {
     "APMrover2": "rover",
     "ArduPlane": "jsbsim",
     "ArduCopter": "quad",
+    "ArduSub": "vectored",
     "AntennaTracker": "tracker",
 }
 

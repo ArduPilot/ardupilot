@@ -146,6 +146,14 @@ px4-v2-upload-solo: px4-v2
 	ssh root@10.1.1.10 PYTHONUNBUFFERED=1 loadPixhawk.py /tmp/ArduCopter-v2.px4
 	ssh root@10.1.1.10 rm /tmp/ArduCopter-v2.px4;
 
+px4-v2-upload-remote: px4-v2
+ifdef TARGETHOST
+	scp $(SKETCH)-v2.px4 $(TARGETHOST):/tmp/
+	ssh $(TARGETHOST) python3 px_uploader.py --port /dev/ttyACM* /tmp/$(SKETCH)-v2.px4
+else
+	$(error TARGETHOST not defined)
+endif
+	
 px4-v1-upload: px4-v1
 	$(RULEHDR)
 	$(v) $(PX4_MAKE) px4fmu-v1_APM upload

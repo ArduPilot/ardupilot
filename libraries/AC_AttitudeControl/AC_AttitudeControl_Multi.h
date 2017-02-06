@@ -38,6 +38,10 @@
  # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     5.0f
 #endif
 
+#ifndef AS_ATC_MULTI_RATE_YAW_FILT_HZ
+ #define AS_ATC_MULTI_RATE_YAW_FILT_HZ 30.0f
+#endif
+
 
 class AC_AttitudeControl_Multi : public AC_AttitudeControl {
 public:

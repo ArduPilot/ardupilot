@@ -1,3 +1,4 @@
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RCMapper.h"
 
@@ -37,6 +38,26 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("YAW",         3, RCMapper, _ch_yaw, 4),
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    // @Param: FORWARD
+    // @DisplayName: Forward channel
+    // @Description: Forward channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Forward is normally on channel 5, but you can move it to any channel with this parameter. Reboot is required for changes to take effect.
+    // @Range: 1 8
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("FORWARD",    4, RCMapper, _ch_forward, 6),
+
+    // @Param: LATERAL
+    // @DisplayName: Lateral channel
+    // @Description: Lateral channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Lateral is normally on channel 6, but you can move it to any channel with this parameter. Reboot is required for changes to take effect.
+    // @Range: 1 8
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("LATERAL",    5, RCMapper, _ch_lateral, 7),
+#endif
 
     AP_GROUPEND
 };

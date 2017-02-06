@@ -17,7 +17,7 @@ void AP_Baro_Backend::_copy_to_frontend(uint8_t instance, float pressure, float 
     if (instance >= _frontend._num_sensors) {
         return;
     }
-    _frontend.sensors[instance].pressure = pressure;
+    _frontend.sensors[instance].pressure = pressure * _frontend.sensors[instance].precision_multiplier;
     _frontend.sensors[instance].temperature = temperature;
     _frontend.sensors[instance].last_update_ms = AP_HAL::millis();
 }
