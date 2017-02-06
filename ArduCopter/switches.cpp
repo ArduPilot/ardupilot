@@ -587,6 +587,17 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
 #endif
             break;
+        case AUXSW_ARMDISARM:
+            // arm or disarm the vehicle
+            switch (ch_flag) {
+            case AUX_SWITCH_HIGH:
+                init_arm_motors(false);
+                break;
+            case AUX_SWITCH_LOW:
+                init_disarm_motors();
+                break;
+            }
+            break;
     }
 }
 
