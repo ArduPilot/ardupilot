@@ -989,7 +989,7 @@ const AP_Param::Info Plane::var_info[] = {
 #endif
 
     // @Group: ARMING_
-    // @Path: arming_checks.cpp,../libraries/AP_Arming/AP_Arming.cpp
+    // @Path: AP_Arming.cpp,../libraries/AP_Arming/AP_Arming.cpp
     GOBJECT(arming,                 "ARMING_", AP_Arming_Plane),
 
     // @Group: RELAY_
@@ -1215,11 +1215,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(stats, "STAT", 5, ParametersG2, AP_Stats),
 
     // @Group: SERVO
-    // @Path: ../libraries/SRV_Channel/SRV_Channel.cpp
+    // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     AP_SUBGROUPINFO(servo_channels, "SERVO", 6, ParametersG2, SRV_Channels),
 
     // @Group: RC
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    // @Path: ../libraries/RC_Channel/RC_Channels.cpp
     AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels),
     
     AP_GROUPEND
