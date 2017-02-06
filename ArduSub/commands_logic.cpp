@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Sub.h"
 
 // start_command - this function will be called when the ap_mission lib wishes to start a new command

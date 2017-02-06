@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "Sub.h"
 
 // manual_init - initialise manual controller
