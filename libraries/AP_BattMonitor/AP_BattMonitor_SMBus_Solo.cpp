@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Notify/AP_Notify.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_SMBus_Solo.h"
 #include <utility>
@@ -11,6 +12,7 @@ extern const AP_HAL::HAL& hal;
 
 #define BATTMONITOR_SMBUS_TEMP      0x08    // temperature register
 #define BATTMONITOR_SMBUS_VOLTAGE   0x09    // voltage register
+#define BATTMONITOR_SMBUS_REMAINING_CAPACITY    0x0f    // predicted remaining battery capacity in milliamps
 #define BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY  0x10    // full capacity register
 #define BATTMONITOR_SMBUS_BATTERY_STATUS        0x16    // battery status register including alarms
 #define BATTMONITOR_SMBUS_DESIGN_CAPACITY       0x18    // design capacity register
@@ -19,9 +21,11 @@ extern const AP_HAL::HAL& hal;
 #define BATTMONITOR_SMBUS_MANUFACTURE_NAME      0x20    // manufacturer name
 #define BATTMONITOR_SMBUS_DEVICE_NAME           0x21    // device name
 #define BATTMONITOR_SMBUS_DEVICE_CHEMISTRY      0x22    // device chemistry
+#define BATTMONITOR_SMBUS_MANUFACTURE_DATA      0x23    /// manufacturer data
 #define BATTMONITOR_SMBUS_MANUFACTURE_INFO      0x25    // manufacturer info including cell voltage
 #define BATTMONITOR_SMBUS_CELL_VOLTAGE          0x28    // cell voltage register
 #define BATTMONITOR_SMBUS_CURRENT               0x2a    // current register
+#define BATTMONITOR_SMBUS_BUTTON_DEBOUNCE       3       // button held down for 3 intervals will cause a power off event
 
 // Constructor
 AP_BattMonitor_SMBus_Solo::AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon, uint8_t instance,
@@ -52,15 +56,53 @@ void AP_BattMonitor_SMBus_Solo::timer()
         _state.healthy = true;
     }
 
-    // read current
-    if (read_block(BATTMONITOR_SMBUS_CURRENT, buff, 4, false) == 4) {
-        _state.current_amps = (float)((int32_t)((uint32_t)buff[3]<<24 | (uint32_t)buff[2]<<16 | (uint32_t)buff[1]<<8 | (uint32_t)buff[0])) / 1000.0f;
-        _state.last_time_micros = tnow;
-    }
-
     // timeout after 5 seconds
     if ((tnow - _state.last_time_micros) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
         _state.healthy = false;
+        // do not attempt to ready any more data from battery
+        return;
+    }
+
+    // read current
+    if (read_block(BATTMONITOR_SMBUS_CURRENT, buff, 4, false) == 4) {
+        _state.current_amps = -(float)((int32_t)((uint32_t)buff[3]<<24 | (uint32_t)buff[2]<<16 | (uint32_t)buff[1]<<8 | (uint32_t)buff[0])) / 1000.0f;
+        _state.last_time_micros = tnow;
+    }
+
+    // read battery design capacity
+    if (get_capacity() == 0) {
+        if (read_word(BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY, data)) {
+            if (data > 0) {
+                set_capacity(data);
+            }
+        }
+    }
+
+    // read remaining capacity
+    if (get_capacity() > 0) {
+        if (read_word(BATTMONITOR_SMBUS_REMAINING_CAPACITY, data)) {
+            _state.current_total_mah = MAX(0, get_capacity() - data);
+        }
+    }
+
+    // read the button press indicator
+    if (read_block(BATTMONITOR_SMBUS_MANUFACTURE_DATA, buff, 6, false) == 6) {
+        bool pressed = (buff[1] >> 3) & 0x01;
+
+        if (_button_press_count >= BATTMONITOR_SMBUS_BUTTON_DEBOUNCE) {
+            // battery will power off
+            _state.is_powering_off = true;
+
+        } else if (pressed) {
+            // battery will power off if the button is held
+            _button_press_count++;
+
+        } else {
+            // button released, reset counters
+            _button_press_count = 0;
+            _state.is_powering_off = false;
+        }
+        AP_Notify::flags.powering_off = _state.is_powering_off;
     }
 }
 
