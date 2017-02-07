@@ -87,6 +87,8 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     { "MFT100L10DBDB>", false},
     #define AP_NOTIFY_PX4_TONE_TUNING_ERROR 25
     { "MFT100L10>BBBBBBBB", false},
+    #define AP_NOTIFY_PX4_TONE_LEAK_DETECTED 26
+    { "MBT255L8>A+AA-", true},
 };
 
 bool ToneAlarm_PX4::init()
@@ -275,7 +277,9 @@ void ToneAlarm_PX4::update()
         }else{
             // disarming tune
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
-            stop_cont_tone();
+            if (!flags.leak_detected) {
+            	stop_cont_tone();
+            }
         }
     }
 
@@ -312,6 +316,15 @@ void ToneAlarm_PX4::update()
         flags.waiting_for_throw = AP_Notify::flags.waiting_for_throw;
         if (flags.waiting_for_throw) {
             play_tone(AP_NOTIFY_PX4_TONE_WAITING_FOR_THROW);
+        } else {
+            stop_cont_tone();
+        }
+    }
+
+    if (flags.leak_detected != AP_Notify::flags.leak_detected) {
+        flags.leak_detected = AP_Notify::flags.leak_detected;
+        if (flags.leak_detected) {
+            play_tone(AP_NOTIFY_PX4_TONE_LEAK_DETECTED);
         } else {
             stop_cont_tone();
         }
