@@ -23,6 +23,7 @@ def build(bld):
             'AP_InertialNav',
             'AP_JSButton',
             'AP_LandingGear',
+            'AP_LeakDetector',
             'AP_Menu',
             'AP_Motors',
             'AP_Mount',
@@ -32,7 +33,6 @@ def build(bld):
             'AP_RSSI',
             'AP_Relay',
             'AP_ServoRelayEvents',
-            'AP_WaterDetector',
         ],
         use='mavlink',
     )

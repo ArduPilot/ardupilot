@@ -61,4 +61,4 @@ LIBRARIES += AP_IRLock
 LIBRARIES += AC_InputManager
 LIBRARIES += AP_ADSB
 LIBRARIES += AP_JSButton
-LIBRARIES += AP_WaterDetector
+LIBRARIES += AP_LeakDetector
