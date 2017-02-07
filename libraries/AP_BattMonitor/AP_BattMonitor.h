@@ -41,7 +41,7 @@ public:
         BattMonitor_TYPE_NONE                       = 0,
         BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY        = 3,
         BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT = 4,
-        BattMonitor_TYPE_SMBUS                      = 5,
+        BattMonitor_TYPE_SOLO                       = 5,
         BattMonitor_TYPE_BEBOP                      = 6,
         BattMonitor_TYPE_MAXCELL                    = 7
     };
