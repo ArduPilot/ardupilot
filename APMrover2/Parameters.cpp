@@ -603,6 +603,8 @@ void Rover::load_parameters(void)
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
 
+    AP_Param::set_frame_type_flags(AP_PARAM_FRAME_ROVER);
+    
     SRV_Channels::set_default_function(CH_1, SRV_Channel::k_steering);
     SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttle);
     
@@ -617,7 +619,7 @@ void Rover::load_parameters(void)
     SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, &rcmap);
     
     cliSerial->printf("load_all took %luus\n", micros() - before);
-
+    
     // set a more reasonable default NAVL1_PERIOD for rovers
     L1_controller.set_default_period(8);
 }
