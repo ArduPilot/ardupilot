@@ -152,7 +152,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Units: Degrees
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("YAW_SV_ANGLE", 35, AP_MotorsMulticopter,  _yaw_servo_angle_max_deg, 30),
+    AP_GROUPINFO_FRAME("YAW_SV_ANGLE", 35, AP_MotorsMulticopter,  _yaw_servo_angle_max_deg, 30, AP_PARAM_FRAME_TRICOPTER),
     
     AP_GROUPEND
 };
