@@ -56,7 +56,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     
     // @Param: REVERSED
     // @DisplayName: Servo reverse
-    // @Description: Reverse servo operation. Set to 0 for normal operation. Set to 1 to reverse this channel.
+    // @Description: Reverse servo operation. Set to 0 for normal operation. Set to 1 to reverse this output channel.
     // @Values: 0:Normal,1:Reversed
     // @User: Standard
     AP_GROUPINFO("REVERSED",  4, SRV_Channel, reversed, 0),
