@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: 2_MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:Maxcell
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:Maxell
     // @User: Standard
     AP_GROUPINFO("2_MONITOR", 11, AP_BattMonitor, _monitoring[1], BattMonitor_TYPE_NONE),
 
@@ -176,9 +176,9 @@ AP_BattMonitor::init()
                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
-            case BattMonitor_TYPE_MAXCELL:
+            case BattMonitor_TYPE_MAXELL:
                 state[instance].instance = instance;
-                drivers[instance] = new AP_BattMonitor_SMBus_Maxcell(*this, instance, state[instance],
+                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, instance, state[instance],
                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
@@ -226,7 +226,7 @@ bool AP_BattMonitor::has_current(uint8_t instance) const
         return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT ||
                 _monitoring[instance] == BattMonitor_TYPE_SOLO ||
                 _monitoring[instance] == BattMonitor_TYPE_BEBOP ||
-                _monitoring[instance] == BattMonitor_TYPE_MAXCELL);
+                _monitoring[instance] == BattMonitor_TYPE_MAXELL);
     }
 
     // not monitoring current

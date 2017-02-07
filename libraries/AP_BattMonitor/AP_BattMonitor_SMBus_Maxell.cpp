@@ -2,7 +2,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor.h"
-#include "AP_BattMonitor_SMBus_Maxcell.h"
+#include "AP_BattMonitor_SMBus_Maxell.h"
 #include <utility>
 
 extern const AP_HAL::HAL& hal;
@@ -32,22 +32,22 @@ extern const AP_HAL::HAL& hal;
 #define BATTMONITOR_SMBUS_PF_STATUS             0x53    // safety status
 
 // Constructor
-AP_BattMonitor_SMBus_Maxcell::AP_BattMonitor_SMBus_Maxcell(AP_BattMonitor &mon, uint8_t instance,
+AP_BattMonitor_SMBus_Maxell::AP_BattMonitor_SMBus_Maxell(AP_BattMonitor &mon, uint8_t instance,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_BattMonitor_SMBus(mon, instance, mon_state)
     , _dev(std::move(dev))
 {
-    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_Maxcell::timer, void));
+    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_Maxell::timer, void));
 }
 
 /// Read the battery voltage and current.  Should be called at 10hz
-void AP_BattMonitor_SMBus_Maxcell::read()
+void AP_BattMonitor_SMBus_Maxell::read()
 {
     // nothing to do - all done in timer()
 }
 
-void AP_BattMonitor_SMBus_Maxcell::timer()
+void AP_BattMonitor_SMBus_Maxell::timer()
 {
     uint16_t data;
     uint32_t tnow = AP_HAL::micros();
@@ -73,7 +73,7 @@ void AP_BattMonitor_SMBus_Maxcell::timer()
 
 // read word from register
 // returns true if read was successful, false if failed
-bool AP_BattMonitor_SMBus_Maxcell::read_word(uint8_t reg, uint16_t& data, uint8_t size) const
+bool AP_BattMonitor_SMBus_Maxell::read_word(uint8_t reg, uint16_t& data, uint8_t size) const
 {
     uint8_t buff[size];    // buffer to hold results
 
