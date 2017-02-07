@@ -284,9 +284,6 @@ private:
     // RSSI 
     AP_RSSI rssi;      
 
-    // remember if USB is connected, so we can adjust baud rate
-    bool usb_connected;
-
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     enum FlightMode control_mode = INITIALISING;
@@ -982,7 +979,6 @@ private:
     void startup_INS_ground(void);
     void update_notify();
     void resetPerfData(void);
-    void check_usb_mux(void);
     void print_comma(void);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
