@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: 2_MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:SMBus,6:Bebop
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:SMBus,6:Bebop,7:Maxcell
     // @User: Standard
     AP_GROUPINFO("2_MONITOR", 11, AP_BattMonitor, _monitoring[1], BattMonitor_TYPE_NONE),
 
@@ -175,9 +175,15 @@ AP_BattMonitor::init()
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
                 drivers[instance] = new AP_BattMonitor_SMBus_PX4(*this, instance, state[instance]);
 #else
-                drivers[instance] = new AP_BattMonitor_SMBus_I2C(*this, instance, state[instance],
+                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, instance, state[instance],
                                                                  hal.i2c_mgr->get_device(BATTMONITOR_SBUS_I2C_BUS, BATTMONITOR_SMBUS_I2C_ADDR));
 #endif
+                _num_instances++;
+                break;
+            case BattMonitor_TYPE_MAXCELL:
+                state[instance].instance = instance;
+                drivers[instance] = new AP_BattMonitor_SMBus_Maxcell(*this, instance, state[instance],
+                                                                 hal.i2c_mgr->get_device(BATTMONITOR_SBUS_I2C_BUS, BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_BEBOP:
@@ -277,7 +283,7 @@ uint8_t AP_BattMonitor::capacity_remaining_pct(uint8_t instance) const
         return 0;
     }
  }
- 
+
  /// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
 bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_capacity_mah)
 {
@@ -330,4 +336,3 @@ bool AP_BattMonitor::overpower_detected(uint8_t instance) const
     return false;
 #endif
 }
-
