@@ -144,10 +144,10 @@ void Copter::read_radio()
 void Copter::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons) {
 	int16_t channels[8];
 
-	float rpyScale = 0.4;
-	float throttleScale = 0.8;
+	float rpyScale = 0.5;
+	float throttleScale = 1.0;
 	int16_t rpyCenter = 1500;
-	int16_t throttleBase = 1100;
+	int16_t throttleBase = 1500-500*throttleScale;
 
 	uint16_t mode = buttons;
 	int16_t camTilt = 1500;
