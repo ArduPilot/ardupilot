@@ -172,11 +172,7 @@ AP_BattMonitor::init()
                 break;
             case BattMonitor_TYPE_SOLO:
                 state[instance].instance = instance;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-                drivers[instance] = new AP_BattMonitor_SMBus_PX4(*this, instance, state[instance]);
-#else
                 drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, instance, state[instance],
-#endif
                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
