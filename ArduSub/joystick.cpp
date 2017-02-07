@@ -107,6 +107,8 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			break;
 		case JSButton::button_function_t::k_camera_trigger:
 			break;
+		case JSButton::button_function_t::k_camera_source_toggle:
+					break;
 		case JSButton::button_function_t::k_lights1_cycle:
 			{
 				static bool increasing = true;
@@ -176,6 +178,8 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			break;
 		case JSButton::button_function_t::k_trim_pitch_dec:
 			pitchTrim = constrain_float(pitchTrim-10,-200,200);
+			break;
+		case JSButton::button_function_t::k_input_hold_toggle:
 			break;
 	}
 }
