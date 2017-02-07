@@ -25,6 +25,5 @@ public:
 };
 
 // include specific implementations
-#include "AP_BattMonitor_SMBus_PX4.h"
 #include "AP_BattMonitor_SMBus_Solo.h"
 #include "AP_BattMonitor_SMBus_Maxcell.h"

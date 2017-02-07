@@ -19,7 +19,6 @@ class AP_BattMonitor_Backend;
 class AP_BattMonitor_Analog;
 class AP_BattMonitor_SMBus;
 class AP_BattMonitor_SMBus_Solo;
-class AP_BattMonitor_SMBus_PX4;
 class AP_BattMonitor_SMBus_Maxcell;
 
 class AP_BattMonitor
@@ -28,7 +27,6 @@ class AP_BattMonitor
     friend class AP_BattMonitor_Analog;
     friend class AP_BattMonitor_SMBus;
     friend class AP_BattMonitor_SMBus_Solo;
-    friend class AP_BattMonitor_SMBus_PX4;
     friend class AP_BattMonitor_SMBus_Maxcell;
 
 public:
