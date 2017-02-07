@@ -15,8 +15,8 @@ public:
                              AP_BattMonitor::BattMonitor_State &mon_state,
                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
-    // Read the battery voltage and current.  Should be called at 10hz
-    void read();
+    // read does nothing, all done in timer
+    void read() override;
 
 private:
 

@@ -52,16 +52,6 @@ void AP_BattMonitor_SMBus_Maxcell::timer()
     uint16_t data;
     uint32_t tnow = AP_HAL::micros();
 
-//    // read temperature (K)
-//    if (read_word(BATTMONITOR_SMBUS_TEMP, data, 2)) {
-//    	float temperature = (float)data / 10.0f;
-//    }
-//
-//    // read relative state of charge (0-100%)
-//    if (read_word(BATTMONITOR_SMBUS_CHARGE_STATUS, data, 1)) {
-//    	uint8_t capacity_remaining = data;
-//    }
-
     // read voltage (V)
     if (read_word(BATTMONITOR_SMBUS_VOLTAGE, data, 2)) {
         _state.voltage = (float)data / 1000.0f;
