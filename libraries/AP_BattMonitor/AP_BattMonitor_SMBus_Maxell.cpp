@@ -67,7 +67,7 @@ void AP_BattMonitor_SMBus_Maxell::timer()
 
     // read current (A)
     if (read_word(BATTMONITOR_SMBUS_CURRENT, data, 2)) {
-        _state.current_amps = (float)((int16_t)data) / 1000.0f;
+        _state.current_amps = -(float)((int16_t)data) / 1000.0f;
         _state.last_time_micros = tnow;
     }
 }
