@@ -460,7 +460,7 @@ void Sub::dataflash_periodic(void)
 // three_hz_loop - 3.3hz loop
 void Sub::three_hz_loop()
 {
-	set_leak_status(water_detector.update());
+	set_leak_status(leak_detector.update());
 
 	failsafe_internal_pressure_check();
 

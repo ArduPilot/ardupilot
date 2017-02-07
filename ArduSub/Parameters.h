@@ -390,7 +390,7 @@ public:
 		k_param_pid_crosstrack_control,
 		k_param_pid_heading_control,
 		
-		k_param_water_detector, // water detector object
+		k_param_leak_detector, // leak detector object
 		k_param_failsafe_leak, // leak failsafe behavior
 		k_param_failsafe_pressure, // internal pressure failsafe behavior
 		k_param_failsafe_pressure_max, // maximum internal pressure in pascal before failsafe is triggered
