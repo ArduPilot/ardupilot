@@ -57,7 +57,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
 
     // @Param: REVERSED
     // @DisplayName: RC reversed
-    // @Description: Reverse servo operation. Set to 0 for normal (forward) operation. Set to 1 to reverse this input channel.
+    // @Description: Reverse channel input. Set to 0 for normal operation. Set to 1 to reverse this input channel.
     // @Values: 0:Normal,1:Reversed
     // @User: Advanced
     AP_GROUPINFO("REVERSED",  4, RC_Channel, reversed, 0),
