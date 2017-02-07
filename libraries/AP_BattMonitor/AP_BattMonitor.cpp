@@ -228,8 +228,9 @@ bool AP_BattMonitor::has_current(uint8_t instance) const
     // check for analog voltage and current monitor or smbus monitor
     if (instance < _num_instances && drivers[instance] != nullptr) {
         return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT ||
-                _monitoring[instance] == BattMonitor_TYPE_BEBOP);
                 _monitoring[instance] == BattMonitor_TYPE_SOLO ||
+                _monitoring[instance] == BattMonitor_TYPE_BEBOP ||
+                _monitoring[instance] == BattMonitor_TYPE_MAXCELL);
     }
 
     // not monitoring current
