@@ -1344,5 +1344,7 @@ void Plane::load_parameters(void)
         AP_Param::set_default_by_name("SCHED_LOOP_RATE", 300);
     }
 
+    AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
+
     cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }
