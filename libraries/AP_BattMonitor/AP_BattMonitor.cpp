@@ -176,14 +176,14 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_SMBus_PX4(*this, instance, state[instance]);
 #else
                 drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, instance, state[instance],
-                                                                 hal.i2c_mgr->get_device(BATTMONITOR_SBUS_I2C_BUS, BATTMONITOR_SMBUS_I2C_ADDR));
 #endif
+                                                                 hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_MAXCELL:
                 state[instance].instance = instance;
                 drivers[instance] = new AP_BattMonitor_SMBus_Maxcell(*this, instance, state[instance],
-                                                                 hal.i2c_mgr->get_device(BATTMONITOR_SBUS_I2C_BUS, BATTMONITOR_SMBUS_I2C_ADDR));
+                                                                 hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_BEBOP:
