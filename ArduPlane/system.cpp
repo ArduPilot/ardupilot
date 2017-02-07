@@ -165,11 +165,6 @@ void Plane::init_ardupilot()
 
     rpm_sensor.init();
 
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
-    usb_connected = true;
-    check_usb_mux();
-
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
@@ -677,18 +672,6 @@ void Plane::resetPerfData(void)
     perf.num_long       = 0;
     perf.start_ms       = millis();
     perf.last_log_dropped = DataFlash.num_dropped();
-}
-
-
-void Plane::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    usb_connected = usb_check;
 }
 
 
