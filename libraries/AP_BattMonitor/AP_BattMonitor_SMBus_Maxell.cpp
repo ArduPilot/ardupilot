@@ -59,15 +59,16 @@ void AP_BattMonitor_SMBus_Maxell::timer()
         _state.healthy = true;
     }
 
+    // timeout after 5 seconds
+    if ((tnow - _state.last_time_micros) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
+        _state.healthy = false;
+        return;
+    }
+
     // read current (A)
     if (read_word(BATTMONITOR_SMBUS_CURRENT, data, 2)) {
         _state.current_amps = (float)((int16_t)data) / 1000.0f;
         _state.last_time_micros = tnow;
-    }
-
-    // timeout after 5 seconds
-    if ((tnow - _state.last_time_micros) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
-        _state.healthy = false;
     }
 }
 
