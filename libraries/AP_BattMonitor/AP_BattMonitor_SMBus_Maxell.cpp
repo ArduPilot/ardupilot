@@ -53,7 +53,7 @@ void AP_BattMonitor_SMBus_Maxell::timer()
     uint32_t tnow = AP_HAL::micros();
 
     // read voltage (V)
-    if (read_word(BATTMONITOR_SMBUS_VOLTAGE, data, 2)) {
+    if (read_word(BATTMONITOR_SMBUS_VOLTAGE, data)) {
         _state.voltage = (float)data / 1000.0f;
         _state.last_time_micros = tnow;
         _state.healthy = true;
@@ -66,7 +66,7 @@ void AP_BattMonitor_SMBus_Maxell::timer()
     }
 
     // read current (A)
-    if (read_word(BATTMONITOR_SMBUS_CURRENT, data, 2)) {
+    if (read_word(BATTMONITOR_SMBUS_CURRENT, data)) {
         _state.current_amps = -(float)((int16_t)data) / 1000.0f;
         _state.last_time_micros = tnow;
     }
@@ -74,9 +74,9 @@ void AP_BattMonitor_SMBus_Maxell::timer()
 
 // read word from register
 // returns true if read was successful, false if failed
-bool AP_BattMonitor_SMBus_Maxell::read_word(uint8_t reg, uint16_t& data, uint8_t size) const
+bool AP_BattMonitor_SMBus_Maxell::read_word(uint8_t reg, uint16_t& data) const
 {
-    uint8_t buff[size];    // buffer to hold results
+    uint8_t buff[2];    // buffer to hold results
 
     // read three bytes and place in last three bytes of buffer
     if (!_dev->read_registers(reg, buff, sizeof(buff))) {
@@ -84,10 +84,7 @@ bool AP_BattMonitor_SMBus_Maxell::read_word(uint8_t reg, uint16_t& data, uint8_t
     }
 
     // convert buffer to word
-    data = (uint16_t)buff[0];
-    for (int i = 1; i < size; i++) {
-        data |= (uint16_t)buff[i]<<(8*i);
-    }
+    data = (uint16_t)buff[1]<<8 | (uint16_t)buff[0];
 
     // return success
     return true;

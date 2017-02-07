@@ -24,7 +24,7 @@ private:
 
     // read word from register
     // returns true if read was successful, false if failed
-    bool read_word(uint8_t reg, uint16_t& data, uint8_t size) const;
+    bool read_word(uint8_t reg, uint16_t& data) const;
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
