@@ -145,12 +145,18 @@ void Copter::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16
 	int16_t channels[8];
 
 	float rpyScale = 0.5;
-	float throttleScale = 1.0;
+	float throttleScale = 0.8;
 	int16_t rpyCenter = 1500;
 	int16_t throttleBase = 1500-500*throttleScale;
 
 	uint16_t mode = buttons;
 	int16_t camTilt = 1500;
+
+	if ( mode & (1 << 4) ) {
+		init_arm_motors(true);
+	} else if ( mode & (1 << 5) ) {
+		init_disarm_motors();
+	}
 
 	channels[0] = 1500;                           // pitch
 	channels[1] = 1500;                           // roll
