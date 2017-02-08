@@ -568,7 +568,7 @@ void PX4RCOutput::push()
     }
 }
 
-void PX4RCOutput::_timer_tick(void)
+void PX4RCOutput::timer_tick(void)
 {
     if (_output_mode != MODE_PWM_ONESHOT && !_corking) {
         /* in oneshot mode the timer does nothing as the outputs are
