@@ -834,6 +834,11 @@ private:
     void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
     void autotune_get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
     void avoidance_adsb_update(void);
+    const char * autotune_step_string() const;
+    const char * autotune_type_string() const;
+    void autotune_announce_state_to_gcs();
+    void autotune_do_gcs_announcements();
+
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
