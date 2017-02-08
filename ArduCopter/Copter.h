@@ -91,6 +91,7 @@
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 #include <AP_Button/AP_Button.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_Telemetry/AP_Telemetry.h>
 
 // Configuration
 #include "defines.h"
@@ -239,6 +240,9 @@ private:
     static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 
     GCS_MAVLINK_Copter gcs[MAVLINK_COMM_NUM_BUFFERS];
+
+    // telemetry
+    AP_Telemetry telemetry;
 
     // User variables
 #ifdef USERHOOK_VARIABLES
@@ -691,6 +695,7 @@ private:
     void stats_update();
     void init_beacon();
     void update_beacon();
+    void update_telemetry();
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
     void gcs_send_mission_item_reached_message(uint16_t mission_index);

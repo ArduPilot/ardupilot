@@ -460,3 +460,9 @@ void Copter::update_beacon()
 {
     g2.beacon.update();
 }
+
+// update telemetry
+void Copter::update_telemetry()
+{
+    telemetry.update();
+}
