@@ -13,14 +13,12 @@
 #include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
+#include "RCOutput_Tap.h"
 #include "AnalogIn.h"
 #include "Util.h"
 #include "GPIO.h"
 #include "I2CDevice.h"
 #include "SPIDevice.h"
-
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
 #include <stdlib.h>
 #include <systemlib/systemlib.h>
@@ -38,10 +36,10 @@ using namespace PX4;
 static PX4Scheduler schedulerInstance;
 static PX4Storage storageDriver;
 static PX4RCInput rcinDriver;
-#if !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-static PX4RCOutput rcoutDriver;
+#if defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+static RCOutput_Tap rcoutDriver;
 #else
-static Empty::RCOutput rcoutDriver;
+static PX4RCOutput rcoutDriver;
 #endif
 static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
