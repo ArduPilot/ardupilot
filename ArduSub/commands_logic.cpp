@@ -247,7 +247,10 @@ void Sub::exit_mission()
     // play a tone
     AP_Notify::events.mission_complete = 1;
 
-	init_disarm_motors();
+    // Try to enter loiter, if that fails, go to depth hold
+    if(!auto_loiter_start()) {
+        set_mode(ALT_HOLD, MODE_REASON_MISSION_END);
+    }
 }
 
 /********************************************************************************/
@@ -358,6 +361,11 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
     }
+
+	// In mavproxy misseditor: Abs = 0 = ALT_FRAME_ABSOLUTE
+	//                         Rel = 1 = ALT_FRAME_ABOVE_HOME
+	//                         AGL = 3 = ALT_FRAME_ABOVE_TERRAIN
+	//    2 = ALT_FRAME_ABOVE_ORIGIN, not an option in mavproxy misseditor
 
     // use current altitude if not provided
     // To-Do: use z-axis stopping point instead of current alt
