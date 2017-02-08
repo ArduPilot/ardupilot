@@ -144,6 +144,9 @@ public:
     /// get_wp_destination waypoint using position vector (distance from home in cm)
     const Vector3f &get_wp_destination() const { return _destination; }
 
+    /// get origin using position vector (distance from home in cm)
+    const Vector3f &get_wp_origin() const { return _origin; }
+
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
     bool set_wp_destination(const Location_Class& destination);
@@ -187,6 +190,9 @@ public:
 
     /// calculate_wp_leash_length - calculates track speed, acceleration and leash lengths for waypoint controller
     void calculate_wp_leash_length();
+
+    /// get_bearing_cd - return bearing in centi-degrees between two positions
+    float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
 
     ///
     /// spline methods
@@ -276,9 +282,6 @@ protected:
     /// calc_loiter_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
     ///		updated velocity sent directly to position controller
     void calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit);
-
-    /// get_bearing_cd - return bearing in centi-degrees between two positions
-    float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
 
     /// calc_slow_down_distance - calculates distance before waypoint that target point should begin to slow-down assuming it is traveling at full speed
     void calc_slow_down_distance(float speed_cms, float accel_cmss);
