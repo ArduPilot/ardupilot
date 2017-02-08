@@ -253,7 +253,7 @@ private:
     bool _force_ekf;
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
-    Vector3f _gyro_bias;
+    Vector3f _gyro_drift;
     Vector3f _gyro_estimate;
     Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
     Vector3f _accel_ef_ekf_blended;
