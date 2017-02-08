@@ -17,12 +17,13 @@
 
 // Autopilot Yaw Mode enumeration
 enum autopilot_yaw_mode {
-    AUTO_YAW_HOLD =             0,  // pilot controls the heading
-    AUTO_YAW_LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
-    AUTO_YAW_ROI =              2,  // point towards a location held in roi_WP (no pilot input accepted)
-    AUTO_YAW_LOOK_AT_HEADING =  3,  // point towards a particular angle (not pilot input accepted)
-    AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
-    AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
+    AUTO_YAW_HOLD =              0,  // pilot controls the heading
+    AUTO_YAW_LOOK_AT_NEXT_WP =   1,  // point towards next waypoint (no pilot input accepted)
+    AUTO_YAW_ROI =               2,  // point towards a location held in roi_WP (no pilot input accepted)
+    AUTO_YAW_LOOK_AT_HEADING =   3,  // point towards a particular angle (not pilot input accepted)
+    AUTO_YAW_LOOK_AHEAD =        4,  // point in the direction the copter is moving
+    AUTO_YAW_RESETTOARMEDYAW =   5,  // point towards heading at time motors were armed
+	AUTO_YAW_CORRECT_XTRACK =    6   // steer the sub in order to correct for crosstrack error during line following
 };
 
 // Ch6... Ch12 aux switch control
@@ -197,6 +198,7 @@ enum tuning_func {
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP               1   // auto pilot will face next waypoint or home during rtl
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicotpers)
+#define WP_YAW_BEHAVIOR_CORRECT_XTRACK				  4   // point towards intermediate position target during line following
 
 // Auto modes
 enum AutoMode {
@@ -208,7 +210,8 @@ enum AutoMode {
     Auto_Circle,
     Auto_Spline,
     Auto_NavGuided,
-    Auto_Loiter
+    Auto_Loiter,
+	Auto_TerrainRecover
 };
 
 // Guided modes
@@ -467,16 +470,25 @@ enum ThrowModeState {
 #define FS_LEAK_SURFACE		2 // Switch to surface mode
 
 // Internal pressure failsafe threshold (FS_PRESS_MAX parameter)
-#define FS_PRESS_MAX_DEFAULT 105000 // Maximum internal pressure in pascal before failsafe is triggered
+#define FS_PRESS_MAX_DEFAULT	105000 // Maximum internal pressure in pascal before failsafe is triggered
 // Internal pressure failsafe definitions (FS_PRESS_ENABLE parameter)
-#define FS_PRESS_DISABLED 0
-#define FS_PRESS_WARN_ONLY 1
+#define FS_PRESS_DISABLED		0
+#define FS_PRESS_WARN_ONLY		1
 
 // Internal temperature failsafe threshold (FS_TEMP_MAX parameter)
-#define FS_TEMP_MAX_DEFAULT 62	// Maximum internal pressure in degrees C before failsafe is triggered
+#define FS_TEMP_MAX_DEFAULT		62	// Maximum internal pressure in degrees C before failsafe is triggered
 // Internal temperature failsafe definitions (FS_TEMP_ENABLE parameter)
-#define FS_TEMP_DISABLED 0
-#define FS_TEMP_WARN_ONLY 1
+#define FS_TEMP_DISABLED		0
+#define FS_TEMP_WARN_ONLY		1
+
+// Terrain failsafe actions for AUTO mode
+#define FS_TERRAIN_DISARM		0
+#define FS_TERRAIN_HOLD			1
+#define FS_TERRAIN_SURFACE		2
+
+// Amount of time to attempt recovery of valid rangefinder data before
+// initiating terrain failsafe action
+#define FS_TERRAIN_RECOVER_TIMEOUT_MS 10000
 
 // EKF failsafe definitions (FS_EKF_ENABLE parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe

@@ -230,6 +230,20 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_temperature_max, "FS_TEMP_MAX", FS_TEMP_MAX_DEFAULT),
 
+    // @Param: FS_TERRAIN_ENAB
+    // @DisplayName: Terrain Failsafe Enable
+    // @Description: Controls what action to take if terrain information is lost during AUTO mode
+    // @Values: 0:Disarm, 1:Hold Position, 2:Surface
+    // @User: Standard
+    GSCALAR(failsafe_terrain, "FS_TERRAIN_ENAB", FS_TERRAIN_DISARM),
+
+    // @Param: XTRACK_ANG_LIM
+    // @DisplayName: Crosstrack correction angle limit
+    // @Description: Maximum allowed angle (in degrees) between current track and desired heading during waypoint navigation
+    // @Range: 10 90
+    // @User: Standard
+	GSCALAR(xtrack_angle_limit,"XTRACK_ANG_LIM", 45),
+
     // @Param: GPS_HDOP_GOOD
     // @DisplayName: GPS Hdop Good
     // @Description: GPS Hdop value at or below this value represent a good position.  Used for pre-arm checks
