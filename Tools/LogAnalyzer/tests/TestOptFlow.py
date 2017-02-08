@@ -48,6 +48,7 @@ class TestFlow(Test):
             max_rate_threshold = 2.0 # if the gyro rate is greter than this, the data will not be used by the curve fit (rad/sec)
             param_std_threshold = 5.0 # maximum allowable 1-std uncertainty in scaling parameter (scale factor * 1000)
             param_abs_threshold = 200 # max/min allowable scale factor parameter. Values of FLOW_FXSCALER and FLOW_FYSCALER outside the range of +-param_abs_threshold indicate a sensor configuration problem.
+            min_num_points = 100 # minimum number of points required for a curve fit - this is necessary, but not sufficient condition - the standard deviation estimate of the fit gradient is also important.
 
             # get the existing scale parameters
             flow_fxscaler = logdata.parameters["FLOW_FXSCALER"]
@@ -113,7 +114,7 @@ class TestFlow(Test):
                     startRollIndex = i
                     break
 
-            # calculate the end time for the roll calibration
+            # calculate the end time for the pitch calibration
             endTime = int(0)
             endRollIndex = int(0)
             for i in range(len(Roll)-1,-1,-1):
@@ -124,6 +125,11 @@ class TestFlow(Test):
                 if flow_time_us[i] < endTime:
                     endRollIndex = i
                     break
+
+            # check we have enough roll data points
+            if (endRollIndex - startRollIndex <= min_num_points):
+                FAIL()
+                self.result.statusMessage = "FAIL: insufficient roll data pointsa\n"
 
             # resample roll test data excluding data before first movement and after last movement
             # also exclude data where there is insufficient angular rate
@@ -159,6 +165,11 @@ class TestFlow(Test):
                 if flow_time_us[i] < endTime:
                     endPitchIndex = i
                     break
+
+            # check we have enough pitch data points
+            if (endPitchIndex - startPitchIndex <= min_num_points):
+                FAIL()
+                self.result.statusMessage = "FAIL: insufficient pitch data pointsa\n"
 
             # resample pitch test data excluding data before first movement and after last movement
             # also exclude data where there is insufficient or too much angular rate
