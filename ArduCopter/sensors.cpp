@@ -501,4 +501,8 @@ void Copter::update_visual_odom()
                                        g2.visual_odom.get_confidence());
     }
 #endif
+// update telemetry
+void Copter::update_telemetry()
+{
+    telemetry.update();
 }
