@@ -63,7 +63,7 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
     if (!active_EKF_type()) {
         return AP_AHRS_DCM::get_gyro_drift();
     }
-    return _gyro_bias;
+    return _gyro_drift;
 }
 
 // reset the current gyro drift estimate
@@ -144,23 +144,24 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             update_cd_values();
             update_trig();
 
-            // keep _gyro_bias for get_gyro_drift()
-            _gyro_bias.zero();            
-            EKF2.getGyroBias(-1,_gyro_bias);
-            _gyro_bias = -_gyro_bias;
-
-            // calculate corrected gryo estimate for get_gyro()
-            _gyro_estimate.zero();
-
-            // the gyro bias applies only to the IMU associated with the primary EKF2
-            // core
+            // Use the primary EKF to select the primary gyro
             int8_t primary_imu = EKF2.getPrimaryCoreIMUIndex();
+
+            // get gyro bias for primary EKF and change sign to give gyro drift
+            // Note sign convention used by EKF is bias = measurement - truth
+            _gyro_drift.zero();
+            EKF2.getGyroBias(-1,_gyro_drift);
+            _gyro_drift = -_gyro_drift;
+
+            // calculate corrected gyro estimate for get_gyro()
+            _gyro_estimate.zero();
             if (primary_imu == -1) {
+                // the primary IMU is undefined so use an uncorrected default value from the INS library
                 _gyro_estimate = _ins.get_gyro();
             } else {
-                _gyro_estimate = _ins.get_gyro(primary_imu);
+                // use the same IMU as the primary EKF and correct for gyro drift
+                _gyro_estimate = _ins.get_gyro(primary_imu) + _gyro_drift;
             }
-            _gyro_estimate += _gyro_bias;
 
             // get z accel bias estimate from active EKF (this is usually for the primary IMU)
             float abias = 0;
@@ -209,23 +210,24 @@ void AP_AHRS_NavEKF::update_EKF3(void)
             update_cd_values();
             update_trig();
 
-            // keep _gyro_bias for get_gyro_drift()
-            EKF3.getGyroBias(-1,_gyro_bias);
-            _gyro_bias = -_gyro_bias;
+            // Use the primary EKF to select the primary gyro
+            int8_t primary_imu = EKF3.getPrimaryCoreIMUIndex();
 
-            // calculate corrected gryo estimate for get_gyro()
+            // get gyro bias for primary EKF and change sign to give gyro drift
+            // Note sign convention used by EKF is bias = measurement - truth
+            _gyro_drift.zero();
+            EKF3.getGyroBias(-1,_gyro_drift);
+            _gyro_drift = -_gyro_drift;
+
+            // calculate corrected gyro estimate for get_gyro()
             _gyro_estimate.zero();
-            uint8_t healthy_count = 0;
-            for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
-                if (_ins.get_gyro_health(i) && healthy_count < 2 && _ins.use_gyro(i)) {
-                    _gyro_estimate += _ins.get_gyro(i);
-                    healthy_count++;
-                }
+            if (primary_imu == -1) {
+                // the primary IMU is undefined so use an uncorrected default value from the INS library
+                _gyro_estimate = _ins.get_gyro();
+            } else {
+                // use the same IMU as the primary EKF and correct for gyro drift
+                _gyro_estimate = _ins.get_gyro(primary_imu) + _gyro_drift;
             }
-            if (healthy_count > 1) {
-                _gyro_estimate /= healthy_count;
-            }
-            _gyro_estimate += _gyro_bias;
 
             // get 3-axis accel bias festimates for active EKF (this is usually for the primary IMU)
             Vector3f abias;
@@ -266,7 +268,7 @@ void AP_AHRS_NavEKF::update_SITL(void)
         update_cd_values();
         update_trig();
 
-        _gyro_bias.zero();
+        _gyro_drift.zero();
 
         _gyro_estimate = Vector3f(radians(fdm.rollRate),
                                   radians(fdm.pitchRate),
