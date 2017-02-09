@@ -233,34 +233,16 @@ void Sub::init_ardupilot()
     barometer.update();
 
     if (barometer.healthy(1)) { // We have an external MS58XX pressure sensor connected
-
         barometer.set_primary_baro(1); // Set the primary baro to external MS58XX !!Changes and saves parameter value!!
-
-
         ap.depth_sensor_present = true;
-        for (int i = 1; i < barometer.num_instances(); i++) {
-            barometer.set_type(i, AP_Baro::BARO_TYPE_WATER); // Altitude (depth) is calculated differently underwater
-            barometer.set_precision_multiplier(i, 40); // The MS58XX values reported need to be multiplied by 10 to match units everywhere else
-        }
-
-
         EKF2.set_baro_alt_noise(0.1f); // Depth readings are very accurate and up-to-date
         EKF3.set_baro_alt_noise(0.1f);
-
     } else { //We only have onboard baro
-
         // No external underwater depth sensor detected
         barometer.set_primary_baro(0); // Set the primary baro to default board baro !!Changes and saves parameter value!!
-
         ap.depth_sensor_present = false;
-        for (int i = 1; i < barometer.num_instances(); i++) {
-            barometer.set_type(i, AP_Baro::BARO_TYPE_AIR); // Default fcu air baro
-            barometer.set_precision_multiplier(i, 1); // Use default values
-        }
         EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
         EKF3.set_baro_alt_noise(10.0f);
-
-
     }
 
     leak_detector.init();
@@ -268,12 +250,6 @@ void Sub::init_ardupilot()
     // read Baro pressure at ground
     //-----------------------------
     init_barometer(true);
-
-    // cope with MS5607 in place of MS5611 on fake pixhawks
-    if (barometer.get_pressure(0) < 60000) {
-        barometer.set_precision_multiplier(0, 2);
-        init_barometer(true); // recalibrate with correct scalar
-    }
 
     // backwards compatibility
     if (attitude_control.get_accel_yaw_max() < 110000.0f) {
