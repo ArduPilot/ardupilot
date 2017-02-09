@@ -144,53 +144,47 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	static int16_t mode;
 	static int16_t camTilt = 1500;
 	static int16_t lights = 1100;
-	static uint32_t lastLights;
-	static bool lightsBrighter = true;
+	static uint32_t buttonDebounce;
 
-	// Button logic to arm/disarm motors (Start and back buttons)
-	if ( buttons & (1 << 4) ) {
-		init_arm_motors(true);
-	} else if ( buttons & (1 << 5) ) {
-		init_disarm_motors();
-	}
+	// Debouncing timer
+	if ( tnow_ms - buttonDebounce > 50 ) {
+		buttonDebounce = tnow_ms;
 
-	// Button logic to change camera tilt (D-pad up and down + left joystick click to center)
-	if ( buttons & (1 << 0) ) {
-		camTilt = constrain_float(camTilt+20,800,2200);
-	} else if ( buttons & (1 << 1) ) {
-		camTilt = constrain_float(camTilt-20,800,2200);
-	} else if ( buttons & (1 << 6) ) {
-		camTilt = 1500; // Reset camera tilt
-	}
-
-	// Button logic for roll trim (D-pad left and right)
-	if ( (buttons & ( 1 << 2 )) && rollTrim > -200 ) {
-		rollTrim -= 10;
-	} else if ( (buttons & ( 1 << 3 )) && rollTrim < 200 ) {
-		rollTrim += 10;
-	}
-
-	// Button logic for mode changes (B for stabilize, Y for altitude hold)
-	if ( buttons & (1 << 14) ) {
-		mode = 2000;
-	} else if ( buttons & (1 << 12)) {
-		mode = 1000;
-	}
-
-	// Button logic for lights with cyclical dimming (right joystick click)
-	if ( (buttons & (1 << 7)) && (tnow_ms - lastLights > 100) ) {
-		lastLights = tnow_ms;
-
-		if ( lightsBrighter ) {
-			lights += 200;
-		} else {
-			lights -= 200;
+		// Button logic to arm/disarm motors (Start and back buttons)
+		if ( buttons & (1 << 4) ) {
+			init_arm_motors(true);
+		} else if ( buttons & (1 << 5) ) {
+			init_disarm_motors();
 		}
 
-		if ( lights >= 1900 ) {
-			lightsBrighter = false;
-		} else if ( lights <= 1100 ) {
-			lightsBrighter = true;
+		// Button logic to change camera tilt (D-pad up and down + left joystick click to center)
+		if ( buttons & (1 << 0) ) {
+			camTilt = constrain_float(camTilt-30,800,2200);
+		} else if ( buttons & (1 << 1) ) {
+			camTilt = constrain_float(camTilt+30,800,2200);
+		} else if ( buttons & (1 << 6) ) {
+			camTilt = 1500; // Reset camera tilt
+		}
+
+		// Button logic for roll trim (D-pad left and right)
+		if ( (buttons & ( 1 << 2 )) && rollTrim > -200 ) {
+			rollTrim -= 10;
+		} else if ( (buttons & ( 1 << 3 )) && rollTrim < 200 ) {
+			rollTrim += 10;
+		}
+
+		// Button logic for mode changes (B for stabilize, Y for altitude hold)
+		if ( buttons & (1 << 14) ) {
+			mode = 2000;
+		} else if ( buttons & (1 << 12)) {
+			mode = 1000;
+		}
+
+		// Button logic for lights with dimming (right bumper brighter, left bumper dimmer)
+		if ( buttons & (1 << 8) ) {
+			lights = constrain_float(lights-100,1100,1900);
+		} else if ( buttons & (1 << 9) ) {
+			lights = constrain_float(lights+100,1100,1900);
 		}
 	}
 
