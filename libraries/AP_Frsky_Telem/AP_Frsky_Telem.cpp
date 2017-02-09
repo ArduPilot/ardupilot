@@ -757,7 +757,7 @@ uint32_t AP_Frsky_Telem::calc_attiandrng(void)
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
     attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
-    attiandrng |= prep_number(_rng.distance_cm(), 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+    attiandrng |= prep_number(_rng.distance_cm_orient(ROTATION_PITCH_270), 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
     return attiandrng;
 }
 
