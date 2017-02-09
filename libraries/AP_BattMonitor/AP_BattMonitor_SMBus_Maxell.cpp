@@ -62,6 +62,8 @@ void AP_BattMonitor_SMBus_Maxell::timer()
         _state.voltage = (float)data / 1000.0f;
         _state.last_time_micros = tnow;
         _state.healthy = true;
+    } else {
+        _state.healthy = false;
     }
 
     // timeout after 5 seconds
@@ -72,8 +74,10 @@ void AP_BattMonitor_SMBus_Maxell::timer()
 
     // read current (A)
     if (read_word(BATTMONITOR_SMBUS_MAXELL_CURRENT, data)) {
-        _state.current_amps = -(float)((int16_t)data) / 1000.0f;
+        _state.current_amps = -(float)((int16_t)data) / 1000.0f;  // 0 to -32,768 mA for discharge, 0 to 32,767 mA for charge
         _state.last_time_micros = tnow;
+    } else {
+        _state.healthy = false;
     }
 }
 
