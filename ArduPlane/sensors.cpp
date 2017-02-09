@@ -352,12 +352,12 @@ void Plane::update_sensor_status_flags(void)
     }
 #endif
 
-    if (rangefinder.num_sensors() > 0) {
+    if (rangefinder.has_orientation(ROTATION_PITCH_270)) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         if (g.rangefinder_landing) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
-        if (rangefinder.has_data()) {
+        if (rangefinder.has_data_orient(ROTATION_PITCH_270)) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;            
         }
     }
