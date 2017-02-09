@@ -365,7 +365,7 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
     delay(20);
     sonar.update();
 
-    if (sonar.status() == RangeFinder::RangeFinder_NotConnected) {
+    if (sonar.status(0) == RangeFinder::RangeFinder_NotConnected && sonar.status(1) == RangeFinder::RangeFinder_NotConnected) {
         cliSerial->printf("WARNING: Sonar is not enabled\n");
     }
 

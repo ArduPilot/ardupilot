@@ -56,7 +56,7 @@ void Rover::read_sonars(void)
 {
     sonar.update();
 
-    if (sonar.status() == RangeFinder::RangeFinder_NotConnected) {
+    if (sonar.status(0) == RangeFinder::RangeFinder_NotConnected) {
         // this makes it possible to disable sonar at runtime
         return;
     }
@@ -214,7 +214,7 @@ void Rover::update_sensor_status_flags(void)
         if (g.sonar_trigger_cm > 0) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
-        if (sonar.has_data()) {
+        if (sonar.has_data(0)) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }

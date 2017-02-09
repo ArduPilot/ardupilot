@@ -142,7 +142,7 @@ private:
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
-    RangeFinder sonar { serial_manager };
+    RangeFinder sonar { serial_manager, ROTATION_NONE };
     AP_Button button;
 
     // flight modes convenience array
