@@ -170,14 +170,16 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Analog(*this, instance, state[instance]);
                 _num_instances++;
                 break;
-            case BattMonitor_TYPE_SMBUS:
+            case BattMonitor_TYPE_SOLO:
                 state[instance].instance = instance;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
                 drivers[instance] = new AP_BattMonitor_SMBus_PX4(*this, instance, state[instance]);
 #else
-                drivers[instance] = new AP_BattMonitor_SMBus_I2C(*this, instance, state[instance],
-                                                                 hal.i2c_mgr->get_device(BATTMONITOR_SBUS_I2C_BUS, BATTMONITOR_SMBUS_I2C_ADDR));
+                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, instance, state[instance],
 #endif
+                                                                 hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
+                _num_instances++;
+                break;
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_BEBOP:
@@ -222,8 +224,8 @@ bool AP_BattMonitor::has_current(uint8_t instance) const
     // check for analog voltage and current monitor or smbus monitor
     if (instance < _num_instances && drivers[instance] != nullptr) {
         return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT ||
-                _monitoring[instance] == BattMonitor_TYPE_SMBUS ||
                 _monitoring[instance] == BattMonitor_TYPE_BEBOP);
+                _monitoring[instance] == BattMonitor_TYPE_SOLO ||
     }
 
     // not monitoring current
