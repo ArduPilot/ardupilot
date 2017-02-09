@@ -142,7 +142,7 @@ void Sub::read_radio()
 }
 
 void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons) {
-	int16_t channels[8];
+	int16_t channels[10];
 
 	float rpyScale = 0.5;
 	float throttleScale = 0.8;
@@ -150,12 +150,16 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	int16_t throttleBase = 1500-500*throttleScale;
 
 	uint16_t mode = buttons;
-	int16_t camTilt = 1500;
+	static int16_t camTilt = 1500;
 
 	if ( mode & (1 << 4) ) {
 		init_arm_motors(true);
 	} else if ( mode & (1 << 5) ) {
 		init_disarm_motors();
+	} else if ( mode & (1 << 0) ) {
+		camTilt = constrain_float(camTilt-20,800,2200);
+	} else if ( mode & (1 << 1) ) {
+		camTilt = constrain_float(camTilt+20,800,2200);
 	}
 
 	channels[0] = 1500;                           // pitch
@@ -166,9 +170,11 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	channels[5] = x*rpyScale+rpyCenter;           // forward for ROV
 	channels[6] = y*rpyScale+rpyCenter;           // strafe for ROV
 	channels[7] = camTilt;                        // camera tilt
+	channels[8] = camTilt;
+	channels[9] = 0;
 
 	// record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 8);
+	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
 }
 
 #define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values below failsafe_throttle_value
