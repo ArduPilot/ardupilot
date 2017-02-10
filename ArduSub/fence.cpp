@@ -1,6 +1,6 @@
 #include "Sub.h"
 
-// Code to integrate AC_Fence library with main ArduCopter code
+// Code to integrate AC_Fence library with main ArduSub code
 
 #if AC_FENCE == ENABLED
 

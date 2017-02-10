@@ -1,6 +1,6 @@
 #include "Sub.h"
 
-// Code to detect a crash main ArduCopter code
+// Code to detect a crash
 #define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
 #define CRASH_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees beyond angle max is signal we are inverted
 #define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed

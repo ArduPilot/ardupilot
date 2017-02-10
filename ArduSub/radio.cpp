@@ -126,7 +126,7 @@ void Sub::read_radio()
 // set_throttle_zero_flag - set throttle_zero flag from debounced throttle control
 // throttle_zero is used to determine if the pilot intends to shut down the motors
 // Basically, this signals when we are not flying.  We are either on the ground
-// or the pilot has shut down the copter in the air and it is free-falling
+// or the pilot has shut down the vehicle in the air and it is free-falling
 void Sub::set_throttle_zero_flag(int16_t throttle_control)
 {
     static uint32_t last_nonzero_throttle_ms = 0;

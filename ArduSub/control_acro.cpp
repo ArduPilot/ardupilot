@@ -90,7 +90,7 @@ void Sub::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16
     // calculate yaw rate request
     rate_bf_request.z = yaw_in * g.acro_yaw_p;
 
-    // calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
+    // calculate earth frame rate corrections to pull the vehicle back to level while in ACRO mode
 
     if (g.acro_trainer != ACRO_TRAINER_DISABLED) {
         // Calculate trainer mode earth frame rate command for roll
