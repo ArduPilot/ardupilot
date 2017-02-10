@@ -305,8 +305,8 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     }
     
     // For legacy reasons, we convert to centi-degrees before inputting to the feedforward
-    roll_ff = roll_feedforward_filter.apply(_pid_rate_roll.get_vff(rate_roll_target_rads), _dt);
-    pitch_ff = pitch_feedforward_filter.apply(_pid_rate_pitch.get_vff(rate_pitch_target_rads), _dt);
+    roll_ff = roll_feedforward_filter.apply(_pid_rate_roll.get_ff(rate_roll_target_rads), _dt);
+    pitch_ff = pitch_feedforward_filter.apply(_pid_rate_pitch.get_ff(rate_pitch_target_rads), _dt);
 
     // add feed forward and final output
     roll_out = roll_pd + roll_i + roll_ff;
@@ -390,7 +390,7 @@ float AC_AttitudeControl_Heli::rate_target_to_motor_yaw(float rate_target_rads)
     }
     
     // For legacy reasons, we convert to centi-degrees before inputting to the feedforward
-    vff = yaw_velocity_feedforward_filter.apply(_pid_rate_yaw.get_vff(rate_target_rads), _dt);
+    vff = yaw_velocity_feedforward_filter.apply(_pid_rate_yaw.get_ff(rate_target_rads), _dt);
     
     // add feed forward
     yaw_out = pd + i + vff;
