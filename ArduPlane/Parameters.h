@@ -189,7 +189,7 @@ public:
         // 130: Sensor parameters
         //
         k_param_imu = 130,  // unused
-        k_param_altitude_mix,
+        k_param_altitude_mix, // deprecated
 
         k_param_compass_enabled,
         k_param_compass,
@@ -393,7 +393,6 @@ public:
 
     // Estimation
     //
-    AP_Float altitude_mix;
     AP_Int8  alt_control_algorithm;
 
     // Waypoints
