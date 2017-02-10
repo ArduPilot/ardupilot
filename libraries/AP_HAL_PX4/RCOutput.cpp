@@ -646,6 +646,7 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
     }
 }
 
+#if defined(MIXER_CONFIGURATION)
 /*
   get the number of mixers
  */
@@ -757,6 +758,7 @@ bool PX4RCOutput::set_mixer_parameter(uint16_t mixer_index, uint16_t submixer_in
 	close(fd);
 	return ret;
 }
+#endif 	//MIXER_CONFIGURATION
 
 
 #endif // CONFIG_HAL_BOARD

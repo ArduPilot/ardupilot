@@ -36,13 +36,13 @@ public:
     
     void _timer_tick(void);
     bool enable_sbus_out(uint16_t rate_hz) override;
-
+#if defined(MIXER_CONFIGURATION)
     int     get_mixer_count(void) override;
     int     get_submixer_count(uint16_t mixer_index) override;
     int     get_mixer_type(uint16_t mixer_index, uint16_t submixer_index) override;
     bool    get_mixer_parameter(uint16_t mixer_index, uint16_t submixer_index, uint16_t parameter_index, float *param_value) override;
     bool    set_mixer_parameter(uint16_t mixer_index, uint16_t submixer_index, uint16_t parameter_index, float param_value) override;
-
+#endif 	//MIXER_CONFIGURATION
 
 private:
     int _pwm_fd;
