@@ -519,6 +519,7 @@ void RCOutput_Tap::push()
     // map from the RPM range to 0 - 100% duty cycle for the ESCs
     for (uint8_t i = 0; i < motor_cnt; i++) {
         uint16_t *val = &out[motor_mapping[i]];
+
         if (!(_enabled_channels & (1U << i))) {
             *val = RPMSTOPPED;
         } else if (_period[i] < _esc_pwm_min) {
@@ -526,8 +527,17 @@ void RCOutput_Tap::push()
         } else if (_period[i] >= _esc_pwm_max) {
             *val = RPMMAX;
         } else {
-            uint32_t pdiff = (_period[i] - _esc_pwm_min) * (RPMMAX - RPMMIN);
-            *val = (pdiff / (_esc_pwm_max - _esc_pwm_min)) + RPMMIN;
+            float period_us = constrain_int16(_period[i], _esc_pwm_min, _esc_pwm_max);
+
+            /*
+             * Map to [ RPMSTOPPED, RPMMAX ] range rather than
+             * [ RPMMIN, RPMMAX ] because AP_Motors will send us _esc_pwm_min
+             * when it's disarmed
+             */
+            float rpm = (period_us - _esc_pwm_min)/(_esc_pwm_max - _esc_pwm_min)
+                        * (RPMMAX - RPMSTOPPED) + RPMSTOPPED;
+
+            *val = (uint16_t) rpm;
         }
     }
     for (uint8_t i = motor_cnt; i < TAP_ESC_MAX_MOTOR_NUM; i++) {
