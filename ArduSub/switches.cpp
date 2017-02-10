@@ -345,7 +345,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
         break;
 
-    case AUXSW_LOST_COPTER_SOUND:
+    case AUXSW_LOST_VEHICLE_SOUND:
         switch (ch_flag) {
         case AUX_SWITCH_HIGH:
             AP_Notify::flags.vehicle_lost = true;
@@ -388,7 +388,7 @@ void Sub::save_trim()
 }
 
 // auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
-// meant to be called continuously while the pilot attempts to keep the copter level
+// meant to be called continuously while the pilot attempts to keep the vehicle level
 void Sub::auto_trim()
 {
     if (auto_trim_counter > 0) {
