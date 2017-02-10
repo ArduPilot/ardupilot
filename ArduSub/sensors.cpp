@@ -1,13 +1,9 @@
 #include "Sub.h"
 
-void Sub::init_barometer(bool full_calibration)
+void Sub::init_barometer(bool save)
 {
     gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
-    } else {
-        barometer.update_calibration();
-    }
+    barometer.calibrate(save);
     gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 

@@ -229,7 +229,9 @@ void Sub::init_ardupilot()
     ins.set_hil_mode();
 #endif
 
-    barometer.calibrate();
+    // read Baro pressure at ground
+    //-----------------------------
+    init_barometer(false);
     barometer.update();
 
     if (barometer.healthy(1)) { // We have an external MS58XX pressure sensor connected
@@ -246,10 +248,6 @@ void Sub::init_ardupilot()
     }
 
     leak_detector.init();
-
-    // read Baro pressure at ground
-    //-----------------------------
-    init_barometer(true);
 
     // backwards compatibility
     if (attitude_control.get_accel_yaw_max() < 110000.0f) {
