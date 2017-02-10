@@ -676,6 +676,17 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
     }
 }
 
+#if defined(MIXER_CONFIGURATION)
+void GCS_MAVLINK::handle_mixer_data_request(mavlink_message_t *msg){
+
+}
+
+void GCS_MAVLINK::handle_mixer_parameter_set(mavlink_message_t *msg){
+
+}
+#endif 	//MIXER_CONFIGURATION
+
+
 // see if we should send a stream now. Called at 50Hz
 bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 {

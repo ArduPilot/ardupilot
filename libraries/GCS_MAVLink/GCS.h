@@ -16,6 +16,7 @@
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <AP_RCMixer/AP_RCMixer.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -172,7 +173,9 @@ public:
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint8_t position);
-
+#if defined(MIXER_CONFIGURATION)
+    void send_mixer_data_value(uint16_t group, uint16_t mixer, uint16_t submixer, uint16_t parameter, uint16_t type, float real_val, signed int_val);
+#endif 	//MIXER_CONFIGURATION
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
     static uint8_t active_channel_mask(void) { return mavlink_active; }
@@ -188,6 +191,7 @@ public:
 
     // send a PARAM_VALUE message to all active MAVLink connections.
     static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
+
     
     /*
       send a MAVLink message to all components with this vehicle's system id
@@ -266,6 +270,11 @@ protected:
     void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
+
+#if defined(MIXER_CONFIGURATION)
+    void handle_mixer_data_request(mavlink_message_t *msg);
+    void handle_mixer_parameter_set(mavlink_message_t *msg);
+#endif 	//MIXER_CONFIGURATION
 
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);

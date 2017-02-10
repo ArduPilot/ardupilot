@@ -1716,6 +1716,20 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+#if defined(MIXER_CONFIGURATION)
+    case MAVLINK_MSG_ID_MIXER_DATA_REQUEST:
+    {
+    	handle_mixer_data_request(msg);
+    	break;
+    }
+
+    case MAVLINK_MSG_ID_MIXER_PARAMETER_SET:
+    {
+    	handle_mixer_parameter_set(msg);
+    	break;
+    }
+#endif 	//MIXER_CONFIGURATION
+
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
     {
 #if MOUNT == ENABLED
