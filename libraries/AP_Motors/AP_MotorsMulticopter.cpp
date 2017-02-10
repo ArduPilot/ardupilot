@@ -394,10 +394,14 @@ int16_t AP_MotorsMulticopter::get_pwm_output_max() const
 void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_max)
 {
     // sanity check
-    if ((radio_max > radio_min)) {
-        _throttle_radio_min = radio_min;
-        _throttle_radio_max = radio_max;
+    if (radio_max <= radio_min) {
+        return;
     }
+
+    _throttle_radio_min = radio_min;
+    _throttle_radio_max = radio_max;
+
+    hal.rcout->set_esc_scaling(get_pwm_output_min(), get_pwm_output_max());
 }
 
 // update the throttle input filter.  should be called at 100hz
