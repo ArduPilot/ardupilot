@@ -235,21 +235,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
 
-	// @Param: NAV_CONTROLLER
-	// @DisplayName: Navigation controller selection
-	// @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental controllers will be added which are selected using this parameter.
-	// @Values: 0:Default,1:L1Controller
-	// @User: Standard
-	GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
-
-    // @Param: ALT_MIX
-    // @DisplayName: GPS to Baro Mix
-    // @Description: The percent of mixing between GPS altitude and baro altitude. 0 = 100% gps, 1 = 100% baro. It is highly recommend that you not change this from the default of 1, as GPS altitude is notoriously unreliable. The only time I would recommend changing this is if you have a high altitude enabled GPS, and you are dropping a plane from a high altitude balloon many kilometers off the ground.
-    // @Units: Percent
-    // @Range: 0 1
-    // @Increment: 0.1
-    // @User: Advanced
-    GSCALAR(altitude_mix,           "ALT_MIX",        ALTITUDE_MIX),
+    // @Param: NAV_CONTROLLER
+    // @DisplayName: Navigation controller selection
+    // @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental controllers will be added which are selected using this parameter.
+    // @Values: 0:Default,1:L1Controller
+    // @User: Standard
+    GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
 
     // @Param: ALT_CTRL_ALG
     // @DisplayName: Altitude control algorithm
