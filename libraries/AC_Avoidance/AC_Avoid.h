@@ -21,6 +21,8 @@
 #define AC_AVOID_NONGPS_DIST_MAX_DEFAULT    10.0f   // objects over 10m away are ignored (default value for DIST_MAX parameter)
 #define AC_AVOID_ANGLE_MAX_PERCENT          0.75f   // object avoidance max lean angle as a percentage (expressed in 0 ~ 1 range) of total vehicle max lean angle
 
+#define AC_AVOID_UPWARD_MARGIN_M            2.0f    // stop 2m before objects above the vehicle
+
 /*
  * This class prevents the vehicle from leaving a polygon fence in
  * 2 dimensions by limiting velocity (adjust_velocity).
