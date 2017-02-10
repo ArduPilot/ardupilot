@@ -187,7 +187,7 @@ void Sub::lost_vehicle_check()
     static uint8_t soundalarm_counter;
 
     // disable if aux switch is setup to vehicle alarm as the two could interfere
-    if (check_if_auxsw_mode_used(AUXSW_LOST_COPTER_SOUND)) {
+    if (check_if_auxsw_mode_used(AUXSW_LOST_VEHICLE_SOUND)) {
         return;
     }
 
@@ -196,7 +196,7 @@ void Sub::lost_vehicle_check()
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;
-                gcs_send_text(MAV_SEVERITY_NOTICE,"Locate Copter alarm");
+                gcs_send_text(MAV_SEVERITY_NOTICE,"Locate vehicle alarm");
             }
         } else {
             soundalarm_counter++;

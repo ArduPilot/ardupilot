@@ -35,7 +35,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #ifndef CONFIG_HAL_BOARD
-#error CONFIG_HAL_BOARD must be defined to build ArduCopter
+#error CONFIG_HAL_BOARD must be defined to build ArduSub
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -452,7 +452,7 @@
 #endif
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED
-# define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before copter is aimed at ground course
+# define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before vehicle is aimed at ground course
 #endif
 
 // Super Simple mode

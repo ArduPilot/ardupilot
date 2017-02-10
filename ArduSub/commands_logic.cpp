@@ -92,7 +92,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_ROI:                // 201
-        // point the copter and camera at a region of interest (ROI)
+        // point the vehicle and camera at a region of interest (ROI)
         do_roi(cmd);
         break;
 
@@ -782,7 +782,7 @@ void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
 
 // do_roi - starts actions required by MAV_CMD_NAV_ROI
 //          this involves either moving the camera to point at the ROI (region of interest)
-//          and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
+//          and possibly rotating the vehicle to point at the ROI if our mount type does not support a yaw feature
 //  TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
 void Sub::do_roi(const AP_Mission::Mission_Command& cmd)
 {

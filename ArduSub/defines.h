@@ -19,7 +19,7 @@ enum autopilot_yaw_mode {
     AUTO_YAW_LOOK_AT_NEXT_WP =   1,  // point towards next waypoint (no pilot input accepted)
     AUTO_YAW_ROI =               2,  // point towards a location held in roi_WP (no pilot input accepted)
     AUTO_YAW_LOOK_AT_HEADING =   3,  // point towards a particular angle (not pilot input accepted)
-    AUTO_YAW_LOOK_AHEAD =        4,  // point in the direction the copter is moving
+    AUTO_YAW_LOOK_AHEAD =        4,  // point in the direction the vehicle is moving
     AUTO_YAW_RESETTOARMEDYAW =   5,  // point towards heading at time motors were armed
     AUTO_YAW_CORRECT_XTRACK =    6   // steer the sub in order to correct for crosstrack error during line following
 };
@@ -75,7 +75,7 @@ enum aux_sw_func {
     // No landing gear for sub, remove
     //    AUXSW_LANDING_GEAR =        29, // Landing gear controller
 
-    AUXSW_LOST_COPTER_SOUND =   30, // Play lost copter sound
+    AUXSW_LOST_VEHICLE_SOUND =   30, // Play lost vehicle sound
     AUXSW_MOTOR_ESTOP =         31, // Emergency Stop Switch
     AUXSW_MOTOR_INTERLOCK =     32, // Motor On/Off switch
     //    AUXSW_BRAKE =               33, // Brake flight mode
