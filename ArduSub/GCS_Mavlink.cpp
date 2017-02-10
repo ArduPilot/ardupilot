@@ -1320,7 +1320,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 if (!sub.ap.depth_sensor_present || sub.motors.armed() || sub.barometer.get_pressure() > 110000) {
                     result = MAV_RESULT_FAILED;
                 } else {
-                    sub.init_barometer(false);
+                    sub.init_barometer(true);
                     result = MAV_RESULT_ACCEPTED;
                 }
             } else if (is_equal(packet.param4,1.0f)) {
