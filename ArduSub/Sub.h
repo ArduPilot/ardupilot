@@ -767,7 +767,7 @@ private:
     void default_js_buttons(void);
     void set_throttle_zero_flag(int16_t throttle_control);
     void radio_passthrough_to_motors();
-    void init_barometer(bool full_calibration);
+    void init_barometer(bool save);
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
