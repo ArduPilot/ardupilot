@@ -64,6 +64,10 @@ void AP_MotorsTailsitter::output_to_motors()
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, _elevator*SERVO_OUTPUT_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder,   _rudder*SERVO_OUTPUT_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, _throttle*THROTTLE_RANGE);
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    SRV_Channels::calc_pwm();
+    SRV_Channels::output_ch_all();
+#endif
 }
 
 // calculate outputs to the motors
