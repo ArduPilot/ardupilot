@@ -496,6 +496,7 @@ uint8_t Copter::get_frame_mav_type()
             return MAV_TYPE_TRICOPTER;
         case AP_Motors::MOTOR_FRAME_SINGLE:
         case AP_Motors::MOTOR_FRAME_COAX:
+        case AP_Motors::MOTOR_FRAME_TAILSITTER:
             return MAV_TYPE_COAXIAL;
     }
     // unknown frame so return generic
@@ -560,6 +561,10 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_COAX:
             motors = new AP_MotorsCoax(MAIN_LOOP_RATE);
             var_info = AP_MotorsCoax::var_info;
+            break;
+        case AP_Motors::MOTOR_FRAME_TAILSITTER:
+            motors = new AP_MotorsTailsitter(MAIN_LOOP_RATE);
+            var_info = AP_MotorsTailsitter::var_info;
             break;
 #else // FRAME_CONFIG == HELI_FRAME
         case AP_Motors::MOTOR_FRAME_HELI:
