@@ -43,9 +43,14 @@ enum AHRS_VehicleClass {
 };
 
 
+// forward declare view class
+class AP_AHRS_View;
+
 class AP_AHRS
 {
 public:
+    friend class AP_AHRS_View;
+    
     // Constructor
     AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
         roll(0.0f),
@@ -499,6 +504,9 @@ public:
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const { ret.zero(); _ins.get_delta_velocity(ret); dt = _ins.get_delta_velocity_dt(); }
+
+    // create a view
+    AP_AHRS_View *create_view(enum Rotation rotation);
     
 protected:
     AHRS_VehicleClass _vehicle_class;
@@ -525,6 +533,11 @@ protected:
         uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
     } _flags;
 
+    // calculate sin/cos of roll/pitch/yaw from rotation
+    void calc_trig(const Matrix3f &rot,
+                   float &cr, float &cp, float &cy,
+                   float &sr, float &sp, float &sy) const;
+    
     // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
     //      should be called after _dcm_matrix is updated
     void update_trig(void);
@@ -584,6 +597,9 @@ protected:
 
     // which accelerometer instance is active
     uint8_t _active_accel_instance;
+
+    // optional view class
+    AP_AHRS_View *_view;
 };
 
 #include "AP_AHRS_DCM.h"
