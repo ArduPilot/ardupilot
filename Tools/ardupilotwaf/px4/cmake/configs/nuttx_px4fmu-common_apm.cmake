@@ -17,7 +17,6 @@ set(config_module_list
     drivers/led
     drivers/px4fmu
     drivers/mkblctrl
-    drivers/batt_smbus
 
 #
 # System commands
