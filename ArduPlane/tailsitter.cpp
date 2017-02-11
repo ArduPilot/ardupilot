@@ -27,11 +27,20 @@ bool QuadPlane::is_tailsitter(void)
 }
 
 /*
+  check if we are flying as a tailsitter
+ */
+bool QuadPlane::tailsitter_active(void)
+{
+    return is_tailsitter() && in_vtol_mode();
+}
+
+/*
   run output for tailsitters
  */
 void QuadPlane::tailsitter_output(void)
 {
-    if (is_tailsitter() && in_vtol_mode()) {
+    if (tailsitter_active()) {
         motors_output();
     }
 }
+
