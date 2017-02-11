@@ -61,7 +61,7 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @Param: _BUS_ID
     // @DisplayName: ID on the bus
     // @Description: This is used to select between multiple possible bus IDs for some sensor types. For PX4Flow you can choose 0 to 7 for the 8 possible addresses on the I2C bus.
-    // @Range: 0 255
+    // @Range: 0 127
     // @User: Advanced
     AP_GROUPINFO("_BUS_ID", 5,  OpticalFlow, _bus_id,   0),
     
