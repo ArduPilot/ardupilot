@@ -1,14 +1,10 @@
 #include <AP_HAL/AP_HAL.h>
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_HAL_SITL.h"
-#include "AP_HAL_SITL_Namespace.h"
-#include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
 #include <stdio.h>
 #include <signal.h>
-#include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 
 #include <SITL/SIM_Multicopter.h>
@@ -123,8 +119,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     _set_signal_handlers();
 
-    setvbuf(stdout, (char *)0, _IONBF, 0);
-    setvbuf(stderr, (char *)0, _IONBF, 0);
+    setvbuf(stdout, reinterpret_cast<char *>(0), _IONBF, 0);
+    setvbuf(stderr, reinterpret_cast<char *>(0), _IONBF, 0);
 
     _synthetic_clock_mode = false;
     _base_port = 5760;
@@ -137,7 +133,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _instance = 0;
 
     enum long_options {
-        CMDLINE_CLIENT=0,
+        CMDLINE_CLIENT = 0,
         CMDLINE_GIMBAL,
         CMDLINE_AUTOTESTDIR,
         CMDLINE_UARTA,
@@ -190,13 +186,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             AP_Param::set_hide_disabled_groups(false);
             break;
         case 'r':
-            _framerate = (unsigned)atoi(gopt.optarg);
+            _framerate = static_cast<uint16_t>(atoi(gopt.optarg));
             break;
         case 'C':
             HALSITL::UARTDriver::_console = true;
             break;
         case 'I': {
-            _instance = atoi(gopt.optarg);
+            _instance = static_cast<uint8_t>(atoi(gopt.optarg));
             _base_port  += _instance * 10;
             _rcout_port += _instance * 10;
             _rcin_port  += _instance * 10;
@@ -299,4 +295,4 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _sitl_setup(home_str);
 }
 
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

@@ -27,9 +27,6 @@ struct sitl_fdm {
     Vector3f angAccel; // Angular acceleration in degrees/s/s about the XYZ body axes
 };
 
-// number of rc output channels
-#define SITL_NUM_CHANNELS 16
-
 class SITL {
 public:
 
@@ -53,8 +50,8 @@ public:
 
     struct sitl_fdm state;
 
-    // loop update rate in Hz
-    uint16_t update_rate_hz;
+    // default sensors update rate in Hz
+    const uint16_t default_sensors_rate_hz = 1200;
 
     // true when motors are active
     bool motors_on;

@@ -2,10 +2,10 @@
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include "AP_HAL_SITL_Namespace.h"
+
+#include "AP_HAL_SITL.h"
 #include <sys/time.h>
 
-#define SITL_SCHEDULER_MAX_TIMER_PROCS 4
 
 /* Scheduler implementation: */
 class HALSITL::Scheduler : public AP_HAL::Scheduler {
@@ -52,6 +52,8 @@ public:
     uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
 
 private:
+    static const uint8_t SITL_SCHEDULER_MAX_TIMER_PROCS = 4;
+
     SITL_State *_sitlState;
     uint8_t _nested_atomic_ctr;
     AP_HAL::Proc _delay_cb;
@@ -75,4 +77,4 @@ private:
     bool _initialized;
     uint64_t _stopped_clock_usec;
 };
-#endif  // CONFIG_HAL_BOARD
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

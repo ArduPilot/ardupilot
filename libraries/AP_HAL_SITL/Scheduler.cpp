@@ -1,10 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include "AP_HAL_SITL.h"
 #include "Scheduler.h"
 #include "UARTDriver.h"
-#include <sys/time.h>
 #include <fenv.h>
 
 using namespace HALSITL;
@@ -34,15 +32,15 @@ void Scheduler::init()
 {
 }
 
-void Scheduler::delay_microseconds(uint16_t usec)
+void Scheduler::delay_microseconds(uint16_t us)
 {
-    uint64_t start = AP_HAL::micros64();
+    const uint64_t start = AP_HAL::micros64();
     do {
         uint64_t dtime = AP_HAL::micros64() - start;
-        if (dtime >= usec) {
+        if (dtime >= us) {
             break;
         }
-        _sitlState->wait_clock(start + usec);
+        _sitlState->wait_clock(start + us);
     } while (true);
 }
 
@@ -168,7 +166,7 @@ void Scheduler::_run_timer_procs(bool called_from_isr)
 
     if (!_timer_suspended) {
         // now call the timer based drivers
-        for (int i = 0; i < _num_timer_procs; i++) {
+        for (uint8_t i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i]) {
                 _timer_proc[i]();
             }
@@ -194,7 +192,7 @@ void Scheduler::_run_io_procs(bool called_from_isr)
 
     if (!_timer_suspended) {
         // now call the IO based drivers
-        for (int i = 0; i < _num_io_procs; i++) {
+        for (uint8_t i = 0; i < _num_io_procs; i++) {
             if (_io_proc[i]) {
                 _io_proc[i]();
             }
@@ -221,4 +219,4 @@ void Scheduler::stop_clock(uint64_t time_usec)
     _run_io_procs(false);
 }
 
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

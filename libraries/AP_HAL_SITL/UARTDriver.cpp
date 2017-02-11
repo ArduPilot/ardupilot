@@ -19,25 +19,10 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <limits.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <AP_Math/AP_Math.h>
-
-#include <errno.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <sys/select.h>
-#include <termios.h>
-
 #include "UARTDriver.h"
-#include "SITL_State.h"
+#include <errno.h>
+#include <stdio.h>
+#include <termios.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -73,17 +58,17 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         char *args1 = strtok_r(nullptr, ":", &saveptr);
         char *args2 = strtok_r(nullptr, ":", &saveptr);
         if (strcmp(devtype, "tcp") == 0) {
-            uint16_t port = atoi(args1);
-            bool wait = (args2 && strcmp(args2, "wait") == 0);
+            uint16_t port = static_cast<uint16_t>(atoi(args1));  // int to unint16
+            const bool wait = (args2 && strcmp(args2, "wait") == 0);
             _tcp_start_connection(port, wait);
         } else if (strcmp(devtype, "tcpclient") == 0) {
             if (args2 == nullptr) {
                 AP_HAL::panic("Invalid tcp client path: %s", path);
             }
-            uint16_t port = atoi(args2);
+            const uint16_t port = static_cast<uint16_t>(atoi(args2));    // int to unint16
             _tcp_start_client(args1, port);
         } else if (strcmp(devtype, "uart") == 0) {
-            uint32_t baudrate = args2? atoi(args2) : baud;
+            const uint32_t baudrate = args2 ? static_cast<uint32_t>(atoi(args2)) : baud;    // int to unint16
             ::printf("UART connection %s:%u\n", args1, baudrate);
             _uart_path = strdup(args1);
             _uart_baudrate = baudrate;
@@ -156,14 +141,13 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     return size;
 }
 
-    
 /*
   start a TCP connection for the serial port. If wait_for_connection
   is true then block until a client connects
  */
 void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 {
-    int one=1;
+    int one = 1;
     struct sockaddr_in sockaddr;
     int ret;
 
@@ -187,7 +171,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
     }
 
     if (_listen_fd == -1) {
-        memset(&sockaddr,0,sizeof(sockaddr));
+        memset(&sockaddr, 0, sizeof(sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
         sockaddr.sin_len = sizeof(sockaddr);
@@ -251,21 +235,20 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
  */
 void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 {
-    int one=1;
+    int one = 1;
     struct sockaddr_in sockaddr;
-    int ret;
 
     if (_connected) {
         return;
     }
 
     _use_send_recv = true;
-    
+
     if (_fd != -1) {
         close(_fd);
     }
 
-    memset(&sockaddr,0,sizeof(sockaddr));
+    memset(&sockaddr, 0, sizeof(sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
     sockaddr.sin_len = sizeof(sockaddr);
@@ -283,7 +266,7 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
     /* we want to be able to re-use ports quickly */
     setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
-    ret = connect(_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    int ret = connect(_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret == -1) {
         fprintf(stderr, "connect failed on port %u - %s\n",
                 (unsigned)ntohs(sockaddr.sin_port),
@@ -390,7 +373,7 @@ bool UARTDriver::_select_check(int fd)
 
 void UARTDriver::_set_nonblocking(int fd)
 {
-    unsigned v = fcntl(fd, F_GETFL, 0);
+    int32_t v = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, v | O_NONBLOCK);
 }
 
@@ -432,11 +415,11 @@ void UARTDriver::_timer_tick(void)
     if (space == 0) {
         return;
     }
-    
+
     char buf[space];
     ssize_t nread = 0;
     if (!_use_send_recv) {
-        int fd = _console?0:_fd;
+        int fd = _console ? 0 : _fd;
         nread = ::read(fd, buf, space);
         if (nread == -1 && errno != EAGAIN && _uart_path) {
             close(_fd);
@@ -459,9 +442,7 @@ void UARTDriver::_timer_tick(void)
         }
     }
     if (nread > 0) {
-        _readbuffer.write((uint8_t *)buf, nread);
+        _readbuffer.write(reinterpret_cast<uint8_t *>(buf), nread);
     }
 }
-
-#endif // CONFIG_HAL_BOARD
-
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

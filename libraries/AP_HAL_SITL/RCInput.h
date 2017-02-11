@@ -1,9 +1,7 @@
-
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define SITL_RC_INPUT_CHANNELS 16
 
 #include "AP_HAL_SITL.h"
 
@@ -29,5 +27,4 @@ private:
     uint16_t _override[SITL_RC_INPUT_CHANNELS];
 };
 
-#endif
-
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
