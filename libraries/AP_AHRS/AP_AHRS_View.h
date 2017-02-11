@@ -30,7 +30,7 @@ public:
 
     // update state
     void update(void);
-    
+
     // empty virtual destructor
     virtual ~AP_AHRS_View() {}
 
@@ -52,20 +52,20 @@ public:
     float cos_pitch() const {
         return trig.cos_pitch;
     }
-    float cos_yaw() const   {
+    float cos_yaw() const {
         return trig.cos_yaw;
     }
-    float sin_roll() const  {
+    float sin_roll() const {
         return trig.sin_roll;
     }
     float sin_pitch() const {
         return trig.sin_pitch;
     }
-    float sin_yaw() const   {
+    float sin_yaw() const {
         return trig.sin_yaw;
     }
 
-    
+
     /*
       wrappers around ahrs functions which pass-thru directly. See
       AP_AHRS.h for description of each function
@@ -73,15 +73,15 @@ public:
     bool get_position(struct Location &loc) const {
         return ahrs.get_position(loc);
     }
-    
+
     Vector3f wind_estimate(void) {
         return ahrs.wind_estimate();
     }
-    
+
     bool airspeed_estimate(float *airspeed_ret) const {
         return ahrs.airspeed_estimate(airspeed_ret);
     }
-    
+
     bool airspeed_estimate_true(float *airspeed_ret) const {
         return ahrs.airspeed_estimate_true(airspeed_ret);
     }
@@ -129,21 +129,22 @@ public:
     uint32_t getLastPosDownReset(float &posDelta) const {
         return ahrs.getLastPosDownReset(posDelta);
     }
-    
+
     float roll;
     float pitch;
     float yaw;
     int32_t roll_sensor;
     int32_t pitch_sensor;
     int32_t yaw_sensor;
-    
+
 private:
     const enum Rotation rotation;
     AP_AHRS &ahrs;
-    
+
+    Matrix3f rot_view;
     Matrix3f rot_body_to_ned;
     Vector3f gyro;
-    
+
     struct {
         float cos_roll;
         float cos_pitch;
@@ -153,4 +154,3 @@ private:
         float sin_yaw;
     } trig;
 };
-
