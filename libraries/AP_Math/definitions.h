@@ -68,3 +68,6 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 #define NSEC_PER_USEC   1000ULL
 #define USEC_PER_SEC    1000000ULL
 #define USEC_PER_MSEC   1000ULL
+#define MSEC_PER_SEC    1000UL
+#define SEC_PER_WEEK    (7UL * 86400UL)
+#define MSEC_PER_WEEK   (SEC_PER_WEEK * MSEC_PER_SEC)
