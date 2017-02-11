@@ -335,6 +335,10 @@ _options_for_frame = {
         "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/plane-vtail.parm",
     },
+    "plane-tailsitter": {
+        "waf_target": "bin/arduplane",
+        "default_params_filename": "default_params/plane-tailsitter.parm",
+    },
     "plane": {
         "waf_target": "bin/arduplane",
         "default_params_filename": "default_params/plane.parm",
