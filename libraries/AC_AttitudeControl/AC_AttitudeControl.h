@@ -7,7 +7,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
@@ -44,7 +44,7 @@
 
 class AC_AttitudeControl {
 public:
-    AC_AttitudeControl( AP_AHRS &ahrs,
+    AC_AttitudeControl( AP_AHRS_View &ahrs,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
                         float dt) :
@@ -369,7 +369,7 @@ protected:
     float               _throttle_rpy_mix;
 
     // References to external libraries
-    const AP_AHRS&      _ahrs;
+    const AP_AHRS_View&  _ahrs;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
 
