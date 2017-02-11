@@ -118,6 +118,8 @@ private:
 
     /* construct a file name given a log number. Caller must free. */
     char *_log_file_name(const uint16_t log_num) const;
+    char *_log_file_name_long(const uint16_t log_num) const;
+    char *_log_file_name_short(const uint16_t log_num) const;
     char *_lastlog_file_name() const;
     uint32_t _get_log_size(const uint16_t log_num) const;
     uint32_t _get_log_time(const uint16_t log_num) const;
