@@ -35,6 +35,8 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     frame_height = 0.1f;
 
+    ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
+    
     if (strstr(frame_str, "-heavy")) {
         mass = 8;
     }
@@ -49,8 +51,12 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     if (strstr(frame_str, "-elevrev")) {
         reverse_elevator_rudder = true;
     }
+   if (strstr(frame_str, "-tailsitter")) {
+       tailsitter = true;
+       ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
+       thrust_scale *= 1.5;
+   }
 
-    ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
     if (strstr(frame_str, "-ice")) {
         ice_engine = true;
     }
@@ -266,7 +272,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         add_noise(fabsf(thrust) / thrust_scale);
     }
 
-    if (on_ground()) {
+    if (on_ground() && !tailsitter) {
         // add some ground friction
         Vector3f vel_body = dcm.transposed() * velocity_ef;
         accel_body.x -= vel_body.x * 0.3f;
