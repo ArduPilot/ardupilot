@@ -747,6 +747,9 @@ void Plane::servos_output(void)
 {
     hal.rcout->cork();
 
+    // cope with tailsitters
+    quadplane.tailsitter_output();
+    
     // the mixers need pwm to be calculated now
     SRV_Channels::calc_pwm();
     

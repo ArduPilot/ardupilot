@@ -439,14 +439,27 @@ bool QuadPlane::setup(void)
         SRV_Channels::set_default_function(CH_11, SRV_Channel::k_motor7);
         AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
         break;
+    case AP_Motors::MOTOR_FRAME_TAILSITTER:
+        break;
     default:
         hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
         goto failed;
     }
-    if (motor_class == AP_Motors::MOTOR_FRAME_TRI) {
+
+    const struct AP_Param::GroupInfo *var_info;
+    switch (motor_class) {
+    case AP_Motors::MOTOR_FRAME_TRI:
         motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz());
-    } else {
+        var_info = AP_MotorsTri::var_info;
+        break;
+    case AP_Motors::MOTOR_FRAME_TAILSITTER:
+        motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz());
+        var_info = AP_MotorsTailsitter::var_info;
+        break;
+    default:
         motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
+        var_info = AP_MotorsMatrix::var_info;
+        break;
     }
     const static char *strUnableToAllocate = "Unable to allocate";
     if (!motors) {
@@ -454,7 +467,7 @@ bool QuadPlane::setup(void)
         goto failed;
     }
     
-    AP_Param::load_object_from_eeprom(motors, motors->var_info);
+    AP_Param::load_object_from_eeprom(motors, var_info);
     attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
         hal.console->printf("%s attitude_control\n", strUnableToAllocate);
@@ -981,7 +994,7 @@ void QuadPlane::update_transition(void)
         plane.control_mode == ACRO ||
         plane.control_mode == TRAINING) {
         // in manual modes quad motors are always off
-        if (!tilt.motors_active) {
+        if (!tilt.motors_active && !is_tailsitter()) {
             motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
             motors->output();
         }
@@ -1080,7 +1093,7 @@ void QuadPlane::update_transition(void)
     }
 
     case TRANSITION_DONE:
-        if (!tilt.motors_active) {
+        if (!tilt.motors_active && !is_tailsitter()) {
             motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
             motors->output();
         }
