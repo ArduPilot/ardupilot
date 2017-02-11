@@ -18,7 +18,7 @@ class AC_Circle
 public:
 
     /// Constructor
-    AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control);
+    AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
 
     /// init - initialise circle controller setting center specifically
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
@@ -82,7 +82,7 @@ private:
 
     // references to inertial nav and ahrs libraries
     const AP_InertialNav&       _inav;
-    const AP_AHRS&              _ahrs;
+    const AP_AHRS_View&         _ahrs;
     AC_PosControl&              _pos_control;
 
     // parameters
