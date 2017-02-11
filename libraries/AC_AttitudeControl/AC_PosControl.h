@@ -47,7 +47,7 @@ class AC_PosControl
 public:
 
     /// Constructor
-    AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
+    AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                   AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
                   AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);
@@ -366,7 +366,7 @@ private:
     void check_for_ekf_z_reset();
 
     // references to inertial nav and ahrs libraries
-    const AP_AHRS&              _ahrs;
+    const AP_AHRS_View &        _ahrs;
     const AP_InertialNav&       _inav;
     const AP_Motors&            _motors;
     AC_AttitudeControl&         _attitude_control;
