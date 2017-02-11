@@ -117,7 +117,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: SBP_LOGMASK
     // @DisplayName: Swift Binary Protocol Logging Mask
     // @Description: Masked with the SBP msg_type field to determine whether SBR1/SBR2 data is logged
-    // @Values: 0x0000:None, 0xFFFF:All, 0xFF00:External only
+    // @Values: 0:None (0x0000),-1:All (0xFFFF),-256:External only (0xFF00)
     // @User: Advanced
     AP_GROUPINFO("SBP_LOGMASK", 8, AP_GPS, _sbp_logmask, 0xFF00),
 
