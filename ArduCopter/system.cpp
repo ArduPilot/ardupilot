@@ -525,6 +525,8 @@ const char* Copter::get_frame_string()
             return "SINGLE";
         case AP_Motors::MOTOR_FRAME_COAX:
             return "COAX";
+        case AP_Motors::MOTOR_FRAME_TAILSITTER:
+            return "TAILSITTER";
         case AP_Motors::MOTOR_FRAME_UNDEFINED:
         default:
             return "UNKNOWN";
