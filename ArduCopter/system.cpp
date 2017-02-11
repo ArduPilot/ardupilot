@@ -582,11 +582,16 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(motors, var_info);
 
+    AP_AHRS_View *ahrs_view = ahrs.create_view(ROTATION_NONE);
+    if (ahrs_view == nullptr) {
+        AP_HAL::panic("Unable to allocate AP_AHRS_View");
+    }
+    
 #if FRAME_CONFIG != HELI_FRAME
-    attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, MAIN_LOOP_SECONDS);
+    attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
     var_info = AC_AttitudeControl_Multi::var_info;
 #else
-    attitude_control = new AC_AttitudeControl_Heli(ahrs, aparm, *motors, MAIN_LOOP_SECONDS);
+    attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
     var_info = AC_AttitudeControl_Heli::var_info;
 #endif
     if (attitude_control == nullptr) {
@@ -594,7 +599,7 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(attitude_control, var_info);
         
-    pos_control = new AC_PosControl(ahrs, inertial_nav, *motors, *attitude_control,
+    pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control,
                                     g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                                     g.p_pos_xy, g.pi_vel_xy);
     if (pos_control == nullptr) {
