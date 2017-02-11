@@ -97,6 +97,7 @@ protected:
     bool vtail;
     bool reverse_elevator_rudder;
     bool ice_engine;
+    bool tailsitter;
 
     ICEngine icengine{2, 14, 12, 13, 100};
 
