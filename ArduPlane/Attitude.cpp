@@ -671,6 +671,11 @@ void Plane::update_load_factor(void)
         // no roll limits when inverted
         return;
     }
+    if (quadplane.tailsitter_active()) {
+        // no limits while hovering
+        return;
+    }
+       
 
     float max_load_factor = smoothed_airspeed / aparm.airspeed_min;
     if (max_load_factor <= 1) {
