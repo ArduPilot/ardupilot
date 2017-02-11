@@ -37,6 +37,10 @@ Changes from 3.4.4
     a) in-tree drivers lead to improved sharing of drivers with Linux boards
     b) copter arming checks consolidated with other vehicles
 ------------------------------------------------------------------
+Copter 3.4.5 11-Feb-2017
+Changes from 3.4.4
+1) Bug fix to Guided mode that could lead to crash after take-off completes if MOT_THST_HOVER too high 
+------------------------------------------------------------------
 Copter 3.4.4 06-Jan-2017 / Copter 3.4.4-rc1 21-Dec-2016
 Changes from 3.4.3
 1) Bug Fixes / Minor Enhancements:
