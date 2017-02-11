@@ -63,7 +63,7 @@ int16_t AP_GPS_Backend::swap_int16(int16_t v) const
  */
 uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
 {
-    uint64_t fix_time_ms = UNIX_OFFSET + gps_week * MSEC_PER_WEEK + gps_ms;
+    uint64_t fix_time_ms = UNIX_OFFSET_MSEC + gps_week * MSEC_PER_WEEK + gps_ms;
     return fix_time_ms;
 }
 
