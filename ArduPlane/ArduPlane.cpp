@@ -175,8 +175,13 @@ void Plane::ahrs_update()
     }
 
     // calculate a scaled roll limit based on current pitch
-    roll_limit_cd = aparm.roll_limit_cd * cosf(ahrs.pitch);
-    pitch_limit_min_cd = aparm.pitch_limit_min_cd * fabsf(cosf(ahrs.roll));
+    roll_limit_cd = aparm.roll_limit_cd;
+    pitch_limit_min_cd = aparm.pitch_limit_min_cd;
+
+    if (!quadplane.tailsitter_active()) {
+        roll_limit_cd *= ahrs.cos_pitch();
+        pitch_limit_min_cd *= fabsf(ahrs.cos_roll());
+    }
 
     // updated the summed gyro used for ground steering and
     // auto-takeoff. Dot product of DCM.c with gyro vector gives earth
