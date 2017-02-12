@@ -58,7 +58,7 @@ void Tracker::send_heartbeat(mavlink_channel_t chan)
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
-    gcs[chan-MAVLINK_COMM_0].send_heartbeat(MAV_TYPE_ANTENNA_TRACKER,
+    gcs_chan[chan-MAVLINK_COMM_0].send_heartbeat(MAV_TYPE_ANTENNA_TRACKER,
                                             base_mode,
                                             custom_mode,
                                             system_status);
@@ -111,7 +111,7 @@ void Tracker::send_hwstatus(mavlink_channel_t chan)
 
 void Tracker::send_waypoint_request(mavlink_channel_t chan)
 {
-    gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
+    gcs_chan[chan-MAVLINK_COMM_0].queued_waypoint_send();
 }
 
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
@@ -486,7 +486,7 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
     // send data stream request to target on all channels
     //  Note: this doesn't check success for all sends meaning it's not guaranteed the vehicle's positions will be sent at 1hz
     for (uint8_t i=0; i < num_gcs; i++) {
-        if (gcs[i].initialised) {
+        if (gcs_chan[i].initialised) {
             // request position
             if (HAVE_PAYLOAD_SPACE((mavlink_channel_t)i, DATA_STREAM)) {
                 mavlink_msg_request_data_stream_send(
@@ -889,7 +889,7 @@ mission_failed:
 void Tracker::mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs[0].initialised) return;
+    if (!gcs_chan[0].initialised) return;
 
     tracker.in_mavlink_delay = true;
 
@@ -918,8 +918,8 @@ void Tracker::mavlink_delay_cb()
 void Tracker::gcs_send_message(enum ap_message id)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_message(id);
+        if (gcs_chan[i].initialised) {
+            gcs_chan[i].send_message(id);
         }
     }
 }
@@ -930,8 +930,8 @@ void Tracker::gcs_send_message(enum ap_message id)
 void Tracker::gcs_data_stream_send(void)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].data_stream_send();
+        if (gcs_chan[i].initialised) {
+            gcs_chan[i].data_stream_send();
         }
     }
 }
@@ -942,15 +942,15 @@ void Tracker::gcs_data_stream_send(void)
 void Tracker::gcs_update(void)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].update(nullptr);
+        if (gcs_chan[i].initialised) {
+            gcs_chan[i].update(nullptr);
         }
     }
 }
 
 void Tracker::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
-    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    gcs().send_statustext(severity, 0xFF, str);
     notify.send_text(str);
 }
 
@@ -966,7 +966,7 @@ void Tracker::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     va_start(arg_list, fmt);
     hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
     va_end(arg_list);
-    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    gcs().send_statustext(severity, 0xFF, str);
     notify.send_text(str);
 }
 
@@ -976,5 +976,5 @@ void Tracker::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 void Tracker::gcs_retry_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
-    GCS_MAVLINK::service_statustext();
+    gcs().service_statustext();
 }

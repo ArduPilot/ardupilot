@@ -469,7 +469,7 @@ void Rover::log_init(void)
         DataFlash.Prep();
         gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
         for (uint8_t i=0; i < num_gcs; i++) {
-            gcs[i].reset_cli_timeout();
+            gcs_chan[i].reset_cli_timeout();
         }
     }
 

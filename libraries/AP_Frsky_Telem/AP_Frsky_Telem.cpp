@@ -46,7 +46,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
     } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough; // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
         // make frsky_telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
-        GCS_MAVLINK::register_frsky_telemetry_callback(this);
+        gcs().register_frsky_telemetry_callback(this);
         // add firmware and frame info to message queue
         queue_message(MAV_SEVERITY_INFO, firmware_str);
         // save main parameters locally

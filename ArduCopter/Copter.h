@@ -238,7 +238,9 @@ private:
     AP_SerialManager serial_manager;
     static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 
-    GCS_MAVLINK_Copter gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Copter gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
+    GCS _gcs; // avoid using this; use gcs()
+    GCS &gcs() { return _gcs; }
 
     // User variables
 #ifdef USERHOOK_VARIABLES

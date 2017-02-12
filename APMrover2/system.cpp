@@ -92,7 +92,7 @@ void Rover::init_ardupilot()
     // initialise stats module
     g2.stats.init();
 
-    GCS_MAVLINK::set_dataflash(&DataFlash);
+    gcs().set_dataflash(&DataFlash);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -100,7 +100,7 @@ void Rover::init_ardupilot()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs_chan[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
@@ -133,7 +133,7 @@ void Rover::init_ardupilot()
 
     // setup telem slots with serial ports
     for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
+        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
 
     // setup frsky telemetry
@@ -193,11 +193,11 @@ void Rover::init_ardupilot()
     if (g.cli_enabled == 1) {
         const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
         cliSerial->printf("%s\n", msg);
-        if (gcs[1].initialised && (gcs[1].get_uart() != nullptr)) {
-            gcs[1].get_uart()->printf("%s\n", msg);
+        if (gcs_chan[1].initialised && (gcs_chan[1].get_uart() != nullptr)) {
+            gcs_chan[1].get_uart()->printf("%s\n", msg);
         }
-        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != nullptr)) {
-            gcs[2].get_uart()->printf("%s\n", msg);
+        if (num_gcs > 2 && gcs_chan[2].initialised && (gcs_chan[2].get_uart() != nullptr)) {
+            gcs_chan[2].get_uart()->printf("%s\n", msg);
         }
     }
 #endif
