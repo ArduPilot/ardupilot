@@ -1425,8 +1425,9 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         }
 
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-    case MAVLINK_MSG_ID_LOG_ERASE:
         rover.in_log_download = true;
+        /* no break */
+    case MAVLINK_MSG_ID_LOG_ERASE:
         /* no break */
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         if (!rover.in_mavlink_delay) {
