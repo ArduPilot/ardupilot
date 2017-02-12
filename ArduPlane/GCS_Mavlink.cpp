@@ -1874,8 +1874,9 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
     }
 
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-    case MAVLINK_MSG_ID_LOG_ERASE:
         plane.in_log_download = true;
+        /* no break */
+    case MAVLINK_MSG_ID_LOG_ERASE:
         /* no break */
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         if (!plane.in_mavlink_delay) {
