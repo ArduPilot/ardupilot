@@ -44,3 +44,20 @@ void QuadPlane::tailsitter_output(void)
     }
 }
 
+
+/*
+  return true when we have completed enough of a transition to switch to fixed wing control
+ */
+bool QuadPlane::tailsitter_transition_complete(void)
+{
+    if (plane.fly_inverted()) {
+        // transition immediately
+        return true;
+    }
+    if (ahrs_view->pitch_sensor < -tailsitter.transition_angle*100 ||
+        ahrs_view->roll_sensor < -tailsitter.transition_angle*100) {
+        return true;
+    }
+    // still waiting
+    return false;
+}

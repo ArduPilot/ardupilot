@@ -1041,7 +1041,7 @@ void QuadPlane::update_transition(void)
 
     if (is_tailsitter()) {
         if (transition_state == TRANSITION_ANGLE_WAIT &&
-            (ahrs_view->pitch_sensor < -tailsitter.transition_angle*100 || plane.fly_inverted())) {
+            tailsitter_transition_complete()) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition done");
             transition_state = TRANSITION_DONE;
         }
