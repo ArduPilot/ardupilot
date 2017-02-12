@@ -77,6 +77,7 @@ enum ap_message {
     MSG_MISSION_ITEM_REACHED,
     MSG_POSITION_TARGET_GLOBAL_INT,
     MSG_ADSB_VEHICLE,
+	MSG_MIXER_DATA,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -173,9 +174,6 @@ public:
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint8_t position);
-#if defined(MIXER_CONFIGURATION)
-    void send_mixer_data_value(uint16_t group, uint16_t mixer, uint16_t submixer, uint16_t parameter, uint16_t type, float real_val, signed int_val);
-#endif 	//MIXER_CONFIGURATION
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
     static uint8_t active_channel_mask(void) { return mavlink_active; }
@@ -270,11 +268,6 @@ protected:
     void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
-
-#if defined(MIXER_CONFIGURATION)
-    void handle_mixer_data_request(mavlink_message_t *msg);
-    void handle_mixer_parameter_set(mavlink_message_t *msg);
-#endif 	//MIXER_CONFIGURATION
 
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
