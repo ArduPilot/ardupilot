@@ -83,6 +83,9 @@ public:
     
     // create outputs for tailsitters
     void tailsitter_output(void);
+
+    // check if we have completed transition
+    bool tailsitter_transition_complete(void);
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
