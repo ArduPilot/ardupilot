@@ -150,6 +150,16 @@ public:
     void setup() override;
     void loop() override;
 
+    enum AUTOTUNE_LEVEL_ISSUE {
+        AUTOTUNE_LEVEL_ISSUE_NONE,
+        AUTOTUNE_LEVEL_ISSUE_ANGLE_ROLL,
+        AUTOTUNE_LEVEL_ISSUE_ANGLE_PITCH,
+        AUTOTUNE_LEVEL_ISSUE_ANGLE_YAW,
+        AUTOTUNE_LEVEL_ISSUE_RATE_ROLL,
+        AUTOTUNE_LEVEL_ISSUE_RATE_PITCH,
+        AUTOTUNE_LEVEL_ISSUE_RATE_YAW,
+    };
+
 private:
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
@@ -814,6 +824,7 @@ private:
     void autotune_stop();
     bool autotune_start(bool ignore_checks);
     void autotune_run();
+    bool autotune_currently_level();
     void autotune_attitude_control();
     void autotune_backup_gains_and_initialise();
     void autotune_load_orig_gains();
@@ -834,10 +845,12 @@ private:
     void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
     void autotune_get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
     void avoidance_adsb_update(void);
-    const char * autotune_step_string() const;
+    void autotune_send_step_string();
+    const char *autotune_level_issue_string() const;
     const char * autotune_type_string() const;
     void autotune_announce_state_to_gcs();
     void autotune_do_gcs_announcements();
+    bool autotune_check_level(const enum AUTOTUNE_LEVEL_ISSUE issue, const float current, const float maximum) const;
 
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
