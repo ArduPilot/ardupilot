@@ -153,6 +153,15 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("YAW_SV_ANGLE", 35, AP_MotorsMulticopter,  _yaw_servo_angle_max_deg, 30),
+
+    // @Param: SPOOL_TIME
+    // @DisplayName: Spool up time
+    // @Description: Time in seconds to spool up the motors from zero to min throttle. 
+    // @Range: 0 2
+    // @Units: Seconds
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("SPOOL_TIME",   36, AP_MotorsMulticopter,  _spool_up_time, AP_MOTORS_SPOOL_UP_TIME_DEFAULT),
     
     AP_GROUPEND
 };
@@ -415,6 +424,11 @@ void AP_MotorsMulticopter::output_logic()
         _spool_mode = SHUT_DOWN;
     }
 
+    if (_spool_up_time < 0.05) {
+        // prevent float exception
+        _spool_up_time.set(0.05);
+    }
+
     switch (_spool_mode) {
         case SHUT_DOWN:
             // Motors should be stationary.
@@ -448,7 +462,7 @@ void AP_MotorsMulticopter::output_logic()
             limit.throttle_upper = true;
 
             // set and increment ramp variables
-            float spool_step = 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
+            float spool_step = 1.0f/(_spool_up_time*_loop_rate);
             if (_spool_desired == DESIRED_SHUT_DOWN){
                 _spin_up_ratio -= spool_step;
                 // constrain ramp value and update mode
@@ -491,7 +505,7 @@ void AP_MotorsMulticopter::output_logic()
 
             // set and increment ramp variables
             _spin_up_ratio = 1.0f;
-            _throttle_thrust_max += 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
+            _throttle_thrust_max += 1.0f/(_spool_up_time*_loop_rate);
 
             // constrain ramp value and update mode
             if (_throttle_thrust_max >= MIN(get_throttle(), get_current_limit_max_throttle())) {
@@ -541,7 +555,7 @@ void AP_MotorsMulticopter::output_logic()
 
             // set and increment ramp variables
             _spin_up_ratio = 1.0f;
-            _throttle_thrust_max -= 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
+            _throttle_thrust_max -= 1.0f/(_spool_up_time*_loop_rate);
 
             // constrain ramp value and update mode
             if (_throttle_thrust_max <= 0.0f){
