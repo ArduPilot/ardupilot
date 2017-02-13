@@ -33,7 +33,6 @@ Rover::Rover(void) :
             FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
             FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
             FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)),
-    num_gcs(MAVLINK_COMM_NUM_BUFFERS),
     ServoRelayEvents(relay),
 #if CAMERA == ENABLED
     camera(&relay),

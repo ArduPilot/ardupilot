@@ -86,6 +86,7 @@
 #endif
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
+#include "GCS_Rover.h"
 
 #include <AP_Declination/AP_Declination.h>          // ArduPilot Mega Declination Helper Library
 
@@ -102,6 +103,7 @@ public:
 #if ADVANCED_FAILSAFE == ENABLED
     friend class AP_AdvancedFailsafe_Rover;
 #endif
+    friend class GCS_Rover;
 
     Rover(void);
 
@@ -189,10 +191,8 @@ private:
 
     // GCS handling
     AP_SerialManager serial_manager;
-    const uint8_t num_gcs;
-    GCS_MAVLINK_Rover gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
-    GCS _gcs;  // avoid using this; use gcs()
-    GCS &gcs() { return _gcs; }
+    GCS_Rover _gcs;  // avoid using this; use gcs()
+    GCS_Rover &gcs() { return _gcs; }
 
     // relay support
     AP_Relay relay;
