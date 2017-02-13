@@ -76,6 +76,7 @@
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
 
+#include <SoaringController/SoaringController.h>
 #include <AP_Notify/AP_Notify.h>      // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 
@@ -252,6 +253,8 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
+    const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
+    GCS_MAVLINK_Plane gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
     GCS_Plane _gcs; // avoid using this; use gcs()
     GCS_Plane &gcs() { return _gcs; }
 
@@ -261,6 +264,9 @@ private:
     // selected navigation controller
     AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
+    //Soaring Controller
+    SoaringController soaring_controller {ahrs, SpdHgt_Controller, aparm, &DataFlash, LOG_THERMAL_MSG, LOG_VARIO_MSG};
+    
     // Relay
     AP_Relay relay;
 
@@ -558,7 +564,7 @@ private:
     
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
-	
+    
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
     int8_t  throttle_watt_limit_min; // for reverse thrust
@@ -1079,6 +1085,7 @@ private:
 #endif
     void accel_cal_update(void);
     void update_soft_armed();
+    void update_soaring();
 
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);
