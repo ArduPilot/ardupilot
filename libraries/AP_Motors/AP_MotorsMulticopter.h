@@ -27,7 +27,7 @@
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
 
 // spool definition
-#define AP_MOTORS_SPOOL_UP_TIME         0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
+#define AP_MOTORS_SPOOL_UP_TIME_DEFAULT 0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
 
 /// @class      AP_MotorsMulticopter
 class AP_MotorsMulticopter : public AP_Motors {
@@ -165,6 +165,9 @@ protected:
 
     // Maximum lean angle of yaw servo in degrees. This is specific to tricopter
     AP_Float            _yaw_servo_angle_max_deg;
+
+    // time to spool motors to min throttle
+    AP_Float            _spool_up_time;
     
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
