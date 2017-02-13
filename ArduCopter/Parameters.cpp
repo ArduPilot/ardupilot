@@ -1071,9 +1071,6 @@ void Copter::load_parameters(void)
     AP_Param::load_all(false);
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
     cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
-
-    // upgrade parameters
-    convert_pid_parameters();
 }
 
 // handle conversion of PID gains from Copter-3.3 to Copter-3.4
