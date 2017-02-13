@@ -102,18 +102,30 @@ public:
         return ahrs.get_expected_mag_field_NED(ret);
     }
 
-    bool get_relative_position_NED(Vector3f &vec) const {
-        return ahrs.get_relative_position_NED(vec);
+    bool get_relative_position_NED_home(Vector3f &vec) const {
+        return ahrs.get_relative_position_NED_home(vec);
     }
 
-    bool get_relative_position_NE(Vector2f &vecNE) const {
-        return ahrs.get_relative_position_NE(vecNE);
+    bool get_relative_position_NED_origin(Vector3f &vec) const {
+        return ahrs.get_relative_position_NED_origin(vec);
+    }
+    
+    bool get_relative_position_NE_home(Vector2f &vecNE) const {
+        return ahrs.get_relative_position_NE_home(vecNE);
     }
 
-    bool get_relative_position_D(float &posD) const {
-        return get_relative_position_D(posD);
+    bool get_relative_position_NE_origin(Vector2f &vecNE) const {
+        return ahrs.get_relative_position_NE_origin(vecNE);
+    }
+    
+    bool get_relative_position_D_home(float &posD) const {
+        return get_relative_position_D_home(posD);
     }
 
+    bool get_relative_position_D_origin(float &posD) const {
+        return get_relative_position_D_origin(posD);
+    }
+    
     float groundspeed(void) {
         return ahrs.groundspeed();
     }
