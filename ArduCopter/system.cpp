@@ -551,6 +551,7 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_TRI:
             motors = new AP_MotorsTri(MAIN_LOOP_RATE);
             var_info = AP_MotorsTri::var_info;
+            AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
             break;
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = new AP_MotorsSingle(MAIN_LOOP_RATE);
@@ -565,6 +566,7 @@ void Copter::allocate_motors(void)
         default:
             motors = new AP_MotorsHeli_Single(MAIN_LOOP_RATE);
             var_info = AP_MotorsHeli::var_info;
+            AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
             break;            
 #endif
     }

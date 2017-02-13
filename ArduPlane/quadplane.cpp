@@ -436,6 +436,7 @@ bool QuadPlane::setup(void)
         SRV_Channels::set_default_function(CH_6, SRV_Channel::k_motor2);
         SRV_Channels::set_default_function(CH_8, SRV_Channel::k_motor4);
         SRV_Channels::set_default_function(CH_11, SRV_Channel::k_motor7);
+        AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
         break;
     default:
         hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
