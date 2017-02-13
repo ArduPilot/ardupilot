@@ -51,6 +51,9 @@ public:
 	// return maximum climb rate
 	virtual float get_max_climbrate(void) const = 0;
 
+    // added to let SoaringController reset pitch integrator to zero
+    virtual void reset_pitch_I(void) = 0;
+    
     // return landing sink rate
     virtual float get_land_sinkrate(void) const = 0;
 
