@@ -1009,6 +1009,7 @@ private:
     void servo_output_mixers(void);
     void servos_output(void);
     void servos_auto_trim(void);
+    void servos_twin_engine_mix();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     bool allow_reverse_thrust(void);
     void update_aux();
