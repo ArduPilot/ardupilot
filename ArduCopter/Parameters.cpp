@@ -1075,8 +1075,6 @@ void Copter::load_parameters(void)
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
     
-    // upgrade parameters
-    convert_pid_parameters();
 }
 
 // handle conversion of PID gains from Copter-3.3 to Copter-3.4

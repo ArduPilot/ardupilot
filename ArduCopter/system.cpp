@@ -651,4 +651,7 @@ void Copter::allocate_motors(void)
         }
 #endif
     }
+
+    // upgrade parameters. This must be done after allocating the objects
+    convert_pid_parameters();
 }
