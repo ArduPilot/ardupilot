@@ -431,6 +431,19 @@ public:
 
     virtual void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text);
     void service_statustext(void);
+    virtual GCS_MAVLINK &chan(const uint8_t ofs) = 0;
+    virtual uint8_t num_gcs() const = 0;
+    void reset_cli_timeout();
+    void send_message(enum ap_message id);
+    void send_mission_item_reached_message(uint16_t mission_index);
+    void data_stream_send();
+    void update();
+    virtual void setup_uarts(AP_SerialManager &serial_manager);
+    void handle_interactive_setup();
+
+    FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
+    run_cli_fn _run_cli;
+    void set_run_cli_func(run_cli_fn run_cli) { _run_cli = run_cli; }
 
     /*
       set a dataflash pointer for logging
@@ -456,6 +469,9 @@ public:
 private:
 
     static GCS *_singleton;
+
+    virtual bool cli_enabled() const = 0;
+    virtual AP_HAL::BetterStream*  cliSerial() = 0;
 
     struct statustext_t {
         uint8_t                 bitmask;
