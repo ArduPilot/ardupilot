@@ -595,6 +595,28 @@ void Plane::servo_output_mixers(void)
     }
 }
 
+/*
+  support for twin-engine planes
+ */
+void Plane::servos_twin_engine_mix(void)
+{
+    float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+    float rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / float(SERVO_MAX);
+    float throttle_left, throttle_right;
+    
+    if (throttle < 0 && aparm.throttle_min < 0) {
+        // doing reverse thrust
+        throttle_left  = constrain_float(throttle + 50 * rudder, -100, 0);
+        throttle_right = constrain_float(throttle - 50 * rudder, -100, 0);
+    } else {
+        // doing forward thrust
+        throttle_left  = constrain_float(throttle + 50 * rudder, 0, 100);
+        throttle_right = constrain_float(throttle - 50 * rudder, 0, 100);
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
+}
+
 
 /*
   Set the flight control servos based on the current calculated values
@@ -733,6 +755,9 @@ void Plane::set_servos(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
     }
 
+    // support twin-engine aircraft
+    servos_twin_engine_mix();
+    
     // run output mixer and send values to the hal for output
     servos_output();
 }
