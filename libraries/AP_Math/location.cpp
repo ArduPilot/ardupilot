@@ -46,6 +46,30 @@ float longitude_scale(const struct Location &loc)
 #endif
 }
 
+// Added for use by SoaringController
+// return distance to north
+float get_offset_north(const struct Location &loc1, const struct Location &loc2)
+{
+    if (loc1.lat == 0 || loc1.lng == 0)
+        return -1;
+    if (loc2.lat == 0 || loc2.lng == 0)
+        return -1;
+    
+    float dlat = (float)(loc2.lat - loc1.lat);
+    return dlat * LOCATION_SCALING_FACTOR;
+}
+
+// return distance to east
+float get_offset_east(const struct Location &loc1, const struct Location &loc2)
+{
+    if (loc1.lat == 0 || loc1.lng == 0)
+        return -1;
+    if (loc2.lat == 0 || loc2.lng == 0)
+        return -1;
+
+    float dlong = ((float)(loc2.lng - loc1.lng)) * longitude_scale(loc2);
+    return dlong * LOCATION_SCALING_FACTOR;
+}
 
 
 // return distance in meters between two locations
