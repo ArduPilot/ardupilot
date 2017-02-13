@@ -1251,6 +1251,72 @@ void GCS::service_statustext(void)
     }
 }
 
+void GCS::reset_cli_timeout()
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        chan(i).reset_cli_timeout();
+    }
+}
+
+void GCS::send_message(enum ap_message id)
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        if (chan(i).initialised) {
+            chan(i).send_message(id);
+        }
+    }
+}
+
+void GCS::data_stream_send()
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        if (chan(i).initialised) {
+            chan(i).data_stream_send();
+        }
+    }
+}
+
+void GCS::update(void)
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        if (chan(i).initialised) {
+            chan(i).update(_run_cli);
+        }
+    }
+}
+
+void GCS::send_mission_item_reached_message(uint16_t mission_index)
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        if (chan(i).initialised) {
+            chan(i).mission_item_reached_index = mission_index;
+            chan(i).send_message(MSG_MISSION_ITEM_REACHED);
+        }
+    }
+}
+
+void GCS::setup_uarts(AP_SerialManager &serial_manager)
+{
+    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+        chan(i).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
+    }
+}
+
+void GCS::handle_interactive_setup()
+{
+    if (cli_enabled()) {
+        AP_HAL::BetterStream* _cliSerial = cliSerial();
+        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
+        _cliSerial->printf("%s\n", msg);
+        if (chan(1).initialised && (chan(1).get_uart() != NULL)) {
+            chan(1).get_uart()->printf("%s\n", msg);
+        }
+        if (num_gcs() > 2 && chan(2).initialised && (chan(2).get_uart() != NULL)) {
+            chan(2).get_uart()->printf("%s\n", msg);
+        }
+    }
+}
+
 // report battery2 state
 void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
 {
