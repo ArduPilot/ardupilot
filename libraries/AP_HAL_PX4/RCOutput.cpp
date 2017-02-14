@@ -656,11 +656,11 @@ int PX4RCOutput::get_mixer_count(void) {
 	//Presume px4io
     int fd = open("/dev/px4io", 0);
     if (fd == -1) {
-        return -1;
+        return -200;
     }
 
 	if( ioctl(fd, MIXERIOCGETMIXERCOUNT, (unsigned long) &mixers) != 0) {
-		mixers = -1;
+		mixers = -201;
 	}
 	close(fd);
 	return mixers;
@@ -675,11 +675,11 @@ int PX4RCOutput::get_submixer_count(uint16_t mixer_index) {
 	//Presume px4io
     int fd = open("/dev/px4io", 0);
     if (fd == -1) {
-        return -1;
+        return -200;
     }
 
 	if( ioctl(fd, MIXERIOCGETSUBMIXERCOUNT, (unsigned long) &val) != 0) {
-		val = -1;
+		val = -202;
 	}
 	close(fd);
 	return val;
@@ -698,11 +698,13 @@ int PX4RCOutput::get_mixer_type(uint16_t mixer_index, uint16_t submixer_index) {
 	//Presume px4io
     int fd = open("/dev/px4io", 0);
     if (fd == -1) {
-        return -1;
+        return -200;
     }
 
 	if( ioctl(fd, MIXERIOCGETSUBMIXERCOUNT, (unsigned long) &type) == 0) {
 		mix_type = type.mix_type;
+	} else {
+		mix_type = -203;
 	}
 	close(fd);
 	return mix_type;

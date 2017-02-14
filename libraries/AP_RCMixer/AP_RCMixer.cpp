@@ -35,7 +35,7 @@ void AP_RCMixer::handle_msg(const mavlink_message_t *msg){
 
 		    // Make sure we are talking to px4io only
 		    if(packet.mixer_group != 1){
-		    	_mixer_data.int_value = -1;
+		    	_mixer_data.int_value = -100;
 				_mixer_data.param_value = 0.0;
 				_status = AP_RCMIXER_STATUS_SEND_DATA;
 				return;
