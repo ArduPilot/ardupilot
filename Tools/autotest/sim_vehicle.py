@@ -446,10 +446,12 @@ def start_antenna_tracker(autotest, opts):
     tracker_frame_options = vinfo.options["AntennaTracker"]["frames"][tracker_default_frame]
     do_build(vehicledir, opts, tracker_frame_options)
     tracker_instance = 1
+    oldpwd = os.getcwd()
     os.chdir(vehicledir)
     tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
     exe = os.path.join(vehicledir, "AntennaTracker.elf")
     run_in_terminal_window(autotest, "AntennaTracker", ["nice", exe, "-I" + str(tracker_instance), "--model=tracker", "--home=" + tracker_home])
+    os.chdir(oldpwd)
 
 
 def start_vehicle(binary, autotest, opts, stuff, loc):
