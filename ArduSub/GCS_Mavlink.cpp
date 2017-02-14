@@ -14,7 +14,7 @@ void Sub::gcs_send_heartbeat(void)
 void Sub::gcs_send_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
-    GCS_MAVLINK::service_statustext();
+    gcs().service_statustext();
 }
 
 /*
@@ -627,7 +627,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         break;
 
     case MSG_STATUSTEXT:
-        // depreciated, use GCS_MAVLINK::send_statustext*
+        // deprecated, use gcs().send_statustext*
         return false;
 
     case MSG_LIMITS_STATUS:
@@ -2052,7 +2052,7 @@ void Sub::gcs_check_input(void)
 
 void Sub::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
-    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    gcs().send_statustext(severity, 0xFF, str);
 }
 
 /*
@@ -2067,5 +2067,5 @@ void Sub::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     va_start(arg_list, fmt);
     va_end(arg_list);
     hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
-    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    gcs().send_statustext(severity, 0xFF, str);
 }
