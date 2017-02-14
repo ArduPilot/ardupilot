@@ -4,11 +4,6 @@
 // mission storage
 static const StorageAccess wp_storage(StorageManager::StorageMission);
 
-static void mavlink_snoop_static(const mavlink_message_t* msg)
-{
-    tracker.mavlink_snoop(msg);
-}
-
 static void mavlink_delay_cb_static()
 {
     tracker.mavlink_delay_cb();
@@ -34,7 +29,7 @@ void Tracker::init_tracker()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs_chan[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
@@ -60,10 +55,7 @@ void Tracker::init_tracker()
     check_usb_mux();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-        gcs_chan[i].set_snoop(mavlink_snoop_static);
-    }
+    gcs().setup_uarts(serial_manager);
 
 #if LOGGING_ENABLED == ENABLED
     log_init();

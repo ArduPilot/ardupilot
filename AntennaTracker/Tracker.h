@@ -69,6 +69,7 @@
 
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
+#include "GCS_Tracker.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -77,6 +78,7 @@
 class Tracker : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Tracker;
+    friend class GCS_Tracker;
     friend class Parameters;
 
     Tracker(void);
@@ -136,10 +138,8 @@ private:
     bool pitch_servo_out_filt_init = false;
 
     AP_SerialManager serial_manager;
-    const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK_Tracker gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
-    GCS _gcs; // avoid using this; use GCS::instance()
-    GCS &gcs() { return _gcs; }
+    GCS_Tracker _gcs; // avoid using this; use gcs()
+    GCS_Tracker &gcs() { return _gcs; }
 
     AP_BoardConfig BoardConfig;
 
