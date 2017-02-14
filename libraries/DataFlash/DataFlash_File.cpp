@@ -422,7 +422,7 @@ bool DataFlash_File::NeedPrep()
 char *DataFlash_File::_log_file_name(const uint16_t log_num) const
 {
     char *buf = nullptr;
-    if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == 0) {
+    if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == -1) {
         return nullptr;
     }
     return buf;
@@ -435,7 +435,7 @@ char *DataFlash_File::_log_file_name(const uint16_t log_num) const
 char *DataFlash_File::_lastlog_file_name(void) const
 {
     char *buf = nullptr;
-    if (asprintf(&buf, "%s/LASTLOG.TXT", _log_directory) == 0) {
+    if (asprintf(&buf, "%s/LASTLOG.TXT", _log_directory) == -1) {
         return nullptr;
     }
     return buf;
