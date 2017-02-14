@@ -14,6 +14,7 @@ AP_RCMixer::AP_RCMixer(void)
     _mixer_data.type = 0;
 	_mixer_data.int_value = -1;
 	_mixer_data.param_value = 0.0;
+	_mixer_data.param_type = 0.0;
 
 	_status = AP_RCMIXER_STATUS_WAITING;
 }
@@ -50,6 +51,15 @@ void AP_RCMixer::handle_msg(const mavlink_message_t *msg){
 				_mixer_data.int_value = hal.rcout->get_submixer_count(_mixer_data.mixer);
 				_mixer_data.param_value = 0.0;
 				break;
+			case MIXER_DATA_TYPE_MIXTYPE:
+				_mixer_data.int_value = hal.rcout->get_mixer_type(_mixer_data.mixer, _mixer_data.submixer);
+				_mixer_data.param_value = 0.0;
+				break;
+			case MIXER_DATA_TYPE_PARAMETER:
+				_mixer_data.int_value = 0;
+				hal.rcout->get_mixer_parameter(_mixer_data.mixer, _mixer_data.submixer, _mixer_data.parameter, &_mixer_data.param_value);
+				_mixer_data.param_type = MAVLINK_TYPE_FLOAT;
+				break;
 			default:
 				break;
 			}
@@ -77,7 +87,7 @@ void AP_RCMixer::send_mixer_data(mavlink_channel_t chan){
 						(uint8_t) _mixer_data.type,
 						_mixer_data.int_value,
 						_mixer_data.param_value,
-						MAVLINK_TYPE_FLOAT
+						_mixer_data.param_type
 						);
 		_status = AP_RCMIXER_STATUS_WAITING;
 		break;

@@ -701,7 +701,7 @@ int PX4RCOutput::get_mixer_type(uint16_t mixer_index, uint16_t submixer_index) {
         return -200;
     }
 
-	if( ioctl(fd, MIXERIOCGETSUBMIXERCOUNT, (unsigned long) &type) == 0) {
+	if( ioctl(fd, MIXERIOCGETTYPE, (unsigned long) &type) == 0) {
 		mix_type = type.mix_type;
 	} else {
 		mix_type = -203;

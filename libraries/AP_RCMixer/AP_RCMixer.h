@@ -12,6 +12,7 @@ struct mixer_data_s{
 	uint16_t parameter;
 	uint16_t type;
 	float 	 param_value;
+	uint16_t param_type;
 	int32_t  int_value;
 };
 
