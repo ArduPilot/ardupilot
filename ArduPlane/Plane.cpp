@@ -27,10 +27,6 @@ Plane::Plane(void)
     auto_state.takeoff_complete = true;
     auto_state.next_wp_no_crosstrack = true;
     auto_state.no_crosstrack = true;
-
-    if (plane.g.cli_enabled) {
-        gcs().set_run_cli_func(FUNCTOR_BIND_MEMBER(&Plane::run_cli, void, AP_HAL::UARTDriver *));
-    }
 }
 
 Plane plane;
