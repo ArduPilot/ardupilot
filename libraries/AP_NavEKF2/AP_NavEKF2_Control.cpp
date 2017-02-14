@@ -45,11 +45,6 @@ void NavEKF2_core::controlFilterModes()
  */
 uint8_t NavEKF2_core::effective_magCal(void) const
 {
-    // if we are on the 2nd core and _magCal is 3 then treat it as
-    // 2. This is a workaround for a mag fusion problem
-    if (frontend->_magCal ==3 && imu_index == 1) {
-        return 2;
-    }
     return frontend->_magCal;
 }
 
