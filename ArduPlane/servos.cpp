@@ -48,6 +48,8 @@ void Plane::throttle_slew_limit(void)
    *       4 - We are not performing a takeoff in Auto mode or takeoff speed/accel not yet reached
    *       OR
    *       5 - Home location is not set
+   *       OR
+   *       6- Landing does not want to allow throttle
 */
 bool Plane::suppress_throttle(void)
 {
@@ -58,6 +60,10 @@ bool Plane::suppress_throttle(void)
         return true;
     }
 #endif
+
+    if (landing.is_throttle_suppressed()) {
+        return true;
+    }
 
     if (!throttle_suppressed) {
         // we've previously met a condition for unsupressing the throttle
