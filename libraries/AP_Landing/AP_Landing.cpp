@@ -138,6 +138,109 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TYPE",    14, AP_Landing, type, TYPE_STANDARD_GLIDE_SLOPE),
 
+    // @Param: DS_V_FWD
+    // @DisplayName: Deepstall forward velocity
+    // @Description: The forward velocity of the aircraft while stalled
+    // @Range: 0 20
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("DS_V_FWD", 15, AP_Landing, type_deepstall_forward_speed, 1),
+
+    // @Param: DS_SLOPE_A
+    // @DisplayName: Deepstall slope a
+    // @Description: The a component of distance = a*wind + b
+    // @User: Advanced
+    AP_GROUPINFO("DS_SLOPE_A", 16, AP_Landing, type_deepstall_slope_a, 1),
+
+    // @Param: DS_SLOPE_B
+    // @DisplayName: Deepstall slope b
+    // @Description: The a component of distance = a*wind + b
+    // @User: Advanced
+    AP_GROUPINFO("DS_SLOPE_B", 17, AP_Landing, type_deepstall_slope_b, 1),
+
+    // @Param: DS_APP_EXT
+    // @DisplayName: Deepstall approach extension
+    // @Description: The forward velocity of the aircraft while stalled
+    // @Range: 10 200
+    // @Units: meters
+    // @User: Advanced
+    AP_GROUPINFO("DS_APP_EXT", 18, AP_Landing, type_deepstall_approach_extension, 50),
+
+    // @Param: DS_V_DWN
+    // @DisplayName: Deepstall veloicty down
+    // @Description: The downward velocity of the aircraft while stalled
+    // @Range: 0 20
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("DS_V_DWN", 19, AP_Landing, type_deepstall_down_speed, 2),
+
+    // @Param: DS_SLEW_SPD
+    // @DisplayName: Deepstall slew speed
+    // @Description: The speed at which the elevator slews to deepstall
+    // @Range: 0 2
+    // @Units: seconds
+    // @User: Advanced
+    AP_GROUPINFO("DS_SLEW_SPD", 20, AP_Landing, type_deepstall_slew_speed, 0.5),
+
+    // @Param: DS_ELEV_PWM
+    // @DisplayName: Deepstall elevator PWM
+    // @Description: The PWM value for the elevator at full deflection in deepstall
+    // @Range: 900 2100
+    // @Units: PWM
+    // @User: Advanced
+    AP_GROUPINFO("DS_ELEV_PWM", 21, AP_Landing, type_deepstall_elevator_pwm, 1500),
+
+    // @Param: DS_ARSP_MAX
+    // @DisplayName: Deepstall enabled airspeed
+    // @Description: The maximum aispeed where the deepstall steering controller is allowed to have control
+    // @Range: 5 20
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("DS_ARSP_MAX", 22, AP_Landing, type_deepstall_handoff_airspeed, 15.0),
+
+    // @Param: DS_ARSP_MIN
+    // @DisplayName: Deepstall minimum derating airspeed
+    // @Description: Deepstall lowest airspeed where the deepstall controller isn't allowed full control
+    // @Range: 5 20
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("DS_ARSP_MIN", 23, AP_Landing, type_deepstall_handoff_lower_limit_airspeed, 10.0),
+
+    // @Param: DS_L1
+    // @DisplayName: Deepstall L1 period
+    // @Description: Deepstall L1 navigational controller period
+    // @Range: 5 50
+    // @Units: meters
+    // @User: Advanced
+    AP_GROUPINFO("DS_L1", 24, AP_Landing, type_deepstall_L1_period, 30.0),
+
+    // @Param: DS_L1_I
+    // @DisplayName: Deepstall L1 I gain
+    // @Description: Deepstall L1 integratior gain
+    // @Range: 0 1
+    // @User: Advanced
+    AP_GROUPINFO("DS_L1_I", 25, AP_Landing, type_deepstall_L1_i, 0),
+
+    // @Param: DS_YAW_LIM
+    // @DisplayName: Deepstall yaw rate limit
+    // @Description: The yaw rate limit while navigating in deepstall
+    // @Range: 0 90
+    // @Units degrees per second
+    // @User: Advanced
+    AP_GROUPINFO("DS_YAW_LIM", 26, AP_Landing, type_deepstall_yaw_rate_limit, 10),
+
+    // @Param: DS_L1_TCON
+    // @DisplayName: Deepstall L1 time constant
+    // @Description: Time constant for deepstall L1 control
+    // @Range: 0 1
+    // @Units seconds
+    // @User: Advanced
+    AP_GROUPINFO("DS_L1_TCON", 27, AP_Landing, type_deepstall_time_constant, 0.4),
+
+    // @Group: DS_
+    // @Path: ../PID/PID.cpp
+    AP_SUBGROUPINFO(type_deepstall_PID, "DS_", 28, AP_Landing, PID),
+
     AP_GROUPEND
 };
 
@@ -150,6 +253,9 @@ void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float rel
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_do_land(cmd, relative_altitude);
+        break;
+    case TYPE_DEEPSTALL:
+        type_deepstall_do_land(cmd, relative_altitude);
         break;
     default:
         // a incorrect type is handled in the verify_land
@@ -173,6 +279,10 @@ bool AP_Landing::verify_land(const Location &prev_WP_loc, Location &next_WP_loc,
         success = type_slope_verify_land(prev_WP_loc, next_WP_loc, current_loc,
                 height, sink_rate, wp_proportion, last_flying_ms, is_armed, is_flying, rangefinder_state_in_range);
         break;
+    case TYPE_DEEPSTALL:
+        success = type_deepstall_verify_land(prev_WP_loc, next_WP_loc, current_loc,
+                      height, sink_rate, wp_proportion, last_flying_ms, is_armed, is_flying, rangefinder_state_in_range);
+        break;
     default:
         // returning TRUE while executing verify_land() will increment the
         // mission index which in many cases will trigger an RTL for end-of-mission
@@ -191,6 +301,9 @@ bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &nex
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_verify_abort_landing(prev_WP_loc, next_WP_loc, throttle_suppressed);
+        break;
+    case TYPE_DEEPSTALL:
+        type_deepstall_verify_abort_landing(prev_WP_loc, next_WP_loc, throttle_suppressed);
         break;
     default:
         break;
@@ -218,12 +331,12 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, wp_distance, target_altitude_offset_cm);
         break;
+    case TYPE_DEEPSTALL:
     default:
         break;
     }
 }
 
-// return true while the aircraft should be in a flaring state
 bool AP_Landing::is_flaring(void) const
 {
     if (!flags.in_progress) {
@@ -233,6 +346,7 @@ bool AP_Landing::is_flaring(void) const
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_flaring();
+    case TYPE_DEEPSTALL:
     default:
         return false;
     }
@@ -252,6 +366,7 @@ bool AP_Landing::is_on_approach(void) const
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_on_approach();
+    case TYPE_DEEPSTALL:
     default:
         return false;
     }
@@ -267,6 +382,8 @@ bool AP_Landing::is_ground_steering_allowed(void) const
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_on_approach();
+    case TYPE_DEEPSTALL:
+        return false;
     default:
         return true;
     }
@@ -283,6 +400,7 @@ bool AP_Landing::is_expecting_impact(void) const
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_expecting_impact();
+    case TYPE_DEEPSTALL:
     default:
         return false;
     }
@@ -295,6 +413,8 @@ bool AP_Landing::override_servos(void) {
     }
 
     switch (type) {
+    case TYPE_DEEPSTALL:
+        return type_deepstall_override_servos();
     case TYPE_STANDARD_GLIDE_SLOPE:
     default:
         return false;
@@ -306,6 +426,8 @@ bool AP_Landing::override_servos(void) {
 const DataFlash_Class::PID_Info* AP_Landing::get_pid_info(void) const
 {
     switch (type) {
+    case TYPE_DEEPSTALL:
+        return &type_deepstall_get_pid_info();
     case TYPE_STANDARD_GLIDE_SLOPE:
     default:
         return nullptr;
@@ -327,6 +449,7 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
         break;
+    case TYPE_DEEPSTALL:
     default:
         break;
     }
@@ -391,6 +514,7 @@ int32_t AP_Landing::constrain_roll(const int32_t desired_roll_cd, const int32_t 
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_constrain_roll(desired_roll_cd, level_roll_limit_cd);
+    case TYPE_DEEPSTALL:
     default:
         return desired_roll_cd;
     }
@@ -404,6 +528,8 @@ bool AP_Landing::get_target_altitude_location(Location &location)
     }
 
     switch (type) {
+    case TYPE_DEEPSTALL:
+        return type_deepstall_get_target_altitude_location(location);
     case TYPE_STANDARD_GLIDE_SLOPE:
     default:
         return false;
@@ -450,6 +576,8 @@ int32_t AP_Landing::get_target_airspeed_cm(void)
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_get_target_airspeed_cm();
+    case TYPE_DEEPSTALL:
+        return type_deepstall_get_target_airspeed_cm();
     default:
         // don't return the landing airspeed, because if type is invalid we have
         // no postive indication that the land airspeed has been configured or
@@ -469,6 +597,9 @@ bool AP_Landing::request_go_around(void)
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         success = type_slope_request_go_around();
+        break;
+    case TYPE_DEEPSTALL:
+        success = type_deepstall_request_go_around();
         break;
     default:
         break;
@@ -494,6 +625,8 @@ bool AP_Landing::is_complete(void) const
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_complete();
+    case TYPE_DEEPSTALL:
+        return false;
     default:
         return true;
     }
@@ -505,6 +638,7 @@ void AP_Landing::log(void) const
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_log();
         break;
+    case TYPE_DEEPSTALL:
     default:
         break;
     }
@@ -522,6 +656,8 @@ bool AP_Landing::is_throttle_suppressed(void) const
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_throttle_suppressed();
+    case TYPE_DEEPSTALL:
+        return type_deepstall_is_throttle_suppressed();
     default:
         return false;
     }
