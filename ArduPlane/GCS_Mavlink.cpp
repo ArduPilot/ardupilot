@@ -388,6 +388,21 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
             return;
         }
     }
+    if ((g.gcs_pid_mask & 0x10) && (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND)) {
+        pid_info = landing.get_pid_info();
+        if (pid_info != nullptr) {
+            mavlink_msg_pid_tuning_send(chan, PID_TUNING_LANDING,
+                                        pid_info->desired,
+                                        gyro.z,
+                                        pid_info->FF,
+                                        pid_info->P,
+                                        pid_info->I,
+                                        pid_info->D);
+        }
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
 }
 
 void Plane::send_rangefinder(mavlink_channel_t chan)

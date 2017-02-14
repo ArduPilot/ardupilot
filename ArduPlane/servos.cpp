@@ -408,10 +408,17 @@ void Plane::set_servos_controlled(void)
         set_servos_old_elevons();
     } else {
         // both types of secondary aileron are slaved to the roll servo out
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input, SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
-        
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input,
+                                        SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
+
         // both types of secondary elevator are slaved to the pitch servo out
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input, SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input,
+                                            SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
+    }
+
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        // allow landing to override servos if it would like to
+        landing.override_servos();
     }
 
     // convert 0 to 100% (or -100 to +100) into PWM
