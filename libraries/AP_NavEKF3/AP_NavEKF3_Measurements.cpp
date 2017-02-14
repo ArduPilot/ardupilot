@@ -22,7 +22,8 @@ void NavEKF3_core::readRangeFinder(void)
     uint8_t maxIndex;
     uint8_t minIndex;
     // get theoretical correct range when the vehicle is on the ground
-    rngOnGnd = frontend->_rng.ground_clearance_cm() * 0.01f;
+    // don't allow range to go below 5cm becasue this can cause problems with optical flow processing
+    rngOnGnd = MAX(frontend->_rng.ground_clearance_cm() * 0.01f, 0.05f);
 
     // limit update rate to maximum allowed by data buffers
     if ((imuSampleTime_ms - lastRngMeasTime_ms) > frontend->sensorIntervalMin_ms) {
