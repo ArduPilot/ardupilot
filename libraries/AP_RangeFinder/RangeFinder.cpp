@@ -120,7 +120,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @DisplayName: Distance (in cm) from the range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the range finder should return when the vehicle is on the ground.
     // @Units: centimeters
-    // @Range: 0 127
+    // @Range: 5 127
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, _ground_clearance_cm[0], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
