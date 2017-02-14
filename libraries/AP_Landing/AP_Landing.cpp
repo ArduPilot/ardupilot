@@ -239,6 +239,10 @@ bool AP_Landing::is_flaring(void) const
 }
 
 // return true while the aircraft is performing a landing approach
+// when true the vehicle will:
+//   - disable ground steering
+//   - call setup_landing_glide_slope() and adjust_landing_slope_for_rangefinder_bump()
+//   - will be considered flying if sink rate > 0.2, and can trigger crash detection
 bool AP_Landing::is_on_approach(void) const
 {
     if (!flags.in_progress) {
@@ -253,7 +257,23 @@ bool AP_Landing::is_on_approach(void) const
     }
 }
 
+// return true while the aircraft is allowed to perform ground steering
+bool AP_Landing::is_ground_steering_allowed(void) const
+{
+    if (!flags.in_progress) {
+        return true;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_on_approach();
+    default:
+        return true;
+    }
+}
+
 // return true when at the last stages of a land when an impact with the ground is expected soon
+// when true is_flying knows that the vehicle was expecting to stop flying, possibly because of a hard impact
 bool AP_Landing::is_expecting_impact(void) const
 {
     if (!flags.in_progress) {
@@ -353,6 +373,20 @@ int32_t AP_Landing::constrain_roll(const int32_t desired_roll_cd, const int32_t 
     }
 }
 
+// returns true if landing provided a Location structure with the current target altitude
+bool AP_Landing::get_target_altitude_location(Location &location)
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
+    }
+}
+
 /*
  * Determine how aligned heading_deg is with the wind. Return result
  * is 1.0 when perfectly aligned heading into wind, -1 when perfectly
@@ -394,7 +428,10 @@ int32_t AP_Landing::get_target_airspeed_cm(void)
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_get_target_airspeed_cm();
     default:
-        return SpdHgt_Controller->get_land_airspeed();
+        // don't return the landing airspeed, because if type is invalid we have
+        // no postive indication that the land airspeed has been configured or
+        // how it was meant to be utilized
+        return SpdHgt_Controller->get_target_airspeed();
     }
 }
 
@@ -447,6 +484,23 @@ void AP_Landing::log(void) const
         break;
     default:
         break;
+    }
+}
+
+/*
+ * returns true when throttle should be suppressed while landing
+ */
+bool AP_Landing::is_throttle_suppressed(void) const
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_throttle_suppressed();
+    default:
+        return false;
     }
 }
 
