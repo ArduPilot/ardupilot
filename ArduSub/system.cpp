@@ -137,7 +137,7 @@ void Sub::init_ardupilot()
 
     // setup telem slots with serial ports
     for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
+        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
 
     // identify ourselves correctly with the ground station
@@ -208,11 +208,11 @@ void Sub::init_ardupilot()
     if (g.cli_enabled) {
         const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
         cliSerial->println(msg);
-        if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
-            gcs[1].get_uart()->println(msg);
+        if (gcs_chan[1].initialised && (gcs_chan[1].get_uart() != NULL)) {
+            gcs_chan[1].get_uart()->println(msg);
         }
-        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
-            gcs[2].get_uart()->println(msg);
+        if (num_gcs > 2 && gcs_chan[2].initialised && (gcs_chan[2].get_uart() != NULL)) {
+            gcs_chan[2].get_uart()->println(msg);
         }
     }
 #endif // CLI_ENABLED
