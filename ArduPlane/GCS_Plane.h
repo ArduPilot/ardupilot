@@ -2,6 +2,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include "GCS_Mavlink.h"
+#include "config.h" // for CLI_ENABLED
 
 class GCS_Plane : public GCS
 {
@@ -26,7 +27,9 @@ public:
 
     void set_run_cli_func(run_cli_fn run_cli) { _run_cli = run_cli; }
     void setup_uarts(AP_SerialManager &serial_manager);
+#if CLI_ENABLED == ENABLED
     void handle_interactive_setup();
+#endif
 
 private:
 
