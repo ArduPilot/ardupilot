@@ -25,6 +25,8 @@
  */
 void Plane::adjust_altitude_target()
 {
+    Location target_location;
+
     if (control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE) {
         return;
@@ -36,6 +38,8 @@ void Plane::adjust_altitude_target()
     } else if (landing.is_on_approach()) {
         landing.setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude.offset_cm);
         landing.adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, auto_state.wp_distance, target_altitude.offset_cm);
+    } else if (landing.get_target_altitude_location(target_location)) {
+       set_target_altitude_location(target_location);
     } else if (reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
         // altitude target
