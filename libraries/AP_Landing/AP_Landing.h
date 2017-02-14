@@ -78,8 +78,11 @@ public:
     bool request_go_around(void);
     bool is_flaring(void) const;
     bool is_on_approach(void) const;
+    bool is_ground_steering_allowed(void) const;
+    bool is_throttle_suppressed(void) const;
     void handle_flight_stage_change(const bool _in_landing_stage);
     int32_t constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
+    bool get_target_altitude_location(Location &location);
 
     // helper functions
     bool restart_landing_sequence(void);
@@ -120,7 +123,6 @@ private:
 
     // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
     float slope;
-
 
     AP_Mission &mission;
     AP_AHRS &ahrs;
@@ -184,5 +186,5 @@ private:
     bool type_slope_is_flaring(void) const;
     bool type_slope_is_on_approach(void) const;
     bool type_slope_is_expecting_impact(void) const;
-
+    bool type_slope_is_throttle_suppressed(void) const;
 };
