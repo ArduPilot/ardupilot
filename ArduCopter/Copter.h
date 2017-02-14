@@ -99,6 +99,7 @@
 #include "config.h"
 
 #include "GCS_Mavlink.h"
+#include "GCS_Copter.h"
 #include "AP_Rally.h"           // Rally point library
 #include "AP_Arming.h"
 
@@ -136,6 +137,7 @@
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Copter;
+    friend class GCS_Copter;
     friend class AP_Rally_Copter;
     friend class Parameters;
     friend class ParametersG2;
@@ -245,11 +247,8 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-
-    GCS_MAVLINK_Copter gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
-    GCS _gcs; // avoid using this; use gcs()
-    GCS &gcs() { return _gcs; }
+    GCS_Copter _gcs; // avoid using this; use gcs()
+    GCS_Copter &gcs() { return _gcs; }
 
     // User variables
 #ifdef USERHOOK_VARIABLES
