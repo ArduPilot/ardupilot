@@ -26,10 +26,10 @@ Provides a layer between the thermal centring algorithm and the main code for ma
 
 class SoaringController
 {
-    ExtendedKalmanFilter ekf;
+    ExtendedKalmanFilter _ekf;
     AP_AHRS &_ahrs;
     AP_SpdHgtControl *&_spdHgt;
-    const AP_Vehicle::FixedWing &aparm;
+    const AP_Vehicle::FixedWing &_aparm;
     const float rate_hz = 5;
   
     // Keep track of the waypoint so we can restore after coming out of thermal mode.
@@ -73,10 +73,8 @@ class SoaringController
     float _sign = 1;
 
     float _aspd_filt;
-    DataFlash_Class* _dataflash;
     uint8_t _msgid;
     uint8_t _msgid2;
-    uint8_t _msgid3;
     float correct_netto_rate(float climb_rate, float phi, float aspd);
     float McCready(float alt);
     
@@ -98,13 +96,12 @@ protected:
     
     
 public:
-    SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl *&spdHgt, const AP_Vehicle::FixedWing &parms, DataFlash_Class* dataflash, uint8_t msgid, uint8_t msgid2) :
+    SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl *&spdHgt, const AP_Vehicle::FixedWing &parms, uint8_t msgid, uint8_t msgid2) :
         _ahrs(ahrs),
         _spdHgt(spdHgt),
-        aparm(parms),
+        _aparm(parms),
         _prev_vario_update_time(0),
         _ptr(0),
-        _dataflash(dataflash),
         _msgid(msgid),
         _msgid2(msgid2)
     {
@@ -117,9 +114,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
     void get_target(Location & wp);
     bool suppress_throttle();
-    bool get_throttle_suppressed();
-    void set_throttle_suppressed(bool suppressed);
-    //void log_data(DataFlash_Class &dataflash, uint8_t msgid);
     void log_data();
     bool check_thermal_criteria();
     bool check_cruise_criteria();
@@ -129,6 +123,8 @@ public:
     void update_thermalling(float loiter_radius);
     void update_cruising();
     bool is_active();
+    bool get_throttle_suppressed() { return _throttle_suppressed; }
+    void set_throttle_suppressed(bool suppressed) { _throttle_suppressed = suppressed; }
     
     // Soaring log structure
     struct PACKED log_Thermal_Tuning {
@@ -163,17 +159,9 @@ public:
         float dx;
         float dy;
         uint32_t ptr;
-        uint8_t action;
     } log_vario_tuning;
  
     void update_vario();
 };
-#define THML_LOG_FORMAT(msg) { msg, sizeof(SoaringController::log_tuning),  \
-                               "THML",  "QfffffffLLfffI",     "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w,n" }
-#define VARIO_LOG_FORMAT(msg) { msg, sizeof(SoaringController::log_vario_tuning),   \
-                               "VAR",  "QffffffffffIB",     "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,wx,wy,dx,dy,ptr,act" }
-/*                             
-#define VARIO_LOG_FORMAT(msg) { msg, sizeof(SoaringController::log_vario_tuning),   \
-                               "VAR",  "Qffffff",     "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt" }
-                               */
+
 #endif

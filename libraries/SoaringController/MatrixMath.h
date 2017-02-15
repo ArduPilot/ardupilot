@@ -15,7 +15,6 @@ class MatrixMath
 {
 public:
     MatrixMath();
-    //void MatrixPrint(float* A, int m, int n, char[] label);
     static void MatrixCopy(float* A, int n, int m, float* B);
     static void MatrixMult(float* A, float* B, int m, int p, int n, float* C);
     static void MatrixMultTranspose(float* A, float* B, int m, int p, int n, float* C);
