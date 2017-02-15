@@ -288,6 +288,29 @@ bool AP_Landing::is_expecting_impact(void) const
     }
 }
 
+// returns true when the landing library has overriden any servos
+bool AP_Landing::override_servos(void) {
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
+    }
+}
+
+// returns a PID_Info object if there is one available for the selected landing
+// type, otherwise returns a nullptr, indicating no data to be logged/sent
+const DataFlash_Class::PID_Info* AP_Landing::get_pid_info(void) const
+{
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return nullptr;
+    }
+}
 
 /*
   a special glide slope calculation for the landing approach
