@@ -116,7 +116,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable EKF3
-    // @Description: This enables EKF3. Enabling EKF3 only makes the maths run, it does not mean it will be used for flight control. To use it for flight control set AHRS_EKF_TYPE=3. A reboot or restart will need to be performed after changing the value of EK2_ENABLE for it to take effect.
+    // @Description: This enables EKF3. Enabling EKF3 only makes the maths run, it does not mean it will be used for flight control. To use it for flight control set AHRS_EKF_TYPE=3. A reboot or restart will need to be performed after changing the value of EK3_ENABLE for it to take effect.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF3, _enable, 0, AP_PARAM_FLAG_ENABLE),
@@ -190,7 +190,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: ALT_SOURCE
     // @DisplayName: Primary altitude sensor source
-    // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS. Setting 3 uses the range beacon data. NOTE - the EK2_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
+    // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK3_GPS_TYPE = 3). Setting 2 uses GPS. Setting 3 uses the range beacon data. NOTE - the EK3_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
     // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF3, _altSource, 0),
