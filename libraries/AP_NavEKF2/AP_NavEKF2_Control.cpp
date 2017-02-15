@@ -45,12 +45,12 @@ void NavEKF2_core::controlFilterModes()
  */
 uint8_t NavEKF2_core::effective_magCal(void) const
 {
-    // if we are on the 2nd core and _magCal is 3 then treat it as
-    // 2. This is a workaround for a mag fusion problem
-    if (frontend->_magCal ==3 && imu_index == 1) {
+    // force use of simple magnetic heading fusion for specified cores
+    if (frontend->_magMask & core_index) {
         return 2;
+    } else {
+        return frontend->_magCal;
     }
-    return frontend->_magCal;
 }
 
 // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
