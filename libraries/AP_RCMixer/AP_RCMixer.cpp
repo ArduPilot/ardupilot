@@ -80,7 +80,12 @@ void AP_RCMixer::handle_msg(const mavlink_message_t *msg){
 		    _mixer_data.param_value = packet.param_value;
 		    _mixer_data.param_type = MAVLINK_TYPE_FLOAT;
 
-			hal.rcout->set_mixer_parameter(packet.mixer_index, packet.mixer_sub_index, _mixer_data.parameter, _mixer_data.param_value);
+			if (hal.rcout->set_mixer_parameter(packet.mixer_index, packet.mixer_sub_index, _mixer_data.parameter, _mixer_data.param_value)) {
+				_mixer_data.int_value = 0;
+			} else {
+				_mixer_data.int_value = -1;
+			}
+			_status = AP_RCMIXER_STATUS_SEND_DATA;
 			break;
 		}
 		default:
