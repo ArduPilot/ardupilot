@@ -22,12 +22,10 @@ AP_RCMixer::AP_RCMixer(void)
 void AP_RCMixer::handle_msg(const mavlink_message_t *msg){
 #if defined(MIXER_CONFIGURATION)
     switch (msg->msgid) {
-		case MAVLINK_MSG_ID_MIXER_DATA_REQUEST:
+		case MAVLINK_MSG_ID_MIXER_DATA_REQUEST: {
 		    mavlink_mixer_data_request_t packet;
 		    mavlink_msg_mixer_data_request_decode(msg, &packet);
 
-		    _target_system = packet.target_system;
-			_target_component = packet.target_component;
 		    _mixer_data.group = packet.mixer_group;
 		    _mixer_data.mixer = packet.mixer_index;
 		    _mixer_data.submixer = packet.mixer_sub_index;
@@ -65,9 +63,26 @@ void AP_RCMixer::handle_msg(const mavlink_message_t *msg){
 			}
 			_status = AP_RCMIXER_STATUS_SEND_DATA;
 			break;
+		}
+		case MAVLINK_MSG_ID_MIXER_PARAMETER_SET: {
+		    mavlink_mixer_parameter_set_t packet;
+		    mavlink_msg_mixer_parameter_set_decode(msg, &packet);
 
-		case MAVLINK_MSG_ID_MIXER_PARAMETER_SET:
+		    if( packet.mixer_group != 1){
+		    	break;
+		    }
+
+		    _mixer_data.group = packet.mixer_group;
+		    _mixer_data.mixer = packet.mixer_index;
+		    _mixer_data.submixer = packet.mixer_sub_index;
+		    _mixer_data.parameter = packet.parameter_index;
+		    _mixer_data.type = MIXER_DATA_TYPE_PARAMETER;
+		    _mixer_data.param_value = packet.param_value;
+		    _mixer_data.param_type = MAVLINK_TYPE_FLOAT;
+
+			hal.rcout->set_mixer_parameter(packet.mixer_index, packet.mixer_sub_index, _mixer_data.parameter, _mixer_data.param_value);
 			break;
+		}
 		default:
 			break;
 	}

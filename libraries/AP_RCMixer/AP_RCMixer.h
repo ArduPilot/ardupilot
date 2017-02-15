@@ -49,6 +49,4 @@ public:
 private:
     mixer_data_s _mixer_data;
     AP_RCMIXER_STATUS _status;
-    uint8_t _target_system;
-	uint8_t _target_component;
 };
