@@ -375,7 +375,7 @@ bool Rover::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 void Rover::nav_set_yaw_speed()
 {
     // if we haven't received a MAV_CMD_NAV_SET_YAW_SPEED message within the last 3 seconds bring the rover to a halt
-    if ((millis() - guided_yaw_speed.msg_time_ms) > 3000) {
+    if ((millis() - guided_control.msg_time_ms) > 3000) {
         gcs_send_text(MAV_SEVERITY_WARNING, "NAV_SET_YAW_SPEED not recvd last 3secs, stopping");
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
@@ -383,13 +383,13 @@ void Rover::nav_set_yaw_speed()
         return;
     }
 
-    const int32_t steering = steerController.get_steering_out_angle_error(guided_yaw_speed.turn_angle);
+    const int32_t steering = steerController.get_steering_out_angle_error(guided_control.turn_angle);
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
 
     // speed param in the message gives speed as a proportion of cruise speed.
     // 0.5 would set speed to the cruise speed
     // 1 is double the cruise speed.
-    float target_speed = g.speed_cruise * guided_yaw_speed.target_speed * 2;
+    float target_speed = g.speed_cruise * guided_control.target_speed * 2;
     calc_throttle(target_speed);
 
     Log_Write_GuidedTarget(guided_mode, Vector3f(steering, 0, 0), Vector3f(target_speed, 0, 0));
@@ -399,7 +399,7 @@ void Rover::nav_set_yaw_speed()
 void Rover::nav_set_speed()
 {
     // if we haven't received a MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED message within the last 3 seconds bring the rover to a halt
-    if ((millis() - guided_yaw_speed.msg_time_ms) > 3000) {
+    if ((millis() - guided_control.msg_time_ms) > 3000) {
         gcs_send_text(MAV_SEVERITY_WARNING, "SET_VELOCITY not recvd last 3secs, stopping");
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
@@ -412,14 +412,14 @@ void Rover::nav_set_speed()
     prev_WP = current_loc;
     next_WP = current_loc;
 
-    const int32_t steer_value = steerController.get_steering_out_rate(guided_target_steer_speed);
+    const int32_t steer_value = steerController.get_steering_out_rate(guided_control.target_steer_speed);
     location_update(next_WP, (steer_value + ahrs.yaw_sensor) * 0.01f, 4.0f);  // put the next wp at 4m forward at steer direction
     nav_controller->update_waypoint(current_loc, next_WP);
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steer_value);
-    calc_throttle(guided_target_speed);
+    calc_throttle(guided_control.target_speed);
 
-    Log_Write_GuidedTarget(guided_mode, Vector3f(guided_target_steer_speed, 0.0f, 0.0f), Vector3f(guided_target_speed, 0.0f, 0.0f));
+    Log_Write_GuidedTarget(guided_mode, Vector3f(steer_value, 0.0f, 0.0f), Vector3f(guided_control.target_speed, 0.0f, 0.0f));
 }
 
 /********************************************************************************/
