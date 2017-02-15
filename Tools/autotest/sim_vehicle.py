@@ -723,6 +723,16 @@ def start_mavproxy(opts, stuff):
     progress("MAVProxy exited")
 
 
+# determine a frame type if not specified:
+default_frame_for_vehicle = {
+    "APMrover2": "rover",
+    "ArduPlane": "jsbsim",
+    "ArduCopter": "quad",
+    "ArduSub": "vectored",
+    "AntennaTracker": "tracker",
+}
+vehicle_options_string = "<" + '|'.join(default_frame_for_vehicle.keys()) + ">"
+
 # define and run parser
 parser = CompatOptionParser("sim_vehicle.py",
         epilog="eeprom.bin in the starting directory contains the parameters for your " \
@@ -731,7 +741,7 @@ parser = CompatOptionParser("sim_vehicle.py",
                "you are simulating, for example, start in the ArduPlane directory to " \
                "simulate ArduPlane")
 
-parser.add_option("-v", "--vehicle", type='string', default=None, help="vehicle type (ArduPlane, ArduCopter, APMrover2 or ArduSub)")
+parser.add_option("-v", "--vehicle", type='choice', default=None, help="vehicle type (%s)" % vehicle_options_string, choices=default_frame_for_vehicle.keys())
 parser.add_option("-f", "--frame", type='string', default=None, help="""set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail""")
@@ -821,15 +831,6 @@ if cmd_opts.vehicle is None:
     cwd = os.getcwd()
     cmd_opts.vehicle = os.path.basename(cwd)
 
-# determine a frame type if not specified:
-default_frame_for_vehicle = {
-    "APMrover2": "rover",
-    "ArduPlane": "jsbsim",
-    "ArduCopter": "quad",
-    "ArduSub": "vectored",
-    "AntennaTracker": "tracker",
-}
-
 if cmd_opts.vehicle not in default_frame_for_vehicle:
     # try in parent directories, useful for having config in subdirectories
     cwd = os.getcwd()
@@ -844,7 +845,12 @@ if cmd_opts.vehicle not in default_frame_for_vehicle:
 
 # try to validate vehicle
 if cmd_opts.vehicle not in default_frame_for_vehicle:
-    progress("** Is (%s) really your vehicle type?  Try  -v VEHICLETYPE  if not, or be in the e.g. ArduCopter subdirectory" % (cmd_opts.vehicle,))
+    progress('''
+** Is (%s) really your vehicle type?
+Perhaps you could try -v %s
+You could also try changing directory to e.g. the ArduCopter subdirectory
+''' % (cmd_opts.vehicle, vehicle_options_string))
+    sys.exit(1)
 
 # determine frame options (e.g. build type might be "sitl")
 if cmd_opts.frame is None:
