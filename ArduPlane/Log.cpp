@@ -483,10 +483,12 @@ const struct LogStructure Plane::log_structure[] = {
       "SONR", "QffBf",   "TimeUS,Dist,Volt,Cnt,Corr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
       "ARM", "QBH", "TimeUS,ArmState,ArmChecks" },
-    THML_LOG_FORMAT(LOG_THERMAL_MSG),
+    { LOG_THERMAL_MSG, sizeof(SoaringController::log_tuning),
+      "THML", "QfffffffLLfffI", "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w,n" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P" },
-    VARIO_LOG_FORMAT(LOG_VARIO_MSG),
+    { LOG_VARIO_MSG, sizeof(SoaringController::log_vario_tuning),
+      "VAR", "QffffffffffIB", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,wx,wy,dx,dy,ptr,act" },
     { LOG_STATUS_MSG, sizeof(log_Status),
       "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit" },
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
@@ -507,7 +509,7 @@ void Plane::Log_Read(uint16_t list_entry, int16_t start_page, int16_t end_page)
 
     cliSerial->printf("%s\n", HAL_BOARD_NAME);
 
-    DataFlash.LogReadProcess(list_entry, start_page, end_page,
+   DataFlash.LogReadProcess(list_entry, start_page, end_page,
                              FUNCTOR_BIND_MEMBER(&Plane::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),
                              cliSerial);
 }

@@ -253,8 +253,6 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK_Plane gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
     GCS_Plane _gcs; // avoid using this; use gcs()
     GCS_Plane &gcs() { return _gcs; }
 
@@ -265,7 +263,7 @@ private:
     AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
     //Soaring Controller
-    SoaringController soaring_controller {ahrs, SpdHgt_Controller, aparm, &DataFlash, LOG_THERMAL_MSG, LOG_VARIO_MSG};
+    SoaringController soaring_controller {ahrs, SpdHgt_Controller, aparm, LOG_THERMAL_MSG, LOG_VARIO_MSG};
     
     // Relay
     AP_Relay relay;
@@ -564,7 +562,7 @@ private:
     
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
-    
+     
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
     int8_t  throttle_watt_limit_min; // for reverse thrust

@@ -403,8 +403,10 @@ public:
     AP_Int8 waypoint_mode;
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
-    AP_Int16 loiter_radius;
     AP_Int16 rtl_radius;
+    
+    // Thermalling
+    AP_Int16 loiter_radius;
 
 #if GEOFENCE_ENABLED == ENABLED
     AP_Int8 fence_action;

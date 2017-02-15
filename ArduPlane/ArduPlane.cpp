@@ -24,6 +24,7 @@
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Plane, &plane, func, rate_hz, max_time_micros)
 
+
 /*
   scheduler table - all regular tasks are listed here, along with how
   often they should be called (in Hz) and the maximum time
@@ -194,9 +195,9 @@ void Plane::ahrs_update()
 void Plane::update_speed_height(void)
 {
     if (auto_throttle_mode) {
-        // Call TECS 50Hz update. Note that we call this regardless of
-        // throttle suppressed, as this needs to be running for
-        // takeoff detection
+       // Call TECS 50Hz update. Note that we call this regardless of
+       // throttle suppressed, as this needs to be running for
+       // takeoff detection
         SpdHgt_Controller->update_50hz();
     }
 }
@@ -982,15 +983,13 @@ void Plane::update_soaring() {
     soaring_controller.update_vario();
 
     // Check for throttle suppression change.
-    switch (control_mode)
-    {
+    switch (control_mode){
     case AUTO:
         soaring_controller.suppress_throttle();
         break;
     case FLY_BY_WIRE_B:
         if (!soaring_controller.suppress_throttle()) {
-            ;
-            set_mode(RTL, MODE_REASON_FBW_B_WITH_MOTOR_RUNNING);
+            set_mode(RTL, MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING);
         }
         break;
     case LOITER:
@@ -1003,12 +1002,11 @@ void Plane::update_soaring() {
         break;
     }
     // Nothing to do if we are in powered flight
-    if (!soaring_controller.get_throttle_suppressed() && aparm.throttle_max>0) {
+    if (!soaring_controller.get_throttle_suppressed() && aparm.throttle_max > 0) {
         return;
     }
 
-    switch (control_mode)
-    {
+    switch (control_mode){
     case AUTO:
     case FLY_BY_WIRE_B:
         // Test for switch into thermalling mode
@@ -1016,7 +1014,7 @@ void Plane::update_soaring() {
 
         if (soaring_controller.check_thermal_criteria()) {
             hal.console->printf("Thermal detected, entering loiter\n");
-            set_mode(LOITER, MODE_REASON_THERMAL_DETECTED);
+            set_mode(LOITER, MODE_REASON_SOARING_THERMAL_DETECTED);
         }
         break;
     case LOITER:
@@ -1031,13 +1029,11 @@ void Plane::update_soaring() {
             if (soaring_controller.check_cruise_criteria()) {
                 // Exit as soon as thermal state estimate deteriorates
                 if (previous_mode == FLY_BY_WIRE_B) {
-                    set_mode(RTL, MODE_REASON_IN_THERMAL);
+                    set_mode(RTL, MODE_REASON_SOARING_IN_THERMAL);
+                } else {
+                    set_mode(previous_mode, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 }
-                else {
-                    set_mode(previous_mode, MODE_REASON_THERMAL_ESTIMATE_DETERIORATED);
-                }
-            }
-            else {
+            } else {
                 // still in thermal - need to update the wp location
                 soaring_controller.get_target(next_WP_loc);
             }

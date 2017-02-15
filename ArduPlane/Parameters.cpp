@@ -410,7 +410,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: This sets the rate in m/s at which FBWB and CRUISE modes will change its target altitude for full elevator deflection. Note that the actual climb rate of the aircraft can be lower than this, depending on your airspeed and throttle control settings. If you have this parameter set to the default value of 2.0, then holding the elevator at maximum deflection for 10 seconds would change the target altitude by 20 meters.
     // @Range: 1 10
     // @Units: m/s
-    // @Increment: 0.1
+   // @Increment: 0.1
     // @User: Standard
     GSCALAR(flybywire_climb_rate, "FBWB_CLIMB_RATE",  2.0f),
 
@@ -462,14 +462,14 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: THR_SUPP_MAN
     // @DisplayName: Throttle suppress manual passthru
     // @Description: When throttle is suppressed in auto mode it is normally forced to zero. If you enable this option, then while suppressed it will be manual throttle. This is useful on petrol engines to hold the idle throttle manually while waiting for takeoff
-    // @Values: 0:Disabled,1:Enabled
+   // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     GSCALAR(throttle_suppress_manual,"THR_SUPP_MAN",   0),
 
     // @Param: THR_PASS_STAB
     // @DisplayName: Throttle passthru in stabilize
     // @Description: If this is set then when in STABILIZE, FBWA or ACRO modes the throttle is a direct passthru from the transmitter. This means the THR_MIN and THR_MAX settings are not used in these modes. This is useful for petrol engines where you setup a throttle cut switch that suppresses the throttle below the normal minimum.
-    // @Values: 0:Disabled,1:Enabled
+   // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     GSCALAR(throttle_passthru_stabilize,"THR_PASS_STAB",   0),
 
@@ -781,7 +781,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: RST_SWITCH_CH
     // @DisplayName: Reset Switch Channel
-    // @Description: RC channel to use to reset to last flight mode after geofence takeover.
+    // @Description: RC channel to use to reset to last flight mode  after geofence takeover.
     // @User: Advanced
     GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",  0),
 
@@ -865,7 +865,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Flap 1 speed
     // @Description: The speed in meters per second at which to engage FLAP_1_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED
     // @Range: 0 100
-    // @Increment: 1
+   // @Increment: 1
     // @Units: m/s
     // @User: Advanced
     GSCALAR(flap_1_speed,           "FLAP_1_SPEED",   FLAP_1_SPEED),
@@ -874,7 +874,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Flap 2 percentage
     // @Description: The percentage change in flap position when FLAP_2_SPEED is reached. Use zero to disable flaps
     // @Range: 0 100
-    // @Units: Percent
+   // @Units: Percent
     // @User: Advanced
     GSCALAR(flap_2_percent,         "FLAP_2_PERCNT",  FLAP_2_PERCENT),
 
@@ -882,8 +882,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Flap 2 speed
     // @Description: The speed in meters per second at which to engage FLAP_2_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED
     // @Range: 0 100
-    // @Units: m/s
-    // @Increment: 1
+   // @Units: m/s
+   // @Increment: 1
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
@@ -988,9 +988,9 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(relay,                  "RELAY_", AP_Relay),
 
 #if PARACHUTE == ENABLED
-    // @Group: CHUTE_
+   // @Group: CHUTE_
     // @Path: ../libraries/AP_Parachute/AP_Parachute.cpp
-    GOBJECT(parachute,      "CHUTE_", AP_Parachute),
+    GOBJECT(parachute,    "CHUTE_", AP_Parachute),
 
     // @Param: CHUTE_CHAN
     // @DisplayName: Parachute release channel
@@ -1040,21 +1040,21 @@ const AP_Param::Info Plane::var_info[] = {
     
     // @Group: RLL2SRV_
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
-    GOBJECT(rollController,         "RLL2SRV_",   AP_RollController),
+   GOBJECT(rollController,         "RLL2SRV_",   AP_RollController),
 
     // @Group: PTCH2SRV_
     // @Path: ../libraries/APM_Control/AP_PitchController.cpp
-    GOBJECT(pitchController,        "PTCH2SRV_",  AP_PitchController),
+   GOBJECT(pitchController,        "PTCH2SRV_",  AP_PitchController),
 
     // @Group: YAW2SRV_
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
-    GOBJECT(yawController,          "YAW2SRV_",   AP_YawController),
+   GOBJECT(yawController,          "YAW2SRV_",   AP_YawController),
 
     // @Group: STEER2SRV_
     // @Path: ../libraries/APM_Control/AP_SteerController.cpp
-    GOBJECT(steerController,        "STEER2SRV_",   AP_SteerController),
+   GOBJECT(steerController,        "STEER2SRV_",   AP_SteerController),
 
-    // variables not in the g class which contain EEPROM saved variables
+   // variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
@@ -1070,19 +1070,19 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs._chan[0], gcs0,        "SR0_",     GCS_MAVLINK), 
+    GOBJECTN(_gcs._chan[0], gcs0,        "SR0_",     GCS_MAVLINK),
 
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs._chan[1],  gcs1,       "SR1_",     GCS_MAVLINK), 
+    GOBJECTN(_gcs._chan[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs._chan[2],  gcs2,       "SR2_",     GCS_MAVLINK), 
+    GOBJECTN(_gcs._chan[2],  gcs2,       "SR2_",     GCS_MAVLINK),
 
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs._chan[3],  gcs3,       "SR3_",     GCS_MAVLINK), 
+    GOBJECTN(_gcs._chan[3],  gcs3,       "SR3_",     GCS_MAVLINK),
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp

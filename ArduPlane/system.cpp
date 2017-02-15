@@ -122,7 +122,7 @@ void Plane::init_ardupilot()
 
     // initialise serial ports
     serial_manager.init();
-    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0); 
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
@@ -161,7 +161,7 @@ void Plane::init_ardupilot()
     check_usb_mux();
 
     // setup telem slots with serial ports
-    gcs().setup_uarts(serial_manager); 
+    gcs().setup_uarts(serial_manager);
 
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
@@ -227,7 +227,7 @@ void Plane::init_ardupilot()
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
 #if CLI_ENABLED == ENABLED
-     gcs().handle_interactive_setup(); 
+    gcs().handle_interactive_setup();
 #endif // CLI_ENABLED
 
     init_capabilities();
@@ -417,9 +417,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         auto_navigation_mode = false;
         
 		// for ArduSoar soaring_controller
-		if (soaring_controller.is_active() && soaring_controller.suppress_throttle()) {
-			soaring_controller.init_cruising();
-		}
+        soaring_controller.update_cruising();
 
         set_target_altitude_current();
         break;
@@ -443,10 +441,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         // start or resume the mission, based on MIS_AUTORESET
         mission.start_or_resume();
 		
-		if (soaring_controller.is_active() && soaring_controller.suppress_throttle()) {
-			soaring_controller.init_cruising();
-		}
-		
+        soaring_controller.update_cruising();
         break;
 
     case RTL:
@@ -577,8 +572,8 @@ void Plane::check_long_failsafe()
                    (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
-                   gcs().chan(0).last_radio_status_remrssi_ms != 0 && 
--                  (tnow - gcs().chan(0).last_radio_status_remrssi_ms) > g.long_fs_timeout*1000) { 
+                   gcs().chan(0).last_radio_status_remrssi_ms != 0 &&
+                   (tnow - gcs().chan(0).last_radio_status_remrssi_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
         }
     } else {
