@@ -848,6 +848,20 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
     {
+        // if we have not yet allocated the motors object we drop this
+        // request. That prevents the GCS from getting a confusing
+        // parameter count during bootup. Hoever if FRAME_CLASS isn't
+        // set we need to process this request to allow the user to
+        // set FRAME_CLASS from the GCS. If we are more than 15s past
+        // boot then start accepting again, to make sure we cope with
+        // other failures
+        if (copter.g2.frame_class != 0 &&
+            copter.motors == nullptr &&
+            AP_HAL::millis() < 15000) {
+            // drop the message until motors are allocated
+            break;
+        }
+        
         // mark the firmware version in the tlog
         send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
 
