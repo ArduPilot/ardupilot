@@ -961,6 +961,7 @@ void Sub::load_parameters(void)
     convert_old_parameters();
 
     AP_Param::set_default_by_name("BRD_SAFETYENABLE", 0);
+    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
 }
 
 void Sub::convert_old_parameters(void)
