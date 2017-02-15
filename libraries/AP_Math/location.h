@@ -30,12 +30,6 @@ uint32_t     get_distance_cm(const struct Location &loc1, const struct Location 
 // return bearing in centi-degrees between two locations
 int32_t      get_bearing_cd(const struct Location &loc1, const struct Location &loc2);
 
-// added for SoaringController
-// return offset north in m
-float        get_offset_north(const struct Location &loc1, const struct Location &loc2);
-
-//offset east
-float        get_offset_east(const struct Location &loc1, const struct Location &loc2);
 // see if location is past a line perpendicular to
 // the line between point1 and point2. If point1 is
 // our previous waypoint and point2 is our target waypoint
