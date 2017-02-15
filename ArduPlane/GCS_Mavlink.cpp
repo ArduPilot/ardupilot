@@ -659,12 +659,12 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         plane.adsb.send_adsb_vehicle(chan);
         break;
-#if defined(MIXER_CONFIGURATION)
     case MSG_MIXER_DATA:
+#if defined(MIXER_CONFIGURATION)
         CHECK_PAYLOAD_SIZE(MIXER_DATA);
         plane.mixer.send_mixer_data(chan);
-        break;
 #endif 	//MIXER_CONFIGURATION
+        break;
     }
     return true;
 }
@@ -784,9 +784,11 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         }
     }
 
+#if defined(MIXER_CONFIGURATION)
     if(plane.mixer.send_queued()){
     	send_message(MSG_MIXER_DATA);
     }
+#endif //MIXER_CONFIGURATION
 
     if (plane.gcs_out_of_time) return;
 
