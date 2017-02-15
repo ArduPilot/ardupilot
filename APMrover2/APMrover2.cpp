@@ -474,9 +474,9 @@ void Rover::update_current_mode(void)
             } else {
                 calc_lateral_acceleration();
                 calc_nav_steer();
-                calc_throttle(guided_target_speed);
+                calc_throttle(rover.guided_control.target_speed);
                 Log_Write_GuidedTarget(guided_mode, Vector3f(next_WP.lat, next_WP.lng, next_WP.alt),
-                                       Vector3f(guided_target_speed, SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0));
+                                       Vector3f(rover.guided_control.target_speed, SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0));
             }
             break;
 

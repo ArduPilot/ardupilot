@@ -47,7 +47,7 @@ void Rover::set_guided_WP(const struct Location& loc)
     // Load the next_WP slot
     // ---------------------
     next_WP = loc;
-    guided_target_speed = g.speed_cruise;
+    rover.guided_control.target_speed = g.speed_cruise;
     // this is handy for the groundstation
     wp_totalDistance = get_distance(current_loc, next_WP);
     wp_distance      = wp_totalDistance;
@@ -58,8 +58,8 @@ void Rover::set_guided_WP(const struct Location& loc)
 void Rover::set_guided_velocity(float target_steer_speed, float target_speed)
 {
     guided_mode = Guided_Velocity;
-    guided_target_steer_speed = target_steer_speed;
-    guided_target_speed = target_speed;
+    rover.guided_control.target_steer_speed = target_steer_speed;
+    rover.guided_control.target_speed = target_speed;
 
     next_WP = current_loc;
     lateral_acceleration = 0.0f;

@@ -391,18 +391,16 @@ private:
 
     // Guided control
     GuidedMode guided_mode;             // controls which controller is run (waypoint or velocity)
-    float guided_target_steer_speed;   // target heading in centi-degrees
-    float guided_target_speed;          // target speed in m/s
+    // Store parameters from Guided msg
+    struct {
+      float turn_angle;          // target heading in centi-degrees
+      float target_speed;        // target speed in m/s
+      float target_steer_speed;  // target steer speed in degree/s
+      uint32_t msg_time_ms;      // time of last guided message
+    } guided_control;
 
     // Store the time the last GPS message was received.
     uint32_t last_gps_msg_ms{0};
-
-    // Store parameters from NAV_SET_YAW_SPEED
-    struct {
-        float turn_angle;
-        float target_speed;
-        uint32_t msg_time_ms;
-    } guided_yaw_speed;
 
 private:
     // private member functions
