@@ -848,6 +848,13 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
     {
+        // if we have not yet initialised (including allocating the motors
+        // object) we drop this request. That prevents the GCS from getting
+        // a confusing parameter count during bootup
+        if (!copter.ap.initialised) {
+            break;
+        }
+
         // mark the firmware version in the tlog
         send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
 
