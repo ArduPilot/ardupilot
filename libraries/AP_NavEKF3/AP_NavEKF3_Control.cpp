@@ -45,7 +45,12 @@ void NavEKF3_core::controlFilterModes()
  */
 uint8_t NavEKF3_core::effective_magCal(void) const
 {
-    return frontend->_magCal;
+    // force use of simple magnetic heading fusion for specified cores
+    if (frontend->_magMask & core_index) {
+        return 2;
+    } else {
+        return frontend->_magCal;
+    }
 }
 
 // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
