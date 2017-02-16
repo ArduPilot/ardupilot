@@ -43,17 +43,19 @@ static void _sig_fpe(int signum)
 void SITL_State::_usage(void)
 {
     printf("Options:\n"
-           "\t--wipe                   wipe eeprom and dataflash\n"
-           "\t--unhide-groups          parameter enumeration ignores AP_PARAM_FLAG_ENABLE\n"
-           "\t--speedup SPEEDUP        set simulation speedup\n"
-           "\t--rate RATE              set SITL framerate\n"
-           "\t--console                use console instead of TCP ports\n"
-           "\t--instance N             set instance of SITL (adds 10*instance to all port numbers)\n"
-           // "\t--param NAME=VALUE    set some param\n"  CURRENTLY BROKEN!
-           "\t--synthetic-clock        set synthetic clock mode\n"
-           "\t--home HOME              set home location (lat,lng,alt,yaw)\n"
-           "\t--model MODEL            set simulation model\n"
-           // "\t--client MODEL        set client address string\n"  NOT USED
+           "\t--help|-h                display this help information\n"
+           "\t--wipe|-w                wipe eeprom and dataflash\n"
+           "\t--unhide-groups|-u       parameter enumeration ignores AP_PARAM_FLAG_ENABLE\n"
+           "\t--speedup|-s SPEEDUP     set simulation speedup\n"
+           "\t--rate|-r RATE           set SITL framerate\n"
+           "\t--console|-C             use console instead of TCP ports\n"
+           "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
+           // "\t--param|-P NAME=VALUE    set some param\n"  CURRENTLY BROKEN!
+           "\t--synthetic-clock|-S     set synthetic clock mode\n"
+           "\t--home|-O HOME           set home location (lat,lng,alt,yaw)\n"
+           "\t--model|-M MODEL         set simulation model\n"
+           "\t--fdm|-F ADDRESS         set FDM address, defaults to 127.0.0.1\n"
+           // "\t--client ADDRESS        TCP address to connect uartC to\n"  NOT USED
            "\t--gimbal                 enable simulated MAVLink gimbal\n"
            "\t--disable-fgview         disable Flight Gear view\n"
            "\t--autotest-dir DIR       set directory for additional files\n"
@@ -188,6 +190,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"synthetic-clock", false,  0, 'S'},
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
+        {"fdm",             false,  0, 'F'},
         {"client",          true,   0, CMDLINE_CLIENT},
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
         {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
