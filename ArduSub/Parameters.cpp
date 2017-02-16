@@ -958,6 +958,8 @@ void Sub::load_parameters(void)
     AP_Param::load_all();
     cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
 
+    AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
+
     convert_old_parameters();
 
     AP_Param::set_default_by_name("BRD_SAFETYENABLE", 0);
