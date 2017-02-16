@@ -76,7 +76,7 @@
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
 
-#include <SoaringController/SoaringController.h>
+#include <AP_Soaring/SoaringController.h>
 #include <AP_Notify/AP_Notify.h>      // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 
