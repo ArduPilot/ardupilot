@@ -484,7 +484,7 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
       "ARM", "QBH", "TimeUS,ArmState,ArmChecks" },
     { LOG_THERMAL_MSG, sizeof(SoaringController::log_tuning),
-      "THML", "QfffffffLLfffI", "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w,n" },
+      "SOAR", "QfffffffLLfffI", "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w,n" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P" },
     { LOG_VARIO_MSG, sizeof(SoaringController::log_vario_tuning),
