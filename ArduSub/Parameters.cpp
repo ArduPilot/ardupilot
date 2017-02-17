@@ -978,8 +978,5 @@ void Sub::convert_old_parameters(void)
                                     };
     const uint16_t old_aux_chan_mask = 0x3FF0;
     // note that we don't pass in rcmap as we don't want output channel functions changed based on rcmap
-    if (SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, nullptr)) {
-        // the rest needs to be done after motors allocation
-        // upgrading_frame_params = true;
-    }
+    SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, nullptr);
 }
