@@ -28,6 +28,7 @@ private:
     void update_battery(uint8_t r);
     void update_mode(uint8_t r);
     void update_text(uint8_t r);
+    void update_text_empty(uint8_t r);
 
     Display_Backend *_driver;
 
@@ -36,5 +37,8 @@ private:
     uint8_t _mstartpos;
     uint8_t _movedelay;
     uint8_t _screenpage;
+
+    // stop showing text in display after this many millis:
+    const uint16_t _send_text_valid_millis = 20000;
 };
 
