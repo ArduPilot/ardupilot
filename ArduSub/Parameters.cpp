@@ -137,7 +137,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Controls what action to take if a leak is detected.
     // @Values: 0:Disabled,1:Warn only,2:Enter surface mode
     // @User: Standard
-    GSCALAR(failsafe_leak, "FS_LEAK_ENABLE", FS_LEAK_DISABLED),
+    GSCALAR(failsafe_leak, "FS_LEAK_ENABLE", FS_LEAK_WARN_ONLY),
 
     // @Param: FS_PRESS_ENABLE
     // @DisplayName: Internal Pressure Failsafe Enable
