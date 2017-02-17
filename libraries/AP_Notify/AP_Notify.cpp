@@ -170,6 +170,7 @@ void AP_Notify::init(bool enable_external_leds)
     // clear flight mode string and text buffer
     memset(_flight_mode_str, 0, sizeof(_flight_mode_str));
     memset(_send_text, 0, sizeof(_send_text));
+    _send_text_updated_millis = 0;
 
     AP_Notify::flags.external_leds = enable_external_leds;
 
@@ -217,4 +218,5 @@ void AP_Notify::send_text(const char *str)
 {
     strncpy(_send_text, str, sizeof(_send_text));
     _send_text[sizeof(_send_text)-1] = 0;
+    _send_text_updated_millis = AP_HAL::millis();
 }
