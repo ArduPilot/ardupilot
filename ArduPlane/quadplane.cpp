@@ -448,6 +448,8 @@ bool QuadPlane::setup(void)
         break;
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
         break;
+    case AP_Motors::MOTOR_FRAME_TAILSITTER:
+        break;
     default:
         hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
         goto failed;
