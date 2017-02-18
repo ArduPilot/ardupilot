@@ -128,7 +128,7 @@ void AP_IRLock_I2C::read_frames(void)
     pixel_to_1M_plane(corner1_pix_x, corner1_pix_y, corner1_pos_x, corner1_pos_y);
     pixel_to_1M_plane(corner2_pix_x, corner2_pix_y, corner2_pos_x, corner2_pos_y);
 
-    if (sem->take(0)) {
+    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         /* convert to angles */
         _target_info.timestamp = AP_HAL::millis();
         _target_info.pos_x = 0.5f*(corner1_pos_x+corner2_pos_x);
@@ -157,7 +157,7 @@ bool AP_IRLock_I2C::update()
     if (!dev || !sem) {
         return false;
     }
-    if (sem->take(0)) {
+    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         if (_last_update_ms != _target_info.timestamp) {
             new_data = true;
         }
