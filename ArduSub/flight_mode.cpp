@@ -57,12 +57,6 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         success = surface_init(ignore_checks);
         break;
 
-#if TRANSECT_ENABLED == ENABLED
-    case TRANSECT:
-        success = transect_init(ignore_checks);
-        break;
-#endif
-
 #if AUTOTUNE_ENABLED == ENABLED
     case AUTOTUNE:
         success = autotune_init(ignore_checks);
@@ -156,12 +150,6 @@ void Sub::update_flight_mode()
         surface_run();
         break;
 
-#if TRANSECT_ENABLED == ENABLED
-    case TRANSECT:
-        transect_run();
-        break;
-#endif
-
 #if AUTOTUNE_ENABLED == ENABLED
     case AUTOTUNE:
         autotune_run();
@@ -212,7 +200,6 @@ bool Sub::mode_requires_GPS(control_mode_t mode)
     case VELHOLD:
     case CIRCLE:
     case POSHOLD:
-    case TRANSECT:
         return true;
     default:
         return false;
@@ -240,7 +227,7 @@ bool Sub::mode_has_manual_throttle(control_mode_t mode)
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
 bool Sub::mode_allows_arming(control_mode_t mode, bool arming_from_gcs)
 {
-    if (mode_has_manual_throttle(mode) || mode == VELHOLD || mode == ALT_HOLD || mode == POSHOLD || mode == TRANSECT || (arming_from_gcs && mode == GUIDED)) {
+    if (mode_has_manual_throttle(mode) || mode == VELHOLD || mode == ALT_HOLD || mode == POSHOLD || (arming_from_gcs && mode == GUIDED)) {
         return true;
     }
     return false;
@@ -296,9 +283,6 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case OF_LOITER:
         port->print("OF_LOITER");
-        break;
-    case TRANSECT:
-        port->print("TRANSECT");
         break;
     case AUTOTUNE:
         port->print("AUTOTUNE");

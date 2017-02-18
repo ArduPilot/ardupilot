@@ -673,8 +673,6 @@ private:
     bool poshold_init(bool ignore_checks);
     void poshold_run();
 
-    bool transect_init(bool ignore_checks);
-    void transect_run();
     bool stabilize_init(bool ignore_checks);
     void stabilize_run();
     bool manual_init(bool ignore_checks);
