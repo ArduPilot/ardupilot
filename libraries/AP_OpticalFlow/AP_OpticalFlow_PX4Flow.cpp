@@ -66,7 +66,7 @@ bool AP_OpticalFlow_PX4Flow::scan_buses(void)
         if (!tdev) {
             continue;
         }
-        if (!tdev->get_semaphore()->take(0)) {
+        if (!tdev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
             continue;
         }
         struct i2c_integral_frame frame;
