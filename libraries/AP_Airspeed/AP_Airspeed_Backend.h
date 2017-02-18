@@ -20,6 +20,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/Mutex.h>
 
 class AP_Airspeed;
 
@@ -27,7 +28,7 @@ class AP_Airspeed_Backend {
 public:
     AP_Airspeed_Backend(AP_Airspeed &frontend);
     virtual ~AP_Airspeed_Backend();
-    
+
     // probe and initialise the sensor
     virtual bool init(void) = 0;
 
@@ -43,8 +44,8 @@ protected:
     uint8_t get_bus(void) const;
 
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *sem;    
-    
+    AP_HAL::Mutex *lock;
+
 private:
     AP_Airspeed &frontend;
 };

@@ -26,14 +26,13 @@ extern const AP_HAL::HAL &hal;
 AP_Airspeed_Backend::AP_Airspeed_Backend(AP_Airspeed &_frontend) :
     frontend(_frontend)
 {
-    sem = hal.util->new_semaphore();
+    lock = AP_HAL::Mutex::create();
 }
 
 AP_Airspeed_Backend::~AP_Airspeed_Backend(void)
 {
-    delete sem;
+    delete lock;
 }
- 
 
 int8_t AP_Airspeed_Backend::get_pin(void) const
 {
