@@ -81,7 +81,7 @@ bool AP_Baro_MS56XX::_init()
         return false;
     }
 
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
     }
 
@@ -324,7 +324,7 @@ void AP_Baro_MS56XX::update()
     uint32_t sD1, sD2;
     uint8_t d1count, d2count;
 
-    if (!_sem->take(0)) {
+    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 

@@ -40,7 +40,7 @@ void AP_Baro_QFLIGHT::timer_update(void)
         return;
     }
 
-    if (!_sem->take(0)) {
+    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
