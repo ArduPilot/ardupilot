@@ -100,7 +100,6 @@ enum control_mode_t {
     CIRCLE =        7,  // not implemented in sub // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     OF_LOITER =    10,  // deprecated
-    TRANSECT =     13,  // automatic x/y velocity, automatic heading/crosstrack error compensation, automatic depth/throttle
     AUTOTUNE =     15,  // not implemented in sub // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
     MANUAL =       19   // Pass-through input with no stabilization
