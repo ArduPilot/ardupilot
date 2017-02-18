@@ -167,7 +167,7 @@ void AP_Compass_IST8310::timer()
     /* correct raw_field for known errors */
     correct_field(field, _instance);
 
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _accum += field;
         _accum_count++;
         _sem->give();

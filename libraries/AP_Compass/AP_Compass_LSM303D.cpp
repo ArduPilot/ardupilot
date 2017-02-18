@@ -360,7 +360,7 @@ void AP_Compass_LSM303D::_update()
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
 
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _mag_x_accum += raw_field.x;
         _mag_y_accum += raw_field.y;
         _mag_z_accum += raw_field.z;

@@ -78,7 +78,7 @@ AP_Compass_LIS3MDL::AP_Compass_LIS3MDL(Compass &compass,
 
 bool AP_Compass_LIS3MDL::init()
 {
-    if (!dev->get_semaphore()->take(0)) {
+    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
@@ -169,7 +169,7 @@ void AP_Compass_LIS3MDL::timer()
     /* correct raw_field for known errors */
     correct_field(field, compass_instance);
 
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         accum += field;
         accum_count++;
         _sem->give();
