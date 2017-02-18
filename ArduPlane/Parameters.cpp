@@ -1169,7 +1169,7 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(notify, "NTF_",  AP_Notify),
 
     // @Group: SOAR_
-    // @Path: ../libraries/SoaringController/SoaringController.cpp
+    // @Path: ../libraries/AP_Soaring/SoaringController.cpp
     GOBJECT(soaring_controller, "SOAR_", SoaringController),
 
     // @Group: 
