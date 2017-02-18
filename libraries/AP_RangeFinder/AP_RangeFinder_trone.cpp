@@ -67,7 +67,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_trone::detect(uint8_t bus, RangeFinder &_
  */
 bool AP_RangeFinder_trone::init(void)
 {
-    if (!dev->get_semaphore()->take(0)) {
+    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
@@ -138,7 +138,7 @@ void AP_RangeFinder_trone::timer(void)
 {
     // take a reading
     uint16_t distance_cm;
-    if (collect(distance_cm) && _sem->take(0)) {
+    if (collect(distance_cm) && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         accum.sum += distance_cm;
         accum.count++;
         _sem->give();
@@ -154,7 +154,7 @@ void AP_RangeFinder_trone::timer(void)
 */
 void AP_RangeFinder_trone::update(void)
 {
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         if (accum.count > 0) {
             state.distance_cm = accum.sum / accum.count;
             accum.sum = 0;

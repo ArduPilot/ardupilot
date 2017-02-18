@@ -45,7 +45,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder &_ranger
         return nullptr;
     }
 
-    if (sensor->_dev->get_semaphore()->take(0)) {
+    if (sensor->_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         uint16_t reading_cm;
         if (!sensor->get_reading(reading_cm)) {
             sensor->_dev->get_semaphore()->give();
