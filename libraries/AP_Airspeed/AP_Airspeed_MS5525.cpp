@@ -66,7 +66,7 @@ bool AP_Airspeed_MS5525::init()
         if (!dev) {
             continue;
         }
-        if (!dev->get_semaphore()->take(0)) {
+        if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
             continue;
         }
 
@@ -213,7 +213,7 @@ void AP_Airspeed_MS5525::calculate(void)
     }
 #endif
     
-    if (sem->take(0)) {
+    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         pressure_sum += P_Pa;
         temperature_sum += Temp_C;
         press_count++;
@@ -258,7 +258,7 @@ bool AP_Airspeed_MS5525::get_differential_pressure(float &_pressure)
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(0)) {
+    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         if (press_count > 0) {
             pressure = pressure_sum / press_count;
             press_count = 0;
@@ -276,7 +276,7 @@ bool AP_Airspeed_MS5525::get_temperature(float &_temperature)
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(0)) {
+    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         if (temp_count > 0) {
             temperature = temperature_sum / temp_count;
             temp_count = 0;
