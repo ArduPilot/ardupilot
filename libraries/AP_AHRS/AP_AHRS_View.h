@@ -118,12 +118,12 @@ public:
         return ahrs.get_relative_position_NE_origin(vecNE);
     }
     
-    bool get_relative_position_D_home(float &posD) const {
-        return get_relative_position_D_home(posD);
+    void get_relative_position_D_home(float &posD) const {
+        ahrs.get_relative_position_D_home(posD);
     }
 
     bool get_relative_position_D_origin(float &posD) const {
-        return get_relative_position_D_origin(posD);
+        return ahrs.get_relative_position_D_origin(posD);
     }
     
     float groundspeed(void) {
