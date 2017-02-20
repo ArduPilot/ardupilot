@@ -234,17 +234,23 @@ void Sub::init_ardupilot()
     init_barometer(false);
     barometer.update();
 
-    if (barometer.healthy(1)) { // We have an external MS58XX pressure sensor connected
-        barometer.set_primary_baro(1); // Set the primary baro to external MS58XX !!Changes and saves parameter value!!
-        ap.depth_sensor_present = true;
-        EKF2.set_baro_alt_noise(0.1f); // Depth readings are very accurate and up-to-date
-        EKF3.set_baro_alt_noise(0.1f);
-    } else { //We only have onboard baro
+    for (uint8_t i = 0; i < barometer.num_instances(); i++) {
+        if (barometer.get_type(i) == AP_Baro::BARO_TYPE_WATER && barometer.healthy(i)) {
+            barometer.set_primary_baro(i);
+            ap.depth_sensor_present = true;
+            break;
+        }
+    }
+
+    if (!ap.depth_sensor_present) {
+        // We only have onboard baro
         // No external underwater depth sensor detected
-        barometer.set_primary_baro(0); // Set the primary baro to default board baro !!Changes and saves parameter value!!
-        ap.depth_sensor_present = false;
+        barometer.set_primary_baro(0);
         EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
         EKF3.set_baro_alt_noise(10.0f);
+    } else {
+        EKF2.set_baro_alt_noise(0.1f);
+        EKF3.set_baro_alt_noise(0.1f);
     }
 
     leak_detector.init();
