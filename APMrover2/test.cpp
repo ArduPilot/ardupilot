@@ -161,14 +161,14 @@ int8_t Rover::test_wp(uint8_t argc, const Menu::arg *argv)
 
 void Rover::test_wp_print(const AP_Mission::Mission_Command& cmd)
 {
-    cliSerial->printf("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n",
+    cliSerial->printf("command #: %d id:%d options:%d p1:%d p2:%d p3:%d p4:%d \n",
             static_cast<int32_t>(cmd.index),
             static_cast<int32_t>(cmd.id),
             static_cast<int32_t>(cmd.content.location.options),
             static_cast<int32_t>(cmd.p1),
-            static_cast<int64_t>(cmd.content.location.alt),
-            static_cast<int64_t>(cmd.content.location.lat),
-            static_cast<int64_t>(cmd.content.location.lng));
+            (cmd.content.location.alt),
+            (cmd.content.location.lat),
+            (cmd.content.location.lng));
 }
 
 int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
@@ -221,11 +221,11 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
         if (gps.last_message_time_ms() != last_message_time_ms) {
             last_message_time_ms = gps.last_message_time_ms();
             const Location &loc = gps.location();
-            cliSerial->printf("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n",
-                    static_cast<int64_t>(loc.lat),
-                    static_cast<int64_t>(loc.lng),
-                    static_cast<int64_t>(loc.alt/100),
-                    static_cast<int32_t>(gps.num_sats()));
+            cliSerial->printf("Lat: %d, Lon %d, Alt: %dm, #sats: %d\n",
+                    (loc.lat),
+                    (loc.lng),
+                    (loc.alt/100),
+                    (gps.num_sats()));
         } else {
             cliSerial->printf(".");
         }
