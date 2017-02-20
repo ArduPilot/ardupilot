@@ -558,7 +558,7 @@ void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, f
         SRV_Channel &ch = channels[i];
         if (ch.function == function) {
             ch.calc_pwm(functions[function].output_scaled);
-            uint16_t last_pwm = hal.rcout->read(ch.ch_num);
+            uint16_t last_pwm = hal.rcout->read_last_sent(ch.ch_num);
             if (last_pwm == ch.output_pwm) {
                 continue;
             }
