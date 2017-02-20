@@ -264,11 +264,11 @@ void Rover::Log_Write_Nav_Tuning()
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
         time_us             : AP_HAL::micros64(),
-        yaw                 : static_cast<uint16_t>(ahrs.yaw_sensor),  // int32 to uint16
+        yaw                 : static_cast<uint16_t>(ahrs.yaw_sensor),
         wp_distance         : wp_distance,
-        target_bearing_cd   : static_cast<uint16_t>(nav_controller->target_bearing_cd()),  // int32 to uint16
-        nav_bearing_cd      : static_cast<uint16_t>(nav_controller->nav_bearing_cd()),  // int32 to uint16
-        throttle            : static_cast<int8_t>((100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle))),  // wrong float to int8
+        target_bearing_cd   : static_cast<uint16_t>(fabsf(nav_controller->target_bearing_cd())),
+        nav_bearing_cd      : static_cast<uint16_t>(fabsf(nav_controller->nav_bearing_cd())),
+        throttle            : static_cast<int8_t>(100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle)),
         xtrack_error        : nav_controller->crosstrack_error()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -323,10 +323,10 @@ void Rover::Log_Write_Sonar()
         sonar1_distance : sonar.distance_cm(0),
         sonar2_distance : sonar.distance_cm(1),
         detected_count  : obstacle.detected_count,
-        turn_angle      : static_cast<int8_t>(obstacle.turn_angle),  // WRONG float to int8
+        turn_angle      : static_cast<int8_t>(obstacle.turn_angle),
         turn_time       : turn_time,
-        ground_speed    : static_cast<uint16_t>(ground_speed * 100),  // WRONT float to uint16
-        throttle        : static_cast<int8_t>((100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle)))  //WRONG float to int8
+        ground_speed    : static_cast<uint16_t>(fabsf(ground_speed * 100)),
+        throttle        : static_cast<int8_t>(100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle))
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
