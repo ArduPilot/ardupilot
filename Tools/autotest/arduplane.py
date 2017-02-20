@@ -19,9 +19,6 @@ WIND = "0,180,0.2"  # speed,direction,variance
 
 homeloc = None
 
-def wait_ready_to_arm(mavproxy):
-    # wait for EKF and GPS checks to pass
-    mavproxy.expect('IMU0 is using GPS')
 
 def takeoff(mavproxy, mav):
     """Takeoff get to 30m altitude."""

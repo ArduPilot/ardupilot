@@ -19,10 +19,6 @@ HOME = mavutil.location(40.071374969556928, -105.22978898137808, 1583.702759, 24
 homeloc = None
 
 
-def wait_ready_to_arm(mavproxy):
-    # wait for EKF and GPS checks to pass
-    mavproxy.expect('IMU0 is using GPS')
-
 def arm_rover(mavproxy, mav):
     wait_ready_to_arm(mavproxy);
 

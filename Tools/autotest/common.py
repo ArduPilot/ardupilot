@@ -106,6 +106,11 @@ def wait_groundspeed(mav, gs_min, gs_max, timeout=30):
     return False
 
 
+def wait_ready_to_arm(mavproxy):
+    """Wait for EKF and GPS checks to pass."""
+    mavproxy.expect('IMU0 is using GPS')
+
+
 def wait_roll(mav, roll, accuracy, timeout=30):
     """Wait for a given roll in degrees."""
     tstart = get_sim_time(mav)
