@@ -801,12 +801,12 @@ def start_mavproxy(opts, stuff):
     progress("MAVProxy exited")
 
 
-vehicle_options_string = "<" + '|'.join(_options.keys()) + ">"
+vehicle_options_string = '|'.join(_options.keys())
 
 def generate_frame_help():
     ret = ""
     for vehicle in _options:
-        frame_options_string = "<" + '|'.join(_options[vehicle]["frames"].keys()) + ">"
+        frame_options_string = '|'.join(_options[vehicle]["frames"].keys())
         ret += "%s: %s\n" % (vehicle, frame_options_string)
     return ret
 
@@ -818,7 +818,7 @@ parser = CompatOptionParser("sim_vehicle.py",
                "you are simulating, for example, start in the ArduPlane directory to " \
                "simulate ArduPlane")
 
-parser.add_option("-v", "--vehicle", type='choice', default=None, help="vehicle type (%s)" % vehicle_options_string, choices=_options.keys())
+parser.add_option("-v", "--vehicle", type='choice', default=None, help="vehicle type %s" % vehicle_options_string, choices=_options.keys())
 parser.add_option("-f", "--frame", type='string', default=None, help="""set vehicle frame type
 
 %s""" % (generate_frame_help()))
