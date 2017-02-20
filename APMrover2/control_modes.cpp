@@ -1,5 +1,7 @@
 #include "Rover.h"
 
+static const int16_t CH_7_PWM_TRIGGER = 1800;
+
 void Rover::read_control_switch()
 {
     static bool switch_debouncer;
@@ -74,8 +76,6 @@ void Rover::reset_control_switch()
     oldSwitchPosition = 254;
     read_control_switch();
 }
-
-#define CH_7_PWM_TRIGGER 1800
 
 // read at 10 hz
 // set this to your trainer switch
