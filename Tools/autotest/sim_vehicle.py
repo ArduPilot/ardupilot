@@ -285,6 +285,7 @@ extra_mavlink_cmds: extra parameters that will be passed to mavproxy
 """
 _options = {
     "ArduCopter": {
+        "default_frame": "quad",
         "frames": {
             # COPTER
             "+": {
@@ -371,6 +372,7 @@ _options = {
         },
     },
     "ArduPlane": {
+        "default_frame": "jsbsim",
         "frames": {
             # PLANE
             "quadplane-tilttri": {
@@ -428,6 +430,7 @@ _options = {
         },
     },
     "APMrover2": {
+        "default_frame": "rover",
         "frames": {
             # ROVER
             "rover": {
@@ -444,6 +447,7 @@ _options = {
         },
     },
     "ArduSub": {
+        "default_frame": "vectored",
         "frames": {
             "vectored": {
                 "waf_target": "bin/ardusub",
@@ -451,20 +455,20 @@ _options = {
             },
         },
     },
+    "AntennaTracker": {
+        "default_frame": "tracker",
+        "frames": {
+            "tracker": {
+                "waf_target": "bin/antennatracker",
+            },
+        },
+    },
 }
-
-_default_waf_target = {
-    "ArduPlane": "bin/arduplane",
-    "ArduCopter": "bin/arducopter",
-    "ArduSub": "bin/ardusub",
-    "APMrover2": "bin/ardurover",
-    "AntennaTracker": "bin/antennatracker",
-}
-
 
 def default_waf_target(vehicle):
     """Returns a waf target based on vehicle type, which is often determined by which directory the user is in"""
-    return _default_waf_target[vehicle]
+    default_frame = _options[vehicle]["default_frame"]
+    return _options[vehicle]["frames"][default_frame]["waf_target"]
 
 
 def options_for_frame(frame, vehicle, opts):
@@ -674,9 +678,8 @@ def start_antenna_tracker(autotest, opts):
     progress("Preparing antenna tracker")
     tracker_home = find_location_by_name(find_autotest_dir(), opts.tracker_location)
     vehicledir = os.path.join(autotest, "../../" + "AntennaTracker")
-    tracker_frame_options = {
-        "waf_target": _default_waf_target["AntennaTracker"],
-    }
+    tracker_default_frame = _options["AntennaTracker"]["default_frame"]
+    tracker_frame_options = _options["AntennaTracker"]["frames"][tracker_default_frame]
     do_build(vehicledir, opts, tracker_frame_options)
     tracker_instance = 1
     os.chdir(vehicledir)
@@ -797,14 +800,6 @@ def start_mavproxy(opts, stuff):
     progress("MAVProxy exited")
 
 
-# determine a frame type if not specified:
-default_frame_for_vehicle = {
-    "APMrover2": "rover",
-    "ArduPlane": "jsbsim",
-    "ArduCopter": "quad",
-    "ArduSub": "vectored",
-    "AntennaTracker": "tracker",
-}
 vehicle_options_string = "<" + '|'.join(_options.keys()) + ">"
 
 def generate_frame_help():
@@ -822,7 +817,7 @@ parser = CompatOptionParser("sim_vehicle.py",
                "you are simulating, for example, start in the ArduPlane directory to " \
                "simulate ArduPlane")
 
-parser.add_option("-v", "--vehicle", type='choice', default=None, help="vehicle type (%s)" % vehicle_options_string, choices=default_frame_for_vehicle.keys())
+parser.add_option("-v", "--vehicle", type='choice', default=None, help="vehicle type (%s)" % vehicle_options_string, choices=_options.keys())
 parser.add_option("-f", "--frame", type='string', default=None, help="""set vehicle frame type
 
 %s""" % (generate_frame_help()))
@@ -912,20 +907,20 @@ if cmd_opts.vehicle is None:
     cwd = os.getcwd()
     cmd_opts.vehicle = os.path.basename(cwd)
 
-if cmd_opts.vehicle not in default_frame_for_vehicle:
+if cmd_opts.vehicle not in _options:
     # try in parent directories, useful for having config in subdirectories
     cwd = os.getcwd()
     while cwd:
         bname = os.path.basename(cwd)
         if not bname:
             break
-        if bname in default_frame_for_vehicle:
+        if bname in _options:
             cmd_opts.vehicle = bname
             break
         cwd = os.path.dirname(cwd)
 
 # try to validate vehicle
-if cmd_opts.vehicle not in default_frame_for_vehicle:
+if cmd_opts.vehicle not in _options:
     progress('''
 ** Is (%s) really your vehicle type?
 Perhaps you could try -v %s
@@ -935,7 +930,7 @@ You could also try changing directory to e.g. the ArduCopter subdirectory
 
 # determine frame options (e.g. build type might be "sitl")
 if cmd_opts.frame is None:
-    cmd_opts.frame = default_frame_for_vehicle[cmd_opts.vehicle]
+    cmd_opts.frame = _options[cmd_opts.vehicle]["default_frame"]
 
 # setup ports for this instance
 mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10 * cmd_opts.instance)
