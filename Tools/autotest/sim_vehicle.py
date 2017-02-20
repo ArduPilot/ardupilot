@@ -483,6 +483,7 @@ def options_for_frame(frame, vehicle, opts):
         if frame.endswith("-heli"):
             ret = _options[vehicle]["frames"]["heli"]
     if ret is None:
+        progress("WARNING: no config for frame (%s)" % frame)
         ret = {}
 
     if "model" not in ret:
