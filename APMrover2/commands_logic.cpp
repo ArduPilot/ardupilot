@@ -259,7 +259,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         if (loiter_duration > 0) {
             // Check if this is the first time we have reached the waypoint
             if (!previously_reached_wp) {
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i. Loiter for %i seconds",
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%u. Loiter for %u seconds",
                         static_cast<uint32_t>(cmd.index),
                         static_cast<uint32_t>(loiter_duration));
                 // record the current time i.e. start timer
@@ -274,9 +274,9 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
                 return false;
             }
         } else {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i. Distance %um",
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%u. Distance %dm",
                     static_cast<uint32_t>(cmd.index),
-                    static_cast<uint32_t>(get_distance(current_loc, next_WP)));  // WRONG float to uint32
+                    static_cast<int32_t>(fabsf(get_distance(current_loc, next_WP))));
         }
         // set loiter_duration to 0 so we know we aren't or have finished loitering
         loiter_duration = 0;
@@ -294,7 +294,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         prev_WP = current_loc;
         // Check if this is the first time we have reached the waypoint even though we have gone past it
         if (!previously_reached_wp) {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i. Loiter for %i seconds",
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%u. Loiter for %u seconds",
                     static_cast<uint32_t>(cmd.index),
                     static_cast<uint32_t>(loiter_duration));
             // record the current time i.e. start timer
@@ -307,9 +307,9 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         const float dist_to_wp = get_distance(current_loc, next_WP);
         if (!is_equal(distance_past_wp, dist_to_wp)) {
             distance_past_wp = dist_to_wp;
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i. Distance %um",
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%u. Distance %dm",
                     static_cast<uint32_t>(cmd.index),
-                    static_cast<uint32_t>(distance_past_wp));  // WRONG float to uint32
+                    static_cast<int32_t>(fabsf(distance_past_wp)));
         }
 
         // Check if we need to loiter at this waypoint
@@ -336,8 +336,8 @@ bool Rover::verify_RTL()
 
     // have we gone past the waypoint?
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached destination. Distance away %um",
-                static_cast<uint32_t>(get_distance(current_loc, next_WP)));  // WRONG float to uint32
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached destination. Distance away %dm",
+                static_cast<int32_t>(fabsf(get_distance(current_loc, next_WP))));
         rtl_complete = true;
         return true;
     }
@@ -439,7 +439,7 @@ void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 
     if (cmd.content.speed.throttle_pct > 0.0f && cmd.content.speed.throttle_pct <= 100.0f) {
         g.throttle_cruise.set(cmd.content.speed.throttle_pct);
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise throttle: %.1f", g.throttle_cruise.get());
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise throttle: %.1f", static_cast<double>(g.throttle_cruise.get()));
     }
 }
 
