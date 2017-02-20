@@ -1000,6 +1000,20 @@ AP_GPS_UBLOX::_parse_gps(void)
         
         // time
         state.time_week_ms    = _buffer.pvt.itow;
+#if UBLOX_FAKE_3DLOCK
+        state.location.lng = 1491652300L;
+        state.location.lat = -353632610L;
+        state.location.alt = 58400;
+        state.vertical_accuracy = 0;
+        state.horizontal_accuracy = 0;
+        state.status = AP_GPS::GPS_OK_FIX_3D;
+        state.num_sats = 10;
+        state.time_week = 1721;
+        state.time_week_ms = AP_HAL::millis() + 3*60*60*1000 + 37000;
+        state.last_gps_time_ms = AP_HAL::millis();
+        state.hdop = 130;
+        next_fix = state.status;
+#endif
         break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
