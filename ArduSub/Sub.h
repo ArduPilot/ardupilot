@@ -401,6 +401,8 @@ private:
     // Inertial Navigation
     AP_InertialNav_NavEKF inertial_nav;
 
+    AP_AHRS_View ahrs_view;
+
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
     AC_AttitudeControl_Sub attitude_control;
