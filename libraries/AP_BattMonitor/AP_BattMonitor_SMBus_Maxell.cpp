@@ -15,12 +15,14 @@ extern const AP_HAL::HAL& hal;
 #define BATTMONITOR_SMBUS_MAXELL_SPECIFICATION_INFO    0x1a    // specification info
 #define BATTMONITOR_SMBUS_MAXELL_MANUFACTURE_NAME  0x20    // manufacturer name
 
-#define BATTMONITOR_SMBUS_10_PEC_SUPPORT  0x10  // Smart Battery Specification v1.0
+#define BATTMONITOR_SMBUS_10_PEC_NOT_SUPPORT  0x10  // Smart Battery Specification v1.0
 #define BATTMONITOR_SMBUS_11_PEC_NOT_SUPPORT  0x21  // Smart Battery Specification v1.1 without PEC support
-#define BATTMONITOR_SMBUS_11_PEC_SUPPORT  0x31  // Smart Battery Specification v1.1 with PEC support
+#define BATTMONITOR_SMBUS_11_PEC_SUPPORT      0x31  // Smart Battery Specification v1.1 with PEC support
 
 // A Block Read or Write is allowed to transfer a maximum of 32 data bytes.
 #define READ_BLOCK_MAXIMUM_TRANSFER    0x20
+
+#define SMBUS_PEC_POLYNOME  0x07 // Polynome for CRC generation
 
 /*
  * Other potentially useful registers, listed here for future use
@@ -62,8 +64,9 @@ void AP_BattMonitor_SMBus_Maxell::read()
 
 void AP_BattMonitor_SMBus_Maxell::timer()
 {
+	// _pec_confirmed set true after confirming if it support PEC
     if (!_pec_confirmed) {
-        get_pec_support();
+        _pec_confirmed = get_pec_support();
     }
 
     uint16_t data;
@@ -161,41 +164,45 @@ uint8_t AP_BattMonitor_SMBus_Maxell::read_block(uint8_t reg, uint8_t* data, bool
     return bufflen;
 }
 
-// get PEC support with the version value in SpecificationInfo
+// get PEC support using the version value in SpecificationInfo
 bool AP_BattMonitor_SMBus_Maxell::get_pec_support()
 {
     uint16_t data;
     uint8_t buff[READ_BLOCK_MAXIMUM_TRANSFER + 1];
 
     // specification info
-    if (read_word(BATTMONITOR_SMBUS_MAXELL_SPECIFICATION_INFO, data)) {
-        if ((data & 0xFF) == BATTMONITOR_SMBUS_11_PEC_SUPPORT) {
-            if (read_block(BATTMONITOR_SMBUS_MAXELL_MANUFACTURE_NAME, buff, true)) {
-                // In Hitachi maxell battery, specification info is 0x31 (SBSv1.1 with PEC support) but PEC isn't support
-                if (strcmp((char*)buff, "Hitachi maxell") == 0) {
-                    _pec_confirmed = true;
-                    _pec_support = false;
-                    return 1;
-                }
-            }
-            _pec_support = true;
-            // Check if it can get the correct value with PEC support
-            if (read_word(BATTMONITOR_SMBUS_MAXELL_SPECIFICATION_INFO, data)) {
-                if ((data & 0xFF) == BATTMONITOR_SMBUS_11_PEC_SUPPORT) {
-                    _pec_confirmed = true;
-                    return 1;
-                }
-            }
-        } else if (((data & 0xFF) == BATTMONITOR_SMBUS_10_PEC_SUPPORT) || ((data & 0xFF) == BATTMONITOR_SMBUS_11_PEC_NOT_SUPPORT)) {
-            _pec_confirmed = true;
+    if (!read_word(BATTMONITOR_SMBUS_MAXELL_SPECIFICATION_INFO, data)) {
+        _pec_support = false;
+        return false;
+    }
+
+    // determine _pec_support is false when SpecInfo indicates no PEC support
+    if (((data & 0xFF) == BATTMONITOR_SMBUS_10_PEC_NOT_SUPPORT) || ((data & 0xFF) == BATTMONITOR_SMBUS_11_PEC_NOT_SUPPORT)) {
+        _pec_support = false;
+        return true;
+    } else if ((data & 0xFF) != BATTMONITOR_SMBUS_11_PEC_SUPPORT) {
+        _pec_support = false;
+        return false;
+    }
+
+    // At first, set true. In the second time, determine it.
+    // This confirm to get the correct value with PEC support
+    if (_pec_support) {
+        return true;
+    }
+
+    // manufacturer name
+    if (read_block(BATTMONITOR_SMBUS_MAXELL_MANUFACTURE_NAME, buff, true)) {
+        // In Hitachi maxell battery, specification info is 0x31 (SBSv1.1 with PEC support) but PEC isn't support
+        if (strcmp((char*)buff, "Hitachi maxell") == 0) {
             _pec_support = false;
-            return 1;
+            return true;
         }
     }
-    return 0;
-}
 
-#define SMBUS_PEC_POLYNOME  0x07 // Polynome for CRC generation
+	_pec_support = true;
+    return false;
+}
 
 /// get_PEC - calculate packet error correction code of buffer
 uint8_t AP_BattMonitor_SMBus_Maxell::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool reading, const uint8_t buff[], uint8_t len) const
