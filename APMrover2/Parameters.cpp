@@ -621,5 +621,5 @@ void Rover::load_parameters(void)
     cliSerial->printf("load_all took %luus\n", micros() - before);
     
     // set a more reasonable default NAVL1_PERIOD for rovers
-    L1_controller.set_default_period(8);
+    L1_controller.set_default_period(NAVL1_PERIOD);
 }
