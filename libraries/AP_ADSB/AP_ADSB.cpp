@@ -462,8 +462,6 @@ void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
 
 void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
 {
-    // --------------
-    // Knowns
     AP_GPS gps = _ahrs.get_gps();
     Vector3f gps_velocity = gps.velocity();
 
@@ -504,20 +502,10 @@ void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
         state |= UAVIONIX_ADSB_OUT_DYNAMIC_STATE_ON_GROUND;
     }
 
-
-
-    // --------------
-    // Not Sure
-    uint32_t utcTime = UINT_MAX; //    uint32_t utcTime,
     // TODO: confirm this sets utcTime correctly
     const uint64_t gps_time = gps.time_epoch_usec();
-    utcTime = gps_time / 1000000ULL;
+    const uint32_t utcTime = gps_time / 1000000ULL;
 
-
-
-    // --------------
-    // Unknowns
-    // TODO: implement http://www.srh.noaa.gov/images/epz/wxcalc/pressureAltitude.pdf
     AP_Baro baro = _ahrs.get_baro();
     int32_t altPres = INT_MAX;
     if (baro.healthy()) {
