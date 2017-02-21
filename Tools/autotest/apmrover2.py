@@ -1,4 +1,6 @@
-# drive APMrover2 in SITL
+#!/usr/bin/env python
+
+# Drive APMrover2 in SITL
 from __future__ import print_function
 import os
 import shutil
