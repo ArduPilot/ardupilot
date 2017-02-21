@@ -1,4 +1,6 @@
-# fly ArduPlane QuadPlane in SITL
+#!/usr/bin/env python
+
+# Fly ArduPlane QuadPlane in SITL
 from __future__ import print_function
 import os
 import pexpect

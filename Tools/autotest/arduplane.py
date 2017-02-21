@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Fly ArduPlane in SITL
 from __future__ import print_function
 import math
