@@ -324,22 +324,26 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         }
         break;
     case JSButton::button_function_t::k_relay_1_on:
-        // Not implemented
+        relay.on(0);
         break;
     case JSButton::button_function_t::k_relay_1_off:
-        // Not implemented
+        relay.off(0);
         break;
     case JSButton::button_function_t::k_relay_1_toggle:
-        // Not implemented
+        if (!held) {
+            relay.toggle(0);
+        }
         break;
     case JSButton::button_function_t::k_relay_2_on:
-        // Not implemented
+        relay.on(1);
         break;
     case JSButton::button_function_t::k_relay_2_off:
-        // Not implemented
+        relay.off(1);
         break;
     case JSButton::button_function_t::k_relay_2_toggle:
-        // Not implemented
+        if (!held) {
+            relay.toggle(1);
+        }
         break;
     case JSButton::button_function_t::k_custom_1:
         // Not implemented
