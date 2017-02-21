@@ -499,12 +499,8 @@ void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
     set_next_WP(loc);
     loiter_set_direction_wp(cmd);
 
-    // used to signify primary turns goal not yet met when non-zero
-    condition_value = next_WP_loc.alt;
-    if (condition_value == 0) {
-        // the value of 0 is used to signify it has been reached. Lets bump alt to 1 which is 10cm. Close enough!
-        condition_value = 1;
-    }
+    // init to 0, set to 1 when altitude is reached
+    condition_value = 0;
 }
 
 /********************************************************************************/
@@ -674,7 +670,7 @@ bool Plane::verify_loiter_time()
     }
 
     if (result) {
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER time complete");
+        gcs_send_text(MAV_SEVERITY_INFO,"Loiter time complete");
         auto_state.vtol_loiter = false;
     }
     return result;
@@ -702,7 +698,7 @@ bool Plane::verify_loiter_turns()
     }
 
     if (result) {
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER orbits complete");
+        gcs_send_text(MAV_SEVERITY_INFO,"Loiter orbits complete");
     }
     return result;
 }
@@ -717,12 +713,16 @@ bool Plane::verify_loiter_to_alt()
     bool result = false;
     update_loiter(mission.get_current_nav_cmd().p1);
 
-    //has target altitude been reached?
-    if (condition_value != 0) {
-        // primary goal, loiter alt
-        if (labs(condition_value - current_loc.alt) < 500 && loiter.sum_cd > 1) {
+    // condition_value == 0 means alt has never been reached
+    if (condition_value == 0) {
+        // primary goal, loiter to alt
+        if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_acheive_target_alt)) {
             // primary goal completed, initialize secondary heading goal
-            condition_value = 0;
+            if (loiter.unable_to_acheive_target_alt) {
+                gcs_send_text_fmt(MAV_SEVERITY_INFO,"Loiter to alt was stuck at %d", current_loc.alt/100);
+            }
+
+            condition_value = 1;
             result = verify_loiter_heading(true);
         }
     } else {
@@ -731,7 +731,7 @@ bool Plane::verify_loiter_to_alt()
     }
 
     if (result) {
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER alt complete");
+        gcs_send_text(MAV_SEVERITY_INFO,"Loiter to alt complete");
     }
     return result;
 }

@@ -22,6 +22,8 @@ void Plane::loiter_angle_reset(void)
 {
     loiter.sum_cd = 0;
     loiter.total_cd = 0;
+    loiter.reached_target_alt = false;
+    loiter.unable_to_acheive_target_alt = false;
 }
 
 /*
@@ -30,21 +32,38 @@ void Plane::loiter_angle_reset(void)
  */
 void Plane::loiter_angle_update(void)
 {
-    int32_t target_bearing_cd = nav_controller->target_bearing_cd();
+    static const int32_t lap_check_interval_cd = 3*36000;
+
+    const int32_t target_bearing_cd = nav_controller->target_bearing_cd();
     int32_t loiter_delta_cd;
+
     if (loiter.sum_cd == 0 && !reached_loiter_target()) {
         // we don't start summing until we are doing the real loiter
         loiter_delta_cd = 0;
     } else if (loiter.sum_cd == 0) {
         // use 1 cd for initial delta
         loiter_delta_cd = 1;
+        loiter.start_lap_alt_cm = current_loc.alt;
+        loiter.next_sum_lap_cd = lap_check_interval_cd;
     } else {
         loiter_delta_cd = target_bearing_cd - loiter.old_target_bearing_cd;
     }
+
     loiter.old_target_bearing_cd = target_bearing_cd;
     loiter_delta_cd = wrap_180_cd(loiter_delta_cd);
-
     loiter.sum_cd += loiter_delta_cd * loiter.direction;
+
+    if (labs(current_loc.alt - next_WP_loc.alt) < 500) {
+        loiter.reached_target_alt = true;
+        loiter.unable_to_acheive_target_alt = false;
+        loiter.next_sum_lap_cd = loiter.sum_cd + lap_check_interval_cd;
+
+    } else if (!loiter.reached_target_alt && labs(loiter.sum_cd) >= loiter.next_sum_lap_cd) {
+        // check every few laps for scenario where up/downdrafts inhibit you from loitering up/down for too long
+        loiter.unable_to_acheive_target_alt = labs(current_loc.alt - loiter.start_lap_alt_cm) < 500;
+        loiter.start_lap_alt_cm = current_loc.alt;
+        loiter.next_sum_lap_cd += lap_check_interval_cd;
+    }
 }
 
 //****************************************************************
