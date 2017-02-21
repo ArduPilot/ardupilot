@@ -102,9 +102,9 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
     sitl = util.start_SITL(binary, wipe=True, model='rover', home=home, speedup=10)
-    mavproxy = util.start_MAVProxy_SITL('APMrover2', options=options)
+    mavproxy = util.start_MAVProxy_SITL('APMrover2')
 
-    print("WAITING FOR PARAMETERS")
+    progress("WAITING FOR PARAMETERS")
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
