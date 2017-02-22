@@ -8,7 +8,6 @@ Provides a layer between the thermal centring algorithm and the main code for ma
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <DataFlash/DataFlash.h>
-#include "MatrixMath.h"
 #include <AP_Math/AP_Math.h>
 #include "ExtendedKalmanFilter.h"
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
@@ -22,7 +21,6 @@ Provides a layer between the thermal centring algorithm and the main code for ma
 #define ASPD_FILT 0.05
 #define TE_FILT 0.03
 #define TE_FILT_DISPLAYED 0.15
-#define EKF_MAX_BUFFER_SIZE 300
 
 class SoaringController
 {
@@ -30,15 +28,11 @@ class SoaringController
     AP_AHRS &_ahrs;
     AP_SpdHgtControl *&_spdHgt;
     const AP_Vehicle::FixedWing &_aparm;
-    const float rate_hz = 5;
-  
-    // Keep track of the waypoint so we can restore after coming out of thermal mode.
-    struct Location _prev_next_wp;
 
-    //Store aircraft location at last update
+    // store aircraft location at last update
     struct Location _prev_update_location;
 
-    //Store aircraft location at last update
+    // store aircraft location at last update
     struct Location _prev_vario_update_location;
 
     // store time thermal was entered for hysteresis
@@ -52,7 +46,6 @@ class SoaringController
 
     // store time of last update
     unsigned long _prev_vario_update_time;
-    //gcs_send_text_P(SEVERITY_LOW, PSTR("Soar initialisation complete"));
 
     float _vario_reading;
     float _filtered_vario_reading;
@@ -62,14 +55,11 @@ class SoaringController
     float _last_roll;
     float _last_total_E;
     bool _new_data;
-    float _loiter_rad; // Loiter radius passed in
+    float _loiter_rad;
     bool _throttle_suppressed;
 
-    float _ekf_buffer[EKF_MAX_BUFFER_SIZE][3];
     unsigned _ptr;
     unsigned _nsamples;
-    Location dummy = Location();
-    Location& _wp = dummy;
     float _sign = 1;
 
     float _aspd_filt;
@@ -77,7 +67,9 @@ class SoaringController
     uint8_t _msgid2;
     float correct_netto_rate(float climb_rate, float phi, float aspd);
     float McCready(float alt);
-    
+    void get_wind_corrected_drift(const Location *current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy);
+    void get_altitude_wrt_home(float *alt);
+  
 protected:
     AP_Int8 soar_active;
     AP_Float thermal_vspeed;
@@ -108,7 +100,6 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     }
     
-    void set_wp(Location & wp) { _wp=wp; }
     float _displayed_vario_reading;  
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -120,7 +111,7 @@ public:
     bool check_init_thermal_criteria();
     void init_thermalling();
     void init_cruising();
-    void update_thermalling(float loiter_radius);
+    void update_thermalling();
     void update_cruising();
     bool is_active();
     bool get_throttle_suppressed() { return _throttle_suppressed; }

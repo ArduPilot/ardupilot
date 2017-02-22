@@ -1,17 +1,16 @@
 #include "SoaringController.h"
-
+#include <stdint.h>
 extern const AP_HAL::HAL& hal;
 
 
 // ArduSoar parameters
 const AP_Param::GroupInfo SoaringController::var_info[] = {
-    // @Param: ACTIVE
-    // @DisplayName: Is the soaring mode active or not
+    // @Param: ENABLE
+    // @DisplayName: Is the soaring mode enabled or not
     // @Description: Toggles the soaring mode on and off
-    // @Units: boolean
-    // @Range: 0 1
+    // @Values: 0:Disable,1:Enable
     // @User: Advanced
-    AP_GROUPINFO("ACTIVE", 1, SoaringController, soar_active, 0),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, SoaringController, soar_active, 0, AP_PARAM_FLAG_ENABLE),
      
     // @Param: VSPEED
     // @DisplayName: Vertical v-speed
@@ -73,7 +72,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: POLAR_CD0
     // @DisplayName: Zero lift drag coef.
     // @Description: Zero lift drag coefficient
-    // @Units: Non-dim.
+    // @Units:
     // @Range: 0 0.5
     // @User: Advanced 
     AP_GROUPINFO("POLAR_CD0", 9, SoaringController, polar_CD0, 0.027),
@@ -81,7 +80,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: POLAR_B
     // @DisplayName: Induced drag coeffient
     // @Description: Induced drag coeffient
-    // @Units: Non-dim.
+    // @Units:
     // @Range: 0 0.5
     // @User: Advanced 
     AP_GROUPINFO("POLAR_B", 10, SoaringController, polar_B, 0.031),
@@ -89,31 +88,31 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: POLAR_K
     // @DisplayName: Cl factor
     // @Description: Cl factor 2*m*g/(rho*S)
-    // @Units: m^2 s^-2
+    // @Units: m*m/s/s
     // @Range: 0 0.5
     // @User: Advanced 
     AP_GROUPINFO("POLAR_K", 11, SoaringController, polar_K, 25.6),
     
     // @Param: ALT_MAX
-    // @DisplayName: Maximum soaring altitude
+    // @DisplayName: Maximum soaring altitude, relative to the home location
     // @Description: Don't thermal any higher than this.
-    // @Units: m
+    // @Units: meters
     // @Range: 0 1000.0
     // @User: Advanced 
     AP_GROUPINFO("ALT_MAX", 12, SoaringController, alt_max, 350.0),
     
     // @Param: ALT_MIN
-    // @DisplayName: Minimum soaring altitude
+    // @DisplayName: Minimum soaring altitude, relative to the home location
     // @Description: Don't get any lower than this.
-    // @Units: m
+    // @Units: meters
     // @Range: 0 1000.0
     // @User: Advanced 
     AP_GROUPINFO("ALT_MIN", 13, SoaringController, alt_min, 50.0),
     
     // @Param: ALT_CUTOFF
-    // @DisplayName: Maximum power altitude
+    // @DisplayName: Maximum power altitude, relative to the home location
     // @Description: Cut off throttle at this alt.
-    // @Units: m
+    // @Units: meters
     // @Range: 0 1000.0
     // @User: Advanced 
     AP_GROUPINFO("ALT_CUTOFF", 14, SoaringController, alt_cutoff, 250.0),
@@ -129,11 +128,14 @@ void SoaringController::get_target(Location &wp)
 
 bool SoaringController::suppress_throttle()
 {
-    if (_throttle_suppressed && (_alt < alt_min)) {
+    float alt = 0;
+    get_altitude_wrt_home(&alt);
+    
+    if (_throttle_suppressed && (alt < alt_min)) {
         // Time to throttle up
         _throttle_suppressed = false;
     }
-    else if ((!_throttle_suppressed) && (_alt > alt_cutoff)) {
+    else if ((!_throttle_suppressed) && (alt > alt_cutoff)) {
         // Start glide
         _throttle_suppressed = true;
         // Zero the pitch integrator - the nose is currently raised to climb, we need to go back to glide.
@@ -158,7 +160,7 @@ bool SoaringController::check_thermal_criteria()
 
 bool SoaringController::check_cruise_criteria()
 {
-    float thermalability = (_ekf.X[0]*expf(-pow(_loiter_rad / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK; 
+    float thermalability = (_ekf.X[0]*expf(-powf(_loiter_rad / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK; 
     
     if (soar_active && (AP_HAL::micros64() -_thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6) && thermalability < McCready(_alt)) {
         hal.console->printf("Thermal weak, recommend quitting: W %f R %f th %f alt %f Mc %f\n", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (double)_alt, (double)McCready(_alt));
@@ -184,9 +186,9 @@ bool SoaringController::check_init_thermal_criteria()
 void SoaringController::init_thermalling()
 {
     // Calc filter matrices - so that changes to parameters can be updated by switching in and out of thermal mode
-    float r[1][1] = {{(float)pow(thermal_r, 2)}};
-    float cov_q1 = (float)pow(thermal_q1, 2); // State covariance
-    float cov_q2 = (float)pow(thermal_q2, 2); // State covariance
+    float r[1][1] = {{(float)powf(thermal_r, 2)}};
+    float cov_q1 = (float)powf(thermal_q1, 2); // State covariance
+    float cov_q2 = (float)powf(thermal_q2, 2); // State covariance
     float q[N][N] = {{cov_q1, 0, 0, 0},{0, cov_q2, 0, 0},{0, 0, cov_q2, 0}, {0, 0, 0, cov_q2}};
     float p[N][N] = {{INITIAL_STRENGTH_COVARIANCE, 0,                         0,                           0},
                     {0,                           INITIAL_RADIUS_COVARIANCE, 0,                           0},
@@ -195,23 +197,10 @@ void SoaringController::init_thermalling()
          
     // New state vector filter will be reset. Thermal location is placed in front of a/c 
     float xr[] = {INITIAL_THERMAL_STRENGTH, INITIAL_THERMAL_RADIUS, (float)(thermal_distance_ahead * cosf(_ahrs.yaw)), (float)(thermal_distance_ahead * sinf(_ahrs.yaw))};
-
-    if (thermal_distance_ahead < 0) {
-        xr[2] = 0; 
-        xr[3] = 0; // Thermal location is placed at current location
-        _ekf.reset(xr, p, q, r);
-        _nsamples = (unsigned) -thermal_distance_ahead * rate_hz;
-        if (_nsamples > EKF_MAX_BUFFER_SIZE) _nsamples = EKF_MAX_BUFFER_SIZE;
-        int k = _ptr - _nsamples;
-        if (k < 0) k += EKF_MAX_BUFFER_SIZE; // wrap around
-        for (unsigned i = 0; i < _nsamples; i++) {
-            _ekf.update(_ekf_buffer[k][0], _ekf_buffer[k][1], _ekf_buffer[k][2]);
-            k = (k + 1) % EKF_MAX_BUFFER_SIZE;
-        }
-    } else {
-        // Also reset covariance matrix p so filter is not affected by previous data
-        _ekf.reset(xr, p, q, r);
-    }
+   
+    // Also reset covariance matrix p so filter is not affected by previous data
+    _ekf.reset(xr, p, q, r);
+    
     float head_sin = sinf(_ahrs.yaw);
     float head_cos = cosf(_ahrs.yaw);
     float xprod = _ekf.X[2] * head_cos -  _ekf.X[3] * head_sin;
@@ -229,50 +218,65 @@ void SoaringController::init_cruising()
     _throttle_suppressed = true;
 }
 
-void SoaringController::update_thermalling(float loiter_radius)
+void SoaringController::get_wind_corrected_drift(const Location *current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy)
+{       
+    Vector2f diff = location_diff(_prev_update_location, *current_loc); // get distances from previous update
+    *dx = diff.x;
+    *dy = diff.y;
+
+    // Wind correction
+    *wind_drift_x = wind->x * (AP_HAL::micros64() - _prev_update_time) * 1e-6;
+    *wind_drift_y = wind->y * (AP_HAL::micros64() - _prev_update_time) * 1e-6;
+    *dx -= *wind_drift_x;
+    *dy -= *wind_drift_y;
+}
+
+void SoaringController::get_altitude_wrt_home(float *alt)
 {
-    _loiter_rad = loiter_radius;
+    _ahrs.get_relative_position_D_home(*alt);
+    *alt *= -1.0f;   
+}
+void SoaringController::update_thermalling()
+{
+    _loiter_rad = _aparm.loiter_radius;
     struct Location current_loc;
     _ahrs.get_position(current_loc);
 
-    if (_new_data) {      
-        Vector2f diff = location_diff(_prev_update_location, current_loc); // get distances from previous update
-        float dx = diff.x;
-        float dy = diff.y;
-
-        // Wind correction
+    if (_new_data) {  
+        float dx = 0;
+        float dy = 0;
+        float dx_w = 0;
+        float dy_w = 0;
         Vector3f wind = _ahrs.wind_estimate();
-        float dx_w = wind.x * (AP_HAL::micros64() - _prev_update_time) * 1e-6;
-        float dy_w = wind.y * (AP_HAL::micros64() - _prev_update_time) * 1e-6;
-        dx -= dx_w;
-        dy -= dy_w;
+        get_wind_corrected_drift(&current_loc, &wind, &dx_w, &dy_w, &dx, &dy);
 
-        if (0) {
-            // Print filter info for debugging
-            int i;
+        #if (0)
+            // Print32_t filter info for debugging
+            int32_t i;
             for (i = 0; i < 4; i++) {
                 hal.console->printf("%e ", (double)_ekf.P[i][i]);
             }
-            for (i = 0; i< 4; i++) {
+            for (i = 0; i < 4; i++) {
                 hal.console->printf("%e ", (double)_ekf.X[i]);
             }
-        } else {
-             // write log - save the data.
-            log_tuning.time_us = AP_HAL::micros64();
-            log_tuning.netto_rate = _vario_reading;
-            log_tuning.dx = dx;
-            log_tuning.dy = dy;
-            log_tuning.x0 = _ekf.X[0];
-            log_tuning.x1 = _ekf.X[1];
-            log_tuning.x2 = _ekf.X[2];
-            log_tuning.x3 = _ekf.X[3];
-            log_tuning.lat = current_loc.lat;
-            log_tuning.lng = current_loc.lng;
-            log_tuning.alt = _alt;
-            log_tuning.dx_w = dx_w;
-            log_tuning.dy_w = dy_w;
-            log_tuning.nsamples = _nsamples;
-        }
+        #endif
+        
+        // write log - save the data.
+        log_tuning.time_us = AP_HAL::micros64();
+        log_tuning.netto_rate = _vario_reading;
+        log_tuning.dx = dx;
+        log_tuning.dy = dy;
+        log_tuning.x0 = _ekf.X[0];
+        log_tuning.x1 = _ekf.X[1];
+        log_tuning.x2 = _ekf.X[2];
+        log_tuning.x3 = _ekf.X[3];
+        log_tuning.lat = current_loc.lat;
+        log_tuning.lng = current_loc.lng;
+        log_tuning.alt = _alt;
+        log_tuning.dx_w = dx_w;
+        log_tuning.dy_w = dy_w;
+        log_tuning.nsamples = _nsamples;
+            
         log_data(); 
         _ekf.update(_vario_reading,dx, dy);       // update the filter
          
@@ -293,7 +297,9 @@ void SoaringController::update_vario()
 {
     Location current_loc;
     _ahrs.get_position(current_loc);
-    _alt = (current_loc.alt -_ahrs.get_home().alt) / 100.0f;
+    //_alt = (current_loc.alt -_ahrs.get_home().alt) / 100.0f;
+    get_altitude_wrt_home(&_alt);
+    _alt *= -1.0f;    
     
     if (fabsf(_alt - _last_alt) > 0.0001f) { // if no change in altitude then there will be no update of ekf buffer
         // Both filtered total energy rates and unfiltered are computed for the thermal switching logic and the EKF
@@ -309,20 +315,15 @@ void SoaringController::update_vario()
         _filtered_vario_reading = TE_FILT * _vario_reading + (1 - TE_FILT) * _filtered_vario_reading;                       // Apply low pass timeconst filter for noise
         _displayed_vario_reading = TE_FILT_DISPLAYED * _vario_reading + (1 - TE_FILT_DISPLAYED) * _displayed_vario_reading;
         
-        Vector2f diff = location_diff(_prev_vario_update_location, current_loc); // get distances from previous update
-        float dx = diff.x;
-        float dy = diff.y;
+        float dx = 0;
+        float dy = 0;
+        float dx_w = 0;
+        float dy_w = 0;
         Vector3f wind = _ahrs.wind_estimate();
-        float dx_w = wind.x * (AP_HAL::micros64() - _prev_vario_update_time) * 1e-6;
-        float dy_w = wind.y * (AP_HAL::micros64() - _prev_vario_update_time) * 1e-6;
-        dx -= dx_w;
-        dy -= dy_w;
-        _ekf_buffer[_ptr][0] = _vario_reading;
-        _ekf_buffer[_ptr][1] = dx;
-        _ekf_buffer[_ptr][2] = dy;
-        _ptr = (_ptr + 1) % EKF_MAX_BUFFER_SIZE;
+        get_wind_corrected_drift(&current_loc, &wind, &dx_w, &dy_w, &dx, &dy);
+        
         _last_alt = _alt;                                       // Store variables
-        _last_roll=roll;
+        _last_roll = roll;
         _last_aspd = aspd;
         _last_total_E = total_E;
         _prev_vario_update_location = current_loc;
@@ -371,25 +372,8 @@ float SoaringController::correct_netto_rate(float climb_rate, float phi, float a
 }
  
 float SoaringController::McCready(float alt) {
-    return thermal_vspeed; 
-    float XP[] = {500, 3000};
-    float YP[] = {0, 4};
-    int n = 2;
-    // Linear interpolation (without extrap)
-    if (alt <= XP[0]) { 
-        return YP[0];
-    }
-    else if (alt >= XP[n - 1]) {
-        return YP[n - 1];
-    }
-    else {
-        for (int i = 0; i < n; i++) {
-            if (alt >= XP[i]) {
-                return (((alt - XP[i]) * (YP[i + 1] - YP[i]) / (XP[i + 1] - XP[i])) + YP[i]);
-            }     
-        }
-    }
-    return -1.0; // never happens   
+    // A method shell to be filled in later
+    return thermal_vspeed;
  }
         
 // log the contents of the log_tuning structure to dataflash
