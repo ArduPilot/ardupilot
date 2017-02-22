@@ -421,6 +421,7 @@ class px4(Board):
         self.bootloader_name = None
         self.board_name = None
         self.px4io_name = None
+        self.board_rc = False
         self.ROMFS_EXCLUDE = []
 
     def configure(self, cfg):
@@ -462,6 +463,7 @@ class px4(Board):
 
         env.PX4_BOOTLOADER_NAME = self.bootloader_name
         env.PX4_BOARD_NAME = self.board_name
+        env.PX4_BOARD_RC = self.board_rc
         env.PX4_PX4IO_NAME = self.px4io_name
 
         env.AP_PROGRAM_AS_STLIB = True
