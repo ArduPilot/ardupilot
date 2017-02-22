@@ -14,6 +14,8 @@
 #
 
 set USB autoconnect
+set NSH_ERROR_UART1 /dev/ttyACM0
+set NSH_ERROR_UART2 /dev/ttyS0
 
 #
 # Try to mount the microSD card.
