@@ -486,9 +486,7 @@ void Sub::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
 
-    for (uint8_t i=0; i<num_gcs; i++) {
-        gcs_chan[i].reset_cli_timeout();
-    }
+    gcs().reset_cli_timeout();
 }
 
 #else // LOGGING_ENABLED

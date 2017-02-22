@@ -76,7 +76,7 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     uint8_t mav_type;
     mav_type = MAV_TYPE_SUBMARINE;
 
-    gcs_chan[chan-MAVLINK_COMM_0].send_heartbeat(mav_type,
+    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(mav_type,
                                             base_mode,
                                             custom_mode,
                                             system_status);
@@ -1804,7 +1804,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 void Sub::mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs_chan[0].initialised || in_mavlink_delay) {
+    if (!gcs().chan(0).initialised || in_mavlink_delay) {
         return;
     }
 
@@ -1838,11 +1838,7 @@ void Sub::mavlink_delay_cb()
  */
 void Sub::gcs_send_message(enum ap_message id)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs_chan[i].initialised) {
-            gcs_chan[i].send_message(id);
-        }
-    }
+    gcs().send_message(id);
 }
 
 /*
@@ -1850,12 +1846,7 @@ void Sub::gcs_send_message(enum ap_message id)
  */
 void Sub::gcs_send_mission_item_reached_message(uint16_t mission_index)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs_chan[i].initialised) {
-            gcs_chan[i].mission_item_reached_index = mission_index;
-            gcs_chan[i].send_message(MSG_MISSION_ITEM_REACHED);
-        }
-    }
+    gcs().send_mission_item_reached_message(mission_index);
 }
 
 /*
@@ -1863,11 +1854,7 @@ void Sub::gcs_send_mission_item_reached_message(uint16_t mission_index)
  */
 void Sub::gcs_data_stream_send(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs_chan[i].initialised) {
-            gcs_chan[i].data_stream_send();
-        }
-    }
+    gcs().data_stream_send();
 }
 
 /*
@@ -1875,11 +1862,7 @@ void Sub::gcs_data_stream_send(void)
  */
 void Sub::gcs_check_input(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs_chan[i].initialised) {
-            gcs_chan[i].update(NULL);
-        }
-    }
+    gcs().update();
 }
 
 void Sub::gcs_send_text(MAV_SEVERITY severity, const char *str)
