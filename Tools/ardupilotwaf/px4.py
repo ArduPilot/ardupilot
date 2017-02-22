@@ -203,7 +203,7 @@ def _process_romfs(self):
             src = romfs_src.make_node(item)
             dst = romfs_bld.make_node(item)
         else:
-            src = bld.srcnode.make_node(item[0])
+            src = romfs_src.make_node(item[0])
             dst = romfs_bld.make_node(item[1])
 
         bname = os.path.basename(str(src))
@@ -238,7 +238,7 @@ def configure(cfg):
     # stop using the make-based build system
     env.PX4_ROMFS_SRC = 'mk/PX4/ROMFS'
     env.PX4_ROMFS_BLD = 'px4-extra-files/ROMFS'
-    env.PX4_BOOTLOADER = 'mk/PX4/bootloader/%s' % env.PX4_BOOTLOADER_NAME
+    env.PX4_BOOTLOADER = '/../bootloader/%s' % env.PX4_BOOTLOADER_NAME
 
     env.PX4_ADD_GIT_HASHES = srcpath('Tools/scripts/add_git_hashes.py')
     env.PX4_APM_ROOT = srcpath('')
