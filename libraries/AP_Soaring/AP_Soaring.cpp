@@ -1,4 +1,4 @@
-#include "SoaringController.h"
+#include "AP_Soaring.h"
 #include <stdint.h>
 extern const AP_HAL::HAL& hal;
 
@@ -297,16 +297,14 @@ void SoaringController::update_vario()
 {
     Location current_loc;
     _ahrs.get_position(current_loc);
-    //_alt = (current_loc.alt -_ahrs.get_home().alt) / 100.0f;
     get_altitude_wrt_home(&_alt);
-    _alt *= -1.0f;    
     
     if (fabsf(_alt - _last_alt) > 0.0001f) { // if no change in altitude then there will be no update of ekf buffer
         // Both filtered total energy rates and unfiltered are computed for the thermal switching logic and the EKF
         float aspd;
         float roll = _ahrs.roll;
         if (!_ahrs.airspeed_estimate(&aspd)) {
-            aspd = 0.5f * (_aparm.airspeed_min + _aparm.airspeed_max); //
+            aspd = 0.5f * (_aparm.airspeed_cruise_cm / 100.0f);
         }
         _aspd_filt = ASPD_FILT * aspd + (1 - ASPD_FILT) * _aspd_filt;
         float total_E = _alt + 0.5 *_aspd_filt * _aspd_filt / GRAVITY_MSS;                                                  // Work out total energy
