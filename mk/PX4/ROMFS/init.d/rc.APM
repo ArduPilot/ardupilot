@@ -82,24 +82,6 @@ then
     mkblctrl -mkmode x -d /dev/pwm_output
 fi
 
-if mtd start /fs/mtd
-then
-    echo "started mtd driver OK"
-else
-    echo "failed to start mtd driver"
-    echo "failed to start mtd driver" >> $logfile
-    sh /etc/init.d/rc.error           
-fi
-
-if mtd readtest /fs/mtd
-then
-    echo "mtd readtest OK"
-else
-    echo "failed to read mtd"
-    echo "failed to read mtd" >> $logfile
-    sh /etc/init.d/rc.error           
-fi
-
 echo Starting ArduPilot
 if ArduPilot start
 then
