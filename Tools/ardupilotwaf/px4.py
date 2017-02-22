@@ -188,12 +188,16 @@ def _px4_taskgen(bld, **kw):
 @feature('_px4_romfs')
 def _process_romfs(self):
     bld = self.bld
-    file_list = (
+    file_list = [
         'init.d/rc.APM',
         'init.d/rc.error',
         'init.d/rcS',
         (bld.env.PX4_BOOTLOADER, 'bootloader/fmu_bl.bin'),
-    )
+    ]
+
+    if bld.env.PX4_BOARD_RC:
+        board_rc = 'init.d/rc.%s' % bld.env.get_flat('PX4_BOARD_NAME')
+        file_list.append((board_rc, 'init.d/rc.board'))
 
     romfs_src = bld.srcnode.find_dir(bld.env.PX4_ROMFS_SRC)
     romfs_bld = bld.bldnode.make_node(bld.env.PX4_ROMFS_BLD)
