@@ -1168,10 +1168,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
-    // @Group: SOAR_
-    // @Path: ../libraries/AP_Soaring/SoaringController.cpp
-    GOBJECT(soaring_controller, "SOAR_", SoaringController),
-
     // @Group: 
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -1217,11 +1213,16 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels.cpp
     AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels),
     
+    // @Group: SOAR_
+    // @Path: ../libraries/AP_Soaring/SoaringController.cpp
+    AP_SUBGROUPINFO(soaring_controller, "SOAR_", 8, ParametersG2, SoaringController),
+  
     AP_GROUPEND
 };
 
 ParametersG2::ParametersG2(void) :
-    ice_control(plane.rpm_sensor, plane.ahrs)
+    ice_control(plane.rpm_sensor, plane.ahrs),
+    soaring_controller(plane.ahrs, plane.SpdHgt_Controller, plane.aparm, LOG_THERMAL_MSG, LOG_VARIO_MSG)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

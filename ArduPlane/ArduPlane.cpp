@@ -1019,12 +1019,10 @@ void Plane::update_soaring() {
         break;
     case LOITER:
         if (soaring_controller.check_init_thermal_criteria()) {
-            // start by circling around current location
-            soaring_controller.set_wp(next_WP_loc);
-            soaring_controller.update_thermalling(aparm.loiter_radius); // update estimate
+            soaring_controller.update_thermalling(); // update estimate
         } else {
             // Update thermal estimate and check for switch back to AUTO
-            soaring_controller.update_thermalling(aparm.loiter_radius);  // Update estimate
+            soaring_controller.update_thermalling();  // Update estimate
 
             if (soaring_controller.check_cruise_criteria()) {
                 // Exit as soon as thermal state estimate deteriorates
