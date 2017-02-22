@@ -366,7 +366,7 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
         }
     }
 
-    float forward_coupling_limit = 1-_forwardVerticalCouplingFactor*float(fabs(throttle_thrust));
+    float forward_coupling_limit = 1-_forwardVerticalCouplingFactor*float(fabsf(throttle_thrust));
     if (forward_coupling_limit < 0) {
         forward_coupling_limit = 0;
     }
@@ -450,8 +450,8 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
             rpt_out[i] = roll_thrust * _roll_factor[i] +
                          pitch_thrust * _pitch_factor[i] +
                          throttle_thrust * _throttle_factor[i];
-            if (fabs(rpt_out[i]) > rpt_max) {
-                rpt_max = fabs(rpt_out[i]);
+            if (fabsf(rpt_out[i]) > rpt_max) {
+                rpt_max = fabsf(rpt_out[i]);
             }
         }
     }
@@ -464,8 +464,8 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
             yfl_out[i] = yaw_thrust * _yaw_factor[i] +
                          forward_thrust * _forward_factor[i] +
                          lateral_thrust * _lateral_factor[i];
-            if (fabs(yfl_out[i]) > yfl_max) {
-                yfl_max = fabs(yfl_out[i]);
+            if (fabsf(yfl_out[i]) > yfl_max) {
+                yfl_max = fabsf(yfl_out[i]);
             }
         }
     }
