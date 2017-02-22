@@ -59,7 +59,7 @@ class SoaringController
 
     unsigned _ptr;
     unsigned _nsamples;
-    float _sign = 1;
+    float _sign;
 
     float _aspd_filt;
     uint8_t _msgid;
@@ -84,19 +84,36 @@ protected:
     AP_Float alt_max;
     AP_Float alt_min;
     AP_Float alt_cutoff;
-    
-    
+        
 public:
     SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl *&spdHgt, const AP_Vehicle::FixedWing &parms, uint8_t msgid, uint8_t msgid2) :
         _ahrs(ahrs),
         _spdHgt(spdHgt),
         _aparm(parms),
+        _thermal_start_time_us(0),
+        _cruise_start_time_us(0),
+        _prev_update_time(0),
         _prev_vario_update_time(0),
+        _vario_reading(0.0f),
+        _filtered_vario_reading(0.0f),
+        _last_alt(0.0f),
+        _alt(0.0f),
+        _last_aspd(0.0f),
+        _last_roll(0.0f),
+        _last_total_E(0.0f),
+        _new_data(false),
+        _loiter_rad(parms.loiter_radius),
+        _throttle_suppressed(true),
         _ptr(0),
+        _nsamples(0),
+        _sign(1.0f),
         _msgid(msgid),
-        _msgid2(msgid2)
+        _msgid2(msgid2),
+        _aspd_filt(0.0f)
     {
         AP_Param::setup_object_defaults(this, var_info);
+        ahrs.get_position(_prev_update_location);
+        ahrs.get_position(_prev_vario_update_location);  
     }
     
     float _displayed_vario_reading;  

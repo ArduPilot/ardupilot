@@ -162,7 +162,7 @@ bool SoaringController::check_cruise_criteria()
 {
     float thermalability = (_ekf.X[0]*expf(-powf(_loiter_rad / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK; 
     
-    if (soar_active && (AP_HAL::micros64() -_thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6) && thermalability < McCready(_alt)) {
+    if (soar_active && (AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6) && thermalability < McCready(_alt)) {
         hal.console->printf("Thermal weak, recommend quitting: W %f R %f th %f alt %f Mc %f\n", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (double)_alt, (double)McCready(_alt));
         return true;
     } else if (soar_active && (_alt>alt_max || _alt<alt_min)) {
@@ -238,7 +238,6 @@ void SoaringController::get_altitude_wrt_home(float *alt)
 }
 void SoaringController::update_thermalling()
 {
-    _loiter_rad = _aparm.loiter_radius;
     struct Location current_loc;
     _ahrs.get_position(current_loc);
 
