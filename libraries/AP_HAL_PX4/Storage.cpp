@@ -11,6 +11,8 @@
 #include <ctype.h>
 #include <nuttx/progmem.h>
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
 #include "Storage.h"
 using namespace PX4;
 
@@ -26,6 +28,8 @@ using namespace PX4;
 #define MTD_PARAMS_FILE "/fs/mtd"
 
 extern const AP_HAL::HAL& hal;
+
+extern "C" int mtd_main(int, char **);
 
 PX4Storage::PX4Storage(void) :
     _perf_storage(perf_alloc(PC_ELAPSED, "APM_storage")),
@@ -193,6 +197,17 @@ void PX4Storage::_mtd_write(uint16_t line)
  */
 void PX4Storage::_mtd_load(void)
 {
+    if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "start " MTD_PARAMS_FILE)) {
+        printf("mtd: started OK\n");
+        if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "readtest " MTD_PARAMS_FILE)) {
+            printf("mtd: readtest OK\n");
+        } else {
+            AP_BoardConfig::px4_sensor_error("mtd: failed readtest");
+        }
+    } else {
+        AP_BoardConfig::px4_sensor_error("mtd: failed start");
+    }
+
     int fd = open(MTD_PARAMS_FILE, O_RDONLY);
     if (fd == -1) {
         AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
