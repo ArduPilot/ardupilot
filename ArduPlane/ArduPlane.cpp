@@ -1027,7 +1027,7 @@ void Plane::update_soaring() {
             if (soaring_controller.check_cruise_criteria()) {
                 // Exit as soon as thermal state estimate deteriorates
                 if (previous_mode == FLY_BY_WIRE_B) {
-                    set_mode(RTL, MODE_REASON_SOARING_IN_THERMAL);
+                    set_mode(RTL, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 } else {
                     set_mode(previous_mode, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 }
