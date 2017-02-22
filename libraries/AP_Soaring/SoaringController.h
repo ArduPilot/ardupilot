@@ -2,8 +2,7 @@
 Soaring Controller class by Samuel Tabor
 Provides a layer between the thermal centring algorithm and the main code for managing navigation targets, data logging, tuning parameters, algorithm inputs and eventually other soaring strategies such as speed-to-fly. AP_TECS libary used for reference.
 */
-#ifndef SoaringController_h
-#define SoaringController_h
+#pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
@@ -154,5 +153,3 @@ public:
  
     void update_vario();
 };
-
-#endif

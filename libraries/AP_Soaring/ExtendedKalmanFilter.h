@@ -5,10 +5,7 @@ Extended Kalman Filter class by Sam Tabor, 2013.
 * purposes by adapting the equations for the jacobians.
 */
 
-#ifndef ExtendedKalmanFilter_h
-#define ExtendedKalmanFilter_h
-
-#include "AP_Math/matrixN.h"
+#pragma once
 
 // Kalman filter dimensionality
 #define N 4
@@ -25,6 +22,3 @@ public:
     void reset(float x[N], float p[N][N], float q[N][N], float r[1][1]);
     void update(float z, float Vx, float Vy);
 };
-
-
-#endif

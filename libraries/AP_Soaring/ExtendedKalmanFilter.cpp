@@ -1,4 +1,6 @@
 #include "ExtendedKalmanFilter.h"
+#include "AP_Math/matrixN.h"
+
 
 float ExtendedKalmanFilter::measurementpredandjacobian(float* A){
     // This function computes the Jacobian using equations from
