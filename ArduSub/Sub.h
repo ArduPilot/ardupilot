@@ -81,6 +81,7 @@
 #include "GCS_Mavlink.h"
 #include "Parameters.h"
 #include "AP_Arming_Sub.h"
+#include "GCS_Sub.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if OPTFLOW == ENABLED
@@ -122,6 +123,7 @@
 class Sub : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Sub;
+    friend class GCS_Sub;
     friend class Parameters;
     friend class ParametersG2;
     friend class AP_Arming_Sub;
@@ -207,11 +209,9 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 
-    GCS_MAVLINK_Sub gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
-    GCS _gcs; // avoid using this; use gcs()
-    GCS &gcs() { return _gcs; }
+    GCS_Sub _gcs; // avoid using this; use gcs()
+    GCS_Sub &gcs() { return _gcs; }
 
     // User variables
 #ifdef USERHOOK_VARIABLES
