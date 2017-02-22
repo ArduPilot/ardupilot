@@ -518,3 +518,4 @@ class aerofc_v1(px4):
         self.bootloader_name = 'aerofcv1_bl.bin'
         self.board_name = 'aerofc-v1'
         self.romfs_exclude(['oreoled.bin'])
+        self.board_rc = True
