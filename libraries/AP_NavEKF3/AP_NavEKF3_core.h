@@ -1099,6 +1099,7 @@ private:
     struct {
         bool bad_sAcc:1;
         bool bad_hAcc:1;
+        bool bad_vAcc:1;
         bool bad_yaw:1;
         bool bad_sats:1;
         bool bad_VZ:1;
