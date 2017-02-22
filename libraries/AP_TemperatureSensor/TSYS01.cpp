@@ -134,9 +134,9 @@ void TSYS01::_calculate(uint32_t adc)
 {
     float adc16 = adc/256;
     _temperature =
-        -2   * _k[4] * pow(10, -21) * pow(adc16, 4) +
-        4    * _k[3] * pow(10, -16) * pow(adc16, 3) +
-        -2   * _k[2] * pow(10, -11) * pow(adc16, 2) +
-        1    * _k[1] * pow(10, -6)  * adc16 +
-        -1.5 * _k[0] * pow(10, -2);
+        -2   * _k[4] * powf(10, -21) * powf(adc16, 4) +
+        4    * _k[3] * powf(10, -16) * powf(adc16, 3) +
+        -2   * _k[2] * powf(10, -11) * powf(adc16, 2) +
+        1    * _k[1] * powf(10, -6)  * adc16 +
+        -1.5 * _k[0] * powf(10, -2);
 }
