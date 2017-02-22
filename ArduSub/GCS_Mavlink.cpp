@@ -201,7 +201,8 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     int8_t battery_remaining = -1;
 
     if (battery.has_current() && battery.healthy()) {
-        battery_remaining = battery.capacity_remaining_pct();
+        // percent remaining is not necessarily accurate at the moment
+        //battery_remaining = battery.capacity_remaining_pct();
         battery_current = battery.current_amps() * 100;
     }
 
