@@ -1214,7 +1214,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels),
     
     // @Group: SOAR_
-    // @Path: ../libraries/AP_Soaring/SoaringController.cpp
+    // @Path: ../libraries/AP_Soaring/AP_Soaring.cpp
     AP_SUBGROUPINFO(soaring_controller, "SOAR_", 8, ParametersG2, SoaringController),
   
     AP_GROUPEND
