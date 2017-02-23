@@ -796,7 +796,6 @@ void Replay::loop()
 
     if (!logreader.update(type)) {
         ::printf("End of log at %.1f seconds\n", AP_HAL::millis()*0.001f);
-        fclose(plotf);
         flush_and_exit();
     }
 
