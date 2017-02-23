@@ -120,8 +120,6 @@ private:
 
     LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.barometer, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash, nottypes};
 
-    FILE *plotf;
-    FILE *plotf2;
     FILE *ekf1f;
     FILE *ekf2f;
     FILE *ekf3f;
