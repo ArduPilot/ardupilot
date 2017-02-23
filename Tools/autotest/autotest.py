@@ -273,6 +273,9 @@ def run_step(step):
     if step == 'build.AntennaTracker':
         return util.build_SITL('bin/antennatracker', j=opts.j, debug=opts.debug)
 
+    if step == 'build.AntennaTracker':
+        return util.build_SIL('AntennaTracker', j=opts.j)
+
     if step == 'build.Helicopter':
         return util.build_SITL('bin/arducopter-heli', j=opts.j, debug=opts.debug)
 
