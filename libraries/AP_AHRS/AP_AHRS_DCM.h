@@ -100,6 +100,8 @@ public:
         return _wind;
     }
 
+    void get_relative_position_D_home(float &posD) const override;
+
     // return an airspeed estimate if available. return true
     // if we have an estimate
     bool airspeed_estimate(float *airspeed_ret) const;
