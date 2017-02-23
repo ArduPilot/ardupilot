@@ -6,6 +6,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <GCS_MAVLink/GCS.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -94,5 +95,7 @@ void loop(void)
         counter = 0;
     }
 }
+
+GCS _gcs;
 
 AP_HAL_MAIN();
