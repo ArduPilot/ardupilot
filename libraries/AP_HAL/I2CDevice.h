@@ -63,8 +63,15 @@ public:
     virtual bool adjust_periodic_callback(
         Device::PeriodicHandle h, uint32_t period_usec) override = 0;
 
-    /* force I2C transfers to be split between send and receive */
-    virtual void set_split_transfers(bool set) {};    
+    /*
+     * Force I2C transfers to be split between send and receive parts, with a
+     * stop condition between them. Setting this allows to conveniently
+     * continue using the read_* and transfer() methods on those devices.
+     *
+     * Some platforms may have transfers always split, in which case
+     * this method is not needed.
+     */
+    virtual void set_split_transfers(bool set) {};
 };
 
 class I2CDeviceManager {
