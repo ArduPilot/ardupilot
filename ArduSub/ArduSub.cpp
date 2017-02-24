@@ -512,6 +512,7 @@ void Sub::read_AHRS(void)
 #endif
 
     ahrs.update();
+    ahrs_view.update();
 }
 
 // read baro and rangefinder altitude at 10hz
