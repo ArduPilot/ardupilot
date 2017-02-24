@@ -84,6 +84,9 @@ public:
     // create outputs for tailsitters
     void tailsitter_output(void);
 
+    // handle different tailsitter input types
+    void tailsitter_check_input(void);
+    
     // check if we have completed transition
     bool tailsitter_transition_complete(void);
     
@@ -328,9 +331,15 @@ private:
         bool motors_active:1;
     } tilt;
 
+    enum tailsitter_input {
+        TAILSITTER_INPUT_MULTICOPTER = 0,
+        TAILSITTER_INPUT_PLANE       = 1,
+    };
+    
     // tailsitter control variables
     struct {
         AP_Int8 transition_angle;
+        AP_Int8 input_type;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller
