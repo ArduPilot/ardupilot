@@ -297,7 +297,7 @@ void SoaringController::update_vario()
         float aspd;
         float roll = _ahrs.roll;
         if (!_ahrs.airspeed_estimate(&aspd)) {
-            aspd = 0.5f * (_aparm.airspeed_cruise_cm / 100.0f);
+            aspd = _aparm.airspeed_cruise_cm / 100.0f;
         }
         _aspd_filt = ASPD_FILT * aspd + (1 - ASPD_FILT) * _aspd_filt;
         float total_E = _alt + 0.5 *_aspd_filt * _aspd_filt / GRAVITY_MSS;                                                  // Work out total energy
