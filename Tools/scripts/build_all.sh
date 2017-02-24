@@ -47,6 +47,15 @@ for b in sitl; do
 done
 popd
 
+echo "Testing ArduSub build"
+pushd ArduSub
+for b in sitl linux; do
+    pwd
+    make clean
+    make $b -j4
+done
+popd
+
 pushd Tools/Replay
 make clean
 make
