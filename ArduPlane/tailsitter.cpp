@@ -56,10 +56,27 @@ bool QuadPlane::tailsitter_transition_complete(void)
         // transition immediately
         return true;
     }
-    if (ahrs_view->pitch_sensor < -tailsitter.transition_angle*100 ||
-        ahrs_view->roll_sensor < -tailsitter.transition_angle*100) {
+    if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle*100 ||
+        labs(ahrs_view->roll_sensor) > tailsitter.transition_angle*100 ||
+        AP_HAL::millis() - transition_start_ms > 2000) {
         return true;
     }
     // still waiting
     return false;
+}
+
+// handle different tailsitter input types
+void QuadPlane::tailsitter_check_input(void)
+{
+    if (tailsitter_active() &&
+        tailsitter.input_type == TAILSITTER_INPUT_PLANE) {
+        // the user has asked for body frame controls when tailsitter
+        // is active. We switch around the control_in value for the
+        // channels to do this, as that ensures the value is
+        // consistent throughout the code
+        int16_t roll_in = plane.channel_roll->get_control_in();
+        int16_t yaw_in = plane.channel_rudder->get_control_in();
+        plane.channel_roll->set_control_in(yaw_in);
+        plane.channel_rudder->set_control_in(-roll_in);
+    }
 }

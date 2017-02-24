@@ -334,7 +334,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:Continuous,1:Binary
     AP_GROUPINFO("TILT_TYPE", 47, QuadPlane, tilt.tilt_type, TILT_TYPE_CONTINUOUS),
 
-    // @Param: Q_TAILSIT_ANGLE
+    // @Param: TAILSIT_ANGLE
     // @DisplayName: Tailsitter transition angle
     // @Description: This is the angle at which tailsitter aircraft will change from VTOL control to fixed wing control.
     // @Range: 5 80
@@ -349,6 +349,12 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TILT_RATE_DN", 49, QuadPlane, tilt.max_rate_down_dps, 0),
         
+    // @Param: TAILSIT_INPUT
+    // @DisplayName: Tailsitter input type
+    // @Description: This controls whether stick input when hovering as a tailsitter follows the conventions for fixed wing hovering or multicopter hovering. When multicopter input is selected the roll stick will roll the aircraft in earth frame and yaw stick will yaw in earth frame. When using fixed wing input the roll and yaw sticks will control the aircraft in body frame.
+    // @Values: 0:MultiCopterInput,1:FixedWingInput
+    AP_GROUPINFO("TAILSIT_INPUT", 50, QuadPlane, tailsitter.input_type, TAILSITTER_INPUT_MULTICOPTER),
+
     AP_GROUPEND
 };
 
@@ -851,7 +857,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void)
     }
 
     // add in rudder input
-    return plane.channel_rudder->norm_input() * 100 * yaw_rate_max;
+    return plane.channel_rudder->get_control_in() * yaw_rate_max / 45;
 }
 
 /*
@@ -1191,6 +1197,7 @@ void QuadPlane::update(void)
             transition_state = TRANSITION_DONE;
         } else if (is_tailsitter()) {
             transition_state = TRANSITION_ANGLE_WAIT;
+            transition_start_ms = AP_HAL::millis();
         } else {
             transition_state = TRANSITION_AIRSPEED_WAIT;
         }
