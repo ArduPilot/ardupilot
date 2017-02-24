@@ -355,6 +355,18 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:MultiCopterInput,1:FixedWingInput
     AP_GROUPINFO("TAILSIT_INPUT", 50, QuadPlane, tailsitter.input_type, TAILSITTER_INPUT_MULTICOPTER),
 
+    // @Param: TAILSIT_MASK
+    // @DisplayName: Tailsitter input mask
+    // @Description: This controls what channels have full manual control when hovering as a tailsitter and the Q_TAILSIT_MASKCH channel in high. This can be used to teach yourself to prop-hang a 3D plane by learning one or more channels at a time.
+    // @Bitmask: 0:Aileron,1:Elevator,2:Throttle,3:Rudder
+    AP_GROUPINFO("TAILSIT_MASK", 51, QuadPlane, tailsitter.input_mask, 0),
+
+    // @Param: TAILSIT_MASKCH
+    // @DisplayName: Tailsitter input mask channel
+    // @Description: This controls what input channel will activate the Q_TAILSIT_MASK mask. When this channel goes above 1700 then the pilot will have direct manual control of the output channels specified in Q_TAILSIT_MASK. Set to zero to disable.
+    // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
+    AP_GROUPINFO("TAILSIT_MASKCH", 52, QuadPlane, tailsitter.input_mask_chan, 0),
+    
     AP_GROUPEND
 };
 

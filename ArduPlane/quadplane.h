@@ -335,11 +335,20 @@ private:
         TAILSITTER_INPUT_MULTICOPTER = 0,
         TAILSITTER_INPUT_PLANE       = 1,
     };
+
+    enum tailsitter_mask {
+        TAILSITTER_MASK_AILERON  = 1,
+        TAILSITTER_MASK_ELEVATOR = 2,
+        TAILSITTER_MASK_THROTTLE = 4,
+        TAILSITTER_MASK_RUDDER   = 8,
+    };
     
     // tailsitter control variables
     struct {
         AP_Int8 transition_angle;
         AP_Int8 input_type;
+        AP_Int8 input_mask;
+        AP_Int8 input_mask_chan;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller
