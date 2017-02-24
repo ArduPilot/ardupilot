@@ -39,10 +39,30 @@ bool QuadPlane::tailsitter_active(void)
  */
 void QuadPlane::tailsitter_output(void)
 {
-    if (tailsitter_active()) {
-        motors_output();
-        plane.pitchController.reset_I();
-        plane.rollController.reset_I();
+    if (!tailsitter_active()) {
+        return;
+    }
+
+    motors_output();
+    plane.pitchController.reset_I();
+    plane.rollController.reset_I();
+
+    if (tailsitter.input_mask_chan > 0 &&
+        tailsitter.input_mask > 0 &&
+        hal.rcin->read(tailsitter.input_mask_chan-1) > 1700) {
+        // the user is learning to prop-hang
+        if (tailsitter.input_mask & TAILSITTER_MASK_AILERON) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.channel_roll->get_control_in_zero_dz());
+        }
+        if (tailsitter.input_mask & TAILSITTER_MASK_ELEVATOR) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.channel_pitch->get_control_in_zero_dz());
+        }
+        if (tailsitter.input_mask & TAILSITTER_MASK_THROTTLE) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.channel_throttle->get_control_in_zero_dz());
+        }
+        if (tailsitter.input_mask & TAILSITTER_MASK_RUDDER) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, plane.channel_rudder->get_control_in_zero_dz());
+        }
     }
 }
 
