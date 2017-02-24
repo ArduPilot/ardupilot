@@ -1010,8 +1010,6 @@ void Plane::update_soaring() {
     case AUTO:
     case FLY_BY_WIRE_B:
         // Test for switch into thermalling mode
-        soaring_controller.update_cruising();
-
         if (soaring_controller.check_thermal_criteria()) {
             hal.console->printf("Thermal detected, entering loiter\n");
             set_mode(LOITER, MODE_REASON_SOARING_THERMAL_DETECTED);
