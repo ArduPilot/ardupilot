@@ -56,11 +56,7 @@ class SoaringController
     bool _new_data;
     float _loiter_rad;
     bool _throttle_suppressed;
-
-    unsigned _ptr;
-    unsigned _nsamples;
-    float _sign;
-
+    
     float _aspd_filt;
     uint8_t _msgid;
     uint8_t _msgid2;
@@ -104,12 +100,9 @@ public:
         _new_data(false),
         _loiter_rad(parms.loiter_radius),
         _throttle_suppressed(true),
-        _ptr(0),
-        _nsamples(0),
-        _sign(1.0f),
+        _aspd_filt(0.0f),
         _msgid(msgid),
-        _msgid2(msgid2),
-        _aspd_filt(0.0f)
+        _msgid2(msgid2)
     {
         AP_Param::setup_object_defaults(this, var_info);
         ahrs.get_position(_prev_update_location);
@@ -149,7 +142,6 @@ public:
         float alt;
         float dx_w;
         float dy_w;
-        uint32_t nsamples;
     } log_tuning;
     
     struct PACKED log_Vario_Tuning {
@@ -165,7 +157,6 @@ public:
         float wind_y;
         float dx;
         float dy;
-        uint32_t ptr;
     } log_vario_tuning;
  
     void update_vario();

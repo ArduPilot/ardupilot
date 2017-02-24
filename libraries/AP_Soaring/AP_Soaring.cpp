@@ -119,7 +119,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
 
     AP_GROUPEND
 };
-    
+
 void SoaringController::get_target(Location &wp)
 {
     wp = _prev_update_location;
@@ -201,11 +201,6 @@ void SoaringController::init_thermalling()
     // Also reset covariance matrix p so filter is not affected by previous data
     _ekf.reset(xr, p, q, r);
     
-    float head_sin = sinf(_ahrs.yaw);
-    float head_cos = cosf(_ahrs.yaw);
-    float xprod = _ekf.X[2] * head_cos -  _ekf.X[3] * head_sin;
-    _sign = xprod <= 0 ? 1.0 : -1.0;
-    
     _ahrs.get_position(_prev_update_location);
     _prev_update_time = AP_HAL::micros64();
     _thermal_start_time_us = AP_HAL::micros64();
@@ -274,7 +269,6 @@ void SoaringController::update_thermalling()
         log_tuning.alt = _alt;
         log_tuning.dx_w = dx_w;
         log_tuning.dy_w = dy_w;
-        log_tuning.nsamples = _nsamples;
             
         log_data(); 
         _ekf.update(_vario_reading,dx, dy);       // update the filter
@@ -338,7 +332,6 @@ void SoaringController::update_vario()
         log_vario_tuning.wind_y = wind.y;
         log_vario_tuning.dx = dx;
         log_vario_tuning.dy = dy;
-        log_vario_tuning.ptr = _ptr;
         log_vario_tuning.head1 = HEAD_BYTE1;
         log_vario_tuning.head2 = HEAD_BYTE2;
         log_vario_tuning.msgid = _msgid2;
