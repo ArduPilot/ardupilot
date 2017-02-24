@@ -270,14 +270,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TILT_MASK", 37, QuadPlane, tilt.tilt_mask, 0),
 
-    // @Param: TILT_RATE
-    // @DisplayName: Tiltrotor tilt rate
-    // @Description: This is the maximum speed at which the motor angle will change for a tiltrotor
+    // @Param: TILT_RATE_UP
+    // @DisplayName: Tiltrotor upwards tilt rate
+    // @Description: This is the maximum speed at which the motor angle will change for a tiltrotor when moving from forward flight to hover
     // @Units: degrees/second
     // @Increment: 1
     // @Range: 10 300
     // @User: Standard
-    AP_GROUPINFO("TILT_RATE", 38, QuadPlane, tilt.max_rate_dps, 40),
+    AP_GROUPINFO("TILT_RATE_UP", 38, QuadPlane, tilt.max_rate_up_dps, 40),
 
     // @Param: TILT_MAX
     // @DisplayName: Tiltrotor maximum VTOL angle
@@ -339,7 +339,16 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Description: This is the angle at which tailsitter aircraft will change from VTOL control to fixed wing control.
     // @Range: 5 80
     AP_GROUPINFO("TAILSIT_ANGLE", 48, QuadPlane, tailsitter.transition_angle, 30),
-    
+
+    // @Param: TILT_RATE_DN
+    // @DisplayName: Tiltrotor downwards tilt rate
+    // @Description: This is the maximum speed at which the motor angle will change for a tiltrotor when moving from hover to forward flight. When this is zero the Q_TILT_RATE_UP value is used.
+    // @Units: degrees/second
+    // @Increment: 1
+    // @Range: 10 300
+    // @User: Standard
+    AP_GROUPINFO("TILT_RATE_DN", 49, QuadPlane, tilt.max_rate_down_dps, 0),
+        
     AP_GROUPEND
 };
 
