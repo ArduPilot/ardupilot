@@ -319,7 +319,8 @@ private:
     // tiltrotor control variables
     struct {
         AP_Int16 tilt_mask;
-        AP_Int16 max_rate_dps;
+        AP_Int16 max_rate_up_dps;
+        AP_Int16 max_rate_down_dps;
         AP_Int8  max_angle_deg;
         AP_Int8  tilt_type;
         float current_tilt;
@@ -345,6 +346,7 @@ private:
     void tiltrotor_binary_update(void);
     void tilt_compensate(float *thrust, uint8_t num_motors);
     bool tiltrotor_fully_fwd(void);
+    float tilt_max_change(bool up);
 
     void afs_terminate(void);
     bool guided_mode_enabled(void);
