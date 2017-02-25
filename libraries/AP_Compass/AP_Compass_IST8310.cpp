@@ -42,6 +42,8 @@
 #define PDCNTL_REG 0x42
 #define NORMAL_PULSE_DURATION 0xC0
 
+#define SAMPLING_PERIOD_USEC (10 * USEC_PER_MSEC)
+
 extern const AP_HAL::HAL &hal;
 
 AP_Compass_Backend *AP_Compass_IST8310::probe(Compass &compass,
@@ -110,8 +112,12 @@ bool AP_Compass_IST8310::init()
     _dev->set_device_type(DEVTYPE_IST8310);
     set_dev_id(_instance, _dev->get_bus_id());
 
-    _dev->register_periodic_callback(10 * USEC_PER_MSEC,
+    _dev->register_periodic_callback(SAMPLING_PERIOD_USEC,
                                      FUNCTOR_BIND_MEMBER(&AP_Compass_IST8310::timer, void));
+
+    _perf_xfer_err = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_xfer_err");
+    _perf_not_ready = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_not_ready");
+    _perf_restart = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_restart");
 
     return true;
 
@@ -122,13 +128,21 @@ fail:
 
 void AP_Compass_IST8310::start_conversion()
 {
-    _dev->write_register(CNTL1_REG,
-            SINGLE_MEASUREMENT_MODE);
+    if (!_dev->write_register(CNTL1_REG, SINGLE_MEASUREMENT_MODE)) {
+        hal.util->perf_count(_perf_xfer_err);
+        _need_start = true;
+        return;
+    }
+
+    _need_start = false;
 }
 
 void AP_Compass_IST8310::timer()
 {
-    bool ret = false;
+    if (_need_start) {
+        start_conversion();
+        return;
+    }
 
     struct PACKED {
         uint8_t status;
@@ -137,19 +151,33 @@ void AP_Compass_IST8310::timer()
         le16_t rz;
     } buffer;
 
-
-    ret = _dev->read_registers(STAT1_REG, (uint8_t *) &buffer, sizeof(buffer));
+    bool ret = _dev->read_registers(STAT1_REG, (uint8_t *) &buffer, sizeof(buffer));
     if (!ret) {
-        /* We're going to be back on the next iteration either way */
+        hal.util->perf_count(_perf_xfer_err);
         return;
     }
 
     auto status = buffer.status;
 
+    uint32_t now = AP_HAL::micros();
+
     if (!(status & 0x01)) {
-        /* We're not ready yet */
-       return;
+        hal.util->perf_count(_perf_not_ready);
+
+        /*
+         * Sensor is in a wrong state or something went really wrong: try to
+         * request a sample again
+         */
+        if (now > _last_measurement_usec + 2 * SAMPLING_PERIOD_USEC) {
+            hal.util->perf_count(_perf_restart);
+            start_conversion();
+        }
+
+        return;
     }
+
+    _last_measurement_usec = now;
+    start_conversion();
 
     auto x = static_cast<int16_t>(le16toh(buffer.rx));
     auto y = static_cast<int16_t>(le16toh(buffer.ry));
@@ -162,7 +190,7 @@ void AP_Compass_IST8310::timer()
     rotate_field(field, _instance);
 
     /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, AP_HAL::micros(), _instance);
+    publish_raw_field(field, now, _instance);
 
     /* correct raw_field for known errors */
     correct_field(field, _instance);
@@ -172,8 +200,6 @@ void AP_Compass_IST8310::timer()
         _accum_count++;
         _sem->give();
     }
-
-    start_conversion();
 }
 
 void AP_Compass_IST8310::read()
