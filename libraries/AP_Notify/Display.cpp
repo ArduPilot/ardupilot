@@ -423,7 +423,7 @@ void Display::update_prearm(uint8_t r)
 
 void Display::update_gps(uint8_t r)
 {
-	static const char * gpsfixname[] = {"Other", "NoGPS","NoFix","2D   ","3D   ","DGPS ", "RTK f", "RTK F"};
+	static const char * gpsfixname[] = {"Other", "NoGPS","NoFix","2D","3D","DGPS", "RTK f", "RTK F"};
 	char msg [DISPLAY_MESSAGE_SIZE];
     const char * fixname;
     switch  (AP_Notify::flags.gps_status) {
@@ -452,7 +452,7 @@ void Display::update_gps(uint8_t r)
             fixname = gpsfixname[0];
             break;
     }
-    snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%s Sats:%u", fixname, AP_Notify::flags.gps_num_sats) ;
+    snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%-5s Sats:%2u", fixname, AP_Notify::flags.gps_num_sats) ;
 	draw_text(COLUMN(0), ROW(r), msg);
 }
 
@@ -488,10 +488,25 @@ void Display::update_mode(uint8_t r)
 	}
 }
 
+void Display::update_text_empty(uint8_t r)
+{
+    char msg [DISPLAY_MESSAGE_SIZE] = {};
+    memset(msg, ' ', sizeof(msg)-1);
+    _movedelay = 0;
+    _mstartpos = 0;
+    draw_text(COLUMN(0), ROW(r), msg);
+}
+
 void Display::update_text(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE];
     char txt [NOTIFY_TEXT_BUFFER_SIZE];
+
+    const bool text_is_valid = AP_HAL::millis() - pNotify->_send_text_updated_millis < _send_text_valid_millis;
+    if (!text_is_valid) {
+        update_text_empty(r);
+        return;
+    }
 
     snprintf(txt, NOTIFY_TEXT_BUFFER_SIZE, "%s", pNotify->get_text());
     _mstartpos++;
