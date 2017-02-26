@@ -477,6 +477,14 @@ void Plane::set_servos_controlled(void)
         // ask quadplane code for forward throttle
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, quadplane.forward_throttle_pct());
     }
+
+    // suppress throttle when soaring is active
+    if ((control_mode == FLY_BY_WIRE_B || control_mode == CRUISE ||
+        control_mode == AUTO || control_mode == LOITER) &&
+        g2.soaring_controller.is_active() &&
+        g2.soaring_controller.get_throttle_suppressed()) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+    }
 }
 
 /*

@@ -76,6 +76,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(Log_Write_Fast,         25,    300),
     SCHED_TASK(update_logging1,        10,    300),
     SCHED_TASK(update_logging2,        10,    300),
+    SCHED_TASK(update_soaring,         50,    400),
     SCHED_TASK(parachute_check,        10,    200),
     SCHED_TASK(terrain_update,         10,    200),
     SCHED_TASK(update_is_flying_5Hz,    5,    100),
