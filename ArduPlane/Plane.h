@@ -32,7 +32,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Menu/AP_Menu.h>
-#include <AP_Param/AP_Param.h>
+#include <AP_RCMixer/AP_RCMixer.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_GPS/AP_GPS.h>         // ArduPilot GPS library
 #include <AP_Baro/AP_Baro.h>        // ArduPilot barometer library
@@ -43,6 +43,7 @@
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include <AP_RCMixer/AP_RCMixer.h>     // APM Mixer manager library
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>                     // Filter library
@@ -764,6 +765,10 @@ private:
     AP_Arming_Plane arming {ahrs, barometer, compass, battery};
 
     AP_Param param_loader {var_info};
+
+#if defined(MIXER_CONFIGURATION)
+    AP_RCMixer mixer;
+#endif 	//MIXER_CONFIGURATION
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];

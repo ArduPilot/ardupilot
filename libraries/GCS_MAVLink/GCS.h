@@ -16,6 +16,7 @@
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <AP_RCMixer/AP_RCMixer.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -70,6 +71,7 @@ enum ap_message {
     MSG_MISSION_ITEM_REACHED,
     MSG_POSITION_TARGET_GLOBAL_INT,
     MSG_ADSB_VEHICLE,
+	MSG_MIXER_DATA,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -158,7 +160,6 @@ public:
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint8_t position);
-
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
     static uint8_t active_channel_mask(void) { return mavlink_active; }
@@ -175,6 +176,7 @@ public:
 
     // send a PARAM_VALUE message to all active MAVLink connections.
     static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
+
     
     /*
       send a MAVLink message to all components with this vehicle's system id

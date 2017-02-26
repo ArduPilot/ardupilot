@@ -112,6 +112,31 @@ public:
       enable SBUS out at the given rate
      */
     virtual bool     enable_sbus_out(uint16_t rate_gz) { return false; }
+
+    /*
+      get the number of mixers
+     */
+    virtual int     get_mixer_count(void) { return -1; }
+
+    /*
+      get the number of submixers for the mixer at given index
+     */
+    virtual int     get_submixer_count(uint16_t mixer_index) { return -1; }
+
+    /*
+      get the mixer type for the mixer/submixer at given indices
+     */
+    virtual int     get_mixer_type(uint16_t mixer_index, uint16_t submixer_index) { return -1; }
+
+    /*
+      get the mixer parameter for the mixer/submixer at given indices
+     */
+    virtual bool    get_mixer_parameter(uint16_t mixer_index, uint16_t submixer_index, uint16_t parameter_index, float *param_value) { return false; }
+
+    /*
+      set the mixer parameter for the mixer/submixer at given indices to param_value
+     */
+    virtual bool    set_mixer_parameter(uint16_t mixer_index, uint16_t submixer_index, uint16_t parameter_index, float param_value) { return false; }
     
     /*
       output modes. Allows for support of oneshot

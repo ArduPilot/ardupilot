@@ -13,6 +13,7 @@
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
 #include <drivers/drv_sbus.h>
+#include <drivers/drv_mixer.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -644,6 +645,122 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
         break;
     }
 }
+
+#if defined(MIXER_CONFIGURATION)
+/*
+  get the number of mixers
+ */
+int PX4RCOutput::get_mixer_count(void) {
+	int mixers = -1;
+
+	//Presume px4io
+    int fd = open("/dev/px4io", 0);
+    if (fd == -1) {
+        return -200;
+    }
+
+	if( ioctl(fd, MIXERIOCGETMIXERCOUNT, (unsigned long) &mixers) != 0) {
+		mixers = -201;
+	}
+	close(fd);
+	return mixers;
+}
+
+/*
+  get the number of submixers for the mixer at given index
+ */
+int PX4RCOutput::get_submixer_count(uint16_t mixer_index) {
+	int val = mixer_index;
+
+	//Presume px4io
+    int fd = open("/dev/px4io", 0);
+    if (fd == -1) {
+        return -200;
+    }
+
+	if( ioctl(fd, MIXERIOCGETSUBMIXERCOUNT, (unsigned long) &val) != 0) {
+		val = -202;
+	}
+	close(fd);
+	return val;
+}
+
+/*
+  get the mixer type for the mixer/submixer at given indices
+ */
+int PX4RCOutput::get_mixer_type(uint16_t mixer_index, uint16_t submixer_index) {
+	int mix_type = -1;
+	mixer_type_s type;
+
+	type.mix_index = mixer_index;
+	type.mix_sub_index = submixer_index;
+
+	//Presume px4io
+    int fd = open("/dev/px4io", 0);
+    if (fd == -1) {
+        return -200;
+    }
+
+	if( ioctl(fd, MIXERIOCGETTYPE, (unsigned long) &type) == 0) {
+		mix_type = type.mix_type;
+	} else {
+		mix_type = -203;
+	}
+	close(fd);
+	return mix_type;
+}
+
+/*
+  get the mixer parameter for the mixer/submixer at given indices
+ */
+bool PX4RCOutput::get_mixer_parameter(uint16_t mixer_index, uint16_t submixer_index, uint16_t parameter_index, float *param_value) {
+	mixer_param_s param;
+	bool ret = false;
+
+	//Presume px4io
+    int fd = open("/dev/px4io", 0);
+    if (fd == -1) {
+        return false;
+    }
+
+	param.mix_index = mixer_index;
+	param.param_index = parameter_index;
+	param.mix_sub_index = submixer_index;
+
+	if(ioctl(fd, MIXERIOCGETPARAM, (unsigned long) &param) == 0) {
+		*param_value = param.value;
+		ret = true;
+	}
+	close(fd);
+	return ret;
+}
+
+/*
+  set the mixer parameter for the mixer/submixer at given indices to param_value
+  WARNING - THIS WILL BLOCK UNTIL REMOTE MIXER WRITE IS DONE.  THIS MAY TAKE A WHILE.
+ */
+bool PX4RCOutput::set_mixer_parameter(uint16_t mixer_index, uint16_t submixer_index, uint16_t parameter_index, float param_value) {
+	mixer_param_s param;
+	bool ret = false;
+
+	//Presume px4io
+    int fd = open("/dev/px4io", 0);
+    if (fd == -1) {
+        return false;
+    }
+
+	param.mix_index = mixer_index;
+	param.param_index = parameter_index;
+	param.mix_sub_index = submixer_index;
+	param.value = param_value;
+
+	if(ioctl(fd, MIXERIOCSETPARAM, (unsigned long) &param) == 0) {
+		ret = true;
+	}
+	close(fd);
+	return ret;
+}
+#endif 	//MIXER_CONFIGURATION
 
 
 #endif // CONFIG_HAL_BOARD
