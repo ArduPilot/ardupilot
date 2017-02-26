@@ -209,9 +209,11 @@ void SoaringController::init_thermalling()
    
 void SoaringController::init_cruising()
 {
-    _cruise_start_time_us = AP_HAL::micros64();
-    // Start glide. Will be updated on the next loop.
-    _throttle_suppressed = true;
+    if (is_active() && suppress_throttle()) {
+        _cruise_start_time_us = AP_HAL::micros64();
+        // Start glide. Will be updated on the next loop.
+        _throttle_suppressed = true;
+    }
 }
 
 void SoaringController::get_wind_corrected_drift(const Location *current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy)
@@ -283,9 +285,8 @@ void SoaringController::update_thermalling()
 
 void SoaringController::update_cruising()
 {
-    if (is_active() && suppress_throttle()) {
-        init_cruising();
-    }
+    // Reserved for future tasks that need to run continuously while in FBWB or AUTO mode, 
+    // for example, calculation of optimal airspeed and flap angle.
 }
 
 void SoaringController::update_vario()
