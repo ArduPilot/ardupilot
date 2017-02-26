@@ -10,12 +10,16 @@
 #include "math.h"
 #include <stdint.h>
 
-void matrix_copy(float* A, int32_t n, int32_t m, float* B);
-void matrix_mult(float* A, float* B, int32_t m, int32_t p, int32_t n, float* C);
-void matrix_mult_transpose(float* A, float* B, int32_t m, int32_t p, int32_t n, float* C);
-void matrix_add(float* A, float* B, int32_t m, int32_t n, float* C);
-void matrix_subtract(float* A, float* B, int32_t m, int32_t n, float* C);
-void matrix_transpose(float* A, int32_t m, int32_t n, float* C);
-void matrix_mult_scalar(float* A, float s, int32_t m, int32_t n, float* C);
-int32_t matrix_invert(float* A, int32_t n);
-void matrix_force_symmetry(float* A, int32_t n);
+template <typename T>
+class MatrixN {
+public:
+    static void matrix_copy(T* A, uint8_t n, uint8_t m, T* B);
+    static void matrix_mult(T* A, T* B, uint8_t m, uint8_t p, uint8_t n, T* C);
+    static void matrix_mult_transpose(T* A, T* B, uint8_t m, uint8_t p, uint8_t n, T* C);
+    static void matrix_add(T* A, T* B, uint8_t m, uint8_t n, T* C);
+    static void matrix_subtract(T* A, T* B, uint8_t m, uint8_t n, T* C);
+    static void matrix_transpose(T* A, uint8_t m, uint8_t n, T* C);
+    static void matrix_mult_scalar(T* A, float s, uint8_t m, uint8_t n, T* C);
+    static bool matrix_invert(T* A, uint8_t n);
+    static void matrix_force_symmetry(T* A, uint8_t n);
+};

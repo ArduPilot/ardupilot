@@ -9,8 +9,9 @@
  
 #include "matrixN.h"
 
-void matrix_copy(float* A, int32_t n, int32_t m, float* B){
-    int32_t i, j;
+template <typename T>
+void MatrixN<T>::matrix_copy(T* A, uint8_t n, uint8_t m, T* B){
+    uint8_t i, j;
     
     for (i = 0; i < m; i++){
         for (j = 0; j < n; j++){
@@ -22,14 +23,15 @@ void matrix_copy(float* A, int32_t n, int32_t m, float* B){
     
 // Matrix Multiplication Routine
 // C = A * B
-void matrix_mult(float* A, float* B, int32_t m, int32_t p, int32_t n, float* C){
+template <typename T>
+void MatrixN<T>::matrix_mult(T* A, T* B, uint8_t m, uint8_t p, uint8_t n, T* C){
     // A = input matrix (m x p)
     // B = input matrix (p x n)
     // m = number of rows in A
     // p = number of columns in A = number of rows in B
     // n = number of columns in B
     // C = output matrix = A*B (m x n)
-    int32_t i, j, k;
+    uint8_t i, j, k;
     for (i = 0; i < m; i++){
         for (j = 0; j < n; j++){
             C[n * i + j] = 0;
@@ -43,14 +45,15 @@ void matrix_mult(float* A, float* B, int32_t m, int32_t p, int32_t n, float* C){
 
 // Matrix Multiplication Routine
 // C = A * B(transpose)
-void matrix_mult_transpose(float* A, float* B, int32_t m, int32_t p, int32_t n, float* C){
+template <typename T>
+void MatrixN<T>::matrix_mult_transpose(T* A, T* B, uint8_t m, uint8_t p, uint8_t n, T* C){
     // A = input matrix (m x p)
     // B = input matrix (n x p)
     // m = number of rows in A
     // p = number of columns in A = number of columns in B
     // n = number of rows in B
     // C = output matrix = A*B (m x n)
-    int32_t i, j, k;
+    uint8_t i, j, k;
     for (i = 0; i < m; i++){
         for(j = 0; j < n; j++){
             C[n * i + j] = 0;
@@ -63,13 +66,14 @@ void matrix_mult_transpose(float* A, float* B, int32_t m, int32_t p, int32_t n, 
 
 
 // Matrix Addition Routine
-void matrix_add(float* A, float* B, int32_t m, int32_t n, float* C){
+template <typename T>
+void MatrixN<T>::matrix_add(T* A, T* B, uint8_t m, uint8_t n, T* C){
     // A = input matrix (m x n)
     // B = input matrix (m x n)
     // m = number of rows in A = number of rows in B
     // n = number of columns in A = number of columns in B
     // C = output matrix = A+B (m x n)
-    int32_t i, j;
+    uint8_t i, j;
     for (i = 0; i < m; i++){
         for (j = 0; j < n; j++){
             C[n * i + j] = A[n * i + j] + B[n * i + j];
@@ -79,13 +83,14 @@ void matrix_add(float* A, float* B, int32_t m, int32_t n, float* C){
 
 
 // Matrix Subtraction Routine
-void matrix_subtract(float* A, float* B, int32_t m, int32_t n, float* C){
+template <typename T>
+void MatrixN<T>::matrix_subtract(T* A, T* B, uint8_t m, uint8_t n, T* C){
     // A = input matrix (m x n)
     // B = input matrix (m x n)
     // m = number of rows in A = number of rows in B
     // n = number of columns in A = number of columns in B
     // C = output matrix = A-B (m x n)
-    int32_t i, j;
+    uint8_t i, j;
     for (i = 0; i < m; i++){
         for (j = 0; j < n; j++){
             C[n * i + j] = A[n * i + j] - B[n * i + j];
@@ -95,12 +100,13 @@ void matrix_subtract(float* A, float* B, int32_t m, int32_t n, float* C){
 
 
 // Matrix Transpose Routine
-void matrix_transpose(float* A, int32_t m, int32_t n, float* C){
+template <typename T>
+void MatrixN<T>::matrix_transpose(T* A, uint8_t m, uint8_t n, T* C){
     // A = input matrix (m x n)
     // m = number of rows in A
     // n = number of columns in A
     // C = output matrix = the transpose of A (n x m)
-    int32_t i, j;
+    uint8_t i, j;
     for (i = 0; i < m;i++){
         for(j = 0; j < n; j++){
             C[m * j + i]=A[n * i + j];
@@ -110,14 +116,15 @@ void matrix_transpose(float* A, int32_t m, int32_t n, float* C){
 
 
 // Matrix Transpose Routine
-void matrix_mult_scalar(float* A, float s, int32_t m, int32_t n, float* C)
+template <typename T>
+void MatrixN<T>::matrix_mult_scalar(T* A, float s, uint8_t m, uint8_t n, T* C)
 {
     // A = input matrix (m x n)
     // s = scalar value to multiply by
     // m = number of rows in A
     // n = number of columns in A
     // C = output matrix = the transpose of A (n x m)
-    int32_t i, j;
+    uint8_t i, j;
     for (i = 0; i < m; i++){
         for(j = 0; j < n; j++){
             C[m * j + i] = A[n * j + i] * s;
@@ -131,15 +138,16 @@ void matrix_mult_scalar(float* A, float s, int32_t m, int32_t n, float* C)
 // * Specifically, it uses partial pivoting to improve numeric stability.
 // * The algorithm is drawn from those presented in 
 //   NUMERICAL RECIPES: The Art of Scientific Computing.
-// * The function returns 1 on success, 0 on failure.
+// * The function returns true on success, false on failure.
 // * NOTE: The argument is ALSO the result matrix, meaning the input matrix is REPLACED
-int32_t matrix_invert(float* A, int32_t n){
+template <typename T>
+bool MatrixN<T>::matrix_invert(T* A, uint8_t n){
     // A = input matrix AND result matrix
     // n = number of rows = number of columns in A (n x n)
-    int32_t pivrow = -1;     // keeps track of current pivot row
-    int32_t k, i, j;      // k: overall index along diagonal; i: row index; j: col index
-    int32_t pivrows[n]; // keeps track of rows swaps to undo at end
-    float tmp;      // used for finding max value and making column swaps
+    uint8_t pivrow = -1;     // keeps track of current pivot row
+    uint8_t k, i, j;      // k: overall index along diagonal; i: row index; j: col index
+    uint8_t pivrows[n]; // keeps track of rows swaps to undo at end
+    T tmp;      // used for finding max value and making column swaps
     
     for (k = 0; k < n; k++){
         // find pivot row, the row with biggest entry in current column
@@ -154,7 +162,7 @@ int32_t matrix_invert(float* A, int32_t n){
         // check for singular matrix
         if (A[pivrow * n + k] == 0.0f){
             // Inversion failed due to the matrix being singular
-            return 0;
+            return false;
         }
         
         // Execute pivot (row swap) if needed
@@ -198,15 +206,16 @@ int32_t matrix_invert(float* A, int32_t n){
             }
         }
     }
-    return 1;
+    return true;
 }
 
 
 // Matrix symmetry Routine
-void matrix_force_symmetry(float* A, int32_t n){
+template <typename T>
+void MatrixN<T>::matrix_force_symmetry(T* A, uint8_t n){
     // A = input matrix (m x n)
     // n = number of columns in A = number of columns in B
-    int32_t i, j;
+    uint8_t i, j;
     for (i = 0; i < n; i++){
         for(j = 0; j < (i - 1); j++){
             A[n * i + j]=(A[n * i + j] + A[n * j + i]) / 2;
@@ -214,3 +223,13 @@ void matrix_force_symmetry(float* A, int32_t n){
         }
     }       
 }
+
+template void MatrixN<float>::matrix_copy(float* A, uint8_t n, uint8_t m, float* B);
+template void MatrixN<float>::matrix_mult(float* A, float* B, uint8_t m, uint8_t p, uint8_t n, float* C);
+template void MatrixN<float>::matrix_mult_transpose(float* A, float* B, uint8_t m, uint8_t p, uint8_t n, float* C);
+template void MatrixN<float>::matrix_add(float* A, float* B, uint8_t m, uint8_t n, float* C);
+template void MatrixN<float>::matrix_subtract(float* A, float* B, uint8_t m, uint8_t n, float* C);
+template void MatrixN<float>::matrix_transpose(float* A, uint8_t m, uint8_t n, float* C);
+template void MatrixN<float>::matrix_mult_scalar(float* A, float s, uint8_t m, uint8_t n, float* C);
+template bool MatrixN<float>::matrix_invert(float* A, uint8_t n);
+template void MatrixN<float>::matrix_force_symmetry(float* A, uint8_t n);
