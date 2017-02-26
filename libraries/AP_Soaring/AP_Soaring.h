@@ -57,9 +57,8 @@ class SoaringController
     float _loiter_rad;
     bool _throttle_suppressed;
     
+    float _displayed_vario_reading;   
     float _aspd_filt;
-    uint8_t _msgid;
-    uint8_t _msgid2;
     float correct_netto_rate(float climb_rate, float phi, float aspd);
     float McCready(float alt);
     void get_wind_corrected_drift(const Location *current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy);
@@ -82,39 +81,23 @@ protected:
     AP_Float alt_cutoff;
         
 public:
-    SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl *&spdHgt, const AP_Vehicle::FixedWing &parms, uint8_t msgid, uint8_t msgid2) :
+    SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl *&spdHgt, const AP_Vehicle::FixedWing &parms) :
         _ahrs(ahrs),
         _spdHgt(spdHgt),
         _aparm(parms),
-        _thermal_start_time_us(0),
-        _cruise_start_time_us(0),
-        _prev_update_time(0),
-        _prev_vario_update_time(0),
-        _vario_reading(0.0f),
-        _filtered_vario_reading(0.0f),
-        _last_alt(0.0f),
-        _alt(0.0f),
-        _last_aspd(0.0f),
-        _last_roll(0.0f),
-        _last_total_E(0.0f),
         _new_data(false),
         _loiter_rad(parms.loiter_radius),
-        _throttle_suppressed(true),
-        _aspd_filt(0.0f),
-        _msgid(msgid),
-        _msgid2(msgid2)
+        _throttle_suppressed(true)
     {
         AP_Param::setup_object_defaults(this, var_info);
         ahrs.get_position(_prev_update_location);
         ahrs.get_position(_prev_vario_update_location);  
     }
     
-    float _displayed_vario_reading;  
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
     void get_target(Location & wp);
     bool suppress_throttle();
-    void log_data();
     bool check_thermal_criteria();
     bool check_cruise_criteria();
     bool check_init_thermal_criteria();
@@ -125,39 +108,7 @@ public:
     bool is_active();
     bool get_throttle_suppressed() { return _throttle_suppressed; }
     void set_throttle_suppressed(bool suppressed) { _throttle_suppressed = suppressed; }
-    
-    // Soaring log structure
-    struct PACKED log_Thermal_Tuning {
-        LOG_PACKET_HEADER;      
-        uint64_t time_us;
-        float netto_rate;
-        float dx;
-        float dy;
-        float x0;
-        float x1;       
-        float x2;       
-        float x3;       
-        uint32_t lat;       
-        uint32_t lng;       
-        float alt;
-        float dx_w;
-        float dy_w;
-    } log_tuning;
-    
-    struct PACKED log_Vario_Tuning {
-        LOG_PACKET_HEADER;      
-        uint64_t time_us;
-        float aspd_raw;
-        float aspd_filt;
-        float alt;
-        float roll;
-        float raw;
-        float filt;
-        float wind_x;
-        float wind_y;
-        float dx;
-        float dy;
-    } log_vario_tuning;
+    float get_vario_reading() { return _displayed_vario_reading; }
  
     void update_vario();
 };

@@ -1,4 +1,5 @@
 #include "AP_Soaring.h"
+#include <GCS_MAVLink/GCS.h>
 #include <stdint.h>
 extern const AP_HAL::HAL& hal;
 
@@ -163,10 +164,10 @@ bool SoaringController::check_cruise_criteria()
     float thermalability = (_ekf.X[0]*expf(-powf(_loiter_rad / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK; 
     
     if (soar_active && (AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6) && thermalability < McCready(_alt)) {
-        hal.console->printf("Thermal weak, recommend quitting: W %f R %f th %f alt %f Mc %f\n", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (double)_alt, (double)McCready(_alt));
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Thermal weak, recommend quitting: W %f R %f th %f alt %f Mc %f\n", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (double)_alt, (double)McCready(_alt));
         return true;
     } else if (soar_active && (_alt>alt_max || _alt<alt_min)) {
-        hal.console->printf("Out of allowable altitude range, beginning cruise. Alt = %f\n", (double)_alt);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ALERT, "Out of allowable altitude range, beginning cruise. Alt = %f\n", (double)_alt);
         return true;
     }
     
@@ -248,29 +249,30 @@ void SoaringController::update_thermalling()
             // Print32_t filter info for debugging
             int32_t i;
             for (i = 0; i < 4; i++) {
-                hal.console->printf("%e ", (double)_ekf.P[i][i]);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "%e ", (double)_ekf.P[i][i]);
             }
             for (i = 0; i < 4; i++) {
-                hal.console->printf("%e ", (double)_ekf.X[i]);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "%e ", (double)_ekf.X[i]);
             }
         #endif
         
         // write log - save the data.
-        log_tuning.time_us = AP_HAL::micros64();
-        log_tuning.netto_rate = _vario_reading;
-        log_tuning.dx = dx;
-        log_tuning.dy = dy;
-        log_tuning.x0 = _ekf.X[0];
-        log_tuning.x1 = _ekf.X[1];
-        log_tuning.x2 = _ekf.X[2];
-        log_tuning.x3 = _ekf.X[3];
-        log_tuning.lat = current_loc.lat;
-        log_tuning.lng = current_loc.lng;
-        log_tuning.alt = _alt;
-        log_tuning.dx_w = dx_w;
-        log_tuning.dy_w = dy_w;
+        DataFlash_Class::instance()->Log_Write("SOAR", "QfffffffLLfff", "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w",
+                                              AP_HAL::micros64(),
+                                              (double)_vario_reading,
+                                              (double)dx,
+                                              (double)dy,
+                                              (double)_ekf.X[0],
+                                              (double)_ekf.X[1],
+                                              (double)_ekf.X[2],
+                                              (double)_ekf.X[3],
+                                              (double)current_loc.lat,
+                                              (double)current_loc.lng,
+                                              (double)_alt,
+                                              (double)dx_w,
+                                              (double)dy_w);
             
-        log_data(); 
+        //log_data(); 
         _ekf.update(_vario_reading,dx, dy);       // update the filter
          
         _prev_update_location = current_loc;      // save for next time
@@ -294,7 +296,7 @@ void SoaringController::update_vario()
     
     if (fabsf(_alt - _last_alt) > 0.0001f) { // if no change in altitude then there will be no update of ekf buffer
         // Both filtered total energy rates and unfiltered are computed for the thermal switching logic and the EKF
-        float aspd;
+        float aspd = 0;
         float roll = _ahrs.roll;
         if (!_ahrs.airspeed_estimate(&aspd)) {
             aspd = _aparm.airspeed_cruise_cm / 100.0f;
@@ -321,21 +323,18 @@ void SoaringController::update_vario()
         _prev_vario_update_time = AP_HAL::micros64();
         _new_data = true;
         
-        log_vario_tuning.time_us = AP_HAL::micros64();
-        log_vario_tuning.aspd_raw = aspd;
-        log_vario_tuning.aspd_filt = _aspd_filt;
-        log_vario_tuning.alt = _alt;
-        log_vario_tuning.roll = roll;
-        log_vario_tuning.raw = _vario_reading;
-        log_vario_tuning.filt = _filtered_vario_reading;
-        log_vario_tuning.wind_x = wind.x;
-        log_vario_tuning.wind_y = wind.y;
-        log_vario_tuning.dx = dx;
-        log_vario_tuning.dy = dy;
-        log_vario_tuning.head1 = HEAD_BYTE1;
-        log_vario_tuning.head2 = HEAD_BYTE2;
-        log_vario_tuning.msgid = _msgid2;
-        DataFlash_Class::instance()->WriteBlock(&log_vario_tuning, sizeof(log_vario_tuning));
+        DataFlash_Class::instance()->Log_Write("VAR", "Qffffffffff", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,wx,wy,dx,dy",
+                                              AP_HAL::micros64(),
+                                              (double)aspd,
+                                              (double)_aspd_filt,
+                                              (double)_alt,
+                                              (double)roll,
+                                              (double)_vario_reading,
+                                              (double)_filtered_vario_reading,
+                                              (double)wind.x,
+                                              (double)wind.y,
+                                              (double)dx,
+                                              (double)dy);
     }
 }
 
@@ -357,7 +356,7 @@ float SoaringController::correct_netto_rate(float climb_rate, float phi, float a
     //float temp_netto = netto_rate;
     //float dVdt = SpdHgt_Controller->get_VXdot();
     //netto_rate = netto_rate + aspd*dVdt/GRAVITY_MSS;
-    //hal.console->printf_P(PSTR("%f %f %f %f\n"),temp_netto,dVdt,netto_rate,barometer.get_altitude());
+    //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "%f %f %f %f\n",temp_netto,dVdt,netto_rate,barometer.get_altitude());
     return netto_rate;
 }
  
@@ -365,15 +364,6 @@ float SoaringController::McCready(float alt) {
     // A method shell to be filled in later
     return thermal_vspeed;
  }
-        
-// log the contents of the log_tuning structure to dataflash
-void SoaringController::log_data()
-{
-    log_tuning.head1 = HEAD_BYTE1;
-    log_tuning.head2 = HEAD_BYTE2;
-    log_tuning.msgid = _msgid;
-    DataFlash_Class::instance()->WriteBlock(&log_tuning, sizeof(log_tuning));
-}
 
 bool SoaringController::is_active()
 {

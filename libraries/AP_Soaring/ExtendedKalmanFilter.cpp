@@ -19,11 +19,11 @@ float ExtendedKalmanFilter::measurementpredandjacobian(float* A){
 }
 
 
-void ExtendedKalmanFilter::reset(float x[N], float p[N][N],float q[N][N], float r[1][1]){
-    matrix_copy((float*)p, N, N, (float*)P);
-    matrix_copy((float*)x, N, 1, (float*)X);
-    matrix_copy((float*)q, N, N, (float*)Q);
-    matrix_copy((float*)r, 1, 1, (float*)R);
+void ExtendedKalmanFilter::reset(float x[N], float p[N][N], float q[N][N], float r[1][1]){
+    MatrixN<float>::matrix_copy((float*)p, N, N, (float*)P);
+    MatrixN<float>::matrix_copy((float*)x, N, 1, (float*)X);
+    MatrixN<float>::matrix_copy((float*)q, N, N, (float*)Q);
+    MatrixN<float>::matrix_copy((float*)r, 1, 1, (float*)R);
 }
 
 
@@ -43,7 +43,7 @@ void ExtendedKalmanFilter::update(float z, float Vx, float Vy)
     // P = A*ekf.P*A'+ekf.Q;              
     // We know A is identity so
     // P = ekf.P+ekf.Q;
-    matrix_add((float*)P, (float*)Q, N, N, (float*)P);
+    MatrixN<float>::matrix_add((float*)P, (float*)Q, N, N, (float*)P);
     
     // What measurement do we expect to receive in the estimated
     // state
@@ -53,27 +53,27 @@ void ExtendedKalmanFilter::update(float z, float Vx, float Vy)
     
     // LINE 40
     // P12 = P * H';
-    matrix_mult_transpose((float*)P, (float*)H, N, N, 1, (float*)P12);      //cross covariance
+    MatrixN<float>::matrix_mult_transpose((float*)P, (float*)H, N, N, 1, (float*)P12);      //cross covariance
     
     // LINE 41
     // Calculate the KALMAN GAIN
     // K = P12 * inv(H*P12 + ekf.R);                     %Kalman filter gain
-    matrix_mult((float*)H, (float*)P12, 1, N, 1, (float*)temp1);
+    MatrixN<float>::matrix_mult((float*)H, (float*)P12, 1, N, 1, (float*)temp1);
     float temp = 1.0 / (temp1[0][0] + R[0][0]);
-    matrix_mult_scalar((float*)P12, temp, N, 1, (float*)K);
+    MatrixN<float>::matrix_mult_scalar((float*)P12, temp, N, 1, (float*)K);
     
     // Correct the state estimate using the measurement residual.
     // LINE 44
     // X = x1 + K * (z - z1);
     float residual = z - z1;
-    matrix_mult_scalar((float*)K, residual, N, 1, (float*)temp1);
-    matrix_add((float*)temp1, (float*)X, N, 1, (float*)X);
+    MatrixN<float>::matrix_mult_scalar((float*)K, residual, N, 1, (float*)temp1);
+    MatrixN<float>::matrix_add((float*)temp1, (float*)X, N, 1, (float*)X);
     
     // Correct the covariance too.
     // LINE 46
     // NB should be altered to reflect Stengel
     // P = P_predict - K * P12'; 
-    matrix_mult_transpose((float*)K, (float*)P12, N, 1, N, (float*)temp1);
-    matrix_subtract((float*)P,(float*)temp1, N, N, (float*)P);
-    matrix_force_symmetry((float*)P, N);
+    MatrixN<float>::matrix_mult_transpose((float*)K, (float*)P12, N, 1, N, (float*)temp1);
+    MatrixN<float>::matrix_subtract((float*)P,(float*)temp1, N, N, (float*)P);
+    MatrixN<float>::matrix_force_symmetry((float*)P, N);
 }
