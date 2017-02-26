@@ -345,9 +345,6 @@ public:
         k_param_pidWheelSteer, // unused
 
         k_param_mixing_offset,
-        
-        // 250: ArduSoar parameters
-        k_param_soaring_controller,
         k_param_dspoiler_rud_rate, 
                 
         k_param_DataFlash = 253, // Logging Group
@@ -545,6 +542,9 @@ public:
 
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
+    
+    // ArduSoar parameters
+    SoaringController soaring_controller;
 };
 
 extern const AP_Param::Info var_info[];

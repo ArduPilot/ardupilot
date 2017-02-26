@@ -263,7 +263,7 @@ private:
     AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
     //Soaring Controller
-    SoaringController soaring_controller {ahrs, SpdHgt_Controller, aparm, LOG_THERMAL_MSG, LOG_VARIO_MSG};
+    SoaringController soaring_controller {ahrs, SpdHgt_Controller, aparm};
     
     // Relay
     AP_Relay relay;
