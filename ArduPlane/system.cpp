@@ -417,7 +417,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         auto_navigation_mode = false;
         
 		// for ArduSoar soaring_controller
-        soaring_controller.update_cruising();
+        soaring_controller.init_cruising();
 
         set_target_altitude_current();
         break;
@@ -441,7 +441,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         // start or resume the mission, based on MIS_AUTORESET
         mission.start_or_resume();
 		
-        soaring_controller.update_cruising();
+        soaring_controller.init_cruising();
         break;
 
     case RTL:

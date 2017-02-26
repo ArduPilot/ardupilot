@@ -41,29 +41,27 @@ void Plane::update_soaring() {
     case AUTO:
     case FLY_BY_WIRE_B:
         // Test for switch into thermalling mode
+        soaring_controller.update_cruising();
+
         if (soaring_controller.check_thermal_criteria()) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Thermal detected, entering loiter\n");
             set_mode(LOITER, MODE_REASON_SOARING_THERMAL_DETECTED);
         }
         break;
     case LOITER:
-        if (soaring_controller.check_init_thermal_criteria()) {
-            soaring_controller.update_thermalling(); // update estimate
-        } else {
-            // Update thermal estimate and check for switch back to AUTO
-            soaring_controller.update_thermalling();  // Update estimate
+        // Update thermal estimate and check for switch back to AUTO
+        soaring_controller.update_thermalling();  // Update estimate
 
-            if (soaring_controller.check_cruise_criteria()) {
-                // Exit as soon as thermal state estimate deteriorates
-                if (previous_mode == FLY_BY_WIRE_B) {
-                    set_mode(RTL, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                } else {
-                    set_mode(previous_mode, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                }
+        if (soaring_controller.check_cruise_criteria()) {
+            // Exit as soon as thermal state estimate deteriorates
+            if (previous_mode == FLY_BY_WIRE_B) {
+                set_mode(RTL, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
             } else {
-                // still in thermal - need to update the wp location
-                soaring_controller.get_target(next_WP_loc);
+                set_mode(previous_mode, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
             }
+        } else {
+            // still in thermal - need to update the wp location
+            soaring_controller.get_target(next_WP_loc);
         }
         break;
     default:
