@@ -353,14 +353,6 @@ const AP_Param::Info Sub::var_info[] = {
     GSCALAR(ch12_option, "CH12_OPT",                AUXSW_DO_NOTHING),
 #endif
 
-    // @Param: ARMING_CHECK
-    // @DisplayName: Arming check
-    // @Description: Allows enabling or disabling of pre-arming checks of receiver, accelerometer, barometer, compass and GPS
-    // @Values: 0:Disabled, 1:Enabled, -3:Skip Baro, -5:Skip Compass, -9:Skip GPS, -17:Skip INS, -33:Skip Params/Rangefinder, -65:Skip RC, 127:Skip Voltage
-    // @Bitmask: 0:All,1:Baro,2:Compass,3:GPS,4:INS,5:Parameters+Rangefinder,6:RC,7:Voltage
-    // @User: Standard
-    GSCALAR(arming_check, "ARMING_CHECK",           ARMING_CHECK_NONE),
-
     // @Param: DISARM_DELAY
     // @DisplayName: Disarm delay
     // @Description: Delay before automatic disarm in seconds. A value of zero disables auto disarm.
@@ -746,6 +738,10 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery,                "BATT",         AP_BattMonitor),
 
+    // @Group: ARMING_
+    // @Path: AP_Arming_Sub.cpp,../libraries/AP_Arming/AP_Arming.cpp
+    GOBJECT(arming, "ARMING_", AP_Arming_Sub),
+
     // @Group: BRD_
     // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
     GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
@@ -958,6 +954,14 @@ void Sub::load_parameters(void)
 
     AP_Param::set_default_by_name("BRD_SAFETYENABLE", 0);
     AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+    AP_Param::set_default_by_name("ARMING_CHECK",
+            AP_Arming::ARMING_CHECK_BARO |
+            AP_Arming::ARMING_CHECK_COMPASS |
+            AP_Arming::ARMING_CHECK_INS |
+            AP_Arming::ARMING_CHECK_RC |
+            AP_Arming::ARMING_CHECK_VOLTAGE |
+            AP_Arming::ARMING_CHECK_BATTERY |
+            AP_Arming::ARMING_CHECK_LOGGING);
 }
 
 void Sub::convert_old_parameters(void)
