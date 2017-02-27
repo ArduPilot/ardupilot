@@ -136,10 +136,12 @@ void Plane::update_home()
         return;
     }
     if (home_is_set == HOME_SET_NOT_LOCKED) {
-        Location loc = gps.location();
-        ahrs.set_home(loc);
-        Log_Write_Home_And_Origin();
-        GCS_MAVLINK::send_home_all(loc);
+        Location loc;
+        if(ahrs.get_position(loc)) {
+            ahrs.set_home(loc);
+            Log_Write_Home_And_Origin();
+            GCS_MAVLINK::send_home_all(loc);
+        }
     }
     barometer.update_calibration();
 }
