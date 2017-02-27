@@ -122,6 +122,8 @@ private:
     AP_Int8 frame_type;
     
     AP_MotorsMulticopter *motors;
+    const struct AP_Param::GroupInfo *motors_var_info;
+    
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
