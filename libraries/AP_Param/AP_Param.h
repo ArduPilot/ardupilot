@@ -49,11 +49,14 @@
 // no conflict with the parent
 #define AP_PARAM_NO_SHIFT           8
 
+// the var_info is a pointer, allowing for dynamic definition of the var_info tree
+#define AP_PARAM_FLAG_INFO_POINTER  16
+
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   4
+#define AP_PARAM_FRAME_TYPE_SHIFT   5
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -93,6 +96,9 @@
 // declare a pointer subgroup entry in a group var_info
 #define AP_SUBGROUPPTR(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_POINTER }
 
+// declare a pointer subgroup entry in a group var_info with a pointer var_info
+#define AP_SUBGROUPVARPTR(element, name, idx, thisclazz, var_info) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info_ptr : &var_info }, AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER }
+
 #define AP_GROUPEND     { AP_PARAM_NONE, 0xFF, "", 0, { group_info : nullptr } }
 #define AP_VAREND       { AP_PARAM_NONE, "", 0, nullptr, { group_info : nullptr } }
 
@@ -124,6 +130,7 @@ public:
         ptrdiff_t offset; // offset within the object
         union {
             const struct GroupInfo *group_info;
+            const struct GroupInfo **group_info_ptr; // when AP_PARAM_FLAG_INFO_POINTER is set in flags
             const float def_value;
         };
         uint16_t flags;
@@ -135,6 +142,7 @@ public:
         const void *ptr;    // pointer to the variable in memory
         union {
             const struct GroupInfo *group_info;
+            const struct GroupInfo **group_info_ptr; // when AP_PARAM_FLAG_INFO_POINTER is set in flags
             const float def_value;
         };
         uint16_t flags;
@@ -440,6 +448,12 @@ private:
     static bool adjust_group_offset(uint16_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset);
     static bool get_base(const struct Info &info, ptrdiff_t &base);
 
+    /// get group_info pointer based on flags
+    static const struct GroupInfo *get_group_info(const struct GroupInfo &ginfo);
+
+    /// get group_info pointer based on flags
+    static const struct GroupInfo *get_group_info(const struct Info &ginfo);
+        
     const struct Info *         find_var_info_group(
                                     const struct GroupInfo *    group_info,
                                     uint16_t                    vindex,
