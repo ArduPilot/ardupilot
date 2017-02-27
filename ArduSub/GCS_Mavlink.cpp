@@ -224,10 +224,10 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
 #endif
 
 #if RANGEFINDER_ENABLED == ENABLED
-    if (rangefinder.num_sensors() > 0) {
+    if (rangefinder_state.enabled) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (rangefinder.has_data()) {
+        if (rangefinder.has_data_orient(ROTATION_PITCH_270)) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
@@ -379,13 +379,13 @@ void NOINLINE Sub::send_current_waypoint(mavlink_channel_t chan)
 void NOINLINE Sub::send_rangefinder(mavlink_channel_t chan)
 {
     // exit immediately if rangefinder is disabled
-    if (!rangefinder.has_data()) {
+    if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
         return;
     }
     mavlink_msg_rangefinder_send(
         chan,
-        rangefinder.distance_cm() * 0.01f,
-        rangefinder.voltage_mv() * 0.001f);
+        rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f,
+        rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
 }
 #endif
 
