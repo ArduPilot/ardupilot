@@ -56,3 +56,4 @@ LIBRARIES += AP_LeakDetector
 LIBRARIES += AP_Gripper
 LIBRARIES += AP_Beacon
 LIBRARIES += AP_TemperatureSensor
+LIBRARIES += AP_Arming
