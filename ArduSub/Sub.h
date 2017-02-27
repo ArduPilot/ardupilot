@@ -83,6 +83,7 @@
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_TemperatureSensor/TSYS01.h>
+#include "AP_Arming_Sub.h"
 #include "defines.h"
 #include "config.h"
 
@@ -121,6 +122,7 @@ public:
     friend class GCS_MAVLINK_Sub;
     friend class Parameters;
     friend class ParametersG2;
+    friend class AP_Arming_Sub;
 
     Sub(void);
 
@@ -348,6 +350,8 @@ private:
 
     // Battery Sensors
     AP_BattMonitor battery;
+
+    AP_Arming_Sub arming {ahrs, barometer, compass, battery};
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP

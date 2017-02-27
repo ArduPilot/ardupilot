@@ -69,6 +69,7 @@ public:
         k_param_serial_manager, // Serial ports, AP_SerialManager
         k_param_notify, // Notify Library, AP_Notify
         k_param_cli_enabled, // Old (deprecated) command line interface
+        k_param_arming, // Arming checks
 
 
         // Sensor objects
@@ -185,7 +186,7 @@ public:
 
         // Misc Sub settings
         k_param_log_bitmask = 165,
-        k_param_arming_check,
+        k_param_arming_check, // deprecated, remove
         k_param_angle_max,
         k_param_rangefinder_gain,
         k_param_gps_hdop_good,
@@ -310,7 +311,6 @@ public:
     AP_Int8         ch10_option;
     AP_Int8         ch11_option;
     AP_Int8         ch12_option;
-    AP_Int8         arming_check;
     AP_Int8         disarm_delay;
 
     AP_Int8         fs_ekf_action;
