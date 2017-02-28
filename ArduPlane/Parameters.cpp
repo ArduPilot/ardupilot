@@ -1194,7 +1194,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // 3 was used by prototype for servo_channels
     
-    // @Group: SYSID_ENFORCE
+    // @Param: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
     // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
     // @Values: 0:NotEnforced,1:Enforced
