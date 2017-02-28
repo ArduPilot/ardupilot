@@ -81,7 +81,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
-#include "../libraries/AP_LeakDetector/AP_LeakDetector.h" // Leak detector
+#include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_TemperatureSensor/TSYS01.h>
 #include "defines.h"
 #include "config.h"
