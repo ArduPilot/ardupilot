@@ -189,8 +189,9 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
 
-    // default throttle ranges (i.e. _throttle_radio_min, _throttle_radio_max)
-    set_throttle_range(1100, 1900);
+    // default throttle range
+    _throttle_radio_min = 1100;
+    _throttle_radio_max = 1900;
 };
 
 // output - sends commands to the motors
