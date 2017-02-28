@@ -261,9 +261,6 @@ private:
 
     // selected navigation controller
     AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
-
-    //Soaring Controller
-    SoaringController soaring_controller {ahrs, SpdHgt_Controller, aparm};
     
     // Relay
     AP_Relay relay;

@@ -242,7 +242,7 @@ void Plane::send_vfr_hud(mavlink_channel_t chan)
         (ahrs.yaw_sensor / 100) % 360,
         abs(throttle_percentage()),
         current_loc.alt / 100.0f,
-        (soaring_controller.is_active() ? soaring_controller.get_vario_reading() : barometer.get_climb_rate()));
+        (g2.soaring_controller.is_active() ? g2.soaring_controller.get_vario_reading() : barometer.get_climb_rate()));
 }
 
 /*
