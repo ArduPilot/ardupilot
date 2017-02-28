@@ -183,6 +183,9 @@ void AP_Compass_IST8310::timer()
     auto y = static_cast<int16_t>(le16toh(buffer.ry));
     auto z = static_cast<int16_t>(le16toh(buffer.rz));
 
+    // flip Z to conform to right-hand rule convention
+    z = -z;
+
     /* convert uT to milligauss */
     Vector3f field = Vector3f{x * 3.0f, y * 3.0f, z * 3.0f};
 
