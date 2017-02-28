@@ -340,6 +340,7 @@ SRV_Channels::move_servo(SRV_Channel::Aux_servo_function_t function,
         return;
     }
     float v = float(value - angle_min) / float(angle_max - angle_min);
+    v = constrain_float(v, 0.0f, 1.0f);
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &ch = channels[i];
         if (ch.function.get() == function) {
