@@ -2,14 +2,15 @@
 #include "AP_Math/matrixN.h"
 
 
-float ExtendedKalmanFilter::measurementpredandjacobian(float* A){
+float ExtendedKalmanFilter::measurementpredandjacobian(VectorN<float,N> &A)
+{
     // This function computes the Jacobian using equations from
     // analytical derivation of Gaussian updraft distribution
     // This expression gets used lots
     float expon = expf(- (powf(X[2], 2) + powf(X[3], 2)) / powf(X[1], 2));
     // Expected measurement
     float w = X[0] * expon;
-    
+
     // Elements of the Jacobian
     A[0] = expon;
     A[1] = 2 * X[0] * ((powf(X[2],2) + powf(X[3],2)) / powf(X[1],3)) * expon;
@@ -19,61 +20,60 @@ float ExtendedKalmanFilter::measurementpredandjacobian(float* A){
 }
 
 
-void ExtendedKalmanFilter::reset(float x[N], float p[N][N], float q[N][N], float r[1][1]){
-    MatrixN<float>::matrix_copy((float*)p, N, N, (float*)P);
-    MatrixN<float>::matrix_copy((float*)x, N, 1, (float*)X);
-    MatrixN<float>::matrix_copy((float*)q, N, N, (float*)Q);
-    MatrixN<float>::matrix_copy((float*)r, 1, 1, (float*)R);
+void ExtendedKalmanFilter::reset(const VectorN<float,N> &x, const MatrixN<float,N> &p, const MatrixN<float,N> q, float r)
+{
+    P = p;
+    X = x;
+    Q = q;
+    R = r;
 }
 
 
 void ExtendedKalmanFilter::update(float z, float Vx, float Vy)
-{   
-    float temp1[N][N] ;
-    float H[1][N];
-    float P12[N][1];
-    float K[N][1];
-    // LINE 28  
-    // Estimate new state from old. 
+{
+    MatrixN<float,N> tempM;
+    VectorN<float,N> H;
+    VectorN<float,N> P12;
+    VectorN<float,N> K;
+    
+    // LINE 28
+    // Estimate new state from old.
     X[2] -= Vx;
     X[3] -= Vy;
-    
+
     // LINE 33
-    // Update the covariance matrix 
-    // P = A*ekf.P*A'+ekf.Q;              
+    // Update the covariance matrix
+    // P = A*ekf.P*A'+ekf.Q;
     // We know A is identity so
     // P = ekf.P+ekf.Q;
-    MatrixN<float>::matrix_add((float*)P, (float*)Q, N, N, (float*)P);
-    
+    P += Q;
+
     // What measurement do we expect to receive in the estimated
     // state
     // LINE 37
     // [z1,H] = ekf.jacobian_h(x1);
-    float z1 = measurementpredandjacobian((float*)H);    
-    
+    float z1 = measurementpredandjacobian(H);
+
     // LINE 40
     // P12 = P * H';
-    MatrixN<float>::matrix_mult_transpose((float*)P, (float*)H, N, N, 1, (float*)P12);      //cross covariance
+    P12.mult(P, H); //cross covariance 
     
     // LINE 41
     // Calculate the KALMAN GAIN
     // K = P12 * inv(H*P12 + ekf.R);                     %Kalman filter gain
-    MatrixN<float>::matrix_mult((float*)H, (float*)P12, 1, N, 1, (float*)temp1);
-    float temp = 1.0 / (temp1[0][0] + R[0][0]);
-    MatrixN<float>::matrix_mult_scalar((float*)P12, temp, N, 1, (float*)K);
-    
+    K = P12 * 1.0 / (H * P12 + R);
+
     // Correct the state estimate using the measurement residual.
     // LINE 44
     // X = x1 + K * (z - z1);
-    float residual = z - z1;
-    MatrixN<float>::matrix_mult_scalar((float*)K, residual, N, 1, (float*)temp1);
-    MatrixN<float>::matrix_add((float*)temp1, (float*)X, N, 1, (float*)X);
-    
+    X += K * (z - z1);
+
     // Correct the covariance too.
     // LINE 46
     // NB should be altered to reflect Stengel
-    // P = P_predict - K * P12'; 
-    MatrixN<float>::matrix_mult_transpose((float*)K, (float*)P12, N, 1, N, (float*)temp1);
-    MatrixN<float>::matrix_subtract((float*)P,(float*)temp1, N, N, (float*)P);
-    MatrixN<float>::matrix_force_symmetry((float*)P, N);
+    // P = P_predict - K * P12';
+    tempM.mult(K, P12);
+    P -= tempM;
+    
+    P.force_symmetry();
 }

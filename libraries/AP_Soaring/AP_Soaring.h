@@ -1,7 +1,12 @@
-/* 
-Soaring Controller class by Samuel Tabor
-Provides a layer between the thermal centring algorithm and the main code for managing navigation targets, data logging, tuning parameters, algorithm inputs and eventually other soaring strategies such as speed-to-fly. AP_TECS libary used for reference.
+/*
+  Soaring Controller class by Samuel Tabor
+
+  Provides a layer between the thermal centring algorithm and the main
+  code for managing navigation targets, data logging, tuning parameters,
+  algorithm inputs and eventually other soaring strategies such as
+  speed-to-fly. AP_TECS libary used for reference.
 */
+
 #pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -21,18 +26,14 @@ Provides a layer between the thermal centring algorithm and the main code for ma
 #define TE_FILT 0.03
 #define TE_FILT_DISPLAYED 0.15
 
-class SoaringController
-{
-    ExtendedKalmanFilter _ekf;
+class SoaringController {
+    ExtendedKalmanFilter _ekf{};
     AP_AHRS &_ahrs;
-    AP_SpdHgtControl *&_spdHgt;
+    AP_SpdHgtControl &_spdHgt;
     const AP_Vehicle::FixedWing &_aparm;
 
     // store aircraft location at last update
     struct Location _prev_update_location;
-
-    // store aircraft location at last update
-    struct Location _prev_vario_update_location;
 
     // store time thermal was entered for hysteresis
     unsigned long _thermal_start_time_us;
@@ -56,14 +57,14 @@ class SoaringController
     bool _new_data;
     float _loiter_rad;
     bool _throttle_suppressed;
-    
-    float _displayed_vario_reading;   
+
+    float _displayed_vario_reading;
     float _aspd_filt;
     float correct_netto_rate(float climb_rate, float phi, float aspd);
     float McCready(float alt);
     void get_wind_corrected_drift(const Location *current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy);
     void get_altitude_wrt_home(float *alt);
-  
+
 protected:
     AP_Int8 soar_active;
     AP_Float thermal_vspeed;
@@ -79,21 +80,10 @@ protected:
     AP_Float alt_max;
     AP_Float alt_min;
     AP_Float alt_cutoff;
-        
+
 public:
-    SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl *&spdHgt, const AP_Vehicle::FixedWing &parms) :
-        _ahrs(ahrs),
-        _spdHgt(spdHgt),
-        _aparm(parms),
-        _new_data(false),
-        _loiter_rad(parms.loiter_radius),
-        _throttle_suppressed(true)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-        ahrs.get_position(_prev_update_location);
-        ahrs.get_position(_prev_vario_update_location);  
-    }
-    
+    SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
+
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
     void get_target(Location & wp);
@@ -106,9 +96,18 @@ public:
     void update_thermalling();
     void update_cruising();
     bool is_active();
-    bool get_throttle_suppressed() { return _throttle_suppressed; }
-    void set_throttle_suppressed(bool suppressed) { _throttle_suppressed = suppressed; }
-    float get_vario_reading() { return _displayed_vario_reading; }
- 
+    bool get_throttle_suppressed()
+    {
+        return _throttle_suppressed;
+    }
+    void set_throttle_suppressed(bool suppressed)
+    {
+        _throttle_suppressed = suppressed;
+    }
+    float get_vario_reading()
+    {
+        return _displayed_vario_reading;
+    }
+
     void update_vario();
 };
