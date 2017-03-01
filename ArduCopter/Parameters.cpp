@@ -693,8 +693,8 @@ const AP_Param::Info Copter::var_info[] = {
 #else
     GOBJECTPTR(attitude_control, "ATC_", AC_AttitudeControl_Multi),
 #endif
-    
-    // @Group: POSCON_
+
+    // @Group: PSC
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     GOBJECTPTR(pos_control, "PSC", AC_PosControl),
 
