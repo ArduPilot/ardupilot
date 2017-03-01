@@ -53,6 +53,21 @@
 
 #define SAMPLING_PERIOD_USEC (10 * USEC_PER_MSEC)
 
+/*
+ * FSR:
+ *   x, y: +- 1600 µT
+ *   z:    +- 2500 µT
+ *
+ * Resolution according to datasheet is 0.3µT/LSB
+ */
+#define IST8310_RESOLUTION 0.3
+
+static const int16_t IST8310_MAX_VAL_XY = (1600 / IST8310_RESOLUTION) + 1;
+static const int16_t IST8310_MIN_VAL_XY = -IST8310_MAX_VAL_XY;
+static const int16_t IST8310_MAX_VAL_Z  = (2500 / IST8310_RESOLUTION) + 1;
+static const int16_t IST8310_MIN_VAL_Z  = -IST8310_MAX_VAL_Z;
+
+
 extern const AP_HAL::HAL &hal;
 
 AP_Compass_Backend *AP_Compass_IST8310::probe(Compass &compass,
@@ -149,6 +164,7 @@ bool AP_Compass_IST8310::init()
     _perf_xfer_err = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_xfer_err");
     _perf_not_ready = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_not_ready");
     _perf_restart = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_restart");
+    _perf_bad_data = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_bad_data");
 
     return true;
 
@@ -213,10 +229,14 @@ void AP_Compass_IST8310::timer()
 
     start_conversion();
 
-    // buffer data is 14bits. Check for invalid data and drop packet
-    if (x > 8191 || x < -8192 ||
-        y > 8191 || y < -8192 ||
-        z > 8191 || z < -8192) {
+    /*
+     * Check if value makes sense according to the FSR and Resolution of
+     * this sensor, discarding outliers
+     */
+    if (x > IST8310_MAX_VAL_XY || x < IST8310_MIN_VAL_XY ||
+        y > IST8310_MAX_VAL_XY || y < IST8310_MIN_VAL_XY ||
+        z > IST8310_MAX_VAL_Z  || z < IST8310_MIN_VAL_Z) {
+        hal.util->perf_count(_perf_bad_data);
         return;
     }
 
