@@ -19,8 +19,7 @@ enum ESCCalibrationModes {
 void Sub::esc_calibration_startup_check()
 {
     // exit immediately if pre-arm rc checks fail
-    pre_arm_rc_checks();
-    if (!ap.pre_arm_rc_check) {
+    if (!arming.rc_check()) {
         // clear esc flag for next time
         if ((g.esc_calibrate != ESCCAL_NONE) && (g.esc_calibrate != ESCCAL_DISABLED)) {
             g.esc_calibrate.set_and_save(ESCCAL_NONE);

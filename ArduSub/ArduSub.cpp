@@ -372,11 +372,11 @@ void Sub::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Sub::one_hz_loop()
 {
+    AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
+
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
-
-    update_arming_checks();
 
     if (!motors.armed()) {
         // make it possible to change ahrs orientation at runtime during initial config

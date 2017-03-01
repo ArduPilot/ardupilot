@@ -52,9 +52,7 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
     }
 
     // check if radio is calibrated
-    pre_arm_rc_checks();
-    if (!ap.pre_arm_rc_check) {
-        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "RC not calibrated");
+    if (!arming.rc_check()) {
         ap.compass_mot = false;
         return 1;
     }

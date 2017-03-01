@@ -230,31 +230,29 @@ private:
 # include USERHOOK_VARIABLES
 #endif
 
-    // Documentation of GLobals:
+    // Documentation of Globals:
     union {
         struct {
-            uint8_t unused1             : 1; // 0
-            uint8_t simple_mode         : 2; // 1,2     // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
-            uint8_t pre_arm_rc_check    : 1; // 3       // true if rc input pre-arm checks have been completed successfully
-            uint8_t pre_arm_check       : 1; // 4       // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
-            uint8_t auto_armed          : 1; // 5       // stops auto missions from beginning until throttle is raised
-            uint8_t logging_started     : 1; // 6       // true if dataflash logging has started
-            uint8_t new_radio_frame     : 1; // 8       // Set true if we have new PWM data to act on from the Radio
-            uint8_t usb_connected       : 1; // 9       // true if APM is powered from USB connection
-            uint8_t rc_receiver_present : 1; // 10      // true if we have an rc receiver present (i.e. if we've ever received an update
-            uint8_t compass_mot         : 1; // 11      // true if we are currently performing compassmot calibration
-            uint8_t motor_test          : 1; // 12      // true if we are currently performing the motors test
-            uint8_t initialised         : 1; // 13      // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
-            uint8_t throttle_zero       : 1; // 15      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
-            uint8_t system_time_set     : 1; // 16      // true if the system time has been set from the GPS
-            uint8_t gps_base_pos_set    : 1; // 17      // true when the gps base position has been set (used for RTK gps only)
-            enum HomeState home_state   : 2; // 18,19   // home status (unset, set, locked)
-            uint8_t using_interlock     : 1; // 20      // aux switch motor interlock function is in use
-            uint8_t motor_emergency_stop: 1; // 21      // motor estop switch, shuts off motors when enabled
-            uint8_t land_repo_active    : 1; // 22      // true if the pilot is overriding the landing position
-            uint8_t at_bottom           : 1;            // true if we are at the bottom
-            uint8_t at_surface          : 1;            // true if we are at the surface
-            uint8_t depth_sensor_present: 1;            // true if we have an external baro connected
+            uint8_t simple_mode         : 2; // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
+            uint8_t pre_arm_check       : 1; // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
+            uint8_t auto_armed          : 1; // stops auto missions from beginning until throttle is raised
+            uint8_t logging_started     : 1; // true if dataflash logging has started
+            uint8_t new_radio_frame     : 1; // Set true if we have new PWM data to act on from the Radio
+            uint8_t usb_connected       : 1; // true if APM is powered from USB connection
+            uint8_t rc_receiver_present : 1; // true if we have an rc receiver present (i.e. if we've ever received an update
+            uint8_t compass_mot         : 1; // true if we are currently performing compassmot calibration
+            uint8_t motor_test          : 1; // true if we are currently performing the motors test
+            uint8_t initialised         : 1; // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
+            uint8_t throttle_zero       : 1; // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
+            uint8_t system_time_set     : 1; // true if the system time has been set from the GPS
+            uint8_t gps_base_pos_set    : 1; // true when the gps base position has been set (used for RTK gps only)
+            enum HomeState home_state   : 2; // home status (unset, set, locked)
+            uint8_t using_interlock     : 1; // aux switch motor interlock function is in use
+            uint8_t motor_emergency_stop: 1; // motor estop switch, shuts off motors when enabled
+            uint8_t land_repo_active    : 1; // true if the pilot is overriding the landing position
+            uint8_t at_bottom           : 1; // true if we are at the bottom
+            uint8_t at_surface          : 1; // true if we are at the surface
+            uint8_t depth_sensor_present: 1; // true if we have an external baro connected
         };
         uint32_t value;
     } ap;
@@ -510,7 +508,6 @@ private:
     void set_simple_mode(uint8_t b);
     void set_failsafe_battery(bool b);
     void set_pre_arm_check(bool b);
-    void set_pre_arm_rc_check(bool b);
     void update_using_interlock();
     void set_motor_emergency_stop(bool b);
     float get_smoothing_gain();
@@ -727,15 +724,6 @@ private:
     void motor_test_stop();
     void auto_disarm_check();
     bool init_arm_motors(bool arming_from_gcs);
-    void update_arming_checks(void);
-    bool all_arming_checks_passing(bool arming_from_gcs);
-    bool pre_arm_checks(bool display_failure);
-    void pre_arm_rc_checks();
-    bool pre_arm_gps_checks(bool display_failure);
-    bool pre_arm_ekf_attitude_check();
-    bool pre_arm_rallypoint_check();
-    bool pre_arm_terrain_check(bool display_failure);
-    bool arm_checks(bool display_failure, bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
     void lost_vehicle_check();

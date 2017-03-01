@@ -44,10 +44,10 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     if (in_arm_motors) {
         return false;
     }
+
     in_arm_motors = true;
 
-    // run pre-arm-checks and display failures
-    if (!all_arming_checks_passing(arming_from_gcs)) {
+    if (!arming.pre_arm_checks(true)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;
