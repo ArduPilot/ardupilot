@@ -150,9 +150,15 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
 */
 bool I2CDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
 {
-    return false;
+    if (_busnum >= num_buses) {
+        return false;
+    }
+
+    struct DeviceBus &binfo = businfo[_busnum];
+
+    return binfo.adjust_timer(h, period_usec);
 }
-    
+
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
 I2CDeviceManager::get_device(uint8_t bus, uint8_t address)
 {

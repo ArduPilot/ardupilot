@@ -239,7 +239,7 @@ AP_HAL::Device::PeriodicHandle SPIDevice::register_periodic_callback(uint32_t pe
 
 bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
 {
-    return false;
+    return bus.adjust_timer(h, period_usec);
 }
 
 /*

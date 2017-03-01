@@ -30,6 +30,7 @@ public:
     Semaphore semaphore;
 
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb, AP_HAL::Device *hal_device);
+    bool adjust_timer(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec);
     static void *bus_thread(void *arg);
     
 private:
