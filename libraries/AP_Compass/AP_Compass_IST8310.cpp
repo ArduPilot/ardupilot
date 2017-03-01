@@ -176,12 +176,21 @@ void AP_Compass_IST8310::timer()
         return;
     }
 
-    _last_measurement_usec = now;
-    start_conversion();
-
     auto x = static_cast<int16_t>(le16toh(buffer.rx));
     auto y = static_cast<int16_t>(le16toh(buffer.ry));
     auto z = static_cast<int16_t>(le16toh(buffer.rz));
+
+    start_conversion();
+
+    // buffer data is 14bits. Check for invalid data and drop packet
+    if (x > 8191 || x < -8192 ||
+        y > 8191 || y < -8192 ||
+        z > 8191 || z < -8192) {
+        return;
+    }
+
+    _last_measurement_usec = now;
+
 
     // flip Z to conform to right-hand rule convention
     z = -z;
