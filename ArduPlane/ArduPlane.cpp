@@ -24,7 +24,6 @@
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Plane, &plane, func, rate_hz, max_time_micros)
 
-
 /*
   scheduler table - all regular tasks are listed here, along with how
   often they should be called (in Hz) and the maximum time
@@ -76,6 +75,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(Log_Write_Fast,         25,    300),
     SCHED_TASK(update_logging1,        10,    300),
     SCHED_TASK(update_logging2,        10,    300),
+    SCHED_TASK(update_soaring,         50,    400),
     SCHED_TASK(parachute_check,        10,    200),
     SCHED_TASK(terrain_update,         10,    200),
     SCHED_TASK(update_is_flying_5Hz,    5,    100),
@@ -199,9 +199,9 @@ void Plane::ahrs_update()
 void Plane::update_speed_height(void)
 {
     if (auto_throttle_mode) {
-	    // Call TECS 50Hz update. Note that we call this regardless of
-	    // throttle suppressed, as this needs to be running for
-	    // takeoff detection
+        // Call TECS 50Hz update. Note that we call this regardless of
+        // throttle suppressed, as this needs to be running for
+        // takeoff detection
         SpdHgt_Controller->update_50hz();
     }
 }
@@ -973,6 +973,86 @@ void Plane::update_flight_stage(void)
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
 
+/*
+*  ArduSoar support function
+*
+*  Peter Braswell and Samuel Tabor
+*/
+void Plane::update_soaring() {
+    
+    if (!soaring_controller.is_active()) {
+        return;
+    }
+    
+    soaring_controller.update_vario();
+
+    // Check for throttle suppression change.
+    switch (control_mode)
+    {
+    case AUTO:
+        soaring_controller.suppress_throttle();
+        break;
+    case FLY_BY_WIRE_B:
+        if (!soaring_controller.suppress_throttle()) {
+            ;
+            set_mode(RTL, MODE_REASON_FBW_B_WITH_MOTOR_RUNNING);
+        }
+        break;
+    case LOITER:
+        // Do nothing. We will switch back to auto/rtl before enabling throttle.
+        break;
+    default:
+        // This does not affect the throttle since suppressed is only checked in the above three modes. 
+        // It ensures that the soaring always starts with throttle suppressed though.
+        soaring_controller.set_throttle_suppressed(true);
+        break;
+    }
+    // Nothing to do if we are in powered flight
+    if (!soaring_controller.get_throttle_suppressed() && aparm.throttle_max>0) {
+        return;
+    }
+
+    switch (control_mode)
+    {
+    case AUTO:
+    case FLY_BY_WIRE_B:
+        // Test for switch into thermalling mode
+        soaring_controller.update_cruising();
+
+        if (soaring_controller.check_thermal_criteria()) {
+            hal.console->printf("Thermal detected, entering loiter\n");
+            set_mode(LOITER, MODE_REASON_THERMAL_DETECTED);
+        }
+        break;
+    case LOITER:
+        if (soaring_controller.check_init_thermal_criteria()) {
+            // start by circling around current location
+            soaring_controller.set_wp(next_WP_loc);
+            soaring_controller.update_thermalling(g.loiter_radius); // update estimate
+        } else {
+            // Update thermal estimate and check for switch back to AUTO
+            soaring_controller.update_thermalling(g.loiter_radius);  // Update estimate
+
+            if (soaring_controller.check_cruise_criteria()) {
+                // Exit as soon as thermal state estimate deteriorates
+                if (previous_mode == FLY_BY_WIRE_B) {
+                    set_mode(RTL, MODE_REASON_IN_THERMAL);
+                }
+                else {
+                    set_mode(previous_mode, MODE_REASON_THERMAL_ESTIMATE_DETERIORATED);
+                }
+            }
+            else {
+                // still in thermal - need to update the wp location
+                soaring_controller.get_target(next_WP_loc);
+            }
+        }
+        break;
+    default:
+        // nothing to do
+        break;
+    }
+}
 
 
 

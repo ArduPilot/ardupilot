@@ -347,6 +347,9 @@ public:
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
 
+        // 250: ArduSoar parameters
+        k_param_soaring_controller,
+                
         k_param_DataFlash = 253, // Logging Group
 
         // 254,255: reserved
@@ -400,6 +403,7 @@ public:
     AP_Int8 waypoint_mode;
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
+    AP_Int16 loiter_radius;
     AP_Int16 rtl_radius;
 
 #if GEOFENCE_ENABLED == ENABLED
