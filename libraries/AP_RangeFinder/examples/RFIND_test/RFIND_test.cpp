@@ -8,7 +8,7 @@
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_SerialManager serial_manager;
-static RangeFinder sonar {serial_manager};
+static RangeFinder sonar {serial_manager, ROTATION_PITCH_270};
 
 void setup()
 {
@@ -32,7 +32,6 @@ void loop()
     hal.scheduler->delay(100);
     sonar.update();
 
-    hal.console->printf("Primary: status %d distance_cm %d \n", (int)sonar.status(), sonar.distance_cm());
     hal.console->printf("All: device_0 type %d status %d distance_cm %d, device_1 type %d status %d distance_cm %d\n",
     (int)sonar._type[0], (int)sonar.status(0), sonar.distance_cm(0), (int)sonar._type[1], (int)sonar.status(1), sonar.distance_cm(1));
 

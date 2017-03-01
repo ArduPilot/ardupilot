@@ -761,6 +761,7 @@ struct PACKED log_Proximity {
     float dist225;
     float dist270;
     float dist315;
+    float distup;
     float closest_angle;
     float closest_dist;
 };
@@ -784,6 +785,11 @@ void Copter::Log_Write_Proximity()
     g2.proximity.get_horizontal_distance(270, sector_distance[6]);
     g2.proximity.get_horizontal_distance(315, sector_distance[7]);
 
+    float dist_up;
+    if (!g2.proximity.get_upward_distance(dist_up)) {
+        dist_up = 0.0f;
+    }
+
     float close_ang = 0.0f, close_dist = 0.0f;
     g2.proximity.get_closest_object(close_ang, close_dist);
 
@@ -799,6 +805,7 @@ void Copter::Log_Write_Proximity()
         dist225         : sector_distance[5],
         dist270         : sector_distance[6],
         dist315         : sector_distance[7],
+        distup          : dist_up,
         closest_angle   : close_ang,
         closest_dist    : close_dist
     };
@@ -893,7 +900,7 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_THROW_MSG, sizeof(log_Throw),
       "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk" },
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity),
-      "PRX",   "QBffffffffff","TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,CAng,CDist" },
+      "PRX",   "QBfffffffffff","TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis" },
     { LOG_BEACON_MSG, sizeof(log_Beacon),
       "BCN",   "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ" },
 };

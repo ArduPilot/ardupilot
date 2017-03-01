@@ -122,7 +122,7 @@ enum AutoTuneTuneType {
 };
 
 // autotune_state_struct - hold state flags
-struct autotune_state_struct {
+static struct autotune_state_struct {
     AutoTuneTuneMode    mode                : 2;    // see AutoTuneTuneMode for what modes are allowed
     uint8_t             pilot_override      : 1;    // 1 = pilot is overriding controls so we suspend tuning temporarily
     AutoTuneAxisType    axis                : 2;    // see AutoTuneAxisType for which things can be tuned
@@ -130,6 +130,9 @@ struct autotune_state_struct {
     AutoTuneStepType    step                : 2;    // see AutoTuneStepType for what steps are performed
     AutoTuneTuneType    tune_type           : 3;    // see AutoTuneTuneType
     uint8_t             ignore_next         : 1;    // 1 = ignore the next test
+    bool                use_poshold         : 1;    // enable position hold
+    bool                have_position       : 1;    // start_position is value
+    Vector3f            start_position;
 } autotune_state;
 
 // variables
@@ -201,6 +204,10 @@ bool Copter::autotune_init(bool ignore_checks)
             break;
     }
 
+    // only do position hold if starting autotune from LOITER or POSHOLD
+    autotune_state.use_poshold = (control_mode == LOITER || control_mode == POSHOLD);
+    autotune_state.have_position = false;
+
     return success;
 }
 
@@ -224,8 +231,9 @@ void Copter::autotune_stop()
 // autotune_start - Initialize autotune flight mode
 bool Copter::autotune_start(bool ignore_checks)
 {
-    // only allow flip from Stabilize or AltHold flight modes
-    if (control_mode != STABILIZE && control_mode != ALT_HOLD) {
+    // only allow flip from Stabilize, AltHold,  PosHold or Loiter modes
+    if (control_mode != STABILIZE && control_mode != ALT_HOLD &&
+        control_mode != LOITER && control_mode != POSHOLD) {
         return false;
     }
 
@@ -311,7 +319,8 @@ void Copter::autotune_run()
         pos_control->update_z_controller();
     }else{
         // check if pilot is overriding the controls
-        if (!is_zero(target_roll) || !is_zero(target_pitch) || !is_zero(target_yaw_rate) || target_climb_rate != 0) {
+        bool zero_rp_input = is_zero(target_roll) && is_zero(target_pitch);
+        if (!zero_rp_input || !is_zero(target_yaw_rate) || target_climb_rate != 0) {
             if (!autotune_state.pilot_override) {
                 autotune_state.pilot_override = true;
                 // set gains to their original values
@@ -320,6 +329,7 @@ void Copter::autotune_run()
             }
             // reset pilot override time
             autotune_override_time = millis();
+            autotune_state.have_position = false;
         }else if (autotune_state.pilot_override) {
             // check if we should resume tuning after pilot's override
             if (millis() - autotune_override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
@@ -329,6 +339,11 @@ void Copter::autotune_run()
                 autotune_state.step = AUTOTUNE_STEP_WAITING_FOR_LEVEL; // set tuning step back from beginning
                 autotune_desired_yaw = ahrs.yaw_sensor;
             }
+        }
+
+        if (zero_rp_input) {
+            // pilot input on throttle and yaw will still use position hold if enabled
+            autotune_get_poshold_attitude(target_roll, target_pitch, autotune_desired_yaw);
         }
 
         // set motors to full range
@@ -363,17 +378,20 @@ void Copter::autotune_attitude_control()
         // re-enable rate limits
         attitude_control->use_ff_and_input_shaping(true);
 
+        float autotune_roll_cd, autotune_pitch_cd;
+        autotune_get_poshold_attitude(autotune_roll_cd, autotune_pitch_cd, autotune_desired_yaw);
+        
         // hold level attitude
-        attitude_control->input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, autotune_desired_yaw, true, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_yaw(autotune_roll_cd, autotune_pitch_cd, autotune_desired_yaw, true, get_smoothing_gain());
 
         // hold the copter level for 0.5 seconds before we begin a twitch
         // reset counter if we are no longer level
-        if ((labs(ahrs.roll_sensor) > AUTOTUNE_LEVEL_ANGLE_CD) ||
-                (labs(ahrs.pitch_sensor) > AUTOTUNE_LEVEL_ANGLE_CD) ||
-                (labs(wrap_180_cd(ahrs.yaw_sensor-(int32_t)autotune_desired_yaw)) > AUTOTUNE_LEVEL_ANGLE_CD) ||
-                ((ToDeg(ahrs.get_gyro().x) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
-                ((ToDeg(ahrs.get_gyro().y) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
-                ((ToDeg(ahrs.get_gyro().z) * 100.0f) > AUTOTUNE_LEVEL_RATE_Y_CD) ) {
+        if ((labs(ahrs.roll_sensor - autotune_roll_cd) > AUTOTUNE_LEVEL_ANGLE_CD) ||
+            (labs(ahrs.pitch_sensor - autotune_pitch_cd) > AUTOTUNE_LEVEL_ANGLE_CD) ||
+            (labs(wrap_180_cd(ahrs.yaw_sensor-(int32_t)autotune_desired_yaw)) > AUTOTUNE_LEVEL_ANGLE_CD) ||
+            ((ToDeg(ahrs.get_gyro().x) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
+            ((ToDeg(ahrs.get_gyro().y) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
+            ((ToDeg(ahrs.get_gyro().z) * 100.0f) > AUTOTUNE_LEVEL_RATE_Y_CD) ) {
             autotune_step_start_time = millis();
         }
 
@@ -1319,6 +1337,80 @@ void Copter::autotune_twitching_measure_acceleration(float &rate_of_change, floa
         rate_measurement_max = rate_measurement;
         rate_of_change = (1000.0f*rate_measurement_max)/(millis() - autotune_step_start_time);
     }
+}
+
+// get attitude for slow position hold in autotune mode
+void Copter::autotune_get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd)
+{
+    roll_cd = pitch_cd = 0;
+
+    if (!autotune_state.use_poshold) {
+        // we are not trying to hold position
+        return;
+    }
+
+    // do we know where we are?
+    if (!position_ok()) {
+        return;
+    }
+
+    if (!autotune_state.have_position) {
+        autotune_state.have_position = true;
+        autotune_state.start_position = inertial_nav.get_position();
+    }
+
+    // don't go past 10 degrees, as autotune result would deteriorate too much
+    const float angle_max_cd = 1000;
+
+    // hit the 10 degree limit at 20 meters position error
+    const float dist_limit_cm = 2000;
+
+    // we only start adjusting yaw if we are more than 5m from the
+    // target position. That corresponds to a lean angle of 2.5 degrees
+    const float yaw_dist_limit_cm = 500;
+    
+    Vector3f pdiff = inertial_nav.get_position() - autotune_state.start_position;
+    pdiff.z = 0;
+    float dist_cm = pdiff.length();
+    if (dist_cm < 10) {
+        // don't do anything within 10cm
+        return;
+    }
+
+    /*
+      very simple linear controller
+     */
+    float scaling = constrain_float(angle_max_cd * dist_cm / dist_limit_cm, 0, angle_max_cd);
+    Vector2f angle_ne(pdiff.x, pdiff.y);
+    angle_ne *= scaling / dist_cm;
+
+    // rotate into body frame
+    pitch_cd = angle_ne.x * ahrs.cos_yaw() + angle_ne.y * ahrs.sin_yaw();
+    roll_cd  = angle_ne.x * ahrs.sin_yaw() - angle_ne.y * ahrs.cos_yaw();
+
+    if (dist_cm < yaw_dist_limit_cm) {
+        // no yaw adjustment
+        return;
+    }
+
+    /*
+      also point so that twitching occurs perpendicular to the wind,
+      if we have drifted more than yaw_dist_limit_cm from the desired
+      position. This ensures that autotune doesn't have to deal with
+      more than 2.5 degrees of attitude on the axis it is tuning
+     */
+    float target_yaw_cd = degrees(atan2f(pdiff.y, pdiff.x)) * 100;
+    if (autotune_state.axis == AUTOTUNE_AXIS_PITCH) {
+        // for roll and yaw tuning we point along the wind, for pitch
+        // we point across the wind
+        target_yaw_cd += 9000;
+    }
+    // go to the nearest 180 degree mark, with 5 degree slop to prevent oscillation
+    if (fabsf(yaw_cd - target_yaw_cd) > 9500) {
+        target_yaw_cd += 18000;
+    }
+
+    yaw_cd = target_yaw_cd;
 }
 
 #endif  // AUTOTUNE_ENABLED == ENABLED

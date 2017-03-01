@@ -65,15 +65,12 @@ void Sub::init_rc_out()
     motors.set_update_rate(g.rc_speed);
     motors.set_loop_rate(scheduler.get_loop_rate_hz());
     motors.init((AP_Motors::motor_frame_class)g.frame_configuration.get(), (AP_Motors::motor_frame_type)0);
+    motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 
     for (uint8_t i = 0; i < 5; i++) {
         hal.scheduler->delay(20);
         read_radio();
     }
-
-    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
-    // take a proportion of speed.
-    hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 
     // check if we should enter esc calibration mode
     esc_calibration_startup_check();

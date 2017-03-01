@@ -665,7 +665,7 @@ float Sub::get_auto_heading(void)
 bool Sub::auto_terrain_recover_start()
 {
     // Check rangefinder status to see if recovery is possible
-    switch (rangefinder.status()) {
+    switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
 
     case RangeFinder::RangeFinder_OutOfRangeLow:
     case RangeFinder::RangeFinder_OutOfRangeHigh:
@@ -720,7 +720,7 @@ void Sub::auto_terrain_recover_run()
         return;
     }
 
-    switch (rangefinder.status()) {
+    switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
 
     case RangeFinder::RangeFinder_OutOfRangeLow:
         target_climb_rate = wp_nav.get_speed_up();

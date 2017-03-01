@@ -19,7 +19,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 #define PROXIMITY_MAX_INSTANCES             1   // Maximum number of proximity sensor instances available on this platform
 #define PROXIMITY_YAW_CORRECTION_DEFAULT    22  // default correction for sensor error in yaw
@@ -40,6 +40,7 @@ public:
         Proximity_Type_SF40C   = 1,
         Proximity_Type_MAV     = 2,
         Proximity_Type_TRTOWER = 3,
+        Proximity_Type_RangeFinder = 4,
         Proximity_Type_SITL    = 10,
     };
 
@@ -54,6 +55,10 @@ public:
 
     // update state of all proximity sensors. Should be called at high rate from main loop
     void update(void);
+
+    // set pointer to rangefinder object
+    void set_rangefinder(const RangeFinder *rangefinder) { _rangefinder = rangefinder; }
+    const RangeFinder *get_rangefinder() const { return _rangefinder; }
 
     // return sensor orientation and yaw correction
     uint8_t get_orientation(uint8_t instance) const;
@@ -122,6 +127,7 @@ public:
 private:
     Proximity_State state[PROXIMITY_MAX_INSTANCES];
     AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
+    const RangeFinder *_rangefinder;
     uint8_t primary_instance:3;
     uint8_t num_instances:3;
     AP_SerialManager &serial_manager;

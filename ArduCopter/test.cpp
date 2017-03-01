@@ -253,9 +253,12 @@ int8_t Copter::test_rangefinder(uint8_t argc, const Menu::arg *argv)
         delay(100);
         rangefinder.update();
 
-        cliSerial->printf("Primary: status %d distance_cm %d \n", (int)rangefinder.status(), rangefinder.distance_cm());
-        cliSerial->printf("All: device_0 type %d status %d distance_cm %d, device_1 type %d status %d distance_cm %d\n",
-        (int)rangefinder._type[0], (int)rangefinder.status(0), rangefinder.distance_cm(0), (int)rangefinder._type[1], (int)rangefinder.status(1), rangefinder.distance_cm(1));
+        for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {
+            cliSerial->printf("Dev%d: status %d distance_cm %d\n",
+                    (int)i,
+                    (int)rangefinder.status(i),
+                    (int)rangefinder.distance_cm(i));
+        }
 
         if(cliSerial->available() > 0) {
             return (0);
