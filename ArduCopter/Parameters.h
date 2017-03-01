@@ -536,6 +536,11 @@ public:
     // beacon (non-GPS positioning) library
     AP_Beacon beacon;
 
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    // Visual Odometry camera
+    AP_VisualOdom visual_odom;
+#endif
+
 #if PROXIMITY_ENABLED == ENABLED
     // proximity (aka object avoidance) library
     AP_Proximity proximity;

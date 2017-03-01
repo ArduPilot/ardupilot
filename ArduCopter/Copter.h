@@ -91,6 +91,7 @@
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 #include <AP_Button/AP_Button.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 
 // Configuration
 #include "defines.h"
@@ -587,7 +588,12 @@ private:
 
     // last valid RC input time
     uint32_t last_radio_update_ms;
-    
+
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    // last visual odometry update time
+    uint32_t visual_odom_last_update_ms;
+#endif
+
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
@@ -692,6 +698,8 @@ private:
     void stats_update();
     void init_beacon();
     void update_beacon();
+    void init_visual_odom();
+    void update_visual_odom();
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
