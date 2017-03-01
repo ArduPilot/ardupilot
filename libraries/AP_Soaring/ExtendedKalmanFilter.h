@@ -16,10 +16,10 @@ public:
     ExtendedKalmanFilter(void) {}
     
     VectorN<float,N> X;
-    MatrixN<N> P;
-    MatrixN<N> Q;
+    MatrixN<float,N> P;
+    MatrixN<float,N> Q;
     float R;
-    void reset(const VectorN<float,N> &x, const MatrixN<N> &p, const MatrixN<N> q, float r);
+    void reset(const VectorN<float,N> &x, const MatrixN<float,N> &p, const MatrixN<float,N> q, float r);
     void update(float z, float Vx, float Vy);
 
 private:
