@@ -139,6 +139,8 @@ void Plane::init_ardupilot()
     // setup any board specific drivers
     BoardConfig.init();
 
+    relay.init();
+
     // initialise notify system
     notify.init(false);
     notify_flight_mode(control_mode);
@@ -215,8 +217,6 @@ void Plane::init_ardupilot()
     gps.init(&DataFlash, serial_manager);
 
     init_rc_in();               // sets up rc channels from radio
-
-    relay.init();
 
 #if MOUNT == ENABLED
     // initialise camera mount
