@@ -45,9 +45,11 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus, RangeFinder &_ranger, uint8_t instance,
-                                                             RangeFinder::RangeFinder_State &_state)
+                                                             RangeFinder::RangeFinder_State &_state,
+                                                             RangeFinder::RangeFinder_Type _rftype)
     : AP_RangeFinder_Backend(_ranger, instance, _state)
     , _dev(hal.i2c_mgr->get_device(bus, LL40LS_ADDR))
+    , rftype(_rftype)
 {
 }
 
@@ -56,10 +58,11 @@ AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus, RangeF
    look for the version registers
 */
 AP_RangeFinder_Backend *AP_RangeFinder_PulsedLightLRF::detect(uint8_t bus, RangeFinder &_ranger, uint8_t instance,
-                                                              RangeFinder::RangeFinder_State &_state)
+                                                              RangeFinder::RangeFinder_State &_state,
+                                                              RangeFinder::RangeFinder_Type rftype)
 {
     AP_RangeFinder_PulsedLightLRF *sensor
-        = new AP_RangeFinder_PulsedLightLRF(bus, _ranger, instance, _state);
+        = new AP_RangeFinder_PulsedLightLRF(bus, _ranger, instance, _state, rftype);
     if (!sensor ||
         !sensor->init()) {
         delete sensor;
@@ -150,18 +153,20 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
     // LidarLite needs split transfers
     _dev->set_split_transfers(true);
 
-    if (!(_dev->read_registers(LL40LS_HW_VERSION, &hw_version, 1) &&
-          hw_version > 0 &&
-          _dev->read_registers(LL40LS_SW_VERSION, &sw_version, 1) &&
-          sw_version > 0)) {
-        printf("PulsedLightI2C: bad version 0x%02x 0x%02x\n", (unsigned)hw_version, (unsigned)sw_version);
-        // invalid version information
-        _dev->get_semaphore()->give();
-        return false;
+    if (rftype == RangeFinder::RangeFinder_TYPE_PLI2CV3) {
+        v2_hardware = true;
+    } else {
+        // auto-detect v1 vs v2
+        if (!(_dev->read_registers(LL40LS_HW_VERSION, &hw_version, 1) &&
+              hw_version > 0 &&
+              _dev->read_registers(LL40LS_SW_VERSION, &sw_version, 1) &&
+              sw_version > 0)) {
+            printf("PulsedLightI2C: bad version 0x%02x 0x%02x\n", (unsigned)hw_version, (unsigned)sw_version);
+            // invalid version information
+            goto failed;
+        }
+        v2_hardware = (hw_version >= 0x15);
     }
-    _dev->get_semaphore()->give();
-
-    v2_hardware = (hw_version >= 0x15);
     
     const struct settings_table *table;
     uint8_t num_settings;
@@ -179,11 +184,21 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
     _dev->setup_checked_registers(num_settings);
 
     for (uint8_t i = 0; i < num_settings; i++) {
-        _dev->write_register(table[i].reg, table[i].value, true);
+        if (!_dev->write_register(table[i].reg, table[i].value, true)) {
+            goto failed;
+        }
     }
+
+    printf("Found LidarLite device=0x%x v2=%d\n", _dev->get_bus_id(), (int)v2_hardware);
+    
+    _dev->get_semaphore()->give();
 
     _dev->register_periodic_callback(20000,
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_PulsedLightLRF::timer, void));
     return true;
+
+failed:
+    _dev->get_semaphore()->give();
+    return false;
 }
 
