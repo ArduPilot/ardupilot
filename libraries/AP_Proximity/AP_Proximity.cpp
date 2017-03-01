@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_IGN_ANG2", 6, AP_Proximity, _ignore_angle_deg[1], 0),
 
-    // @Param: _IGN_WID1
+    // @Param: _IGN_WID2
     // @DisplayName: Proximity sensor ignore width 2
     // @Description: Proximity sensor ignore width 2
     // @Units: degrees
