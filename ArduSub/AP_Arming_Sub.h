@@ -10,6 +10,9 @@ public:
             AP_Param::setup_object_defaults(this, var_info);
     }
 
+    bool rc_check(bool report=true);
+    bool pre_arm_checks(bool report) override;
+
 protected:
     enum HomeState home_status() const override;
 };
