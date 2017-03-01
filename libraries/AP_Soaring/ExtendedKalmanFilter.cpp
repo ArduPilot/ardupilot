@@ -20,7 +20,7 @@ float ExtendedKalmanFilter::measurementpredandjacobian(VectorN<float,N> &A)
 }
 
 
-void ExtendedKalmanFilter::reset(const VectorN<float,N> &x, const MatrixN<N> &p, const MatrixN<N> q, float r)
+void ExtendedKalmanFilter::reset(const VectorN<float,N> &x, const MatrixN<float,N> &p, const MatrixN<float,N> q, float r)
 {
     P = p;
     X = x;
@@ -31,8 +31,7 @@ void ExtendedKalmanFilter::reset(const VectorN<float,N> &x, const MatrixN<N> &p,
 
 void ExtendedKalmanFilter::update(float z, float Vx, float Vy)
 {
-    MatrixN<N> tempM;
-    VectorN<float,N> tempV;
+    MatrixN<float,N> tempM;
     VectorN<float,N> H;
     VectorN<float,N> P12;
     VectorN<float,N> K;
@@ -57,7 +56,7 @@ void ExtendedKalmanFilter::update(float z, float Vx, float Vy)
 
     // LINE 40
     // P12 = P * H';
-    P.mult(H, P12); //cross covariance    
+    P12.mult(P, H); //cross covariance 
     
     // LINE 41
     // Calculate the KALMAN GAIN

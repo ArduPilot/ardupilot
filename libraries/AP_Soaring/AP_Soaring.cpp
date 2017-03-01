@@ -208,9 +208,9 @@ void SoaringController::init_thermalling()
     float cov_q1 = powf(thermal_q1, 2); // State covariance
     float cov_q2 = powf(thermal_q2, 2); // State covariance
     const float init_q[4] = {cov_q1, cov_q2, cov_q2, cov_q2};
-    const MatrixN<4> q{init_q};
+    const MatrixN<float,4> q{init_q};
     const float init_p[4] = {INITIAL_STRENGTH_COVARIANCE, INITIAL_RADIUS_COVARIANCE, INITIAL_POSITION_COVARIANCE, INITIAL_POSITION_COVARIANCE};
-    const MatrixN<4> p{init_p};
+    const MatrixN<float,4> p{init_p};
 
     // New state vector filter will be reset. Thermal location is placed in front of a/c
     const float init_xr[4] = {INITIAL_THERMAL_STRENGTH,
