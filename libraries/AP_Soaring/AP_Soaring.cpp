@@ -120,7 +120,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     
     // @Param: ENABLE_CH
     // @DisplayName: (Optional) RC channel that toggles the soaring controller on and off
-    // @Description: Toggles the soaring controller on and off. This parameter has any effect only if SOAR_ENABLE is set to 1 and this parameter is set to a valid non-zero channel number.
+    // @Description: Toggles the soaring controller on and off. This parameter has any effect only if SOAR_ENABLE is set to 1 and this parameter is set to a valid non-zero channel number. When set, soaring will be activated when RC input to the specified channel is greater than or equal to 1700.
     // @Range: 0 16
     // @User: Advanced
     AP_GROUPINFO("ENABLE_CH", 15, SoaringController, soar_active_ch, 0),
@@ -389,5 +389,13 @@ float SoaringController::McCready(float alt)
 
 bool SoaringController::is_active()
 {
-    return (soar_active && (soar_active_ch == 0 || (soar_active_ch != 0 && hal.rcin->read(soar_active_ch))));
+    if (!soar_active) {
+        return false;
+    }
+    if (soar_active_ch <= 0) {
+        // no activation channel
+        return true;
+    }
+    // active when above 1700
+    return hal.rcin->read(soar_active_ch-1) >= 1700;
 }
