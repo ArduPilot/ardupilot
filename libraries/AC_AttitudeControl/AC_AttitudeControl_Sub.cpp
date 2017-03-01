@@ -36,6 +36,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
+    // @Param: RAT_RLL_FF
+    // @DisplayName: Roll axis rate controller feed forward
+    // @Description: Roll axis rate controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
     // @Param: RAT_RLL_FILT
     // @DisplayName: Roll axis rate controller input frequency in Hz
     // @Description: Roll axis rate controller input frequency in Hz
@@ -74,6 +81,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
+    // @Param: RAT_PIT_FF
+    // @DisplayName: Pitch axis rate controller feed forward
+    // @Description: Pitch axis rate controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
     // @Param: RAT_PIT_FILT
     // @DisplayName: Pitch axis rate controller input frequency in Hz
     // @Description: Pitch axis rate controller input frequency in Hz
@@ -109,6 +123,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @DisplayName: Yaw axis rate controller D gain
     // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate
     // @Range: 0.000 0.02
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: RAT_YAW_FF
+    // @DisplayName: Yaw axis rate controller feed forward
+    // @Description: Yaw axis rate controller feed forward
+    // @Range: 0 0.5
     // @Increment: 0.001
     // @User: Standard
 
