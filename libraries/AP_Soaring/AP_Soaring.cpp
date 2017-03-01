@@ -117,6 +117,13 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Range: 0 1000.0
     // @User: Advanced
     AP_GROUPINFO("ALT_CUTOFF", 14, SoaringController, alt_cutoff, 250.0),
+    
+    // @Param: ENABLE_CH
+    // @DisplayName: (Optional) RC channel that toggles the soaring controller on and off
+    // @Description: Toggles the soaring controller on and off. This parameter has any effect only if SOAR_ENABLE is set to 1 and this parameter is set to a valid non-zero channel number.
+    // @Range: 0 16
+    // @User: Advanced
+    AP_GROUPINFO("ENABLE_CH", 15, SoaringController, soar_active_ch, 0),
 
     AP_GROUPEND
 };
@@ -382,5 +389,5 @@ float SoaringController::McCready(float alt)
 
 bool SoaringController::is_active()
 {
-    return soar_active;
+    return (soar_active && (soar_active_ch == 0 || (soar_active_ch != 0 && hal.rcin->read(soar_active_ch))));
 }

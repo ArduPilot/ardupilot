@@ -58,6 +58,7 @@ public:
 
     enum Invensense_Type {
         Invensense_MPU6000=0,
+        Invensense_MPU6500,
         Invensense_MPU9250,
         Invensense_ICM20608,
     };

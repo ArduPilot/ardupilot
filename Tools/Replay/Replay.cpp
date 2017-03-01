@@ -14,6 +14,7 @@
  */
 
 #include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS.h>
 #include "Parameters.h"
 #include "VehicleType.h"
 #include "MsgHandler.h"
@@ -796,7 +797,6 @@ void Replay::loop()
 
     if (!logreader.update(type)) {
         ::printf("End of log at %.1f seconds\n", AP_HAL::millis()*0.001f);
-        fclose(plotf);
         flush_and_exit();
     }
 
@@ -927,5 +927,13 @@ bool Replay::check_user_param(const char *name)
     }
     return false;
 }
+
+class GCS_Replay : public GCS
+{
+    void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) override {
+        ::fprintf(stderr, "GCS: %s\n", text);
+    }
+};
+GCS_Replay _gcs;
 
 AP_HAL_MAIN_CALLBACKS(&replay);

@@ -261,7 +261,7 @@ private:
 
     // selected navigation controller
     AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
-    
+
     // Relay
     AP_Relay relay;
 
@@ -411,7 +411,7 @@ private:
     } acro_state;
 
     // CRUISE controller state
-    struct {
+    struct CruiseState {
         bool locked_heading;
         int32_t locked_heading_cd;
         uint32_t lock_timer_ms;
@@ -559,7 +559,7 @@ private:
     
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
-     
+	
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
     int8_t  throttle_watt_limit_min; // for reverse thrust
@@ -642,8 +642,19 @@ private:
         // Direction for loiter. 1 for clockwise, -1 for counter-clockwise
         int8_t direction;
 
+        // when loitering and an altitude is involved, this flag is true when it has been reached at least once
+        bool reached_target_alt;
+
+        // check for scenarios where updrafts can keep you from loitering down indefinitely.
+        bool unable_to_acheive_target_alt;
+
         // start time of the loiter.  Milliseconds.
         uint32_t start_time_ms;
+
+        // altitude at start of loiter loop lap. Used to detect delta alt of each lap.
+        // only valid when sum_cd > 36000
+        int32_t start_lap_alt_cm;
+        int32_t next_sum_lap_cd;
 
         // The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
         uint32_t time_max_ms;
@@ -1010,6 +1021,7 @@ private:
     void servo_output_mixers(void);
     void servos_output(void);
     void servos_auto_trim(void);
+    void servos_twin_engine_mix();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     bool allow_reverse_thrust(void);
     void update_aux();

@@ -54,7 +54,7 @@ public:
     };
 
     /// Constructor
-    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
+    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
     /// provide pointer to terrain database
     void set_terrain(AP_Terrain* terrain_ptr) { _terrain = terrain_ptr; }
@@ -144,6 +144,9 @@ public:
     /// get_wp_destination waypoint using position vector (distance from home in cm)
     const Vector3f &get_wp_destination() const { return _destination; }
 
+    /// get origin using position vector (distance from home in cm)
+    const Vector3f &get_wp_origin() const { return _origin; }
+
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
     bool set_wp_destination(const Location_Class& destination);
@@ -187,6 +190,9 @@ public:
 
     /// calculate_wp_leash_length - calculates track speed, acceleration and leash lengths for waypoint controller
     void calculate_wp_leash_length();
+
+    /// get_bearing_cd - return bearing in centi-degrees between two positions
+    float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
 
     ///
     /// spline methods
@@ -277,9 +283,6 @@ protected:
     ///		updated velocity sent directly to position controller
     void calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit);
 
-    /// get_bearing_cd - return bearing in centi-degrees between two positions
-    float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
-
     /// calc_slow_down_distance - calculates distance before waypoint that target point should begin to slow-down assuming it is traveling at full speed
     void calc_slow_down_distance(float speed_cms, float accel_cmss);
 
@@ -308,7 +311,7 @@ protected:
 
     // references and pointers to external libraries
     const AP_InertialNav&   _inav;
-    const AP_AHRS&          _ahrs;
+    const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
     AP_Terrain              *_terrain = nullptr;

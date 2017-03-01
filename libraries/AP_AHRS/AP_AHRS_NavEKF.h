@@ -57,33 +57,33 @@ public:
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
-    void reset_gyro_drift(void);
+    void reset_gyro_drift() override;
 
-    void            update(void);
-    void            reset(bool recover_eulers = false);
+    void            update() override;
+    void            reset(bool recover_eulers = false) override;
 
     // reset the current attitude, used on new IMU calibration
-    void reset_attitude(const float &roll, const float &pitch, const float &yaw);
+    void reset_attitude(const float &roll, const float &pitch, const float &yaw) override;
 
     // dead-reckoning support
-    bool get_position(struct Location &loc) const;
+    bool get_position(struct Location &loc) const override;
 
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const;
 
     // status reporting of estimated error
-    float           get_error_rp(void) const;
-    float           get_error_yaw(void) const;
+    float           get_error_rp() const override;
+    float           get_error_yaw() const override;
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate(void);
+    Vector3f wind_estimate() override;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float *airspeed_ret) const;
+    bool airspeed_estimate(float *airspeed_ret) const override;
 
     // true if compass is being used
-    bool use_compass(void);
+    bool use_compass() override;
 
     // we will need to remove these to fully hide which EKF we are using
     NavEKF2 &get_NavEKF2(void) {
@@ -101,47 +101,47 @@ public:
     }
     
     // return secondary attitude solution if available, as eulers in radians
-    bool get_secondary_attitude(Vector3f &eulers);
+    bool get_secondary_attitude(Vector3f &eulers) override;
 
     // return secondary position solution if available
-    bool get_secondary_position(struct Location &loc);
+    bool get_secondary_position(struct Location &loc) override;
 
     // EKF has a better ground speed vector estimate
-    Vector2f groundspeed_vector(void);
+    Vector2f groundspeed_vector() override;
 
     const Vector3f &get_accel_ef(uint8_t i) const override;
     const Vector3f &get_accel_ef() const override;
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
-    void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const;
+    void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const override;
 
     // blended accelerometer values in the earth frame in m/s/s
-    const Vector3f &get_accel_ef_blended(void) const;
+    const Vector3f &get_accel_ef_blended() const override;
 
     // set home location
-    void set_home(const Location &loc);
+    void set_home(const Location &loc) override;
 
     // returns the inertial navigation origin in lat/lon/alt
     bool get_origin(Location &ret) const;
 
-    bool have_inertial_nav(void) const;
+    bool have_inertial_nav() const override;
 
-    bool get_velocity_NED(Vector3f &vec) const;
+    bool get_velocity_NED(Vector3f &vec) const override;
 
     // return the relative position NED to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NED_home(Vector3f &vec) const;
-    bool get_relative_position_NED_origin(Vector3f &vec) const;
+    bool get_relative_position_NED_home(Vector3f &vec) const override;
+    bool get_relative_position_NED_origin(Vector3f &vec) const override;
 
     // return the relative position NE to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NE_home(Vector2f &posNE) const;
-    bool get_relative_position_NE_origin(Vector2f &posNE) const;
+    bool get_relative_position_NE_home(Vector2f &posNE) const override;
+    bool get_relative_position_NE_origin(Vector2f &posNE) const override;
 
     // return the relative position down to either home or origin
     // baro will be used for the _home relative one if the EKF isn't
-    void get_relative_position_D_home(float &posD) const;
-    bool get_relative_position_D_origin(float &posD) const;
+    void get_relative_position_D_home(float &posD) const override;
+    bool get_relative_position_D_origin(float &posD) const override;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
@@ -159,10 +159,10 @@ public:
     void set_ekf_use(bool setting);
 
     // is the AHRS subsystem healthy?
-    bool healthy(void) const;
+    bool healthy() const override;
 
     // true if the AHRS has completed initialisation
-    bool initialised(void) const;
+    bool initialised() const override;
 
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const;
@@ -176,26 +176,26 @@ public:
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAng) const;
+    uint32_t getLastYawResetAngle(float &yawAng) const override;
 
     // return the amount of NE position change in meters due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) const;
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) const override;
 
     // return the amount of NE velocity change in meters/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
+    uint32_t getLastVelNorthEastReset(Vector2f &vel) const override;
 
     // return the amount of vertical position change due to the last reset in meters
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta) const;
+    uint32_t getLastPosDownReset(float &posDelta) const override;
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum(void);
+    bool resetHeightDatum() override;
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(mavlink_channel_t chan);
@@ -219,7 +219,7 @@ public:
     bool get_mag_field_NED(Vector3f& ret) const;
 
     // returns the estimated magnetic field offsets in body frame
-    bool get_mag_field_correction(Vector3f &ret) const;
+    bool get_mag_field_correction(Vector3f &ret) const override;
 
     void setTakeoffExpected(bool val);
     void setTouchdownExpected(bool val);

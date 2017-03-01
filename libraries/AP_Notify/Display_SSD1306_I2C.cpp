@@ -109,13 +109,13 @@ void Display_SSD1306_I2C::_timer()
         command.cmd[4] = i;
         _dev->transfer((uint8_t *)&command, sizeof(command), nullptr, 0);
 
-        if (_displaybuffer_sem->take(0)) {
+        if (_displaybuffer_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
             memcpy(&display_buffer.db[0], &_displaybuffer[i * SSD1306_COLUMNS], SSD1306_COLUMNS/2);
             _displaybuffer_sem->give();
             _dev->transfer((uint8_t *)&display_buffer, SSD1306_COLUMNS/2 + 1, nullptr, 0);
         }
 
-        if (_displaybuffer_sem->take(0)) {
+        if (_displaybuffer_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
             memcpy(&display_buffer.db[0], &_displaybuffer[i * SSD1306_COLUMNS + SSD1306_COLUMNS/2 ], SSD1306_COLUMNS/2);
             _displaybuffer_sem->give();
             _dev->transfer((uint8_t *)&display_buffer, SSD1306_COLUMNS/2 + 1, nullptr, 0);
@@ -129,7 +129,7 @@ void Display_SSD1306_I2C::set_pixel(uint16_t x, uint16_t y)
     if ((x >= SSD1306_COLUMNS) || (y >= SSD1306_ROWS)) {
         return;
     }
-    if (!_displaybuffer_sem->take(0)) {
+    if (!_displaybuffer_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
     // set pixel in buffer
@@ -143,7 +143,7 @@ void Display_SSD1306_I2C::clear_pixel(uint16_t x, uint16_t y)
     if ((x >= SSD1306_COLUMNS) || (y >= SSD1306_ROWS)) {
         return;
     }
-    if (!_displaybuffer_sem->take(0)) {
+    if (!_displaybuffer_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
     // clear pixel in buffer
@@ -153,7 +153,7 @@ void Display_SSD1306_I2C::clear_pixel(uint16_t x, uint16_t y)
 
 void Display_SSD1306_I2C::clear_screen()
 {
-    if (!_displaybuffer_sem->take(0)) {
+    if (!_displaybuffer_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
      memset(_displaybuffer, 0, SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE);

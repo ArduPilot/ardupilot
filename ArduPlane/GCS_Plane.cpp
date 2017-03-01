@@ -63,6 +63,7 @@ void GCS_Plane::setup_uarts(AP_SerialManager &serial_manager)
     }
 }
 
+#if CLI_ENABLED == ENABLED
 void GCS_Plane::handle_interactive_setup()
 {
     if (plane.g.cli_enabled == 1) {
@@ -76,3 +77,4 @@ void GCS_Plane::handle_interactive_setup()
         }
     }
 }
+#endif

@@ -496,6 +496,7 @@ uint8_t Copter::get_frame_mav_type()
             return MAV_TYPE_TRICOPTER;
         case AP_Motors::MOTOR_FRAME_SINGLE:
         case AP_Motors::MOTOR_FRAME_COAX:
+        case AP_Motors::MOTOR_FRAME_TAILSITTER:
             return MAV_TYPE_COAXIAL;
     }
     // unknown frame so return generic
@@ -524,6 +525,8 @@ const char* Copter::get_frame_string()
             return "SINGLE";
         case AP_Motors::MOTOR_FRAME_COAX:
             return "COAX";
+        case AP_Motors::MOTOR_FRAME_TAILSITTER:
+            return "TAILSITTER";
         case AP_Motors::MOTOR_FRAME_UNDEFINED:
         default:
             return "UNKNOWN";
@@ -551,6 +554,7 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_TRI:
             motors = new AP_MotorsTri(MAIN_LOOP_RATE);
             var_info = AP_MotorsTri::var_info;
+            AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
             break;
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = new AP_MotorsSingle(MAIN_LOOP_RATE);
@@ -560,11 +564,16 @@ void Copter::allocate_motors(void)
             motors = new AP_MotorsCoax(MAIN_LOOP_RATE);
             var_info = AP_MotorsCoax::var_info;
             break;
+        case AP_Motors::MOTOR_FRAME_TAILSITTER:
+            motors = new AP_MotorsTailsitter(MAIN_LOOP_RATE);
+            var_info = AP_MotorsTailsitter::var_info;
+            break;
 #else // FRAME_CONFIG == HELI_FRAME
         case AP_Motors::MOTOR_FRAME_HELI:
         default:
             motors = new AP_MotorsHeli_Single(MAIN_LOOP_RATE);
             var_info = AP_MotorsHeli::var_info;
+            AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
             break;            
 #endif
     }
@@ -573,11 +582,16 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(motors, var_info);
 
+    AP_AHRS_View *ahrs_view = ahrs.create_view(ROTATION_NONE);
+    if (ahrs_view == nullptr) {
+        AP_HAL::panic("Unable to allocate AP_AHRS_View");
+    }
+    
 #if FRAME_CONFIG != HELI_FRAME
-    attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, MAIN_LOOP_SECONDS);
+    attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
     var_info = AC_AttitudeControl_Multi::var_info;
 #else
-    attitude_control = new AC_AttitudeControl_Heli(ahrs, aparm, *motors, MAIN_LOOP_SECONDS);
+    attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
     var_info = AC_AttitudeControl_Heli::var_info;
 #endif
     if (attitude_control == nullptr) {
@@ -585,7 +599,7 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(attitude_control, var_info);
         
-    pos_control = new AC_PosControl(ahrs, inertial_nav, *motors, *attitude_control,
+    pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control,
                                     g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                                     g.p_pos_xy, g.pi_vel_xy);
     if (pos_control == nullptr) {
@@ -593,13 +607,13 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
 
-    wp_nav = new AC_WPNav(inertial_nav, ahrs, *pos_control, *attitude_control);
+    wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (wp_nav == nullptr) {
         AP_HAL::panic("Unable to allocate WPNav");
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
-    circle_nav = new AC_Circle(inertial_nav, ahrs, *pos_control);
+    circle_nav = new AC_Circle(inertial_nav, *ahrs_view, *pos_control);
     if (wp_nav == nullptr) {
         AP_HAL::panic("Unable to allocate CircleNav");
     }
@@ -649,4 +663,7 @@ void Copter::allocate_motors(void)
         }
 #endif
     }
+
+    // upgrade parameters. This must be done after allocating the objects
+    convert_pid_parameters();
 }

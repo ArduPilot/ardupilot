@@ -176,8 +176,13 @@ void Plane::ahrs_update()
     }
 
     // calculate a scaled roll limit based on current pitch
-    roll_limit_cd = aparm.roll_limit_cd * cosf(ahrs.pitch);
-    pitch_limit_min_cd = aparm.pitch_limit_min_cd * fabsf(cosf(ahrs.roll));
+    roll_limit_cd = aparm.roll_limit_cd;
+    pitch_limit_min_cd = aparm.pitch_limit_min_cd;
+
+    if (!quadplane.tailsitter_active()) {
+        roll_limit_cd *= ahrs.cos_pitch();
+        pitch_limit_min_cd *= fabsf(ahrs.cos_roll());
+    }
 
     // updated the summed gyro used for ground steering and
     // auto-takeoff. Dot product of DCM.c with gyro vector gives earth
@@ -195,9 +200,9 @@ void Plane::ahrs_update()
 void Plane::update_speed_height(void)
 {
     if (auto_throttle_mode) {
-       // Call TECS 50Hz update. Note that we call this regardless of
-       // throttle suppressed, as this needs to be running for
-       // takeoff detection
+	    // Call TECS 50Hz update. Note that we call this regardless of
+	    // throttle suppressed, as this needs to be running for
+	    // takeoff detection
         SpdHgt_Controller->update_50hz();
     }
 }
@@ -759,7 +764,7 @@ void Plane::update_flight_mode(void)
     case QRTL: {
         // set nav_roll and nav_pitch using sticks
         int16_t roll_limit = MIN(roll_limit_cd, quadplane.aparm.angle_max);
-        nav_roll_cd  = channel_roll->norm_input() * roll_limit;
+        nav_roll_cd  = (channel_roll->get_control_in() / 4500.0) * roll_limit;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
         float pitch_input = channel_pitch->norm_input();
         if (pitch_input > 0) {
@@ -968,6 +973,8 @@ void Plane::update_flight_stage(void)
     // tell AHRS the airspeed to true airspeed ratio
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
+
+
 
 
 #if OPTFLOW == ENABLED

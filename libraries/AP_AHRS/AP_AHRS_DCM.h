@@ -59,61 +59,63 @@ public:
     }
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f &get_gyro(void) const {
+    const Vector3f &get_gyro() const override {
         return _omega;
     }
 
     // return rotation matrix representing rotaton from body to earth axes
-    const Matrix3f &get_rotation_body_to_ned(void) const {
+    const Matrix3f &get_rotation_body_to_ned() const override {
         return _body_dcm_matrix;
     }
 
     // return the current drift correction integrator value
-    const Vector3f &get_gyro_drift(void) const {
+    const Vector3f &get_gyro_drift() const override {
         return _omega_I;
     }
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
-    void reset_gyro_drift(void);
+    void reset_gyro_drift() override;
 
     // Methods
-    void            update(void);
-    void            reset(bool recover_eulers = false);
+    void            update() override;
+    void            reset(bool recover_eulers = false) override;
 
     // reset the current attitude, used on new IMU calibration
-    void reset_attitude(const float &roll, const float &pitch, const float &yaw);
+    void reset_attitude(const float &roll, const float &pitch, const float &yaw) override;
 
     // dead-reckoning support
-    virtual bool get_position(struct Location &loc) const;
+    virtual bool get_position(struct Location &loc) const override;
 
     // status reporting
-    float           get_error_rp(void) const {
+    float           get_error_rp() const override {
         return _error_rp;
     }
-    float           get_error_yaw(void) const {
+    float           get_error_yaw() const override {
         return _error_yaw;
     }
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate(void) {
+    Vector3f wind_estimate() override {
         return _wind;
     }
 
+    void get_relative_position_D_home(float &posD) const override;
+
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float *airspeed_ret) const;
+    bool airspeed_estimate(float *airspeed_ret) const override;
 
-    bool            use_compass(void);
+    bool            use_compass() override;
 
-    void set_home(const Location &loc);
+    void set_home(const Location &loc) override;
     void estimate_wind(void);
 
     // is the AHRS subsystem healthy?
-    bool healthy(void) const;
+    bool healthy() const override;
 
     // time that the AHRS has been up
-    uint32_t uptime_ms(void) const;
+    uint32_t uptime_ms() const override;
 
 private:
     float _ki;

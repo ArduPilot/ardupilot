@@ -90,7 +90,7 @@ public:
     } state;
 
     static const uint16_t num_keys = sizeof(state)/sizeof(double);
-    
+
     struct keytable {
         const char *key;
         double &ref;
@@ -150,7 +150,7 @@ public:
         { "m-flightAxisControllerIsActive", state.m_flightAxisControllerIsActive },
         { "m-resetButtonHasBeenPressed", state.m_resetButtonHasBeenPressed },
     };
-    
+
 private:
     char *soap_request(const char *action, const char *fmt, ...);
     void exchange_data(const struct sitl_input &input);
@@ -166,6 +166,8 @@ private:
     double last_frame_count_s = 0;
     Vector3f position_offset;
     Vector3f last_velocity_ef;
+    Matrix3f att_rotation;
+    enum Rotation rotation = ROTATION_NONE;
 
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;

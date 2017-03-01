@@ -7,11 +7,29 @@
 
 
 /*
+  calculate maximum tilt change as a proportion from 0 to 1 of tilt
+ */
+float QuadPlane::tilt_max_change(bool up)
+{
+    float rate;
+    if (up || tilt.max_rate_down_dps <= 0) {
+        rate = tilt.max_rate_up_dps;
+    } else {
+        rate = tilt.max_rate_down_dps;
+    }
+    if (plane.control_mode == MANUAL && tilt.tilt_type != TILT_TYPE_BINARY) {
+        // allow a minimum of 90 DPS in manual, to give fast control
+        rate = MAX(rate, 90);
+    }
+    return rate * plane.G_Dt / 90.0f;
+}
+
+/*
   output a slew limited tiltrotor angle. tilt is from 0 to 1
  */
 void QuadPlane::tiltrotor_slew(float newtilt)
 {
-    float max_change = (tilt.max_rate_dps.get() * plane.G_Dt) / 90.0f;
+    float max_change = tilt_max_change(newtilt<tilt.current_tilt);
     tilt.current_tilt = constrain_float(newtilt, tilt.current_tilt-max_change, tilt.current_tilt+max_change);
 
     // translate to 0..1000 range and output
@@ -30,13 +48,15 @@ void QuadPlane::tiltrotor_continuous_update(void)
     tilt.motors_active = false;
 
     // the maximum rate of throttle change
-    float max_change = (tilt.max_rate_dps.get() * plane.G_Dt) / 90.0f;
+    float max_change;
     
     if (!in_vtol_mode() && !assisted_flight) {
         // we are in pure fixed wing mode. Move the tiltable motors all the way forward and run them as
         // a forward motor
         tiltrotor_slew(1);
 
+        max_change = tilt_max_change(false);
+        
         float new_throttle = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01, 0, 1);
         if (tilt.current_tilt < 1) {
             tilt.current_throttle = constrain_float(new_throttle,
@@ -58,7 +78,9 @@ void QuadPlane::tiltrotor_continuous_update(void)
     }
 
     // remember the throttle level we're using for VTOL flight
-    tilt.current_throttle = constrain_float(motors->get_throttle(),
+    float motors_throttle = motors->get_throttle();
+    max_change = tilt_max_change(motors_throttle<tilt.current_throttle);
+    tilt.current_throttle = constrain_float(motors_throttle,
                                             tilt.current_throttle-max_change,
                                             tilt.current_throttle+max_change);
     
@@ -106,7 +128,7 @@ void QuadPlane::tiltrotor_binary_slew(bool forward)
 {
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, forward?1000:0);
 
-    float max_change = (tilt.max_rate_dps.get() * plane.G_Dt) / 90.0f;
+    float max_change = tilt_max_change(!forward);
     if (forward) {
         tilt.current_tilt = constrain_float(tilt.current_tilt+max_change, 0, 1);
     } else {

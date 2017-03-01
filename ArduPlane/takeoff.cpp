@@ -58,12 +58,14 @@ bool Plane::auto_takeoff_check(void)
         goto no_launch;
     }
 
-    // Check aircraft attitude for bad launch
-    if (ahrs.pitch_sensor <= -3000 ||
-        ahrs.pitch_sensor >= 4500 ||
-        (!fly_inverted() && labs(ahrs.roll_sensor) > 3000)) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad launch AUTO");
-        goto no_launch;
+    if (!quadplane.is_tailsitter()) {
+        // Check aircraft attitude for bad launch
+        if (ahrs.pitch_sensor <= -3000 ||
+            ahrs.pitch_sensor >= 4500 ||
+            (!fly_inverted() && labs(ahrs.roll_sensor) > 3000)) {
+            gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad launch AUTO");
+            goto no_launch;
+        }
     }
 
     // Check ground speed and time delay

@@ -498,7 +498,7 @@ AP_GPS::update_instance(uint8_t instance)
     // has expired, re-initialise the GPS. This will cause GPS
     // detection to run again
     if (!result) {
-        if (tnow - timing[instance].last_message_time_ms > 2000) {
+        if (tnow - timing[instance].last_message_time_ms > 4000) {
             // free the driver before we run the next detection, so we
             // don't end up with two allocated at any time
             delete drivers[instance];

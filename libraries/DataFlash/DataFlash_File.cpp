@@ -417,15 +417,49 @@ bool DataFlash_File::NeedPrep()
 
 /*
   construct a log file name given a log number. 
+  The number in the log filename will *not* be zero-padded.
+  Note: Caller must free.
+ */
+char *DataFlash_File::_log_file_name_short(const uint16_t log_num) const
+{
+    char *buf = nullptr;
+    if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == -1) {
+        return nullptr;
+    }
+    return buf;
+}
+
+/*
+  construct a log file name given a log number.
+  The number in the log filename will be zero-padded.
+  Note: Caller must free.
+ */
+char *DataFlash_File::_log_file_name_long(const uint16_t log_num) const
+{
+    char *buf = nullptr;
+    if (asprintf(&buf, "%s/%08u.BIN", _log_directory, (unsigned)log_num) == -1) {
+        return nullptr;
+    }
+    return buf;
+}
+
+/*
+  return a log filename appropriate for the supplied log_num if a
+  filename exists with the short (not-zero-padded name) then it is the
+  appropirate name, otherwise the long (zero-padded) version is.
   Note: Caller must free.
  */
 char *DataFlash_File::_log_file_name(const uint16_t log_num) const
 {
-    char *buf = nullptr;
-    if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == 0) {
+    char *filename = _log_file_name_short(log_num);
+    if (filename == nullptr) {
         return nullptr;
     }
-    return buf;
+    if (file_exists(filename)) {
+        return filename;
+    }
+    free(filename);
+    return _log_file_name_long(log_num);
 }
 
 /*
@@ -435,7 +469,7 @@ char *DataFlash_File::_log_file_name(const uint16_t log_num) const
 char *DataFlash_File::_lastlog_file_name(void) const
 {
     char *buf = nullptr;
-    if (asprintf(&buf, "%s/LASTLOG.TXT", _log_directory) == 0) {
+    if (asprintf(&buf, "%s/LASTLOG.TXT", _log_directory) == -1) {
         return nullptr;
     }
     return buf;

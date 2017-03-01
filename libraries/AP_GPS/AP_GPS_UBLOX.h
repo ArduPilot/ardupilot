@@ -74,6 +74,8 @@
 #define CONFIG_SBAS          (1<<12)
 #define CONFIG_RATE_PVT      (1<<13)
 
+#define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
+
 #define CONFIG_ALL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_SOL | CONFIG_RATE_VELNED \
                     | CONFIG_RATE_DOP | CONFIG_RATE_MON_HW | CONFIG_RATE_MON_HW2 | CONFIG_RATE_RAW | CONFIG_VERSION \
                     | CONFIG_NAV_SETTINGS | CONFIG_GNSS | CONFIG_SBAS)
@@ -476,16 +478,16 @@ private:
 
     enum config_step {
         STEP_PVT = 0,
+        STEP_NAV_RATE, // poll NAV rate
         STEP_SOL,
         STEP_PORT,
-        STEP_POSLLH,
         STEP_STATUS,
+        STEP_POSLLH,
         STEP_VELNED,
         STEP_POLL_SVINFO, // poll svinfo
         STEP_POLL_SBAS, // poll SBAS
         STEP_POLL_NAV, // poll NAV settings
         STEP_POLL_GNSS, // poll GNSS
-        STEP_NAV_RATE, // poll NAV rate
         STEP_DOP,
         STEP_MON_HW,
         STEP_MON_HW2,
@@ -544,7 +546,7 @@ private:
     void        _configure_rate(void);
     void        _configure_sbas(bool enable);
     void        _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);
-    void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
+    bool        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
     void	send_next_rate_update(void);
     bool        _request_message_rate(uint8_t msg_class, uint8_t msg_id);
     void        _request_next_config(void);

@@ -218,6 +218,7 @@ extern const AP_HAL::HAL& hal;
 // WHOAMI values
 #define MPU_WHOAMI_6000			0x68
 #define MPU_WHOAMI_20608		0xaf
+#define MPU_WHOAMI_6500			0x70
 #define MPU_WHOAMI_MPU9250      0x71
 #define MPU_WHOAMI_MPU9255      0x73
 
@@ -330,6 +331,8 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensense::probe(AP_InertialSensor
     }
     if (sensor->_mpu_type == Invensense_MPU9250) {
         sensor->_id = HAL_INS_MPU9250_SPI;
+    } else if (sensor->_mpu_type == Invensense_MPU6500) {
+        sensor->_id = HAL_INS_MPU6500;
     } else {
         sensor->_id = HAL_INS_MPU60XX_SPI;
     }
@@ -372,7 +375,7 @@ bool AP_InertialSensor_Invensense::_has_auxiliary_bus()
 
 void AP_InertialSensor_Invensense::start()
 {
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
@@ -394,6 +397,7 @@ void AP_InertialSensor_Invensense::start()
         adev = DEVTYPE_ACC_MPU9250;
         break;
     case Invensense_MPU6000:
+    case Invensense_MPU6500:
     case Invensense_ICM20608:
     default:
         gdev = DEVTYPE_GYR_MPU6000;
@@ -810,6 +814,9 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
     case MPU_WHOAMI_6000:
         _mpu_type = Invensense_MPU6000;
         return true;
+    case MPU_WHOAMI_6500:
+        _mpu_type = Invensense_MPU6500;
+        return true;
     case MPU_WHOAMI_MPU9250:
     case MPU_WHOAMI_MPU9255:
         _mpu_type = Invensense_MPU9250;
@@ -825,7 +832,7 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
 
 bool AP_InertialSensor_Invensense::_hardware_init(void)
 {
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 

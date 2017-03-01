@@ -41,7 +41,7 @@
 
 class AC_AttitudeControl_Multi : public AC_AttitudeControl {
 public:
-	AC_AttitudeControl_Multi(AP_AHRS &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
+	AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
 
 	// empty destructor to suppress compiler warning
 	virtual ~AC_AttitudeControl_Multi() {}
@@ -66,6 +66,7 @@ public:
     void set_throttle_mix_min() override { _throttle_rpy_mix_desired = _thr_mix_min; }
     void set_throttle_mix_man() override { _throttle_rpy_mix_desired = _thr_mix_man; }
     void set_throttle_mix_max() override { _throttle_rpy_mix_desired = _thr_mix_max; }
+    void set_throttle_mix_value(float value) override { _throttle_rpy_mix_desired = value; }
 
     // are we producing min throttle?
     bool is_throttle_mix_min() const override { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }

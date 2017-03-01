@@ -100,7 +100,7 @@ AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(OpticalFlow &_frontend)
 // setup the device
 bool AP_OpticalFlow_Pixart::setup_sensor(void)
 {
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("Unable to get bus semaphore");
     }
 
@@ -278,7 +278,7 @@ void AP_OpticalFlow_Pixart::timer(void)
     float dt = dt_us * 1.0e-6;
     const Vector3f &gyro = get_ahrs().get_gyro();
 
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         integral.sum.x += burst.delta_x;
         integral.sum.y += burst.delta_y;
         integral.sum_us += dt_us;
@@ -316,7 +316,7 @@ void AP_OpticalFlow_Pixart::update(void)
     state.device_id = 1;
     state.surface_quality = burst.squal;
     
-    if (integral.sum_us > 0 && _sem->take(0)) {
+    if (integral.sum_us > 0 && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         const Vector2f flowScaler = _flowScaler();
         float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
         float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;

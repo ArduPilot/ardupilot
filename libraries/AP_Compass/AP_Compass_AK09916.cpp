@@ -69,7 +69,7 @@ AP_Compass_AK09916::AP_Compass_AK09916(Compass &compass,
 
 bool AP_Compass_AK09916::init()
 {
-    if (!dev->get_semaphore()->take(0)) {
+    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
@@ -147,7 +147,7 @@ void AP_Compass_AK09916::timer()
     /* correct raw_field for known errors */
     correct_field(field, compass_instance);
 
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         accum += field;
         accum_count++;
         _sem->give();

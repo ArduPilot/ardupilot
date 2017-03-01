@@ -25,6 +25,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "AP_Baro_BMP085.h"
 #include "AP_Baro_BMP280.h"
@@ -85,7 +86,57 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Values: -1:Disabled,0:Bus0:1:Bus1
     // @User: Advanced
     AP_GROUPINFO("EXT_BUS", 7, AP_Baro, _ext_bus, -1),
-    
+
+    // @Param: SPEC_GRAV
+    // @DisplayName: Specific Gravity (For water depth measurement)
+    // @Description: This sets the specific gravity of the fluid when flying an underwater ROV.
+    // @Values: 1.0:Freshwater,1.024:Saltwater
+    AP_GROUPINFO_FRAME("SPEC_GRAV", 8, AP_Baro, _specific_gravity, 1.0, AP_PARAM_FRAME_SUB),
+
+#if BARO_MAX_INSTANCES > 1
+    // @Param: ABS_PRESS2
+    // @DisplayName: Absolute Pressure
+    // @Description: calibrated ground pressure in Pascals
+    // @Units: pascals
+    // @Increment: 1
+    // @ReadOnly: True
+    // @Volatile: True
+    // @User: Advanced
+    AP_GROUPINFO("ABS_PRESS2", 9, AP_Baro, sensors[1].ground_pressure, 0),
+
+    // @Param: TEMP2
+    // @DisplayName: ground temperature
+    // @Description: calibrated ground temperature in degrees Celsius
+    // @Units: degrees celsius
+    // @Increment: 1
+    // @ReadOnly: True
+    // @Volatile: True
+    // @User: Advanced
+    AP_GROUPINFO("TEMP2", 10, AP_Baro, sensors[1].ground_temperature, 0),
+#endif
+
+#if BARO_MAX_INSTANCES > 2
+    // @Param: ABS_PRESS3
+    // @DisplayName: Absolute Pressure
+    // @Description: calibrated ground pressure in Pascals
+    // @Units: pascals
+    // @Increment: 1
+    // @ReadOnly: True
+    // @Volatile: True
+    // @User: Advanced
+    AP_GROUPINFO("ABS_PRESS3", 11, AP_Baro, sensors[2].ground_pressure, 0),
+
+    // @Param: TEMP3
+    // @DisplayName: ground temperature
+    // @Description: calibrated ground temperature in degrees Celsius
+    // @Units: degrees celsius
+    // @Increment: 1
+    // @ReadOnly: True
+    // @Volatile: True
+    // @User: Advanced
+    AP_GROUPINFO("TEMP3", 12, AP_Baro, sensors[2].ground_temperature, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -99,7 +150,7 @@ AP_Baro::AP_Baro()
 
 // calibrate the barometer. This must be called at least once before
 // the altitude() or climb_rate() interfaces can be used
-void AP_Baro::calibrate()
+void AP_Baro::calibrate(bool save)
 {
     // reset the altitude offset when we calibrate. The altitude
     // offset is supposed to be for within a flight
@@ -156,8 +207,10 @@ void AP_Baro::calibrate()
         if (count[i] == 0) {
             sensors[i].calibrated = false;
         } else {
-            sensors[i].ground_pressure.set_and_save(sum_pressure[i] / count[i]);
-            sensors[i].ground_temperature.set_and_save(sum_temperature[i] / count[i]);
+            if (save) {
+                sensors[i].ground_pressure.set_and_save(sum_pressure[i] / count[i]);
+                sensors[i].ground_temperature.set_and_save(sum_temperature[i] / count[i]);
+            }
         }
     }
 
@@ -243,7 +296,7 @@ float AP_Baro::get_air_density_ratio(void)
     }
 }
 
-// return current climb_rate estimeate relative to time that calibrate()
+// return current climb_rate estimate relative to time that calibrate()
 // was called. Returns climb rate in meters/s, positive means up
 // note that this relies on read() being called regularly to get new data
 float AP_Baro::get_climb_rate(void)
@@ -393,8 +446,13 @@ void AP_Baro::init(void)
 
     // can optionally have baro on I2C too
     if (_ext_bus >= 0) {
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_MS5837_I2C_ADDR)), AP_Baro_MS56XX::BARO_MS5837));
+#else
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
+#endif
     }
     
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
@@ -436,7 +494,14 @@ void AP_Baro::update(void)
             if (is_zero(ground_pressure) || isnan(ground_pressure) || isinf(ground_pressure)) {
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
-            float altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
+            float altitude = sensors[i].altitude;
+            if (sensors[i].type == BARO_TYPE_AIR) {
+                altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
+            } else if (sensors[i].type == BARO_TYPE_WATER) {
+                //101325Pa is sea level air pressure, 9800 Pascal/ m depth in water.
+                //No temperature or depth compensation for density of water.
+                altitude = (sensors[i].ground_pressure - sensors[i].pressure) / 9800.0f / _specific_gravity;
+            }
             // sanity check altitude
             sensors[i].alt_ok = !(isnan(altitude) || isinf(altitude));
             if (sensors[i].alt_ok) {

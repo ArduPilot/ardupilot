@@ -39,7 +39,8 @@ public:
     float       get_p();
     float       get_i();
     float       get_d();
-
+    float       get_ff(float requested_rate);
+    
     // reset_I - reset the integrator
     void        reset_I();
 
@@ -62,7 +63,7 @@ public:
     AP_Float   &filt_hz() { return _filt_hz; }
     float       imax() const { return _imax.get(); }
     float       get_filt_alpha() const;
-    float       ff() const { return _vff.get(); }
+    float       ff() const { return _ff.get(); }
 
     // set accessors
     void        kP(const float v) { _kp.set(v); }
@@ -70,7 +71,7 @@ public:
     void        kD(const float v) { _kd.set(v); }
     void        imax(const float v) { _imax.set(fabsf(v)); }
     void        filt_hz(const float v);
-    void        ff(const float v) { _vff.set(v); }
+    void        ff(const float v) { _ff.set(v); }
 
     float       get_integrator() const { return _integrator; }
     void        set_integrator(float i) { _integrator = i; }
@@ -91,7 +92,7 @@ protected:
     AP_Float        _kd;
     AP_Float        _imax;
     AP_Float        _filt_hz;                   // PID Input filter frequency in Hz
-    AP_Float        _vff; // only used by heli
+    AP_Float        _ff;
 
     // flags
     struct ac_pid_flags {

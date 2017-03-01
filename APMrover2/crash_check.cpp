@@ -3,7 +3,7 @@
 // Code to detect a crash or block
 #define CRASH_CHECK_TRIGGER_SEC     2       // 2 seconds blocked indicates a crash
 #define CRASH_CHECK_THROTTLE_MIN    5.0f    // vehicle must have a throttle greater that 5% to be considered crashed
-#define CRASH_CHECK_VEL_MIN         0.08f   // vehicle must have a velocity under 0.08 m/s to be considered crashed
+#define CRASH_CHECK_VEL_MIN         0.08f   // vehicle must have a velocity under 0.08 m/s or rad/s to be considered crashed
 
 // crash_check - disarms motors if a crash or block has been detected
 // crashes are detected by the vehicle being static (no speed) for more than CRASH_CHECK_TRIGGER_SEC and motor are running
@@ -21,7 +21,9 @@ void Rover::crash_check()
   // TODO : Check if min vel can be calculated
   // min_vel = ( CRASH_CHECK_THROTTLE_MIN * g.speed_cruise) / g.throttle_cruise;
 
-  if ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN)|| ((100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))) < CRASH_CHECK_THROTTLE_MIN)) {
+  if ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
+      (fabsf(ahrs.get_gyro().z) >= CRASH_CHECK_VEL_MIN) ||  // Check turn speed
+      ((100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))) < CRASH_CHECK_THROTTLE_MIN)) {
     crash_counter = 0;
     return;
   }

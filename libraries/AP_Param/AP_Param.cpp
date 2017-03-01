@@ -71,6 +71,8 @@ uint16_t AP_Param::num_param_overrides = 0;
 // storage object
 StorageAccess AP_Param::_storage(StorageManager::StorageParam);
 
+// flags indicating frame type
+uint16_t AP_Param::_frame_type_flags;
 
 // write to EEPROM
 void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
@@ -127,7 +129,22 @@ uint32_t AP_Param::group_id(const struct GroupInfo *grpinfo, uint32_t base, uint
     }
     return base + (grpinfo[i].idx<<shift);
 }
- 
+
+
+/*
+  check if a frame type should be included. A frame is included if
+  either there are no frame type flags on a parameter or if at least
+  one of the flags has been set by set_frame_type_flags()
+ */
+bool AP_Param::check_frame_type(uint16_t flags)
+{
+    uint16_t frame_flags = flags >> AP_PARAM_FRAME_TYPE_SHIFT;
+    if (frame_flags == 0) {
+        return true;
+    }
+    return (frame_flags & _frame_type_flags) != 0;
+}
+
 // validate a group info table
 bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
                                 uint16_t *                          total_size,
@@ -1316,6 +1333,9 @@ AP_Param *AP_Param::next_group(uint16_t vindex, const struct GroupInfo *group_in
     for (uint8_t i=0;
          (type=(enum ap_var_type)group_info[i].type) != AP_PARAM_NONE;
          i++) {
+        if (!check_frame_type(group_info[i].flags)) {
+            continue;
+        }
         if (type == AP_PARAM_GROUP) {
             // a nested group
             const struct GroupInfo *ginfo = group_info[i].group_info;
@@ -1396,6 +1416,9 @@ AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype)
         found_current = true;
     }
     for (; i<_num_vars; i++) {
+        if (!check_frame_type(_var_info[i].flags)) {
+            continue;
+        }
         type = (enum ap_var_type)_var_info[i].type;
         if (type == AP_PARAM_GROUP) {
             const struct GroupInfo *group_info = _var_info[i].group_info;
@@ -1720,14 +1743,9 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value)
     return true;
 }
 
-/*
-  load a default set of parameters from a file
- */
-bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
+// increments num_defaults for each default found in filename
+bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults, bool panic_on_error)
 {
-    if (filename == nullptr) {
-        return false;
-    }
     FILE *f = fopen(filename, "r");
     if (f == nullptr) {
         return false;
@@ -1737,7 +1755,6 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
     /*
       work out how many parameter default structures to allocate
      */
-    uint16_t num_defaults = 0;
     while (fgets(line, sizeof(line)-1, f)) {
         char *pname;
         float value;
@@ -1759,27 +1776,19 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
     }
     fclose(f);
 
-    if (param_overrides != nullptr) {
-        free(param_overrides);
-    }
-    num_param_overrides = 0;
+    return true;
+}
 
-    param_overrides = new param_override[num_defaults];
-    if (param_overrides == nullptr) {
-        AP_HAL::panic("AP_Param: Failed to allocate overrides");
-        return false;
-    }
-
-    /* 
-       re-open to avoid possible seek issues with NuttX
-     */
-    f = fopen(filename, "r");
+bool AP_Param::read_param_defaults_file(const char *filename)
+{
+    FILE *f = fopen(filename, "r");
     if (f == nullptr) {
         AP_HAL::panic("AP_Param: Failed to re-open defaults file");
         return false;
     }
 
     uint16_t idx = 0;
+    char line[100];
     while (fgets(line, sizeof(line)-1, f)) {
         char *pname;
         float value;
@@ -1799,6 +1808,60 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
         }
     }
     fclose(f);
+    return true;
+}
+
+/*
+  load a default set of parameters from a file
+ */
+bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
+{
+    if (filename == nullptr) {
+        return false;
+    }
+
+    char *mutable_filename = strdup(filename);
+    if (mutable_filename == nullptr) {
+        AP_HAL::panic("AP_Param: Failed to allocate mutable string");
+    }
+
+    uint16_t num_defaults = 0;
+    char *saveptr = nullptr;
+    for (char *pname = strtok_r(mutable_filename, ",", &saveptr);
+         pname != nullptr;
+         pname = strtok_r(nullptr, ",", &saveptr)) {
+        if (!count_defaults_in_file(pname, num_defaults, panic_on_error)) {
+            free(mutable_filename);
+            return false;
+        }
+    }
+    free(mutable_filename);
+
+    if (param_overrides != nullptr) {
+        free(param_overrides);
+    }
+    num_param_overrides = 0;
+
+    param_overrides = new param_override[num_defaults];
+    if (param_overrides == nullptr) {
+        AP_HAL::panic("AP_Param: Failed to allocate overrides");
+        return false;
+    }
+
+    saveptr = nullptr;
+    mutable_filename = strdup(filename);
+    if (mutable_filename == nullptr) {
+        AP_HAL::panic("AP_Param: Failed to allocate mutable string");
+    }
+    for (char *pname = strtok_r(mutable_filename, ",", &saveptr);
+         pname != nullptr;
+         pname = strtok_r(nullptr, ",", &saveptr)) {
+        if (!read_param_defaults_file(pname)) {
+            free(mutable_filename);
+            return false;
+        }
+    }
+    free(mutable_filename);
 
     num_param_overrides = num_defaults;
 

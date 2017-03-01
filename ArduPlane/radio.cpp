@@ -29,6 +29,9 @@ void Plane::set_control_channels(void)
     } else {
         // reverse thrust
         channel_throttle->set_angle(100);
+        SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
+        SRV_Channels::set_angle(SRV_Channel::k_throttleLeft, 100);
+        SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 100);
     }
 
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
@@ -237,6 +240,9 @@ void Plane::read_radio()
         rudder_input = 0;
     }
 
+    // potentially swap inputs for tailsitters
+    quadplane.tailsitter_check_input();
+    
     // check for transmitter tuning changes
     tuning.check_input(control_mode);
 }

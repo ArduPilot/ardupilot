@@ -61,7 +61,7 @@ protected:
     void                remove_motor(int8_t motor_num);
 
     // configures the motors for the defined frame_class and frame_type
-    void                setup_motors(motor_frame_class frame_class, motor_frame_type frame_type);
+    virtual void        setup_motors(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // normalizes the roll, pitch and yaw factors so maximum magnitude is 0.5
     void                normalise_rpy_factors();

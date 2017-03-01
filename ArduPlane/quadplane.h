@@ -74,6 +74,21 @@ public:
 
     // see if we are flying from vtol point of view
     bool is_flying_vtol(void);
+
+    // return true when tailsitter frame configured
+    bool is_tailsitter(void);
+
+    // return true when flying a tailsitter in VTOL
+    bool tailsitter_active(void);
+    
+    // create outputs for tailsitters
+    void tailsitter_output(void);
+
+    // handle different tailsitter input types
+    void tailsitter_check_input(void);
+    
+    // check if we have completed transition
+    bool tailsitter_transition_complete(void);
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -249,6 +264,7 @@ private:
     enum {
         TRANSITION_AIRSPEED_WAIT,
         TRANSITION_TIMER,
+        TRANSITION_ANGLE_WAIT,
         TRANSITION_DONE
     } transition_state;
 
@@ -306,13 +322,37 @@ private:
     // tiltrotor control variables
     struct {
         AP_Int16 tilt_mask;
-        AP_Int16 max_rate_dps;
+        AP_Int16 max_rate_up_dps;
+        AP_Int16 max_rate_down_dps;
         AP_Int8  max_angle_deg;
         AP_Int8  tilt_type;
         float current_tilt;
         float current_throttle;
         bool motors_active:1;
     } tilt;
+
+    enum tailsitter_input {
+        TAILSITTER_INPUT_MULTICOPTER = 0,
+        TAILSITTER_INPUT_PLANE       = 1,
+    };
+
+    enum tailsitter_mask {
+        TAILSITTER_MASK_AILERON  = 1,
+        TAILSITTER_MASK_ELEVATOR = 2,
+        TAILSITTER_MASK_THROTTLE = 4,
+        TAILSITTER_MASK_RUDDER   = 8,
+    };
+    
+    // tailsitter control variables
+    struct {
+        AP_Int8 transition_angle;
+        AP_Int8 input_type;
+        AP_Int8 input_mask;
+        AP_Int8 input_mask_chan;
+    } tailsitter;
+
+    // the attitude view of the VTOL attitude controller
+    AP_AHRS_View *ahrs_view;
 
     // time when motors were last active
     uint32_t last_motors_active_ms;
@@ -324,6 +364,7 @@ private:
     void tiltrotor_binary_update(void);
     void tilt_compensate(float *thrust, uint8_t num_motors);
     bool tiltrotor_fully_fwd(void);
+    float tilt_max_change(bool up);
 
     void afs_terminate(void);
     bool guided_mode_enabled(void);
