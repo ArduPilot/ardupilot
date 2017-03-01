@@ -1986,6 +1986,12 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 #endif
         break;
 
+    case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+        copter.g2.visual_odom.handle_msg(msg);
+#endif
+        break;
+
     default:
         handle_common_message(msg);
         break;

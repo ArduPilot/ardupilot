@@ -279,6 +279,9 @@ void Copter::init_ardupilot()
     // init beacons used for non-gps position estimation
     init_beacon();
 
+    // init visual odometry
+    init_visual_odom();
+
     // initialise AP_RPM library
     rpm_sensor.init();
 
@@ -380,11 +383,27 @@ bool Copter::ekf_position_ok()
 // optflow_position_ok - returns true if optical flow based position estimate is ok
 bool Copter::optflow_position_ok()
 {
-#if OPTFLOW != ENABLED
+#if OPTFLOW != ENABLED && VISUAL_ODOMETRY_ENABLED != ENABLED
     return false;
 #else
-    // return immediately if optflow is not enabled or EKF not used
-    if (!optflow.enabled() || !ahrs.have_inertial_nav()) {
+    // return immediately if EKF not used
+    if (!ahrs.have_inertial_nav()) {
+        return false;
+    }
+
+    // return immediately if neither optflow nor visual odometry is enabled
+    bool enabled = false;
+#if OPTFLOW == ENABLED
+    if (optflow.enabled()) {
+        enabled = true;
+    }
+#endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    if (g2.visual_odom.enabled()) {
+        enabled = true;
+    }
+#endif
+    if (!enabled) {
         return false;
     }
 
