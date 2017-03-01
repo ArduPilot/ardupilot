@@ -322,6 +322,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
     case PX4_BOARD_PIXHAWK2:
     case PX4_BOARD_PIXRACER:
     case PX4_BOARD_PHMINI:
+    case PX4_BOARD_AUAV21:
     case PX4_BOARD_PH2SLIM:
         break;
     default:
