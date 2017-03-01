@@ -74,13 +74,6 @@ void Sub::set_pre_arm_check(bool b)
     }
 }
 
-void Sub::set_pre_arm_rc_check(bool b)
-{
-    if (ap.pre_arm_rc_check != b) {
-        ap.pre_arm_rc_check = b;
-    }
-}
-
 void Sub::update_using_interlock()
 {
     // check if we are using motor interlock control on an aux switch
