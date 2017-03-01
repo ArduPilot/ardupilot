@@ -36,7 +36,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:PulsedLightI2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, RangeFinder, _type[0], 0),
 
@@ -163,7 +163,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:PulsedLightI2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    12, RangeFinder, _type[1], 0),
 
@@ -608,11 +608,12 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
  */
 void RangeFinder::detect_instance(uint8_t instance)
 {
-    uint8_t type = _type[instance];
+    enum RangeFinder_Type type = (enum RangeFinder_Type)_type[instance].get();
     switch (type) {
     case RangeFinder_TYPE_PLI2C:
-        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, *this, instance, state[instance]))) {
-            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, *this, instance, state[instance]));
+    case RangeFinder_TYPE_PLI2CV3:
+        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, *this, instance, state[instance], type))) {
+            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, *this, instance, state[instance], type));
         }
         break;
     case RangeFinder_TYPE_MBI2C:
