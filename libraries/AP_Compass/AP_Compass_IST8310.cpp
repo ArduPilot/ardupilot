@@ -28,11 +28,16 @@
 #define WAI_REG 0x0
 #define DEVICE_ID 0x10
 
+#define OUTPUT_X_L_REG 0x3
+#define OUTPUT_X_H_REG 0x4
+#define OUTPUT_Y_L_REG 0x5
+#define OUTPUT_Y_H_REG 0x6
+#define OUTPUT_Z_L_REG 0x7
+#define OUTPUT_Z_H_REG 0x8
+
 #define CNTL1_REG 0xA
 #define CNTL1_BIT_SINGLE_MEASUREMENT_MODE 0x1
 
-#define STAT1_REG 0x2
-#define DATA_RDY 0x1
 #define CNTL2_REG 0xB
 #define CNTL2_BIT_SRST 1
 
@@ -158,12 +163,10 @@ bool AP_Compass_IST8310::init()
     _dev->set_device_type(DEVTYPE_IST8310);
     set_dev_id(_instance, _dev->get_bus_id());
 
-    _dev->register_periodic_callback(SAMPLING_PERIOD_USEC,
-                                     FUNCTOR_BIND_MEMBER(&AP_Compass_IST8310::timer, void));
+    _periodic_handle = _dev->register_periodic_callback(SAMPLING_PERIOD_USEC,
+        FUNCTOR_BIND_MEMBER(&AP_Compass_IST8310::timer, void));
 
     _perf_xfer_err = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_xfer_err");
-    _perf_not_ready = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_not_ready");
-    _perf_restart = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_restart");
     _perf_bad_data = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_bad_data");
 
     return true;
@@ -177,57 +180,40 @@ void AP_Compass_IST8310::start_conversion()
 {
     if (!_dev->write_register(CNTL1_REG, CNTL1_BIT_SINGLE_MEASUREMENT_MODE)) {
         hal.util->perf_count(_perf_xfer_err);
-        _need_start = true;
-        return;
+        _ignore_next_sample = true;
     }
-
-    _need_start = false;
 }
 
 void AP_Compass_IST8310::timer()
 {
-    if (_need_start) {
+    if (_ignore_next_sample) {
+        _ignore_next_sample = false;
         start_conversion();
         return;
     }
 
     struct PACKED {
-        uint8_t status;
         le16_t rx;
         le16_t ry;
         le16_t rz;
     } buffer;
 
-    bool ret = _dev->read_registers(STAT1_REG, (uint8_t *) &buffer, sizeof(buffer));
+    bool ret = _dev->read_registers(OUTPUT_X_L_REG, (uint8_t *) &buffer, sizeof(buffer));
     if (!ret) {
         hal.util->perf_count(_perf_xfer_err);
         return;
     }
 
-    auto status = buffer.status;
-
     uint32_t now = AP_HAL::micros();
 
-    if (!(status & 0x01)) {
-        hal.util->perf_count(_perf_not_ready);
+    start_conversion();
 
-        /*
-         * Sensor is in a wrong state or something went really wrong: try to
-         * request a sample again
-         */
-        if (now > _last_measurement_usec + 2 * SAMPLING_PERIOD_USEC) {
-            hal.util->perf_count(_perf_restart);
-            start_conversion();
-        }
-
-        return;
-    }
+    /* same period, but start counting from now */
+    _dev->adjust_periodic_callback(_periodic_handle, SAMPLING_PERIOD_USEC);
 
     auto x = static_cast<int16_t>(le16toh(buffer.rx));
     auto y = static_cast<int16_t>(le16toh(buffer.ry));
     auto z = static_cast<int16_t>(le16toh(buffer.rz));
-
-    start_conversion();
 
     /*
      * Check if value makes sense according to the FSR and Resolution of
@@ -240,13 +226,10 @@ void AP_Compass_IST8310::timer()
         return;
     }
 
-    _last_measurement_usec = now;
-
-
     // flip Z to conform to right-hand rule convention
     z = -z;
 
-    /* convert uT to milligauss */
+    /* Resolution: 0.3 µT/LSB - already convert to milligauss */
     Vector3f field = Vector3f{x * 3.0f, y * 3.0f, z * 3.0f};
 
     /* rotate raw_field from sensor frame to body frame */
