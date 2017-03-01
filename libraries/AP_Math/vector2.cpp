@@ -131,8 +131,11 @@ float Vector2<T>::angle(const Vector2<T> &v2) const
         return 0.0f;
     }
     float cosv = ((*this)*v2) / len;
-    if (fabsf(cosv) >= 1) {
+    if (cosv >= 1) {
         return 0.0f;
+    }
+    if (cosv <= -1) {
+        return M_PI;
     }
     return acosf(cosv);
 }
