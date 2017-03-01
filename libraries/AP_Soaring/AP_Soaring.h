@@ -67,6 +67,7 @@ class SoaringController {
 
 protected:
     AP_Int8 soar_active;
+    AP_Int8 soar_active_ch;
     AP_Float thermal_vspeed;
     AP_Float thermal_q1;
     AP_Float thermal_q2;
