@@ -78,6 +78,11 @@ public:
         return _maxClimbRate;
     }
 
+    // added to let SoaringContoller reset pitch integrator to zero
+    void reset_pitch_I(void) {
+        _integSEB_state = 0.0f;
+    }
+    
     // return landing sink rate
     float get_land_sinkrate(void) const {
         return _land_sink;
