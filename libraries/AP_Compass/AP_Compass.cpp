@@ -504,6 +504,7 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_PX4V1:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK:
     case AP_BoardConfig::PX4_BOARD_PHMINI:
+    case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
     case AP_BoardConfig::PX4_BOARD_PIXRACER: {
@@ -573,6 +574,11 @@ void Compass::_detect_backends(void)
                      AP_Compass_AK8963::name, false);
         break;
 
+    case AP_BoardConfig::PX4_BOARD_AUAV21:
+        ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
+                     AP_Compass_AK8963::name, false);
+        break;
+        
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
         ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_YAW_270),
                      AP_Compass_AK8963::name, false);
