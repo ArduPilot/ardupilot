@@ -590,10 +590,9 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(Vector3f attit
 }
 
 // Run the roll angular velocity PID controller and return the output
-float AC_AttitudeControl::rate_target_to_motor_roll(float rate_target_rads)
+float AC_AttitudeControl::rate_target_to_motor_roll(float rate_actual_rads, float rate_target_rads)
 {
-    float current_rate_rads = _ahrs.get_gyro().x;
-    float rate_error_rads = rate_target_rads - current_rate_rads;
+    float rate_error_rads = rate_target_rads - rate_actual_rads;
 
     // pass error to PID controller
     get_rate_roll_pid().set_input_filter_d(rate_error_rads);
@@ -614,10 +613,9 @@ float AC_AttitudeControl::rate_target_to_motor_roll(float rate_target_rads)
 }
 
 // Run the pitch angular velocity PID controller and return the output
-float AC_AttitudeControl::rate_target_to_motor_pitch(float rate_target_rads)
+float AC_AttitudeControl::rate_target_to_motor_pitch(float rate_actual_rads, float rate_target_rads)
 {
-    float current_rate_rads = _ahrs.get_gyro().y;
-    float rate_error_rads = rate_target_rads - current_rate_rads;
+    float rate_error_rads = rate_target_rads - rate_actual_rads;
 
     // pass error to PID controller
     get_rate_pitch_pid().set_input_filter_d(rate_error_rads);
@@ -638,10 +636,9 @@ float AC_AttitudeControl::rate_target_to_motor_pitch(float rate_target_rads)
 }
 
 // Run the yaw angular velocity PID controller and return the output
-float AC_AttitudeControl::rate_target_to_motor_yaw(float rate_target_rads)
+float AC_AttitudeControl::rate_target_to_motor_yaw(float rate_actual_rads, float rate_target_rads)
 {
-    float current_rate_rads = _ahrs.get_gyro().z;
-    float rate_error_rads = rate_target_rads - current_rate_rads;
+    float rate_error_rads = rate_target_rads - rate_actual_rads;
 
     // pass error to PID controller
     get_rate_yaw_pid().set_input_filter_all(rate_error_rads);
