@@ -235,6 +235,9 @@ public:
     // return a smoothed and corrected gyro vector
     virtual const Vector3f &get_gyro(void) const = 0;
 
+    // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
+    Vector3f get_gyro_latest(void) const;
+
     // return the current estimate of the gyro drift
     virtual const Vector3f &get_gyro_drift(void) const = 0;
 

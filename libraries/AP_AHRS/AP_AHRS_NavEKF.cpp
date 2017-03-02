@@ -1471,7 +1471,7 @@ bool AP_AHRS_NavEKF::have_ekf_logging(void) const
     return false;
 }
 
-// get earth-frame accel vector for primary IMU
+// get the index of the current primary IMU
 uint8_t AP_AHRS_NavEKF::get_primary_IMU_index() const
 {
     int8_t imu = -1;

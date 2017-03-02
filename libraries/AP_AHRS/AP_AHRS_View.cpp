@@ -67,3 +67,10 @@ void AP_AHRS_View::update(void)
                    trig.cos_roll, trig.cos_pitch, trig.cos_yaw,
                    trig.sin_roll, trig.sin_pitch, trig.sin_yaw);
 }
+
+// return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
+Vector3f AP_AHRS_View::get_gyro_latest(void) const {
+    Vector3f gyro_latest = ahrs.get_gyro_latest();
+    gyro_latest.rotate(rotation);
+    return gyro_latest;
+}
