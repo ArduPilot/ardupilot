@@ -61,6 +61,7 @@ public:
         Invensense_MPU6500,
         Invensense_MPU9250,
         Invensense_ICM20608,
+        Invensense_ICM20602,
     };
     
 private:

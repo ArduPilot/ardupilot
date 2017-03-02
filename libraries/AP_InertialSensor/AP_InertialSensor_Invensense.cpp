@@ -14,7 +14,7 @@
 */
 /*
   driver for all supported Invensense IMUs, including MPU6000, MPU9250
-  and ICM-20608
+  ICM-20608 and ICM-20602
  */
 
 #include <assert.h>
@@ -218,6 +218,7 @@ extern const AP_HAL::HAL& hal;
 // WHOAMI values
 #define MPU_WHOAMI_6000			0x68
 #define MPU_WHOAMI_20608		0xaf
+#define MPU_WHOAMI_20602		0x12
 #define MPU_WHOAMI_6500			0x70
 #define MPU_WHOAMI_MPU9250      0x71
 #define MPU_WHOAMI_MPU9255      0x73
@@ -399,6 +400,7 @@ void AP_InertialSensor_Invensense::start()
     case Invensense_MPU6000:
     case Invensense_MPU6500:
     case Invensense_ICM20608:
+    case Invensense_ICM20602:
     default:
         gdev = DEVTYPE_GYR_MPU6000;
         adev = DEVTYPE_ACC_MPU6000;
@@ -438,7 +440,8 @@ void AP_InertialSensor_Invensense::start()
     }
     hal.scheduler->delay(1);
 
-	if (_mpu_type == Invensense_ICM20608) {
+	if (_mpu_type == Invensense_ICM20608 ||
+        _mpu_type == Invensense_ICM20602) {
         // this avoids a sensor bug, see description above
 		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
 	}
@@ -824,6 +827,9 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
     case MPU_WHOAMI_20608:
         _mpu_type = Invensense_ICM20608;
         return true;
+    case MPU_WHOAMI_20602:
+        _mpu_type = Invensense_ICM20602;
+        return true;
     }
     // not a value WHOAMI result
     return false;
@@ -904,7 +910,8 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
         return false;
     }
 
-	if (_mpu_type == Invensense_ICM20608) {
+	if (_mpu_type == Invensense_ICM20608 ||
+        _mpu_type == Invensense_ICM20602) {
         // this avoids a sensor bug, see description above
 		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
 	}
