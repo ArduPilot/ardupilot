@@ -373,6 +373,7 @@ void Sub::three_hz_loop()
 void Sub::one_hz_loop()
 {
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
+    AP_Notify::flags.pre_arm_gps_check = position_ok();
 
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
