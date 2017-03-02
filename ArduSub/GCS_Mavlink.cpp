@@ -983,11 +983,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_PARAM_REQUEST_READ: {       // MAV ID: 20
-        handle_param_request_read(msg);
-        break;
-    }
-
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {       // MAV ID: 21
         // mark the firmware version in the tlog
         send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
@@ -1949,19 +1944,19 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_SETUP_SIGNING:
-        handle_setup_signing(msg);
-        break;
-
-    case MAVLINK_MSG_ID_SYS_STATUS:
+    case MAVLINK_MSG_ID_SYS_STATUS: {
         uint32_t MAV_SENSOR_WATER = 0x20000000;
         mavlink_sys_status_t packet;
         mavlink_msg_sys_status_decode(msg, &packet);
         if ((packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) && !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER)) {
             sub.leak_detector.set_detect();
         }
+    }
         break;
 
+    default:
+        handle_common_message(msg);
+        break;
     }     // end switch
 } // end handle mavlink
 
