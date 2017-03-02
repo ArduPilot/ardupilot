@@ -288,8 +288,8 @@ void SoaringController::update_thermalling()
                                                (double)_ekf.X[1],
                                                (double)_ekf.X[2],
                                                (double)_ekf.X[3],
-                                               (double)current_loc.lat,
-                                               (double)current_loc.lng,
+                                               current_loc.lat,
+                                               current_loc.lng,
                                                (double)_alt,
                                                (double)dx_w,
                                                (double)dy_w);

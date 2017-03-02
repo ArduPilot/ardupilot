@@ -417,6 +417,10 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         auto_navigation_mode = false;
         cruise_state.locked_heading = false;
         cruise_state.lock_timer_ms = 0;
+        
+        // for ArduSoar soaring_controller
+        g2.soaring_controller.init_cruising();
+        
         set_target_altitude_current();
         break;
 
