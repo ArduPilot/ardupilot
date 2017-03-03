@@ -191,7 +191,7 @@ protected:
     void update_mag_field_bf(void);
 
     /* advance time by deltat in seconds */
-    void time_advance(float deltat);
+    void time_advance();
 
     /* setup the frame step time */
     void setup_frame_time(float rate, float speedup);
