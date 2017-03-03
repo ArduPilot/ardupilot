@@ -246,10 +246,10 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
     // Initialise class variables used to do GPS blending
     memset(&_NE_pos_offset_m, 0, sizeof(_NE_pos_offset_m));
     memset(&_hgt_offset_cm, 0, sizeof(_hgt_offset_cm));
-    memset(&state[GPS_MAX_INSTANCES], 0, sizeof(state[GPS_MAX_INSTANCES]));
+    memset(&state[GPS_MAX_RECEIVERS], 0, sizeof(state[GPS_MAX_RECEIVERS]));
     memset(&_last_time_updated, 0, sizeof(_last_time_updated));
     memset(&_blend_weights, 0, sizeof(_blend_weights));
-    memset(&timing[GPS_MAX_INSTANCES], 0, sizeof(timing[GPS_MAX_INSTANCES]));
+    memset(&timing[GPS_MAX_RECEIVERS], 0, sizeof(timing[GPS_MAX_RECEIVERS]));
     memset(&_output_location_corrected, 0, sizeof(_output_location_corrected));
     _blended_antenna_offset.zero();
     _omega_lpf = 1.0f / constrain_float(_blend_tc, 5.0f, 30.0f);
@@ -552,7 +552,7 @@ AP_GPS::update_instance(uint8_t instance)
 void
 AP_GPS::update(void)
 {
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         update_instance(i);
     }
 
@@ -565,14 +565,14 @@ AP_GPS::update(void)
         calc_blended_state();
 
         // update notify with gps status. Used blended data
-        AP_Notify::flags.gps_status = state[GPS_MAX_INSTANCES].status;
-        AP_Notify::flags.gps_num_sats = state[GPS_MAX_INSTANCES].num_sats;
+        AP_Notify::flags.gps_status = state[GPS_MAX_RECEIVERS].status;
+        AP_Notify::flags.gps_num_sats = state[GPS_MAX_RECEIVERS].num_sats;
 
     } else {
         // use hard switch logic
         // work out which GPS is the primary, and how many sensors we have
         uint32_t now = AP_HAL::millis();
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status != NO_GPS) {
                 num_instances = i+1;
             }
@@ -609,7 +609,7 @@ AP_GPS::update(void)
             }
 
             // copy the primary instance to the blended instance
-            state[GPS_MAX_INSTANCES] = state[primary_instance];
+            state[GPS_MAX_RECEIVERS] = state[primary_instance];
             _output_location_corrected = state[primary_instance].location;
             _blended_antenna_offset = _antenna_offset[primary_instance];
 
@@ -650,7 +650,7 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
                const Location &_location, const Vector3f &_velocity, uint8_t _num_sats, 
                uint16_t hdop)
 {
-    if (instance >= GPS_MAX_INSTANCES) {
+    if (instance >= GPS_MAX_RECEIVERS) {
         return;
     }
     uint32_t tnow = AP_HAL::millis();
@@ -699,7 +699,7 @@ void
 AP_GPS::lock_port(uint8_t instance, bool lock)
 {
 
-    if (instance >= GPS_MAX_INSTANCES) {
+    if (instance >= GPS_MAX_RECEIVERS) {
         return;
     }
     if (lock) {
@@ -715,7 +715,7 @@ AP_GPS::inject_data(uint8_t *data, uint8_t len)
 {
     //Support broadcasting to all GPSes.
     if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             inject_data(i, data, len);
         }
     } else {
@@ -726,7 +726,7 @@ AP_GPS::inject_data(uint8_t *data, uint8_t len)
 void 
 AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint8_t len)
 {
-    if (instance < GPS_MAX_INSTANCES && drivers[instance] != nullptr) {
+    if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
         drivers[instance]->inject_data(data, len);
     }
 }  
@@ -813,7 +813,7 @@ AP_GPS::send_mavlink_gps2_rtk(mavlink_channel_t chan)
 uint8_t
 AP_GPS::first_unconfigured_gps(void) const
 {
-    for(int i = 0; i < GPS_MAX_INSTANCES; i++) {
+    for(int i = 0; i < GPS_MAX_RECEIVERS; i++) {
         if(_type[i] != GPS_TYPE_NONE && (drivers[i] == nullptr || !drivers[i]->is_configured())) {
             return i;
         }
@@ -963,7 +963,7 @@ void AP_GPS::calc_blend_weights(void)
 
     // determine how many GPS receivers are returning a fix and the instance of the first receiver that is
     uint8_t first_instance = 0;
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (state[i].status > NO_FIX) {
             num_instances = i+1;
             if (first_instance == 0) {
@@ -985,7 +985,7 @@ void AP_GPS::calc_blend_weights(void)
     uint32_t min_ms = -1; // oldest non-zero system time of arrival of a GPS message
     uint8_t newest_instance = 0; // index of receiver with newest time stamp
     int16_t max_rate_ms = 0; // largest update interval of a GPS receiver
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         // Find largest and smallest times
         if (state[i].last_gps_time_ms > max_ms) {
             max_ms = state[i].last_gps_time_ms;
@@ -1000,10 +1000,10 @@ void AP_GPS::calc_blend_weights(void)
     }
     if ((int32_t)(max_ms - min_ms) < (int32_t)(2 * max_rate_ms)) {
         // data is not too delayed so use the oldest time_stamp to give a chance for data from that receiver to be updated
-        state[GPS_MAX_INSTANCES].last_gps_time_ms = min_ms;
+        state[GPS_MAX_RECEIVERS].last_gps_time_ms = min_ms;
     } else {
         // receiver data has timed out so hard switch to the newest data
-        state[GPS_MAX_INSTANCES].last_gps_time_ms = max_ms;
+        state[GPS_MAX_RECEIVERS].last_gps_time_ms = max_ms;
         // hard switch to that receiver
         primary_instance = newest_instance;
         _output_is_blended = false;
@@ -1014,7 +1014,7 @@ void AP_GPS::calc_blend_weights(void)
     // calculate the sum squared speed accuracy across all GPS sensors
     float speed_accuracy_sum_sq = 0.0f;
     if (_blend_mask & USE_SPD_ACC) {
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
                 if (state[i].have_speed_accuracy) {
                     speed_accuracy_sum_sq += state[i].speed_accuracy * state[i].speed_accuracy;
@@ -1030,7 +1030,7 @@ void AP_GPS::calc_blend_weights(void)
     // calculate the sum squared horizontal position accuracy across all GPS sensors
     float horizontal_accuracy_sum_sq = 0.0f;
     if (_blend_mask & USE_HPOS_ACC) {
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_2D) {
                 if (state[i].have_horizontal_accuracy && state[i].horizontal_accuracy > 0.0f) {
                     horizontal_accuracy_sum_sq += state[i].horizontal_accuracy * state[i].horizontal_accuracy;
@@ -1046,7 +1046,7 @@ void AP_GPS::calc_blend_weights(void)
     // calculate the sum squared vertical position accuracy across all GPS sensors
     float vertical_accuracy_sum_sq = 0.0f;
     if (_blend_mask & USE_VPOS_ACC) {
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
                 if (state[i].have_vertical_accuracy && state[i].vertical_accuracy > 0.0f) {
                     vertical_accuracy_sum_sq += state[i].vertical_accuracy * state[i].vertical_accuracy;
@@ -1063,7 +1063,7 @@ void AP_GPS::calc_blend_weights(void)
 
     // if we cant do blending using reported accuracy, set the weight to the receiver with the highest solution status
     if (!can_do_blending) {
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
                 if (state[i].status > state[primary_instance].status) {
                     // we have a higher status lock, change GPS
                     primary_instance = i;
@@ -1077,11 +1077,11 @@ void AP_GPS::calc_blend_weights(void)
     float sum_of_all_weights = 0.0f;
 
     // calculate a weighting using the reported horizontal position
-    float hpos_blend_weights[GPS_MAX_INSTANCES];
+    float hpos_blend_weights[GPS_MAX_RECEIVERS];
     if (horizontal_accuracy_sum_sq > 0.0f && (_blend_mask & USE_HPOS_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_hpos_weights = 0.0f;
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_2D) {
                 hpos_blend_weights[i] = horizontal_accuracy_sum_sq / (state[i].horizontal_accuracy * state[i].horizontal_accuracy);
                 sum_of_hpos_weights += hpos_blend_weights[i];
@@ -1091,23 +1091,23 @@ void AP_GPS::calc_blend_weights(void)
         }
         // normalise the weights
         if (sum_of_hpos_weights > 0.0f) {
-            for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+            for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
                 hpos_blend_weights[i] = hpos_blend_weights[i] / sum_of_hpos_weights;
             }
             sum_of_all_weights += 1.0f;
         }
     } else {
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             hpos_blend_weights[i] = 0.0f;
         }
     }
 
     // calculate a weighting using the reported vertical position accuracy
-    float vpos_blend_weights[GPS_MAX_INSTANCES];
+    float vpos_blend_weights[GPS_MAX_RECEIVERS];
     if (vertical_accuracy_sum_sq > 0.0f && (_blend_mask & USE_VPOS_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_vpos_weights = 0.0f;
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
                 vpos_blend_weights[i] = vertical_accuracy_sum_sq / (state[i].vertical_accuracy * state[i].vertical_accuracy);
                 sum_of_vpos_weights += vpos_blend_weights[i];
@@ -1117,23 +1117,23 @@ void AP_GPS::calc_blend_weights(void)
         }
         // normalise the weights
         if (sum_of_vpos_weights > 0.0f) {
-            for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+            for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
                 vpos_blend_weights[i] = vpos_blend_weights[i] / sum_of_vpos_weights;
             }
             sum_of_all_weights += 1.0f;
         };
     } else {
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             vpos_blend_weights[i] = 0.0f;
         }
     }
 
     // calculate a weighting using the reported speed accuracy
-    float spd_blend_weights[GPS_MAX_INSTANCES];
+    float spd_blend_weights[GPS_MAX_RECEIVERS];
     if (speed_accuracy_sum_sq > 0.0f && (_blend_mask & USE_SPD_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_spd_weights = 0.0f;
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
                 spd_blend_weights[i] = speed_accuracy_sum_sq / (state[i].speed_accuracy * state[i].speed_accuracy);
                 sum_of_spd_weights += spd_blend_weights[i];
@@ -1143,23 +1143,23 @@ void AP_GPS::calc_blend_weights(void)
         }
         // normalise the weights
         if (sum_of_spd_weights > 0.0f) {
-            for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+            for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
                 spd_blend_weights[i] = spd_blend_weights[i] / sum_of_spd_weights;
             }
             sum_of_all_weights += 1.0f;
         }
     } else {
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             spd_blend_weights[i] = 0.0f;
         }
     }
 
     // calculate an overall weight
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         _blend_weights[i] = (hpos_blend_weights[i] + vpos_blend_weights[i] + spd_blend_weights[i]) / sum_of_all_weights;
     }
 
-    primary_instance = GPS_MAX_INSTANCES;
+    primary_instance = GPS_MAX_RECEIVERS;
     _output_is_blended = true;
 
     return;
@@ -1172,70 +1172,70 @@ void AP_GPS::calc_blend_weights(void)
 void AP_GPS::calc_blended_state(void)
 {
     // initialise the blended states so we can accumulate the results using the weightings for each GPS receiver
-    state[GPS_MAX_INSTANCES].instance = GPS_MAX_INSTANCES;
-    state[GPS_MAX_INSTANCES].status = NO_GPS;
-    state[GPS_MAX_INSTANCES].time_week_ms = 0;
-    state[GPS_MAX_INSTANCES].time_week = 0;
-    state[GPS_MAX_INSTANCES].ground_speed = 0.0f;
-    state[GPS_MAX_INSTANCES].ground_course = 0.0f;
-    state[GPS_MAX_INSTANCES].hdop = -1;
-    state[GPS_MAX_INSTANCES].vdop = -1;
-    state[GPS_MAX_INSTANCES].num_sats = 0;
-    state[GPS_MAX_INSTANCES].velocity.zero();
-    state[GPS_MAX_INSTANCES].speed_accuracy = 1e6f;
-    state[GPS_MAX_INSTANCES].horizontal_accuracy = 1e6f;
-    state[GPS_MAX_INSTANCES].vertical_accuracy = 1e6f;
-    state[GPS_MAX_INSTANCES].have_vertical_velocity = false;
-    state[GPS_MAX_INSTANCES].have_speed_accuracy = false;
-    state[GPS_MAX_INSTANCES].have_horizontal_accuracy = false;
-    state[GPS_MAX_INSTANCES].have_vertical_accuracy = false;
+    state[GPS_MAX_RECEIVERS].instance = GPS_MAX_RECEIVERS;
+    state[GPS_MAX_RECEIVERS].status = NO_GPS;
+    state[GPS_MAX_RECEIVERS].time_week_ms = 0;
+    state[GPS_MAX_RECEIVERS].time_week = 0;
+    state[GPS_MAX_RECEIVERS].ground_speed = 0.0f;
+    state[GPS_MAX_RECEIVERS].ground_course = 0.0f;
+    state[GPS_MAX_RECEIVERS].hdop = -1;
+    state[GPS_MAX_RECEIVERS].vdop = -1;
+    state[GPS_MAX_RECEIVERS].num_sats = 0;
+    state[GPS_MAX_RECEIVERS].velocity.zero();
+    state[GPS_MAX_RECEIVERS].speed_accuracy = 1e6f;
+    state[GPS_MAX_RECEIVERS].horizontal_accuracy = 1e6f;
+    state[GPS_MAX_RECEIVERS].vertical_accuracy = 1e6f;
+    state[GPS_MAX_RECEIVERS].have_vertical_velocity = false;
+    state[GPS_MAX_RECEIVERS].have_speed_accuracy = false;
+    state[GPS_MAX_RECEIVERS].have_horizontal_accuracy = false;
+    state[GPS_MAX_RECEIVERS].have_vertical_accuracy = false;
 
     _blended_antenna_offset.zero();
 
-    timing[GPS_MAX_INSTANCES].last_fix_time_ms = 0;
-    timing[GPS_MAX_INSTANCES].last_message_time_ms = 0;
+    timing[GPS_MAX_RECEIVERS].last_fix_time_ms = 0;
+    timing[GPS_MAX_RECEIVERS].last_message_time_ms = 0;
 
     // combine the states into a blended solution
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         // use the highest status
-        if (state[i].status > state[GPS_MAX_INSTANCES].status) {
-            state[GPS_MAX_INSTANCES].status = state[i].status;
+        if (state[i].status > state[GPS_MAX_RECEIVERS].status) {
+            state[GPS_MAX_RECEIVERS].status = state[i].status;
         }
 
         // calculate a blended average velocity
-        state[GPS_MAX_INSTANCES].velocity += state[i].velocity * _blend_weights[i];
+        state[GPS_MAX_RECEIVERS].velocity += state[i].velocity * _blend_weights[i];
 
         // report the best valid accuracies and DOP metrics
 
-        if (state[i].have_horizontal_accuracy && state[i].horizontal_accuracy > 0.0f && state[i].horizontal_accuracy < state[GPS_MAX_INSTANCES].horizontal_accuracy) {
-            state[GPS_MAX_INSTANCES].have_horizontal_accuracy = true;
-            state[GPS_MAX_INSTANCES].horizontal_accuracy = state[i].horizontal_accuracy;
+        if (state[i].have_horizontal_accuracy && state[i].horizontal_accuracy > 0.0f && state[i].horizontal_accuracy < state[GPS_MAX_RECEIVERS].horizontal_accuracy) {
+            state[GPS_MAX_RECEIVERS].have_horizontal_accuracy = true;
+            state[GPS_MAX_RECEIVERS].horizontal_accuracy = state[i].horizontal_accuracy;
         }
 
-        if (state[i].have_vertical_accuracy && state[i].vertical_accuracy > 0.0f && state[i].vertical_accuracy < state[GPS_MAX_INSTANCES].vertical_accuracy) {
-            state[GPS_MAX_INSTANCES].have_vertical_accuracy = true;
-            state[GPS_MAX_INSTANCES].vertical_accuracy = state[i].vertical_accuracy;
+        if (state[i].have_vertical_accuracy && state[i].vertical_accuracy > 0.0f && state[i].vertical_accuracy < state[GPS_MAX_RECEIVERS].vertical_accuracy) {
+            state[GPS_MAX_RECEIVERS].have_vertical_accuracy = true;
+            state[GPS_MAX_RECEIVERS].vertical_accuracy = state[i].vertical_accuracy;
         }
 
         if (state[i].have_vertical_velocity ) {
-            state[GPS_MAX_INSTANCES].have_vertical_velocity = true;
+            state[GPS_MAX_RECEIVERS].have_vertical_velocity = true;
         }
 
-        if (state[i].have_speed_accuracy && state[i].speed_accuracy > 0.0f && state[i].speed_accuracy < state[GPS_MAX_INSTANCES].speed_accuracy) {
-            state[GPS_MAX_INSTANCES].have_speed_accuracy = true;
-            state[GPS_MAX_INSTANCES].speed_accuracy = state[i].speed_accuracy;
+        if (state[i].have_speed_accuracy && state[i].speed_accuracy > 0.0f && state[i].speed_accuracy < state[GPS_MAX_RECEIVERS].speed_accuracy) {
+            state[GPS_MAX_RECEIVERS].have_speed_accuracy = true;
+            state[GPS_MAX_RECEIVERS].speed_accuracy = state[i].speed_accuracy;
         }
 
-        if (state[i].hdop > 0 && state[i].hdop < state[GPS_MAX_INSTANCES].hdop) {
-            state[GPS_MAX_INSTANCES].hdop = state[i].hdop;
+        if (state[i].hdop > 0 && state[i].hdop < state[GPS_MAX_RECEIVERS].hdop) {
+            state[GPS_MAX_RECEIVERS].hdop = state[i].hdop;
         }
 
-        if (state[i].vdop > 0 && state[i].vdop < state[GPS_MAX_INSTANCES].vdop) {
-            state[GPS_MAX_INSTANCES].vdop = state[i].vdop;
+        if (state[i].vdop > 0 && state[i].vdop < state[GPS_MAX_RECEIVERS].vdop) {
+            state[GPS_MAX_RECEIVERS].vdop = state[i].vdop;
         }
 
-        if (state[i].num_sats > 0 && state[i].num_sats > state[GPS_MAX_INSTANCES].num_sats) {
-            state[GPS_MAX_INSTANCES].num_sats = state[i].num_sats;
+        if (state[i].num_sats > 0 && state[i].num_sats > state[GPS_MAX_RECEIVERS].num_sats) {
+            state[GPS_MAX_RECEIVERS].num_sats = state[i].num_sats;
         }
 
         // report a blended average GPS antenna position
@@ -1244,11 +1244,11 @@ void AP_GPS::calc_blended_state(void)
         _blended_antenna_offset += temp_antenna_offset;
 
         // blend the timing data
-        if (timing[i].last_fix_time_ms > timing[GPS_MAX_INSTANCES].last_fix_time_ms) {
-            timing[GPS_MAX_INSTANCES].last_fix_time_ms = timing[i].last_fix_time_ms;
+        if (timing[i].last_fix_time_ms > timing[GPS_MAX_RECEIVERS].last_fix_time_ms) {
+            timing[GPS_MAX_RECEIVERS].last_fix_time_ms = timing[i].last_fix_time_ms;
         }
-        if (timing[i].last_message_time_ms > timing[GPS_MAX_INSTANCES].last_message_time_ms) {
-            timing[GPS_MAX_INSTANCES].last_message_time_ms = timing[i].last_message_time_ms;
+        if (timing[i].last_message_time_ms > timing[GPS_MAX_RECEIVERS].last_message_time_ms) {
+            timing[GPS_MAX_RECEIVERS].last_message_time_ms = timing[i].last_message_time_ms;
         }
 
     }
@@ -1261,11 +1261,11 @@ void AP_GPS::calc_blended_state(void)
     // Use the GPS with the highest weighting as the reference position
     float best_weight = 0.0f;
     uint8_t best_index = 0;
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (_blend_weights[i] > best_weight) {
             best_weight = _blend_weights[i];
             best_index = i;
-            state[GPS_MAX_INSTANCES].location = state[i].location;
+            state[GPS_MAX_RECEIVERS].location = state[i].location;
         }
     }
 
@@ -1273,21 +1273,21 @@ void AP_GPS::calc_blended_state(void)
     Vector2f blended_NE_offset_m;
     float blended_alt_offset_cm = 0.0f;
     blended_NE_offset_m.zero();
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (_blend_weights[i] > 0.0f && i != best_index) {
             //TODO correct for antenna position
-            blended_NE_offset_m += location_diff(state[GPS_MAX_INSTANCES].location, state[i].location) * _blend_weights[i];
-            blended_alt_offset_cm += (float)(state[i].location.alt - state[GPS_MAX_INSTANCES].location.alt) * _blend_weights[i];
+            blended_NE_offset_m += location_diff(state[GPS_MAX_RECEIVERS].location, state[i].location) * _blend_weights[i];
+            blended_alt_offset_cm += (float)(state[i].location.alt - state[GPS_MAX_RECEIVERS].location.alt) * _blend_weights[i];
         }
     }
 
     // Add the sum of weighted offsets to the reference location to obtain the blended location
-    location_offset(state[GPS_MAX_INSTANCES].location, blended_NE_offset_m.x, blended_NE_offset_m.y);
-    state[GPS_MAX_INSTANCES].location.alt += (int)blended_alt_offset_cm;
+    location_offset(state[GPS_MAX_RECEIVERS].location, blended_NE_offset_m.x, blended_NE_offset_m.y);
+    state[GPS_MAX_RECEIVERS].location.alt += (int)blended_alt_offset_cm;
 
     // Calculate ground speed and course from blended velocity vector
-    state[GPS_MAX_INSTANCES].ground_speed = norm(state[GPS_MAX_INSTANCES].velocity.x, state[GPS_MAX_INSTANCES].velocity.y);
-    state[GPS_MAX_INSTANCES].ground_course = wrap_360(degrees(atan2f(state[GPS_MAX_INSTANCES].velocity.x, state[GPS_MAX_INSTANCES].velocity.x)));
+    state[GPS_MAX_RECEIVERS].ground_speed = norm(state[GPS_MAX_RECEIVERS].velocity.x, state[GPS_MAX_RECEIVERS].velocity.y);
+    state[GPS_MAX_RECEIVERS].ground_course = wrap_360(degrees(atan2f(state[GPS_MAX_RECEIVERS].velocity.x, state[GPS_MAX_RECEIVERS].velocity.x)));
 
     /*
      * The blended location in _output_state.location is not stable enough to be used by the autopilot
@@ -1298,8 +1298,8 @@ void AP_GPS::calc_blended_state(void)
 
     // Calculate filter coefficients to be applied to the offsets for each GPS position and height offset
     // A weighting of 1 will make the offset adjust the slowest, a weighting of 0 will make it adjust with zero filtering
-    float alpha[GPS_MAX_INSTANCES];
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    float alpha[GPS_MAX_RECEIVERS];
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (state[i].last_gps_time_ms > _last_time_updated[i]) {
             float min_alpha = constrain_float(_omega_lpf * 0.001f * (float)(state[i].last_gps_time_ms - _last_time_updated[i]), 0.0f, 1.0f);
             if (_blend_weights[i] > min_alpha) {
@@ -1311,14 +1311,14 @@ void AP_GPS::calc_blended_state(void)
     }
 
     // Calculate the offset from each GPS solution to the blended solution
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
-        _NE_pos_offset_m[i] = location_diff(state[i].location, state[GPS_MAX_INSTANCES].location) * alpha[i] + _NE_pos_offset_m[i] * (1.0f - alpha[i]);
-        _hgt_offset_cm[i] = (float)(state[GPS_MAX_INSTANCES].location.alt - state[i].location.alt) *  alpha[i] + _hgt_offset_cm[i] * (1.0f - alpha[i]);
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        _NE_pos_offset_m[i] = location_diff(state[i].location, state[GPS_MAX_RECEIVERS].location) * alpha[i] + _NE_pos_offset_m[i] * (1.0f - alpha[i]);
+        _hgt_offset_cm[i] = (float)(state[GPS_MAX_RECEIVERS].location.alt - state[i].location.alt) *  alpha[i] + _hgt_offset_cm[i] * (1.0f - alpha[i]);
     }
 
     // Calculate a corrected location for each GPS
-    Location corrected_location[GPS_MAX_INSTANCES];
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    Location corrected_location[GPS_MAX_RECEIVERS];
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             corrected_location[i] = state[i].location;
             location_offset(corrected_location[i], _NE_pos_offset_m[i].x, _NE_pos_offset_m[i].y);
             corrected_location[i].alt += (int)(_hgt_offset_cm[i]);
@@ -1327,15 +1327,15 @@ void AP_GPS::calc_blended_state(void)
     // Calculate the weighted sum of horizontal and vertical position offsets relative to the blended location
     blended_alt_offset_cm = 0.0f;
     blended_NE_offset_m.zero();
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (_blend_weights[i] > 0.0f) {
-            blended_NE_offset_m += location_diff(state[GPS_MAX_INSTANCES].location, corrected_location[i]) * _blend_weights[i];
-            blended_alt_offset_cm += (float)(corrected_location[i].alt - state[GPS_MAX_INSTANCES].location.alt) * _blend_weights[i];
+            blended_NE_offset_m += location_diff(state[GPS_MAX_RECEIVERS].location, corrected_location[i]) * _blend_weights[i];
+            blended_alt_offset_cm += (float)(corrected_location[i].alt - state[GPS_MAX_RECEIVERS].location.alt) * _blend_weights[i];
         }
     }
 
     // Add the sum of weighted offsets to the blended location to obtain the corrected location
-    _output_location_corrected = state[GPS_MAX_INSTANCES].location;
+    _output_location_corrected = state[GPS_MAX_RECEIVERS].location;
     location_offset(_output_location_corrected, blended_NE_offset_m.x, blended_NE_offset_m.y);
     _output_location_corrected.alt += (int)blended_alt_offset_cm;
 
@@ -1344,7 +1344,7 @@ void AP_GPS::calc_blended_state(void)
     // detect inconsistent week data
     uint8_t last_week_instance = 0;
     bool weeks_inconsistent = false;
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (last_week_instance == 0 && _blend_weights[i] > 0) {
             // this is our first valid sensor week data
             last_week_instance = state[i].time_week;
@@ -1356,31 +1356,31 @@ void AP_GPS::calc_blended_state(void)
     // calculate output
     if (!weeks_inconsistent) {
         // use data from highest weighted sensor
-        state[GPS_MAX_INSTANCES].time_week = state[best_index].time_week;
-        state[GPS_MAX_INSTANCES].time_week_ms = state[best_index].time_week_ms;
+        state[GPS_MAX_RECEIVERS].time_week = state[best_index].time_week;
+        state[GPS_MAX_RECEIVERS].time_week_ms = state[best_index].time_week_ms;
     } else {
         // use week number from highest weighting GPS (they should all have the same week number)
-        state[GPS_MAX_INSTANCES].time_week = state[best_index].time_week;
+        state[GPS_MAX_RECEIVERS].time_week = state[best_index].time_week;
         // calculate a blended value for the number of ms lapsed in the week
         double temp_time_0 = 0.0;
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (_blend_weights[i] > 0.0f) {
                 temp_time_0 += (double)state[i].time_week_ms * _blend_weights[i];
             }
         }
-        state[GPS_MAX_INSTANCES].time_week_ms = (uint32_t)temp_time_0;
+        state[GPS_MAX_RECEIVERS].time_week_ms = (uint32_t)temp_time_0;
     }
 
     // calculate a blended value for the timing data
     double temp_time_1 = 0.0;
     double temp_time_2 = 0.0;
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (_blend_weights[i] > 0.0f) {
             temp_time_1 += (double)timing[i].last_fix_time_ms * _blend_weights[i];
             temp_time_2 += (double)timing[i].last_message_time_ms * _blend_weights[i];
         }
     }
-    timing[GPS_MAX_INSTANCES].last_fix_time_ms = (uint32_t)temp_time_1;
-    timing[GPS_MAX_INSTANCES].last_message_time_ms = (uint32_t)temp_time_2;
+    timing[GPS_MAX_RECEIVERS].last_fix_time_ms = (uint32_t)temp_time_1;
+    timing[GPS_MAX_RECEIVERS].last_message_time_ms = (uint32_t)temp_time_2;
 
 }
