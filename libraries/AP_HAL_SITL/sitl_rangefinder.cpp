@@ -30,7 +30,7 @@ void SITL_State::_update_rangefinder(float range_value)
     }
 
     // sensor position offset in body frame
-    Vector3f relPosSensorBF = _sitl->rngfnd_pos_offset;
+    const Vector3f relPosSensorBF = _sitl->rngfnd_pos_offset;
 
     // adjust altitude for position of the sensor on the vehicle if position offset is non-zero
     if (!relPosSensorBF.is_zero()) {
@@ -38,7 +38,7 @@ void SITL_State::_update_rangefinder(float range_value)
         Matrix3f rotmat;
         _sitl->state.quaternion.rotation_matrix(rotmat);
         // rotate the offset into earth frame
-        Vector3f relPosSensorEF = rotmat * relPosSensorBF;
+        const Vector3f relPosSensorEF = rotmat * relPosSensorBF;
         // correct the altitude at the sensor
         altitude -= relPosSensorEF.z;
     }
