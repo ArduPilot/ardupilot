@@ -71,6 +71,7 @@ private:
     SocketAPM socket_sitl;
     const char *_gazebo_address = "127.0.0.1";
     int _gazebo_port = 9002;
+    static const uint64_t GAZEBO_TIMEOUT_US = 5000000;
 };
 
 }  // namespace SITL

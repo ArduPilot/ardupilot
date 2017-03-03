@@ -86,9 +86,13 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
      */
     while (socket_sitl.recv(&pkt, sizeof(pkt), 100) != sizeof(pkt)) {
         send_servos(input);
+        // Reset the timestamp after a long disconnection, also catch gazebo reset
+        if (get_wall_time_us() > last_wall_time_us + GAZEBO_TIMEOUT_US) {
+            last_timestamp = 0;
+        }
     }
 
-    double deltat = pkt.timestamp - last_timestamp;  // in seconds
+    const double deltat = pkt.timestamp - last_timestamp;  // in seconds
     if (deltat < 0) {  // don't use old paquet
         time_now_us += 1;
         return;
