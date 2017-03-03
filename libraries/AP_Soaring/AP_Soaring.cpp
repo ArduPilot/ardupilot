@@ -387,7 +387,7 @@ float SoaringController::McCready(float alt)
     return thermal_vspeed;
 }
 
-bool SoaringController::is_active()
+bool SoaringController::is_active() const
 {
     if (!soar_active) {
         return false;
