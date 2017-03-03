@@ -96,8 +96,8 @@ public:
     void init_cruising();
     void update_thermalling();
     void update_cruising();
-    bool is_active();
-    bool get_throttle_suppressed()
+    bool is_active() const;
+    bool get_throttle_suppressed() const
     {
         return _throttle_suppressed;
     }
