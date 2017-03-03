@@ -789,6 +789,8 @@ Format characters in the format string for binary log messages
       "GPA",  "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
     { LOG_GPA2_MSG, sizeof(log_GPA), \
       "GPA2", "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
+    { LOG_GPA3_MSG, sizeof(log_GPA), \
+      "GPA3", "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -1049,6 +1051,7 @@ enum LogMessages {
     LOG_RPM_MSG,
     LOG_GPA_MSG,
     LOG_GPA2_MSG,
+    LOG_GPA3_MSG,
     LOG_RFND_MSG,
     LOG_BAR3_MSG,
     LOG_NKF1_MSG,
