@@ -183,7 +183,7 @@ private:
     // Dataflash
     DataFlash_Class DataFlash;
 
-    AP_GPS gps;
+    AP_GPS gps {AP_GPS::GPS_ENGINE_AIRBORNE_2G};
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
