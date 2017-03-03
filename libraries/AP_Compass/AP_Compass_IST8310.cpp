@@ -36,25 +36,25 @@
 #define OUTPUT_Z_H_REG 0x8
 
 #define CNTL1_REG 0xA
-#define CNTL1_BIT_SINGLE_MEASUREMENT_MODE 0x1
+#define CNTL1_VAL_SINGLE_MEASUREMENT_MODE 0x1
 
 #define CNTL2_REG 0xB
-#define CNTL2_BIT_SRST 1
+#define CNTL2_VAL_SRST 1
 
 #define AVGCNTL_REG 0x41
-#define AVGCNTL_BIT_XZ_0  (0)
-#define AVGCNTL_BIT_XZ_2  (1)
-#define AVGCNTL_BIT_XZ_4  (2)
-#define AVGCNTL_BIT_XZ_8  (3)
-#define AVGCNTL_BIT_XZ_16 (4)
-#define AVGCNTL_BIT_Y_0  (0 << 3)
-#define AVGCNTL_BIT_Y_2  (1 << 3)
-#define AVGCNTL_BIT_Y_4  (2 << 3)
-#define AVGCNTL_BIT_Y_8  (3 << 3)
-#define AVGCNTL_BIT_Y_16 (4 << 3)
+#define AVGCNTL_VAL_XZ_0  (0)
+#define AVGCNTL_VAL_XZ_2  (1)
+#define AVGCNTL_VAL_XZ_4  (2)
+#define AVGCNTL_VAL_XZ_8  (3)
+#define AVGCNTL_VAL_XZ_16 (4)
+#define AVGCNTL_VAL_Y_0  (0 << 3)
+#define AVGCNTL_VAL_Y_2  (1 << 3)
+#define AVGCNTL_VAL_Y_4  (2 << 3)
+#define AVGCNTL_VAL_Y_8  (3 << 3)
+#define AVGCNTL_VAL_Y_16 (4 << 3)
 
 #define PDCNTL_REG 0x42
-#define PDCNTL_BIT_PULSE_DURATION_NORMAL 0xC0
+#define PDCNTL_VAL_PULSE_DURATION_NORMAL 0xC0
 
 #define SAMPLING_PERIOD_USEC (10 * USEC_PER_MSEC)
 
@@ -120,7 +120,7 @@ bool AP_Compass_IST8310::init()
     }
 
     for (; reset_count < 5; reset_count++) {
-        if (!_dev->write_register(CNTL2_REG, CNTL2_BIT_SRST)) {
+        if (!_dev->write_register(CNTL2_REG, CNTL2_VAL_SRST)) {
             hal.scheduler->delay(10);
             continue;
         }
@@ -139,8 +139,8 @@ bool AP_Compass_IST8310::init()
         goto fail;
     }
 
-    if (!_dev->write_register(AVGCNTL_REG, AVGCNTL_BIT_Y_16 | AVGCNTL_BIT_XZ_16) ||
-        !_dev->write_register(PDCNTL_REG, PDCNTL_BIT_PULSE_DURATION_NORMAL)) {
+    if (!_dev->write_register(AVGCNTL_REG, AVGCNTL_VAL_Y_16 | AVGCNTL_VAL_XZ_16) ||
+        !_dev->write_register(PDCNTL_REG, PDCNTL_VAL_PULSE_DURATION_NORMAL)) {
         fprintf(stderr, "IST8310: found device but could not set it up\n");
         goto fail;
     }
@@ -178,7 +178,7 @@ fail:
 
 void AP_Compass_IST8310::start_conversion()
 {
-    if (!_dev->write_register(CNTL1_REG, CNTL1_BIT_SINGLE_MEASUREMENT_MODE)) {
+    if (!_dev->write_register(CNTL1_REG, CNTL1_VAL_SINGLE_MEASUREMENT_MODE)) {
         hal.util->perf_count(_perf_xfer_err);
         _ignore_next_sample = true;
     }
