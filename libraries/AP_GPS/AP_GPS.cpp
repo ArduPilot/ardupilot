@@ -217,7 +217,6 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: BLEND_MASK
     // @DisplayName: Multi GPS Blending Mask
     // @Description: Determines which of the accuracy measures Horizontal position, Vertical Position and Speed are used to calculate the weighting on each GPS receiver when soft switching has been selected by setting GPS_AUTO_SWITCH to 3.
-    // @Values: 5:Default
     // @Bitmask: 0:Horiz Pos,1:Vert Pos,2:Speed
     // @User: Advanced
     AP_GROUPINFO("BLEND_MASK", 20, AP_GPS, _blend_mask, 5),
@@ -572,6 +571,7 @@ AP_GPS::update(void)
     } else {
         // use hard switch logic
         // work out which GPS is the primary, and how many sensors we have
+        uint32_t now = AP_HAL::millis();
         for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
             if (state[i].status != NO_GPS) {
                 num_instances = i+1;
@@ -583,6 +583,7 @@ AP_GPS::update(void)
                 if (state[i].status > state[primary_instance].status) {
                     // we have a higher status lock, change GPS
                     primary_instance = i;
+                    _last_instance_swap_ms = now;
                     continue;
                 }
 
@@ -590,7 +591,6 @@ AP_GPS::update(void)
 
                 if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
 
-                    uint32_t now = AP_HAL::millis();
                     bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
 
                     if ( (another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
@@ -1016,7 +1016,7 @@ void AP_GPS::calc_blend_weights(void)
     if (_blend_mask & USE_SPD_ACC) {
         for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
-                if (state[i].have_speed_accuracy && state[i].speed_accuracy > 0.0f) {
+                if (state[i].have_speed_accuracy) {
                     speed_accuracy_sum_sq += state[i].speed_accuracy * state[i].speed_accuracy;
                 } else {
                     // not all receivers support this metric so set it to zero and don't use it
