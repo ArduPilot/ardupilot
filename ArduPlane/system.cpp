@@ -428,7 +428,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         auto_throttle_mode = true;
         auto_navigation_mode = false;
         
-		// for ArduSoar soaring_controller
+        // for ArduSoar soaring_controller
         g2.soaring_controller.init_cruising();
 
         set_target_altitude_current();

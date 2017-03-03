@@ -466,7 +466,7 @@ void Plane::set_servos_controlled(void)
     }
     // For ArduSoar
     
-    if ((control_mode == FLY_BY_WIRE_B ||
+    if ((control_mode == FLY_BY_WIRE_B || control_mode == CRUISE ||
         control_mode == AUTO || control_mode == LOITER) &&
         g2.soaring_controller.is_active() &&
         g2.soaring_controller.get_throttle_suppressed()) {
