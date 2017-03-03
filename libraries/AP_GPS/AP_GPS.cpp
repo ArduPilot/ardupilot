@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: Navigation filter engine setting
     // @Values: 0:Portable,2:Stationary,3:Pedestrian,4:Automotive,5:Sea,6:Airborne1G,7:Airborne2G,8:Airborne4G
     // @User: Advanced
-    AP_GROUPINFO("NAVFILTER", 2, AP_GPS, _navfilter, GPS_ENGINE_AIRBORNE_4G),
+    AP_GROUPINFO("NAVFILTER", 2, AP_GPS, _navfilter, GPS_NAVFILTER_DEFAULT),
 
     // @Param: AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
@@ -215,6 +215,14 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("DELAY_MS2", 19, AP_GPS, _delay_ms[1], 0),
     AP_GROUPEND
 };
+
+// constructor
+AP_GPS::AP_GPS(GPS_Engine_Setting nav_filter_default)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+
+    _navfilter.set_default(nav_filter_default);
+}
 
 /// Startup initialisation.
 void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager)
