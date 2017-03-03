@@ -250,11 +250,11 @@ private:
     LowPassFilterFloat servo_filter[4];
 
     /* set this always to the sampling in degrees for the table below */
-    static const float SAMPLING_RES = 10.0f;
-    static const float SAMPLING_MIN_LAT = -60.0f;
-    static const float SAMPLING_MAX_LAT = 60.0f;
-    static const float SAMPLING_MIN_LON = -180.0f;
-    static const float SAMPLING_MAX_LON = 180.0f;
+    static constexpr float SAMPLING_RES = 10.0f;
+    static constexpr float SAMPLING_MIN_LAT = -60.0f;
+    static constexpr float SAMPLING_MAX_LAT = 60.0f;
+    static constexpr float SAMPLING_MIN_LON = -180.0f;
+    static constexpr float SAMPLING_MAX_LON = 180.0f;
 
     /* table data containing magnetic declination angle in degrees */
     const float declination_table[13][37] =
