@@ -12,6 +12,7 @@ from htmlemit import HtmlEmit
 from rstemit import RSTEmit
 from wikiemit import WikiEmit
 from xmlemit import XmlEmit
+from mdemit import MDEmit
 
 parser = OptionParser("param_parse.py [options]")
 parser.add_option("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
@@ -229,5 +230,6 @@ do_emit(XmlEmit())
 do_emit(WikiEmit())
 do_emit(HtmlEmit())
 do_emit(RSTEmit())
+do_emit(MDEmit())
 
 sys.exit(error_count)
