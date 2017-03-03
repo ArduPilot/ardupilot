@@ -366,6 +366,7 @@ void FlightAxis::update(const struct sitl_input &input)
     }
 
     update_position();
+    time_advance();
     time_now_us = (state.m_currentPhysicsTime_SEC - initial_time_s)*1.0e6;
 
     if (frame_counter++ % 1000 == 0) {
