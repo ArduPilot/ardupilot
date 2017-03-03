@@ -743,7 +743,7 @@ void AP_TECS::_detect_bad_descent(void)
     // 2) Specific total energy error > 0
     // This mode will produce an undulating speed and height response as it cuts in and out but will prevent the aircraft from descending into the ground if an unachievable speed demand is set
     float STEdot = _SPEdot + _SKEdot;
-    if ((!_soaring_controller.is_active() || _soaring_controller.get_throttle_suppressed()) 
+    if (!(_soaring_controller.is_active() && _soaring_controller.get_throttle_suppressed()) 
         && ((!_flags.underspeed && (_STE_error > 200.0f) && (STEdot < 0.0f) && (_throttle_dem >= _THRmaxf * 0.9f)) 
             || (_flags.badDescent && !_flags.underspeed && (_STE_error > 0.0f))))
     {
