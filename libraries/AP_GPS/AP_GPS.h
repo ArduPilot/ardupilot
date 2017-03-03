@@ -106,6 +106,13 @@ public:
        GPS_ALL_CONFIGURED = 255
    };
 
+   // GPS auto-switching modes
+   enum GPS_Auto_Switch {
+       GPS_AUTO_SWITCH_DISABLED = 0,
+       GPS_AUTO_SWITCH_BETTER_LOCK = 1,
+       GPS_AUTO_SWITCH_GPS2_AS_BACKUP = 2
+   };
+
     /*
       The GPS_State structure is filled in by the backend driver as it
       parses each message from the GPS.
@@ -400,6 +407,8 @@ private:
 
     /// primary GPS instance
     uint8_t primary_instance:2;
+    uint8_t primary_instance_change_request:2;
+    uint32_t primary_instance_change_debounce_ms;
 
     /// number of GPS instances present
     uint8_t num_instances:2;
