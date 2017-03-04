@@ -178,9 +178,13 @@ void AP_Terrain::open_file(void)
     // create directory if need be
     if (!directory_created) {
         *p = 0;
-        mkdir(file_path, 0755);
-        directory_created = true;
+        directory_created = !mkdir(file_path, 0755);
         *p = '/';
+        // if we didn't succeed at making the directory, then IO failed
+        if(!directory_created) {
+            io_failure = true;
+            return;
+        }
     }
 
     if (fd != -1) {

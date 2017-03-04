@@ -220,11 +220,11 @@ bool AP_Terrain::height_above_terrain(float &terrain_altitude, bool extrapolate)
         // we don't know where we are
         return false;
     }
-    float relative_home_altitude = loc.alt*0.01f;
-    if (!loc.flags.relative_alt) {
-        // loc.alt has home altitude added, remove it
-        relative_home_altitude -= ahrs.get_home().alt*0.01f;
-    }
+
+    float relative_home_altitude;
+    ahrs.get_relative_position_D_home(relative_home_altitude);
+    relative_home_altitude = -relative_home_altitude;
+
     terrain_altitude = relative_home_altitude - terrain_difference;
     return true;
 }
