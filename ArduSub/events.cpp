@@ -285,7 +285,7 @@ bool Sub::should_disarm_on_failsafe()
         return !ap.auto_armed;
         break;
     default:
-        // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
+        // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, PosHold
         // if landed disarm
         //            return ap.land_complete;
         return false;
