@@ -275,11 +275,11 @@ void Plane::startup_ground(void)
 {
     set_mode(INITIALISING, MODE_REASON_UNKNOWN);
 
-    gcs_send_text(MAV_SEVERITY_INFO,"<startup_ground> Ground start");
-
 #if (GROUND_START_DELAY > 0)
-    gcs_send_text(MAV_SEVERITY_NOTICE,"<startup_ground> With delay");
+    gcs_send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
     delay(GROUND_START_DELAY * 1000);
+#else
+    gcs_send_text(MAV_SEVERITY_INFO,"Ground start");
 #endif
 
     //INS ground start
@@ -312,7 +312,7 @@ void Plane::startup_ground(void)
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
 
-    gcs_send_text(MAV_SEVERITY_INFO,"Ready to fly");
+    gcs_send_text(MAV_SEVERITY_INFO,"Ground start complete");
 }
 
 enum FlightMode Plane::get_previous_mode() {
