@@ -250,7 +250,6 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
     memset(&_last_time_updated, 0, sizeof(_last_time_updated));
     memset(&_blend_weights, 0, sizeof(_blend_weights));
     memset(&timing[GPS_MAX_RECEIVERS], 0, sizeof(timing[GPS_MAX_RECEIVERS]));
-    memset(&_output_location_corrected, 0, sizeof(_output_location_corrected));
     _blended_antenna_offset.zero();
     _omega_lpf = 1.0f / constrain_float(_blend_tc, 5.0f, 30.0f);
     _output_is_blended = false;
@@ -610,7 +609,6 @@ AP_GPS::update(void)
 
             // copy the primary instance to the blended instance
             state[GPS_MAX_RECEIVERS] = state[primary_instance];
-            _output_location_corrected = state[primary_instance].location;
             _blended_antenna_offset = _antenna_offset[primary_instance];
 
             // we are using hard switching logic, so no blending
@@ -1333,11 +1331,6 @@ void AP_GPS::calc_blended_state(void)
             blended_alt_offset_cm += (float)(corrected_location[i].alt - state[GPS_MAX_RECEIVERS].location.alt) * _blend_weights[i];
         }
     }
-
-    // Add the sum of weighted offsets to the blended location to obtain the corrected location
-    _output_location_corrected = state[GPS_MAX_RECEIVERS].location;
-    location_offset(_output_location_corrected, blended_NE_offset_m.x, blended_NE_offset_m.y);
-    _output_location_corrected.alt += (int)blended_alt_offset_cm;
 
     // If the GPS week is the same then use a blended time_week_ms
     // If week is different, then use time stamp from GPs with largest weighting
