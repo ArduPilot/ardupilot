@@ -1120,20 +1120,26 @@ bool AP_AHRS_NavEKF::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets)
 // Retrieves the NED delta velocity corrected
 void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 {
-    if (ekf_type() == 2 || ekf_type() == 3) {
-        uint8_t imu_idx = 0;
+    EKF_TYPE type = active_EKF_type();
+    if (type == EKF_TYPE2 || type == EKF_TYPE3) {
+        int8_t imu_idx = 0;
         Vector3f accel_bias;
-        if (ekf_type() == 2) {
+        if (type == EKF_TYPE2) {
             accel_bias.zero();
             imu_idx = EKF2.getPrimaryCoreIMUIndex();
             EKF2.getAccelZBias(-1,accel_bias.z);
-        } else if (ekf_type() == 3) {
+        } else if (type == EKF_TYPE3) {
             imu_idx = EKF3.getPrimaryCoreIMUIndex();
             EKF3.getAccelBias(-1,accel_bias);
         }
+        if (imu_idx == -1) {
+            // should never happen, call parent implementation in this scenario
+            AP_AHRS::getCorrectedDeltaVelocityNED(ret, dt);
+            return;
+        }
         ret.zero();
-        _ins.get_delta_velocity(imu_idx, ret);
-        dt = _ins.get_delta_velocity_dt(imu_idx);
+        _ins.get_delta_velocity((uint8_t)imu_idx, ret);
+        dt = _ins.get_delta_velocity_dt((uint8_t)imu_idx);
         ret -= accel_bias*dt;
         ret = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
         ret.z += GRAVITY_MSS*dt;
