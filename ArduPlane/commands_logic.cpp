@@ -746,7 +746,7 @@ bool Plane::verify_RTL()
     update_loiter(abs(g.rtl_radius));
 	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
         reached_loiter_target()) {
-			gcs_send_text(MAV_SEVERITY_INFO,"Reached HOME");
+			gcs_send_text(MAV_SEVERITY_INFO,"Reached RTL location");
 			return true;
     } else {
         return false;
