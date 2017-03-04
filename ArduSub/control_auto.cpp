@@ -371,11 +371,18 @@ void Sub::auto_circle_run()
     // call circle controller
     circle_nav.update();
 
+    float lateral_out, forward_out;
+    translate_circle_nav_rp(lateral_out, forward_out);
+
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
+
     // call z-axis position controller
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.input_euler_angle_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), circle_nav.get_yaw(), true, get_smoothing_gain());
 }
 
 #if NAV_GUIDED == ENABLED
