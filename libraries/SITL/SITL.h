@@ -97,7 +97,8 @@ public:
     AP_Int8  gps_type;    // see enum GPSType
     AP_Float gps_byteloss;// byte loss as a percent
     AP_Int8  gps_numsats; // number of visible satellites
-    AP_Vector3f  gps_glitch;  // glitch offsets in lat, lon and altitude
+    AP_Vector3f gps_glitch;  // glitch offsets in lat, lon and altitude
+    AP_Vector3f gps2_glitch; // glitch offsets in lat, lon and altitude for 2nd GPS
     AP_Int8  gps_hertz;   // GPS update rate in Hz
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
