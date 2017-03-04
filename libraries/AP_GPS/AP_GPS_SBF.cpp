@@ -87,9 +87,6 @@ AP_GPS_SBF::parse(uint8_t temp)
             if (temp == SBF_PREAMBLE1) {
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE2;
                 sbf_msg.read = 0;
-            } else if (temp == '$') {
-                // this is a command response
-                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE2;
             }
             break;
         case sbf_msg_parser_t::PREAMBLE2:
