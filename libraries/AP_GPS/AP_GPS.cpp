@@ -66,6 +66,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: Automatic Switchover Setting
     // @Description: Automatic switchover to GPS reporting best lock
     // @Values: 0:Disabled,1:Hard,2:Soft
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, 1),
 
