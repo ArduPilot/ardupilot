@@ -103,9 +103,9 @@ private:
 
     bool _gps_has_basestation_position;
     gps_data _gps_basestation_data;
-    void _gps_write(const uint8_t *p, uint16_t size);
-    void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size);
-    void _update_gps_ubx(const struct gps_data *d);
+    void _gps_write(const uint8_t *p, uint16_t size, uint8_t instance = 0);
+    void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size, uint8_t instance);
+    void _update_gps_ubx(const struct gps_data *d, uint8_t instance);
     void _update_gps_mtk(const struct gps_data *d);
     void _update_gps_mtk16(const struct gps_data *d);
     void _update_gps_mtk19(const struct gps_data *d);
