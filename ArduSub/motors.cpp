@@ -139,11 +139,6 @@ void Sub::init_disarm_motors()
         }
     }
 
-#if AUTOTUNE_ENABLED == ENABLED
-    // save auto tuned parameters
-    autotune_save_tuning_gains();
-#endif
-
     // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);
 
