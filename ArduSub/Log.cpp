@@ -157,60 +157,6 @@ void Sub::do_erase_logs(void)
     gcs_send_text(MAV_SEVERITY_INFO, "Log erase complete");
 }
 
-#if AUTOTUNE_ENABLED == ENABLED
-struct PACKED log_AutoTune {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t axis;           // roll or pitch
-    uint8_t tune_step;      // tuning PI or D up or down
-    float   meas_target;    // target achieved rotation rate
-    float   meas_min;       // maximum achieved rotation rate
-    float   meas_max;       // maximum achieved rotation rate
-    float   new_gain_rp;    // newly calculated gain
-    float   new_gain_rd;    // newly calculated gain
-    float   new_gain_sp;    // newly calculated gain
-    float   new_ddt;        // newly calculated gain
-};
-
-// Write an Autotune data packet
-void Sub::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
-{
-    struct log_AutoTune pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
-        time_us     : AP_HAL::micros64(),
-        axis        : axis,
-        tune_step   : tune_step,
-        meas_target : meas_target,
-        meas_min    : meas_min,
-        meas_max    : meas_max,
-        new_gain_rp : new_gain_rp,
-        new_gain_rd : new_gain_rd,
-        new_gain_sp : new_gain_sp,
-        new_ddt     : new_ddt
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
-struct PACKED log_AutoTuneDetails {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float    angle_cd;      // lean angle in centi-degrees
-    float    rate_cds;      // current rotation rate in centi-degrees / second
-};
-
-// Write an Autotune data packet
-void Sub::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
-{
-    struct log_AutoTuneDetails pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),
-        time_us     : AP_HAL::micros64(),
-        angle_cd    : angle_cd,
-        rate_cds    : rate_cds
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-#endif
-
 // Write a Current data packet
 void Sub::Log_Write_Current()
 {
@@ -657,12 +603,6 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 
 const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-#if AUTOTUNE_ENABLED == ENABLED
-    { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
-      "ATUN", "QBBfffffff",       "TimeUS,Axis,TuneStep,Targ,Min,Max,RP,RD,SP,ddt" },
-    { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
-      "ATDE", "Qff",          "TimeUS,Angle,Rate" },
-#endif
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
       "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
@@ -761,10 +701,6 @@ void Sub::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page) {}
 #endif // CLI_ENABLED == ENABLED
 
 void Sub::do_erase_logs(void) {}
-void Sub::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, \
-                             float meas_min, float meas_max, float new_gain_rp, \
-                             float new_gain_rd, float new_gain_sp, float new_ddt) {}
-void Sub::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
 void Sub::Log_Write_Current() {}
 void Sub::Log_Write_Nav_Tuning() {}
 void Sub::Log_Write_Control_Tuning() {}

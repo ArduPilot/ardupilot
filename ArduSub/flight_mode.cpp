@@ -57,12 +57,6 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         success = surface_init(ignore_checks);
         break;
 
-#if AUTOTUNE_ENABLED == ENABLED
-    case AUTOTUNE:
-        success = autotune_init(ignore_checks);
-        break;
-#endif
-
 #if POSHOLD_ENABLED == ENABLED
     case POSHOLD:
         success = poshold_init(ignore_checks);
@@ -150,12 +144,6 @@ void Sub::update_flight_mode()
         surface_run();
         break;
 
-#if AUTOTUNE_ENABLED == ENABLED
-    case AUTOTUNE:
-        autotune_run();
-        break;
-#endif
-
 #if POSHOLD_ENABLED == ENABLED
     case POSHOLD:
         poshold_run();
@@ -174,12 +162,6 @@ void Sub::update_flight_mode()
 // exit_mode - high level call to organise cleanup as a flight mode is exited
 void Sub::exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode)
 {
-#if AUTOTUNE_ENABLED == ENABLED
-    if (old_control_mode == AUTOTUNE) {
-        autotune_stop();
-    }
-#endif
-
     // stop mission when we leave auto mode
     if (old_control_mode == AUTO) {
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
@@ -283,9 +265,6 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case OF_LOITER:
         port->print("OF_LOITER");
-        break;
-    case AUTOTUNE:
-        port->print("AUTOTUNE");
         break;
     case POSHOLD:
         port->print("POSHOLD");

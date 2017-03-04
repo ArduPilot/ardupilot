@@ -57,7 +57,6 @@ enum aux_sw_func {
     //    AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
 
     AUXSW_AUTO =                16, // change to auto flight mode
-    AUXSW_AUTOTUNE =            17, // auto tune
     AUXSW_LAND =                18, // change to LAND flight mode
     AUXSW_GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
 
@@ -100,7 +99,6 @@ enum control_mode_t {
     CIRCLE =        7,  // not implemented in sub // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     OF_LOITER =    10,  // deprecated
-    AUTOTUNE =     15,  // not implemented in sub // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
     MANUAL =       19   // Pass-through input with no stabilization
 };
@@ -252,8 +250,6 @@ enum LoiterModeState {
 #define LOG_DATA_INT32_MSG              0x16
 #define LOG_DATA_UINT32_MSG             0x17
 #define LOG_DATA_FLOAT_MSG              0x18
-#define LOG_AUTOTUNE_MSG                0x19
-#define LOG_AUTOTUNEDETAILS_MSG         0x1A
 #define LOG_MOTBATT_MSG                 0x1E
 #define LOG_PARAMTUNE_MSG               0x1F
 #define LOG_HELI_MSG                    0x20
@@ -299,14 +295,6 @@ enum LoiterModeState {
 #define DATA_SET_SIMPLE_ON                  26
 #define DATA_SET_SIMPLE_OFF                 27
 #define DATA_SET_SUPERSIMPLE_ON             29
-#define DATA_AUTOTUNE_INITIALISED           30
-#define DATA_AUTOTUNE_OFF                   31
-#define DATA_AUTOTUNE_RESTART               32
-#define DATA_AUTOTUNE_SUCCESS               33
-#define DATA_AUTOTUNE_FAILED                34
-#define DATA_AUTOTUNE_REACHED_LIMIT         35
-#define DATA_AUTOTUNE_PILOT_TESTING         36
-#define DATA_AUTOTUNE_SAVEDGAINS            37
 #define DATA_SAVE_TRIM                      38
 #define DATA_SAVEWP_ADD_WP                  39
 #define DATA_FENCE_ENABLE                   41
@@ -351,8 +339,7 @@ enum LoiterModeState {
 #define ERROR_SUBSYSTEM_FLIGHT_MODE         10
 #define ERROR_SUBSYSTEM_GPS                 11  // not used
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
-//#define ERROR_SUBSYSTEM_FLIP                13
-#define ERROR_SUBSYSTEM_AUTOTUNE            14
+//#define ERROR_SUBSYSTEM_FLIP                13 // Remove
 //#define ERROR_SUBSYSTEM_PARACHUTE           15 // Remove
 #define ERROR_SUBSYSTEM_EKFCHECK            16
 #define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17

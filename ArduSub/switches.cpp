@@ -280,25 +280,6 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         }
         break;
 
-#if AUTOTUNE_ENABLED == ENABLED
-    case AUXSW_AUTOTUNE:
-        // turn on auto tuner
-        switch (ch_flag) {
-        case AUX_SWITCH_LOW:
-        case AUX_SWITCH_MIDDLE:
-            // restore flight mode based on flight mode switch position
-            if (control_mode == AUTOTUNE) {
-                //                        reset_control_switch();
-            }
-            break;
-        case AUX_SWITCH_HIGH:
-            // start an autotuning session
-            set_mode(AUTOTUNE);
-            break;
-        }
-        break;
-#endif
-
     case AUXSW_LAND:
         // Do nothing for Sub
 

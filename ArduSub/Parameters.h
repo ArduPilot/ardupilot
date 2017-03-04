@@ -236,10 +236,6 @@ public:
         k_param_radio_tuning_high, // Disabled
         k_param_radio_tuning_low, // Disabled
 
-        // Autotune parameters
-        k_param_autotune_axis_bitmask, // Disabled
-        k_param_autotune_aggressiveness, // Disabled
-        k_param_autotune_min_d, // Disabled
     };
 
     AP_Int16        format_version;
@@ -366,13 +362,6 @@ public:
 
     AC_P            p_pos_xy;
     AC_P            p_alt_hold;
-
-    // Autotune
-#if AUTOTUNE_ENABLED == ENABLED
-    AP_Int8                 autotune_axis_bitmask;
-    AP_Float                autotune_aggressiveness;
-    AP_Float                autotune_min_d;
-#endif
 
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
