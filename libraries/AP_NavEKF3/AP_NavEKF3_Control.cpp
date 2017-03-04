@@ -252,8 +252,7 @@ void NavEKF3_core::setAidingMode()
                  maxLossTime_ms = frontend->posRetryTimeUseVel_ms;
              }
              posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
-                    (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms) &&
-                    (imuSampleTime_ms - lastVelPassTime_ms > maxLossTime_ms);
+                    (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
          }
 
          if (attAidLossCritical) {
