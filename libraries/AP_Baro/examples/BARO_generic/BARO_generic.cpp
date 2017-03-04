@@ -32,6 +32,10 @@ void setup()
 
 void loop()
 {
+    if (!hal.console->is_initialized()) {
+        return;
+    }
+
     // run accumulate() at 50Hz and update() at 10Hz
     if ((AP_HAL::micros() - timer) > 20 * 1000UL) {
         timer = AP_HAL::micros();
