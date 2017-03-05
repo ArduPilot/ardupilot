@@ -87,12 +87,7 @@ uint16_t SRV_Channel::pwm_from_range(int16_t scaled_value) const
     if (servo_max <= servo_min || high_out == 0) {
         return servo_min;
     }
-    if (scaled_value >= high_out) {
-        scaled_value = high_out;
-    }
-    if (scaled_value < 0) {
-        scaled_value = 0;
-    }
+    scaled_value = constrain_int16(scaled_value, 0, high_out);
     if (reversed) {
         scaled_value = high_out - scaled_value;
     }
@@ -105,6 +100,7 @@ uint16_t SRV_Channel::pwm_from_angle(int16_t scaled_value) const
     if (reversed) {
         scaled_value = -scaled_value;
     }
+    scaled_value = constrain_int16(scaled_value, -high_out, high_out);
     if (scaled_value > 0) {
         return servo_trim + ((int32_t)scaled_value * (int32_t)(servo_max - servo_trim)) / (int32_t)high_out;
     } else {
