@@ -311,7 +311,11 @@ void Rover::set_servos(void) {
         if (!apply_skid_mix) {  // Mixage is already done by a controller so just pass the value to motor
             motor1 = steering_scaled;
             motor2 = throttle_scaled;
+        } else if (fabsf(throttle_scaled) <= 0.01f) {  // Use full range for on spot turn
+            motor1 = steering_scaled;
+            motor2 = -steering_scaled;
         }
+
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 4500 * motor1);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100 * motor2);
     }
