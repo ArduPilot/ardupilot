@@ -7,25 +7,23 @@
 // circle_init - initialise circle controller flight mode
 bool Sub::circle_init(bool ignore_checks)
 {
-    return false; // Not implemented
+    if (position_ok() || ignore_checks) {
+        circle_pilot_yaw_override = false;
 
-    //    if (position_ok() || ignore_checks) {
-    //        circle_pilot_yaw_override = false;
-    //
-    //        // initialize speeds and accelerations
-    //        pos_control.set_speed_xy(wp_nav.get_speed_xy());
-    //        pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
-    //        pos_control.set_jerk_xy_to_default();
-    //        pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-    //        pos_control.set_accel_z(g.pilot_accel_z);
-    //
-    //        // initialise circle controller including setting the circle center based on vehicle speed
-    //        circle_nav.init();
-    //
-    //        return true;
-    //    }else{
-    //        return false;
-    //    }
+        // initialize speeds and accelerations
+        pos_control.set_speed_xy(wp_nav.get_speed_xy());
+        pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
+        pos_control.set_jerk_xy_to_default();
+        pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+        pos_control.set_accel_z(g.pilot_accel_z);
+
+        // initialise circle controller including setting the circle center based on vehicle speed
+        circle_nav.init();
+
+        return true;
+    }else{
+        return false;
+    }
 }
 
 // circle_run - runs the circle flight mode
@@ -35,7 +33,7 @@ void Sub::circle_run()
     float target_yaw_rate = 0;
     float target_climb_rate = 0;
 
-    // initialize speeds and accelerations
+    // update parameters, to allow changing at runtime
     pos_control.set_speed_xy(wp_nav.get_speed_xy());
     pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
@@ -53,24 +51,14 @@ void Sub::circle_run()
     }
 
     // process pilot inputs
-    if (!failsafe.manual_control) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-        if (!is_zero(target_yaw_rate)) {
-            circle_pilot_yaw_override = true;
-        }
-
-        // get pilot desired climb rate
-        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-
-        //        // check for pilot requested take-off
-        //        if (ap.land_complete && target_climb_rate > 0) {
-        //            // indicate we are taking off
-        //            set_land_complete(false);
-        //            // clear i term when we're taking off
-        //            set_throttle_takeoff();
-        //        }
+    // get pilot's desired yaw rate
+    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    if (!is_zero(target_yaw_rate)) {
+        circle_pilot_yaw_override = true;
     }
+
+    // get pilot desired climb rate
+    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
 
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
@@ -78,11 +66,21 @@ void Sub::circle_run()
     // run circle controller
     circle_nav.update();
 
+    ///////////////////////
+    // update xy outputs //
+
+    float lateral_out, forward_out;
+    translate_circle_nav_rp(lateral_out, forward_out);
+
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
+
     // call attitude controller
     if (circle_pilot_yaw_override) {
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate, get_smoothing_gain());
     } else {
-        attitude_control.input_euler_angle_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), circle_nav.get_yaw(), true, get_smoothing_gain());
     }
 
     // adjust climb rate using rangefinder
