@@ -214,6 +214,9 @@ private:
     // mask of channels where we have a output_pwm value. Cleared when a
     // scaled value is written. 
     static servo_mask_t have_pwm_mask;
+
+    // mask of channels where we store which channel will have limited output.
+    static servo_mask_t limited_pwm_mask;
 };
 
 /*
@@ -374,7 +377,7 @@ public:
     // upgrade RC* parameters into SERVO* parameters
     static bool upgrade_parameters(const uint8_t old_keys[14], uint16_t aux_channel_mask, RCMapper *rcmap);
     static void upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors_idx, uint8_t new_channel);
-    
+
     static uint32_t get_can_servo_bm(void) {
         if(p_can_servo_bm != nullptr)
             return *p_can_servo_bm;
@@ -387,6 +390,8 @@ public:
         else
             return 0;
     }
+
+    static void set_output_unlimited_once(SRV_Channel::Aux_servo_function_t function);
 
 private:
     struct {

@@ -174,7 +174,9 @@ void SRV_Channels::enable_by_mask(uint16_t mask)
 }
 
 /*
-  set radio_out for all channels matching the given function type
+  set servo_out for all channels matching the given function type
+  Constrain between servo_min and servo_max by default
+  Use set_output_unlimited_once to unlimit the ouput
  */
 void SRV_Channels::set_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t value)
 {
@@ -190,7 +192,7 @@ void SRV_Channels::set_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
 }
 
 /*
-  set radio_out for all channels matching the given function type
+  set servo_out for all channels matching the given function type
   trim the output assuming a 1500 center on the given value
  */
 void
@@ -201,8 +203,8 @@ SRV_Channels::set_output_pwm_trimmed(SRV_Channel::Aux_servo_function_t function,
     }
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function.get() == function) {
-            int16_t value2 = value - 1500 + channels[i].get_trim();
-            channels[i].set_output_pwm(constrain_int16(value2,channels[i].get_output_min(),channels[i].get_output_max()));
+            uint16_t value2 = value - 1500 + channels[i].get_trim();
+            channels[i].set_output_pwm(value2);
             channels[i].output_ch();
           }
     }
@@ -230,7 +232,7 @@ SRV_Channels::set_trim_to_radio_in_for(SRV_Channel::Aux_servo_function_t functio
 }
 
 /*
-  copy radio_in to radio_out for a given function
+  copy radio_in to servo_out for a given function
  */
 void
 SRV_Channels::copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool do_input_output)
@@ -321,6 +323,7 @@ SRV_Channels::set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_C
         SRV_Channel &ch = channels[i];
         if (ch.function.get() == function) {
             uint16_t pwm = ch.get_limit_pwm(limit);
+            set_output_unlimited_once(function);
             ch.set_output_pwm(pwm);
             if (ch.function.get() == SRV_Channel::k_manual) {
                 RC_Channel *rc = RC_Channels::rc_channel(ch.ch_num);
@@ -807,18 +810,29 @@ void SRV_Channels::upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors
     }
 }
 
-
 // set RC output frequency on a function output
 void SRV_Channels::set_rc_frequency(SRV_Channel::Aux_servo_function_t function, uint16_t frequency_hz)
 {
     uint16_t mask = 0;
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        SRV_Channel &ch = channels[i];
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel & ch = channels[i];
         if (ch.function == function) {
-            mask |= (1U<<ch.ch_num);
+            mask |= (1U << ch.ch_num);
         }
     }
     if (mask != 0) {
         hal.rcout->set_freq(mask, frequency_hz);
+    }
+}
+
+/*
+  set unlimited pwm mask for a channel function
+ */
+void SRV_Channels::set_output_unlimited_once(SRV_Channel::Aux_servo_function_t function) {
+    if (!function_assigned(function)) {
+        return;
+    }
+    if (function < SRV_Channel::k_nr_aux_servo_functions) {
+        SRV_Channel::limited_pwm_mask &= ~functions[function].channel_mask;
     }
 }
