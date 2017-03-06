@@ -20,6 +20,8 @@
 #include <AP_Motors/AP_Motors.h>
 #include "Frame_Vectored.h"
 
+#include <stdio.h>
+
 using namespace SITL;
 
 static Thruster vectored_thrusters[] =
@@ -37,7 +39,7 @@ Submarine::Submarine(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     frame(NULL)
 {
-    frame_height = 0.1;
+    frame_height = 0.0;
     ground_behavior = GROUND_BEHAVIOR_NONE;
 }
 
@@ -45,17 +47,32 @@ Submarine::Submarine(const char *home_str, const char *frame_str) :
 void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
     rot_accel = Vector3f(0,0,0);
-    body_accel = Vector3f(0,0,0);
+
+    // slight positive buoyancy
+    body_accel = Vector3f(0,0,-GRAVITY_MSS * 1.1);
+
     for (int i = 0; i < 6; i++) {
         Thruster t = vectored_thrusters[i];
         int16_t pwm = input.servos[t.servo];
         float output = 0;
         if (pwm < 2000 && pwm > 1000) {
-         output = (pwm - 1500) / 400.0f; // range -1~1
+         output = (pwm - 1500) / 400.0; // range -1~1
         }
 
-        body_accel += t.linear * output * 1.2 * GRAVITY_MSS;
+        // 2.5 scalar for approximate real-life performance of T200 thruster
+        body_accel += t.linear * output * 2.5;
+
         rot_accel += t.rotational * output;
+    }
+
+    // Limit movement at the surface of the water
+    if (position.z < 0 && body_accel.z < 0) {
+    	body_accel.z = GRAVITY_MSS;
+    }
+
+    // Limit movement at the sea floor
+    if (position.z > 100 && body_accel.z > -GRAVITY_MSS) {
+    	body_accel.z = -GRAVITY_MSS;
     }
 
     float terminal_rotation_rate = 10.0;
@@ -93,4 +110,12 @@ void Submarine::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+}
+
+/*
+   return true if we are on the ground
+*/
+bool Submarine::on_ground() const
+{
+	return false;
 }

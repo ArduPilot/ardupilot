@@ -174,7 +174,7 @@ protected:
     const float FEET_TO_METERS = 0.3048f;
     const float KNOTS_TO_METERS_PER_SECOND = 0.51444f;
 
-    bool on_ground() const;
+    virtual bool on_ground() const;
 
     // returns height above ground level in metres
     float hagl() const;  // metres
