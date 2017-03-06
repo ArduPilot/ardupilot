@@ -3,11 +3,12 @@
 
 bool Sub::surface_init(bool ignore_checks)
 {
-
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor, exit immediately.
         gcs_send_text(MAV_SEVERITY_WARNING, "Surface mode requires external pressure sensor.");
         return false;
     }
+#endif
 
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
