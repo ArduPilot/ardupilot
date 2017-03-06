@@ -659,13 +659,18 @@ bool NavEKF3::InitialiseFilter(void)
     // Set up any cores that have been created
     // This specifies the IMU to be used and creates the data buffers
     // If we are unble to set up a core, return false and try again next time the function is called
+    bool core_setup_success = true;
     for (uint8_t core_index=0; core_index<num_cores; core_index++) {
         if (coreSetupRequired[core_index]) {
             coreSetupRequired[core_index] = !core[core_index].setup_core(this, coreImuIndex[core_index], core_index);
-            if(coreSetupRequired[core_index]) {
-                return false;
+            if (coreSetupRequired[core_index]) {
+                core_setup_success = false;
             }
         }
+    }
+    // exit with failure if any cores could not be setup
+    if (!core_setup_success) {
+        return false;
     }
 
     // Set the primary initially to be the lowest index
