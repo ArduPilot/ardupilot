@@ -31,6 +31,7 @@ void Sub::failsafe_battery_event(void)
 
 void Sub::failsafe_manual_control_check()
 {
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     uint32_t tnow = AP_HAL::millis();
 
     // Require at least 2Hz update
@@ -46,6 +47,7 @@ void Sub::failsafe_manual_control_check()
     }
 
     failsafe.manual_control = false;
+#endif
 }
 
 void Sub::failsafe_internal_pressure_check()
