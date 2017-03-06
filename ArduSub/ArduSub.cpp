@@ -172,15 +172,14 @@ void Sub::loop()
 // Main loop - 400hz
 void Sub::fast_loop()
 {
-
-    // IMU DCM Algorithm
-    // --------------------
-    read_AHRS();
-
     if (control_mode != MANUAL) { //don't run rate controller in manual mode
         // run low level rate controllers that only require IMU data
         attitude_control.rate_controller_run();
     }
+
+    // IMU DCM Algorithm
+    // --------------------
+    read_AHRS();
 
     // send outputs to the motors library
     motors_output();
