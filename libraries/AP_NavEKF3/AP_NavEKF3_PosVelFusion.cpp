@@ -316,11 +316,16 @@ void NavEKF3_core::SelectVelPosFusion()
 
             // write to the state vector
             stateStruct.position.z = -hgtMea;
-            outputDataNew.position.z = stateStruct.position.z;
-            outputDataDelayed.position.z = stateStruct.position.z;
 
             // Calculate the position jump due to the reset
             posResetD = stateStruct.position.z - posResetD;
+
+            // Add the offset to the output observer states
+            outputDataNew.position.z += posResetD;
+            outputDataDelayed.position.z += posResetD;
+            for (uint8_t i=0; i<imu_buffer_length; i++) {
+                storedOutput[i].position.z += posResetD;
+            }
 
             // store the time of the reset
             lastPosResetD_ms = imuSampleTime_ms;
