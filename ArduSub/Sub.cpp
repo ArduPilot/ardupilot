@@ -103,7 +103,10 @@ Sub::Sub(void) :
     sensor_health.compass = true;
 
     failsafe.last_heartbeat_ms = 0;
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     failsafe.manual_control = true;
+#endif
 }
 
 Sub sub;
