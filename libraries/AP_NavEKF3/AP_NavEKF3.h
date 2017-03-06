@@ -174,14 +174,14 @@ public:
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
-    void  getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov);
+    void getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov);
 
     // publish output observer angular, velocity and position tracking error
     void getOutputTrackingError(int8_t instance, Vector3f &error) const;
 
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
-    void  getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset);
+    void getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset);
 
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
@@ -194,7 +194,7 @@ public:
     // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
-    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
+    void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
 
     // return data for debugging optical flow fusion for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
@@ -242,7 +242,7 @@ public:
      7 = badly conditioned synthetic sideslip fusion
      7 = filter is not initialised
     */
-    void  getFilterFaults(int8_t instance, uint16_t &faults);
+    void getFilterFaults(int8_t instance, uint16_t &faults);
 
     /*
     return filter timeout status as a bitmasked integer for the specified instance
@@ -256,19 +256,19 @@ public:
      7 = unassigned
      7 = unassigned
     */
-    void  getFilterTimeouts(int8_t instance, uint8_t &timeouts);
+    void getFilterTimeouts(int8_t instance, uint8_t &timeouts);
 
     /*
     return filter gps quality check status for the specified instance
     An out of range instance (eg -1) returns data for the the primary instance
     */
-    void  getFilterGpsStatus(int8_t instance, nav_gps_status &faults);
+    void getFilterGpsStatus(int8_t instance, nav_gps_status &faults);
 
     /*
     return filter status flags for the specified instance
     An out of range instance (eg -1) returns data for the the primary instance
     */
-    void  getFilterStatus(int8_t instance, nav_filter_status &status);
+    void getFilterStatus(int8_t instance, nav_filter_status &status);
 
     // send an EKF_STATUS_REPORT message to GCS
     void send_status_report(mavlink_channel_t chan);
