@@ -357,7 +357,6 @@ bool AP_Arming::gps_checks(bool report)
         }
     }
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
         uint8_t first_unconfigured = gps.first_unconfigured_gps();
         if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
@@ -370,7 +369,6 @@ bool AP_Arming::gps_checks(bool report)
             return false;
         }
     }
-#endif
     return true;
 }
 
