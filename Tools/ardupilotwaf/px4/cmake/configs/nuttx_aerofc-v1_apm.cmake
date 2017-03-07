@@ -2,6 +2,7 @@ include(configs/nuttx_px4fmu-common_apm)
 
 list(APPEND config_module_list
     drivers/boards/aerofc-v1
+    drivers/aerofc_adc
     lib/rc
 
     # replace stm32 tone_alarm with a dummy one
