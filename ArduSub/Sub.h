@@ -839,6 +839,7 @@ private:
 
     void translate_wpnav_rp(float &lateral_out, float &forward_out);
     void translate_circle_nav_rp(float &lateral_out, float &forward_out);
+    void translate_pos_control_rp(float &lateral_out, float &forward_out);
 
     bool surface_init(bool ignore_flags);
     void surface_run();
