@@ -209,9 +209,6 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
         desired_rate = 0.0f;
     }
 
-    // desired climb rate for logging
-    desired_climb_rate = desired_rate;
-
     return desired_rate;
 }
 
