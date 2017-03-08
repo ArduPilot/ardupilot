@@ -47,13 +47,21 @@ class AP_GPS
 {
 public:
 
-    /// Startup initialisation.
-    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
+    friend class AP_GPS_ERB;
+    friend class AP_GPS_GSOF;
+    friend class AP_GPS_MAV;
+    friend class AP_GPS_MTK;
+    friend class AP_GPS_MTK19;
+    friend class AP_GPS_NMEA;
+    friend class AP_GPS_NOVA;
+    friend class AP_GPS_PX4;
+    friend class AP_GPS_QURT;
+    friend class AP_GPS_SBF;
+    friend class AP_GPS_SBP;
+    friend class AP_GPS_SIRF;
+    friend class AP_GPS_UBLOX;
+    friend class AP_GPS_Backend;
 
-    /// Update GPS state based on possible bytes received from the module.
-    /// This routine must be called periodically (typically at 10Hz or
-    /// more) to process incoming data.
-    void update(void);
     // constructor
 	AP_GPS();
 
@@ -133,6 +141,14 @@ public:
         bool have_vertical_accuracy:1;
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
     };
+
+    /// Startup initialisation.
+    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
+
+    /// Update GPS state based on possible bytes received from the module.
+    /// This routine must be called periodically (typically at 10Hz or
+    /// more) to process incoming data.
+    void update(void);
 
     // Pass mavlink data to message handlers (for MAV type)
     void handle_msg(const mavlink_message_t *msg);
@@ -279,15 +295,6 @@ public:
         return last_message_time_ms(primary_instance);
     }
 
-    // convert GPS week and millis to unix epoch in ms
-    static uint64_t time_epoch_convert(uint16_t gps_week, uint32_t gps_ms);
-    
-    // return last fix time since the 1/1/1970 in microseconds
-    uint64_t time_epoch_usec(uint8_t instance);
-    uint64_t time_epoch_usec(void) { 
-        return time_epoch_usec(primary_instance); 
-    }
-
 	// return true if the GPS supports vertical velocity values
     bool have_vertical_velocity(uint8_t instance) const { 
         return state[instance].have_vertical_velocity; 
@@ -300,9 +307,6 @@ public:
     float get_lag(uint8_t instance) const;
     float get_lag(void) const { return get_lag(primary_instance); }
 
-    // return gps update rate in milliseconds
-    uint16_t get_rate_ms(uint8_t instance) const;
-
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const;
 
@@ -313,8 +317,46 @@ public:
 
     // set accuracy for HIL
     void setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity, uint32_t sample_ms);
-    
+
+    // lock out a GPS port, allowing another application to use the port
+    void lock_port(uint8_t instance, bool locked);
+
+    //Inject a packet of raw binary to a GPS
+    void inject_data(uint8_t *data, uint8_t len);
+    void inject_data(uint8_t instance, uint8_t *data, uint8_t len);
+
+    //MAVLink Status Sending
+    void send_mavlink_gps_raw(mavlink_channel_t chan);
+    void send_mavlink_gps2_raw(mavlink_channel_t chan);
+
+    void send_mavlink_gps_rtk(mavlink_channel_t chan);
+    void send_mavlink_gps2_rtk(mavlink_channel_t chan);
+
+    // Returns the index of the first unconfigured GPS (returns GPS_ALL_CONFIGURED if all instances report as being configured)
+    uint8_t first_unconfigured_gps(void) const;
+    void broadcast_first_configuration_failure_reason(void) const;
+
+    // return true if all GPS instances have finished configuration
+    bool all_configured(void) const {
+        return first_unconfigured_gps() == GPS_ALL_CONFIGURED;
+    }
+
+    // handle sending of initialisation strings to the GPS - only used by backends
+    void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
+    void send_blob_update(uint8_t instance);
+
+    // return last fix time since the 1/1/1970 in microseconds
+    uint64_t time_epoch_usec(uint8_t instance);
+    uint64_t time_epoch_usec(void) {
+        return time_epoch_usec(primary_instance);
+    }
+
+    // convert GPS week and millis to unix epoch in ms
+    static uint64_t time_epoch_convert(uint16_t gps_week, uint32_t gps_ms);
+
     static const struct AP_Param::GroupInfo var_info[];
+
+protected:
 
     // dataflash for logging, if available
     DataFlash_Class *_DataFlash;
@@ -339,34 +381,10 @@ public:
     AP_Int8 _blend_mask;
     AP_Float _blend_tc;
 
-    // handle sending of initialisation strings to the GPS
-    void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
-    void send_blob_update(uint8_t instance);
-
-    // lock out a GPS port, allowing another application to use the port
-    void lock_port(uint8_t instance, bool locked);
-
-    //Inject a packet of raw binary to a GPS
-    void inject_data(uint8_t *data, uint8_t len);
-    void inject_data(uint8_t instance, uint8_t *data, uint8_t len);
-
-    //MAVLink Status Sending
-    void send_mavlink_gps_raw(mavlink_channel_t chan);
-    void send_mavlink_gps2_raw(mavlink_channel_t chan);
-
-    void send_mavlink_gps_rtk(mavlink_channel_t chan);
-    void send_mavlink_gps2_rtk(mavlink_channel_t chan);
-
-    // Returns the index of the first unconfigured GPS (returns GPS_ALL_CONFIGURED if all instances report as being configured)
-    uint8_t first_unconfigured_gps(void) const;
-    void broadcast_first_configuration_failure_reason(void) const;
-
-    // return true if all GPS instances have finished configuration
-    bool all_configured(void) const {
-        return first_unconfigured_gps() == GPS_ALL_CONFIGURED;
-    }
-    
 private:
+    // return gps update rate in milliseconds
+    uint16_t get_rate_ms(uint8_t instance) const;
+
     struct GPS_timing {
         // the time we got our last fix in system milliseconds
         uint32_t last_fix_time_ms;

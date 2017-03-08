@@ -44,6 +44,13 @@
 
 extern const AP_HAL::HAL &hal;
 
+// baudrates to try to detect GPSes with
+const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9600U, 230400U};
+
+// initialisation blobs to send to the GPS to try to get it into the
+// right mode
+const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
@@ -270,8 +277,6 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
     }
 }
 
-// baudrates to try to detect GPSes with
-const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9600U, 230400U};
 // return number of active GPS sensors. Note that if the first GPS
 // is not present but the 2nd is then we return 2. Note that a blended
 // GPS solution is treated as an additional sensor.
@@ -284,9 +289,6 @@ uint8_t AP_GPS::num_sensors(void) const
     }
 }
 
-// initialisation blobs to send to the GPS to try to get it into the
-// right mode
-const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
 bool AP_GPS::speed_accuracy(uint8_t instance, float &sacc) const
 {
     if (state[instance].have_speed_accuracy) {
