@@ -225,13 +225,14 @@ public:
         return ground_speed() * 100;
     }
 
-    // ground course in centidegrees
+    // ground course in degrees
     float ground_course(uint8_t instance) const {
         return state[instance].ground_course;
     }
     float ground_course() const {
         return ground_course(primary_instance);
     }
+    // ground course in centi-degrees
     int32_t ground_course_cd(uint8_t instance) const {
         return ground_course(instance) * 100;
     }
