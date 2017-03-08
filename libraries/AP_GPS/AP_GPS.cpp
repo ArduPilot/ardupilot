@@ -242,6 +242,12 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPEND
 };
 
+// constructor
+AP_GPS::AP_GPS()
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 /// Startup initialisation.
 void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager)
 {
@@ -266,10 +272,48 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
 
 // baudrates to try to detect GPSes with
 const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9600U, 230400U};
+// return number of active GPS sensors. Note that if the first GPS
+// is not present but the 2nd is then we return 2. Note that a blended
+// GPS solution is treated as an additional sensor.
+uint8_t AP_GPS::num_sensors(void) const
+{
+    if (!_output_is_blended) {
+        return num_instances;
+    } else {
+        return num_instances+1;
+    }
+}
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
 const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
+bool AP_GPS::speed_accuracy(uint8_t instance, float &sacc) const
+{
+    if (state[instance].have_speed_accuracy) {
+        sacc = state[instance].speed_accuracy;
+        return true;
+    }
+    return false;
+}
+
+bool AP_GPS::horizontal_accuracy(uint8_t instance, float &hacc) const
+{
+    if (state[instance].have_horizontal_accuracy) {
+        hacc = state[instance].horizontal_accuracy;
+        return true;
+    }
+    return false;
+}
+
+bool AP_GPS::vertical_accuracy(uint8_t instance, float &vacc) const
+{
+    if (state[instance].have_vertical_accuracy) {
+        vacc = state[instance].vertical_accuracy;
+        return true;
+    }
+    return false;
+}
+
 
 /**
    convert GPS week and milliseconds to unix epoch in milliseconds
@@ -993,6 +1037,17 @@ float AP_GPS::get_lag(uint8_t instance) const
     } else {
         // the user has not specified a delay so we determine it from the GPS type
         return drivers[instance]->get_lag();
+    }
+}
+
+// return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
+const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
+{
+    if (instance == GPS_MAX_RECEIVERS) {
+        // return an offset for the blended GPS solution
+        return _blended_antenna_offset;
+    } else {
+        return _antenna_offset[instance];
     }
 }
 
