@@ -58,29 +58,6 @@ int16_t AP_GPS_Backend::swap_int16(int16_t v) const
     return u.v;
 }
 
-/**
-   convert GPS week and milliseconds to unix epoch in milliseconds
- */
-uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
-{
-    uint64_t fix_time_ms = UNIX_OFFSET_MSEC + gps_week * MSEC_PER_WEEK + gps_ms;
-    return fix_time_ms;
-}
-
-/**
-   calculate current time since the unix epoch in microseconds
- */
-uint64_t AP_GPS::time_epoch_usec(uint8_t instance)
-{
-    const GPS_State &istate = state[instance];
-    if (istate.last_gps_time_ms == 0) {
-        return 0;
-    }
-    uint64_t fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
-    // add in the milliseconds since the last fix
-    return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
-}
-
 
 /**
    fill in time_week_ms and time_week from BCD date and time components
