@@ -46,10 +46,6 @@ class AP_GPS_Backend;
 class AP_GPS
 {
 public:
-    // constructor
-	AP_GPS() {
-		AP_Param::setup_object_defaults(this, var_info);
-    }
 
     /// Startup initialisation.
     void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
@@ -58,6 +54,8 @@ public:
     /// This routine must be called periodically (typically at 10Hz or
     /// more) to process incoming data.
     void update(void);
+    // constructor
+	AP_GPS();
 
     // GPS driver types
     enum GPS_Type {
@@ -144,13 +142,7 @@ public:
     // return number of active GPS sensors. Note that if the first GPS
     // is not present but the 2nd is then we return 2. Note that a blended
     // GPS solution is treated as an additional sensor.
-    uint8_t num_sensors(void) const {
-        if (!_output_is_blended) {
-            return num_instances;
-        } else {
-            return num_instances+1;
-        }
-    }
+    uint8_t num_sensors(void) const;
 
     // Return the index of the primary sensor which is the index of the sensor contributing to
     // the output. A blended solution is available as an additional instance
@@ -177,38 +169,18 @@ public:
         return location(primary_instance);
     }
 
-    bool speed_accuracy(uint8_t instance, float &sacc) const {
-        if(state[instance].have_speed_accuracy) {
-            sacc = state[instance].speed_accuracy;
-            return true;
-        }
-        return false;
-    }
-
+    // report speed accuracy
+    bool speed_accuracy(uint8_t instance, float &sacc) const;
     bool speed_accuracy(float &sacc) const {
         return speed_accuracy(primary_instance, sacc);
     }
 
-    bool horizontal_accuracy(uint8_t instance, float &hacc) const {
-        if(state[instance].have_horizontal_accuracy) {
-            hacc = state[instance].horizontal_accuracy;
-            return true;
-        }
-        return false;
-    }
-
+    bool horizontal_accuracy(uint8_t instance, float &hacc) const;
     bool horizontal_accuracy(float &hacc) const {
         return horizontal_accuracy(primary_instance, hacc);
     }
 
-    bool vertical_accuracy(uint8_t instance, float &vacc) const {
-        if(state[instance].have_vertical_accuracy) {
-            vacc = state[instance].vertical_accuracy;
-            return true;
-        }
-        return false;
-    }
-
+    bool vertical_accuracy(uint8_t instance, float &vacc) const;
     bool vertical_accuracy(float &vacc) const {
         return vertical_accuracy(primary_instance, vacc);
     }
@@ -332,14 +304,7 @@ public:
     uint16_t get_rate_ms(uint8_t instance) const;
 
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
-    const Vector3f &get_antenna_offset(uint8_t instance) const {
-        if (instance == GPS_MAX_RECEIVERS) {
-            // return an offset for the blended GPS solution
-            return _blended_antenna_offset;
-        } else {
-            return _antenna_offset[instance];
-        }
-    }
+    const Vector3f &get_antenna_offset(uint8_t instance) const;
 
     // set position for HIL
     void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
