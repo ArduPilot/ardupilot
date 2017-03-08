@@ -146,7 +146,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     case VELHOLD:
     case CIRCLE:
     case SURFACE:
-    case OF_LOITER:
     case POSHOLD:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;

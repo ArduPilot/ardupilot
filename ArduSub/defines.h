@@ -95,10 +95,8 @@ enum control_mode_t {
     AUTO =          3,  // not implemented in sub // fully automatic waypoint control using mission commands
     GUIDED =        4,  // not implemented in sub // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
     VELHOLD =       5,  // automatic x/y velocity control and automatic depth/throttle
-    //    RTL =           6,  // not implemented in sub // automatic return to launching point
     CIRCLE =        7,  // not implemented in sub // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
-    OF_LOITER =    10,  // deprecated
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
     MANUAL =       19   // Pass-through input with no stabilization
 };

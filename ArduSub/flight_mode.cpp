@@ -263,9 +263,6 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case SURFACE:
         port->print("SURFACE");
         break;
-    case OF_LOITER:
-        port->print("OF_LOITER");
-        break;
     case POSHOLD:
         port->print("POSHOLD");
         break;
