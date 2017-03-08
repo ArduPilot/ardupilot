@@ -157,6 +157,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
     // @Units: milliseconds
     // @Values: 100:10Hz,125:8Hz,200:5Hz
+    // @Range: 100 200
     // @User: Advanced
     AP_GROUPINFO("RATE_MS", 14, AP_GPS, _rate_ms[0], 200),
 
@@ -165,6 +166,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
     // @Units: milliseconds
     // @Values: 100:10Hz,125:8Hz,200:5Hz
+    // @Range: 100 200
     // @User: Advanced
     AP_GROUPINFO("RATE_MS2", 15, AP_GPS, _rate_ms[1], 200),
 
@@ -254,6 +256,12 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
     // Initialise class variables used to do GPS blending
     _omega_lpf = 1.0f / constrain_float(_blend_tc, 5.0f, 30.0f);
 
+    // sanity check update rate
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (_rate_ms[i] <= 0 || _rate_ms[i] > GPS_MAX_RATE_MS) {
+            _rate_ms[i] = GPS_MAX_RATE_MS;
+        }
+    }
 }
 
 // baudrates to try to detect GPSes with
@@ -978,11 +986,23 @@ float AP_GPS::get_lag(uint8_t instance) const
     } else if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
         // no GPS was detected in this instance
         // so return a default delay of 1 measurement interval
-        return 0.001f * (float)_rate_ms[instance];
+        return 0.001f * (float)get_rate_ms(instance);
     } else {
         // the user has not specified a delay so we determine it from the GPS type
         return drivers[instance]->get_lag();
     }
+}
+
+/*
+  return gps update rate in milliseconds
+*/
+uint16_t AP_GPS::get_rate_ms(uint8_t instance) const
+{
+    // sanity check
+    if (instance >= num_instances || _rate_ms[instance] <= 0) {
+        return GPS_MAX_RATE_MS;
+    }
+    return MIN(_rate_ms[instance], GPS_MAX_RATE_MS);
 }
 
 /*
@@ -1010,8 +1030,8 @@ bool AP_GPS::calc_blend_weights(void)
         if ((state[i].last_gps_time_ms < min_ms) && (state[i].last_gps_time_ms > 0)) {
             min_ms = state[i].last_gps_time_ms;
         }
-        if (_rate_ms[i] > max_rate_ms) {
-            max_rate_ms = _rate_ms[i];
+        if (get_rate_ms(i) > max_rate_ms) {
+            max_rate_ms = get_rate_ms(i);
         }
     }
     if ((int32_t)(max_ms - min_ms) < (int32_t)(2 * max_rate_ms)) {

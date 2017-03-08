@@ -31,6 +31,7 @@
 #define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
 #define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximumum number of GPs instances including the 'virtual' GPS created by blending receiver data
 #define GPS_RTK_INJECT_TO_ALL 127
+#define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
 
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
@@ -142,7 +143,7 @@ public:
 
     // return number of active GPS sensors. Note that if the first GPS
     // is not present but the 2nd is then we return 2. Note that a blended
-    // GPS solution is treated as an addditional sensor.
+    // GPS solution is treated as an additional sensor.
     uint8_t num_sensors(void) const {
         if (!_output_is_blended) {
             return num_instances;
@@ -152,7 +153,7 @@ public:
     }
 
     // Return the index of the primary sensor which is the index of the sensor contributing to
-    // the output. A blended solution is avalable as an additional instance
+    // the output. A blended solution is available as an additional instance
     uint8_t primary_sensor(void) const {
         return primary_instance;
     }
@@ -326,6 +327,9 @@ public:
     // the expected lag (in seconds) in the position and velocity readings from the gps
     float get_lag(uint8_t instance) const;
     float get_lag(void) const { return get_lag(primary_instance); }
+
+    // return gps update rate in milliseconds
+    uint16_t get_rate_ms(uint8_t instance) const;
 
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const {
