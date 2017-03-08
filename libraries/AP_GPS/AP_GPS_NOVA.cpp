@@ -194,7 +194,7 @@ AP_GPS_NOVA::process_message(void)
 
         state.time_week = nova_msg.header.nova_headeru.week;
         state.time_week_ms = (uint32_t) nova_msg.header.nova_headeru.tow;
-        state.last_gps_time_ms = state.time_week_ms;
+        state.last_gps_time_ms = AP_HAL::millis();
 
         state.location.lat = (int32_t) (bestposu.lat * (double)1e7);
         state.location.lng = (int32_t) (bestposu.lng * (double)1e7);
@@ -270,7 +270,7 @@ AP_GPS_NOVA::process_message(void)
     }
 
     // ensure out position and velocity stay insync
-    if (_new_position && _new_speed && _last_vel_time == state.last_gps_time_ms) {
+    if (_new_position && _new_speed && _last_vel_time == state.time_week_ms) {
         _new_speed = _new_position = false;
         
         return true;
