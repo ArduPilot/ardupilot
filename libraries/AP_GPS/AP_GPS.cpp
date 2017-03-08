@@ -235,6 +235,29 @@ const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9
 // right mode
 const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
 
+/**
+   convert GPS week and milliseconds to unix epoch in milliseconds
+ */
+uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
+{
+    uint64_t fix_time_ms = UNIX_OFFSET_MSEC + gps_week * MSEC_PER_WEEK + gps_ms;
+    return fix_time_ms;
+}
+
+/**
+   calculate current time since the unix epoch in microseconds
+ */
+uint64_t AP_GPS::time_epoch_usec(uint8_t instance)
+{
+    const GPS_State &istate = state[instance];
+    if (istate.last_gps_time_ms == 0) {
+        return 0;
+    }
+    uint64_t fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
+    // add in the milliseconds since the last fix
+    return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
+}
+
 /*
   send some more initialisation string bytes if there is room in the
   UART transmit buffer
