@@ -79,46 +79,46 @@ protected:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the FlightMode base
     // class.
-    virtual void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max) {
+    void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max) {
         _copter.get_pilot_desired_lean_angles(roll_in, pitch_in, roll_out, pitch_out, angle_max);
     }
-    virtual float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt) {
+    float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt) {
         return _copter.get_surface_tracking_climb_rate(target_rate, current_alt_target, dt);
     }
-    virtual float get_pilot_desired_yaw_rate(int16_t stick_angle) {
+    float get_pilot_desired_yaw_rate(int16_t stick_angle) {
         return _copter.get_pilot_desired_yaw_rate(stick_angle);
     }
-    virtual float get_pilot_desired_climb_rate(float throttle_control) {
+    float get_pilot_desired_climb_rate(float throttle_control) {
         return _copter.get_pilot_desired_climb_rate(throttle_control);
     }
-    virtual float get_pilot_desired_throttle(int16_t throttle_control, float thr_mid = 0.0f) {
+    float get_pilot_desired_throttle(int16_t throttle_control, float thr_mid = 0.0f) {
         return _copter.get_pilot_desired_throttle(throttle_control, thr_mid);
     }
-    virtual float get_non_takeoff_throttle() {
+    float get_non_takeoff_throttle() {
         return _copter.get_non_takeoff_throttle();
     }
-    virtual void update_simple_mode(void) {
+    void update_simple_mode(void) {
         _copter.update_simple_mode();
     }
-    virtual float get_smoothing_gain() {
+    float get_smoothing_gain() {
         return _copter.get_smoothing_gain();
     }
-    virtual bool set_mode(control_mode_t mode, mode_reason_t reason) {
+    bool set_mode(control_mode_t mode, mode_reason_t reason) {
         return _copter.set_mode(mode, reason);
     }
-    virtual void set_land_complete(bool b) {
+    void set_land_complete(bool b) {
         return _copter.set_land_complete(b);
     }
     GCS_Copter &gcs() {
         return _copter.gcs();
     }
-    virtual void Log_Write_Event(uint8_t id) {
+    void Log_Write_Event(uint8_t id) {
         return _copter.Log_Write_Event(id);
     }
-    virtual void set_throttle_takeoff() {
+    void set_throttle_takeoff() {
         return _copter.set_throttle_takeoff();
     }
-    virtual void set_auto_yaw_mode(uint8_t yaw_mode) {
+    void set_auto_yaw_mode(uint8_t yaw_mode) {
         return _copter.set_auto_yaw_mode(yaw_mode);
     }
     void set_auto_yaw_rate(float turn_rate_cds) {
@@ -127,13 +127,13 @@ protected:
     void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle) {
         return _copter.set_auto_yaw_look_at_heading(angle_deg, turn_rate_dps, direction, relative_angle);
     }
-    virtual void takeoff_timer_start(float alt_cm) {
+    void takeoff_timer_start(float alt_cm) {
         return _copter.takeoff_timer_start(alt_cm);
     }
-    virtual void takeoff_stop() {
+    void takeoff_stop() {
         return _copter.takeoff_stop();
     }
-    virtual void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate) {
+    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate) {
         return _copter.takeoff_get_climb_rates(pilot_climb_rate, takeoff_climb_rate);
     }
     float get_auto_heading() {
