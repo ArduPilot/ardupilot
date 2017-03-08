@@ -1,11 +1,5 @@
 #include "Copter.h"
 
-// FIXME? why are these static?
-static bool land_with_gps;
-
-static uint32_t land_start_time;
-static bool land_pause;
-
 // land_init - initialise land controller
 bool Copter::FlightMode_LAND::init(bool ignore_checks)
 {
@@ -81,9 +75,9 @@ void Copter::FlightMode_LAND::gps_run()
     if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
         land_pause = false;
     }
-    
-    _copter.land_run_horizontal_control();
-    _copter.land_run_vertical_control(land_pause);
+
+    land_run_horizontal_control();
+    land_run_vertical_control(land_pause);
 }
 
 // land_nogps_run - runs the land controller
@@ -144,13 +138,13 @@ void Copter::FlightMode_LAND::nogps_run()
         land_pause = false;
     }
 
-    _copter.land_run_vertical_control(land_pause);
+    land_run_vertical_control(land_pause);
 }
 
 /*
   get a height above ground estimate for landing
  */
-int32_t Copter::FlightMode_LAND::get_alt_above_ground(void)
+int32_t Copter::FlightMode::get_alt_above_ground(void)
 {
     int32_t alt_above_ground;
     if (_copter.rangefinder_alt_ok()) {
@@ -164,7 +158,7 @@ int32_t Copter::FlightMode_LAND::get_alt_above_ground(void)
     return alt_above_ground;
 }
 
-void Copter::land_run_vertical_control(bool pause_descent)
+void Copter::FlightMode::land_run_vertical_control(bool pause_descent)
 {
     bool navigating = pos_control->is_active_xy();
 
@@ -177,7 +171,7 @@ void Copter::land_run_vertical_control(bool pause_descent)
     // compute desired velocity
     const float precland_acceptable_error = 15.0f;
     const float precland_min_descent_speed = 10.0f;
-    int32_t alt_above_ground = flightmode_land.get_alt_above_ground();
+    const int32_t alt_above_ground = get_alt_above_ground();
 
     float cmb_rate = 0;
     if (!pause_descent) {
@@ -197,7 +191,7 @@ void Copter::land_run_vertical_control(bool pause_descent)
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
-        if (doing_precision_landing && rangefinder_alt_ok() && rangefinder_state.alt_cm > 35.0f && rangefinder_state.alt_cm < 200.0f) {
+        if (doing_precision_landing && _copter.rangefinder_alt_ok() && _copter.rangefinder_state.alt_cm > 35.0f && _copter.rangefinder_state.alt_cm < 200.0f) {
             float max_descent_speed = abs(g.land_speed)/2.0f;
             float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
@@ -209,7 +203,7 @@ void Copter::land_run_vertical_control(bool pause_descent)
     pos_control->update_z_controller();
 }
 
-void Copter::land_run_horizontal_control()
+void Copter::FlightMode::land_run_horizontal_control()
 {
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
@@ -220,8 +214,8 @@ void Copter::land_run_horizontal_control()
     }
     
     // process pilot inputs
-    if (!failsafe.radio) {
-        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+    if (!_copter.failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && _copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
@@ -281,8 +275,8 @@ void Copter::land_run_horizontal_control()
         // there is any position estimate drift after touchdown. We
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
-        int alt_above_ground = flightmode_land.get_alt_above_ground();
-        float attitude_limit_cd = linear_interpolate(700, aparm.angle_max, alt_above_ground,
+        const int alt_above_ground = get_alt_above_ground();
+        float attitude_limit_cd = linear_interpolate(700, _copter.aparm.angle_max, alt_above_ground,
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
         float total_angle_cd = norm(nav_roll, nav_pitch);
         if (total_angle_cd > attitude_limit_cd) {
@@ -313,13 +307,8 @@ void Copter::FlightMode_LAND::do_not_use_GPS()
 void Copter::set_mode_land_with_pause(mode_reason_t reason)
 {
     set_mode(LAND, reason);
-    land_pause = true;
+    flightmode_land.set_land_pause(true);
 
     // alert pilot to mode change
     AP_Notify::events.failsafe_mode_change = 1;
-}
-
-// landing_with_GPS - returns true if vehicle is landing using GPS
-bool Copter::landing_with_GPS() {
-    return (control_mode == LAND && land_with_gps);
 }

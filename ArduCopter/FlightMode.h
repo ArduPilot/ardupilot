@@ -25,6 +25,9 @@ public:
         G_Dt(_copter.G_Dt),
         ap(_copter.ap),
         takeoff_state(_copter.takeoff_state),
+#if PRECISION_LANDING == ENABLED
+        precland(_copter.precland),
+#endif
         ekfGndSpdLimit(_copter.ekfGndSpdLimit),
         ekfNavVelGainScaler(_copter.ekfNavVelGainScaler)
         { };
@@ -64,12 +67,22 @@ protected:
     float &G_Dt;
     ap_t &ap;
     takeoff_state_t &takeoff_state;
+    // Precision Landing
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand &precland;
+#endif
+
 
     // gnd speed limit required to observe optical flow sensor limits
     float &ekfGndSpdLimit;
 
     // scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
     float &ekfNavVelGainScaler;
+
+    void land_run_vertical_control(bool pause_descent = false);
+    void land_run_horizontal_control();
+    virtual bool landing_with_GPS() const { return false; }
+    int32_t get_alt_above_ground(void);
 
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the FlightMode base
@@ -475,10 +488,10 @@ public:
     bool is_autopilot() const override { return true; }
 
     float get_land_descent_speed();
-    bool landing_with_GPS();
+    bool landing_with_GPS() const override { return land_with_gps; };
     void do_not_use_GPS();
 
-    int32_t get_alt_above_ground(void);
+    void set_land_pause(const bool pause) { land_pause = pause; }
 
 protected:
 
@@ -489,6 +502,11 @@ private:
 
     void gps_run();
     void nogps_run();
+
+    bool land_with_gps;
+    bool land_pause;
+    uint32_t land_start_time;
+
 };
 
 

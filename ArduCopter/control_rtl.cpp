@@ -401,8 +401,8 @@ void Copter::FlightMode_RTL::land_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    _copter.land_run_horizontal_control();
-    _copter.land_run_vertical_control();
+    land_run_horizontal_control();
+    land_run_vertical_control();
 
     // check if we've completed this stage of RTL
     _state_complete = ap.land_complete;
