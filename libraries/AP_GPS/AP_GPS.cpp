@@ -501,7 +501,7 @@ found_gps:
 AP_GPS::GPS_Status 
 AP_GPS::highest_supported_status(uint8_t instance) const
 {
-    if (drivers[instance] != nullptr) {
+    if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
         return drivers[instance]->highest_supported_status();
     }
     return AP_GPS::GPS_OK_FIX_3D;
@@ -710,6 +710,9 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
 // set accuracy for HIL
 void AP_GPS::setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity, uint32_t sample_ms)
 {
+    if (instance >= GPS_MAX_RECEIVERS) {
+        return;
+    }
     GPS_State &istate = state[instance];
     istate.vdop = vdop * 100;
     istate.horizontal_accuracy = hacc;
@@ -803,7 +806,7 @@ void
 AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 {
     static uint32_t last_send_time_ms[MAVLINK_COMM_NUM_BUFFERS];
-    if (num_sensors() < 2 || status(1) <= AP_GPS::NO_GPS) {
+    if (num_instances < 2 || status(1) <= AP_GPS::NO_GPS) {
         return;
     }
     // when we have a GPS then only send new data

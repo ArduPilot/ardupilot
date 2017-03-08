@@ -166,7 +166,7 @@ public:
         return status(primary_instance);
     }
 
-    // Query the highest status this GPS supports
+    // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
     GPS_Status highest_supported_status(uint8_t instance) const;
 
     // location of last fix
