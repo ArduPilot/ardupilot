@@ -288,14 +288,6 @@ private:
         uint32_t last_edge_time_ms;         // system time that switch position was last changed
     } control_switch_state;
 
-    typedef struct {
-        bool running;
-        float max_speed;
-        float alt_delta;
-        uint32_t start_ms;
-    } takeoff_state_t;
-    takeoff_state_t takeoff_state;
-
     // altitude below which we do no navigation in auto takeoff
     float auto_takeoff_no_nav_alt_cm;
     
@@ -870,11 +862,6 @@ private:
     void allocate_motors(void);
     uint8_t get_frame_mav_type();
     const char* get_frame_string();
-    bool current_mode_has_user_takeoff(bool must_navigate);
-    bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
-    void takeoff_timer_start(float alt_cm);
-    void takeoff_stop();
-    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     void print_hit_enter();
     void tuning();
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);

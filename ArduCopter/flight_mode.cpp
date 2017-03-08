@@ -190,7 +190,7 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
     }
 
     // cancel any takeoffs in progress
-    takeoff_stop();
+    flightmode->takeoff_stop();
 
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.

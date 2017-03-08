@@ -50,6 +50,15 @@ bool Copter::FlightMode_GUIDED::init(bool ignore_checks)
 }
 
 
+bool Copter::FlightMode_GUIDED::initiate_user_takeoff(const float takeoff_alt_cm)
+{
+    if (takeoff_start(takeoff_alt_cm)) {
+        _copter.set_auto_armed(true);
+        return true;
+    }
+    return false;
+}
+
 // guided_takeoff_start - initialises waypoint controller to implement take-off
 bool Copter::FlightMode_GUIDED::takeoff_start(float final_alt_above_home)
 {

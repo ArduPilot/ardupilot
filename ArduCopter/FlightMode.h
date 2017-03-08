@@ -8,6 +8,13 @@ class FlightMode {
 
 public:
 
+    typedef struct {
+        bool running;
+        float max_speed;
+        float alt_delta;
+        uint32_t start_ms;
+    } takeoff_state_t;
+
     FlightMode(Copter &copter) :
         _copter(copter),
         g(copter.g),
@@ -23,14 +30,16 @@ public:
         channel_throttle(_copter.channel_throttle),
         channel_yaw(_copter.channel_yaw),
         G_Dt(_copter.G_Dt),
-        ap(_copter.ap),
 #if PRECISION_LANDING == ENABLED
         precland(_copter.precland),
 #endif
-        takeoff_state(_copter.takeoff_state)
+        ap(_copter.ap)
         { };
 
     virtual void update();  // should be called at 100hz or more
+
+    // takeoff support
+    bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
 
 protected:
 
@@ -40,6 +49,11 @@ protected:
     virtual bool requires_GPS() const = 0;
     virtual bool has_manual_throttle() const = 0;
     virtual bool allows_arming(bool from_gcs) const = 0;
+
+    // return true if this flight mode supports user takeoff
+    //  must_nagivate is true if mode must also control horizontal position
+    virtual bool has_user_takeoff(bool must_navigate) const { return false; };
+
     void print_FlightMode(AP_HAL::BetterStream *port) const {
         port->print(name());
     }
@@ -64,12 +78,11 @@ protected:
     RC_Channel *&channel_throttle;
     RC_Channel *&channel_yaw;
     float &G_Dt;
-    ap_t &ap;
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
     AC_PrecLand &precland;
 #endif
-    takeoff_state_t &takeoff_state;
+    ap_t &ap;
 
     // gnd speed limit required to observe optical flow sensor limits
     float ekfGndSpdLimit;
@@ -127,15 +140,6 @@ protected:
     void set_auto_yaw_mode(uint8_t yaw_mode) {
         return _copter.set_auto_yaw_mode(yaw_mode);
     }
-    void takeoff_timer_start(float alt_cm) {
-        return _copter.takeoff_timer_start(alt_cm);
-    }
-    void takeoff_stop() {
-        return _copter.takeoff_stop();
-    }
-    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate) {
-        return _copter.takeoff_get_climb_rates(pilot_climb_rate, takeoff_climb_rate);
-    }
     float get_auto_heading() {
         return _copter.get_auto_heading();
     }
@@ -145,9 +149,17 @@ protected:
 
     // end pass-through functions
 
+    virtual bool initiate_user_takeoff(float takeoff_alt_cm);
+
 private:
 
         virtual void run() = 0;
+
+    // takeoff support
+    takeoff_state_t takeoff_state;
+    void takeoff_timer_start(float alt_cm);
+    void takeoff_stop();
+    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
 
 };
 
@@ -212,6 +224,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return !must_navigate; };
 
 protected:
 
@@ -388,6 +401,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; };
 
 #if PRECISION_LANDING == ENABLED
     void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
@@ -432,6 +446,7 @@ public:
         return false;
     };
     bool is_autopilot() const override { return true; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; };
 
     void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
@@ -455,6 +470,8 @@ protected:
 
     const char *name() const override { return "GUIDED"; }
     const char *name4() const override { return "GUID"; }
+
+    bool initiate_user_takeoff(float takeoff_alt_cm) override;
 
 private:
 
@@ -622,6 +639,7 @@ public:
     virtual bool has_manual_throttle() const override { return false; }
     virtual bool allows_arming(bool from_gcs) const override { return true; };
     virtual bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return !must_navigate; };
 
 protected:
 
@@ -738,6 +756,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; };
 
 protected:
 
