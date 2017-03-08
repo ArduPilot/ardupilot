@@ -159,7 +159,6 @@ public:
 
     // Query the highest status this GPS supports
     GPS_Status highest_supported_status(uint8_t instance) const;
-    GPS_Status highest_supported_status(void) const;
 
     // location of last fix
     const Location &location(uint8_t instance) const {

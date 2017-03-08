@@ -448,16 +448,6 @@ AP_GPS::highest_supported_status(uint8_t instance) const
     return AP_GPS::GPS_OK_FIX_3D;
 }
 
-AP_GPS::GPS_Status 
-AP_GPS::highest_supported_status(void) const
-{
-    if (drivers[primary_instance] != nullptr) {
-        return drivers[primary_instance]->highest_supported_status();
-    }
-    return AP_GPS::GPS_OK_FIX_3D;
-}
-
-
 /*
   update one GPS instance. This should be called at 10Hz or greater
  */
