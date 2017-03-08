@@ -277,7 +277,7 @@ void Copter::fast_loop()
     check_ekf_reset();
 
     // run the attitude controllers
-    update_flight_mode();
+    flightmode->update();
 
     // update home from EKF if necessary
     update_home_from_EKF();

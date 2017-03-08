@@ -153,14 +153,15 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     return true;
 }
 
-// update_flight_mode - calls the appropriate attitude controllers based on flight mode
+// update - calls the appropriate attitude controllers based on flight mode
 // called at 100hz or more
-void Copter::update_flight_mode()
+void Copter::FlightMode::update()
 {
     // Update EKF speed limit - used to limit speed when we are using optical flow
+    // FIXME: not needed by all modes
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-    flightmode->run();
+    run();
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited

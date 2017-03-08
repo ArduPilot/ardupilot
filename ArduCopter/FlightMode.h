@@ -24,18 +24,17 @@ public:
         channel_yaw(_copter.channel_yaw),
         G_Dt(_copter.G_Dt),
         ap(_copter.ap),
-        takeoff_state(_copter.takeoff_state),
 #if PRECISION_LANDING == ENABLED
         precland(_copter.precland),
 #endif
-        ekfGndSpdLimit(_copter.ekfGndSpdLimit),
-        ekfNavVelGainScaler(_copter.ekfNavVelGainScaler)
+        takeoff_state(_copter.takeoff_state)
         { };
+
+    virtual void update();  // should be called at 100hz or more
 
 protected:
 
     virtual bool init(bool ignore_checks) = 0; // should be called at 100hz or more
-    virtual void run() = 0; // should be called at 100hz or more
 
     virtual bool is_autopilot() const { return false; }
     virtual bool requires_GPS() const = 0;
@@ -57,7 +56,7 @@ protected:
     AC_WPNav *&wp_nav;
     AC_PosControl *&pos_control;
     AP_InertialNav &inertial_nav;
-    AP_AHRS &ahrs;
+    AP_AHRS_NavEKF &ahrs;
     AC_AttitudeControl_t *&attitude_control;
     MOTOR_CLASS *&motors;
     RC_Channel *&channel_roll;
@@ -66,18 +65,17 @@ protected:
     RC_Channel *&channel_yaw;
     float &G_Dt;
     ap_t &ap;
-    takeoff_state_t &takeoff_state;
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
     AC_PrecLand &precland;
 #endif
-
+    takeoff_state_t &takeoff_state;
 
     // gnd speed limit required to observe optical flow sensor limits
-    float &ekfGndSpdLimit;
+    float ekfGndSpdLimit;
 
     // scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
-    float &ekfNavVelGainScaler;
+    float ekfNavVelGainScaler;
 
     void land_run_vertical_control(bool pause_descent = false);
     void land_run_horizontal_control();
@@ -146,6 +144,11 @@ protected:
     }
 
     // end pass-through functions
+
+private:
+
+        virtual void run() = 0;
+
 };
 
 
