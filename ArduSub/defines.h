@@ -118,50 +118,6 @@ enum mode_reason_t {
     MODE_REASON_LEAK_FAILSAFE
 };
 
-// Tuning enumeration
-enum tuning_func {
-    TUNING_NONE =                        0, //
-    TUNING_STABILIZE_ROLL_PITCH_KP =     1, // stabilize roll/pitch angle controller's P term
-    TUNING_STABILIZE_YAW_KP =            3, // stabilize yaw heading controller's P term
-    TUNING_RATE_ROLL_PITCH_KP =          4, // body frame roll/pitch rate controller's P term
-    TUNING_RATE_ROLL_PITCH_KI =          5, // body frame roll/pitch rate controller's I term
-    TUNING_YAW_RATE_KP =                 6, // body frame yaw rate controller's P term
-    TUNING_THROTTLE_RATE_KP =            7, // throttle rate controller's P term (desired rate to acceleration or motor output)
-    TUNING_WP_SPEED =                   10, // maximum speed to next way point (0 to 10m/s)
-    TUNING_LOITER_POSITION_KP =         12, // loiter distance controller's P term (position error to speed)
-    TUNING_HELI_EXTERNAL_GYRO =         13, // TradHeli specific external tail gyro gain
-    TUNING_ALTITUDE_HOLD_KP =           14, // altitude hold controller's P term (alt error to desired rate)
-    TUNING_RATE_ROLL_PITCH_KD =         21, // body frame roll/pitch rate controller's D term
-    TUNING_VEL_XY_KP =                  22, // loiter rate controller's P term (speed error to tilt angle)
-    TUNING_ACRO_RP_KP =                 25, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
-    TUNING_YAW_RATE_KD =                26, // body frame yaw rate controller's D term
-    TUNING_VEL_XY_KI =                  28, // loiter rate controller's I term (speed error to tilt angle)
-    TUNING_AHRS_YAW_KP =                30, // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
-    TUNING_AHRS_KP =                    31, // accelerometer effect on roll/pitch angle (0=low)
-    TUNING_ACCEL_Z_KP =                 34, // accel based throttle controller's P term
-    TUNING_ACCEL_Z_KI =                 35, // accel based throttle controller's I term
-    TUNING_ACCEL_Z_KD =                 36, // accel based throttle controller's D term
-    TUNING_DECLINATION =                38, // compass declination in radians
-    TUNING_CIRCLE_RATE =                39, // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
-    TUNING_ACRO_YAW_KP =                40, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
-    TUNING_RANGEFINDER_GAIN =           41, // rangefinder gain
-    TUNING_EKF_VERTICAL_POS =           42, // EKF's baro vs accel (higher rely on accels more, baro impact is reduced).  Range should be 0.2 ~ 4.0?  2.0 is default
-    TUNING_EKF_HORIZONTAL_POS =         43, // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
-    TUNING_EKF_ACCEL_NOISE =            44, // EKF's accel noise (lower means trust accels more, gps & baro less).  Range should be 0.02 ~ 0.5  0.5 is default (but very robust at that level)
-    TUNING_RC_FEEL_RP =                 45, // roll-pitch input smoothing
-    TUNING_RATE_PITCH_KP =              46, // body frame pitch rate controller's P term
-    TUNING_RATE_PITCH_KI =              47, // body frame pitch rate controller's I term
-    TUNING_RATE_PITCH_KD =              48, // body frame pitch rate controller's D term
-    TUNING_RATE_ROLL_KP =               49, // body frame roll rate controller's P term
-    TUNING_RATE_ROLL_KI =               50, // body frame roll rate controller's I term
-    TUNING_RATE_ROLL_KD =               51, // body frame roll rate controller's D term
-    TUNING_RATE_PITCH_FF =              52, // body frame pitch rate controller FF term
-    TUNING_RATE_ROLL_FF =               53, // body frame roll rate controller FF term
-    TUNING_RATE_YAW_FF =                54, // body frame yaw rate controller FF term
-    TUNING_RATE_MOT_YAW_HEADROOM =      55, // motors yaw headroom minimum
-    TUNING_RATE_YAW_FILT =              56  // yaw rate input filter
-};
-
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
 #define ACRO_TRAINER_LEVELING   1
@@ -185,7 +141,6 @@ enum tuning_func {
 enum AutoMode {
     Auto_WP,
     Auto_Land,
-    //    Auto_RTL,
     Auto_CircleMoveToEdge,
     Auto_Circle,
     Auto_Spline,
@@ -211,22 +166,6 @@ enum RTLState {
     RTL_Land
 };
 
-// Alt_Hold states
-enum AltHoldModeState {
-    AltHold_MotorStopped,
-    AltHold_NotAutoArmed,
-    AltHold_Flying,
-    AltHold_Landed
-};
-
-// Loiter states
-enum LoiterModeState {
-    Loiter_MotorStopped,
-    Loiter_NotAutoArmed,
-    Loiter_Flying,
-    Loiter_Landed
-};
-
 // LAND state
 #define LAND_STATE_FLY_TO_LOCATION  0
 #define LAND_STATE_DESCENDING       1
@@ -239,9 +178,6 @@ enum LoiterModeState {
 #define LOG_PERFORMANCE_MSG             0x06
 #define LOG_OPTFLOW_MSG                 0x0C
 #define LOG_EVENT_MSG                   0x0D
-#define LOG_PID_MSG                     0x0E    // deprecated
-#define LOG_INAV_MSG                    0x11    // deprecated
-#define LOG_CAMERA_MSG_DEPRECATED       0x12    // deprecated
 #define LOG_ERROR_MSG                   0x13
 #define LOG_DATA_INT16_MSG              0x14
 #define LOG_DATA_UINT16_MSG             0x15
@@ -251,7 +187,6 @@ enum LoiterModeState {
 #define LOG_MOTBATT_MSG                 0x1E
 #define LOG_PARAMTUNE_MSG               0x1F
 #define LOG_HELI_MSG                    0x20
-//#define LOG_PRECLAND_MSG                0x21 // Remove
 #define LOG_GUIDEDTARGET_MSG            0x22
 #define LOG_PROXIMITY_MSG               0x24
 
@@ -269,7 +204,6 @@ enum LoiterModeState {
 #define MASK_LOG_OPTFLOW                (1<<11)
 #define MASK_LOG_PID                    (1<<12)
 #define MASK_LOG_COMPASS                (1<<13)
-#define MASK_LOG_INAV                   (1<<14) // deprecated
 #define MASK_LOG_CAMERA                 (1<<15)
 #define MASK_LOG_MOTBATT                (1UL<<17)
 #define MASK_LOG_IMU_FAST               (1UL<<18)
@@ -283,12 +217,8 @@ enum LoiterModeState {
 #define DATA_ARMED                          10
 #define DATA_DISARMED                       11
 #define DATA_AUTO_ARMED                     15
-//#define DATA_LAND_COMPLETE_MAYBE            17
-//#define DATA_LAND_COMPLETE                  18
 #define DATA_NOT_LANDED                     28
 #define DATA_LOST_GPS                       19
-//#define DATA_FLIP_START                     21
-//#define DATA_FLIP_END                       22
 #define DATA_SET_HOME                       25
 #define DATA_SET_SIMPLE_ON                  26
 #define DATA_SET_SIMPLE_OFF                 27
@@ -302,24 +232,17 @@ enum LoiterModeState {
 #define DATA_ACRO_TRAINER_LIMITED           45
 #define DATA_GRIPPER_GRAB                   46
 #define DATA_GRIPPER_RELEASE                47
-//#define DATA_PARACHUTE_DISABLED             49 // Remove
-//#define DATA_PARACHUTE_ENABLED              50 // Remove
-//#define DATA_PARACHUTE_RELEASED             51 // Remove
-//#define DATA_LANDING_GEAR_DEPLOYED          52 // Remove
-//#define DATA_LANDING_GEAR_RETRACTED         53 // Remove
 #define DATA_MOTORS_EMERGENCY_STOPPED       54
 #define DATA_MOTORS_EMERGENCY_STOP_CLEARED  55
 #define DATA_MOTORS_INTERLOCK_DISABLED      56
 #define DATA_MOTORS_INTERLOCK_ENABLED       57
-#define DATA_ROTOR_RUNUP_COMPLETE           58  // Heli only
-#define DATA_ROTOR_SPEED_BELOW_CRITICAL     59  // Heli only
 #define DATA_EKF_ALT_RESET                  60
 #define DATA_LAND_CANCELLED_BY_PILOT        61
 #define DATA_EKF_YAW_RESET                  62
-#define DATA_SURFACED                       63  // Sub only
-#define DATA_NOT_SURFACED                   64  // Sub only
-#define DATA_BOTTOMED                       65  // Sub only
-#define DATA_NOT_BOTTOMED                   66  // Sub only
+#define DATA_SURFACED                       63
+#define DATA_NOT_SURFACED                   64
+#define DATA_BOTTOMED                       65
+#define DATA_NOT_BOTTOMED                   66
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -337,13 +260,10 @@ enum LoiterModeState {
 #define ERROR_SUBSYSTEM_FLIGHT_MODE         10
 #define ERROR_SUBSYSTEM_GPS                 11  // not used
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
-//#define ERROR_SUBSYSTEM_FLIP                13 // Remove
-//#define ERROR_SUBSYSTEM_PARACHUTE           15 // Remove
 #define ERROR_SUBSYSTEM_EKFCHECK            16
 #define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
 #define ERROR_SUBSYSTEM_BARO                18
 #define ERROR_SUBSYSTEM_CPU                 19
-//#define ERROR_SUBSYSTEM_FAILSAFE_ADSB       20 // Remove
 #define ERROR_SUBSYSTEM_TERRAIN             21
 #define ERROR_SUBSYSTEM_NAVIGATION          22
 #define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
@@ -377,12 +297,6 @@ enum LoiterModeState {
 #define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
 // Baro specific error codes
 #define ERROR_CODE_BARO_GLITCH              2
-
-// Radio failsafe definitions (FS_THR parameter)
-#define FS_THR_DISABLED                    0
-#define FS_THR_ENABLED_ALWAYS_RTL          1
-#define FS_THR_ENABLED_CONTINUE_MISSION    2
-#define FS_THR_ENABLED_ALWAYS_LAND         3
 
 // Battery failsafe definitions (FS_BATT_ENABLE parameter)
 #define FS_BATT_DISABLED                    0       // battery failsafe disabled
@@ -433,7 +347,3 @@ enum LoiterModeState {
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE      (1<<10)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE (1<<11)
 
-// for PILOT_THR_BHV parameter
-#define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)
-#define THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND (1<<1)
-#define THR_BEHAVE_DISARM_ON_LAND_DETECT (1<<2)
