@@ -32,6 +32,7 @@
 #include "AP_Baro_BMP280.h"
 #include "AP_Baro_HIL.h"
 #include "AP_Baro_MS5611.h"
+#include "AP_Baro_ICM20789.h"
 #include "AP_Baro_qflight.h"
 #include "AP_Baro_QURT.h"
 #if HAL_WITH_UAVCAN
