@@ -1,18 +1,9 @@
 #include "Sub.h"
 
 /*
- * control_auto.pde - init and run calls for auto flight mode
+ * control_auto.cpp
+ *  Contains the mission, waypoint navigation and NAV_CMD item implementation
  *
- * This file contains the implementation for Land, Waypoint navigation and Takeoff from Auto mode
- * Command execution code (i.e. command_logic.pde) should:
- *      a) switch to Auto flight mode with set_mode() function.  This will cause auto_init to be called
- *      b) call one of the three auto initialisation functions: auto_wp_start(), auto_takeoff_start(), auto_land_start()
- *      c) call one of the verify functions auto_wp_verify(), auto_takeoff_verify, auto_land_verify repeated to check if the command has completed
- * The main loop (i.e. fast loop) will call update_flight_modes() which will in turn call auto_run() which, based upon the auto_mode variable will call
- *      correct auto_wp_run, auto_takeoff_run or auto_land_run to actually implement the feature
- */
-
-/*
  *  While in the auto flight mode, navigation or do/now commands can be run.
  *  Code in this file implements the navigation commands
  */

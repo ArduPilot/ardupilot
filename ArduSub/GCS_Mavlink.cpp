@@ -1174,12 +1174,11 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-            // Not supported in sub
-            //        case MAV_CMD_NAV_LAND:
-            //            if (sub.set_mode(LAND, MODE_REASON_GCS_COMMAND)) {
-            //                result = MAV_RESULT_ACCEPTED;
-            //            }
-            //            break;
+        case MAV_CMD_NAV_LAND:
+            if (sub.set_mode(SURFACE, MODE_REASON_GCS_COMMAND)) {
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
 
         case MAV_CMD_CONDITION_YAW:
             // param1 : target angle [0-360]
