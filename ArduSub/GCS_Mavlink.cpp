@@ -130,9 +130,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
-    if (ap.rc_receiver_present) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
-    }
 
     // all present sensors enabled by default except altitude and position control and motors which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
@@ -181,9 +178,7 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
-    if (ap.rc_receiver_present) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
-    }
+
     if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
     }

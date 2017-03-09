@@ -67,11 +67,6 @@ void Sub::init_rc_out()
     motors.init((AP_Motors::motor_frame_class)g.frame_configuration.get(), (AP_Motors::motor_frame_type)0);
     motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 
-    for (uint8_t i = 0; i < 5; i++) {
-        hal.scheduler->delay(20);
-        read_radio();
-    }
-
     // check if we should enter esc calibration mode
     esc_calibration_startup_check();
 
@@ -90,34 +85,6 @@ void Sub::enable_motor_output()
     // enable motors
     motors.enable();
     motors.output_min();
-}
-
-void Sub::read_radio()
-{
-    static uint32_t last_update_ms = 0;
-    uint32_t tnow_ms = millis();
-
-    if (hal.rcin->new_input()) {
-        ap.new_radio_frame = true;
-        RC_Channels::set_pwm_all();
-
-        set_throttle_zero_flag(channel_throttle->get_control_in());
-
-        // flag we must have an rc receiver attached
-        if (!failsafe.rc_override_active) {
-            ap.rc_receiver_present = true;
-        }
-
-        // update output on any aux channels, for manual passthru
-        SRV_Channels::output_ch_all();
-
-        // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
-        radio_passthrough_to_motors();
-
-        float dt = (tnow_ms - last_update_ms)*1.0e-3f;
-        rc_throttle_control_in_filter.apply(channel_throttle->get_control_in(), dt);
-        last_update_ms = tnow_ms;
-    }
 }
 
 #define THROTTLE_ZERO_DEBOUNCE_TIME_MS 400
@@ -141,8 +108,3 @@ void Sub::set_throttle_zero_flag(int16_t throttle_control)
     }
 }
 
-// pass pilot's inputs to motors library (used to allow wiggling servos while disarmed on heli, single, coax copters)
-void Sub::radio_passthrough_to_motors()
-{
-    motors.set_radio_passthrough(channel_roll->get_control_in()/1000.0f, channel_pitch->get_control_in()/1000.0f, channel_throttle->get_control_in()/1000.0f, channel_yaw->get_control_in()/1000.0f);
-}

@@ -50,7 +50,6 @@ Sub::Sub(void) :
           target_rangefinder_alt(0.0f),
           baro_alt(0),
           baro_climbrate(0.0f),
-          rc_throttle_control_in_filter(1.0f),
           auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
           yaw_look_at_WP_bearing(0.0f),
           yaw_look_at_heading(0),
