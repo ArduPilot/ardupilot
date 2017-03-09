@@ -34,8 +34,6 @@
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
 
-#define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52 * 10 * MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
-
 class DataFlash_Class;
 class AP_GPS_Backend;
 
