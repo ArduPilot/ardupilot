@@ -41,6 +41,7 @@
 #define BLEND_MASK_USE_HPOS_ACC     1
 #define BLEND_MASK_USE_VPOS_ACC     2
 #define BLEND_MASK_USE_SPD_ACC      4
+#define BLEND_COUNTER_FAILURE_INCREMENT 10
 
 extern const AP_HAL::HAL &hal;
 
@@ -632,6 +633,12 @@ AP_GPS::update(void)
     // if blending is requested, attempt to calculate weighting for each GPS
     if (_auto_switch == 2) {
         _output_is_blended = calc_blend_weights();
+        // adjust blend health counter
+        if (!_output_is_blended) {
+            _blend_health_counter = MIN(_blend_health_counter+BLEND_COUNTER_FAILURE_INCREMENT, 100);
+        } else if (_blend_health_counter > 0) {
+            _blend_health_counter--;
+        }
     } else {
         _output_is_blended = false;
     }
@@ -913,6 +920,29 @@ AP_GPS::broadcast_first_configuration_failure_reason(void) const {
     } else {
         drivers[unconfigured]->broadcast_configuration_failure_reason();
     }
+}
+
+// pre-arm check that all GPSs are close to each other.  farthest distance between GPSs (in meters) is returned
+bool AP_GPS::all_consistent(float &distance) const
+{
+    // return true immediately if only one valid receiver
+    if (num_instances <= 1 ||
+        drivers[0] == nullptr || _type[0] == GPS_TYPE_NONE ||
+        drivers[1] == nullptr || _type[1] == GPS_TYPE_NONE) {
+        distance = 0;
+        return true;
+    }
+
+    // calculate distance
+    distance = location_3d_diff_NED(state[0].location, state[1].location).length();
+    // success if distance is within 50m
+    return (distance < 50);
+}
+
+// pre-arm check of GPS blending.  True means healthy or that blending is not being used
+bool AP_GPS::blend_healthy() const
+{
+    return (_blend_health_counter < 50);
 }
 
 void
