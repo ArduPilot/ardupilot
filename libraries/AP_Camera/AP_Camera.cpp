@@ -91,7 +91,14 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Values: 0:TriggerLow,1:TriggerHigh
     // @User: Standard
     AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
-    
+
+    // @Param: FEEDBACK_SOURCE
+    // @DisplayName: Camera feedback location source
+    // @Description lalalala
+    // @Values: 0:Normal,1:GPS1,2:GPS2
+    // @User: Standard
+    AP_GROUPINFO("FEEDBACK_SRC", 10, AP_Camera, _feedback_location_source, 0),
+
     AP_GROUPEND
 };
 
@@ -252,22 +259,28 @@ bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
  */
 void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS &ahrs, const Location &current_loc)
 {
+    struct Location loc;
     float altitude, altitude_rel;
-    if (current_loc.flags.relative_alt) {
-        altitude = current_loc.alt+ahrs.get_home().alt;
-        altitude_rel = current_loc.alt;
-    } else {
-        altitude = current_loc.alt;
-        altitude_rel = current_loc.alt - ahrs.get_home().alt;
+
+    if (_feedback_location_source >= 1 && _feedback_location_source <= gps.num_sensors()) {
+        loc = gps.location(_feedback_location_source - 1);
+        altitude = loc.alt;
+        altitude_rel = loc.alt - ahrs.get_home().alt;
+    }
+    else {
+        loc = current_loc;
+        if (loc.flags.relative_alt) {
+            altitude = loc.alt+ahrs.get_home().alt;
+            altitude_rel = loc.alt;
+        } else {
+            altitude = loc.alt;
+            altitude_rel = loc.alt - ahrs.get_home().alt;
+        }
     }
 
-    mavlink_msg_camera_feedback_send(chan, 
-        gps.time_epoch_usec(),
-        0, 0, _image_index,
-        current_loc.lat, current_loc.lng,
-        altitude/100.0f, altitude_rel/100.0f,
-        ahrs.roll_sensor/100.0f, ahrs.pitch_sensor/100.0f, ahrs.yaw_sensor/100.0f,
-        0.0f,CAMERA_FEEDBACK_PHOTO);
+    mavlink_msg_camera_feedback_send(chan, gps.time_epoch_usec(), 0, 0, _image_index,
+       loc.lat, loc.lng, altitude/100.0f, altitude_rel/100.0f, ahrs.roll_sensor/100.0f,
+       ahrs.pitch_sensor/100.0f, ahrs.yaw_sensor/100.0f, 0.0f, CAMERA_FEEDBACK_PHOTO);
 }
 
 
