@@ -312,7 +312,6 @@ private:
     int32_t home_distance;
     // distance between plane and next waypoint in cm.
     uint32_t wp_distance;
-    uint8_t land_state;              // records state of land (flying to location, descending)
 
     // Auto
     AutoMode auto_mode;   // controls which auto controller is run
@@ -605,9 +604,6 @@ private:
     void auto_wp_start(const Location_Class& dest_loc);
     void auto_wp_run();
     void auto_spline_run();
-    void auto_land_start();
-    void auto_land_start(const Vector3f& destination);
-    void auto_land_run();
     void auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
     void auto_circle_start();
     void auto_circle_run();
@@ -789,7 +785,7 @@ private:
 
     bool do_guided(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
-    void do_land(const AP_Mission::Mission_Command& cmd);
+    void do_surface(const AP_Mission::Mission_Command& cmd);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_circle(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
@@ -814,6 +810,7 @@ private:
     void do_gripper(const AP_Mission::Mission_Command& cmd);
 #endif
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool verify_surface(const AP_Mission::Mission_Command& cmd);
     bool verify_circle(const AP_Mission::Mission_Command& cmd);
     bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
 #if NAV_GUIDED == ENABLED
