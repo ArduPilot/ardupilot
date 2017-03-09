@@ -412,7 +412,9 @@ void AP_BoardConfig::px4_setup_peripherals(void)
     }
 
 #if HAL_PX4_HAVE_PX4IO
-    px4_setup_px4io();
+    if (px4.io_enable.get() != 0) {
+        px4_setup_px4io();
+    }
 #endif
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
