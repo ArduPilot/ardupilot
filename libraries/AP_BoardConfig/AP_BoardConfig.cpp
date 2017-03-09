@@ -164,6 +164,16 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, px4.board_type, BOARD_TYPE_DEFAULT),
 #endif
+
+#if HAL_PX4_HAVE_PX4IO
+    // @Param: BRD_IO_ENABLE
+    // @DisplayName: Enable IO co-processor
+    // @Description: This allows for the IO co-processor on FMUv1 and FMUv2 to be disabled
+    // @Values: 0:Disabled,1:Enabled
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("IO_ENABLE", 10, AP_BoardConfig, px4.io_enable, 1),
+#endif
     
     AP_GROUPEND
 };
