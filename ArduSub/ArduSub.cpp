@@ -191,6 +191,8 @@ void Sub::fast_loop()
     // check if ekf has reset target heading
     check_ekf_yaw_reset();
 
+    crash_check(MAIN_LOOP_SECONDS);
+
     // run the attitude controllers
     update_flight_mode();
 
