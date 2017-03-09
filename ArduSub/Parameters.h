@@ -216,17 +216,8 @@ public:
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
 
-
-        // AUX switch options
-        k_param_ch7_option, // Disabled
-        k_param_ch8_option, // Disabled
-        k_param_ch9_option, // Disabled
-        k_param_ch10_option, // Disabled
-        k_param_ch11_option, // Disabled
-        k_param_ch12_option, // Disabled
-
         // RPM Sensor
-        k_param_rpm_sensor, // Disabled
+        k_param_rpm_sensor = 232, // Disabled
 
         // RC_Mapper Library
         k_param_rcmap, // Disabled
@@ -301,12 +292,7 @@ public:
     AP_Int16        radio_tuning_high;
     AP_Int16        radio_tuning_low;
 #endif
-    AP_Int8         ch7_option;
-    AP_Int8         ch8_option;
-    AP_Int8         ch9_option;
-    AP_Int8         ch10_option;
-    AP_Int8         ch11_option;
-    AP_Int8         ch12_option;
+
     AP_Int8         disarm_delay;
 
     AP_Int8         fs_ekf_action;

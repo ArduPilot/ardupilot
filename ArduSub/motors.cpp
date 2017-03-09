@@ -181,11 +181,6 @@ void Sub::lost_vehicle_check()
 {
     static uint8_t soundalarm_counter;
 
-    // disable if aux switch is setup to vehicle alarm as the two could interfere
-    if (check_if_auxsw_mode_used(AUXSW_LOST_VEHICLE_SOUND)) {
-        return;
-    }
-
     // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
     if (ap.throttle_zero && !motors.armed() && (channel_roll->get_control_in() > 4000) && (channel_pitch->get_control_in() > 4000)) {
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
