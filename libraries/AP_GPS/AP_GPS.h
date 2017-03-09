@@ -341,6 +341,12 @@ public:
         return first_unconfigured_gps() == GPS_ALL_CONFIGURED;
     }
 
+    // pre-arm check that all GPSs are close to each other.  farthest distance between GPSs (in meters) is returned
+    bool all_consistent(float &distance) const;
+
+    // pre-arm check of GPS blending.  True means healthy or that blending is not being used
+    bool blend_healthy() const;
+
     // handle sending of initialisation strings to the GPS - only used by backends
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
     void send_blob_update(uint8_t instance);
@@ -469,6 +475,7 @@ private:
     uint32_t _last_time_updated[GPS_MAX_RECEIVERS]; // the last value of state.last_gps_time_ms read for that GPS instance - used to detect new data.
     float _omega_lpf; // cutoff frequency in rad/sec of LPF applied to position offsets
     bool _output_is_blended; // true when a blended GPS solution being output
+    uint8_t _blend_health_counter;  // 0 = perfectly health, 100 = very unhealthy
 
     // calculate the blend weight.  Returns true if blend could be calculated, false if not
     bool calc_blend_weights(void);
