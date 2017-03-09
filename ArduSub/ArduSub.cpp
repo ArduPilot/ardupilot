@@ -50,7 +50,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(gcs_send_deferred,     50,    550),
     SCHED_TASK(gcs_data_stream_send,  50,    550),
     SCHED_TASK(update_mount,          50,     75),
-    SCHED_TASK(camera_tilt_smooth,    50,     50),
     SCHED_TASK(update_trigger,        50,     75),
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
@@ -224,6 +223,7 @@ void Sub::fifty_hz_loop()
     if (hal.rcin->new_input()) {
         // Update servo output
         RC_Channels::set_pwm_all();
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, 20.0f, 0.02f);
         SRV_Channels::output_ch_all();
     }
 }

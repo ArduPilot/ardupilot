@@ -713,7 +713,6 @@ private:
     void init_joystick();
     void transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons);
     void handle_jsbutton_press(uint8_t button,bool shift=false,bool held=false);
-    void camera_tilt_smooth();
     JSButton* get_button(uint8_t index);
     void default_js_buttons(void);
     void set_throttle_zero_flag(int16_t throttle_control);
