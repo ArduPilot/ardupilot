@@ -241,7 +241,7 @@ private:
             uint8_t compass_mot         : 1; // true if we are currently performing compassmot calibration
             uint8_t motor_test          : 1; // true if we are currently performing the motors test
             uint8_t initialised         : 1; // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
-            uint8_t throttle_zero       : 1; // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
+            uint8_t throttle_zero       : 1; // true if the throttle stick is at zero
             uint8_t system_time_set     : 1; // true if the system time has been set from the GPS
             uint8_t gps_base_pos_set    : 1; // true when the gps base position has been set (used for RTK gps only)
             enum HomeState home_state   : 2; // home status (unset, set, locked)
@@ -500,7 +500,6 @@ private:
     void set_simple_mode(uint8_t b);
     void set_failsafe_battery(bool b);
     void set_pre_arm_check(bool b);
-    void update_using_interlock();
     void set_motor_emergency_stop(bool b);
     float get_smoothing_gain();
     void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
@@ -744,13 +743,6 @@ private:
     void print_divider(void);
     void print_enabled(bool b);
     void report_version();
-    bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check);
-    bool check_duplicate_auxsw(void);
-    uint8_t read_3pos_switch(int16_t radio_in);
-    void read_aux_switches();
-    void init_aux_switches();
-    void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag);
-    void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag);
     void save_trim();
     void auto_trim();
     void init_ardupilot();
