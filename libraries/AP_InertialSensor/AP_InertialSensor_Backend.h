@@ -95,6 +95,7 @@ public:
         DEVTYPE_GYR_MPU9250  = 0x24,
         DEVTYPE_GYR_I3G4250D = 0x25,
         DEVTYPE_GYR_LSM9DS1  = 0x26,
+        DEVTYPE_INS_ICM20789 = 0x27
     };
         
 protected:
