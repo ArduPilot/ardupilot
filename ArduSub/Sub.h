@@ -355,7 +355,6 @@ private:
     float target_rangefinder_alt;      // desired altitude in cm above the ground
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s
-    LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
     // Turn counter
     int32_t quarter_turn_count;
@@ -644,7 +643,7 @@ private:
     void stabilize_run();
     bool manual_init(bool ignore_checks);
     void manual_run();
-    void crash_check();
+    void crash_check(uint32_t dt_seconds);
     void ekf_check();
     bool ekf_over_threshold();
     void failsafe_ekf_event();

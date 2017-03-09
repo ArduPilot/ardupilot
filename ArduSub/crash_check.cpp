@@ -4,13 +4,22 @@
 #define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
 #define CRASH_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees beyond angle max is signal we are inverted
 #define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
+#define CRASH_CHECK_ACCEL_LPF_CUTOFF    1.0f    // LPF cutoff frequency for acceleration vector
 
 // crash_check - disarms motors if a crash has been detected
 // crashes are detected by the vehicle being more than 20 degrees beyond it's angle limits continuously for more than 1 second
 // called at MAIN_LOOP_RATE
-void Sub::crash_check()
+void Sub::crash_check(uint32_t dt_seconds)
 {
     static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
+
+    static LowPassFilterVector3f crash_accel_ef_filter(CRASH_CHECK_ACCEL_LPF_CUTOFF); // acceleration for checking if crashed
+
+    // update 1hz filtered acceleration
+    Vector3f accel_ef = ahrs.get_accel_ef_blended();
+    accel_ef.z += GRAVITY_MSS;
+
+    crash_accel_ef_filter.apply(accel_ef, dt_seconds);
 
     // return immediately if disarmed, or crash checking disabled
     if (!motors.armed() || g.fs_crash_check == 0) {
@@ -18,14 +27,14 @@ void Sub::crash_check()
         return;
     }
 
-    // return immediately if we are not in an angle stabilize flight mode
-    if (control_mode == ACRO) {
+    // return immediately if we are not in an angle stabilized flight mode
+    if (control_mode == ACRO || control_mode == MANUAL) {
         crash_counter = 0;
         return;
     }
 
     // vehicle not crashed if 1hz filtered acceleration is more than 3m/s (1G on Z-axis has been subtracted)
-    if (land_accel_ef_filter.get().length() >= CRASH_CHECK_ACCEL_MAX) {
+    if (crash_accel_ef_filter.get().length() >= CRASH_CHECK_ACCEL_MAX) {
         crash_counter = 0;
         return;
     }
