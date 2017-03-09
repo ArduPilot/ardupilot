@@ -31,6 +31,14 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 			do_RTL();
 			break;
 
+        case MAV_CMD_NAV_LOITER_UNLIM:              // Loiter indefinitely
+            do_loiter_unlimited(cmd);
+            break;
+
+        case MAV_CMD_NAV_LOITER_TIME:
+            do_loiter_time(cmd);
+            break;
+
         // Conditional commands
 		case MAV_CMD_CONDITION_DELAY:
 			do_wait_delay(cmd);
@@ -153,21 +161,38 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
 			return verify_RTL();
 
+        case MAV_CMD_NAV_LOITER_UNLIM:
+            return verify_loiter_unlimited(cmd);
+
+        case MAV_CMD_NAV_LOITER_TIME:
+            return verify_loiter_time(cmd);
+
         case MAV_CMD_CONDITION_DELAY:
             return verify_wait_delay();
 
         case MAV_CMD_CONDITION_DISTANCE:
             return verify_within_distance();
 
+        // do commands (always return true)
+        case MAV_CMD_DO_CHANGE_SPEED:
+        case MAV_CMD_DO_SET_HOME:
+        case MAV_CMD_DO_SET_SERVO:
+        case MAV_CMD_DO_SET_RELAY:
+        case MAV_CMD_DO_REPEAT_SERVO:
+        case MAV_CMD_DO_REPEAT_RELAY:
+        case MAV_CMD_DO_CONTROL_VIDEO:
+        case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        case MAV_CMD_DO_DIGICAM_CONTROL:
+        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        case MAV_CMD_DO_SET_ROI:
+            return true;
+
         default:
-            if (cmd.id > MAV_CMD_CONDITION_LAST) {
-                // this is a command that doesn't require verify
-                return true;
-            }
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Unsupported command"));
+            // error message
+            gcs_send_text_fmt(PSTR("Skipping invalid cmd #%i"), cmd.id);
+            // return true if we do not recognize the command so that we move on to the next command
             return true;
 	}
-    return false;
 }
 
 /********************************************************************************/
@@ -183,62 +208,111 @@ void Rover::do_RTL(void)
 
 void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
+    // just starting so we haven't previously reached the waypoint
+    previously_reached_wp = false;
+
     // this will be used to remember the time in millis after we reach or pass the WP.
-    loiter_time = 0;
+    loiter_start_time = 0;
+
     // this is the delay, stored in seconds
-    loiter_time_max = abs(cmd.p1);
+    loiter_duration = cmd.p1;
 
     // this is the distance we travel past the waypoint - not there yet so 0 initially
     distance_past_wp = 0;
 
-	set_next_WP(cmd.content.location);
+    Location cmdloc = cmd.content.location;
+    set_next_WP(cmdloc);
 }
+
+void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
+{
+    active_loiter = true;
+    do_nav_wp(cmd);
+    loiter_duration = 100; // an arbitrary large loiter time
+}
+
+// do_loiter_time - initiate loitering at a point for a given time period
+// if the vehicle is moved off the loiter point (i.e. a boat in a current)
+// then the vehicle will actively return to the loiter coords.
+void Rover::do_loiter_time(const AP_Mission::Mission_Command& cmd)
+{
+    active_loiter = true;
+    do_nav_wp(cmd);
+}
+
 
 /********************************************************************************/
 //  Verify Nav (Must) commands
 /********************************************************************************/
 bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
+    // Have we reached the waypoint i.e. are we within waypoint_radius of the waypoint
     if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
-        // Check if we need to loiter at this waypoint
-        if (loiter_time_max > 0) {
-            if (loiter_time == 0) {  // check if we are just starting loiter
-                gcs_send_text_fmt(PSTR("Reached Waypoint #%i - Loiter for %i seconds"),
+        // check if we are loitering at this waypoint - the message sent to the GCS is different
+        if (loiter_duration > 0) {
+            // Check if this is the first time we have reached the waypoint
+            if (!previously_reached_wp) {
+                gcs_send_text_fmt(PSTR("Reached waypoint #%i. Loiter for %i seconds"),
                                   (unsigned)cmd.index,
-                                  (unsigned)loiter_time_max);
+                                  (unsigned)loiter_duration);
                 // record the current time i.e. start timer
-                loiter_time = millis();
+                loiter_start_time = millis();
+                previously_reached_wp = true;
             }
+
+            distance_past_wp = wp_distance;
+
             // Check if we have loiter long enough
-            if (((millis() - loiter_time) / 1000) < loiter_time_max) {
+            if (((millis() - loiter_start_time) / 1000) < loiter_duration) {
                 return false;
             }
         } else {
-            gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
+            gcs_send_text_fmt(PSTR("Reached waypoint #%i. Distance %um"),
                               (unsigned)cmd.index,
                               (unsigned)get_distance(current_loc, next_WP));
         }
+        // set loiter_duration to 0 so we know we aren't or have finished loitering
+        loiter_duration = 0;
         return true;
     }
 
     // have we gone past the waypoint?
     // We should always go through the waypoint i.e. the above code
-    // first before we go past it.
-    if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        // check if we have gone futher past the wp then last time and output new message if we have
-        if ((uint32_t)distance_past_wp != (uint32_t)get_distance(current_loc, next_WP)) {
-            distance_past_wp = get_distance(current_loc, next_WP);
-            gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
+    // first before we go past it but sometimes we don't.
+    // OR have we reached the waypoint previously be we aren't actively loitering
+    // This second check is required for when we roll past the waypoint radius
+    if (location_passed_point(current_loc, prev_WP, next_WP) ||
+        (!active_loiter && previously_reached_wp)) {
+        // As we have passed the waypoint navigation needs to be done from current location
+        prev_WP = current_loc;
+        // Check if this is the first time we have reached the waypoint even though we have gone past it
+        if (!previously_reached_wp) {
+            gcs_send_text_fmt(PSTR("Reached waypoint #%i. Loiter for %i seconds"),
+                              (unsigned)cmd.index,
+                              (unsigned)loiter_duration);
+            // record the current time i.e. start timer
+            loiter_start_time = millis();
+            previously_reached_wp = true;
+            distance_past_wp = wp_distance;
+        }
+
+        // check if distance to the WP has changed and output new message if it has
+        float dist_to_wp = get_distance(current_loc, next_WP);
+        if ((uint32_t)distance_past_wp != (uint32_t)dist_to_wp) {
+            distance_past_wp = dist_to_wp;
+            gcs_send_text_fmt(PSTR("Passed waypoint #%i. Distance %um"),
                               (unsigned)cmd.index,
                               (unsigned)distance_past_wp);
         }
+
         // Check if we need to loiter at this waypoint
-        if (loiter_time_max > 0) {
-            if (((millis() - loiter_time) / 1000) < loiter_time_max) {
+        if (loiter_duration > 0) {
+            if (((millis() - loiter_start_time) / 1000) < loiter_duration) {
                 return false;
             }
         }
-        distance_past_wp = 0;
+        // set loiter_duration to 0 so we know we aren't or have finished loitering
+        loiter_duration = 0;
         return true;
     }
 
@@ -263,6 +337,27 @@ bool Rover::verify_RTL()
 
     return false;
 }
+
+bool Rover::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
+{
+    // Continually set loiter start time to now so it never finishes
+    loiter_start_time += millis();
+    verify_nav_wp(cmd);
+    return false;
+}
+
+// verify_loiter_time - check if we have loitered long enough
+bool Rover::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
+{
+    bool result = verify_nav_wp(cmd);
+    if (result) {
+        gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Finished active loiter\n"));
+        // if we have finished active loitering - turn it off
+        active_loiter = false;
+    }
+    return result;
+}
+
 
 /********************************************************************************/
 //  Condition (May) commands
