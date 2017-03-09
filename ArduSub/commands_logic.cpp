@@ -569,7 +569,7 @@ bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-// verify_land - returns true if landing has been completed
+// verify_surface - returns true if surface procedure has been completed
 bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
 {
     bool retval = false;
@@ -590,7 +590,6 @@ bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
             break;
 
         case AUTO_SURFACE_STATE_ASCEND:
-            // rely on THROTTLE_LAND mode to correctly update landing status
             if (wp_nav.reached_wp_destination()) {
                 retval = true;
             }

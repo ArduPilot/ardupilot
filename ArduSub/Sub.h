@@ -249,7 +249,6 @@ private:
             enum HomeState home_state   : 2; // home status (unset, set, locked)
             uint8_t using_interlock     : 1; // aux switch motor interlock function is in use
             uint8_t motor_emergency_stop: 1; // motor estop switch, shuts off motors when enabled
-            uint8_t land_repo_active    : 1; // true if the pilot is overriding the landing position
             uint8_t at_bottom           : 1; // true if we are at the bottom
             uint8_t at_surface          : 1; // true if we are at the surface
             uint8_t depth_sensor_present: 1; // true if we have an external baro connected
@@ -342,7 +341,7 @@ private:
     uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
     // Delay the next navigation command
-    int32_t nav_delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
+    int32_t nav_delay_time_max;  // used for delaying the navigation commands
     uint32_t nav_delay_time_start;
 
     // Battery Sensors
@@ -585,7 +584,6 @@ private:
     bool far_from_EKF_origin(const Location& loc);
     void set_system_time_from_GPS();
     void exit_mission();
-    bool verify_land();
     bool verify_loiter_unlimited();
     bool verify_loiter_time();
     bool verify_wait_delay();
@@ -637,7 +635,6 @@ private:
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     void guided_limit_init_time_and_pos();
     bool guided_limit_check();
-    float get_land_descent_speed();
     bool velhold_init(bool ignore_checks);
     void velhold_run();
     bool poshold_init(bool ignore_checks);

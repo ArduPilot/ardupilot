@@ -62,7 +62,6 @@ enum aux_sw_func {
     //    AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
 
     AUXSW_AUTO =                16, // change to auto flight mode
-    AUXSW_LAND =                18, // change to LAND flight mode
     AUXSW_GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
 
     // No parachute for Sub, remove
@@ -75,9 +74,6 @@ enum aux_sw_func {
     AUXSW_ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting
     AUXSW_RETRACT_MOUNT =       27, // Retract Mount
     AUXSW_RELAY =               28, // Relay pin on/off (only supports first relay)
-
-    // No landing gear for sub, remove
-    //    AUXSW_LANDING_GEAR =        29, // Landing gear controller
 
     AUXSW_LOST_VEHICLE_SOUND =   30, // Play lost vehicle sound
     AUXSW_MOTOR_ESTOP =         31, // Emergency Stop Switch
@@ -116,7 +112,7 @@ enum mode_reason_t {
     MODE_REASON_EKF_FAILSAFE,
     MODE_REASON_GPS_GLITCH,
     MODE_REASON_MISSION_END,
-    MODE_REASON_THROTTLE_LAND_ESCAPE,
+    MODE_REASON_THROTTLE_SURFACE_ESCAPE,
     MODE_REASON_FENCE_BREACH,
     MODE_REASON_TERRAIN_FAILSAFE,
     MODE_REASON_SURFACE_COMPLETE,
@@ -145,7 +141,6 @@ enum mode_reason_t {
 // Auto modes
 enum AutoMode {
     Auto_WP,
-    Auto_Land,
     Auto_CircleMoveToEdge,
     Auto_Circle,
     Auto_Spline,
@@ -218,7 +213,6 @@ enum RTLState {
 #define DATA_ARMED                          10
 #define DATA_DISARMED                       11
 #define DATA_AUTO_ARMED                     15
-#define DATA_NOT_LANDED                     28
 #define DATA_LOST_GPS                       19
 #define DATA_SET_HOME                       25
 #define DATA_SET_SIMPLE_ON                  26
@@ -238,7 +232,7 @@ enum RTLState {
 #define DATA_MOTORS_INTERLOCK_DISABLED      56
 #define DATA_MOTORS_INTERLOCK_ENABLED       57
 #define DATA_EKF_ALT_RESET                  60
-#define DATA_LAND_CANCELLED_BY_PILOT        61
+#define DATA_SURFACE_CANCELLED_BY_PILOT     61
 #define DATA_EKF_YAW_RESET                  62
 #define DATA_SURFACED                       63
 #define DATA_NOT_SURFACED                   64
@@ -301,7 +295,7 @@ enum RTLState {
 
 // Battery failsafe definitions (FS_BATT_ENABLE parameter)
 #define FS_BATT_DISABLED                    0       // battery failsafe disabled
-#define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
+#define FS_BATT_SURFACE                     1       // switch to SURFACE mode on battery failsafe
 #define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
