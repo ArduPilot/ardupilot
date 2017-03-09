@@ -91,10 +91,6 @@ void Sub::esc_calibration_passthrough()
         // flash LEDS
         AP_Notify::flags.esc_calibration = true;
 
-        // read pilot input
-        read_radio();
-        hal.scheduler->delay(10);
-
         // pass through to motors
         motors.set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
     }

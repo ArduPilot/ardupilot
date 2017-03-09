@@ -25,8 +25,7 @@
   and the maximum time they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task Sub::scheduler_tasks[] = {
-    SCHED_TASK(rc_loop,              100,    130),
-    SCHED_TASK(throttle_loop,         50,     75),
+    SCHED_TASK(fifty_hz_loop,         50,     75),
     SCHED_TASK(update_GPS,            50,    200),
 #if OPTFLOW == ENABLED
     SCHED_TASK(update_optical_flow,  200,    160),
@@ -213,22 +212,20 @@ void Sub::fast_loop()
     }
 }
 
-// rc_loops - reads user input from transmitter/receiver
-// called at 100hz
-void Sub::rc_loop()
-{
-    // Read radio
-    // -----------------------------------------
-    read_radio();
-    failsafe_manual_control_check();
-}
-
-// throttle_loop - should be run at 50 hz
-// ---------------------------
-void Sub::throttle_loop()
+// 50 Hz tasks
+void Sub::fifty_hz_loop()
 {
     // check auto_armed status
     update_auto_armed();
+
+    // check pilot input failsafe
+    failsafe_manual_control_check();
+
+    if (hal.rcin->new_input()) {
+        // Update servo output
+        RC_Channels::set_pwm_all();
+        SRV_Channels::output_ch_all();
+    }
 }
 
 // update_mount - update camera mount position
@@ -466,12 +463,9 @@ void Sub::update_simple_mode(void)
     float rollx, pitchx;
 
     // exit immediately if no new radio frame or not in simple mode
-    if (ap.simple_mode == 0 || !ap.new_radio_frame) {
+    if (ap.simple_mode == 0) {
         return;
     }
-
-    // mark radio frame as consumed
-    ap.new_radio_frame = false;
 
     if (ap.simple_mode == 1) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
