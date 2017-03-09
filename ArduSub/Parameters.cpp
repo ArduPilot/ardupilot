@@ -894,6 +894,7 @@ void Sub::load_parameters(void)
             AP_Arming::ARMING_CHECK_VOLTAGE |
             AP_Arming::ARMING_CHECK_BATTERY |
             AP_Arming::ARMING_CHECK_LOGGING);
+    AP_Param::set_default_by_name("CIRCLE_RATE", 2.0f);
 }
 
 void Sub::convert_old_parameters(void)

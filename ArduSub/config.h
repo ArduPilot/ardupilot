@@ -68,7 +68,7 @@
 //
 
 #ifndef CIRCLE_NAV_ENABLED
-# define CIRCLE_NAV_ENABLED DISABLED
+# define CIRCLE_NAV_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
