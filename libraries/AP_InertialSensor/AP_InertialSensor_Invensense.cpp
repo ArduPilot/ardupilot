@@ -225,6 +225,7 @@ extern const AP_HAL::HAL& hal;
 #define MPU_WHOAMI_6500			0x70
 #define MPU_WHOAMI_MPU9250      0x71
 #define MPU_WHOAMI_MPU9255      0x73
+#define MPU_WHOAMI_ICM20789     0x03
 
 #define BIT_READ_FLAG                           0x80
 #define BIT_I2C_SLVX_EN                         0x80
@@ -359,6 +360,12 @@ void AP_InertialSensor_Invensense::_fifo_reset()
 {
     uint8_t user_ctrl = _last_stat_user_ctrl;
     user_ctrl &= ~(BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_FIFO_EN);
+
+    if (_mpu_type == Invensense_ICM20789) {
+        // setup to allow for barometer
+        user_ctrl &= ~BIT_USER_CTRL_I2C_MST_EN;
+    }
+    
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
     _register_write(MPUREG_FIFO_EN, 0);
     _register_write(MPUREG_USER_CTRL, user_ctrl);
@@ -410,6 +417,10 @@ void AP_InertialSensor_Invensense::start()
         gdev = DEVTYPE_GYR_MPU6000;
         adev = DEVTYPE_ACC_MPU6000;
         break;
+    case Invensense_ICM20789:
+        gdev = DEVTYPE_INS_ICM20789;
+        adev = DEVTYPE_INS_ICM20789;
+        break;
     }
 
     /*
@@ -432,6 +443,11 @@ void AP_InertialSensor_Invensense::start()
     case Invensense_ICM20602:
         temp_zero = 25;
         temp_sensitivity = 1.0/326.8; 
+        break;
+
+    case Invensense_ICM20789:
+        temp_zero = 25;
+        temp_sensitivity = 0.003;
         break;
     }
 
@@ -490,7 +506,11 @@ void AP_InertialSensor_Invensense::start()
 
     // clear interrupt on any read, and hold the data ready pin high
     // until we clear the interrupt
-    _register_write(MPUREG_INT_PIN_CFG, _register_read(MPUREG_INT_PIN_CFG) | BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
+    uint8_t v = _register_read(MPUREG_INT_PIN_CFG) | BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN;
+    if (_mpu_type == Invensense_ICM20789) {    
+        v &= BIT_BYPASS_EN;
+    }
+    _register_write(MPUREG_INT_PIN_CFG, v);
 
     // now that we have initialised, we set the bus speed to high
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
@@ -865,7 +885,8 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
             // setup for 4kHz accels
             _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_FCHOICE_B, true);
         } else {
-            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_DLPF_CFG_218HZ, true);
+            uint8_t fifo_size = (_mpu_type == Invensense_ICM20789) ? 1:0;
+            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_DLPF_CFG_218HZ | (fifo_size<<6), true);
         }
     }
 }
@@ -892,6 +913,9 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
         return true;
     case MPU_WHOAMI_20602:
         _mpu_type = Invensense_ICM20602;
+        return true;
+    case MPU_WHOAMI_ICM20789:
+        _mpu_type = Invensense_ICM20789;
         return true;
     }
     // not a value WHOAMI result
@@ -945,8 +969,11 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
         /* bus-dependent initialization */
         if ((_dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C) && (_mpu_type == Invensense_MPU9250)) {
             /* Enable I2C bypass to access internal AK8963 */
-            _register_write(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN);
+            if (_mpu_type != Invensense_ICM20789) {
+                _register_write(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN);
+            }
         }
+
 
         // Wake up device and select GyroZ clock. Note that the
         // Invensense starts up in sleep mode, and it can take some time
@@ -1109,6 +1136,11 @@ void AP_Invensense_AuxiliaryBus::_configure_slaves()
 {
     auto &backend = AP_InertialSensor_Invensense::from(_ins_backend);
 
+    if (backend._mpu_type == AP_InertialSensor_Invensense::Invensense_ICM20789) {
+        // on 20789 we can't enable slaves if we want to be able to use the baro
+        return;
+    }
+    
     if (!backend._dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
