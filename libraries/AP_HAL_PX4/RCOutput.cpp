@@ -628,6 +628,11 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
         if (_alt_fd != -1) {
             ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 1);
         }
+        // setup an 8MHz clock. This changes the units for pulse width from 1usec to (1/8)usec
+        ioctl(_pwm_fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
+        if (_alt_fd != -1) {
+            ioctl(_alt_fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
+        }
         break;
     case MODE_PWM_NORMAL:
         ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 0);

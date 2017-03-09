@@ -79,7 +79,8 @@ void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float
 }
 
 /*
-  write to an output channel
+ * write to an output channel
+ * pwm is in usec with range [1000,2000] usec
  */
 void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 {
@@ -87,18 +88,23 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
         // we have a mapped motor number for this channel
         chan = _motor_map[chan];
     }
-    if (_pwm_type == PWM_TYPE_ONESHOT125 && (_motor_fast_mask & (1U<<chan))) {
+    // In oneshot modes, the timer frequency is 8MHz:
+    if (_pwm_type == PWM_TYPE_ONESHOT && (_motor_fast_mask & (1U<<chan))) {
+    	// multiply pwm by 8 to achieve [1000,2000] usec pulse widths
+    	pwm *= 8;
+
+    } else if (_pwm_type == PWM_TYPE_ONESHOT125 && (_motor_fast_mask & (1U<<chan))) {
         // OneShot125 uses a PWM range from 125 to 250 usec
-        pwm /= 8;
+    	// corresponding directly to pwm in the range [1000,2000]
         /*
           OneShot125 ESCs can be confused by pulses below 125 or above
           250, making them fail the pulse type auto-detection. This
           happens at least with BLHeli
         */
-        if (pwm < 125) {
-            pwm = 125;
-        } else if (pwm > 250) {
-            pwm = 250;
+        if (pwm < 1000) {
+            pwm = 1000;
+        } else if (pwm > 2000) {
+            pwm = 2000;
         }
     }
     hal.rcout->write(chan, pwm);
