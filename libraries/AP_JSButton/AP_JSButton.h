@@ -7,9 +7,6 @@ public:
     JSButton();
 
     // Button functions
-    // Value list for parameter convenience:
-    // @Values: 0:Disabled,1:shift,2:arm_toggle,3:arm,4:disarm,5:mode_toggle,6:mode_stab,7:mode_althold,21:mount_center,22:mount_tilt_up,23:mount_tilt_down,24:camera_trigger,25:camera_source_toggle,26:mount_pan_right,27:mount_pan_left,31:light1_cycle,32:lights1_brighter,
-    // 33:lights1_dimmer,34:lights2_cycle,35:lights2_brighter,36:lights2_dimmer,41:gain_toggle,42:gain_inc,43:gain_dec,44:trim_roll_inc,45:trim_roll_dec,46:trim_pitch_inc,47:trim_pitch_dec,48:input_hold_toggle,51:relay_1_on,52:relay_1_off,53:relay_1_toggle,52:relay_2_on,53:relay_2_off,54:relay_2_toggle,91:custom_1,92:custom_2,93:custom_3,94:custom_4,95:custom_5,96:custom_6
     typedef enum {
         k_none                  = 0,            ///< disabled
         k_shift                 = 1,            ///< "shift" buttons to allow more functions
@@ -54,7 +51,17 @@ public:
         k_relay_2_on            = 54,           ///< trigger relay on
         k_relay_2_off           = 55,           ///< trigger relay off
         k_relay_2_toggle        = 56,           ///< trigger relay toggle
-        // 57-90 reserved for future functions
+        // 57-60 reserved for future functions
+        k_servo_1_inc           = 61,           ///< increase servo 1 output
+        k_servo_1_dec           = 62,           ///< decrease servo 1 output
+        k_servo_1_center        = 63,           ///< center servo 1 output
+        k_servo_2_inc           = 64,           ///< increase servo 2 output
+        k_servo_2_dec           = 65,           ///< decrease servo 2 output
+        k_servo_2_center        = 66,           ///< center servo 2 output
+        k_servo_3_inc           = 67,           ///< increase servo 3 output
+        k_servo_3_dec           = 68,           ///< decrease servo 3 output
+        k_servo_3_center        = 69,           ///< center servo 3 output
+        // 70-89 reserved for future functions
         k_custom_1              = 91,           ///< custom user button 1
         k_custom_2              = 92,           ///< custom user button 2
         k_custom_3              = 93,           ///< custom user button 3
