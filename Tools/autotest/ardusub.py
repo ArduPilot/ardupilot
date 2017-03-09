@@ -17,12 +17,7 @@ HOME = mavutil.location(33.810313, -118.393867, 0, 185)
 homeloc = None
 
 
-def wait_ready_to_arm(mavproxy):
-    # wait for EKF and GPS checks to pass
-    mavproxy.expect('IMU0 is using GPS')
-
 def arm_sub(mavproxy, mav):
-    wait_ready_to_arm(mavproxy);
     for i in range(8):
         mavproxy.send('rc %d 1500\n' % (i+1))
 
@@ -32,10 +27,7 @@ def arm_sub(mavproxy, mav):
     print("SUB ARMED")
     return True
 
-def dive_mission(mavproxy, mav, filename):
-    """Dive a mission from a file."""
-    global homeloc
-
+def dive_manual(mavproxy, mav):
     mavproxy.send('rc 3 1600\n')
     mavproxy.send('rc 6 1600\n')
     mavproxy.send('rc 7 1550\n')
@@ -65,12 +57,42 @@ def dive_mission(mavproxy, mav, filename):
     if not wait_distance(mav, 75, accuracy=7, timeout=100):
         return False
     
-    mavproxy.send('rc 7 1500\n')
+    mavproxy.send('rc all 1500\n')
     
-    wait_mode(mav, 'MANUAL')
-    print("Mission OK")
+    mavproxy.send('disarm\n');
+
+    # wait for disarm
+    mav.motors_disarmed_wait()
+    print("Manual dive OK")
     return True
 
+def dive_mission(mavproxy, mav, filename):
+    
+    print("Executing mission %s" % filename)
+    mavproxy.send('wp load %s\n' % filename)
+    mavproxy.expect('Flight plan received')
+    mavproxy.send('wp list\n')
+    mavproxy.expect('Saved [0-9]+ waypoints')
+    
+    if not arm_sub(mavproxy, mav):
+        print("Failed to ARM")
+        return False
+    
+    mavproxy.send('mode auto\n')
+    wait_mode(mav, 'AUTO')
+    
+    if not wait_waypoint(mav, 1, 6, max_dist=5):
+        return False
+    
+    wait_altitude(mav, -1, 1, timeout=3000)
+    
+    mavproxy.send('disarm\n');
+    
+    # wait for disarm
+    mav.motors_disarmed_wait()
+
+    print("Mission OK")
+    return True
 
 def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
     """Dive ArduSub in SITL.
@@ -78,8 +100,6 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the mission in real time
     """
-    global homeloc
-
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
         options += " --out=%s:14550" % viewerip
@@ -143,21 +163,21 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
         mav.wait_heartbeat()
         print("Waiting for GPS fix")
         mav.wait_gps_fix()
-
+        
+        # wait for EKF and GPS checks to pass
+        mavproxy.expect('IMU0 is using GPS')
+        
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
         if not arm_sub(mavproxy, mav):
             print("Failed to ARM")
             failed = True
-        if not dive_mission(mavproxy, mav, os.path.join(testdir, "sub1.txt")):
-            print("Failed mission")
+        if not dive_manual(mavproxy, mav):
+            print("Failed manual dive")
             failed = True
-        
-        mavproxy.send('disarm\n');
-        
-        # wait for disarm
-        mav.motors_disarmed_wait()
-        
+        if not dive_mission(mavproxy, mav, os.path.join(testdir, "sub_mission.txt")):
+            print("Failed auto mission")
+            failed = True
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduSub-log.bin")):
             print("Failed log download")
             failed = True
