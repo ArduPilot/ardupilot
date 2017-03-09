@@ -149,9 +149,6 @@ void Sub::init_ardupilot()
 
     gcs().set_dataflash(&DataFlash);
 
-    // update motor interlock state
-    update_using_interlock();
-
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
     init_joystick();            // joystick initialization
@@ -274,11 +271,6 @@ void Sub::init_ardupilot()
 
     // initialise mission library
     mission.init();
-
-    // initialise the flight mode and aux switch
-    // ---------------------------
-    //    reset_control_switch();
-    init_aux_switches();
 
     startup_INS_ground();
 

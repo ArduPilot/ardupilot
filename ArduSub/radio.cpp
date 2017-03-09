@@ -108,3 +108,41 @@ void Sub::set_throttle_zero_flag(int16_t throttle_control)
     }
 }
 
+// save_trim - adds roll and pitch trims from the radio to ahrs
+void Sub::save_trim()
+{
+    // save roll and pitch trim
+    float roll_trim = ToRad((float)channel_roll->get_control_in()/100.0f);
+    float pitch_trim = ToRad((float)channel_pitch->get_control_in()/100.0f);
+    ahrs.add_trim(roll_trim, pitch_trim);
+    Log_Write_Event(DATA_SAVE_TRIM);
+    gcs_send_text(MAV_SEVERITY_INFO, "Trim saved");
+}
+
+// auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
+// meant to be called continuously while the pilot attempts to keep the vehicle level
+void Sub::auto_trim()
+{
+    if (auto_trim_counter > 0) {
+        auto_trim_counter--;
+
+        // flash the leds
+        AP_Notify::flags.save_trim = true;
+
+        // calculate roll trim adjustment
+        float roll_trim_adjustment = ToRad((float)channel_roll->get_control_in() / 4000.0f);
+
+        // calculate pitch trim adjustment
+        float pitch_trim_adjustment = ToRad((float)channel_pitch->get_control_in() / 4000.0f);
+
+        // add trim to ahrs object
+        // save to eeprom on last iteration
+        ahrs.add_trim(roll_trim_adjustment, pitch_trim_adjustment, (auto_trim_counter == 0));
+
+        // on last iteration restore leds and accel gains to normal
+        if (auto_trim_counter == 0) {
+            AP_Notify::flags.save_trim = false;
+        }
+    }
+}
+

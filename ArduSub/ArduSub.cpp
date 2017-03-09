@@ -31,7 +31,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(update_optical_flow,  200,    160),
 #endif
     SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK(read_aux_switches,     10,     50),
     SCHED_TASK(auto_disarm_check,     10,     50),
     SCHED_TASK(auto_trim,             10,     75),
     SCHED_TASK(read_rangefinder,      20,    100),
@@ -380,8 +379,6 @@ void Sub::one_hz_loop()
     if (!motors.armed()) {
         // make it possible to change ahrs orientation at runtime during initial config
         ahrs.set_orientation();
-
-        update_using_interlock();
 
         // set all throttle channel settings
         motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
