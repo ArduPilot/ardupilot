@@ -31,9 +31,9 @@ protected:
     // NOTE! the following check functions *DO* call into AP_Arming:
     bool ins_checks(bool display_failure) override;
     bool compass_checks(bool display_failure) override;
+    bool gps_checks(bool display_failure) override;
 
     // NOTE! the following check functions *DO NOT* call into AP_Arming!
-    bool gps_checks(bool display_failure);
     bool fence_checks(bool display_failure);
     bool board_voltage_checks(bool display_failure);
     bool parameter_checks(bool display_failure);
