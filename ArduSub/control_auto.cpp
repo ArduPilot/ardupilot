@@ -56,10 +56,6 @@ void Sub::auto_run()
         auto_wp_run();
         break;
 
-    case Auto_Land:
-        auto_land_run();
-        break;
-
     case Auto_Circle:
         auto_circle_run();
         break;
@@ -247,56 +243,6 @@ void Sub::auto_spline_run()
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
     }
-}
-
-// auto_land_start - initialises controller to implement a landing
-void Sub::auto_land_start()
-{
-    // set target to stopping point
-    Vector3f stopping_point;
-    wp_nav.get_loiter_stopping_point_xy(stopping_point);
-
-    // call location specific land start function
-    auto_land_start(stopping_point);
-}
-
-// auto_land_start - initialises controller to implement a landing
-void Sub::auto_land_start(const Vector3f& destination)
-{
-    auto_mode = Auto_Land;
-
-    // initialise loiter target destination
-    wp_nav.init_loiter_target(destination);
-
-    // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
-
-    // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
-}
-
-// auto_land_run - lands in auto mode
-//      called by auto_run at 100hz or more
-void Sub::auto_land_run()
-{
-    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-
-        // set target to current position
-        wp_nav.init_loiter_target();
-        return;
-    }
-
-    // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // land mode replaced by surface mode, does not have this functionality
-    //    land_run_horizontal_control();
-    //    land_run_vertical_control();
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location

@@ -13,6 +13,11 @@
 #define BOTTOM_DETECTOR_TRIGGER_SEC 1.0
 #define SURFACE_DETECTOR_TRIGGER_SEC 1.0
 
+enum AutoSurfaceState {
+    AUTO_SURFACE_STATE_GO_TO_LOCATION,
+    AUTO_SURFACE_STATE_ASCEND
+};
+
 // Autopilot Yaw Mode enumeration
 enum autopilot_yaw_mode {
     AUTO_YAW_HOLD =              0,  // pilot controls the heading
@@ -165,10 +170,6 @@ enum RTLState {
     RTL_FinalDescent,
     RTL_Land
 };
-
-// LAND state
-#define LAND_STATE_FLY_TO_LOCATION  0
-#define LAND_STATE_DESCENDING       1
 
 //  Logging parameters
 #define TYPE_AIRSTART_MSG               0x00
