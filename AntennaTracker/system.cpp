@@ -98,7 +98,7 @@ void Tracker::init_tracker()
     if (fabsf(current_loc.lat) <= 90.0f && fabsf(current_loc.lng) <= 180.0f) {
         current_loc.lat = g.start_latitude * 1.0e7f;
         current_loc.lng = g.start_longitude * 1.0e7f;
-        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("ignoring invalid START_LATITUDE or START_LONGITUDE parameter"));
+        gcs_send_text_P(SEVERITY_MEDIUM, PSTR("ignoring invalid START_LATITUDE or START_LONGITUDE parameter"));
     }
 
     // see if EEPROM has a default location as well
