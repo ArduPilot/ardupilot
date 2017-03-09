@@ -1,3 +1,6 @@
 [submodule "modules/waf"]
 	path = modules/waf
 	url = https://github.com/ArduPilot/waf.git
+[submodule "modules/gtest"]
+	path = modules/gtest
+	url = https://github.com/ArduPilot/googletest.git
