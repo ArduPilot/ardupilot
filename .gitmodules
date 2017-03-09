@@ -4,3 +4,6 @@
 [submodule "modules/gtest"]
 	path = modules/gtest
 	url = https://github.com/ArduPilot/googletest.git
+[submodule "modules/mavlink"]
+	path = modules/mavlink
+	url = https://github.com/ArduPilot/mavlink.git
