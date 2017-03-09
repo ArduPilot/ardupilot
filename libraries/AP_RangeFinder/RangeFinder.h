@@ -53,6 +53,7 @@ public:
         RangeFinder_TYPE_MBSER  = 13,
         RangeFinder_TYPE_TRONE  = 14,
         RangeFinder_TYPE_PLI2CV3= 15,
+        RangeFinder_TYPE_VL53L0X = 16
     };
 
     enum RangeFinder_Function {
