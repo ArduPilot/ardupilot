@@ -30,6 +30,7 @@
  */
 #define GPS_MAX_INSTANCES 2
 #define GPS_RTK_INJECT_TO_ALL 127
+#define GPS_NAVFILTER_DEFAULT GPS_ENGINE_AIRBORNE_4G
 
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
@@ -44,18 +45,6 @@ class AP_GPS_Backend;
 class AP_GPS
 {
 public:
-    // constructor
-	AP_GPS() {
-		AP_Param::setup_object_defaults(this, var_info);
-    }
-
-    /// Startup initialisation.
-    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
-
-    /// Update GPS state based on possible bytes received from the module.
-    /// This routine must be called periodically (typically at 10Hz or
-    /// more) to process incoming data.
-    void update(void);
 
     // GPS driver types
     enum GPS_Type {
@@ -105,6 +94,17 @@ public:
    enum GPS_Config {
        GPS_ALL_CONFIGURED = 255
    };
+
+   // constructor
+   AP_GPS(GPS_Engine_Setting nav_filter_default = GPS_NAVFILTER_DEFAULT);
+
+   /// Startup initialisation.
+   void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
+
+   /// Update GPS state based on possible bytes received from the module.
+   /// This routine must be called periodically (typically at 10Hz or
+   /// more) to process incoming data.
+   void update(void);
 
     /*
       The GPS_State structure is filled in by the backend driver as it
