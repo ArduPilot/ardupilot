@@ -1209,7 +1209,7 @@ bool AP_GPS::calc_blend_weights(void)
     }
 
     // calculate a weighting using the reported vertical position accuracy
-    float vpos_blend_weights[GPS_MAX_RECEIVERS];
+    float vpos_blend_weights[GPS_MAX_RECEIVERS] = {};
     if (vertical_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_VPOS_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_vpos_weights = 0.0f;
@@ -1217,8 +1217,6 @@ bool AP_GPS::calc_blend_weights(void)
             if (state[i].status >= GPS_OK_FIX_3D && state[i].vertical_accuracy > 0.001f) {
                 vpos_blend_weights[i] = vertical_accuracy_sum_sq / (state[i].vertical_accuracy * state[i].vertical_accuracy);
                 sum_of_vpos_weights += vpos_blend_weights[i];
-            } else {
-                vpos_blend_weights[i] = 0.0f;
             }
         }
         // normalise the weights
@@ -1228,14 +1226,10 @@ bool AP_GPS::calc_blend_weights(void)
             }
             sum_of_all_weights += 1.0f;
         };
-    } else {
-        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            vpos_blend_weights[i] = 0.0f;
-        }
     }
 
     // calculate a weighting using the reported speed accuracy
-    float spd_blend_weights[GPS_MAX_RECEIVERS];
+    float spd_blend_weights[GPS_MAX_RECEIVERS] = {};
     if (speed_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_SPD_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_spd_weights = 0.0f;
@@ -1243,8 +1237,6 @@ bool AP_GPS::calc_blend_weights(void)
             if (state[i].status >= GPS_OK_FIX_3D && state[i].speed_accuracy > 0.001f) {
                 spd_blend_weights[i] = speed_accuracy_sum_sq / (state[i].speed_accuracy * state[i].speed_accuracy);
                 sum_of_spd_weights += spd_blend_weights[i];
-            } else {
-                spd_blend_weights[i] = 0.0f;
             }
         }
         // normalise the weights
@@ -1253,10 +1245,6 @@ bool AP_GPS::calc_blend_weights(void)
                 spd_blend_weights[i] = spd_blend_weights[i] / sum_of_spd_weights;
             }
             sum_of_all_weights += 1.0f;
-        }
-    } else {
-        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            spd_blend_weights[i] = 0.0f;
         }
     }
 
