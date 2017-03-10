@@ -139,8 +139,6 @@ class ap_library_check_headers(Task.Task):
     def run(self):
         for n in self.headers:
             s = _remove_comments(n.read())
-            if _macros_re.search(s):
-                raise Errors.WafError('%s: library header uses vehicle-dependent macros' % n.srcpath())
 
     def uid(self):
         try:
