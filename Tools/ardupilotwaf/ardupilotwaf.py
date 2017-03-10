@@ -54,6 +54,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Progmem',
 	'AC_PID',
 	'PID',
+	'APM_OBC',
 ]
 
 def get_legacy_defines(sketch_name):
