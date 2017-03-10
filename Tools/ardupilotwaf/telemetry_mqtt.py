@@ -52,13 +52,19 @@ class mqtt(Task.Task):
         super(mqtt, self).post_run()
 
 def cleanup(bld):
-    print('Cleanup AP_Telemetry/Mqtt direcotry')
+    print('Cleanup Mqtt files from AP_Telemetry direcotry')
     print(os.path.abspath('.'))
-    mqttdir = ('./libraries/AP_Telemetry/Mqtt')
-    files = os.listdir(mqttdir)
-    for f in files:
-        os.remove("{}/{}".format(mqttdir, f))
-    os.rmdir(mqttdir)
+    apdir = ('./libraries/AP_Telemetry')
+    mqttdir = ('./modules/Mqtt/src')
+    apmqttfiles = os.listdir(apdir)
+    mqttfiles = os.listdir(mqttdir)
+    for f in apmqttfiles:
+        if f == 'VersionInfo.h':
+            os.remove("{}/{}".format(apdir, f))
+            continue
+        for m in mqttfiles:
+            if ('.c' in m or '.h' in m) and m == f:
+                os.remove("{}/{}".format(apdir, f))
 
 def options(opt):
     opt.load('python')

@@ -16,6 +16,7 @@
 #include "AP_Telemetry_MQTT.h"
 #include <stdio.h>
 
+#include "MQTTAsync.h"
 extern const AP_HAL::HAL& hal;
 
 AP_Telemetry_MQTT::AP_Telemetry_MQTT(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart) :
