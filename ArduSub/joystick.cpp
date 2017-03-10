@@ -19,6 +19,12 @@ int16_t x_last, y_last, z_last;
 uint16_t buttons_prev;
 float gain;
 bool toggle_mode = true;
+
+// Servo control output channels
+// TODO: Allow selecting output channels
+const uint8_t SERVO_CHAN_1 = 9; // Pixhawk Aux1
+const uint8_t SERVO_CHAN_2 = 10; // Pixhawk Aux2
+const uint8_t SERVO_CHAN_3 = 11; // Pixhawk Aux3
 }
 
 void Sub::init_joystick()
@@ -343,6 +349,82 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             relay.toggle(1);
         }
         break;
+
+    ////////////////////////////////////////////////
+    // Servo functions
+    // TODO: initialize
+    case JSButton::button_function_t::k_servo_1_inc:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_1 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out + 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_1_dec:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_1 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out - 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_1_center:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+        uint16_t pwm_center = (chan->get_output_min() + chan->get_output_max()) / 2;
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, pwm_center); // 1-indexed
+    }
+        break;
+
+    case JSButton::button_function_t::k_servo_2_inc:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_2 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out + 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_2_dec:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_2 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out - 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_2_center:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+        uint16_t pwm_center = (chan->get_output_min() + chan->get_output_max()) / 2;
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, pwm_center); // 1-indexed
+    }
+        break;
+
+    case JSButton::button_function_t::k_servo_3_inc:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_3 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out + 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_3_dec:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_3 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out - 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_3_center:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+        uint16_t pwm_center = (chan->get_output_min() + chan->get_output_max()) / 2;
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, pwm_center); // 1-indexed
+    }
+        break;
+
     case JSButton::button_function_t::k_custom_1:
         // Not implemented
         break;
