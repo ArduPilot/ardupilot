@@ -376,8 +376,8 @@ bool AP_Arming::gps_checks(bool report)
         if (!gps.all_consistent(distance_m)) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,
-                                                 "PreArm: GPSs inconsistent by %4.1fm",
-                                                  (double)distance_m);
+                                                 "PreArm: GPS positions differ by %4.1fm",
+                                                 (double)distance_m);
             }
             return false;
         }
