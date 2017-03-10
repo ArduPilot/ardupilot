@@ -111,7 +111,7 @@ void loop()
 
 #else // Non-APM1:
 #warning AP_ADC_test built as stub for APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 void setup () {}
 void loop () {}
 #endif  // CONFIG_HAL_BOARD
