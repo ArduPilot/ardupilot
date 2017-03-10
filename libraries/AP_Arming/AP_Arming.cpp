@@ -381,7 +381,7 @@ bool AP_Arming::gps_checks(bool report)
             }
             return false;
         }
-        if (!gps.blend_healthy()) {
+        if (!gps.blend_health_check()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: GPS blending unhealthy");
             }
