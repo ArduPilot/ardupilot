@@ -638,6 +638,10 @@ AP_GPS::update(void)
         } else if (_blend_health_counter > 0) {
             _blend_health_counter--;
         }
+        // stop blending if unhealthy
+        if (_blend_health_counter >= 50) {
+            _output_is_blended = false;
+        }
     } else {
         _output_is_blended = false;
         _blend_health_counter = 0;
