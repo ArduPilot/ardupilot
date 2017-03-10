@@ -998,7 +998,7 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
     // see if this fragment is consistent with existing fragments
     if (rtcm_buffer->fragments_received &&
         (rtcm_buffer->sequence != sequence ||
-         rtcm_buffer->fragments_received & (1U<<fragment))) {
+        (rtcm_buffer->fragments_received & (1U<<fragment)))) {
         // we have one or more partial fragments already received
         // which conflict with the new fragment, discard previous fragments
         memset(rtcm_buffer, 0, sizeof(*rtcm_buffer));
