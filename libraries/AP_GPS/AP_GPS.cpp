@@ -943,7 +943,7 @@ bool AP_GPS::all_consistent(float &distance) const
 }
 
 // pre-arm check of GPS blending.  True means healthy or that blending is not being used
-bool AP_GPS::blend_healthy() const
+bool AP_GPS::blend_health_check() const
 {
     return (_blend_health_counter < 50);
 }

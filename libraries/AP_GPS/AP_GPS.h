@@ -345,8 +345,8 @@ public:
     // pre-arm check that all GPSs are close to each other.  farthest distance between GPSs (in meters) is returned
     bool all_consistent(float &distance) const;
 
-    // pre-arm check of GPS blending.  True means healthy or that blending is not being used
-    bool blend_healthy() const;
+    // pre-arm check of GPS blending.  False if blending is unhealthy, True if healthy or blending is not being used
+    bool blend_health_check() const;
 
     // handle sending of initialisation strings to the GPS - only used by backends
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
