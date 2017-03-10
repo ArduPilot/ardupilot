@@ -8,6 +8,7 @@ import sys
 sys.path.insert(0, 'Tools/ardupilotwaf/')
 
 import ardupilotwaf
+import telemetry_mqtt
 import boards
 
 from waflib import Build, ConfigSet, Configure, Context, Utils

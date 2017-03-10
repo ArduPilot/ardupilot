@@ -17,6 +17,7 @@ class mqtt(Task.Task):
     color   = 'BLUE'
 
     def run(self):
+        print('Copy modules/Mqtt to libraries/AP_Telemetry/Mqtt')
         now = datetime.now().strftime('%Y\/%m\/%d %H:%M:%S')
         cpy = self.env.get_flat('INPUT_DIR')
         src = self.inputs[0]
@@ -37,6 +38,7 @@ class mqtt(Task.Task):
         files = os.listdir(src.abspath() + '/src')
         
         for f in files:
+            print("copying {}".format(f))
             if 'VersionInfo.h.in' in f:
                 sedcmd = 'sed -e "s/@CLIENT_VERSION@/{}/g" -e "s/@BUILD_TIMESTAMP@/{}/g" {} > {}'.format(
                     version, now, src.abspath() + '/src/' + f, cpy + '/VersionInfo.h')
@@ -44,16 +46,18 @@ class mqtt(Task.Task):
             if '.c' in f or '.h' in f:
                 self.exec_command('cp {} {}'.format(
                                 src.abspath()+'/src/'+f, cpy))
+        print("copied!")
 
     def post_run(self):
         super(mqtt, self).post_run()
 
 def cleanup(bld):
-    print('Cleanup Mqtt direcotry')
-    mqttdir = self.env.get_flat('INPUT_DIR')
+    print('Cleanup AP_Telemetry/Mqtt direcotry')
+    print(os.path.abspath('.'))
+    mqttdir = ('./libraries/AP_Telemetry/Mqtt')
     files = os.listdir(mqttdir)
     for f in files:
-        os.remove(mqttdir+f)
+        os.remove("{}/{}".format(mqttdir, f))
     os.rmdir(mqttdir)
 
 def options(opt):
