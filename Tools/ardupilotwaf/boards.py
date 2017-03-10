@@ -261,6 +261,8 @@ class avr(Board):
             '-Wl, --gc-sections, --relax, --debug-relax',
             '-Wno-error=double-promotion',
             '-Wno-error=reorder',
+			'-Wno-error=format-security',
+			'-Wno-format-nonliteral',
         ]
 
         cfg.env.CXXFLAGS = [
@@ -288,6 +290,8 @@ class avr(Board):
             '-Wno-error=double-promotion',
             '-Wno-error=reorder',
             '-fno-threadsafe-statics',
+			'-Wno-error=format-security',
+			'-Wno-format-nonliteral',
         ]
 
         env.LIB += [
