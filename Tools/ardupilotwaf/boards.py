@@ -237,7 +237,6 @@ class avr(Board):
             ]
 
         cfg.env.CFLAGS = [
-            '-std=gnu++11',
             '-Os',
             '-ffunction-sections',
             '-fdata-sections',
@@ -266,7 +265,6 @@ class avr(Board):
         ]
 
         cfg.env.CXXFLAGS = [
-            '-std=gnu++11',
             '-Os',
             '-ffunction-sections',
             '-fdata-sections',
