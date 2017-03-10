@@ -17,7 +17,6 @@ SOURCE_EXTS = [
 ]
 
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
-    'AP_AccelCal',
     'AP_ADC',
     'AP_AHRS',
     'AP_Airspeed',
@@ -34,8 +33,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_InertialSensor',
     'AP_Math',
     'AP_Mission',
-    'AP_NavEKF2',
-    'AP_NavEKF3',
+    'AP_NavEKF',
     'AP_Notify',
     'AP_OpticalFlow',
     'AP_Param',
@@ -49,17 +47,13 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'Filter',
     'GCS_MAVLink',
     'RC_Channel',
-    'SRV_Channel',
     'StorageManager',
-    'AP_Tuning',
     'AP_RPM',
-    'AP_RSSI',
     'AP_Mount',
-    'AP_Module',
-    'AP_Button',
-    'AP_ICEngine',
     'AP_Frsky_Telem',
-    'AP_FlashStorage',
+    'AP_Progmem',
+	'AC_PID',
+	'PID',
 ]
 
 def get_legacy_defines(sketch_name):
