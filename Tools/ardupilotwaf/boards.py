@@ -191,6 +191,7 @@ class sitl(Board):
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+			AP_HAL_BOARD_DRIVER = 'AP_HAL_SITL',
         )
 
         if not cfg.env.DEBUG:
@@ -214,6 +215,131 @@ class sitl(Board):
             env.LIB += [
                 'winmm',
             ]
+
+class avr(Board):
+
+    abstract = True
+    toolchain = 'avr'
+
+    def configure_env(self, cfg, env):
+        super(avr, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            AP_AHRS_NAVEKF_AVAILABLE = 0,
+            F_CPU = 16000000,
+            HAL_OS_POSIX_IO = 0,
+			HAL_OS_SOCKETS = 0,
+        )
+
+        if not cfg.env.DEBUG:
+            env.CXXFLAGS += [
+                '-O3',
+            ]
+
+        cfg.env.CFLAGS = [
+            '-std=gnu++11',
+            '-Os',
+            '-ffunction-sections',
+            '-fdata-sections',
+            '-fsigned-char',
+            '-fno-use-cxa-atexit',
+            '-fno-exceptions',
+            '-fpermissive',
+
+            '-Wall',
+            '-Wextra',
+            '-Wformat',
+            '-Wshadow',
+            '-Wpointer-arith',
+            '-Wcast-align',
+            '-Wundef',
+            '-Wno-missing-field-initializers',
+            '-Wno-unused-parameter',
+            '-Wno-redundant-decls',
+            '-Wno-unknown-pragmas',
+            '-Wformat=2',
+            '-Wl, --gc-sections, --relax, --debug-relax',
+            '-Wno-error=double-promotion',
+            '-Wno-error=reorder',
+        ]
+
+        cfg.env.CXXFLAGS = [
+            '-std=gnu++11',
+            '-Os',
+            '-ffunction-sections',
+            '-fdata-sections',
+            '-fno-exceptions',
+            '-fsigned-char',
+            '-fno-use-cxa-atexit',
+            '-fpermissive',
+
+            '-Wformat',
+            '-Wall',
+            '-Wshadow',
+            '-Wpointer-arith',
+            '-Wcast-align',
+            '-Wwrite-strings',
+            '-Wformat=2',
+            '-Wno-unused-parameter',
+            '-Wno-missing-field-initializers',
+            '-Wno-reorder',
+            '-mcall-prologues',
+            '-Wl, --gc-sections, --relax, --debug-relax',
+            '-Wno-error=double-promotion',
+            '-Wno-error=reorder',
+            '-fno-threadsafe-statics',
+        ]
+
+        env.LIB += [
+            'm',
+        ]
+
+        env.AP_LIBRARIES += [
+            'AP_HAL',
+            'AP_HAL_AVR',
+        ]
+
+        env.AP_PROGRAM_AS_STLIB = True
+
+    def build(self, bld):
+        bld.env.SIZE = 0
+        super(avr, self).build(bld)
+
+class apm2(avr):
+    def configure_env(self, cfg, env):
+        super(apm2, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_APM2',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_AVR_APM2',
+            AP_HAL_BOARD_DRIVER = 'AP_HAL_AVR_APM2',
+        )
+
+        cfg.env.CFLAGS += [
+            '-mmcu=atmega2560',
+        ]
+
+        cfg.env.CXXFLAGS += [
+            '-mmcu=atmega2560',
+        ]
+
+class apm1(avr):
+    def configure_env(self, cfg, env):
+        super(apm1, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_APM1',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_AVR_APM1',
+            AP_HAL_BOARD_DRIVER = 'AP_HAL_AVR_APM1',
+        )
+
+        cfg.env.CFLAGS += [
+            '-mmcu=atmega1280',
+        ]
+
+        cfg.env.CXXFLAGS += [
+            '-mmcu=atmega1280',
+        ]
 
 class linux(Board):
     def configure_env(self, cfg, env):
