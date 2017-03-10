@@ -154,6 +154,7 @@ def configure(cfg):
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('uavcangen')
+    cfg.load('telemetry_mqtt')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -242,6 +243,12 @@ def _build_dynamic_sources(bld):
             bld.bldnode.make_node('libraries').abspath(),
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
         ],
+    )
+    
+    bld(
+        features='mqtt',
+        source=bld.path.make_node('/modules/Mqtt/'),
+        input_dir=bld.path.make_node('/libraries/AP_Telemetry/Mqtt/'),
     )
 
     if bld.get_board().with_uavcan:
@@ -341,6 +348,9 @@ def _build_post_funs(bld):
 
     if bld.env.SUBMODULE_UPDATE:
         bld.git_submodule_post_fun()
+    
+    # remove Mqtt from AP_Telemetry directory
+    bld.add_post_fun(telemetry_mqtt.cleanup)
 
 def build(bld):
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
