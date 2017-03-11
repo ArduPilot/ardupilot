@@ -766,6 +766,7 @@ private:
     bool do_guided(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_surface(const AP_Mission::Mission_Command& cmd);
+    void do_RTL(void);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_circle(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
@@ -791,6 +792,7 @@ private:
 #endif
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_surface(const AP_Mission::Mission_Command& cmd);
+    bool verify_RTL(void);
     bool verify_circle(const AP_Mission::Mission_Command& cmd);
     bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
 #if NAV_GUIDED == ENABLED
