@@ -130,9 +130,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
-    if (ap.rc_receiver_present) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
-    }
 
     // all present sensors enabled by default except altitude and position control and motors which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
@@ -146,7 +143,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     case VELHOLD:
     case CIRCLE:
     case SURFACE:
-    case OF_LOITER:
     case POSHOLD:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
@@ -182,9 +178,7 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
-    if (ap.rc_receiver_present) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
-    }
+
     if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
     }
@@ -1175,12 +1169,11 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-            // Not supported in sub
-            //        case MAV_CMD_NAV_LAND:
-            //            if (sub.set_mode(LAND, MODE_REASON_GCS_COMMAND)) {
-            //                result = MAV_RESULT_ACCEPTED;
-            //            }
-            //            break;
+        case MAV_CMD_NAV_LAND:
+            if (sub.set_mode(SURFACE, MODE_REASON_GCS_COMMAND)) {
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
 
         case MAV_CMD_CONDITION_YAW:
             // param1 : target angle [0-360]

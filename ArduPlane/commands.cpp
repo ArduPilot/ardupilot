@@ -111,8 +111,6 @@ void Plane::init_home()
     Log_Write_Home_And_Origin();
     GCS_MAVLINK::send_home_all(gps.location());
 
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "GPS alt: %lu", (unsigned long)home.alt);
-
     // Save Home to EEPROM
     mission.write_home_to_storage();
 

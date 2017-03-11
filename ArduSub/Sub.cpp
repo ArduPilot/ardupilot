@@ -50,8 +50,6 @@ Sub::Sub(void) :
           target_rangefinder_alt(0.0f),
           baro_alt(0),
           baro_climbrate(0.0f),
-          land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
-          rc_throttle_control_in_filter(1.0f),
           auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
           yaw_look_at_WP_bearing(0.0f),
           yaw_look_at_heading(0),
@@ -103,7 +101,10 @@ Sub::Sub(void) :
     sensor_health.compass = true;
 
     failsafe.last_heartbeat_ms = 0;
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     failsafe.manual_control = true;
+#endif
 }
 
 Sub sub;

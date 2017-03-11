@@ -1,5 +1,7 @@
 #include "Sub.h"
 
+static enum AutoSurfaceState auto_surface_state = AUTO_SURFACE_STATE_GO_TO_LOCATION;
+
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -18,7 +20,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
-        do_land(cmd);
+        do_surface(cmd);
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:              // 17 Loiter indefinitely
@@ -174,6 +176,9 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
 
+    case MAV_CMD_NAV_LAND:
+        return verify_surface(cmd);
+
     case MAV_CMD_NAV_LOITER_UNLIM:
         return verify_loiter_unlimited();
 
@@ -282,39 +287,40 @@ void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-// do_land - initiate landing procedure
-void Sub::do_land(const AP_Mission::Mission_Command& cmd)
+// do_surface - initiate surface procedure
+void Sub::do_surface(const AP_Mission::Mission_Command& cmd)
 {
-    // To-Do: check if we have already landed
+    Location_Class target_location;
 
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
-        // set state to fly to location
-        land_state = LAND_STATE_FLY_TO_LOCATION;
+        // set state to go to location
+        auto_surface_state = AUTO_SURFACE_STATE_GO_TO_LOCATION;
 
-        // calculate and set desired location above landing target
+        // calculate and set desired location below surface target
         // convert to location class
-        Location_Class target_loc(cmd.content.location);
+        target_location = Location_Class(cmd.content.location);
 
         // decide if we will use terrain following
         int32_t curr_terr_alt_cm, target_terr_alt_cm;
         if (current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
-                target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
-            curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
+                target_location.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
             // if using terrain, set target altitude to current altitude above terrain
-            target_loc.set_alt_cm(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
+            target_location.set_alt_cm(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
         } else {
             // set target altitude to current altitude above home
-            target_loc.set_alt_cm(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+            target_location.set_alt_cm(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
         }
-        auto_wp_start(target_loc);
     } else {
-        // set landing state
-        land_state = LAND_STATE_DESCENDING;
+        // set surface state to ascend
+        auto_surface_state = AUTO_SURFACE_STATE_ASCEND;
 
-        // initialise landing controller
-        auto_land_start();
+        // Set waypoint destination to current location at zero depth
+        target_location = Location_Class(current_loc.lat, current_loc.lng, 0, Location_Class::ALT_FRAME_ABOVE_HOME);
     }
+
+    // Go to wp location
+    auto_wp_start(target_location);
 }
 
 // do_loiter_unlimited - start loitering with no end conditions
@@ -561,6 +567,43 @@ bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     } else {
         return false;
     }
+}
+
+// verify_surface - returns true if surface procedure has been completed
+bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
+{
+    bool retval = false;
+
+    switch (auto_surface_state) {
+        case AUTO_SURFACE_STATE_GO_TO_LOCATION:
+            // check if we've reached the location
+            if (wp_nav.reached_wp_destination()) {
+                // Set target to current xy and zero depth
+                // TODO get xy target from current wp destination, because current location may be acceptance-radius away from original destination
+                Location_Class target_location(cmd.content.location.lat, cmd.content.location.lng, 0, Location_Class::ALT_FRAME_ABOVE_HOME);
+
+                auto_wp_start(target_location);
+
+                // advance to next state
+                auto_surface_state = AUTO_SURFACE_STATE_ASCEND;
+            }
+            break;
+
+        case AUTO_SURFACE_STATE_ASCEND:
+            if (wp_nav.reached_wp_destination()) {
+                retval = true;
+            }
+            break;
+
+        default:
+            // this should never happen
+            // TO-DO: log an error
+            retval = true;
+            break;
+    }
+
+    // true is returned if we've successfully surfaced
+    return retval;
 }
 
 bool Sub::verify_loiter_unlimited()

@@ -105,11 +105,15 @@ public:
     void inject_data(const uint8_t *data, uint16_t len) override;
     
     bool is_configured(void) {
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         if (!gps._auto_config) {
             return true;
         } else {
             return !_unconfigured_messages;
         }
+#else
+        return true;
+#endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
     }
 
     void broadcast_configuration_failure_reason(void) const override;

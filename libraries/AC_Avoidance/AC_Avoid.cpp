@@ -87,7 +87,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     float alt_diff_cm = 0.0f;   // distance from altitude limit to vehicle in cm (positive means vehicle is below limit)
 
     // calculate distance below fence
-    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && (_fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
         // calculate distance from vehicle to safe altitude
         float veh_alt = get_alt_above_home();
         alt_diff_cm = _fence.get_safe_alt_max() * 100.0f - veh_alt;

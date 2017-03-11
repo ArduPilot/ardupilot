@@ -44,7 +44,6 @@ Copter::Copter(void) :
     super_simple_cos_yaw(1.0),
     super_simple_sin_yaw(0.0f),
     initial_armed_bearing(0),
-    desired_climb_rate(0),
     loiter_time_max(0),
     loiter_time(0),
 #if FRSKY_TELEM_ENABLED == ENABLED
