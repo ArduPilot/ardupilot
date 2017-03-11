@@ -11,7 +11,9 @@
 class Display_SSD1306_I2C: public Display_Backend {
 
 public:
+
     Display_SSD1306_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    ~Display_SSD1306_I2C() override;
 
     bool hw_init() override;
     void hw_update() override;

@@ -28,6 +28,17 @@ Display_SSD1306_I2C::Display_SSD1306_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev) :
     _displaybuffer_sem = hal.util->new_semaphore();
 }
 
+Display_SSD1306_I2C::~Display_SSD1306_I2C()
+{
+    // note that a callback is registered below.  here we delete the
+    // semaphore, in that callback we use it.  That means - don't
+    // delete this Display backend if you've ever registered that
+    // callback!  This delete is only here to not leak memory during
+    // the detection phase.
+    delete _displaybuffer_sem;
+}
+
+
 bool Display_SSD1306_I2C::hw_init()
 {
     struct PACKED {

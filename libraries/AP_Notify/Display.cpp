@@ -297,11 +297,24 @@ bool Display::init(void)
     // initialise driver
     switch (pNotify->_display_type) {
         case DISPLAY_SSD1306:
-            _driver = new Display_SSD1306_I2C(hal.i2c_mgr->get_device(NOTIFY_DISPLAY_I2C_BUS, NOTIFY_DISPLAY_I2C_ADDR));
+            for(uint8_t i=0; i<3; i++) {
+                Display_Backend *tmp_driver = new Display_SSD1306_I2C(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR));
+                if (tmp_driver && tmp_driver->hw_init()) {
+                    _driver = tmp_driver;
+                    break;
+                }
+                delete tmp_driver;
+            }
             break;
-
         case DISPLAY_SH1106:
-            _driver = new Display_SH1106_I2C(hal.i2c_mgr->get_device(NOTIFY_DISPLAY_I2C_BUS, NOTIFY_DISPLAY_I2C_ADDR));
+            for(uint8_t i=0; i<3; i++) {
+                Display_Backend *tmp_driver = new Display_SH1106_I2C(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR));
+                if (tmp_driver && tmp_driver->hw_init()) {
+                    _driver = tmp_driver;
+                    break;
+                }
+                delete tmp_driver;
+            }
             break;
 
         case DISPLAY_OFF:
@@ -309,7 +322,7 @@ bool Display::init(void)
             break;
     }
 
-    if (!_driver || !_driver->hw_init()) {
+    if (_driver == nullptr) {
         _healthy = false;
         return false;
     }
