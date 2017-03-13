@@ -616,14 +616,32 @@ void QuadPlane::init_stabilize(void)
     throttle_wait = false;
 }
 
+
+/*
+  ask the multicopter attitude control to match the roll and pitch rates being demanded by the
+  fixed wing controller if not in a pure VTOL mode
+ */
+void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds, float smooth_gain)
+{
+    if (in_vtol_mode() || is_tailsitter()) {
+        // use euler angle attitude control
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+                                                                      plane.nav_pitch_cd,
+                                                                      yaw_rate_cds,
+                                                                      smooth_gain);
+    } else {
+        // use the fixed wing desired rates
+        float roll_rate = plane.rollController.get_pid_info().desired;
+        float pitch_rate = plane.pitchController.get_pid_info().desired;
+        attitude_control->input_euler_rate_roll_pitch_yaw(roll_rate*100, pitch_rate*100, yaw_rate_cds);
+    }
+}
+
 // hold in stabilize with given throttle
 void QuadPlane::hold_stabilize(float throttle_in)
 {    
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                         plane.nav_pitch_cd,
-                                                                         get_desired_yaw_rate_cds(),
-                                                                         smoothing_gain);
+    multicopter_attitude_rate_update(get_desired_yaw_rate_cds(), smoothing_gain);
 
     if (throttle_in <= 0) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -709,10 +727,7 @@ void QuadPlane::hold_hover(float target_climb_rate)
     pos_control->set_accel_z(pilot_accel_z);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                         plane.nav_pitch_cd,
-                                                                         get_desired_yaw_rate_cds(),
-                                                                         smoothing_gain);
+    multicopter_attitude_rate_update(get_desired_yaw_rate_cds(), smoothing_gain);
 
     // call position controller
     pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, plane.G_Dt, false);
