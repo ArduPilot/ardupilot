@@ -189,6 +189,8 @@ private:
     void guided_update(void);
 
     void check_throttle_suppression(void);
+
+    void run_z_controller(void);
     
     AP_Int16 transition_time_ms;
 
@@ -356,6 +358,9 @@ private:
 
     // time when motors were last active
     uint32_t last_motors_active_ms;
+
+    // time when we last ran the vertical accel controller
+    uint32_t last_pidz_active_ms;
     
     void tiltrotor_slew(float tilt);
     void tiltrotor_binary_slew(bool forward);
