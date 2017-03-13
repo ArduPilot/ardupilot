@@ -163,22 +163,23 @@ void Plane::Log_Write_Attitude(void)
     targets.z = 0;          //Plane does not have the concept of navyaw. This is a placeholder.
 
     DataFlash.Log_Write_Attitude(ahrs, targets);
-    if (quadplane.in_vtol_mode()) {
-        DataFlash.Log_Write_PID(LOG_PIDR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIDP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIDY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIDA_MSG, quadplane.pid_accel_z.get_pid_info() );
-    } else {
+    if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
+        // log quadplane PIDs separately from fixed wing PIDs
+        DataFlash.Log_Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
+        DataFlash.Log_Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
+        DataFlash.Log_Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
+        DataFlash.Log_Write_PID(LOG_PIQA_MSG, quadplane.pid_accel_z.get_pid_info() );
+    }
+
+    DataFlash.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
+    DataFlash.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
+    DataFlash.Log_Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
+    DataFlash.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         const DataFlash_Class::PID_Info *landing_info;
-        DataFlash.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
-        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
-            landing_info = landing.get_pid_info();
-            if (landing_info != nullptr) { // only log LANDING PID's while in landing
-                DataFlash.Log_Write_PID(LOG_PIDL_MSG, *landing_info);
-            }
+        landing_info = landing.get_pid_info();
+        if (landing_info != nullptr) { // only log LANDING PID's while in landing
+            DataFlash.Log_Write_PID(LOG_PIDL_MSG, *landing_info);
         }
     }
 
@@ -500,6 +501,14 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
 #endif
+    { LOG_PIQR_MSG, sizeof(log_PID), \
+      "PIQR", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+    { LOG_PIQP_MSG, sizeof(log_PID), \
+      "PIQP", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+    { LOG_PIQY_MSG, sizeof(log_PID), \
+      "PIQY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+    { LOG_PIQA_MSG, sizeof(log_PID), \
+      "PIQA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
 };
 
 #if CLI_ENABLED == ENABLED
