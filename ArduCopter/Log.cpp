@@ -939,6 +939,7 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
 #if AC_RALLY
     DataFlash.Log_Write_Rally(rally);
 #endif
+    Log_Write_Home_And_Origin();
 }
 
 
