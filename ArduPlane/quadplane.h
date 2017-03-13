@@ -370,7 +370,12 @@ private:
     void tiltrotor_update(void);
     void tiltrotor_continuous_update(void);
     void tiltrotor_binary_update(void);
+    void tilt_compensate_up(float *thrust, uint8_t num_motors);
+    void tilt_compensate_down(float *thrust, uint8_t num_motors);
     void tilt_compensate(float *thrust, uint8_t num_motors);
+    bool is_motor_tilting(uint8_t motor) const {
+        return (((uint8_t)tilt.tilt_mask.get()) & (1U<<motor));
+    }
     bool tiltrotor_fully_fwd(void);
     float tilt_max_change(bool up);
 
