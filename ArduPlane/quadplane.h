@@ -156,6 +156,9 @@ private:
     // initialise throttle_wait when entering mode
     void init_throttle_wait();
 
+    // use multicopter rate controller
+    void multicopter_attitude_rate_update(float yaw_rate_cds, float smoothing_gain);
+    
     // main entry points for VTOL flight modes
     void init_stabilize(void);
     void control_stabilize(void);
