@@ -1,5 +1,33 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5-rc2 13-Mar-2017
+Changes from 3.5-rc1
+1) Improved dual GPS support including blending (set GPS_TYPE2=1, GPS_AUTO_SWITCH=2)
+2) AutoTune with position hold (enter AutoTune from Loiter or PosHold modes to enable light position hold)
+3) New boards/drivers:
+    a) PixhawkMini support
+    b) AUAV2.1 board support (for AUAV2.1 set BRD_TYPE to 20 to distinguish from PixhawkMini)
+    c) Garmin LidarLiteV3 support
+    d) Maxell Smart Battery support
+    e) Invensense ICM-20602 IMU and ST L3GD20H gyro drivers added
+4) IMU to Motor lag reduced by 0.6ms
+5) Object Avoidance:
+    a) support TeraRanger Tower sensor
+    b) support using normal (1-dimensional lidar/sonar)
+6) Minor changes/enhancements:
+    a) add MOT_SPOOL_TIME parameter to allow users to control spool-up time of motors
+    b) remove Solo gimbal from -v2 because of 1MB Flash limit on many Pixhawk1s
+    c) altitude check for Guided mode takeoff (must be at least 1m)
+    d) auxiliary switch to arm/disarm vehicle (set CH7_OPT to 41)
+    e) change battery alarm tone to reduce impact on IMU
+    f) add battery monitor health reporting
+    g) support DO-FENCE-ENABLE mission command to enable/disable fence during missions
+7) Bug Fixes:
+    a) OLED Display clears messages after 10seconds
+    b) Servo Gimbal output range fix (could attempt to push servos beyond their limits)
+    c) fix do-set-servo
+    d) fix dataflash log time (was always appearing as 1970)
+------------------------------------------------------------------
 Copter 3.5-rc1 28-Jan-2017
 Changes from 3.4.4
 1) Multicopter firmware consolidated into single binary, users must set FRAME_CLASS parameter (1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri)
