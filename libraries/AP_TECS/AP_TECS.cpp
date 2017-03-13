@@ -751,6 +751,11 @@ void AP_TECS::_detect_bad_descent(void)
     {
         _flags.badDescent = false;
     }
+
+    // when soaring is active we never trigger a bad descent
+    if (_soaring_controller.is_active() && _soaring_controller.get_throttle_suppressed()) {
+        _flags.badDescent = false;        
+    }
 }
 
 void AP_TECS::_update_pitch(void)
