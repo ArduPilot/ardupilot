@@ -141,7 +141,11 @@ enum log_messages {
     LOG_QTUN_MSG,
     LOG_PARAMTUNE_MSG,
     LOG_THERMAL_MSG,
-    LOG_VARIO_MSG
+    LOG_VARIO_MSG,
+    LOG_PIQR_MSG,
+    LOG_PIQP_MSG,
+    LOG_PIQY_MSG,
+    LOG_PIQA_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
