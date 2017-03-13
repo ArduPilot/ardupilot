@@ -649,6 +649,39 @@ void QuadPlane::control_stabilize(void)
 
 }
 
+// run the multicopter Z controller
+void QuadPlane::run_z_controller(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - last_pidz_active_ms > 2000) {
+        // it has been two seconds since we last ran the Z
+        // controller. We need to assume the integrator may be way off
+
+        // we will set the initial integrator based on airspeed. 
+        float aspeed, airspeed_threshold;
+        if (assist_speed > 0) {
+            airspeed_threshold = assist_speed;
+        } else {
+            airspeed_threshold = plane.aparm.airspeed_min;
+        }
+        if (ahrs.airspeed_estimate(&aspeed)) {
+            // starting at 5m/s below the threshold we ramp up the
+            // amount of integrator suppression until we are at full
+            // suppression of initial vertical integrator at the full
+            // transition airspeed
+            float initial_z_integrator = linear_interpolate(0, -motors->get_throttle_hover()*1000.0f,
+                                                            aspeed,
+                                                            airspeed_threshold-5,
+                                                            airspeed_threshold);
+            pid_accel_z.set_integrator(initial_z_integrator);
+        } else {
+            pid_accel_z.set_integrator(0);
+        }
+    }
+    last_pidz_active_ms = now;
+    pos_control->update_z_controller();    
+}
+
 // init quadplane hover mode 
 void QuadPlane::init_hover(void)
 {
@@ -683,8 +716,7 @@ void QuadPlane::hold_hover(float target_climb_rate)
 
     // call position controller
     pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, plane.G_Dt, false);
-    pos_control->update_z_controller();
-
+    run_z_controller();
 }
 
 /*
@@ -855,7 +887,7 @@ void QuadPlane::control_loiter()
         // update altitude target and call position controller
         pos_control->set_alt_target_from_climb_rate_ff(get_pilot_desired_climb_rate_cms(), plane.G_Dt, false);
     }
-    pos_control->update_z_controller();
+    run_z_controller();
 }
 
 /*
@@ -1535,15 +1567,6 @@ void QuadPlane::vtol_position_controller(void)
             // max_speed will control how fast we will fly. It will always decrease
             poscontrol.max_speed = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01);
             poscontrol.speed_scale = poscontrol.max_speed / MAX(distance, 1);
-
-            // start with low integrator. The alt_hold controller will
-            // add hover throttle to initial integrator. By starting
-            // without it we end up with a smoother startup when
-            // transitioning from fixed wing flight
-            float aspeed;
-            if (ahrs.airspeed_estimate(&aspeed) && aspeed > 6) {
-                pid_accel_z.set_integrator((-motors->get_throttle_hover())*1000.0f);
-            }
         }
 
         // run fixed wing navigation
@@ -1683,7 +1706,7 @@ void QuadPlane::vtol_position_controller(void)
         break;
     }
     
-    pos_control->update_z_controller();
+    run_z_controller();
 }
 
 
@@ -1743,7 +1766,7 @@ void QuadPlane::takeoff_controller(void)
     plane.nav_pitch_cd = pos_control->get_pitch();
     
     pos_control->set_alt_target_from_climb_rate(wp_nav->get_speed_up(), plane.G_Dt, true);
-    pos_control->update_z_controller();
+    run_z_controller();
 }
 
 /*
@@ -1770,7 +1793,7 @@ void QuadPlane::waypoint_controller(void)
     
     // climb based on altitude error
     pos_control->set_alt_target_from_climb_rate_ff(assist_climb_rate_cms(), plane.G_Dt, false);
-    pos_control->update_z_controller();
+    run_z_controller();
 }
 
 
