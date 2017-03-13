@@ -156,6 +156,9 @@ private:
     // initialise throttle_wait when entering mode
     void init_throttle_wait();
 
+    // use multicopter rate controller
+    void multicopter_attitude_rate_update(float yaw_rate_cds, float smoothing_gain);
+    
     // main entry points for VTOL flight modes
     void init_stabilize(void);
     void control_stabilize(void);
@@ -189,6 +192,8 @@ private:
     void guided_update(void);
 
     void check_throttle_suppression(void);
+
+    void run_z_controller(void);
     
     AP_Int16 transition_time_ms;
 
@@ -356,13 +361,21 @@ private:
 
     // time when motors were last active
     uint32_t last_motors_active_ms;
+
+    // time when we last ran the vertical accel controller
+    uint32_t last_pidz_active_ms;
     
     void tiltrotor_slew(float tilt);
     void tiltrotor_binary_slew(bool forward);
     void tiltrotor_update(void);
     void tiltrotor_continuous_update(void);
     void tiltrotor_binary_update(void);
+    void tilt_compensate_up(float *thrust, uint8_t num_motors);
+    void tilt_compensate_down(float *thrust, uint8_t num_motors);
     void tilt_compensate(float *thrust, uint8_t num_motors);
+    bool is_motor_tilting(uint8_t motor) const {
+        return (((uint8_t)tilt.tilt_mask.get()) & (1U<<motor));
+    }
     bool tiltrotor_fully_fwd(void);
     float tilt_max_change(bool up);
 
