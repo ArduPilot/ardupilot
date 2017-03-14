@@ -8,7 +8,7 @@ CWD=$(pwd)
 OPT="/opt"
 
 BASE_PKGS="base-devel ccache git-core gsfonts tk wget"
-SITL_PKGS="python2-pip python-pip wxpython2.8 opencv python2-numpy python2-scipy"
+SITL_PKGS="python2-pip python-pip wxpython opencv python2-numpy python2-scipy"
 PX4_PKGS="lib32-glibc zip zlib ncurses cmake"
 
 PYTHON2_PKGS="future lxml pymavlink MAVProxy argparse matplotlib pyparsing"
