@@ -15,7 +15,7 @@
 #define WPNAV_ACCELERATION_MIN           50.0f      // minimum acceleration in cm/s/s - used for sanity checking _wp_accel parameter
 
 #define WPNAV_LOITER_SPEED              500.0f      // default loiter speed in cm/s
-#define WPNAV_LOITER_SPEED_MIN          100.0f      // minimum loiter speed in cm/s
+#define WPNAV_LOITER_SPEED_MIN           20.0f      // minimum loiter speed in cm/s
 #define WPNAV_LOITER_ACCEL              250.0f      // default acceleration in loiter mode
 #define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
 #define WPNAV_LOITER_JERK_MAX_DEFAULT  1000.0f      // maximum jerk in cm/s/s/s in loiter mode
