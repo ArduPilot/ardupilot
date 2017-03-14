@@ -37,6 +37,7 @@ public:
         MOTOR_FRAME_SINGLE = 8,
         MOTOR_FRAME_COAX = 9,
         MOTOR_FRAME_TAILSITTER = 10,
+        MOTOR_FRAME_HELI_DUAL = 11,
     };
     enum motor_frame_type {
         MOTOR_FRAME_TYPE_PLUS = 0,
