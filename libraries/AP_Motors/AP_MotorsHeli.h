@@ -11,9 +11,6 @@
 #include "AP_Motors_Class.h"
 #include "AP_MotorsHeli_RSC.h"
 
-// maximum number of swashplate servos
-#define AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS    3
-
 // servo output rates
 #define AP_MOTORS_HELI_SPEED_DEFAULT            125     // default servo update rate for helicopters
 
@@ -120,6 +117,11 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t get_motor_mask() = 0;
 
+    virtual void set_acro_tail(bool set) {}
+
+    // ext_gyro_gain - set external gyro gain in range 0 ~ 1
+    virtual void ext_gyro_gain(float gain) {}
+    
     // output - sends commands to the motors
     void output();
 
@@ -205,9 +207,6 @@ protected:
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
 
     // internal variables
-    float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
-    float           _pitchFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
-    float           _collectiveFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     float           _collective_mid_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 };
