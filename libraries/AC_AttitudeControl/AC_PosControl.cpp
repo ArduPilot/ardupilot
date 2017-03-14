@@ -273,6 +273,12 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
         }
     }
 
+    // avoid divide by zero by using current position if kP is very low or acceleration is zero
+    if (_p_pos_z.kP() <= 0.0f || _accel_z_cms <= 0.0f) {
+        stopping_point.z = curr_pos_z;
+        return;
+    }
+
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
     linear_velocity = _accel_z_cms/_p_pos_z.kP();
 
