@@ -396,7 +396,6 @@ void Display::update()
 
 void Display::update_all()
 {
-
     update_text(0);
     update_mode(1);
     update_battery(2);
@@ -468,8 +467,8 @@ void Display::update_prearm(uint8_t r)
 
 void Display::update_gps(uint8_t r)
 {
-	static const char * gpsfixname[] = {"Other", "NoGPS","NoFix","2D","3D","DGPS", "RTK f", "RTK F"};
-	char msg [DISPLAY_MESSAGE_SIZE];
+    static const char * gpsfixname[] = {"Other", "NoGPS","NoFix","2D","3D","DGPS", "RTK f", "RTK F"};
+    char msg [DISPLAY_MESSAGE_SIZE];
     const char * fixname;
     switch  (AP_Notify::flags.gps_status) {
         case AP_GPS::NO_GPS:
@@ -498,7 +497,7 @@ void Display::update_gps(uint8_t r)
             break;
     }
     snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%-5s Sats:%2u", fixname, AP_Notify::flags.gps_num_sats) ;
-	draw_text(COLUMN(0), ROW(r), msg);
+    draw_text(COLUMN(0), ROW(r), msg);
 }
 
 void Display::update_gps_sats(uint8_t r)
@@ -519,18 +518,18 @@ void Display::update_ekf(uint8_t r)
 
 void Display::update_battery(uint8_t r)
 {
-	char msg [DISPLAY_MESSAGE_SIZE];
-	snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP_Notify::flags.battery_voltage) ;
-	draw_text(COLUMN(0), ROW(r), msg);
+    char msg [DISPLAY_MESSAGE_SIZE];
+    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP_Notify::flags.battery_voltage) ;
+    draw_text(COLUMN(0), ROW(r), msg);
  }
 
 void Display::update_mode(uint8_t r)
 {
-	char msg [DISPLAY_MESSAGE_SIZE];
-	if (pNotify->get_flight_mode_str()) {
-	    snprintf(msg, DISPLAY_MESSAGE_SIZE, "Mode: %s", pNotify->get_flight_mode_str()) ;
-	    draw_text(COLUMN(0), ROW(r), msg);
-	}
+    char msg [DISPLAY_MESSAGE_SIZE];
+    if (pNotify->get_flight_mode_str()) {
+        snprintf(msg, DISPLAY_MESSAGE_SIZE, "Mode: %s", pNotify->get_flight_mode_str()) ;
+        draw_text(COLUMN(0), ROW(r), msg);
+    }
 }
 
 void Display::update_text_empty(uint8_t r)
