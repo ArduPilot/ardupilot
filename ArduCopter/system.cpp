@@ -472,7 +472,8 @@ bool Copter::should_log(uint32_t mask)
 // default frame_class to match firmware if possible
 void Copter::set_default_frame_class()
 {
-    if (FRAME_CONFIG == HELI_FRAME) {
+    if (FRAME_CONFIG == HELI_FRAME &&
+        g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_DUAL) {
         g2.frame_class.set(AP_Motors::MOTOR_FRAME_HELI);
     }
 }
@@ -491,6 +492,7 @@ uint8_t Copter::get_frame_mav_type()
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
             return MAV_TYPE_OCTOROTOR;
         case AP_Motors::MOTOR_FRAME_HELI:
+        case AP_Motors::MOTOR_FRAME_HELI_DUAL:
             return MAV_TYPE_HELICOPTER;
         case AP_Motors::MOTOR_FRAME_TRI:
             return MAV_TYPE_TRICOPTER;
@@ -519,6 +521,8 @@ const char* Copter::get_frame_string()
             return "OCTA_QUAD";
         case AP_Motors::MOTOR_FRAME_HELI:
             return "HELI";
+        case AP_Motors::MOTOR_FRAME_HELI_DUAL:
+            return "HELI_DUAL";
         case AP_Motors::MOTOR_FRAME_TRI:
             return "TRI";
         case AP_Motors::MOTOR_FRAME_SINGLE:
@@ -538,8 +542,6 @@ const char* Copter::get_frame_string()
  */
 void Copter::allocate_motors(void)
 {
-    const struct AP_Param::GroupInfo *var_info;
-    
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
 #if FRAME_CONFIG != HELI_FRAME
         case AP_Motors::MOTOR_FRAME_QUAD:
@@ -549,30 +551,36 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
         default:
             motors = new AP_MotorsMatrix(MAIN_LOOP_RATE);
-            var_info = AP_MotorsMatrix::var_info;
+            motors_var_info = AP_MotorsMatrix::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_TRI:
             motors = new AP_MotorsTri(MAIN_LOOP_RATE);
-            var_info = AP_MotorsTri::var_info;
+            motors_var_info = AP_MotorsTri::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
             break;
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = new AP_MotorsSingle(MAIN_LOOP_RATE);
-            var_info = AP_MotorsSingle::var_info;
+            motors_var_info = AP_MotorsSingle::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_COAX:
             motors = new AP_MotorsCoax(MAIN_LOOP_RATE);
-            var_info = AP_MotorsCoax::var_info;
+            motors_var_info = AP_MotorsCoax::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
             motors = new AP_MotorsTailsitter(MAIN_LOOP_RATE);
-            var_info = AP_MotorsTailsitter::var_info;
+            motors_var_info = AP_MotorsTailsitter::var_info;
             break;
 #else // FRAME_CONFIG == HELI_FRAME
+        case AP_Motors::MOTOR_FRAME_HELI_DUAL:
+            motors = new AP_MotorsHeli_Dual(MAIN_LOOP_RATE);
+            motors_var_info = AP_MotorsHeli_Dual::var_info;
+            AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
+            break;
+            
         case AP_Motors::MOTOR_FRAME_HELI:
         default:
             motors = new AP_MotorsHeli_Single(MAIN_LOOP_RATE);
-            var_info = AP_MotorsHeli_Single::var_info;
+            motors_var_info = AP_MotorsHeli_Single::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
             break;            
 #endif
@@ -580,24 +588,26 @@ void Copter::allocate_motors(void)
     if (motors == nullptr) {
         AP_HAL::panic("Unable to allocate FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
     }
-    AP_Param::load_object_from_eeprom(motors, var_info);
+    AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
     AP_AHRS_View *ahrs_view = ahrs.create_view(ROTATION_NONE);
     if (ahrs_view == nullptr) {
         AP_HAL::panic("Unable to allocate AP_AHRS_View");
     }
-    
+
+    const struct AP_Param::GroupInfo *ac_var_info;
+
 #if FRAME_CONFIG != HELI_FRAME
     attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
-    var_info = AC_AttitudeControl_Multi::var_info;
+    ac_var_info = AC_AttitudeControl_Multi::var_info;
 #else
     attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
-    var_info = AC_AttitudeControl_Heli::var_info;
+    ac_var_info = AC_AttitudeControl_Heli::var_info;
 #endif
     if (attitude_control == nullptr) {
         AP_HAL::panic("Unable to allocate AttitudeControl");
     }
-    AP_Param::load_object_from_eeprom(attitude_control, var_info);
+    AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
         
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control,
                                     g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
