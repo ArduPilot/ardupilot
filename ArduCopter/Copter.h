@@ -336,12 +336,13 @@ private:
 
     // Motor Output
 #if FRAME_CONFIG == HELI_FRAME
- #define MOTOR_CLASS AP_MotorsHeli_Single
+ #define MOTOR_CLASS AP_MotorsHeli
 #else
  #define MOTOR_CLASS AP_MotorsMulticopter
 #endif
 
     MOTOR_CLASS *motors;
+    const struct AP_Param::GroupInfo *motors_var_info;
 
     // GPS variables
     // Sometimes we need to remove the scaling for distance calcs
