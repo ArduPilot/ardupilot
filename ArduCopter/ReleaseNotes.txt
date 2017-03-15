@@ -1,5 +1,9 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.6 15-Mar-2017
+Changes from 3.4.5
+1) ensure WPNAV_LOIT_SPEED is non-zero to avoid divide-by-zero
+------------------------------------------------------------------
 Copter 3.4.5 11-Feb-2017
 Changes from 3.4.4
 1) Bug fix to Guided mode that could lead to crash after take-off completes if MOT_THST_HOVER too high 
