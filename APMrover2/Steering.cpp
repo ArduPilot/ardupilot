@@ -93,9 +93,10 @@ bool Rover::in_stationary_loiter()
         if (active_loiter && (wp_distance > g.waypoint_radius)) {
             return false;
         }
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 
