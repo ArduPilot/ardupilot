@@ -41,7 +41,7 @@ sudo pip3 -q install -U $PYTHON3_PKGS
 yaourt -S --needed --noconfirm $ARCH_AUR_PKGS
 
 wget https://www.archlinux.org/packages/multilib/x86_64/lib32-glibc/download/ -O /tmp/lib32-glibc.tar.xz
-sudo pacman -U /tmp/lib32-glibc.tar.xz
+sudo pacman -U --noconfirm /tmp/lib32-glibc.tar.xz
 
 (
  cd /usr/lib/ccache
