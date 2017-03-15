@@ -5,7 +5,7 @@
 #define ROW(Y)    ((Y * 10) + 6)
 #define COLUMN(X) ((X *  7) + 0)
 
-#define DISPLAY_MESSAGE_SIZE 18
+#define DISPLAY_MESSAGE_SIZE 19
 
 class Display_Backend;
 
