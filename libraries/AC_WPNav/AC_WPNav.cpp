@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @DisplayName: Waypoint Climb Speed Target
     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain while climbing during a WP mission
     // @Units: cm/s
-    // @Range: 0 1000
+    // @Range: 10 1000
     // @Increment: 50
     // @User: Standard
     AP_GROUPINFO("SPEED_UP",    2, AC_WPNav, _wp_speed_up_cms, WPNAV_WP_SPEED_UP),
@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @DisplayName: Waypoint Descent Speed Target
     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain while descending during a WP mission
     // @Units: cm/s
-    // @Range: 0 500
+    // @Range: 10 500
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("SPEED_DN",    3, AC_WPNav, _wp_speed_down_cms, WPNAV_WP_SPEED_DOWN),
