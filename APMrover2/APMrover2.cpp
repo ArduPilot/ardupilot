@@ -101,6 +101,8 @@ void Rover::setup()
     notify.init(false);
 
     AP_Notify::flags.failsafe_battery = false;
+
+    in_auto_reverse = false;
     
     rssi.init();
 
@@ -430,12 +432,18 @@ void Rover::update_current_mode(void)
     switch (control_mode){
     case AUTO:
     case RTL:
+        if (!in_auto_reverse) {
+            set_reverse(false);
+        }
         calc_lateral_acceleration();
         calc_nav_steer();
         calc_throttle(g.speed_cruise);
         break;
 
     case GUIDED: {
+        if (!in_auto_reverse) {
+            set_reverse(false);
+        }
         switch (guided_mode){
         case Guided_Angle:
             nav_set_yaw_speed();
@@ -502,6 +510,7 @@ void Rover::update_current_mode(void)
           we set the exact value in set_servos(), but it helps for
           logging
          */
+        in_auto_reverse = false;
         channel_throttle->set_servo_out(channel_throttle->get_control_in());
         channel_steer->set_servo_out(channel_steer->pwm_to_angle());
 
@@ -514,6 +523,9 @@ void Rover::update_current_mode(void)
         // hold position - stop motors and center steering
         channel_throttle->set_servo_out(0);
         channel_steer->set_servo_out(0);
+        if (!in_auto_reverse) {
+            set_reverse(false);
+        }
         break;
 
     case INITIALISING:
