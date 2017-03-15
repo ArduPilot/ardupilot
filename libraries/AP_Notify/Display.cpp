@@ -424,7 +424,7 @@ void Display::update_prearm(uint8_t r)
 void Display::update_gps(uint8_t r)
 {
 	static const char * gpsfixname[] = {"Other", "NoGPS","NoFix","2D","3D","DGPS", "RTK f", "RTK F"};
-	char msg [DISPLAY_MESSAGE_SIZE];
+	char msg [DISPLAY_MESSAGE_SIZE - 1];
     const char * fixname;
     switch  (AP_Notify::flags.gps_status) {
         case AP_GPS::NO_GPS:
@@ -474,14 +474,14 @@ void Display::update_ekf(uint8_t r)
 
 void Display::update_battery(uint8_t r)
 {
-	char msg [DISPLAY_MESSAGE_SIZE];
+	char msg [DISPLAY_MESSAGE_SIZE - 1];
 	snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP_Notify::flags.battery_voltage) ;
 	draw_text(COLUMN(0), ROW(r), msg);
  }
 
 void Display::update_mode(uint8_t r)
 {
-	char msg [DISPLAY_MESSAGE_SIZE];
+	char msg [DISPLAY_MESSAGE_SIZE - 1];
 	if (pNotify->get_flight_mode_str()) {
 	    snprintf(msg, DISPLAY_MESSAGE_SIZE, "Mode: %s", pNotify->get_flight_mode_str()) ;
 	    draw_text(COLUMN(0), ROW(r), msg);
@@ -499,8 +499,8 @@ void Display::update_text_empty(uint8_t r)
 
 void Display::update_text(uint8_t r)
 {
-    char msg [DISPLAY_MESSAGE_SIZE];
-    char txt [NOTIFY_TEXT_BUFFER_SIZE];
+    char msg [DISPLAY_MESSAGE_SIZE] = {0};
+    char txt [NOTIFY_TEXT_BUFFER_SIZE] = {0};
 
     const bool text_is_valid = AP_HAL::millis() - pNotify->_send_text_updated_millis < _send_text_valid_millis;
     if (!text_is_valid) {
