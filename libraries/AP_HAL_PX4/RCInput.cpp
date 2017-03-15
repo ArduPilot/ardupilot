@@ -26,7 +26,15 @@ void PX4RCInput::init()
 bool PX4RCInput::new_input()
 {
     pthread_mutex_lock(&rcin_mutex);
-    bool valid = _rcin.timestamp_last_signal != _last_read || _override_valid;
+    bool valid = _rcin.timestamp_last_signal != _last_read;
+    if (_rcin.rc_failsafe) {
+        // don't consider input valid if we are in RC failsafe.
+        valid = false;
+    }
+    if (_override_valid) {
+        // if we have RC overrides active, then always consider it valid
+        valid = true;
+    }
     _last_read = _rcin.timestamp_last_signal;
     _override_valid = false;
     pthread_mutex_unlock(&rcin_mutex);
