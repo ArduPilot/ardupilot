@@ -284,6 +284,9 @@ void Rover::set_mode(enum mode mode)
     control_mode = mode;
     throttle_last = 0;
     throttle = 500;
+    if (!in_auto_reverse) {
+        set_reverse(false);
+    }
     g.pidSpeedThrottle.reset_I();
 
 #if FRSKY_TELEM_ENABLED == ENABLED
