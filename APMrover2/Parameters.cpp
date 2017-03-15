@@ -265,7 +265,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Description: What to do on a crash event. When enabled the rover will go to hold if a crash is detected.
     // @Values: 0:Disabled,1:HOLD,2:HoldAndDisarm
     // @User: Standard
-    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    FS_CRASH_HOLD),
+    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    FS_CRASH_DISABLE),
 
     // @Param: RNGFND_TRIGGR_CM
     // @DisplayName: Rangefinder trigger distance
