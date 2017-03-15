@@ -101,6 +101,8 @@ void Rover::setup()
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
+    in_auto_reverse = false;
+    
     rssi.init();
 
     init_ardupilot();
@@ -437,12 +439,18 @@ void Rover::update_current_mode(void)
     switch (control_mode){
     case AUTO:
     case RTL:
+        if (!in_auto_reverse) {
+            set_reverse(false);
+        }
         calc_lateral_acceleration();
         calc_nav_steer();
         calc_throttle(g.speed_cruise);
         break;
 
     case GUIDED: {
+        if (!in_auto_reverse) {
+            set_reverse(false);
+        }
         switch (guided_mode){
         case Guided_Angle:
             nav_set_yaw_speed();
@@ -510,6 +518,7 @@ void Rover::update_current_mode(void)
           we set the exact value in set_servos(), but it helps for
           logging
          */
+        in_auto_reverse = false;
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,channel_throttle->get_control_in());
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering,channel_steer->get_control_in());
 
@@ -522,6 +531,9 @@ void Rover::update_current_mode(void)
         // hold position - stop motors and center steering
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,0);
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering,0);
+        if (!in_auto_reverse) {
+            set_reverse(false);
+        }
         break;
 
     case INITIALISING:

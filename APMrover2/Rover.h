@@ -360,6 +360,9 @@ private:
     // set if we are driving backwards
     bool in_reverse;
 
+    // set if the users asks for auto reverse
+    bool in_auto_reverse;
+
     static const AP_Scheduler::Task scheduler_tasks[];
 
     // use this to prevent recursion during sensor init
