@@ -536,15 +536,15 @@ void Display::update_text_empty(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE] = {};
     memset(msg, ' ', sizeof(msg)-1);
-    _movedelay = 0;
+    _movedelay = 4;
     _mstartpos = 0;
     draw_text(COLUMN(0), ROW(r), msg);
 }
 
 void Display::update_text(uint8_t r)
 {
-    char msg [DISPLAY_MESSAGE_SIZE];
-    char txt [NOTIFY_TEXT_BUFFER_SIZE];
+    char msg [DISPLAY_MESSAGE_SIZE] = {0};
+    char txt [NOTIFY_TEXT_BUFFER_SIZE] = {0};
 
     const bool text_is_valid = AP_HAL::millis() - pNotify->_send_text_updated_millis < _send_text_valid_millis;
     if (!text_is_valid) {
@@ -554,7 +554,7 @@ void Display::update_text(uint8_t r)
 
     snprintf(txt, NOTIFY_TEXT_BUFFER_SIZE, "%s", pNotify->get_text());
     _mstartpos++;
-    for (uint8_t i = 0; i < sizeof(msg); i++) {
+    for (uint8_t i = 0; i < (sizeof(msg) - 1); i++) {
         if (txt[i + _mstartpos - 1] != 0) {
             msg[i] = txt[i + _mstartpos - 1];
         } else {
