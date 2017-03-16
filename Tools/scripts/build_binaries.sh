@@ -403,7 +403,7 @@ build_rover() {
             error_count=$((error_count+1))
             continue
         }
-        copyit $BUILDROOT/$b/bin/ardurover $ddir $tag "APMRover2"
+        copyit $BUILDROOT/$b/bin/ardurover $ddir $tag "APMrover2"
         touch $binaries/Rover/$tag
     done
     pushd APMrover2
