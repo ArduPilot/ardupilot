@@ -10,38 +10,56 @@ set -x
 
 . ~/.profile
 
-# If TRAVIS_BUILD_TARGET is not set, default to all of them
-if [ -z "$TRAVIS_BUILD_TARGET" ]; then
-    TRAVIS_BUILD_TARGET="sitl linux apm2 navio"
-fi
+# CXX and CC are exported by default by travis
+c_compiler=${CC:-gcc}
+cxx_compiler=${CXX:-g++}
+unset CXX CC
+
+# Override CI_BUILD_TARGET
+CI_BUILD_TARGET="sitl apm1 apm2"
 
 declare -A build_platforms
 declare -A build_concurrency
-declare -A build_extra_clean
+declare -A waf_supported_boards
 
-build_platforms=(  ["ArduPlane"]="apm2 navio sitl linux"
-                   ["ArduCopter"]="navio sitl linux"
-                   ["APMrover2"]="apm2 navio sitl linux"
-                   ["AntennaTracker"]="apm2 navio sitl linux"
-                   ["Tools/Replay"]="linux")
+build_platforms=(  ["plane"]="sitl apm1 apm2"
+                   ["copter"]="sitl"
+                   ["rover"]="sitl apm1 apm2"
+                   ["antennatracker"]="sitl apm1 apm2")
 
-build_concurrency=(["apm2"]="-j2"
-                   ["navio"]="-j2"
-                   ["sitl"]="-j2"
-                   ["linux"]="-j2")
+build_concurrency=(["sitl"]="-j2"
+                   ["apm2"]="-j2"
+                   ["apm1"]="-j2")
 
-echo "Targets: $TRAVIS_BUILD_TARGET"
-for t in $TRAVIS_BUILD_TARGET; do
+waf=modules/waf/waf-light
+
+# get list of boards supported by the waf build
+for board in $($waf list_boards | head -n1); do waf_supported_boards[$board]=1; done
+
+echo "Targets: $CI_BUILD_TARGET"
+
+$waf distclean
+for t in $CI_BUILD_TARGET; do
+
+    echo "Starting waf build for board ${t}..."
+	$waf configure --board $t
+	$waf clean
+
     for v in ${!build_platforms[@]}; do
         if [[ ${build_platforms[$v]} != *$t* ]]; then
             continue
         fi
+
         echo "Building $v for ${t}..."
+		$waf ${build_concurrency[$t]} $v
 
-        pushd $v
-        make clean
-
-        make $t ${build_concurrency[$t]}
-        popd
     done
+
+	if [ $t != "sitl" ]; then
+		$waf ${build_concurrency[$t]} examples
+	fi
+
 done
+
+echo build OK
+exit 0

@@ -4,102 +4,67 @@
 set -e
 set -v
 
-CWD=$(pwd)
-OPT="$HOME/opt"
-echo "PATH=$PATH"
+# Disable ccache for the configure phase, it's not worth it
+export CCACHE_DISABLE="true"
 
-BASE_PKGS="gawk make git arduino-core curl"
-SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-pyparsing ccache python-empy"
-AVR_PKGS="gcc-avr binutils-avr avr-libc"
-PYTHON_PKGS="pymavlink MAVProxy catkin_pkg"
-PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
-          autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
-          zip genromfs"
-UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.6-base:i386 libstdc++5:i386 libstdc++6:i386 gcc-multilib"
+CCACHE_ROOT="ccache-3.2.5"
+CCACHE_TARBALL="$CCACHE_ROOT.tar.bz2"
 
-# We do not make ARM builds on master-AVR branch.
-# GNU Tools for ARM Embedded Processors
-# (see https://launchpad.net/gcc-arm-embedded/)
-ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
-ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
-ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL"
+mkdir -p $HOME/opt
+pushd $HOME
 
-RPI_ROOT="master"
-RPI_TARBALL="$RPI_ROOT.tar.gz"
-RPI_TARBALL_URL="http://firmware.ardupilot.org/Tools/Travis/NavIO/$RPI_TARBALL"
-
-# Ardupilot Tools
-ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
-
-APT_GET="sudo apt-get -qq --assume-yes"
-
-$APT_GET update
-$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $AVR_PKGS
-sudo pip install --upgrade pip || {
-    echo "pip upgrade failed"
-}
-sudo pip install --upgrade setuptools || {
-    echo "setuptools upgrade failed"
-}
-for pkg in $PYTHON_PKGS; do
-    echo "Installing $pkg"
-    sudo pip -q install $pkg || echo "FAILED INSTALL OF $pkg"
-done
-
-# install some extra packages (for later AVR compiler)
-rsync -av firmware.ardupilot.org::Tools/Travis/*.deb ExtraPackages
-sudo dpkg -i ExtraPackages/*.deb || echo "FAILED INSTALL OF EXTRA DEBS"
-
-# try to upgrade to g++ 4.8. See https://github.com/travis-ci/travis-ci/issues/1379
-(sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test &&
-sudo apt-get -qq update &&
-sudo apt-get -qq install g++-4.8 &&
-sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90) || {
-    echo "upgrade to gcc 4.8 failed"
-}
-
-
-if [ ! -d PX4Firmware ]; then
-    git clone https://github.com/ArduPilot/PX4Firmware.git
+# CCache
+dir=$CCACHE_ROOT
+if [ ! -d "$HOME/opt/$dir" ]; then
+  wget https://www.samba.org/ftp/ccache/$CCACHE_TARBALL
+  tar -xf $CCACHE_TARBALL
+  pushd $CCACHE_ROOT
+  ./configure --prefix="/tmp" --bindir="$HOME/opt/$dir"
+  make
+  make install
+  popd
 fi
 
-if [ ! -d PX4NuttX ]; then
-    git clone https://github.com/ArduPilot/PX4NuttX.git
+popd
+
+git clone https://github.com/UrusTeam/avr_toolchain_multi_cross.git $HOME/avrbin
+
+export PATH=$HOME/avrbin/bin:$PATH
+
+mkdir -p $HOME/bin
+
+# symlink to compiler versions
+ln -s /usr/bin/gcc-4.9 ~/bin/gcc
+ln -s /usr/bin/g++-4.9 ~/bin/g++
+ln -s /usr/bin/clang-3.7 ~/bin/clang
+ln -s /usr/bin/clang++-3.7 ~/bin/clang++
+ln -s /usr/bin/llvm-ar-3.7 ~/bin/llvm-ar
+
+mkdir -p $HOME/ccache
+
+# configure ccache
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/g++
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/gcc
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/clang++
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/clang
+
+exportline="export PATH=$HOME/ccache"
+exportline="${exportline}:$HOME/bin"
+exportline="${exportline}:$HOME/avrbin/bin"
+exportline="${exportline}:$HOME/.local/bin"
+exportline="${exportline}:$HOME/opt/$CCACHE_ROOT"
+exportline="${exportline}:\$PATH"
+
+if grep -Fxq "$exportline" ~/.profile; then
+    echo nothing to do;
+else
+    echo $exportline >> ~/.profile;
 fi
-
-if [ ! -d uavcan ]; then
-    git clone https://github.com/ArduPilot/uavcan.git
-fi
-
-if [ ! -d VRNuttX ]; then
-    git clone https://github.com/virtualrobotix/vrbrain_nuttx.git VRNuttX
-fi
-
-mkdir -p $OPT
-
-cd $OPT
-wget $ARM_TARBALL_URL
-tar xjf ${ARM_TARBALL}
-rm -f ${ARM_TARBALL}
-
-cd $OPT
-wget $RPI_TARBALL_URL
-tar xzf ${RPI_TARBALL}
-rm -f ${RPI_TARBALL}
-
-exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
-echo $exportline >> ~/.profile
-
-exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
-echo $exportline2 >> ~/.profile
-
-exportline3="export PATH=$OPT/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:\$PATH";
-echo $exportline3 >> ~/.profile
 
 . ~/.profile
-echo $PATH
-ls -l $OPT/$ARM_ROOT/bin
-$OPT/$ARM_ROOT/bin/arm-none-eabi-gcc --version
 
-echo "Compiler for NavIO"
-arm-linux-gnueabihf-gcc --version
+avr-g++ -v
+
+pip install --user -U argparse empy pyserial pexpect future lxml
+
+echo $PATH
