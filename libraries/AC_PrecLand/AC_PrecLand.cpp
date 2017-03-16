@@ -57,7 +57,12 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("EST_TYPE",    5, AC_PrecLand, _estimator_type, 1),
 
-    // 6 RESERVED for ACC_NSE
+    // @Param: ACC_P_NSE
+    // @DisplayName: Kalman Filter Accelerometer Noise
+    // @Description: Kalman Filter Accelerometer Noise, higher values weight the input from the camera more, accels less
+    // @Range: 0.5 5
+    // @User: Advanceds
+    AP_GROUPINFO("ACC_P_NSE", 6, AC_PrecLand, _accel_noise, 2.5f),
 
     AP_GROUPEND
 };
@@ -249,8 +254,8 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
                 const float& dt = inertial_data_delayed.dt;
                 const Vector3f& vehicleDelVel = inertial_data_delayed.correctedVehicleDeltaVelocityNED;
 
-                _ekf_x.predict(dt, -vehicleDelVel.x, 0.5f*dt);
-                _ekf_y.predict(dt, -vehicleDelVel.y, 0.5f*dt);
+                _ekf_x.predict(dt, -vehicleDelVel.x, _accel_noise*dt);
+                _ekf_y.predict(dt, -vehicleDelVel.y, _accel_noise*dt);
             }
 
             // Update if a new LOS measurement is available
