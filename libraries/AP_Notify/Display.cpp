@@ -284,6 +284,9 @@ static const uint8_t _font[] = {
     0x00, 0x00, 0x00, 0x00, 0x00
 };
 
+// probe first 3 busses:
+static const uint8_t I2C_BUS_PROBE_MASK = 0x7;
+
 bool Display::init(void)
 {
     // exit immediately if already initialised
@@ -295,31 +298,33 @@ bool Display::init(void)
     _movedelay = 4; // ticker delay before shifting after new message displayed
 
     // initialise driver
-    switch (pNotify->_display_type) {
-        case DISPLAY_SSD1306:
-            for(uint8_t i=0; i<3; i++) {
-                Display_Backend *tmp_driver = new Display_SSD1306_I2C(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR));
-                if (tmp_driver && tmp_driver->hw_init()) {
-                    _driver = tmp_driver;
-                    break;
-                }
-                delete tmp_driver;
+    for(uint8_t i=0; i<8 && _driver == nullptr; i++) {
+        if (! (I2C_BUS_PROBE_MASK & (1<<i))) {
+            continue;
+        }
+        switch (pNotify->_display_type) {
+        case DISPLAY_SSD1306: {
+            Display_Backend *tmp_driver = new Display_SSD1306_I2C(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR));
+            if (tmp_driver && tmp_driver->hw_init()) {
+                _driver = tmp_driver;
+                break;
             }
+            delete tmp_driver;
             break;
-        case DISPLAY_SH1106:
-            for(uint8_t i=0; i<3; i++) {
-                Display_Backend *tmp_driver = new Display_SH1106_I2C(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR));
-                if (tmp_driver && tmp_driver->hw_init()) {
-                    _driver = tmp_driver;
-                    break;
-                }
-                delete tmp_driver;
+        }
+        case DISPLAY_SH1106: {
+            Display_Backend *tmp_driver = new Display_SH1106_I2C(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR));
+            if (tmp_driver && tmp_driver->hw_init()) {
+                _driver = tmp_driver;
+                break;
             }
+            delete tmp_driver;
             break;
-
+        }
         case DISPLAY_OFF:
         default:
             break;
+        }
     }
 
     if (_driver == nullptr) {
