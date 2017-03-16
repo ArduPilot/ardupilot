@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Description: Precision Land Estimator Type
     // @Values: 0:RawSensor, 1:KalmanFilter
     // @User: Advanced
-    AP_GROUPINFO("EST_TYPE",    5, AC_PrecLand, _estimator_type, 0),
+    AP_GROUPINFO("EST_TYPE",    5, AC_PrecLand, _estimator_type, 1),
 
     // 6 RESERVED for ACC_NSE
 
