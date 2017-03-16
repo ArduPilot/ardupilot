@@ -761,6 +761,33 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &d
     }
 }
 
+/*
+  return a timesync request
+  Sends back ts1 as received, and tc1 is the local timestamp in usec
+ */
+void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
+{
+    // Decode incoming timesync message
+    mavlink_timesync_t tsync;
+    mavlink_msg_timesync_decode(msg, &tsync);
+
+    // Create new timestruct to return
+    mavlink_timesync_t rsync;
+    rsync.ts1 = tsync.ts1;
+    rsync.tc1 = AP_HAL::micros64();
+
+    // If message is sent with tc > 1, calculate the offset and return that instead
+    if (tsync.tc1 > 0) {
+        rsync.tc1 = tsync.tc1 - AP_HAL::micros64();
+    }
+
+    // Return a timesync message with updated tc1 field
+    mavlink_msg_timesync_send(
+        chan,
+        rsync.tc1,
+        rsync.ts1
+        );
+}
 
 /*
   handle an incoming mission item
