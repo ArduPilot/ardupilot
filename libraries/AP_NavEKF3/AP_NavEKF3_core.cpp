@@ -23,7 +23,8 @@ NavEKF3_core::NavEKF3_core(void) :
     _perf_FuseAirspeed(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseAirspeed")),
     _perf_FuseSideslip(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseSideslip")),
     _perf_TerrainOffset(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_TerrainOffset")),
-    _perf_FuseOptFlow(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseOptFlow"))
+    _perf_FuseOptFlow(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseOptFlow")),
+    _perf_FuseBodyOdom(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseBodyOdom"))
 {
     _perf_test[0] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test0");
     _perf_test[1] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test1");
@@ -120,6 +121,9 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
         return false;
     }
     if(!storedOF.init(obs_buffer_length)) {
+        return false;
+    }
+    if(!storedBodyOdm.init(obs_buffer_length)) {
         return false;
     }
     // Note: the use of dual range finders potentially doubles the amount of data to be stored
@@ -279,6 +283,7 @@ void NavEKF3_core::InitialiseVariables()
     posDown = 0.0f;
     posVelFusionDelayed = false;
     optFlowFusionDelayed = false;
+    flowFusionActive = false;
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
     posResetNE.zero();
@@ -356,6 +361,19 @@ void NavEKF3_core::InitialiseVariables()
     bcnPosOffsetNED.zero();
     bcnOriginEstInit = false;
 
+    // body frame displacement fusion
+    memset(&bodyOdmDataNew, 0, sizeof(bodyOdmDataNew));
+    memset(&bodyOdmDataDelayed, 0, sizeof(bodyOdmDataDelayed));
+    bodyOdmStoreIndex = 0;
+    lastbodyVelPassTime_ms = 0;
+    memset(&bodyVelTestRatio, 0, sizeof(bodyVelTestRatio));
+    memset(&varInnovBodyVel, 0, sizeof(varInnovBodyVel));
+    memset(&innovBodyVel, 0, sizeof(innovBodyVel));
+    prevBodyVelFuseTime_ms = 0;
+    bodyOdmMeasTime_ms = 0;
+    bodyVelFusionDelayed = false;
+    bodyVelFusionActive = false;
+
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
@@ -365,6 +383,7 @@ void NavEKF3_core::InitialiseVariables()
     storedRange.reset();
     storedOutput.reset();
     storedRangeBeacon.reset();
+    storedBodyOdm.reset();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -547,6 +566,9 @@ void NavEKF3_core::UpdateFilter(bool predict)
 
         // Update states using optical flow data
         SelectFlowFusion();
+
+        // Update states using body frame odometry data
+        SelectBodyOdomFusion();
 
         // Update states using airspeed data
         SelectTasFusion();

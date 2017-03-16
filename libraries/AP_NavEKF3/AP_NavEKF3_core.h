@@ -203,6 +203,28 @@ public:
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
     /*
+     * Write body frame linear and angular displacement measurements from a visual odometry sensor
+     *
+     * quality is a normalised confidence value from 0 to 100
+     * delPos is the XYZ change in linear position meaasured in body frame and relative to the inertial reference at time_ms (m)
+     * delAng is the XYZ angular rotation measured in body frame and relative to the inertial reference at time_ms (rad)
+     * delTime is the time interval for the measurement of delPos and delAng (sec)
+     * timeStamp_ms is the timestamp of the last image used to calculate delPos and delAng (msec)
+     * posOffset is the XYZ body frame position of the camera focal point (m)
+    */
+    void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
+
+    /*
+     * Return data for debugging body frame odometry fusion:
+     *
+     * velInnov are the XYZ body frame velocity innovations (m/s)
+     * velInnovVar are the XYZ body frame velocity innovation variances (m/s)**2
+     *
+     * Return the time stamp of the last odometry fusion update (msec)
+     */
+    uint32_t getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velInnovVar);
+
+    /*
         Returns the following data for debugging range beacon fusion
         ID : beacon identifier
         rng : measured range to beacon (m)
@@ -376,73 +398,81 @@ private:
     // memory)
     Vector24 statesArray;
     struct state_elements {
-        Quaternion  quat;           // 0..3
-        Vector3f    velocity;       // 4..6
-        Vector3f    position;       // 7..9
-        Vector3f    gyro_bias;      // 10..12
-        Vector3f    accel_bias;     // 13..15
-        Vector3f    earth_magfield; // 16..18
-        Vector3f    body_magfield;  // 19..21
-        Vector2f    wind_vel;       // 22..23
+        Quaternion  quat;           // quaternion defining rotation from local NED earth frame to body frame
+        Vector3f    velocity;       // velocity of IMU in local NED earth frame (m/sec)
+        Vector3f    position;       // position of IMU in local NED earth frame (m)
+        Vector3f    gyro_bias;      // body frame delta angle IMU bias vector (rad)
+        Vector3f    accel_bias;     // body frame delta velocity IMU bias vector (m/sec)
+        Vector3f    earth_magfield; // earth frame magnetic field vector (Gauss)
+        Vector3f    body_magfield;  // body frame magnetic field vector (Gauss)
+        Vector2f    wind_vel;       // horizontal North East wind velocity vector in local NED earth frame (m/sec)
     } &stateStruct;
 
     struct output_elements {
-        Quaternion  quat;           // 0..3
-        Vector3f    velocity;       // 4..6
-        Vector3f    position;       // 7..9
+        Quaternion  quat;           // quaternion defining rotation from local NED earth frame to body frame
+        Vector3f    velocity;       // velocity of body frame origin in local NED earth frame (m/sec)
+        Vector3f    position;       // position of body frame origin in local NED earth frame (m)
     };
 
     struct imu_elements {
-        Vector3f    delAng;         // 0..2
-        Vector3f    delVel;         // 3..5
-        float       delAngDT;       // 6
-        float       delVelDT;       // 7
-        uint32_t    time_ms;        // 8
+        Vector3f    delAng;         // IMU delta angle measurements in body frame (rad)
+        Vector3f    delVel;         // IMU delta velocity measurements in body frame (m/sec)
+        float       delAngDT;       // time interval over which delAng has been measured (sec)
+        float       delVelDT;       // time interval over which delVelDT has been measured (sec)
+        uint32_t    time_ms;        // measurement timestamp (msec)
     };
 
     struct gps_elements {
-        Vector2f    pos;         // 0..1
-        float       hgt;         // 2
-        Vector3f    vel;         // 3..5
-        uint32_t    time_ms;     // 6
-        uint8_t     sensor_idx;  // 7
+        Vector2f    pos;            // horizontal North East position of the GPS antenna in local NED earth frame (m)
+        float       hgt;            // height of the GPS antenna in local NED earth frame (m)
+        Vector3f    vel;            // velocity of the GPS antenna in local NED earth frame (m/sec)
+        uint32_t    time_ms;        // measurement timestamp (msec)
+        uint8_t     sensor_idx;     // unique integer identifying the GPS sensor
     };
 
     struct mag_elements {
-        Vector3f    mag;         // 0..2
-        uint32_t    time_ms;     // 3
+        Vector3f    mag;            // body frame magnetic field measurements (Gauss)
+        uint32_t    time_ms;        // measurement timestamp (msec)
     };
 
     struct baro_elements {
-        float       hgt;         // 0
-        uint32_t    time_ms;     // 1
+        float       hgt;            // height of the pressure sensor in local NED earth frame (m)
+        uint32_t    time_ms;        // measurement timestamp (msec)
     };
 
     struct range_elements {
-        float       rng;         // 0
-        uint32_t    time_ms;     // 1
-        uint8_t     sensor_idx;  // 2
+        float       rng;            // distance measured by the range sensor (m)
+        uint32_t    time_ms;        // measurement timestamp (msec)
+        uint8_t     sensor_idx;     // integer either 0 or 1 uniquely identifying up to two range sensors
     };
 
     struct rng_bcn_elements {
-        float       rng;                // range measurement to each beacon (m)
-        Vector3f    beacon_posNED;      // NED position of the beacon (m)
-        float       rngErr;             // range measurement error 1-std (m)
-        uint8_t     beacon_ID;          // beacon identification number
-        uint32_t    time_ms;            // measurement timestamp (msec)
+        float       rng;            // range measurement to each beacon (m)
+        Vector3f    beacon_posNED;  // NED position of the beacon (m)
+        float       rngErr;         // range measurement error 1-std (m)
+        uint8_t     beacon_ID;      // beacon identification number
+        uint32_t    time_ms;        // measurement timestamp (msec)
     };
 
     struct tas_elements {
-        float       tas;         // 0
-        uint32_t    time_ms;     // 1
+        float       tas;            // true airspeed measurement (m/sec)
+        uint32_t    time_ms;        // measurement timestamp (msec)
     };
 
     struct of_elements {
-        Vector2f    flowRadXY;      // 0..1
-        Vector2f    flowRadXYcomp;  // 2..3
-        uint32_t    time_ms;        // 4
-        Vector3f    bodyRadXYZ;     //8..10
-        const Vector3f *body_offset;// 5..7
+        Vector2f    flowRadXY;      // raw (non motion compensated) optical flow angular rates about the XY body axes (rad/sec)
+        Vector2f    flowRadXYcomp;  // motion compensated XY optical flow angular rates about the XY body axes (rad/sec)
+        uint32_t    time_ms;        // measurement timestamp (msec)
+        Vector3f    bodyRadXYZ;     // body frame XYZ axis angular rates averaged across the optical flow measurement interval (rad/sec)
+        const Vector3f *body_offset;// pointer to XYZ position of the optical flow sensor in body frame (m)
+    };
+
+    struct bfodm_elements {
+        Vector3f        vel;        // XYZ velocity measured in body frame (m/s)
+        float           velErr;     // velocity measurement error 1-std (m/s)
+        const Vector3f *body_offset;// pointer to XYZ position of the velocity sensor in body frame (m)
+        Vector3f        angRate;    // angular rate estimated from odometry (rad/sec)
+        uint32_t        time_ms;    // measurement timestamp (msec)
     };
 
     // update the navigation filter status
@@ -468,6 +498,9 @@ private:
 
     // fuse selected position, velocity and height measurements
     void FuseVelPosNED();
+
+    // fuse body frame velocity measurements
+    void FuseBodyVel();
 
     // fuse range beacon measurements
     void FuseRngBcn();
@@ -624,11 +657,17 @@ private:
     // return true if the filter is ready to start using optical flow measurements
     bool readyToUseOptFlow(void) const;
 
+    // return true if the filter is ready to start using body frame odometry measurements
+    bool readyToUseBodyOdm(void) const;
+
     // return true if we should use the range finder sensor
     bool useRngFinder(void) const;
 
     // determine when to perform fusion of optical flow measurements
     void SelectFlowFusion();
+
+    // determine when to perform fusion of body frame odometry measurements
+    void SelectBodyOdomFusion();
 
     // Estimate terrain offset using a single state EKF
     void EstimateTerrainOffset();
@@ -986,8 +1025,9 @@ private:
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     Vector3f delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     float delTimeOF;                // time that delAngBodyOF is summed across
-    Vector3f accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
+    bool flowFusionActive;          // true when optical flow fusion is active
 
+    Vector3f accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
 
     // Range finder
     float baroHgtOffset;                    // offset applied when when switching to use of Baro height
@@ -998,6 +1038,21 @@ private:
     uint8_t rngMeasIndex[2];                // Current range measurement ringbuffer index for dual range sensors
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
     uint32_t terrainHgtStableSet_ms;        // system time at which terrainHgtStable was set
+
+    // body frame odometry fusion
+    obs_ring_buffer_t<bfodm_elements> storedBodyOdm;    // body velocity data buffer
+    bfodm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
+    bfodm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
+    uint8_t bodyOdmStoreIndex;          // Body  frame odometry  data storage index
+    uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innvovation consistency checks (msec)
+    Vector3 bodyVelTestRatio;           // Innovation test ratios for body velocity XYZ measurements
+    Vector3 varInnovBodyVel;            // Body velocity XYZ innovation variances (rad/sec)^2
+    Vector3 innovBodyVel;               // Body velocity XYZ innovations (rad/sec)
+    uint32_t prevBodyVelFuseTime_ms;    // previous time all body velocity measurement components passed their innovation consistency checks (msec)
+    uint32_t bodyOdmMeasTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
+    bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
+    bool bodyVelFusionActive;           // true when body frame velocity fusion is active
+
 
     // Range Beacon Sensor Fusion
     obs_ring_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
@@ -1094,6 +1149,9 @@ private:
         bool bad_xflow:1;
         bool bad_yflow:1;
         bool bad_rngbcn:1;
+        bool bad_xvel:1;
+        bool bad_yvel:1;
+        bool bad_zvel:1;
     } faultStatus;
 
     // flags indicating which GPS quality checks are failing
@@ -1144,6 +1202,7 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_FuseSideslip;
     AP_HAL::Util::perf_counter_t  _perf_TerrainOffset;
     AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
+    AP_HAL::Util::perf_counter_t  _perf_FuseBodyOdom;
     AP_HAL::Util::perf_counter_t  _perf_test[10];
 
     // should we assume zero sideslip?
