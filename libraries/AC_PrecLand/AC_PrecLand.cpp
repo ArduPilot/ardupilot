@@ -52,8 +52,8 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
 
     // @Param: EST_TYPE
     // @DisplayName: Precision Land Estimator Type
-    // @Description: Specifies the estimation method used.
-    // @Values: 0:RAW_MEASUREMENTS, 1:TWO_STATE_KF_PER_AXIS
+    // @Description: Precision Land Estimator Type
+    // @Values: 0:RawSensor, 1:KalmanFilter
     // @User: Advanced
     AP_GROUPINFO("EST_TYPE",    5, AC_PrecLand, _estimator_type, 0),
 
@@ -80,7 +80,6 @@ AC_PrecLand::AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav) :
     // other initialisation
     _backend_state.healthy = false;
 }
-
 
 // init - perform any required initialisation of backends
 void AC_PrecLand::init()
@@ -129,14 +128,15 @@ void AC_PrecLand::init()
 // update - give chance to driver to get updates from sensor
 void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 {
-    // Collect inertial data and append it to the buffer
+    // append current velocity and attitude correction into history buffer
     struct inertial_data_frame_s inertial_data_newest;
     _ahrs.getCorrectedDeltaVelocityNED(inertial_data_newest.correctedVehicleDeltaVelocityNED, inertial_data_newest.dt);
     inertial_data_newest.Tbn = _ahrs.get_rotation_body_to_ned();
     inertial_data_newest.inertialNavVelocity = _inav.get_velocity()*0.01f;
     inertial_data_newest.inertialNavVelocityValid = _inav.get_filter_status().flags.horiz_vel;
     _inertial_history.push_back(inertial_data_newest);
-    
+
+    // update estimator of target position
     if (_backend != nullptr && _enabled) {
         _backend->update();
         run_estimator(rangefinder_alt_cm*0.01f, rangefinder_alt_valid);
@@ -195,7 +195,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
     const struct inertial_data_frame_s& inertial_data_delayed = _inertial_history.front();
 
     switch (_estimator_type) {
-        case ESTIMATOR_TYPE_RAW_MEASUREMENTS: {
+        case ESTIMATOR_TYPE_RAW_SENSOR: {
             // Return if there's any invalid velocity data
             for (uint8_t i=0; i<_inertial_history.size(); i++) {
                 const struct inertial_data_frame_s& inertial_data = _inertial_history.peek(i);
@@ -245,7 +245,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
             }
             break;
         }
-        case ESTIMATOR_TYPE_TWO_STATE_KF_PER_AXIS: {
+        case ESTIMATOR_TYPE_KALMAN_FILTER: {
             // Predict
             if (target_acquired()) {
                 const float& dt = inertial_data_delayed.dt;
@@ -349,7 +349,7 @@ void AC_PrecLand::run_output_prediction()
         _target_pos_rel_out_NE.y += _target_vel_rel_out_NE.y * inertial_data.dt;
     }
 
-    // Apply offset
+    // compensate for camera offset from the center of the vehicle
     Vector3f land_ofs_ned_m = _ahrs.get_rotation_body_to_ned() * Vector3f(_land_ofs_cm_x,_land_ofs_cm_y,0) * 0.01f;
     _target_pos_rel_est_NE.x += land_ofs_ned_m.x;
     _target_pos_rel_est_NE.y += land_ofs_ned_m.y;
