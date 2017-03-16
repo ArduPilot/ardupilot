@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <AP_GPS/AP_GPS.h>
 
+#include <utility>
+
 extern const AP_HAL::HAL& hal;
 
 static const uint8_t _font[] = {
@@ -304,21 +306,11 @@ bool Display::init(void)
         }
         switch (pNotify->_display_type) {
         case DISPLAY_SSD1306: {
-            Display_Backend *tmp_driver = new Display_SSD1306_I2C(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR));
-            if (tmp_driver && tmp_driver->hw_init()) {
-                _driver = tmp_driver;
-                break;
-            }
-            delete tmp_driver;
+            _driver = Display_SSD1306_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
             break;
         }
         case DISPLAY_SH1106: {
-            Display_Backend *tmp_driver = new Display_SH1106_I2C(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR));
-            if (tmp_driver && tmp_driver->hw_init()) {
-                _driver = tmp_driver;
-                break;
-            }
-            delete tmp_driver;
+            _driver = Display_SH1106_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
             break;
         }
         case DISPLAY_OFF:

@@ -38,6 +38,17 @@ Display_SH1106_I2C::~Display_SH1106_I2C()
     delete _displaybuffer_sem;
 }
 
+Display_SH1106_I2C *Display_SH1106_I2C::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev)
+{
+    Display_SH1106_I2C *driver = new Display_SH1106_I2C(std::move(dev));
+    if (!driver || !driver->hw_init()) {
+        delete driver;
+        return nullptr;
+    }
+    return driver;
+}
+
+
 bool Display_SH1106_I2C::hw_init()
 {
     struct PACKED {
