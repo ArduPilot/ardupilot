@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #define THISFIRMWARE "AntennaTracker V0.7.4"
-#define FIRMWARE_VERSION 0,7,4,FIRMWARE_VERSION_TYPE_DEV
+#define FIRMWARE_VERSION 0,7,4,FIRMWARE_VERSION_TYPE_BETA
 
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
