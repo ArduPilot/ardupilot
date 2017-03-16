@@ -51,13 +51,16 @@ public:
     // returns true if precision landing is healthy
     bool healthy() const { return _backend_state.healthy; }
 
+    // returns true if precision landing is enabled (used only for logging)
+    bool enabled() const { return _enabled.get(); }
+
     // returns time of last update
     uint32_t last_update_ms() const { return _last_update_ms; }
 
-    // give chance to driver to get updates from sensor
+    // give chance to driver to get updates from sensor, should be called at 400hz
     void update(float rangefinder_alt_cm, bool rangefinder_alt_valid);
 
-    // returns target position relative to origin
+    // returns target position relative to the EKF origin
     bool get_target_position_cm(Vector2f& ret);
 
     // returns target position relative to vehicle
@@ -72,23 +75,26 @@ public:
     // process a LANDING_TARGET mavlink message
     void handle_msg(mavlink_message_t* msg);
 
-    // accessors for logging
-    bool enabled() const { return _enabled; }
-
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
     enum estimator_type_t {
-        ESTIMATOR_TYPE_RAW_MEASUREMENTS=0,
-        ESTIMATOR_TYPE_TWO_STATE_KF_PER_AXIS=1
+        ESTIMATOR_TYPE_RAW_SENSOR = 0,
+        ESTIMATOR_TYPE_KALMAN_FILTER = 1
     };
 
     // returns enabled parameter as an behaviour
     enum PrecLandBehaviour get_behaviour() const { return (enum PrecLandBehaviour)(_enabled.get()); }
 
+    // run target position estimator
     void run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid);
+
+    // get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
     bool retrieve_los_meas(Vector3f& target_vec_unit_body);
+
+    // calculate target's position and velocity relative to the vehicle (used as input to position controller)
+    // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
     void run_output_prediction();
 
     // references to inertial nav and ahrs libraries
@@ -103,29 +109,29 @@ private:
     AP_Float                    _land_ofs_cm_x;     // Desired landing position of the camera forward of the target in vehicle body frame
     AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
 
-    uint32_t                    _last_update_ms;      // epoch time in millisecond when update is called
-    bool                        _target_acquired;
-    uint32_t                    _last_backend_los_meas_ms;
+    uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
+    bool                        _target_acquired;   // true if target has been seen recently
+    uint32_t                    _last_backend_los_meas_ms;  // system time target was last seen
 
-    PosVelEKF                   _ekf_x, _ekf_y;
-    uint32_t                    _outlier_reject_count;
+    PosVelEKF                   _ekf_x, _ekf_y;     // Kalman Filter for x and y axis
+    uint32_t                    _outlier_reject_count;  // mini-EKF's outlier counter (3 consecutive outliers lead to EKF accepting updates)
     
-    Vector3f                    _target_pos_rel_meas_NED;
+    Vector3f                    _target_pos_rel_meas_NED; // target's relative position as 3D vector
 
-    Vector2f                    _target_pos_rel_est_NE;
-    Vector2f                    _target_vel_rel_est_NE;
+    Vector2f                    _target_pos_rel_est_NE; // target's relative position based on latest sensor data (i.e. not compensated for lag)
+    Vector2f                    _target_vel_rel_est_NE; // target's relative velocity based on latest sensor data (i.e. not compensated for lag)
 
-    Vector2f                    _target_pos_rel_out_NE;
-    Vector2f                    _target_vel_rel_out_NE;
+    Vector2f                    _target_pos_rel_out_NE; // target's relative position, fed into position controller
+    Vector2f                    _target_vel_rel_out_NE; // target's relative velocity, fed into position controller
 
+    // structure and buffer to hold a short history of vehicle velocity
     struct inertial_data_frame_s {
-        Matrix3f Tbn;
+        Matrix3f Tbn;                               // dcm rotation matrix to rotate body frame to north
         Vector3f correctedVehicleDeltaVelocityNED;
         Vector3f inertialNavVelocity;
         bool inertialNavVelocityValid;
         float dt;
     };
-
     AP_Buffer<inertial_data_frame_s,8>       _inertial_history;
 
     // backend state
