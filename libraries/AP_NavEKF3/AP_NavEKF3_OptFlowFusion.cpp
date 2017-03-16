@@ -6,6 +6,7 @@
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -647,7 +648,11 @@ void NavEKF3_core::FuseOptFlow()
         if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
             // record the last time observations were accepted for fusion
             prevFlowFuseTime_ms = imuSampleTime_ms;
-
+            // notify first time only
+            if (!flowFusionActive) {
+                flowFusionActive = true;
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing optical flow",(unsigned)imu_index);
+            }
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations
