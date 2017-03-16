@@ -67,6 +67,18 @@ void NavEKF3_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
     gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
 }
 
+// return data for debugging body frame odometry fusion
+uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velInnovVar)
+{
+    velInnov.x = innovBodyVel[0];
+    velInnov.y = innovBodyVel[1];
+    velInnov.z = innovBodyVel[2];
+    velInnovVar.x = varInnovBodyVel[0];
+    velInnovVar.y = varInnovBodyVel[1];
+    velInnovVar.z = varInnovBodyVel[2];
+    return bodyOdmDataDelayed.time_ms;
+}
+
 // return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
 bool NavEKF3_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED,
                                        float &offsetHigh, float &offsetLow, Vector3f &posNED)

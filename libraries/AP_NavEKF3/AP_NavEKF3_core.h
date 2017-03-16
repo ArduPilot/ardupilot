@@ -203,6 +203,28 @@ public:
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
     /*
+     * Write body frame linear and angular displacement measurements from a visual odometry sensor
+     *
+     * quality is a normalised confidence value from 0 to 100
+     * delPos is the XYZ change in linear position meaasured in body frame and relative to the inertial reference at time_ms (m)
+     * delAng is the XYZ angular rotation measured in body frame and relative to the inertial reference at time_ms (rad)
+     * delTime is the time interval for the measurement of delPos and delAng (sec)
+     * timeStamp_ms is the timestamp of the last image used to calculate delPos and delAng (msec)
+     * posOffset is the XYZ body frame position of the camera focal point (m)
+    */
+    void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
+
+    /*
+     * Return data for debugging body frame odometry fusion:
+     *
+     * velInnov are the XYZ body frame velocity innovations (m/s)
+     * velInnovVar are the XYZ body frame velocity innovation variances (m/s)**2
+     *
+     * Return the time stamp of the last odometry fusion update (msec)
+     */
+    uint32_t getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velInnovVar);
+
+    /*
         Returns the following data for debugging range beacon fusion
         ID : beacon identifier
         rng : measured range to beacon (m)
@@ -445,6 +467,14 @@ private:
         const Vector3f *body_offset;// 5..7
     };
 
+    struct bfodm_elements {
+        Vector3f        vel;            // 0..2 XYZ velocity measured in body frame (m/s)
+        float           velErr;         // 3 velocity measurement error 1-std (m/s)
+        const Vector3f *body_offset;    // 10..12 XYZ position of the velocity sensor in body frame (m)
+        Vector3f        angRate;        // 4..6 XYZ angular rate estimated from odmetry rad/sec)
+        uint32_t        time_ms;        // 7 measurement timestamp (msec)
+    };
+
     // update the navigation filter status
     void updateFilterStatus(void);
 
@@ -468,6 +498,9 @@ private:
 
     // fuse selected position, velocity and height measurements
     void FuseVelPosNED();
+
+    // fuse body frame velocity measurements
+    void FuseBodyVel();
 
     // fuse range beacon measurements
     void FuseRngBcn();
@@ -624,11 +657,17 @@ private:
     // return true if the filter is ready to start using optical flow measurements
     bool readyToUseOptFlow(void) const;
 
+    // return true if the filter is ready to start using body frame odometry measurements
+    bool readyToUseBodyOdm(void) const;
+
     // return true if we should use the range finder sensor
     bool useRngFinder(void) const;
 
     // determine when to perform fusion of optical flow measurements
     void SelectFlowFusion();
+
+    // determine when to perform fusion of body frame odometry measurements
+    void SelectBodyOdomFusion();
 
     // Estimate terrain offset using a single state EKF
     void EstimateTerrainOffset();
@@ -999,6 +1038,20 @@ private:
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
     uint32_t terrainHgtStableSet_ms;        // system time at which terrainHgtStable was set
 
+    // body frame odometry fusion
+    obs_ring_buffer_t<bfodm_elements> storedBodyOdm;    // body velocity data buffer
+    bfodm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
+    bfodm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
+    uint8_t bodyOdmStoreIndex;          // Body  frame odometry  data storage index
+    uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innvovation consistency checks (msec)
+    Vector3 bodyVelTestRatio;           // Innovation test ratios for body velocity XYZ measurements
+    Vector3 varInnovBodyVel;            // Body velocity XYZ innovation variances (rad/sec)^2
+    Vector3 innovBodyVel;               // Body velocity XYZ innovations (rad/sec)
+    uint32_t prevBodyVelFuseTime_ms;    // previous time all body velocity measurement components passed their innovation consistency checks (msec)
+    uint32_t bodyOdmMeasTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
+    bool bodyVelFusionDelayed;          // true when body fame velocity fusion has been delayed
+
+
     // Range Beacon Sensor Fusion
     obs_ring_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
     rng_bcn_elements rngBcnDataNew;     // Range beacon data at the current time horizon
@@ -1094,6 +1147,9 @@ private:
         bool bad_xflow:1;
         bool bad_yflow:1;
         bool bad_rngbcn:1;
+        bool bad_xvel:1;
+        bool bad_yvel:1;
+        bool bad_zvel:1;
     } faultStatus;
 
     // flags indicating which GPS quality checks are failing
@@ -1144,6 +1200,7 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_FuseSideslip;
     AP_HAL::Util::perf_counter_t  _perf_TerrainOffset;
     AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
+    AP_HAL::Util::perf_counter_t  _perf_FuseBodyOdom;
     AP_HAL::Util::perf_counter_t  _perf_test[10];
 
     // should we assume zero sideslip?
