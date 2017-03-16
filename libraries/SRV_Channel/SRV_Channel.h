@@ -291,7 +291,7 @@ public:
     static void copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool do_input_output=false);
 
     // setup failsafe for an auxiliary channel function, by pwm
-    static void set_failsafe_pwm(SRV_Channel::SRV_Channel::Aux_servo_function_t function, uint16_t pwm);
+    static void set_failsafe_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t pwm);
 
     // setup failsafe for an auxiliary channel function
     static void set_failsafe_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::LimitValue limit);
