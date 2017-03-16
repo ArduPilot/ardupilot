@@ -20,8 +20,8 @@
 #ifndef _ROVER_H_
 #define _ROVER_H_
 
-#define THISFIRMWARE "ArduRover v2.51-beta"
-#define FIRMWARE_VERSION 2,51,0,FIRMWARE_VERSION_TYPE_BETA
+#define THISFIRMWARE "ArduRover v2.52-beta"
+#define FIRMWARE_VERSION 2,52,0,FIRMWARE_VERSION_TYPE_BETA
 
 #include <math.h>
 #include <stdarg.h>
