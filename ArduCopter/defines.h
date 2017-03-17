@@ -393,6 +393,7 @@ enum DevOptions {
 #define DATA_AVOIDANCE_ADSB_DISABLE         64
 #define DATA_AVOIDANCE_PROXIMITY_ENABLE     65
 #define DATA_AVOIDANCE_PROXIMITY_DISABLE    66
+#define DATA_GPS_PRIMARY_CHANGED            67
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f

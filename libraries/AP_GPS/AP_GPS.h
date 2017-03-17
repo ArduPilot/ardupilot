@@ -28,8 +28,11 @@
    maximum number of GPS instances available on this platform. If more
    than 1 then redundant sensors may be available
  */
-#define GPS_MAX_INSTANCES 2
+#define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
+#define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximumum number of GPs instances including the 'virtual' GPS created by blending receiver data
+#define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #define GPS_RTK_INJECT_TO_ALL 127
+#define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
 
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
@@ -44,18 +47,24 @@ class AP_GPS_Backend;
 class AP_GPS
 {
 public:
+
+    friend class AP_GPS_ERB;
+    friend class AP_GPS_GSOF;
+    friend class AP_GPS_MAV;
+    friend class AP_GPS_MTK;
+    friend class AP_GPS_MTK19;
+    friend class AP_GPS_NMEA;
+    friend class AP_GPS_NOVA;
+    friend class AP_GPS_PX4;
+    friend class AP_GPS_QURT;
+    friend class AP_GPS_SBF;
+    friend class AP_GPS_SBP;
+    friend class AP_GPS_SIRF;
+    friend class AP_GPS_UBLOX;
+    friend class AP_GPS_Backend;
+
     // constructor
-	AP_GPS() {
-		AP_Param::setup_object_defaults(this, var_info);
-    }
-
-    /// Startup initialisation.
-    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
-
-    /// Update GPS state based on possible bytes received from the module.
-    /// This routine must be called periodically (typically at 10Hz or
-    /// more) to process incoming data.
-    void update(void);
+	AP_GPS();
 
     // GPS driver types
     enum GPS_Type {
@@ -134,17 +143,26 @@ public:
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
     };
 
+    /// Startup initialisation.
+    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
+
+    /// Update GPS state based on possible bytes received from the module.
+    /// This routine must be called periodically (typically at 10Hz or
+    /// more) to process incoming data.
+    void update(void);
+
     // Pass mavlink data to message handlers (for MAV type)
     void handle_msg(const mavlink_message_t *msg);
 
     // Accessor functions
 
     // return number of active GPS sensors. Note that if the first GPS
-    // is not present but the 2nd is then we return 2
-    uint8_t num_sensors(void) const {
-        return num_instances;
-    }
+    // is not present but the 2nd is then we return 2. Note that a blended
+    // GPS solution is treated as an additional sensor.
+    uint8_t num_sensors(void) const;
 
+    // Return the index of the primary sensor which is the index of the sensor contributing to
+    // the output. A blended solution is available as an additional instance
     uint8_t primary_sensor(void) const {
         return primary_instance;
     }
@@ -157,9 +175,8 @@ public:
         return status(primary_instance);
     }
 
-    // Query the highest status this GPS supports
+    // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
     GPS_Status highest_supported_status(uint8_t instance) const;
-    GPS_Status highest_supported_status(void) const;
 
     // location of last fix
     const Location &location(uint8_t instance) const {
@@ -169,38 +186,18 @@ public:
         return location(primary_instance);
     }
 
-    bool speed_accuracy(uint8_t instance, float &sacc) const {
-        if(state[instance].have_speed_accuracy) {
-            sacc = state[instance].speed_accuracy;
-            return true;
-        }
-        return false;
-    }
-
+    // report speed accuracy
+    bool speed_accuracy(uint8_t instance, float &sacc) const;
     bool speed_accuracy(float &sacc) const {
         return speed_accuracy(primary_instance, sacc);
     }
 
-    bool horizontal_accuracy(uint8_t instance, float &hacc) const {
-        if(state[instance].have_horizontal_accuracy) {
-            hacc = state[instance].horizontal_accuracy;
-            return true;
-        }
-        return false;
-    }
-
+    bool horizontal_accuracy(uint8_t instance, float &hacc) const;
     bool horizontal_accuracy(float &hacc) const {
         return horizontal_accuracy(primary_instance, hacc);
     }
 
-    bool vertical_accuracy(uint8_t instance, float &vacc) const {
-        if(state[instance].have_vertical_accuracy) {
-            vacc = state[instance].vertical_accuracy;
-            return true;
-        }
-        return false;
-    }
-
+    bool vertical_accuracy(uint8_t instance, float &vacc) const;
     bool vertical_accuracy(float &vacc) const {
         return vertical_accuracy(primary_instance, vacc);
     }
@@ -226,13 +223,14 @@ public:
         return ground_speed() * 100;
     }
 
-    // ground course in centidegrees
+    // ground course in degrees
     float ground_course(uint8_t instance) const {
         return state[instance].ground_course;
     }
     float ground_course() const {
         return ground_course(primary_instance);
     }
+    // ground course in centi-degrees
     int32_t ground_course_cd(uint8_t instance) const {
         return ground_course(instance) * 100;
     }
@@ -298,15 +296,6 @@ public:
         return last_message_time_ms(primary_instance);
     }
 
-    // convert GPS week and millis to unix epoch in ms
-    static uint64_t time_epoch_convert(uint16_t gps_week, uint32_t gps_ms);
-    
-    // return last fix time since the 1/1/1970 in microseconds
-    uint64_t time_epoch_usec(uint8_t instance);
-    uint64_t time_epoch_usec(void) { 
-        return time_epoch_usec(primary_instance); 
-    }
-
 	// return true if the GPS supports vertical velocity values
     bool have_vertical_velocity(uint8_t instance) const { 
         return state[instance].have_vertical_velocity; 
@@ -320,12 +309,7 @@ public:
     float get_lag(void) const { return get_lag(primary_instance); }
 
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
-    const Vector3f &get_antenna_offset(uint8_t instance) const {
-        return _antenna_offset[instance];
-    }
-    const Vector3f &get_antenna_offset(void) const {
-        return _antenna_offset[primary_instance];
-    }
+    const Vector3f &get_antenna_offset(uint8_t instance) const;
 
     // set position for HIL
     void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
@@ -334,33 +318,6 @@ public:
 
     // set accuracy for HIL
     void setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity, uint32_t sample_ms);
-    
-    static const struct AP_Param::GroupInfo var_info[];
-
-    // dataflash for logging, if available
-    DataFlash_Class *_DataFlash;
-
-    // configuration parameters
-    AP_Int8 _type[GPS_MAX_INSTANCES];
-    AP_Int8 _navfilter;
-    AP_Int8 _auto_switch;
-    AP_Int8 _min_dgps;
-    AP_Int16 _sbp_logmask;
-    AP_Int8 _inject_to;
-    uint32_t _last_instance_swap_ms;
-    AP_Int8 _sbas_mode;
-    AP_Int8 _min_elevation;
-    AP_Int8 _raw_data;
-    AP_Int8 _gnss_mode[2];
-    AP_Int16 _rate_ms[2];
-    AP_Int8 _save_config;
-    AP_Int8 _auto_config;
-    AP_Vector3f _antenna_offset[2];
-    AP_Int16 _delay_ms[2];
-
-    // handle sending of initialisation strings to the GPS
-    void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
-    void send_blob_update(uint8_t instance);
 
     // lock out a GPS port, allowing another application to use the port
     void lock_port(uint8_t instance, bool locked);
@@ -384,8 +341,57 @@ public:
     bool all_configured(void) const {
         return first_unconfigured_gps() == GPS_ALL_CONFIGURED;
     }
-    
+
+    // pre-arm check that all GPSs are close to each other.  farthest distance between GPSs (in meters) is returned
+    bool all_consistent(float &distance) const;
+
+    // pre-arm check of GPS blending.  False if blending is unhealthy, True if healthy or blending is not being used
+    bool blend_health_check() const;
+
+    // handle sending of initialisation strings to the GPS - only used by backends
+    void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
+    void send_blob_update(uint8_t instance);
+
+    // return last fix time since the 1/1/1970 in microseconds
+    uint64_t time_epoch_usec(uint8_t instance);
+    uint64_t time_epoch_usec(void) {
+        return time_epoch_usec(primary_instance);
+    }
+
+    // convert GPS week and millis to unix epoch in ms
+    static uint64_t time_epoch_convert(uint16_t gps_week, uint32_t gps_ms);
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+protected:
+
+    // dataflash for logging, if available
+    DataFlash_Class *_DataFlash;
+
+    // configuration parameters
+    AP_Int8 _type[GPS_MAX_RECEIVERS];
+    AP_Int8 _navfilter;
+    AP_Int8 _auto_switch;
+    AP_Int8 _min_dgps;
+    AP_Int16 _sbp_logmask;
+    AP_Int8 _inject_to;
+    uint32_t _last_instance_swap_ms;
+    AP_Int8 _sbas_mode;
+    AP_Int8 _min_elevation;
+    AP_Int8 _raw_data;
+    AP_Int8 _gnss_mode[GPS_MAX_RECEIVERS];
+    AP_Int16 _rate_ms[GPS_MAX_RECEIVERS];   // this parameter should always be accessed using get_rate_ms()
+    AP_Int8 _save_config;
+    AP_Int8 _auto_config;
+    AP_Vector3f _antenna_offset[GPS_MAX_RECEIVERS];
+    AP_Int16 _delay_ms[GPS_MAX_RECEIVERS];
+    AP_Int8 _blend_mask;
+    AP_Float _blend_tc;
+
 private:
+    // return gps update rate in milliseconds
+    uint16_t get_rate_ms(uint8_t instance) const;
+
     struct GPS_timing {
         // the time we got our last fix in system milliseconds
         uint32_t last_fix_time_ms;
@@ -393,10 +399,11 @@ private:
         // the time we got our last fix in system milliseconds
         uint32_t last_message_time_ms;
     };
-    GPS_timing timing[GPS_MAX_INSTANCES];
-    GPS_State state[GPS_MAX_INSTANCES];
-    AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
-    AP_HAL::UARTDriver *_port[GPS_MAX_INSTANCES];
+    // Note allowance for an additional instance to contain blended data
+    GPS_timing timing[GPS_MAX_RECEIVERS+1];
+    GPS_State state[GPS_MAX_RECEIVERS+1];
+    AP_GPS_Backend *drivers[GPS_MAX_RECEIVERS];
+    AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
 
     /// primary GPS instance
     uint8_t primary_instance:2;
@@ -419,12 +426,12 @@ private:
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
         struct ERB_detect_state erb_detect_state;
-    } detect_state[GPS_MAX_INSTANCES];
+    } detect_state[GPS_MAX_RECEIVERS];
 
     struct {
         const char *blob;
         uint16_t remaining;
-    } initblob_state[GPS_MAX_INSTANCES];
+    } initblob_state[GPS_MAX_RECEIVERS];
 
     static const uint32_t  _baudrates[];
     static const char _initialisation_blob[];
@@ -459,6 +466,22 @@ private:
 
     // inject data into all backends
     void inject_data_all(const uint8_t *data, uint16_t len);
-};
 
-#define GPS_BAUD_TIME_MS 1200
+    // GPS blending and switching
+    Vector2f _NE_pos_offset_m[GPS_MAX_RECEIVERS]; // Filtered North,East position offset from GPS instance to blended solution in _output_state.location (m)
+    float _hgt_offset_cm[GPS_MAX_RECEIVERS]; // Filtered height offset from GPS instance relative to blended solution in _output_state.location (cm)
+    Vector3f _blended_antenna_offset; // blended antenna offset
+    float _blended_lag_sec = 0.001f * GPS_MAX_RATE_MS; // blended receiver lag in seconds
+    float _blend_weights[GPS_MAX_RECEIVERS]; // blend weight for each GPS. The blend weights must sum to 1.0 across all instances.
+    uint32_t _last_time_updated[GPS_MAX_RECEIVERS]; // the last value of state.last_gps_time_ms read for that GPS instance - used to detect new data.
+    float _omega_lpf; // cutoff frequency in rad/sec of LPF applied to position offsets
+    bool _output_is_blended; // true when a blended GPS solution being output
+    uint8_t _blend_health_counter;  // 0 = perfectly health, 100 = very unhealthy
+
+    // calculate the blend weight.  Returns true if blend could be calculated, false if not
+    bool calc_blend_weights(void);
+
+    // calculate the blended state
+    void calc_blended_state(void);
+
+};

@@ -31,6 +31,7 @@ void Sub::failsafe_battery_event(void)
 
 void Sub::failsafe_manual_control_check()
 {
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     uint32_t tnow = AP_HAL::millis();
 
     // Require at least 2Hz update
@@ -46,6 +47,7 @@ void Sub::failsafe_manual_control_check()
     }
 
     failsafe.manual_control = false;
+#endif
 }
 
 void Sub::failsafe_internal_pressure_check()
@@ -285,7 +287,7 @@ bool Sub::should_disarm_on_failsafe()
         return !ap.auto_armed;
         break;
     default:
-        // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
+        // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, PosHold
         // if landed disarm
         //            return ap.land_complete;
         return false;

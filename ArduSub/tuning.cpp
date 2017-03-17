@@ -3,7 +3,6 @@
 
 /*
  * tuning.pde - function to update various parameters in flight using the ch6 tuning knob
- *      This should not be confused with the AutoTune feature which can bve found in control_autotune.pde
  */
 
 // tuning - updates parameters based on the ch6 tuning knob's position

@@ -1,18 +1,9 @@
 #include "Sub.h"
 
 /*
- * control_auto.pde - init and run calls for auto flight mode
+ * control_auto.cpp
+ *  Contains the mission, waypoint navigation and NAV_CMD item implementation
  *
- * This file contains the implementation for Land, Waypoint navigation and Takeoff from Auto mode
- * Command execution code (i.e. command_logic.pde) should:
- *      a) switch to Auto flight mode with set_mode() function.  This will cause auto_init to be called
- *      b) call one of the three auto initialisation functions: auto_wp_start(), auto_takeoff_start(), auto_land_start()
- *      c) call one of the verify functions auto_wp_verify(), auto_takeoff_verify, auto_land_verify repeated to check if the command has completed
- * The main loop (i.e. fast loop) will call update_flight_modes() which will in turn call auto_run() which, based upon the auto_mode variable will call
- *      correct auto_wp_run, auto_takeoff_run or auto_land_run to actually implement the feature
- */
-
-/*
  *  While in the auto flight mode, navigation or do/now commands can be run.
  *  Code in this file implements the navigation commands
  */
@@ -54,10 +45,6 @@ void Sub::auto_run()
     case Auto_WP:
     case Auto_CircleMoveToEdge:
         auto_wp_run();
-        break;
-
-    case Auto_Land:
-        auto_land_run();
         break;
 
     case Auto_Circle:
@@ -249,56 +236,6 @@ void Sub::auto_spline_run()
     }
 }
 
-// auto_land_start - initialises controller to implement a landing
-void Sub::auto_land_start()
-{
-    // set target to stopping point
-    Vector3f stopping_point;
-    wp_nav.get_loiter_stopping_point_xy(stopping_point);
-
-    // call location specific land start function
-    auto_land_start(stopping_point);
-}
-
-// auto_land_start - initialises controller to implement a landing
-void Sub::auto_land_start(const Vector3f& destination)
-{
-    auto_mode = Auto_Land;
-
-    // initialise loiter target destination
-    wp_nav.init_loiter_target(destination);
-
-    // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
-
-    // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
-}
-
-// auto_land_run - lands in auto mode
-//      called by auto_run at 100hz or more
-void Sub::auto_land_run()
-{
-    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-
-        // set target to current position
-        wp_nav.init_loiter_target();
-        return;
-    }
-
-    // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // land mode replaced by surface mode, does not have this functionality
-    //    land_run_horizontal_control();
-    //    land_run_vertical_control();
-}
-
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
 //  we assume the caller has set the circle's circle with circle_nav.set_center()
 //  we assume the caller has performed all required GPS_ok checks
@@ -371,11 +308,18 @@ void Sub::auto_circle_run()
     // call circle controller
     circle_nav.update();
 
+    float lateral_out, forward_out;
+    translate_circle_nav_rp(lateral_out, forward_out);
+
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
+
     // call z-axis position controller
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.input_euler_angle_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), circle_nav.get_yaw(), true, get_smoothing_gain());
 }
 
 #if NAV_GUIDED == ENABLED

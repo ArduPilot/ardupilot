@@ -36,17 +36,15 @@ struct Guided_Limit {
 // guided_init - initialise guided controller
 bool Sub::guided_init(bool ignore_checks)
 {
-    return false; // Not implemented
-
-    //    if (position_ok() || ignore_checks) {
-    //        // initialise yaw
-    //        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-    //        // start in position control mode
-    //        guided_pos_control_start();
-    //        return true;
-    //    }else{
-    //        return false;
-    //    }
+        if (position_ok() || ignore_checks) {
+            // initialise yaw
+            set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+            // start in position control mode
+            guided_pos_control_start();
+            return true;
+        }else{
+            return false;
+        }
 }
 
 // initialise guided mode's position controller
@@ -304,16 +302,23 @@ void Sub::guided_pos_control_run()
     // run waypoint controller
     failsafe_terrain_set_status(wp_nav.update_wpnav());
 
+    float lateral_out, forward_out;
+    translate_wpnav_rp(lateral_out, forward_out);
+
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
+
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate, get_smoothing_gain());
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), true, get_smoothing_gain());
     }
 }
 
@@ -354,13 +359,20 @@ void Sub::guided_vel_control_run()
     // call velocity controller which includes z axis controller
     pos_control.update_vel_controller_xyz(ekfNavVelGainScaler);
 
+    float lateral_out, forward_out;
+    translate_pos_control_rp(lateral_out, forward_out);
+
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
+
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(pos_control.get_roll(), pos_control.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate, get_smoothing_gain());
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), true, get_smoothing_gain());
     }
 }
 
@@ -421,15 +433,22 @@ void Sub::guided_posvel_control_run()
         pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_AND_VEL_FF, ekfNavVelGainScaler, false);
     }
 
+    float lateral_out, forward_out;
+    translate_pos_control_rp(lateral_out, forward_out);
+
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
+
     pos_control.update_z_controller();
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(pos_control.get_roll(), pos_control.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate, get_smoothing_gain());
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), true, get_smoothing_gain());
     }
 }
 

@@ -68,7 +68,7 @@
 //
 
 #ifndef CIRCLE_NAV_ENABLED
-# define CIRCLE_NAV_ENABLED DISABLED
+# define CIRCLE_NAV_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -77,14 +77,6 @@
 
 #ifndef CH6_TUNE_ENABLED
 # define CH6_TUNE_ENABLED DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Aux Switches
-//
-
-#ifndef AUXSW_ENABLED
-# define AUXSW_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -225,7 +217,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_ACTION_DEFAULT
-# define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_DISABLED  // EKF failsafe triggers land by default
+# define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_DISABLED  // EKF failsafe
 #endif
 #ifndef FS_EKF_THRESHOLD_DEFAULT
 # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
@@ -261,12 +253,6 @@
 //  OPTICAL_FLOW
 #ifndef OPTFLOW
 # define OPTFLOW       DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-//  Auto Tuning
-#ifndef AUTOTUNE_ENABLED
-# define AUTOTUNE_ENABLED  ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -318,45 +304,6 @@
 # define FS_THR_VALUE_DEFAULT             975
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// Landing
-//
-#ifndef LAND_SPEED
-# define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
-#endif
-#ifndef LAND_START_ALT
-# define LAND_START_ALT -25         // altitude in cm where land controller switches to slow rate of descent
-#endif
-#ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM
-# define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM DISABLED  // we do not require pilot to reduce throttle to minimum before vehicle will disarm in AUTO, LAND or RTL
-#endif
-#ifndef LAND_REPOSITION_DEFAULT
-# define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing
-#endif
-#ifndef LAND_WITH_DELAY_MS
-# define LAND_WITH_DELAY_MS        4000    // default delay (in milliseconds) when a land-with-delay is triggered during a failsafe event
-#endif
-#ifndef LAND_CANCEL_TRIGGER_THR
-# define LAND_CANCEL_TRIGGER_THR   700     // land is cancelled by input throttle above 700
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Landing Detector
-//
-#ifndef LAND_DETECTOR_TRIGGER_SEC
-# define LAND_DETECTOR_TRIGGER_SEC         1.0f    // number of seconds to detect a landing
-#endif
-#ifndef LAND_DETECTOR_MAYBE_TRIGGER_SEC
-# define LAND_DETECTOR_MAYBE_TRIGGER_SEC   0.2f    // number of seconds that means we might be landed (used to reset horizontal position targets to prevent tipping over)
-#endif
-#ifndef LAND_DETECTOR_ACCEL_LPF_CUTOFF
-# define LAND_DETECTOR_ACCEL_LPF_CUTOFF     1.0f    // frequency cutoff of land detector accelerometer filter
-#endif
-#ifndef LAND_DETECTOR_ACCEL_MAX
-# define LAND_DETECTOR_ACCEL_MAX            1.0f    // vehicle acceleration must be under 1m/s/s
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
 //
@@ -403,7 +350,7 @@
 
 // RTL Mode
 #ifndef RTL_ALT_FINAL
-# define RTL_ALT_FINAL             0       // the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
+# define RTL_ALT_FINAL             0       // the altitude the vehicle will move to as the final stage of Returning to Launch.
 #endif
 
 #ifndef RTL_ALT

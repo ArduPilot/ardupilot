@@ -101,7 +101,7 @@ int SITL_State::gps2_pipe(void)
 /*
   write some bytes from the simulated GPS
  */
-void SITL_State::_gps_write(const uint8_t *p, uint16_t size)
+void SITL_State::_gps_write(const uint8_t *p, uint16_t size, uint8_t instance)
 {
     while (size--) {
         if (_sitl->gps_byteloss > 0.0f) {
@@ -112,10 +112,10 @@ void SITL_State::_gps_write(const uint8_t *p, uint16_t size)
                 continue;
             }
         }
-        if (gps_state.gps_fd != 0) {
+        if (instance == 0 && gps_state.gps_fd != 0) {
             write(gps_state.gps_fd, p, 1);
         }
-        if (_sitl->gps2_enable) {
+        if (instance == 1 && _sitl->gps2_enable) {
             if (gps2_state.gps_fd != 0) {
                 write(gps2_state.gps_fd, p, 1);
             }
@@ -146,7 +146,7 @@ static void simulation_timeval(struct timeval *tv)
 /*
   send a UBLOX GPS message
  */
-void SITL_State::_gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
+void SITL_State::_gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size, uint8_t instance)
 {
     const uint8_t PREAMBLE1 = 0xb5;
     const uint8_t PREAMBLE2 = 0x62;
@@ -165,9 +165,9 @@ void SITL_State::_gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
     for (uint8_t i=0; i<size; i++) {
         chk[1] += (chk[0] += buf[i]);
     }
-    _gps_write(hdr, sizeof(hdr));
-    _gps_write(buf, size);
-    _gps_write(chk, sizeof(chk));
+    _gps_write(hdr, sizeof(hdr), instance);
+    _gps_write(buf, size, instance);
+    _gps_write(chk, sizeof(chk), instance);
 }
 
 /*
@@ -188,7 +188,7 @@ static void gps_time(uint16_t *time_week, uint32_t *time_week_ms)
 /*
   send a new set of GPS UBLOX packets
  */
-void SITL_State::_update_gps_ubx(const struct gps_data *d)
+void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
 {
     struct PACKED ubx_nav_posllh {
         uint32_t	time; // GPS msToW
@@ -282,11 +282,19 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 
     gps_time(&time_week, &time_week_ms);
 
+    // add glitch to 2nd gps
+    Vector3f glitch;
+    if (instance == 0) {
+        glitch = _sitl->gps_glitch;
+    } else {
+        glitch = _sitl->gps2_glitch;
+    }
+
     pos.time = time_week_ms;
-    pos.longitude = d->longitude * 1.0e7;
-    pos.latitude  = d->latitude * 1.0e7;
-    pos.altitude_ellipsoid = d->altitude*1000.0f;
-    pos.altitude_msl = d->altitude*1000.0f;
+    pos.longitude = (d->longitude + glitch.y) * 1.0e7;
+    pos.latitude  = (d->latitude + glitch.x) * 1.0e7;
+    pos.altitude_ellipsoid = (d->altitude + glitch.z) * 1000.0f;
+    pos.altitude_msl = (d->altitude + glitch.z) * 1000.0f;
     pos.horizontal_accuracy = 1500;
     pos.vertical_accuracy = 2000;
 
@@ -341,10 +349,10 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
     pvt.flags2 =0; 
     pvt.num_sv = d->have_lock?_sitl->gps_numsats:3; 
-    pvt.lon = d->longitude * 1.0e7;
-    pvt.lat = d->latitude * 1.0e7; 
-    pvt.height = d->altitude*1000.0f;
-    pvt.h_msl = d->altitude*1000.0f; 
+    pvt.lon = (d->longitude + glitch.y) * 1.0e7;
+    pvt.lat  = (d->latitude + glitch.x) * 1.0e7;
+    pvt.height = (d->altitude + glitch.z) * 1000.0f;
+    pvt.h_msl = (d->altitude + glitch.z) * 1000.0f;
     pvt.h_acc = 200;
     pvt.v_acc = 200; 
     pvt.velN = 1000.0f * d->speedN;
@@ -359,12 +367,12 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     pvt.headVeh = 0;
     memset(pvt.reserved2, '\0', ARRAY_SIZE(pvt.reserved2));
 
-    _gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
-    _gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
-    _gps_send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
-    _gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
-    _gps_send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop));
-    _gps_send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt));
+    _gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos), instance);
+    _gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status), instance);
+    _gps_send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned), instance);
+    _gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol), instance);
+    _gps_send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop), instance);
+    _gps_send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt), instance);
 }
 
 static void swap_uint32(uint32_t *v, uint8_t n)
@@ -984,7 +992,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 {
     struct gps_data d;
     char c;
-    Vector3f glitch_offsets = _sitl->gps_glitch;
+    Vector3f glitch_offsets;// = _sitl->gps_glitch;
 
     //Capture current position as basestation location for
     if (!_gps_has_basestation_position) {
@@ -1092,7 +1100,8 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
         break;
 
     case SITL::SITL::GPS_TYPE_UBLOX:
-        _update_gps_ubx(&d);
+        _update_gps_ubx(&d,0);
+        _update_gps_ubx(&d,1);
         break;
 
     case SITL::SITL::GPS_TYPE_MTK:

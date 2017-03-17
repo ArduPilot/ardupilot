@@ -1269,7 +1269,7 @@ AP_GPS_UBLOX::_configure_rate(void)
 {
     struct ubx_cfg_nav_rate msg;
     // require a minimum measurement rate of 5Hz
-    msg.measure_rate_ms = MIN(gps._rate_ms[state.instance], MINIMUM_MEASURE_RATE_MS);
+    msg.measure_rate_ms = gps.get_rate_ms(state.instance);
     msg.nav_rate        = 1;
     msg.timeref         = 0;     // UTC time
     _send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));

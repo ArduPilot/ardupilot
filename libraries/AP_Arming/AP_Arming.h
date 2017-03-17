@@ -92,7 +92,7 @@ protected:
 
     virtual bool compass_checks(bool report);
 
-    bool gps_checks(bool report);
+    virtual bool gps_checks(bool report);
 
     bool battery_checks(bool report);
 

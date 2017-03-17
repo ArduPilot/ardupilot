@@ -357,7 +357,6 @@ bool AP_Arming::gps_checks(bool report)
         }
     }
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
         uint8_t first_unconfigured = gps.first_unconfigured_gps();
         if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
@@ -370,7 +369,26 @@ bool AP_Arming::gps_checks(bool report)
             return false;
         }
     }
-#endif
+
+    // check GPSs are within 50m of each other and that blending is healthy
+    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
+        float distance_m;
+        if (!gps.all_consistent(distance_m)) {
+            if (report) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,
+                                                 "PreArm: GPS positions differ by %4.1fm",
+                                                 (double)distance_m);
+            }
+            return false;
+        }
+        if (!gps.blend_health_check()) {
+            if (report) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: GPS blending unhealthy");
+            }
+            return false;
+        }
+    }
+
     return true;
 }
 

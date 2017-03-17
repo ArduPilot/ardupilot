@@ -309,50 +309,6 @@ const AP_Param::Info Sub::var_info[] = {
     GSCALAR(radio_tuning_high, "TUNE_HIGH",         1000),
 #endif
 
-#if AUXSW_ENABLED == ENABLED
-    // @Param: CH7_OPT
-    // @DisplayName: Channel 7 option
-    // @Description: Select which function if performed when CH7 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost vehicle Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
-    // @User: Standard
-    GSCALAR(ch7_option, "CH7_OPT",                  AUXSW_DO_NOTHING),
-
-    // @Param: CH8_OPT
-    // @DisplayName: Channel 8 option
-    // @Description: Select which function if performed when CH8 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost vehicle Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
-    // @User: Standard
-    GSCALAR(ch8_option, "CH8_OPT",                  AUXSW_DO_NOTHING),
-
-    // @Param: CH9_OPT
-    // @DisplayName: Channel 9 option
-    // @Description: Select which function if performed when CH9 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost vehicle Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
-    // @User: Standard
-    GSCALAR(ch9_option, "CH9_OPT",                  AUXSW_DO_NOTHING),
-
-    // @Param: CH10_OPT
-    // @DisplayName: Channel 10 option
-    // @Description: Select which function if performed when CH10 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost vehicle Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
-    // @User: Standard
-    GSCALAR(ch10_option, "CH10_OPT",                AUXSW_DO_NOTHING),
-
-    // @Param: CH11_OPT
-    // @DisplayName: Channel 11 option
-    // @Description: Select which function if performed when CH11 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost vehicle Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
-    // @User: Standard
-    GSCALAR(ch11_option, "CH11_OPT",                AUXSW_DO_NOTHING),
-
-    // @Param: CH12_OPT
-    // @DisplayName: Channel 12 option
-    // @Description: Select which function if performed when CH12 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost vehicle Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw
-    // @User: Standard
-    GSCALAR(ch12_option, "CH12_OPT",                AUXSW_DO_NOTHING),
-#endif
-
     // @Param: DISARM_DELAY
     // @DisplayName: Disarm delay
     // @Description: Delay before automatic disarm in seconds. A value of zero disables auto disarm.
@@ -832,38 +788,14 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
 #endif
 
-#if AUTOTUNE_ENABLED == ENABLED
-    // @Param: AUTOTUNE_AXES
-    // @DisplayName: Autotune axis bitmask
-    // @Description: 1-byte bitmap of axes to autotune
-    // @Values: 7:All,1:Roll Only,2:Pitch Only,4:Yaw Only,3:Roll and Pitch,5:Roll and Yaw,6:Pitch and Yaw
-    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
-    // @User: Standard
-    GSCALAR(autotune_axis_bitmask, "AUTOTUNE_AXES", 7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
-
-    // @Param: AUTOTUNE_AGGR
-    // @DisplayName: Autotune aggressiveness
-    // @Description: Autotune aggressiveness. Defines the bounce back used to detect size of the D term.
-    // @Range: 0.05 0.10
-    // @User: Standard
-    GSCALAR(autotune_aggressiveness, "AUTOTUNE_AGGR", 0.1f),
-
-    // @Param: AUTOTUNE_MIN_D
-    // @DisplayName: AutoTune minimum D
-    // @Description: Defines the minimum D gain
-    // @Range: 0.001 0.006
-    // @User: Standard
-    GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.001f),
-#endif
-
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
     // @Param: TERRAIN_FOLLOW
     // @DisplayName: Terrain Following use control
-    // @Description: This enables terrain following for RTL and LAND flight modes. To use this option TERRAIN_ENABLE must be 1 and the GCS must  support sending terrain data to the aircraft.  In RTL the RTL_ALT will be considered a height above the terrain.  In LAND mode the vehicle will slow to LAND_SPEED 10m above terrain (instead of 10m above home).  This parameter does not affect AUTO and Guided which use a per-command flag to determine if the height is above-home, absolute or above-terrain.
-    // @Values: 0:Do Not Use in RTL and Land,1:Use in RTL and Land
+    // @Description: This enables terrain following for RTL and SURFACE flight modes. To use this option TERRAIN_ENABLE must be 1 and the GCS must  support sending terrain data to the aircraft.  In RTL the RTL_ALT will be considered a height above the terrain.  In LAND mode the vehicle will slow to LAND_SPEED 10m above terrain (instead of 10m above home).  This parameter does not affect AUTO and Guided which use a per-command flag to determine if the height is above-home, absolute or above-terrain.
+    // @Values: 0:Do Not Use in RTL and SURFACE,1:Use in RTL and SURFACE
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 
@@ -962,6 +894,7 @@ void Sub::load_parameters(void)
             AP_Arming::ARMING_CHECK_VOLTAGE |
             AP_Arming::ARMING_CHECK_BATTERY |
             AP_Arming::ARMING_CHECK_LOGGING);
+    AP_Param::set_default_by_name("CIRCLE_RATE", 2.0f);
 }
 
 void Sub::convert_old_parameters(void)

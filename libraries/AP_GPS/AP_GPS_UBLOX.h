@@ -48,7 +48,6 @@
 #define UBX_MSG_TYPES 2
 
 #define UBLOX_MAX_PORTS 6
-#define MINIMUM_MEASURE_RATE_MS 200
 
 #define RATE_POSLLH 1
 #define RATE_STATUS 1
@@ -105,11 +104,15 @@ public:
     void inject_data(const uint8_t *data, uint16_t len) override;
     
     bool is_configured(void) {
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         if (!gps._auto_config) {
             return true;
         } else {
             return !_unconfigured_messages;
         }
+#else
+        return true;
+#endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
     }
 
     void broadcast_configuration_failure_reason(void) const override;

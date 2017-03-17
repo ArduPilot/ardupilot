@@ -786,10 +786,14 @@ Format characters in the format string for binary log messages
       "GPS",  "QBIHBcLLefffB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_GPS2_MSG, sizeof(log_GPS), \
       "GPS2", "QBIHBcLLefffB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
+    { LOG_GPSB_MSG, sizeof(log_GPS), \
+      "GPSB", "QBIHBcLLefffB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
       "GPA",  "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
     { LOG_GPA2_MSG, sizeof(log_GPA), \
       "GPA2", "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
+    { LOG_GPAB_MSG, sizeof(log_GPA), \
+      "GPAB", "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -990,6 +994,7 @@ enum LogMessages {
     LOG_PARAMETER_MSG,
     LOG_GPS_MSG,
     LOG_GPS2_MSG,
+    LOG_GPSB_MSG,
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
@@ -1052,6 +1057,7 @@ enum LogMessages {
     LOG_RPM_MSG,
     LOG_GPA_MSG,
     LOG_GPA2_MSG,
+    LOG_GPAB_MSG,
     LOG_RFND_MSG,
     LOG_BAR3_MSG,
     LOG_NKF1_MSG,

@@ -621,6 +621,12 @@ void Copter::Log_Sensor_Health()
         sensor_health.compass = compass.healthy();
         Log_Write_Error(ERROR_SUBSYSTEM_COMPASS, (sensor_health.compass ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
     }
+
+    // check primary GPS
+    if (sensor_health.primary_gps != gps.primary_sensor()) {
+        sensor_health.primary_gps = gps.primary_sensor();
+        Log_Write_Event(DATA_GPS_PRIMARY_CHANGED);
+    }
 }
 
 struct PACKED log_Heli {

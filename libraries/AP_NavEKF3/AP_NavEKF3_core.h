@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-  24 state EKF based on https://github.com/priseborough/InertialNav
+  24 state EKF based on the derivation in https://github.com/PX4/ecl/
+  blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
 
   Converted from Matlab to C++ by Paul Riseborough
 
@@ -180,10 +181,10 @@ public:
     void getQuaternion(Quaternion &quat) const;
 
     // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
-    void  getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
+    void getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
     // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-    void  getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+    void getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
@@ -196,7 +197,7 @@ public:
     // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
-    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
+    void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
 
     // return data for debugging optical flow fusion
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
@@ -242,7 +243,7 @@ public:
      7 = badly conditioned synthetic sideslip fusion
      7 = filter is not initialised
     */
-    void  getFilterFaults(uint16_t &faults) const;
+    void getFilterFaults(uint16_t &faults) const;
 
     /*
     return filter timeout status as a bitmasked integer
@@ -255,12 +256,12 @@ public:
      7 = unassigned
      7 = unassigned
     */
-    void  getFilterTimeouts(uint8_t &timeouts) const;
+    void getFilterTimeouts(uint8_t &timeouts) const;
 
     /*
     return filter gps quality check status
     */
-    void  getFilterGpsStatus(nav_gps_status &status) const;
+    void getFilterGpsStatus(nav_gps_status &status) const;
 
     /*
     Return a filter function status that indicates:
@@ -269,7 +270,7 @@ public:
         If the filter has activated the mode that mitigates against ground effect static pressure errors
         If GPS data is being used
     */
-    void  getFilterStatus(nav_filter_status &status) const;
+    void getFilterStatus(nav_filter_status &status) const;
 
     // send an EKF_STATUS_REPORT message to GCS
     void send_status_report(mavlink_channel_t chan);
@@ -445,7 +446,7 @@ private:
     };
 
     // update the navigation filter status
-    void  updateFilterStatus(void);
+    void updateFilterStatus(void);
 
     // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
@@ -848,7 +849,7 @@ private:
     uint8_t magStoreIndex;          // Magnetometer data storage index
     gps_elements gpsDataNew;        // GPS data at the current time horizon
     gps_elements gpsDataDelayed;    // GPS data at the fusion time horizon
-    uint8_t gpsStoreIndex;          // GPS data storage index
+    uint8_t last_gps_idx;           // sensor ID of the GPS receiver used for the last fusion or reset
     output_elements outputDataNew;  // output state data at the current time step
     output_elements outputDataDelayed; // output state data at the current time step
     Vector3f delAngCorrection;      // correction applied to delta angles used by output observer to track the EKF
@@ -1130,7 +1131,6 @@ private:
         ftype R_MAG;
         Vector9 SH_MAG;
     } mag_state;
-
 
     // string representing last reason for prearm failure
     char prearm_fail_string[40];

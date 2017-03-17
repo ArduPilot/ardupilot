@@ -331,6 +331,7 @@ private:
     struct {
         uint8_t baro        : 1;    // true if baro is healthy
         uint8_t compass     : 1;    // true if compass is healthy
+        uint8_t primary_gps;        // primary gps index
     } sensor_health;
 
     // Motor Output
@@ -401,9 +402,6 @@ private:
 
     // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
     int32_t initial_armed_bearing;
-
-    // Throttle variables
-    int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
 
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
