@@ -664,7 +664,7 @@ void Replay::read_sensors(const char *type)
         if (!done_baro_init) {
             done_baro_init = true;
             ::printf("Barometer initialised\n");
-            _vehicle.barometer.update_calibration();
+            _vehicle.barometer.update_calibration(_vehicle.gps);
         }
     } 
 
