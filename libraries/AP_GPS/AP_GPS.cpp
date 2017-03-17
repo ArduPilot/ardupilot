@@ -1457,7 +1457,7 @@ void AP_GPS::calc_blended_state(void)
         double temp_time_0 = 0.0;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (_blend_weights[i] > 0.0f) {
-                temp_time_0 += (double)state[i].time_week_ms * _blend_weights[i];
+                temp_time_0 += (double)state[i].time_week_ms * (double)_blend_weights[i];
             }
         }
         state[GPS_BLENDED_INSTANCE].time_week_ms = (uint32_t)temp_time_0;
@@ -1468,8 +1468,8 @@ void AP_GPS::calc_blended_state(void)
     double temp_time_2 = 0.0;
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (_blend_weights[i] > 0.0f) {
-            temp_time_1 += (double)timing[i].last_fix_time_ms * _blend_weights[i];
-            temp_time_2 += (double)timing[i].last_message_time_ms * _blend_weights[i];
+            temp_time_1 += (double)timing[i].last_fix_time_ms * (double) _blend_weights[i];
+            temp_time_2 += (double)timing[i].last_message_time_ms * (double)_blend_weights[i];
             _blended_lag_sec += get_lag(i) * _blended_lag_sec;
         }
     }
