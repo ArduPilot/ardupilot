@@ -90,6 +90,9 @@ private:
     // run target position estimator
     void run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
+    // If a new measurement was retreived, sets _target_pos_rel_meas_NED and returns true
+    bool construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid);
+
     // get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
     bool retrieve_los_meas(Vector3f& target_vec_unit_body);
 
@@ -109,6 +112,7 @@ private:
     AP_Float                    _land_ofs_cm_x;     // Desired landing position of the camera forward of the target in vehicle body frame
     AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
     AP_Float                    _accel_noise;       // accelometer process noise
+    AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently
@@ -119,11 +123,11 @@ private:
     
     Vector3f                    _target_pos_rel_meas_NED; // target's relative position as 3D vector
 
-    Vector2f                    _target_pos_rel_est_NE; // target's relative position based on latest sensor data (i.e. not compensated for lag)
-    Vector2f                    _target_vel_rel_est_NE; // target's relative velocity based on latest sensor data (i.e. not compensated for lag)
+    Vector2f                    _target_pos_rel_est_NE; // target's position relative to the IMU, not compensated for lag
+    Vector2f                    _target_vel_rel_est_NE; // target's velocity relative to the IMU, not compensated for lag
 
-    Vector2f                    _target_pos_rel_out_NE; // target's relative position, fed into position controller
-    Vector2f                    _target_vel_rel_out_NE; // target's relative velocity, fed into position controller
+    Vector2f                    _target_pos_rel_out_NE; // target's position relative to the camera, fed into position controller
+    Vector2f                    _target_vel_rel_out_NE; // target's velocity relative to the CG, fed into position controller
 
     // structure and buffer to hold a short history of vehicle velocity
     struct inertial_data_frame_s {
