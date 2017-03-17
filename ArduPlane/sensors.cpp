@@ -7,9 +7,13 @@ void Plane::init_barometer(bool full_calibration)
     if (full_calibration) {
         barometer.calibrate();
     } else {
-        barometer.update_calibration();
+        update_barometer_calibration();
     }
     gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
+}
+
+void Plane::update_barometer_calibration (void) {
+    barometer.update_calibration(gps);
 }
 
 void Plane::init_rangefinder(void)
@@ -107,7 +111,7 @@ void Plane::zero_airspeed(bool in_startup)
     airspeed.calibrate(in_startup);
     read_airspeed();
     // update barometric calibration with new airspeed supplied temperature
-    barometer.update_calibration();
+    update_barometer_calibration();
     gcs_send_text(MAV_SEVERITY_INFO,"Airspeed calibration started");
 }
 

@@ -942,6 +942,7 @@ private:
     void trim_radio();
     bool rc_failsafe_active(void);
     void init_barometer(bool full_calibration);
+    void update_barometer_calibration(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
     void read_airspeed(void);
