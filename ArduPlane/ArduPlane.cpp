@@ -279,6 +279,9 @@ void Plane::update_logging1(void)
 
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
         Log_Write_IMU();
+
+    if (should_log(MASK_LOG_ATTITUDE_MED))
+        Log_Write_AOA_SSA();
 }
 
 /*

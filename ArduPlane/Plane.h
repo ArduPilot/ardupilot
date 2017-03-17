@@ -810,6 +810,9 @@ private:
     void send_rpm(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
+
+    void send_aoa_ssa(mavlink_channel_t chan);
+
     bool telemetry_delayed(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
@@ -838,6 +841,7 @@ private:
     void Log_Write_Airspeed(void);
     void Log_Write_Home_And_Origin();
     void Log_Write_Vehicle_Startup_Messages();
+    void Log_Write_AOA_SSA();
     void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page);
     void start_logging();
 

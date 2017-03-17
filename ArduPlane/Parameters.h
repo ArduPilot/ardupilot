@@ -545,6 +545,9 @@ public:
     
     // ArduSoar parameters
     SoaringController soaring_controller;
+
+    // critical angle of attack
+    AP_Float aoa_crit;
 };
 
 extern const AP_Param::Info var_info[];

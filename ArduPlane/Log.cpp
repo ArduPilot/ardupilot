@@ -460,6 +460,12 @@ void Plane::Log_Write_Airspeed(void)
     DataFlash.Log_Write_Airspeed(airspeed);
 }
 
+// Write a AOA and SSA packet
+void Plane::Log_Write_AOA_SSA(void)
+{
+    DataFlash.Log_Write_AOA_SSA(ahrs);
+}
+
 // log ahrs home and EKF origin to dataflash
 void Plane::Log_Write_Home_And_Origin()
 {
@@ -497,6 +503,8 @@ const struct LogStructure Plane::log_structure[] = {
       "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit" },
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
       "QTUN", "Qffffehhffff", "TimeUS,AngBst,ThrOut,DAlt,Alt,BarAlt,DCRt,CRt,DVx,DVy,DAx,DAy" },
+    { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA),
+      "AOA", "Qff", "TimeUS,AOA,SSA" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
