@@ -354,6 +354,6 @@ void AC_PrecLand::run_output_prediction()
 
     // compensate for camera offset from the center of the vehicle
     Vector3f land_ofs_ned_m = _ahrs.get_rotation_body_to_ned() * Vector3f(_land_ofs_cm_x,_land_ofs_cm_y,0) * 0.01f;
-    _target_pos_rel_est_NE.x += land_ofs_ned_m.x;
-    _target_pos_rel_est_NE.y += land_ofs_ned_m.y;
+    _target_pos_rel_out_NE.x += land_ofs_ned_m.x;
+    _target_pos_rel_out_NE.y += land_ofs_ned_m.y;
 }
