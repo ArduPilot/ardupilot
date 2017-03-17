@@ -305,9 +305,9 @@ float AP_Baro::get_EAS2TAS(void)
 // return air density / sea level density - decreases as altitude climbs
 float AP_Baro::get_air_density_ratio(void)
 {
-    float eas2tas = get_EAS2TAS();
+    const float eas2tas = get_EAS2TAS();
     if (eas2tas > 0.0f) {
-        return 1.0f/(sq(get_EAS2TAS()));
+        return 1.0f/(sq(eas2tas));
     } else {
         return 1.0f;
     }
