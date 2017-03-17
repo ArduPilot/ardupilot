@@ -64,6 +64,25 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanceds
     AP_GROUPINFO("ACC_P_NSE", 6, AC_PrecLand, _accel_noise, 2.5f),
 
+    // @Param: CAM_POS_X
+    // @DisplayName: Camera X position offset
+    // @Description: X position of the camera in body frame. Positive X is forward of the origin.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: CAM_POS_Y
+    // @DisplayName: Antenna Y position offset
+    // @Description: Y position of the camera in body frame. Positive Y is to the right of the origin.
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: CAM_POS_Z
+    // @DisplayName: Antenna Z position offset
+    // @Description: Z position of the camera in body frame. Positive Z is down from the origin.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("CAM_POS", 7, AC_PrecLand, _cam_offset, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -217,29 +236,14 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
             }
 
             // Update if a new LOS measurement is available
-            Vector3f target_vec_unit_body;
-            if (retrieve_los_meas(target_vec_unit_body)) {
-                Vector3f target_vec_unit_ned = inertial_data_delayed.Tbn * target_vec_unit_body;
-                bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
-                bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
-                if (target_vec_valid && alt_valid) {
-                    float alt;
-                    if (_backend->distance_to_target() > 0.0f) {
-                        alt = _backend->distance_to_target();
-                    } else {
-                        alt = MAX(rangefinder_alt_m, 0.0f);
-                    }
-                    float dist = alt/target_vec_unit_ned.z;
-                    _target_pos_rel_meas_NED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt);
+            if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
+                _target_pos_rel_est_NE.x = _target_pos_rel_meas_NED.x;
+                _target_pos_rel_est_NE.y = _target_pos_rel_meas_NED.y;
+                _target_vel_rel_est_NE.x = -inertial_data_delayed.inertialNavVelocity.x;
+                _target_vel_rel_est_NE.y = -inertial_data_delayed.inertialNavVelocity.y;
 
-                    _target_pos_rel_est_NE.x = _target_pos_rel_meas_NED.x;
-                    _target_pos_rel_est_NE.y = _target_pos_rel_meas_NED.y;
-                    _target_vel_rel_est_NE.x = -inertial_data_delayed.inertialNavVelocity.x;
-                    _target_vel_rel_est_NE.y = -inertial_data_delayed.inertialNavVelocity.y;
-
-                    _last_update_ms = AP_HAL::millis();
-                    _target_acquired = true;
-                }
+                _last_update_ms = AP_HAL::millis();
+                _target_acquired = true;
             }
 
             // Output prediction
@@ -259,45 +263,30 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
             }
 
             // Update if a new LOS measurement is available
-            Vector3f target_vec_unit_body;
-            if (retrieve_los_meas(target_vec_unit_body)) {
-                Vector3f target_vec_unit_ned = inertial_data_delayed.Tbn * target_vec_unit_body;
-                bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
-                bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
-                if (target_vec_valid && alt_valid) {
-                    float alt;
-                    if (_backend->distance_to_target() > 0.0f) {
-                        alt = _backend->distance_to_target();
+            if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
+                float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*_ahrs.get_gyro().length()) + 0.02f);
+                if (!target_acquired()) {
+                    // reset filter state
+                    if (inertial_data_delayed.inertialNavVelocityValid) {
+                        _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, -inertial_data_delayed.inertialNavVelocity.x, sq(2.0f));
+                        _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, -inertial_data_delayed.inertialNavVelocity.y, sq(2.0f));
                     } else {
-                        alt = MAX(rangefinder_alt_m, 0.0f);
+                        _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, 0.0f, sq(10.0f));
+                        _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, 0.0f, sq(10.0f));
                     }
-                    float dist = alt/target_vec_unit_ned.z;
-                    _target_pos_rel_meas_NED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt);
-
-                    float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*_ahrs.get_gyro().length()) + 0.02f);
-                    if (!target_acquired()) {
-                        // reset filter state
-                        if (inertial_data_delayed.inertialNavVelocityValid) {
-                            _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, -inertial_data_delayed.inertialNavVelocity.x, sq(2.0f));
-                            _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, -inertial_data_delayed.inertialNavVelocity.y, sq(2.0f));
-                        } else {
-                            _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, 0.0f, sq(10.0f));
-                            _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, 0.0f, sq(10.0f));
-                        }
+                    _last_update_ms = AP_HAL::millis();
+                    _target_acquired = true;
+                } else {
+                    float NIS_x = _ekf_x.getPosNIS(_target_pos_rel_meas_NED.x, xy_pos_var);
+                    float NIS_y = _ekf_y.getPosNIS(_target_pos_rel_meas_NED.y, xy_pos_var);
+                    if (MAX(NIS_x, NIS_y) < 3.0f || _outlier_reject_count >= 3) {
+                        _outlier_reject_count = 0;
+                        _ekf_x.fusePos(_target_pos_rel_meas_NED.x, xy_pos_var);
+                        _ekf_y.fusePos(_target_pos_rel_meas_NED.y, xy_pos_var);
                         _last_update_ms = AP_HAL::millis();
                         _target_acquired = true;
                     } else {
-                        float NIS_x = _ekf_x.getPosNIS(_target_pos_rel_meas_NED.x, xy_pos_var);
-                        float NIS_y = _ekf_y.getPosNIS(_target_pos_rel_meas_NED.y, xy_pos_var);
-                        if (MAX(NIS_x, NIS_y) < 3.0f || _outlier_reject_count >= 3) {
-                            _outlier_reject_count = 0;
-                            _ekf_x.fusePos(_target_pos_rel_meas_NED.x, xy_pos_var);
-                            _ekf_y.fusePos(_target_pos_rel_meas_NED.y, xy_pos_var);
-                            _last_update_ms = AP_HAL::millis();
-                            _target_acquired = true;
-                        } else {
-                            _outlier_reject_count++;
-                        }
+                        _outlier_reject_count++;
                     }
                 }
             }
@@ -338,6 +327,36 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
     }
 }
 
+bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid)
+{
+    Vector3f target_vec_unit_body;
+    if (retrieve_los_meas(target_vec_unit_body)) {
+        const struct inertial_data_frame_s& inertial_data_delayed = _inertial_history.front();
+
+        Vector3f target_vec_unit_ned = inertial_data_delayed.Tbn * target_vec_unit_body;
+        bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
+        bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
+        if (target_vec_valid && alt_valid) {
+            float alt;
+            if (_backend->distance_to_target() > 0.0f) {
+                alt = _backend->distance_to_target();
+            } else {
+                alt = MAX(rangefinder_alt_m, 0.0f);
+            }
+            float dist = alt/target_vec_unit_ned.z;
+
+            // Compute camera position relative to IMU
+            Vector3f accel_body_offset = _ahrs.get_ins().get_imu_pos_offset(_ahrs.get_primary_accel_index());
+            Vector3f cam_pos_ned = inertial_data_delayed.Tbn * (_cam_offset.get() - accel_body_offset);
+
+            // Compute target position relative to IMU
+            _target_pos_rel_meas_NED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt) + cam_pos_ned;
+            return true;
+        }
+    }
+    return false;
+}
+
 void AC_PrecLand::run_output_prediction()
 {
     _target_pos_rel_out_NE = _target_pos_rel_est_NE;
@@ -352,7 +371,25 @@ void AC_PrecLand::run_output_prediction()
         _target_pos_rel_out_NE.y += _target_vel_rel_out_NE.y * inertial_data.dt;
     }
 
-    // compensate for camera offset from the center of the vehicle
+    const Matrix3f& Tbn = _inertial_history.peek(_inertial_history.size()-1).Tbn;
+    Vector3f accel_body_offset = _ahrs.get_ins().get_imu_pos_offset(_ahrs.get_primary_accel_index());
+
+    // Apply position correction for CG offset from IMU
+    Vector3f imu_pos_ned = Tbn * accel_body_offset;
+    _target_pos_rel_out_NE.x += imu_pos_ned.x;
+    _target_pos_rel_out_NE.y += imu_pos_ned.y;
+
+    // Apply position correction for body-frame horizontal camera offset from CG, so that vehicle lands lens-to-target
+    Vector3f cam_pos_horizontal_ned = Tbn * Vector3f(_cam_offset.get().x, _cam_offset.get().y, 0);
+    _target_pos_rel_out_NE.x -= cam_pos_horizontal_ned.x;
+    _target_pos_rel_out_NE.y -= cam_pos_horizontal_ned.y;
+
+    // Apply velocity correction for IMU offset from CG
+    Vector3f vel_ned_rel_imu = Tbn * (_ahrs.get_gyro() % (-accel_body_offset));
+    _target_vel_rel_out_NE.x -= vel_ned_rel_imu.x;
+    _target_vel_rel_out_NE.y -= vel_ned_rel_imu.y;
+
+    // Apply land offset
     Vector3f land_ofs_ned_m = _ahrs.get_rotation_body_to_ned() * Vector3f(_land_ofs_cm_x,_land_ofs_cm_y,0) * 0.01f;
     _target_pos_rel_out_NE.x += land_ofs_ned_m.x;
     _target_pos_rel_out_NE.y += land_ofs_ned_m.y;
