@@ -148,6 +148,7 @@ public:
                         const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control);
     void Log_Write_Rally(const AP_Rally &rally);
+    void Log_Write_AOA_SSA(const AP_AHRS &ahrs);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 
