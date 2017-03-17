@@ -226,7 +226,7 @@ void AP_Baro::calibrate(bool save)
             return;
         }
     }
-    AP_HAL::panic("AP_Baro: all sensors uncalibrated");
+    AP_HAL::panic("AP_Baro: unable to calibrate all sensors");
 }
 
 /*
