@@ -92,6 +92,9 @@ void AP_AHRS_NavEKF::update(void)
     update_SITL();
 #endif
 
+    // update AOA and SSA
+    update_AOA_SSA();
+
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);
 
@@ -1520,3 +1523,60 @@ uint8_t AP_AHRS_NavEKF::get_primary_gyro_index(void) const
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
+/*
+ * Update AOA and SSA estimation based on airspeed, velocity vector and wind vector
+ *
+ * Based on:
+ * "On estimation of wind velocity, angle-of-attack and sideslip angle of small UAVs using standard sensors" by
+ * Tor A. Johansen, Andrea Cristofaro, Kim Sorensen, Jakob M. Hansen, Thor I. Fossen
+ *
+ * "Multi-Stage Fusion Algorithm for Estimation of Aerodynamic Angles in Mini Aerial Vehicle" by
+ * C.Ramprasadh and Hemendra Arya
+ *
+ * "ANGLE OF ATTACK AND SIDESLIP ESTIMATION USING AN INERTIAL REFERENCE PLATFORM" by
+ * JOSEPH E. ZEIS, JR., CAPTAIN, USAF
+ */
+void AP_AHRS_NavEKF::update_AOA_SSA(void)
+{
+	Quaternion aoa_NED2BODY;
+	Vector3f aoa_velocity, aoa_wind;
+
+	// get velocity and wind
+	if (get_velocity_NED(aoa_velocity) == false) {
+		return;
+	}
+
+	// do not calculate if speed is too low
+	if(aoa_velocity.length() < 2.0) {
+	    _AOA = 0;
+	    _SSA = 0;
+	    return;
+	}
+
+    aoa_wind = wind_estimate();
+
+    // Rotate vectors to the body frame
+    Matrix3f rot = get_rotation_body_to_ned();
+    rot.transpose();
+    aoa_velocity = rot * aoa_velocity;
+    aoa_wind = rot * aoa_wind;
+
+    // calculate relative velocity in body coordinates
+	aoa_velocity = aoa_velocity - aoa_wind;
+
+	// Calculate AOA and SSA
+	if(!is_zero(aoa_velocity.x)) {
+	    _AOA = degrees(atanf(aoa_velocity.z / aoa_velocity.x));
+	} else {
+	    _AOA = 0;
+	}
+
+	float vel_len = aoa_velocity.length();
+
+	if(!is_zero(vel_len)) {
+	    _SSA = 90.0 - degrees(safe_asin(aoa_velocity.x / vel_len));
+	} else {
+	    _SSA = 0;
+	}
+
+}

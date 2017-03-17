@@ -510,6 +510,16 @@ public:
     // create a view
     AP_AHRS_View *create_view(enum Rotation rotation);
     
+    // return calculated AOA
+    float getAOA(void)	const   {
+        return _AOA;
+    }
+
+    // return calculated SSA
+	float getSSA(void)	const   {
+        return _SSA;
+    }
+
 protected:
     AHRS_VehicleClass _vehicle_class;
 
@@ -602,6 +612,10 @@ protected:
 
     // optional view class
     AP_AHRS_View *_view;
+
+    // AOA and SSA
+    float _AOA, _SSA;
+    void update_AOA_SSA(void);
 };
 
 #include "AP_AHRS_DCM.h"
