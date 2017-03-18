@@ -43,22 +43,29 @@ static void _sig_fpe(int signum)
 void SITL_State::_usage(void)
 {
     printf("Options:\n"
-           "\t--home HOME        set home location (lat,lng,alt,yaw)\n"
-           "\t--model MODEL      set simulation model\n"
-           "\t--wipe             wipe eeprom and dataflash\n"
-           "\t--unhide-groups    parameter enumeration ignores AP_PARAM_FLAG_ENABLE\n"
-           "\t--rate RATE        set SITL framerate\n"
-           "\t--console          use console instead of TCP ports\n"
-           "\t--instance N       set instance of SITL (adds 10*instance to all port numbers)\n"
-           "\t--speedup SPEEDUP  set simulation speedup\n"
-           "\t--gimbal           enable simulated MAVLink gimbal\n"
-           "\t--autotest-dir DIR set directory for additional files\n"
-           "\t--uartA device     set device string for UARTA\n"
-           "\t--uartB device     set device string for UARTB\n"
-           "\t--uartC device     set device string for UARTC\n"
-           "\t--uartD device     set device string for UARTD\n"
-           "\t--uartE device     set device string for UARTE\n"
-           "\t--defaults path    set path to defaults file\n"
+           "\t[--help|-h]             display this help information\n"
+           "\t[--home|-O] HOME        set home location (lat,lng,alt,yaw)\n"
+           "\t[--model|-M] MODEL      set simulation model\n"
+           "\t[--wipe|-w]             wipe eeprom and dataflash\n"
+           "\t[--unhide-groups|-u]    parameter enumeration ignores AP_PARAM_FLAG_ENABLE\n"
+           "\t[--rate RATE|-r]        set SITL framerate\n"
+           "\t[--console|-C]          use console instead of TCP ports\n"
+           "\t[--instance|-I] N       set instance of SITL (adds 10*instance to all port numbers)\n"
+           "\t[--speedup|-s] SPEEDUP  set simulation speedup\n"
+           "\t[--synthetic-clock|-S]  use synthetic clock mode\n"
+           "\t[--param|-P] NAME=VALUE set parameter NAME to value VALUE\n"
+           "\t[--fdm|-F] ADDRESS      set FDM address, defaults to 127.0.0.1\n"
+           "\t--client ADDRESS        TCP address to connect uartC to\n"
+           "\t--rtscts                use UART RTS-CTS\n"
+           "\t--disable-fgview        disable flightgear view\n"
+           "\t--gimbal                enable simulated MAVLink gimbal\n"
+           "\t--autotest-dir DIR      set directory for additional files\n"
+           "\t--uartA device          set device string for UARTA\n"
+           "\t--uartB device          set device string for UARTB\n"
+           "\t--uartC device          set device string for UARTC\n"
+           "\t--uartD device          set device string for UARTD\n"
+           "\t--uartE device          set device string for UARTE\n"
+           "\t--defaults path         set path to defaults file\n"
         );
 }
 
@@ -165,6 +172,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"synthetic-clock", false,  0, 'S'},
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
+        {"fdm",             false,  0, 'F'},
         {"uartA",           true,   0, CMDLINE_UARTA},
         {"uartB",           true,   0, CMDLINE_UARTB},
         {"uartC",           true,   0, CMDLINE_UARTC},
