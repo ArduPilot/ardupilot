@@ -1,0 +1,43 @@
+set moddebug 2
+module load graph
+@graph timespan 30
+@alias add g graph
+@alias add gaccel g RAW_IMU.xacc*9.81*0.001 RAW_IMU.yacc*9.81*0.001 RAW_IMU.zacc*9.81*0.001 gravity(RAW_IMU)
+@alias add gaccel2 g RAW_IMU.xacc*9.81*0.001 RAW_IMU.yacc*9.81*0.001 9.81+RAW_IMU.zacc*9.81*0.001
+@alias add gaccelxy g RAW_IMU.xacc*9.81*0.001 RAW_IMU.yacc*9.81*0.001
+@alias add gaccelz_filter g RAW_IMU.zacc*9.81*0.001 lowpass(RAW_IMU.zacc*9.81*0.001,"z",0.9)
+@alias add ggyro  g degrees(RAW_IMU.xgyro*0.001) degrees(RAW_IMU.ygyro*0.001) degrees(RAW_IMU.zgyro*0.001)
+@alias add ggyro_earth  g earth_gyro(RAW_IMU,ATTITUDE).x earth_gyro(RAW_IMU,ATTITUDE).y earth_gyro(RAW_IMU,ATTITUDE).z
+@alias add grp g degrees(ATTITUDE.roll) degrees(ATTITUDE.pitch)
+@alias add grpsim g degrees(ATTITUDE.roll) degrees(ATTITUDE.pitch) degrees(SIMSTATE.roll) degrees(SIMSTATE.pitch)
+@alias add grollp g NAV_CONTROLLER_OUTPUT.nav_roll-degrees(ATTITUDE.roll) (SERVO_OUTPUT_RAW.servo1_raw-MAV.params['RC1_TRIM'])*0.1 
+@alias add gradio g RADIO.rssi RADIO.noise RADIO.remrssi RADIO.remnoise 
+@alias add gbatt g SYS_STATUS.current_battery
+@alias add gnavroll g NAV_CONTROLLER_OUTPUT.nav_roll-degrees(ATTITUDE.roll) (SERVO_OUTPUT_RAW.servo1_raw-MAV.params['RC1_TRIM'])*0.1
+@alias add gcontrol g RC_CHANNELS_RAW.chan1_raw RC_CHANNELS_RAW.chan2_raw SERVO_OUTPUT_RAW.servo1_raw SERVO_OUTPUT_RAW.servo2_raw
+@alias add gmag g RAW_IMU.xmag RAW_IMU.ymag RAW_IMU.zmag mag_field(RAW_IMU)
+@alias add gmagfield g mag_field(RAW_IMU)
+@alias add gmagofs g SENSOR_OFFSETS.mag_ofs_x SENSOR_OFFSETS.mag_ofs_y SENSOR_OFFSETS.mag_ofs_z
+@alias add gservo g SERVO_OUTPUT_RAW.servo1_raw SERVO_OUTPUT_RAW.servo2_raw SERVO_OUTPUT_RAW.servo3_raw SERVO_OUTPUT_RAW.servo4_raw SERVO_OUTPUT_RAW.servo5_raw SERVO_OUTPUT_RAW.servo6_raw SERVO_OUTPUT_RAW.servo7_raw SERVO_OUTPUT_RAW.servo8_raw
+@alias add gservo12 g SERVO_OUTPUT_RAW.servo1_raw SERVO_OUTPUT_RAW.servo2_raw
+@alias add gthr g VFR_HUD.throttle
+@alias add ggs g VFR_HUD.groundspeed
+@alias add grc g RC_CHANNELS_RAW.chan1_raw RC_CHANNELS_RAW.chan2_raw RC_CHANNELS_RAW.chan3_raw RC_CHANNELS_RAW.chan4_raw RC_CHANNELS_RAW.chan5_raw RC_CHANNELS_RAW.chan6_raw RC_CHANNELS_RAW.chan7_raw RC_CHANNELS_RAW.chan8_raw
+@alias add grc12 g RC_CHANNELS_RAW.chan1_raw RC_CHANNELS_RAW.chan2_raw
+@alias add galt g GLOBAL_POSITION_INT.relative_alt*0.001 altitude(SCALED_PRESSURE)
+@alias add gclimb g lowpass(delta(altitude(SCALED_PRESSURE),"a"),"a2",0.9) VFR_HUD.climb GLOBAL_POSITION_INT.vz*0.01
+@alias add ghead g VFR_HUD.heading mag_heading(RAW_IMU,ATTITUDE)
+@alias add gnavrp g NAV_CONTROLLER_OUTPUT.nav_roll NAV_CONTROLLER_OUTPUT.nav_pitch degrees(ATTITUDE.roll) degrees(ATTITUDE.pitch)
+@alias add gspeed g VFR_HUD.groundspeed 
+@alias add gthr g VFR_HUD.throttle
+@alias add galterr g NAV_CONTROLLER_OUTPUT.alt_error
+@alias add gtargetalt g GLOBAL_POSITION_INT.relative_alt*0.001+NAV_CONTROLLER_OUTPUT.alt_error
+@alias add gthrpitch g VFR_HUD.throttle NAV_CONTROLLER_OUTPUT.nav_pitch
+@alias add gsteer g NAV_CONTROLLER_OUTPUT.nav_roll NAV_CONTROLLER_OUTPUT.nav_pitch
+@alias add gspeed g VFR_HUD.airspeed VFR_HUD.groundspeed
+@alias add ggpst g min(abs(diff(GPS_RAW_INT.time_usec*1.0e-6,"d")),3)
+@alias add gload g SYS_STATUS.load
+@alias add grate g 1000.0/diff(ATTITUDE.time_boot_ms,"a")
+@alias add grange g RANGEFINDER.distance
+@alias add grangev g RANGEFINDER.voltage
+
