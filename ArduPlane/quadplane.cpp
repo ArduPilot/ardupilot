@@ -476,8 +476,10 @@ bool QuadPlane::setup(void)
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
         break;
     default:
-        hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
-        goto failed;
+        hal.console->printf("Unknown frame class %u - using QUAD\n", (unsigned)frame_class.get());
+        frame_class.set(AP_Motors::MOTOR_FRAME_QUAD);
+        setup_default_channels(4);
+        break;
     }
 
     const struct AP_Param::GroupInfo *var_info;
