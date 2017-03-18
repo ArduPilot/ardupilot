@@ -337,13 +337,14 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
         bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
         bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
         if (target_vec_valid && alt_valid) {
-            float alt;
+            float dist, alt;
             if (_backend->distance_to_target() > 0.0f) {
-                alt = _backend->distance_to_target();
+                dist = _backend->distance_to_target();
+                alt = dist * target_vec_unit_ned.z;
             } else {
                 alt = MAX(rangefinder_alt_m, 0.0f);
+                dist = alt / target_vec_unit_ned.z;
             }
-            float dist = alt/target_vec_unit_ned.z;
 
             // Compute camera position relative to IMU
             Vector3f accel_body_offset = _ahrs.get_ins().get_imu_pos_offset(_ahrs.get_primary_accel_index());
