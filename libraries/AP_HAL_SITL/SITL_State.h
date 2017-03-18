@@ -162,6 +162,7 @@ private:
     uint16_t _rcout_port;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
+    uint16_t _irlock_port;
     float _current;
 
     bool _synthetic_clock_mode;

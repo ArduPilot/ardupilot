@@ -23,6 +23,7 @@
 #include "SITL.h"
 #include <AP_Terrain/AP_Terrain.h>
 
+
 namespace SITL {
 
 /*
@@ -65,6 +66,9 @@ public:
     void set_autotest_dir(const char *_autotest_dir) {
         autotest_dir = _autotest_dir;
     }
+
+    /*  Create and set in/out socket for extenal simulator */
+    virtual void set_interface_ports(const char* address, const int port_in, const int port_out) {};
 
     /*
       step the FDM by one time step
