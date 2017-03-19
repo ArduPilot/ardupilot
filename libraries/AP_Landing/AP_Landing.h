@@ -118,9 +118,6 @@ private:
     AP_AHRS &ahrs;
     AP_SpdHgtControl *SpdHgt_Controller;
     AP_Navigation *nav_controller;
-
-    // support for deepstall landings
-    AP_Landing_Deepstall deepstall;
     
     AP_Vehicle::FixedWing &aparm;
 
@@ -130,6 +127,9 @@ private:
     adjusted_relative_altitude_cm_fn_t adjusted_relative_altitude_cm_fn;
     disarm_if_autoland_complete_fn_t disarm_if_autoland_complete_fn;
     update_flight_stage_fn_t update_flight_stage_fn;
+
+    // support for deepstall landings
+    AP_Landing_Deepstall deepstall;
 
     AP_Int16 pitch_cd;
     AP_Float flare_alt;
