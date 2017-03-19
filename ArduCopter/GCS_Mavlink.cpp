@@ -997,6 +997,36 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_MANUAL_CONTROL:
+    {
+        if(msg->sysid != copter.g.sysid_my_gcs) break;                         // Only accept control from our gcs
+
+        mavlink_manual_control_t packet;
+        mavlink_msg_manual_control_decode(msg, &packet);
+
+        if (packet.z < 0) { // Copter doesn't do negative thrust
+            break;
+        }
+
+        bool override_active = false;
+        int16_t roll = (packet.y == INT16_MAX) ? 0 : copter.channel_roll->get_radio_min() + (copter.channel_roll->get_radio_max() - copter.channel_roll->get_radio_min()) * (packet.y + 1000) / 2000.0f;
+        int16_t pitch = (packet.x == INT16_MAX) ? 0 : copter.channel_pitch->get_radio_min() + (copter.channel_pitch->get_radio_max() - copter.channel_pitch->get_radio_min()) * (-packet.x + 1000) / 2000.0f;
+        int16_t throttle = (packet.z == INT16_MAX) ? 0 : copter.channel_throttle->get_radio_min() + (copter.channel_throttle->get_radio_max() - copter.channel_throttle->get_radio_min()) * (packet.z) / 1000.0f;
+        int16_t yaw = (packet.r == INT16_MAX) ? 0 : copter.channel_yaw->get_radio_min() + (copter.channel_yaw->get_radio_max() - copter.channel_yaw->get_radio_min()) * (packet.r + 1000) / 2000.0f;
+
+        override_active |= hal.rcin->set_override(uint8_t(copter.rcmap.roll() - 1), roll);
+        override_active |= hal.rcin->set_override(uint8_t(copter.rcmap.pitch() - 1), pitch);
+        override_active |= hal.rcin->set_override(uint8_t(copter.rcmap.throttle() - 1), throttle);
+        override_active |= hal.rcin->set_override(uint8_t(copter.rcmap.yaw() - 1), yaw);
+
+        // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
+        copter.failsafe.rc_override_active = override_active;
+
+        // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
+        copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        break;
+    }
+
     case MAVLINK_MSG_ID_COMMAND_INT:
     {
         // decode packet
