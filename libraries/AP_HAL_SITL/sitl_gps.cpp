@@ -345,7 +345,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pvt.valid = 0; // invalid utc date
     pvt.t_acc = 0; 
     pvt.nano = 0; 
-    pvt.fix_type = 0x3; 
+    pvt.fix_type = d->have_lock? 0x3 : 0;
     pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
     pvt.flags2 =0; 
     pvt.num_sv = d->have_lock?_sitl->gps_numsats:3; 
