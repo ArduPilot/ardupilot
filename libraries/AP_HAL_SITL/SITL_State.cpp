@@ -375,8 +375,12 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     }
 
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
+    uint8_t engine_fail = _sitl?_sitl->engine_fail.get():0;
     bool motors_on = false;
     
+    if (engine_fail > 7) {
+        engine_fail = 0;
+    }
     if (_vehicle == ArduPlane) {
         // add in engine multiplier
         if (input.servos[2] > 1000) {
@@ -394,8 +398,8 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         motors_on = ((input.servos[2]-1500)/500.0f) != 0;
     } else {
         motors_on = false;
-        // apply engine multiplier to first motor
-        input.servos[0] = ((input.servos[0]-1000) * engine_mul) + 1000;
+        // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
+        input.servos[engine_fail] = ((input.servos[engine_fail]-1000) * engine_mul) + 1000;
         // run checks on each motor
         for (i=0; i<4; i++) {
             // check motors do not exceed their limits
