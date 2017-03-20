@@ -350,3 +350,4 @@
 #endif
 
 #define HAL_HAVE_BOARD_VOLTAGE 1
+#define HAL_HAVE_SAFETY_SWITCH 1
