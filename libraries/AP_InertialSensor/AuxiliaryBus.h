@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015  Intel Corporation. All rights reserved.
  *
@@ -19,6 +18,7 @@
 #pragma once
 
 #include <inttypes.h>
+#include <AP_HAL/Device.h>
 
 class AuxiliaryBus;
 class AP_InertialSensor_Backend;
@@ -102,6 +102,9 @@ public:
     AuxiliaryBusSlave *request_next_slave(uint8_t addr);
     int register_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg, uint8_t size);
 
+    /* See AP_HAL::Device::register_periodic_callback() */
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t, AP_HAL::Device::PeriodicCb);
+    
     /*
      * Get the semaphore needed to call methods on the bus this sensor is on.
      * Internally no locks are taken and it's the caller's duty to lock and
@@ -114,9 +117,19 @@ public:
      */
     virtual AP_HAL::Semaphore *get_semaphore() = 0;
 
+    // set device type within a device class
+    void set_device_type(uint8_t devtype) {
+        _devid = AP_HAL::Device::change_bus_id(_devid, devtype);
+    }
+
+    // return 24 bit bus identifier
+    uint32_t get_bus_id(void) const {
+        return _devid;
+    }
+        
 protected:
     /* Only AP_InertialSensor_Backend is able to create a bus */
-    AuxiliaryBus(AP_InertialSensor_Backend &backend, uint8_t max_slaves);
+    AuxiliaryBus(AP_InertialSensor_Backend &backend, uint8_t max_slaves, uint32_t devid);
     virtual ~AuxiliaryBus();
 
     virtual AuxiliaryBusSlave *_instantiate_slave(uint8_t addr, uint8_t instance) = 0;
@@ -127,4 +140,5 @@ protected:
     const uint8_t _max_slaves;
     AuxiliaryBusSlave **_slaves;
     AP_InertialSensor_Backend &_ins_backend;
+    uint32_t _devid;
 };

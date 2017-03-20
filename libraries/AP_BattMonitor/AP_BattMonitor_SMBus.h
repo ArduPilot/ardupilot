@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -6,7 +5,10 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor_Backend.h"
 
-#define AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS 5000000    // sensor becomes unhealthy if no successful readings for 5 seconds
+#define AP_BATTMONITOR_SMBUS_BUS_INTERNAL           0
+#define AP_BATTMONITOR_SMBUS_BUS_EXTERNAL           1
+#define AP_BATTMONITOR_SMBUS_I2C_ADDR               0x0B
+#define AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS         5000000 // sensor becomes unhealthy if no successful readings for 5 seconds
 
 class AP_BattMonitor_SMBus : public AP_BattMonitor_Backend
 {
@@ -23,5 +25,5 @@ public:
 };
 
 // include specific implementations
-#include "AP_BattMonitor_SMBus_PX4.h"
-#include "AP_BattMonitor_SMBus_I2C.h"
+#include "AP_BattMonitor_SMBus_Solo.h"
+#include "AP_BattMonitor_SMBus_Maxell.h"

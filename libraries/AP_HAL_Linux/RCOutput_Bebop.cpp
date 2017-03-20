@@ -109,7 +109,7 @@ void RCOutput_Bebop::_start_prop()
 {
     uint8_t data = BEBOP_BLDC_STARTPROP;
 
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
@@ -138,7 +138,7 @@ void RCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
     data.enable_security = 0;
     data.checksum = _checksum((uint8_t *) &data, sizeof(data) - 1);
 
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
@@ -155,7 +155,7 @@ bool RCOutput_Bebop::_get_info(struct bldc_info *info)
 
     memset(info, 0, sizeof(struct bldc_info));
 
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
     _dev->read_registers(BEBOP_BLDC_GET_INFO, (uint8_t*)info, sizeof(*info));
@@ -186,7 +186,7 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
     } data;
 
     memset(&data, 0, sizeof(data));
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return -EBUSY;
     }
 
@@ -241,7 +241,7 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
 
 void RCOutput_Bebop::_toggle_gpio(uint8_t mask)
 {
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
@@ -253,7 +253,7 @@ void RCOutput_Bebop::_stop_prop()
 {
     uint8_t data = BEBOP_BLDC_STOP_PROP;
 
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
@@ -265,7 +265,7 @@ void RCOutput_Bebop::_clear_error()
 {
     uint8_t data = BEBOP_BLDC_CLEAR_ERROR;
 
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
@@ -275,11 +275,45 @@ void RCOutput_Bebop::_clear_error()
 
 void RCOutput_Bebop::_play_sound(uint8_t sound)
 {
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
     _dev->write_register(BEBOP_BLDC_PLAY_SOUND, sound);
+    _dev->get_semaphore()->give();
+}
+
+/*
+ * pwm is the pwm power used for the note.
+ *  It has to be >= 3, otherwise it refers to a predefined song
+ * (see _play_sound function)
+ * period is in us and duration in ms.
+ */
+void RCOutput_Bebop::play_note(uint8_t pwm,
+                               uint16_t period_us,
+                               uint16_t duration_ms)
+{
+    struct PACKED {
+        uint8_t header;
+        uint8_t pwm;
+        be16_t period;
+        be16_t duration;
+    } msg;
+
+    if (pwm < 3) {
+        return;
+    }
+
+    msg.header = BEBOP_BLDC_PLAY_SOUND;
+    msg.pwm = pwm;
+    msg.period = htobe16(period_us);
+    msg.duration = htobe16(duration_ms);
+
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
+
+    _dev->transfer((uint8_t *)&msg, sizeof(msg), nullptr, 0);
     _dev->get_semaphore()->give();
 }
 
@@ -301,7 +335,7 @@ void RCOutput_Bebop::init()
     pthread_condattr_t cond_attr;
 
     /* Initialize thread, cond, and mutex */
-    ret = pthread_mutex_init(&_mutex, NULL);
+    ret = pthread_mutex_init(&_mutex, nullptr);
     if (ret != 0) {
         perror("RCout_Bebop: failed to init mutex\n");
         return;
@@ -419,7 +453,7 @@ void* RCOutput_Bebop::_control_thread(void *arg) {
     RCOutput_Bebop* rcout = (RCOutput_Bebop *) arg;
 
     rcout->_run_rcout();
-    return NULL;
+    return nullptr;
 }
 
 void RCOutput_Bebop::_run_rcout()
@@ -448,7 +482,7 @@ void RCOutput_Bebop::_run_rcout()
      * keep current order. The order changes from version 2 on bebop 1 and
      * remains the same as this for bebop 2
      */
-    if (info.version_maj == 1 || info.version_maj == 5) {
+    if (info.version_maj == 1) {
         bebop_bldc_right_front = BEBOP_BLDC_MOTOR_1;
         bebop_bldc_left_front  = BEBOP_BLDC_MOTOR_2;
         bebop_bldc_left_back   = BEBOP_BLDC_MOTOR_3;

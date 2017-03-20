@@ -1,29 +1,22 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Notify/ToshibaLED_I2C.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include <AP_Notify/ToshibaLED_PX4.h>
-static ToshibaLED_PX4 toshiba_led;
-#else
-#include <AP_Notify/ToshibaLED_I2C.h>
 static ToshibaLED_I2C toshiba_led;
-#endif
 
 void setup(void)
 {
     // display welcome message
-    hal.console->print("Toshiba LED test ver 0.1\n");
+    hal.console->printf("Toshiba LED test ver 0.1\n");
 
     // initialise LED
     toshiba_led.init();
 
     // check if healthy
     if (!toshiba_led.healthy()) {
-        hal.console->print("Failed to initialise Toshiba LED\n");
+        hal.console->printf("Failed to initialise Toshiba LED\n");
     }
 
     // turn on initialising notification
@@ -37,11 +30,11 @@ void setup(void)
 void loop(void)
 {
     // blink test
-    //hal.console->print("Blink test\n");
+    //hal.console->printf("Blink test\n");
     //blink();
     /*
     // full spectrum test
-    hal.console->print("Spectrum test\n");
+    hal.console->printf("Spectrum test\n");
     full_spectrum();
     */
 

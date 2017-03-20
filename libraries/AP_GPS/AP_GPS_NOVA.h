@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,12 +27,12 @@ class AP_GPS_NOVA : public AP_GPS_Backend
 public:
     AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK; }
+    AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
     // Methods
     bool read();
 
-    void inject_data(uint8_t *data, uint8_t len);
+    void inject_data(const uint8_t *data, uint16_t len) override;
 
 private:
 
@@ -64,10 +63,8 @@ private:
         "log psrdopb\r\n" // poll message, as dop only changes when a sat is dropped/added to the visible list
     };
    
-    uint32_t last_hdop = 999;
     uint32_t crc_error_counter = 0;
     uint32_t last_injected_data_ms = 0;
-    bool validcommand = false;
 
     struct PACKED nova_header
     {

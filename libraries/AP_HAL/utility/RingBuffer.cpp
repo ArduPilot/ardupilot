@@ -36,8 +36,14 @@ bool ByteBuffer::set_size(uint32_t _size)
 
 uint32_t ByteBuffer::available(void) const
 {
-    uint32_t _tail;
-    return ((head > (_tail=tail))? (size - head) + _tail: _tail - head);
+    /* use a copy on stack to avoid race conditions of @tail being updated by
+     * the writer thread */
+    uint32_t _tail = tail;
+
+    if (head > _tail) {
+        return size - head + _tail;
+    }
+    return _tail - head;
 }
 
 void ByteBuffer::clear(void)
@@ -47,8 +53,22 @@ void ByteBuffer::clear(void)
 
 uint32_t ByteBuffer::space(void) const
 {
+    if (size == 0) {
+        return 0;
+    }
+
+    /* use a copy on stack to avoid race conditions of @head being updated by
+     * the reader thread */
     uint32_t _head = head;
-    return size ? (_head > tail ? 0 : size) + _head - tail - 1 : 0;
+    uint32_t ret = 0;
+
+    if (_head <= tail) {
+        ret = size;
+    }
+
+    ret += _head - tail - 1;
+
+    return ret;
 }
 
 bool ByteBuffer::empty(void) const
@@ -194,6 +214,22 @@ uint32_t ByteBuffer::read(uint8_t *data, uint32_t len)
     uint32_t ret = peekbytes(data, len);
     advance(ret);
     return ret;
+}
+
+bool ByteBuffer::read_byte(uint8_t *data)
+{
+    if (!data) {
+        return false;
+    }
+
+    int16_t ret = peek(0);
+    if (ret < 0) {
+        return false;
+    }
+
+    *data = ret;
+
+    return advance(1);
 }
 
 /*

@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 void Plane::read_control_switch()
@@ -85,7 +83,7 @@ void Plane::read_control_switch()
             }
         } else if (!override_requested && px4io_override_enabled) {
             px4io_override_enabled = false;
-            RC_Channel_aux::enable_aux_servos();
+            SRV_Channels::enable_aux_servos();
             gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override disabled");
         }
         if (px4io_override_enabled && 

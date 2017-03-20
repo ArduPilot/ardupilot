@@ -131,6 +131,9 @@ AP_InertialSensor_Backend *
 AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
                                 AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
 {
+    if (!dev) {
+        return nullptr;
+    }
     auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev));
 
     if (!sensor) {
@@ -149,8 +152,8 @@ void AP_InertialSensor_BMI160::start()
 {
     bool r;
 
-    if (!_dev->get_semaphore()->take(100)) {
-        AP_HAL::panic("BMI160: Unable to get semaphore");
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
     }
 
     r = _configure_accel();
@@ -177,12 +180,12 @@ void AP_InertialSensor_BMI160::start()
 
     _dev->get_semaphore()->give();
 
-    _accel_instance = _imu.register_accel(BMI160_ODR_TO_HZ(BMI160_ODR));
-    _gyro_instance = _imu.register_gyro(BMI160_ODR_TO_HZ(BMI160_ODR));
+    _accel_instance = _imu.register_accel(BMI160_ODR_TO_HZ(BMI160_ODR), _dev->get_bus_id_devtype(DEVTYPE_BMI160));
+    _gyro_instance = _imu.register_gyro(BMI160_ODR_TO_HZ(BMI160_ODR),   _dev->get_bus_id_devtype(DEVTYPE_BMI160));
 
     /* Call _poll_data() at 1kHz */
     _dev->register_periodic_callback(1000,
-        FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI160::_poll_data, bool));
+        FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI160::_poll_data, void));
 }
 
 bool AP_InertialSensor_BMI160::update()
@@ -414,10 +417,9 @@ read_fifo_end:
     }
 }
 
-bool AP_InertialSensor_BMI160::_poll_data()
+void AP_InertialSensor_BMI160::_poll_data()
 {
     _read_fifo();
-    return true;
 }
 
 bool AP_InertialSensor_BMI160::_hardware_init()
@@ -426,8 +428,8 @@ bool AP_InertialSensor_BMI160::_hardware_init()
 
     hal.scheduler->delay(BMI160_POWERUP_DELAY_MSEC);
 
-    if (!_dev->get_semaphore()->take(100)) {
-        AP_HAL::panic("BMI160: Unable to get semaphore");
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
     }
 
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);

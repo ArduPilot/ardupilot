@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_Compass.h"
@@ -9,12 +7,15 @@ extern const AP_HAL::HAL& hal;
 
 AP_Compass_Backend::AP_Compass_Backend(Compass &compass) :
     _compass(compass)
-{}
+{
+    _sem = hal.util->new_semaphore();    
+}
 
 void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
 {
     Compass::mag_state &state = _compass._state[instance];
     mag.rotate(MAG_BOARD_ORIENTATION);
+    mag.rotate(state.rotation);
 
     if (!state.external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
@@ -105,7 +106,7 @@ uint8_t AP_Compass_Backend::register_compass(void) const
 */
 void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 {
-    _compass._state[instance].dev_id.set(dev_id);
+    _compass._state[instance].dev_id.set_and_notify(dev_id);
 }
 
 /*
@@ -114,11 +115,17 @@ void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 void AP_Compass_Backend::set_external(uint8_t instance, bool external)
 {
     if (_compass._state[instance].external != 2) {
-        _compass._state[instance].external.set(external);
+        _compass._state[instance].external.set_and_notify(external);
     }
 }
 
 bool AP_Compass_Backend::is_external(uint8_t instance)
 {
     return _compass._state[instance].external;
+}
+
+// set rotation of an instance
+void AP_Compass_Backend::set_rotation(uint8_t instance, enum Rotation rotation)
+{
+    _compass._state[instance].rotation = rotation;
 }

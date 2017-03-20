@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +20,7 @@
 
 #include "SIM_Aircraft.h"
 #include "SIM_ICEngine.h"
+#include <Filter/LowPassFilter.h>
 
 namespace SITL {
 
@@ -97,6 +97,7 @@ protected:
     bool vtail;
     bool reverse_elevator_rudder;
     bool ice_engine;
+    bool tailsitter;
 
     ICEngine icengine{2, 14, 12, 13, 100};
 

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * This file is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -18,16 +17,54 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "Util.h"
+#include "Scheduler.h"
 
 namespace PX4 {
 
 uint8_t PX4::PX4_I2C::instance;
 
+DeviceBus I2CDevice::businfo[I2CDevice::num_buses];
+
+/*
+  constructor for I2C wrapper class
+ */    
+PX4_I2C::PX4_I2C(uint8_t bus) :
+  I2C(devname, devpath, map_bus_number(bus), 0, 100000UL)
+{}
+
+/*
+  map ArduPilot bus numbers to PX4 bus numbers
+ */    
+uint8_t PX4_I2C::map_bus_number(uint8_t bus) const
+{
+    switch (bus) {
+    case 0:
+        // map to internal bus
+#ifdef PX4_I2C_BUS_ONBOARD
+        return PX4_I2C_BUS_ONBOARD;
+#else
+        return 0;
+#endif
+
+    case 1:
+        // map to expansion bus
+#ifdef PX4_I2C_BUS_EXPANSION
+        return PX4_I2C_BUS_EXPANSION;
+#else
+        return 1;
+#endif
+        
+    }
+    // default to bus 1
+    return 1;
+}
+    
 /*
   implement wrapper for PX4 I2C driver
  */
 bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len)
 {
+    set_address(address);
     if (!init_done) {
         init_done = true;
         // we do late init() so we can setup the device paths
@@ -41,25 +78,51 @@ bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_le
     if (!init_ok) {
         return false;
     }
-    set_address(address);
-    bool ret = (transfer(send, send_len, recv, recv_len) == OK);
-    return ret;
+    /*
+      splitting the transfer() into two pieces avoids a stop condition
+      with SCL low which is not supported on some devices (such as
+      LidarLite blue label)
+     */
+    if (send && send_len) {
+        if (transfer(send, send_len, nullptr, 0) != OK) {
+            return false;
+        }
+    }
+    if (recv && recv_len) {
+        if (transfer(nullptr, 0, recv, recv_len) != OK) {
+            return false;
+        }
+    }
+    return true;
 }
-    
+
 I2CDevice::I2CDevice(uint8_t bus, uint8_t address) :
-    _bus(bus),
+    _busnum(bus),
+    _px4dev(_busnum),
     _address(address)
 {
+    set_device_bus(bus);
+    set_device_address(address);
+    asprintf(&pname, "I2C:%u:%02x",
+             (unsigned)bus, (unsigned)address);
+    perf = perf_alloc(PC_ELAPSED, pname);
 }
     
 I2CDevice::~I2CDevice()
 {
+    printf("I2C device bus %u address 0x%02x closed\n", 
+           (unsigned)_busnum, (unsigned)_address);
+    perf_free(perf);
+    free(pname);
 }
 
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-    return _bus.do_transfer(_address, send, send_len, recv, recv_len);
+    perf_begin(perf);
+    bool ret = _px4dev.do_transfer(_address, send, send_len, recv, recv_len);
+    perf_end(perf);
+    return ret;
 }
 
 bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
@@ -68,6 +131,28 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
     return false;
 }
 
+    
+/*
+  register a periodic callback
+*/
+AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    if (_busnum >= num_buses) {
+        return nullptr;
+    }
+    struct DeviceBus &binfo = businfo[_busnum];
+    return binfo.register_periodic_callback(period_usec, cb, this);
+}
+    
+
+/*
+  adjust a periodic callback
+*/
+bool I2CDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
+{
+    return false;
+}
+    
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
 I2CDeviceManager::get_device(uint8_t bus, uint8_t address)
 {

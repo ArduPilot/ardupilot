@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include "RangeFinder.h"
@@ -29,6 +28,12 @@ private:
     AP_RangeFinder_MaxsonarI2CXL(RangeFinder &ranger, uint8_t instance,
                                  RangeFinder::RangeFinder_State &_state);
 
+    bool _init(void);
+    void _timer(void);
+
+    uint16_t distance;
+    bool new_distance;
+    
     // start a reading
     bool start_reading(void);
     bool get_reading(uint16_t &reading_cm);

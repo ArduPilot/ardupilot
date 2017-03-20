@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -46,7 +45,7 @@ Helicopter::Helicopter(const char *home_str, const char *frame_str) :
     } else {
         frame_type = HELI_FRAME_CONVENTIONAL;
     }
-    gas_heli = (strstr(frame_str, "-gas") != NULL);
+    gas_heli = (strstr(frame_str, "-gas") != nullptr);
 
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 }

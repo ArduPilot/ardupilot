@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_ADC/AP_ADC.h>                 // ArduPilot Mega Analog to Digital Converter Library
@@ -57,6 +56,12 @@
  # define AP_BATT_VOLT_PIN                  2
  # define AP_BATT_CURR_PIN                  3
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
+
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2)
+ # define AP_BATT_VOLT_PIN                  2
+ # define AP_BATT_CURR_PIN                  3
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       11.3f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
 
 #else

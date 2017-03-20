@@ -16,6 +16,8 @@ public:
     void     write(uint8_t ch, uint16_t period_us);
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
+    void     cork(void) override;
+    void     push(void) override;
 
 private:
     static const int TICK_PER_US=100;
@@ -30,6 +32,10 @@ private:
         struct s_period_hi periodhi[MAX_ZYNQ_PWMS];
     };
     volatile struct pwm_cmd *sharedMem_cmd;
+
+    uint16_t pending[MAX_ZYNQ_PWMS];
+    bool corked;
+    uint32_t pending_mask;
 };
 
 }

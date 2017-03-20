@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -27,15 +26,18 @@ public:
     // provides a unit vector towards the target in body frame
     //  returns same as have_los_meas()
     virtual bool get_los_body(Vector3f& dir_body) = 0;
-    
+
     // returns system time in milliseconds of last los measurement
     virtual uint32_t los_meas_time_ms() = 0;
-    
+
     // return true if there is a valid los measurement available
     virtual bool have_los_meas() = 0;
-    
+
+    // returns distance to target in meters (0 means distance is not known)
+    virtual float distance_to_target() { return 0.0f; };
+
     // parses a mavlink message from the companion computer
-    virtual void handle_msg(mavlink_message_t* msg) = 0;
+    virtual void handle_msg(mavlink_message_t* msg) {};
 
 protected:
     const AC_PrecLand&  _frontend;          // reference to precision landing front end

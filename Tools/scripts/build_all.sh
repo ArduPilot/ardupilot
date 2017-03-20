@@ -47,19 +47,18 @@ for b in sitl; do
 done
 popd
 
-echo "Testing build of examples"
-
-examples="Tools/CPUInfo"
-for d in $examples; do
-    pushd $d
+echo "Testing ArduSub build"
+pushd ArduSub
+for b in sitl linux; do
+    pwd
     make clean
-    make sitl -j4
-    popd
+    make $b -j4
 done
+popd
 
 pushd Tools/Replay
 make clean
-make linux -j4
+make
 popd
 
 test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {

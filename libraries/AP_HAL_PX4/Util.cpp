@@ -61,7 +61,7 @@ bool PX4Util::run_debug_shell(AP_HAL::BetterStream *stream)
     dup2(fd, 1);
     dup2(fd, 2);
     
-    nsh_consolemain(0, NULL);
+    nsh_consolemain(0, nullptr);
     
     // this shouldn't happen
     hal.console->printf("shell exited\n");
@@ -152,7 +152,7 @@ PX4Util::perf_counter_t PX4Util::perf_alloc(PX4Util::perf_counter_type t, const 
         px4_t = ::PC_INTERVAL;
         break;
     default:
-        return NULL;
+        return nullptr;
     }
     return (perf_counter_t)::perf_alloc(px4_t, name);
 }
@@ -222,6 +222,33 @@ void PX4Util::set_imu_temp(float current)
 void PX4Util::set_imu_target_temp(int8_t *target)
 {
     _heater.target = target;
+}
+
+
+extern "C" {
+    extern void *fat_dma_alloc(size_t);
+    extern void fat_dma_free(void *, size_t);
+}
+
+/*
+  allocate DMA-capable memory if possible. Otherwise return normal
+  memory.
+*/
+void *PX4Util::dma_allocate(size_t size)
+{
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+    return fat_dma_alloc(size);
+#else
+    return malloc(size);
+#endif
+}
+void PX4Util::dma_free(void *ptr, size_t size)
+{
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+    fat_dma_free(ptr, size);
+#else
+    return free(ptr);
+#endif
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

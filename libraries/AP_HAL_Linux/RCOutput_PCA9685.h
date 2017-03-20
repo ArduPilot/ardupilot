@@ -8,6 +8,7 @@
 #define PCA9685_SECONDARY_ADDRESS           0x41
 #define PCA9685_TERTIARY_ADDRESS            0x42
 #define PCA9685_QUATENARY_ADDRESS           0x55
+#define PCA9685_QUINARY_ADDRESS             0x61
 
 namespace Linux {
 

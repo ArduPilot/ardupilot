@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       GPS UBlox passthrough sketch
  *       Code by DIYDrones.com
@@ -25,7 +24,6 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>

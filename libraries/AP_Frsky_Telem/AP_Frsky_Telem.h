@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -62,9 +61,6 @@ for FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
 #define SENSOR_ID_28                0x1B // Sensor ID 28
 
 // FrSky data IDs
-#define ALT_FIRST_ID                0x0100
-#define VARIO_FIRST_ID              0x0110
-#define VFAS_FIRST_ID               0x0210
 #define GPS_LONG_LATI_FIRST_ID      0x0800
 #define DIY_FIRST_ID                0x5000
 
@@ -91,7 +87,8 @@ for FrSky SPort Passthrough
 #define AP_CONTROL_MODE_LIMIT       0x1F
 #define AP_SSIMPLE_FLAGS            0x6
 #define AP_SSIMPLE_OFFSET           4
-#define AP_ISFLYING_FLAG            0x80
+#define AP_LANDCOMPLETE_FLAG        0x80
+#define AP_INITIALIZED_FLAG         0x2000
 #define AP_ARMED_OFFSET             8
 #define AP_BATT_FS_OFFSET           9
 #define AP_EKF_FS_OFFSET            10
@@ -118,7 +115,7 @@ public:
     AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
 
     // init - perform required initialisation
-    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage = nullptr, AP_Float *fs_batt_mah = nullptr, uint32_t *ap_valuep = nullptr);
+    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, const AP_Float *fs_batt_voltage = nullptr, const AP_Float *fs_batt_mah = nullptr, const uint32_t *ap_valuep = nullptr);
 
     // add statustext message to FrSky lib message queue
     void queue_message(MAV_SEVERITY severity, const char *text);
@@ -127,15 +124,16 @@ public:
     void update_control_mode(uint8_t mode) { _ap.control_mode = mode; }
 
     // update whether we're flying (used for Plane)
-    void set_is_flying(bool is_flying) { is_flying ? (_ap.value | AP_ISFLYING_FLAG) : (_ap.value & (~AP_ISFLYING_FLAG)); }
+    // set land_complete flag to 0 if is_flying
+    // set land_complete flag to 1 if not flying
+    void set_is_flying(bool is_flying) { (is_flying) ? (_ap.value &= ~AP_LANDCOMPLETE_FLAG) : (_ap.value |= AP_LANDCOMPLETE_FLAG); }
  
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-
     void update_sensor_status_flags(uint32_t error_mask) { _ap.sensor_status_flags = error_mask; }
-        
+
     static ObjectArray<mavlink_statustext_t> _statustext_queue;
     
 private:
@@ -150,19 +148,18 @@ private:
     struct
     {
         uint8_t mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
-        AP_Float *fs_batt_voltage; // failsafe battery voltage in volts
-        AP_Float *fs_batt_mah; // failsafe reserve capacity in mAh
+        const AP_Float *fs_batt_voltage; // failsafe battery voltage in volts
+        const AP_Float *fs_batt_mah; // failsafe reserve capacity in mAh
     } _params;
     
     struct
     {
         uint8_t control_mode;
         uint32_t value;
-        uint32_t *valuep;
+        const uint32_t *valuep;
         uint32_t sensor_status_flags;
     } _ap;
-    
-    float _relative_home_altitude; // altitude in centimeters above home
+
     uint32_t check_sensor_status_timer;
     uint32_t check_ekf_status_timer;
     uint8_t _paramID;
@@ -194,9 +191,6 @@ private:
         uint32_t home_timer;
         uint32_t velandyaw_timer;
         uint32_t gps_latlng_timer;
-        uint32_t vario_timer;
-        uint32_t alt_timer;
-        uint32_t vfas_timer;
     } _passthrough;
     
     struct

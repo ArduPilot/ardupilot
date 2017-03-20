@@ -27,9 +27,9 @@ HAL_Empty::HAL_Empty() :
         &uartADriver,
         &uartBDriver,
         &uartCDriver,
-        NULL,            /* no uartD */
-        NULL,            /* no uartE */
-        NULL,            /* no uartF */
+        nullptr,            /* no uartD */
+        nullptr,            /* no uartE */
+        nullptr,            /* no uartF */
         &spiDeviceManager,
         &analogIn,
         &storageDriver,

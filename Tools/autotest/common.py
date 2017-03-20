@@ -1,3 +1,4 @@
+from __future__ import print_function
 import math
 import time
 
@@ -236,13 +237,13 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, time
 
 def save_wp(mavproxy, mav):
     mavproxy.send('rc 7 1000\n')
-    mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==1000', blocking=True)
+    mav.recv_match(condition='RC_CHANNELS.chan7_raw==1000', blocking=True)
     wait_seconds(mav, 1)
     mavproxy.send('rc 7 2000\n')
-    mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==2000', blocking=True)
+    mav.recv_match(condition='RC_CHANNELS.chan7_raw==2000', blocking=True)
     wait_seconds(mav, 1)
     mavproxy.send('rc 7 1000\n')
-    mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==1000', blocking=True)
+    mav.recv_match(condition='RC_CHANNELS.chan7_raw==1000', blocking=True)
     wait_seconds(mav, 1)
 
 

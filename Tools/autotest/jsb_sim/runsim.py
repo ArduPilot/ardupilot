@@ -2,7 +2,7 @@
 """
  Run a jsbsim model as a child process.
 """
-
+from __future__ import print_function
 import atexit
 import errno
 import fdpexpect

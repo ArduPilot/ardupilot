@@ -4,6 +4,9 @@ cd /data/ftp/internal_000/APM
 (
  date
 
+ # stop stock led daemon
+ pstop ledd
+
  # startup fan
  echo 1 > /sys/devices/platform/user_gpio/FAN/value
  

@@ -21,7 +21,7 @@ using namespace Linux;
 // name the storage file after the sketch so you can use the same board
 // card for ArduCopter and ArduPlane
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-#define STORAGE_DIR "/data/ftp/internal_000/APM"
+#define STORAGE_DIR "/data/ftp/internal_000/ardupilot"
 #elif APM_BUILD_TYPE(APM_BUILD_Replay)
 #define STORAGE_DIR "."
 #else
@@ -35,7 +35,7 @@ void Storage::_storage_create(void)
 {
     mkdir(STORAGE_DIR, 0777);
     unlink(STORAGE_FILE);
-    int fd = open(STORAGE_FILE, O_RDWR|O_CREAT, 0666);
+    int fd = open(STORAGE_FILE, O_RDWR|O_CREAT|O_CLOEXEC, 0666);
     if (fd == -1) {
         AP_HAL::panic("Failed to create " STORAGE_FILE);
     }
@@ -57,10 +57,10 @@ void Storage::_storage_open(void)
     }
 
     _dirty_mask = 0;
-    int fd = open(STORAGE_FILE, O_RDWR);
+    int fd = open(STORAGE_FILE, O_RDWR|O_CLOEXEC);
     if (fd == -1) {
         _storage_create();
-        fd = open(STORAGE_FILE, O_RDWR);
+        fd = open(STORAGE_FILE, O_RDWR|O_CLOEXEC);
         if (fd == -1) {
             AP_HAL::panic("Failed to open " STORAGE_FILE);
         }
@@ -80,7 +80,7 @@ void Storage::_storage_open(void)
     if (ret != sizeof(_buffer)) {
         close(fd);
         _storage_create();
-        fd = open(STORAGE_FILE, O_RDONLY);
+        fd = open(STORAGE_FILE, O_RDONLY|O_CLOEXEC);
         if (fd == -1) {
             AP_HAL::panic("Failed to open " STORAGE_FILE);
         }
@@ -137,7 +137,7 @@ void Storage::_timer_tick(void)
     }
 
     if (_fd == -1) {
-        _fd = open(STORAGE_FILE, O_WRONLY);
+        _fd = open(STORAGE_FILE, O_WRONLY|O_CLOEXEC);
         if (_fd == -1) {
             return;
         }

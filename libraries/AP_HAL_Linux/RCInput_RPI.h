@@ -104,13 +104,14 @@ private:
     uint32_t curr_tick_inc;
     uint32_t curr_pointer;
     uint32_t curr_channel;
-    uint32_t counter;
 
     uint16_t width_s0;
     uint16_t width_s1;
 
     uint8_t curr_signal;
     uint8_t last_signal;
+
+    bool _initialized = false;
 
     state_t state;
 
@@ -127,7 +128,7 @@ private:
     static void termination_handler(int signum);
     void set_sigaction();
     void set_physical_addresses(int version);
-    void deinit() override;
+    void teardown() override;
 };
 
 }

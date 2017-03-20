@@ -1,4 +1,3 @@
-// -*- Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -68,17 +67,17 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
              tcpclient:192.168.2.15:5762
              uart:/dev/ttyUSB0:57600
          */
-        char *saveptr = NULL;
+        char *saveptr = nullptr;
         char *s = strdup(path);
         char *devtype = strtok_r(s, ":", &saveptr);
-        char *args1 = strtok_r(NULL, ":", &saveptr);
-        char *args2 = strtok_r(NULL, ":", &saveptr);
+        char *args1 = strtok_r(nullptr, ":", &saveptr);
+        char *args2 = strtok_r(nullptr, ":", &saveptr);
         if (strcmp(devtype, "tcp") == 0) {
             uint16_t port = atoi(args1);
             bool wait = (args2 && strcmp(args2, "wait") == 0);
             _tcp_start_connection(port, wait);
         } else if (strcmp(devtype, "tcpclient") == 0) {
-            if (args2 == NULL) {
+            if (args2 == nullptr) {
                 AP_HAL::panic("Invalid tcp client path: %s", path);
             }
             uint16_t port = atoi(args2);
@@ -235,7 +234,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
     if (wait_for_connection) {
         fprintf(stdout, "Waiting for connection ....\n");
         fflush(stdout);
-        _fd = accept(_listen_fd, NULL, NULL);
+        _fd = accept(_listen_fd, nullptr, nullptr);
         if (_fd == -1) {
             fprintf(stderr, "accept() error - %s", strerror(errno));
             exit(1);
@@ -354,7 +353,7 @@ void UARTDriver::_check_connection(void)
         return;
     }
     if (_select_check(_listen_fd)) {
-        _fd = accept(_listen_fd, NULL, NULL);
+        _fd = accept(_listen_fd, nullptr, nullptr);
         if (_fd != -1) {
             int one = 1;
             _connected = true;
@@ -383,7 +382,7 @@ bool UARTDriver::_select_check(int fd)
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    if (select(fd+1, &fds, NULL, NULL, &tv) == 1) {
+    if (select(fd+1, &fds, nullptr, nullptr, &tv) == 1) {
         return true;
     }
     return false;

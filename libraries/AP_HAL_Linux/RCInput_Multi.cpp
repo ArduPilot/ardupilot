@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -59,7 +58,7 @@ void RCInput_Multi::_timer_tick(void)
         if (inputs[i]->new_input()) {
             inputs[i]->read(_pwm_values, inputs[i]->num_channels());
             _num_channels = inputs[i]->num_channels();
-            new_rc_input = true;
+            rc_input_count++;
         }        
     }
 }

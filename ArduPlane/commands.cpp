@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *  logic for dealing with the current command in the mission and home location
  */
@@ -71,7 +70,7 @@ void Plane::set_next_WP(const struct Location &loc)
 
 void Plane::set_guided_WP(void)
 {
-    if (g.loiter_radius < 0 || guided_WP_loc.flags.loiter_ccw) {
+    if (aparm.loiter_radius < 0 || guided_WP_loc.flags.loiter_ccw) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -89,7 +88,6 @@ void Plane::set_guided_WP(void)
     // -----------------------------------------------
     set_target_altitude_current();
 
-    update_flight_stage();
     setup_glide_slope();
     setup_turn_angle();
 
@@ -112,8 +110,6 @@ void Plane::init_home()
     home_is_set = HOME_SET_NOT_LOCKED;
     Log_Write_Home_And_Origin();
     GCS_MAVLINK::send_home_all(gps.location());
-
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "GPS alt: %lu", (unsigned long)home.alt);
 
     // Save Home to EEPROM
     mission.write_home_to_storage();
@@ -138,17 +134,12 @@ void Plane::update_home()
         return;
     }
     if (home_is_set == HOME_SET_NOT_LOCKED) {
-        Location loc = gps.location();
-        Location origin;
-        // if an EKF origin is available then we leave home equal to
-        // the height of that origin. This ensures that our relative
-        // height calculations are using the same origin
-        if (ahrs.get_origin(origin)) {
-            loc.alt = origin.alt;
+        Location loc;
+        if(ahrs.get_position(loc)) {
+            ahrs.set_home(loc);
+            Log_Write_Home_And_Origin();
+            GCS_MAVLINK::send_home_all(loc);
         }
-        ahrs.set_home(loc);
-        Log_Write_Home_And_Origin();
-        GCS_MAVLINK::send_home_all(gps.location());
     }
     barometer.update_calibration();
 }

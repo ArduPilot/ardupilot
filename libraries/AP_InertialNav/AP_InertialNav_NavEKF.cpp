@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialNav.h"
 
@@ -18,14 +16,14 @@ void AP_InertialNav_NavEKF::update(float dt)
 {
     // get the NE position relative to the local earth frame origin
     Vector2f posNE;
-    if (_ahrs_ekf.get_relative_position_NE(posNE)) {
+    if (_ahrs_ekf.get_relative_position_NE_origin(posNE)) {
         _relpos_cm.x = posNE.x * 100; // convert from m to cm
         _relpos_cm.y = posNE.y * 100; // convert from m to cm
     }
 
     // get the D position relative to the local earth frame origin
     float posD;
-    if (_ahrs_ekf.get_relative_position_D(posD)) {
+    if (_ahrs_ekf.get_relative_position_D_origin(posD)) {
         _relpos_cm.z = - posD * 100; // convert from m in NED to cm in NEU
     }
 
@@ -40,7 +38,7 @@ void AP_InertialNav_NavEKF::update(float dt)
     }
 
     // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
     if (_ahrs_ekf.get_vert_pos_rate(_pos_z_rate)) {
         _pos_z_rate *= 100; // convert to cm/s
         _pos_z_rate = - _pos_z_rate; // InertialNav is NEU
@@ -64,7 +62,7 @@ struct Location AP_InertialNav_NavEKF::get_origin() const
 {
     struct Location ret;
      if (!_ahrs_ekf.get_origin(ret)) {
-         // initialise location to all zeros if EKF1 origin not yet set
+         // initialise location to all zeros if EKF origin not yet set
          memset(&ret, 0, sizeof(ret));
      }
     return ret;

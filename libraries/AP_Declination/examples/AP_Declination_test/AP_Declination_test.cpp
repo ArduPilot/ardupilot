@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -85,7 +83,7 @@ void setup(void)
     uint16_t pass = 0, fail = 0;
     uint32_t total_time=0;
 
-    hal.console->print("Beginning Test. Please wait...\n");
+    hal.console->printf("Beginning Test. Please wait...\n");
 
     for(int16_t i = -90; i <= 90; i+=5)
     {
@@ -107,7 +105,7 @@ void setup(void)
             }
         }
     }
-    hal.console->print("Ending Test.\n\n");
+    hal.console->printf("Ending Test.\n\n");
     hal.console->printf("Total Pass: %i\n", pass);
     hal.console->printf("Total Fail: %i\n", fail);
     hal.console->printf("Average time per call: %.1f usec\n",

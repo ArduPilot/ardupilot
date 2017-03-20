@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 void Copter::init_capabilities(void)
@@ -11,7 +9,8 @@ void Copter::init_capabilities(void)
                                MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED |
                                MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |
                                MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION |
-                               MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET);
+                               MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET |
+                               MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION);
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
 #endif

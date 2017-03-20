@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -88,9 +87,6 @@ AP_GPS_SBF::parse(uint8_t temp)
             if (temp == SBF_PREAMBLE1) {
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE2;
                 sbf_msg.read = 0;
-            } else if (temp == '$') {
-                // this is a command response
-                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE2;
             }
             break;
         case sbf_msg_parser_t::PREAMBLE2:
@@ -164,7 +160,7 @@ AP_GPS_SBF::parse(uint8_t temp)
 void
 AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
 
@@ -227,18 +223,19 @@ AP_GPS_SBF::process_message(void)
             state.ground_speed = (float)safe_sqrt(ground_vector_sq);
 
             state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
-
-            state.horizontal_accuracy = (float)temp.HAccuracy * 0.01f;
-            state.vertical_accuracy = (float)temp.VAccuracy * 0.01f;
+            
+            // value is expressed as twice the rms error = int16 * 0.01/2
+            state.horizontal_accuracy = (float)temp.HAccuracy * 0.005f;
+            state.vertical_accuracy = (float)temp.VAccuracy * 0.005f;
             state.have_horizontal_accuracy = true;
             state.have_vertical_accuracy = true;
         }
 
         // Update position state (don't use −2·10^10)
         if (temp.Latitude > -200000) {
-            state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * 1e7);
-            state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * 1e7);
-            state.location.alt = (int32_t)((float)temp.Height * 1e2f);
+            state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
+            state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
+            state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f);
         }
 
         if (temp.NrSV != 255) {
@@ -260,19 +257,19 @@ AP_GPS_SBF::process_message(void)
                 state.status = AP_GPS::GPS_OK_FIX_3D;
                 break;
             case 4: // rtk fixed
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;
             case 5: // rtk float
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                 break;
             case 6: // sbas
-                state.status = AP_GPS::GPS_OK_FIX_3D;
+                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
                 break;
             case 7: // moving rtk fixed
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;
             case 8: // moving rtk float
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                 break;
         }
         
@@ -296,7 +293,7 @@ AP_GPS_SBF::process_message(void)
 }
 
 void
-AP_GPS_SBF::inject_data(uint8_t *data, uint8_t len)
+AP_GPS_SBF::inject_data(const uint8_t *data, uint16_t len)
 {
 
     if (port->txspace() > len) {

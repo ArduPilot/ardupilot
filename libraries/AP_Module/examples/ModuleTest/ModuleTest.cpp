@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple test for the AP_AHRS interface
 //
@@ -27,7 +25,7 @@ void setup(void)
     baro.init();
     ahrs.init();
 
-    gps.init(NULL, serial_manager);
+    gps.init(nullptr, serial_manager);
 }
 
 void loop(void)

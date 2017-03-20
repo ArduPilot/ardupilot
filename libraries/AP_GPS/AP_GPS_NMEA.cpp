@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -119,11 +118,11 @@ bool AP_GPS_NMEA::read(void)
     while (numc--) {
         char c = port->read();
 #ifdef NMEA_LOG_PATH
-        static FILE *logf = NULL;
-        if (logf == NULL) {
+        static FILE *logf = nullptr;
+        if (logf == nullptr) {
             logf = fopen(NMEA_LOG_PATH, "wb");
         }
-        if (logf != NULL) {
+        if (logf != nullptr) {
             ::fwrite(&c, 1, 1, logf);
         }
 #endif

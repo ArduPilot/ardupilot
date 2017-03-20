@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -93,6 +92,7 @@ struct Vector2
     T operator %(const Vector2<T> &v) const;
 
     // computes the angle between this vector and another vector
+    // returns 0 if the vectors are parallel, and M_PI if they are antiparallel
     float angle(const Vector2<T> &v2) const;
 
     // computes the angle in radians between the origin and this vector

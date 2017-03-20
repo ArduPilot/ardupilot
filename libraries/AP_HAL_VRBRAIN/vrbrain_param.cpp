@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   This replaces the PX4Firmware parameter system with dummy
   functions. The ArduPilot parameter system uses different formatting

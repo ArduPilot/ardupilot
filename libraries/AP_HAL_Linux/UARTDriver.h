@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/utility/OwnPtr.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 #include "AP_HAL_Linux.h"
 #include "SerialDevice.h"
@@ -68,24 +69,14 @@ private:
 protected:
     const char *device_path;
     volatile bool _initialised;
+
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
-    uint8_t *_readbuf;
-    uint16_t _readbuf_size;
-
-    // _head is where the next available data is. _tail is where new
-    // data is put
-    volatile uint16_t _readbuf_head;
-    volatile uint16_t _readbuf_tail;
-
-    uint8_t *_writebuf;
-    uint16_t _writebuf_size;
-    volatile uint16_t _writebuf_head;
-    volatile uint16_t _writebuf_tail;
+    ByteBuffer _readbuf{0};
+    ByteBuffer _writebuf{0};
 
     virtual int _write_fd(const uint8_t *buf, uint16_t n);
     virtual int _read_fd(uint8_t *buf, uint16_t n);
-
 };
 
 }

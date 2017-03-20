@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 // Unit tests for the AP_Common code
 //
@@ -33,7 +32,7 @@ void test_high_low_byte(void)
  */
 void setup(void)
 {
-    hal.console->println("AP_Common tests\n");
+    hal.console->printf("AP_Common tests\n\n");
 
     test_high_low_byte();
 }

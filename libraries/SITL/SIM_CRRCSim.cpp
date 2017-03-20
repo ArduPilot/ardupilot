@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,7 +38,7 @@ CRRCSim::CRRCSim(const char *home_str, const char *frame_str) :
 
     sock.reuseaddress();
     sock.set_blocking(false);
-    heli_servos = (strstr(frame_str,"heli") != NULL);
+    heli_servos = (strstr(frame_str,"heli") != nullptr);
 }
 
 /*

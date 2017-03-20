@@ -197,7 +197,7 @@ void CameraSensor_Mt9v117::_write_reg32(uint16_t reg, uint32_t val)
     buf[4] = (uint8_t) ((val >> 8) & 0xFF);
     buf[5] = (uint8_t) (val & 0xFF);
 
-    if (!_dev->transfer(buf, 6, NULL, 0)) {
+    if (!_dev->transfer(buf, 6, nullptr, 0)) {
         hal.console->printf("mt9v117: error writing 0x%8x\n", reg);
     }
 }

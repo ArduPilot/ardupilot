@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple test for the StorageManager class
 //
@@ -43,7 +41,7 @@ static uint8_t pvalue(uint16_t offset)
 
 void setup(void)
 {
-    hal.console->println("StorageTest startup...");
+    hal.console->printf("StorageTest startup...\n");
 #if DO_INITIALISATION
     for (uint8_t type=0; type<4; type++) {
         const StorageAccess &storage = all_storage[type];

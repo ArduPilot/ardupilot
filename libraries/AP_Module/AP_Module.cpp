@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,7 +46,7 @@ void AP_Module::module_scan(const char *path)
         printf("dlopen(%s) -> %s\n", path, dlerror());
         return;
     }
-    bool found_hook = false;
+    uint8_t found_hooks = 0;
     for (uint16_t i=0; i<NUM_HOOKS; i++) {
         void *s = dlsym(m, hook_names[i]);
         if (s != nullptr) {
@@ -59,12 +58,14 @@ void AP_Module::module_scan(const char *path)
             h->next = hooks[i];
             h->symbol = s;
             hooks[i] = h;
-            found_hook = true;
+            found_hooks++;
         }
     }
-    if (!found_hook) {
+    if (found_hooks == 0) {
         // we don't need this module
         dlclose(m);
+    } else {
+        printf("AP_Module: Loaded %u hooks from %s\n", (unsigned)found_hooks, path);
     }
 #endif
 }
@@ -178,7 +179,7 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
     }
     
     Vector3f pos;
-    if (ahrs.get_relative_position_NED(pos)) {
+    if (ahrs.get_relative_position_NED_origin(pos)) {
         state.relative_position[0] = pos[0];
         state.relative_position[1] = pos[1];
         state.relative_position[2] = pos[2];

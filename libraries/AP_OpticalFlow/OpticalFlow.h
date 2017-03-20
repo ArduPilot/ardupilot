@@ -40,7 +40,7 @@ public:
     bool enabled() const { return _enabled; }
 
     // healthy - return true if the sensor is healthy
-    bool healthy() const { return backend != NULL && _flags.healthy; }
+    bool healthy() const { return backend != nullptr && _flags.healthy; }
 
     // read latest values from sensor and fill in x,y and totals.
     void update(void);
@@ -70,10 +70,13 @@ public:
         Vector2f bodyRate;          // body inertial angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
     };
 
-    // support for HIL/SITL
-    void setHIL(const struct OpticalFlow_state &state);
+    // return a 3D vector defining the position offset of the sensors focal point in metres relative to the body frame origin
+    const Vector3f &get_pos_offset(void) const {
+        return _pos_offset;
+    }
 
 private:
+    AP_AHRS_NavEKF &_ahrs;
     OpticalFlow_backend *backend;
 
     struct AP_OpticalFlow_Flags {
@@ -85,7 +88,8 @@ private:
     AP_Int16 _flowScalerX;          // X axis flow scale factor correction - parts per thousand
     AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
     AP_Int16 _yawAngle_cd;          // yaw angle of sensor X axis with respect to vehicle X axis - centi degrees
-
+    AP_Vector3f _pos_offset;        // position offset of the flow sensor in the body frame
+    AP_Int8  _bus_id;               // ID on bus (some sensors only)
 
     // state filled in by backend
     struct OpticalFlow_state _state;
@@ -94,6 +98,3 @@ private:
 };
 
 #include "OpticalFlow_backend.h"
-#include "AP_OpticalFlow_HIL.h"
-#include "AP_OpticalFlow_PX4.h"
-#include "AP_OpticalFlow_Linux.h"

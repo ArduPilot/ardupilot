@@ -41,7 +41,7 @@ static void *main_thread(void *cmdptr)
     argv[argc] = nullptr;
     
     ArduPilot_main(argc, argv);
-    return NULL;
+    return nullptr;
 }
 
 

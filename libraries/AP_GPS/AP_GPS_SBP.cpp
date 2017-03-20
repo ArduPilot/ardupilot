@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -85,7 +84,7 @@ AP_GPS_SBP::read(void)
 }
 
 void 
-AP_GPS_SBP::inject_data(uint8_t *data, uint8_t len)
+AP_GPS_SBP::inject_data(const uint8_t *data, uint16_t len)
 {
 
     if (port->txspace() > len) {
@@ -110,7 +109,7 @@ AP_GPS_SBP::_sbp_process()
 
         //This switch reads one character at a time,
         //parsing it into buffers until a full message is dispatched
-        switch(parser_state.state) {
+        switch (parser_state.state) {
             case sbp_parser_state_t::WAITING:
                 if (temp == SBP_PREAMBLE) {
                     parser_state.n_read = 0;
@@ -168,7 +167,7 @@ AP_GPS_SBP::_sbp_process()
                         crc_error_counter += 1;
                     }
 
-                    parser_state.state = sbp_parser_state_t::WAITING;                
+                    parser_state.state = sbp_parser_state_t::WAITING;
                 }
                 break;
 
@@ -183,7 +182,7 @@ AP_GPS_SBP::_sbp_process()
 //INVARIANT: A fully received message with correct CRC is currently in parser_state
 void
 AP_GPS_SBP::_sbp_process_message() {
-    switch(parser_state.msg_type) {
+    switch (parser_state.msg_type) {
         case SBP_HEARTBEAT_MSGTYPE:
             last_heatbeat_received_ms = AP_HAL::millis();
             break;
@@ -245,10 +244,9 @@ AP_GPS_SBP::_attempt_state_update()
     bool ret = false;
 
     if (now - last_heatbeat_received_ms > SBP_TIMEOUT_HEATBEAT) {
-        
+
         state.status = AP_GPS::NO_GPS;
         Debug("No Heartbeats from Piksi! Driver Ready to Die!");
-        ret = false;
 
     } else if (last_pos_llh_rtk.tow == last_vel_ned.tow
             && abs((int32_t) (last_gps_time.tow - last_vel_ned.tow)) < 10000
@@ -276,18 +274,18 @@ AP_GPS_SBP::_attempt_state_update()
 
         // Update position state
 
-        state.location.lat      = (int32_t) (pos_llh->lat*1e7);
-        state.location.lng      = (int32_t) (pos_llh->lon*1e7);
-        state.location.alt      = (int32_t) (pos_llh->height*1e2);
+        state.location.lat      = (int32_t) (pos_llh->lat * (double)1e7);
+        state.location.lng      = (int32_t) (pos_llh->lon * (double)1e7);
+        state.location.alt      = (int32_t) (pos_llh->height * 100);
         state.num_sats          = pos_llh->n_sats;
 
-        if (pos_llh->flags == 0)
+        if (pos_llh->flags == 0) {
             state.status = AP_GPS::GPS_OK_FIX_3D;
-        else if (pos_llh->flags == 2)
-            state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
-        else if (pos_llh->flags == 1)
-            state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
-        
+        } else if (pos_llh->flags == 2) {
+            state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+        } else if (pos_llh->flags == 1) {
+            state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+        }
 
         last_full_update_tow = last_vel_ned.tow;
         last_full_update_cpu_ms = now;
@@ -303,12 +301,10 @@ AP_GPS_SBP::_attempt_state_update()
         ret = true;
 
     } else {
-        
-        //No timeouts yet, no data yet, nothing has happened.
-        ret = false;
-    
-    }
 
+        //No timeouts yet, no data yet, nothing has happened.
+
+    }
 
     return ret;
 
@@ -323,7 +319,7 @@ AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data)
     // looks like our preamble we'll try to read the full message length,
     // calculating the CRC. If the CRC matches, we have an SBP GPS!
 
-    switch(state.state) {
+    switch (state.state) {
         case SBP_detect_state::WAITING:
             if (data == SBP_PREAMBLE) {
                 state.n_read = 0;
@@ -388,7 +384,7 @@ void
 AP_GPS_SBP::logging_log_full_update()
 {
 
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
       return;
     }
 
@@ -409,7 +405,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         uint8_t msg_len, 
         uint8_t *msg_buff) {
 
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
       return;
     }
 

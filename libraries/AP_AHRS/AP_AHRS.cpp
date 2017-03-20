@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   APM_AHRS.cpp
 
@@ -16,7 +15,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "AP_AHRS.h"
+#include "AP_AHRS_View.h"
 #include <AP_HAL/AP_HAL.h>
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -25,9 +26,10 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: GPS_GAIN
     // @DisplayName: AHRS GPS gain
-    // @Description: This controls how how much to use the GPS to correct the attitude. This should never be set to zero for a plane as it would result in the plane losing control in turns. For a plane please use the default value of 1.0.
+    // @Description: This controls how much to use the GPS to correct the attitude. This should never be set to zero for a plane as it would result in the plane losing control in turns. For a plane please use the default value of 1.0.
     // @Range: 0.0 1.0
     // @Increment: .01
+    // @User: Advanced
     AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS, gps_gain, 1.0f),
 
     // @Param: GPS_USE
@@ -42,6 +44,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Description: This controls the weight the compass or GPS has on the heading. A higher value means the heading will track the yaw source (GPS or compass) more rapidly.
     // @Range: 0.1 0.4
     // @Increment: .01
+    // @User: Advanced
     AP_GROUPINFO("YAW_P", 4,    AP_AHRS, _kp_yaw, 0.2f),
 
     // @Param: RP_P
@@ -49,6 +52,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Description: This controls how fast the accelerometers correct the attitude
     // @Range: 0.1 0.4
     // @Increment: .01
+    // @User: Advanced
     AP_GROUPINFO("RP_P",  5,    AP_AHRS, _kp, 0.2f),
 
     // @Param: WIND_MAX
@@ -57,6 +61,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Range: 0 127
     // @Units: m/s
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("WIND_MAX",  6,    AP_AHRS, _wind_max, 0.0f),
 
     // NOTE: 7 was BARO_USE
@@ -67,7 +72,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Units: Radians
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
-    // @User: User
+    // @User: Standard
 
     // @Param: TRIM_Y
     // @DisplayName: AHRS Trim Pitch
@@ -75,7 +80,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Units: Radians
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
-    // @User: User
+    // @User: Standard
 
     // @Param: TRIM_Z
     // @DisplayName: AHRS Trim Yaw
@@ -117,14 +122,21 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 #if AP_AHRS_NAVEKF_AVAILABLE
     // @Param: EKF_TYPE
     // @DisplayName: Use NavEKF Kalman filter for attitude and position estimation
-    // @Description: This controls whether the NavEKF Kalman filter is used for attitude and position estimation and whether fallback to the DCM algorithm is allowed. Note that on copters "disabled" is not available, and will be the same as "enabled - no fallback"
-    // @Values: 0:Disabled,1:Enabled,2:Enable EKF2
+    // @Description: This controls which NavEKF Kalman filter version is used for attitude and position estimation
+    // @Values: 0:Disabled,2:Enable EKF2,3:Enable EKF3
     // @User: Advanced
     AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, 2),
 #endif
 
     AP_GROUPEND
 };
+
+// return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
+Vector3f AP_AHRS::get_gyro_latest(void) const
+{
+    uint8_t primary_gyro = get_primary_gyro_index();
+    return get_ins().get_gyro(primary_gyro) + get_gyro_drift();
+}
 
 // return airspeed estimate if available
 bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
@@ -226,55 +238,68 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     return Vector2f(0.0f, 0.0f);
 }
 
+/*
+  calculate sin and cos of roll/pitch/yaw from a body_to_ned rotation matrix
+ */
+void AP_AHRS::calc_trig(const Matrix3f &rot,
+                        float &cr, float &cp, float &cy,
+                        float &sr, float &sp, float &sy) const
+{
+    Vector2f yaw_vector;
+
+    yaw_vector.x = rot.a.x;
+    yaw_vector.y = rot.b.x;
+    if (fabsf(yaw_vector.x) > 0 ||
+        fabsf(yaw_vector.y) > 0) {
+        yaw_vector.normalize();
+    }
+    sy = constrain_float(yaw_vector.y, -1.0, 1.0);
+    cy = constrain_float(yaw_vector.x, -1.0, 1.0);
+
+    // sanity checks
+    if (yaw_vector.is_inf() || yaw_vector.is_nan()) {
+        sy = 0.0f;
+        cy = 1.0f;
+    }
+    
+    float cx2 = rot.c.x * rot.c.x;
+    if (cx2 >= 1.0f) {
+        cp = 0;
+        cr = 1.0f;
+    } else {
+        cp = safe_sqrt(1 - cx2);
+        cr = rot.c.z / cp;
+    }
+    cp = constrain_float(cp, 0, 1.0);
+    cr = constrain_float(cr, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing
+
+    sp = -rot.c.x;
+
+    if (!is_zero(cp)) {
+        sr = rot.c.y / cp;
+    }
+
+    if (is_zero(cp) || isinf(cr) || isnan(cr) || isinf(sr) || isnan(sr)) {
+        float r, p, y;
+        rot.to_euler(&r, &p, &y);
+        cr = cosf(r);
+        sr = sinf(r);
+    }
+}
+
 // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
 //      should be called after _dcm_matrix is updated
 void AP_AHRS::update_trig(void)
 {
-    Vector2f yaw_vector;
-    const Matrix3f &temp = get_rotation_body_to_ned();
-
-    // sin_yaw, cos_yaw
-    yaw_vector.x = temp.a.x;
-    yaw_vector.y = temp.b.x;
-    yaw_vector.normalize();
-    _sin_yaw = constrain_float(yaw_vector.y, -1.0, 1.0);
-    _cos_yaw = constrain_float(yaw_vector.x, -1.0, 1.0);
-
-    // cos_roll, cos_pitch
-    float cx2 = temp.c.x * temp.c.x;
-    if (cx2 >= 1.0f) {
-        _cos_pitch = 0;
-        _cos_roll = 1.0f;
-    } else {
-        _cos_pitch = safe_sqrt(1 - cx2);
-        _cos_roll = temp.c.z / _cos_pitch;
-    }
-    _cos_pitch = constrain_float(_cos_pitch, 0, 1.0);
-    _cos_roll = constrain_float(_cos_roll, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing
-
-    // sin_roll, sin_pitch
-    _sin_pitch = -temp.c.x;
-    if (is_zero(_cos_pitch)) {
-        _sin_roll = sinf(roll);
-    } else {
-        _sin_roll = temp.c.y / _cos_pitch;
+    if (_last_trim != _trim.get()) {
+        _last_trim = _trim.get();
+        _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
+        _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
     }
 
-    // sanity checks
-    if (yaw_vector.is_inf() || yaw_vector.is_nan()) {
-        yaw_vector.x = 0.0f;
-        yaw_vector.y = 0.0f;
-        _sin_yaw = 0.0f;
-        _cos_yaw = 1.0f;
-    }
-
-    if (isinf(_cos_roll) || isnan(_cos_roll)) {
-        _cos_roll = cosf(roll);
-    }
-
-    if (isinf(_sin_roll) || isnan(_sin_roll)) {
-        _sin_roll = sinf(roll);
-    }
+    calc_trig(get_rotation_body_to_ned(),
+              _cos_roll, _cos_pitch, _cos_yaw,
+              _sin_roll, _sin_pitch, _sin_yaw);
 }
 
 /*
@@ -287,4 +312,17 @@ void AP_AHRS::update_cd_values(void)
     yaw_sensor   = degrees(yaw) * 100;
     if (yaw_sensor < 0)
         yaw_sensor += 36000;
+}
+
+/*
+  create a rotated view of AP_AHRS
+ */
+AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation)
+{
+    if (_view != nullptr) {
+        // can only have one
+        return nullptr;
+    }
+    _view = new AP_AHRS_View(*this, rotation);
+    return _view;
 }

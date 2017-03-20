@@ -171,7 +171,7 @@ void SoloGimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavli
     mavlink_param_value_t packet;
     mavlink_msg_param_value_decode(msg, &packet);
 
-    if (dataflash != NULL) {
+    if (dataflash != nullptr) {
         dataflash->Log_Write_Parameter(packet.param_id, packet.param_value);
     }
 

@@ -1,5 +1,3 @@
-// -*- Mode: C++; c-basic-offset: 8; indent-tabs-mode: nil -*-
-
 // This code is placed into the public domain.
 
 #include <AP_Common/AP_Common.h>
@@ -28,13 +26,13 @@ void flush_console_to_statustext() {
 void console_loopback() {
     int a = hal.console->available();
     if (a > 0) {
-        hal.console->print("Console loopback:");
+        hal.console->printf("Console loopback:");
         int r = hal.console->read();
         while (r > 0) {
             hal.console->write( (uint8_t) r );
             r = hal.console->read();
         }
-        hal.console->println();
+        hal.console->printf("\n");
     }   
 }
 

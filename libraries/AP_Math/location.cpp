@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * location.cpp
  * Copyright (C) Andrew Tridgell 2011
@@ -24,12 +23,6 @@
 #include <stdlib.h>
 #include "AP_Math.h"
 #include "location.h"
-
-// scaling factor from 1e-7 degrees to meters at equater
-// == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
-#define LOCATION_SCALING_FACTOR 0.011131884502145034f
-// inverse of LOCATION_SCALING_FACTOR
-#define LOCATION_SCALING_FACTOR_INV 89.83204953368922f
 
 float longitude_scale(const struct Location &loc)
 {
@@ -150,6 +143,17 @@ Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
 }
 
 /*
+  return the distance in meters in North/East/Down plane as a N/E/D vector
+  from loc1 to loc2
+ */
+Vector3f location_3d_diff_NED(const struct Location &loc1, const struct Location &loc2)
+{
+    return Vector3f((loc2.lat - loc1.lat) * LOCATION_SCALING_FACTOR,
+                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * longitude_scale(loc1),
+                    (loc1.alt - loc2.alt) * 0.01f);
+}
+
+/*
   return true if lat and lng match. Ignores altitude and options
  */
 bool locations_are_same(const struct Location &loc1, const struct Location &loc2) {
@@ -209,7 +213,7 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 
 void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef) {
   double d = WGS84_E * sin(llh[0]);
-  double N = WGS84_A / sqrt(1. - d*d);
+  double N = WGS84_A / sqrt(1 - d*d);
 
   ecef[0] = (N + llh[2]) * cos(llh[0]) * cos(llh[1]);
   ecef[1] = (N + llh[2]) * cos(llh[0]) * sin(llh[1]);
@@ -229,7 +233,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
 
   /* If we are close to the pole then convergence is very slow, treat this is a
    * special case. */
-  if (p < WGS84_A*1e-16) {
+  if (p < WGS84_A * double(1e-16)) {
     llh[0] = copysign(M_PI_2, ecef[2]);
     llh[2] = fabs(ecef[2]) - WGS84_B;
     return;
@@ -237,7 +241,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
 
   /* Calculate some other constants as defined in the Fukushima paper. */
   const double P = p / WGS84_A;
-  const double e_c = sqrt(1. - WGS84_E*WGS84_E);
+  const double e_c = sqrt(1 - WGS84_E*WGS84_E);
   const double Z = fabs(ecef[2]) * e_c / WGS84_A;
 
   /* Initial values for S and C correspond to a zero height solution. */
@@ -260,7 +264,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
     A_n = sqrt(S*S + C*C);
     D_n = Z*A_n*A_n*A_n + WGS84_E*WGS84_E*S*S*S;
     F_n = P*A_n*A_n*A_n - WGS84_E*WGS84_E*C*C*C;
-    B_n = 1.5*WGS84_E*S*C*C*(A_n*(P*S - Z*C) - WGS84_E*S*C);
+    B_n = double(1.5) * WGS84_E*S*C*C*(A_n*(P*S - Z*C) - WGS84_E*S*C);
 
     /* Update step. */
     S = D_n*F_n - B_n*S;
@@ -296,7 +300,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
     }
 
     /* Check for convergence and exit early if we have converged. */
-    if (fabs(S - prev_S) < 1e-16 && fabs(C - prev_C) < 1e-16) {
+    if (fabs(S - prev_S) < double(1e-16) && fabs(C - prev_C) < double(1e-16)) {
       break;
     } else {
       prev_S = S;

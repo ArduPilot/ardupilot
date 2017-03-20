@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -16,13 +15,13 @@
 #define WPNAV_ACCELERATION_MIN           50.0f      // minimum acceleration in cm/s/s - used for sanity checking _wp_accel parameter
 
 #define WPNAV_LOITER_SPEED              500.0f      // default loiter speed in cm/s
-#define WPNAV_LOITER_SPEED_MIN          100.0f      // minimum loiter speed in cm/s
+#define WPNAV_LOITER_SPEED_MIN           20.0f      // minimum loiter speed in cm/s
 #define WPNAV_LOITER_ACCEL              250.0f      // default acceleration in loiter mode
 #define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
 #define WPNAV_LOITER_JERK_MAX_DEFAULT  1000.0f      // maximum jerk in cm/s/s/s in loiter mode
 
 #define WPNAV_WP_SPEED                  500.0f      // default horizontal speed between waypoints in cm/s
-#define WPNAV_WP_SPEED_MIN              100.0f      // minimum horizontal speed between waypoints in cm/s
+#define WPNAV_WP_SPEED_MIN               20.0f      // minimum horizontal speed between waypoints in cm/s
 #define WPNAV_WP_TRACK_SPEED_MIN         50.0f      // minimum speed along track of the target point the vehicle is chasing in cm/s (used as target slows down before reaching destination)
 #define WPNAV_WP_RADIUS                 200.0f      // default waypoint radius in cm
 
@@ -55,7 +54,7 @@ public:
     };
 
     /// Constructor
-    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
+    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
     /// provide pointer to terrain database
     void set_terrain(AP_Terrain* terrain_ptr) { _terrain = terrain_ptr; }
@@ -85,7 +84,9 @@ public:
 
     /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
     void set_pilot_desired_acceleration(float control_roll, float control_pitch);
-
+    /// get_pilot_desired_acceleration - gets pilot desired
+    /// acceleration, body frame, [forward,right]
+    Vector2f get_pilot_desired_acceleration() const { return Vector2f(_pilot_accel_fwd_cms, _pilot_accel_rgt_cms); }
     /// clear_pilot_desired_acceleration - clear pilot desired acceleration
     void clear_pilot_desired_acceleration() { _pilot_accel_fwd_cms = 0.0f; _pilot_accel_rgt_cms = 0.0f; }
 
@@ -143,6 +144,9 @@ public:
     /// get_wp_destination waypoint using position vector (distance from home in cm)
     const Vector3f &get_wp_destination() const { return _destination; }
 
+    /// get origin using position vector (distance from home in cm)
+    const Vector3f &get_wp_origin() const { return _origin; }
+
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
     bool set_wp_destination(const Location_Class& destination);
@@ -186,6 +190,9 @@ public:
 
     /// calculate_wp_leash_length - calculates track speed, acceleration and leash lengths for waypoint controller
     void calculate_wp_leash_length();
+
+    /// get_bearing_cd - return bearing in centi-degrees between two positions
+    float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
 
     ///
     /// spline methods
@@ -276,18 +283,11 @@ protected:
     ///		updated velocity sent directly to position controller
     void calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit);
 
-    /// get_bearing_cd - return bearing in centi-degrees between two positions
-    float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
-
     /// calc_slow_down_distance - calculates distance before waypoint that target point should begin to slow-down assuming it is traveling at full speed
     void calc_slow_down_distance(float speed_cms, float accel_cmss);
 
     /// get_slow_down_speed - returns target speed of target point based on distance from the destination (in cm)
     float get_slow_down_speed(float dist_from_dest_cm, float accel_cmss);
-
-    /// initialise and check for ekf position reset and adjust loiter or brake target position
-    void init_ekf_position_reset();
-    void check_for_ekf_position_reset();
 
     /// spline protected functions
 
@@ -311,11 +311,11 @@ protected:
 
     // references and pointers to external libraries
     const AP_InertialNav&   _inav;
-    const AP_AHRS&          _ahrs;
+    const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
-    AP_Terrain              *_terrain = NULL;
-    AC_Avoid                *_avoid = NULL;
+    AP_Terrain              *_terrain = nullptr;
+    AC_Avoid                *_avoid = nullptr;
 
     // parameters
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
@@ -330,11 +330,9 @@ protected:
     AP_Float    _wp_accel_z_cms;        // vertical acceleration in cm/s/s during missions
 
     // loiter controller internal variables
-    uint8_t     _loiter_step;           // used to decide which portion of loiter controller to run during this iteration
     int16_t     _pilot_accel_fwd_cms; 	// pilot's desired acceleration forward (body-frame)
     int16_t     _pilot_accel_rgt_cms;   // pilot's desired acceleration right (body-frame)
     Vector2f    _loiter_desired_accel;  // slewed pilot's desired acceleration in lat/lon frame
-    uint32_t    _loiter_ekf_pos_reset_ms;   // system time of last recorded ekf position reset
 
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call

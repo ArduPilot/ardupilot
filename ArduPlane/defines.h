@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 // Internal defines, don't edit and expect things to work
@@ -81,6 +80,10 @@ enum mode_reason_t {
     MODE_REASON_FENCE_BREACH,
     MODE_REASON_AVOIDANCE,
     MODE_REASON_AVOIDANCE_RECOVERY,
+    MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING,
+    MODE_REASON_SOARING_THERMAL_DETECTED,
+    MODE_REASON_SOARING_IN_THERMAL,
+    MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED
 };
 
 // type of stick mixing enabled
@@ -136,7 +139,13 @@ enum log_messages {
     LOG_STATUS_MSG,
     LOG_OPTFLOW_MSG,
     LOG_QTUN_MSG,
-    LOG_PARAMTUNE_MSG
+    LOG_PARAMTUNE_MSG,
+    LOG_THERMAL_MSG,
+    LOG_VARIO_MSG,
+    LOG_PIQR_MSG,
+    LOG_PIQP_MSG,
+    LOG_PIQY_MSG,
+    LOG_PIQA_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)

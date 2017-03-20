@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
  *
@@ -138,6 +137,14 @@ int I2CBus::open(uint8_t n)
     return fd;
 }
 
+I2CDevice::I2CDevice(I2CBus &bus, uint8_t address)
+    : _bus(bus)
+    , _address(address)
+{
+    set_device_bus(bus.bus);
+    set_device_address(address);
+}
+    
 I2CDevice::~I2CDevice()
 {
     // Unregister itself from the I2CDeviceManager
@@ -147,6 +154,11 @@ I2CDevice::~I2CDevice()
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+    if (_split_transfers && send_len > 0 && recv_len > 0) {
+        return transfer(send, send_len, nullptr, 0) &&
+            transfer(nullptr, 0, recv, recv_len);
+    }
+
     struct i2c_msg msgs[2] = { };
     unsigned nmsgs = 0;
 
@@ -386,6 +398,19 @@ void I2CDeviceManager::_unregister(I2CBus &b)
             delete &b;
             break;
         }
+    }
+}
+
+void I2CDeviceManager::teardown()
+{
+    for (auto it = _buses.begin(); it != _buses.end(); it++) {
+        /* Try to stop thread - it may not even be started yet */
+        (*it)->thread.stop();
+    }
+
+    for (auto it = _buses.begin(); it != _buses.end(); it++) {
+        /* Try to join thread - failing is normal if thread was not started */
+        (*it)->thread.join();
     }
 }
 

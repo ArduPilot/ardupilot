@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 #if CLI_ENABLED == ENABLED
@@ -44,7 +42,7 @@ int8_t Copter::test_baro(uint8_t argc, const Menu::arg *argv)
         read_barometer();
 
         if (!barometer.healthy()) {
-            cliSerial->println("not healthy");
+            cliSerial->printf("not healthy\n");
         } else {
             cliSerial->printf("Alt: %0.2fm, Raw: %f Temperature: %.1f\n",
                                 (double)(baro_alt / 100.0f),
@@ -71,7 +69,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
     }
 
     if (!compass.init()) {
-        cliSerial->println("Compass initialisation failed!");
+        cliSerial->printf("Compass initialisation failed!\n");
         return 0;
     }
 
@@ -127,7 +125,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
                                         (double)mag_ofs.y,
                                         (double)mag_ofs.z);
                 } else {
-                    cliSerial->println("compass not healthy");
+                    cliSerial->printf("compass not healthy\n");
                 }
                 counter=0;
             }
@@ -139,7 +137,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
 
     // save offsets. This allows you to get sane offset values using
     // the CLI before you go flying.
-    cliSerial->println("saving offsets");
+    cliSerial->printf("saving offsets\n");
     compass.save_offsets();
     return (0);
 }
@@ -255,9 +253,12 @@ int8_t Copter::test_rangefinder(uint8_t argc, const Menu::arg *argv)
         delay(100);
         rangefinder.update();
 
-        cliSerial->printf("Primary: status %d distance_cm %d \n", (int)rangefinder.status(), rangefinder.distance_cm());
-        cliSerial->printf("All: device_0 type %d status %d distance_cm %d, device_1 type %d status %d distance_cm %d\n",
-        (int)rangefinder._type[0], (int)rangefinder.status(0), rangefinder.distance_cm(0), (int)rangefinder._type[1], (int)rangefinder.status(1), rangefinder.distance_cm(1));
+        for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {
+            cliSerial->printf("Dev%d: status %d distance_cm %d\n",
+                    (int)i,
+                    (int)rangefinder.status(i),
+                    (int)rangefinder.distance_cm(i));
+        }
 
         if(cliSerial->available() > 0) {
             return (0);

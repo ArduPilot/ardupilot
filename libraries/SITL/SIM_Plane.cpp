@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,6 +35,8 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     frame_height = 0.1f;
 
+    ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
+    
     if (strstr(frame_str, "-heavy")) {
         mass = 8;
     }
@@ -50,8 +51,12 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     if (strstr(frame_str, "-elevrev")) {
         reverse_elevator_rudder = true;
     }
+   if (strstr(frame_str, "-tailsitter")) {
+       tailsitter = true;
+       ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
+       thrust_scale *= 1.5;
+   }
 
-    ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
     if (strstr(frame_str, "-ice")) {
         ice_engine = true;
     }
@@ -207,9 +212,9 @@ Vector3f Plane::getForce(float inputAileron, float inputElevator, float inputRud
 
 void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
-    float aileron  = (input.servos[0]-1500)/500.0f;
-    float elevator = (input.servos[1]-1500)/500.0f;
-    float rudder   = (input.servos[3]-1500)/500.0f;
+    float aileron  = filtered_servo_angle(input, 0);
+    float elevator = filtered_servo_angle(input, 1);
+    float rudder   = filtered_servo_angle(input, 3);
     float throttle;
     if (reverse_elevator_rudder) {
         elevator = -elevator;
@@ -222,6 +227,9 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         aileron  = (ch2-ch1)/2.0f;
         // the minus does away with the need for RC2_REV=-1
         elevator = -(ch2+ch1)/2.0f;
+
+        // assume no rudder
+        rudder = 0;
     } else if (vtail) {
         // fake a vtail plane
         float ch1 = elevator;
@@ -232,9 +240,9 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     }
 
     if (reverse_thrust) {
-        throttle = constrain_float((input.servos[2]-1500)/500.0f, -1, 1);
+        throttle = filtered_servo_angle(input, 2);
     } else {
-        throttle = constrain_float((input.servos[2]-1000)/1000.0f, 0, 1);
+        throttle = filtered_servo_range(input, 2);
     }
     
     float thrust     = throttle;
@@ -264,7 +272,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         add_noise(fabsf(thrust) / thrust_scale);
     }
 
-    if (on_ground(position)) {
+    if (on_ground() && !tailsitter) {
         // add some ground friction
         Vector3f vel_body = dcm.transposed() * velocity_ef;
         accel_body.x -= vel_body.x * 0.3f;

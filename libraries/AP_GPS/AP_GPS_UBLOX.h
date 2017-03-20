@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,8 +37,7 @@
  * modules are configured with all ubx binary messages off, which
  * would mean we would never detect it.
  */
-#define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,38400,0*26\r\n"
-#define UBLOX_SET_BINARY_RAW_BAUD "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,115200,0*1E\r\n"
+#define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,115200,0*1C\r\n"
 
 #define UBLOX_RXM_RAW_LOGGING 1
 #define UBLOX_MAX_RXM_RAW_SATS 22
@@ -50,11 +48,11 @@
 #define UBX_MSG_TYPES 2
 
 #define UBLOX_MAX_PORTS 6
-#define MEASURE_RATE 200
 
 #define RATE_POSLLH 1
 #define RATE_STATUS 1
 #define RATE_SOL 1
+#define RATE_PVT 1
 #define RATE_VELNED 1
 #define RATE_DOP 1
 #define RATE_HW 5
@@ -73,6 +71,9 @@
 #define CONFIG_NAV_SETTINGS  (1<<10)
 #define CONFIG_GNSS          (1<<11)
 #define CONFIG_SBAS          (1<<12)
+#define CONFIG_RATE_PVT      (1<<13)
+
+#define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
 #define CONFIG_ALL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_SOL | CONFIG_RATE_VELNED \
                     | CONFIG_RATE_DOP | CONFIG_RATE_MON_HW | CONFIG_RATE_MON_HW2 | CONFIG_RATE_RAW | CONFIG_VERSION \
@@ -96,21 +97,29 @@ public:
     // Methods
     bool read();
 
-    AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_DGPS; }
+    AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
-    void inject_data(uint8_t *data, uint8_t len);
+    void inject_data(const uint8_t *data, uint16_t len) override;
     
     bool is_configured(void) {
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         if (!gps._auto_config) {
             return true;
         } else {
             return !_unconfigured_messages;
         }
+#else
+        return true;
+#endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
     }
 
     void broadcast_configuration_failure_reason(void) const override;
+
+    // return velocity lag
+    float get_lag(void) const override;
+
 private:
     // u-blox UBX protocol essentials
     struct PACKED ubx_header {
@@ -228,6 +237,29 @@ private:
         uint8_t res;
         uint8_t satellites;
         uint32_t res2;
+    };
+    struct PACKED ubx_nav_pvt {
+        uint32_t itow; 
+        uint16_t year; 
+        uint8_t month, day, hour, min, sec; 
+        uint8_t valid; 
+        uint32_t t_acc; 
+        int32_t nano; 
+        uint8_t fix_type; 
+        uint8_t flags; 
+        uint8_t flags2; 
+        uint8_t num_sv; 
+        int32_t lon, lat; 
+        int32_t height, h_msl; 
+        uint32_t h_acc, v_acc; 
+        int32_t velN, velE, velD, gspeed; 
+        int32_t head_mot; 
+        uint32_t s_acc; 
+        uint32_t head_acc; 
+        uint16_t p_dop; 
+        uint8_t reserved1[6]; 
+        uint32_t headVeh;
+        uint8_t reserved2[4]; 
     };
     struct PACKED ubx_nav_velned {
         uint32_t time;                                  // GPS msToW
@@ -365,6 +397,7 @@ private:
         ubx_nav_status status;
         ubx_nav_dop dop;
         ubx_nav_solution solution;
+        ubx_nav_pvt pvt;
         ubx_nav_velned velned;
         ubx_cfg_msg_rate msg_rate;
         ubx_cfg_msg_rate_6 msg_rate_6;
@@ -401,6 +434,7 @@ private:
         MSG_STATUS = 0x3,
         MSG_DOP = 0x4,
         MSG_SOL = 0x6,
+        MSG_PVT = 0x7,
         MSG_VELNED = 0x12,
         MSG_CFG_CFG = 0x09,
         MSG_CFG_RATE = 0x08,
@@ -446,19 +480,17 @@ private:
     };
 
     enum config_step {
-        STEP_RATE_NAV = 0,
-        STEP_RATE_POSLLH,
-        STEP_RATE_VELNED,
-        STEP_PORT,
-        STEP_POLL_SVINFO,
-        STEP_POLL_SBAS,
-        STEP_POLL_NAV,
-        STEP_POLL_GNSS,
-        STEP_NAV_RATE,
-        STEP_POSLLH,
-        STEP_STATUS,
+        STEP_PVT = 0,
+        STEP_NAV_RATE, // poll NAV rate
         STEP_SOL,
+        STEP_PORT,
+        STEP_STATUS,
+        STEP_POSLLH,
         STEP_VELNED,
+        STEP_POLL_SVINFO, // poll svinfo
+        STEP_POLL_SBAS, // poll SBAS
+        STEP_POLL_NAV, // poll NAV settings
+        STEP_POLL_GNSS, // poll GNSS
         STEP_DOP,
         STEP_MON_HW,
         STEP_MON_HW2,
@@ -507,20 +539,19 @@ private:
     // used to update fix between status and position packets
     AP_GPS::GPS_Status next_fix;
 
-    uint32_t _last_5hz_time;
-
     bool _cfg_needs_save;
 
     bool noReceivedHdop;
+    
+    bool havePvtMsg;
 
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _configure_rate(void);
     void        _configure_sbas(bool enable);
     void        _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);
-    void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
+    bool        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
     void	send_next_rate_update(void);
     bool        _request_message_rate(uint8_t msg_class, uint8_t msg_id);
-    void        _request_navigation_rate(void);
     void        _request_next_config(void);
     void        _request_port(void);
     void        _request_version(void);

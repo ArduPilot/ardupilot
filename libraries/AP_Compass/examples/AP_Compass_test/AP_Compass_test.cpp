@@ -5,6 +5,7 @@
 
 #include <AP_Compass/AP_Compass.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -12,8 +13,11 @@ static Compass compass;
 
 uint32_t timer;
 
-void setup() {
-    hal.console->println("Compass library test");
+static void setup()
+{
+    hal.console->printf("Compass library test\n");
+
+    AP_BoardConfig{}.init(); // initialise the board drivers
 
     if (!compass.init()) {
         AP_HAL::panic("compass initialisation failed!");
@@ -29,7 +33,7 @@ void setup() {
     timer = AP_HAL::micros();
 }
 
-void loop()
+static void loop()
 {
     static const uint8_t compass_count = compass.get_count();
     static float min[COMPASS_MAX_INSTANCES][3];
@@ -49,7 +53,7 @@ void loop()
             hal.console->printf("Compass #%u: ", i);
 
             if (!compass.healthy()) {
-                hal.console->println("not healthy");
+                hal.console->printf("not healthy\n");
                 continue;
             }
 
@@ -89,7 +93,7 @@ void loop()
 
             hal.console->printf(" t=%u", (unsigned)read_time);
 
-            hal.console->println();
+            hal.console->printf("\n");
         }
     } else {
         hal.scheduler->delay(1);

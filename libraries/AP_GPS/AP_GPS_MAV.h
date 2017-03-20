@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,7 +33,7 @@ public:
 
     static bool _detect(struct MAV_detect_state &state, uint8_t data);
 
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t *msg);
 
 private:
     bool _new_data;

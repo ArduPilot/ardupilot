@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -59,31 +58,6 @@ int16_t AP_GPS_Backend::swap_int16(int16_t v) const
     return u.v;
 }
 
-/**
-   convert GPS week and milliseconds to unix epoch in milliseconds
- */
-uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
-{
-    const uint64_t ms_per_week = 7000ULL*86400ULL;
-    const uint64_t unix_offset = 17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL;
-    uint64_t fix_time_ms = unix_offset + gps_week*ms_per_week + gps_ms;
-    return fix_time_ms;
-}
-
-/**
-   calculate current time since the unix epoch in microseconds
- */
-uint64_t AP_GPS::time_epoch_usec(uint8_t instance)
-{
-    const GPS_State &istate = state[instance];
-    if (istate.last_gps_time_ms == 0) {
-        return 0;
-    }
-    uint64_t fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
-    // add in the milliseconds since the last fix
-    return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
-}
-
 
 /**
    fill in time_week_ms and time_week from BCD date and time components
@@ -111,7 +85,7 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     }
 
     // get time in seconds since unix epoch
-    uint32_t ret = (year/4) - 15 + 367*rmon/12 + day;
+    uint32_t ret = (year/4) - (GPS_LEAPSECONDS_MILLIS / 1000UL) + 367*rmon/12 + day;
     ret += year*365 + 10501;
     ret = ret*24 + hour;
     ret = ret*60 + min;
@@ -121,8 +95,8 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     ret -= 272764785UL;
 
     // get GPS week and time
-    state.time_week = ret / (7*86400UL);
-    state.time_week_ms = (ret % (7*86400UL)) * 1000;
+    state.time_week = ret / SEC_PER_WEEK;
+    state.time_week_ms = (ret % SEC_PER_WEEK) * MSEC_PER_SEC;
     state.time_week_ms += msec;
 }
 

@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -195,11 +194,11 @@ AP_GPS_NOVA::process_message(void)
 
         state.time_week = nova_msg.header.nova_headeru.week;
         state.time_week_ms = (uint32_t) nova_msg.header.nova_headeru.tow;
-        state.last_gps_time_ms = state.time_week_ms;
+        state.last_gps_time_ms = AP_HAL::millis();
 
-        state.location.lat = (int32_t) (bestposu.lat*1e7);
-        state.location.lng = (int32_t) (bestposu.lng*1e7);
-        state.location.alt = (int32_t) (bestposu.hgt*1e2);
+        state.location.lat = (int32_t) (bestposu.lat * (double)1e7);
+        state.location.lng = (int32_t) (bestposu.lng * (double)1e7);
+        state.location.alt = (int32_t) (bestposu.hgt * 100);
 
         state.num_sats = bestposu.svsused;
 
@@ -225,9 +224,11 @@ AP_GPS_NOVA::process_message(void)
                 case 32: // l1 float
                 case 33: // iono float
                 case 34: // narrow float
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                    break;
                 case 48: // l1 int
                 case 50: // narrow int
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                     break;
                 case 0: // NONE
                 case 1: // FIXEDPOS
@@ -269,7 +270,7 @@ AP_GPS_NOVA::process_message(void)
     }
 
     // ensure out position and velocity stay insync
-    if (_new_position && _new_speed && _last_vel_time == state.last_gps_time_ms) {
+    if (_new_position && _new_speed && _last_vel_time == state.time_week_ms) {
         _new_speed = _new_position = false;
         
         return true;
@@ -279,7 +280,7 @@ AP_GPS_NOVA::process_message(void)
 }
 
 void
-AP_GPS_NOVA::inject_data(uint8_t *data, uint8_t len)
+AP_GPS_NOVA::inject_data(const uint8_t *data, uint16_t len)
 {
     if (port->txspace() > len) {
         last_injected_data_ms = AP_HAL::millis();
