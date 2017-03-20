@@ -75,6 +75,7 @@
 #define HAL_BARO_MS5611_I2C_ADDR 0x76
 #define HAL_BARO_MS5611_I2C_BUS  0
 #define HAL_HAVE_BOARD_VOLTAGE 0
+#define HAL_PX4_HAVE_PWM_INPUT 0
 #endif
 
 /* px4fmu-v4 */
@@ -94,6 +95,7 @@
 #define HAL_HAVE_SAFETY_SWITCH 0
 #define HAL_PX4_HAVE_MTD_SUPPORT 0
 #define HAL_PX4_HAVE_PX4IO 0
+#define HAL_PX4_HAVE_PWM_INPUT 0
 #endif
 
 /* default values */
@@ -111,6 +113,10 @@
 
 #ifndef HAL_PX4_HAVE_PX4IO
 #define HAL_PX4_HAVE_PX4IO 1
+#endif
+
+#ifndef HAL_PX4_HAVE_PWM_INPUT
+#define HAL_PX4_HAVE_PWM_INPUT 1
 #endif
 
 #ifndef HAL_HAVE_SAFETY_SWITCH
