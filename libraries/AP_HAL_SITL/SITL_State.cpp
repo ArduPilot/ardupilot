@@ -378,8 +378,8 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     int engine_fail = _sitl?_sitl->engine_fail.get():0;
     bool motors_on = false;
     
-    if(engine_fail<0 || engine_fail>7)
-        engine_fail=0;
+    if (engine_fail<0 || engine_fail>7)
+        engine_fail = 0;
 
     if (_vehicle == ArduPlane) {
         // add in engine multiplier
