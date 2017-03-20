@@ -1,7 +1,6 @@
 #pragma once
 
 #include <atomic>
-#include <stdbool.h>
 #include <stdint.h>
 
 /*

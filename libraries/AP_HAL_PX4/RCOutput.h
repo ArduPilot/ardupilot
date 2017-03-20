@@ -33,8 +33,8 @@ public:
     void push();
 
     void set_output_mode(enum output_mode mode) override;
-    
-    void _timer_tick(void);
+
+    void timer_tick(void) override;
     bool enable_sbus_out(uint16_t rate_hz) override;
 
 private:

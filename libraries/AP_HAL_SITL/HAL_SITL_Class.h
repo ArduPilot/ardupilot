@@ -17,4 +17,4 @@ private:
     HALSITL::SITL_State *_sitl_state;
 };
 
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

@@ -49,6 +49,7 @@ union nav_gps_status {
         uint16_t bad_vert_vel       : 1; // 7 - true if the GPS vertical speed is too large to start using GPS (this check assumes vehicle is static)
         uint16_t bad_fix            : 1; // 8 - true if the GPS is not providing a 3D fix
         uint16_t bad_horiz_vel      : 1; // 9 - true if the GPS horizontal speed is excessive (this check assumes the vehicle is static)
+        uint16_t bad_vAcc           : 1; // 10 - true if reported gps vertical position accuracy is insufficient to start using GPS
     } flags;
     uint16_t value;
 };

@@ -21,6 +21,7 @@ def build(bld):
             'PID',
             'AP_Stats',
             'AP_Beacon',
+            'AP_AdvancedFailsafe',
         ],
     )
 

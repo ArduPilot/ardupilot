@@ -43,7 +43,7 @@
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
-#include <RC_Channel/SRV_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>                     // Filter library
 #include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
@@ -72,10 +72,11 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_TECS/AP_TECS.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
 
+#include <AP_Soaring/AP_Soaring.h>
 #include <AP_Notify/AP_Notify.h>      // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 
@@ -95,6 +96,7 @@
 #include <AP_Landing/AP_Landing.h>
 
 #include "GCS_Mavlink.h"
+#include "GCS_Plane.h"
 #include "quadplane.h"
 #include "tuning.h"
 
@@ -106,31 +108,11 @@
 
 #include "Parameters.h"
 #include "avoidance_adsb.h"
+#include "AP_Arming.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
-
-/*
-  a plane specific arming class
- */
-class AP_Arming_Plane : public AP_Arming
-{
-public:
-    AP_Arming_Plane(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                    const AP_BattMonitor &battery, const enum HomeState &home_set) :
-        AP_Arming(ahrs_ref, baro, compass, battery, home_set) {
-            AP_Param::setup_object_defaults(this, var_info);
-    }
-    bool pre_arm_checks(bool report);
-    bool arm(uint8_t method) override;
-
-    // var_info for holding Parameter information
-    static const struct AP_Param::GroupInfo var_info[];
-protected:
-    bool ins_checks(bool report);
-};
-
 
 /*
   a plane specific AP_AdvancedFailsafe class
@@ -164,6 +146,7 @@ public:
     friend class AP_Tuning_Plane;
     friend class AP_AdvancedFailsafe_Plane;
     friend class AP_Avoidance_Plane;
+    friend class GCS_Plane;
 
     Plane(void);
 
@@ -189,7 +172,7 @@ private:
     // board specific config
     AP_BoardConfig BoardConfig;
 
-    // primary control channels
+    // primary input channels
     RC_Channel *channel_roll;
     RC_Channel *channel_pitch;
     RC_Channel *channel_throttle;
@@ -218,7 +201,7 @@ private:
 
     AP_InertialSensor ins;
 
-    RangeFinder rangefinder {serial_manager};
+    RangeFinder rangefinder {serial_manager, ROTATION_PITCH_270};
 
     AP_Vehicle::FixedWing::Rangefinder_State rangefinder_state;
 
@@ -226,15 +209,15 @@ private:
     
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF EKF{&ahrs, barometer, rangefinder};
     NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder, EKF, EKF2};
+    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder, EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs {ins, barometer, gps};
 #endif
 
     AP_L1_Control L1_controller {ahrs};
-    AP_TECS TECS_controller {ahrs, aparm, landing};
+    AP_TECS TECS_controller {ahrs, aparm, landing, g2.soaring_controller};
 
     // Attitude to servo controllers
     AP_RollController  rollController {ahrs, aparm, DataFlash};
@@ -270,8 +253,8 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK_Plane gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_Plane _gcs; // avoid using this; use gcs()
+    GCS_Plane &gcs() { return _gcs; }
 
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
@@ -428,7 +411,7 @@ private:
     } acro_state;
 
     // CRUISE controller state
-    struct {
+    struct CruiseState {
         bool locked_heading;
         int32_t locked_heading_cd;
         uint32_t lock_timer_ms;
@@ -582,7 +565,7 @@ private:
     int8_t  throttle_watt_limit_min; // for reverse thrust
     uint32_t throttle_watt_limit_timer_ms;
 
-    AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL;
+    AP_Vehicle::FixedWing::FlightStage flight_stage = AP_Vehicle::FixedWing::FLIGHT_NORMAL;
 
     // probability of aircraft is currently in flight. range from 0 to
     // 1 where 1 is 100% sure we're in flight
@@ -659,8 +642,19 @@ private:
         // Direction for loiter. 1 for clockwise, -1 for counter-clockwise
         int8_t direction;
 
+        // when loitering and an altitude is involved, this flag is true when it has been reached at least once
+        bool reached_target_alt;
+
+        // check for scenarios where updrafts can keep you from loitering down indefinitely.
+        bool unable_to_acheive_target_alt;
+
         // start time of the loiter.  Milliseconds.
         uint32_t start_time_ms;
+
+        // altitude at start of loiter loop lap. Used to detect delta alt of each lap.
+        // only valid when sum_cd > 36000
+        int32_t start_lap_alt_cm;
+        int32_t next_sum_lap_cd;
 
         // The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
         uint32_t time_max_ms;
@@ -720,6 +714,8 @@ private:
 #endif
     } target_altitude {};
 
+    float relative_altitude = 0.0f;
+
     // INS variables
     // The main loop execution time.  Seconds
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
@@ -766,7 +762,7 @@ private:
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming_Plane arming {ahrs, barometer, compass, battery, home_is_set };
+    AP_Arming_Plane arming {ahrs, barometer, compass, battery};
 
     AP_Param param_loader {var_info};
 
@@ -849,8 +845,6 @@ private:
     void adjust_altitude_target();
     void setup_glide_slope(void);
     int32_t get_RTL_altitude();
-    float relative_altitude(void);
-    int32_t relative_altitude_abs_cm(void);
     float relative_ground_altitude(bool use_rangefinder_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
@@ -983,7 +977,6 @@ private:
     void resetPerfData(void);
     void check_usb_mux(void);
     void print_comma(void);
-    void servo_write(uint8_t ch, uint16_t pwm);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
     void change_arm_state(void);
@@ -1028,6 +1021,7 @@ private:
     void servo_output_mixers(void);
     void servos_output(void);
     void servos_auto_trim(void);
+    void servos_twin_engine_mix();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     bool allow_reverse_thrust(void);
     void update_aux();
@@ -1041,13 +1035,12 @@ private:
     void calc_nav_pitch();
     void update_flight_stage();
     void update_navigation();
-    void set_flight_stage(AP_SpdHgtControl::FlightStage fs);
+    void set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs);
     bool is_flying(void);
     float get_speed_scaler(void);
     bool stick_mixing_enabled(void);
     void stabilize_roll(float speed_scaler);
     void stabilize_pitch(float speed_scaler);
-    static void stick_mix_channel(RC_Channel *channel);
     static void stick_mix_channel(RC_Channel *channel, int16_t &servo_out);
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
@@ -1057,11 +1050,10 @@ private:
     void calc_nav_yaw_coordinated(float speed_scaler);
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
-    void throttle_slew_limit(int16_t last_throttle);
-    void flap_slew_limit(int8_t &last_value, int8_t &new_value);
+    void throttle_slew_limit(void);
     bool suppress_throttle(void);
-    void channel_output_mixer(uint8_t mixing_type, int16_t & chan1, int16_t & chan2)const;
-    void channel_output_mixer(uint8_t mixing_type, RC_Channel* chan1, RC_Channel* chan2)const;
+    void channel_output_mixer_pwm(uint8_t mixing_type, uint16_t & chan1, uint16_t & chan2)const;
+    void channel_output_mixer(uint8_t mixing_type, SRV_Channel::Aux_servo_function_t servo1, SRV_Channel::Aux_servo_function_t servo2);
     void flaperon_update(int8_t flap_percent);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -1087,17 +1079,20 @@ private:
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
+    void notify_flight_mode(enum FlightMode mode);
     void run_cli(AP_HAL::UARTDriver *port);
     void log_init();
     void init_capabilities(void);
     void dataflash_periodic(void);
-    uint16_t throttle_min(void) const;
-    void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_check();
+#if PARACHUTE == ENABLED
+    void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_release();
     bool parachute_manual_release();
+#endif
     void accel_cal_update(void);
     void update_soft_armed();
+    void update_soaring();
 
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);
@@ -1118,7 +1113,6 @@ public:
     int8_t reboot_board(uint8_t argc, const Menu::arg *argv);
     int8_t main_menu_help(uint8_t argc, const Menu::arg *argv);
     int8_t test_radio_pwm(uint8_t argc, const Menu::arg *argv);
-    int8_t test_passthru(uint8_t argc, const Menu::arg *argv);
     int8_t test_radio(uint8_t argc, const Menu::arg *argv);
     int8_t test_failsafe(uint8_t argc, const Menu::arg *argv);
     int8_t test_relay(uint8_t argc, const Menu::arg *argv);

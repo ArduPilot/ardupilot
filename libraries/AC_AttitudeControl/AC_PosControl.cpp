@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
+AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                              const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                              AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
                              AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy) :
@@ -52,7 +52,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _leash_up_z(POSCONTROL_LEASH_LENGTH_MIN),
     _roll_target(0.0f),
     _pitch_target(0.0f),
-    _alt_max(0.0f),
     _distance_to_target(0.0f),
     _accel_target_jerk_limited(0.0f,0.0f),
     _accel_target_filter(POSCONTROL_ACCEL_FILTER_HZ)
@@ -166,12 +165,6 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
         _pos_target.z += climb_rate_cms * dt;
     }
 
-    // do not let target alt get above limit
-    if (_alt_max > 0 && _pos_target.z > _alt_max) {
-        _pos_target.z = _alt_max;
-        _limit.pos_up = true;
-    }
-
     // do not use z-axis desired velocity feed forward
     // vel_desired set to desired climb rate for reporting and land-detector
     _flags.use_desvel_ff_z = false;
@@ -211,14 +204,6 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
     // To-Do: add check of _limit.pos_down?
     if ((_vel_desired.z<0 && (!_motors.limit.throttle_lower || force_descend)) || (_vel_desired.z>0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
         _pos_target.z += _vel_desired.z * dt;
-    }
-
-    // do not let target alt get above limit
-    if (_alt_max > 0 && _pos_target.z > _alt_max) {
-        _pos_target.z = _alt_max;
-        _limit.pos_up = true;
-        // decelerate feed forward to zero
-        _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
     }
 }
 
@@ -286,6 +271,12 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
         if (_flags.use_desvel_ff_z) {
             curr_vel_z -= _vel_desired.z;
         }
+    }
+
+    // avoid divide by zero by using current position if kP is very low or acceleration is zero
+    if (_p_pos_z.kP() <= 0.0f || _accel_z_cms <= 0.0f) {
+        stopping_point.z = curr_pos_z;
+        return;
     }
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function

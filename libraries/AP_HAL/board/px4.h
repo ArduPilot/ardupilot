@@ -19,9 +19,18 @@
 #define HAL_STORAGE_SIZE            16384
 #define HAL_HAVE_IMU_HEATER         1 // for Pixhawk2
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
+#define HAL_WITH_UAVCAN             1
+#define HAL_MINIMIZE_FEATURES       1
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V3)
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V3
+#define HAL_STORAGE_SIZE            16384
+#define HAL_HAVE_IMU_HEATER         1 // for Pixhawk2
+#define HAL_IMU_TEMP_DEFAULT       -1 // disabled
+#define HAL_WITH_UAVCAN             1
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V4
 #define HAL_STORAGE_SIZE            16384
+#define HAL_WITH_UAVCAN             1
 #else
 #error "Unknown PX4 board type"
 #endif
@@ -47,6 +56,8 @@
 
 #define HAL_INS_MPU9250_NAME "mpu9250"
 #define HAL_INS_MPU9250_EXT_NAME "mpu9250_ext"
+
+#define HAL_INS_MPU6500_NAME "mpu6500"
 
 #define HAL_INS_ICM20608_NAME "icm20608"
 #define HAL_INS_ICM20608_AM_NAME "icm20608-am"

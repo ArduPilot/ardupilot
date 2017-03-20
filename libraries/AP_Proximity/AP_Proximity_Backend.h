@@ -20,6 +20,7 @@
 
 #define PROXIMITY_SECTORS_MAX   12  // maximum number of sectors
 #define PROXIMITY_BOUNDARY_DIST_MIN 0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
+#define PROXIMITY_BOUNDARY_DIST_DEFAULT 100 // if we have no data for a sector, boundary is placed 100m out
 
 class AP_Proximity_Backend
 {
@@ -38,6 +39,12 @@ public:
     virtual float distance_max() const = 0;
     virtual float distance_min() const = 0;
 
+    // get distance upwards in meters. returns true on success
+    virtual bool get_upward_distance(float &distance) const { return false; }
+
+    // handle mavlink DISTANCE_SENSOR messages
+    virtual void handle_msg(mavlink_message_t *msg) {}
+
     // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
     // returns true on successful read and places distance in distance
     bool get_horizontal_distance(float angle_deg, float &distance) const;
@@ -50,6 +57,10 @@ public:
     //   returns true on success, false if no valid readings
     bool get_closest_object(float& angle_deg, float &distance) const;
 
+    // get number of objects, angle and distance - used for non-GPS avoidance
+    uint8_t get_object_count() const;
+    bool get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
+
     // get distances in 8 directions. used for sending distances to ground station
     bool get_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
 
@@ -60,6 +71,10 @@ protected:
 
     // find which sector a given angle falls into
     bool convert_angle_to_sector(float angle_degrees, uint8_t &sector) const;
+
+    // initialise the boundary and sector_edge_vector array used for object avoidance
+    //   should be called if the sector_middle_deg or _setor_width_deg arrays are changed
+    void init_boundary();
 
     // update boundary points used for object avoidance based on a single sector's distance changing
     //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing

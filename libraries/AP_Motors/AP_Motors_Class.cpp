@@ -21,6 +21,8 @@
 
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
+#include <SRV_Channel/SRV_Channel.h>
+
 extern const AP_HAL::HAL& hal;
 
 // Constructor
@@ -42,8 +44,8 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
 {
     // init other flags
     _flags.armed = false;
-    _flags.frame_orientation = AP_MOTORS_X_FRAME;
     _flags.interlock = false;
+    _flags.initialised_ok = false;
 
     // setup throttle filtering
     _throttle_filter.set_cutoff_frequency(0.0f);
@@ -153,39 +155,39 @@ uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
 }
 
 // convert input in -1 to +1 range to pwm output
-int16_t AP_Motors::calc_pwm_output_1to1(float input, const RC_Channel& servo)
+int16_t AP_Motors::calc_pwm_output_1to1(float input, const SRV_Channel *servo)
 {
     int16_t ret;
 
     input = constrain_float(input, -1.0f, 1.0f);
 
-    if (servo.get_reverse()) {
+    if (servo->get_reversed()) {
         input = -input;
     }
 
     if (input >= 0.0f) {
-        ret = ((input * (servo.get_radio_max() - servo.get_radio_trim())) + servo.get_radio_trim());
+        ret = ((input * (servo->get_output_max() - servo->get_trim())) + servo->get_trim());
     } else {
-        ret = ((input * (servo.get_radio_trim() - servo.get_radio_min())) + servo.get_radio_trim());
+        ret = ((input * (servo->get_trim() - servo->get_output_min())) + servo->get_trim());
     }
 
-    return constrain_int16(ret, servo.get_radio_min(), servo.get_radio_max());
+    return constrain_int16(ret, servo->get_output_min(), servo->get_output_max());
 }
 
 // convert input in 0 to +1 range to pwm output
-int16_t AP_Motors::calc_pwm_output_0to1(float input, const RC_Channel& servo)
+int16_t AP_Motors::calc_pwm_output_0to1(float input, const SRV_Channel *servo)
 {
     int16_t ret;
 
     input = constrain_float(input, 0.0f, 1.0f);
 
-    if (servo.get_reverse()) {
+    if (servo->get_reversed()) {
         input = 1.0f-input;
     }
 
-    ret = input * (servo.get_radio_max() - servo.get_radio_min()) + servo.get_radio_min();
+    ret = input * (servo->get_output_max() - servo->get_output_min()) + servo->get_output_min();
 
-    return constrain_int16(ret, servo.get_radio_min(), servo.get_radio_max());
+    return constrain_int16(ret, servo->get_output_min(), servo->get_output_max());
 }
 
 /*
@@ -196,13 +198,12 @@ void AP_Motors::add_motor_num(int8_t motor_num)
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
         uint8_t chan;
-        if (RC_Channel_aux::find_channel((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+motor_num),
-                                         chan)) {
+        SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+motor_num);
+        SRV_Channels::set_aux_channel_default(function, motor_num);
+        if (SRV_Channels::find_channel((SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+motor_num),
+                                       chan) && chan != motor_num) {
             _motor_map[motor_num] = chan;
             _motor_map_mask |= 1U<<motor_num;
-        } else {
-            // disable this channel from being used by RC_Channel_aux
-            RC_Channel_aux::disable_aux_channel(motor_num);
         }
     }
 }

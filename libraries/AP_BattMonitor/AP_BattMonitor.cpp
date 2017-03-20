@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: _MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:SMBus,6:Bebop
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Maxell
     // @User: Standard
     AP_GROUPINFO("_MONITOR", 0, AP_BattMonitor, _monitoring[0], BattMonitor_TYPE_NONE),
 
@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: 2_MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:SMBus,6:Bebop
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Maxell
     // @User: Standard
     AP_GROUPINFO("2_MONITOR", 11, AP_BattMonitor, _monitoring[1], BattMonitor_TYPE_NONE),
 
@@ -170,14 +170,16 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Analog(*this, instance, state[instance]);
                 _num_instances++;
                 break;
-            case BattMonitor_TYPE_SMBUS:
+            case BattMonitor_TYPE_SOLO:
                 state[instance].instance = instance;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-                drivers[instance] = new AP_BattMonitor_SMBus_PX4(*this, instance, state[instance]);
-#else
-                drivers[instance] = new AP_BattMonitor_SMBus_I2C(*this, instance, state[instance],
-                                                                 hal.i2c_mgr->get_device(BATTMONITOR_SBUS_I2C_BUS, BATTMONITOR_SMBUS_I2C_ADDR));
-#endif
+                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, instance, state[instance],
+                                                                 hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
+                _num_instances++;
+                break;
+            case BattMonitor_TYPE_MAXELL:
+                state[instance].instance = instance;
+                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, instance, state[instance],
+                                                                 hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_BEBOP:
@@ -222,8 +224,9 @@ bool AP_BattMonitor::has_current(uint8_t instance) const
     // check for analog voltage and current monitor or smbus monitor
     if (instance < _num_instances && drivers[instance] != nullptr) {
         return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT ||
-                _monitoring[instance] == BattMonitor_TYPE_SMBUS ||
-                _monitoring[instance] == BattMonitor_TYPE_BEBOP);
+                _monitoring[instance] == BattMonitor_TYPE_SOLO ||
+                _monitoring[instance] == BattMonitor_TYPE_BEBOP ||
+                _monitoring[instance] == BattMonitor_TYPE_MAXELL);
     }
 
     // not monitoring current
@@ -277,7 +280,7 @@ uint8_t AP_BattMonitor::capacity_remaining_pct(uint8_t instance) const
         return 0;
     }
  }
- 
+
  /// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
 bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_capacity_mah)
 {
@@ -330,4 +333,3 @@ bool AP_BattMonitor::overpower_detected(uint8_t instance) const
     return false;
 #endif
 }
-

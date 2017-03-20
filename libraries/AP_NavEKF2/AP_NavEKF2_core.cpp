@@ -314,6 +314,7 @@ void NavEKF2_core::InitialiseVariables()
     OffsetMinInnovFilt = 0.0f;
     rngBcnFuseDataReportIndex = 0;
     memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
+    last_gps_idx = 0;
 
     // zero data buffers
     storedIMU.reset();

@@ -46,7 +46,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
     } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough; // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
         // make frsky_telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
-        GCS_MAVLINK::register_frsky_telemetry_callback(this);
+        gcs().register_frsky_telemetry_callback(this);
         // add firmware and frame info to message queue
         queue_message(MAV_SEVERITY_INFO, firmware_str);
         // save main parameters locally
@@ -757,7 +757,7 @@ uint32_t AP_Frsky_Telem::calc_attiandrng(void)
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
     attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
-    attiandrng |= prep_number(_rng.distance_cm(), 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+    attiandrng |= prep_number(_rng.distance_cm_orient(ROTATION_PITCH_270), 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
     return attiandrng;
 }
 

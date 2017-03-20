@@ -15,7 +15,7 @@ void setup() {
 
 static void show_sizes(void)
 {
-	hal.console->println("Type sizes:");
+	hal.console->printf("Type sizes:\n");
 	hal.console->printf("char      : %lu\n", (unsigned long)sizeof(char));
 	hal.console->printf("short     : %lu\n", (unsigned long)sizeof(short));
 	hal.console->printf("int       : %lu\n", (unsigned long)sizeof(int));
@@ -72,8 +72,8 @@ static void show_timings(void)
 	v_out_8 = 1+(AP_HAL::micros() % 3);
 
 
-	hal.console->println("Operation timings:");
-	hal.console->println("Note: timings for some operations are very data dependent");
+	hal.console->printf("Operation timings:\n");
+	hal.console->printf("Note: timings for some operations are very data dependent\n");
 
 	TIMEIT("nop", asm volatile("nop"::), 255);
 
@@ -127,9 +127,9 @@ static void show_timings(void)
 void loop()
 {
 	show_sizes();
-	hal.console->println("");
+	hal.console->printf("\n");
 	show_timings();
-	hal.console->println("");
+	hal.console->printf("\n");
 	hal.scheduler->delay(3000);
 }
 

@@ -4,7 +4,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>      // RC Channel Library
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsHeli_RSC.h"
 
@@ -42,20 +42,16 @@
 class AP_MotorsHeli_Single : public AP_MotorsHeli {
 public:
     // constructor
-    AP_MotorsHeli_Single(RC_Channel&    servo_aux,
-                         uint16_t       loop_rate,
+    AP_MotorsHeli_Single(uint16_t       loop_rate,
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
-        _servo_aux(servo_aux),
-        _main_rotor(RC_Channel_aux::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC),
-        _tail_rotor(RC_Channel_aux::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_AUX),
-        _swash_servo_1(CH_NONE), _swash_servo_2(CH_NONE), _swash_servo_3(CH_NONE), _yaw_servo(CH_NONE)
+        _main_rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC),
+        _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_AUX)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
 
     // set update rate to motors - a value in hertz
-    // you must have setup_motors before calling this
     void set_update_rate(uint16_t speed_hz);
 
     // enable - starts allowing signals to be sent to motors and servos
@@ -108,7 +104,7 @@ public:
 protected:
 
     // init_outputs - initialise Servo/PWM ranges and endpoints
-    void init_outputs();
+    bool init_outputs() override;
 
     // update_motor_controls - sends commands to motor controllers
     void update_motor_control(RotorControlState state);
@@ -129,7 +125,6 @@ protected:
     void servo_test();
 
     // external objects we depend upon
-    RC_Channel&     _servo_aux;                 // output to ext gyro gain and tail direct drive esc (ch7)
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
 
@@ -153,10 +148,12 @@ protected:
     AP_Float        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
-    RC_Channel      _swash_servo_1;             // swash plate servo #1
-    RC_Channel      _swash_servo_2;             // swash plate servo #2
-    RC_Channel      _swash_servo_3;             // swash plate servo #3
-    RC_Channel      _yaw_servo;                 // tail servo
 
+    SRV_Channel    *_swash_servo_1;
+    SRV_Channel    *_swash_servo_2;
+    SRV_Channel    *_swash_servo_3;
+    SRV_Channel    *_yaw_servo;
+    SRV_Channel    *_servo_aux;
+    
     bool            _acro_tail = false;
 };

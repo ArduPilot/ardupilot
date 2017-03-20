@@ -45,7 +45,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder &_ranger
         return nullptr;
     }
 
-    if (sensor->_dev->get_semaphore()->take(0)) {
+    if (sensor->_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         uint16_t reading_cm;
         if (!sensor->get_reading(reading_cm)) {
             sensor->_dev->get_semaphore()->give();
@@ -64,7 +64,7 @@ void AP_RangeFinder_LightWareI2C::init()
 {
     // call timer() at 20Hz
     _dev->register_periodic_callback(50000,
-                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_LightWareI2C::timer, bool));
+                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_LightWareI2C::timer, void));
 }
 
 // read - return last value measured by sensor
@@ -94,13 +94,12 @@ void AP_RangeFinder_LightWareI2C::update(void)
     // nothing to do - its all done in the timer()
 }
 
-bool AP_RangeFinder_LightWareI2C::timer(void)
+void AP_RangeFinder_LightWareI2C::timer(void)
 {
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
         update_status();
     } else {
         set_status(RangeFinder::RangeFinder_NoData);
-    }    
-    return true;
+    }
 }

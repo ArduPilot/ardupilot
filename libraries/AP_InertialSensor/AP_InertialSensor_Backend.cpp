@@ -79,6 +79,10 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
     // call gyro_sample hook if any
     AP_Module::call_hook_gyro_sample(instance, dt, gyro);
+
+    // push gyros if optical flow present
+    if (hal.opticalflow)
+        hal.opticalflow->push_gyro(gyro.x, gyro.y, dt);
     
     // compute delta angle
     Vector3f delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
@@ -93,7 +97,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     delta_coning = delta_coning % delta_angle;
     delta_coning *= 0.5f;
 
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         // integrate delta angle accumulator
         // the angles and coning corrections are accumulated separately in the
         // referenced paper, but in simulation little difference was found between
@@ -183,7 +187,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         // delta velocity
         _imu._delta_velocity_acc[instance] += accel * dt;
         _imu._delta_velocity_acc_dt[instance] += dt;
@@ -269,7 +273,7 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
  */
 void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
 {    
-    if (!_sem->take(0)) {
+    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
@@ -292,7 +296,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
  */
 void AP_InertialSensor_Backend::update_accel(uint8_t instance)
 {    
-    if (!_sem->take(0)) {
+    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 

@@ -57,18 +57,18 @@
 >> for more information.
 >>
 >> - [Andrew Tridgell](https://github.com/tridge)
->>   - ***Vehicle***: AntennaTracker, Plane
->>   - ***Board***: APM1, APM2, Pixhawk
+>>   - ***Vehicle***: Plane, AntennaTracker
+>>   - ***Board***: APM1, APM2, Pixhawk, Pixhawk2, PixRacer
 >> - [Randy Mackay](https://github.com/rmackay9)
->>   - ***Vehicle***: Copter
+>>   - ***Vehicle***: Copter, AntennaTracker
 >> - [Robert Lefebvre](https://github.com/R-Lefebvre)
 >>   - ***Vehicle***: TradHeli
 >> - [Grant Morphett](https://github.com/gmorph):
 >>   - ***Vehicle***: Rover
->> - [Matthias Badaire](https://github.com/badzz)
->>   - ***Subsystem***: FRSky
+>> - [Tom Pittenger] (https://github.com/magicrub)
+>>   - ***Vehicle***: Plane
 >> - [Paul Riseborough](https://github.com/priseborough)
->>   - ***Subsystem***: AP_NavEKF
+>>   - ***Subsystem***: AP_NavEKF2
 >> - [Lucas De Marchi](https://github.com/lucasdemarchi)
 >>   - ***Subsystem***: Linux
 >> - [Peter Barker](https://github.com/peterbarker)
@@ -76,10 +76,14 @@
 >>   - ***Subsystem***: Tools
 >> - [Michael du Breuil](https://github.com/WickedShell)
 >>   - ***Subsystem***: uBlox GPS
+>> - [Francisco Ferreira](https://github.com/oxinarf)
+>>   - ***Bug Master***
+>> - [Matthias Badaire](https://github.com/badzz)
+>>   - ***Subsystem***: FRSky
 >> - [Víctor Mayoral Vilches](https://github.com/vmayoral)
 >>   - ***Board***: PXF, Erle-Brain 2, PXFmini
 >> - [Mirko Denecke](https://github.com/mirkix)
->>   - ***Board***: BBBmini
+>>   - ***Board***: BBBmini, BeagleBone Blue
 >> - [Georgii Staroselskii](https://github.com/staroselskii)
 >>   - ***Board***: NavIO
 >> - [Emile Castelnuovo](https://github.com/emilecastelnuovo)
@@ -93,6 +97,4 @@
 >> - [Gustavo José de Sousa](https://github.com/guludo)
 >>   - ***Subsystem***: Build system
 >> - [Craig Elder] (https://github.com/CraigElder)
->>   - ***Administration***: Dronecode Technical Community Manager
->> - [Tom Pittenger] (https://github.com/magicrub)
->>   - ***Vehicle***: Plane
+>>   - ***Administration***: ArduPilot Technical Community Manager

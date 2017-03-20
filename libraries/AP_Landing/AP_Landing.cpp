@@ -138,32 +138,225 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TYPE",    14, AP_Landing, type, TYPE_STANDARD_GLIDE_SLOPE),
 
+    // @Group: DS_
+    // @Path: AP_Landing_Deepstall.cpp
+    AP_SUBGROUPINFO(deepstall, "DS_", 15, AP_Landing, AP_Landing_Deepstall),
+    
     AP_GROUPEND
 };
 
+    // constructor
+AP_Landing::AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_SpdHgt_Controller, AP_Navigation *_nav_controller, AP_Vehicle::FixedWing &_aparm,
+                       set_target_altitude_proportion_fn_t _set_target_altitude_proportion_fn,
+                       constrain_target_altitude_location_fn_t _constrain_target_altitude_location_fn,
+                       adjusted_altitude_cm_fn_t _adjusted_altitude_cm_fn,
+                       adjusted_relative_altitude_cm_fn_t _adjusted_relative_altitude_cm_fn,
+                       disarm_if_autoland_complete_fn_t _disarm_if_autoland_complete_fn,
+                       update_flight_stage_fn_t _update_flight_stage_fn) :
+    mission(_mission)
+    ,ahrs(_ahrs)
+    ,SpdHgt_Controller(_SpdHgt_Controller)
+    ,nav_controller(_nav_controller)
+    ,aparm(_aparm)
+    ,set_target_altitude_proportion_fn(_set_target_altitude_proportion_fn)
+    ,constrain_target_altitude_location_fn(_constrain_target_altitude_location_fn)
+    ,adjusted_altitude_cm_fn(_adjusted_altitude_cm_fn)
+    ,adjusted_relative_altitude_cm_fn(_adjusted_relative_altitude_cm_fn)
+    ,disarm_if_autoland_complete_fn(_disarm_if_autoland_complete_fn)
+    ,update_flight_stage_fn(_update_flight_stage_fn)
+    ,deepstall(*this)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
+
+void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
+{
+    log(); // log old state so we get a nice transition from old to new here
+
+    flags.commanded_go_around = false;
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        type_slope_do_land(cmd, relative_altitude);
+        break;
+    case TYPE_DEEPSTALL:
+        deepstall.do_land(cmd, relative_altitude);
+        break;
+    default:
+        // a incorrect type is handled in the verify_land
+        break;
+    }
+
+    log();
+}
 
 /*
   update navigation for landing. Called when on landing approach or
   final flare
  */
-bool AP_Landing::verify_land(const AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
-        const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed)
+bool AP_Landing::verify_land(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+        const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range)
+{
+    bool success = true;
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        success = type_slope_verify_land(prev_WP_loc, next_WP_loc, current_loc,
+                height, sink_rate, wp_proportion, last_flying_ms, is_armed, is_flying, rangefinder_state_in_range);
+        break;
+    case TYPE_DEEPSTALL:
+        success = deepstall.verify_land(prev_WP_loc, next_WP_loc, current_loc,
+                                             height, sink_rate, wp_proportion, last_flying_ms, is_armed, is_flying, rangefinder_state_in_range);
+        break;
+    default:
+        // returning TRUE while executing verify_land() will increment the
+        // mission index which in many cases will trigger an RTL for end-of-mission
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Landing configuration error, invalid LAND_TYPE");
+        success = true;
+        break;
+    }
+    log();
+    return success;
+}
+
+
+bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+    const int32_t auto_state_takeoff_altitude_rel_cm, bool &throttle_suppressed)
 {
     switch (type) {
-    default:
     case TYPE_STANDARD_GLIDE_SLOPE:
-        return type_slope_verify_land(flight_stage,prev_WP_loc, next_WP_loc, current_loc,
-                auto_state_takeoff_altitude_rel_cm, height,sink_rate, wp_proportion, last_flying_ms, is_armed, is_flying, rangefinder_state_in_range, throttle_suppressed);
+        type_slope_verify_abort_landing(prev_WP_loc, next_WP_loc, throttle_suppressed);
+        break;
+    case TYPE_DEEPSTALL:
+        deepstall.verify_abort_landing(prev_WP_loc, next_WP_loc, throttle_suppressed);
+        break;
+    default:
+        break;
     }
+
+    // see if we have reached abort altitude
+     if (adjusted_relative_altitude_cm_fn() > auto_state_takeoff_altitude_rel_cm) {
+         next_WP_loc = current_loc;
+         mission.stop();
+         if (restart_landing_sequence()) {
+             mission.resume();
+         }
+         // else we're in AUTO with a stopped mission and handle_auto_mode() will set RTL
+     }
+
+     log();
+
+     // make sure to always return false so it leaves the mission index alone
+     return false;
 }
 
 void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm)
 {
     switch (type) {
-    default:
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, wp_distance, target_altitude_offset_cm);
         break;
+    case TYPE_DEEPSTALL:
+    default:
+        break;
+    }
+}
+
+bool AP_Landing::is_flaring(void) const
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_flaring();
+    case TYPE_DEEPSTALL:
+    default:
+        return false;
+    }
+}
+
+// return true while the aircraft is performing a landing approach
+// when true the vehicle will:
+//   - disable ground steering
+//   - call setup_landing_glide_slope() and adjust_landing_slope_for_rangefinder_bump()
+//   - will be considered flying if sink rate > 0.2, and can trigger crash detection
+bool AP_Landing::is_on_approach(void) const
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_on_approach();
+    case TYPE_DEEPSTALL:
+    default:
+        return false;
+    }
+}
+
+// return true while the aircraft is allowed to perform ground steering
+bool AP_Landing::is_ground_steering_allowed(void) const
+{
+    if (!flags.in_progress) {
+        return true;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_on_approach();
+    case TYPE_DEEPSTALL:
+        return false;
+    default:
+        return true;
+    }
+}
+
+// return true when at the last stages of a land when an impact with the ground is expected soon
+// when true is_flying knows that the vehicle was expecting to stop flying, possibly because of a hard impact
+bool AP_Landing::is_expecting_impact(void) const
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_expecting_impact();
+    case TYPE_DEEPSTALL:
+    default:
+        return false;
+    }
+}
+
+// returns true when the landing library has overriden any servos
+bool AP_Landing::override_servos(void) {
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return deepstall.override_servos();
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
+    }
+}
+
+// returns a PID_Info object if there is one available for the selected landing
+// type, otherwise returns a nullptr, indicating no data to be logged/sent
+const DataFlash_Class::PID_Info* AP_Landing::get_pid_info(void) const
+{
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return &deepstall.get_pid_info();
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return nullptr;
     }
 }
 
@@ -179,22 +372,11 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
 void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm)
 {
     switch (type) {
-    default:
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
         break;
-    }
-}
-
-/*
- * initialize state for new nav command
- */
-void AP_Landing::init_start_nav_cmd(void)
-{
-    switch (type) {
+    case TYPE_DEEPSTALL:
     default:
-    case TYPE_STANDARD_GLIDE_SLOPE:
-        type_slope_init_start_nav_cmd();
         break;
     }
 }
@@ -248,7 +430,36 @@ bool AP_Landing::restart_landing_sequence()
         // exit landing stages if we're no longer executing NAV_LAND
         update_flight_stage_fn();
     }
+
+    log();
     return success;
+}
+
+int32_t AP_Landing::constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd)
+{
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_constrain_roll(desired_roll_cd, level_roll_limit_cd);
+    case TYPE_DEEPSTALL:
+    default:
+        return desired_roll_cd;
+    }
+}
+
+// returns true if landing provided a Location structure with the current target altitude
+bool AP_Landing::get_target_altitude_location(Location &location)
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return deepstall.get_target_altitude_location(location);
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
+    }
 }
 
 /*
@@ -281,44 +492,100 @@ float AP_Landing::head_wind(void)
 /*
  * returns target airspeed in cm/s depending on flight stage
  */
-int32_t AP_Landing::get_target_airspeed_cm(const AP_SpdHgtControl::FlightStage flight_stage)
+int32_t AP_Landing::get_target_airspeed_cm(void)
 {
-    int32_t target_airspeed_cm = aparm.airspeed_cruise_cm;
-
-    if (!in_progress) {
+    if (!flags.in_progress) {
         // not landing, use regular cruise airspeed
-        return target_airspeed_cm;
+        return aparm.airspeed_cruise_cm;
     }
 
-    // we're landing, check for custom approach and
-    // pre-flare airspeeds. Also increase for head-winds
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_get_target_airspeed_cm();
+    case TYPE_DEEPSTALL:
+        return deepstall.get_target_airspeed_cm();
+    default:
+        // don't return the landing airspeed, because if type is invalid we have
+        // no postive indication that the land airspeed has been configured or
+        // how it was meant to be utilized
+        return SpdHgt_Controller->get_target_airspeed();
+    }
+}
 
-    const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+/*
+ * request a landing abort given the landing type
+ * return true on success
+ */
+bool AP_Landing::request_go_around(void)
+{
+    bool success = false;
 
-    switch (flight_stage) {
-    case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
-        if (land_airspeed >= 0) {
-            target_airspeed_cm = land_airspeed * 100;
-        }
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        success = type_slope_request_go_around();
         break;
-
-    case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
-    case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-        if (pre_flare && get_pre_flare_airspeed() > 0) {
-            // if we just preflared then continue using the pre-flare airspeed during final flare
-            target_airspeed_cm = get_pre_flare_airspeed() * 100;
-        } else if (land_airspeed >= 0) {
-            target_airspeed_cm = land_airspeed * 100;
-        }
+    case TYPE_DEEPSTALL:
+        success = deepstall.request_go_around();
         break;
-
     default:
         break;
     }
 
-    // when landing, add half of head-wind.
-    const int32_t head_wind_compensation_cm = head_wind() * 0.5f * 100;
-
-    // Do not lower it or exceed cruise speed
-    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_cruise_cm);
+    log();
+    return success;
 }
+
+void AP_Landing::handle_flight_stage_change(const bool _in_landing_stage)
+{
+    log(); // log old value to plot discrete transitions
+    flags.in_progress = _in_landing_stage;
+    flags.commanded_go_around = false;
+    log();
+}
+
+/*
+ * returns true when a landing is complete, usually used to disable throttle
+ */
+bool AP_Landing::is_complete(void) const
+{
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_complete();
+    case TYPE_DEEPSTALL:
+        return false;
+    default:
+        return true;
+    }
+}
+
+void AP_Landing::log(void) const
+{
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        type_slope_log();
+        break;
+    case TYPE_DEEPSTALL:
+    default:
+        break;
+    }
+}
+
+/*
+ * returns true when throttle should be suppressed while landing
+ */
+bool AP_Landing::is_throttle_suppressed(void) const
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_throttle_suppressed();
+    case TYPE_DEEPSTALL:
+        return deepstall.is_throttle_suppressed();
+    default:
+        return false;
+    }
+}
+

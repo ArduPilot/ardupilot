@@ -20,66 +20,13 @@
  */
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsTri.h"
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
-    // variables from parent vehicle
-    AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
-
-    // parameters 1 ~ 29 were reserved for tradheli
-    // parameters 30 ~ 39 reserved for tricopter
-    // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
-
-    // @Param: YAW_SV_REV
-    // @DisplayName: Yaw Servo Reverse
-    // @Description: Yaw servo reversing. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
-    // @Values: -1:Reversed,1:Normal
-    // @User: Standard
-    AP_GROUPINFO("YAW_SV_REV", 31,     AP_MotorsTri,  _yaw_reverse, 1),
-
-    // @Param: YAW_SV_TRIM
-    // @DisplayName: Yaw Servo Trim/Center
-    // @Description: Trim or center position of yaw servo
-    // @Range: 1250 1750
-    // @Units: PWM
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("YAW_SV_TRIM", 32,     AP_MotorsTri,  _yaw_servo_trim, 1500),
-
-    // @Param: YAW_SV_MIN
-    // @DisplayName: Yaw Servo Min PWM
-    // @Description: Yaw servo's minimum pwm value
-    // @Range: 1000 1400
-    // @Units: PWM
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("YAW_SV_MIN", 33,     AP_MotorsTri,  _yaw_servo_min, 1250),
-
-    // @Param: YAW_SV_MAX
-    // @DisplayName: Yaw Servo Max PWM
-    // @Description: Yaw servo's maximum pwm value
-    // @Range: 1600 2000
-    // @Units: PWM
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("YAW_SV_MAX", 34,     AP_MotorsTri,  _yaw_servo_max, 1750),
-
-    // @Param: YAW_SV_ANGLE
-    // @DisplayName: Yaw Servo Max Lean Angle
-    // @Description: Yaw servo's maximum lean angle
-    // @Range: 5 80
-    // @Units: Degrees
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("YAW_SV_ANGLE", 35,   AP_MotorsTri,  _yaw_servo_angle_max_deg, 30),
-
-    AP_GROUPEND
-};
-
 // init
-void AP_MotorsTri::Init()
+void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     add_motor_num(AP_MOTORS_MOT_1);
     add_motor_num(AP_MOTORS_MOT_2);
@@ -93,8 +40,25 @@ void AP_MotorsTri::Init()
     motor_enabled[AP_MOTORS_MOT_2] = true;
     motor_enabled[AP_MOTORS_MOT_4] = true;
 
+    // find the yaw servo
+    _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, AP_MOTORS_CH_TRI_YAW);
+    if (!_yaw_servo) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "MotorsTri: unable to setup yaw channel");
+        // don't set initialised_ok
+        return;
+    }
+    
     // allow mapping of motor7
     add_motor_num(AP_MOTORS_CH_TRI_YAW);
+
+    // record successful initialisation if what we setup was the desired frame_class
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_TRI);
+}
+
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+void AP_MotorsTri::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+{
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_TRI);
 }
 
 // set update rate to motors - a value in hertz
@@ -130,7 +94,7 @@ void AP_MotorsTri::output_to_motors()
             rc_write(AP_MOTORS_MOT_1, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_2, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_4, get_pwm_output_min());
-            rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
+            rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             hal.rcout->push();
             break;
         case SPIN_WHEN_ARMED:
@@ -139,7 +103,7 @@ void AP_MotorsTri::output_to_motors()
             rc_write(AP_MOTORS_MOT_1, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_2, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_4, calc_spin_up_to_pwm());
-            rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
+            rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             hal.rcout->push();
             break;
         case SPOOL_UP:
@@ -329,14 +293,14 @@ int16_t AP_MotorsTri::calc_yaw_radio_output(float yaw_input, float yaw_input_max
 {
     int16_t ret;
 
-    if (_yaw_reverse < 0) {
+    if (_yaw_servo->get_reversed()) {
         yaw_input = -yaw_input;
     }
 
     if (yaw_input >= 0){
-        ret = (_yaw_servo_trim + (yaw_input/yaw_input_max * (_yaw_servo_max - _yaw_servo_trim)));
+        ret = (_yaw_servo->get_trim() + (yaw_input/yaw_input_max * (_yaw_servo->get_output_max() - _yaw_servo->get_trim())));
     } else {
-        ret = (_yaw_servo_trim + (yaw_input/yaw_input_max * (_yaw_servo_trim - _yaw_servo_min)));
+        ret = (_yaw_servo->get_trim() + (yaw_input/yaw_input_max * (_yaw_servo->get_trim() - _yaw_servo->get_output_min())));
     }
 
     return ret;

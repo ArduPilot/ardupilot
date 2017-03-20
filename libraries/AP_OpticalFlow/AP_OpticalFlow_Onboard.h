@@ -17,7 +17,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
-#include <AP_NavEKF/AP_NavEKF.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 
 #include "OpticalFlow.h"
 
@@ -28,6 +28,5 @@ public:
     void init(void);
     void update(void);
 private:
-    void _get_gyro(float&, float&, float&);
     uint32_t _last_read_ms;
 };

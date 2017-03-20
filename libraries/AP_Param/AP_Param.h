@@ -49,6 +49,20 @@
 // no conflict with the parent
 #define AP_PARAM_NO_SHIFT           8
 
+// vehicle and frame type flags, used to hide parameters when not
+// relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
+// enable parameters flagged in this way. frame type flags are stored
+// in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
+#define AP_PARAM_FRAME_TYPE_SHIFT   4
+
+// supported frame types for parameters
+#define AP_PARAM_FRAME_COPTER       (1<<0)
+#define AP_PARAM_FRAME_ROVER        (1<<1)
+#define AP_PARAM_FRAME_PLANE        (1<<2)
+#define AP_PARAM_FRAME_SUB          (1<<3)
+#define AP_PARAM_FRAME_TRICOPTER    (1<<4)
+#define AP_PARAM_FRAME_HELI         (1<<5)
+
 // a variant of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
 // is constant and known at compile time
@@ -59,6 +73,12 @@
 
 // declare a group var_info line
 #define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { AP_CLASSTYPE(clazz, element), idx, name, AP_VAROFFSET(clazz, element), {def_value : def}, flags }
+
+// declare a group var_info line with a frame type mask
+#define AP_GROUPINFO_FRAME(name, idx, clazz, element, def, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, (frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT )
+
+// declare a group var_info line with both flags and frame type mask
+#define AP_GROUPINFO_FLAGS_FRAME(name, idx, clazz, element, def, flags, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags|((frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT) )
 
 // declare a group var_info line
 #define AP_GROUPINFO(name, idx, clazz, element, def) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, 0)
@@ -106,7 +126,7 @@ public:
             const struct GroupInfo *group_info;
             const float def_value;
         };
-        uint8_t flags;
+        uint16_t flags;
     };
     struct Info {
         uint8_t type; // AP_PARAM_*
@@ -117,11 +137,11 @@ public:
             const struct GroupInfo *group_info;
             const float def_value;
         };
-        uint8_t flags;
+        uint16_t flags;
     };
     struct ConversionInfo {
         uint16_t old_key; // k_param_*
-        uint8_t old_group_element; // index in old object
+        uint32_t old_group_element; // index in old object
         enum ap_var_type type; // AP_PARAM_*
         const char *new_name;
     };
@@ -262,8 +282,12 @@ public:
     ///
     /// @return                False if any variable failed to load
     ///
-    static bool load_all(void);
+    static bool load_all(bool check_defaults_file=true);
 
+    /// reoad the hal.util defaults file. Called after pointer parameters have been allocated
+    ///
+    static void reload_defaults_file(bool panic_on_error=true);
+    
     static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
     
     // set a AP_Param variable to a specified value
@@ -288,12 +312,23 @@ public:
     // does not recurse into the sub-objects    
     static void         setup_sketch_defaults(void);
 
+    // find an old parameter and return it.
+    static bool find_old_parameter(const struct ConversionInfo *info, AP_Param *value);
+    
     // convert old vehicle parameters to new object parameters
-    static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size);
+    static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
 
     // convert a single parameter with scaling
-    static void         convert_old_parameter(const struct ConversionInfo *info, float scaler);
+    enum {
+        CONVERT_FLAG_REVERSE=1, // handle _REV -> _REVERSED conversion
+        CONVERT_FLAG_FORCE=2    // store new value even if configured in eeprom already
+    };
+    static void         convert_old_parameter(const struct ConversionInfo *info, float scaler, uint8_t flags=0);
 
+    // move old class variables for a class that was sub-classed to one that isn't
+    static void         convert_parent_class(uint8_t param_key, void *object_pointer,
+                                             const struct AP_Param::GroupInfo *group_info);
+    
     /// Erase all variables in EEPROM.
     ///
     static void         erase_all(void);
@@ -335,19 +370,27 @@ public:
     static bool             check_var_info(void);
 
     // return true if the parameter is configured in the defaults file
-    bool configured_in_defaults_file(void);
+    bool configured_in_defaults_file(void) const;
 
     // return true if the parameter is configured in EEPROM/FRAM
-    bool configured_in_storage(void);
+    bool configured_in_storage(void) const;
 
     // return true if the parameter is configured
-    bool configured(void) { return configured_in_defaults_file() || configured_in_storage(); }
+    bool configured(void) const { return configured_in_defaults_file() || configured_in_storage(); }
 
     // count of parameters in tree
     static uint16_t count_parameters(void);
 
     static void set_hide_disabled_groups(bool value) { _hide_disabled_groups = value; }
 
+    // set frame type flags. Used to unhide frame specific parameters
+    static void set_frame_type_flags(uint16_t flags_to_set) {
+        _frame_type_flags |= flags_to_set;
+    }
+
+    // check if a given frame type should be included
+    static bool check_frame_type(uint16_t flags);
+    
 private:
     /// EEPROM header
     ///
@@ -387,6 +430,8 @@ private:
     static const uint16_t       _sentinal_key   = 0x1FF;
     static const uint8_t        _sentinal_type  = 0x1F;
     static const uint8_t        _sentinal_group = 0xFF;
+
+    static uint16_t             _frame_type_flags;
 
     static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
                                                  uint8_t max_bits, uint8_t prefix_length);
@@ -458,21 +503,18 @@ private:
                                     enum ap_var_type *ptype);
 
     // find a default value given a pointer to a default value in flash
-    static float get_default_value(const float *def_value_ptr);
-
-    /*
-      find the def_value for a variable by name
-    */
-    static const float *find_def_value_ptr(const char *name);
+    static float get_default_value(const AP_Param *object_ptr, const float *def_value_ptr);
 
 #if HAL_OS_POSIX_IO == 1
     /*
       load a parameter defaults file. This happens as part of load_all()
      */
     static bool parse_param_line(char *line, char **vname, float &value);
-    static bool load_defaults_file(const char *filename);
+    static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults, bool panic_on_error);
+    static bool read_param_defaults_file(const char *filename);
+    static bool load_defaults_file(const char *filename, bool panic_on_error);
 #endif
-
+    
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
     
@@ -485,7 +527,7 @@ private:
       list of overridden values from load_defaults_file()
     */
     struct param_override {
-        const float *def_value_ptr;
+        const AP_Param *object_ptr;
         float value;
     };
     static struct param_override *param_overrides;
@@ -532,11 +574,16 @@ public:
             set(v);
         }
     }
-    
+
     /// Value setter - set value, tell GCS
     ///
     void set_and_notify(const T &v) {
+// We do want to compare each value, even floats, since it being the same here
+// is the result of previously setting it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
         if (v != _value) {
+#pragma GCC diagnostic pop
             set(v);
             notify();
         }

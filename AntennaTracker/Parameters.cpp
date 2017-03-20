@@ -253,19 +253,19 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[0], gcs0,        "SR0_",     GCS_MAVLINK),
+    GOBJECTN(gcs_chan[0], gcs0,        "SR0_",     GCS_MAVLINK),
 
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
+    GOBJECTN(gcs_chan[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
+    GOBJECTN(gcs_chan[2],  gcs2,       "SR2_",     GCS_MAVLINK),
 
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
+    GOBJECTN(gcs_chan[3],  gcs3,       "SR3_",     GCS_MAVLINK),
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
@@ -302,16 +302,12 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
-    // RC channel
-    //-----------
-    // @Group: RC1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GOBJECT(channel_yaw,       "RC1_", RC_Channel),
+    // @Path: ../libraries/RC_Channel/RC_Channels.cpp
+    GOBJECT(rc_channels,     "RC", RC_Channels),
 
-    // @Group: RC2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GOBJECT(channel_pitch,     "RC2_", RC_Channel),
-
+    // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
+    GOBJECT(servo_channels,     "SERVO", SRV_Channels),
+    
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager,    "SERIAL",   AP_SerialManager),
@@ -394,12 +390,12 @@ void Tracker::load_parameters(void)
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        hal.console->println("Firmware change: erasing EEPROM...");
+        hal.console->printf("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->println("done.");
+        hal.console->printf("done.\n");
     }
 
     uint32_t before = AP_HAL::micros();

@@ -59,6 +59,10 @@ private:
 	uint32_t _last_t;
 	float _last_out;
 
+	AP_Float _deratespeed;
+	AP_Float _deratefactor;
+	AP_Float _mindegree;
+
     DataFlash_Class::PID_Info _pid_info {};
 
 	AP_AHRS &_ahrs;

@@ -462,14 +462,12 @@ void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
 
 void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
 {
-    // --------------
-    // Knowns
     AP_GPS gps = _ahrs.get_gps();
     Vector3f gps_velocity = gps.velocity();
 
     int32_t latitude = _my_loc.lat;
     int32_t longitude = _my_loc.lng;
-    int32_t altGNSS = _my_loc.alt*0.1f; // convert cm to mm
+    int32_t altGNSS = _my_loc.alt * 10; // convert cm to mm
     int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
     int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
     int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
@@ -504,21 +502,16 @@ void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
         state |= UAVIONIX_ADSB_OUT_DYNAMIC_STATE_ON_GROUND;
     }
 
-
-
-    // --------------
-    // Not Sure
-    uint32_t utcTime = UINT_MAX; //    uint32_t utcTime,
     // TODO: confirm this sets utcTime correctly
     const uint64_t gps_time = gps.time_epoch_usec();
-    utcTime = gps_time / 1000000ULL;
+    const uint32_t utcTime = gps_time / 1000000ULL;
 
-
-
-    // --------------
-    // Unknowns
-    // TODO: implement http://www.srh.noaa.gov/images/epz/wxcalc/pressureAltitude.pdf
-    int32_t altPres = INT_MAX; //_ahrs.get_baro().get_altitude() relative to home, not MSL
+    AP_Baro baro = _ahrs.get_baro();
+    int32_t altPres = INT_MAX;
+    if (baro.healthy()) {
+        // Altitude difference between 101325 (Pascals) and current pressure. Result in millimeters
+        altPres = baro.get_altitude_difference(101325, baro.get_pressure()) * 1E3; // convert m to mm;
+    }
 
 
 
@@ -639,7 +632,7 @@ void AP_ADSB::set_callsign(const char* str, const bool append_icao)
     } // for i
 
     if (append_icao) {
-        sprintf(&out_state.cfg.callsign[4], "%04X", out_state.cfg.ICAO_id % 0x10000);
+        snprintf(&out_state.cfg.callsign[4], 5, "%04X", out_state.cfg.ICAO_id % 0x10000);
     }
 }
 

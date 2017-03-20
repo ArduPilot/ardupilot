@@ -11,7 +11,7 @@ void Tracker::Log_Write_Attitude()
     targets.y = nav_status.pitch * 100.0f;
     targets.z = wrap_360_cd(nav_status.bearing * 100.0f);
     DataFlash.Log_Write_Attitude(ahrs, targets);
-    DataFlash.Log_Write_EKF2(ahrs,false);
+    DataFlash.Log_Write_EKF(ahrs,false);
     DataFlash.Log_Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE(&DataFlash);
@@ -107,7 +107,7 @@ void Tracker::log_init(void)
         DataFlash.Prep();
         gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
         for (uint8_t i=0; i<num_gcs; i++) {
-            gcs[i].reset_cli_timeout();
+            gcs_chan[i].reset_cli_timeout();
         }
     }
 
@@ -119,10 +119,11 @@ void Tracker::log_init(void)
 #else // LOGGING_ENABLED
 
 void Tracker::Log_Write_Attitude(void) {}
-void Tracker::Log_Write_Startup() {}
 void Tracker::Log_Write_Baro(void) {}
 
 void Tracker::start_logging() {}
 void Tracker::log_init(void) {}
+void Tracker::Log_Write_Vehicle_Pos(int32_t lat, int32_t lng, int32_t alt, const Vector3f& vel) {}
+void Tracker::Log_Write_Vehicle_Baro(float pressure, float altitude) {}
 
 #endif // LOGGING_ENABLED

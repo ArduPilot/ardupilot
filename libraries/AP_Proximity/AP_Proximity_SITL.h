@@ -20,10 +20,14 @@ public:
     float distance_max() const;
     float distance_min() const;
 
+    // get distance upwards in meters. returns true on success
+    bool get_upward_distance(float &distance) const;
+
 private:
     SITL::SITL *sitl;
     Vector2l *fence;
     AP_Int8 *fence_count;
+    AP_Float *fence_alt_max;
     uint32_t last_load_ms;
     AC_PolyFence_loader fence_loader;
     Location current_loc;

@@ -34,7 +34,7 @@ private:
 
     bool _data_ready();
     bool _hardware_init();
-    bool _update();
+    void _update();
     void _disable_i2c();
     bool _mag_set_range(uint8_t max_ga);
     bool _mag_set_samplerate(uint16_t frequency);
