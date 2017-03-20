@@ -85,6 +85,7 @@
 #define HAL_COMPASS_IST8310_I2C_BUS 1
 #define HAL_SERIAL0_BAUD_DEFAULT 460800
 #define HAL_HAVE_BOARD_VOLTAGE 0
+#define HAL_PX4_HAVE_MTD_SUPPORT 0
 #endif
 
 /* default values */
@@ -94,4 +95,8 @@
 
 #ifndef HAL_HAVE_BOARD_VOLTAGE
 #define HAL_HAVE_BOARD_VOLTAGE 1
+#endif
+
+#ifndef HAL_PX4_HAVE_MTD_SUPPORT
+#define HAL_PX4_HAVE_MTD_SUPPORT 1
 #endif
