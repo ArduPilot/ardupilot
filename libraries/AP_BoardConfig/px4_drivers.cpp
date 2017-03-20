@@ -411,8 +411,7 @@ void AP_BoardConfig::px4_setup_peripherals(void)
         px4_sensor_error("no ADC found");
     }
 
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V4) && \
-    !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+#if HAL_PX4_HAVE_PX4IO
     px4_setup_px4io();
 #endif
 
