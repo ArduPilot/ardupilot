@@ -216,8 +216,8 @@ private:
     AP_AHRS_DCM ahrs {ins, barometer, gps};
 #endif
 
-    AP_L1_Control L1_controller {ahrs};
     AP_TECS TECS_controller {ahrs, aparm, landing, g2.soaring_controller};
+    AP_L1_Control L1_controller {ahrs, &TECS_controller};
 
     // Attitude to servo controllers
     AP_RollController  rollController {ahrs, aparm, DataFlash};
