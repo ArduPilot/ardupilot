@@ -18,3 +18,4 @@
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH
 
+#define HAL_HAVE_BOARD_VOLTAGE 1
