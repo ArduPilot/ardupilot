@@ -375,9 +375,11 @@ void AP_Landing_Deepstall::build_approach_path(void)
     memcpy(&arc, &arc_exit, sizeof(Location));
     memcpy(&arc_entry, &arc_exit, sizeof(Location));
 
+    float loiter_radius = landing.nav_controller->loiter_radius(landing.aparm.loiter_radius);
+
     // TODO: Support loitering on either side of the approach path
-    location_update(arc, target_heading_deg + 90.0, landing.aparm.loiter_radius);
-    location_update(arc_entry, target_heading_deg + 90.0, landing.aparm.loiter_radius * 2);
+    location_update(arc, target_heading_deg + 90.0, loiter_radius);
+    location_update(arc_entry, target_heading_deg + 90.0, loiter_radius * 2);
 
 #ifdef DEBUG_PRINTS
     // TODO: Send this information via a MAVLink packet
