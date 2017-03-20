@@ -418,9 +418,21 @@ class px4(Board):
     toolchain = 'arm-none-eabi'
 
     def __init__(self):
+        # bootloader name: a file with that name will be used and installed
+        # on ROMFS
         self.bootloader_name = None
+
+        # board name: it's the name of this board that's also used as path
+        # in ROMFS: don't add spaces
         self.board_name = None
+
+        # px4io binary name: this is the name of the IO binary to be installed
+        # in ROMFS
         self.px4io_name = None
+
+        # board-specific init script: if True a file with `board_name` name will
+        # be searched for in sources and installed in ROMFS as rc.board. This
+        # init script is used to change the init behavior among different boards.
         self.board_rc = False
         self.ROMFS_EXCLUDE = []
 
