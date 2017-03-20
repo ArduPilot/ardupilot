@@ -154,9 +154,9 @@ AP_GPS_ERB::_parse_gps(void)
     case MSG_POS:
         Debug("Message POS");
         _last_pos_time        = _buffer.pos.time;
-        state.location.lng    = (int32_t)(_buffer.pos.longitude * 1e7);
-        state.location.lat    = (int32_t)(_buffer.pos.latitude * 1e7);
-        state.location.alt    = (int32_t)(_buffer.pos.altitude_msl * 1e2);
+        state.location.lng    = (int32_t)(_buffer.pos.longitude * (double)1e7);
+        state.location.lat    = (int32_t)(_buffer.pos.latitude * (double)1e7);
+        state.location.alt    = (int32_t)(_buffer.pos.altitude_msl * 100);
         state.status          = next_fix;
         _new_position = true;
         state.horizontal_accuracy = _buffer.pos.horizontal_accuracy * 1.0e-3f;
@@ -170,9 +170,9 @@ AP_GPS_ERB::_parse_gps(void)
               _buffer.stat.fix_type);
         if (_buffer.stat.fix_status & STAT_FIX_VALID) {
             if (_buffer.stat.fix_type == AP_GPS_ERB::FIX_FIX) {
-                next_fix = AP_GPS::GPS_OK_FIX_3D_RTK;
+                next_fix = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
             } else if (_buffer.stat.fix_type == AP_GPS_ERB::FIX_FLOAT) {
-                next_fix = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                next_fix = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
             } else if (_buffer.stat.fix_type == AP_GPS_ERB::FIX_SINGLE) {
                 next_fix = AP_GPS::GPS_OK_FIX_3D;
             } else {

@@ -50,7 +50,7 @@ private:
     bool _check_id();
     bool _calibrate();
 
-    bool _update();
+    void _update();
     void _update_timer();
 
     AP_AK8963_BusDriver *_bus;

@@ -50,6 +50,9 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Units: Centimeters
     AP_GROUPINFO("LAND_OFS_Y",    4, AC_PrecLand, _land_ofs_cm_y, 0),
 
+    // 5 RESERVED for EKF_TYPE
+    // 6 RESERVED for ACC_NSE
+
     AP_GROUPEND
 };
 
@@ -159,9 +162,15 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
             Vector3f target_vec_unit_ned = _attitude_history.front() * Rz * target_vec_unit_body;
 
             bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
+            bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_cm > 0.0f) || (_backend->distance_to_target() > 0.0f);
 
-            if (target_vec_valid && rangefinder_alt_valid && rangefinder_alt_cm > 0.0f) {
-                float alt = MAX(rangefinder_alt_cm*0.01f, 0.0f);
+            if (target_vec_valid && alt_valid) {
+                float alt;
+                if (_backend->distance_to_target() > 0.0f) {
+                    alt = _backend->distance_to_target();
+                } else {
+                    alt = MAX(rangefinder_alt_cm*0.01f, 0.0f);
+                }
                 float dist = alt/target_vec_unit_ned.z;
                 Vector3f targetPosRelMeasNED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt);
 

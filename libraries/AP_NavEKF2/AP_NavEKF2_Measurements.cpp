@@ -23,8 +23,10 @@ void NavEKF2_core::readRangeFinder(void)
     uint8_t midIndex;
     uint8_t maxIndex;
     uint8_t minIndex;
+
     // get theoretical correct range when the vehicle is on the ground
-    rngOnGnd = frontend->_rng.ground_clearance_cm() * 0.01f;
+    // don't allow range to go below 5cm because this can cause problems with optical flow processing
+    rngOnGnd = MAX(frontend->_rng.ground_clearance_cm_orient(ROTATION_PITCH_270) * 0.01f, 0.05f);
 
     // read range finder at 20Hz
     // TODO better way of knowing if it has new data
@@ -37,7 +39,7 @@ void NavEKF2_core::readRangeFinder(void)
         // use data from two range finders if available
 
         for (uint8_t sensorIndex = 0; sensorIndex <= 1; sensorIndex++) {
-            if (frontend->_rng.status(sensorIndex) == RangeFinder::RangeFinder_Good) {
+            if ((frontend->_rng.get_orientation(sensorIndex) == ROTATION_PITCH_270) && (frontend->_rng.status(sensorIndex) == RangeFinder::RangeFinder_Good)) {
                 rngMeasIndex[sensorIndex] ++;
                 if (rngMeasIndex[sensorIndex] > 2) {
                     rngMeasIndex[sensorIndex] = 0;

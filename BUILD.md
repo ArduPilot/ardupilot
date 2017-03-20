@@ -34,6 +34,15 @@ list some basic and more used commands as example.
     ./waf copter
     ```
 
+    If building for the bebop2 the binary must be built statically:
+
+    ```sh
+    ./waf configure --board bebop --static
+    ./waf copter
+    ```    
+
+    The "arducopter" and "arducopter-heli" binaries should appear in the `build/<board-name>/bin` directory.
+
 * **List available boards**
 
 
@@ -63,7 +72,7 @@ list some basic and more used commands as example.
     uses the `--targets` option that is explained in the next item.
 
     ```sh
-    ./waf --targets bin/arducopter-quad --upload
+    ./waf --targets bin/arducopter --upload
     ```
 
     Currently Linux boards don't support the upload option, but there's an
@@ -92,7 +101,7 @@ list some basic and more used commands as example.
 
     ```
     # Quad frame of ArduCopter
-    ./waf --targets bin/arducopter-quad
+    ./waf --targets bin/arducopter
 
     # unit test of our math functions
     ./waf --targets tests/test_math
@@ -226,7 +235,7 @@ to `build/<board>/` to the option `--targets`. Example:
 
 ```bash
 # Build arducopter for quad frame
-./waf --targets bin/arducopter-quad
+./waf --targets bin/arducopter
 
 # Build vectors unit test
 ./waf --targets tests/test_vectors

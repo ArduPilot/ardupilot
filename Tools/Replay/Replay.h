@@ -36,8 +36,8 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_InertialNav/AP_InertialNav.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -62,10 +62,10 @@ public:
     AP_GPS gps;
     Compass compass;
     AP_SerialManager serial_manager;
-    RangeFinder rng {serial_manager};
-    NavEKF EKF{&ahrs, barometer, rng};
+    RangeFinder rng {serial_manager, ROTATION_PITCH_270};
     NavEKF2 EKF2{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF, EKF2};
+    NavEKF3 EKF3{&ahrs, barometer, rng};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF2, EKF3};
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
@@ -120,8 +120,6 @@ private:
 
     LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.barometer, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash, nottypes};
 
-    FILE *plotf;
-    FILE *plotf2;
     FILE *ekf1f;
     FILE *ekf2f;
     FILE *ekf3f;

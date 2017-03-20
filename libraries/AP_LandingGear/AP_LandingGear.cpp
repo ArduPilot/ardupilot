@@ -1,7 +1,7 @@
 #include "AP_LandingGear.h"
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
-#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -39,7 +39,7 @@ void AP_LandingGear::enable(bool on_off)
 void AP_LandingGear::deploy()
 {
     // set servo PWM to deployed position
-    RC_Channel_aux::set_radio(RC_Channel_aux::k_landing_gear_control, _servo_deploy_pwm);
+    SRV_Channels::set_output_pwm(SRV_Channel::k_landing_gear_control, _servo_deploy_pwm);
 
     // set deployed flag
     _deployed = true;    
@@ -49,7 +49,7 @@ void AP_LandingGear::deploy()
 void AP_LandingGear::retract()
 {    
     // set servo PWM to retracted position
-    RC_Channel_aux::set_radio(RC_Channel_aux::k_landing_gear_control, _servo_retract_pwm);
+    SRV_Channels::set_output_pwm(SRV_Channel::k_landing_gear_control, _servo_retract_pwm);
 
     // reset deployed flag
     _deployed = false;   

@@ -10,7 +10,6 @@
  */
 #pragma once
 
-#include <stdbool.h>
 
 class GetOptLong {
 public:

@@ -69,20 +69,15 @@ enum aux_sw_func {
     AUXSW_THROW =               37,  // change to THROW flight mode
     AUXSW_AVOID_ADSB =          38,  // enable AP_Avoidance library
     AUXSW_PRECISION_LOITER =    39,  // enable precision loiter
+    AUXSW_AVOID_PROXIMITY =     40,  // enable object avoidance using proximity sensors (ie. horizontal lidar)
+    AUXSW_ARMDISARM =           41,  // arm or disarm vehicle
     AUXSW_SWITCH_MAX,
 };
 
 // Frame types
 #define UNDEFINED_FRAME 0
-#define QUAD_FRAME 1
-#define TRI_FRAME 2
-#define HEXA_FRAME 3
-#define Y6_FRAME 4
-#define OCTA_FRAME 5
-#define HELI_FRAME 6
-#define OCTA_QUAD_FRAME 7
-#define SINGLE_FRAME 8
-#define COAX_FRAME 9
+#define MULTICOPTER_FRAME 1
+#define HELI_FRAME 2
 
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
@@ -396,6 +391,9 @@ enum DevOptions {
 #define DATA_EKF_YAW_RESET                  62
 #define DATA_AVOIDANCE_ADSB_ENABLE          63
 #define DATA_AVOIDANCE_ADSB_DISABLE         64
+#define DATA_AVOIDANCE_PROXIMITY_ENABLE     65
+#define DATA_AVOIDANCE_PROXIMITY_DISABLE    66
+#define DATA_GPS_PRIMARY_CHANGED            67
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f

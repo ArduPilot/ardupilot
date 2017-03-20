@@ -31,6 +31,7 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
     // @Description: PWM value sent to Gripper to initiate grabbing the cargo
     // @User: Advanced
     // @Range: 1000 2000
+    // @Units: PWM
     AP_GROUPINFO("GRAB",    2, AP_Gripper, config.grab_pwm, GRIPPER_GRAB_PWM_DEFAULT),
 
     // @Param: RELEASE
@@ -38,6 +39,7 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
     // @Description: PWM value sent to Gripper to release the cargo
     // @User: Advanced
     // @Range: 1000 2000
+    // @Units: PWM
     AP_GROUPINFO("RELEASE", 3, AP_Gripper, config.release_pwm, GRIPPER_RELEASE_PWM_DEFAULT),
 
     // @Param: NEUTRAL
@@ -45,13 +47,14 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
     // @Description: PWM value sent to grabber when not grabbing or releasing
     // @User: Advanced
     // @Range: 1000 2000
+    // @Units: PWM
     AP_GROUPINFO("NEUTRAL", 4, AP_Gripper, config.neutral_pwm, GRIPPER_NEUTRAL_PWM_DEFAULT),
 
     // @Param: REGRAB
     // @DisplayName: Gripper Regrab interval
     // @Description: Time in seconds that gripper will regrab the cargo to ensure grip has not weakened; 0 to disable
     // @User: Advanced
-    // @Values: 0 255
+    // @Range: 0 255
     // @Units: seconds
     AP_GROUPINFO("REGRAB",  5, AP_Gripper, config.regrab_interval, GRIPPER_REGRAB_DEFAULT),
 

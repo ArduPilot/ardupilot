@@ -100,7 +100,7 @@ AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(OpticalFlow &_frontend)
 // setup the device
 bool AP_OpticalFlow_Pixart::setup_sensor(void)
 {
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("Unable to get bus semaphore");
     }
 
@@ -149,8 +149,8 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
     _dev->get_semaphore()->give();
 
     integral.last_frame_us = AP_HAL::micros();
-    
-    _dev->register_periodic_callback(2000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Pixart::timer, bool));
+
+    _dev->register_periodic_callback(2000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Pixart::timer, void));
     return true;
 
 failed:
@@ -266,10 +266,10 @@ void AP_OpticalFlow_Pixart::motion_burst(void)
     _dev->set_chip_select(false);
 }
 
-bool AP_OpticalFlow_Pixart::timer(void)
+void AP_OpticalFlow_Pixart::timer(void)
 {
     if (AP_HAL::micros() - last_burst_us < 500) {
-        return true;
+        return;
     }
     motion_burst();
     last_burst_us = AP_HAL::micros();
@@ -278,7 +278,7 @@ bool AP_OpticalFlow_Pixart::timer(void)
     float dt = dt_us * 1.0e-6;
     const Vector3f &gyro = get_ahrs().get_gyro();
 
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         integral.sum.x += burst.delta_x;
         integral.sum.y += burst.delta_y;
         integral.sum_us += dt_us;
@@ -301,7 +301,6 @@ bool AP_OpticalFlow_Pixart::timer(void)
         sum_x = sum_y = 0;
     }
 #endif
-    return true;
 }
 
 // update - read latest values from sensor and fill in x,y and totals.
@@ -317,7 +316,7 @@ void AP_OpticalFlow_Pixart::update(void)
     state.device_id = 1;
     state.surface_quality = burst.squal;
     
-    if (integral.sum_us > 0 && _sem->take(0)) {
+    if (integral.sum_us > 0 && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         const Vector2f flowScaler = _flowScaler();
         float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
         float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;

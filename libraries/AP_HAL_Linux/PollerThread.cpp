@@ -41,9 +41,7 @@ void TimerPollable::on_can_read()
         _wrapper->start_cb();
     }
 
-    if (!_cb()) {
-        _removeme = true;
-    }
+    _cb();
 
     if (_wrapper) {
         _wrapper->end_cb();

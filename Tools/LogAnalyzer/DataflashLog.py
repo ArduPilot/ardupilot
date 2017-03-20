@@ -676,6 +676,8 @@ class DataflashLog(object):
                     if h.head1 == 0xff and h.head2 == 0xff and h.msgid == 0xff:
                         print("Assuming EOF due to dataflash block tail filled with \\xff... (offset={off})".format(off=offset), file=sys.stderr)
                         break
+                    offset += 1
+                    continue
 
             if h.msgid in self._formats:
                 typ = self._formats[h.msgid]

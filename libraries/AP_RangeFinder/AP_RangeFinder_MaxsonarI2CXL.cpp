@@ -68,7 +68,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder &_range
  */
 bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
 {
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
     
@@ -90,7 +90,7 @@ bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
     _dev->get_semaphore()->give();
     
     _dev->register_periodic_callback(50000,
-                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_MaxsonarI2CXL::_timer, bool));
+                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_MaxsonarI2CXL::_timer, void));
     
     return true;
 }
@@ -126,19 +126,18 @@ bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
 /*
   timer called at 20Hz
 */
-bool AP_RangeFinder_MaxsonarI2CXL::_timer(void)
+void AP_RangeFinder_MaxsonarI2CXL::_timer(void)
 {
     uint16_t d;
     if (get_reading(d)) {
-        if (_sem->take(0)) {
+        if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
             distance = d;
             new_distance = true;
             _sem->give();
         }
     }
-    return true;
 }
-    
+
 
 /*
    update the state of the sensor

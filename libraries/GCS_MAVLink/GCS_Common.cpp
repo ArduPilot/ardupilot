@@ -34,8 +34,9 @@ extern const AP_HAL::HAL& hal;
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
 uint8_t GCS_MAVLINK::chan_is_streaming = 0;
-ObjectArray<GCS_MAVLINK::statustext_t> GCS_MAVLINK::_statustext_queue(GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY);
 uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
+
+GCS *GCS::_singleton = nullptr;
 
 GCS_MAVLINK::GCS_MAVLINK()
 {
@@ -335,6 +336,12 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
         // decode
         mavlink_mission_request_t packet;
         mavlink_msg_mission_request_decode(msg, &packet);
+
+        if (packet.seq >= mission.num_commands()) {
+            // try to educate the GCS on the actual size of the mission:
+            mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands());
+            goto mission_item_send_failed;
+        }
 
         // retrieve mission from eeprom
         if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
@@ -1320,7 +1327,7 @@ void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ..
     hal.util->vsnprintf((char *)text, sizeof(text)-1, fmt, arg_list);
     va_end(arg_list);
     text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = 0;
-    send_statustext(severity, mavlink_active | chan_is_streaming, text);
+    gcs().send_statustext(severity, mavlink_active | chan_is_streaming, text);
 }
 
 /*
@@ -1333,14 +1340,14 @@ void GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY severity, uint8_t dest_chan,
     va_start(arg_list, fmt);
     hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
     va_end(arg_list);
-    send_statustext(severity, (1<<dest_chan), text);
+    gcs().send_statustext(severity, (1<<dest_chan), text);
 }
 
 
 /*
     send a statustext text string to specific MAVLink bitmask
 */
-void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
+void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
     if (dataflash_p != nullptr) {
         dataflash_p->Log_Write_Message(text);
@@ -1353,7 +1360,7 @@ void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, c
 
     // filter destination ports to only allow active ports.
     statustext_t statustext{};
-    statustext.bitmask = (mavlink_active | chan_is_streaming) & dest_bitmask;
+    statustext.bitmask = (GCS_MAVLINK::active_channel_mask()  | GCS_MAVLINK::streaming_channel_mask() ) & dest_bitmask;
     if (!statustext.bitmask) {
         // nowhere to send
         return;
@@ -1370,17 +1377,18 @@ void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, c
     // try and send immediately if possible
     service_statustext();
 }
+
 /*
     send a statustext message to specific MAVLink connections in a bitmask
  */
-void GCS_MAVLINK::service_statustext(void)
+void GCS::service_statustext(void)
 {
     // create bitmask of what mavlink ports we should send this text to.
     // note, if sending to all ports, we only need to store the bitmask for each and the string only once.
     // once we send over a link, clear the port but other busy ports bit may stay allowing for faster links
     // to clear the bit and send quickly but slower links to still store the string. Regardless of mixed
-    // bitrates of ports, a maximum of GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY strings can be buffered. Downside
-    // is if you have a super slow link mixed with a faster port, if there are GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY
+    // bitrates of ports, a maximum of _status_capacity strings can be buffered. Downside
+    // is if you have a super slow link mixed with a faster port, if there are _status_capacity
     // strings in the slow queue then the next item can not be queued for the faster link
 
     if (_statustext_queue.empty()) {
@@ -1388,7 +1396,7 @@ void GCS_MAVLINK::service_statustext(void)
         return;
     }
 
-    for (uint8_t idx=0; idx<GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY; ) {
+    for (uint8_t idx=0; idx<_status_capacity; ) {
         statustext_t *statustext = _statustext_queue[idx];
         if (statustext == nullptr) {
             break;
@@ -1507,7 +1515,8 @@ void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optf
     float hagl = 0;
 
     if (ahrs.have_inertial_nav()) {
-        ahrs.get_NavEKF().getHAGL(hagl);
+
+        ahrs.get_hagl(hagl);
     }
 
     // populate and send message
@@ -1588,7 +1597,7 @@ void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_ve
 void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
 {
     Vector3f local_position, velocity;
-    if (!ahrs.get_relative_position_NED(local_position) ||
+    if (!ahrs.get_relative_position_NED_home(local_position) ||
         !ahrs.get_velocity_NED(velocity)) {
         // we don't know the position and velocity
         return;
@@ -1606,7 +1615,7 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
 }
 
 /*
-  send LOCAL_POSITION_NED message
+  send VIBRATION message
  */
 void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
 {
@@ -1709,7 +1718,7 @@ void GCS_MAVLINK::send_servo_output_raw(bool hil)
     uint16_t values[16] {};
     if (hil) {
         for (uint8_t i=0; i<16; i++) {
-            values[i] = RC_Channel::rc_channel(i)->get_radio_out();
+            values[i] = SRV_Channels::srv_channel(i)->get_output_pwm();
         }
     } else {
         hal.rcout->read(values, 16);
@@ -1839,4 +1848,9 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_device_op_write(msg);
         break;
     }
+}
+
+GCS &gcs()
+{
+    return *GCS::instance();
 }

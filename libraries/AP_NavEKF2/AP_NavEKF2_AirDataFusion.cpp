@@ -58,7 +58,7 @@ void NavEKF2_core::FuseAirspeed()
     if (VtasPred > 1.0f)
     {
         // calculate observation jacobians
-        SH_TAS[0] = 1/(sqrt(sq(ve - vwe) + sq(vn - vwn) + sq(vd)));
+        SH_TAS[0] = 1.0f/(sqrtf(sq(ve - vwe) + sq(vn - vwn) + sq(vd)));
         SH_TAS[1] = (SH_TAS[0]*(2*ve - 2*vwe))/2;
         SH_TAS[2] = (SH_TAS[0]*(2*vn - 2*vwn))/2;
         for (uint8_t i=0; i<=2; i++) H_TAS[i] = 0.0f;

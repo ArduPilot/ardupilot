@@ -73,7 +73,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
+    // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:Steering,4:Landing
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
     // @Param: KFF_RDDRMIX
@@ -235,21 +235,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
 
-	// @Param: NAV_CONTROLLER
-	// @DisplayName: Navigation controller selection
-	// @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental controllers will be added which are selected using this parameter.
-	// @Values: 0:Default,1:L1Controller
-	// @User: Standard
-	GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
-
-    // @Param: ALT_MIX
-    // @DisplayName: GPS to Baro Mix
-    // @Description: The percent of mixing between GPS altitude and baro altitude. 0 = 100% gps, 1 = 100% baro. It is highly recommend that you not change this from the default of 1, as GPS altitude is notoriously unreliable. The only time I would recommend changing this is if you have a high altitude enabled GPS, and you are dropping a plane from a high altitude balloon many kilometers off the ground.
-    // @Units: Percent
-    // @Range: 0 1
-    // @Increment: 0.1
-    // @User: Advanced
-    GSCALAR(altitude_mix,           "ALT_MIX",        ALTITUDE_MIX),
+    // @Param: NAV_CONTROLLER
+    // @DisplayName: Navigation controller selection
+    // @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental controllers will be added which are selected using this parameter.
+    // @Values: 0:Default,1:L1Controller
+    // @User: Standard
+    GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
 
     // @Param: ALT_CTRL_ALG
     // @DisplayName: Altitude control algorithm
@@ -292,7 +283,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Standard
-    GSCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
+    ASCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
 
     // @Param: RTL_RADIUS
     // @DisplayName: RTL loiter radius
@@ -989,7 +980,7 @@ const AP_Param::Info Plane::var_info[] = {
 #endif
 
     // @Group: ARMING_
-    // @Path: arming_checks.cpp,../libraries/AP_Arming/AP_Arming.cpp
+    // @Path: AP_Arming.cpp,../libraries/AP_Arming/AP_Arming.cpp
     GOBJECT(arming,                 "ARMING_", AP_Arming_Plane),
 
     // @Group: RELAY_
@@ -1047,72 +1038,6 @@ const AP_Param::Info Plane::var_info[] = {
       (const void *)&plane.quadplane.attitude_control,
       {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER },
     
-    // RC channel
-    //-----------
-    // @Group: RC1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_1,                    "RC1_", RC_Channel),
-
-    // @Group: RC2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_2,                    "RC2_", RC_Channel),
-
-    // @Group: RC3_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_3,                    "RC3_", RC_Channel),
-
-    // @Group: RC4_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_4,                    "RC4_", RC_Channel),
-
-    // @Group: RC5_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_5,                    "RC5_", RC_Channel_aux),
-
-    // @Group: RC6_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_6,                    "RC6_", RC_Channel_aux),
-
-    // @Group: RC7_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_7,                    "RC7_", RC_Channel_aux),
-
-    // @Group: RC8_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
-
-    // @Group: RC9_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
-
-    // @Group: RC10_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
-
-    // @Group: RC11_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
-
-    // @Group: RC12_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_12,                    "RC12_", RC_Channel_aux),
-
-    // @Group: RC13_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_13,                    "RC13_", RC_Channel_aux),
-
-    // @Group: RC14_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_14,                    "RC14_", RC_Channel_aux),
-
-    // @Group: RC15_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_15,                    "RC15_", RC_Channel_aux),
-
-    // @Group: RC16_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_16,                    "RC16_", RC_Channel_aux),
-    
     // @Group: RLL2SRV_
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
 	GOBJECT(rollController,         "RLL2SRV_",   AP_RollController),
@@ -1145,19 +1070,19 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[0], gcs0,        "SR0_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[0], gcs0,        "SR0_",     GCS_MAVLINK),
 
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[2],  gcs2,       "SR2_",     GCS_MAVLINK),
 
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[3],  gcs3,       "SR3_",     GCS_MAVLINK),
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
@@ -1222,13 +1147,13 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(rally,  "RALLY_",       AP_Rally),
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    // @Group: EKF_
-    // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
-    GOBJECTN(EKF, NavEKF, "EKF_", NavEKF),
-
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
     GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
+
+    // @Group: EK3_
+    // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
+    GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
     // @Group: RPM
@@ -1267,11 +1192,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_ICEngine/AP_ICEngine.cpp
     AP_SUBGROUPINFO(ice_control, "ICE_", 2, ParametersG2, AP_ICEngine),
 
-    // @Group: SERVO_
-    // @Path: ../libraries/RC_Channel/SRV_Channel.cpp
-    AP_SUBGROUPINFO(servo_channels, "SERVO", 3, ParametersG2, SRV_Channels),
-
-    // @Group: SYSID_ENFORCE
+    // 3 was used by prototype for servo_channels
+    
+    // @Param: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
     // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
     // @Values: 0:NotEnforced,1:Enforced
@@ -1282,11 +1205,24 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_Stats/AP_Stats.cpp
     AP_SUBGROUPINFO(stats, "STAT", 5, ParametersG2, AP_Stats),
 
+    // @Group: SERVO
+    // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
+    AP_SUBGROUPINFO(servo_channels, "SERVO", 6, ParametersG2, SRV_Channels),
+
+    // @Group: RC
+    // @Path: ../libraries/RC_Channel/RC_Channels.cpp
+    AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels),
+    
+    // @Group: SOAR_
+    // @Path: ../libraries/AP_Soaring/AP_Soaring.cpp
+    AP_SUBGROUPINFO(soaring_controller, "SOAR_", 8, ParametersG2, SoaringController),
+  
     AP_GROUPEND
 };
 
 ParametersG2::ParametersG2(void) :
-    ice_control(plane.rpm_sensor, plane.ahrs)
+    ice_control(plane.rpm_sensor, plane.ahrs),
+    soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -1363,30 +1299,48 @@ const AP_Param::ConversionInfo conversion_table[] = {
 void Plane::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->println("Bad parameter table");
+        cliSerial->printf("Bad parameter table\n");
         AP_HAL::panic("Bad parameter table");
     }
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->println("Firmware change: erasing EEPROM...");
+        cliSerial->printf("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        cliSerial->println("done.");
+        cliSerial->printf("done.\n");
     }
 
     uint32_t before = micros();
     // Load all auto-loaded EEPROM variables
-    AP_Param::load_all();
+    AP_Param::load_all(false);
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
+
+    // setup defaults in SRV_Channels
+    g2.servo_channels.set_default_function(CH_1, SRV_Channel::k_aileron);
+    g2.servo_channels.set_default_function(CH_2, SRV_Channel::k_elevator);
+    g2.servo_channels.set_default_function(CH_3, SRV_Channel::k_throttle);
+    g2.servo_channels.set_default_function(CH_4, SRV_Channel::k_rudder);
+        
+    const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
+                                      Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
+                                      Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
+                                      Parameters::k_param_rc_7_old,  Parameters::k_param_rc_8_old,
+                                      Parameters::k_param_rc_9_old,  Parameters::k_param_rc_10_old,
+                                      Parameters::k_param_rc_11_old, Parameters::k_param_rc_12_old,
+                                      Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old };
+    const uint16_t old_aux_chan_mask = 0x3FF0;
+    SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, &rcmap);
 
     if (quadplane.enable) {
         // quadplanes needs a higher loop rate
         AP_Param::set_default_by_name("SCHED_LOOP_RATE", 300);
     }
-    
+
+    AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
+
     cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

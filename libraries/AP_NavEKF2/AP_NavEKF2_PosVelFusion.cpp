@@ -90,6 +90,8 @@ void NavEKF2_core::ResetPosition(void)
     } else  {
         // Use GPS data as first preference if fresh data is available
         if (imuSampleTime_ms - lastTimeGpsReceived_ms < 250) {
+            // record the ID of the GPS for the data we are using for the reset
+            last_gps_idx = gpsDataNew.sensor_idx;
             // write to state vector and compensate for offset  between last GPS measurement and the EKF time horizon
             stateStruct.position.x = gpsDataNew.pos.x  + 0.001f*gpsDataNew.vel.x*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
             stateStruct.position.y = gpsDataNew.pos.y  + 0.001f*gpsDataNew.vel.y*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
@@ -195,7 +197,7 @@ void NavEKF2_core::ResetHeight(void)
 bool NavEKF2_core::resetHeightDatum(void)
 {
     if (activeHgtSource == HGT_SOURCE_RNG) {
-        // by definition the height dataum is at ground level so cannot perform the reset
+        // by definition the height datum is at ground level so cannot perform the reset
         return false;
     }
     // record the old height estimate
@@ -204,7 +206,7 @@ bool NavEKF2_core::resetHeightDatum(void)
     frontend->_baro.update_calibration();
     // reset the height state
     stateStruct.position.z = 0.0f;
-    // adjust the height of the EKF origin so that the origin plus baro height before and afer the reset is the same
+    // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
     if (validOrigin) {
         EKF_origin.alt += oldHgt*100;
     }
@@ -234,14 +236,6 @@ void NavEKF2_core::SelectVelPosFusion()
     gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
     // Determine if we need to fuse position and velocity data on this time step
     if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
-        // Don't fuse velocity data if GPS doesn't support it
-        if (frontend->_fusionModeGPS <= 1) {
-            fuseVelData = true;
-        } else {
-            fuseVelData = false;
-        }
-        fusePosData = true;
-
         // correct GPS data for position offset of antenna phase centre relative to the IMU
         Vector3f posOffsetBody = _ahrs->get_gps().get_antenna_offset(gpsDataDelayed.sensor_idx) - accelPosOffset;
         if (!posOffsetBody.is_zero()) {
@@ -257,6 +251,16 @@ void NavEKF2_core::SelectVelPosFusion()
             gpsDataDelayed.pos.y -= posOffsetEarth.y;
             gpsDataDelayed.hgt += posOffsetEarth.z;
         }
+
+
+        // Don't fuse velocity data if GPS doesn't support it
+        if (frontend->_fusionModeGPS <= 1) {
+            fuseVelData = true;
+        } else {
+            fuseVelData = false;
+        }
+        fusePosData = true;
+
     } else {
         fuseVelData = false;
         fusePosData = false;
@@ -269,6 +273,59 @@ void NavEKF2_core::SelectVelPosFusion()
 
     // Select height data to be fused from the available baro, range finder and GPS sources
     selectHeightForFusion();
+
+    // if we are using GPS, check for a change in receiver and reset position and height
+    if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE && gpsDataDelayed.sensor_idx != last_gps_idx) {
+        // record the ID of the GPS that we are using for the reset
+        last_gps_idx = gpsDataDelayed.sensor_idx;
+
+        // Store the position before the reset so that we can record the reset delta
+        posResetNE.x = stateStruct.position.x;
+        posResetNE.y = stateStruct.position.y;
+
+        // Set the position states to the position from the new GPS
+        stateStruct.position.x = gpsDataNew.pos.x;
+        stateStruct.position.y = gpsDataNew.pos.y;
+
+        // Calculate the position offset due to the reset
+        posResetNE.x = stateStruct.position.x - posResetNE.x;
+        posResetNE.y = stateStruct.position.y - posResetNE.y;
+
+        // Add the offset to the output observer states
+        for (uint8_t i=0; i<imu_buffer_length; i++) {
+            storedOutput[i].position.x += posResetNE.x;
+            storedOutput[i].position.y += posResetNE.y;
+        }
+        outputDataNew.position.x += posResetNE.x;
+        outputDataNew.position.y += posResetNE.y;
+        outputDataDelayed.position.x += posResetNE.x;
+        outputDataDelayed.position.y += posResetNE.y;
+
+        // store the time of the reset
+        lastPosReset_ms = imuSampleTime_ms;
+
+        // If we are alseo using GPS as the height reference, reset the height
+        if (activeHgtSource == HGT_SOURCE_GPS) {
+            // Store the position before the reset so that we can record the reset delta
+            posResetD = stateStruct.position.z;
+
+            // write to the state vector
+            stateStruct.position.z = -hgtMea;
+
+            // Calculate the position jump due to the reset
+            posResetD = stateStruct.position.z - posResetD;
+
+            // Add the offset to the output observer states
+            outputDataNew.position.z += posResetD;
+            outputDataDelayed.position.z += posResetD;
+            for (uint8_t i=0; i<imu_buffer_length; i++) {
+                storedOutput[i].position.z += posResetD;
+            }
+
+            // store the time of the reset
+            lastPosResetD_ms = imuSampleTime_ms;
+        }
+    }
 
     // If we are operating without any aiding, fuse in the last known position
     // to constrain tilt drift. This assumes a non-manoeuvring vehicle
@@ -705,7 +762,7 @@ void NavEKF2_core::selectHeightForFusion()
             activeHgtSource = HGT_SOURCE_RNG;
         } else {
             // determine if we are above or below the height switch region
-            float rangeMaxUse = 1e-4f * (float)frontend->_rng.max_distance_cm() * (float)frontend->_useRngSwHgt;
+            float rangeMaxUse = 1e-4f * (float)frontend->_rng.max_distance_cm_orient(ROTATION_PITCH_270) * (float)frontend->_useRngSwHgt;
             bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
             bool belowLowerSwHgt = (terrainState - stateStruct.position.z) < 0.7f * rangeMaxUse;
 

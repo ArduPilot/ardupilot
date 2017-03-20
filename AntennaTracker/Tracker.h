@@ -46,8 +46,8 @@
 #include <DataFlash/DataFlash.h>
 #include <AC_PID/AC_PID.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Mission/AP_Mission.h>
@@ -110,13 +110,13 @@ private:
 
     AP_InertialSensor ins;
 
-    RangeFinder rng {serial_manager};
+    RangeFinder rng {serial_manager, ROTATION_NONE};
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF EKF{&ahrs, barometer, rng};
     NavEKF2 EKF2{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rng, EKF, EKF2};
+    NavEKF3 EKF3{&ahrs, barometer, rng};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rng, EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs{ins, barometer, gps};
 #endif
@@ -128,8 +128,8 @@ private:
     /**
        antenna control channels
     */
-    RC_Channel channel_yaw{CH_YAW};
-    RC_Channel channel_pitch{CH_PITCH};
+    RC_Channels rc_channels;
+    SRV_Channels servo_channels;
 
     LowPassFilterFloat yaw_servo_out_filt;
     LowPassFilterFloat pitch_servo_out_filt;
@@ -139,7 +139,9 @@ private:
 
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK_Tracker gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Tracker gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
+    GCS _gcs; // avoid using this; use GCS::instance()
+    GCS &gcs() { return _gcs; }
 
     AP_BoardConfig BoardConfig;
 

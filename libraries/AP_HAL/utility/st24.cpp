@@ -43,7 +43,6 @@
  * @author Lorenz Meier <lm@inf.ethz.ch>
  */
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include "st24.h"

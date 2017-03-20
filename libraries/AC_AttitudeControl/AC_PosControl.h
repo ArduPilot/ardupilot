@@ -47,7 +47,7 @@ class AC_PosControl
 public:
 
     /// Constructor
-    AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
+    AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                   AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
                   AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);
@@ -56,7 +56,7 @@ public:
     enum xy_mode {
         XY_MODE_POS_ONLY = 0,           // position correction only (i.e. no velocity feed-forward)
         XY_MODE_POS_LIMITED_AND_VEL_FF, // for loiter - rate-limiting the position correction, velocity feed-forward
-        XY_MODE_POS_AND_VEL_FF          // for velocity controller - unlimied position correction, velocity feed-forward
+        XY_MODE_POS_AND_VEL_FF          // for velocity controller - unlimited position correction, velocity feed-forward
     };
 
     ///
@@ -75,11 +75,6 @@ public:
     ///
     /// z position controller
     ///
-
-    /// set_alt_max - sets maximum altitude above the ekf origin in cm
-    ///   only enforced when set_alt_target_from_climb_rate is used
-    ///   set to zero to disable limit
-    void set_alt_max(float alt) { _alt_max = alt; }
 
     /// set_speed_z - sets maximum climb and descent rates
     ///     speed_down can be positive or negative but will always be interpreted as a descent speed
@@ -120,14 +115,14 @@ public:
     ///     actual position target will be moved no faster than the speed_down and speed_up
     ///     target will also be stopped if the motors hit their limits or leash length is exceeded
     ///     set force_descend to true during landing to allow target to move low enough to slow the motors
-    void set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend);
+    virtual void set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend);
 
     /// set_alt_target_from_climb_rate_ff - adjusts target up or down using a climb rate in cm/s using feed-forward
     ///     should be called continuously (with dt set to be the expected time between calls)
     ///     actual position target will be moved no faster than the speed_down and speed_up
     ///     target will also be stopped if the motors hit their limits or leash length is exceeded
     ///     set force_descend to true during landing to allow target to move low enough to slow the motors
-    void set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend);
+    virtual void set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend);
 
     /// add_takeoff_climb_rate - adjusts alt target up or down using a climb rate in cm/s
     ///     should be called continuously (with dt set to be the expected time between calls)
@@ -171,6 +166,9 @@ public:
     // get_leash_down_z, get_leash_up_z - returns vertical leash lengths in cm
     float get_leash_down_z() const { return _leash_down_z; }
     float get_leash_up_z() const { return _leash_up_z; }
+
+    /// get_pos_z_kP - returns z position controller's kP gain
+    float get_pos_z_kP() const { return _p_pos_z.kP(); }
 
     ///
     /// xy position controller
@@ -293,7 +291,7 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-private:
+protected:
 
     // general purpose flags
     struct poscontrol_flags {
@@ -368,7 +366,7 @@ private:
     void check_for_ekf_z_reset();
 
     // references to inertial nav and ahrs libraries
-    const AP_AHRS&              _ahrs;
+    const AP_AHRS_View &        _ahrs;
     const AP_InertialNav&       _inav;
     const AP_Motors&            _motors;
     AC_AttitudeControl&         _attitude_control;
@@ -414,7 +412,6 @@ private:
     Vector3f    _accel_error;           // desired acceleration in cm/s/s  // To-Do: are xy actually required?
     Vector3f    _accel_feedforward;     // feedforward acceleration in cm/s/s
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
-    float       _alt_max;               // max altitude - should be updated from the main code with altitude limit from fence
     float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
 

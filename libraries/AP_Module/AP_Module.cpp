@@ -179,7 +179,7 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
     }
     
     Vector3f pos;
-    if (ahrs.get_relative_position_NED(pos)) {
+    if (ahrs.get_relative_position_NED_origin(pos)) {
         state.relative_position[0] = pos[0];
         state.relative_position[1] = pos[1];
         state.relative_position[2] = pos[2];

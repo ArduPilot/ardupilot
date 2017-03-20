@@ -16,7 +16,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
         // set land_complete to false to stop us zeroing the throttle
-        landing.init_start_nav_cmd();
         auto_state.sink_rate = 0;
 
         // set takeoff_complete to true so we don't add extra elevator
@@ -137,8 +136,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_LAND_START:
-        //ensure go around hasn't been set
-        landing.commanded_go_around = false;
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:
@@ -247,12 +244,14 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         return verify_nav_wp(cmd);
 
     case MAV_CMD_NAV_LAND:
-        {
-        // use rangefinder to correct if possible
-        float height = height_above_target() - rangefinder_correction();
+        if (flight_stage == AP_Vehicle::FixedWing::FlightStage::FLIGHT_ABORT_LAND) {
+            return landing.verify_abort_landing(prev_WP_loc, next_WP_loc, current_loc, auto_state.takeoff_altitude_rel_cm, throttle_suppressed);
 
-        return landing.verify_land(flight_stage, prev_WP_loc, next_WP_loc, current_loc,
-                auto_state.takeoff_altitude_rel_cm, height, auto_state.sink_rate, auto_state.wp_proportion, auto_state.last_flying_ms, arming.is_armed(), is_flying(), rangefinder_state.in_range, throttle_suppressed);
+        } else {
+            // use rangefinder to correct if possible
+            const float height = height_above_target() - rangefinder_correction();
+            return landing.verify_land(prev_WP_loc, next_WP_loc, current_loc,
+                height, auto_state.sink_rate, auto_state.wp_proportion, auto_state.last_flying_ms, arming.is_armed(), is_flying(), rangefinder_state.in_range);
         }
 
     case MAV_CMD_NAV_LOITER_UNLIM:
@@ -338,7 +337,7 @@ void Plane::do_RTL(int32_t rtl_altitude)
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
-    if (g.loiter_radius < 0) {
+    if (aparm.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -382,7 +381,6 @@ void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 {
-    landing.commanded_go_around = false;
     set_next_WP(cmd.content.location);
 
     // configure abort altitude and pitch
@@ -398,10 +396,26 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         auto_state.takeoff_pitch_cd = 1000;
     }
 
-    landing.slope = 0;
-
     // zero rangefinder state, start to accumulate good samples now
     memset(&rangefinder_state, 0, sizeof(rangefinder_state));
+
+    landing.do_land(cmd, relative_altitude);
+
+#if GEOFENCE_ENABLED == ENABLED 
+    if (g.fence_autoenable == 1) {
+        if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
+            gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
+        } else {
+            gcs_send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
+        }
+    } else if (g.fence_autoenable == 2) {
+        if (! geofence_set_floor_enabled(false)) {
+            gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
+        } else {
+            gcs_send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
+        }
+    }
+#endif
 }
 
 void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
@@ -485,12 +499,8 @@ void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
     set_next_WP(loc);
     loiter_set_direction_wp(cmd);
 
-    // used to signify primary turns goal not yet met when non-zero
-    condition_value = next_WP_loc.alt;
-    if (condition_value == 0) {
-        // the value of 0 is used to signify it has been reached. Lets bump alt to 1 which is 10cm. Close enough!
-        condition_value = 1;
-    }
+    // init to 0, set to 1 when altitude is reached
+    condition_value = 0;
 }
 
 /********************************************************************************/
@@ -558,40 +568,65 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     steer_state.hold_course_cd = -1;
 
+    // depending on the pass by flag either go to waypoint in regular manner or
+    // fly past it for set distance along the line of waypoints
+    Location flex_next_WP_loc = next_WP_loc;
+
+    uint8_t cmd_passby = HIGHBYTE(cmd.p1); // distance in meters to pass beyond the wp
+    uint8_t cmd_acceptance_distance = LOWBYTE(cmd.p1); // radius in meters to accept reaching the wp
+
+    if (cmd_passby > 0) {
+        float dist = get_distance(prev_WP_loc, flex_next_WP_loc);
+
+        if (!is_zero(dist)) {
+            float factor = (dist + cmd_passby) / dist;
+
+            flex_next_WP_loc.lat = flex_next_WP_loc.lat + (flex_next_WP_loc.lat - prev_WP_loc.lat) * (factor - 1.0f);
+            flex_next_WP_loc.lng = flex_next_WP_loc.lng + (flex_next_WP_loc.lng - prev_WP_loc.lng) * (factor - 1.0f);
+        }
+    }
+
     if (auto_state.no_crosstrack) {
-        nav_controller->update_waypoint(current_loc, next_WP_loc);
+        nav_controller->update_waypoint(current_loc, flex_next_WP_loc);
     } else {
-        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+        nav_controller->update_waypoint(prev_WP_loc, flex_next_WP_loc);
     }
 
     // see if the user has specified a maximum distance to waypoint
-    if (g.waypoint_max_radius > 0 && 
+    // If override with p3 - then this is not used as it will overfly badly
+    if (g.waypoint_max_radius > 0 &&
         auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
-        if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+        if (location_passed_point(current_loc, prev_WP_loc, flex_next_WP_loc)) {
             // this is needed to ensure completion of the waypoint
-            prev_WP_loc = current_loc;
+            if (cmd_passby == 0) {
+                prev_WP_loc = current_loc;
+            }
         }
         return false;
     }
 
-    float acceptance_distance = nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle);
-    if (cmd.p1 > 0) {
+    float acceptance_distance_m = 0; // default to: if overflown - let it fly up to the point
+    if (cmd_acceptance_distance > 0) {
         // allow user to override acceptance radius
-        acceptance_distance = cmd.p1;
+        acceptance_distance_m = cmd_acceptance_distance;
+    } else if (cmd_passby == 0) {
+        acceptance_distance_m = nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle);
+    } else {
+
     }
     
-    if (auto_state.wp_distance <= acceptance_distance) {
+    if (auto_state.wp_distance <= acceptance_distance_m) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, next_WP_loc));
+                          (unsigned)get_distance(current_loc, flex_next_WP_loc));
         return true;
 	}
 
     // have we flown past the waypoint?
-    if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+    if (location_passed_point(current_loc, prev_WP_loc, flex_next_WP_loc)) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, next_WP_loc));
+                          (unsigned)get_distance(current_loc, flex_next_WP_loc));
         return true;
     }
 
@@ -614,7 +649,7 @@ bool Plane::verify_loiter_unlim()
 bool Plane::verify_loiter_time()
 {
     bool result = false;
-    // mission radius is always g.loiter_radius
+    // mission radius is always aparm.loiter_radius
     update_loiter(0);
 
     if (loiter.start_time_ms == 0) {
@@ -635,7 +670,7 @@ bool Plane::verify_loiter_time()
     }
 
     if (result) {
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER time complete");
+        gcs_send_text(MAV_SEVERITY_INFO,"Loiter time complete");
         auto_state.vtol_loiter = false;
     }
     return result;
@@ -663,7 +698,7 @@ bool Plane::verify_loiter_turns()
     }
 
     if (result) {
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER orbits complete");
+        gcs_send_text(MAV_SEVERITY_INFO,"Loiter orbits complete");
     }
     return result;
 }
@@ -678,12 +713,16 @@ bool Plane::verify_loiter_to_alt()
     bool result = false;
     update_loiter(mission.get_current_nav_cmd().p1);
 
-    //has target altitude been reached?
-    if (condition_value != 0) {
-        // primary goal, loiter alt
-        if (labs(condition_value - current_loc.alt) < 500 && loiter.sum_cd > 1) {
+    // condition_value == 0 means alt has never been reached
+    if (condition_value == 0) {
+        // primary goal, loiter to alt
+        if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_acheive_target_alt)) {
             // primary goal completed, initialize secondary heading goal
-            condition_value = 0;
+            if (loiter.unable_to_acheive_target_alt) {
+                gcs_send_text_fmt(MAV_SEVERITY_INFO,"Loiter to alt was stuck at %d", current_loc.alt/100);
+            }
+
+            condition_value = 1;
             result = verify_loiter_heading(true);
         }
     } else {
@@ -692,7 +731,7 @@ bool Plane::verify_loiter_to_alt()
     }
 
     if (result) {
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER alt complete");
+        gcs_send_text(MAV_SEVERITY_INFO,"Loiter to alt complete");
     }
     return result;
 }
@@ -707,7 +746,7 @@ bool Plane::verify_RTL()
     update_loiter(abs(g.rtl_radius));
 	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
         reached_loiter_target()) {
-			gcs_send_text(MAV_SEVERITY_INFO,"Reached HOME");
+			gcs_send_text(MAV_SEVERITY_INFO,"Reached RTL location");
 			return true;
     } else {
         return false;
@@ -822,7 +861,7 @@ bool Plane::verify_within_distance()
 
 void Plane::do_loiter_at_location()
 {
-    if (g.loiter_radius < 0) {
+    if (aparm.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -992,7 +1031,7 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 
-    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < labs(g.loiter_radius)) {
+    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < abs(aparm.loiter_radius)) {
         /* Whenever next waypoint is within the loiter radius,
            maintaining loiter would prevent us from ever pointing toward the next waypoint.
            Hence break out of loiter immediately

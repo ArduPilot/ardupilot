@@ -55,7 +55,7 @@ AP_OpticalFlow_PX4Flow *AP_OpticalFlow_PX4Flow::detect(OpticalFlow &_frontend)
  */
 bool AP_OpticalFlow_PX4Flow::scan_buses(void)
 {
-    for (uint8_t bus=0; bus<2; bus++) {
+    for (uint8_t bus = 0; bus < 3; bus++) {
 #ifdef HAL_OPTFLOW_PX4FLOW_I2C_BUS
         // only one bus from HAL
         if (bus != HAL_OPTFLOW_PX4FLOW_I2C_BUS) {
@@ -66,7 +66,7 @@ bool AP_OpticalFlow_PX4Flow::scan_buses(void)
         if (!tdev) {
             continue;
         }
-        if (!tdev->get_semaphore()->take(0)) {
+        if (!tdev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
             continue;
         }
         struct i2c_integral_frame frame;
@@ -88,7 +88,7 @@ bool AP_OpticalFlow_PX4Flow::setup_sensor(void)
         return false;
     }
     // read at 10Hz
-    dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_PX4Flow::timer, bool));
+    dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_PX4Flow::timer, void));
     return true;
 }
 
@@ -99,11 +99,11 @@ void AP_OpticalFlow_PX4Flow::update(void)
 }
 
 // timer to read sensor
-bool AP_OpticalFlow_PX4Flow::timer(void)
+void AP_OpticalFlow_PX4Flow::timer(void)
 {
     struct i2c_integral_frame frame;
     if (!dev->read_registers(REG_INTEGRAL_FRAME, (uint8_t *)&frame, sizeof(frame))) {
-        return true;
+        return;
     }
     struct OpticalFlow::OpticalFlow_state state {};
     state.device_id = get_bus_id();
@@ -124,6 +124,4 @@ bool AP_OpticalFlow_PX4Flow::timer(void)
     }
 
     _update_frontend(state);
-    
-    return true;
 }

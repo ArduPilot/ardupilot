@@ -92,6 +92,7 @@ struct Vector2
     T operator %(const Vector2<T> &v) const;
 
     // computes the angle between this vector and another vector
+    // returns 0 if the vectors are parallel, and M_PI if they are antiparallel
     float angle(const Vector2<T> &v2) const;
 
     // computes the angle in radians between the origin and this vector

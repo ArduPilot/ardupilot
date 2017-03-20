@@ -73,8 +73,10 @@ public:
     AP_Float accel_noise; // in m/s/s
     AP_Float accel2_noise; // in m/s/s
     AP_Vector3f accel_bias; // in m/s/s
+    AP_Vector3f accel2_bias; // in m/s/s
     AP_Float arspd_noise;  // in m/s
     AP_Float arspd_fail;   // pitot tube failure
+    AP_Float gps_noise; // amplitude of the gps altitude error
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Float mag_error;   // in degrees
@@ -95,7 +97,8 @@ public:
     AP_Int8  gps_type;    // see enum GPSType
     AP_Float gps_byteloss;// byte loss as a percent
     AP_Int8  gps_numsats; // number of visible satellites
-    AP_Vector3f  gps_glitch;  // glitch offsets in lat, lon and altitude
+    AP_Vector3f gps_glitch;  // glitch offsets in lat, lon and altitude
+    AP_Vector3f gps2_glitch; // glitch offsets in lat, lon and altitude for 2nd GPS
     AP_Int8  gps_hertz;   // GPS update rate in Hz
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
@@ -136,6 +139,8 @@ public:
     AP_Vector3f gps_pos_offset;     // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
+
+    uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);
 

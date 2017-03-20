@@ -33,6 +33,8 @@ def build(bld):
             'AP_Stats',
             'AP_Landing',
             'AP_Beacon',
+            'PID',
+            'AP_Soaring'
         ],
     )
 
@@ -40,11 +42,4 @@ def build(bld):
         program_name='arduplane',
         program_groups=['bin', 'plane'],
         use=vehicle + '_libs',
-    )
-
-    bld.ap_program(
-        program_name='arduplane-tri',
-        program_groups=['bin', 'plane'],
-        use=vehicle + '_libs',
-        defines=['FRAME_CONFIG=TRI_FRAME'],
     )

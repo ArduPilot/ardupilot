@@ -1003,6 +1003,12 @@ void AP_AHRS_DCM::set_home(const Location &loc)
     _home.options = 0;
 }
 
+//  a relative ground position to home in meters, Down
+void AP_AHRS_DCM::get_relative_position_D_home(float &posD) const
+{
+    posD = -_baro.get_altitude();
+}
+
 /*
   check if the AHRS subsystem is healthy
 */

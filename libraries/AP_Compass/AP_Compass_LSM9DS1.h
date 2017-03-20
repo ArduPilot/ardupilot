@@ -28,7 +28,7 @@ private:
     bool _check_id(void);
     bool _configure(void);
     bool _set_scale(void);
-    bool _update(void);
+    void _update(void);
 
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val);

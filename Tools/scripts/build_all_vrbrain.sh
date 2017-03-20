@@ -8,7 +8,7 @@
 set -e
 set -x
 
-for d in ArduPlane ArduCopter APMrover2; do
+for d in ArduPlane ArduCopter APMrover2 ArduSub; do
     pushd $d
     make vrbrain-clean
     popd
@@ -26,6 +26,11 @@ popd
 
 echo "Testing APMrover2 build"
 pushd APMrover2
+make vrbrain
+popd
+
+echo "Testing ArduSub build"
+pushd ArduSub
 make vrbrain
 popd
 

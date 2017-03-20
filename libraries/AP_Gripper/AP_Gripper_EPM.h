@@ -16,7 +16,7 @@
 #include "AP_Gripper.h"
 #include "AP_Gripper_Backend.h"
 
-#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #define EPM_RETURN_TO_NEUTRAL_MS    500         // EPM PWM returns to neutral position this many milliseconds after grab or release
 

@@ -35,7 +35,7 @@ public:
     float board_voltage(void);
 
 protected:
-    bool _update();
+    void _update();
 
     AP_HAL::AnalogSource *_vcc_pin_analog_source;
     AnalogSource_Raspilot *_channels[RASPILOT_ADC_MAX_CHANNELS];

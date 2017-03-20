@@ -419,9 +419,9 @@ void AP_Mount::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_m
 
     // default mount to servo mount if rc output channels to control roll, tilt or pan have been defined
     if (!state[0]._type.configured()) {
-        if (RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t::k_mount_pan) ||
-            RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t::k_mount_tilt) ||
-            RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t::k_mount_roll)) {
+        if (SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t::k_mount_pan) ||
+            SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t::k_mount_tilt) ||
+            SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t::k_mount_roll)) {
                 state[0]._type.set_and_save(Mount_Type_Servo);
         }
     }
@@ -442,11 +442,13 @@ void AP_Mount::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_m
             _num_instances++;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
+#if !HAL_MINIMIZE_FEATURES
         // check for MAVLink mounts
         } else if (mount_type == Mount_Type_SoloGimbal) {
             _backends[instance] = new AP_Mount_SoloGimbal(*this, state[instance], instance);
             _num_instances++;
-#endif
+#endif // HAL_MINIMIZE_FEATURES
+#endif // AP_AHRS_NAVEKF_AVAILABLE
 
         // check for Alexmos mounts
         } else if (mount_type == Mount_Type_Alexmos) {

@@ -52,6 +52,7 @@ public:
         k_param_g2,
         k_param_avoidance_adsb,
         k_param_landing,
+        k_param_NavEKF3,
 
         // Misc
         //
@@ -188,7 +189,7 @@ public:
         // 130: Sensor parameters
         //
         k_param_imu = 130,  // unused
-        k_param_altitude_mix,
+        k_param_altitude_mix, // deprecated
 
         k_param_compass_enabled,
         k_param_compass,
@@ -202,10 +203,10 @@ public:
         k_param_barometer,   // barometer ground calibration
         k_param_airspeed,  // AP_Airspeed parameters
         k_param_curr_amp_offset,
-        k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
+        k_param_NavEKF,  // deprecated - remove
         k_param_mission, // mission library
         k_param_serial_manager, // serial manager library
-        k_param_NavEKF2_old,  // deprecated
+        k_param_NavEKF2_old,  // deprecated - remove
         k_param_land_pre_flare_alt, // unused - moved to AP_Landing
         k_param_land_pre_flare_airspeed = 149,  // unused - moved to AP_Landing
 
@@ -243,19 +244,19 @@ public:
         k_param_battery_curr_pin,       // unused - 169
 
         //
-        // 170: Radio settings
+        // 170: Radio settings - all unused now
         //
-        k_param_rc_1 = 170,
-        k_param_rc_2,
-        k_param_rc_3,
-        k_param_rc_4,
-        k_param_rc_5,
-        k_param_rc_6,
-        k_param_rc_7,
-        k_param_rc_8,
-        k_param_rc_9,
-        k_param_rc_10,
-        k_param_rc_11,
+        k_param_rc_1_old = 170,
+        k_param_rc_2_old,
+        k_param_rc_3_old,
+        k_param_rc_4_old,
+        k_param_rc_5_old,
+        k_param_rc_6_old,
+        k_param_rc_7_old,
+        k_param_rc_8_old,
+        k_param_rc_9_old,
+        k_param_rc_10_old,
+        k_param_rc_11_old,
 
         k_param_throttle_min,
         k_param_throttle_max,
@@ -269,13 +270,13 @@ public:
         k_param_throttle_slewrate,
         k_param_throttle_suppress_manual,
         k_param_throttle_passthru_stabilize,
-        k_param_rc_12,
+        k_param_rc_12_old,
         k_param_fs_batt_voltage,
         k_param_fs_batt_mah,
         k_param_short_fs_timeout,
         k_param_long_fs_timeout,
-        k_param_rc_13,
-        k_param_rc_14,
+        k_param_rc_13_old,
+        k_param_rc_14_old,
         k_param_tuning,
 
         //
@@ -289,8 +290,8 @@ public:
         k_param_quadplane,
         k_param_rtl_radius,
         k_param_land_then_servos_neutral,   // unused - moved to AP_Landing
-        k_param_rc_15,
-        k_param_rc_16,
+        k_param_rc_15_old,
+        k_param_rc_16_old,
 
         //
         // 210: flight modes
@@ -392,7 +393,6 @@ public:
 
     // Estimation
     //
-    AP_Float altitude_mix;
     AP_Int8  alt_control_algorithm;
 
     // Waypoints
@@ -400,7 +400,6 @@ public:
     AP_Int8 waypoint_mode;
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
-    AP_Int16 loiter_radius;
     AP_Int16 rtl_radius;
 
 #if GEOFENCE_ENABLED == ENABLED
@@ -514,47 +513,6 @@ public:
 #endif
     AP_Int16 gcs_pid_mask;
     AP_Int8 parachute_channel;
-
-    // RC channels
-    RC_Channel rc_1;
-    RC_Channel rc_2;
-    RC_Channel rc_3;
-    RC_Channel rc_4;
-    RC_Channel_aux rc_5;
-    RC_Channel_aux rc_6;
-    RC_Channel_aux rc_7;
-    RC_Channel_aux rc_8;
-    RC_Channel_aux rc_9;
-    RC_Channel_aux rc_10;
-    RC_Channel_aux rc_11;
-    RC_Channel_aux rc_12;
-    RC_Channel_aux rc_13;
-    RC_Channel_aux rc_14;
-    RC_Channel_aux rc_15;
-    RC_Channel_aux rc_16;
-    uint8_t _dummy;
-
-    Parameters() :
-        // variable				default
-        //----------------------------------------
-        rc_1                                    (CH_1),
-        rc_2                                    (CH_2),
-        rc_3                                    (CH_3),
-        rc_4                                    (CH_4),
-        rc_5                                    (CH_5),
-        rc_6                                    (CH_6),
-        rc_7                                    (CH_7),
-        rc_8                                    (CH_8),
-        rc_9                                    (CH_9),
-        rc_10                                   (CH_10),
-        rc_11                                   (CH_11),
-        rc_12                                   (CH_12),
-        rc_13                                   (CH_13),
-        rc_14                                   (CH_14),
-        rc_15                                   (CH_15),
-        rc_16                                   (CH_16),
-        _dummy(0)
-        {}
 };
 
 /*
@@ -576,11 +534,17 @@ public:
     // internal combustion engine control
     AP_ICEngine ice_control;
 
+    // RC input channels
+    RC_Channels rc_channels;
+    
     // control over servo output ranges
     SRV_Channels servo_channels;
 
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
+    
+    // ArduSoar parameters
+    SoaringController soaring_controller;
 };
 
 extern const AP_Param::Info var_info[];

@@ -32,10 +32,10 @@ public:
     virtual ~AP_BattMonitor_Bebop(void) {};
 
     // initialise
-    void init();
+    void init() override;
 
     // read the latest battery voltage
-    void read();
+    void read() override;
 
 private:
     float _prev_vbat_raw;

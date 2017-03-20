@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
-#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsHeli_Single.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -116,22 +116,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
 
-    // @Group: SV1_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_swash_servo_1, "SV1_", 12, AP_MotorsHeli_Single, RC_Channel),
-
-    // @Group: SV2_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_swash_servo_2, "SV2_", 13, AP_MotorsHeli_Single, RC_Channel),
-
-    // @Group: SV3_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_swash_servo_3, "SV3_", 14, AP_MotorsHeli_Single, RC_Channel),
-
-    // @Group: SV4_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_yaw_servo, "SV4_", 15, AP_MotorsHeli_Single, RC_Channel),
-
     // @Param: RSC_PWM_MIN
     // @DisplayName: RSC PWM output miniumum
     // @Description: This sets the PWM output on RSC channel for maximum rotor speed
@@ -186,18 +170,31 @@ void AP_MotorsHeli_Single::enable()
 }
 
 // init_outputs - initialise Servo/PWM ranges and endpoints
-void AP_MotorsHeli_Single::init_outputs()
+bool AP_MotorsHeli_Single::init_outputs()
 {
+    if (!_flags.initialised_ok) {
+        _swash_servo_1 = SRV_Channels::get_channel_for(SRV_Channel::k_motor1, CH_1);
+        _swash_servo_2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
+        _swash_servo_3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
+        _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
+        _servo_aux = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, CH_7);
+        if (!_swash_servo_1 || !_swash_servo_2 || !_swash_servo_3 || !_yaw_servo || !_servo_aux) {
+            return false;
+        }
+    }
+
     // reset swash servo range and endpoints
     reset_swash_servo (_swash_servo_1);
     reset_swash_servo (_swash_servo_2);
     reset_swash_servo (_swash_servo_3);
 
-    _yaw_servo.set_angle(4500);
+    _yaw_servo->set_angle(4500);
 
     // set main rotor servo range
     // tail rotor servo use range as set in vehicle code for rc7
     _main_rotor.init_servo();
+
+    return true;
 }
 
 // output_test - spin a motor at the pwm value specified
@@ -357,10 +354,10 @@ void AP_MotorsHeli_Single::update_motor_control(RotorControlState state)
 
     if (state == ROTOR_CONTROL_STOP){
         // set engine run enable aux output to not run position to kill engine when disarmed
-        RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_engine_run_enable);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     } else {
         // else if armed, set engine run enable output to run position
-        RC_Channel_aux::set_radio_to_max(RC_Channel_aux::k_engine_run_enable);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
     }
 
     // Check if both rotors are run-up, tail rotor controller always returns true if not enabled

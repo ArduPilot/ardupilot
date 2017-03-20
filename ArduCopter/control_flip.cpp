@@ -55,7 +55,7 @@ bool Copter::flip_init(bool ignore_checks)
     }
 
     // only allow flip when flying
-    if (!motors.armed() || ap.land_complete) {
+    if (!motors->armed() || ap.land_complete) {
         return false;
     }
 
@@ -98,7 +98,7 @@ void Copter::flip_run()
     float recovery_angle;
 
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (!motors.armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - flip_start_time) > FLIP_TIMEOUT_MS)) {
+    if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - flip_start_time) > FLIP_TIMEOUT_MS)) {
         flip_state = Flip_Abandon;
     }
 
@@ -120,7 +120,7 @@ void Copter::flip_run()
 
     case Flip_Start:
         // under 45 degrees request 400deg/sec roll or pitch
-        attitude_control.input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * flip_roll_dir, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * flip_roll_dir, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
 
         // increase throttle
         throttle_out += FLIP_THR_INC;
@@ -139,7 +139,7 @@ void Copter::flip_run()
 
     case Flip_Roll:
         // between 45deg ~ -90deg request 400deg/sec roll
-        attitude_control.input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * flip_roll_dir, 0.0, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * flip_roll_dir, 0.0, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
@@ -151,7 +151,7 @@ void Copter::flip_run()
 
     case Flip_Pitch_A:
         // between 45deg ~ -90deg request 400deg/sec pitch
-        attitude_control.input_rate_bf_roll_pitch_yaw(0.0f, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
@@ -163,7 +163,7 @@ void Copter::flip_run()
 
     case Flip_Pitch_B:
         // between 45deg ~ -90deg request 400deg/sec pitch
-        attitude_control.input_rate_bf_roll_pitch_yaw(0.0, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw(0.0, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
@@ -175,7 +175,7 @@ void Copter::flip_run()
 
     case Flip_Recover:
         // use originally captured earth-frame angle targets to recover
-        attitude_control.input_euler_angle_roll_pitch_yaw(flip_orig_attitude.x, flip_orig_attitude.y, flip_orig_attitude.z, false, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_yaw(flip_orig_attitude.x, flip_orig_attitude.y, flip_orig_attitude.z, false, get_smoothing_gain());
 
         // increase throttle to gain any lost altitude
         throttle_out += FLIP_THR_INC;
@@ -212,8 +212,8 @@ void Copter::flip_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // output pilot's throttle without angle boost
-    attitude_control.set_throttle_out(throttle_out, false, g.throttle_filt);
+    attitude_control->set_throttle_out(throttle_out, false, g.throttle_filt);
 }

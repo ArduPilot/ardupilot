@@ -112,7 +112,13 @@ public:
       enable SBUS out at the given rate
      */
     virtual bool     enable_sbus_out(uint16_t rate_gz) { return false; }
-    
+
+    /*
+     * Optional method to control the update of the motors. Derived classes
+     * can implement it if their HAL layer requires.
+     */
+    virtual void timer_tick(void) { }
+
     /*
       output modes. Allows for support of oneshot
      */

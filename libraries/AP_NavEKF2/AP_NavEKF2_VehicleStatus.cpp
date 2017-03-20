@@ -142,6 +142,22 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
         gpsCheckStatus.bad_hAcc = false;
     }
 
+    // Check for vertical GPS accuracy
+    float vAcc = 0.0f;
+    bool vAccFail = false;
+    if (_ahrs->get_gps().vertical_accuracy(vAcc)) {
+        vAccFail = (vAcc > 7.5f * checkScaler) && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
+    }
+    // Report check result as a text string and bitmask
+    if (vAccFail) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "GPS vert error %.1fm (needs < %.1f)", (double)vAcc, (double)(7.5f * checkScaler));
+        gpsCheckStatus.bad_vAcc = true;
+    } else {
+        gpsCheckStatus.bad_vAcc = false;
+    }
+
     // fail if reported speed accuracy greater than threshold
     bool gpsSpdAccFail = (gpsSpdAccuracy > 1.0f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_SPD_ERR);
 
@@ -207,7 +223,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // record time of fail
-    if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail) {
+    if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || vAccFail ||  yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail) {
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
 
