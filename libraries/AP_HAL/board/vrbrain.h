@@ -45,3 +45,4 @@
 #define EXTERNAL_LED_MOTOR2       31    // Motor2 LED - AN12
 
 #define HAL_HAVE_BOARD_VOLTAGE 0
+#define HAL_PX4_HAVE_MTD_SUPPORT 1
