@@ -91,6 +91,7 @@ public:
     AP_Float drift_speed; // degrees/second/minute
     AP_Float drift_time;  // period in minutes
     AP_Float engine_mul;  // engine multiplier
+    AP_Int8  engine_fail; // defines failed engine
     AP_Int8  gps_disable; // disable simulated GPS
     AP_Int8  gps2_enable; // enable 2nd simulated GPS
     AP_Int8  gps_delay;   // delay in samples

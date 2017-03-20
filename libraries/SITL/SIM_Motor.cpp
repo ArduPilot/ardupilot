@@ -108,3 +108,5 @@ uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_va
     last_value = constrain_float(demand, last_value-max_change, last_value+max_change);
     return uint16_t(last_value+0.5);
 }
+
+

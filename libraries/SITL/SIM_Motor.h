@@ -44,6 +44,7 @@ public:
     uint64_t last_change_usec;
     float last_roll_value, last_pitch_value;
 
+
     Motor(uint8_t _servo, float _angle, float _yaw_factor, uint8_t _display_order) :
         servo(_servo), // what servo output drives this motor
         angle(_angle), // angle in degrees from front
