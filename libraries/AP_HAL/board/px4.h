@@ -77,6 +77,11 @@
 #define HAL_HAVE_BOARD_VOLTAGE 0
 #endif
 
+/* px4fmu-v4 */
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V4
+#define HAL_PX4_HAVE_PX4IO 0
+#endif
+
 /* aerofc-v1 */
 #ifdef CONFIG_ARCH_BOARD_AEROFC_V1
 #define HAL_BARO_MS5607_I2C_ADDR 0x77
@@ -86,6 +91,7 @@
 #define HAL_SERIAL0_BAUD_DEFAULT 460800
 #define HAL_HAVE_BOARD_VOLTAGE 0
 #define HAL_PX4_HAVE_MTD_SUPPORT 0
+#define HAL_PX4_HAVE_PX4IO 0
 #endif
 
 /* default values */
@@ -99,4 +105,8 @@
 
 #ifndef HAL_PX4_HAVE_MTD_SUPPORT
 #define HAL_PX4_HAVE_MTD_SUPPORT 1
+#endif
+
+#ifndef HAL_PX4_HAVE_PX4IO
+#define HAL_PX4_HAVE_PX4IO 1
 #endif
