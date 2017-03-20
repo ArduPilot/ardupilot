@@ -90,6 +90,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("ACC2_BIAS",     57, SITL,  accel2_bias, 0),
     AP_GROUPINFO("GPS_NOISE",     58, SITL,  gps_noise, 0),
     AP_GROUPINFO("GP2_GLITCH",    59, SITL,  gps2_glitch,  0),
+    AP_GROUPINFO("ENGINE_FAIL",   60, SITL,  engine_fail,  0),
     AP_GROUPEND
 };
 
