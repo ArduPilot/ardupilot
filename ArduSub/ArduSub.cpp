@@ -219,12 +219,10 @@ void Sub::fifty_hz_loop()
     // check pilot input failsafe
     failsafe_manual_control_check();
 
-    if (hal.rcin->new_input()) {
-        // Update servo output
-        RC_Channels::set_pwm_all();
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, 20.0f, 0.02f);
-        SRV_Channels::output_ch_all();
-    }
+    // Update servo output
+    RC_Channels::set_pwm_all();
+    SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, g.cam_slew_limit, 0.02f);
+    SRV_Channels::output_ch_all();
 }
 
 // update_mount - update camera mount position

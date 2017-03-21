@@ -227,6 +227,8 @@ public:
         k_param_radio_tuning_high, // Disabled
         k_param_radio_tuning_low, // Disabled
 
+        k_param_cam_slew_limit,
+
     };
 
     AP_Int16        format_version;
@@ -352,6 +354,7 @@ public:
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
 
+    AP_Float cam_slew_limit;
     // Note: keep initializers here in the same order as they are declared
     // above.
     Parameters() :
