@@ -422,16 +422,20 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
     }
 
     if (_msg_chunk.repeats == 0) { // if it's the first time get_next_msg_chunk is called for a given chunk
-        uint8_t character;
+        uint8_t character = 0;
         _msg_chunk.chunk = 0; // clear the 4 bytes of the chunk buffer
-        for(int i = 3; i > -1 && _msg_chunk.char_index < sizeof(_statustext_queue[0]->text); i--) {
+
+        for (int i = 3; i > -1 && _msg_chunk.char_index < sizeof(_statustext_queue[0]->text); i--) {
             character = _statustext_queue[0]->text[_msg_chunk.char_index++];
+
             if (!character) {
                 break;
             }
+
             _msg_chunk.chunk |= character << i * 8;
-        }        
-        if ((!character)||(_msg_chunk.char_index == sizeof(_statustext_queue[0]->text))) { // we've reached the end of the message (string terminated by '\0' or last character of the string has been processed)
+        }
+
+        if (!character || (_msg_chunk.char_index == sizeof(_statustext_queue[0]->text))) { // we've reached the end of the message (string terminated by '\0' or last character of the string has been processed)
             _msg_chunk.char_index = 0; // reset index to get ready to process the next message
             // add severity which is sent as the MSB of the last three bytes of the last chunk (bits 24, 16, and 8) since a character is on 7 bits
             _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x4)<<21;
@@ -439,9 +443,8 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
             _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x1)<<7;
         }
     }
-    
-    _msg_chunk.repeats++;
-    if (_msg_chunk.repeats > 2) { // repeat each message chunk 3 times to ensure transmission
+
+    if (_msg_chunk.repeats++ > 2) { // repeat each message chunk 3 times to ensure transmission
         _msg_chunk.repeats = 0;
         if (_msg_chunk.char_index == 0) { // if we're ready for the next message
             _statustext_queue.remove(0);
