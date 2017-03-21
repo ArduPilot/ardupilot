@@ -283,6 +283,7 @@ private:
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
+    uint32_t _last_body_odm_update_ms = 0;
     void update_SITL(void);
 #endif    
 };
