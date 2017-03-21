@@ -165,9 +165,6 @@ uint8_t PX4GPIO::read(uint8_t pin) {
 
     case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5): {
             uint32_t relays = 0;
-            if (_gpio_io_fd == -1) {
-                return LOW;
-            }
             ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & (1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0))))?HIGH:LOW;
         }
