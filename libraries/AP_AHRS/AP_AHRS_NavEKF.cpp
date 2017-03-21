@@ -262,9 +262,10 @@ void AP_AHRS_NavEKF::update_SITL(void)
     if (_sitl == nullptr) {
         _sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     }
-    if (_sitl && active_EKF_type() == EKF_TYPE_SITL) {
-        const struct SITL::sitl_fdm &fdm = _sitl->state;
 
+    const struct SITL::sitl_fdm &fdm = _sitl->state;
+
+    if (_sitl && active_EKF_type() == EKF_TYPE_SITL) {
         roll  = radians(fdm.rollDeg);
         pitch = radians(fdm.pitchDeg);
         yaw   = radians(fdm.yawDeg);
@@ -286,6 +287,27 @@ void AP_AHRS_NavEKF::update_SITL(void)
                                         fdm.zAccel);
         }
         _accel_ef_ekf_blended = _accel_ef_ekf[0];
+
+    }
+    // use SITL states to write body frame odometry data at 20Hz
+    uint32_t timeStamp_ms = AP_HAL::millis();
+    if (timeStamp_ms - _last_body_odm_update_ms > 50) {
+        float quality = 100.0f;
+        Vector3f posOffset = Vector3f(0.0f,0.0f,0.0f);
+        float delTime = 0.001f*(timeStamp_ms - _last_body_odm_update_ms);
+        _last_body_odm_update_ms = timeStamp_ms;
+        timeStamp_ms -= (timeStamp_ms - _last_body_odm_update_ms)/2; // correct for first order hold average delay
+        Vector3f delAng = Vector3f(radians(fdm.rollRate),
+                                   radians(fdm.pitchRate),
+                                   radians(fdm.yawRate));
+        delAng *= delTime;
+        // rotate earth velocity into body frame and calculate delta position
+        Matrix3f Tbn;
+        Tbn.from_euler(radians(fdm.rollDeg),radians(fdm.pitchDeg),radians(fdm.yawDeg));
+        Vector3f earth_vel = Vector3f(fdm.speedN,fdm.speedE,fdm.speedD);
+        Vector3f delPos = Tbn.transposed() * (earth_vel * delTime);
+        // write to EKF
+        EKF3.writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, posOffset);
     }
 }
 #endif // CONFIG_HAL_BOARD
