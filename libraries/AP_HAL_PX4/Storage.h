@@ -46,6 +46,7 @@ private:
     Bitmask _dirty_mask{PX4_STORAGE_NUM_LINES};
     perf_counter_t  _perf_storage;
     perf_counter_t  _perf_errors;
+    uint32_t _last_re_init_ms;
 
 #if !USE_FLASH_STORAGE
     int _fd = -1;
