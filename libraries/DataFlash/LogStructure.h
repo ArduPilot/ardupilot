@@ -418,6 +418,17 @@ struct PACKED log_RngBcnDebug {
     int16_t posD;           // Down position of receiver rel to EKF origin (cm)
 };
 
+struct PACKED log_ekfBodyOdomDebug {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float velInnovX;
+    float velInnovY;
+    float velInnovZ;
+    float velInnovVarX;
+    float velInnovVarY;
+    float velInnovVarZ;
+};
+
 struct PACKED log_Cmd {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -936,6 +947,8 @@ Format characters in the format string for binary log messages
       "XKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD" }, \
     { LOG_XKQ1_MSG, sizeof(log_Quaternion), "XKQ1", QUAT_FMT, QUAT_LABELS }, \
     { LOG_XKQ2_MSG, sizeof(log_Quaternion), "XKQ2", QUAT_FMT, QUAT_LABELS }, \
+    { LOG_XKFD_MSG, sizeof(log_ekfBodyOdomDebug), \
+      "XKFD","Qffffff","TimeUS,IX,IY,IZ,IVX,IVY,IVZ" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
@@ -1135,6 +1148,7 @@ enum LogMessages {
     LOG_XKF10_MSG,
     LOG_XKQ1_MSG,
     LOG_XKQ2_MSG,
+    LOG_XKFD_MSG,
     LOG_DF_MAV_STATS,
 
     LOG_MSG_SBPHEALTH,

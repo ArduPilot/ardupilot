@@ -1729,6 +1729,24 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             WriteBlock(&pkt10, sizeof(pkt10));
         }
     }
+    // write debug data for body frame odometry fusion
+    Vector3f velBodyInnov,velBodyInnovVar;
+    static uint32_t lastUpdateTime_ms = 0;
+    uint32_t updateTime_ms = ahrs.get_NavEKF3().getBodyFrameOdomDebug(-1, velBodyInnov, velBodyInnovVar);
+    if (updateTime_ms > lastUpdateTime_ms) {
+        struct log_ekfBodyOdomDebug pkt11 = {
+            LOG_PACKET_HEADER_INIT(LOG_XKFD_MSG),
+            time_us : time_us,
+            velInnovX : velBodyInnov.x,
+            velInnovY : velBodyInnov.y,
+            velInnovZ : velBodyInnov.z,
+            velInnovVarX : velBodyInnovVar.x,
+            velInnovVarY : velBodyInnovVar.y,
+            velInnovVarZ : velBodyInnovVar.z
+         };
+        WriteBlock(&pkt11, sizeof(pkt11));
+        updateTime_ms = lastUpdateTime_ms;
+    }
 }
 #endif
 
