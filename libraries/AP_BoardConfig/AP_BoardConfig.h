@@ -35,6 +35,7 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // public method to start a driver
     static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
+    static void px4_sensor_error(const char *reason);
 
     // valid types for BRD_TYPE
     enum px4_board_type {
@@ -103,7 +104,6 @@ private:
     void px4_setup_peripherals(void);
     void px4_setup_px4io(void);
     void px4_tone_alarm(const char *tone_string);
-    void px4_sensor_error(const char *reason);
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
