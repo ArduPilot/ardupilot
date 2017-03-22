@@ -277,9 +277,7 @@ bool AP_FlashStorage::erase_sector(uint8_t sector)
 bool AP_FlashStorage::erase_all(void)
 {
     write_error = false;
-    
-    // start with empty memory buffer
-    memset(mem_buffer, 0, storage_size);
+
     current_sector = 0;
     write_offset = sizeof(struct sector_header);
     
@@ -373,4 +371,18 @@ bool AP_FlashStorage::switch_sectors(void)
     
     write_offset = sizeof(header);
     return true;    
+}
+
+/*
+  re-initialise, using current mem_buffer
+ */
+bool AP_FlashStorage::re_initialise(void)
+{
+    if (!flash_erase_ok()) {
+        return false;
+    }
+    if (!erase_all()) {
+        return false;        
+    }
+    return write_all();
 }
