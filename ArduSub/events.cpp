@@ -34,8 +34,8 @@ void Sub::failsafe_manual_control_check()
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     uint32_t tnow = AP_HAL::millis();
 
-    // Require at least 2Hz update
-    if (tnow > failsafe.last_manual_control_ms + 500) {
+    // Require at least 0.5 Hz update
+    if (tnow > failsafe.last_manual_control_ms + 2000) {
         if (!failsafe.manual_control) {
             failsafe.manual_control = true;
             set_neutral_controls();
