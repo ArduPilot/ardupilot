@@ -75,3 +75,4 @@ Nishchay Agrawal
 Akash Nair
 Borys Tymchenko (spsancti)
 Mahtab Sandhu(ma8sa)
+Vedarth Sharma (Working on rtl)
