@@ -1112,6 +1112,12 @@ void QuadPlane::update_transition(void)
         }
         transition_state = TRANSITION_AIRSPEED_WAIT;
         transition_start_ms = millis();
+        if (!assisted_flight) {
+            // set alt target to current height on transition. This
+            // starts the Z controller off with the right values
+            pos_control->set_alt_target(inertial_nav.get_altitude());
+            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+        }
         assisted_flight = true;
     } else {
         assisted_flight = false;
