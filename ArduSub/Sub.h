@@ -410,9 +410,6 @@ private:
     // Counter of main loop executions.  Used for performance monitoring and failsafe processing
     uint16_t mainLoop_count;
 
-    // Used to exit the roll and pitch auto trim function
-    uint8_t auto_trim_counter;
-
     // Reference to the relay object
     AP_Relay relay;
 
