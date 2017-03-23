@@ -224,6 +224,13 @@ void Sub::fifty_hz_loop()
     SRV_Channels::output_ch_all();
 }
 
+// updates the status of notify
+// should be called at 50hz
+void Sub::update_notify()
+{
+    notify.update();
+}
+
 // update_mount - update camera mount position
 // should be run at 50hz
 void Sub::update_mount()
