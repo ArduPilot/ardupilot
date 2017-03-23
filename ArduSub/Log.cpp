@@ -509,31 +509,6 @@ void Sub::Log_Write_Baro(void)
     }
 }
 
-struct PACKED log_ParameterTuning {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  parameter;     // parameter we are tuning, e.g. 39 is CH6_CIRCLE_RATE
-    float    tuning_value;  // normalized value used inside tuning() function
-    int16_t  control_in;    // raw tune input value
-    int16_t  tuning_low;    // tuning low end value
-    int16_t  tuning_high;   // tuning high end value
-};
-
-void Sub::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high)
-{
-    struct log_ParameterTuning pkt_tune = {
-        LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
-        time_us        : AP_HAL::micros64(),
-        parameter      : param,
-        tuning_value   : tuning_val,
-        control_in     : control_in,
-        tuning_low     : tune_low,
-        tuning_high    : tune_high
-    };
-
-    DataFlash.WriteBlock(&pkt_tune, sizeof(pkt_tune));
-}
-
 // log EKF origin and ahrs home to dataflash
 void Sub::Log_Write_Home_And_Origin()
 {
@@ -603,8 +578,6 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 
 const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-    { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
-      "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
@@ -717,7 +690,6 @@ void Sub::Log_Write_Data(uint8_t id, uint16_t value) {}
 void Sub::Log_Write_Data(uint8_t id, float value) {}
 void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 void Sub::Log_Write_Baro(void) {}
-void Sub::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
 void Sub::Log_Write_Home_And_Origin() {}
 void Sub::Log_Sensor_Health() {}
 void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}

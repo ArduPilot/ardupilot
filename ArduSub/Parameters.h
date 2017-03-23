@@ -222,12 +222,7 @@ public:
         // RC_Mapper Library
         k_param_rcmap, // Disabled
 
-        // CH6 Tuning
-        k_param_radio_tuning, // Disabled
-        k_param_radio_tuning_high, // Disabled
-        k_param_radio_tuning_low, // Disabled
-
-        k_param_cam_slew_limit,
+        k_param_cam_slew_limit = 237,
 
     };
 
@@ -289,11 +284,6 @@ public:
     //
     AP_Int32        log_bitmask;
     AP_Int8         esc_calibrate;
-#if CH6_TUNE_ENABLED == ENABLED
-    AP_Int8         radio_tuning;
-    AP_Int16        radio_tuning_high;
-    AP_Int16        radio_tuning_low;
-#endif
 
     AP_Int8         disarm_delay;
 

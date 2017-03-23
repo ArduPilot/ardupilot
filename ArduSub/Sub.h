@@ -539,7 +539,6 @@ private:
     void Log_Write_Data(uint8_t id, float value);
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
-    void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
     void Log_Write_Home_And_Origin();
     void Log_Sensor_Health();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
@@ -741,9 +740,6 @@ private:
     void check_usb_mux(void);
     bool should_log(uint32_t mask);
     void print_hit_enter();
-#if CH6_TUNE_ENABLED == ENABLED
-    void tuning();
-#endif
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
