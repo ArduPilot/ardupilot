@@ -15,6 +15,10 @@ public:
     uint8_t num_channels() override {
         return SITL_RC_INPUT_CHANNELS;
     }
+    float link_quality() override {
+        // Always perfect link in the simulator
+        return 1.0f;
+    }    
     uint16_t read(uint8_t ch) override;
     uint8_t read(uint16_t* periods, uint8_t len) override;
 

@@ -49,6 +49,14 @@ uint8_t PX4RCInput::num_channels()
     return n;
 }
 
+float PX4RCInput::link_quality() 
+{
+    pthread_mutex_lock(&rcin_mutex);
+    float current_link_quality = _rcin.link_quality;
+    pthread_mutex_unlock(&rcin_mutex);
+    return current_link_quality;
+}
+
 uint16_t PX4RCInput::read(uint8_t ch)
 {
     if (ch >= RC_INPUT_MAX_CHANNELS) {

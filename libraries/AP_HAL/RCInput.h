@@ -26,6 +26,10 @@ public:
      */
     virtual uint8_t  num_channels() = 0;
 
+    /* Return the Link Quality of the RC link. 0.0 = worst quality, 1.0 = best quality. 
+       Some platforms may not support this and will return 0.0 always. */
+    virtual float link_quality() = 0;    
+
     /* Read a single channel at a time */
     virtual uint16_t read(uint8_t ch) = 0;
 
