@@ -189,8 +189,7 @@ public:
         k_param_arming_check, // deprecated, remove
         k_param_angle_max,
         k_param_rangefinder_gain,
-        k_param_gps_hdop_good,
-        k_param_wp_yaw_behavior,
+        k_param_wp_yaw_behavior = 170,
         k_param_xtrack_angle_limit, // Angle limit for crosstrack correction in Auto modes (degrees)
         k_param_pilot_velocity_z_max,
         k_param_pilot_accel_z,
@@ -253,8 +252,6 @@ public:
     AP_Int8         failsafe_terrain;
 
     AP_Int8         xtrack_angle_limit;
-
-    AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         compass_enabled;
 
