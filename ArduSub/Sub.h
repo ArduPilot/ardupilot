@@ -635,7 +635,6 @@ private:
     void failsafe_terrain_check();
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
-    void update_events();
     void failsafe_enable();
     void failsafe_disable();
     void fence_check();

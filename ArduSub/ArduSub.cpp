@@ -362,7 +362,7 @@ void Sub::three_hz_loop()
     fence_check();
 #endif // AC_FENCE_ENABLED
 
-    update_events();
+    ServoRelayEvents.update_events();
 }
 
 // one_hz_loop - runs at 1Hz
