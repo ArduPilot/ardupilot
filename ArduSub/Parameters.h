@@ -197,8 +197,7 @@ public:
         k_param_compass_enabled,
         k_param_surface_depth,
         k_param_rc_speed, // Main output pwm frequency
-        k_param_esc_calibrate, // Boot-time ESC calibration behavior
-        k_param_gcs_pid_mask,
+        k_param_gcs_pid_mask = 178,
         k_param_throttle_filt,
         k_param_throttle_deadzone, // Used in auto-throttle modes
         k_param_disarm_delay,
@@ -283,7 +282,6 @@ public:
     // Misc
     //
     AP_Int32        log_bitmask;
-    AP_Int8         esc_calibrate;
 
     AP_Int8         disarm_delay;
 
