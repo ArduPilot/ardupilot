@@ -86,9 +86,6 @@ void Sub::velhold_run()
         return;
     }
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 

@@ -70,10 +70,6 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
 #endif
 
-    // Remember Orientation
-    // --------------------
-    init_simple_bearing();
-
     initial_armed_bearing = ahrs.yaw_sensor;
 
     if (ap.home_state == HOME_UNSET) {

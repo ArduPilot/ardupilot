@@ -435,64 +435,6 @@ void Sub::update_GPS(void)
     }
 }
 
-void Sub::init_simple_bearing()
-{
-    // capture current cos_yaw and sin_yaw values
-    simple_cos_yaw = ahrs.cos_yaw();
-    simple_sin_yaw = ahrs.sin_yaw();
-
-    // initialise super simple heading (i.e. heading towards home) to be 180 deg from simple mode heading
-    super_simple_last_bearing = wrap_360_cd(ahrs.yaw_sensor+18000);
-    super_simple_cos_yaw = simple_cos_yaw;
-    super_simple_sin_yaw = simple_sin_yaw;
-
-    // log the simple bearing to dataflash
-    if (should_log(MASK_LOG_ANY)) {
-        Log_Write_Data(DATA_INIT_SIMPLE_BEARING, ahrs.yaw_sensor);
-    }
-}
-
-// update_simple_mode - rotates pilot input if we are in simple mode
-void Sub::update_simple_mode(void)
-{
-    float rollx, pitchx;
-
-    // exit immediately if no new radio frame or not in simple mode
-    if (ap.simple_mode == 0) {
-        return;
-    }
-
-    if (ap.simple_mode == 1) {
-        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
-        rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
-        pitchx = channel_roll->get_control_in()*simple_sin_yaw + channel_pitch->get_control_in()*simple_cos_yaw;
-    } else {
-        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
-        rollx = channel_roll->get_control_in()*super_simple_cos_yaw - channel_pitch->get_control_in()*super_simple_sin_yaw;
-        pitchx = channel_roll->get_control_in()*super_simple_sin_yaw + channel_pitch->get_control_in()*super_simple_cos_yaw;
-    }
-
-    // rotate roll, pitch input from north facing to vehicle's perspective
-    channel_roll->set_control_in(rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw());
-    channel_pitch->set_control_in(-rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw());
-}
-
-// update_super_simple_bearing - adjusts simple bearing based on location
-// should be called after home_bearing has been updated
-void Sub::update_super_simple_bearing(bool force_update)
-{
-    // check if we are in super simple mode and at least 10m from home
-    if (force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
-        // check the bearing to home has changed by at least 5 degrees
-        if (labs(super_simple_last_bearing - home_bearing) > 500) {
-            super_simple_last_bearing = home_bearing;
-            float angle_rad = radians((super_simple_last_bearing+18000)/100);
-            super_simple_cos_yaw = cosf(angle_rad);
-            super_simple_sin_yaw = sinf(angle_rad);
-        }
-    }
-}
-
 void Sub::read_AHRS(void)
 {
     // Perform IMU calculations and get attitude info

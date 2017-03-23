@@ -233,7 +233,6 @@ private:
     // Documentation of Globals:
     union {
         struct {
-            uint8_t simple_mode         : 2; // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
             uint8_t pre_arm_check       : 1; // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
             uint8_t auto_armed          : 1; // stops auto missions from beginning until throttle is raised
             uint8_t logging_started     : 1; // true if dataflash logging has started
@@ -318,15 +317,6 @@ private:
 
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
-
-    // SIMPLE Mode
-    // Used to track the orientation of the Sub for Simple mode. This value is reset at each arming
-    // or in SuperSimple mode when the Sub leaves a 20m radius from home.
-    float simple_cos_yaw;
-    float simple_sin_yaw;
-    int32_t super_simple_last_bearing;
-    float super_simple_cos_yaw;
-    float super_simple_sin_yaw;
 
     // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
     int32_t initial_armed_bearing;
@@ -489,15 +479,11 @@ private:
     void one_hz_loop();
     void update_GPS(void);
     void update_turn_counter();
-    void init_simple_bearing();
-    void update_simple_mode(void);
-    void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
     void update_altitude();
     void set_home_state(enum HomeState new_home_state);
     bool home_is_set();
     void set_auto_armed(bool b);
-    void set_simple_mode(uint8_t b);
     void set_failsafe_battery(bool b);
     void set_pre_arm_check(bool b);
     void set_motor_emergency_stop(bool b);

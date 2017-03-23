@@ -50,9 +50,6 @@ void Sub::althold_run()
 
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // get pilot desired lean angles
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
