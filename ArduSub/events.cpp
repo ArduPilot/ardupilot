@@ -294,9 +294,3 @@ bool Sub::should_disarm_on_failsafe()
         break;
     }
 }
-
-void Sub::update_events()
-{
-    ServoRelayEvents.update_events();
-}
-
