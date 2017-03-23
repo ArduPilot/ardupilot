@@ -610,8 +610,7 @@ private:
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     void guided_limit_init_time_and_pos();
     bool guided_limit_check();
-    bool velhold_init(bool ignore_checks);
-    void velhold_run();
+
     bool poshold_init(bool ignore_checks);
     void poshold_run();
 
