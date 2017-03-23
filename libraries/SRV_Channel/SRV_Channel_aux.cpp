@@ -344,7 +344,8 @@ SRV_Channels::move_servo(SRV_Channel::Aux_servo_function_t function,
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &ch = channels[i];
         if (ch.function.get() == function) {
-            uint16_t pwm = ch.servo_min + v * (ch.servo_max - ch.servo_min);
+            float v2 = ch.get_reversed()? (1-v) : v;
+            uint16_t pwm = ch.servo_min + v2 * (ch.servo_max - ch.servo_min);
             ch.set_output_pwm(pwm);
         }
     }
