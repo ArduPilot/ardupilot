@@ -67,7 +67,6 @@ Sub::Sub(void) :
           pmTest1(0),
           fast_loopTimer(0),
           mainLoop_count(0),
-          auto_trim_counter(0),
           ServoRelayEvents(relay),
 #if CAMERA == ENABLED
           camera(&relay),
