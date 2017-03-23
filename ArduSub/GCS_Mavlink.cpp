@@ -49,7 +49,6 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
     switch (control_mode) {
     case AUTO:
-    case VELHOLD:
     case GUIDED:
     case CIRCLE:
     case POSHOLD:
@@ -140,7 +139,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     case ALT_HOLD:
     case AUTO:
     case GUIDED:
-    case VELHOLD:
     case CIRCLE:
     case SURFACE:
     case POSHOLD:
