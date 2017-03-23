@@ -623,9 +623,6 @@ private:
     bool ekf_over_threshold();
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
-    void esc_calibration_startup_check();
-    void esc_calibration_passthrough();
-    void esc_calibration_auto();
     bool should_disarm_on_failsafe();
     void failsafe_battery_event(void);
     void failsafe_gcs_check();
