@@ -70,7 +70,7 @@ void Sub::failsafe_check()
     }
 }
 
-void Sub::failsafe_battery_event(void)
+void Sub::failsafe_battery_check(void)
 {
     //    // return immediately if low battery event has already been triggered
     //    if (failsafe.battery) {
