@@ -286,6 +286,7 @@ private:
         uint32_t last_manual_control_ms; // last time MANUAL_CONTROL message arrived from GCS
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
+        uint32_t last_battery_warn_ms; // last time a battery failsafe warning was sent to gcs
     } failsafe;
 
     // sensor health for logging
@@ -481,7 +482,6 @@ private:
     void set_home_state(enum HomeState new_home_state);
     bool home_is_set();
     void set_auto_armed(bool b);
-    void set_failsafe_battery(bool b);
     void set_pre_arm_check(bool b);
     void set_motor_emergency_stop(bool b);
     float get_smoothing_gain();

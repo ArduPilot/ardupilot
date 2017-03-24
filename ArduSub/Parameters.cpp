@@ -105,7 +105,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_BATT_ENABLE
     // @DisplayName: Battery Failsafe Enable
     // @Description: Controls whether failsafe will be invoked when battery voltage or current runs low
-    // @Values: 0:Disabled
+    // @Values: 0:Disabled,1:Warn only,2:Disarm,3:Enter surface mode
     // @User: Standard
     GSCALAR(failsafe_battery_enabled, "FS_BATT_ENABLE", FS_BATT_DISABLED),
 

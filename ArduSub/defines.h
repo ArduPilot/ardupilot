@@ -276,8 +276,9 @@ enum RTLState {
 
 // Battery failsafe definitions (FS_BATT_ENABLE parameter)
 #define FS_BATT_DISABLED                    0       // battery failsafe disabled
-#define FS_BATT_SURFACE                     1       // switch to SURFACE mode on battery failsafe
-#define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
+#define FS_BATT_WARN_ONLY                   1       // only warn gcs on battery failsafe
+#define FS_BATT_DISARM                      2       // disarm on battery failsafe
+#define FS_BATT_SURFACE                     3       // switch to SURFACE mode on battery failsafe
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED     0 // Disabled
