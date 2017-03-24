@@ -91,13 +91,7 @@ bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
 {
     // pre-arm rc checks a prerequisite
     pre_arm_rc_checks(display_failure);
-    if (!copter.ap.pre_arm_rc_check) {
-        if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: RC not calibrated");
-        }
-        return false;
-    }
-    return true;
+    return copter.ap.pre_arm_rc_check;
 }
 
 bool AP_Arming_Copter::barometer_checks(bool display_failure)
@@ -357,7 +351,7 @@ void AP_Arming_Copter::pre_arm_rc_checks(const bool display_failure)
         // check if radio has been calibrated
         if (!channel->min_max_configured()) {
             if (display_failure) {
-                copter.gcs_send_text_fmt(MAV_SEVERITY_CRITICAL,"PreArm: %s not configured", channel_name);
+                copter.gcs_send_text_fmt(MAV_SEVERITY_CRITICAL,"PreArm: RC %s not configured", channel_name);
             }
             return;
         }
@@ -579,14 +573,14 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         //check if accelerometers have calibrated and require reboot
         if (_ins.accel_cal_requires_reboot()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers calibrated requires reboot");
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "PreArm: Accels calibrated requires reboot");
             }
             return false;
         }
 
         if (!_ins.get_accel_health_all()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Accelerometers not healthy");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Accels not healthy");
             }
             return false;
         }
