@@ -159,9 +159,10 @@ bool AP_Arming_Copter::fence_checks(bool display_failure)
 {
     #if AC_FENCE == ENABLED
     // check fence is initialised
-    if (!copter.fence.pre_arm_check()) {
-        if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check fence");
+    const char *fail_msg = nullptr;
+    if (!copter.fence.pre_arm_check(fail_msg)) {
+        if (display_failure && fail_msg != nullptr) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: %s", fail_msg);
         }
         return false;
     }
@@ -408,17 +409,17 @@ bool AP_Arming_Copter::pre_arm_gps_checks(bool display_failure)
     }
 
     // check if flight mode requires GPS
-    bool gps_required = copter.mode_requires_GPS(copter.control_mode);
+    bool mode_requires_gps = copter.mode_requires_GPS(copter.control_mode);
 
+    // check if fence requires GPS
+    bool fence_requires_gps = false;
     #if AC_FENCE == ENABLED
-    // if circular fence is enabled we need GPS
-    if ((copter.fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) {
-        gps_required = true;
-    }
+    // if circular or polygon fence is enabled we need GPS
+    fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
     #endif
 
     // return true if GPS is not required
-    if (!gps_required) {
+    if (!mode_requires_gps && !fence_requires_gps) {
         AP_Notify::flags.pre_arm_gps_check = true;
         return true;
     }
@@ -430,7 +431,12 @@ bool AP_Arming_Copter::pre_arm_gps_checks(bool display_failure)
             if (reason) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
             } else {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D Fix");
+                if (!mode_requires_gps && fence_requires_gps) {
+                    // clarify to user why they need GPS in non-GPS flight mode
+                    gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Fence enabled, need 3D Fix");
+                } else {
+                    gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D Fix");
+                }
             }
         }
         AP_Notify::flags.pre_arm_gps_check = false;
@@ -698,9 +704,10 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     #if AC_FENCE == ENABLED
     // check vehicle is within fence
-    if (!copter.fence.pre_arm_check()) {
-        if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: check fence");
+    const char *fail_msg = nullptr;
+    if (!copter.fence.pre_arm_check(fail_msg)) {
+        if (display_failure && fail_msg != nullptr) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Arm: %s", fail_msg);
         }
         return false;
     }
