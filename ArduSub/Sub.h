@@ -659,7 +659,6 @@ private:
     bool init_arm_motors(bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
-    void lost_vehicle_check();
     void run_nav_updates(void);
     void calc_position();
     void calc_distance_and_bearing();
