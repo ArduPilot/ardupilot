@@ -1,38 +1,6 @@
 #include "Sub.h"
 
-#define ARM_DELAY               20  // called at 10hz so 2 seconds
-#define DISARM_DELAY            20  // called at 10hz so 2 seconds
-#define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
-
-//static uint32_t auto_disarm_begin;
-
-// auto_disarm_check
-// Automatically disarm the vehicle under some set of conditions
-// What those conditions should be TBD
-void Sub::auto_disarm_check()
-{
-    // Disable for now
-
-    //    uint32_t tnow_ms = millis();
-    //    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
-    //
-    //    // exit immediately if we are already disarmed, or if auto
-    //    // disarming is disabled
-    //    if (!motors.armed() || disarm_delay_ms == 0) {
-    //        auto_disarm_begin = tnow_ms;
-    //        return;
-    //    }
-    //
-    //    if(!mode_has_manual_throttle(control_mode) || !ap.throttle_zero) {
-    //      auto_disarm_begin = tnow_ms;
-    //    }
-    //
-    //    if(tnow > auto_disarm_begin + disarm_delay_ms) {
-    //      init_disarm_motors();
-    //      auto_disarm_begin = tnow_ms;
-    //    }
-}
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
