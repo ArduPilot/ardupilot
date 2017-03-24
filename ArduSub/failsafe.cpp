@@ -194,8 +194,10 @@ void Sub::failsafe_internal_temperature_check()
     }
 }
 
-void Sub::set_leak_status(bool status)
+void Sub::failsafe_leak_check()
 {
+    bool status = leak_detector.get_status();
+
     AP_Notify::flags.leak_detected = status;
 
     // Do nothing if we are dry, or if leak failsafe action is disabled
