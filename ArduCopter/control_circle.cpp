@@ -5,10 +5,10 @@
  */
 
 // circle_init - initialise circle controller flight mode
-bool Copter::circle_init(bool ignore_checks)
+bool Copter::FlightMode_CIRCLE::init(bool ignore_checks)
 {
-    if (position_ok() || ignore_checks) {
-        circle_pilot_yaw_override = false;
+    if (_copter.position_ok() || ignore_checks) {
+        pilot_yaw_override = false;
 
         // initialize speeds and accelerations
         pos_control->set_speed_xy(wp_nav->get_speed_xy());
@@ -28,7 +28,7 @@ bool Copter::circle_init(bool ignore_checks)
 
 // circle_run - runs the circle flight mode
 // should be called at 100hz or more
-void Copter::circle_run()
+void Copter::FlightMode_CIRCLE::run()
 {
     float target_yaw_rate = 0;
     float target_climb_rate = 0;
@@ -56,11 +56,11 @@ void Copter::circle_run()
     }
 
     // process pilot inputs
-    if (!failsafe.radio) {
+    if (!_copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-            circle_pilot_yaw_override = true;
+            pilot_yaw_override = true;
         }
 
         // get pilot desired climb rate
@@ -82,14 +82,14 @@ void Copter::circle_run()
     circle_nav->update();
 
     // call attitude controller
-    if (circle_pilot_yaw_override) {
+    if (pilot_yaw_override) {
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(circle_nav->get_roll(), circle_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
     }else{
         attitude_control->input_euler_angle_roll_pitch_yaw(circle_nav->get_roll(), circle_nav->get_pitch(), circle_nav->get_yaw(),true, get_smoothing_gain());
     }
 
     // adjust climb rate using rangefinder
-    if (rangefinder_alt_ok()) {
+    if (_copter.rangefinder_alt_ok()) {
         // if rangefinder is ok, use surface tracking
         target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
     }

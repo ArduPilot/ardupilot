@@ -224,12 +224,6 @@ private:
     OpticalFlow optflow{ahrs};
 #endif
 
-    // gnd speed limit required to observe optical flow sensor limits
-    float ekfGndSpdLimit;
-
-    // scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
-    float ekfNavVelGainScaler;
-
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms = 0;
     int8_t ekf_primary_core;
@@ -248,7 +242,7 @@ private:
 #endif
 
     // Documentation of GLobals:
-    union {
+    typedef union {
         struct {
             uint8_t unused1                 : 1; // 0
             uint8_t simple_mode             : 2; // 1,2     // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
@@ -275,7 +269,9 @@ private:
             uint8_t in_arming_delay         : 1; // 24      // true while we are armed but waiting to spin motors
         };
         uint32_t value;
-    } ap;
+    } ap_t;
+
+    ap_t ap;
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
@@ -291,13 +287,6 @@ private:
         int8_t last_switch_position;        // switch position in previous iteration
         uint32_t last_edge_time_ms;         // system time that switch position was last changed
     } control_switch_state;
-
-    struct {
-        bool running;
-        float max_speed;
-        float alt_delta;
-        uint32_t start_ms;
-    } takeoff_state;
 
     // altitude below which we do no navigation in auto takeoff
     float auto_takeoff_no_nav_alt_cm;
@@ -368,29 +357,6 @@ private:
         float descend_max; // centimetres
     } nav_payload_place;
 
-    // Auto
-    AutoMode auto_mode;   // controls which auto controller is run
-
-    // Guided
-    GuidedMode guided_mode;  // controls which controller is run (pos or vel)
-
-    // RTL
-    RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
-    bool rtl_state_complete; // set to true if the current state is completed
-
-    struct {
-        // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
-        Location_Class origin_point;
-        Location_Class climb_target;
-        Location_Class return_target;
-        Location_Class descent_target;
-        bool land;
-        bool terrain_used;
-    } rtl_path;
-
-    // Circle
-    bool circle_pilot_yaw_override; // true if pilot is overriding yaw
-
     // SIMPLE Mode
     // Used to track the orientation of the copter for Simple mode. This value is reset at each arming
     // or in SuperSimple mode when the copter leaves a 20m radius from home.
@@ -407,26 +373,9 @@ private:
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
     uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
-    // Brake
-    uint32_t brake_timeout_start;
-    uint32_t brake_timeout_ms;
-
     // Delay the next navigation command
     int32_t nav_delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
     uint32_t nav_delay_time_start;
-
-    // Flip
-    Vector3f flip_orig_attitude;         // original copter attitude before flip
-
-    // throw mode state
-    struct {
-        ThrowModeStage stage;
-        ThrowModeStage prev_stage;
-        uint32_t last_log_ms;
-        bool nextmode_attempted;
-        uint32_t free_fall_start_ms;    // system time free fall was detected
-        float free_fall_start_velz;     // vertical velocity when free fall was detected
-    } throw_state = {Throw_Disarmed, Throw_Disarmed, 0, false, 0, 0.0f};
 
     // Battery Sensors
     AP_BattMonitor battery;
@@ -489,7 +438,12 @@ private:
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
-    AC_AttitudeControl *attitude_control;
+#if FRAME_CONFIG == HELI_FRAME
+    #define AC_AttitudeControl_t AC_AttitudeControl_Heli
+#else
+    #define AC_AttitudeControl_t AC_AttitudeControl_Multi
+#endif
+    AC_AttitudeControl_t *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
     AC_Circle *circle_nav;
@@ -503,8 +457,6 @@ private:
     uint32_t fast_loopTimer;
     // Counter of main loop executions.  Used for performance monitoring and failsafe processing
     uint16_t mainLoop_count;
-    // Loiter timer - Records how long we have been in loiter
-    uint32_t rtl_loiter_start_time;
     // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.
     uint32_t arm_time_ms;
 
@@ -698,8 +650,6 @@ private:
     void gcs_check_input(void);
     void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void do_erase_logs(void);
-    void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
-    void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
     void Log_Write_Current();
     void Log_Write_Optflow();
     void Log_Write_Nav_Tuning();
@@ -760,168 +710,23 @@ private:
     void log_picture();
     MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
     void delay(uint32_t ms);
-    bool acro_init(bool ignore_checks);
-    void acro_run();
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
-    bool althold_init(bool ignore_checks);
-    void althold_run();
-    bool auto_init(bool ignore_checks);
-    void auto_run();
-    void auto_takeoff_start(const Location& dest_loc);
-    void auto_takeoff_run();
-    void auto_wp_start(const Vector3f& destination);
-    void auto_wp_start(const Location_Class& dest_loc);
-    void auto_wp_run();
-    void auto_spline_run();
-    void auto_land_start();
-    void auto_land_start(const Vector3f& destination);
-    void auto_land_run();
     void do_payload_place(const AP_Mission::Mission_Command& cmd);
-    void auto_payload_place_start();
-    void auto_payload_place_start(const Vector3f& destination);
-    void auto_payload_place_run();
-    bool auto_payload_place_run_should_run();
-    void auto_payload_place_run_loiter();
-    void auto_payload_place_run_descend();
-    void auto_payload_place_run_release();
-    void auto_rtl_start();
-    void auto_rtl_run();
-    void auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
-    void auto_circle_start();
-    void auto_circle_run();
-    void auto_nav_guided_start();
-    void auto_nav_guided_run();
-    bool auto_loiter_start();
-    void auto_loiter_run();
     uint8_t get_default_auto_yaw_mode(bool rtl);
     void set_auto_yaw_mode(uint8_t yaw_mode);
     void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle);
     void set_auto_yaw_roi(const Location &roi_location);
     float get_auto_heading(void);
-    bool autotune_init(bool ignore_checks);
-    void autotune_stop();
-    bool autotune_start(bool ignore_checks);
-    void autotune_run();
-    void autotune_attitude_control();
-    void autotune_backup_gains_and_initialise();
-    void autotune_load_orig_gains();
-    void autotune_load_tuned_gains();
-    void autotune_load_intra_test_gains();
-    void autotune_load_twitch_gains();
-    void autotune_save_tuning_gains();
-    void autotune_update_gcs(uint8_t message_id);
-    bool autotune_roll_enabled();
-    bool autotune_pitch_enabled();
-    bool autotune_yaw_enabled();
-    void autotune_twitching_test(float measurement, float target, float &measurement_min, float &measurement_max);
-    void autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
-    void autotune_updating_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
-    void autotune_updating_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float target, float measurement_max);
-    void autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float target, float measurement_max);
-    void autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
-    void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
-    void autotune_get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
     void avoidance_adsb_update(void);
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
-    bool brake_init(bool ignore_checks);
-    void brake_run();
-    void brake_timeout_to_loiter_ms(uint32_t timeout_ms);
-    bool circle_init(bool ignore_checks);
-    void circle_run();
-    bool drift_init(bool ignore_checks);
-    void drift_run();
-    float get_throttle_assist(float velz, float pilot_throttle_scaled);
-    bool flip_init(bool ignore_checks);
-    void flip_run();
-    bool guided_init(bool ignore_checks);
-    bool guided_takeoff_start(float final_alt_above_home);
-    void guided_pos_control_start();
-    void guided_vel_control_start();
-    void guided_posvel_control_start();
-    void guided_angle_control_start();
-    bool guided_set_destination(const Vector3f& destination);
-    bool guided_set_destination(const Location_Class& dest_loc);
-    void guided_set_velocity(const Vector3f& velocity);
-    void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
-    void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
-    void guided_run();
-    void guided_takeoff_run();
-    void guided_pos_control_run();
-    void guided_vel_control_run();
-    void guided_posvel_control_run();
-    void guided_angle_control_run();
-    void guided_set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
-    void guided_limit_clear();
-    void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
-    void guided_limit_init_time_and_pos();
-    bool guided_limit_check();
-    bool guided_nogps_init(bool ignore_checks);
-    void guided_nogps_run();
-    bool land_init(bool ignore_checks);
-    void land_run();
-    void land_gps_run();
-    void land_nogps_run();
-    int32_t land_get_alt_above_ground(void);
-    void land_run_vertical_control(bool pause_descent = false);
-    void land_run_horizontal_control();
-    void land_do_not_use_GPS();
     void set_mode_land_with_pause(mode_reason_t reason);
-    bool landing_with_GPS();
-    bool loiter_init(bool ignore_checks);
-    void loiter_run();
-#if PRECISION_LANDING == ENABLED
-    bool do_precision_loiter() const;
-    void precision_loiter_xy();
-    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
-    bool _precision_loiter_enabled;
-#endif
-    bool poshold_init(bool ignore_checks);
-    void poshold_run();
-    void poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
-    int16_t poshold_mix_controls(float mix_ratio, int16_t first_control, int16_t second_control);
-    void poshold_update_brake_angle_from_velocity(int16_t &brake_angle, float velocity);
-    void poshold_update_wind_comp_estimate();
-    void poshold_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle);
-    void poshold_roll_controller_to_pilot_override();
-    void poshold_pitch_controller_to_pilot_override();
 
-    // Throw to launch functionality
-    bool throw_init(bool ignore_checks);
-    void throw_run();
-    bool throw_detected();
-    bool throw_attitude_good();
-    bool throw_height_good();
-    bool throw_position_good();
-
-    bool rtl_init(bool ignore_checks);
-    void rtl_restart_without_terrain();
-    void rtl_run();
-    void rtl_climb_start();
-    void rtl_return_start();
-    void rtl_climb_return_run();
-    void rtl_loiterathome_start();
-    void rtl_loiterathome_run();
-    void rtl_descent_start();
-    void rtl_descent_run();
-    void rtl_land_start();
-    void rtl_land_run();
-    void rtl_build_path(bool terrain_following_allowed);
-    void rtl_compute_return_target(bool terrain_following_allowed);
-    bool sport_init(bool ignore_checks);
-    void sport_run();
-    bool stabilize_init(bool ignore_checks);
-    void stabilize_run();
     void crash_check();
     void parachute_check();
     void parachute_release();
     void parachute_manual_release();
-
-    // support for AP_Avoidance custom flight mode, AVOID_ADSB
-    bool avoid_adsb_init(bool ignore_checks);
-    void avoid_adsb_run();
-    bool avoid_adsb_set_velocity(const Vector3f& velocity_neu);
 
     void ekf_check();
     bool ekf_over_threshold();
@@ -948,21 +753,14 @@ private:
     void update_sensor_status_flags(void);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     bool gcs_set_mode(uint8_t mode) { return set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND); }
-    void update_flight_mode();
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
-    bool mode_requires_GPS(control_mode_t mode);
     bool mode_has_manual_throttle(control_mode_t mode);
-    bool mode_allows_arming(control_mode_t mode, bool arming_from_gcs);
-    void notify_flight_mode(control_mode_t mode);
+    void notify_flight_mode();
     void heli_init();
     void check_dynamic_flight(void);
     void update_heli_control_dynamics(void);
     void heli_update_landing_swash();
     void heli_update_rotor_speed_targets();
-    bool heli_acro_init(bool ignore_checks);
-    void heli_acro_run();
-    bool heli_stabilize_init(bool ignore_checks);
-    void heli_stabilize_run();
     void read_inertia();
     bool land_complete_maybe();
     void update_land_and_crash_detectors();
@@ -1065,11 +863,6 @@ private:
     void allocate_motors(void);
     uint8_t get_frame_mav_type();
     const char* get_frame_string();
-    bool current_mode_has_user_takeoff(bool must_navigate);
-    bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
-    void takeoff_timer_start(float alt_cm);
-    void takeoff_stop();
-    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     void print_hit_enter();
     void tuning();
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
@@ -1124,6 +917,60 @@ private:
     void init_capabilities(void);
     void dataflash_periodic(void);
     void accel_cal_update(void);
+
+#include "FlightMode.h"
+
+    Copter::FlightMode *flightmode;
+
+#if FRAME_CONFIG == HELI_FRAME
+    Copter::FlightMode_ACRO_Heli flightmode_acro{*this};
+#else
+    Copter::FlightMode_ACRO flightmode_acro{*this};
+#endif
+
+    Copter::FlightMode_ALTHOLD flightmode_althold{*this};
+
+    Copter::FlightMode_AUTO flightmode_auto{*this, mission, circle_nav};
+
+#if AUTOTUNE_ENABLED == ENABLED
+    Copter::FlightMode_AUTOTUNE flightmode_autotune{*this};
+#endif
+
+    Copter::FlightMode_BRAKE flightmode_brake{*this};
+
+    Copter::FlightMode_CIRCLE flightmode_circle{*this, circle_nav};
+
+    Copter::FlightMode_DRIFT flightmode_drift{*this};
+
+    Copter::FlightMode_FLIP flightmode_flip{*this};
+
+    Copter::FlightMode_GUIDED flightmode_guided{*this};
+
+    Copter::FlightMode_LAND flightmode_land{*this};
+
+    Copter::FlightMode_LOITER flightmode_loiter{*this};
+
+#if POSHOLD_ENABLED == ENABLED
+    Copter::FlightMode_POSHOLD flightmode_poshold{*this};
+#endif
+
+    Copter::FlightMode_RTL flightmode_rtl{*this};
+
+#if FRAME_CONFIG == HELI_FRAME
+    Copter::FlightMode_STABILIZE_Heli flightmode_stabilize{*this};
+#else
+    Copter::FlightMode_STABILIZE flightmode_stabilize{*this};
+#endif
+
+    Copter::FlightMode_SPORT flightmode_sport{*this};
+
+    Copter::FlightMode_AVOID_ADSB flightmode_avoid_adsb{*this};
+
+    Copter::FlightMode_THROW flightmode_throw{*this};
+
+    Copter::FlightMode_GUIDED_NOGPS flightmode_guided_nogps{*this};
+
+    Copter::FlightMode *flightmode_for_mode(const uint8_t mode);
 
 public:
     void mavlink_delay_cb();

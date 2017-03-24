@@ -5,9 +5,9 @@
  */
 
 // brake_init - initialise brake controller
-bool Copter::brake_init(bool ignore_checks)
+bool Copter::FlightMode_BRAKE::init(bool ignore_checks)
 {
-    if (position_ok() || ignore_checks) {
+    if (_copter.position_ok() || ignore_checks) {
 
         // set desired acceleration to zero
         wp_nav->clear_pilot_desired_acceleration();
@@ -25,7 +25,7 @@ bool Copter::brake_init(bool ignore_checks)
             pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
         }
 
-        brake_timeout_ms = 0;
+        _timeout_ms = 0;
 
         return true;
     }else{
@@ -35,7 +35,7 @@ bool Copter::brake_init(bool ignore_checks)
 
 // brake_run - runs the brake controller
 // should be called at 100hz or more
-void Copter::brake_run()
+void Copter::FlightMode_BRAKE::run()
 {
     // if not auto armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
@@ -60,7 +60,7 @@ void Copter::brake_run()
 
     // if landed immediately disarm
     if (ap.land_complete) {
-        init_disarm_motors();
+        _copter.init_disarm_motors();
     }
 
     // set motors to full range
@@ -78,15 +78,15 @@ void Copter::brake_run()
     pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
     pos_control->update_z_controller();
 
-    if (brake_timeout_ms != 0 && millis()-brake_timeout_start >= brake_timeout_ms) {
-        if (!set_mode(LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
-            set_mode(ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
+    if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {
+        if (!_copter.set_mode(LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
+            _copter.set_mode(ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
         }
     }
 }
 
-void Copter::brake_timeout_to_loiter_ms(uint32_t timeout_ms)
+void Copter::FlightMode_BRAKE::timeout_to_loiter_ms(uint32_t timeout_ms)
 {
-    brake_timeout_start = millis();
-    brake_timeout_ms = timeout_ms;
+    _timeout_start = millis();
+    _timeout_ms = timeout_ms;
 }

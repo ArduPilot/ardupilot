@@ -5,7 +5,7 @@
  */
 
 // loiter_init - initialise loiter controller
-bool Copter::loiter_init(bool ignore_checks)
+bool Copter::FlightMode_LOITER::init(bool ignore_checks)
 {
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter Loiter if the Rotor Runup is not complete
@@ -14,7 +14,7 @@ bool Copter::loiter_init(bool ignore_checks)
     }
 #endif
 
-    if (position_ok() || ignore_checks) {
+    if (_copter.position_ok() || ignore_checks) {
 
         // set target to current position
         wp_nav->init_loiter_target();
@@ -36,7 +36,7 @@ bool Copter::loiter_init(bool ignore_checks)
 }
 
 #if PRECISION_LANDING == ENABLED
-bool Copter::do_precision_loiter() const
+bool Copter::FlightMode_LOITER::do_precision_loiter() const
 {
     if (!_precision_loiter_enabled) {
         return false;
@@ -48,21 +48,21 @@ bool Copter::do_precision_loiter() const
     if (wp_nav->get_pilot_desired_acceleration().length() > 50.0f) {
         return false;
     }
-    if (!precland.target_acquired()) {
+    if (!_copter.precland.target_acquired()) {
         return false; // we don't have a good vector
     }
     return true;
 }
 
-void Copter::precision_loiter_xy()
+void Copter::FlightMode_LOITER::precision_loiter_xy()
 {
     wp_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel_rel;
-    if (!precland.get_target_position_cm(target_pos)) {
+    if (!_copter.precland.get_target_position_cm(target_pos)) {
         target_pos.x = inertial_nav.get_position().x;
         target_pos.y = inertial_nav.get_position().y;
     }
-    if (!precland.get_target_velocity_relative_cms(target_vel_rel)) {
+    if (!_copter.precland.get_target_velocity_relative_cms(target_vel_rel)) {
         target_vel_rel.x = -inertial_nav.get_velocity().x;
         target_vel_rel.y = -inertial_nav.get_velocity().y;
     }
@@ -73,7 +73,7 @@ void Copter::precision_loiter_xy()
 
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
-void Copter::loiter_run()
+void Copter::FlightMode_LOITER::run()
 {
     LoiterModeState loiter_state;
     float target_yaw_rate = 0.0f;
@@ -85,7 +85,7 @@ void Copter::loiter_run()
     pos_control->set_accel_z(g.pilot_accel_z);
 
     // process pilot inputs unless we are in radio failsafe
-    if (!failsafe.radio) {
+    if (!_copter.failsafe.radio) {
         // apply SIMPLE mode transform to pilot inputs
         update_simple_mode();
 
@@ -210,7 +210,7 @@ void Copter::loiter_run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
 
         // adjust climb rate using rangefinder
-        if (rangefinder_alt_ok()) {
+        if (_copter.rangefinder_alt_ok()) {
             // if rangefinder is ok, use surface tracking
             target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
         }
