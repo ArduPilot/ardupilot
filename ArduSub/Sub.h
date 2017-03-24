@@ -279,6 +279,7 @@ private:
         uint8_t leak                 : 1; // true if leak recently detected
         uint8_t internal_pressure    : 1; // true if internal pressure is over threshold
         uint8_t internal_temperature : 1; // true if temperature is over threshold
+        uint8_t crash                : 1; // true if we are crashed
         uint32_t last_leak_warn_ms;      // last time a leak warning was sent to gcs
         uint32_t last_gcs_warn_ms;
 
@@ -287,6 +288,7 @@ private:
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
         uint32_t last_battery_warn_ms; // last time a battery failsafe warning was sent to gcs
+        uint32_t last_crash_warn_ms; // last time a crash warning was sent to gcs
     } failsafe;
 
     // sensor health for logging
@@ -618,7 +620,7 @@ private:
     void stabilize_run();
     bool manual_init(bool ignore_checks);
     void manual_run();
-    void crash_check(uint32_t dt_seconds);
+    void failsafe_crash_check();
     void ekf_check();
     bool ekf_over_threshold();
     void failsafe_ekf_event();

@@ -185,8 +185,6 @@ void Sub::fast_loop()
     // check if ekf has reset target heading
     check_ekf_yaw_reset();
 
-    crash_check(MAIN_LOOP_SECONDS);
-
     // run the attitude controllers
     update_flight_mode();
 
@@ -215,6 +213,8 @@ void Sub::fifty_hz_loop()
 
     // check pilot input failsafe
     failsafe_manual_control_check();
+
+    failsafe_crash_check();
 
     // Update servo output
     RC_Channels::set_pwm_all();
