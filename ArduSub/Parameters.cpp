@@ -306,9 +306,9 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_CRASH_CHECK
     // @DisplayName: Crash check enable
     // @Description: This enables automatic crash checking. When enabled the motors will disarm if a crash is detected.
-    // @Values: 0:Disabled
+    // @Values: 0:Disabled,1:Warn only,2:Disarm
     // @User: Advanced
-    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    0),
+    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    FS_CRASH_DISABLED),
 
     // @Param: JS_GAIN_DEFAULT
     // @DisplayName: Default gain at boot

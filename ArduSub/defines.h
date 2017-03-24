@@ -304,6 +304,11 @@ enum RTLState {
 #define FS_TEMP_DISABLED        0
 #define FS_TEMP_WARN_ONLY       1
 
+// Crash failsafe options
+#define FS_CRASH_DISABLED  0
+#define FS_CRASH_WARN_ONLY 1
+#define FS_CRASH_DISARM    2
+
 // Terrain failsafe actions for AUTO mode
 #define FS_TERRAIN_DISARM       0
 #define FS_TERRAIN_HOLD         1
