@@ -237,6 +237,43 @@ enum RTLState {
 // Baro specific error codes
 #define ERROR_CODE_BARO_GLITCH              2
 
+//////////////////////////////////////////////////////////////////////////////
+// Battery monitoring
+//
+#ifndef FS_BATT_VOLTAGE_DEFAULT
+# define FS_BATT_VOLTAGE_DEFAULT       0       // default battery voltage below which failsafe will be triggered
+#endif
+
+#ifndef FS_BATT_MAH_DEFAULT
+# define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
+#endif
+
+// GCS failsafe
+#ifndef FS_GCS
+# define FS_GCS                        DISABLED
+#endif
+#ifndef FS_GCS_TIMEOUT_MS
+# define FS_GCS_TIMEOUT_MS             2500    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
+#endif
+
+// missing terrain data failsafe
+#ifndef FS_TERRAIN_TIMEOUT_MS
+#define FS_TERRAIN_TIMEOUT_MS          1000     // 1 second of unhealthy rangefinder and/or missing terrain data will trigger failsafe
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+//  EKF Failsafe
+// EKF failsafe definitions (FS_EKF_ENABLE parameter)
+#define FS_EKF_ACTION_DISABLED                  1       // Disabled, not implemented yet in Sub
+
+#ifndef FS_EKF_ACTION_DEFAULT
+# define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_DISABLED  // EKF failsafe
+#endif
+
+#ifndef FS_EKF_THRESHOLD_DEFAULT
+# define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
+#endif
+
 // Battery failsafe definitions (FS_BATT_ENABLE parameter)
 #define FS_BATT_DISABLED                    0       // battery failsafe disabled
 #define FS_BATT_SURFACE                     1       // switch to SURFACE mode on battery failsafe
@@ -274,9 +311,6 @@ enum RTLState {
 // Amount of time to attempt recovery of valid rangefinder data before
 // initiating terrain failsafe action
 #define FS_TERRAIN_RECOVER_TIMEOUT_MS 10000
-
-// EKF failsafe definitions (FS_EKF_ENABLE parameter)
-#define FS_EKF_ACTION_DISABLED                  1       // Disabled, not implemented yet in Sub
 
 // for mavlink SET_POSITION_TARGET messages
 #define MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE      ((1<<0) | (1<<1) | (1<<2))

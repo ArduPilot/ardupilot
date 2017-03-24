@@ -139,40 +139,6 @@
 # define MAV_SYSTEM_ID          1
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef FS_BATT_VOLTAGE_DEFAULT
-# define FS_BATT_VOLTAGE_DEFAULT       0       // default battery voltage below which failsafe will be triggered
-#endif
-
-#ifndef FS_BATT_MAH_DEFAULT
-# define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
-#endif
-
-// GCS failsafe
-#ifndef FS_GCS
-# define FS_GCS                        DISABLED
-#endif
-#ifndef FS_GCS_TIMEOUT_MS
-# define FS_GCS_TIMEOUT_MS             2500    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
-#endif
-
-// missing terrain data failsafe
-#ifndef FS_TERRAIN_TIMEOUT_MS
-#define FS_TERRAIN_TIMEOUT_MS          1000     // 1 second of unhealthy rangefinder and/or missing terrain data will trigger failsafe
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-//  EKF Failsafe
-#ifndef FS_EKF_ACTION_DEFAULT
-# define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_DISABLED  // EKF failsafe
-#endif
-#ifndef FS_EKF_THRESHOLD_DEFAULT
-# define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
-#endif
-
 #ifndef EKF_ORIGIN_MAX_DIST_M
 # define EKF_ORIGIN_MAX_DIST_M         50000   // EKF origin and waypoints (including home) must be within 50km
 #endif
