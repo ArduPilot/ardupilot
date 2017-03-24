@@ -782,7 +782,7 @@ private:
     void dataflash_periodic(void);
     void accel_cal_update(void);
 
-    void set_leak_status(bool status);
+    void failsafe_leak_check();
     void failsafe_internal_pressure_check();
     void failsafe_internal_temperature_check();
 
