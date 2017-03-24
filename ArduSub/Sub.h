@@ -624,7 +624,7 @@ private:
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
     bool should_disarm_on_failsafe();
-    void failsafe_battery_event(void);
+    void failsafe_battery_check(void);
     void failsafe_gcs_check();
     void failsafe_manual_control_check(void);
     void set_neutral_controls(void);
