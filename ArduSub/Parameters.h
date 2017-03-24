@@ -199,8 +199,7 @@ public:
         k_param_gcs_pid_mask = 178,
         k_param_throttle_filt,
         k_param_throttle_deadzone, // Used in auto-throttle modes
-        k_param_disarm_delay,
-        k_param_terrain_follow,
+        k_param_terrain_follow = 182,
         k_param_rc_feel_rp,
         k_param_throttle_gain,
         k_param_cam_tilt_center,
@@ -279,8 +278,6 @@ public:
     // Misc
     //
     AP_Int32        log_bitmask;
-
-    AP_Int8         disarm_delay;
 
     AP_Int8         fs_ekf_action;
     AP_Int8         fs_crash_check;
