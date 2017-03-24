@@ -1,37 +1,31 @@
 #include "Sub.h"
 
-//
-//  failsafe support
-//  Andrew Tridgell, December 2011
-//
-//  our failsafe strategy is to detect main loop lockup and disarm the motors
-//
+/*
+ * failsafe.cpp
+ * Failsafe checks and actions
+ */
 
 static bool failsafe_enabled = false;
 static uint16_t failsafe_last_mainLoop_count;
 static uint32_t failsafe_last_timestamp;
 static bool in_failsafe;
 
-//
-// failsafe_enable - enable failsafe
-//
+// Enable mainloop lockup failsafe
 void Sub::failsafe_enable()
 {
     failsafe_enabled = true;
     failsafe_last_timestamp = micros();
 }
 
-//
-// failsafe_disable - used when we know we are going to delay the mainloop significantly
-//
+// Disable mainloop lockup failsafe
+// Used when we know we are going to delay the mainloop significantly.
 void Sub::failsafe_disable()
 {
     failsafe_enabled = false;
 }
 
-//
-//  failsafe_check - this function is called from the core timer interrupt at 1kHz.
-//
+// This function is called from the core timer interrupt at 1kHz.
+// This checks that the mainloop is running, and has not locked up.
 void Sub::failsafe_check()
 {
     uint32_t tnow = AP_HAL::micros();
@@ -71,6 +65,7 @@ void Sub::failsafe_check()
 }
 
 // Battery failsafe check
+// Check the battery voltage and remaining capacity
 void Sub::failsafe_battery_check(void)
 {
     // Do nothing if the failsafe is disabled, or if we are disarmed
@@ -115,6 +110,8 @@ void Sub::failsafe_battery_check(void)
     }
 }
 
+// MANUAL_CONTROL failsafe check
+// Make sure that we are receiving MANUAL_CONTROL at an appropriate interval
 void Sub::failsafe_manual_control_check()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
@@ -136,6 +133,9 @@ void Sub::failsafe_manual_control_check()
 #endif
 }
 
+// Internal pressure failsafe check
+// Check if the internal pressure of the watertight electronics enclosure
+// has exceeded the maximum specified by the FS_PRESS_MAX parameter
 void Sub::failsafe_internal_pressure_check()
 {
 
@@ -165,6 +165,9 @@ void Sub::failsafe_internal_pressure_check()
     }
 }
 
+// Internal temperature failsafe check
+// Check if the internal temperature of the watertight electronics enclosure
+// has exceeded the maximum specified by the FS_TEMP_MAX parameter
 void Sub::failsafe_internal_temperature_check()
 {
 
@@ -194,6 +197,7 @@ void Sub::failsafe_internal_temperature_check()
     }
 }
 
+// Check if we are leaking and perform appropiate action
 void Sub::failsafe_leak_check()
 {
     bool status = leak_detector.get_status();
