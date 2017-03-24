@@ -829,6 +829,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
     }
     float climbrate = baro.get_climb_rate();
     float drift_offset = baro.get_baro_drift_offset();
+    float ground_temp = baro.get_ground_temperature();
     struct log_BARO pkt = {
         LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
         time_us       : time_us,
@@ -838,6 +839,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
         climbrate     : climbrate,
         sample_time_ms: baro.get_last_update(0),
         drift_offset  : drift_offset,
+        ground_temp   : ground_temp,
     };
     WriteBlock(&pkt, sizeof(pkt));
 
@@ -851,6 +853,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
             climbrate     : climbrate,
             sample_time_ms: baro.get_last_update(1),
             drift_offset  : drift_offset,
+            ground_temp   : ground_temp,
         };
         WriteBlock(&pkt2, sizeof(pkt2));
     }
@@ -865,6 +868,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
             climbrate     : climbrate,
             sample_time_ms: baro.get_last_update(2),
             drift_offset  : drift_offset,
+            ground_temp   : ground_temp,
         };
         WriteBlock(&pkt3, sizeof(pkt3));
     }
