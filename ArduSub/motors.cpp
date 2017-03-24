@@ -1,7 +1,5 @@
 #include "Sub.h"
 
-#define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
-
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
 bool Sub::init_arm_motors(bool arming_from_gcs)
@@ -134,29 +132,6 @@ void Sub::motors_output()
             motors.set_interlock(!ap.motor_emergency_stop);
         }
         motors.output();
-    }
-}
-
-// check for pilot stick input to trigger lost vehicle alarm
-void Sub::lost_vehicle_check()
-{
-    static uint8_t soundalarm_counter;
-
-    // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors.armed() && (channel_roll->get_control_in() > 4000) && (channel_pitch->get_control_in() > 4000)) {
-        if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
-            if (AP_Notify::flags.vehicle_lost == false) {
-                AP_Notify::flags.vehicle_lost = true;
-                gcs_send_text(MAV_SEVERITY_NOTICE,"Locate vehicle alarm");
-            }
-        } else {
-            soundalarm_counter++;
-        }
-    } else {
-        soundalarm_counter = 0;
-        if (AP_Notify::flags.vehicle_lost == true) {
-            AP_Notify::flags.vehicle_lost = false;
-        }
     }
 }
 
