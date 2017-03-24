@@ -70,33 +70,49 @@ void Sub::failsafe_check()
     }
 }
 
+// Battery failsafe check
 void Sub::failsafe_battery_check(void)
 {
-    //    // return immediately if low battery event has already been triggered
-    //    if (failsafe.battery) {
-    //        return;
-    //    }
-    //
-    //    // failsafe check
-    //  if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
-    //      if (should_disarm_on_failsafe()) {
-    //          init_disarm_motors();
-    //      } else {
-    //          if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
-    //              set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-    //          } else {
-    //              set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-    //          }
-    //      }
-    //  }
-    //
-    //    // set the low battery flag
-    //    set_failsafe_battery(true);
-    //
-    //    // warn the ground station and log to dataflash
-    //    gcs_send_text(MAV_SEVERITY_WARNING,"Low battery");
-    //    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
+    // Do nothing if the failsafe is disabled, or if we are disarmed
+    if (g.failsafe_battery_enabled == FS_BATT_DISABLED || !motors.armed()) {
+        failsafe.battery = false;
+        AP_Notify::flags.failsafe_battery = false;
+        return; // Failsafe disabled, nothing to do
+    }
 
+    if (!battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
+        failsafe.battery = false;
+        AP_Notify::flags.failsafe_battery = false;
+        return; // Battery is doing well
+    }
+
+    // Always warn when failsafe condition is met
+    if (AP_HAL::millis() > failsafe.last_battery_warn_ms + 20000) {
+        failsafe.last_battery_warn_ms = AP_HAL::millis();
+        gcs_send_text(MAV_SEVERITY_WARNING, "Low battery");
+    }
+
+    // Don't do anything if failsafe has already been set
+    if (failsafe.battery) {
+        return;
+    }
+
+    failsafe.battery = true;
+    AP_Notify::flags.failsafe_battery = true;
+
+    // Log failsafe
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
+
+    switch(g.failsafe_battery_enabled) {
+    case FS_BATT_SURFACE:
+        set_mode(SURFACE, MODE_REASON_BATTERY_FAILSAFE);
+        break;
+    case FS_BATT_DISARM:
+        init_disarm_motors();
+        break;
+    default:
+        break;
+    }
 }
 
 void Sub::failsafe_manual_control_check()

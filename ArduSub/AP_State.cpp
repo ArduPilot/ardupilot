@@ -38,13 +38,6 @@ void Sub::set_auto_armed(bool b)
 }
 
 // ---------------------------------------------
-void Sub::set_failsafe_battery(bool b)
-{
-    failsafe.battery = b;
-    AP_Notify::flags.failsafe_battery = b;
-}
-
-// ---------------------------------------------
 
 void Sub::set_pre_arm_check(bool b)
 {
