@@ -6,7 +6,7 @@ void Rover::init_barometer(bool full_calibration)
     if (full_calibration) {
         barometer.calibrate();
     } else {
-        barometer.update_calibration();
+        barometer.update_calibration(gps);
     }
     gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }

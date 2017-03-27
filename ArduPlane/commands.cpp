@@ -141,5 +141,5 @@ void Plane::update_home()
             GCS_MAVLINK::send_home_all(loc);
         }
     }
-    barometer.update_calibration();
+    update_barometer_calibration();
 }

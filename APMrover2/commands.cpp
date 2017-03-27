@@ -102,5 +102,5 @@ void Rover::update_home()
             GCS_MAVLINK::send_home_all(gps.location());
         }
     }
-    barometer.update_calibration();
+    barometer.update_calibration(gps);
 }
