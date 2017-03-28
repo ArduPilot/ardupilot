@@ -30,6 +30,7 @@
 #include "AP_GPS_QURT.h"
 #include "AP_GPS_SBF.h"
 #include "AP_GPS_SBP.h"
+#include "AP_GPS_SBP2.h"
 #include "AP_GPS_SIRF.h"
 #include "AP_GPS_UBLOX.h"
 #include "AP_GPS_MAV.h"
@@ -526,6 +527,11 @@ void AP_GPS::detect_instance(uint8_t instance)
             new_gps = new AP_GPS_MTK(*this, state[instance], _port[instance]);
         }
 #endif
+        else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
+                 AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
+            _broadcast_gps_type("SBP", instance, dstate->current_baud);
+            new_gps = new AP_GPS_SBP2(*this, state[instance], _port[instance]);
+        }
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
             _broadcast_gps_type("SBP", instance, dstate->current_baud);

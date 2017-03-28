@@ -24,19 +24,19 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
-class AP_GPS_SBP : public AP_GPS_Backend
+class AP_GPS_SBP2 : public AP_GPS_Backend
 {
 public:
-    AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_SBP2(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
+    AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
     // Methods
-    bool read();
+    bool read() override;
 
     void inject_data(const uint8_t *data, uint16_t len) override;
 
-    static bool _detect(struct SBP_detect_state &state, uint8_t data);
+    static bool _detect(struct SBP2_detect_state &state, uint8_t data);
 
 private:
 
@@ -63,24 +63,21 @@ private:
 
     static const uint8_t SBP_PREAMBLE = 0x55;
 
-    //Message types supported by this driver
+    // Message types supported by this driver
     static const uint16_t SBP_STARTUP_MSGTYPE        = 0xFF00;
     static const uint16_t SBP_HEARTBEAT_MSGTYPE      = 0xFFFF;
-    static const uint16_t SBP_GPS_TIME_MSGTYPE       = 0x0100;
-    static const uint16_t SBP_DOPS_MSGTYPE           = 0x0206;
-    static const uint16_t SBP_POS_ECEF_MSGTYPE       = 0x0200;
-    static const uint16_t SBP_POS_LLH_MSGTYPE        = 0x0201;
-    static const uint16_t SBP_BASELINE_ECEF_MSGTYPE  = 0x0202;
-    static const uint16_t SBP_BASELINE_NED_MSGTYPE   = 0x0203;
-    static const uint16_t SBP_VEL_ECEF_MSGTYPE       = 0x0204;
-    static const uint16_t SBP_VEL_NED_MSGTYPE        = 0x0205;
-    static const uint16_t SBP_TRACKING_STATE_MSGTYPE = 0x0016;
+    static const uint16_t SBP_GPS_TIME_MSGTYPE       = 0x0102;
+    static const uint16_t SBP_DOPS_MSGTYPE           = 0x0208;
+    static const uint16_t SBP_POS_ECEF_MSGTYPE       = 0x0209;
+    static const uint16_t SBP_POS_LLH_MSGTYPE        = 0x020A;
+    static const uint16_t SBP_BASELINE_ECEF_MSGTYPE  = 0x020B;
+    static const uint16_t SBP_BASELINE_NED_MSGTYPE   = 0x020C;
+    static const uint16_t SBP_VEL_ECEF_MSGTYPE       = 0x020D;
+    static const uint16_t SBP_VEL_NED_MSGTYPE        = 0x020E;
+    static const uint16_t SBP_TRACKING_STATE_MSGTYPE = 0x0013;
     static const uint16_t SBP_IAR_STATE_MSGTYPE      = 0x0019;
 
     // Heartbeat
-    // struct sbp_heartbeat_t {
-    //     uint32_t flags; //< Status flags (reserved)
-    // }; // 4 bytes
     struct PACKED sbp_heartbeat_t {
         bool sys_error : 1;
         bool io_error : 1;
@@ -97,7 +94,10 @@ private:
         uint16_t wn;     //< GPS week number (unit: weeks)
         uint32_t tow;    //< GPS Time of Week rounded to the nearest ms (unit: ms)
         int32_t ns;      //< Nanosecond remainder of rounded tow (unit: ns)
-        uint8_t flags;   //< Status flags (reserved)
+        struct PACKED flags {
+            uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX
+            uint8_t res:5;       //< Reserved
+        } flags;
     }; // 11 bytes
 
     // Dilution of Precision
@@ -108,7 +108,12 @@ private:
         uint16_t tdop;   //< Time Dilution of Precision (unit: 0.01)
         uint16_t hdop;   //< Horizontal Dilution of Precision (unit: 0.01)
         uint16_t vdop;   //< Vertical Dilution of Precision (unit: 0.01)
-    }; // 14 bytes
+        struct PACKED flags {
+            uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX
+            uint8_t res:4;       //< Reserved
+            bool raim_repair:1;  //< Solution from RAIM?
+        } flags;
+    }; // 15 bytes
 
     // Geodetic position solution.
     struct PACKED sbp_pos_llh_t {
@@ -119,7 +124,11 @@ private:
         uint16_t h_accuracy;  //< Horizontal position accuracy estimate (unit: mm)
         uint16_t v_accuracy;  //< Vertical position accuracy estimate (unit: mm)
         uint8_t n_sats;       //< Number of satellites used in solution
-        uint8_t flags;        //< Status flags
+        struct PACKED flags {
+            uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX
+            uint8_t res:4;       //< Reserved
+            bool raim_repair:1;  //< Solution from RAIM?
+        } flags;
     }; // 34 bytes
 
     // Velocity in NED Velocity in local North East Down (NED) coordinates.
@@ -131,20 +140,11 @@ private:
         uint16_t h_accuracy;   //< Horizontal velocity accuracy estimate (unit: mm/s)
         uint16_t v_accuracy;   //< Vertical velocity accuracy estimate (unit: mm/s)
         uint8_t n_sats;        //< Number of satellites used in solution
-        uint8_t flags;         //< Status flags (reserved)
+        struct PACKED flags {
+            uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX
+            uint8_t res:5;       //< Reserved
+        } flags;
     }; // 22 bytes
-
-    // Activity and Signal-to-Noise data of a tracking channel on the GPS.
-    struct PACKED sbp_tracking_state_t {
-        uint8_t state;         //< 0 if disabled, 1 if running
-        uint8_t prn;           //< PRN identifier of tracked satellite
-        float cn0;             //< carrier to noise power ratio.
-    };
-
-    // Integer Ambiguity Resolution state - how is the RTK resolution doing?
-    struct PACKED sbp_iar_state_t {
-        uint32_t num_hypotheses;
-    };
 
     void _sbp_process();
     void _sbp_process_message();
@@ -153,18 +153,17 @@ private:
     // ************************************************************************
     // Internal Received Messages State
     // ************************************************************************
-    uint32_t last_heatbeat_received_ms;
+    uint32_t last_heartbeat_received_ms;
     uint32_t last_injected_data_ms;
 
-    struct sbp_gps_time_t last_gps_time;
-    struct sbp_dops_t     last_dops;
-    struct sbp_pos_llh_t  last_pos_llh_spp;
-    struct sbp_pos_llh_t  last_pos_llh_rtk;
-    struct sbp_vel_ned_t  last_vel_ned;
-    uint32_t              last_iar_num_hypotheses;
+    struct sbp_heartbeat_t last_heartbeat;
+    struct sbp_gps_time_t  last_gps_time;
+    struct sbp_dops_t      last_dops;
+    struct sbp_pos_llh_t   last_pos_llh;
+    struct sbp_vel_ned_t   last_vel_ned;
 
-    uint32_t              last_full_update_tow;
-    uint32_t              last_full_update_cpu_ms;
+    uint32_t               last_full_update_tow;
+    uint16_t               last_full_update_wn;
 
     // ************************************************************************
     // Monitoring and Performance Counting
@@ -179,5 +178,7 @@ private:
     void logging_log_full_update();
     void logging_log_raw_sbp(uint16_t msg_type, uint16_t sender_id, uint8_t msg_len, uint8_t *msg_buff);
 
+    int32_t distMod(int32_t tow1_ms, int32_t tow2_ms, int32_t mod);
 
 };
+
