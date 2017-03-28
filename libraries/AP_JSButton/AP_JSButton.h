@@ -52,15 +52,24 @@ public:
         k_relay_2_off           = 55,           ///< trigger relay off
         k_relay_2_toggle        = 56,           ///< trigger relay toggle
         // 57-60 reserved for future functions
-        k_servo_1_inc           = 61,           ///< increase servo 1 output
-        k_servo_1_dec           = 62,           ///< decrease servo 1 output
-        k_servo_1_center        = 63,           ///< center servo 1 output
-        k_servo_2_inc           = 64,           ///< increase servo 2 output
-        k_servo_2_dec           = 65,           ///< decrease servo 2 output
-        k_servo_2_center        = 66,           ///< center servo 2 output
-        k_servo_3_inc           = 67,           ///< increase servo 3 output
-        k_servo_3_dec           = 68,           ///< decrease servo 3 output
-        k_servo_3_center        = 69,           ///< center servo 3 output
+        k_servo_1_inc           = 61,           ///< increase servo output
+        k_servo_1_dec           = 62,           ///< decrease servo output
+        k_servo_1_min           = 63,           ///< center servo
+        k_servo_1_max           = 64,           ///< set servo output to minimum (SERVOn_MIN)
+        k_servo_1_center        = 65,           ///< set servo output to maximum (SERVOn_MAX)
+
+        k_servo_2_inc           = 66,
+        k_servo_2_dec           = 67,
+        k_servo_2_min           = 68,
+        k_servo_2_max           = 69,
+        k_servo_2_center        = 70,
+
+        k_servo_3_inc           = 71,
+        k_servo_3_dec           = 72,
+        k_servo_3_min           = 73,
+        k_servo_3_max           = 74,
+        k_servo_3_center        = 75,
+
         // 70-89 reserved for future functions
         k_custom_1              = 91,           ///< custom user button 1
         k_custom_2              = 92,           ///< custom user button 2
