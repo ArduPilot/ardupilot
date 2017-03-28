@@ -398,7 +398,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         motors_on = ((input.servos[2]-1500)/500.0f) != 0;
     } else {
         motors_on = false;
-        // apply engine multiplier to first motor
+        // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
         input.servos[engine_fail] = ((input.servos[engine_fail]-1000) * engine_mul) + 1000;
         // run checks on each motor
         for (i=0; i<4; i++) {
