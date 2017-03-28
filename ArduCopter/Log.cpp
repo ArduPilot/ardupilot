@@ -59,7 +59,6 @@ bool Copter::print_log_menu(void)
     return(true);
 }
 
-#if CLI_ENABLED == ENABLED
 int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv)
 {
     int16_t dump_log_num;
@@ -85,7 +84,6 @@ int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv)
     Log_Read((uint16_t)dump_log_num, dump_log_start, dump_log_end);
     return (0);
 }
-#endif
 
 int8_t Copter::erase_logs(uint8_t argc, const Menu::arg *argv)
 {
