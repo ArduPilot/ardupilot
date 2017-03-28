@@ -59,6 +59,7 @@ public:
     friend class AP_GPS_QURT;
     friend class AP_GPS_SBF;
     friend class AP_GPS_SBP;
+    friend class AP_GPS_SBP2;
     friend class AP_GPS_SIRF;
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
@@ -83,7 +84,7 @@ public:
         GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
         GPS_TYPE_MAV = 14,
-        GPS_TYPE_NOVA = 15,
+        GPS_TYPE_NOVA = 15
     };
 
     /// GPS status codes
@@ -131,15 +132,15 @@ public:
         float ground_course;                ///< ground course in degrees
         uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint16_t vdop;                      ///< vertical dilution of precision in cm
-        uint8_t num_sats;                   ///< Number of visible satellites        
+        uint8_t num_sats;                   ///< Number of visible satellites
         Vector3f velocity;                  ///< 3D velocitiy in m/s, in NED format
-        float speed_accuracy;
-        float horizontal_accuracy;
-        float vertical_accuracy;
-        bool have_vertical_velocity:1;      ///< does this GPS give vertical velocity?
-        bool have_speed_accuracy:1;
-        bool have_horizontal_accuracy:1;
-        bool have_vertical_accuracy:1;
+        float speed_accuracy;               ///< 3D velocity accuracy estimate in m/s
+        float horizontal_accuracy;          ///< horizontal accuracy estimate in m
+        float vertical_accuracy;            ///< vertical accuracy estimate in m
+        bool have_vertical_velocity:1;      ///< does GPS give vertical velocity? Set to true only once available.
+        bool have_speed_accuracy:1;         ///< does GPS give speed accuracy? Set to true only once available.
+        bool have_horizontal_accuracy:1;    ///< does GPS give horizontal position accuracy? Set to true only once available.
+        bool have_vertical_accuracy:1;      ///< does GPS give vertical position accuract? Set to true only once available.
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
     };
 
@@ -297,10 +298,10 @@ public:
     }
 
 	// return true if the GPS supports vertical velocity values
-    bool have_vertical_velocity(uint8_t instance) const { 
-        return state[instance].have_vertical_velocity; 
+    bool have_vertical_velocity(uint8_t instance) const {
+        return state[instance].have_vertical_velocity;
     }
-    bool have_vertical_velocity(void) const { 
+    bool have_vertical_velocity(void) const {
         return have_vertical_velocity(primary_instance);
     }
 
@@ -312,7 +313,7 @@ public:
     const Vector3f &get_antenna_offset(uint8_t instance) const;
 
     // set position for HIL
-    void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
+    void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms,
                 const Location &location, const Vector3f &velocity, uint8_t num_sats,
                 uint16_t hdop);
 
@@ -425,6 +426,7 @@ private:
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
+        struct SBP2_detect_state sbp2_detect_state;
         struct ERB_detect_state erb_detect_state;
     } detect_state[GPS_MAX_RECEIVERS];
 
@@ -442,7 +444,7 @@ private:
     void _broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index);
 
     /*
-      buffer for re-assembling RTCM data for GPS injection. 
+      buffer for re-assembling RTCM data for GPS injection.
       The 8 bit flags field in GPS_RTCM_DATA is interpreted as:
               1 bit for "is fragmented"
               2 bits for fragment number
