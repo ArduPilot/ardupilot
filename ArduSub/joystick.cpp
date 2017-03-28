@@ -25,6 +25,8 @@ bool toggle_mode = true;
 const uint8_t SERVO_CHAN_1 = 9; // Pixhawk Aux1
 const uint8_t SERVO_CHAN_2 = 10; // Pixhawk Aux2
 const uint8_t SERVO_CHAN_3 = 11; // Pixhawk Aux3
+
+uint8_t roll_pitch_flag = false; // Flag to adjust roll/pitch instead of forward/lateral
 }
 
 void Sub::init_joystick()
@@ -84,17 +86,33 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     }
 
     // Set channels to override
-    channels[0] = 1500 + pitchTrim;                           // pitch
-    channels[1] = 1500 + rollTrim;                            // roll
-    channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900);  // throttle
-    channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                       // yaw
-    channels[4] = mode_switch_pwm;                                       // for testing only
-    channels[5] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900);           // forward for ROV
-    channels[6] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900);           // lateral for ROV
-    channels[7] = cam_tilt;                                   // camera tilt
-    channels[8] = lights1;                                    // lights 1
-    channels[9] = lights2;                                    // lights 2
-    channels[10] = video_switch;                              // video switch
+    if (!roll_pitch_flag) {
+        channels[0] = 1500 + pitchTrim; // pitch
+        channels[1] = 1500 + rollTrim;  // roll
+    } else {
+        // adjust roll and pitch with joystick input instead of forward and lateral
+        channels[0] = constrain_int16((x+pitchTrim)*rpyScale+rpyCenter,1100,1900);
+        channels[1] = constrain_int16((y+rollTrim)*rpyScale+rpyCenter,1100,1900);
+    }
+
+    channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900); // throttle
+    channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                 // yaw
+    channels[4] = mode_switch_pwm;                                                 // for testing only
+
+    if (!roll_pitch_flag) {
+        // adjust forward and lateral with joystick input instead of roll and pitch
+        channels[5] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900); // forward for ROV
+        channels[6] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900); // lateral for ROV
+    } else {
+        // neutralize forward and lateral input while we are adjusting roll and pitch
+        channels[5] = constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900); // forward for ROV
+        channels[6] = constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900); // lateral for ROV
+    }
+
+    channels[7] = cam_tilt;      // camera tilt
+    channels[8] = lights1;       // lights 1
+    channels[9] = lights2;       // lights 2
+    channels[10] = video_switch; // video switch
 
     // Store old x, y, z values for use in input hold logic
     x_last = x;
@@ -456,6 +474,12 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
         ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
     }
+        break;
+
+    case JSButton::button_function_t::k_roll_pitch_toggle:
+        if (!held) {
+            roll_pitch_flag = !roll_pitch_flag;
+        }
         break;
 
     case JSButton::button_function_t::k_custom_1:
