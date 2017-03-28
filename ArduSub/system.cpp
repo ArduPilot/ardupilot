@@ -8,71 +8,10 @@
 *
 *****************************************************************************/
 
-#if CLI_ENABLED == ENABLED
-
-// This is the help function
-int8_t Sub::main_menu_help(uint8_t argc, const Menu::arg *argv)
-{
-    cliSerial->printf("Commands:\n"
-                      "  logs\n"
-                      "  setup\n"
-                      "  test\n"
-                      "  reboot\n"
-                      "\n");
-    return (0);
-}
-
-// Command/function table for the top-level menu.
-const struct Menu::command main_menu_commands[] = {
-    //   command        function called
-    //   =======        ===============
-    {"logs",                MENU_FUNC(process_logs)},
-    {"setup",               MENU_FUNC(setup_mode)},
-    {"test",                MENU_FUNC(test_mode)},
-    {"reboot",              MENU_FUNC(reboot_board)},
-    {"help",                MENU_FUNC(main_menu_help)},
-};
-
-// Create the top-level menu object.
-MENU(main_menu, THISFIRMWARE, main_menu_commands);
-
-int8_t Sub::reboot_board(uint8_t argc, const Menu::arg *argv)
-{
-    hal.scheduler->reboot(false);
-    return 0;
-}
-
-// the user wants the CLI. It never exits
-void Sub::run_cli(AP_HAL::UARTDriver *port)
-{
-    cliSerial = port;
-    Menu::set_port(port);
-    port->set_blocking_writes(true);
-
-    // disable the mavlink delay callback
-    hal.scheduler->register_delay_callback(NULL, 5);
-
-    // disable main_loop failsafe
-    failsafe_disable();
-
-    // cut the engines
-    if (motors.armed()) {
-        motors.armed(false);
-        motors.output();
-    }
-
-    while (1) {
-        main_menu.run();
-    }
-}
-
-#endif // CLI_ENABLED
-
 static void mavlink_delay_cb_static()
 {
     sub.mavlink_delay_cb();
 }
-
 
 static void failsafe_check_static()
 {
@@ -96,11 +35,6 @@ void Sub::init_ardupilot()
     cliSerial->printf("\n\nInit " FIRMWARE_STRING
                       "\n\nFree RAM: %u\n",
                       (unsigned)hal.util->available_memory());
-
-    //
-    // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
-    //
-    report_version();
 
     // load parameters from EEPROM
     load_parameters();
@@ -200,19 +134,6 @@ void Sub::init_ardupilot()
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif
-
-#if CLI_ENABLED == ENABLED
-    if (g.cli_enabled) {
-        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        cliSerial->println(msg);
-        if (gcs_chan[1].initialised && (gcs_chan[1].get_uart() != NULL)) {
-            gcs_chan[1].get_uart()->println(msg);
-        }
-        if (num_gcs > 2 && gcs_chan[2].initialised && (gcs_chan[2].get_uart() != NULL)) {
-            gcs_chan[2].get_uart()->println(msg);
-        }
-    }
-#endif // CLI_ENABLED
 
 #if HIL_MODE != HIL_MODE_DISABLED
     while (barometer.get_last_update() == 0) {

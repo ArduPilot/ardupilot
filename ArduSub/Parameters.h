@@ -68,8 +68,7 @@ public:
         k_param_DataFlash, // DataFlash Logging
         k_param_serial_manager, // Serial ports, AP_SerialManager
         k_param_notify, // Notify Library, AP_Notify
-        k_param_cli_enabled, // Old (deprecated) command line interface
-        k_param_arming, // Arming checks
+        k_param_arming = 26, // Arming checks
 
 
         // Sensor objects
@@ -227,9 +226,6 @@ public:
     //
     AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
-#if CLI_ENABLED == ENABLED
-    AP_Int8         cli_enabled;
-#endif
 
     AP_Float        throttle_filt;
 

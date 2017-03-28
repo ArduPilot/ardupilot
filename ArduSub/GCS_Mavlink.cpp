@@ -2033,11 +2033,7 @@ void Sub::gcs_check_input(void)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs_chan[i].initialised) {
-#if CLI_ENABLED == ENABLED
-            gcs_chan[i].update(g.cli_enabled==1?FUNCTOR_BIND_MEMBER(&Sub::run_cli, void, AP_HAL::UARTDriver *):NULL);
-#else
             gcs_chan[i].update(NULL);
-#endif
         }
     }
 }

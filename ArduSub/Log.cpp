@@ -6,150 +6,6 @@
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
-#if CLI_ENABLED == ENABLED
-
-// Creates a constant array of structs representing menu options
-// and stores them in Flash memory, not RAM.
-// User enters the string in the console to call the functions on the right.
-// See class Menu in AP_Coommon for implementation details
-static const struct Menu::command log_menu_commands[] = {
-    {"dump",        MENU_FUNC(dump_log)},
-    {"erase",       MENU_FUNC(erase_logs)},
-    {"enable",      MENU_FUNC(select_logs)},
-    {"disable",     MENU_FUNC(select_logs)}
-};
-
-// A Macro to create the Menu
-MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&sub, &Sub::print_log_menu, bool));
-
-bool Sub::print_log_menu(void)
-{
-    cliSerial->printf("logs enabled: ");
-
-    if (0 == g.log_bitmask) {
-        cliSerial->printf("none");
-    } else {
-        // Macro to make the following code a bit easier on the eye.
-        // Pass it the capitalised name of the log option, as defined
-        // in defines.h but without the LOG_ prefix.  It will check for
-        // the bit being set and print the name of the log option to suit.
-#define PLOG(_s) if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %s", # _s)
-        PLOG(ATTITUDE_FAST);
-        PLOG(ATTITUDE_MED);
-        PLOG(GPS);
-        PLOG(PM);
-        PLOG(CTUN);
-        PLOG(NTUN);
-        PLOG(RCIN);
-        PLOG(IMU);
-        PLOG(CMD);
-        PLOG(CURRENT);
-        PLOG(RCOUT);
-        PLOG(OPTFLOW);
-        PLOG(COMPASS);
-        PLOG(CAMERA);
-        PLOG(PID);
-#undef PLOG
-    }
-
-    cliSerial->println();
-
-    DataFlash.ListAvailableLogs(cliSerial);
-
-    return (true);
-}
-
-#if CLI_ENABLED == ENABLED
-int8_t Sub::dump_log(uint8_t argc, const Menu::arg *argv)
-{
-    int16_t dump_log_num;
-    uint16_t dump_log_start;
-    uint16_t dump_log_end;
-
-    // check that the requested log number can be read
-    dump_log_num = argv[1].i;
-
-    if (dump_log_num == -2) {
-        DataFlash.DumpPageInfo(cliSerial);
-        return (-1);
-    } else if (dump_log_num <= 0) {
-        cliSerial->printf("dumping all\n");
-        Log_Read(0, 1, 0);
-        return (-1);
-    } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
-        cliSerial->printf("bad log number\n");
-        return (-1);
-    }
-
-    DataFlash.get_log_boundaries(dump_log_num, dump_log_start, dump_log_end);
-    Log_Read((uint16_t)dump_log_num, dump_log_start, dump_log_end);
-    return (0);
-}
-#endif
-
-int8_t Sub::erase_logs(uint8_t argc, const Menu::arg *argv)
-{
-    in_mavlink_delay = true;
-    do_erase_logs();
-    in_mavlink_delay = false;
-    return 0;
-}
-
-int8_t Sub::select_logs(uint8_t argc, const Menu::arg *argv)
-{
-    uint16_t bits;
-
-    if (argc != 2) {
-        cliSerial->printf("missing log type\n");
-        return (-1);
-    }
-
-    bits = 0;
-
-    // Macro to make the following code a bit easier on the eye.
-    // Pass it the capitalised name of the log option, as defined
-    // in defines.h but without the LOG_ prefix.  It will check for
-    // that name as the argument to the command, and set the bit in
-    // bits accordingly.
-    //
-    if (!strcasecmp(argv[1].str, "all")) {
-        bits = ~0;
-    } else {
-#define TARG(_s)        if (!strcasecmp(argv[1].str, # _s)) bits |= MASK_LOG_ ## _s
-        TARG(ATTITUDE_FAST);
-        TARG(ATTITUDE_MED);
-        TARG(GPS);
-        TARG(PM);
-        TARG(CTUN);
-        TARG(NTUN);
-        TARG(RCIN);
-        TARG(IMU);
-        TARG(CMD);
-        TARG(CURRENT);
-        TARG(RCOUT);
-        TARG(OPTFLOW);
-        TARG(COMPASS);
-        TARG(CAMERA);
-        TARG(PID);
-#undef TARG
-    }
-
-    if (!strcasecmp(argv[0].str, "enable")) {
-        g.log_bitmask.set_and_save(g.log_bitmask | bits);
-    } else {
-        g.log_bitmask.set_and_save(g.log_bitmask & ~bits);
-    }
-
-    return (0);
-}
-
-int8_t Sub::process_logs(uint8_t argc, const Menu::arg *argv)
-{
-    log_menu.run();
-    return 0;
-}
-#endif // CLI_ENABLED
-
 void Sub::do_erase_logs(void)
 {
     gcs_send_text(MAV_SEVERITY_INFO, "Erasing logs");
@@ -610,22 +466,6 @@ const struct LogStructure Sub::log_structure[] = {
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
 };
 
-#if CLI_ENABLED == ENABLED
-// Read the DataFlash log memory
-void Sub::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
-{
-    cliSerial->printf("\n" FIRMWARE_STRING
-                      "\nFree RAM: %u\n",
-                      (unsigned) hal.util->available_memory());
-
-    cliSerial->println(HAL_BOARD_NAME);
-
-    DataFlash.LogReadProcess(list_entry, start_page, end_page,
-                             FUNCTOR_BIND_MEMBER(&Sub::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),
-                             cliSerial);
-}
-#endif // CLI_ENABLED
-
 void Sub::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
@@ -666,15 +506,6 @@ void Sub::log_init(void)
 }
 
 #else // LOGGING_ENABLED
-
-#if CLI_ENABLED == ENABLED
-bool Sub::print_log_menu(void) { return true; }
-int8_t Sub::dump_log(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Sub::erase_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Sub::select_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Sub::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-void Sub::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page) {}
-#endif // CLI_ENABLED == ENABLED
 
 void Sub::do_erase_logs(void) {}
 void Sub::Log_Write_Current() {}
