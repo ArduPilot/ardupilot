@@ -6,7 +6,6 @@ list below
 ----------------
 Test Developer ...
 
-Shaunaq Narindra
 Chris Anderson
 Phil Cole after following the instructions explicitly.
 Craig Elder was here.
@@ -21,7 +20,6 @@ Benoit GRUSON
 Dario Lindo Andres
 George Zogopoulos Papaliakos, struggling with Git
 Hao Zhou
-
 Shingo Matsuura (assignment)
 Murata Katsutoshi, Yoseijyuku-Sei.
 Hiroshi Kitaoka
@@ -47,7 +45,6 @@ Mitsuhiro Komiya
 Eduardo Cáceres (eduherminio)
 steven test
 Fnoop hello :)
-
 Yuichiro Shibata
 Tsuyoshi Kawamura (retry)
 Natsuki Matsuda
@@ -78,3 +75,4 @@ Borys Tymchenko (spsancti)
 Mahtab Sandhu(ma8sa)
 Vedarth Sharma (Working on rtl)
 Kim Nguyen
+Shaunaq Narindra
