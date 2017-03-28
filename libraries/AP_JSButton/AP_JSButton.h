@@ -44,7 +44,10 @@ public:
         k_trim_pitch_inc        = 46,           ///< increase pitch trim
         k_trim_pitch_dec        = 47,           ///< decrease pitch trim
         k_input_hold_toggle     = 48,           ///< toggle input hold (trim to current controls)
-        // 49-50 reserved for future functions
+        k_roll_pitch_toggle     = 49,           ///< adjust roll/pitch input instead of forward/lateral
+
+        // 50 reserved for future function
+
         k_relay_1_on            = 51,           ///< trigger relay on
         k_relay_1_off           = 52,           ///< trigger relay off
         k_relay_1_toggle        = 53,           ///< trigger relay toggle
