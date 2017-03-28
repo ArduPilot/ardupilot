@@ -3,9 +3,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// this only builds for PX4 so far
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
 // Constructor
 AC_PrecLand_IRLock::AC_PrecLand_IRLock(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state)
     : AC_PrecLand_Backend(frontend, state),
@@ -57,5 +54,3 @@ uint32_t AC_PrecLand_IRLock::los_meas_time_ms() {
 bool AC_PrecLand_IRLock::have_los_meas() {
     return _have_los_meas;
 }
-
-#endif // PX4
