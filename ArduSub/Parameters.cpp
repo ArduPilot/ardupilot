@@ -768,13 +768,6 @@ const AP_Param::Info Sub::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
-    // @Param: WP_NAVALT_MIN
-    // @DisplayName: Minimum navigation altitude
-    // @Description: This is the altitude in meters above which for navigation can begin. This applies in auto takeoff and auto landing.
-    // @Range: 0 5
-    // @User: Standard
-    AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
-
 #if PROXIMITY_ENABLED == ENABLED
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
