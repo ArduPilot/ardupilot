@@ -305,17 +305,17 @@ _options = {
             "hexa": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": "default_params/copter-hexa.parm",
             },
             "octa-quad": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": "default_params/copter-octaquad.parm",
             },
             "octa": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": "default_params/copter-octa.parm",
             },
             "tri": {
                 "make_target": "sitl",
