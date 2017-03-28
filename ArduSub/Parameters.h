@@ -164,8 +164,6 @@ public:
         k_param_pi_vel_xy,
         k_param_p_vel_z,
         k_param_pid_accel_z,
-        k_param_pid_crosstrack_control, // Experimental
-        k_param_pid_heading_control, // Experimental
 
 
         // Failsafes
@@ -186,8 +184,7 @@ public:
 
         // Misc Sub settings
         k_param_log_bitmask = 165,
-        k_param_arming_check, // deprecated, remove
-        k_param_angle_max,
+        k_param_angle_max = 167,
         k_param_rangefinder_gain,
         k_param_wp_yaw_behavior = 170,
         k_param_xtrack_angle_limit, // Angle limit for crosstrack correction in Auto modes (degrees)
