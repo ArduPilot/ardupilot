@@ -70,7 +70,7 @@ public:
         k_servo_3_max           = 74,
         k_servo_3_center        = 75,
 
-        // 70-89 reserved for future functions
+        // 76-90 reserved for future functions
         k_custom_1              = 91,           ///< custom user button 1
         k_custom_2              = 92,           ///< custom user button 2
         k_custom_3              = 93,           ///< custom user button 3
