@@ -12,7 +12,6 @@
 //#define PROXIMITY_ENABLED     DISABLED            // disable proximity sensors
 //#define POSHOLD_ENABLED       DISABLED            // disable PosHold flight mode to save 4.5k of flash
 #define GRIPPER_ENABLED           DISABLED            // disable gripper to save 500bytes of flash
-//#define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 
 // features below are disabled by default on all boards

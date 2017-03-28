@@ -17,7 +17,6 @@ def build(bld):
             'AP_InertialNav',
             'AP_JSButton',
             'AP_LeakDetector',
-            'AP_Menu',
             'AP_Motors',
             'AP_RCMapper',
             'AP_Relay',

@@ -381,12 +381,3 @@
 #ifndef AC_TERRAIN
 #define AC_TERRAIN DISABLED // Requires Rally enabled as well
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Developer Items
-//
-
-// use this to completely disable the CLI
-#ifndef CLI_ENABLED
-#  define CLI_ENABLED           ENABLED
-#endif
