@@ -1843,9 +1843,9 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
         return;
     }
 
-    // create new timesync struct with tc1 field filled in
+    // create new timesync struct with tc1 field as system time in nanoseconds
     mavlink_timesync_t rsync;
-    rsync.tc1 = AP_HAL::micros64();
+    rsync.tc1 = AP_HAL::micros64() * 1000;
     rsync.ts1 = tsync.ts1;
 
     // respond with a timesync message
