@@ -406,6 +406,30 @@ void AP_InertialSensor_Invensense::start()
         adev = DEVTYPE_ACC_MPU6000;
         break;
     }
+
+    /*
+      setup temperature sensitivity and offset. This varies
+      considerably between parts
+     */
+    switch (_mpu_type) {
+    case Invensense_MPU9250:
+        temp_zero = 21;
+        temp_sensitivity = 1.0/340;
+        break;
+
+    case Invensense_MPU6000:
+    case Invensense_MPU6500:
+        temp_zero = 36.53;
+        temp_sensitivity = 1.0/340;
+        break;
+
+    case Invensense_ICM20608:
+    case Invensense_ICM20602:
+        temp_zero = 25;
+        temp_sensitivity = 1.0/326.8; 
+        break;
+    }
+
     _gyro_instance = _imu.register_gyro(1000, _dev->get_bus_id_devtype(gdev));
     _accel_instance = _imu.register_accel(1000, _dev->get_bus_id_devtype(adev));
 
@@ -553,7 +577,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
             _fifo_reset();
             return false;
         }
-        float temp = t2/340.0f + 36.53f;
+        float temp = t2 * temp_sensitivity + temp_zero;
         
         gyro = Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
@@ -643,7 +667,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
     }
 
     if (ret) {
-        float temp = (static_cast<float>(tsum)/n_samples)/340.0f + 36.53f;
+        float temp = (static_cast<float>(tsum)/n_samples)*temp_sensitivity + temp_zero;
         _temp_filtered = _temp_filter.apply(temp);
     }
     
