@@ -1424,6 +1424,12 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+    case MAVLINK_MSG_ID_TIMESYNC:           // MAV ID: 111
+    {
+        handle_timesync(msg);
+        break;
+    }
+
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
         rover.in_log_download = true;
         /* no break */
