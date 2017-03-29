@@ -97,7 +97,7 @@ void AP_BattMonitor_SMBus_Maxell::timer()
 bool AP_BattMonitor_SMBus_Maxell::read_word(uint8_t reg, uint16_t& data) const
 {
     // buffer to hold results (1 extra byte returned holding PEC)
-    uint8_t read_size = 2 + (_pec_support ? 1 : 0);
+    const uint8_t read_size = 2 + (_pec_supported ? 1 : 0);
     uint8_t buff[read_size];    // buffer to hold results
 
     // read three bytes and place in last three bytes of buffer
@@ -107,7 +107,7 @@ bool AP_BattMonitor_SMBus_Maxell::read_word(uint8_t reg, uint16_t& data) const
 
     // check PEC
     if (_pec_support) {
-        uint8_t pec = get_PEC(AP_BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, 2);
+        const uint8_t pec = get_PEC(AP_BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, 2);
         if (pec != buff[2]) {
             return false;
         }
@@ -136,7 +136,7 @@ uint8_t AP_BattMonitor_SMBus_Maxell::read_block(uint8_t reg, uint8_t* data, bool
     }
 
     // buffer to hold results (2 extra byte returned holding length and PEC)
-    uint8_t read_size = bufflen + 1 + (_pec_support ? 1 : 0);
+    const uint8_t read_size = bufflen + 1 + (_pec_supported ? 1 : 0);
     uint8_t buff[read_size];
 
     // read bytes
@@ -208,7 +208,7 @@ bool AP_BattMonitor_SMBus_Maxell::get_pec_support()
 uint8_t AP_BattMonitor_SMBus_Maxell::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool reading, const uint8_t buff[], uint8_t len) const
 {
     // exit immediately if no data
-    if (len <= 0) {
+    if (len == 0) {
         return 0;
     }
 
