@@ -106,6 +106,9 @@ private:
 
     uint16_t _error_count;
 
+    float temp_sensitivity = 1.0/340; // degC/LSB
+    float temp_zero = 36.53; // degC
+    
     float _temp_filtered;
     float _accel_scale;
     LowPassFilter2pFloat _temp_filter;
