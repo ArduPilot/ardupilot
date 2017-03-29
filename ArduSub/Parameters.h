@@ -148,17 +148,8 @@ public:
         k_param_jbtn_15,
 
 
-        // Flight mode selection
-        k_param_flight_mode1 = 120,
-        k_param_flight_mode2,
-        k_param_flight_mode3,
-        k_param_flight_mode4,
-        k_param_flight_mode5,
-        k_param_flight_mode6,
-
-
         // PID Controllers
-        k_param_p_pos_xy,
+        k_param_p_pos_xy = 126,
         k_param_p_alt_hold,
         k_param_pi_vel_xy,
         k_param_p_vel_z,
@@ -258,15 +249,6 @@ public:
     // Throttle
     //
     AP_Int16        throttle_deadzone;
-
-    // Flight modes
-    //
-    AP_Int8         flight_mode1;
-    AP_Int8         flight_mode2;
-    AP_Int8         flight_mode3;
-    AP_Int8         flight_mode4;
-    AP_Int8         flight_mode5;
-    AP_Int8         flight_mode6;
 
     // Misc
     //
