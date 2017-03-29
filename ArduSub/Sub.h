@@ -169,9 +169,6 @@ private:
 
     AP_LeakDetector leak_detector;
 
-    // flight modes convenience array
-    AP_Int8 *flight_modes;
-
     TSYS01 celsius;
     AP_Baro barometer;
     Compass compass;

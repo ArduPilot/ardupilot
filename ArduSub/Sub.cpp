@@ -22,7 +22,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
  */
 Sub::Sub(void) :
     DataFlash {FIRMWARE_STRING},
-          flight_modes(&g.flight_mode1),
           mission(ahrs,
                   FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
                   FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
