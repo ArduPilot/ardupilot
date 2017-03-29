@@ -13,13 +13,16 @@ public:
         k_arm_toggle            = 2,            ///< arm/disarm vehicle toggle
         k_arm                   = 3,            ///< arm vehicle
         k_disarm                = 4,            ///< disarm vehicle
-        k_mode_toggle           = 5,            ///< toggle through available modes
-        k_mode_1                = 6,            ///< enter mode 1
-        k_mode_2                = 7,            ///< enter mode 2
-        k_mode_3                = 8,            ///< enter mode 3
-        k_mode_4                = 9,            ///< enter mode 4
-        k_mode_5                = 10,           ///< enter mode 5
-        k_mode_6                = 11,           ///< enter mode 6
+
+        k_mode_manual           = 5,            ///< enter enter manual mode
+        k_mode_stabilize        = 6,            ///< enter stabilize mode
+        k_mode_depth_hold       = 7,            ///< enter depth hold mode
+        k_mode_poshold          = 8,            ///< enter poshold mode
+        k_mode_auto             = 9,            ///< enter auto mode
+        k_mode_circle           = 10,           ///< enter circle mode
+        k_mode_guided           = 11,           ///< enter guided mode
+        k_mode_acro             = 12,           ///< enter acro mode
+
         // 12-20 reserved for future mode functions
         k_mount_center          = 21,           ///< move mount to center
         k_mount_tilt_up         = 22,           ///< tilt mount up
