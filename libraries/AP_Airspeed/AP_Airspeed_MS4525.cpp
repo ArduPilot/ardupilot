@@ -102,14 +102,20 @@ void AP_Airspeed_MS4525::_measure()
 void AP_Airspeed_MS4525::_collect()
 {
     uint8_t data[4];
+    uint8_t data2[4];
 
     _measurement_started_ms = 0;
 
     if (!_dev->transfer(nullptr, 0, data, sizeof(data))) {
         return;
     }
+    // reread the data, so we can attempt to detect bad inputs
+    if (!_dev->transfer(nullptr, 0, data2, sizeof(data2))) {
+        return;
+    }
 
     uint8_t status = (data[0] & 0xC0) >> 6;
+    // only check the status on the first read, the second read is expected to be stale
     if (status == 2 || status == 3) {
         return;
     }
@@ -119,6 +125,25 @@ void AP_Airspeed_MS4525::_collect()
     dp_raw = 0x3FFF & dp_raw;
     dT_raw = (data[2] << 8) + data[3];
     dT_raw = (0xFFE0 & dT_raw) >> 5;
+
+    int16_t dp_raw2, dT_raw2;
+    dp_raw2 = (data2[0] << 8) + data2[1];
+    dp_raw2 = 0x3FFF & dp_raw2;
+    dT_raw2 = (data2[2] << 8) + data2[3];
+    dT_raw2 = (0xFFE0 & dT_raw2) >> 5;
+
+    // reject any values that are the absolute minimum or maximums these
+    // can happen due to gnd lifts or communication errors on the bus
+    if (dp_raw  == 0x3FFF || dp_raw  == 0 || dT_raw  == 0x7FF || dT_raw == 0 ||
+        dp_raw2 == 0x3FFF || dp_raw2 == 0 || dT_raw2 == 0x7FF || dT_raw2 == 0) {
+        return;
+    }
+
+    // reject any double reads where the value has shifted in the upper more than
+    // 0xFF
+    if (abs(dp_raw - dp_raw2) > 0xFF || abs(dT_raw - dT_raw2) > 0xFF) {
+        return;
+    }
 
     const float P_max = get_psi_range();
     const float P_min = - P_max;
