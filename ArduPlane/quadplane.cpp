@@ -11,7 +11,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Group: M_
     // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
-    AP_SUBGROUPPTR(motors, "M_", 2, QuadPlane, AP_MotorsMulticopter),
+    AP_SUBGROUPVARPTR(motors, "M_", 2, QuadPlane, plane.quadplane.motors_var_info),
 
     // 3 ~ 8 were used by quadplane attitude control PIDs
 
@@ -482,20 +482,19 @@ bool QuadPlane::setup(void)
         break;
     }
 
-    const struct AP_Param::GroupInfo *var_info;
     switch (motor_class) {
     case AP_Motors::MOTOR_FRAME_TRI:
         motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz());
-        var_info = AP_MotorsTri::var_info;
+        motors_var_info = AP_MotorsTri::var_info;
         break;
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
         motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz());
-        var_info = AP_MotorsTailsitter::var_info;
+        motors_var_info = AP_MotorsTailsitter::var_info;
         rotation = ROTATION_PITCH_90;
         break;
     default:
         motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
-        var_info = AP_MotorsMatrix::var_info;
+        motors_var_info = AP_MotorsMatrix::var_info;
         break;
     }
     const static char *strUnableToAllocate = "Unable to allocate";
@@ -504,7 +503,7 @@ bool QuadPlane::setup(void)
         goto failed;
     }
 
-    AP_Param::load_object_from_eeprom(motors, var_info);
+    AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
     // create the attitude view used by the VTOL code
     ahrs_view = ahrs.create_view(rotation);
@@ -1112,6 +1111,12 @@ void QuadPlane::update_transition(void)
         }
         transition_state = TRANSITION_AIRSPEED_WAIT;
         transition_start_ms = millis();
+        if (!assisted_flight) {
+            // set alt target to current height on transition. This
+            // starts the Z controller off with the right values
+            pos_control->set_alt_target(inertial_nav.get_altitude());
+            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+        }
         assisted_flight = true;
     } else {
         assisted_flight = false;

@@ -38,33 +38,6 @@ void Sub::set_auto_armed(bool b)
 }
 
 // ---------------------------------------------
-void Sub::set_simple_mode(uint8_t b)
-{
-    if (ap.simple_mode != b) {
-        if (b == 0) {
-            Log_Write_Event(DATA_SET_SIMPLE_OFF);
-            gcs().send_statustext(MAV_SEVERITY_INFO, 0XFF, "SIMPLE mode off");
-        } else if (b == 1) {
-            Log_Write_Event(DATA_SET_SIMPLE_ON);
-            gcs().send_statustext(MAV_SEVERITY_INFO,  0XFF, "SIMPLE mode on");
-        } else {
-            // initialise super simple heading
-            update_super_simple_bearing(true);
-            Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
-            gcs().send_statustext(MAV_SEVERITY_INFO,  0XFF, "SUPERSIMPLE mode on");
-        }
-        ap.simple_mode = b;
-    }
-}
-
-// ---------------------------------------------
-void Sub::set_failsafe_battery(bool b)
-{
-    failsafe.battery = b;
-    AP_Notify::flags.failsafe_battery = b;
-}
-
-// ---------------------------------------------
 
 void Sub::set_pre_arm_check(bool b)
 {

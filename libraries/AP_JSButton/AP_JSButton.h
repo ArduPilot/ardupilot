@@ -7,9 +7,6 @@ public:
     JSButton();
 
     // Button functions
-    // Value list for parameter convenience:
-    // @Values: 0:Disabled,1:shift,2:arm_toggle,3:arm,4:disarm,5:mode_toggle,6:mode_stab,7:mode_althold,21:mount_center,22:mount_tilt_up,23:mount_tilt_down,24:camera_trigger,25:camera_source_toggle,26:mount_pan_right,27:mount_pan_left,31:light1_cycle,32:lights1_brighter,
-    // 33:lights1_dimmer,34:lights2_cycle,35:lights2_brighter,36:lights2_dimmer,41:gain_toggle,42:gain_inc,43:gain_dec,44:trim_roll_inc,45:trim_roll_dec,46:trim_pitch_inc,47:trim_pitch_dec,48:input_hold_toggle,51:relay_1_on,52:relay_1_off,53:relay_1_toggle,52:relay_2_on,53:relay_2_off,54:relay_2_toggle,91:custom_1,92:custom_2,93:custom_3,94:custom_4,95:custom_5,96:custom_6
     typedef enum {
         k_none                  = 0,            ///< disabled
         k_shift                 = 1,            ///< "shift" buttons to allow more functions
@@ -47,14 +44,36 @@ public:
         k_trim_pitch_inc        = 46,           ///< increase pitch trim
         k_trim_pitch_dec        = 47,           ///< decrease pitch trim
         k_input_hold_toggle     = 48,           ///< toggle input hold (trim to current controls)
-        // 49-50 reserved for future functions
+        k_roll_pitch_toggle     = 49,           ///< adjust roll/pitch input instead of forward/lateral
+
+        // 50 reserved for future function
+
         k_relay_1_on            = 51,           ///< trigger relay on
         k_relay_1_off           = 52,           ///< trigger relay off
         k_relay_1_toggle        = 53,           ///< trigger relay toggle
         k_relay_2_on            = 54,           ///< trigger relay on
         k_relay_2_off           = 55,           ///< trigger relay off
         k_relay_2_toggle        = 56,           ///< trigger relay toggle
-        // 57-90 reserved for future functions
+        // 57-60 reserved for future functions
+        k_servo_1_inc           = 61,           ///< increase servo output
+        k_servo_1_dec           = 62,           ///< decrease servo output
+        k_servo_1_min           = 63,           ///< center servo
+        k_servo_1_max           = 64,           ///< set servo output to minimum (SERVOn_MIN)
+        k_servo_1_center        = 65,           ///< set servo output to maximum (SERVOn_MAX)
+
+        k_servo_2_inc           = 66,
+        k_servo_2_dec           = 67,
+        k_servo_2_min           = 68,
+        k_servo_2_max           = 69,
+        k_servo_2_center        = 70,
+
+        k_servo_3_inc           = 71,
+        k_servo_3_dec           = 72,
+        k_servo_3_min           = 73,
+        k_servo_3_max           = 74,
+        k_servo_3_center        = 75,
+
+        // 76-90 reserved for future functions
         k_custom_1              = 91,           ///< custom user button 1
         k_custom_2              = 92,           ///< custom user button 2
         k_custom_3              = 93,           ///< custom user button 3

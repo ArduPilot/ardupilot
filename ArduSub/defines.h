@@ -40,7 +40,6 @@ enum control_mode_t {
     ALT_HOLD =      2,  // manual angle with automatic depth/throttle
     AUTO =          3,  // not implemented in sub // fully automatic waypoint control using mission commands
     GUIDED =        4,  // not implemented in sub // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-    VELHOLD =       5,  // automatic x/y velocity control and automatic depth/throttle
     CIRCLE =        7,  // not implemented in sub // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
@@ -238,10 +237,48 @@ enum RTLState {
 // Baro specific error codes
 #define ERROR_CODE_BARO_GLITCH              2
 
+//////////////////////////////////////////////////////////////////////////////
+// Battery monitoring
+//
+#ifndef FS_BATT_VOLTAGE_DEFAULT
+# define FS_BATT_VOLTAGE_DEFAULT       0       // default battery voltage below which failsafe will be triggered
+#endif
+
+#ifndef FS_BATT_MAH_DEFAULT
+# define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
+#endif
+
+// GCS failsafe
+#ifndef FS_GCS
+# define FS_GCS                        DISABLED
+#endif
+#ifndef FS_GCS_TIMEOUT_MS
+# define FS_GCS_TIMEOUT_MS             2500    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
+#endif
+
+// missing terrain data failsafe
+#ifndef FS_TERRAIN_TIMEOUT_MS
+#define FS_TERRAIN_TIMEOUT_MS          1000     // 1 second of unhealthy rangefinder and/or missing terrain data will trigger failsafe
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+//  EKF Failsafe
+// EKF failsafe definitions (FS_EKF_ENABLE parameter)
+#define FS_EKF_ACTION_DISABLED                  1       // Disabled, not implemented yet in Sub
+
+#ifndef FS_EKF_ACTION_DEFAULT
+# define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_DISABLED  // EKF failsafe
+#endif
+
+#ifndef FS_EKF_THRESHOLD_DEFAULT
+# define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
+#endif
+
 // Battery failsafe definitions (FS_BATT_ENABLE parameter)
 #define FS_BATT_DISABLED                    0       // battery failsafe disabled
-#define FS_BATT_SURFACE                     1       // switch to SURFACE mode on battery failsafe
-#define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
+#define FS_BATT_WARN_ONLY                   1       // only warn gcs on battery failsafe
+#define FS_BATT_DISARM                      2       // disarm on battery failsafe
+#define FS_BATT_SURFACE                     3       // switch to SURFACE mode on battery failsafe
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED     0 // Disabled
@@ -267,6 +304,11 @@ enum RTLState {
 #define FS_TEMP_DISABLED        0
 #define FS_TEMP_WARN_ONLY       1
 
+// Crash failsafe options
+#define FS_CRASH_DISABLED  0
+#define FS_CRASH_WARN_ONLY 1
+#define FS_CRASH_DISARM    2
+
 // Terrain failsafe actions for AUTO mode
 #define FS_TERRAIN_DISARM       0
 #define FS_TERRAIN_HOLD         1
@@ -275,9 +317,6 @@ enum RTLState {
 // Amount of time to attempt recovery of valid rangefinder data before
 // initiating terrain failsafe action
 #define FS_TERRAIN_RECOVER_TIMEOUT_MS 10000
-
-// EKF failsafe definitions (FS_EKF_ENABLE parameter)
-#define FS_EKF_ACTION_DISABLED                  1       // Disabled, not implemented yet in Sub
 
 // for mavlink SET_POSITION_TARGET messages
 #define MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE      ((1<<0) | (1<<1) | (1<<2))

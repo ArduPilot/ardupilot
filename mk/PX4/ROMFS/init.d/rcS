@@ -13,12 +13,9 @@
 #       add them to the per-configuration scripts instead.
 #
 
-#
-# Default to auto-start mode.  An init script on the microSD card
-# can change this to prevent automatic startup of the flight script.
-#
-set MODE autostart
 set USB autoconnect
+set NSH_ERROR_UART1 /dev/ttyACM0
+set NSH_ERROR_UART2 /dev/ttyS0
 
 #
 # Try to mount the microSD card.
@@ -62,12 +59,17 @@ else
     fi
 fi
 
+# Look for an additional init script that allows changing the default
+# behavior. Settings may be overriden in the following order:
 #
-# Look for an init script on the microSD card.
-#
-# To prevent automatic startup in the current flight mode,
-# the script should set MODE to some other value.
-#
+# board-specific file
+# etc/rc on microSD card
+# etc/rc.txt on microSD card
+if [ -f /etc/init.d/rc.board ]
+then
+    echo "[init] reading /etc/init.d/rc.board"
+    sh /etc/init.d/rc.board
+fi
 if [ -f /fs/microsd/etc/rc ]
 then
     echo "[init] reading /fs/microsd/etc/rc"

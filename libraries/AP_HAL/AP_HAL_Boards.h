@@ -43,6 +43,7 @@
 #define HAL_BOARD_SUBTYPE_PX4_V2           2001
 #define HAL_BOARD_SUBTYPE_PX4_V4           2002
 #define HAL_BOARD_SUBTYPE_PX4_V3           2003
+#define HAL_BOARD_SUBTYPE_PX4_AEROFC_V1    2004
 
 /* HAL VRBRAIN sub-types, starting at 4000 */
 #define HAL_BOARD_SUBTYPE_VRBRAIN_V45      4000

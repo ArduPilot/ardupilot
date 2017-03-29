@@ -1,5 +1,15 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5-rc3 24-Mar-2017
+Changes from 3.5-rc2
+1) OLED Display fixes:
+    a) can be connected to either I2C bus
+    b) last character on line correctly cleared
+2) bug fix to detect SBUS failsafe on Pixracer
+3) bug fix to Gimbal servo reversing
+4) ensure WPNAV_LOIT_SPEED is non-zero to avoid divide-by-zero
+5) Fence pre-arm check failure messages clarified 
+------------------------------------------------------------------
 Copter 3.5-rc2 13-Mar-2017
 Changes from 3.5-rc1
 1) Improved dual GPS support including blending (set GPS_TYPE2=1, GPS_AUTO_SWITCH=2)

@@ -55,9 +55,6 @@ void Sub::calc_home_distance_and_bearing()
         Vector3f curr = inertial_nav.get_position();
         home_distance = pv_get_horizontal_distance_cm(curr, home);
         home_bearing = pv_get_bearing_cd(curr,home);
-
-        // update super simple bearing (if required) because it relies on home_bearing
-        update_super_simple_bearing(false);
     }
 }
 

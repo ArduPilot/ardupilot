@@ -50,19 +50,12 @@ void Sub::althold_run()
 
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // get pilot desired lean angles
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
 
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-
-    // get pilot desired climb rate
-    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
     // call attitude controller
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
@@ -86,24 +79,24 @@ void Sub::althold_run()
         }
     }
 
-    // adjust climb rate using rangefinder
-    if (rangefinder_alt_ok()) {
-        // if rangefinder is ok, use surface tracking
-        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+    if (fabsf(channel_throttle->norm_input()-0.5) > 0.05) { // Throttle input above 5%
+        // output pilot's throttle
+        attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
+        // reset z targets to current values
+        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+    } else { // hold z
+
+        if (ap.at_bottom) {
+            pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
+            pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+        } else if (rangefinder_alt_ok()) {
+            // if rangefinder is ok, use surface tracking
+            float target_climb_rate = get_surface_tracking_climb_rate(0, pos_control.get_alt_target(), G_Dt);
+            pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        }
+        pos_control.update_z_controller();
     }
 
-    // call z axis position controller
-    if (ap.at_bottom) {
-        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
-        pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
-    } else {
-        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-    }
-
-    pos_control.update_z_controller();
-
-    //control_in is range 0-1000
-    //radio_in is raw pwm value
     motors.set_forward(channel_forward->norm_input());
     motors.set_lateral(channel_lateral->norm_input());
 }

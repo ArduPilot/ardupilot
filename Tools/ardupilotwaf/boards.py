@@ -418,9 +418,22 @@ class px4(Board):
     toolchain = 'arm-none-eabi'
 
     def __init__(self):
+        # bootloader name: a file with that name will be used and installed
+        # on ROMFS
         self.bootloader_name = None
+
+        # board name: it's the name of this board that's also used as path
+        # in ROMFS: don't add spaces
         self.board_name = None
+
+        # px4io binary name: this is the name of the IO binary to be installed
+        # in ROMFS
         self.px4io_name = None
+
+        # board-specific init script: if True a file with `board_name` name will
+        # be searched for in sources and installed in ROMFS as rc.board. This
+        # init script is used to change the init behavior among different boards.
+        self.board_rc = False
         self.ROMFS_EXCLUDE = []
 
     def configure(self, cfg):
@@ -462,6 +475,7 @@ class px4(Board):
 
         env.PX4_BOOTLOADER_NAME = self.bootloader_name
         env.PX4_BOARD_NAME = self.board_name
+        env.PX4_BOARD_RC = self.board_rc
         env.PX4_PX4IO_NAME = self.px4io_name
 
         env.AP_PROGRAM_AS_STLIB = True
@@ -508,3 +522,12 @@ class px4_v4(px4):
         self.bootloader_name = 'px4fmuv4_bl.bin'
         self.board_name = 'px4fmu-v4'
         self.romfs_exclude(['oreoled.bin'])
+
+class aerofc_v1(px4):
+    name = 'aerofc-v1'
+    def __init__(self):
+        super(aerofc_v1, self).__init__()
+        self.bootloader_name = 'aerofcv1_bl.bin'
+        self.board_name = 'aerofc-v1'
+        self.romfs_exclude(['oreoled.bin'])
+        self.board_rc = True

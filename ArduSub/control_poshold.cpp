@@ -50,9 +50,6 @@ void Sub::poshold_run()
         return;
     }
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
@@ -61,14 +58,14 @@ void Sub::poshold_run()
 
     ///////////////////////
     // update xy outputs //
-    int16_t pilot_lateral = channel_lateral->norm_input();
-    int16_t pilot_forward = channel_forward->norm_input();
+    float pilot_lateral = channel_lateral->norm_input();
+    float pilot_forward = channel_forward->norm_input();
 
     float lateral_out = 0;
     float forward_out = 0;
 
     // Allow pilot to reposition the sub
-    if (pilot_lateral != 0 || pilot_forward != 0) {
+    if (fabsf(pilot_lateral) > 0.1 || fabsf(pilot_forward) > 0.1) {
         lateral_out = pilot_lateral;
         forward_out = pilot_forward;
         wp_nav.init_loiter_target(); // initialize target to current position after repositioning
@@ -127,19 +124,10 @@ void Sub::poshold_run()
 
     // call z axis position controller
     if (ap.at_bottom) {
-        pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
+        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
         pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
     } else {
-        if (inertial_nav.get_altitude() < g.surface_depth) { // pilot allowed to move up or down freely
-            pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        } else if (target_climb_rate < 0) { // pilot allowed to move only down freely
-            if (pos_control.get_vel_target_z() > 0) {
-                pos_control.relax_alt_hold_controllers(0); // reset target velocity and acceleration
-            }
-            pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        } else if (pos_control.get_alt_target() > g.surface_depth) { // hold depth at surface level.
-            pos_control.set_alt_target(g.surface_depth);
-        }
+        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
     }
 
     pos_control.update_z_controller();

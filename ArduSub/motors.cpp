@@ -1,39 +1,5 @@
 #include "Sub.h"
 
-#define ARM_DELAY               20  // called at 10hz so 2 seconds
-#define DISARM_DELAY            20  // called at 10hz so 2 seconds
-#define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
-#define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
-
-//static uint32_t auto_disarm_begin;
-
-// auto_disarm_check
-// Automatically disarm the vehicle under some set of conditions
-// What those conditions should be TBD
-void Sub::auto_disarm_check()
-{
-    // Disable for now
-
-    //    uint32_t tnow_ms = millis();
-    //    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
-    //
-    //    // exit immediately if we are already disarmed, or if auto
-    //    // disarming is disabled
-    //    if (!motors.armed() || disarm_delay_ms == 0) {
-    //        auto_disarm_begin = tnow_ms;
-    //        return;
-    //    }
-    //
-    //    if(!mode_has_manual_throttle(control_mode) || !ap.throttle_zero) {
-    //      auto_disarm_begin = tnow_ms;
-    //    }
-    //
-    //    if(tnow > auto_disarm_begin + disarm_delay_ms) {
-    //      init_disarm_motors();
-    //      auto_disarm_begin = tnow_ms;
-    //    }
-}
-
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
 bool Sub::init_arm_motors(bool arming_from_gcs)
@@ -56,9 +22,6 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
 
-    // reset battery failsafe
-    set_failsafe_battery(false);
-
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
     // call update_notify a few times to ensure the message gets out
@@ -69,10 +32,6 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
     gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
 #endif
-
-    // Remember Orientation
-    // --------------------
-    init_simple_bearing();
 
     initial_armed_bearing = ahrs.yaw_sensor;
 
@@ -173,29 +132,6 @@ void Sub::motors_output()
             motors.set_interlock(!ap.motor_emergency_stop);
         }
         motors.output();
-    }
-}
-
-// check for pilot stick input to trigger lost vehicle alarm
-void Sub::lost_vehicle_check()
-{
-    static uint8_t soundalarm_counter;
-
-    // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors.armed() && (channel_roll->get_control_in() > 4000) && (channel_pitch->get_control_in() > 4000)) {
-        if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
-            if (AP_Notify::flags.vehicle_lost == false) {
-                AP_Notify::flags.vehicle_lost = true;
-                gcs_send_text(MAV_SEVERITY_NOTICE,"Locate vehicle alarm");
-            }
-        } else {
-            soundalarm_counter++;
-        }
-    } else {
-        soundalarm_counter = 0;
-        if (AP_Notify::flags.vehicle_lost == true) {
-            AP_Notify::flags.vehicle_lost = false;
-        }
     }
 }
 

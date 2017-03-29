@@ -20,7 +20,6 @@ Benoit GRUSON
 Dario Lindo Andres
 George Zogopoulos Papaliakos, struggling with Git
 Hao Zhou
-
 Shingo Matsuura (assignment)
 Murata Katsutoshi, Yoseijyuku-Sei.
 Hiroshi Kitaoka
@@ -46,7 +45,6 @@ Mitsuhiro Komiya
 Eduardo Cáceres (eduherminio)
 steven test
 Fnoop hello :)
-
 Yuichiro Shibata
 Tsuyoshi Kawamura (retry)
 Natsuki Matsuda
@@ -74,4 +72,8 @@ Opemipo Ogunkola saying Hi from Nigeria!
 Nishchay Agrawal 
 Akash Nair
 Borys Tymchenko (spsancti)
-Guilherme Sousa
+Mahtab Sandhu(ma8sa)
+Vedarth Sharma (Working on rtl)
+Kim Nguyen
+Shaunaq Narindra
+

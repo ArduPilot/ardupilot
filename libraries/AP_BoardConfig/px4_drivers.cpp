@@ -324,6 +324,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
     case PX4_BOARD_PHMINI:
     case PX4_BOARD_AUAV21:
     case PX4_BOARD_PH2SLIM:
+    case PX4_BOARD_AEROFC:
         break;
     default:
         px4_sensor_error("Unknown board type");
@@ -410,12 +411,14 @@ void AP_BoardConfig::px4_setup_peripherals(void)
         px4_sensor_error("no ADC found");
     }
 
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V4
+#if HAL_PX4_HAVE_PX4IO
     px4_setup_px4io();
 #endif
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     const char *fmu_mode = "mode_serial";
+#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+    const char *fmu_mode = "mode_rcin";
 #else
     const char *fmu_mode = "mode_pwm4";
 #endif
@@ -504,6 +507,9 @@ void AP_BoardConfig::px4_autodetect(void)
     // only one choice
     px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);    
     hal.console->printf("Detected Pixracer\n");
+#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+    px4.board_type.set_and_notify(PX4_BOARD_AEROFC);
+    hal.console->printf("Detected Aero FC\n");
 #endif
     
 }

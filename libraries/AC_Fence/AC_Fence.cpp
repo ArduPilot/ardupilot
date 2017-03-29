@@ -108,8 +108,10 @@ uint8_t AC_Fence::get_enabled_fences() const
 }
 
 /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
-bool AC_Fence::pre_arm_check() const
+bool AC_Fence::pre_arm_check(const char* &fail_msg) const
 {
+    fail_msg = nullptr;
+
     // if not enabled or not fence set-up always return true
     if (!_enabled || _enabled_fences == AC_FENCE_TYPE_NONE) {
         return true;
@@ -117,11 +119,13 @@ bool AC_Fence::pre_arm_check() const
 
     // check no limits are currently breached
     if (_breached_fences != AC_FENCE_TYPE_NONE) {
+        fail_msg =  "vehicle outside fence";
         return false;
     }
 
     // if we have horizontal limits enabled, check inertial nav position is ok
-    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE)!=0 && !_inav.get_filter_status().flags.horiz_pos_abs && !_inav.get_filter_status().flags.pred_horiz_pos_abs) {
+    if ((_enabled_fences & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON))>0 && !_inav.get_filter_status().flags.horiz_pos_abs && !_inav.get_filter_status().flags.pred_horiz_pos_abs) {
+        fail_msg = "fence requires position";
         return false;
     }
 

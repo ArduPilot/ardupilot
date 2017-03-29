@@ -67,9 +67,6 @@ void Sub::init_rc_out()
     motors.init((AP_Motors::motor_frame_class)g.frame_configuration.get(), (AP_Motors::motor_frame_type)0);
     motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 
-    // check if we should enter esc calibration mode
-    esc_calibration_startup_check();
-
     // enable output to motors
     if (arming.rc_check()) {
         enable_motor_output();
@@ -118,31 +115,3 @@ void Sub::save_trim()
     Log_Write_Event(DATA_SAVE_TRIM);
     gcs_send_text(MAV_SEVERITY_INFO, "Trim saved");
 }
-
-// auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
-// meant to be called continuously while the pilot attempts to keep the vehicle level
-void Sub::auto_trim()
-{
-    if (auto_trim_counter > 0) {
-        auto_trim_counter--;
-
-        // flash the leds
-        AP_Notify::flags.save_trim = true;
-
-        // calculate roll trim adjustment
-        float roll_trim_adjustment = ToRad((float)channel_roll->get_control_in() / 4000.0f);
-
-        // calculate pitch trim adjustment
-        float pitch_trim_adjustment = ToRad((float)channel_pitch->get_control_in() / 4000.0f);
-
-        // add trim to ahrs object
-        // save to eeprom on last iteration
-        ahrs.add_trim(roll_trim_adjustment, pitch_trim_adjustment, (auto_trim_counter == 0));
-
-        // on last iteration restore leds and accel gains to normal
-        if (auto_trim_counter == 0) {
-            AP_Notify::flags.save_trim = false;
-        }
-    }
-}
-

@@ -23,6 +23,10 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_surface(cmd);
         break;
 
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        do_RTL();
+        break;
+
     case MAV_CMD_NAV_LOITER_UNLIM:              // 17 Loiter indefinitely
         do_loiter_unlimited(cmd);
         break;
@@ -179,6 +183,9 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_LAND:
         return verify_surface(cmd);
 
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        return verify_RTL();
+
     case MAV_CMD_NAV_LOITER_UNLIM:
         return verify_loiter_unlimited();
 
@@ -321,6 +328,11 @@ void Sub::do_surface(const AP_Mission::Mission_Command& cmd)
 
     // Go to wp location
     auto_wp_start(target_location);
+}
+
+void Sub::do_RTL()
+{
+    auto_wp_start(ahrs.get_home());
 }
 
 // do_loiter_unlimited - start loitering with no end conditions
@@ -604,6 +616,10 @@ bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
 
     // true is returned if we've successfully surfaced
     return retval;
+}
+
+bool Sub::verify_RTL() {
+    return wp_nav.reached_wp_destination();
 }
 
 bool Sub::verify_loiter_unlimited()

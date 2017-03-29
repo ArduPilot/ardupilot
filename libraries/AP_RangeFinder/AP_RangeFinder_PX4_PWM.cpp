@@ -85,7 +85,8 @@ AP_RangeFinder_PX4_PWM::~AP_RangeFinder_PX4_PWM()
 */
 bool AP_RangeFinder_PX4_PWM::detect(RangeFinder &_ranger, uint8_t instance)
 {
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1) && \
+    !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     if (AP_BoardConfig::px4_start_driver(pwm_input_main, "pwm_input", "start")) {
         hal.console->printf("started pwm_input driver\n");
     }

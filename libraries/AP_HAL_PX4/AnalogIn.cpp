@@ -58,9 +58,12 @@ static const struct {
     { 13,  3.3f/4096  },    // AUX ADC pin 4
     { 14,  3.3f/4096  },    // AUX ADC pin 3
     { 15,  6.6f/4096  },    // analog airspeed sensor, 2:1 scaling
+#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+    { 1,   3.3f/4096  },
 #else
 #error "Unknown board type for AnalogIn scaling"
 #endif
+    { 0, 0.f          },
 };
 
 using namespace PX4;
@@ -114,7 +117,7 @@ float PX4AnalogSource::read_latest()
 float PX4AnalogSource::_pin_scaler(void)
 {
     float scaling = PX4_VOLTAGE_SCALING;
-    uint8_t num_scalings = ARRAY_SIZE(pin_scaling);
+    uint8_t num_scalings = ARRAY_SIZE(pin_scaling) - 1;
     for (uint8_t i=0; i<num_scalings; i++) {
         if (pin_scaling[i].pin == _pin) {
             scaling = pin_scaling[i].scaling;
