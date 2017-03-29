@@ -246,8 +246,6 @@ protected:
 
     void handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps);
 
-    void handle_timesync(mavlink_message_t *msg);
-
     void handle_common_message(mavlink_message_t *msg);
     void handle_log_message(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_setup_signing(const mavlink_message_t *msg);
@@ -256,6 +254,8 @@ protected:
 
     void handle_device_op_read(mavlink_message_t *msg);
     void handle_device_op_write(mavlink_message_t *msg);
+
+    void handle_timesync(mavlink_message_t *msg);
     
 private:
 
