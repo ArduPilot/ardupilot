@@ -22,17 +22,13 @@ private:
 
     void timer(void);
 
-    bool _pec_support = false;
-
-    // it sets true after check if PEC is used
-    bool _pec_confirmed = false;
-
     // read word from register
     // returns true if read was successful, false if failed
     bool read_word(uint8_t reg, uint16_t& data) const;
 
-    // get PEC support with the version value in SpecificationInfo() function
-    bool get_pec_support();
+    // check if PEC supported with the version value in SpecificationInfo() function
+    // returns true once PEC is confirmed as working or not working
+    bool check_pec_support();
 
     // read_block - returns number of characters read if successful, zero if unsuccessful
     uint8_t read_block(uint8_t reg, uint8_t* data, bool append_zero) const;
@@ -42,4 +38,6 @@ private:
     uint8_t get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool reading, const uint8_t buff[], uint8_t len) const;
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    uint8_t _pec_confirmed; // count of the number of times PEC has been confirmed as working
+    bool _pec_supported;    // true if pec is supported
 };
