@@ -64,13 +64,6 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port) override {}
     void ListAvailableLogs(AP_HAL::BetterStream *port) override {}
 
-    // enum dm_block_state {
-    //     BLOCK_STATE_FREE = 17,
-    //     BLOCK_STATE_FILLING,
-    //     BLOCK_STATE_SEND_PENDING,
-    //     BLOCK_STATE_SEND_RETRY,
-    //     BLOCK_STATE_SENT
-    // };
     struct dm_block {
         uint32_t seqno;
         uint8_t buf[MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN];
