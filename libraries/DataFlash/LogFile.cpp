@@ -20,61 +20,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_types)
-{
-    if (_next_backend == DATAFLASH_MAX_BACKENDS) {
-        AP_HAL::panic("Too many backends");
-        return;
-    }
-    _num_types = num_types;
-    _structures = structures;
-
-#if defined(HAL_BOARD_LOG_DIRECTORY)
-    if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
-        _params.backend_types == DATAFLASH_BACKEND_BOTH) {
-        DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart(_firmware_string);
-        if (message_writer != nullptr)  {
-#if HAL_OS_POSIX_IO
-            backends[_next_backend] = new DataFlash_File(*this,
-                                                         message_writer,
-                                                         HAL_BOARD_LOG_DIRECTORY);
-#endif
-        }
-        if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open DataFlash_File");
-        } else {
-            _next_backend++;
-        }
-    }
-#endif
-
-#if DATAFLASH_MAVLINK_SUPPORT
-    if (_params.backend_types == DATAFLASH_BACKEND_MAVLINK ||
-        _params.backend_types == DATAFLASH_BACKEND_BOTH) {
-        if (_next_backend == DATAFLASH_MAX_BACKENDS) {
-            AP_HAL::panic("Too many backends");
-            return;
-        }
-        DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart(_firmware_string);
-        if (message_writer != nullptr)  {
-            backends[_next_backend] = new DataFlash_MAVLink(*this,
-                                                            message_writer);
-        }
-        if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open DataFlash_MAVLink");
-        } else {
-            _next_backend++;
-        }
-    }
-#endif
-
-    for (uint8_t i=0; i<_next_backend; i++) {
-        backends[i]->Init();
-    }
-}
-
 // This function determines the number of whole or partial log files in the DataFlash
 // Wholly overwritten files are (of course) lost.
 uint16_t DataFlash_Block::get_num_logs(void)
