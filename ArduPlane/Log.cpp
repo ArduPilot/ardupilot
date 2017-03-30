@@ -162,7 +162,11 @@ void Plane::Log_Write_Attitude(void)
     targets.y = nav_pitch_cd;
     targets.z = 0;          //Plane does not have the concept of navyaw. This is a placeholder.
 
-    DataFlash.Log_Write_Attitude(ahrs, targets);
+    if (quadplane.tailsitter_active()) {
+        DataFlash.Log_Write_AttitudeView(*quadplane.ahrs_view, targets);
+    } else {
+        DataFlash.Log_Write_Attitude(ahrs, targets);
+    }
     if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
         // log quadplane PIDs separately from fixed wing PIDs
         DataFlash.Log_Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
