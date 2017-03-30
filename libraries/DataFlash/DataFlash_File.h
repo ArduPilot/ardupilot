@@ -33,43 +33,43 @@ public:
 
     // initialisation
     void Init() override;
-    bool CardInserted(void);
+    bool CardInserted(void) override;
 
     // erase handling
-    void EraseAll();
+    void EraseAll() override;
 
     // possibly time-consuming preparation handling:
-    bool NeedPrep();
-    void Prep();
+    bool NeedPrep() override;
+    void Prep() override;
 
     /* Write a block of data at current offset */
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
-    uint32_t bufferspace_available();
+    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) override;
+    uint32_t bufferspace_available() override;
 
     // high level interface
     uint16_t find_last_log() override;
-    void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
-    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
-    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
+    void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page) override;
+    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override;
+    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override;
     uint16_t get_num_logs() override;
     uint16_t start_new_log(void) override;
     void LogReadProcess(const uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
                         print_mode_fn print_mode,
-                        AP_HAL::BetterStream *port);
-    void DumpPageInfo(AP_HAL::BetterStream *port);
-    void ShowDeviceInfo(AP_HAL::BetterStream *port);
-    void ListAvailableLogs(AP_HAL::BetterStream *port);
+                        AP_HAL::BetterStream *port) override;
+    void DumpPageInfo(AP_HAL::BetterStream *port) override;
+    void ShowDeviceInfo(AP_HAL::BetterStream *port) override;
+    void ListAvailableLogs(AP_HAL::BetterStream *port) override;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    void flush(void);
+    void flush(void) override;
 #endif
     void periodic_1Hz(const uint32_t now) override;
-    void periodic_fullrate(const uint32_t now);
+    void periodic_fullrate(const uint32_t now) override;
 
     // this method is used when reporting system status over mavlink
-    bool logging_enabled() const;
-    bool logging_failed() const;
+    bool logging_enabled() const override;
+    bool logging_failed() const override;
 
     void vehicle_was_disarmed() override;
 
@@ -124,7 +124,7 @@ private:
     uint32_t _get_log_size(const uint16_t log_num) const;
     uint32_t _get_log_time(const uint16_t log_num) const;
 
-    void stop_logging(void);
+    void stop_logging(void) override;
 
     void _io_timer(void);
 
