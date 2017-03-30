@@ -34,7 +34,7 @@ public:
 
     bool logging_started() const override { return _logging_started; }
 
-    void stop_logging();
+    void stop_logging() override;
 
     /* Write a block of data at current offset */
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size,
@@ -78,12 +78,12 @@ public:
         struct dm_block *next;
     };
     void push_log_blocks();
-    virtual bool send_log_block(struct dm_block &block);
-    virtual void handle_ack(mavlink_channel_t chan, mavlink_message_t* msg, uint32_t seqno);
-    virtual void handle_retry(uint32_t block_num);
+    bool send_log_block(struct dm_block &block);
+    void handle_ack(mavlink_channel_t chan, mavlink_message_t* msg, uint32_t seqno);
+    void handle_retry(uint32_t block_num);
     void do_resends(uint32_t now);
-    virtual void set_channel(mavlink_channel_t chan);
-    virtual void remote_log_block_status_msg(mavlink_channel_t chan, mavlink_message_t* msg) override;
+    void set_channel(mavlink_channel_t chan);
+    void remote_log_block_status_msg(mavlink_channel_t chan, mavlink_message_t* msg) override;
     void free_all_blocks();
 
     // a stack for free blocks, queues for pending, sent, retries and sent
@@ -126,8 +126,8 @@ protected:
     } stats;
 
     // this method is used when reporting system status over mavlink
-    bool logging_enabled() const { return true; }
-    bool logging_failed() const;
+    bool logging_enabled() const override { return true; }
+    bool logging_failed() const override;
 
 private:
     mavlink_channel_t _chan;
@@ -166,9 +166,9 @@ private:
     struct dm_block *_current_block;
     struct dm_block *next_block();
 
-    void periodic_10Hz(uint32_t now);
-    void periodic_1Hz(uint32_t now);
-    void periodic_fullrate(uint32_t now);
+    void periodic_10Hz(uint32_t now) override;
+    void periodic_1Hz(uint32_t now) override;
+    void periodic_fullrate(uint32_t now) override;
     
     void stats_init();
     void stats_reset();
