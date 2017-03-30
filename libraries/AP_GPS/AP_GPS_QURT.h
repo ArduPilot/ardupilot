@@ -29,7 +29,7 @@ public:
     
     bool read() override;
 
-    const char *name() const override { return "QURTGPS"; }
+    const char *name() const override { return "QURT"; }
 
 private:
     bool initialised = false;
