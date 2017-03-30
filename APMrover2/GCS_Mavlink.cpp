@@ -100,7 +100,7 @@ void Rover::send_extended_status1(mavlink_channel_t chan)
         control_sensors_present,
         control_sensors_enabled,
         control_sensors_health,
-        (uint16_t)(scheduler.load_average(20000) * 1000),
+        static_cast<uint16_t>(scheduler.load_average(20000) * 1000),  // WRONG float to uint16_t
         battery.voltage() * 1000,  // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
@@ -179,8 +179,7 @@ void Rover::send_vfr_hud(mavlink_channel_t chan)
         gps.ground_speed(),
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
-        (uint16_t)(100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))),
-        current_loc.alt / 100.0,
+        static_cast<uint16_t>(100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))),  // WRONG float to uint16
         0);
 }
 
@@ -281,7 +280,7 @@ void Rover::send_current_waypoint(mavlink_channel_t chan)
 
 uint32_t GCS_MAVLINK_Rover::telem_delay() const
 {
-    return (uint32_t)(rover.g.telem_delay);
+    return static_cast<uint32_t>(rover.g.telem_delay);
 }
 
 // try to send a message, return false if it won't fit in the serial tx buffer
@@ -948,7 +947,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             }
 
         case MAV_CMD_DO_SET_MODE:
-            switch ((uint16_t)packet.param1) {
+            switch (static_cast<uint16_t>(packet.param1)) {
             case MAV_MODE_MANUAL_ARMED:
             case MAV_MODE_MANUAL_DISARMED:
                 rover.set_mode(MANUAL);
@@ -1068,9 +1067,9 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 GCS_MAVLINK::send_home_all(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
                 rover.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
-                                        (double)(new_home_loc.lat * 1.0e-7f),
-                                        (double)(new_home_loc.lng * 1.0e-7f),
-                                        (uint32_t)(new_home_loc.alt * 0.01f));
+                                          static_cast<double>(new_home_loc.lat * 1.0e-7f),
+                                          static_cast<double>(new_home_loc.lng * 1.0e-7f),
+                                          static_cast<uint32_t>(new_home_loc.alt * 0.01f));  // WRONG FLoat to uint32
             }
             break;
         }
@@ -1588,7 +1587,7 @@ void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     char str[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
     va_list arg_list;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
+    hal.util->vsnprintf(reinterpret_cast<char *>(str), sizeof(str), fmt, arg_list);
     va_end(arg_list);
     gcs().send_statustext(severity, 0xFF, str);
     notify.send_text(str);

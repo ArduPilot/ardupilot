@@ -38,7 +38,7 @@ void Rover::failsafe_check()
     }
 
     if (in_failsafe && tnow - last_timestamp > 20000 &&
-        channel_throttle->read() >= (uint16_t)g.fs_throttle_value) {
+        channel_throttle->read() >= static_cast<uint16_t>(g.fs_throttle_value)) {
         // pass RC inputs to outputs every 20ms
         last_timestamp = tnow;
         hal.rcin->clear_overrides();

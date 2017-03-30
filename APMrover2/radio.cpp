@@ -188,7 +188,7 @@ void Rover::control_failsafe(uint16_t pwm)
     if (rc_override_active) {
         failsafe_trigger(FAILSAFE_EVENT_RC, (millis() - failsafe.rc_override_timer) > 1500);
     } else if (g.fs_throttle_enabled) {
-        bool failed = pwm < (uint16_t)g.fs_throttle_value;
+        bool failed = pwm < static_cast<uint16_t>(g.fs_throttle_value);
         if (AP_HAL::millis() - failsafe.last_valid_rc_ms > 2000) {
             failed = true;
         }

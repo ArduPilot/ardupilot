@@ -65,26 +65,26 @@ void Rover::read_sonars(void)
         // we have two sonars
         obstacle.sonar1_distance_cm = sonar.distance_cm(0);
         obstacle.sonar2_distance_cm = sonar.distance_cm(1);
-        if (obstacle.sonar1_distance_cm < (uint16_t)g.sonar_trigger_cm &&
-            obstacle.sonar1_distance_cm < (uint16_t)obstacle.sonar2_distance_cm)  {
+        if (obstacle.sonar1_distance_cm < static_cast<uint16_t>(g.sonar_trigger_cm) &&
+            obstacle.sonar1_distance_cm < static_cast<uint16_t>(obstacle.sonar2_distance_cm))  {
             // we have an object on the left
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar1 obstacle %u cm",
-                                  (unsigned)obstacle.sonar1_distance_cm);
+                        static_cast<uint32_t>(obstacle.sonar1_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = g.sonar_turn_angle;
-        } else if (obstacle.sonar2_distance_cm < (uint16_t)g.sonar_trigger_cm) {
+        } else if (obstacle.sonar2_distance_cm < static_cast<uint16_t>(g.sonar_trigger_cm)) {
             // we have an object on the right
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar2 obstacle %u cm",
-                                  (unsigned)obstacle.sonar2_distance_cm);
+                        static_cast<uint32_t>(obstacle.sonar2_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = -g.sonar_turn_angle;
@@ -93,14 +93,14 @@ void Rover::read_sonars(void)
         // we have a single sonar
         obstacle.sonar1_distance_cm = sonar.distance_cm(0);
         obstacle.sonar2_distance_cm = 0;
-        if (obstacle.sonar1_distance_cm < (uint16_t)g.sonar_trigger_cm)  {
+        if (obstacle.sonar1_distance_cm < static_cast<uint16_t>(g.sonar_trigger_cm))  {
             // obstacle detected in front
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar obstacle %u cm",
-                                  (unsigned)obstacle.sonar1_distance_cm);
+                        static_cast<uint32_t>(obstacle.sonar1_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = g.sonar_turn_angle;

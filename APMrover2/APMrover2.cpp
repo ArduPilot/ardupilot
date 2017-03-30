@@ -338,7 +338,7 @@ void Rover::one_second_loop(void)
     // write perf data every 20s
     if (counter % 10 == 0) {
         if (scheduler.debug() != 0) {
-            hal.console->printf("G_Dt_max=%lu\n", (unsigned long)G_Dt_max);
+            hal.console->printf("G_Dt_max=%lu\n", static_cast<uint64_t>(G_Dt_max));
         }
         if (should_log(MASK_LOG_PM)) {
             Log_Write_Performance();

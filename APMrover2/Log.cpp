@@ -72,13 +72,13 @@ int8_t Rover::dump_log(uint8_t argc, const Menu::arg *argv)
         cliSerial->printf("dumping all\n");
         Log_Read(0, 1, 0);
         return(-1);
-    } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
+    } else if ((argc != 2) || (static_cast<uint16_t>(dump_log_num) > DataFlash.get_num_logs())) {
         cliSerial->printf("bad log number\n");
         return(-1);
     }
 
     DataFlash.get_log_boundaries(dump_log_num, dump_log_start, dump_log_end);
-    Log_Read((uint16_t)dump_log_num, dump_log_start, dump_log_end);
+    Log_Read(static_cast<uint16_t>(dump_log_num), dump_log_start, dump_log_end);
     return 0;
 }
 
@@ -266,11 +266,11 @@ void Rover::Log_Write_Nav_Tuning()
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
         time_us             : AP_HAL::micros64(),
-        yaw                 : (uint16_t)ahrs.yaw_sensor,
+        yaw                 : static_cast<uint16_t>(ahrs.yaw_sensor),  // int32 to uint16
         wp_distance         : wp_distance,
-        target_bearing_cd   : (uint16_t)nav_controller->target_bearing_cd(),
-        nav_bearing_cd      : (uint16_t)nav_controller->nav_bearing_cd(),
-        throttle            : (int8_t)(100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle)),
+        target_bearing_cd   : static_cast<uint16_t>(nav_controller->target_bearing_cd()),  // int32 to uint16
+        nav_bearing_cd      : static_cast<uint16_t>(nav_controller->nav_bearing_cd()),  // int32 to uint16
+        throttle            : static_cast<int8_t>((100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle))),  // wrong float to int8
         xtrack_error        : nav_controller->crosstrack_error()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -322,13 +322,13 @@ void Rover::Log_Write_Sonar()
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
         time_us         : AP_HAL::micros64(),
         lateral_accel   : lateral_acceleration,
-        sonar1_distance : (uint16_t)sonar.distance_cm(0),
-        sonar2_distance : (uint16_t)sonar.distance_cm(1),
+        sonar1_distance : sonar.distance_cm(0),
+        sonar2_distance : sonar.distance_cm(1),
         detected_count  : obstacle.detected_count,
-        turn_angle      : (int8_t)obstacle.turn_angle,
+        turn_angle      : static_cast<int8_t>(obstacle.turn_angle),  // WRONG float to int8
         turn_time       : turn_time,
-        ground_speed    : (uint16_t)(ground_speed*100),
-        throttle        : (int8_t)(100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle))
+        ground_speed    : static_cast<uint16_t>(ground_speed * 100),  // WRONT float to uint16
+        throttle        : static_cast<int8_t>((100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle)))  //WRONG float to int8
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -486,7 +486,7 @@ void Rover::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page
 {
     cliSerial->printf("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n",
-                        (unsigned)hal.util->available_memory());
+            static_cast<uint32_t>(hal.util->available_memory()));
 
     cliSerial->printf("%s\n", HAL_BOARD_NAME);
 
