@@ -32,7 +32,7 @@ public:
     // initialisation
     void Init() override;
 
-    bool logging_started() { return _logging_started; }
+    bool logging_started() const override { return _logging_started; }
 
     void stop_logging();
 
