@@ -338,9 +338,6 @@ void DataFlash_MAVLink::Log_Write_DF_MAV(DataFlash_MAVLink &df)
         state_sent_avg    : (uint8_t)(df.stats.state_sent/df.stats.collection_count),
         state_sent_min    : df.stats.state_sent_min,
         state_sent_max    : df.stats.state_sent_max,
-        // state_retry_avg   : (uint8_t)(df.stats.state_retry/df.stats.collection_count),
-        // state_retry_min    : df.stats.state_retry_min,
-        // state_retry_max    : df.stats.state_retry_max
     };
     WriteBlock(&pkt,sizeof(pkt));
 }
