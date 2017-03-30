@@ -260,8 +260,8 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
             // Check if this is the first time we have reached the waypoint
             if (!previously_reached_wp) {
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i. Loiter for %i seconds",
-                                  (unsigned)cmd.index,
-                                  (unsigned)loiter_duration);
+                        static_cast<uint32_t>(cmd.index),
+                        static_cast<uint32_t>(loiter_duration));
                 // record the current time i.e. start timer
                 loiter_start_time = millis();
                 previously_reached_wp = true;
@@ -275,8 +275,8 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
             }
         } else {
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i. Distance %um",
-                              (unsigned)cmd.index,
-                              (unsigned)get_distance(current_loc, next_WP));
+                    static_cast<uint32_t>(cmd.index),
+                    static_cast<uint32_t>(get_distance(current_loc, next_WP)));  // WRONG float to uint32
         }
         // set loiter_duration to 0 so we know we aren't or have finished loitering
         loiter_duration = 0;
@@ -295,8 +295,8 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         // Check if this is the first time we have reached the waypoint even though we have gone past it
         if (!previously_reached_wp) {
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i. Loiter for %i seconds",
-                              (unsigned)cmd.index,
-                              (unsigned)loiter_duration);
+                    static_cast<uint32_t>(cmd.index),
+                    static_cast<uint32_t>(loiter_duration));
             // record the current time i.e. start timer
             loiter_start_time = millis();
             previously_reached_wp = true;
@@ -308,8 +308,8 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         if ((uint32_t)distance_past_wp != (uint32_t)dist_to_wp) {
             distance_past_wp = dist_to_wp;
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i. Distance %um",
-                              (unsigned)cmd.index,
-                              (unsigned)distance_past_wp);
+                    static_cast<uint32_t>(cmd.index),
+                    static_cast<uint32_t>(distance_past_wp));  // WRONG float to uint32
         }
 
         // Check if we need to loiter at this waypoint
@@ -337,7 +337,7 @@ bool Rover::verify_RTL()
     // have we gone past the waypoint?
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached destination. Distance away %um",
-                          (unsigned)get_distance(current_loc, next_WP));
+                static_cast<uint32_t>(get_distance(current_loc, next_WP)));  // WRONG float to uint32
         rtl_complete = true;
         return true;
     }
@@ -396,7 +396,7 @@ void Rover::nav_set_yaw_speed()
 void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
     condition_start = millis();
-    condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
+    condition_value = static_cast<int32_t>(cmd.content.delay.seconds * 1000);    // convert seconds to milliseconds
 }
 
 void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
@@ -410,7 +410,7 @@ void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 
 bool Rover::verify_wait_delay()
 {
-    if ((uint32_t)(millis() - condition_start) > (uint32_t)condition_value) {
+    if (static_cast<uint32_t>(millis() - condition_start) > static_cast<uint32_t>(condition_value)) {
         condition_value = 0;
         return true;
     }
@@ -434,7 +434,7 @@ void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
         g.speed_cruise.set(cmd.content.speed.target_ms);
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise speed: %.1f m/s", (double)g.speed_cruise.get());
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise speed: %.1f m/s", static_cast<double>(g.speed_cruise.get()));
     }
 
     if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {

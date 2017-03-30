@@ -387,7 +387,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
         control_mode != RTL &&
         control_mode != HOLD) {
         failsafe.triggered = failsafe.bits;
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Failsafe trigger 0x%x", (unsigned)failsafe.triggered);
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Failsafe trigger 0x%x", static_cast<uint32_t>(failsafe.triggered));
         switch (g.fs_action) {
         case 0:
             break;
@@ -467,7 +467,7 @@ void Rover::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->printf("RTL");
         break;
     default:
-        port->printf("Mode(%u)", (unsigned)mode);
+        port->printf("Mode(%u)", static_cast<uint32_t>(mode));
         break;
     }
 }
