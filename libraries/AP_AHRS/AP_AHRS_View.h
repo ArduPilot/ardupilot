@@ -145,6 +145,18 @@ public:
         return ahrs.getLastPosDownReset(posDelta);
     }
 
+    // return the average size of the roll/pitch error estimate
+    // since last call
+    float get_error_rp(void) const {
+        return ahrs.get_error_rp();
+    }
+
+    // return the average size of the yaw error estimate
+    // since last call
+    float get_error_yaw(void) const {
+        return ahrs.get_error_yaw();
+    }
+    
     float roll;
     float pitch;
     float yaw;
