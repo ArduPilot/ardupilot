@@ -101,10 +101,55 @@ void AP_MotorsTailsitter::output_to_motors()
 // calculate outputs to the motors
 void AP_MotorsTailsitter::output_armed_stabilizing()
 {
-    _aileron = -_yaw_in;
-    _elevator = _pitch_in;
-    _rudder = _roll_in;
-    _throttle = get_throttle();
+    float   roll_thrust;                // roll thrust input value, +/- 1.0
+    float   pitch_thrust;               // pitch thrust input value, +/- 1.0
+    float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
+    float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
+    float   rpy_thrust;                 // the minimum throttle setting that will not limit the roll pitch and yaw output
+    float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+
+    // apply voltage and air pressure compensation
+    // roll, pitch, yaw should only be scaled by air density
+    roll_thrust = _roll_in * get_compensation_gain();
+    pitch_thrust = _pitch_in * get_compensation_gain();
+    yaw_thrust = _yaw_in * get_compensation_gain();
+    throttle_thrust = get_throttle() * get_compensation_gain();
+
+    // sanity check throttle is above zero and below current limited throttle
+    if (throttle_thrust <= 0.0f) {
+        throttle_thrust = 0.0f;
+        limit.throttle_lower = true;
+    }
+    if (throttle_thrust >= _throttle_thrust_max) {
+        throttle_thrust = _throttle_thrust_max;
+        limit.throttle_upper = true;
+    }
+
+    _throttle_avg_max = constrain_float(_throttle_avg_max, throttle_thrust, _throttle_thrust_max);
+
+    rpy_thrust = MAX(MAX(fabsf(roll_thrust), fabsf(pitch_thrust)), fabsf(yaw_thrust));
+
+    thr_adj = throttle_thrust - _throttle_avg_max;
+    if (thr_adj < (rpy_thrust - _throttle_avg_max)) {
+        // Throttle can't be reduced to the desired level because this would mean roll or pitch control
+        // would not be able to reach the desired level because of lack of thrust.
+        thr_adj = MIN(rpy_thrust, _throttle_avg_max) - _throttle_avg_max;
+    }
+
+    // calculate the throttle setting for the lift fan
+    _throttle = _throttle_avg_max + thr_adj;
+
+    if (is_zero(_throttle)) {
+        limit.roll_pitch = true;
+        limit.yaw = true;
+    }
+
+    // limit thrust out for calculation of actuator gains
+    float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5f,_throttle), 0.1f, 1.0f);
+
+    _aileron = -constrain_float(yaw_thrust/thrust_out_actuator, -1.0f, 1.0f);
+    _elevator = constrain_float(pitch_thrust/thrust_out_actuator, -1.0f, 1.0f);
+    _rudder = constrain_float(roll_thrust/thrust_out_actuator, -1.0f, 1.0f);
 
     // sanity check throttle is above zero and below current limited throttle
     if (_throttle <= 0.0f) {
@@ -115,7 +160,5 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
         _throttle = _throttle_thrust_max;
         limit.throttle_upper = true;
     }
-
-    _throttle = constrain_float(_throttle, 0.1, 1);
 }
 
