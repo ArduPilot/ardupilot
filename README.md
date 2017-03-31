@@ -1,7 +1,7 @@
 
-### ArduPilot w/ Custom Transmit Message ###
+### ArduPilot w/ Custom MAVLink Transmit Data Message ###
 
-This a fork of ArduPilot with the intent of adding a new message type to ArduCopter. The Message REMOTE_DATA (id=196) should allow ArduCopter to pass short strings over MAVLink.
+This a fork of ArduPilot with the intent of adding a custom message into ArduCopter for a project. The Message REMOTE_DATA (id=196) should allow ArduCopter to pass short strings over MAVLink. Data can be passed through MAVLink by writing to a named pipe that gets created at /tmp/apm_pipe. A copy of the xml file for the message specification can be found under messages_definitions. A copy of this should be placed under 'modules/mavlink/message_definitions/v1.0' before building.
 
 #ArduPilot Project#
 
