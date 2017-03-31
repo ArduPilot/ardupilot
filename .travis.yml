@@ -75,6 +75,8 @@ matrix:
   fast_finish: true
   include:
     - compiler: "gcc"
+      env: CI_BUILD_TARGET="px4-v1"
+    - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v2"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v3"
