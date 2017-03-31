@@ -671,6 +671,8 @@ private:
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
     void gcs_send_heartbeat(void);
+    void gcs_send_remote_data(mavlink_channel_t); //custom
+    void gcs_remote_data_task(void); // custom
     void gcs_send_deferred(void);
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);

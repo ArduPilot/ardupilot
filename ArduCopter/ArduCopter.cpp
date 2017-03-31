@@ -154,6 +154,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK(button_update,          5,    100),
     SCHED_TASK(stats_update,           1,    100),
+    SCHED_TASK(gcs_remote_data_task,   5,    400),
 };
 
 
