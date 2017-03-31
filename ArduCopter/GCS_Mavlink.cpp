@@ -49,27 +49,14 @@ NOINLINE void Copter::gcs_send_remote_data(mavlink_channel_t chan)
 		}
 	}
 
-
-	// Safety limit on segment numbers	
-	/*(while((bytes = read(fd, buf, 252) > 0)){
-		buf[bytes] = '\0';
-		// My Custom MAVLink Message
-		sprintf(msg, "RDATA: Read %zu Bytes. Sending message: %s", bytes, buf);
-		gcs_send_text(MAV_SEVERITY_INFO, msg);
-		mavlink_msg_remote_data_send(chan,
-                                             segnr,
-			         	     buf);
-		if(bytes > 0) segnr++;
-	}*/
 	if((bytes = read(fd, buf, 252)) > 0){
 		buf[bytes] = '\0';
-		sprintf(msg, "RDATA: Read %zu Bytes. Sending message: %s", bytes, buf);
-		gcs_send_text(MAV_SEVERITY_INFO, msg);
+		//sprintf(msg, "RDATA: Read %zu Bytes. Sending message: %s", bytes, buf);
+		//gcs_send_text(MAV_SEVERITY_INFO, msg);
 		mavlink_msg_remote_data_send(chan,
                                              segnr,
 			         	     buf);
 	}
-	//close(fd);
 	return;
 
 }
