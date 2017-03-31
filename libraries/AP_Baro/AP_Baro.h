@@ -152,6 +152,9 @@ public:
     // simple atmospheric model
     static void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
 
+    // set a pressure correction from AP_TempCalibration
+    void set_pressure_correction(uint8_t instance, float p_correction);
+    
 private:
     // how many drivers do we have?
     uint8_t _num_drivers;
@@ -173,6 +176,7 @@ private:
         float temperature;              // temperature in degrees C
         float altitude;                 // calculated altitude
         AP_Float ground_pressure;
+        float p_correction;
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
