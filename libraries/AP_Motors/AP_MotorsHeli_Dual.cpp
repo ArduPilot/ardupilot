@@ -144,7 +144,35 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Values: -1:Reversed,1:Normal
     // @User: Standard
     AP_GROUPINFO("RSC_PWM_REV", 15, AP_MotorsHeli_Dual, _rotor._pwm_rev, 1),
-    
+
+
+    // @Param: COL_MIN
+    // @DisplayName: Collective Pitch Minimum for rear swashplate
+    // @Description: Lowest possible servo position for the rear swashplate
+    // @Range: 1000 2000
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("COL2_MIN", 16, AP_MotorsHeli_Dual, _collective2_min, AP_MOTORS_HELI_DUAL_COLLECTIVE2_MIN),
+
+    // @Param: COL_MAX
+    // @DisplayName: Collective Pitch Maximum for rear swashplate
+    // @Description: Highest possible servo position for the rear swashplate
+    // @Range: 1000 2000
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("COL2_MAX", 17, AP_MotorsHeli_Dual, _collective2_max, AP_MOTORS_HELI_DUAL_COLLECTIVE2_MAX),
+
+    // @Param: COL2_MID
+    // @DisplayName: Collective Pitch Mid-Point for rear swashplate
+    // @Description: Swash servo position corresponding to zero collective pitch for the rear swashplate (or zero lift for Asymmetrical blades)
+    // @Range: 1000 2000
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("COL2_MID", 18, AP_MotorsHeli_Dual, _collective2_mid, AP_MOTORS_HELI_DUAL_COLLECTIVE2_MID),
+
     AP_GROUPEND
 };
 
@@ -282,10 +310,20 @@ void AP_MotorsHeli_Dual::calculate_scalars()
         _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
         _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
     }
+
+
+    // range check collective min, max and mid for rear swashplate
+    if( _collective2_min >= _collective2_max ) {
+        _collective2_min = AP_MOTORS_HELI_DUAL_COLLECTIVE2_MIN;
+        _collective2_max = AP_MOTORS_HELI_DUAL_COLLECTIVE2_MAX;
+    }
+
     _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
+    _collective2_mid = constrain_int16(_collective2_mid, _collective2_min, _collective2_max);
 
     // calculate collective mid point as a number from 0 to 1000
     _collective_mid_pct = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min));
+    _collective2_mid_pct = ((float)(_collective2_mid-_collective2_min))/((float)(_collective2_max-_collective2_min));
 
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
@@ -463,15 +501,26 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
         limit.throttle_upper = true;
     }
 
+    // Set rear collective to midpoint if required
+    float collective2_out = collective_out;
+    if (_servo_mode == SERVO_CONTROL_MODE_MANUAL_CENTER) {
+        collective2_out = _collective2_mid_pct;
+    }
+
+
     // ensure not below landed/landing collective
     if (_heliflags.landing_collective && collective_out < (_land_collective_min/1000.0f)) {
         collective_out = _land_collective_min/1000.0f;
         limit.throttle_lower = true;
     }
 
-    // scale collective pitch
+    // scale collective pitch for front swashplate (servos 1,2,3)
     float collective_scaler = ((float)(_collective_max-_collective_min))/1000.0f;
     float collective_out_scaled = collective_out * collective_scaler + (_collective_min - 1000)/1000.0f;
+
+    // scale collective pitch for rear swashplate (servos 4,5,6)
+    float collective2_scaler = ((float)(_collective2_max-_collective2_min))/1000.0f;
+    float collective2_out_scaled = collective2_out * collective2_scaler + (_collective2_min - 1000)/1000.0f;
 
     // feed power estimate into main rotor controller
     // ToDo: add main rotor cyclic power?
@@ -481,9 +530,9 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     float servo1_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out + _yawFactor[CH_1] * yaw_out)/0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
     float servo2_out = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out + _yawFactor[CH_2] * yaw_out)/0.45f + _collectiveFactor[CH_2] * collective_out_scaled;
     float servo3_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out + _yawFactor[CH_3] * yaw_out)/0.45f + _collectiveFactor[CH_3] * collective_out_scaled;
-    float servo4_out = (_rollFactor[CH_4] * roll_out + _pitchFactor[CH_4] * pitch_out + _yawFactor[CH_4] * yaw_out)/0.45f + _collectiveFactor[CH_4] * collective_out_scaled;
-    float servo5_out = (_rollFactor[CH_5] * roll_out + _pitchFactor[CH_5] * pitch_out + _yawFactor[CH_5] * yaw_out)/0.45f + _collectiveFactor[CH_5] * collective_out_scaled;
-    float servo6_out = (_rollFactor[CH_6] * roll_out + _pitchFactor[CH_6] * pitch_out + _yawFactor[CH_6] * yaw_out)/0.45f + _collectiveFactor[CH_6] * collective_out_scaled;
+    float servo4_out = (_rollFactor[CH_4] * roll_out + _pitchFactor[CH_4] * pitch_out + _yawFactor[CH_4] * yaw_out)/0.45f + _collectiveFactor[CH_4] * collective2_out_scaled;
+    float servo5_out = (_rollFactor[CH_5] * roll_out + _pitchFactor[CH_5] * pitch_out + _yawFactor[CH_5] * yaw_out)/0.45f + _collectiveFactor[CH_5] * collective2_out_scaled;
+    float servo6_out = (_rollFactor[CH_6] * roll_out + _pitchFactor[CH_6] * pitch_out + _yawFactor[CH_6] * yaw_out)/0.45f + _collectiveFactor[CH_6] * collective2_out_scaled;
 
     // rescale from -1..1, so we can use the pwm calc that includes trim
     servo1_out = 2*servo1_out - 1;
