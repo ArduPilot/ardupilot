@@ -70,6 +70,7 @@ enum ap_message {
     MSG_MISSION_ITEM_REACHED,
     MSG_POSITION_TARGET_GLOBAL_INT,
     MSG_ADSB_VEHICLE,
+    MSG_REMOTE_DATA, //custom
     MSG_RETRY_DEFERRED // this must be last
 };
 

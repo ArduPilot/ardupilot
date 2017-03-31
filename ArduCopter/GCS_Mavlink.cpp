@@ -3,6 +3,12 @@
 
 #include "GCS_Mavlink.h"
 
+// Needed for custom remote data
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 void Copter::gcs_send_heartbeat(void)
 {
     gcs_send_message(MSG_HEARTBEAT);
@@ -12,6 +18,60 @@ void Copter::gcs_send_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
     gcs().service_statustext();
+}
+
+// custom
+void Copter::gcs_remote_data_task(void)
+{
+	gcs_send_message(MSG_REMOTE_DATA);
+}
+
+NOINLINE void Copter::gcs_send_remote_data(mavlink_channel_t chan)
+{
+	// Data is char[253]
+	static int fd = 0;
+	unsigned int bytes;
+	uint16_t segnr = 0;
+	char buf[253];
+	char msg[512];
+	const char *PIPE_NAME = "/tmp/apm_pipe";
+
+	if(fd <= 0){
+		fd = open(PIPE_NAME, O_RDONLY | O_NONBLOCK);	
+	}
+
+	if(access(PIPE_NAME, F_OK) == -1){
+		gcs_send_text(MAV_SEVERITY_INFO, "RDATA: Named pipe not found. Trying to create /tmp/apm_pipe");
+		if (mknod(PIPE_NAME, S_IFIFO | 0755, 0) != 0){
+			gcs_send_text(MAV_SEVERITY_INFO, "RDATA: Could not create new named pipe at /tmp/apm_pipe");
+			// If we can't make a FIFO don't worry about it, just exit
+			return;
+		}
+	}
+
+
+	// Safety limit on segment numbers	
+	/*(while((bytes = read(fd, buf, 252) > 0)){
+		buf[bytes] = '\0';
+		// My Custom MAVLink Message
+		sprintf(msg, "RDATA: Read %zu Bytes. Sending message: %s", bytes, buf);
+		gcs_send_text(MAV_SEVERITY_INFO, msg);
+		mavlink_msg_remote_data_send(chan,
+                                             segnr,
+			         	     buf);
+		if(bytes > 0) segnr++;
+	}*/
+	if((bytes = read(fd, buf, 252)) > 0){
+		buf[bytes] = '\0';
+		sprintf(msg, "RDATA: Read %zu Bytes. Sending message: %s", bytes, buf);
+		gcs_send_text(MAV_SEVERITY_INFO, msg);
+		mavlink_msg_remote_data_send(chan,
+                                             segnr,
+			         	     buf);
+	}
+	//close(fd);
+	return;
+
 }
 
 /*
@@ -580,6 +640,10 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         copter.adsb.send_adsb_vehicle(chan);
         break;
+   
+    case MSG_REMOTE_DATA:
+	CHECK_PAYLOAD_SIZE(REMOTE_DATA);
+	copter.gcs_send_remote_data(chan);
     }
 
     return true;
@@ -2010,6 +2074,7 @@ void Copter::mavlink_delay_cb()
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs_send_heartbeat();
+	gcs_send_message(MSG_REMOTE_DATA); //custom
         gcs_send_message(MSG_EXTENDED_STATUS1);
     }
     if (tnow - last_50hz > 20) {
