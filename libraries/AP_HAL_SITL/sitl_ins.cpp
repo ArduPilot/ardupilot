@@ -88,7 +88,7 @@ void SITL_State::_update_ins(float airspeed)
         return;
     }
 
-    float airspeed_simulated = (fabsf(_sitl->arspd_fail) > 1.0e-6f) ? _sitl->arspd_fail : airspeed;
+    const float airspeed_simulated = is_zero(_sitl->arspd_fail) ? airspeed : _sitl->arspd_fail;
     airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->arspd_noise * rand_float()));
 }
 
