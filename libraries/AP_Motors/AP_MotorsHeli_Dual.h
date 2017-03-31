@@ -35,6 +35,11 @@
 // maximum number of swashplate servos
 #define AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS    6
 
+// default collective min, max and midpoints for the rear swashplate
+#define AP_MOTORS_HELI_DUAL_COLLECTIVE2_MIN 1250
+#define AP_MOTORS_HELI_DUAL_COLLECTIVE2_MAX 1750
+#define AP_MOTORS_HELI_DUAL_COLLECTIVE2_MID 1500
+
 /// @class AP_MotorsHeli_Dual
 class AP_MotorsHeli_Dual : public AP_MotorsHeli {
 public:
@@ -46,6 +51,7 @@ public:
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
+
 
     // set_update_rate - set update rate to motors
     void set_update_rate( uint16_t speed_hz ) override;
@@ -114,6 +120,9 @@ protected:
     float _pitch_test = 0.0f;                       // over-ride for pitch output, used by servo_test function
 
     // parameters
+    AP_Int16        _collective2_min;               // Lowest possible servo position for the rear swashplate
+    AP_Int16        _collective2_max;               // Highest possible servo position for the rear swashplate
+    AP_Int16        _collective2_mid;               // Swash servo position corresponding to zero collective pitch for the rear swashplate (or zero lift for Asymmetrical blades)
     AP_Int16        _servo1_pos;                    // angular location of swash servo #1
     AP_Int16        _servo2_pos;                    // angular location of swash servo #2
     AP_Int16        _servo3_pos;                    // angular location of swash servo #3
@@ -133,8 +142,9 @@ protected:
     SRV_Channel    *_swash_servo_4;
     SRV_Channel    *_swash_servo_5;
     SRV_Channel    *_swash_servo_6;
-    
+
     // internal variables
+    float           _collective2_mid_pct = 0.0f;      // collective mid parameter value for rear swashplate converted to 0 ~ 1 range
     float           _rollFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
     float           _pitchFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
     float           _collectiveFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
