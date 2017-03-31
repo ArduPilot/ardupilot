@@ -146,7 +146,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     AP_GROUPINFO("RSC_PWM_REV", 15, AP_MotorsHeli_Dual, _rotor._pwm_rev, 1),
 
 
-    // @Param: COL_MIN
+    // @Param: COL2_MIN
     // @DisplayName: Collective Pitch Minimum for rear swashplate
     // @Description: Lowest possible servo position for the rear swashplate
     // @Range: 1000 2000
@@ -155,7 +155,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("COL2_MIN", 16, AP_MotorsHeli_Dual, _collective2_min, AP_MOTORS_HELI_DUAL_COLLECTIVE2_MIN),
 
-    // @Param: COL_MAX
+    // @Param: COL2_MAX
     // @DisplayName: Collective Pitch Maximum for rear swashplate
     // @Description: Highest possible servo position for the rear swashplate
     // @Range: 1000 2000
