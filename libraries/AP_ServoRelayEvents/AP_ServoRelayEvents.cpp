@@ -106,10 +106,6 @@ void AP_ServoRelayEvents::update_events(void)
         return;
     }
 
-    if (channel > NUM_SERVO_CHANNELS || channel == 0) {
-        return;
-    }
-
     start_time_ms = AP_HAL::millis();
 
     switch (type) {
