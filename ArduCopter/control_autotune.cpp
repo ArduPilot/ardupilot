@@ -124,14 +124,14 @@ enum AutoTuneTuneType {
 // autotune_state_struct - hold state flags
 static struct autotune_state_struct {
     AutoTuneTuneMode    mode                : 2;    // see AutoTuneTuneMode for what modes are allowed
-    uint8_t             pilot_override      : 1;    // 1 = pilot is overriding controls so we suspend tuning temporarily
+    uint8_t             pilot_override      : 1;    // true = pilot is overriding controls so we suspend tuning temporarily
     AutoTuneAxisType    axis                : 2;    // see AutoTuneAxisType for which things can be tuned
-    uint8_t             positive_direction  : 1;    // 0 = tuning in negative direction (i.e. left for roll), 1 = positive direction (i.e. right for roll)
+    uint8_t             positive_direction  : 1;    // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
     AutoTuneStepType    step                : 2;    // see AutoTuneStepType for what steps are performed
     AutoTuneTuneType    tune_type           : 3;    // see AutoTuneTuneType
-    uint8_t             ignore_next         : 1;    // 1 = ignore the next test
-    bool                use_poshold         : 1;    // enable position hold
-    bool                have_position       : 1;    // start_position is value
+    uint8_t             ignore_next         : 1;    // true = ignore the next test
+    bool                use_poshold         : 1;    // true = enable position hold
+    bool                have_position       : 1;    // true = start_position is value
     Vector3f            start_position;
 } autotune_state;
 
@@ -1143,11 +1143,11 @@ void Copter::autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_
         // we have a good measurement of bounce back
         if (measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) {
             // ignore the next result unless it is the same as this one
-            autotune_state.ignore_next = 1;
+            autotune_state.ignore_next = true;
             // bounce back is bigger than our threshold so increment the success counter
             autotune_counter++;
         }else{
-            if (autotune_state.ignore_next == 0){
+            if (autotune_state.ignore_next == false) {
                 // bounce back is smaller than our threshold so decrement the success counter
                 if (autotune_counter > 0 ) {
                     autotune_counter--;
@@ -1161,7 +1161,7 @@ void Copter::autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_
                     Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                 }
             } else {
-                autotune_state.ignore_next = 0;
+                autotune_state.ignore_next = false;
             }
         }
     }
@@ -1197,15 +1197,15 @@ void Copter::autotune_updating_d_down(float &tune_d, float tune_d_min, float tun
     }else{
         // we have a good measurement of bounce back
         if (measurement_max-measurement_min < measurement_max*g.autotune_aggressiveness) {
-            if (autotune_state.ignore_next == 0){
+            if (autotune_state.ignore_next == false) {
                 // bounce back is less than our threshold so increment the success counter
                 autotune_counter++;
             } else {
-                autotune_state.ignore_next = 0;
+                autotune_state.ignore_next = false;
             }
         }else{
             // ignore the next result unless it is the same as this one
-            autotune_state.ignore_next = 1;
+            autotune_state.ignore_next = true;
             // bounce back is larger than our threshold so decrement the success counter
             if (autotune_counter > 0 ) {
                 autotune_counter--;
@@ -1227,15 +1227,15 @@ void Copter::autotune_updating_d_down(float &tune_d, float tune_d_min, float tun
 void Copter::autotune_updating_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float target, float measurement_max)
 {
     if (measurement_max < target*(1+0.5f*g.autotune_aggressiveness)) {
-        if (autotune_state.ignore_next == 0){
+        if (autotune_state.ignore_next == false) {
             // if maximum measurement was lower than target so increment the success counter
             autotune_counter++;
         } else {
-            autotune_state.ignore_next = 0;
+            autotune_state.ignore_next = false;
         }
     }else{
         // ignore the next result unless it is the same as this one
-        autotune_state.ignore_next = 1;
+        autotune_state.ignore_next = true;
         // if maximum measurement was higher than target so decrement the success counter
         if (autotune_counter > 0 ) {
             autotune_counter--;
@@ -1261,7 +1261,7 @@ void Copter::autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_
         // if maximum measurement was greater than target so increment the success counter
         autotune_counter++;
     }else{
-        if (autotune_state.ignore_next == 0){
+        if (autotune_state.ignore_next == false) {
             // if maximum measurement was lower than target so decrement the success counter
             if (autotune_counter > 0 ) {
                 autotune_counter--;
@@ -1275,7 +1275,7 @@ void Copter::autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_
                 Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
             }
         } else {
-            autotune_state.ignore_next = 0;
+            autotune_state.ignore_next = false;
         }
     }
 }
@@ -1286,7 +1286,7 @@ void Copter::autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, floa
 {
     if (measurement_max > target*(1+0.5f*g.autotune_aggressiveness)) {
         // ignore the next result unless it is the same as this one
-        autotune_state.ignore_next = 1;
+        autotune_state.ignore_next = true;
         // if maximum measurement was greater than target so increment the success counter
         autotune_counter++;
     } else if ((measurement_max < target) && (measurement_max > target*(1.0f-AUTOTUNE_D_UP_DOWN_MARGIN)) && (measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) && (tune_d > tune_d_min)) {
@@ -1311,7 +1311,7 @@ void Copter::autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, floa
         // cancel change in direction
         autotune_state.positive_direction = !autotune_state.positive_direction;
     }else{
-        if (autotune_state.ignore_next == 0){
+        if (autotune_state.ignore_next == false) {
             // if maximum measurement was lower than target so decrement the success counter
             if (autotune_counter > 0 ) {
                 autotune_counter--;
@@ -1325,7 +1325,7 @@ void Copter::autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, floa
                 Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
             }
         } else {
-            autotune_state.ignore_next = 0;
+            autotune_state.ignore_next = false;
         }
     }
 }
