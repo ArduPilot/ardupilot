@@ -18,6 +18,9 @@
 #include "AP_Compass_qflight.h"
 #include "AP_Compass_LIS3MDL.h"
 #include "AP_Compass_AK09916.h"
+#if HAL_WITH_UAVCAN
+#include "AP_Compass_UAVCAN.h"
+#endif
 #include "AP_Compass.h"
 
 extern AP_HAL::HAL& hal;
@@ -685,6 +688,18 @@ void Compass::_detect_backends(void)
                  AP_Compass_LSM9DS1::name, false);
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
+#endif
+
+#if HAL_WITH_UAVCAN
+    if ((AP_BoardConfig::get_can_enable() != 0) && (hal.can_mgr != nullptr))
+    {
+        if((_backend_count < COMPASS_MAX_BACKEND) && (_compass_count < COMPASS_MAX_INSTANCES))
+        {
+            printf("Creating AP_Compass_UAVCAN\n\r");
+            _backends[_backend_count] = new AP_Compass_UAVCAN(*this);
+            _backend_count++;
+        }
+    }
 #endif
 
     if (_backend_count == 0 ||
