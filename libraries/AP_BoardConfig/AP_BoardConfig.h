@@ -13,24 +13,43 @@
 #define UAVCAN_IOCG_NODEID_INPROGRESS  _UAVCAN_IOC(1)               // query if node identification is in progress
 #define UAVCAN_IOCS_HARDPOINT_SET      _UAVCAN_IOC(10)              // control hardpoint (e.g. OpenGrab EPM)
 
-#define UAVCAN_NODE_FILE            "/dev/uavcan/esc"   // design flaw of uavcan driver, this should be /dev/uavcan/node one day
-
 #endif
 
 extern "C" typedef int (*main_fn_t)(int argc, char **);
 
-class AP_BoardConfig
-{
+class AP_BoardConfig {
 public:
     // constructor
     AP_BoardConfig(void)
     {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
     };
 
     void init(void);
 
     static const struct AP_Param::GroupInfo var_info[];
+
+#if HAL_WITH_UAVCAN
+    class CAN_var_info {
+        friend class AP_BoardConfig;
+
+    public:
+        CAN_var_info() : _uavcan(nullptr)
+        {
+            AP_Param::setup_object_defaults(this, var_info);
+        }
+        static const struct AP_Param::GroupInfo var_info[];
+
+    private:
+        AP_Int8 _can_enable;
+        AP_Int8 _can_debug;
+        AP_Int32 _can_bitrate;
+
+        AP_Int8 _uavcan_enable;
+
+        AP_UAVCAN *_uavcan;
+    };
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // public method to start a driver
@@ -70,18 +89,35 @@ public:
         return px4_configured_board;
     }
 #endif
-    
+
+    static int8_t get_can_enable()
+    {
+#if HAL_WITH_UAVCAN
+        return _st_can_enable;
+#else
+        return 0;
+#endif
+    }
+    static int8_t get_can_debug()
+    {
+#if HAL_WITH_UAVCAN
+        return _st_can_debug;
+#else
+        return 0;
+#endif
+    }
 private:
     AP_Int16 vehicleSerialNumber;
+
+#if HAL_WITH_UAVCAN
+    CAN_var_info _var_info_can;
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     struct {
         AP_Int8 pwm_count;
         AP_Int8 safety_enable;
         AP_Int32 ignore_safety_channels;
-#if HAL_WITH_UAVCAN
-        AP_Int8 can_enable;
-#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         AP_Int8 ser1_rtscts;
         AP_Int8 ser2_rtscts;
@@ -92,7 +128,12 @@ private:
     } px4;
 
     static enum px4_board_type px4_configured_board;
-    
+
+#if HAL_WITH_UAVCAN
+    static int8_t _st_can_enable;
+    static int8_t _st_can_debug;
+#endif
+
     void px4_drivers_start(void);
     void px4_setup(void);
     void px4_setup_pwm(void);
@@ -106,11 +147,11 @@ private:
     void px4_setup_px4io(void);
     void px4_tone_alarm(const char *tone_string);
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
-    
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     void px4_autodetect(void);
 #endif
-    
+
 #endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
 
     // target temperarure for IMU in Celsius, or -1 to disable
