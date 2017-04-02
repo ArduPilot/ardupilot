@@ -153,6 +153,7 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
+    cfg.load('uavcangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -242,6 +243,17 @@ def _build_dynamic_sources(bld):
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
         ],
     )
+
+    if bld.get_board().with_uavcan:
+        bld(
+            features='uavcangen',
+            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/uavcan/**/*.uavcan'),
+            output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
+            name='uavcan',
+            export_includes=[
+                bld.bldnode.make_node('modules/uavcan/libuavcan/include/dsdlc_generated').abspath(),
+            ]
+        )
 
     def write_version_header(tsk):
         bld = tsk.generator.bld
@@ -340,9 +352,12 @@ def build(bld):
     bld.load('ardupilotwaf')
 
     bld.env.AP_LIBRARIES_OBJECTS_KW.update(
-        use='mavlink',
+        use=['mavlink'],
         cxxflags=['-include', 'ap_config.h'],
     )
+    
+    if bld.get_board().with_uavcan:
+        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
 
     _build_cmd_tweaks(bld)
 
