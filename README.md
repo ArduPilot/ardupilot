@@ -80,6 +80,9 @@
 >>   - ***Bug Master***
 >> - [Matthias Badaire](https://github.com/badzz)
 >>   - ***Subsystem***: FRSky
+>> - [Eugene Shamaev](https://github.com/EShamaev)
+>>   - ***Subsystem***: CAN bus
+>>   - ***Subsystem***: UAVCAN
 >> - [Víctor Mayoral Vilches](https://github.com/vmayoral)
 >>   - ***Board***: PXF, Erle-Brain 2, PXFmini
 >> - [Mirko Denecke](https://github.com/mirkix)
