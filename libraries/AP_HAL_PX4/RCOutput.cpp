@@ -14,6 +14,12 @@
 #include <drivers/drv_pwm_output.h>
 #include <drivers/drv_sbus.h>
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
+#ifdef HAL_WITH_UAVCAN
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 using namespace PX4;
@@ -529,8 +535,34 @@ void PX4RCOutput::_send_outputs(void)
             }
         }
 
-        // also publish to actuator_direct
-        _publish_actuators();
+        if(AP_BoardConfig::get_can_enable() >= 1)
+        {
+            // also publish to actuator_direct (UAVCAN is published via AP_UAVCAN)
+            _publish_actuators();
+
+            if(hal.can_mgr != nullptr)
+            {
+                AP_UAVCAN *ap_uc = hal.can_mgr->get_UAVCAN();
+                if(ap_uc != nullptr)
+                {
+                    ap_uc->rc_out_sem_take();
+
+                    for(uint8_t i = 0; i < _max_channel; i++)
+                    {
+                        ap_uc->rco_write(_period[i], i);
+                    }
+
+                    bool armed = hal.util->get_soft_armed();
+                    if (armed) {
+                        ap_uc->rco_arm_actuators(true);
+                    } else {
+                        ap_uc->rco_arm_actuators(false);
+                    }
+
+                    ap_uc->rc_out_sem_give();
+                }
+            }
+        }
 
         perf_end(_perf_rcout);
         _last_output = now;
