@@ -193,6 +193,7 @@ private:
 
     // get normalised output from -1 to 1
     float get_output_norm(void);
+    float get_output_norm_from_pwm(uint16_t pwm);
     
     // a bitmask type wide enough for NUM_SERVO_CHANNELS
     typedef uint16_t servo_mask_t;
@@ -236,6 +237,10 @@ public:
     // get normalised output (-1 to 1 for angle, 0 to 1 for range). Value is taken from pwm value
     // return zero on error.
     static float get_output_norm(SRV_Channel::Aux_servo_function_t function);
+
+    // get normalised output (-1 to 1 for angle, 0 to 1 for range). Value is taken from pwm value
+    static float get_output_norm_from_pwm(uint8_t chan, uint16_t pwm);
+
 
     // limit slew rate to given limit in percent per second
     static void limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt);
@@ -352,6 +357,19 @@ public:
     static bool upgrade_parameters(const uint8_t old_keys[14], uint16_t aux_channel_mask, RCMapper *rcmap);
     static void upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors_idx, uint8_t new_channel);
     
+    static uint32_t get_can_servo_bm(void) {
+        if(p_can_servo_bm != nullptr)
+            return *p_can_servo_bm;
+        else
+            return 0;
+    }
+    static uint32_t get_can_esc_bm(void) {
+        if(p_can_esc_bm != nullptr)
+            return *p_can_esc_bm;
+        else
+            return 0;
+    }
+
 private:
     struct {
         bool k_throttle_reversible:1;
@@ -382,4 +400,9 @@ private:
     static bool passthrough_disabled(void) {
         return disabled_passthrough;
     }
+
+    AP_Int32 can_servo_bm;
+    AP_Int32 can_esc_bm;
+    static AP_Int32 *p_can_servo_bm;
+    static AP_Int32 *p_can_esc_bm;
 };

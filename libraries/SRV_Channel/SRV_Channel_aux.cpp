@@ -551,6 +551,14 @@ float SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t function)
 }
 
 /*
+  get the normalised output for a channel function from the pwm value
+ */
+float SRV_Channels::get_output_norm_from_pwm(uint8_t chan, uint16_t pwm)
+{
+    return channels[chan].get_output_norm_from_pwm(pwm);
+}
+
+/*
   limit slew rate for an output function to given rate in percent per
   second. This assumes output has not yet done to the hal
  */
