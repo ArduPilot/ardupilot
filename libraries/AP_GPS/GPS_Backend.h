@@ -51,6 +51,7 @@ public:
     virtual void broadcast_configuration_failure_reason(void) const { return ; }
 
     virtual void handle_msg(const mavlink_message_t *msg) { return ; }
+    virtual void handle_gnss_msg(const AP_GPS::GPS_State &msg) { return ; }
 
     // driver specific lag
     virtual float get_lag(void) const { return 0.2f; }
