@@ -249,7 +249,8 @@ HAL_Linux::HAL_Linux() :
         &rcoutDriver,
         &schedulerInstance,
         &utilInstance,
-        &opticalFlow)
+        &opticalFlow,
+        nullptr)
 {}
 
 void _usage(void)
