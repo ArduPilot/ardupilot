@@ -83,11 +83,17 @@ def ap_library(bld, library, vehicle):
     if common_tg and vehicle_tg:
         return
 
-    library_dir = bld.srcnode.find_dir('libraries/%s' % library)
+    if library.find('*') != -1:
+        # allow for wildcard patterns, used for submodules without direct waf support
+        library_dir = bld.srcnode.find_dir('.')
+        wildcard = library
+    else:
+        library_dir = bld.srcnode.find_dir('libraries/%s' % library)
+        wildcard = ap.SOURCE_EXTS + UTILITY_SOURCE_EXTS
+
     if not library_dir:
         bld.fatal('ap_library: %s not found' % library)
-
-    src = library_dir.ant_glob(ap.SOURCE_EXTS + UTILITY_SOURCE_EXTS)
+    src = library_dir.ant_glob(wildcard)
 
     if not common_tg:
         kw = dict(bld.env.AP_LIBRARIES_OBJECTS_KW)
