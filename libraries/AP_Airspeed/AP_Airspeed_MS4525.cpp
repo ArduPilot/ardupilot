@@ -98,6 +98,34 @@ void AP_Airspeed_MS4525::_measure()
     }
 }
 
+/*
+  this equation is an inversion of the equation in the
+  pressure transfer function figure on page 4 of the datasheet
+  
+  We negate the result so that positive differential pressures
+  are generated when the bottom port is used as the static
+  port on the pitot and top port is used as the dynamic port
+*/
+float AP_Airspeed_MS4525::_get_pressure(int16_t dp_raw) const
+{
+    const float P_max = get_psi_range();
+    const float P_min = - P_max;
+    const float PSI_to_Pa = 6894.757f;
+
+    float diff_press_PSI  = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
+    float press  = diff_press_PSI * PSI_to_Pa;
+    return press;
+}
+
+/*
+  convert raw temperature to temperature in degrees C
+ */
+float AP_Airspeed_MS4525::_get_temperature(int16_t dT_raw) const
+{
+    float temp  = ((200.0f * dT_raw) / 2047) - 50;
+    return temp;
+}
+
 // read the values from the sensor
 void AP_Airspeed_MS4525::_collect()
 {
@@ -145,29 +173,19 @@ void AP_Airspeed_MS4525::_collect()
         return;
     }
 
-    const float P_max = get_psi_range();
-    const float P_min = - P_max;
-    const float PSI_to_Pa = 6894.757f;
-    /*
-      this equation is an inversion of the equation in the
-      pressure transfer function figure on page 4 of the datasheet
-
-      We negate the result so that positive differential pressures
-      are generated when the bottom port is used as the static
-      port on the pitot and top port is used as the dynamic port
-     */
-    float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
-
-    float press = diff_press_PSI * PSI_to_Pa;
-    float temp = ((200.0f * dT_raw) / 2047) - 50;
+    float press  = _get_pressure(dp_raw);
+    float press2 = _get_pressure(dp_raw2);
+    float temp  = _get_temperature(dT_raw);
+    float temp2 = _get_temperature(dT_raw2);
     
     _voltage_correction(press, temp);
+    _voltage_correction(press2, temp2);
 
     if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _press_sum += press;
-        _temp_sum += temp;
-        _press_count++;
-        _temp_count++;
+        _press_sum += press + press2;
+        _temp_sum += temp + temp2;
+        _press_count += 2;
+        _temp_count += 2;
         sem->give();
     }
     
