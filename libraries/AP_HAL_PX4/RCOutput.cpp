@@ -184,10 +184,6 @@ void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         hal.console->printf("RCOutput: Unable to get servo count\n");        
         return;
     }
-    if (_alt_fd != -1 && ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get alt servo count\n");        
-        return;
-    }
     
     // greater than 400 doesn't give enough room at higher periods for
     // the down pulse
