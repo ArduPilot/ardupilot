@@ -34,6 +34,9 @@
 #include "AP_Baro_PX4.h"
 #include "AP_Baro_qflight.h"
 #include "AP_Baro_QURT.h"
+#if HAL_WITH_UAVCAN
+#include "AP_Baro_UAVCAN.h"
+#endif
 
 #define C_TO_KELVIN 273.15f
 // Gas Constant is from Aerodynamics for Engineering Students, Third Edition, E.L.Houghton and N.B.Carruthers
@@ -474,6 +477,19 @@ void AP_Baro::init(void)
 #endif
     }
     
+#if HAL_WITH_UAVCAN
+    // If there is place left - allocate one UAVCAN based baro
+    if ((AP_BoardConfig::get_can_enable() != 0) && (hal.can_mgr != nullptr))
+    {
+        if(_num_drivers < BARO_MAX_DRIVERS && _num_sensors < BARO_MAX_INSTANCES)
+        {
+            printf("Creating AP_Baro_UAVCAN\n\r");
+            drivers[_num_drivers] = new AP_Baro_UAVCAN(*this);
+            _num_drivers++;
+        }
+    }
+#endif
+
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_HAL::panic("Baro: unable to initialise driver");
     }

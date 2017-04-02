@@ -6,6 +6,7 @@ class AP_Baro_Backend
 {
 public:
     AP_Baro_Backend(AP_Baro &baro);
+    virtual ~AP_Baro_Backend(void) {};
 
     // each driver must provide an update method to copy accumulated
     // data to the frontend
@@ -15,6 +16,9 @@ public:
     // timer, and need to be called regularly by the main code to
     // trigger them to read the sensor
     virtual void accumulate(void) {}
+
+    // callback for UAVCAN messages
+    virtual void handle_baro_msg(float pressure, float temperature) {}
 
 protected:
     // reference to frontend object
