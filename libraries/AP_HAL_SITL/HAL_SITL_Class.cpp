@@ -56,13 +56,14 @@ HAL_SITL::HAL_SITL() :
         &emptySPI,          /* spi */
         &sitlAnalogIn,      /* analogin */
         &sitlEEPROMStorage, /* storage */
-        &sitlUart0Driver,   /* console */
-        &sitlGPIO,          /* gpio */
-        &sitlRCInput,       /* rcinput */
-        &sitlRCOutput,      /* rcoutput */
-        &sitlScheduler,     /* scheduler */
-        &utilInstance,      /* util */
-        &emptyOpticalFlow), /* onboard optical flow */
+        &sitlUart0Driver, /* console */
+        &sitlGPIO, /* gpio */
+        &sitlRCInput,  /* rcinput */
+        &sitlRCOutput, /* rcoutput */
+        &sitlScheduler, /* scheduler */
+        &utilInstance, /* util */
+        &emptyOpticalFlow, /* onboard optical flow */
+        nullptr),   /* CAN */
     _sitl_state(&sitlState)
 {}
 
