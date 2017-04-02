@@ -153,6 +153,7 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
+    cfg.load('uavcangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -188,6 +189,8 @@ def configure(cfg):
 
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/',
+        cfg.srcnode.abspath() + '/modules/uavcan/libuavcan/include/',
+        cfg.srcnode.abspath() + '/modules/uavcan/libuavcan/include/dsdlc_generated/',
     ])
 
     # TODO: Investigate if code could be changed to not depend on the
@@ -241,6 +244,13 @@ def _build_dynamic_sources(bld):
             bld.bldnode.make_node('libraries').abspath(),
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
         ],
+    )
+
+    bld(
+        features='uavcangen',
+        source='modules/uavcan/dsdl/uavcan/Timestamp.uavcan',
+        output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
+        name='uavcan'
     )
 
     def write_version_header(tsk):
