@@ -161,12 +161,14 @@ static void gnss_aux_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::g
         if (ap_uavcan != nullptr) {
             AP_GPS::GPS_State *state = ap_uavcan->find_gps_node(msg.getSrcNodeID().get());
 
-            if (!uavcan::isNaN(msg.hdop)) {
-                state->hdop = msg.hdop * 100.0;
-            }
+            if (state != nullptr) {
+                if (!uavcan::isNaN(msg.hdop)) {
+                    state->hdop = msg.hdop * 100.0;
+                }
 
-            if (!uavcan::isNaN(msg.vdop)) {
-                state->vdop = msg.vdop * 100.0;
+                if (!uavcan::isNaN(msg.vdop)) {
+                    state->vdop = msg.vdop * 100.0;
+                }
             }
         }
     }
