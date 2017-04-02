@@ -20,7 +20,14 @@
 #include "Storage.h"
 #include "RCOutput.h"
 #include "RCInput.h"
+
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
+#ifdef HAL_WITH_UAVCAN
+#include "CAN.h"
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#endif
 
 using namespace PX4;
 
@@ -32,7 +39,7 @@ PX4Scheduler::PX4Scheduler() :
     _perf_timers(perf_alloc(PC_ELAPSED, "APM_timers")),
     _perf_io_timers(perf_alloc(PC_ELAPSED, "APM_IO_timers")),
     _perf_storage_timer(perf_alloc(PC_ELAPSED, "APM_storage_timers")),
-	_perf_delay(perf_alloc(PC_ELAPSED, "APM_delay"))
+    _perf_delay(perf_alloc(PC_ELAPSED, "APM_delay"))
 {}
 
 void PX4Scheduler::init()
@@ -40,37 +47,37 @@ void PX4Scheduler::init()
     _main_task_pid = getpid();
 
     // setup the timer thread - this will call tasks at 1kHz
-	pthread_attr_t thread_attr;
-	struct sched_param param;
+    pthread_attr_t thread_attr;
+    struct sched_param param;
 
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setstacksize(&thread_attr, 2048);
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 2048);
 
-	param.sched_priority = APM_TIMER_PRIORITY;
-	(void)pthread_attr_setschedparam(&thread_attr, &param);
+    param.sched_priority = APM_TIMER_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
-	pthread_create(&_timer_thread_ctx, &thread_attr, &PX4Scheduler::_timer_thread, this);
+    pthread_create(&_timer_thread_ctx, &thread_attr, &PX4Scheduler::_timer_thread, this);
 
     // the UART thread runs at a medium priority
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setstacksize(&thread_attr, 2048);
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 2048);
 
-	param.sched_priority = APM_UART_PRIORITY;
-	(void)pthread_attr_setschedparam(&thread_attr, &param);
+    param.sched_priority = APM_UART_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
-	pthread_create(&_uart_thread_ctx, &thread_attr, &PX4Scheduler::_uart_thread, this);
+    pthread_create(&_uart_thread_ctx, &thread_attr, &PX4Scheduler::_uart_thread, this);
 
     // the IO thread runs at lower priority
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setstacksize(&thread_attr, 2048);
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 2048);
 
-	param.sched_priority = APM_IO_PRIORITY;
-	(void)pthread_attr_setschedparam(&thread_attr, &param);
+    param.sched_priority = APM_IO_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
-	pthread_create(&_io_thread_ctx, &thread_attr, &PX4Scheduler::_io_thread, this);
+    pthread_create(&_io_thread_ctx, &thread_attr, &PX4Scheduler::_io_thread, this);
 
     // the storage thread runs at just above IO priority
     pthread_attr_init(&thread_attr);
@@ -83,10 +90,30 @@ void PX4Scheduler::init()
     pthread_create(&_storage_thread_ctx, &thread_attr, &PX4Scheduler::_storage_thread, this);
 }
 
+void PX4Scheduler::create_uavcan_thread()
+{
+#if HAL_WITH_UAVCAN
+    pthread_attr_t thread_attr;
+    struct sched_param param;
+
+     //the UAVCAN thread runs at medium priority
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 8192);
+
+    param.sched_priority = APM_CAN_PRIORITY;
+    (void) pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+    pthread_create(&_uavcan_thread_ctx, &thread_attr, &PX4Scheduler::_uavcan_thread, this);
+
+    printf("UAVCAN thread started\n\r");
+#endif
+}
+
 /**
-   delay for a specified number of microseconds using a semaphore wait
+ delay for a specified number of microseconds using a semaphore wait
  */
-void PX4Scheduler::delay_microseconds_semaphore(uint16_t usec) 
+void PX4Scheduler::delay_microseconds_semaphore(uint16_t usec)
 {
     sem_t wait_semaphore;
     struct hrt_call wait_call;
@@ -96,7 +123,7 @@ void PX4Scheduler::delay_microseconds_semaphore(uint16_t usec)
     sem_wait(&wait_semaphore);
 }
 
-void PX4Scheduler::delay_microseconds(uint16_t usec) 
+void PX4Scheduler::delay_microseconds(uint16_t usec)
 {
     perf_begin(_perf_delay);
     delay_microseconds_semaphore(usec);
@@ -104,7 +131,7 @@ void PX4Scheduler::delay_microseconds(uint16_t usec)
 }
 
 /*
-  wrapper around sem_post that boosts main thread priority
+ wrapper around sem_post that boosts main thread priority
  */
 static void sem_post_boost(sem_t *sem)
 {
@@ -113,7 +140,7 @@ static void sem_post_boost(sem_t *sem)
 }
 
 /*
-  return the main thread to normal priority
+ return the main thread to normal priority
  */
 static void set_normal_priority(void *sem)
 {
@@ -121,12 +148,12 @@ static void set_normal_priority(void *sem)
 }
 
 /*
-  a variant of delay_microseconds that boosts priority to
-  APM_MAIN_PRIORITY_BOOST for APM_MAIN_PRIORITY_BOOST_USEC
-  microseconds when the time completes. This significantly improves
-  the regularity of timing of the main loop as it takes 
+ a variant of delay_microseconds that boosts priority to
+ APM_MAIN_PRIORITY_BOOST for APM_MAIN_PRIORITY_BOOST_USEC
+ microseconds when the time completes. This significantly improves
+ the regularity of timing of the main loop as it takes
  */
-void PX4Scheduler::delay_microseconds_boost(uint16_t usec) 
+void PX4Scheduler::delay_microseconds_boost(uint16_t usec)
 {
     sem_t wait_semaphore;
     static struct hrt_call wait_call;
@@ -143,9 +170,9 @@ void PX4Scheduler::delay(uint16_t ms)
         return;
     }
     perf_begin(_perf_delay);
-	uint64_t start = AP_HAL::micros64();
-    
-    while ((AP_HAL::micros64() - start)/1000 < ms && 
+    uint64_t start = AP_HAL::micros64();
+
+    while ((AP_HAL::micros64() - start)/1000 < ms &&
            !_px4_thread_should_exit) {
         delay_microseconds_semaphore(1000);
         if (_min_delay_cb_ms <= ms) {
@@ -161,13 +188,13 @@ void PX4Scheduler::delay(uint16_t ms)
 }
 
 void PX4Scheduler::register_delay_callback(AP_HAL::Proc proc,
-                                            uint16_t min_time_ms) 
+        uint16_t min_time_ms)
 {
     _delay_cb = proc;
     _min_delay_cb_ms = min_time_ms;
 }
 
-void PX4Scheduler::register_timer_process(AP_HAL::MemberProc proc) 
+void PX4Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -183,7 +210,7 @@ void PX4Scheduler::register_timer_process(AP_HAL::MemberProc proc)
     }
 }
 
-void PX4Scheduler::register_io_process(AP_HAL::MemberProc proc) 
+void PX4Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -199,17 +226,17 @@ void PX4Scheduler::register_io_process(AP_HAL::MemberProc proc)
     }
 }
 
-void PX4Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us) 
+void PX4Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
 {
     _failsafe = failsafe;
 }
 
-void PX4Scheduler::suspend_timer_procs() 
+void PX4Scheduler::suspend_timer_procs()
 {
     _timer_suspended = true;
 }
 
-void PX4Scheduler::resume_timer_procs() 
+void PX4Scheduler::resume_timer_procs()
 {
     _timer_suspended = false;
     if (_timer_event_missed == true) {
@@ -218,7 +245,7 @@ void PX4Scheduler::resume_timer_procs()
     }
 }
 
-void PX4Scheduler::reboot(bool hold_in_bootloader) 
+void PX4Scheduler::reboot(bool hold_in_bootloader)
 {
     // disarm motors to ensure they are off during a bootloader upload
     hal.rcout->force_safety_on();
@@ -227,7 +254,7 @@ void PX4Scheduler::reboot(bool hold_in_bootloader)
     // delay to ensure the async force_saftey operation completes
     delay(500);
 
-	px4_systemreset(hold_in_bootloader);
+    px4_systemreset(hold_in_bootloader);
 }
 
 void PX4Scheduler::_run_timers(bool called_from_timer_thread)
@@ -320,7 +347,7 @@ void *PX4Scheduler::_uart_thread(void *arg)
     PX4Scheduler *sched = (PX4Scheduler *)arg;
 
     pthread_setname_np(pthread_self(), "apm_uart");
-    
+
     while (!sched->_hal_initialized) {
         poll(nullptr, 0, 1);
     }
@@ -343,7 +370,7 @@ void *PX4Scheduler::_io_thread(void *arg)
     PX4Scheduler *sched = (PX4Scheduler *)arg;
 
     pthread_setname_np(pthread_self(), "apm_io");
-    
+
     while (!sched->_hal_initialized) {
         poll(nullptr, 0, 1);
     }
@@ -363,7 +390,7 @@ void *PX4Scheduler::_storage_thread(void *arg)
     PX4Scheduler *sched = (PX4Scheduler *)arg;
 
     pthread_setname_np(pthread_self(), "apm_storage");
-    
+
     while (!sched->_hal_initialized) {
         poll(nullptr, 0, 1);
     }
@@ -378,15 +405,40 @@ void *PX4Scheduler::_storage_thread(void *arg)
     return nullptr;
 }
 
-bool PX4Scheduler::in_timerprocess() 
+void *PX4Scheduler::_uavcan_thread(void *arg)
+{
+    PX4Scheduler *sched = (PX4Scheduler *) arg;
+
+    pthread_setname_np(pthread_self(), "apm_uavcan");
+
+    while (!sched->_hal_initialized) {
+        poll(nullptr, 0, 1);
+    }
+
+    while (!_px4_thread_should_exit) {
+        if (((PX4CANManager *)hal.can_mgr)->is_initialized()) {
+            if (((PX4CANManager *)hal.can_mgr)->get_UAVCAN() != nullptr) {
+                (((PX4CANManager *)hal.can_mgr)->get_UAVCAN())->do_cyclic();
+            } else {
+                sched->delay_microseconds_semaphore(10000);
+            }
+        } else {
+            sched->delay_microseconds_semaphore(10000);
+        }
+    }
+    return nullptr;
+}
+
+bool PX4Scheduler::in_timerprocess()
 {
     return getpid() != _main_task_pid;
 }
 
-void PX4Scheduler::system_initialized() {
+void PX4Scheduler::system_initialized()
+{
     if (_initialized) {
         AP_HAL::panic("PANIC: scheduler::system_initialized called"
-                   "more than once");
+                      "more than once");
     }
     _initialized = true;
 }

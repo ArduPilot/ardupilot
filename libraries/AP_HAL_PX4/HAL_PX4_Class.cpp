@@ -19,6 +19,7 @@
 #include "GPIO.h"
 #include "I2CDevice.h"
 #include "SPIDevice.h"
+#include "CAN.h"
 
 #include <stdlib.h>
 #include <systemlib/systemlib.h>
@@ -106,7 +107,8 @@ HAL_PX4::HAL_PX4() :
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
         &utilInstance, /* util */
-        nullptr)    /* no onboard optical flow */
+        nullptr,    /* no onboard optical flow */
+        nullptr)   /* CAN */
 {}
 
 bool _px4_thread_should_exit = false;        /**< Daemon exit flag */
