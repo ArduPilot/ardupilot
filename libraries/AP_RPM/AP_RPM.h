@@ -34,7 +34,8 @@ public:
     // RPM driver types
     enum RPM_Type {
         RPM_TYPE_NONE    = 0,
-        RPM_TYPE_PX4_PWM = 1
+        RPM_TYPE_PX4_PWM = 1,
+        RPM_TYPE_PIN     = 2
     };
 
     // The RPM_State structure is filled in by the backend driver
@@ -47,6 +48,7 @@ public:
 
     // parameters for each instance
     AP_Int8  _type[RPM_MAX_INSTANCES];
+    AP_Int8  _pin[RPM_MAX_INSTANCES];
     AP_Float _scaling[RPM_MAX_INSTANCES];
     AP_Float _maximum[RPM_MAX_INSTANCES];
     AP_Float _minimum[RPM_MAX_INSTANCES];
