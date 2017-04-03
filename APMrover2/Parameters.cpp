@@ -543,13 +543,18 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(afs, "AFS_", 5, ParametersG2, AP_AdvancedFailsafe),
 #endif
 
+    // @Group: BCN
+    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
+    AP_SUBGROUPINFO(beacon, "BCN", 6, ParametersG2, AP_Beacon),
+
     AP_GROUPEND
 };
 
 
 ParametersG2::ParametersG2(void)
+    : beacon(rover.serial_manager)
 #if ADVANCED_FAILSAFE == ENABLED
-    : afs(rover.mission, rover.barometer, rover.gps, rover.rcmap)
+    , afs(rover.mission, rover.barometer, rover.gps, rover.rcmap)
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
