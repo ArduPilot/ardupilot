@@ -158,6 +158,10 @@ void Rover::init_ardupilot()
     // initialise sonar
     init_sonar();
 
+
+    // init beacons used for non-gps position estimation
+    init_beacon();
+
     // and baro for EKF
     init_barometer(true);
 
@@ -181,6 +185,9 @@ void Rover::init_ardupilot()
       the RC library being initialised.
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
+
+    // give AHRS the range beacon sensor
+    ahrs.set_beacon(&g2.beacon);
 
 
 #if CLI_ENABLED == ENABLED

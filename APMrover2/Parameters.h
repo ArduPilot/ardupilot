@@ -319,6 +319,7 @@ public:
     AP_AdvancedFailsafe_Rover afs;
 #endif
 
+    AP_Beacon beacon;
 };
 
 extern const AP_Param::Info var_info[];
