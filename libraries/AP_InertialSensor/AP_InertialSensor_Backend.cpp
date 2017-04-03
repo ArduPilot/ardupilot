@@ -172,8 +172,8 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
                                                              const Vector3f &accel,
-                                                             bool fsync_set,
                                                              uint64_t sample_us,
+                                                             bool fsync_set,
                                                              uint32_t samp_cnt)
 {
     float dt;
