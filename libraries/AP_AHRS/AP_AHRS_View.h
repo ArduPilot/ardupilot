@@ -29,7 +29,7 @@ public:
     AP_AHRS_View(AP_AHRS &ahrs, enum Rotation rotation);
 
     // update state
-    void update(void);
+    void update(bool skip_ins_update=false);
 
     // empty virtual destructor
     virtual ~AP_AHRS_View() {}
