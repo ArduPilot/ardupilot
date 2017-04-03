@@ -44,7 +44,7 @@ AP_AHRS_View::AP_AHRS_View(AP_AHRS &_ahrs, enum Rotation _rotation) :
 }
 
 // update state
-void AP_AHRS_View::update(void)
+void AP_AHRS_View::update(bool skip_ins_update)
 {
     rot_body_to_ned = ahrs.get_rotation_body_to_ned();
     gyro = ahrs.get_gyro();

@@ -79,13 +79,13 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
     EKF3.resetGyroBias();
 }
 
-void AP_AHRS_NavEKF::update(void)
+void AP_AHRS_NavEKF::update(bool skip_ins_update)
 {
     // EKF1 is no longer supported - handle case where it is selected
     if (_ekf_type == 1) {
         _ekf_type.set(2);
     }
-    update_DCM();
+    update_DCM(skip_ins_update);
     update_EKF2();
     update_EKF3();
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -103,11 +103,11 @@ void AP_AHRS_NavEKF::update(void)
 
     if (_view != nullptr) {
         // update optional alternative attitude view
-        _view->update();
+        _view->update(skip_ins_update);
     }
 }
 
-void AP_AHRS_NavEKF::update_DCM(void)
+void AP_AHRS_NavEKF::update_DCM(bool skip_ins_update)
 {
     // we need to restore the old DCM attitude values as these are
     // used internally in DCM to calculate error values for gyro drift
@@ -117,7 +117,7 @@ void AP_AHRS_NavEKF::update_DCM(void)
     yaw = _dcm_attitude.z;
     update_cd_values();
 
-    AP_AHRS_DCM::update();
+    AP_AHRS_DCM::update(skip_ins_update);
 
     // keep DCM attitude available for get_secondary_attitude()
     _dcm_attitude(roll, pitch, yaw);
