@@ -59,7 +59,7 @@ public:
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override;
 
-    void            update() override;
+    void            update(bool skip_ins_update=false) override;
     void            reset(bool recover_eulers = false) override;
 
     // reset the current attitude, used on new IMU calibration
@@ -268,7 +268,7 @@ private:
     Flags _ekf_flags;
 
     uint8_t ekf_type(void) const;
-    void update_DCM(void);
+    void update_DCM(bool skip_ins_update);
     void update_EKF2(void);
     void update_EKF3(void);
 

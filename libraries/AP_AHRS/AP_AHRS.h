@@ -210,7 +210,7 @@ public:
     }
 
     // Methods
-    virtual void update(void) = 0;
+    virtual void update(bool skip_ins_update=false) = 0;
 
     // report any reason for why the backend is refusing to initialise
     virtual const char *prearm_failure_reason(void) const {
