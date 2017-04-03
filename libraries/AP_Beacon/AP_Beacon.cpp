@@ -16,6 +16,7 @@
 #include "AP_Beacon.h"
 #include "AP_Beacon_Backend.h"
 #include "AP_Beacon_Pozyx.h"
+#include "AP_Beacon_Marvelmind.h"
 #include "AP_Beacon_SITL.h"
 
 extern const AP_HAL::HAL &hal;
@@ -26,7 +27,7 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Beacon based position estimation device type
     // @Description: What type of beacon based position estimation device is connected
-    // @Values: 0:None,1:Pozyx
+    // @Values: 0:None,1:Pozyx,2:Marvelmind
     // @User: Advanced
     AP_GROUPINFO("_TYPE",    0, AP_Beacon, _type, 0),
 
@@ -86,6 +87,8 @@ void AP_Beacon::init(void)
     // create backend
     if (_type == AP_BeaconType_Pozyx) {
         _driver = new AP_Beacon_Pozyx(*this, serial_manager);
+    } else if (_type == AP_BeaconType_Marvelmind) {
+        _driver = new AP_Beacon_Marvelmind(*this, serial_manager);
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_type == AP_BeaconType_SITL) {
