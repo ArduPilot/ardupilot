@@ -1,4 +1,81 @@
 APM:Sub Release Notes:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.5-rc1
+
+Major changes:
+
+- Merge with ardupilot project
+- Implement autotest suite (autotest.ardupilot.org)
+- Firmware available on firmware.ardupilot.org and through QGC dropdown
+
+- All supported frames are included in one binary. Select your frame with the FRAME_CONFIG parameter
+- Improved pilot control in depth hold mode. Now depth hold behaves like STABLIZE when pilot commands
+  ascent/descent, rather than setting desired climb rate.
+- Implemented arming checks and the AP_Arming libraries
+- Added pilot input failsafe requiring MANUAL_CONTROL or RC_CHANNELS_OVERRRIDE messages to be received
+  at regular intervals. This addresses issue of joystick being disconnected while GCS connection remains
+  unbroken.
+- Add failsafe for depth sensor malfunction, vehicle will automatically enter MANUAL mode when
+  depth sensor malfunctions.
+- Drastically reduced latency between IMU updates and motor output (Thanks Randy and Tridge!)
+- RC/Servo Channel library and parameters split
+- Allow MS5837 pressure sensor on boards other than pixhawk, use GND_EXT_BUS parameter to select
+  I2C bus to look for sensor on. -1 = Disabled; default to 1, which is Pixhawk external I2C bus
+- Rework parameters, unused or irrelevant parameters have been removed
+
+Other changes:
+
+- No more ch5 mode selection, modes are configured by assigning modes directly to
+  joystick button functions. Forward/lateral inputs are now on channel 5/6 (was 6/7)
+- Default FS_LEAK_ENABLE to FS_LEAK_WARN_ONLY (was disabled)
+- Added support for BlueRobotics Celsius temperature sensor (TSYS01). Temperature is output on
+  SCALED_PRESSURE3 message as a workaround.
+- No longer report battery percent remaining, as the measurement algorithm is flawed and does not work
+  on partially charged batteries.
+- Implement auto circle mode (loiter turns)
+- Implement circle mode
+- Implement guided mode
+- Implement auto surface mode (NAV_CMD_LAND)
+- Implement spline waypoints
+- Implement crash check failsafe
+- Implement ekf failsafe
+- Implement battery failsafe
+- Implement relay joystick button functions
+- Add joystick button functions to control servos
+- Add joystick button function to toggle between foward/lateral input and roll/pitch input
+- Remove BASE_RESET and BASE_PRESS baro parameters. Barometer reset is now done via mavlink cmd.
+- Implement parameter reset to defaults via mavlink cmd.
+- Fixed bug with camera tilt smoothing conflicting with RC_OVERRIDE messages
+- Fix bug preventing LOG_FILE_DSRMROT parameter from working correctly
+- Detect external pressure sensor according to BARO_TYPE == BARO_TYPE_WATER rather than hard-coding baro instance index
+- Use default StorageManager layout instead of Copter layout
+- Add support for AHRS View
+- Remove experimental/deprecated VELHOLD and TRANSECT modes
+- Some refactoring of code and files to improve readability
+- Disable untested CAMERA object and parameters by default
+- Only allow negative altitudes and ALT_FRAME_ABOVE_HOME for mission commands
+
+- Remove lots of dead code left over from ArduCopter:
+
+    - RC receiver
+    - Landing
+    - Unused/unsupported modes
+    - Remove channel 5 mode logic
+    - Remove aux switches
+    - Throttle zero flag
+    - Auto trim
+    - Unsupported mavlink messages
+    - Compassmot calibration
+    - Simple mode
+    - Ch6 tuning
+    - Esc calibration
+    - CLI
+    - Motor test
+    - Helicopter references
+    - HIL_MODE
+    - Various unused flags, members and methods
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 3.4 30-Dec-2016 / Sub 3.4-rc3 14-Dec-2016
 First Stable Release
