@@ -16,6 +16,18 @@ void Rover::init_sonar(void)
     sonar.init();
 }
 
+// init beacons used for non-gps position estimates
+void Rover::init_beacon()
+{
+    g2.beacon.init();
+}
+
+// update beacons
+void Rover::update_beacon()
+{
+    g2.beacon.update();
+}
+
 // read_battery - reads battery voltage and current and invokes failsafe
 // should be called at 10hz
 void Rover::read_battery(void)
