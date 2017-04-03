@@ -288,7 +288,7 @@
  # define THROTTLE_CRUISE                45
 #endif
 #ifndef THROTTLE_MAX
- # define THROTTLE_MAX                   75
+ # define THROTTLE_MAX                   100
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
