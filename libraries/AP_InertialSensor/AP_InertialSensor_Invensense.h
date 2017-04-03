@@ -132,8 +132,6 @@ private:
     // if corruption is detected, _seqcnt is zeroed to indicate a break in continuity.
     uint32_t _seqcnt;
 
-//#define INVENSENSE_DEBUG 1
-#undef INVENSENSE_DEBUG
 #if defined(INVENSENSE_DEBUG)
     uint16_t _dcnt = 0;
     uint64_t _dtim = 0;
