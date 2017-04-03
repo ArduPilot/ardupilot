@@ -281,6 +281,11 @@ public:
     enum LearnType get_learn_type(void) const {
         return (enum LearnType)_learn.get();
     }
+
+    // return maximum allowed compass offsets
+    uint16_t get_offsets_max(void) const {
+        return (uint16_t)_offset_max.get();
+    }
     
 private:
     /// Register a new compas driver, allocating an instance number
@@ -382,6 +387,8 @@ private:
         enum Rotation rotation;
     } _state[COMPASS_MAX_INSTANCES];
 
+    AP_Int16 _offset_max;
+    
     CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];
 
     // if we want HIL only
