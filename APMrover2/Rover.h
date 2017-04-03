@@ -447,6 +447,7 @@ private:
     void Log_Write_Control_Tuning();
     void Log_Write_Nav_Tuning();
     void Log_Write_Sonar();
+    void Log_Write_Beacon();
     void Log_Write_Current();
     void Log_Write_Attitude();
     void Log_Write_RC(void);
@@ -501,6 +502,8 @@ private:
     void trim_radio();
     void init_barometer(bool full_calibration);
     void init_sonar(void);
+    void init_beacon();
+    void update_beacon();
     void read_battery(void);
     void read_receiver_rssi(void);
     void read_sonars(void);
