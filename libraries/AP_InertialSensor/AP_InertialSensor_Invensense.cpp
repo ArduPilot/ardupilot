@@ -633,7 +633,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
             _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
             
-            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, now, false, _seqcnt);
+            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, false, now, _seqcnt);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro, now, _seqcnt);
             
             _accum.accel.zero();
