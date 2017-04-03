@@ -255,19 +255,22 @@ void Copter::loop()
 // Main loop - 400hz
 void Copter::fast_loop()
 {
+    // update INS immediately to get current gyro data populated
+    ins.update();
+    
     // run low level rate controllers that only require IMU data
     attitude_control->rate_controller_run();
 
-    // IMU DCM Algorithm
+    // send outputs to the motors library immediately
+    motors_output();
+
+    // run EKF state estimator (expensive)
     // --------------------
     read_AHRS();
 
 #if FRAME_CONFIG == HELI_FRAME
     update_heli_control_dynamics();
 #endif //HELI_FRAME
-
-    // send outputs to the motors library
-    motors_output();
 
     // Inertial Nav
     // --------------------
@@ -626,7 +629,8 @@ void Copter::read_AHRS(void)
     gcs_check_input();
 #endif
 
-    ahrs.update();
+    // we tell AHRS to skip INS update as we have already done it in fast_loop()
+    ahrs.update(true);
 }
 
 // read baro and rangefinder altitude at 10hz
