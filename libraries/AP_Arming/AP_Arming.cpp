@@ -17,10 +17,6 @@
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 
-#ifndef AP_ARMING_COMPASS_OFFSETS_MAX
-// this can also be overridden for specific boards in the HAL
-#define AP_ARMING_COMPASS_OFFSETS_MAX   600
-#endif
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
@@ -314,7 +310,7 @@ bool AP_Arming::compass_checks(bool report)
 
         // check for unreasonable compass offsets
         Vector3f offsets = _compass.get_offsets();
-        if (offsets.length() > AP_ARMING_COMPASS_OFFSETS_MAX) {
+        if (offsets.length() > _compass.get_offsets_max()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Compass offsets too high");
             }
