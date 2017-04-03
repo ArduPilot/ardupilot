@@ -28,6 +28,10 @@ extern AP_HAL::HAL& hal;
 #define COMPASS_LEARN_DEFAULT Compass::LEARN_INTERNAL
 #endif
 
+#ifndef AP_COMPASS_OFFSETS_MAX_DEFAULT
+#define AP_COMPASS_OFFSETS_MAX_DEFAULT 600
+#endif
+
 const AP_Param::GroupInfo Compass::var_info[] = {
     // index 0 was used for the old orientation matrix
 
@@ -404,6 +408,14 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, AP_COMPASS_CALIBRATION_FITNESS_DEFAULT),
 
+    // @Param: OFFS_MAX
+    // @DisplayName: Compass maximum offset
+    // @Description: This sets the maximum allowed compass offset in calibration and arming checks
+    // @Range: 500 3000
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("OFFS_MAX", 31, Compass, _offset_max, AP_COMPASS_OFFSETS_MAX_DEFAULT),
+    
     AP_GROUPEND
 };
 
