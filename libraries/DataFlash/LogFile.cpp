@@ -2126,3 +2126,21 @@ void DataFlash_Class::Log_Write_Rally(const AP_Rally &rally)
         }
     }
 }
+
+// Write visual odometry sensor data
+void DataFlash_Class::Log_Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence)
+{
+    struct log_VisualOdom pkt_visualodom = {
+        LOG_PACKET_HEADER_INIT(LOG_VISUALODOM_MSG),
+        time_us             : AP_HAL::micros64(),
+        time_delta          : time_delta,
+        angle_delta_x       : angle_delta.x,
+        angle_delta_y       : angle_delta.y,
+        angle_delta_z       : angle_delta.z,
+        position_delta_x    : position_delta.x,
+        position_delta_y    : position_delta.y,
+        position_delta_z    : position_delta.z,
+        confidence          : confidence
+    };
+    WriteBlock(&pkt_visualodom, sizeof(log_VisualOdom));
+}
