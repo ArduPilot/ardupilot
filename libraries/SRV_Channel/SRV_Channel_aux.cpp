@@ -30,8 +30,10 @@ void SRV_Channel::output_ch(void)
     int8_t passthrough_from = -1;
 
     // take care of special function cases
-    switch(function)
-    {
+    switch (function) {
+    case k_none:
+        // if channel is disabled, return immediately without writing to RCOUT
+        return;
     case k_manual:              // manual
         passthrough_from = ch_num;
         break;
