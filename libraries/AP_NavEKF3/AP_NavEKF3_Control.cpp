@@ -340,13 +340,18 @@ void NavEKF3_core::setAidingMode()
 void NavEKF3_core::checkAttitudeAlignmentStatus()
 {
     // Check for tilt convergence - used during initial alignment
-    if (norm(P[0][0],P[1][1],P[2][2],P[3][3]) < sq(0.035f) && !tiltAlignComplete) {
-        tiltAlignComplete = true;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete\n",(unsigned)imu_index);
+    // Once the tilt variances have reduced to equivalent of 3deg uncertainty, re-set the yaw and magnetic field states
+    // and declare the tilt alignment complete
+    if (!tiltAlignComplete) {
+        Vector3f angleErrVarVec = calcRotVecVariances();
+        if ((angleErrVarVec.x + angleErrVarVec.y) < sq(0.05235f)) {
+            tiltAlignComplete = true;
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete\n",(unsigned)imu_index);
+        }
     }
 
-    // submit yaw and magnetic field reset request depending on whether we have compass data
-    if (use_compass()&& !yawAlignComplete  && tiltAlignComplete) {
+    // submit yaw and magnetic field reset request
+    if (!yawAlignComplete && tiltAlignComplete && use_compass()) {
             magYawResetRequest = true;
     }
 }
