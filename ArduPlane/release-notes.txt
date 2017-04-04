@@ -1,3 +1,34 @@
+Release 3.8.0beta4, 4th April 2017
+----------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.8.0beta of APM:Plane. This is a major release. All users
+should carefully check their setup when upgrading.
+
+Major changes include:
+
+ - new SRV_Channel system for setting up of output servos separately
+   from input RC channels
+ - new EKF3 state estimator (not enabled by default yet)
+ - support for tailsitter aircraft
+ - greatly improved support for tilt-rotor quadplanes
+ - greatly improved quadplane transition code
+ - support for deepstall landing
+ - large improvements in airspeed noise handling
+ - much improved RTK GPS support
+ - support automatic servo trimming
+ - greatly improved automatic landing accuracy
+ - significant improvements in altitude handling
+
+On top of that there have been hundreds of smaller improvements and
+bug fixes.
+
+From the users point of view the most significant change in setup is
+moving of RCn_FUNCTION parameters into new SERVOn_FUNCTION parameters,
+and the creation of separate output MIN/MAX/TRIM values for all servo
+outputs. This allows for much more flxible output setup that is
+independent of RC input setup.
+
 Release 3.7.1, 21st October 2016
 --------------------------------
 
