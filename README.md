@@ -92,8 +92,8 @@
 >>   - ***Board***: Bebop & Bebop 2
 >> - [Pritam Ghanghas](https://github.com/pritamghanghas)
 >>   - ***Board***: Raspilot
->> - [Jonathan Challinger] (https://github.com/3drobotics/ardupilot-solo)
->>   - ***Vehicle***: 3DRobotics Solo ArduPilot maintainer
+>> - [Matt Lawrence] (https://github.com/Pedals2Paddles)
+>>   - ***Vehicle***: 3DR Solo & Solo based vehicles
 >> - [Gustavo José de Sousa](https://github.com/guludo)
 >>   - ***Subsystem***: Build system
 >> - [Craig Elder] (https://github.com/CraigElder)
