@@ -408,6 +408,20 @@ struct PACKED log_RngBcnDebug {
     int16_t posD;           // Down position of receiver rel to EKF origin (cm)
 };
 
+// visual odometry sensor data
+struct PACKED log_VisualOdom {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float time_delta;
+    float angle_delta_x;
+    float angle_delta_y;
+    float angle_delta_z;
+    float position_delta_x;
+    float position_delta_y;
+    float position_delta_z;
+    float confidence;
+};
+
 struct PACKED log_ekfBodyOdomDebug {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1019,7 +1033,9 @@ Format characters in the format string for binary log messages
     { LOG_RATE_MSG, sizeof(log_Rate), \
       "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
-      "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }
+      "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }, \
+    { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
+      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf" }
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -1145,6 +1161,7 @@ enum LogMessages {
     LOG_GIMBAL3_MSG,
     LOG_RATE_MSG,
     LOG_RALLY_MSG,
+    LOG_VISUALODOM_MSG,
 };
 
 enum LogOriginType {
