@@ -205,7 +205,6 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         _sem->give();
     }
 
-    // log raw data if flag is set
     DataFlash_Class *dataflash = get_dataflash();
     if (dataflash != nullptr) {
         uint64_t now = AP_HAL::micros64();
