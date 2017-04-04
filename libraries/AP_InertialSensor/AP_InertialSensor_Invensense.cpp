@@ -367,6 +367,7 @@ void AP_InertialSensor_Invensense::_fifo_reset()
     hal.scheduler->delay_microseconds(1);
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
     _last_stat_user_ctrl = user_ctrl | BIT_USER_CTRL_FIFO_EN;
+    _seqcnt = 0;
 }
 
 bool AP_InertialSensor_Invensense::_has_auxiliary_bus()
@@ -587,8 +588,8 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
 
-        _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), fsync_set);
-        _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+        _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), fsync_set, _seqcnt);
+        _notify_new_gyro_raw_sample(_gyro_instance, gyro, _seqcnt);
 
         _temp_filtered = _temp_filter.apply(temp);
     }
@@ -610,10 +611,12 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
     bool clipped = false;
     bool ret = true;
     
+    uint64_t now = AP_HAL::micros64();
+
     for (uint8_t i = 0; i < n_samples; i++) {
         const uint8_t *data = samples + MPU_SAMPLE_SIZE * i;
 
-        // use temperatue to detect FIFO corruption
+        // use temperature to detect FIFO corruption
         int16_t t2 = int16_val(data, 3);
         if (!_check_raw_temp(t2)) {
             debug("temp reset %d %d", _raw_temp, t2);
@@ -642,6 +645,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
 
         _accum.gyro += _accum.gyro_filter.apply(g);
         _accum.count++;
+        _seqcnt++;
 
         if (_accum.count == MPU_FIFO_DOWNSAMPLE_COUNT) {
             float ascale = _accel_scale / (MPU_FIFO_DOWNSAMPLE_COUNT/2);
@@ -653,8 +657,8 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
             _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
             
-            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, AP_HAL::micros64(), false);
-            _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
+            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, now, false, _seqcnt);
+            _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro, now, _seqcnt);
             
             _accum.accel.zero();
             _accum.gyro.zero();
@@ -682,6 +686,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
     bool need_reset = false;
 
     if (!_block_read(MPUREG_FIFO_COUNTH, rx, 2)) {
+        _seqcnt = 0;
         goto check_registers;
     }
 
@@ -692,6 +697,19 @@ void AP_InertialSensor_Invensense::_read_fifo()
         /* Not enough data in FIFO */
         goto check_registers;
     }
+
+#if defined(INVENSENSE_DEBUG)
+	_tot_samples += n_samples;
+    if (++_dcnt >= 1000) {
+    	_dcnt = 0;
+    	uint64_t now = AP_HAL::micros64();
+    	float delt = 1e-3 * (now - _dtim);
+    	float drate = _tot_samples / delt;
+		::printf("MPU[%u]:  %d samples, %5.3f msec, %5.3f KHz\n", _accel_instance, _tot_samples, (double) delt, (double) drate);
+    	_dtim = now;
+    	_tot_samples = 0;
+    }
+#endif
 
     /*
       testing has shown that if we have more than 32 samples in the
@@ -883,7 +901,7 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
         _last_stat_user_ctrl = _register_read(MPUREG_USER_CTRL);
 
         /* First disable the master I2C to avoid hanging the slaves on the
-         * aulixiliar I2C bus - it will be enabled again if the AuxiliaryBus
+         * auxiliary I2C bus - it will be enabled again if the AuxiliaryBus
          * is used */
         if (_last_stat_user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
             _last_stat_user_ctrl &= ~BIT_USER_CTRL_I2C_MST_EN;

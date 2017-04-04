@@ -126,8 +126,8 @@ void loop(void)
 
                 struct log_ACCEL pkt = {
                     LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+i)),
-                    time_us   : AP_HAL::micros64(),
-                    sample_us : accel_report.timestamp,
+                    time_us   : accel_report.timestamp,
+                    samp_cnt  : total_samples[i],
                     AccX      : accel_report.x,
                     AccY      : accel_report.y,
                     AccZ      : accel_report.z
@@ -150,8 +150,8 @@ void loop(void)
 
                 struct log_GYRO pkt = {
                     LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+i)),
-                    time_us   : AP_HAL::micros64(),
-                    sample_us : gyro_report.timestamp,
+                    time_us   : gyro_report.timestamp,
+                    samp_cnt  : total_samples[i],
                     GyrX      : gyro_report.x,
                     GyrY      : gyro_report.y,
                     GyrZ      : gyro_report.z

@@ -125,6 +125,22 @@ private:
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
 
+    // use a sample counter to "timestamp" samples from the sensor
+    // Since the system timebase is not synchronized to the sensor sample clock,
+    // this is the best way to identify missing samples in the log. With this
+    // counter supplied to the notify methods, the SampleC field becomes an integer
+    // sequence which increments each time a sample is read from the FIFO. As long as
+    // the FIFO is read at a sufficient rate, there should be no dropped samples
+    // between the sensor and the call to notify, with the exception of FIFO corruption:
+    // if corruption is detected, _seqcnt is zeroed to indicate a break in continuity.
+    uint32_t _seqcnt;
+
+#if defined(INVENSENSE_DEBUG)
+    uint16_t _dcnt = 0;
+    uint64_t _dtim = 0;
+    uint32_t _tot_samples = 0;
+#endif
+
     // Last status from register user control
     uint8_t _last_stat_user_ctrl;    
 

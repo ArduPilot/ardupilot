@@ -67,7 +67,8 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
 
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
                                                             const Vector3f &gyro,
-                                                            uint64_t sample_us)
+                                                            uint64_t sample_us,
+                                                            uint32_t samp_cnt)
 {
     float dt;
 
@@ -122,8 +123,8 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         uint64_t now = AP_HAL::micros64();
         struct log_GYRO pkt = {
             LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+instance)),
-            time_us   : now,
-            sample_us : sample_us?sample_us:now,
+            time_us   : sample_us?sample_us:now,
+            samp_cnt  : samp_cnt,
             GyrX      : gyro.x,
             GyrY      : gyro.y,
             GyrZ      : gyro.z
@@ -172,7 +173,8 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
                                                              const Vector3f &accel,
                                                              uint64_t sample_us,
-                                                             bool fsync_set)
+                                                             bool fsync_set,
+                                                             uint32_t samp_cnt)
 {
     float dt;
 
@@ -208,8 +210,8 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         uint64_t now = AP_HAL::micros64();
         struct log_ACCEL pkt = {
             LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+instance)),
-            time_us   : now,
-            sample_us : sample_us?sample_us:now,
+            time_us   : sample_us?sample_us:now,
+            samp_cnt  : samp_cnt,
             AccX      : accel.x,
             AccY      : accel.y,
             AccZ      : accel.z
