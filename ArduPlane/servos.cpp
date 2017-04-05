@@ -622,7 +622,8 @@ void Plane::servo_output_mixers(void)
 void Plane::servos_twin_engine_mix(void)
 {
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-    float rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / float(SERVO_MAX);
+    float rud_gain = float(plane.g2.rudd_dt_gain) / 100;
+    float rudder = rud_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / float(SERVO_MAX);
     float throttle_left, throttle_right;
     
     if (throttle < 0 && aparm.throttle_min < 0) {
