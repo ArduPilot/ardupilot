@@ -38,13 +38,6 @@
 #error CONFIG_HAL_BOARD must be defined to build ArduSub
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// HIL_MODE                                 OPTIONAL
-
-#ifndef HIL_MODE
-#define HIL_MODE        HIL_MODE_DISABLED
-#endif
-
 #define MAGNETOMETER ENABLED
 
 // run at 400Hz on all systems

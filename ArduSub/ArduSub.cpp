@@ -314,12 +314,6 @@ void Sub::ten_hz_logging_loop()
 // should be run at 25hz
 void Sub::twentyfive_hz_logging()
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    // HIL needs very fast update of the servo values
-    gcs_send_message(MSG_RADIO_OUT);
-#endif
-
-#if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
         DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
@@ -335,7 +329,6 @@ void Sub::twentyfive_hz_logging()
     if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMU(ins);
     }
-#endif
 }
 
 void Sub::dataflash_periodic(void)
@@ -443,11 +436,6 @@ void Sub::read_AHRS(void)
 {
     // Perform IMU calculations and get attitude info
     //-----------------------------------------------
-#if HIL_MODE != HIL_MODE_DISABLED
-    // update hil before ahrs update
-    gcs_check_input();
-#endif
-
     // <true> tells AHRS to skip INS update as we have already done it in fast_loop()
     ahrs.update(true);
     ahrs_view.update(true);

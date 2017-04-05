@@ -37,7 +37,7 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
         update_notify();
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
 #endif
 
@@ -92,7 +92,7 @@ void Sub::init_disarm_motors()
         return;
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 

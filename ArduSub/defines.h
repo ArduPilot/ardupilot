@@ -29,10 +29,6 @@ enum autopilot_yaw_mode {
     AUTO_YAW_CORRECT_XTRACK =    6   // steer the sub in order to correct for crosstrack error during line following
 };
 
-// HIL enumerations
-#define HIL_MODE_DISABLED               0
-#define HIL_MODE_SENSORS                1
-
 // Auto Pilot Modes enumeration
 enum control_mode_t {
     STABILIZE =     0,  // manual angle with manual depth/throttle
