@@ -80,14 +80,3 @@ void Sub::enable_motor_output()
     motors.enable();
     motors.output_min();
 }
-
-// save_trim - adds roll and pitch trims from the radio to ahrs
-void Sub::save_trim()
-{
-    // save roll and pitch trim
-    float roll_trim = ToRad((float)channel_roll->get_control_in()/100.0f);
-    float pitch_trim = ToRad((float)channel_pitch->get_control_in()/100.0f);
-    ahrs.add_trim(roll_trim, pitch_trim);
-    Log_Write_Event(DATA_SAVE_TRIM);
-    gcs_send_text(MAV_SEVERITY_INFO, "Trim saved");
-}

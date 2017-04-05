@@ -694,8 +694,6 @@ private:
     void terrain_update();
     void terrain_logging();
     bool terrain_use();
-    void save_trim();
-    void auto_trim();
     void init_ardupilot();
     void startup_INS_ground();
     bool calibrate_gyros();
