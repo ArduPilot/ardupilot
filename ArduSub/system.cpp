@@ -312,8 +312,8 @@ void Sub::update_auto_armed()
             set_auto_armed(false);
             return;
         }
-        // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if (mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.manual_control) {
+        // if in stabilize or acro flight mode auto-armed should become false
+        if (mode_has_manual_throttle(control_mode) && !failsafe.manual_control) {
             set_auto_armed(false);
         }
     } else {

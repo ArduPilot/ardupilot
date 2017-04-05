@@ -236,7 +236,6 @@ private:
             uint8_t compass_mot         : 1; // true if we are currently performing compassmot calibration
             uint8_t motor_test          : 1; // true if we are currently performing the motors test
             uint8_t initialised         : 1; // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
-            uint8_t throttle_zero       : 1; // true if the throttle stick is at zero
             uint8_t system_time_set     : 1; // true if the system time has been set from the GPS
             uint8_t gps_base_pos_set    : 1; // true when the gps base position has been set (used for RTK gps only)
             enum HomeState home_state   : 2; // home status (unset, set, locked)
@@ -621,7 +620,6 @@ private:
     bool ekf_over_threshold();
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
-    bool should_disarm_on_failsafe();
     void failsafe_battery_check(void);
     void failsafe_gcs_check();
     void failsafe_manual_control_check(void);
@@ -683,7 +681,6 @@ private:
     void handle_jsbutton_press(uint8_t button,bool shift=false,bool held=false);
     JSButton* get_button(uint8_t index);
     void default_js_buttons(void);
-    void set_throttle_zero_flag(int16_t throttle_control);
     void init_barometer(bool save);
     void read_barometer(void);
     void init_rangefinder(void);
