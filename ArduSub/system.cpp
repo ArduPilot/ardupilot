@@ -135,18 +135,6 @@ void Sub::init_ardupilot()
     USERHOOK_INIT
 #endif
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    while (barometer.get_last_update() == 0) {
-        // the barometer begins updating when we get the first
-        // HIL_STATE message
-        gcs_send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
-        hal.scheduler->delay(1000);
-    }
-
-    // set INS to HIL mode
-    ins.set_hil_mode();
-#endif
-
     // read Baro pressure at ground
     //-----------------------------
     init_barometer(false);

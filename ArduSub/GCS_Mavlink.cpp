@@ -65,10 +65,6 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     // override if stick mixing is enabled
     base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-#endif
-
     // we are armed if we are not initialising
     if (motors.armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
@@ -304,28 +300,6 @@ void NOINLINE Sub::send_hwstatus(mavlink_channel_t chan)
         0);
 }
 
-void NOINLINE Sub::send_servo_out(mavlink_channel_t chan)
-{
-#if HIL_MODE != HIL_MODE_DISABLED
-    // normalized values scaled to -10000 to 10000
-    // This is used for HIL.  Do not change without discussing with HIL maintainers
-
-    mavlink_msg_rc_channels_scaled_send(
-        chan,
-        millis(),
-        0,         // port 0
-        g.rc_1.get_servo_out(),
-        g.rc_2.get_servo_out(),
-        g.rc_3.get_servo_out(),
-        g.rc_4.get_servo_out(),
-        10000 * g.rc_1.norm_output(),
-        10000 * g.rc_2.norm_output(),
-        10000 * g.rc_3.norm_output(),
-        10000 * g.rc_4.norm_output(),
-        0);
-#endif // HIL_MODE
-}
-
 void NOINLINE Sub::send_radio_out(mavlink_channel_t chan)
 {
     mavlink_msg_servo_output_raw_send(
@@ -477,7 +451,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         return false;
     }
 
-#if HIL_MODE != HIL_MODE_SENSORS
     // if we don't have at least 250 micros remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
@@ -485,7 +458,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         sub.gcs_out_of_time = true;
         return false;
     }
-#endif
 
     switch (id) {
     case MSG_HEARTBEAT:
@@ -539,8 +511,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         break;
 
     case MSG_SERVO_OUT:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
-        sub.send_servo_out(chan);
         break;
 
     case MSG_RADIO_IN:
@@ -1721,52 +1691,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         sub.gps.handle_msg(msg);
         break;
     }
-
-#if HIL_MODE != HIL_MODE_DISABLED
-    case MAVLINK_MSG_ID_HIL_STATE: {        // MAV ID: 90
-        mavlink_hil_state_t packet;
-        mavlink_msg_hil_state_decode(msg, &packet);
-
-        // sanity check location
-        if (!check_latlng(packet.lat, packet.lon)) {
-            break;
-        }
-
-        // set gps hil sensor
-        Location loc;
-        loc.lat = packet.lat;
-        loc.lng = packet.lon;
-        loc.alt = packet.alt/10;
-        Vector3f vel(packet.vx, packet.vy, packet.vz);
-        vel *= 0.01f;
-
-        gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
-                   packet.time_usec/1000,
-                   loc, vel, 10, 0);
-
-        // rad/sec
-        Vector3f gyros;
-        gyros.x = packet.rollspeed;
-        gyros.y = packet.pitchspeed;
-        gyros.z = packet.yawspeed;
-
-        // m/s/s
-        Vector3f accels;
-        accels.x = packet.xacc * (GRAVITY_MSS/1000.0f);
-        accels.y = packet.yacc * (GRAVITY_MSS/1000.0f);
-        accels.z = packet.zacc * (GRAVITY_MSS/1000.0f);
-
-        ins.set_gyro(0, gyros);
-
-        ins.set_accel(0, accels);
-
-        sub.barometer.setHIL(packet.alt*0.001f);
-        sub.compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);
-        sub.compass.setHIL(1, packet.roll, packet.pitch, packet.yaw);
-
-        break;
-    }
-#endif //  HIL_MODE != HIL_MODE_DISABLED
 
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS: {     // MAV ID: 109
