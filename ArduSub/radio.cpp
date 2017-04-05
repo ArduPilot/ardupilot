@@ -46,12 +46,8 @@ void Sub::init_rc_in()
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     // initialize rc input to 1500 on control channels (rather than 0)
-    for (int i = 0; i < 7; i++) {
-        if (i == 4) {
-            hal.rcin->set_override(i, 1100); // Channel 5 mode selection
-        } else {
-            hal.rcin->set_override(i, 1500);
-        }
+    for (int i = 0; i < 6; i++) {
+        hal.rcin->set_override(i, 1500);
     }
 #endif
 }
