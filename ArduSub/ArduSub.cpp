@@ -166,17 +166,20 @@ void Sub::loop()
 // Main loop - 400hz
 void Sub::fast_loop()
 {
+    // update INS immediately to get current gyro data populated
+    ins.update();
+
     if (control_mode != MANUAL) { //don't run rate controller in manual mode
         // run low level rate controllers that only require IMU data
         attitude_control.rate_controller_run();
     }
 
-    // IMU DCM Algorithm
-    // --------------------
-    read_AHRS();
-
     // send outputs to the motors library
     motors_output();
+
+    // run EKF state estimator (expensive)
+    // --------------------
+    read_AHRS();
 
     // Inertial Nav
     // --------------------
@@ -445,8 +448,9 @@ void Sub::read_AHRS(void)
     gcs_check_input();
 #endif
 
-    ahrs.update();
-    ahrs_view.update();
+    // <true> tells AHRS to skip INS update as we have already done it in fast_loop()
+    ahrs.update(true);
+    ahrs_view.update(true);
 }
 
 // read baro and rangefinder altitude at 10hz
