@@ -64,19 +64,23 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port) override {}
     void ListAvailableLogs(AP_HAL::BetterStream *port) override {}
 
+    void push_log_blocks() override;
+
+    void remote_log_block_status_msg(mavlink_channel_t chan, mavlink_message_t* msg) override;
+
+private:
+
     struct dm_block {
         uint32_t seqno;
         uint8_t buf[MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN];
         uint32_t last_sent;
         struct dm_block *next;
     };
-    void push_log_blocks();
     bool send_log_block(struct dm_block &block);
     void handle_ack(mavlink_channel_t chan, mavlink_message_t* msg, uint32_t seqno);
     void handle_retry(uint32_t block_num);
     void do_resends(uint32_t now);
     void set_channel(mavlink_channel_t chan);
-    void remote_log_block_status_msg(mavlink_channel_t chan, mavlink_message_t* msg) override;
     void free_all_blocks();
 
     // a stack for free blocks, queues for pending, sent, retries and sent
@@ -99,7 +103,6 @@ public:
     dm_block_queue_t _blocks_pending;
     dm_block_queue_t _blocks_retry;
 
-protected:
     struct _stats {
         // the following are reset any time we log stats (see "reset_stats")
         uint32_t resends;
