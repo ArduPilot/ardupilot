@@ -708,26 +708,9 @@ void QuadPlane::run_z_controller(void)
         // it has been two seconds since we last ran the Z
         // controller. We need to assume the integrator may be way off
 
-        // we will set the initial integrator based on airspeed. 
-        float aspeed, airspeed_threshold;
-        if (assist_speed > 0) {
-            airspeed_threshold = assist_speed;
-        } else {
-            airspeed_threshold = plane.aparm.airspeed_min;
-        }
-        if (ahrs.airspeed_estimate(&aspeed)) {
-            // starting at 5m/s below the threshold we ramp up the
-            // amount of integrator suppression until we are at full
-            // suppression of initial vertical integrator at the full
-            // transition airspeed
-            float initial_z_integrator = linear_interpolate(0, -motors->get_throttle_hover()*1000.0f,
-                                                            aspeed,
-                                                            airspeed_threshold-5,
-                                                            airspeed_threshold);
-            pid_accel_z.set_integrator(initial_z_integrator);
-        } else {
-            pid_accel_z.set_integrator(0);
-        }
+        // the base throttle we start at is the current throttle we are using
+        float base_throttle = constrain_float(motors->get_throttle() - motors->get_throttle_hover(), 0, 1) * 1000;
+        pid_accel_z.set_integrator(base_throttle);
     }
     last_pidz_active_ms = now;
     pos_control->update_z_controller();    
