@@ -754,6 +754,39 @@ struct PACKED log_Rally {
 
 // #endif // SBP_HW_LOGGING
 
+#define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
+#define ACC_FMT "QQfff"
+
+// see "struct sensor" in AP_Baro.h and "Log_Write_Baro":
+#define BARO_LABELS "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp"
+#define BARO_FMT   "QffcfIff"
+
+#define ESC_LABELS "TimeUS,RPM,Volt,Curr,Temp"
+#define ESC_FMT   "Qcccc"
+
+#define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS"
+#define GPA_FMT   "QCCCCBI"
+
+// see "struct GPS_State" and "Log_Write_GPS":
+#define GPS_LABELS "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U"
+#define GPS_FMT   "QBIHBcLLefffB"
+
+#define GYR_LABELS "TimeUS,SampleUS,GyrX,GyrY,GyrZ"
+#define GYR_FMT    "QQfff"
+
+#define IMT_LABELS "TimeUS,DelT,DelvT,DelaT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ"
+#define IMT_FMT    "Qfffffffff"
+
+#define IMU_LABELS "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt"
+#define IMU_FMT   "QffffffIIfBB"
+
+#define MAG_LABELS "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S"
+#define MAG_FMT   "QhhhhhhhhhBI"
+
+#define PID_LABELS "TimeUS,Des,P,I,D,FF,AFF"
+#define PID_FMT    "Qffffff"
+
+
 /*
 Format characters in the format string for binary log messages
   b   : int8_t
@@ -784,19 +817,19 @@ Format characters in the format string for binary log messages
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "QNf",        "TimeUS,Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "QBIHBcLLefffB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
+      "GPS",  GPS_FMT, GPS_LABELS }, \
     { LOG_GPS2_MSG, sizeof(log_GPS), \
-      "GPS2", "QBIHBcLLefffB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
+      "GPS2", GPS_FMT, GPS_LABELS }, \
     { LOG_GPSB_MSG, sizeof(log_GPS), \
-      "GPSB", "QBIHBcLLefffB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
+      "GPSB", GPS_FMT, GPS_LABELS }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
+      "GPA",  GPA_FMT, GPA_LABELS }, \
     { LOG_GPA2_MSG, sizeof(log_GPA), \
-      "GPA2", "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
+      "GPA2", GPA_FMT, GPA_LABELS }, \
     { LOG_GPAB_MSG, sizeof(log_GPA), \
-      "GPAB", "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
+      "GPAB", GPA_FMT, GPA_LABELS }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
+      "IMU",  IMU_FMT,     IMU_LABELS }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "QZ",     "TimeUS,Message"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
@@ -806,7 +839,7 @@ Format characters in the format string for binary log messages
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qf",     "TimeUS,RXRSSI" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "QffcfIff", "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp" }, \
+      "BARO",  BARO_FMT, BARO_LABELS }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QffH","TimeUS,Vcc,VServo,Flags" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
@@ -826,7 +859,7 @@ Format characters in the format string for binary log messages
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
-      "MAG", "QhhhhhhhhhBI",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S" }, \
+      "MAG", MAG_FMT,    MAG_LABELS }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
@@ -837,9 +870,9 @@ Format characters in the format string for binary log messages
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
-      "IMU2",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
+      "IMU2",  IMU_FMT,     IMU_LABELS }, \
     { LOG_IMU3_MSG, sizeof(log_IMU), \
-      "IMU3",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
+      "IMU3",  IMU_FMT,     IMU_LABELS }, \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
       "AHR2","QccCfLL","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
@@ -905,61 +938,61 @@ Format characters in the format string for binary log messages
     { LOG_GPS_SBF_EVENT_MSG, sizeof(log_GPS_SBF_EVENT), \
       "SBFE", "QIHBBdddfffff", "TimeUS,TOW,WN,Mode,Err,Lat,Lng,Height,Undul,Vn,Ve,Vu,COG" }, \
     { LOG_ESC1_MSG, sizeof(log_Esc), \
-      "ESC1",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
+      "ESC1",  ESC_FMT, ESC_LABELS }, \
     { LOG_ESC2_MSG, sizeof(log_Esc), \
-      "ESC2",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
+      "ESC2",  ESC_FMT, ESC_LABELS }, \
     { LOG_ESC3_MSG, sizeof(log_Esc), \
-      "ESC3",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
+      "ESC3",  ESC_FMT, ESC_LABELS }, \
     { LOG_ESC4_MSG, sizeof(log_Esc), \
-      "ESC4",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
+      "ESC4",  ESC_FMT, ESC_LABELS }, \
     { LOG_ESC5_MSG, sizeof(log_Esc), \
-      "ESC5",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
+      "ESC5",  ESC_FMT, ESC_LABELS }, \
     { LOG_ESC6_MSG, sizeof(log_Esc), \
-      "ESC6",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
+      "ESC6",  ESC_FMT, ESC_LABELS }, \
     { LOG_ESC7_MSG, sizeof(log_Esc), \
-      "ESC7",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
+      "ESC7",  ESC_FMT, ESC_LABELS }, \
     { LOG_ESC8_MSG, sizeof(log_Esc), \
-      "ESC8",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
+      "ESC8",  ESC_FMT, ESC_LABELS }, \
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
-      "MAG2","QhhhhhhhhhBI",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S" }, \
+      "MAG2",MAG_FMT,    MAG_LABELS }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
-      "MAG3","QhhhhhhhhhBI",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S" }, \
+      "MAG3",MAG_FMT,    MAG_LABELS }, \
     { LOG_ACC1_MSG, sizeof(log_ACCEL), \
-      "ACC1", "QQfff",        "TimeUS,SampleUS,AccX,AccY,AccZ" }, \
+      "ACC1", ACC_FMT,        ACC_LABELS }, \
     { LOG_ACC2_MSG, sizeof(log_ACCEL), \
-      "ACC2", "QQfff",        "TimeUS,SampleUS,AccX,AccY,AccZ" }, \
+      "ACC2", ACC_FMT,        ACC_LABELS }, \
     { LOG_ACC3_MSG, sizeof(log_ACCEL), \
-      "ACC3", "QQfff",        "TimeUS,SampleUS,AccX,AccY,AccZ" }, \
+      "ACC3", ACC_FMT,        ACC_LABELS }, \
     { LOG_GYR1_MSG, sizeof(log_GYRO), \
-      "GYR1", "QQfff",        "TimeUS,SampleUS,GyrX,GyrY,GyrZ" }, \
+      "GYR1", GYR_FMT,        GYR_LABELS }, \
     { LOG_GYR2_MSG, sizeof(log_GYRO), \
-      "GYR2", "QQfff",        "TimeUS,SampleUS,GyrX,GyrY,GyrZ" }, \
+      "GYR2", GYR_FMT,        GYR_LABELS }, \
     { LOG_GYR3_MSG, sizeof(log_GYRO), \
-      "GYR3", "QQfff",        "TimeUS,SampleUS,GyrX,GyrY,GyrZ" }, \
+      "GYR3", GYR_FMT,        GYR_LABELS }, \
     { LOG_PIDR_MSG, sizeof(log_PID), \
-      "PIDR", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+      "PIDR", PID_FMT,  PID_LABELS }, \
     { LOG_PIDP_MSG, sizeof(log_PID), \
-      "PIDP", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+      "PIDP", PID_FMT,  PID_LABELS }, \
     { LOG_PIDY_MSG, sizeof(log_PID), \
-      "PIDY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+      "PIDY", PID_FMT,  PID_LABELS }, \
     { LOG_PIDA_MSG, sizeof(log_PID), \
-      "PIDA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+      "PIDA", PID_FMT,  PID_LABELS }, \
     { LOG_PIDS_MSG, sizeof(log_PID), \
-      "PIDS", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+      "PIDS", PID_FMT,  PID_LABELS }, \
     { LOG_PIDL_MSG, sizeof(log_PID), \
-      "PIDL", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+      "PIDL", PID_FMT,  PID_LABELS }, \
     { LOG_BAR2_MSG, sizeof(log_BARO), \
-      "BAR2",  "QffcfIff", "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp" }, \
+      "BAR2",  BARO_FMT, BARO_LABELS }, \
     { LOG_BAR3_MSG, sizeof(log_BARO), \
-      "BAR3",  "QffcfIff", "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp" }, \
+      "BAR3",  BARO_FMT, BARO_LABELS }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
       "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2" }, \
     { LOG_IMUDT_MSG, sizeof(log_IMUDT), \
-      "IMT","Qfffffffff","TimeUS,DelT,DelvT,DelaT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }, \
+      "IMT",IMT_FMT,IMT_LABELS }, \
     { LOG_IMUDT2_MSG, sizeof(log_IMUDT), \
-      "IMT2","Qfffffffff","TimeUS,DelT,DelvT,DelaT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }, \
+      "IMT2",IMT_FMT,IMT_LABELS }, \
     { LOG_IMUDT3_MSG, sizeof(log_IMUDT), \
-      "IMT3","Qfffffffff","TimeUS,DelT,DelvT,DelaT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }, \
+      "IMT3",IMT_FMT,IMT_LABELS }, \
     { LOG_ORGN_MSG, sizeof(log_ORGN), \
       "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
