@@ -399,6 +399,7 @@ static const struct defaults_struct defaults_table_tailsitter[] = {
     { "LIM_PITCH_MAX",    3000 },
     { "LIM_PITCH_MIN",    -3000 },
     { "MIXING_GAIN",      1.0 },
+    { "RUDD_DT_GAIN",      10 },
 };
 
 QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
