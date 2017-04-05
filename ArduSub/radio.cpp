@@ -54,9 +54,6 @@ void Sub::init_rc_in()
         }
     }
 #endif
-
-    // initialise throttle_zero flag
-    ap.throttle_zero = true;
 }
 
 // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
@@ -82,27 +79,6 @@ void Sub::enable_motor_output()
     // enable motors
     motors.enable();
     motors.output_min();
-}
-
-#define THROTTLE_ZERO_DEBOUNCE_TIME_MS 400
-// set_throttle_zero_flag - set throttle_zero flag from debounced throttle control
-// throttle_zero is used to determine if the pilot intends to shut down the motors
-// Basically, this signals when we are not flying.  We are either on the ground
-// or the pilot has shut down the vehicle in the air and it is free-falling
-void Sub::set_throttle_zero_flag(int16_t throttle_control)
-{
-    static uint32_t last_nonzero_throttle_ms = 0;
-    uint32_t tnow_ms = millis();
-
-    // if not using throttle interlock and non-zero throttle and not E-stopped,
-    // or using motor interlock and it's enabled, then motors are running,
-    // and we are flying. Immediately set as non-zero
-    if ((!ap.using_interlock && (throttle_control < 475 || throttle_control > 525) &&  !ap.motor_emergency_stop) || (ap.using_interlock && motors.get_interlock())) {
-        last_nonzero_throttle_ms = tnow_ms;
-        ap.throttle_zero = false;
-    } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
-        ap.throttle_zero = true;
-    }
 }
 
 // save_trim - adds roll and pitch trims from the radio to ahrs
