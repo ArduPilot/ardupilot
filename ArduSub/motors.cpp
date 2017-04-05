@@ -1,5 +1,13 @@
 #include "Sub.h"
 
+// enable_motor_output() - enable and output lowest possible value to motors
+void Sub::enable_motor_output()
+{
+    // enable motors
+    motors.enable();
+    motors.output_min();
+}
+
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
 bool Sub::init_arm_motors(bool arming_from_gcs)

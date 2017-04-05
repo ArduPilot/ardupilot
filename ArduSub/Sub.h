@@ -672,7 +672,6 @@ private:
     float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
     float pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
     float pv_distance_to_home_cm(const Vector3f &destination);
-    void default_dead_zones();
     void init_rc_in();
     void init_rc_out();
     void enable_motor_output();
