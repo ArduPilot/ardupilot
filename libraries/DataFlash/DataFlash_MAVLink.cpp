@@ -25,6 +25,12 @@ extern const AP_HAL::HAL& hal;
 // initialisation
 void DataFlash_MAVLink::Init()
 {
+    semaphore = hal.util->new_semaphore();
+    if (semaphore == nullptr) {
+        AP_HAL::panic("Failed to create DataFlash_MAVLink semaphore");
+        return;
+    }
+
     DataFlash_Backend::Init();
 
     _blocks = nullptr;
@@ -121,7 +127,13 @@ bool DataFlash_MAVLink::WritePrioritisedBlock(const void *pBuffer, uint16_t size
         return false;
     }
 
+    if (!semaphore->take_nonblocking()) {
+        dropped++;
+        return false;
+    }
+
     if (! WriteBlockCheckStartupMessages()) {
+        semaphore->give();
         return false;
     }
 
@@ -130,6 +142,7 @@ bool DataFlash_MAVLink::WritePrioritisedBlock(const void *pBuffer, uint16_t size
             // do not count the startup packets as being dropped...
             dropped++;
         }
+        semaphore->give();
         return false;
     }
 
@@ -141,6 +154,7 @@ bool DataFlash_MAVLink::WritePrioritisedBlock(const void *pBuffer, uint16_t size
             if (_current_block == nullptr) {
                 // should not happen - there's a sanity check above
                 internal_error();
+                semaphore->give();
                 return false;
             }
         }
@@ -157,9 +171,7 @@ bool DataFlash_MAVLink::WritePrioritisedBlock(const void *pBuffer, uint16_t size
         }
     }
 
-    if (!_writing_startup_messages) {
-        // push_log_blocks();
-    }
+    semaphore->give();
 
     return true;
 }
@@ -465,13 +477,20 @@ void DataFlash_MAVLink::push_log_blocks()
 
     DataFlash_Backend::WriteMoreStartupMessages();
 
+    if (!semaphore->take_nonblocking()) {
+        return;
+    }
+
     if (! send_log_blocks_from_queue(_blocks_retry)) {
+        semaphore->give();
         return;
     }
 
     if (! send_log_blocks_from_queue(_blocks_pending)) {
+        semaphore->give();
         return;
     }
+    semaphore->give();
 }
 
 void DataFlash_MAVLink::do_resends(uint32_t now)
