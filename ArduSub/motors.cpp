@@ -122,7 +122,7 @@ void Sub::motors_output()
 {
     // check if we are performing the motor test
     if (ap.motor_test) {
-        motor_test_output();
+        return; // Placeholder
     } else {
         if (!ap.using_interlock) {
             // if not using interlock switch, set according to Emergency Stop status
