@@ -17,6 +17,8 @@
 #pragma once
 
 #include "AP_HAL_SITL.h"
+
+#ifdef HAL_WITH_UAVCAN
 #include <AP_HAL/CAN.h>
 
 class HALSITL::HALSITLCAN : public AP_HAL::CAN {
@@ -57,3 +59,4 @@ public:
                    uavcan::MonotonicTime blocking_deadline) override;
 };
 
+#endif
