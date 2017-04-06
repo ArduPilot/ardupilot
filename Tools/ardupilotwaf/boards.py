@@ -488,6 +488,10 @@ class px4(Board):
             'uavcan',
         ]
 
+        env.AP_LIBRARIES += [
+            'AP_UAVCAN',
+        ]
+
         env.ROMFS_EXCLUDE = self.ROMFS_EXCLUDE
 
         env.PX4_BOOTLOADER_NAME = self.bootloader_name
@@ -525,12 +529,6 @@ class px4_v2(px4):
         self.romfs_exclude(['oreoled.bin'])
         self.with_uavcan = True
 
-    def configure_env(self, cfg, env):
-        super(sitl, self).configure_env(cfg, env)
-        env.AP_LIBRARIES += [
-            'AP_UAVCAN',
-        ]
-
 class px4_v3(px4):
     name = 'px4-v3'
     def __init__(self):
@@ -540,12 +538,6 @@ class px4_v3(px4):
         self.px4io_name = 'px4io-v2'
         self.with_uavcan = True
 
-    def configure_env(self, cfg, env):
-        super(sitl, self).configure_env(cfg, env)
-        env.AP_LIBRARIES += [
-            'AP_UAVCAN',
-        ]
-
 class px4_v4(px4):
     name = 'px4-v4'
     def __init__(self):
@@ -554,12 +546,6 @@ class px4_v4(px4):
         self.board_name = 'px4fmu-v4'
         self.romfs_exclude(['oreoled.bin'])
         self.with_uavcan = True
-
-    def configure_env(self, cfg, env):
-        super(sitl, self).configure_env(cfg, env)
-        env.AP_LIBRARIES += [
-            'AP_UAVCAN',
-        ]
 
 class aerofc_v1(px4):
     name = 'aerofc-v1'
