@@ -10,6 +10,8 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+#ifdef HAL_WITH_UAVCAN
+
 #include <cassert>
 #include <cstring>
 #include "CAN.h"
@@ -1026,3 +1028,5 @@ extern "C" {
     }
 
 } // extern "C"
+
+#endif

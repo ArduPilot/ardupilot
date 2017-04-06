@@ -19,7 +19,10 @@
 #include "GPIO.h"
 #include "I2CDevice.h"
 #include "SPIDevice.h"
+
+#ifdef HAL_WITH_UAVCAN
 #include "CAN.h"
+#endif
 
 #include <stdlib.h>
 #include <systemlib/systemlib.h>
