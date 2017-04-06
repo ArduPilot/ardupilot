@@ -148,15 +148,11 @@ enum RTLState {
 // DATA - event logging
 #define DATA_AP_STATE                       7
 #define DATA_SYSTEM_TIME_SET                8
-#define DATA_INIT_SIMPLE_BEARING            9
 #define DATA_ARMED                          10
 #define DATA_DISARMED                       11
 #define DATA_AUTO_ARMED                     15
 #define DATA_LOST_GPS                       19
 #define DATA_SET_HOME                       25
-#define DATA_SET_SIMPLE_ON                  26
-#define DATA_SET_SIMPLE_OFF                 27
-#define DATA_SET_SUPERSIMPLE_ON             29
 #define DATA_SAVE_TRIM                      38
 #define DATA_SAVEWP_ADD_WP                  39
 #define DATA_FENCE_ENABLE                   41
