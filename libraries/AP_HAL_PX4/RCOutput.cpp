@@ -545,21 +545,22 @@ void PX4RCOutput::_send_outputs(void)
                 AP_UAVCAN *ap_uc = hal.can_mgr->get_UAVCAN();
                 if(ap_uc != nullptr)
                 {
-                    ap_uc->rc_out_sem_take();
-
-                    for(uint8_t i = 0; i < _max_channel; i++)
+                    if(ap_uc->rc_out_sem_take())
                     {
-                        ap_uc->rco_write(_period[i], i);
-                    }
+                        for(uint8_t i = 0; i < _max_channel; i++)
+                        {
+                            ap_uc->rco_write(_period[i], i);
+                        }
 
-                    bool armed = hal.util->get_soft_armed();
-                    if (armed) {
-                        ap_uc->rco_arm_actuators(true);
-                    } else {
-                        ap_uc->rco_arm_actuators(false);
-                    }
+                        bool armed = hal.util->get_soft_armed();
+                        if (armed) {
+                            ap_uc->rco_arm_actuators(true);
+                        } else {
+                            ap_uc->rco_arm_actuators(false);
+                        }
 
-                    ap_uc->rc_out_sem_give();
+                        ap_uc->rc_out_sem_give();
+                    }
                 }
             }
         }

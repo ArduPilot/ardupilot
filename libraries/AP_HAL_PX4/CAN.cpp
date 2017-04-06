@@ -256,31 +256,43 @@ int PX4CAN::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
     // First attempt with rounding to nearest
     BsPair solution(bs1_bs2_sum, uint8_t(((7 * bs1_bs2_sum - 1) + 4) / 8));
 
-    if (solution.sample_point_permill > MaxSamplePointLocation) {
-        // Second attempt with rounding to zero
-        solution = BsPair(bs1_bs2_sum, uint8_t((7 * bs1_bs2_sum - 1) / 8));
-    }
-
-    /*
-     * Final validation
-     */
-    if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
-        if (AP_BoardConfig::get_can_debug() >= 1) {
-            printf("PX4CAN::computeTimings target_bitrate error\n\r");
+    if (solution.isValid())
+    {
+        if (solution.sample_point_permill > MaxSamplePointLocation) {
+            // Second attempt with rounding to zero
+            solution = BsPair(bs1_bs2_sum, uint8_t((7 * bs1_bs2_sum - 1) / 8));
+            if (!solution.isValid())
+            {
+                printf("PX4CAN::computeTimings second solution invalid\n\r");
+                return -ErrLogic;
+            }
         }
+
+        /*
+         * Final validation
+         */
+        if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
+            if (AP_BoardConfig::get_can_debug() >= 1) {
+                printf("PX4CAN::computeTimings target_bitrate error\n\r");
+            }
+            return -ErrLogic;
+        }
+
+        if (AP_BoardConfig::get_can_debug() >= 2) {
+            printf("PX4CAN::computeTimings Timings: quanta/bit: %d, sample point location: %.1f%%\n\r",
+                   int(1 + solution.bs1 + solution.bs2), double(solution.sample_point_permill / 10.0));
+        }
+
+        out_timings.prescaler = uint16_t(prescaler - 1U);
+        out_timings.sjw = 0;                                      // Which means one
+        out_timings.bs1 = uint8_t(solution.bs1 - 1);
+        out_timings.bs2 = uint8_t(solution.bs2 - 1);
+
+        return 0;
+    } else {
+        printf("PX4CAN::computeTimings first solution invalid\n\r");
         return -ErrLogic;
     }
-
-    if (AP_BoardConfig::get_can_debug() >= 2) {
-        printf("PX4CAN::computeTimings Timings: quanta/bit: %d, sample point location: %.1f%%\n\r",
-               int(1 + solution.bs1 + solution.bs2), double(solution.sample_point_permill / 10.0));
-    }
-
-    out_timings.prescaler = uint16_t(prescaler - 1U);
-    out_timings.sjw = 0;                                      // Which means one
-    out_timings.bs1 = uint8_t(solution.bs1 - 1);
-    out_timings.bs2 = uint8_t(solution.bs2 - 1);
-    return 0;
 }
 
 int16_t PX4CAN::send(const uavcan::CanFrame& frame, uavcan::MonotonicTime tx_deadline, uavcan::CanIOFlags flags)
@@ -953,7 +965,8 @@ bool PX4CANManager::begin(uint32_t bitrate, uint8_t can_number)
         if (p_uavcan != UAVCAN_NULLPTR) {
             uint16_t UAVCAN_init_tries;
 
-            // TODO: Something
+            // TODO: Limit number of times we try to init UAVCAN and also provide
+            //       the reasonable actions when it fails.
             for (UAVCAN_init_tries = 0; UAVCAN_init_tries < 100; UAVCAN_init_tries++) {
                 if (p_uavcan->try_init() == true) {
                     return true;
