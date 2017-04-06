@@ -22,6 +22,8 @@
 #include <assert.h>
 #include <cmath>
 
+#ifdef HAL_WITH_UAVCAN
+
 #include "AP_HAL_Namespace.h"
 #include "utility/functor.h"
 #include <uavcan/driver/can.hpp>
@@ -111,3 +113,4 @@ public:
     virtual void set_UAVCAN(AP_UAVCAN *uavcan);
 };
 
+#endif
