@@ -84,8 +84,6 @@ def dive_mission(mavproxy, mav, filename):
     if not wait_waypoint(mav, 1, 6, max_dist=5):
         return False
     
-    wait_altitude(mav, -1, 1, timeout=3000)
-    
     mavproxy.send('disarm\n');
     
     # wait for disarm
