@@ -89,20 +89,6 @@ public:
  */
 class AP_HAL::CANManager: public uavcan::ICanDriver {
 public:
-    /**
-     * Returns an interface by index, or null pointer if the index is out of range.
-     */
-    virtual AP_HAL::CAN* getIface(uint8_t iface_index) = 0;
-
-    /**
-     * Default implementation of this method calls the non-const overload of getIface().
-     * Can be overriden by the application if necessary.
-     */
-    virtual const AP_HAL::CAN* getIface(uint8_t iface_index) const
-    {
-        return (this)->getIface(iface_index);
-    }
-
     /*  CAN port open method
      Opens port with specified bit rate
      bitrate - selects the speed that the port will be configured to.  If zero, the port speed is left
