@@ -30,8 +30,10 @@
 #include <nuttx/arch.h>
 #include <spawn.h>
 
+#ifdef HAL_WITH_UAVCAN
 #include <AP_HAL_PX4/CAN.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
