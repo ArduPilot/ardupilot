@@ -696,7 +696,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[0],  0),
+    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[STREAM_RAW_SENSORS],  0),
 
     // @Param: EXT_STAT
     // @DisplayName: Extended status stream rate to ground station
@@ -705,7 +705,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[1],  0),
+    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[STREAM_EXTENDED_STATUS],  0),
 
     // @Param: RC_CHAN
     // @DisplayName: RC Channel stream rate to ground station
@@ -714,16 +714,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[2],  0),
-
-    // @Param: RAW_CTRL
-    // @DisplayName: Raw Control stream rate to ground station
-    // @Description: Stream rate of RC_CHANNELS_SCALED (HIL only) to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRates[3],  0),
+    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[STREAM_RC_CHANNELS],  0),
 
     // @Param: POSITION
     // @DisplayName: Position stream rate to ground station
@@ -732,7 +723,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[4],  0),
+    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[STREAM_POSITION],  0),
 
     // @Param: EXTRA1
     // @DisplayName: Extra data type 1 stream rate to ground station
@@ -741,7 +732,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[5],  0),
+    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[STREAM_EXTRA1],  0),
 
     // @Param: EXTRA2
     // @DisplayName: Extra data type 2 stream rate to ground station
@@ -750,7 +741,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[6],  0),
+    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[STREAM_EXTRA2],  0),
 
     // @Param: EXTRA3
     // @DisplayName: Extra data type 3 stream rate to ground station
@@ -759,7 +750,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[7],  0),
+    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[STREAM_EXTRA3],  0),
 
     // @Param: PARAMS
     // @DisplayName: Parameter stream rate to ground station
@@ -768,7 +759,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  0),
+    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[STREAM_PARAMS],  0),
     AP_GROUPEND
 };
 
@@ -1044,9 +1035,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {     // MAV ID: 70
-        // allow override of RC channel values for HIL
-        // or for complete GCS control of switch position
-        // and RC PWM values.
+        // allow override of RC input
         if (msg->sysid != sub.g.sysid_my_gcs) {
             break;    // Only accept control from our gcs
         }
