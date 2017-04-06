@@ -20,6 +20,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Math/AP_Math.h>
 #include "SRV_Channel.h"
 
 extern const AP_HAL::HAL& hal;
@@ -181,6 +182,8 @@ float SRV_Channel::get_output_norm_from_pwm(uint16_t pwm)
         ret = 0;
     }
     
+    ret = constrain_value(ret, -1.0f, 1.0f);
+
     return ret;
 }
 

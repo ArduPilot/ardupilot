@@ -115,7 +115,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: _CANESC_BM
     // @DisplayName: RC Out channels to be transmitted as ESC over CAN bus
     // @Description: Bitmask with one set for channel to be transmitted as a ESC command over CAN bus
-    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20
+    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
     // @User: Standard
     AP_GROUPINFO("_CANESC_BM", 19, SRV_Channels, can_esc_bm, 0),
 
