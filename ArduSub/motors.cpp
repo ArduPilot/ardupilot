@@ -28,7 +28,7 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     }
 
     // disable cpu failsafe because initialising everything takes a while
-    failsafe_disable();
+    mainloop_failsafe_disable();
 
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
@@ -72,7 +72,7 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 
     // reenable failsafe
-    failsafe_enable();
+    mainloop_failsafe_enable();
 
     // perf monitor ignores delay due to arming
     perf_ignore_this_loop();
