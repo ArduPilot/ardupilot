@@ -228,11 +228,18 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
     float velocity_correction;
     float current_alt = inertial_nav.get_altitude();
 
+    int32_t rangefinder_height_above_terrain_cm;
+    bool rangefinder_height_above_terrain_cm_valid = get_rangefinder_height_above_terrain(rangefinder_height_above_terrain_cm);
+
+    if (!rangefinder_height_above_terrain_cm_valid) {
+        return target_rate;
+    }
+
     uint32_t now = millis();
 
     // reset target altitude if this controller has just been engaged
     if (now - last_call_ms > RANGEFINDER_TIMEOUT_MS) {
-        target_rangefinder_alt = rangefinder_state.alt_cm + current_alt_target - current_alt;
+        target_rangefinder_alt = rangefinder_height_above_terrain_cm + current_alt_target - current_alt;
     }
     last_call_ms = now;
 
@@ -249,7 +256,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
       row. When that happens we reset the target altitude to the new
       reading
      */
-    int32_t glitch_cm = rangefinder_state.alt_cm - target_rangefinder_alt;
+    int32_t glitch_cm = rangefinder_height_above_terrain_cm - target_rangefinder_alt;
     if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
         rangefinder_state.glitch_count = MAX(rangefinder_state.glitch_count+1,1);
     } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
@@ -259,7 +266,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
     }
     if (abs(rangefinder_state.glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
         // shift to the new rangefinder reading
-        target_rangefinder_alt = rangefinder_state.alt_cm;
+        target_rangefinder_alt = rangefinder_height_above_terrain_cm;
         rangefinder_state.glitch_count = 0;
     }
     if (rangefinder_state.glitch_count != 0) {
@@ -268,7 +275,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
     }
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
-    distance_error = (target_rangefinder_alt - rangefinder_state.alt_cm) - (current_alt_target - current_alt);
+    distance_error = (target_rangefinder_alt - rangefinder_height_above_terrain_cm) - (current_alt_target - current_alt);
     velocity_correction = distance_error * g.rangefinder_gain;
     velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 
