@@ -171,22 +171,6 @@ float SRV_Channel::get_output_norm(void)
     return ret;
 }
 
-float SRV_Channel::get_output_norm_from_pwm(uint16_t pwm)
-{
-    float ret;
-    if (pwm < servo_trim) {
-        ret = (float)(pwm - servo_trim) / (float)(servo_trim - servo_min);
-    } else if (pwm > servo_trim) {
-        ret = (float)(pwm - servo_trim) / (float)(servo_max  - servo_trim);
-    } else {
-        ret = 0;
-    }
-    
-    ret = constrain_value(ret, -1.0f, 1.0f);
-
-    return ret;
-}
-
 uint16_t SRV_Channel::get_limit_pwm(LimitValue limit) const
 {
     switch (limit) {
