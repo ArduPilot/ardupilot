@@ -405,6 +405,7 @@ void *PX4Scheduler::_storage_thread(void *arg)
     return nullptr;
 }
 
+#if HAL_WITH_UAVCAN
 void *PX4Scheduler::_uavcan_thread(void *arg)
 {
     PX4Scheduler *sched = (PX4Scheduler *) arg;
@@ -428,6 +429,7 @@ void *PX4Scheduler::_uavcan_thread(void *arg)
     }
     return nullptr;
 }
+#endif
 
 bool PX4Scheduler::in_timerprocess()
 {

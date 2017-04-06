@@ -539,6 +539,7 @@ void PX4RCOutput::_send_outputs(void)
         {
             // also publish to actuator_direct (UAVCAN is published via AP_UAVCAN)
             _publish_actuators();
+#if HAL_WITH_UAVCAN
 
             if(hal.can_mgr != nullptr)
             {
@@ -563,6 +564,7 @@ void PX4RCOutput::_send_outputs(void)
                     }
                 }
             }
+#endif // HAL_WITH_UAVCAN
         }
 
         perf_end(_perf_rcout);
