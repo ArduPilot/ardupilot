@@ -452,9 +452,9 @@ void AP_UAVCAN::do_cyclic(void)
                                 uavcan::equipment::actuator::Command cmd;
 
                                 if ((((uint32_t) 1) << i) & _esc_bm) {
-                                    float scaled = cmd_max * hal.rcout->scale_esc_to_unity(_rco_conf[i].pulse);
+                                    float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_rco_conf[i].pulse) + 1.0) / 2.0;
 
-                                    scaled = constrain_float(scaled, -cmd_max, cmd_max);
+                                    scaled = constrain_float(scaled, 0, cmd_max);
 
                                     esc_msg.cmd.push_back(static_cast<int>(scaled));
                                 } else {
