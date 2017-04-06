@@ -10,10 +10,10 @@
 //#define CAMERA                DISABLED            // disable camera trigger to save 1k of flash
 //#define RANGEFINDER_ENABLED   DISABLED            // disable rangefinder to save 1k of flash
 //#define POSHOLD_ENABLED       DISABLED            // disable PosHold flight mode to save 4.5k of flash
-#define GRIPPER_ENABLED           DISABLED            // disable gripper to save 500bytes of flash
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 
 // features below are disabled by default on all boards
+//#define GRIPPER_ENABLED       ENABLED            // enable gripper library
 //#define AVOIDANCE_ENABLED     ENABLED
 //#define PROXIMITY_ENABLED     ENABLED
 //#define AC_RALLY              ENABLED            // enable rally points library
