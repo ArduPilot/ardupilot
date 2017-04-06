@@ -10,7 +10,7 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#ifdef HAL_WITH_UAVCAN
+#if HAL_WITH_UAVCAN
 
 #include <cassert>
 #include <cstring>
@@ -258,43 +258,38 @@ int PX4CAN::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
     // First attempt with rounding to nearest
     BsPair solution(bs1_bs2_sum, uint8_t(((7 * bs1_bs2_sum - 1) + 4) / 8));
 
-    if (solution.isValid())
-    {
-        if (solution.sample_point_permill > MaxSamplePointLocation) {
-            // Second attempt with rounding to zero
-            solution = BsPair(bs1_bs2_sum, uint8_t((7 * bs1_bs2_sum - 1) / 8));
-            if (!solution.isValid())
-            {
-                printf("PX4CAN::computeTimings second solution invalid\n\r");
-                return -ErrLogic;
-            }
-        }
+    if (solution.sample_point_permill > MaxSamplePointLocation || !solution.isValid()) {
+        // Second attempt with rounding to zero
+        solution = BsPair(bs1_bs2_sum, uint8_t((7 * bs1_bs2_sum - 1) / 8));
 
-        /*
-         * Final validation
-         */
-        if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
-            if (AP_BoardConfig::get_can_debug() >= 1) {
-                printf("PX4CAN::computeTimings target_bitrate error\n\r");
-            }
+        if (!solution.isValid())
+        {
+            printf("PX4CAN::computeTimings second solution invalid\n\r");
             return -ErrLogic;
         }
+    }
 
-        if (AP_BoardConfig::get_can_debug() >= 2) {
-            printf("PX4CAN::computeTimings Timings: quanta/bit: %d, sample point location: %.1f%%\n\r",
-                   int(1 + solution.bs1 + solution.bs2), double(solution.sample_point_permill / 10.0));
+    /*
+     * Final validation
+     */
+    if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
+        if (AP_BoardConfig::get_can_debug() >= 1) {
+            printf("PX4CAN::computeTimings target_bitrate error\n\r");
         }
-
-        out_timings.prescaler = uint16_t(prescaler - 1U);
-        out_timings.sjw = 0;                                      // Which means one
-        out_timings.bs1 = uint8_t(solution.bs1 - 1);
-        out_timings.bs2 = uint8_t(solution.bs2 - 1);
-
-        return 0;
-    } else {
-        printf("PX4CAN::computeTimings first solution invalid\n\r");
         return -ErrLogic;
     }
+
+    if (AP_BoardConfig::get_can_debug() >= 2) {
+        printf("PX4CAN::computeTimings Timings: quanta/bit: %d, sample point location: %.1f%%\n\r",
+               int(1 + solution.bs1 + solution.bs2), double(solution.sample_point_permill / 10.0));
+    }
+
+    out_timings.prescaler = uint16_t(prescaler - 1U);
+    out_timings.sjw = 0;                                      // Which means one
+    out_timings.bs1 = uint8_t(solution.bs1 - 1);
+    out_timings.bs2 = uint8_t(solution.bs2 - 1);
+
+    return 0;
 }
 
 int16_t PX4CAN::send(const uavcan::CanFrame& frame, uavcan::MonotonicTime tx_deadline, uavcan::CanIOFlags flags)
@@ -851,19 +846,19 @@ void PX4CANManager::initOnce(uint8_t can_number)
     }
 
     if (can_number >= 1) {
-#if defined(GPIO_CAN1_RX)
+#if defined(GPIO_CAN1_RX) && defined(GPIO_CAN1_TX)
         stm32_configgpio(GPIO_CAN1_RX);
         stm32_configgpio(GPIO_CAN1_TX);
 #else
-# error  "Need to define GPIO_CAN1_RX"
+# error  "Need to define GPIO_CAN1_RX/TX"
 #endif
     }
     if (can_number >= 2) {
-#if defined(GPIO_CAN2_RX)
+#if defined(GPIO_CAN2_RX) && defined(GPIO_CAN1_TX)
         stm32_configgpio(GPIO_CAN2_RX | GPIO_PULLUP);
         stm32_configgpio(GPIO_CAN2_TX);
 #else
-# error  "Need to define GPIO_CAN2_RX"
+# error  "Need to define GPIO_CAN2_RX/TX"
 #endif
     }
 

@@ -20,7 +20,7 @@
 #include "I2CDevice.h"
 #include "SPIDevice.h"
 
-#ifdef HAL_WITH_UAVCAN
+#if HAL_WITH_UAVCAN
 #include "CAN.h"
 #endif
 
