@@ -316,7 +316,7 @@ private:
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
 
-    // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
+    // Stores initial bearing when armed
     int32_t initial_armed_bearing;
 
     // Throttle variables
