@@ -19,7 +19,6 @@
 //#define AC_RALLY              ENABLED            // enable rally points library
 //#define AC_TERRAIN            ENABLED            // enable terrain library (Must also enable Rally)
 //#define OPTFLOW               ENABLED // enable optical flow sensor support
-//#define DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE   // disable mode changes from GCS during Radio failsafes.  Avoids a race condition for vehicle like Solo in which the RC and telemetry travel along the same link
 
 // User Hooks : For User Developed code that you wish to run
 // Put your variable definitions into the UserVariables.h file (or another file name and then change the #define below).
