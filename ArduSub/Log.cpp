@@ -398,13 +398,6 @@ void Sub::Log_Sensor_Health()
     }
 }
 
-struct PACKED log_Heli {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float   desired_rotor_speed;
-    float   main_rotor_speed;
-};
-
 struct PACKED log_GuidedTarget {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -460,8 +453,6 @@ const struct LogStructure Sub::log_structure[] = {
       "DFLT",  "QBf",         "TimeUS,Id,Value" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
       "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
-    { LOG_HELI_MSG, sizeof(log_Heli),
-      "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
 };
