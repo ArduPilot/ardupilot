@@ -38,8 +38,6 @@
 #error CONFIG_HAL_BOARD must be defined to build ArduSub
 #endif
 
-#define MAGNETOMETER ENABLED
-
 // run at 400Hz on all systems
 # define MAIN_LOOP_RATE    400
 # define MAIN_LOOP_SECONDS 0.0025f

@@ -177,7 +177,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    GSCALAR(compass_enabled,        "MAG_ENABLE",   MAGNETOMETER),
+    GSCALAR(compass_enabled,        "MAG_ENABLE",   ENABLED),
 
     // @Param: WP_YAW_BEHAVIOR
     // @DisplayName: Yaw behaviour during missions
