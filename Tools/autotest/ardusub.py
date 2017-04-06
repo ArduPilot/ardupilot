@@ -29,8 +29,8 @@ def arm_sub(mavproxy, mav):
 
 def dive_manual(mavproxy, mav):
     mavproxy.send('rc 3 1600\n')
-    mavproxy.send('rc 6 1600\n')
-    mavproxy.send('rc 7 1550\n')
+    mavproxy.send('rc 5 1600\n')
+    mavproxy.send('rc 6 1550\n')
 
     if not wait_distance(mav, 50, accuracy=7, timeout=100):
         return False
@@ -51,8 +51,8 @@ def dive_manual(mavproxy, mav):
         return False
     
     mavproxy.send('rc 4 1500\n')
-    mavproxy.send('rc 6 1500\n')
-    mavproxy.send('rc 7 1100\n')
+    mavproxy.send('rc 5 1500\n')
+    mavproxy.send('rc 6 1100\n')
     
     if not wait_distance(mav, 75, accuracy=7, timeout=100):
         return False
