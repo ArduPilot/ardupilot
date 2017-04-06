@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA,16:UAVCAN
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA,16:UAVCAN
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
@@ -393,17 +393,7 @@ void AP_GPS::detect_instance(uint8_t instance)
     struct detect_state *dstate = &detect_state[instance];
     uint32_t now = AP_HAL::millis();
 
-    switch (_type[instance]) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    case GPS_TYPE_PX4:
-        // check for explicitly chosen PX4 GPS beforehand
-        // it is not possible to autodetect it, nor does it require a real UART
-        _broadcast_gps_type("PX4", instance, -1); // baud rate isn't valid
-        new_gps = new AP_GPS_PX4(*this, state[instance], _port[instance]);
-        goto found_gps;
-        break;
-#endif
-
+    switch (_type[instance]){
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
     case GPS_TYPE_QURT:
         _broadcast_gps_type("QURTGPS", instance, -1); // baud rate isn't valid
@@ -438,11 +428,7 @@ void AP_GPS::detect_instance(uint8_t instance)
                         hal.console->printf("AP_GPS_UAVCAN registered\n\r");
                     }
 
-                    state[instance].status = NO_GPS;
-                    drivers[instance] = new_gps;
-                    timing[instance].last_message_time_ms = now;
-
-                    return;
+                    goto found_gps;
                 }
             }
         }
@@ -605,7 +591,7 @@ void AP_GPS::update_instance(uint8_t instance)
     }
 
     // If it is UAVCAN GNSS - give it regular time as if it is there to acknowledge itself
-    if (drivers[instance] == nullptr || (state[instance].status == NO_GPS && _type[instance] != GPS_TYPE_UAVCAN)) {
+    if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
         // we don't yet know the GPS type of this one, or it has timed
         // out and needs to be re-initialised
         detect_instance(instance);
