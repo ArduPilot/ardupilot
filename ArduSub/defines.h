@@ -122,7 +122,6 @@ enum RTLState {
 #define LOG_DATA_FLOAT_MSG              0x18
 #define LOG_MOTBATT_MSG                 0x1E
 #define LOG_PARAMTUNE_MSG               0x1F
-#define LOG_HELI_MSG                    0x20
 #define LOG_GUIDEDTARGET_MSG            0x22
 #define LOG_PROXIMITY_MSG               0x24
 
