@@ -626,8 +626,8 @@ private:
     void failsafe_terrain_check();
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
-    void failsafe_enable();
-    void failsafe_disable();
+    void mainloop_failsafe_enable();
+    void mainloop_failsafe_disable();
     void fence_check();
     void fence_send_mavlink_status(mavlink_channel_t chan);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
@@ -769,7 +769,7 @@ private:
 
 public:
     void mavlink_delay_cb();
-    void failsafe_check();
+    void mainloop_failsafe_check();
 };
 
 extern const AP_HAL::HAL& hal;

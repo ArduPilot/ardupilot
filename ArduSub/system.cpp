@@ -15,7 +15,7 @@ static void mavlink_delay_cb_static()
 
 static void failsafe_check_static()
 {
-    sub.failsafe_check();
+    sub.mainloop_failsafe_check();
 }
 
 void Sub::init_ardupilot()
@@ -189,7 +189,7 @@ void Sub::init_ardupilot()
     serial_manager.set_blocking_writes_all(false);
 
     // enable CPU failsafe
-    failsafe_enable();
+    mainloop_failsafe_enable();
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
