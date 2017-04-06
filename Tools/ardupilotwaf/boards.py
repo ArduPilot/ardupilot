@@ -217,10 +217,6 @@ class sitl(Board):
             'm',
         ]
         
-        env.CXXFLAGS += [
-            '-fexceptions',
-        ]
-
         cfg.check_librt(env)
 
         env.LINKFLAGS += ['-pthread',]
@@ -234,9 +230,6 @@ class sitl(Board):
                 'winmm',
             ]
             
-    def __init__(self):
-        self.with_uavcan = True
-
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
@@ -266,9 +259,6 @@ class linux(Board):
         env.AP_LIBRARIES = [
             'AP_HAL_Linux',
         ]
-
-    def __init__(self):
-        self.with_uavcan = True
 
 class minlure(linux):
     def configure_env(self, cfg, env):
@@ -524,7 +514,6 @@ class px4_v1(px4):
         self.board_name = 'px4fmu-v1'
         self.px4io_name = 'px4io-v1'
         self.romfs_exclude(['oreoled.bin'])
-        self.with_uavcan = True
 
 class px4_v2(px4):
     name = 'px4-v2'
