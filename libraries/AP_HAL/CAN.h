@@ -22,7 +22,7 @@
 #include <assert.h>
 #include <cmath>
 
-#ifdef HAL_WITH_UAVCAN
+#if HAL_WITH_UAVCAN
 
 #include "AP_HAL_Namespace.h"
 #include "utility/functor.h"
