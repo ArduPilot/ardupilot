@@ -33,22 +33,6 @@
 namespace PX4 {
 namespace bxcan {
 
-#ifndef GPIO_CAN1_RX
-#define GPIO_CAN1_RX    GPIO_CAN1_RX_3
-#endif
-
-#ifndef GPIO_CAN1_TX
-#define GPIO_CAN1_TX    GPIO_CAN1_TX_3
-#endif
-
-#ifndef GPIO_CAN2_RX
-#define GPIO_CAN2_RX    GPIO_CAN2_RX_1
-#endif
-
-#ifndef GPIO_CAN2_TX
-#define GPIO_CAN2_TX    GPIO_CAN2_TX_2
-#endif
-
 # define CAN_IRQ_ATTACH(irq, handler)                          \
    do {                                                      \
         const int res = irq_attach(irq, handler);          \
