@@ -414,7 +414,7 @@ void AP_UAVCAN::do_cyclic(void)
                             cmd.command_type = uavcan::equipment::actuator::Command::COMMAND_TYPE_UNITLESS;
 
                             // TODO: failsafe, safety
-                            cmd.command_value = SRV_Channels::get_output_norm_from_pwm(i, _rco_conf[i].pulse);
+                            cmd.command_value = constrain_value(((float) _rco_conf[i].pulse - 1000.0) / 500.0 - 1.0, -1.0, 1.0);
 
                             msg.commands.push_back(cmd);
 
@@ -452,8 +452,9 @@ void AP_UAVCAN::do_cyclic(void)
                                 uavcan::equipment::actuator::Command cmd;
 
                                 if ((((uint32_t) 1) << i) & _esc_bm) {
-                                    float scaled = SRV_Channels::get_output_norm_from_pwm(i, _rco_conf[i].pulse);
-                                    scaled = constrain_float(scaled, 0.0, cmd_max);
+                                    float scaled = cmd_max * hal.rcout->scale_esc_to_unity(_rco_conf[i].pulse);
+
+                                    scaled = constrain_float(scaled, -cmd_max, cmd_max);
 
                                     esc_msg.cmd.push_back(static_cast<int>(scaled));
                                 } else {
