@@ -101,22 +101,6 @@ struct AP_Notify::notify_events_type AP_Notify::events;
     ToshibaLED_I2C toshibaled;
     Display display;
 
-//#if AP_NOTIFY_SOLO_TONES == 1  Replaced by testing _solo_tones_enable parameter. True is solo enable.
-if (_solo_tones_enable)
-    ToneAlarm_PX4_Solo tonealarm;
-else
-    ToneAlarm_PX4 tonealarm;
-endif
-
-// #if AP_NOTIFY_OREOLED == 1    Replaced by testing _solo_led_enable parameter. True is solo enable
-// removed # so this works at runtime.
-if (_solo_led_enable)
-    OreoLED_PX4 oreoled;
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled, &display};
-else
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &display};
-endif
-
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ToneAlarm_PX4 tonealarm;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
@@ -180,6 +164,21 @@ endif
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
 {
+    // Check the solo tones parameter and set tone alarm. Formerly a hard coded parameter on compile
+    if (_solo_tones_enable)
+        ToneAlarm_PX4_Solo tonealarm;
+    else
+        ToneAlarm_PX4 tonealarm;
+    endif
+
+    //Check the solo LED parameter and set notify devices. Formerly a hard coded parameter on compile.
+    if (_solo_led_enable)
+        OreoLED_PX4 oreoled;
+        NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled, &display};
+    else
+        NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &display};
+    endif
+    
     // clear all flags and events
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
