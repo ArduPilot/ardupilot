@@ -72,10 +72,8 @@ AP_GPS_QURT::read(void)
 		state.status = AP_GPS::GPS_OK_FIX_3D;
 	} else if (data.nav_type & NAV_TYPE_2SV_KF_SOLUTION) {
 		state.status = AP_GPS::GPS_OK_FIX_2D;
-	} else if (data.nav_type & NAV_TYPE_1SV_KF_SOLUTION) {
-		state.status = AP_GPS::NO_FIX;
 	} else {
-		state.status = AP_GPS::NO_GPS;
+		state.status = AP_GPS::NO_FIX;
 	}
 
     state.num_sats = data.sv_in_fix;
