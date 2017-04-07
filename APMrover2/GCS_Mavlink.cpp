@@ -475,6 +475,10 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.compass.send_mag_cal_report(chan);
         break;
 
+    case MSG_BATTERY_STATUS:
+        send_battery_status(rover.battery);
+        break;
+
     case MSG_RETRY_DEFERRED:
     case MSG_ADSB_VEHICLE:
     case MSG_TERRAIN:
@@ -690,6 +694,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         send_message(MSG_RANGEFINDER);
         send_message(MSG_SYSTEM_TIME);
         send_message(MSG_BATTERY2);
+        send_message(MSG_BATTERY_STATUS);
         send_message(MSG_MAG_CAL_REPORT);
         send_message(MSG_MAG_CAL_PROGRESS);
         send_message(MSG_MOUNT_STATUS);
