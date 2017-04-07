@@ -149,8 +149,8 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 // Verify command Handlers
 /********************************************************************************/
 
-// verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
-//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
+// check to see if current command goal has been acheived
+// called by mission library in mission.update()
 bool Sub::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
     if (control_mode == AUTO) {
@@ -167,13 +167,10 @@ bool Sub::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 }
 
 
-// verify_command - this will be called repeatedly by ap_mission lib to ensure the active commands are progressing
-//  should return true once the active navigation command completes successfully
-//  called at 10hz or higher
+// check if current mission command has completed
 bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 {
     switch (cmd.id) {
-
         //
         // navigation commands
         //
@@ -760,9 +757,7 @@ bool Sub::verify_wait_delay()
 
 bool Sub::verify_within_distance()
 {
-    // update distance calculation
-    calc_wp_distance();
-    if (wp_distance < (uint32_t)MAX(condition_value,0)) {
+    if (wp_nav.get_wp_distance_to_destination() < (uint32_t)MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }

@@ -34,11 +34,13 @@ bool Sub::auto_init(bool ignore_checks)
     }
 }
 
-// auto_run - runs the auto controller
-//      should be called at 100hz or more
-//      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
+// auto_run - runs the appropriate auto controller
+// according to the current auto_mode
+// should be called at 100hz or more
 void Sub::auto_run()
 {
+    mission.update();
+
     // call the correct auto controller
     switch (auto_mode) {
 

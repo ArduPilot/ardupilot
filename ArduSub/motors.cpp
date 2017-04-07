@@ -53,8 +53,7 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location();
     }
-    calc_distance_and_bearing();
-
+	
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
