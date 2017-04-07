@@ -72,6 +72,8 @@ void AP_RPM_Pin::update(void)
     if (last_pin != get_pin()) {
         last_pin = get_pin();
         uint32_t gpio = 0;
+
+#ifdef GPIO_GPIO0_INPUT
         switch (last_pin) {
         case 50:
             gpio = GPIO_GPIO0_INPUT;
@@ -92,7 +94,8 @@ void AP_RPM_Pin::update(void)
             gpio = GPIO_GPIO5_INPUT;
             break;
         }
-
+#endif // GPIO_GPIO5_INPUT
+        
         // uninstall old handler if installed
         if (last_gpio != 0) {
             stm32_gpiosetevent(last_gpio, false, false, false, nullptr);
