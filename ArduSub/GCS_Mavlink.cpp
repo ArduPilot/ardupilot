@@ -682,6 +682,9 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 
     case MSG_ADSB_VEHICLE:
         break; // Do nothing for Sub, here to prevent warning
+    case MSG_BATTERY_STATUS:
+        send_battery_status(sub.battery);
+        break;
     }
 
     return true;
@@ -873,6 +876,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         send_message(MSG_TERRAIN);
 #endif
         send_message(MSG_BATTERY2);
+        send_message(MSG_BATTERY_STATUS);
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_GIMBAL_REPORT);
