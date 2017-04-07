@@ -764,8 +764,8 @@ uavcan::CanSelectMasks PX4CANManager::makeSelectMasks(const uavcan::CanFrame* (&
         }
     }
 
-    if (can_number_ >= 2) {
 #if CAN_STM32_NUM_IFACES > 1
+    if (can_number_ >= 2) {
         if (!if1_.isRxBufferEmpty()) {
             msk.read |= 1 << 1;
         }
@@ -776,8 +776,8 @@ uavcan::CanSelectMasks PX4CANManager::makeSelectMasks(const uavcan::CanFrame* (&
                 msk.write |= 1 << 1;
             }
         }
-#endif
     }
+#endif
 
     return msk;
 }
@@ -809,15 +809,15 @@ int16_t PX4CANManager::select(uavcan::CanSelectMasks& inout_masks,
         }
     }
 
-    if (can_number_ >= 2) {
 #if CAN_STM32_NUM_IFACES > 1
+    if (can_number_ >= 2) {
         if1_.discardTimedOutTxMailboxes(time);
         {
             CriticalSectionLocker cs_locker;
             if1_.pollErrorFlagsFromISR();
         }
-#endif
     }
+#endif
 
     inout_masks = makeSelectMasks(pending_tx); // Check if we already have some of the requested events
     if ((inout_masks.read & in_masks.read) != 0 || (inout_masks.write & in_masks.write) != 0) {
@@ -852,14 +852,16 @@ void PX4CANManager::initOnce(uint8_t can_number)
 # error  "Need to define GPIO_CAN1_RX/TX"
 #endif
     }
+#if CAN_STM32_NUM_IFACES > 1
     if (can_number >= 2) {
 #if defined(GPIO_CAN2_RX) && defined(GPIO_CAN2_TX)
         stm32_configgpio(GPIO_CAN2_RX | GPIO_PULLUP);
         stm32_configgpio(GPIO_CAN2_TX);
 #else
 # error  "Need to define GPIO_CAN2_RX/TX"
-#endif
+#endif // defined(GPIO_CAN2_RX) && defined(GPIO_CAN2_TX)
     }
+#endif // CAN_STM32_NUM_IFACES > 1
 
     /*
      * IRQ
@@ -870,11 +872,13 @@ void PX4CANManager::initOnce(uint8_t can_number)
         CAN_IRQ_ATTACH(STM32_IRQ_CAN1RX1, can1_irq);
     }
 
+#if CAN_STM32_NUM_IFACES > 1
     if (can_number >= 2) {
         CAN_IRQ_ATTACH(STM32_IRQ_CAN2TX, can2_irq);
         CAN_IRQ_ATTACH(STM32_IRQ_CAN2RX0, can2_irq);
         CAN_IRQ_ATTACH(STM32_IRQ_CAN2RX1, can2_irq);
     }
+#endif // CAN_STM32_NUM_IFACES > 1
 }
 
 int PX4CANManager::init(const uint32_t bitrate, const PX4CAN::OperatingMode mode, uint8_t can_number)
@@ -1007,6 +1011,7 @@ extern "C" {
         return 0;
     }
 
+#if CAN_STM32_NUM_IFACES > 1
     static int can2_irq(const int irq, void*)
     {
         if (irq == STM32_IRQ_CAN2TX) {
@@ -1020,6 +1025,7 @@ extern "C" {
         }
         return 0;
     }
+#endif
 
 } // extern "C"
 
