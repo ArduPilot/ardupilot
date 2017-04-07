@@ -15,8 +15,13 @@
 
 #include "bxcan.h"
 #include "AP_HAL/utility/RingBuffer.h"
-
+                                      
+#if defined(GPIO_CAN2_RX) && defined(GPIO_CAN2_TX)
 #define CAN_STM32_NUM_IFACES 2
+#else
+#define CAN_STM32_NUM_IFACES 1
+#endif
+
 #define CAN_STM32_RX_QUEUE_SIZE 64
 
 #ifndef UAVCAN_NULLPTR

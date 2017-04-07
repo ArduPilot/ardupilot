@@ -32,9 +32,6 @@
  * synchronization only if it has a dedicated hardware timer to work with.
  */
 
-//#define STM32_SYSCLK_FREQUENCY  168000000ul
-//#define STM32_HCLK_FREQUENCY    STM32_SYSCLK_FREQUENCY
-//#define STM32_PCLK1_FREQUENCY   (STM32_HCLK_FREQUENCY/4)
 #ifndef UAVCAN_NULLPTR
 # if UAVCAN_CPP_VERSION >= UAVCAN_CPP11
 #  define UAVCAN_NULLPTR nullptr
@@ -49,7 +46,9 @@ extern const AP_HAL::HAL& hal;
 
 extern "C" {
     static int can1_irq(const int irq, void*);
+#if CAN_STM32_NUM_IFACES > 1
     static int can2_irq(const int irq, void*);
+#endif
 }
 
 using namespace PX4;
@@ -854,7 +853,7 @@ void PX4CANManager::initOnce(uint8_t can_number)
 #endif
     }
     if (can_number >= 2) {
-#if defined(GPIO_CAN2_RX) && defined(GPIO_CAN1_TX)
+#if defined(GPIO_CAN2_RX) && defined(GPIO_CAN2_TX)
         stm32_configgpio(GPIO_CAN2_RX | GPIO_PULLUP);
         stm32_configgpio(GPIO_CAN2_TX);
 #else
