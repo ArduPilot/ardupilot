@@ -70,6 +70,7 @@ enum ap_message {
     MSG_MISSION_ITEM_REACHED,
     MSG_POSITION_TARGET_GLOBAL_INT,
     MSG_ADSB_VEHICLE,
+    MSG_BATTERY_STATUS,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -137,6 +138,8 @@ public:
     // common send functions
     void send_meminfo(void);
     void send_power_status(void);
+    void send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const;
+    bool send_battery_status(const AP_BattMonitor &battery) const;
     void send_ahrs2(AP_AHRS &ahrs);
     bool send_gps_raw(AP_GPS &gps);
     void send_system_time(AP_GPS &gps);
