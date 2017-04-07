@@ -143,7 +143,11 @@ static void handleRxInterrupt(uint8_t iface_index, uint8_t fifo_index)
 }
 
 const uint32_t PX4CAN::TSR_ABRQx[PX4CAN::NumTxMailboxes] = { bxcan::TSR_ABRQ0, bxcan::TSR_ABRQ1, bxcan::TSR_ABRQ2 };
+#if CAN_STM32_NUM_IFACES > 1
 PX4CAN* PX4CANManager::ifaces[CAN_STM32_NUM_IFACES] = { UAVCAN_NULLPTR, UAVCAN_NULLPTR };
+#else
+PX4CAN* PX4CANManager::ifaces[CAN_STM32_NUM_IFACES] = { UAVCAN_NULLPTR };
+#endif
 
 int PX4CAN::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
 {
@@ -784,13 +788,11 @@ uavcan::CanSelectMasks PX4CANManager::makeSelectMasks(const uavcan::CanFrame* (&
 
 bool PX4CANManager::hasReadableInterfaces() const
 {
-    if (can_number_ >= 2) {
 #if CAN_STM32_NUM_IFACES > 1
+    if (can_number_ >= 2) {
         return !if0_.isRxBufferEmpty() || !if1_.isRxBufferEmpty();
-#else
-        return !if0_.isRxBufferEmpty()
-#endif
     }
+#endif
 
     return !if0_.isRxBufferEmpty();
 }
@@ -839,9 +841,11 @@ void PX4CANManager::initOnce(uint8_t can_number)
         if (can_number >= 1) {
             modifyreg32(STM32_RCC_APB1ENR, 0, RCC_APB1ENR_CAN1EN);
         }
+#if CAN_STM32_NUM_IFACES > 1
         if (can_number >= 2) {
             modifyreg32(STM32_RCC_APB1ENR, 0, RCC_APB1ENR_CAN2EN);
         }
+#endif
     }
 
     if (can_number >= 1) {
@@ -883,58 +887,62 @@ void PX4CANManager::initOnce(uint8_t can_number)
 
 int PX4CANManager::init(const uint32_t bitrate, const PX4CAN::OperatingMode mode, uint8_t can_number)
 {
-    int res = 0;
+    int res = -ErrNotImplemented;
 
-    can_number_ = can_number;
+    if (can_number < CAN_STM32_NUM_IFACES) {
+        res = 0;
 
-    if (AP_BoardConfig::get_can_debug() >= 2) {
-        printf("PX4CANManager::init Bitrate %lu mode %d bus %d\n\r", static_cast<unsigned long>(bitrate),
-               static_cast<int>(mode), static_cast<int>(can_number));
-    }
+        can_number_ = can_number;
 
-    static bool initialized_once = false;
-    if (!initialized_once) {
-        initialized_once = true;
         if (AP_BoardConfig::get_can_debug() >= 2) {
-            printf("PX4CANManager::init First initialization bus %d\n\r", static_cast<int>(can_number));
+            printf("PX4CANManager::init Bitrate %lu mode %d bus %d\n\r", static_cast<unsigned long>(bitrate),
+                   static_cast<int>(mode), static_cast<int>(can_number));
         }
-        initOnce(can_number);
-    }
 
-    /*
-     * CAN1
-     */
-    if (can_number >= 1) {
+        static bool initialized_once = false;
+        if (!initialized_once) {
+            initialized_once = true;
+            if (AP_BoardConfig::get_can_debug() >= 2) {
+                printf("PX4CANManager::init First initialization bus %d\n\r", static_cast<int>(can_number));
+            }
+            initOnce(can_number);
+        }
+
+        /*
+         * CAN1
+         */
+        if (can_number >= 1) {
+            if (AP_BoardConfig::get_can_debug() >= 2) {
+                printf("PX4CANManager::init Initing iface 0...\n\r");
+            }
+            ifaces[0] = &if0_;               // This link must be initialized first,
+            res = if0_.init(bitrate, mode); // otherwise an IRQ may fire while the interface is not linked yet;
+            if (res < 0) {             // a typical race condition.
+                printf("PX4CANManager::init Iface 0 init failed %i\n\r", res);
+                ifaces[0] = UAVCAN_NULLPTR;
+            }
+        }
+
+        /*
+         * CAN2
+         */
+        if (can_number >= 2) {
+    #if CAN_STM32_NUM_IFACES > 1
+            if (AP_BoardConfig::get_can_debug() >= 2) {
+                printf("PX4CANManager::init Initing iface 1...\n\r");
+            }
+            ifaces[1] = &if1_;                          // Same thing here.
+            res = if1_.init(bitrate, mode);
+            if (res < 0) {
+                printf("PX4CANManager::init Iface 1 init failed %i\n\r", res);
+                ifaces[1] = UAVCAN_NULLPTR;
+            }
+    #endif
+        }
+
         if (AP_BoardConfig::get_can_debug() >= 2) {
-            printf("PX4CANManager::init Initing iface 0...\n\r");
+            printf("PX4CANManager::init CAN drv init OK, res = %d\n\r", res);
         }
-        ifaces[0] = &if0_;               // This link must be initialized first,
-        res = if0_.init(bitrate, mode); // otherwise an IRQ may fire while the interface is not linked yet;
-        if (res < 0) {             // a typical race condition.
-            printf("PX4CANManager::init Iface 0 init failed %i\n\r", res);
-            ifaces[0] = UAVCAN_NULLPTR;
-        }
-    }
-
-    /*
-     * CAN2
-     */
-    if (can_number >= 2) {
-#if CAN_STM32_NUM_IFACES > 1
-        if (AP_BoardConfig::get_can_debug() >= 2) {
-            printf("PX4CANManager::init Initing iface 1...\n\r");
-        }
-        ifaces[1] = &if1_;                          // Same thing here.
-        res = if1_.init(bitrate, mode);
-        if (res < 0) {
-            printf("PX4CANManager::init Iface 1 init failed %i\n\r", res);
-            ifaces[1] = UAVCAN_NULLPTR;
-        }
-#endif
-    }
-
-    if (AP_BoardConfig::get_can_debug() >= 2) {
-        printf("PX4CANManager::init CAN drv init OK, res = %d\n\r", res);
     }
 
     return res;
