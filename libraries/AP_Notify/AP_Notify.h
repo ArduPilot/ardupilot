@@ -21,11 +21,11 @@
 #include "NotifyDevice.h"
 
 
-#ifndef AP_NOTIFY_OREOLED
+#ifndef AP_NOTIFY_OREOLED		// Use replaced by checking new parameter _Solo_LED_Enable in AP_Notify.cpp.
 #define AP_NOTIFY_OREOLED 0
 #endif
 
-#ifndef AP_NOTIFY_SOLO_TONES
+#ifndef AP_NOTIFY_SOLO_TONES	// Use replaced by checking new parameter _Solo_Tones_Enable in AP_Notify.cpp.
 #define AP_NOTIFY_SOLO_TONES 0
 #endif
 
@@ -138,6 +138,8 @@ private:
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
     AP_Int8 _display_type;
+	AP_Int8 _solo_led_enable;
+    AP_Int8 _solo_tones_enable;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed
