@@ -298,15 +298,6 @@ private:
     // Sometimes we need to remove the scaling for distance calcs
     float scaleLongDown;
 
-    // Location & Navigation
-    int32_t wp_bearing;
-    // The location of home in relation to the Sub in centi-degrees
-    int32_t home_bearing;
-    // distance between plane and home in cm
-    int32_t home_distance;
-    // distance between plane and next waypoint in cm.
-    uint32_t wp_distance;
-
     // Auto
     AutoMode auto_mode;   // controls which auto controller is run
 
@@ -650,13 +641,6 @@ private:
     bool init_arm_motors(bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
-    void run_nav_updates(void);
-    void calc_position();
-    void calc_distance_and_bearing();
-    void calc_wp_distance();
-    void calc_wp_bearing();
-    void calc_home_distance_and_bearing();
-    void run_autopilot();
     void perf_info_reset();
     void perf_ignore_this_loop();
     void perf_info_check_loop_time(uint32_t time_in_micros);
