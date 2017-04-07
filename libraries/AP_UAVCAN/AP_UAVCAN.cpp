@@ -407,6 +407,15 @@ void AP_UAVCAN::do_cyclic(void)
                     for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER && k < 15; i++) {
                         uavcan::equipment::actuator::Command cmd;
 
+                        /*
+                         * Servo output uses a range of 1000-2000 PWM for scaling.
+                         * This converts output PWM from [1000:2000] range to [-1:1] range that
+                         * is passed to servo as unitless type via UAVCAN.
+                         * This approach allows for MIN/TRIM/MAX values to be used fully on
+                         * autopilot side and for servo it should have the setup to provide maximum
+                         * physically possible throws at [-1:1] limits.
+                         */
+
                         if (_rco_conf[i].active && ((((uint32_t) 1) << i) & _servo_bm)) {
                             cmd.actuator_id = i + 1;
 
@@ -452,6 +461,7 @@ void AP_UAVCAN::do_cyclic(void)
                                 uavcan::equipment::actuator::Command cmd;
 
                                 if ((((uint32_t) 1) << i) & _esc_bm) {
+                                    // TODO: ESC negative scaling for reverse thrust and reverse rotation
                                     float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_rco_conf[i].pulse) + 1.0) / 2.0;
 
                                     scaled = constrain_float(scaled, 0, cmd_max);
