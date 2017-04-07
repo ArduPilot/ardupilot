@@ -38,7 +38,8 @@ void PX4RCOutput::init()
         hal.console->printf("RCOutput: Unable to setup IO arming OK\n");
     }
 
-    _rate_mask = 0;
+    _rate_mask_main = 0;
+    _rate_mask_alt = 0;
     _alt_fd = -1;    
     _servo_count = 0;
     _alt_servo_count = 0;
@@ -98,7 +99,7 @@ void PX4RCOutput::_init_alt_channels(void)
 /*
   set output frequency on outputs associated with fd
  */
-void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz) 
+void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_t &rate_mask) 
 {
     if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
         freq_hz = 2000; // this maps to 16kHz due to 8MHz clock
@@ -136,32 +137,31 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
      */
     if (freq_hz > 50 || freq_hz == 1) {
         // we are setting high rates on the given channels
-        _rate_mask |= chmask & 0xFF;
-        if (_rate_mask & 0x3) {
-            _rate_mask |= 0x3;
+        rate_mask |= chmask & 0xFF;
+        if (rate_mask & 0x3) {
+            rate_mask |= 0x3;
         }
-        if (_rate_mask & 0xc) {
-            _rate_mask |= 0xc;
+        if (rate_mask & 0xc) {
+            rate_mask |= 0xc;
         }
-        if (_rate_mask & 0xF0) {
-            _rate_mask |= 0xF0;
+        if (rate_mask & 0xF0) {
+            rate_mask |= 0xF0;
         }
     } else {
         // we are setting low rates on the given channels
         if (chmask & 0x3) {
-            _rate_mask &= ~0x3;
+            rate_mask &= ~0x3;
         }
         if (chmask & 0xc) {
-            _rate_mask &= ~0xc;
+            rate_mask &= ~0xc;
         }
         if (chmask & 0xf0) {
-            _rate_mask &= ~0xf0;
+            rate_mask &= ~0xf0;
         }
     }
 
-    //::printf("SELECT_UPDATE_RATE %d 0x%02x\n", fd, (unsigned)_rate_mask);
-    if (ioctl(fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
-        hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)_rate_mask);
+    if (ioctl(fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, rate_mask) != 0) {
+        hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)rate_mask);
     }
 
     if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
@@ -193,17 +193,23 @@ void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     uint32_t primary_mask = chmask & ((1UL<<_servo_count)-1);
     uint32_t alt_mask = chmask >> _servo_count;
     if (primary_mask && _pwm_fd != -1) {
-        set_freq_fd(_pwm_fd, primary_mask, freq_hz);
+        set_freq_fd(_pwm_fd, primary_mask, freq_hz, _rate_mask_main);
     }
     if (alt_mask && _alt_fd != -1) {
-        set_freq_fd(_alt_fd, alt_mask, freq_hz);
+        set_freq_fd(_alt_fd, alt_mask, freq_hz, _rate_mask_alt);
     }
 }
 
 uint16_t PX4RCOutput::get_freq(uint8_t ch) 
 {
-    if (_rate_mask & (1U<<ch)) {
-        return _freq_hz;
+    if (ch < _servo_count) {
+        if (_rate_mask_main & (1U<<ch)) {
+            return _freq_hz;
+        }
+    } else if (_alt_fd != -1) {
+        if (_rate_mask_alt & (1U<<(ch-_servo_count))) {
+            return _freq_hz;
+        }
     }
     return 50;
 }
@@ -615,7 +621,10 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
         // mean the timer is constantly reset, so no pulses are
         // produced except when triggered by push() when the main loop
         // is running
-        set_freq(_rate_mask, 1);
+        set_freq_fd(_pwm_fd, _rate_mask_main, 1, _rate_mask_main);
+        if (_alt_fd != -1) {
+            set_freq_fd(_alt_fd, _rate_mask_alt, 1, _rate_mask_alt);
+        }
     }
     _output_mode = mode;
     switch (_output_mode) {

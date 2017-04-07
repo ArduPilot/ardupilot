@@ -50,7 +50,8 @@ private:
     uint32_t _last_config_us;
     unsigned _servo_count;
     unsigned _alt_servo_count;
-    uint32_t _rate_mask;
+    uint32_t _rate_mask_main;
+    uint32_t _rate_mask_alt;
     uint16_t _enabled_channels;
     struct {
         int pwm_sub;
@@ -66,7 +67,7 @@ private:
     void _init_alt_channels(void);
     void _publish_actuators(void);
     void _arm_actuators(bool arm);
-    void set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz);
+    void set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_t &rate_mask);
     bool _corking;
     enum output_mode _output_mode = MODE_PWM_NORMAL;
     void _send_outputs(void);
