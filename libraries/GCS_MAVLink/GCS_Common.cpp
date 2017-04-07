@@ -234,6 +234,32 @@ void GCS_MAVLINK::send_power_status(void)
                                   hal.analogin->power_status_flags());
 }
 
+void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const
+{
+    uint16_t voltages[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
+    memset(&voltages, 0xff, sizeof(uint16_t)*MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN); // fill with UINT16_MAX for unknown cells
+    mavlink_msg_battery_status_send(chan,
+                                    instance, // id
+                                    MAV_BATTERY_FUNCTION_UNKNOWN, // function
+                                    MAV_BATTERY_TYPE_UNKNOWN, // type
+                                    INT16_MAX, // temperature. INT16_MAX if unknown
+                                    voltages,
+                                    battery.has_current(instance) ? battery.current_amps(instance) * 100 : -1, // current
+                                    battery.has_current(instance) ? battery.current_total_mah(instance) : -1, // total current
+                                    -1, // joules used
+                                    battery.capacity_remaining_pct(instance));
+}
+
+// returns true if all battery instances were reported
+bool GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery) const
+{
+    for(uint8_t i = 0; i < battery.num_instances(); i++) {
+        CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
+        send_battery_status(battery, i);
+    }
+    return true;
+}
+
 // report AHRS2 state
 void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
 {
