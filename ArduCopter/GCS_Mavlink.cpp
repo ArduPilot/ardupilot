@@ -580,6 +580,9 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         copter.adsb.send_adsb_vehicle(chan);
         break;
+    case MSG_BATTERY_STATUS:
+        send_battery_status(copter.battery);
+        break;
     }
 
     return true;
@@ -773,6 +776,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
         send_message(MSG_TERRAIN);
 #endif
         send_message(MSG_BATTERY2);
+        send_message(MSG_BATTERY_STATUS);
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_GIMBAL_REPORT);
