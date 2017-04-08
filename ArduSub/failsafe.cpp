@@ -64,6 +64,60 @@ void Sub::mainloop_failsafe_check()
     }
 }
 
+void Sub::failsafe_ekf_check(void)
+{
+    static uint32_t last_ekf_good_ms = 0;
+
+    if (g.fs_ekf_action == FS_EKF_ACTION_DISABLED) {
+        last_ekf_good_ms = AP_HAL::millis();
+        failsafe.ekf = false;
+        AP_Notify::flags.ekf_bad = false;
+        return;
+
+    }
+
+    float posVar, hgtVar, tasVar;
+    Vector3f magVar;
+    Vector2f offset;
+    float compass_variance;
+    float vel_variance;
+    ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
+    compass_variance = magVar.length();
+
+    if (compass_variance < g.fs_ekf_thresh && vel_variance < g.fs_ekf_thresh) {
+        last_ekf_good_ms = AP_HAL::millis();
+        failsafe.ekf = false;
+        AP_Notify::flags.ekf_bad = false;
+        return;;
+    }
+
+    // Bad EKF for 2 solid seconds triggers failsafe
+    if (AP_HAL::millis() < last_ekf_good_ms + 2000) {
+        failsafe.ekf = false;
+        AP_Notify::flags.ekf_bad = false;
+        return;
+    }
+
+    // Only trigger failsafe once
+    if (failsafe.ekf) {
+        return;
+    }
+
+    failsafe.ekf = true;
+    AP_Notify::flags.ekf_bad = true;
+
+    Log_Write_Error(ERROR_SUBSYSTEM_EKFCHECK, ERROR_CODE_EKFCHECK_BAD_VARIANCE);
+
+    if (AP_HAL::millis() > failsafe.last_ekf_warn_ms + 20000) {
+        failsafe.last_ekf_warn_ms = AP_HAL::millis();
+        gcs_send_text(MAV_SEVERITY_WARNING, "EKF bad");
+    }
+
+    if (g.fs_ekf_action == FS_EKF_ACTION_DISARM) {
+        init_disarm_motors();
+    }
+}
+
 // Battery failsafe check
 // Check the battery voltage and remaining capacity
 void Sub::failsafe_battery_check(void)
