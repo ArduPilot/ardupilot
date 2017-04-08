@@ -706,6 +706,16 @@ void QuadPlane::run_z_controller(void)
 {
     uint32_t now = AP_HAL::millis();
     if (now - last_pidz_active_ms > 2000) {
+        // set alt target to current height on transition. This
+        // starts the Z controller off with the right values
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Reset alt target to %.1f", inertial_nav.get_altitude());
+        pos_control->set_alt_target(inertial_nav.get_altitude());
+        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+
+        // initialize vertical speeds and leash lengths
+        pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+        pos_control->set_accel_z(pilot_accel_z);
+        
         // it has been two seconds since we last ran the Z
         // controller. We need to assume the integrator may be way off
 
@@ -1127,12 +1137,6 @@ void QuadPlane::update_transition(void)
         }
         transition_state = TRANSITION_AIRSPEED_WAIT;
         transition_start_ms = millis();
-        if (!assisted_flight) {
-            // set alt target to current height on transition. This
-            // starts the Z controller off with the right values
-            pos_control->set_alt_target(inertial_nav.get_altitude());
-            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-        }
         assisted_flight = true;
     } else {
         assisted_flight = false;
