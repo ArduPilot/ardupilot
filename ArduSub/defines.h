@@ -250,7 +250,10 @@ enum RTLState {
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 // EKF failsafe definitions (FS_EKF_ENABLE parameter)
-#define FS_EKF_ACTION_DISABLED                  1       // Disabled, not implemented yet in Sub
+#define FS_EKF_ACTION_DISABLED                0       // Disabled
+#define FS_EKF_ACTION_WARN_ONLY               1       // Send warning to gcs
+#define FS_EKF_ACTION_DISARM                  2       // Disarm
+
 
 #ifndef FS_EKF_ACTION_DEFAULT
 # define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_DISABLED  // EKF failsafe

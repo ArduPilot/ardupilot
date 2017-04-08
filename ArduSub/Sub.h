@@ -278,6 +278,7 @@ private:
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
         uint32_t last_battery_warn_ms; // last time a battery failsafe warning was sent to gcs
         uint32_t last_crash_warn_ms; // last time a crash warning was sent to gcs
+        uint32_t last_ekf_warn_ms; // last time an ekf warning was sent to gcs
     } failsafe;
 
     // sensor health for logging
@@ -591,6 +592,7 @@ private:
     bool manual_init(bool ignore_checks);
     void manual_run();
     void failsafe_crash_check();
+    void failsafe_ekf_check(void);
     void failsafe_battery_check(void);
     void failsafe_gcs_check();
     void failsafe_manual_control_check(void);

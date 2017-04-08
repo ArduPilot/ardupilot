@@ -214,6 +214,8 @@ void Sub::fifty_hz_loop()
 
     failsafe_crash_check();
 
+    failsafe_ekf_check();
+
     // Update servo output
     RC_Channels::set_pwm_all();
     SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, g.cam_slew_limit, 0.02f);
