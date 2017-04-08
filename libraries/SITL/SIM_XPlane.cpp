@@ -122,7 +122,7 @@ bool XPlane::receive_data(void)
     }
     ssize_t len = socket_in.recv(pkt, sizeof(pkt), wait_time_ms);
     
-    if (len < pkt_len+5 || memcmp(pkt, "DATA@", 5) != 0) {
+    if (len < pkt_len+5 || memcmp(pkt, "DATA", 4) != 0) {
         // not a data packet we understand
         goto failed;
     }
