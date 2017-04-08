@@ -346,3 +346,14 @@ const AP_BattMonitor::cells & AP_BattMonitor::get_cell_voltages(const uint8_t in
         return state[instance].cell_voltages;
     }
 }
+
+// returns true if there is a temperature reading
+bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance) const
+{
+    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES) {
+        return false;
+    } else {
+        temperature = state[instance].temperature;
+        return (AP_HAL::millis() - state[instance].temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
+    }
+}
