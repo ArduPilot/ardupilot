@@ -162,6 +162,9 @@ AP_BattMonitor::init()
 
     // create each instance
     for (uint8_t instance=0; instance<AP_BATT_MONITOR_MAX_INSTANCES; instance++) {
+        // clear out the cell voltages
+        memset(&state[instance].cell_voltages, 0xFF, sizeof(cells));
+
         uint8_t monitor_type = _monitoring[instance];
         switch (monitor_type) {
             case BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY:
@@ -332,4 +335,14 @@ bool AP_BattMonitor::overpower_detected(uint8_t instance) const
 #else
     return false;
 #endif
+}
+
+// return the current cell voltages, returns the first monitor instances cells if the instance is out of range
+const AP_BattMonitor::cells & AP_BattMonitor::get_cell_voltages(const uint8_t instance) const
+{
+    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES) {
+        return state[AP_BATT_PRIMARY_INSTANCE].cell_voltages;
+    } else {
+        return state[instance].cell_voltages;
+    }
 }
