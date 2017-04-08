@@ -1872,24 +1872,43 @@ void DataFlash_Class::Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f 
 void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery)
 {
     if (battery.num_instances() >= 1) {
+        float temp;
+        bool has_temp = battery.get_temperature(temp, 0);
         struct log_Current pkt = {
             LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
             time_us             : AP_HAL::micros64(),
             battery_voltage     : battery.voltage(0),
             current_amps        : battery.current_amps(0),
             current_total       : battery.current_total_mah(0),
+            temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
         };
+        AP_BattMonitor::cells cells = battery.get_cell_voltages(0);
+
+        // check battery structure can hold all cells
+        static_assert(ARRAY_SIZE(cells.cells) == (sizeof(pkt.cell_voltages) / sizeof(pkt.cell_voltages[0])),
+                      "Battery cell number doesn't match in library and log structure");
+
+        for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
+            pkt.cell_voltages[i] = cells.cells[i] + 1;
+        }
         WriteBlock(&pkt, sizeof(pkt));
     }
 
     if (battery.num_instances() >= 2) {
+        float temp;
+        bool has_temp = battery.get_temperature(temp, 1);
         struct log_Current pkt = {
             LOG_PACKET_HEADER_INIT(LOG_CURRENT2_MSG),
             time_us             : AP_HAL::micros64(),
             battery_voltage     : battery.voltage(1),
             current_amps        : battery.current_amps(1),
             current_total       : battery.current_total_mah(1),
+            temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
         };
+        AP_BattMonitor::cells cells = battery.get_cell_voltages(1);
+        for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
+            pkt.cell_voltages[i] = cells.cells[i] + 1;
+        }
         WriteBlock(&pkt, sizeof(pkt));
     }
 }

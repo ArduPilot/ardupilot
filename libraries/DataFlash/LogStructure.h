@@ -515,6 +515,8 @@ struct PACKED log_Current {
     float    battery_voltage;
     float    current_amps;
     float    current_total;
+    int16_t  temperature; // degrees C * 100
+    uint16_t cell_voltages[10];
 };
 
 struct PACKED log_Compass {
@@ -831,6 +833,8 @@ struct PACKED log_AOA_SSA {
 #define QUAT_LABELS "TimeUS,Q1,Q2,Q3,Q4"
 #define QUAT_FMT    "Qffff"
 
+#define CURR_LABELS "TimeUS,Volt,Curr,CurrTot,Temp,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
+#define CURR_FMT    "QfffcHHHHHHHHHH"
 
 /*
 Format characters in the format string for binary log messages
@@ -898,9 +902,9 @@ Format characters in the format string for binary log messages
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
       "ARSP",  "QffcffB",  "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
-      "CURR", "Qfff","TimeUS,Volt,Curr,CurrTot" },\
+      "CURR", CURR_FMT,CURR_LABELS }, \
     { LOG_CURRENT2_MSG, sizeof(log_Current), \
-      "CUR2", "Qfff","TimeUS,Volt,Curr,CurrTot" }, \
+      "CUR2", CURR_FMT,CURR_LABELS }, \
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
