@@ -1,5 +1,14 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5-rc4 08-Apr-2017
+Changes from 3.5-rc3
+1) Bug fixes including:
+    a) Baro based altitude estimate fixes including limiting ground temperature to reasonable value
+    b) Fix 0.6ms lag reduction
+    c) Fix Invensense IMU driver temperature reading
+    d) Fix semaphore take during interrupts that may have caused very occasional main loop rate issues
+    e) Return Home if GCS asks for first (i.e. zero-ith) mission command (required for Solo)
+------------------------------------------------------------------
 Copter 3.5-rc3 24-Mar-2017
 Changes from 3.5-rc2
 1) OLED Display fixes:
