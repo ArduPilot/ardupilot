@@ -368,6 +368,7 @@ private:
 
     // time when we last ran the vertical accel controller
     uint32_t last_pidz_active_ms;
+    uint32_t last_pidz_init_ms;
     
     void tiltrotor_slew(float tilt);
     void tiltrotor_binary_slew(bool forward);

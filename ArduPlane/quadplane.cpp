@@ -722,6 +722,8 @@ void QuadPlane::run_z_controller(void)
         // the base throttle we start at is the current throttle we are using
         float base_throttle = constrain_float(motors->get_throttle() - motors->get_throttle_hover(), 0, 1) * 1000;
         pid_accel_z.set_integrator(base_throttle);
+
+        last_pidz_init_ms = now;
     }
     last_pidz_active_ms = now;
     pos_control->update_z_controller();    
@@ -1023,6 +1025,13 @@ float QuadPlane::assist_climb_rate_cms(void)
         climb_rate *= plane.channel_throttle->get_control_in();
     }
     climb_rate = constrain_float(climb_rate, -wp_nav->get_speed_down(), wp_nav->get_speed_up());
+
+    // bring in the demanded climb rate over 2 seconds
+    uint16_t dt_since_start = last_pidz_active_ms - last_pidz_init_ms;
+    if (dt_since_start < 2000) {
+        climb_rate = linear_interpolate(0, climb_rate, dt_since_start, 0, 2000);
+    }
+    
     return climb_rate;
 }
 
