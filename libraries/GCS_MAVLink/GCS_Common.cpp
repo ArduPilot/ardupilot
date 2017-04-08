@@ -236,14 +236,16 @@ void GCS_MAVLINK::send_power_status(void)
 
 void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const
 {
-    uint16_t voltages[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
-    memset(&voltages, 0xff, sizeof(uint16_t)*MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN); // fill with UINT16_MAX for unknown cells
+    // catch the battery backend not supporting the required number of cells
+    static_assert(sizeof(AP_BattMonitor::cells) >= (sizeof(uint16_t) * MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN),
+                  "Not enough battery cells for the MAVLink message");
+
     mavlink_msg_battery_status_send(chan,
                                     instance, // id
                                     MAV_BATTERY_FUNCTION_UNKNOWN, // function
                                     MAV_BATTERY_TYPE_UNKNOWN, // type
                                     INT16_MAX, // temperature. INT16_MAX if unknown
-                                    voltages,
+                                    battery.get_cell_voltages(instance).cells, // cell voltages
                                     battery.has_current(instance) ? battery.current_amps(instance) * 100 : -1, // current
                                     battery.has_current(instance) ? battery.current_total_mah(instance) : -1, // total current
                                     -1, // joules used
