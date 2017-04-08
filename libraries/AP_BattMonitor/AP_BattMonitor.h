@@ -15,6 +15,8 @@
 #define AP_BATT_LOW_VOLT_TIMEOUT_MS         10000   // low voltage of 10 seconds will cause battery_exhausted to return true
 #define AP_BATT_MAX_WATT_DEFAULT            0
 
+#define AP_BATT_MONITOR_TIMEOUT             5000
+
 // declare backend class
 class AP_BattMonitor_Backend;
 class AP_BattMonitor_Analog;
@@ -60,6 +62,8 @@ public:
         uint32_t    last_time_micros;   // time when voltage and current was last read
         uint32_t    low_voltage_start_ms;  // time when voltage dropped below the minimum
         cells       cell_voltages;      // battery cell voltages in millivolts, 10 cells matches the MAVLink spec
+        float       temperature;        // battery temperature in celsius
+        uint32_t    temperature_time;   // timestamp of the last recieved temperature message
     };
 
     // Return the number of battery monitor instances
@@ -125,6 +129,10 @@ public:
     // cell voltages
     const cells & get_cell_voltages() { return get_cell_voltages(AP_BATT_PRIMARY_INSTANCE); };
     const cells & get_cell_voltages(const uint8_t instance) const;
+
+    // temperature
+    bool get_temperature(float &temperature) const { return get_temperature(temperature, AP_BATT_PRIMARY_INSTANCE); };
+    bool get_temperature(float &temperature, const uint8_t instance) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
