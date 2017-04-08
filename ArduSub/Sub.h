@@ -591,10 +591,6 @@ private:
     bool manual_init(bool ignore_checks);
     void manual_run();
     void failsafe_crash_check();
-    void ekf_check();
-    bool ekf_over_threshold();
-    void failsafe_ekf_event();
-    void failsafe_ekf_off_event(void);
     void failsafe_battery_check(void);
     void failsafe_gcs_check();
     void failsafe_manual_control_check(void);

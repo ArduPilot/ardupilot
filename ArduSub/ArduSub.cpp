@@ -39,7 +39,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(barometer_accumulate,  50,     90),
     SCHED_TASK(update_notify,         50,     90),
     SCHED_TASK(one_hz_loop,            1,    100),
-    SCHED_TASK(ekf_check,             10,     75),
     SCHED_TASK(gcs_check_input,      400,    180),
     SCHED_TASK(gcs_send_heartbeat,     1,    110),
     SCHED_TASK(gcs_send_deferred,     50,    550),
