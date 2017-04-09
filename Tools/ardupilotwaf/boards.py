@@ -29,6 +29,9 @@ class BoardMeta(type):
 class Board:
     abstract = True
 
+    def __init__(self):
+        self.with_uavcan = False
+
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = self.toolchain
         cfg.load('toolchain')
@@ -126,6 +129,8 @@ class Board:
             '-Werror=uninitialized',
             '-Werror=init-self',
             '-Wfatal-errors',
+            '-DUAVCAN_CPP_VERSION=UAVCAN_CPP03',
+            '-DUAVCAN_NO_ASSERTIONS',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
@@ -156,6 +161,16 @@ class Board:
         else:
             env.LINKFLAGS += [
                 '-Wl,--gc-sections',
+            ]
+            
+        if self.with_uavcan:
+            env.AP_LIBRARIES += [
+                'modules/uavcan/libuavcan/src/**/*.cpp'
+                ]
+    
+            env.CXXFLAGS += [
+                '-Wno-error=cast-align',
+                '-Imodules/uavcan/libuavcan/include/dsdlc_generated'
             ]
 
         # We always want to use PRI format macros
@@ -201,7 +216,7 @@ class sitl(Board):
         env.LIB += [
             'm',
         ]
-
+        
         cfg.check_librt(env)
 
         env.LINKFLAGS += ['-pthread',]
@@ -244,7 +259,6 @@ class linux(Board):
         env.AP_LIBRARIES = [
             'AP_HAL_Linux',
         ]
-
 
 class minlure(linux):
     def configure_env(self, cfg, env):
@@ -420,6 +434,8 @@ class px4(Board):
     def __init__(self):
         # bootloader name: a file with that name will be used and installed
         # on ROMFS
+        super(px4, self).__init__()
+
         self.bootloader_name = None
 
         # board name: it's the name of this board that's also used as path
@@ -471,6 +487,11 @@ class px4(Board):
             'PX4NuttX',
             'uavcan',
         ]
+
+        env.AP_LIBRARIES += [
+            'AP_UAVCAN',
+        ]
+
         env.ROMFS_EXCLUDE = self.ROMFS_EXCLUDE
 
         env.PX4_BOOTLOADER_NAME = self.bootloader_name
@@ -506,6 +527,7 @@ class px4_v2(px4):
         self.board_name = 'px4fmu-v2'
         self.px4io_name = 'px4io-v2'
         self.romfs_exclude(['oreoled.bin'])
+        self.with_uavcan = True
 
 class px4_v3(px4):
     name = 'px4-v3'
@@ -514,6 +536,7 @@ class px4_v3(px4):
         self.bootloader_name = 'px4fmuv2_bl.bin'
         self.board_name = 'px4fmu-v3'
         self.px4io_name = 'px4io-v2'
+        self.with_uavcan = True
 
 class px4_v4(px4):
     name = 'px4-v4'
@@ -522,6 +545,7 @@ class px4_v4(px4):
         self.bootloader_name = 'px4fmuv4_bl.bin'
         self.board_name = 'px4fmu-v4'
         self.romfs_exclude(['oreoled.bin'])
+        self.with_uavcan = True
 
 class aerofc_v1(px4):
     name = 'aerofc-v1'

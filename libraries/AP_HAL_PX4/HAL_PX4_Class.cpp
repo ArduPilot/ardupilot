@@ -20,6 +20,10 @@
 #include "I2CDevice.h"
 #include "SPIDevice.h"
 
+#if HAL_WITH_UAVCAN
+#include "CAN.h"
+#endif
+
 #include <stdlib.h>
 #include <systemlib/systemlib.h>
 #include <nuttx/config.h>
@@ -106,7 +110,8 @@ HAL_PX4::HAL_PX4() :
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
         &utilInstance, /* util */
-        nullptr)    /* no onboard optical flow */
+        nullptr,    /* no onboard optical flow */
+        nullptr)   /* CAN */
 {}
 
 bool _px4_thread_should_exit = false;        /**< Daemon exit flag */

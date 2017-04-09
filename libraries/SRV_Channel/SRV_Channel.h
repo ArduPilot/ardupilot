@@ -352,6 +352,19 @@ public:
     static bool upgrade_parameters(const uint8_t old_keys[14], uint16_t aux_channel_mask, RCMapper *rcmap);
     static void upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors_idx, uint8_t new_channel);
     
+    static uint32_t get_can_servo_bm(void) {
+        if(p_can_servo_bm != nullptr)
+            return *p_can_servo_bm;
+        else
+            return 0;
+    }
+    static uint32_t get_can_esc_bm(void) {
+        if(p_can_esc_bm != nullptr)
+            return *p_can_esc_bm;
+        else
+            return 0;
+    }
+
 private:
     struct {
         bool k_throttle_reversible:1;
@@ -382,4 +395,9 @@ private:
     static bool passthrough_disabled(void) {
         return disabled_passthrough;
     }
+
+    AP_Int32 can_servo_bm;
+    AP_Int32 can_esc_bm;
+    static AP_Int32 *p_can_servo_bm;
+    static AP_Int32 *p_can_esc_bm;
 };

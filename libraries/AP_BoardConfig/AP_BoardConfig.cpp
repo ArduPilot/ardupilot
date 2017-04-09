@@ -30,6 +30,10 @@
 #include <drivers/drv_sbus.h>
 #endif
 
+#if HAL_WITH_UAVCAN
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 # define BOARD_SAFETY_ENABLE_DEFAULT 1
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
@@ -97,7 +101,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, px4.ser2_rtscts, 2),
 #endif
-    
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: SAFETYENABLE
     // @DisplayName: Enable use of safety arming switch
@@ -126,12 +130,9 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
 
 #if HAL_WITH_UAVCAN
-    // @Param: CAN_ENABLE
-    // @DisplayName:  Enable use of UAVCAN devices
-    // @Description: Enabling this option on a Pixhawk enables UAVCAN devices. Note that this uses about 25k of memory
-    // @Values: 0:Disabled,1:Enabled,2:Dynamic ID/Update
-    // @User: Advanced
-    AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, px4.can_enable, 0),
+    // @Group: CAN_
+    // @Path: ../AP_BoardConfig/canbus.cpp
+    AP_SUBGROUPINFO(_var_info_can, "CAN_", 6, AP_BoardConfig, AP_BoardConfig::CAN_var_info),
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -174,16 +175,26 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("IO_ENABLE", 10, AP_BoardConfig, px4.io_enable, 1),
 #endif
-    
+
     AP_GROUPEND
 };
+
+#if HAL_WITH_UAVCAN
+int8_t AP_BoardConfig::_st_can_enable;
+int8_t AP_BoardConfig::_st_can_debug;
+#endif
 
 void AP_BoardConfig::init()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     px4_setup();
 #endif
-    
+
+#if HAL_WITH_UAVCAN
+    _st_can_enable = (int8_t) _var_info_can._can_enable;
+    _st_can_debug = (int8_t) _var_info_can._can_debug;
+#endif
+
 #if HAL_HAVE_IMU_HEATER
     // let the HAL know the target temperature. We pass a pointer as
     // we want the user to be able to change the parameter without

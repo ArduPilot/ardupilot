@@ -37,7 +37,7 @@
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
 
-#define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52 * 10 * MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
+#define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
 class DataFlash_Class;
 class AP_GPS_Backend;
@@ -47,7 +47,6 @@ class AP_GPS_Backend;
 class AP_GPS
 {
 public:
-
     friend class AP_GPS_ERB;
     friend class AP_GPS_GSOF;
     friend class AP_GPS_MAV;
@@ -77,7 +76,7 @@ public:
         GPS_TYPE_SIRF  = 6,
         GPS_TYPE_HIL   = 7,
         GPS_TYPE_SBP   = 8,
-        GPS_TYPE_PX4   = 9,
+        GPS_TYPE_UAVCAN = 9,
         GPS_TYPE_SBF   = 10,
         GPS_TYPE_GSOF  = 11,
         GPS_TYPE_QURT  = 12,
@@ -483,5 +482,4 @@ private:
 
     // calculate the blended state
     void calc_blended_state(void);
-
 };
