@@ -564,6 +564,8 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
 
+        _seqcnt++;
+
         _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), fsync_set, _seqcnt);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro, _seqcnt);
 
