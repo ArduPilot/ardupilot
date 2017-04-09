@@ -75,7 +75,9 @@ public:
         _sin_roll(0.0f),
         _sin_pitch(0.0f),
         _sin_yaw(0.0f),
-        _active_accel_instance(0)
+        _active_accel_instance(0),
+        _AOA(0),
+        _SSA(0)
     {
         // load default values from var_info table
         AP_Param::setup_object_defaults(this, var_info);
@@ -515,6 +517,18 @@ public:
     // create a view
     AP_AHRS_View *create_view(enum Rotation rotation);
     
+    // return calculated AOA
+    float getAOA(void) const {
+        return _AOA;
+    }
+
+    // return calculated SSA
+	float getSSA(void) const {
+        return _SSA;
+    }
+
+    virtual void update_AOA_SSA(void);
+
 protected:
     AHRS_VehicleClass _vehicle_class;
 
@@ -607,6 +621,9 @@ protected:
 
     // optional view class
     AP_AHRS_View *_view;
+
+    // AOA and SSA
+    float _AOA, _SSA;
 };
 
 #include "AP_AHRS_DCM.h"
