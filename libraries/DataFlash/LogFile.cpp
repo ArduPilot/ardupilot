@@ -2144,3 +2144,16 @@ void DataFlash_Class::Log_Write_VisualOdom(float time_delta, const Vector3f &ang
     };
     WriteBlock(&pkt_visualodom, sizeof(log_VisualOdom));
 }
+
+// Write AOA and SSA
+void DataFlash_Class::Log_Write_AOA_SSA(AP_AHRS &ahrs)
+{
+    struct log_AOA_SSA aoa_ssa = {
+        LOG_PACKET_HEADER_INIT(LOG_AOA_SSA_MSG),
+        time_us         : AP_HAL::micros64(),
+        AOA             : ahrs.getAOA(),
+        SSA             : ahrs.getSSA()
+    };
+
+    WriteBlock(&aoa_ssa, sizeof(aoa_ssa));
+}
