@@ -121,6 +121,15 @@ void Plane::send_attitude(mavlink_channel_t chan)
         omega.z);
 }
 
+void Plane::send_aoa_ssa(mavlink_channel_t chan)
+{
+    mavlink_msg_aoa_ssa_send(
+        chan,
+        micros(),
+        ahrs.getAOA(),
+        ahrs.getSSA());
+}
+
 #if GEOFENCE_ENABLED == ENABLED
 void Plane::send_fence_status(mavlink_channel_t chan)
 {
@@ -687,6 +696,10 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_BATTERY_STATUS:
         send_battery_status(plane.battery);
         break;
+    case MSG_AOA_SSA:
+        CHECK_PAYLOAD_SIZE(AOA_SSA);
+        plane.send_aoa_ssa(chan);
+        break;
     }
     return true;
 }
@@ -873,6 +886,8 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
         send_message(MSG_RPM);
+        send_message(MSG_AOA_SSA);
+
         if (plane.control_mode != MANUAL) {
             send_message(MSG_PID_TUNING);
         }
