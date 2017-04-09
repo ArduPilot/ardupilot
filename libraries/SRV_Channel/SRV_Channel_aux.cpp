@@ -106,6 +106,8 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_steering:
     case k_flaperon1:
     case k_flaperon2:
+    case k_tiltMotorLeft:
+    case k_tiltMotorRight:
         set_angle(4500);
         break;
     case k_throttle:
