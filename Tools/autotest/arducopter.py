@@ -933,15 +933,23 @@ def fly_motor_fail(mavproxy, mav, fail_servo=0, fail_mul=1.0, holdtime=30):
     mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
     time.sleep(3)
+    # Get initial values
     m = mav.recv_match(type='VFR_HUD', blocking=True) 
     start_altitude = m.alt
     start_heading = m.heading
-    start_yaw_rate = mav.recv_match(type='ATTITUDE', blocking=True).yawspeed
+    start_attitude = mav.recv_match(type='ATTITUDE', blocking=True)
+    start_yaw_rate = start_attitude.yawspeed
+    start_yaw = start_attitude.yaw
+
     print("test: Fly with motor {0} efficiency at {1}%".format(fail_servo+1,fail_mul))
     change_alt(mavproxy,mav,alt_min=50)
     mavproxy.send('param set SIM_ENGINE_FAIL %u\n' % fail_servo)
     mavproxy.send('param set SIM_ENGINE_MUL %f\n' % fail_mul)
     tstart = get_sim_time(mav)
+    ti = tstart
+    integration_error_alt = 0
+    integration_error_yaw_rate = 0
+    integration_error_yaw = 0
     while get_sim_time(mav) < tstart + holdtime:
         servo_data = mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
         hud_data = mav.recv_match(type='VFR_HUD', blocking=True)
@@ -956,20 +964,31 @@ def fly_motor_fail(mavproxy, mav, fail_servo=0, fail_mul=1.0, holdtime=30):
         for i, val in enumerate(servo_list):
             if val>0: #Prevent printing of unused servo channels
                 if i==fail_servo:
-                    output_message+="[failed] "
+                    output_message += "[failed] "
                 if val > 1900:
-                    output_message+="[oversaturated] "
+                    output_message += "[oversaturated] "
                 if val < 1200:
-                    output_message+="[undersaturated] "
-                output_message+= "servo " + str(i+1) + " " + str(val) + "; "
+                    output_message += "[undersaturated] "
+                output_message += "servo " + str(i+1) + " " + str(val) + "; "
                 output_message += '\n'
 
         print(output_message)
-
+        print("Altitude %f meters" % (hud_data.alt))
         print("Altitude drop of %f meters" % (start_altitude-hud_data.alt))
         print("Yaw rate increased of %f rad/s" % (attitude_data.yawspeed-start_yaw_rate))
+        print("Yaw variation of %f degrees" % (attitude_data.yaw-start_yaw))
 
-    
+        print("## Error Integration from initial values ##")
+        integration_error_alt += (hud_data.alt-start_altitude)/(get_sim_time(mav)-ti)
+        print("Altitude integrated error: %f" % integration_error_alt)
+        integration_error_yaw_rate += (attitude_data.yawspeed-start_yaw_rate)/(get_sim_time(mav)-ti)
+        print("Yaw rate integrated error: %f" % integration_error_yaw_rate)
+        integration_error_yaw += (attitude_data.yaw-start_yaw)/(get_sim_time(mav)-ti)
+        print("Yaw integrated error: %f" % integration_error_yaw)
+        ti = get_sim_time(mav)
+        if hud_data.alt < 0:
+            break #Stop on crash
+    time.sleep(3)
     #Reset motor efficiency
     mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
     return True
