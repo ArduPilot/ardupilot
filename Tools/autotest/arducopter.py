@@ -1325,6 +1325,11 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
         else:
             print("Flew copter mission OK")
 
+        print("# Fly motor failure test")
+        if not fly_motor_fail(mavproxy, mav, fail_mul=0, fail_servo=0):
+            failed_test_msg = "fly motor failure test failed"
+            print(failed_test_msg)
+            failed = True
         # wait for disarm
         mav.motors_disarmed_wait()
 
