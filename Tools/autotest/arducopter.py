@@ -924,6 +924,55 @@ def fly_mission(mavproxy, mav, height_accuracy=-1.0, target_altitude=None):
     wait_mode(mav, 'LOITER')
     return ret
 
+def fly_motor_fail(mavproxy, mav, fail_servo=0, fail_mul=1.0, holdtime=30):
+    """Test flight with reduced motor efficiency"""
+
+    if (fail_servo < 0) or (fail_servo > 7):
+        raise ValueError('fail_servo must be between 0-7')
+
+    mavproxy.send('switch 5\n')  # loiter mode
+    wait_mode(mav, 'LOITER')
+    time.sleep(3)
+    m = mav.recv_match(type='VFR_HUD', blocking=True) 
+    start_altitude = m.alt
+    start_heading = m.heading
+    start_yaw_rate = mav.recv_match(type='ATTITUDE', blocking=True).yawspeed
+    print("test: Fly with motor {0} efficiency at {1}%".format(fail_servo+1,fail_mul))
+    change_alt(mavproxy,mav,alt_min=50)
+    mavproxy.send('param set SIM_ENGINE_FAIL %u\n' % fail_servo)
+    mavproxy.send('param set SIM_ENGINE_MUL %f\n' % fail_mul)
+    tstart = get_sim_time(mav)
+    while get_sim_time(mav) < tstart + holdtime:
+        servo_data = mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+        hud_data = mav.recv_match(type='VFR_HUD', blocking=True)
+        attitude_data = mav.recv_match(type='ATTITUDE', blocking=True)
+
+        servo_list=[servo_data.servo1_raw, servo_data.servo2_raw, servo_data.servo3_raw, servo_data.servo4_raw, servo_data.servo5_raw, servo_data.servo6_raw, servo_data.servo7_raw, servo_data.servo8_raw]
+        os.system('cls' if os.name=='nt' else 'clear') #Cross platform clear screen
+
+        print("##### Motor failure test ####\n\n")
+        print("Time since failure %f\n" % (get_sim_time(mav)-tstart))
+        output_message = "PWM output per motor: \n"
+        for i, val in enumerate(servo_list):
+            if val>0: #Prevent printing of unused servo channels
+                if i==fail_servo:
+                    output_message+="[failed] "
+                if val > 1900:
+                    output_message+="[oversaturated] "
+                if val < 1200:
+                    output_message+="[undersaturated] "
+                output_message+= "servo " + str(i+1) + " " + str(val) + "; "
+                output_message += '\n'
+
+        print(output_message)
+
+        print("Altitude drop of %f meters" % (start_altitude-hud_data.alt))
+        print("Yaw rate increased of %f rad/s" % (attitude_data.yawspeed-start_yaw_rate))
+
+    
+    #Reset motor efficiency
+    mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
+    return True
 
 def load_mission_from_file(mavproxy, mav, filename):
     """Load a mission from a file to flight controller."""
