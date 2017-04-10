@@ -35,6 +35,15 @@ void AP_MotorsTailsitter::init(motor_frame_class frame_class, motor_frame_type f
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_TAILSITTER);
 }
 
+
+/// Constructor
+AP_MotorsTailsitter::AP_MotorsTailsitter(uint16_t loop_rate, uint16_t speed_hz) :
+    AP_MotorsMulticopter(loop_rate, speed_hz)
+{
+    SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleLeft, speed_hz);
+    SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleRight, speed_hz);
+}
+
 void AP_MotorsTailsitter::output_to_motors()
 {
     if (!_flags.initialised_ok) {
