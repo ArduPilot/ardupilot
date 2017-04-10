@@ -366,6 +366,20 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Description: This controls what input channel will activate the Q_TAILSIT_MASK mask. When this channel goes above 1700 then the pilot will have direct manual control of the output channels specified in Q_TAILSIT_MASK. Set to zero to disable.
     // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
     AP_GROUPINFO("TAILSIT_MASKCH", 52, QuadPlane, tailsitter.input_mask_chan, 0),
+
+    // @Param: TAILSIT_VFGAIN
+    // @DisplayName: Tailsitter vector thrust gain in forward flight
+    // @Description: This controls the amount of vectored thrust control used in forward flight for a vectored tailsitter
+    // @Range: 0 1
+    // @Increment: 0.01
+    AP_GROUPINFO("TAILSIT_VFGAIN", 53, QuadPlane, tailsitter.vectored_forward_gain, 0),
+
+    // @Param: TAILSIT_VHGAIN
+    // @DisplayName: Tailsitter vector thrust gain in hover
+    // @Description: This controls the amount of vectored thrust control used in hover for a vectored tailsitter
+    // @Range: 0 1
+    // @Increment: 0.01
+    AP_GROUPINFO("TAILSIT_VHGAIN", 54, QuadPlane, tailsitter.vectored_hover_gain, 0.5),
     
     AP_GROUPEND
 };
