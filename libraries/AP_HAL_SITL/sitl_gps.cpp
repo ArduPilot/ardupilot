@@ -282,19 +282,11 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
 
     gps_time(&time_week, &time_week_ms);
 
-    // add glitch to 2nd gps
-    Vector3f glitch;
-    if (instance == 0) {
-        glitch = _sitl->gps_glitch;
-    } else {
-        glitch = _sitl->gps2_glitch;
-    }
-
     pos.time = time_week_ms;
-    pos.longitude = (d->longitude + glitch.y) * 1.0e7;
-    pos.latitude  = (d->latitude + glitch.x) * 1.0e7;
-    pos.altitude_ellipsoid = (d->altitude + glitch.z) * 1000.0f;
-    pos.altitude_msl = (d->altitude + glitch.z) * 1000.0f;
+    pos.longitude = d->longitude * 1.0e7;
+    pos.latitude  = d->latitude * 1.0e7;
+    pos.altitude_ellipsoid = d->altitude * 1000.0f;
+    pos.altitude_msl = d->altitude * 1000.0f;
     pos.horizontal_accuracy = 1500;
     pos.vertical_accuracy = 2000;
 
@@ -349,10 +341,10 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
     pvt.flags2 =0; 
     pvt.num_sv = d->have_lock?_sitl->gps_numsats:3; 
-    pvt.lon = (d->longitude + glitch.y) * 1.0e7;
-    pvt.lat  = (d->latitude + glitch.x) * 1.0e7;
-    pvt.height = (d->altitude + glitch.z) * 1000.0f;
-    pvt.h_msl = (d->altitude + glitch.z) * 1000.0f;
+    pvt.lon = d->longitude * 1.0e7;
+    pvt.lat  = d->latitude * 1.0e7;
+    pvt.height = d->altitude * 1000.0f;
+    pvt.h_msl = d->altitude * 1000.0f;
     pvt.h_acc = 200;
     pvt.v_acc = 200; 
     pvt.velN = 1000.0f * d->speedN;
@@ -1119,7 +1111,6 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 {
     struct gps_data d;
     char c;
-    Vector3f glitch_offsets;// = _sitl->gps_glitch;
 
     //Capture current position as basestation location for
     if (!_gps_has_basestation_position) {
@@ -1151,10 +1142,10 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     gps_state.last_update = AP_HAL::millis();
     gps2_state.last_update = AP_HAL::millis();
 
-    d.latitude = latitude + glitch_offsets.x;
-    d.longitude = longitude + glitch_offsets.y;
+    d.latitude = latitude;
+    d.longitude = longitude;
     // add an altitude error controlled by a slow sine wave
-    d.altitude = altitude + glitch_offsets.z + _sitl->gps_noise * sinf(AP_HAL::millis() * 0.0005f);
+    d.altitude = altitude + _sitl->gps_noise * sinf(AP_HAL::millis() * 0.0005f);
 
     // Add offet to c.g. velocity to get velocity at antenna
     d.speedN = speedN;
@@ -1218,6 +1209,20 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     if (gps_state.gps_fd == 0 && gps2_state.gps_fd == 0) {
         return;
     }
+    // Creating GPS2 data by coping GPS data
+    gps_data d2 = d;
+
+    // Applying GPS glitch
+    // Using first gps glitch
+    Vector3f glitch_offsets = _sitl->gps_glitch;
+    d.latitude += glitch_offsets.x;
+    d.longitude += glitch_offsets.y;
+    d.altitude += glitch_offsets.z;
+    // Using second gps glitch
+    glitch_offsets = _sitl->gps2_glitch;
+    d2.latitude += glitch_offsets.x;
+    d2.longitude += glitch_offsets.y;
+    d2.altitude += glitch_offsets.z;
 
     switch ((SITL::SITL::GPSType)_sitl->gps_type.get()) {
     case SITL::SITL::GPS_TYPE_NONE:
@@ -1225,8 +1230,8 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
         break;
 
     case SITL::SITL::GPS_TYPE_UBLOX:
-        _update_gps_ubx(&d,0);
-        _update_gps_ubx(&d,1);
+        _update_gps_ubx(&d, 0);
+        _update_gps_ubx(&d2, 1);
         break;
 
     case SITL::SITL::GPS_TYPE_MTK:
