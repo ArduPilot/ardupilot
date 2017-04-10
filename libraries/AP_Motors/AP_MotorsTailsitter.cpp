@@ -42,16 +42,10 @@ void AP_MotorsTailsitter::output_to_motors()
     }
     switch (_spool_mode) {
         case SHUT_DOWN:
-            _aileron = 0;
-            _elevator = 0;
-            _rudder = 0;
             _throttle = 0;
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
-            _aileron = 0;
-            _elevator = 0;
-            _rudder = 0;
             _throttle = constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
             break;
         case SPOOL_UP:
