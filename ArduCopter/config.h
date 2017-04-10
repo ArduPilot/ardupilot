@@ -586,3 +586,7 @@
 #ifndef ADVANCED_FAILSAFE
 # define ADVANCED_FAILSAFE DISABLED
 #endif
+
+#ifndef CH_MODE_DEFAULT
+#define CH_MODE_DEFAULT CH_5
+#endif
