@@ -165,6 +165,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, px4.board_type, BOARD_TYPE_DEFAULT),
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #if HAL_PX4_HAVE_PX4IO
     // @Param: BRD_IO_ENABLE
     // @DisplayName: Enable IO co-processor
@@ -173,6 +174,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("IO_ENABLE", 10, AP_BoardConfig, px4.io_enable, 1),
+#endif
 #endif
     
     AP_GROUPEND
