@@ -789,3 +789,18 @@ void SRV_Channels::upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors
     }
 }
 
+
+// set RC output frequency on a function output
+void SRV_Channels::set_rc_frequency(SRV_Channel::Aux_servo_function_t function, uint16_t frequency_hz)
+{
+    uint16_t mask = 0;
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel &ch = channels[i];
+        if (ch.function == function) {
+            mask |= (1U<<ch.ch_num);
+        }
+    }
+    if (mask != 0) {
+        hal.rcout->set_freq(mask, frequency_hz);
+    }
+}
