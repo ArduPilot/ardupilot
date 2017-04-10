@@ -722,7 +722,7 @@ void QuadPlane::run_z_controller(void)
     if (now - last_pidz_active_ms > 2000) {
         // set alt target to current height on transition. This
         // starts the Z controller off with the right values
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Reset alt target to %.1f", inertial_nav.get_altitude());
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)inertial_nav.get_altitude());
         pos_control->set_alt_target(inertial_nav.get_altitude());
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
