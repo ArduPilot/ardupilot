@@ -173,7 +173,7 @@ Changes from 3.4.0-rc4
 ------------------------------------------------------------------
 Copter 3.4.0-rc4 06-Sep-2016
 Changes from 3.4.0-rc3
-1) Intel Aero flight controller support
+1) Intel Aero flight controller support (not Intel Aero RTF, that was done in a later release)
 2) Bug fixes, minor improvements:
     a) resolve unlikely endless-climb in AltHold, Loiter by ensuring Z-axis accelerometer IMAX can always overpower hover throttle
     b) fix auto build issue that could lead to parameter corruption
