@@ -1021,7 +1021,30 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
 
     # setup test parameters
     if params_file is None:
-        params_file = "{testdir}/default_params/copter.parm"
+        if frame == 'hexa':
+            params_file = "{testdir}/default_params/copter-hexa.parm"
+        elif frame == 'octa-quad':
+            params_file = "{testdir}/default_params/copter-octaquad.parm"
+        elif frame == 'octa':
+            params_file = "{testdir}/default_params/copter-octa.parm"
+        elif frame == 'tri':
+            params_file = "{testdir}/default_params/copter-tri.parm"
+        elif frame == 'y6':
+            params_file = "{testdir}/default_params/copter-y6.parm"
+        elif frame == 'firefly':
+            params_file = "{testdir}/default_params/firefly.parm"
+        elif frame == 'gazebo-iris':
+            params_file = "{testdir}/default_params/gazebo-iris.parm"
+        elif frame == 'heli':
+            params_file = "{testdir}/default_params/copter-heli.parm"
+        elif frame == 'heli-dual':
+            params_file = "{testdir}/default_params/copter-heli-dual.parm"
+        elif frame == 'singlecopter':
+            params_file = "{testdir}/default_params/copter-single.parm"
+        elif frame == 'coax':
+            params_file = "{testdir}/default_params/copter-coax.parm"
+        else:
+            params_file = "{testdir}/default_params/copter.parm"
     mavproxy.send("param load %s\n" % params_file.format(testdir=testdir))
     mavproxy.expect('Loaded [0-9]+ parameters')
     mavproxy.send("param set LOG_REPLAY 1\n")
