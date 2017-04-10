@@ -358,6 +358,8 @@ private:
         AP_Int8 input_type;
         AP_Int8 input_mask;
         AP_Int8 input_mask_chan;
+        AP_Float vectored_forward_gain;
+        AP_Float vectored_hover_gain;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller

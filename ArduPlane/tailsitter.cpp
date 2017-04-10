@@ -40,6 +40,18 @@ bool QuadPlane::tailsitter_active(void)
 void QuadPlane::tailsitter_output(void)
 {
     if (!tailsitter_active()) {
+        if (tailsitter.vectored_forward_gain > 0) {
+            // thrust vectoring in fixed wing flight
+            float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+            float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+            float tilt_left  = (elevator + aileron) * tailsitter.vectored_forward_gain;
+            float tilt_right = (elevator - aileron) * tailsitter.vectored_forward_gain;
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
+        } else {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 0);
+        }
         return;
     }
 
@@ -47,6 +59,17 @@ void QuadPlane::tailsitter_output(void)
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
 
+    if (tailsitter.vectored_hover_gain > 0) {
+        // thrust vectoring VTOL modes
+        float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+        float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+        float tilt_left  = (elevator + aileron) * tailsitter.vectored_hover_gain;
+        float tilt_right = (elevator - aileron) * tailsitter.vectored_hover_gain;
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
+    }
+    
+    
     if (tailsitter.input_mask_chan > 0 &&
         tailsitter.input_mask > 0 &&
         hal.rcin->read(tailsitter.input_mask_chan-1) > 1700) {
