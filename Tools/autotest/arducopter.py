@@ -992,6 +992,117 @@ class AutoTestCopter(AutoTest):
 
         self.progress("AVC mission completed: passed!")
 
+    def fly_motor_fail(self, fail_servo=0, fail_mul=0.0, holdtime=30):
+        """Test flight with reduced motor efficiency"""
+
+        # we only expect an octocopter to survive ATM:
+        servo_counts = {
+#            2: 6, # hexa
+            3: 8, # octa
+#            5: 6, # Y6
+        }
+        frame_class = int(self.get_parameter("FRAME_CLASS"))
+        if frame_class not in servo_counts:
+            self.progress("Test not relevant for frame_class %u" % frame_class)
+            return
+
+        servo_count = servo_counts[frame_class]
+
+        if fail_servo < 0 or fail_servo > servo_count:
+            raise ValueError('fail_servo outside range for frame class')
+
+        self.mavproxy.send('switch 5\n')  # loiter mode
+        self.wait_mode('LOITER')
+
+        self.change_alt(alt_min=50)
+
+        # Get initial values
+        start_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        start_attitude = self.mav.recv_match(type='ATTITUDE', blocking=True)
+
+        hover_time = 5
+        try:
+            tstart = self.get_sim_time()
+            int_error_alt = 0
+            int_error_yaw_rate = 0
+            int_error_yaw = 0
+            self.progress("Hovering for %u seconds" % hover_time)
+            failed = False
+            while self.get_sim_time() < tstart + holdtime + hover_time:
+                ti = self.get_sim_time()
+
+                servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
+                                            blocking=True)
+                hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
+                attitude = self.mav.recv_match(type='ATTITUDE', blocking=True)
+
+                if not failed and self.get_sim_time() - tstart > hover_time:
+                    self.progress("Killing motor %u (%u%%)" %
+                                  (fail_servo+1, fail_mul))
+                    self.set_parameter("SIM_ENGINE_FAIL", fail_servo)
+                    self.set_parameter("SIM_ENGINE_MUL", fail_mul)
+                    failed = True
+
+                if failed:
+                    self.progress("Hold Time: %f/%f" %
+                                  (self.get_sim_time()-tstart, holdtime))
+
+                servo_pwm = [servo.servo1_raw,
+                             servo.servo2_raw,
+                             servo.servo3_raw,
+                             servo.servo4_raw,
+                             servo.servo5_raw,
+                             servo.servo6_raw,
+                             servo.servo7_raw,
+                             servo.servo8_raw]
+
+                self.progress("PWM output per motor")
+                for i, pwm in enumerate(servo_pwm[0:servo_count]):
+                    if pwm > 1900:
+                        state = "oversaturated"
+                    elif pwm < 1200:
+                        state = "undersaturated"
+                    else:
+                        state = "OK"
+
+                    if failed and i==fail_servo:
+                        state += " (failed)"
+
+                    self.progress("servo %u [pwm=%u] [%s]" % (i+1, pwm, state))
+
+                alt_delta = hud.alt - start_hud.alt
+                yawrate_delta = attitude.yawspeed - start_attitude.yawspeed
+                yaw_delta = attitude.yaw - start_attitude.yaw
+
+                self.progress("Alt=%fm (delta=%fm)" % (hud.alt, alt_delta))
+                self.progress("Yaw rate=%f (delta=%f) (rad/s)" %
+                              (attitude.yawspeed, yawrate_delta))
+                self.progress("Yaw=%f (delta=%f) (deg)" %
+                              (attitude.yaw, yaw_delta))
+
+                dt = self.get_sim_time() - ti
+                int_error_alt += abs(alt_delta/dt)
+                int_error_yaw_rate += abs(yawrate_delta/dt)
+                int_error_yaw += abs(yaw_delta/dt)
+                self.progress("## Error Integration ##")
+                self.progress("  Altitude: %fm" % int_error_alt)
+                self.progress("  Yaw rate: %f rad/s" % int_error_yaw_rate)
+                self.progress("  Yaw: %f deg" % int_error_yaw)
+                self.progress("----")
+
+                if alt_delta < -20:
+                    self.progress("Vehicle is descending")
+                    raise NotAchievedException()
+
+            self.set_parameter("SIM_ENGINE_FAIL", 0)
+            self.set_parameter("SIM_ENGINE_MUL", 1.0)
+        except Exception as e:
+            self.set_parameter("SIM_ENGINE_FAIL", 0)
+            self.set_parameter("SIM_ENGINE_MUL", 1.0)
+            raise e
+
+        return True
+
     def fly_mission(self, height_accuracy=-1.0, target_altitude=None):
         """Fly a mission from a file."""
         global num_wp
@@ -1153,6 +1264,21 @@ class AutoTestCopter(AutoTest):
 
             # RTL
             self.run_test("RTL after CIRCLE mode", self.fly_RTL)
+
+            # Arm
+            self.set_rc(3, 1000)
+            self.mavproxy.send('mode stabilize\n')  # stabilize mode
+            self.wait_mode('STABILIZE')
+
+            # Takeoff
+            self.run_test("Takeoff to test motor failure",
+                          lambda: self.takeoff(10, arm=True))
+
+            self.run_test("Fly motor failure test",
+                          self.fly_motor_fail)
+
+            # RTL
+            self.run_test("RTL after motor failure test", self.fly_RTL)
 
             # Arm
             self.set_rc(3, 1000)
