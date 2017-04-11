@@ -37,16 +37,6 @@ void Sub::set_auto_armed(bool b)
     }
 }
 
-// ---------------------------------------------
-
-void Sub::set_pre_arm_check(bool b)
-{
-    if (ap.pre_arm_check != b) {
-        ap.pre_arm_check = b;
-        AP_Notify::flags.pre_arm_check = b;
-    }
-}
-
 void Sub::set_motor_emergency_stop(bool b)
 {
     if (ap.motor_emergency_stop != b) {

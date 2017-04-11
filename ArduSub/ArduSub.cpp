@@ -363,7 +363,9 @@ void Sub::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Sub::one_hz_loop()
 {
-    AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
+    bool arm_check = arming.pre_arm_checks(false);
+    ap.pre_arm_check = arm_check;
+    AP_Notify::flags.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_gps_check = position_ok();
 
     if (should_log(MASK_LOG_ANY)) {
