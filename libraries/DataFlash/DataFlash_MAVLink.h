@@ -80,7 +80,6 @@ private:
     void handle_ack(mavlink_channel_t chan, mavlink_message_t* msg, uint32_t seqno);
     void handle_retry(uint32_t block_num);
     void do_resends(uint32_t now);
-    void set_channel(mavlink_channel_t chan);
     void free_all_blocks();
 
     // a stack for free blocks, queues for pending, sent, retries and sent
