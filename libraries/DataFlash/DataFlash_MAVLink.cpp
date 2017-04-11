@@ -527,6 +527,9 @@ void DataFlash_MAVLink::do_resends(uint32_t now)
     }
 }
 
+// NOTE: any functions called from these periodic functions MUST
+// handle locking of the blocks structures by taking the semaphore
+// appropriately!
 void DataFlash_MAVLink::periodic_10Hz(const uint32_t now)
 {
     do_resends(now);
