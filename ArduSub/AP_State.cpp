@@ -36,17 +36,3 @@ void Sub::set_auto_armed(bool b)
         Log_Write_Event(DATA_AUTO_ARMED);
     }
 }
-
-void Sub::set_motor_emergency_stop(bool b)
-{
-    if (ap.motor_emergency_stop != b) {
-        ap.motor_emergency_stop = b;
-    }
-
-    // Log new status
-    if (ap.motor_emergency_stop) {
-        Log_Write_Event(DATA_MOTORS_EMERGENCY_STOPPED);
-    } else {
-        Log_Write_Event(DATA_MOTORS_EMERGENCY_STOP_CLEARED);
-    }
-}

@@ -39,7 +39,7 @@ void Sub::althold_run()
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
-    if (!motors.armed() || !motors.get_interlock()) {
+    if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
