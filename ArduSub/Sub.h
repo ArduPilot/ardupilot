@@ -452,7 +452,6 @@ private:
     void barometer_accumulate(void);
     void perf_update(void);
     void fast_loop();
-    void rc_loop();
     void fifty_hz_loop();
     void update_mount();
     void update_trigger();
@@ -523,10 +522,8 @@ private:
     void Log_Sensor_Health();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
-    void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
     void load_parameters(void);
-    void convert_pid_parameters(void);
     void userhook_init();
     void userhook_FastLoop();
     void userhook_50Hz();
@@ -627,9 +624,7 @@ private:
     bool mode_has_manual_throttle(control_mode_t mode);
     bool mode_allows_arming(control_mode_t mode, bool arming_from_gcs);
     void notify_flight_mode(control_mode_t mode);
-    void check_dynamic_flight(void);
     void read_inertia();
-    void read_inertial_altitude();
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
@@ -723,7 +718,6 @@ private:
 
     void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
     void log_init(void);
-    void run_cli(AP_HAL::UARTDriver *port);
     void init_capabilities(void);
     void dataflash_periodic(void);
     void accel_cal_update(void);
