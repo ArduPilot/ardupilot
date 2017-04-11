@@ -75,6 +75,7 @@ private:
     // parameters
     AP_Int8 _type;
     AP_Vector3f _pos_offset;    // position offset of the camera in the body frame
+    AP_Int8 _orientation;       // camera orientation on vehicle frame
 
     // reference to backends
     AP_VisualOdom_Backend *_driver;

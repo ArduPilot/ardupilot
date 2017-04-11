@@ -48,6 +48,13 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_POS", 1, AP_VisualOdom, _pos_offset, 0.0f),
 
+    // @Param: _ORIENT
+    // @DisplayName: Visual odometery camera orientation
+    // @Description: Visual odometery camera orientation
+    // @Values: 0:Forward, 2:Right, 4:Back, 6:Left, 24:Up, 25:Down
+    // @User: Advanced
+    AP_GROUPINFO("_ORIENT", 2, AP_VisualOdom, _orientation, ROTATION_NONE),
+
     AP_GROUPEND
 };
 

@@ -27,8 +27,14 @@ AP_VisualOdom_Backend::AP_VisualOdom_Backend(AP_VisualOdom &frontend) :
 // set deltas (used by backend to update state)
 void AP_VisualOdom_Backend::set_deltas(const Vector3f &angle_delta, const Vector3f& position_delta, uint64_t time_delta_usec, float confidence)
 {
+    // rotate and store angle_delta
     _frontend._state.angle_delta = angle_delta;
+    _frontend._state.angle_delta.rotate((enum Rotation)_frontend._orientation.get());
+
+    // rotate and store position_delta
     _frontend._state.position_delta = position_delta;
+    _frontend._state.position_delta.rotate((enum Rotation)_frontend._orientation.get());
+
     _frontend._state.time_delta_usec = time_delta_usec;
     _frontend._state.confidence = confidence;
     _frontend._state.last_update_ms = AP_HAL::millis();
