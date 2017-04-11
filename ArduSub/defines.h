@@ -162,10 +162,6 @@ enum RTLState {
 #define DATA_ACRO_TRAINER_LIMITED           45
 #define DATA_GRIPPER_GRAB                   46
 #define DATA_GRIPPER_RELEASE                47
-#define DATA_MOTORS_EMERGENCY_STOPPED       54
-#define DATA_MOTORS_EMERGENCY_STOP_CLEARED  55
-#define DATA_MOTORS_INTERLOCK_DISABLED      56
-#define DATA_MOTORS_INTERLOCK_ENABLED       57
 #define DATA_EKF_ALT_RESET                  60
 #define DATA_SURFACE_CANCELLED_BY_PILOT     61
 #define DATA_EKF_YAW_RESET                  62

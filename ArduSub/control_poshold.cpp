@@ -41,8 +41,8 @@ void Sub::poshold_run()
     //    float vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
     //    float vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
 
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if not auto armed set throttle to zero and exit immediately
+    if (!motors.armed() || !ap.auto_armed) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         wp_nav.init_loiter_target();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);

@@ -130,16 +130,9 @@ void Sub::motors_output()
     // check if we are performing the motor test
     if (ap.motor_test) {
         return; // Placeholder
-    } else {
-        if (!ap.using_interlock) {
-            // if not using interlock switch, set according to Emergency Stop status
-            // where Emergency Stop is forced false during arming if Emergency Stop switch
-            // is not used. Interlock enabled means motors run, so we must
-            // invert motor_emergency_stop status for motors to run.
-            motors.set_interlock(!ap.motor_emergency_stop);
-        }
-        motors.output();
     }
+    motors.set_interlock(true);
+    motors.output();
 }
 
 // translate wpnav roll/pitch outputs to lateral/forward
