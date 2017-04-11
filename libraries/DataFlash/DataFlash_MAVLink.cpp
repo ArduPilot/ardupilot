@@ -297,11 +297,6 @@ void DataFlash_MAVLink::handle_retry(uint32_t seqno)
     }
 }
 
-void DataFlash_MAVLink::set_channel(mavlink_channel_t chan)
-{
-    _chan = chan;
-}
-
 void DataFlash_MAVLink::internal_error() {
     internal_errors++;
     DataFlash_Backend::internal_error();
