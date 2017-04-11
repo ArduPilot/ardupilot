@@ -103,9 +103,9 @@ void Sub::init_compass()
 }
 
 // initialise optical flow sensor
+#if OPTFLOW == ENABLED
 void Sub::init_optflow()
 {
-#if OPTFLOW == ENABLED
     // exit immediately if not enabled
     if (!optflow.enabled()) {
         return;
@@ -113,8 +113,8 @@ void Sub::init_optflow()
 
     // initialise optical flow sensor
     optflow.init();
-#endif      // OPTFLOW == ENABLED
 }
+#endif      // OPTFLOW == ENABLED
 
 // called at 200hz
 #if OPTFLOW == ENABLED

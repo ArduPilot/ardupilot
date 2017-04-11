@@ -57,8 +57,6 @@
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
-
-#include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>           // APM relay
@@ -89,6 +87,10 @@
 #include "GCS_Mavlink.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
+#if OPTFLOW == ENABLED
+#include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
+#endif
+
 #if RCMAP_ENABLED == ENABLED
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #endif
@@ -658,8 +660,10 @@ private:
     void read_rangefinder(void);
     bool rangefinder_alt_ok(void);
     void init_compass();
+#if OPTFLOW == ENABLED
     void init_optflow();
     void update_optical_flow(void);
+#endif
     void read_battery(void);
     void gripper_update();
     void terrain_update();
