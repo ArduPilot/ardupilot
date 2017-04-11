@@ -665,7 +665,9 @@ private:
     void update_optical_flow(void);
 #endif
     void read_battery(void);
+#if GRIPPER_ENABLED == ENABLED
     void gripper_update();
+#endif
     void terrain_update();
     void terrain_logging();
     bool terrain_use();
