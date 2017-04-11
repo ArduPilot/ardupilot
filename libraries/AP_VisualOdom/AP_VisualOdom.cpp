@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @Description: Visual odometry camera connection type
     // @Values: 0:None,1:MAV
     // @User: Advanced
-    AP_GROUPINFO("_TYPE",    0, AP_VisualOdom, _type, 0),
+    AP_GROUPINFO("_TYPE", 0, AP_VisualOdom, _type, 0),
 
     // @Param: _POS_X
     // @DisplayName: Visual odometry camera X position offset

@@ -32,7 +32,7 @@ void AP_VisualOdom_MAV::handle_msg(mavlink_message_t *msg)
     mavlink_vision_position_delta_t packet;
     mavlink_msg_vision_position_delta_decode(msg, &packet);
 
-    Vector3f angle_delta(packet.angle_delta[0], packet.angle_delta[1], packet.angle_delta[2]);
-    Vector3f position_delta(packet.position_delta[0], packet.position_delta[1], packet.position_delta[2]);
+    const Vector3f angle_delta(packet.angle_delta[0], packet.angle_delta[1], packet.angle_delta[2]);
+    const Vector3f position_delta(packet.position_delta[0], packet.position_delta[1], packet.position_delta[2]);
     set_deltas(angle_delta, position_delta, packet.time_delta_usec, packet.confidence);
 }
