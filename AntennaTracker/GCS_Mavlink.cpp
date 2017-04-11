@@ -798,7 +798,8 @@ mission_failed:
             chan,
             msg->sysid,
             msg->compid,
-            result);
+            result,
+            MAV_MISSION_TYPE_MISSION);
         break;
     }
 
