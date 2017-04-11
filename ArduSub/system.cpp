@@ -115,7 +115,9 @@ void Sub::init_ardupilot()
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
+#if OPTFLOW == ENABLED
     init_optflow();
+#endif
 
 #if MOUNT == ENABLED
     // initialise camera mount
