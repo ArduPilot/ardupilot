@@ -19,7 +19,6 @@ extern const AP_HAL::HAL& hal;
 
 class DataFlash_MAVLink : public DataFlash_Backend
 {
-    friend class DataFlash_Class; // for access to stats on Log_Df_Mav_Stats
 public:
     // constructor
     DataFlash_MAVLink(DataFlash_Class &front, DFMessageWriter_DFLogStart *writer) :
@@ -124,7 +123,6 @@ private:
     bool logging_enabled() const override { return true; }
     bool logging_failed() const override;
 
-private:
     mavlink_channel_t _chan;
     uint8_t _target_system_id;
     uint8_t _target_component_id;
