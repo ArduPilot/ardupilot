@@ -209,7 +209,8 @@ GCS_MAVLINK::queued_waypoint_send()
             chan,
             waypoint_dest_sysid,
             waypoint_dest_compid,
-            waypoint_request_i);
+            waypoint_request_i,
+            MAV_MISSION_TYPE_MISSION);
     }
 }
 
@@ -275,7 +276,8 @@ void GCS_MAVLINK::handle_mission_request_list(AP_Mission &mission, mavlink_messa
     mavlink_msg_mission_request_list_decode(msg, &packet);
 
     // reply with number of commands in the mission.  The GCS will then request each command separately
-    mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands());
+    mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands(),
+                                   MAV_MISSION_TYPE_MISSION);
 
     // set variables to help handle the expected sending of commands to the GCS
     waypoint_receiving = false;             // record that we are sending commands (i.e. not receiving)
@@ -340,7 +342,8 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
         if (packet.seq != 0 && // always allow HOME to be read
             packet.seq >= mission.num_commands()) {
             // try to educate the GCS on the actual size of the mission:
-            mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands());
+            mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands(),
+                                           MAV_MISSION_TYPE_MISSION);
             goto mission_item_send_failed;
         }
 
@@ -387,7 +390,8 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
 
 mission_item_send_failed:
     // send failure message
-    mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
+    mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR,
+                                 MAV_MISSION_TYPE_MISSION);
 }
 
 /*
@@ -417,7 +421,8 @@ void GCS_MAVLINK::handle_mission_count(AP_Mission &mission, mavlink_message_t *m
     // start waypoint receiving
     if (packet.count > mission.num_commands_max()) {
         // send NAK
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_NO_SPACE);
+        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_NO_SPACE,
+                                     MAV_MISSION_TYPE_MISSION);
         return;
     }
 
@@ -444,10 +449,12 @@ void GCS_MAVLINK::handle_mission_clear_all(AP_Mission &mission, mavlink_message_
     // clear all waypoints
     if (mission.clear()) {
         // send ack
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_RESULT_ACCEPTED);
+        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_RESULT_ACCEPTED,
+                                     MAV_MISSION_TYPE_MISSION);
     }else{
         // send nack
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
+        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR,
+                                     MAV_MISSION_TYPE_MISSION);
     }
 }
 
@@ -872,7 +879,8 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
             chan,
             msg->sysid,
             msg->compid,
-            MAV_MISSION_ACCEPTED);
+            MAV_MISSION_ACCEPTED,
+            MAV_MISSION_TYPE_MISSION);
         
         send_text(MAV_SEVERITY_INFO,"Flight plan received");
         waypoint_receiving = false;
@@ -897,7 +905,8 @@ mission_ack:
         chan,
         msg->sysid,
         msg->compid,
-        result);
+        result,
+        MAV_MISSION_TYPE_MISSION);
 
     return mission_is_complete;
 }
