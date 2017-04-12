@@ -297,25 +297,25 @@ _options = {
             "X": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
-                # this param set FRAME doesn't actually work because mavproxy
-                # won't set a parameter unless it knows of it, and the
-                # param fetch happens asynchronously
-                "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
+                "extra_params": "FRAME_TYPE=1;",
             },
-            "hexa": {
+            "hexa": {  # HEXA +
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-hexa.parm",
+                "default_params_filename": "default_params/copter.parm",
+                "extra_params": "FRAME_CLASS=2;",
             },
             "octa-quad": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-octaquad.parm",
+                "default_params_filename": "default_params/copter.parm",
+                "extra_params": "FRAME_CLASS=4;",
             },
-            "octa": {
+            "octa": {  # OCTA +
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-octa.parm",
+                "default_params_filename": "default_params/copter.parm",
+                "extra_params": "FRAME_CLASS=3;",
             },
             "tri": {
                 "make_target": "sitl",
@@ -384,9 +384,9 @@ _options = {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane-tri.parm",
             },
-            "quadplane-cl84" : {
-                "make_target" : "sitl",
-                "waf_target" : "bin/arduplane",
+            "quadplane-cl84": {
+                "make_target": "sitl",
+                "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane-cl84.parm",
             },
             "quadplane": {
@@ -467,6 +467,7 @@ _options = {
         },
     },
 }
+
 
 def default_waf_target(vehicle):
     """Returns a waf target based on vehicle type, which is often determined by which directory the user is in"""
@@ -726,15 +727,19 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
     cmd.extend(["--speedup", str(opts.speedup)])
+    if "extra_params" in stuff:
+        opts.extra_params = stuff["extra_params"] + (opts.extra_params if opts.extra_params else "")
+    if opts.extra_params:
+        cmd.extend(["-P", opts.extra_params])
     if opts.sitl_instance_args:
         cmd.extend(opts.sitl_instance_args.split(" "))  # this could be a lot better..
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
     if "default_params_filename" in stuff:
         paths = stuff["default_params_filename"]
-        if not isinstance(paths,list):
+        if not isinstance(paths, list):
             paths = [paths]
-        paths =  [ os.path.join(autotest, x) for x in paths ]
+        paths = [ os.path.join(autotest, x) for x in paths ]
         path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
         cmd.extend(["--defaults", path])
@@ -857,6 +862,7 @@ group_sim.add_option("-B", "--breakpoint", type='string', action="append", defau
 group_sim.add_option("-M", "--mavlink-gimbal", action='store_true', default=False, help="enable MAVLink gimbal")
 group_sim.add_option("-L", "--location", type='string', default='CMAC', help="select start location from Tools/autotest/locations.txt")
 group_sim.add_option("-l", "--custom-location", type='string', default=None, help="set custom start location")
+group_sim.add_option("-P", "--extra-params", type='string', default=None, help="set extra parameters with the format PARAM=VALUE. Use ; to pass multiple parameters")
 group_sim.add_option("-S", "--speedup", default=1, type='int', help="set simulation speedup (1 for wall clock time)")
 group_sim.add_option("-t", "--tracker-location", default='CMAC_PILOTSBOX', type='string', help="set antenna tracker start location")
 group_sim.add_option("-w", "--wipe-eeprom", action='store_true', default=False, help="wipe EEPROM and reload parameters")
@@ -976,6 +982,11 @@ if cmd_opts.use_dir is not None:
         if exception.errno != errno.EEXIST:
             raise
     os.chdir(new_dir)
+
+if cmd_opts.extra_params is not None:
+    if ' ' in cmd_opts.extra_params:
+        print("Do not use space in extra param")
+        sys.exit(1)
 
 if cmd_opts.hil:
     # (unlikely)
