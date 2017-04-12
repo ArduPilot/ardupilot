@@ -25,6 +25,14 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("DIST_MAX", 3,  AC_Avoid, _dist_max, AC_AVOID_NONGPS_DIST_MAX_DEFAULT),
 
+    // @Param: MARGIN
+    // @DisplayName: Avoidance distance margin in GPS modes
+    // @Description: Vehicle will attempt to stay at least this distance (in meters) from objects while in GPS modes
+    // @Units: meters
+    // @Range: 1 10
+    // @User: Standard
+    AP_GROUPINFO("MARGIN", 4, AC_Avoid, _margin, 2.0f),
+
     AP_GROUPEND
 };
 
@@ -107,7 +115,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     // get distance from proximity sensor (in meters, convert to cm)
     float proximity_alt_diff_m;
     if (_proximity.get_upward_distance(proximity_alt_diff_m)) {
-        float proximity_alt_diff_cm = (proximity_alt_diff_m - AC_AVOID_UPWARD_MARGIN_M) * 100.0f;
+        float proximity_alt_diff_cm = (proximity_alt_diff_m - _margin) * 100.0f;
         if (!limit_alt || proximity_alt_diff_cm < alt_diff_cm) {
             alt_diff_cm = proximity_alt_diff_cm;
         }
@@ -198,17 +206,17 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     // get the fence radius in cm
     const float fence_radius = _fence.get_radius() * 100.0f;
     // get the margin to the fence in cm
-    const float margin = get_margin();
+    const float margin_cm = _fence.get_margin() * 100.0f;
 
     if (!is_zero(speed) && position_xy.length() <= fence_radius) {
         // Currently inside circular fence
         Vector2f stopping_point = position_xy + desired_vel*(get_stopping_distance(kP, accel_cmss, speed)/speed);
         float stopping_point_length = stopping_point.length();
-        if (stopping_point_length > fence_radius - margin) {
+        if (stopping_point_length > fence_radius - margin_cm) {
             // Unsafe desired velocity - will not be able to stop before fence breach
             // Project stopping point radially onto fence boundary
             // Adjusted velocity will point towards this projected point at a safe speed
-            Vector2f target = stopping_point * ((fence_radius - margin) / stopping_point_length);
+            Vector2f target = stopping_point * ((fence_radius - margin_cm) / stopping_point_length);
             Vector2f target_direction = target - position_xy;
             float distance_to_target = target_direction.length();
             float max_speed = get_max_speed(kP, accel_cmss, distance_to_target);
@@ -243,7 +251,7 @@ void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2
     Vector2f* boundary = _fence.get_polygon_points(num_points);
 
     // adjust velocity using polygon
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, true);
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, true, _fence.get_margin());
 }
 
 /*
@@ -264,13 +272,13 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &d
     // get boundary from proximity sensor
     uint16_t num_points;
     const Vector2f *boundary = _proximity.get_boundary_points(num_points);
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, false);
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, false, _margin);
 }
 
 /*
  * Adjusts the desired velocity for the polygon fence.
  */
-void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame)
+void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin)
 {
     // exit if there are no points
     if (boundary == nullptr || num_points == 0) {
@@ -298,6 +306,9 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         safe_vel.y = desired_vel.y * _ahrs.cos_yaw() - desired_vel.x * _ahrs.sin_yaw(); // forward
     }
 
+    // calc margin in cm
+    float margin_cm = MAX(margin * 100.0f, 0);
+
     uint16_t i, j;
     for (i = 1, j = num_points-1; i < num_points; j = i++) {
         // end points of current edge
@@ -311,7 +322,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
             // We are strictly inside the given edge.
             // Adjust velocity to not violate this edge.
             limit_direction /= limit_distance;
-            limit_velocity(kP, accel_cmss, safe_vel, limit_direction, MAX(limit_distance - get_margin(),0.0f));
+            limit_velocity(kP, accel_cmss, safe_vel, limit_direction, MAX(limit_distance - margin_cm,0.0f));
         } else {
             // We are exactly on the edge - treat this as a fence breach.
             // i.e. do not adjust velocity.
