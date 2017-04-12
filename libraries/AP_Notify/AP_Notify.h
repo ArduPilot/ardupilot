@@ -51,6 +51,14 @@ class AP_Notify
 public:
     // Constructor
     AP_Notify();
+    
+    // ToneAlarm types
+    enum ToneAlarm_Type {
+        ToneAlarm_Type_NONE     = 0,
+        ToneAlarm_Type_PX4      = 1,
+        ToneAlarm_Type_Solo     = 2,
+        ToneAlarm_Type_Linux    = 3
+    };
 
     /// notify_flags_type - bitmask of notification flags
     struct notify_flags_and_values_type {
@@ -138,10 +146,13 @@ private:
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
     AP_Int8 _display_type;
+    AP_Int8 _tone_type;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed
     char _flight_mode_str[5];
+    
+    NotifyDevice* tonealarm;
 
     static NotifyDevice* _devices[];
 };

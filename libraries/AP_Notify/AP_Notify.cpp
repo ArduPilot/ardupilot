@@ -33,6 +33,7 @@
 #include "DiscoLED.h"
 #include <stdio.h>
 
+#define CONFIG_NOTIFY_DEVICES_COUNT 5
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
@@ -65,6 +66,13 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
 
+    // @Param: TONEALARM_TYPE
+    // @DisplayName: Type of Tone Alarm to be used
+    // @Description: This sets up the type of tones to be used, Defaults to PX4
+    // @Values: 0:Disabled,1:PX4,2:Solo,3:Linux
+    // @User: Advanced
+    AP_GROUPINFO("TONE_TYPE", 4, AP_Notify, _tone_type, 1),
+
     AP_GROUPEND
 };
 
@@ -78,6 +86,14 @@ AP_Notify::AP_Notify()
 struct AP_Notify::notify_flags_and_values_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
 
+AP_BoardLED boardled;
+OreoLED_PX4 oreoled;
+ToshibaLED_I2C toshibaled;
+Display display;
+//ToneAlarm_PX4_Solo tonealarm;
+
+NotifyDevice *AP_Notify::_devices[] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+/*
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
     PixRacerLED boardled;
@@ -159,10 +175,33 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #endif
 
 #define CONFIG_NOTIFY_DEVICES_COUNT (ARRAY_SIZE(AP_Notify::_devices))
-
+*/
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
 {
+  switch (_tone_type) {
+        case ToneAlarm_Type_NONE:
+            break;
+        case ToneAlarm_Type_PX4:
+            tonealarm = new ToneAlarm_PX4();
+            break;
+        case ToneAlarm_Type_Solo:
+            tonealarm = new ToneAlarm_PX4_Solo();
+            break;
+        case ToneAlarm_Type_Linux:
+            //tonealarm = new ToneAlarm_Linux();
+            break;
+        default:
+            break;
+    }
+    
+    _devices[0] = &boardled;
+    _devices[1] = &toshibaled;
+    _devices[2] = tonealarm;
+    _devices[3] = &oreoled;
+    _devices[4] = &display;
+    
+    
     // clear all flags and events
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
@@ -175,8 +214,10 @@ void AP_Notify::init(bool enable_external_leds)
     AP_Notify::flags.external_leds = enable_external_leds;
 
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
-        _devices[i]->pNotify = this;
-        _devices[i]->init();
+        if (_devices[i] != nullptr) {
+            _devices[i]->pNotify = this;
+            _devices[i]->init();
+        }
     }
 }
 
@@ -184,7 +225,9 @@ void AP_Notify::init(bool enable_external_leds)
 void AP_Notify::update(void)
 {
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
-        _devices[i]->update();
+        if (_devices[i] != nullptr) {
+            _devices[i]->update();
+        }
     }
 
     //reset the events
@@ -195,7 +238,9 @@ void AP_Notify::update(void)
 void AP_Notify::handle_led_control(mavlink_message_t *msg)
 {
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
-        _devices[i]->handle_led_control(msg);
+        if (_devices[i] != nullptr) {
+            _devices[i]->handle_led_control(msg);
+        }
     }
 }
 
@@ -203,7 +248,9 @@ void AP_Notify::handle_led_control(mavlink_message_t *msg)
 void AP_Notify::handle_play_tune(mavlink_message_t *msg)
 {
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
-        _devices[i]->handle_play_tune(msg);
+        if (_devices[i] != nullptr) {
+            _devices[i]->handle_play_tune(msg);
+        }
     }
 }
 
