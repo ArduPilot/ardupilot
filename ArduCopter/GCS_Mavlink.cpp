@@ -241,8 +241,8 @@ void NOINLINE Copter::send_proximity(mavlink_channel_t chan, uint16_t count_max)
 
     // send known distances
     AP_Proximity::Proximity_Distance_Array dist_array;
-    if (g2.proximity.get_distances(dist_array)) {
         for (uint8_t i=0; i<count_max; i++) {
+    if (g2.proximity.get_horizontal_distances(dist_array)) {
             mavlink_msg_distance_sensor_send(
                 chan,
                 AP_HAL::millis(),               //  time since system boot
