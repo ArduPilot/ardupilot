@@ -87,7 +87,6 @@ void SITL_State::_sitl_setup(const char *home_str)
     if (_sitl != nullptr) {
         // setup some initial values
 #ifndef HIL_MODE
-        _update_barometer(100);
         _update_ins(0);
         _update_compass();
         _update_gps(0, 0, 0, 0, 0, 0, false);
@@ -156,7 +155,6 @@ void SITL_State::_fdm_input_step(void)
 
     if (_update_count == 0 && _sitl != nullptr) {
         _update_gps(0, 0, 0, 0, 0, 0, false);
-        _update_barometer(0);
         _scheduler->timer_event();
         _scheduler->sitl_end_atomic();
         return;
@@ -168,7 +166,6 @@ void SITL_State::_fdm_input_step(void)
                     _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
                     !_sitl->gps_disable);
         _update_ins(_sitl->state.airspeed);
-        _update_barometer(_sitl->state.altitude);
         _update_compass();
 
         if (_sitl->adsb_plane_count >= 0 &&
@@ -433,18 +430,12 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
 }
 
 
-// generate a random float between -1 and 1
-float SITL_State::_rand_float(void)
-{
-    return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
-}
-
 // generate a random Vector3f of size 1
 Vector3f SITL_State::_rand_vec3f(void)
 {
-    Vector3f v = Vector3f(_rand_float(),
-                          _rand_float(),
-                          _rand_float());
+    Vector3f v = Vector3f(rand_float(),
+                          rand_float(),
+                          rand_float());
     if (v.length() != 0.0f) {
         v.normalize();
     }
