@@ -93,9 +93,18 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("ENGINE_FAIL",   60, SITL,  engine_fail,  0),
     AP_GROUPINFO("GPS2_TYPE",     61, SITL,  gps2_type,  SITL::GPS_TYPE_UBLOX),
     AP_GROUPINFO("ODOM_ENABLE",   62, SITL,  odom_enable, 0),
+    AP_SUBGROUPEXTENSION("",      63, SITL,  var_info2),
     AP_GROUPEND
 };
 
+// second table of user settable parameters for SITL. 
+const AP_Param::GroupInfo SITL::var_info2[] = {
+    AP_GROUPINFO("TEMP_START",   1, SITL,  temp_start,  25),
+    AP_GROUPINFO("TEMP_FLIGHT",  2, SITL,  temp_flight, 35),
+    AP_GROUPINFO("TEMP_TCONST",  3, SITL,  temp_tconst, 30),
+    AP_GROUPEND
+};
+    
 
 /* report SITL state via MAVLink */
 void SITL::simstate_send(mavlink_channel_t chan)
