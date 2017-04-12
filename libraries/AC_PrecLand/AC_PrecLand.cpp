@@ -83,6 +83,13 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CAM_POS", 7, AC_PrecLand, _cam_offset, 0.0f),
 
+    // @Param: BUS
+    // @DisplayName: Sensor Bus
+    // @Description: Precland sensor bus for I2C sensors.
+    // @Values: -1:DefaultBus,0:InternalI2C,1:ExternalI2C
+    // @User: Advanced
+    AP_GROUPINFO("BUS",    8, AC_PrecLand, _bus, -1),
+    
     AP_GROUPEND
 };
 
