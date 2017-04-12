@@ -56,7 +56,8 @@ public:
     static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
     static void px4_sensor_error(const char *reason);
 
-    // valid types for BRD_TYPE
+    // valid types for BRD_TYPE: these values need to be in sync with the
+    // values from the param description
     enum px4_board_type {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         PX4_BOARD_AUTO     = 0,
@@ -66,7 +67,7 @@ public:
         PX4_BOARD_PIXRACER = 4,
         PX4_BOARD_PHMINI   = 5,
         PX4_BOARD_PH2SLIM  = 6,
-        PX4_BOARD_AEROFC   = 7,
+        PX4_BOARD_AEROFC   = 13,
         PX4_BOARD_AUAV21   = 20,
         PX4_BOARD_OLDDRIVERS = 100,
 #endif
