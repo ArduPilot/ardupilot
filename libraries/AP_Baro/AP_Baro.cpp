@@ -27,6 +27,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#include "AP_Baro_SITL.h"
 #include "AP_Baro_BMP085.h"
 #include "AP_Baro_BMP280.h"
 #include "AP_Baro_HIL.h"
@@ -388,6 +389,11 @@ void AP_Baro::init(void)
         return;
     }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    ADD_BACKEND(new AP_Baro_SITL(*this));
+    return;
+#endif
+    
 #if HAL_BARO_DEFAULT == HAL_BARO_PX4 || HAL_BARO_DEFAULT == HAL_BARO_VRBRAIN
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PX4V1:
