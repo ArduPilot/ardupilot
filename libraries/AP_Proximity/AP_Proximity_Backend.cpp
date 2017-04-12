@@ -86,7 +86,7 @@ bool AP_Proximity_Backend::get_object_angle_and_distance(uint8_t object_number, 
 }
 
 // get distances in 8 directions. used for sending distances to ground station
-bool AP_Proximity_Backend::get_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const
+bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const
 {
     // exit immediately if we have no good ranges
     bool valid_distances = false;
