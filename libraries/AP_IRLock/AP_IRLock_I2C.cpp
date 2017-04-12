@@ -32,9 +32,13 @@ extern const AP_HAL::HAL& hal;
 
 #define IRLOCK_SYNC			0xAA55AA55
 
-void AP_IRLock_I2C::init()
+void AP_IRLock_I2C::init(int8_t bus)
 {
-    dev = std::move(hal.i2c_mgr->get_device(1, IRLOCK_I2C_ADDRESS));
+    if (bus < 0) {
+        // default to i2c external bus
+        bus = 1;
+    }
+    dev = std::move(hal.i2c_mgr->get_device(bus, IRLOCK_I2C_ADDRESS));
     if (!dev) {
         return;
     }
