@@ -221,3 +221,6 @@ float linear_interpolate(float low_output, float high_output,
 /* simple 16 bit random number generator */
 uint16_t get_random16(void);
 
+// generate a random float between -1 and 1, for use in SITL
+float rand_float(void);
+
