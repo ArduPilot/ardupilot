@@ -149,6 +149,9 @@ public:
     // get baro drift amount
     float get_baro_drift_offset(void) { return _alt_offset_active; }
 
+    // simple atmospheric model
+    static void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
+
 private:
     // how many drivers do we have?
     uint8_t _num_drivers;
@@ -189,6 +192,5 @@ private:
     // when did we last notify the GCS of new pressure reference?
     uint32_t                            _last_notify_ms;
 
-    void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
     bool _add_backend(AP_Baro_Backend *backend);
 };
