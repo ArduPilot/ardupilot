@@ -111,8 +111,6 @@
 /* CPU classes, used to select if CPU intensive algorithms should be used
  * Note that these are only approximate, not exact CPU speeds. */
 
-/* DEPRECATED: 16Mhz: AVR2560 or similar */
-#define HAL_CPU_CLASS_16   1
 /* 150Mhz: PX4 or similar. Assumes:
  *  - hardware floating point
  *  - tens of kilobytes of memory available */
