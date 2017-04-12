@@ -323,6 +323,16 @@ bool AP_Proximity::get_horizontal_distance(float angle_deg, float &distance) con
     return get_horizontal_distance(primary_instance, angle_deg, distance);
 }
 
+// get distances in 8 directions. used for sending distances to ground station
+bool AP_Proximity::get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return false;
+    }
+    // get distances from backend
+    return drivers[primary_instance]->get_horizontal_distances(prx_dist_array);
+}
+
 // get boundary points around vehicle for use by avoidance
 //   returns nullptr and sets num_points to zero if no boundary can be returned
 const Vector2f* AP_Proximity::get_boundary_points(uint8_t instance, uint16_t& num_points) const
@@ -370,16 +380,6 @@ bool AP_Proximity::get_object_angle_and_distance(uint8_t object_number, float& a
     }
     // get angle and distance from backend
     return drivers[primary_instance]->get_object_angle_and_distance(object_number, angle_deg, distance);
-}
-
-// get distances in 8 directions. used for sending distances to ground station
-bool AP_Proximity::get_distances(Proximity_Distance_Array &prx_dist_array) const
-{
-    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
-        return 0.0f;
-    }
-    // get distances from backend
-    return drivers[primary_instance]->get_distances(prx_dist_array);
 }
 
 // get maximum and minimum distances (in meters) of primary sensor
