@@ -15,7 +15,7 @@ AC_PrecLand_IRLock::AC_PrecLand_IRLock(const AC_PrecLand& frontend, AC_PrecLand:
 // init - perform initialisation of this backend
 void AC_PrecLand_IRLock::init()
 {
-    irlock.init();
+    irlock.init(get_bus());
 }
 
 // update - give chance to driver to get updates from sensor
