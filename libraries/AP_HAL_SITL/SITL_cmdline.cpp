@@ -50,7 +50,7 @@ void SITL_State::_usage(void)
            "\t--rate|-r RATE           set SITL framerate\n"
            "\t--console|-C             use console instead of TCP ports\n"
            "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
-           // "\t--param|-P NAME=VALUE    set some param\n"  CURRENTLY BROKEN!
+           "\t--param|-P NAME=VALUE    set some param with the format PARAM=VALUE. Use ; to pass multiple params\n"
            "\t--synthetic-clock|-S     set synthetic clock mode\n"
            "\t--home|-O HOME           set home location (lat,lng,alt,yaw)\n"
            "\t--model|-M MODEL         set simulation model\n"
@@ -130,6 +130,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     int opt;
     float speedup = 1.0f;
     _instance = 0;
+    bool has_extra_param = false;
     _synthetic_clock_mode = false;
     // default to CMAC
     const char *home_str = "-35.363261,149.165230,584,353";
@@ -137,6 +138,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _client_address = nullptr;
     _use_fg_view = true;
     char *autotest_dir = nullptr;
+    char *mutable_filename = nullptr;
     _fdm_address = "127.0.0.1";
 
     const int BASE_PORT = 5760;
@@ -268,7 +270,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
         break;
         case 'P':
-            _set_param_default(gopt.optarg);
+            has_extra_param = _set_param_default(gopt.optarg);
             break;
         case 'S':
             _synthetic_clock_mode = true;
@@ -295,7 +297,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             autotest_dir = strdup(gopt.optarg);
             break;
         case CMDLINE_DEFAULTS:
-            defaults_path = strdup(gopt.optarg);
+            mutable_filename = strdup(gopt.optarg);
             break;
         case CMDLINE_UARTA:
         case CMDLINE_UARTB:
@@ -338,6 +340,14 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     if (!model_str) {
         printf("You must specify a vehicle model\n");
         exit(1);
+    }
+
+    // Append the extra_param file to the default param file
+    if (has_extra_param) {
+        strcat(mutable_filename, ",extra_param.parm");
+    }
+    if (mutable_filename != nullptr) {
+        defaults_path = strdup(mutable_filename);
     }
 
     for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
