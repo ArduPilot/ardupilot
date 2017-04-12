@@ -18,6 +18,24 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
     }
 }
 
+// adjust for board temperature
+void AP_Baro_SITL::temperature_adjustment(float &p, float &T)
+{
+    float tsec = AP_HAL::millis() * 0.001;
+    const float T0 = sitl->temp_start;
+    const float T1 = sitl->temp_flight;
+    const float tconst = sitl->temp_tconst;
+    const float baro_factor = sitl->temp_baro_factor;
+    const float Tzero = 30; // start baro adjustment at 30C
+    T = T1 - (T1 - T0)*expf(-tsec / tconst);
+    if (baro_factor > 0) {
+        // this produces a pressure change with temperature that
+        // closely matches what has been observed with a ICM-20789
+        // barometer. A typical factor is 1.2.
+        p -= powf(MAX(T - Tzero, 0), baro_factor);
+    }
+}
+
 // Read the sensor
 void AP_Baro_SITL::update(void)
 {
@@ -75,6 +93,8 @@ void AP_Baro_SITL::update(void)
     float p = p0 * delta;
     float T = 303.16f * theta - 273.16f; // Assume 30 degrees at sea level - converted to degrees Kelvin
 
+    temperature_adjustment(p, T);
+    
     _copy_to_frontend(instance, p, T);
 }
 
