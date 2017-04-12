@@ -151,6 +151,7 @@ public:
     AP_Float temp_start;
     AP_Float temp_flight;
     AP_Float temp_tconst;
+    AP_Float temp_baro_factor;
     
     uint16_t irlock_port;
 
