@@ -5,16 +5,6 @@
 #include <AP_Param/AP_Param.h>
 #include <sys/ioctl.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-
-#define _UAVCAN_IOCBASE             (0x4000)                        // IOCTL base for module UAVCAN
-#define _UAVCAN_IOC(_n)             (_IOC(_UAVCAN_IOCBASE, _n))
-
-#define UAVCAN_IOCG_NODEID_INPROGRESS  _UAVCAN_IOC(1)               // query if node identification is in progress
-#define UAVCAN_IOCS_HARDPOINT_SET      _UAVCAN_IOC(10)              // control hardpoint (e.g. OpenGrab EPM)
-
-#endif
-
 extern "C" typedef int (*main_fn_t)(int argc, char **);
 
 class AP_BoardConfig {
