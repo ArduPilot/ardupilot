@@ -153,7 +153,7 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
                         19812,   // uint16_t
                         -98234729,   // int32_t
                         74627293,    // uint32_t
-                        35.87654,  // float
+                        35.87654f,  // float
                         (double)67.7393274658293,   // double
                         "ABCD", // char[4]
                         // char[16]:
