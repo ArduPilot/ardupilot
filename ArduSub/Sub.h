@@ -58,7 +58,6 @@
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Relay/AP_Relay.h>           // APM relay
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
@@ -108,6 +107,10 @@
 
 #if AC_RALLY == ENABLED
 #include <AP_Rally/AP_Rally.h>           // Rally point library
+#endif
+
+#if CAMERA == ENABLED
+#include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #endif
 
 // Local modules
@@ -455,7 +458,6 @@ private:
     void fast_loop();
     void fifty_hz_loop();
     void update_mount();
-    void update_trigger();
     void update_batt_compass(void);
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
@@ -545,8 +547,6 @@ private:
     bool verify_wait_delay();
     bool verify_within_distance();
     bool verify_yaw();
-    void do_take_picture();
-    void log_picture();
     bool acro_init(bool ignore_checks);
     void acro_run();
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
@@ -707,10 +707,15 @@ private:
 #if CAMERA == ENABLED
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
+    void do_take_picture();
+    void log_picture();
+    void update_trigger();
 #endif
+
 #if GRIPPER_ENABLED == ENABLED
     void do_gripper(const AP_Mission::Mission_Command& cmd);
 #endif
+
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_surface(const AP_Mission::Mission_Command& cmd);
     bool verify_RTL(void);

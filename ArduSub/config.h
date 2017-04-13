@@ -191,7 +191,7 @@
 // CAMERA TRIGGER AND CONTROL
 //
 #ifndef CAMERA
-# define CAMERA        ENABLED
+# define CAMERA        DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
