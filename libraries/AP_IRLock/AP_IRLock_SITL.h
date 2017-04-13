@@ -16,10 +16,10 @@ public:
     AP_IRLock_SITL();
 
     // init - initialize sensor library
-    virtual void init(int8_t bus);
+    void init(int8_t bus) override;
 
     // retrieve latest sensor data - returns true if new data is available
-    virtual bool update();
+    bool update() override;
 
 private:
 
