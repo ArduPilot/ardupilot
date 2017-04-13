@@ -1242,9 +1242,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_MISSION_START:
             if (sub.motors.armed() && sub.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
-                if (sub.mission.state() != AP_Mission::MISSION_RUNNING) {
-                    sub.mission.start_or_resume();
-                }
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
