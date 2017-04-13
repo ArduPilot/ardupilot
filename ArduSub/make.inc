@@ -49,7 +49,6 @@ LIBRARIES += AP_BoardConfig
 LIBRARIES += AP_Frsky_Telem
 LIBRARIES += AP_Terrain
 LIBRARIES += AP_RPM
-LIBRARIES += AC_InputManager
 LIBRARIES += AP_JSButton
 LIBRARIES += AP_LeakDetector
 LIBRARIES += AP_Gripper
