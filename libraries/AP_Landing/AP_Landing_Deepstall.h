@@ -106,7 +106,7 @@ private:
 
     //private helpers
     void build_approach_path();
-    float predict_travel_distance(const Vector3f wind, const float height);
+    float predict_travel_distance(const Vector3f wind, const float height, const bool print);
     bool verify_breakout(const Location &current_loc, const Location &target_loc, const float height_error) const;
     float update_steering(void);
 
