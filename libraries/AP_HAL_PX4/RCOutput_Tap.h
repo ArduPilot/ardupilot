@@ -52,7 +52,6 @@
 #include "AP_HAL_PX4.h"
 #include <systemlib/perf_counter.h>
 #include <uORB/topics/actuator_armed.h>
-#include <uORB/topics/actuator_outputs.h>
 
 namespace PX4 {
 
