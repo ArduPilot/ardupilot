@@ -13,7 +13,7 @@ public:
     void init(int8_t bus) override;
 
     // retrieve latest sensor data - returns true if new data is available
-    bool update();
+    bool update() override;
 
 private:
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
