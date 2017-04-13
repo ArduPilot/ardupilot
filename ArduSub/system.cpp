@@ -23,7 +23,7 @@ void Sub::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    cliSerial->printf("\n\nInit " FIRMWARE_STRING
+    hal.console->printf("\n\nInit " FIRMWARE_STRING
                       "\n\nFree RAM: %u\n",
                       (unsigned)hal.util->available_memory());
 
@@ -190,7 +190,7 @@ void Sub::init_ardupilot()
     // init vehicle capabilties
     init_capabilities();
 
-    cliSerial->print("\nReady to FLY ");
+    hal.console->print("\nInit complete");
 
     // flag that initialisation has completed
     ap.initialised = true;
