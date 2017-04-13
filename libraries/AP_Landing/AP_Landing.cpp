@@ -263,6 +263,21 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing
     }
 }
 
+// send out any required mavlink messages
+bool AP_Landing::send_landing_message(mavlink_channel_t chan) {
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return deepstall.send_deepstall_message(chan);
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
+    }
+}
+
 bool AP_Landing::is_flaring(void) const
 {
     if (!flags.in_progress) {

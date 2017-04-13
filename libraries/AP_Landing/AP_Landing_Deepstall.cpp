@@ -364,6 +364,24 @@ int32_t AP_Landing_Deepstall::get_target_airspeed_cm(void) const
     }
 }
 
+bool AP_Landing_Deepstall::send_deepstall_message(mavlink_channel_t chan) const
+{
+    CHECK_PAYLOAD_SIZE2(DEEPSTALL);
+    mavlink_msg_deepstall_send(
+        chan,
+        landing_point.lat,
+        landing_point.lng,
+        stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_exit.lat : 0.0f,
+        stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_exit.lng : 0.0f,
+        stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_entry.lat : 0.0f,
+        stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_entry.lng : 0.0f,
+        landing_point.alt * 0.01,
+        stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? predicted_travel_distance : 0.0f,
+        stage == DEEPSTALL_STAGE_LAND ? crosstrack_error : 0.0f,
+        stage);
+    return true;
+}
+
 const DataFlash_Class::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
 {
     return ds_PID.get_pid_info();
@@ -414,7 +432,7 @@ void AP_Landing_Deepstall::build_approach_path(void)
 
 }
 
-float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const float height) const
+float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const float height)
 {
     bool reverse = false;
 
@@ -446,11 +464,13 @@ float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const f
 
     float estimated_forward = cosf(estimated_crab_angle) * forward_speed_ms + cosf(theta) * wind_length;
 
+    predicted_travel_distance = estimated_forward * height / down_speed + stall_distance;
+
 #ifdef DEBUG_PRINTS
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Predict: %f %f", stall_distance,  estimated_forward * height / down_speed + stall_distance);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Predict: %f %f", stall_distance,  predicted_travel_distance);
 #endif // DEBUG_PRINTS
 
-    return estimated_forward * height / down_speed + stall_distance;
+    return predicted_travel_distance;
 }
 
 bool AP_Landing_Deepstall::verify_breakout(const Location &current_loc, const Location &target_loc,
@@ -488,7 +508,7 @@ float AP_Landing_Deepstall::update_steering()
     ab.normalize();
     Vector2f a_air = location_diff(arc_exit, current_loc);
 
-    float crosstrack_error = a_air % ab;
+    crosstrack_error = a_air % ab;
     float sine_nu1 = constrain_float(crosstrack_error / MAX(L1_period, 0.1f), -0.7071f, 0.7107f);
     float nu1 = asinf(sine_nu1);
 
