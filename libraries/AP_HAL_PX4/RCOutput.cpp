@@ -78,9 +78,6 @@ void PX4RCOutput::init()
 
     // publish actuator vaules on demand
     _actuator_direct_pub = nullptr;
-
-    // and armed state
-    _actuator_armed_pub = nullptr;
 }
 
 
@@ -421,59 +418,6 @@ void PX4RCOutput::_arm_actuators(bool arm)
     }
     _armed.lockdown = false;
     _armed.force_failsafe = false;
-
-    if (_actuator_armed_pub == nullptr) {
-        _actuator_armed_pub = orb_advertise(ORB_ID(actuator_armed), &_armed);
-    } else {
-        orb_publish(ORB_ID(actuator_armed), _actuator_armed_pub, &_armed);
-    }
-}
-
-/*
-  publish new outputs to the actuator_direct topic
- */
-void PX4RCOutput::_publish_actuators(void)
-{
-	struct actuator_direct_s actuators;
-
-    if (_esc_pwm_min == 0 ||
-        _esc_pwm_max == 0) {
-        // not initialised yet
-        return;
-    }
-
-	actuators.nvalues = _max_channel;
-    if (actuators.nvalues > actuators.NUM_ACTUATORS_DIRECT) {
-        actuators.nvalues = actuators.NUM_ACTUATORS_DIRECT;
-    }
-    // don't publish more than 8 actuators for now, as the uavcan ESC
-    // driver refuses to update any motors if you try to publish more
-    // than 8
-    if (actuators.nvalues > 8) {
-        actuators.nvalues = 8;
-    }
-    bool armed = hal.util->get_soft_armed();
-	actuators.timestamp = hrt_absolute_time();
-    for (uint8_t i=0; i<actuators.nvalues; i++) {
-        if (!armed) {
-            actuators.values[i] = 0;
-        } else {
-            actuators.values[i] = (_period[i] - _esc_pwm_min) / (float)(_esc_pwm_max - _esc_pwm_min);
-        }
-        // actuator values are from -1 to 1
-        actuators.values[i] = actuators.values[i]*2 - 1;
-    }
-
-    if (_actuator_direct_pub == nullptr) {
-        _actuator_direct_pub = orb_advertise(ORB_ID(actuator_direct), &actuators);
-    } else {
-        orb_publish(ORB_ID(actuator_direct), _actuator_direct_pub, &actuators);
-    }
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-        _arm_actuators(true);
-    } else {
-        _arm_actuators(false);
-    }
 }
 
 void PX4RCOutput::_send_outputs(void)
@@ -537,8 +481,6 @@ void PX4RCOutput::_send_outputs(void)
 
         if(AP_BoardConfig::get_can_enable() >= 1)
         {
-            // also publish to actuator_direct (UAVCAN is published via AP_UAVCAN)
-            _publish_actuators();
 #if HAL_WITH_UAVCAN
 
             if(hal.can_mgr != nullptr)
