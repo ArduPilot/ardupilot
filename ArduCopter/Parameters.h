@@ -561,6 +561,9 @@ public:
 
     // Land alt final stage
     AP_Int16 land_alt_low;
+
+    // temperature calibration handling
+    AP_TempCalibration temp_calibration;
 };
 
 extern const AP_Param::Info        var_info[];
