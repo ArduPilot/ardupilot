@@ -911,6 +911,15 @@ void NavEKF3_core::FuseBodyVel()
         // calculate relative velocity in sensor frame including the relative motion due to rotation
         bodyVelPred = (prevTnb * stateStruct.velocity);
 
+        // correct sensor offset body frame position offset relative to IMU
+        Vector3f posOffsetBody = (*bodyOdmDataDelayed.body_offset) - accelPosOffset;
+
+        // correct prediction for relative motion due to rotation
+        // note - % operator overloaded for cross product
+        if (imuDataDelayed.delAngDT > 0.001f) {
+            bodyVelPred += (imuDataDelayed.delAng * (1.0f / imuDataDelayed.delAngDT)) % posOffsetBody;
+        }
+
         // calculate observation jacobians and Kalman gains
         if (obsIndex == 0) {
             // calculate X axis observation Jacobian
