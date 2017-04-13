@@ -22,17 +22,3 @@ bool Sub::home_is_set()
 {
     return (ap.home_state == HOME_SET_NOT_LOCKED || ap.home_state == HOME_SET_AND_LOCKED);
 }
-
-// ---------------------------------------------
-void Sub::set_auto_armed(bool b)
-{
-    // if no change, exit immediately
-    if (ap.auto_armed == b) {
-        return;
-    }
-
-    ap.auto_armed = b;
-    if (b) {
-        Log_Write_Event(DATA_AUTO_ARMED);
-    }
-}

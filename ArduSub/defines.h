@@ -150,7 +150,6 @@ enum RTLState {
 #define DATA_SYSTEM_TIME_SET                8
 #define DATA_ARMED                          10
 #define DATA_DISARMED                       11
-#define DATA_AUTO_ARMED                     15
 #define DATA_LOST_GPS                       19
 #define DATA_SET_HOME                       25
 #define DATA_SAVE_TRIM                      38

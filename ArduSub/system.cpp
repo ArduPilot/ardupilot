@@ -283,29 +283,6 @@ bool Sub::optflow_position_ok()
 #endif
 }
 
-// update_auto_armed - update status of auto_armed flag
-void Sub::update_auto_armed()
-{
-    // disarm checks
-    if (ap.auto_armed) {
-        // if motors are disarmed, auto_armed should also be false
-        if (!motors.armed()) {
-            set_auto_armed(false);
-            return;
-        }
-        // if in stabilize or acro flight mode auto-armed should become false
-        if (mode_has_manual_throttle(control_mode) && !failsafe.manual_control) {
-            set_auto_armed(false);
-        }
-    } else {
-        // arm checks
-        // if motors are armed and throttle is above zero auto_armed should be true
-        if (motors.armed()) {
-            set_auto_armed(true);
-        }
-    }
-}
-
 void Sub::check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();

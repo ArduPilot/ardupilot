@@ -232,7 +232,6 @@ private:
     union {
         struct {
             uint8_t pre_arm_check       : 1; // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
-            uint8_t auto_armed          : 1; // stops auto missions from beginning until throttle is raised
             uint8_t logging_started     : 1; // true if dataflash logging has started
             uint8_t usb_connected       : 1; // true if APM is powered from USB connection
             uint8_t compass_mot         : 1; // true if we are currently performing compassmot calibration
@@ -467,7 +466,6 @@ private:
     void update_altitude();
     void set_home_state(enum HomeState new_home_state);
     bool home_is_set();
-    void set_auto_armed(bool b);
     float get_smoothing_gain();
     void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
@@ -674,7 +672,6 @@ private:
     bool position_ok();
     bool ekf_position_ok();
     bool optflow_position_ok();
-    void update_auto_armed();
     void check_usb_mux(void);
     bool should_log(uint32_t mask);
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
