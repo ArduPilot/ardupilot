@@ -27,7 +27,6 @@ LIBRARIES += AP_Motors
 LIBRARIES += AP_RangeFinder
 LIBRARIES += AP_OpticalFlow
 LIBRARIES += Filter
-LIBRARIES += AP_Buffer
 LIBRARIES += AP_Relay
 LIBRARIES += AP_ServoRelayEvents
 LIBRARIES += AP_Camera
