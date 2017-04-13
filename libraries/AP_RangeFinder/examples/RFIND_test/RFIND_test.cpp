@@ -5,6 +5,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_SerialManager serial_manager;
@@ -17,8 +20,8 @@ void setup()
 
     // setup for analog pin 13
     AP_Param::set_object_value(&sonar, sonar.var_info, "_TYPE", RangeFinder::RangeFinder_TYPE_PLI2C);
-    AP_Param::set_object_value(&sonar, sonar.var_info, "_PIN", -1);
-    AP_Param::set_object_value(&sonar, sonar.var_info, "_SCALING", 1.0);
+    AP_Param::set_object_value(&sonar, sonar.var_info, "_PIN", -1.0f);
+    AP_Param::set_object_value(&sonar, sonar.var_info, "_SCALING", 1.0f);
 
     // initialise sensor, delaying to make debug easier
     hal.scheduler->delay(2000);
