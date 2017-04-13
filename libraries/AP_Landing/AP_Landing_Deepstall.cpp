@@ -241,7 +241,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         float relative_alt_D;
         landing.ahrs.get_relative_position_D_home(relative_alt_D);
 
-        const float travel_distance = predict_travel_distance(landing.ahrs.wind_estimate(), -relative_alt_D);
+        const float travel_distance = predict_travel_distance(landing.ahrs.wind_estimate(), -relative_alt_D, false);
 
         memcpy(&entry_point, &landing_point, sizeof(Location));
         location_update(entry_point, target_heading_deg + 180.0, travel_distance);
@@ -253,6 +253,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             }
             return false;
         }
+        predict_travel_distance(landing.ahrs.wind_estimate(), -relative_alt_D, true);
         stage = DEEPSTALL_STAGE_LAND;
         stall_entry_time = AP_HAL::millis();
 
@@ -401,7 +402,7 @@ void AP_Landing_Deepstall::build_approach_path(void)
     //extend the approach point to 1km away so that there is always a navigational target
     location_update(extended_approach, target_heading_deg, 1000.0);
 
-    float expected_travel_distance = predict_travel_distance(wind, landing_point.alt / 100);
+    float expected_travel_distance = predict_travel_distance(wind, landing_point.alt * 0.01f, false);
     float approach_extension_m = expected_travel_distance + approach_extension;
     // an approach extensions must be at least half the loiter radius, or the aircraft has a
     // decent chance to be misaligned on final approach
@@ -432,7 +433,7 @@ void AP_Landing_Deepstall::build_approach_path(void)
 
 }
 
-float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const float height)
+float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const float height, const bool print)
 {
     bool reverse = false;
 
@@ -464,11 +465,19 @@ float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const f
 
     float estimated_forward = cosf(estimated_crab_angle) * forward_speed_ms + cosf(theta) * wind_length;
 
-    predicted_travel_distance = estimated_forward * height / down_speed + stall_distance;
+    if (is_positive(down_speed)) {
+        predicted_travel_distance = (estimated_forward * height / down_speed) + stall_distance;
+    } else {
+        // if we don't have a sane downward speed in a deepstall (IE not zero, and not
+        // an ascent) then just provide the stall_distance as a reasonable approximation
+        predicted_travel_distance = stall_distance;
+    }
 
-#ifdef DEBUG_PRINTS
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Predict: %f %f", stall_distance,  predicted_travel_distance);
-#endif // DEBUG_PRINTS
+    if(print) {
+        // allow printing the travel distances on the final entry as its used for tuning
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Deepstall: Entry: %0.1f (m) Travel: %0.1f (m)",
+                                         (double)stall_distance, (double)predicted_travel_distance);
+    }
 
     return predicted_travel_distance;
 }
