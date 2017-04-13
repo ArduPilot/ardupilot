@@ -31,7 +31,6 @@
 #include "AP_Baro_BMP280.h"
 #include "AP_Baro_HIL.h"
 #include "AP_Baro_MS5611.h"
-#include "AP_Baro_PX4.h"
 #include "AP_Baro_qflight.h"
 #include "AP_Baro_QURT.h"
 #if HAL_WITH_UAVCAN
@@ -427,8 +426,6 @@ void AP_Baro::init(void)
         break;
 
     default:
-        drivers[0] = new AP_Baro_PX4(*this);
-        _num_drivers = 1;
         break;
     }
 #elif HAL_BARO_DEFAULT == HAL_BARO_HIL
