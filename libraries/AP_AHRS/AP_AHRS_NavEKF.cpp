@@ -292,8 +292,8 @@ void AP_AHRS_NavEKF::update_SITL(void)
     // use SITL states to write body frame odometry data at 20Hz
     uint32_t timeStamp_ms = AP_HAL::millis();
     if (timeStamp_ms - _last_body_odm_update_ms > 50) {
-        float quality = 100.0f;
-        Vector3f posOffset = Vector3f(0.0f,0.0f,0.0f);
+        const float quality = 100.0f;
+        const Vector3f posOffset = Vector3f(0.0f,0.0f,0.0f);
         float delTime = 0.001f*(timeStamp_ms - _last_body_odm_update_ms);
         _last_body_odm_update_ms = timeStamp_ms;
         timeStamp_ms -= (timeStamp_ms - _last_body_odm_update_ms)/2; // correct for first order hold average delay
