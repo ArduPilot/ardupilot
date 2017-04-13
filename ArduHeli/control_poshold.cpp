@@ -78,11 +78,8 @@ static struct {
 bool Copter::poshold_init(bool ignore_checks)
 {
 #if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter Alt Hold if the Rotor Runup is not complete and current control mode has manual throttle control,
-    // as this will force the helicopter to descend.
-    if (!ignore_checks && mode_has_manual_throttle(control_mode) && !motors.rotor_runup_complete()){
-        return false;
-    }
+	// PosHold mode not available for helicopters
+    return false;
 #endif
 
     // fail to initialise PosHold mode if no GPS lock
