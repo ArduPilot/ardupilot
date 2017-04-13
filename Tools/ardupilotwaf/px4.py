@@ -73,7 +73,7 @@ class px4_copy(Task.Task):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
 class px4_add_git_hashes(Task.Task):
-    run_str = '${PYTHON} ${PX4_ADD_GIT_HASHES} --ardupilot ${PX4_APM_ROOT} --px4 ${PX4_ROOT} --nuttx ${PX4_NUTTX_ROOT} --uavcan ${PX4_UAVCAN_ROOT} ${SRC} ${TGT}'
+    run_str = '${PYTHON} ${PX4_ADD_GIT_HASHES} --ardupilot ${PX4_APM_ROOT} --px4 ${PX4_ROOT} --nuttx ${PX4_NUTTX_ROOT} ${SRC} ${TGT}'
     color = 'CYAN'
 
     def keyword(self):
@@ -248,7 +248,6 @@ def configure(cfg):
     env.PX4_APM_ROOT = srcpath('')
     env.PX4_ROOT = srcpath('modules/PX4Firmware')
     env.PX4_NUTTX_ROOT = srcpath('modules/PX4NuttX')
-    env.PX4_UAVCAN_ROOT = srcpath('modules/uavcan')
 
     if env.PX4_PX4IO_NAME:
         env.PX4IO_ELF_DEST = 'px4-extra-files/px4io'
@@ -258,7 +257,6 @@ def configure(cfg):
     env.PX4_CMAKE_VARS = dict(
         CONFIG=nuttx_config,
         CMAKE_MODULE_PATH=srcpath('Tools/ardupilotwaf/px4/cmake'),
-        UAVCAN_LIBUAVCAN_PATH=env.PX4_UAVCAN_ROOT,
         NUTTX_SRC=env.PX4_NUTTX_ROOT,
         PX4_NUTTX_ROMFS=bldpath(env.PX4_ROMFS_BLD),
         ARDUPILOT_BUILD='YES',
