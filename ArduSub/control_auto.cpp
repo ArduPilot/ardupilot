@@ -225,16 +225,27 @@ void Sub::auto_spline_run()
     // run waypoint controller
     wp_nav.update_spline();
 
+    float lateral_out, forward_out;
+    translate_wpnav_rp(lateral_out, forward_out);
+
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
+
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
+
+    // get pilot desired lean angles
+    float target_roll, target_pitch;
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, get_auto_heading(), true, get_smoothing_gain());
     }
 }
 
