@@ -13,7 +13,6 @@
 #include "AP_Compass_IST8310.h"
 #include "AP_Compass_LSM303D.h"
 #include "AP_Compass_LSM9DS1.h"
-#include "AP_Compass_PX4.h"
 #include "AP_Compass_QURT.h"
 #include "AP_Compass_qflight.h"
 #include "AP_Compass_LIS3MDL.h"
@@ -608,8 +607,7 @@ void Compass::_detect_backends(void)
     default:
         break;
     }
-    // also add any px4 level drivers (for canbus magnetometers)
-    ADD_BACKEND(AP_Compass_PX4::detect(*this), nullptr, false);
+
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QURT
     ADD_BACKEND(AP_Compass_QURT::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_RASPILOT
