@@ -47,7 +47,6 @@
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>         // Mission command library
-#include <AP_Rally/AP_Rally.h>           // Rally point library
 #include <AC_PID/AC_PID.h>             // PID library
 #include <AC_PID/AC_PI_2D.h>           // PID library (2-axis)
 #include <AC_PID/AC_P.h>               // P library
@@ -105,6 +104,10 @@
 
 #if AVOIDANCE_ENABLED == ENABLED
 #include <AC_Avoidance/AC_Avoid.h>           // Stop at fence library
+#endif
+
+#if AC_RALLY == ENABLED
+#include <AP_Rally/AP_Rally.h>           // Rally point library
 #endif
 
 // Local modules
