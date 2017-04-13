@@ -1130,10 +1130,14 @@ void NavEKF3::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Ve
 uint32_t NavEKF3::getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vector3f &velInnovVar)
 {
     uint32_t ret = 0;
-    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (instance < 0 || instance >= num_cores) {
+        instance = primary;
+    }
+
     if (core) {
         ret = core[instance].getBodyFrameOdomDebug(velInnov, velInnovVar);
     }
+
     return ret;
 }
 

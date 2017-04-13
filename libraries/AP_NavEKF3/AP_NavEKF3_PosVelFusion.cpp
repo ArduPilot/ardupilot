@@ -1469,7 +1469,7 @@ void NavEKF3_core::FuseBodyVel()
     }
 }
 
-// select fusion of body odomoetry measurements
+// select fusion of body odometry measurements
 void NavEKF3_core::SelectBodyOdomFusion()
 {
         // Check for data at the fusion time horizon
