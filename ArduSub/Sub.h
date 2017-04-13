@@ -32,16 +32,17 @@
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
+#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
+#include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 
 // Application dependencies
-#include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_GPS/AP_GPS.h>             // ArduPilot GPS library
 #include <DataFlash/DataFlash.h>          // ArduPilot Mega Flash Memory Library
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>         // ArduPilot Mega Magnetometer Library
-#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -63,9 +64,7 @@
 #include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>           // Waypoint navigation library
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
-#include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AC_Fence/AC_Fence.h>           // Fence library
-
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
@@ -74,11 +73,13 @@
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_TemperatureSensor/TSYS01.h>
-#include "AP_Arming_Sub.h"
+
+// Local modules
 #include "defines.h"
 #include "config.h"
-
 #include "GCS_Mavlink.h"
+#include "Parameters.h"
+#include "AP_Arming_Sub.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if OPTFLOW == ENABLED
@@ -112,9 +113,6 @@
 #if CAMERA == ENABLED
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #endif
-
-// Local modules
-#include "Parameters.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
