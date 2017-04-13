@@ -135,11 +135,6 @@ private:
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
 
-
-    // cliSerial isn't strictly necessary - it is an alias for hal.console. It may
-    // be deprecated in favor of hal.console in later releases.
-    AP_HAL::BetterStream* cliSerial;
-
     // Global parameters are all contained within the 'g' class.
     Parameters g;
     ParametersG2 g2;

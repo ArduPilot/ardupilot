@@ -754,7 +754,7 @@ ParametersG2::ParametersG2(void)
 void Sub::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf("Bad var table\n");
+        hal.console->printf("Bad var table\n");
         AP_HAL::panic("Bad var table");
     }
 
@@ -766,18 +766,18 @@ void Sub::load_parameters(void)
             g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->printf("Firmware change: erasing EEPROM...\n");
+        hal.console->printf("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        cliSerial->println("done.");
+        hal.console->println("done.");
     }
 
     uint32_t before = micros();
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
-    cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
+    hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
 

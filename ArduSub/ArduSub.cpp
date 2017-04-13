@@ -81,8 +81,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 
 void Sub::setup()
 {
-    cliSerial = hal.console;
-
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
 
