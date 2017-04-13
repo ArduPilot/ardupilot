@@ -149,6 +149,20 @@ void Copter::heli_update_rotor_speed_targets()
 {
 
     static bool rotor_runup_complete_last = false;
+	
+	// when rotor_runup_complete changes to true, log event
+    if (!rotor_runup_complete_last && motors.rotor_runup_complete()){
+        Log_Write_Event(DATA_ROTOR_RUNUP_COMPLETE);
+    } else if (rotor_runup_complete_last && !motors.rotor_runup_complete()){
+        Log_Write_Event(DATA_ROTOR_SPEED_BELOW_CRITICAL);
+    }
+    rotor_runup_complete_last = motors.rotor_runup_complete();
+	
+    // exit immediately during radio failsafe
+	// we will not process RSC controls during failsafe, they will remain static
+    if (failsafe.radio || failsafe.radio_counter != 0) {
+        return;
+    }	
 
     // get rotor control method
     uint8_t rsc_control_mode = motors.get_rsc_mode();
@@ -189,14 +203,6 @@ void Copter::heli_update_rotor_speed_targets()
             }
             break;
     }
-
-    // when rotor_runup_complete changes to true, log event
-    if (!rotor_runup_complete_last && motors.rotor_runup_complete()){
-        Log_Write_Event(DATA_ROTOR_RUNUP_COMPLETE);
-    } else if (rotor_runup_complete_last && !motors.rotor_runup_complete()){
-        Log_Write_Event(DATA_ROTOR_SPEED_BELOW_CRITICAL);
-    }
-    rotor_runup_complete_last = motors.rotor_runup_complete();
 }
 
 // heli_radio_passthrough send RC inputs direct into motors library for use during manual passthrough for helicopter setup
