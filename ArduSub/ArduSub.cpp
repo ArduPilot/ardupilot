@@ -45,7 +45,9 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(gcs_send_deferred,     50,    550),
     SCHED_TASK(gcs_data_stream_send,  50,    550),
     SCHED_TASK(update_mount,          50,     75),
+#if CAMERA == ENABLED
     SCHED_TASK(update_trigger,        50,     75),
+#endif
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
     SCHED_TASK(dataflash_periodic,    400,    300),
@@ -241,11 +243,10 @@ void Sub::update_mount()
 #endif
 }
 
-
+#if CAMERA == ENABLED
 // update camera trigger
 void Sub::update_trigger(void)
 {
-#if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
     if (camera.check_trigger_pin()) {
         gcs_send_message(MSG_CAMERA_FEEDBACK);
@@ -253,8 +254,8 @@ void Sub::update_trigger(void)
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
     }
-#endif
 }
+#endif
 
 // update_batt_compass - read battery and compass
 // should be called at 10hz
