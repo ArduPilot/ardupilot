@@ -930,7 +930,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(visual_odom, "VISO", 18, ParametersG2, AP_VisualOdom),
 #endif
 
-    // ID 19 reserved for TCAL (PR pending)
+    // @Group: TCAL
+    // @Path: ../libraries/AP_TempCalibration/AP_TempCalibration.cpp
+    AP_SUBGROUPINFO(temp_calibration, "TCAL", 19, ParametersG2, AP_TempCalibration),
+
     // ID 20 reserved for TX_TYPE (PR pending)
 
     // @Group: SRTL_
@@ -979,6 +982,7 @@ ParametersG2::ParametersG2(void)
     ,afs(copter.mission, copter.barometer, copter.gps, copter.rcmap)
 #endif
     ,smart_rtl(copter.ahrs)
+    ,temp_calibration(copter.barometer, copter.ins)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

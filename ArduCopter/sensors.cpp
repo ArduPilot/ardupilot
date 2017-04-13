@@ -552,3 +552,8 @@ void Copter::winch_update()
     g2.wheel_encoder.update();
     g2.winch.update();
 }
+
+void Copter::temp_cal_update(void)
+{
+    g2.temp_calibration.update();
+}
