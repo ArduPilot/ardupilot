@@ -111,7 +111,7 @@ void Sub::auto_wp_start(const Location_Class& dest_loc)
 //      called by auto_run at 100hz or more
 void Sub::auto_wp_run()
 {
-    // if not auto armed set throttle to zero and exit immediately
+    // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
         // To-Do: reset waypoint origin to current location because vehicle is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
@@ -198,8 +198,8 @@ void Sub::auto_spline_start(const Location_Class& destination, bool stopped_at_s
 //      called by auto_run at 100hz or more
 void Sub::auto_spline_run()
 {
-    // if not auto armed set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed) {
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed()) {
         // To-Do: reset waypoint origin to current location because vehicle is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
@@ -376,7 +376,7 @@ bool Sub::auto_loiter_start()
 //      called by auto_run at 100hz or more
 void Sub::auto_loiter_run()
 {
-    // if not auto armed set throttle to zero and exit immediately
+    // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed

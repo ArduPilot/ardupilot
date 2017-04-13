@@ -36,9 +36,9 @@ bool Sub::poshold_init(bool ignore_checks)
 void Sub::poshold_run()
 {
     uint32_t tnow = AP_HAL::millis();
-
-    // if not auto armed set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed) {
+    
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         wp_nav.init_loiter_target();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);

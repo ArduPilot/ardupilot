@@ -212,9 +212,6 @@ void Sub::fast_loop()
 // 50 Hz tasks
 void Sub::fifty_hz_loop()
 {
-    // check auto_armed status
-    update_auto_armed();
-
     // check pilot input failsafe
     failsafe_manual_control_check();
 

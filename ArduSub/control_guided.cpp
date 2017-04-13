@@ -277,8 +277,8 @@ void Sub::guided_run()
 // called from guided_run
 void Sub::guided_pos_control_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed) {
+    // if motors not enabled set throttle to zero and exit immediately
+    if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -326,8 +326,8 @@ void Sub::guided_pos_control_run()
 // called from guided_run
 void Sub::guided_vel_control_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed) {
+    // ifmotors not enabled set throttle to zero and exit immediately
+    if (!motors.armed()) {
         // initialise velocity controller
         pos_control.init_vel_controller_xyz();
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -380,8 +380,8 @@ void Sub::guided_vel_control_run()
 // called from guided_run
 void Sub::guided_posvel_control_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed) {
+    // if motors not enabled set throttle to zero and exit immediately
+    if (!motors.armed()) {
         // set target position and velocity to current position and velocity
         pos_control.set_pos_target(inertial_nav.get_position());
         pos_control.set_desired_velocity(Vector3f(0,0,0));
@@ -456,8 +456,8 @@ void Sub::guided_posvel_control_run()
 // called from guided_run
 void Sub::guided_angle_control_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed) {
+    // if motors not enabled set throttle to zero and exit immediately
+    if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0.0f,true,g.throttle_filt);

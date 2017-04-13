@@ -39,8 +39,8 @@ void Sub::circle_run()
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
-    // if not auto armed set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed) {
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed()) {
         // To-Do: add some initialisation of position controllers
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
