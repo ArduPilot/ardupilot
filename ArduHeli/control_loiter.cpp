@@ -89,6 +89,7 @@ void Copter::loiter_run()
 
         wp_nav.init_loiter_target();
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        attitude_control.set_yaw_target_to_current_heading();
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
@@ -148,6 +149,7 @@ void Copter::loiter_run()
 
         wp_nav.init_loiter_target();
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        attitude_control.set_yaw_target_to_current_heading();
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
