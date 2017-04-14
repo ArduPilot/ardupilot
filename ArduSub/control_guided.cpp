@@ -462,7 +462,7 @@ void Sub::guided_angle_control_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0.0f,true,g.throttle_filt);
 
-        pos_control.relax_alt_hold_controllers(0.0f);
+        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         return;
     }
 
