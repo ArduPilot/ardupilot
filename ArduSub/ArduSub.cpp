@@ -382,8 +382,6 @@ void Sub::one_hz_loop()
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
 
-    check_usb_mux();
-
     // update position controller alt limits
     update_poscon_alt_max();
 
