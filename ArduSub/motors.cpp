@@ -12,6 +12,7 @@ void Sub::enable_motor_output()
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
 bool Sub::init_arm_motors(bool arming_from_gcs)
 {
+    start_logging();
     static bool in_arm_motors = false;
 
     // exit immediately if already in this function
@@ -26,6 +27,9 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
         in_arm_motors = false;
         return false;
     }
+
+    // let dataflash know that we're armed (it may open logs e.g.)
+    DataFlash_Class::instance()->set_vehicle_armed(true);
 
     // disable cpu failsafe because initialising everything takes a while
     mainloop_failsafe_disable();
@@ -118,6 +122,7 @@ void Sub::init_disarm_motors()
     if (!DataFlash.log_while_disarmed()) {
         DataFlash.EnableWrites(false);
     }
+    DataFlash_Class::instance()->set_vehicle_armed(false);
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
