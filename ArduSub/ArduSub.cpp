@@ -210,7 +210,7 @@ void Sub::fast_loop()
 void Sub::fifty_hz_loop()
 {
     // check pilot input failsafe
-    failsafe_manual_control_check();
+    failsafe_pilot_input_check();
 
     failsafe_crash_check();
 

@@ -164,17 +164,16 @@ void Sub::failsafe_battery_check(void)
     }
 }
 
-// MANUAL_CONTROL failsafe check
-// Make sure that we are receiving MANUAL_CONTROL at an appropriate interval
-void Sub::failsafe_manual_control_check()
+// Make sure that we are receiving pilot input at an appropriate interval
+void Sub::failsafe_pilot_input_check()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     uint32_t tnow = AP_HAL::millis();
 
     // Require at least 0.5 Hz update
-    if (tnow > failsafe.last_manual_control_ms + 2000) {
-        if (!failsafe.manual_control) {
-            failsafe.manual_control = true;
+    if (tnow > failsafe.last_pilot_input_ms + 2000) {
+        if (!failsafe.pilot_input) {
+            failsafe.pilot_input = true;
             set_neutral_controls();
             init_disarm_motors();
             Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
@@ -183,7 +182,7 @@ void Sub::failsafe_manual_control_check()
         return;
     }
 
-    failsafe.manual_control = false;
+    failsafe.pilot_input = false;
 #endif
 }
 

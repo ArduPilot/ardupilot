@@ -117,8 +117,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     y_last = y;
     z_last = z;
 
-    // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-    failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
+    hal.rcin->set_overrides(channels, 10);
 }
 
 void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
@@ -570,5 +569,5 @@ void Sub::set_neutral_controls()
 
     channels[4] = 0xffff; // Leave mode switch where it was
 
-    failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
+    hal.rcin->set_overrides(channels, 10);
 }
