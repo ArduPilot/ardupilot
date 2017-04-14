@@ -168,21 +168,29 @@ void Sub::failsafe_battery_check(void)
 void Sub::failsafe_pilot_input_check()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    uint32_t tnow = AP_HAL::millis();
-
-    // Require at least 0.5 Hz update
-    if (tnow > failsafe.last_pilot_input_ms + 2000) {
-        if (!failsafe.pilot_input) {
-            failsafe.pilot_input = true;
-            set_neutral_controls();
-            init_disarm_motors();
-            Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
-            gcs_send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
-        }
+    if (g.failsafe_pilot_input == FS_PILOT_INPUT_DISABLED) {
+        failsafe.pilot_input = false;
         return;
     }
 
-    failsafe.pilot_input = false;
+    if (AP_HAL::millis() < failsafe.last_pilot_input_ms + g.failsafe_pilot_input_timeout * 1000.0f) {
+        failsafe.pilot_input = false; // We've received an update from the pilot within the timeout period
+        return;
+    }
+
+    if (failsafe.pilot_input) {
+        return; // only act once
+    }
+
+    failsafe.pilot_input = true;
+
+    Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
+    gcs_send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
+
+    if(g.failsafe_pilot_input == FS_PILOT_INPUT_DISARM) {
+        set_neutral_controls();
+        init_disarm_motors();
+    }
 #endif
 }
 
