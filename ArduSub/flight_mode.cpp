@@ -1,14 +1,7 @@
 #include "Sub.h"
 
-/*
- * flight.pde - high level calls to set and update flight modes
- *      logic for individual flight modes is in control_acro.pde, control_stabilize.pde, etc
- */
-
-// set_mode - change flight mode and perform any necessary initialisation
-// optional force parameter used to force the flight mode change (used only first time mode is set)
+// change flight mode and perform any necessary initialisation
 // returns true if mode was succesfully set
-// ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 {
     // boolean to record if flight mode could be set
