@@ -649,7 +649,7 @@ bool Sub::auto_terrain_recover_start()
     wp_nav.init_loiter_target();
 
     // Reset z axis controller
-    pos_control.relax_alt_hold_controllers(0.0);
+    pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
 
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
@@ -699,7 +699,7 @@ void Sub::auto_terrain_recover_run()
             // Start timer as soon as rangefinder is healthy
             if (rangefinder_recovery_ms == 0) {
                 rangefinder_recovery_ms = AP_HAL::millis();
-                pos_control.relax_alt_hold_controllers(0.0); // Reset alt hold targets
+                pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // Reset alt hold targets
             }
 
             // 1.5 seconds of healthy rangefinder means we can resume mission with terrain enabled
