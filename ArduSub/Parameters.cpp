@@ -165,6 +165,21 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_terrain, "FS_TERRAIN_ENAB", FS_TERRAIN_DISARM),
 
+    // @Param: FS_PILOT_INPUT
+    // @DisplayName: Pilot input failsafe action
+    // @Description: Controls what action to take if no pilot input has been received after the timeout period specified by the FS_PILOT_TIMEOUT parameter
+    // @Values: 0:Disabled, 1:Warn Only, 2:Disarm
+    // @User: Standard
+    GSCALAR(failsafe_pilot_input, "FS_PILOT_INPUT", FS_PILOT_INPUT_DISARM),
+
+    // @Param: FS_PILOT_TIMEOUT
+    // @DisplayName: Timeout for activation of pilot input failsafe
+    // @Description: Controls the maximum interval between received pilot inputs before the failsafe action is triggered
+    // @Units: Seconds
+    // @Range 0.1 3.0
+    // @User: Standard
+    GSCALAR(failsafe_pilot_input_timeout, "FS_PILOT_TIMEOUT", 1.0f),
+
     // @Param: XTRACK_ANG_LIM
     // @DisplayName: Crosstrack correction angle limit
     // @Description: Maximum allowed angle (in degrees) between current track and desired heading during waypoint navigation

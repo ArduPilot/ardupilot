@@ -170,6 +170,8 @@ public:
         k_param_failsafe_battery_enabled,
         k_param_fs_batt_mah,
         k_param_fs_batt_voltage,
+        k_param_failsafe_pilot_input,
+        k_param_failsafe_pilot_input_timeout,
 
 
         // Misc Sub settings
@@ -233,6 +235,8 @@ public:
     AP_Int32        failsafe_pressure_max;
     AP_Int8         failsafe_temperature_max;
     AP_Int8         failsafe_terrain;
+    AP_Int8         failsafe_pilot_input;       // pilot input failsafe behavior
+    AP_Float        failsafe_pilot_input_timeout;
 
     AP_Int8         xtrack_angle_limit;
 

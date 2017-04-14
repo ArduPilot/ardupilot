@@ -303,6 +303,11 @@ enum RTLState {
 #define FS_TERRAIN_HOLD         1
 #define FS_TERRAIN_SURFACE      2
 
+// Pilot input failsafe actions
+#define FS_PILOT_INPUT_DISABLED    0
+#define FS_PILOT_INPUT_WARN_ONLY   1
+#define FS_PILOT_INPUT_DISARM      2
+
 // Amount of time to attempt recovery of valid rangefinder data before
 // initiating terrain failsafe action
 #define FS_TERRAIN_RECOVER_TIMEOUT_MS 10000
