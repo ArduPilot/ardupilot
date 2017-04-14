@@ -1,7 +1,7 @@
 #include "Sub.h"
 
 // stabilize_init - initialise stabilize controller
-bool Sub::stabilize_init(bool ignore_checks)
+bool Sub::stabilize_init()
 {
     // set target altitude to zero for reporting
     pos_control.set_alt_target(0);

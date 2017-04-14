@@ -6,7 +6,7 @@
  */
 
 // acro_init - initialise acro controller
-bool Sub::acro_init(bool ignore_checks)
+bool Sub::acro_init()
 {
     // set target altitude to zero for reporting
     pos_control.set_alt_target(0);

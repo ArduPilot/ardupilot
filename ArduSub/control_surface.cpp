@@ -1,7 +1,7 @@
 #include "Sub.h"
 
 
-bool Sub::surface_init(bool ignore_checks)
+bool Sub::surface_init()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor, exit immediately.
