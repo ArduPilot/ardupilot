@@ -92,7 +92,7 @@ Sub::Sub(void) :
     failsafe.last_heartbeat_ms = 0;
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    failsafe.manual_control = true;
+    failsafe.pilot_input = true;
 #endif
 }
 

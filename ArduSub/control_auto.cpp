@@ -125,7 +125,7 @@ void Sub::auto_wp_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!failsafe.manual_control) {
+    if (!failsafe.pilot_input) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -211,7 +211,7 @@ void Sub::auto_spline_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!failsafe.manual_control) {
+    if (!failsafe.pilot_input) {
         // get pilot's desired yaw rat
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -398,7 +398,7 @@ void Sub::auto_loiter_run()
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
-    if (!failsafe.manual_control) {
+    if (!failsafe.pilot_input) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 

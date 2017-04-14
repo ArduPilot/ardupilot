@@ -34,7 +34,7 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     uint32_t custom_mode = control_mode;
 
     // set system as critical if any failsafe have triggered
-    if (failsafe.manual_control || failsafe.battery || failsafe.gcs || failsafe.ekf || failsafe.terrain)  {
+    if (failsafe.pilot_input || failsafe.battery || failsafe.gcs || failsafe.ekf || failsafe.terrain)  {
         system_status = MAV_STATE_CRITICAL;
     }
 
@@ -1023,7 +1023,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 
         sub.transform_manual_control_to_rc_override(packet.x,packet.y,packet.z,packet.r,packet.buttons);
 
-        sub.failsafe.last_manual_control_ms = AP_HAL::millis();
+        sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
         // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
         break;
@@ -1047,9 +1047,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         v[6] = packet.chan7_raw;
         v[7] = packet.chan8_raw;
 
-        // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-        sub.failsafe.rc_override_active = hal.rcin->set_overrides(v, 8);
+        hal.rcin->set_overrides(v, 8);
 
+        sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
         // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
         break;
