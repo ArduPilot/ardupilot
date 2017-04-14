@@ -14,5 +14,6 @@ public:
     bool pre_arm_checks(bool report) override;
 
 protected:
+    bool ins_checks(bool report) override;
     enum HomeState home_status() const override;
 };
