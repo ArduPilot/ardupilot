@@ -194,6 +194,7 @@ void AP_MotorsHeli_RSC::write_rsc(float servo_out)
         } else {
             pwm = _pwm_max - pwm;
         }
+        SRV_Channels::set_output_unlimited_once(_aux_fn);
         SRV_Channels::set_output_pwm(_aux_fn, pwm);
     }
 }
