@@ -252,10 +252,10 @@ void Rover::set_servos(void) {
         SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, channel_throttle->read());
         if (failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
             // suppress throttle if in failsafe and manual
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, channel_throttle->get_radio_trim());
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             // suppress steer if in failsafe and manual and skid steer mode
             if (g.skid_steer_out) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_steering, channel_steer->get_radio_trim());
+                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             }
         }
         if (g.skid_steer_in) {
@@ -332,17 +332,17 @@ void Rover::set_servos(void) {
             break;
 
         case AP_Arming::YES_ZERO_PWM:
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, 0);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             if (g.skid_steer_out) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_steering, 0);
+                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             }
             break;
 
         case AP_Arming::YES_MIN_PWM:
         default:
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, channel_throttle->get_radio_trim());
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             if (g.skid_steer_out) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_steering, channel_steer->get_radio_trim());
+                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             }
             break;
         }
