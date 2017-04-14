@@ -49,6 +49,9 @@ void AP_MotorsTailsitter::output_to_motors()
     if (!_flags.initialised_ok) {
         return;
     }
+    float throttle_left  = 0;
+    float throttle_right = 0;
+    
     switch (_spool_mode) {
         case SHUT_DOWN:
             _throttle = 0;
@@ -60,6 +63,8 @@ void AP_MotorsTailsitter::output_to_motors()
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
+            throttle_left  = constrain_float(_throttle + _rudder*0.5, 0, 1);
+            throttle_right = constrain_float(_throttle - _rudder*0.5, 0, 1);
             break;
     }
     // outputs are setup here, and written to the HAL by the plane servos loop
@@ -69,8 +74,6 @@ void AP_MotorsTailsitter::output_to_motors()
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, _throttle*THROTTLE_RANGE);
 
     // also support differential roll with twin motors
-    float throttle_left  = constrain_float(_throttle + _rudder*0.5, 0, 1);
-    float throttle_right = constrain_float(_throttle - _rudder*0.5, 0, 1);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  throttle_left*THROTTLE_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right*THROTTLE_RANGE);
 
