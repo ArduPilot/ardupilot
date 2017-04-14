@@ -10,6 +10,7 @@ sys.path.insert(0, 'Tools/ardupilotwaf/')
 import ardupilotwaf
 import telemetry_mqtt
 import boards
+from datetime import datetime
 
 from waflib import Build, ConfigSet, Configure, Context, Utils
 
@@ -104,6 +105,13 @@ revisions.
         action='store_true',
         default=False,
         help='Force a static build')
+    
+    g.add_option('--enable-mqtt-telemetry',
+        dest='mqtt_telemetry',
+        action='store_true',
+        default=False,
+        help='Enable MQTT Telemetry.'
+    )
 
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
@@ -117,7 +125,7 @@ def _collect_autoconfig_files(cfg):
         for p in paths:
             if p in cfg.files or not os.path.isfile(p):
                 continue
-
+            
             with open(p, 'rb') as f:
                 cfg.hash = Utils.h_list((cfg.hash, f.read()))
                 cfg.files.append(p)
@@ -156,6 +164,11 @@ def configure(cfg):
     cfg.load('mavgen')
     cfg.load('uavcangen')
     cfg.load('telemetry_mqtt')
+    
+    if cfg.options.mqtt_telemetry:
+        cfg.env.MQTT_TELEMETRY = cfg.options.mqtt_telemetry
+        cleanMqtt(cfg)
+        copyMqtt(cfg)
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -206,6 +219,45 @@ def configure(cfg):
 
     _collect_autoconfig_files(cfg)
 
+def copyMqtt(cfg):
+    mqttroot = cfg.srcnode.abspath() + '/modules/Mqtt/src/'
+    now = datetime.now().strftime('%Y\/%m\/%d %H:%M:%S')
+    major = '1'
+    minor = '0'
+    mkfile = open(mqttroot + '/../Makefile')
+    mklines = mkfile.readlines()
+    for line in mklines:
+        if 'MAJOR_VERSION' in line:
+            major = line.split('=')[1].strip()
+        if 'MINOR_VERSION' in line:
+            minor = line.split('=')[1].strip()
+            break
+    version = '{}.{}'.format(major, minor)
+    sedcmd = 'sed -e "s/@CLIENT_VERSION@/{}/g" -e "s/@BUILD_TIMESTAMP@/{}/g" {} > {}'.format(
+        version, now, mqttroot + 'VersionInfo.h.in', cfg.path.make_node('libraries/AP_Telemetry/VersionInfo.h'))
+    cfg.exec_command(sedcmd)
+    srcs = os.listdir(mqttroot)
+    for s in srcs:
+        if ('.c' in s or '.h' in s) and 'samples' not in s:
+            print(cfg.path.make_node('/modules/Mqtt/src/' + s))
+            print(cfg.path.make_node('libraries/AP_Telemetry/' + s))
+            cfg.exec_command('cp -f {} {}'.format(
+                cfg.path.make_node('/modules/Mqtt/src/' + s),
+                cfg.path.make_node('libraries/AP_Telemetry/' + s))
+            )
+
+def cleanMqtt(bld):
+    print('Cleanup Mqtt files from AP_Telemetry direcotry')
+    mqttroot =  bld.srcnode.abspath() + '/modules/Mqtt/src/'
+    aptroot = bld.srcnode.abspath() + '/libraries/AP_Telemetry/'
+    mqttfiles = os.listdir(mqttroot)
+    for f in mqttfiles:
+        tgt = "{}{}".format(aptroot, f)
+        if os.path.exists(tgt):
+            os.remove(tgt)
+        if f == 'VersionInfo.h' and os.path.exists(tgt):
+            os.remove("{}{}".format(aptroot, "VersionInfo.h"));
+
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
     globs = Utils.to_list(globs)
@@ -217,6 +269,7 @@ def collect_dirs_to_recurse(bld, globs, **kw):
     for g in globs:
         for d in bld.srcnode.ant_glob(g + '/wscript', **kw):
             dirs.append(d.parent.relpath())
+
     return dirs
 
 def list_boards(ctx):
@@ -244,12 +297,6 @@ def _build_dynamic_sources(bld):
             bld.bldnode.make_node('libraries').abspath(),
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
         ],
-    )
-    
-    bld(
-        features='mqtt',
-        source=bld.path.make_node('/modules/Mqtt/'),
-        input_dir=bld.path.make_node('/libraries/AP_Telemetry/'),
     )
 
     if bld.get_board().with_uavcan:
@@ -349,9 +396,6 @@ def _build_post_funs(bld):
 
     if bld.env.SUBMODULE_UPDATE:
         bld.git_submodule_post_fun()
-    
-    # remove Mqtt from AP_Telemetry directory
-    bld.add_post_fun(telemetry_mqtt.cleanup)
 
 def build(bld):
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
