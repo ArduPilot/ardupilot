@@ -80,6 +80,9 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         control_mode_reason = reason;
         DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 
+        // update notify object
+        notify_flight_mode(control_mode);
+
 #if AC_FENCE == ENABLED
         // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
         // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
@@ -89,11 +92,6 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
     } else {
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
-    }
-
-    // update notify object
-    if (success) {
-        notify_flight_mode(control_mode);
     }
 
     // return success or failure
