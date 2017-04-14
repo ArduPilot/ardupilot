@@ -228,7 +228,6 @@ private:
         struct {
             uint8_t pre_arm_check       : 1; // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
             uint8_t logging_started     : 1; // true if dataflash logging has started
-            uint8_t usb_connected       : 1; // true if APM is powered from USB connection
             uint8_t compass_mot         : 1; // true if we are currently performing compassmot calibration
             uint8_t motor_test          : 1; // true if we are currently performing the motors test
             uint8_t initialised         : 1; // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
@@ -669,7 +668,6 @@ private:
     bool position_ok();
     bool ekf_position_ok();
     bool optflow_position_ok();
-    void check_usb_mux(void);
     bool should_log(uint32_t mask);
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     bool start_command(const AP_Mission::Mission_Command& cmd);

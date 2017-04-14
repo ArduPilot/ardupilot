@@ -55,11 +55,6 @@ void Sub::init_ardupilot()
     // hal.scheduler->delay.
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
-    ap.usb_connected = true;
-    check_usb_mux();
-
     // setup telem slots with serial ports
     for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
@@ -282,17 +277,6 @@ bool Sub::optflow_position_ok()
         return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
     }
 #endif
-}
-
-void Sub::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == ap.usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    ap.usb_connected = usb_check;
 }
 
 /*
