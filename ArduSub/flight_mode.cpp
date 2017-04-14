@@ -6,7 +6,6 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 {
     // boolean to record if flight mode could be set
     bool success = false;
-    bool ignore_checks = false; // Always check for now
 
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
@@ -19,41 +18,41 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 
     switch (mode) {
     case ACRO:
-        success = acro_init(ignore_checks);
+        success = acro_init();
         break;
 
     case STABILIZE:
-        success = stabilize_init(ignore_checks);
+        success = stabilize_init();
         break;
 
     case ALT_HOLD:
-        success = althold_init(ignore_checks);
+        success = althold_init();
         break;
 
     case AUTO:
-        success = auto_init(ignore_checks);
+        success = auto_init();
         break;
 
     case CIRCLE:
-        success = circle_init(ignore_checks);
+        success = circle_init();
         break;
 
     case GUIDED:
-        success = guided_init(ignore_checks);
+        success = guided_init();
         break;
 
     case SURFACE:
-        success = surface_init(ignore_checks);
+        success = surface_init();
         break;
 
 #if POSHOLD_ENABLED == ENABLED
     case POSHOLD:
-        success = poshold_init(ignore_checks);
+        success = poshold_init();
         break;
 #endif
 
     case MANUAL:
-        success = manual_init(ignore_checks);
+        success = manual_init();
         break;
 
     default:

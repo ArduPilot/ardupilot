@@ -6,7 +6,7 @@
  */
 
 // althold_init - initialise althold controller
-bool Sub::althold_init(bool ignore_checks)
+bool Sub::althold_init()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor, exit immediately.

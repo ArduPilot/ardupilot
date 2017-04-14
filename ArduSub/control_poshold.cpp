@@ -7,10 +7,10 @@
 #if POSHOLD_ENABLED == ENABLED
 
 // poshold_init - initialise PosHold controller
-bool Sub::poshold_init(bool ignore_checks)
+bool Sub::poshold_init()
 {
     // fail to initialise PosHold mode if no GPS lock
-    if (!position_ok() && !ignore_checks) {
+    if (!position_ok()) {
         return false;
     }
 

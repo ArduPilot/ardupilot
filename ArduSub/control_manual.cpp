@@ -1,7 +1,7 @@
 #include "Sub.h"
 
 // manual_init - initialise manual controller
-bool Sub::manual_init(bool ignore_checks)
+bool Sub::manual_init()
 {
     // set target altitude to zero for reporting
     pos_control.set_alt_target(0);

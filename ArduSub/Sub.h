@@ -539,12 +539,12 @@ private:
     bool verify_wait_delay();
     bool verify_within_distance();
     bool verify_yaw();
-    bool acro_init(bool ignore_checks);
+    bool acro_init(void);
     void acro_run();
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
-    bool althold_init(bool ignore_checks);
+    bool althold_init(void);
     void althold_run();
-    bool auto_init(bool ignore_checks);
+    bool auto_init(void);
     void auto_run();
     void auto_wp_start(const Vector3f& destination);
     void auto_wp_start(const Location_Class& dest_loc);
@@ -562,9 +562,9 @@ private:
     void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle);
     void set_auto_yaw_roi(const Location &roi_location);
     float get_auto_heading(void);
-    bool circle_init(bool ignore_checks);
+    bool circle_init(void);
     void circle_run();
-    bool guided_init(bool ignore_checks);
+    bool guided_init(bool ignore_checks = false);
     void guided_pos_control_start();
     void guided_vel_control_start();
     void guided_posvel_control_start();
@@ -584,12 +584,12 @@ private:
     void guided_limit_init_time_and_pos();
     bool guided_limit_check();
 
-    bool poshold_init(bool ignore_checks);
+    bool poshold_init(void);
     void poshold_run();
 
-    bool stabilize_init(bool ignore_checks);
+    bool stabilize_init(void);
     void stabilize_run();
-    bool manual_init(bool ignore_checks);
+    bool manual_init(void);
     void manual_run();
     void failsafe_crash_check();
     void failsafe_ekf_check(void);
@@ -732,7 +732,7 @@ private:
     void translate_circle_nav_rp(float &lateral_out, float &forward_out);
     void translate_pos_control_rp(float &lateral_out, float &forward_out);
 
-    bool surface_init(bool ignore_flags);
+    bool surface_init(void);
     void surface_run();
 
     void convert_old_parameters(void);

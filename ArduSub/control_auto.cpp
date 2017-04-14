@@ -9,29 +9,29 @@
  */
 
 // auto_init - initialise auto controller
-bool Sub::auto_init(bool ignore_checks)
+bool Sub::auto_init()
 {
-    if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
-        auto_mode = Auto_Loiter;
-
-        // stop ROI from carrying over from previous runs of the mission
-        // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
-        if (auto_yaw_mode == AUTO_YAW_ROI) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
-        }
-
-        // initialise waypoint and spline controller
-        wp_nav.wp_and_spline_init();
-
-        // clear guided limits
-        guided_limit_clear();
-
-        // start/resume the mission (based on MIS_RESTART parameter)
-        mission.start_or_resume();
-        return true;
-    } else {
+    if (!position_ok() || mission.num_commands() < 2) {
         return false;
     }
+
+    auto_mode = Auto_Loiter;
+
+    // stop ROI from carrying over from previous runs of the mission
+    // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
+    if (auto_yaw_mode == AUTO_YAW_ROI) {
+        set_auto_yaw_mode(AUTO_YAW_HOLD);
+    }
+
+    // initialise waypoint and spline controller
+    wp_nav.wp_and_spline_init();
+
+    // clear guided limits
+    guided_limit_clear();
+
+    // start/resume the mission (based on MIS_RESTART parameter)
+    mission.start_or_resume();
+    return true;
 }
 
 // auto_run - runs the appropriate auto controller
