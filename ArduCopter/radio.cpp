@@ -91,9 +91,14 @@ void Copter::init_rc_out()
 // enable_motor_output() - enable and output lowest possible value to motors
 void Copter::enable_motor_output()
 {
-    // enable motors
-    motors->enable();
-    motors->output_min();
+    // enable motors. We don't enable if in oneshot mode till we've
+    // completed setup(). This prevents us sending pulses at a slow
+    // rate
+    if (motors->get_pwm_type() < AP_Motors::PWM_TYPE_ONESHOT ||
+        ap.initialised) {
+        motors->enable();
+        motors->output_min();
+    }
 }
 
 void Copter::read_radio()
