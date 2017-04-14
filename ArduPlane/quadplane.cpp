@@ -693,7 +693,12 @@ void QuadPlane::hold_stabilize(float throttle_in)
 
     if (throttle_in <= 0) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        attitude_control->set_throttle_out_unstabilized(0, true, 0);
+        if (is_tailsitter()) {
+            // always stabilize with tailsitters so we can do belly takeoffs
+            attitude_control->set_throttle_out(0, true, 0);
+        } else {
+            attitude_control->set_throttle_out_unstabilized(0, true, 0);
+        }
     } else {
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         attitude_control->set_throttle_out(throttle_in, true, 0);
