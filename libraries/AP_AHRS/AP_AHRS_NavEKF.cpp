@@ -269,7 +269,7 @@ void AP_AHRS_NavEKF::update_SITL(void)
         pitch = radians(fdm.pitchDeg);
         yaw   = radians(fdm.yawDeg);
 
-        _dcm_matrix.from_euler(roll, pitch, yaw);
+        fdm.quaternion.rotation_matrix(_dcm_matrix);
 
         update_cd_values();
         update_trig();
@@ -457,6 +457,27 @@ bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
     default:
         // DCM is secondary
         eulers = _dcm_attitude;
+        return true;
+    }
+}
+
+
+// return secondary attitude solution if available, as quaternion
+bool AP_AHRS_NavEKF::get_secondary_quaternion(Quaternion &quat)
+{
+    switch (active_EKF_type()) {
+    case EKF_TYPE_NONE:
+        // EKF is secondary
+        EKF2.getQuaternion(-1, quat);
+        return _ekf2_started;
+
+    case EKF_TYPE2:
+
+    case EKF_TYPE3:
+
+    default:
+        // DCM is secondary
+        quat.from_rotation_matrix(AP_AHRS_DCM::get_rotation_body_to_ned());
         return true;
     }
 }

@@ -103,6 +103,9 @@ public:
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers) override;
 
+    // return secondary attitude solution if available, as quaternion
+    bool get_secondary_quaternion(Quaternion &quat) override;
+    
     // return secondary position solution if available
     bool get_secondary_position(struct Location &loc) override;
 
