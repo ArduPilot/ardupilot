@@ -327,8 +327,6 @@ private:
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
     float target_rangefinder_alt;      // desired altitude in cm above the ground
-    int32_t baro_alt;            // barometer altitude in cm above home
-    float baro_climbrate;        // barometer climbrate in cm/s
 
     // Turn counter
     int32_t quarter_turn_count;
