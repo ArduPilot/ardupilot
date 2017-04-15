@@ -69,12 +69,6 @@ void Copter::init_rc_out()
     // check if we should enter esc calibration mode
     esc_calibration_startup_check();
 
-    // enable output to motors
-    arming.pre_arm_rc_checks(true);
-    if (ap.pre_arm_rc_check) {
-        enable_motor_output();
-    }
-
     // refresh auxiliary channel to function map
     SRV_Channels::update_aux_servo_function();
 
