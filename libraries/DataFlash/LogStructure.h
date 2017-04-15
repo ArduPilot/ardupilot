@@ -390,6 +390,15 @@ struct PACKED log_NKF5 {
     float posErr;
 };
 
+struct PACKED log_Quaternion {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float q1;
+    float q2;
+    float q3;
+    float q4;
+};
+
 struct PACKED log_RngBcnDebug {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -786,6 +795,9 @@ struct PACKED log_Rally {
 #define PID_LABELS "TimeUS,Des,P,I,D,FF,AFF"
 #define PID_FMT    "Qffffff"
 
+#define QUAT_LABELS "TimeUS,Q1,Q2,Q3,Q4"
+#define QUAT_FMT    "Qffff"
+
 
 /*
 Format characters in the format string for binary log messages
@@ -899,6 +911,8 @@ Format characters in the format string for binary log messages
       "NKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
       "NKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD" }, \
+    { LOG_NKQ1_MSG, sizeof(log_Quaternion), "NKQ1", QUAT_FMT, QUAT_LABELS }, \
+    { LOG_NKQ2_MSG, sizeof(log_Quaternion), "NKQ2", QUAT_FMT, QUAT_LABELS }, \
     { LOG_XKF1_MSG, sizeof(log_EKF1), \
       "XKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
     { LOG_XKF2_MSG, sizeof(log_NKF2a), \
@@ -919,6 +933,8 @@ Format characters in the format string for binary log messages
       "XKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_XKF10_MSG, sizeof(log_RngBcnDebug), \
       "XKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD" }, \
+    { LOG_XKQ1_MSG, sizeof(log_Quaternion), "XKQ1", QUAT_FMT, QUAT_LABELS }, \
+    { LOG_XKQ2_MSG, sizeof(log_Quaternion), "XKQ2", QUAT_FMT, QUAT_LABELS }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
@@ -1104,6 +1120,8 @@ enum LogMessages {
     LOG_NKF8_MSG,
     LOG_NKF9_MSG,
     LOG_NKF10_MSG,
+    LOG_NKQ1_MSG,
+    LOG_NKQ2_MSG,
     LOG_XKF1_MSG,
     LOG_XKF2_MSG,
     LOG_XKF3_MSG,
@@ -1114,6 +1132,8 @@ enum LogMessages {
     LOG_XKF8_MSG,
     LOG_XKF9_MSG,
     LOG_XKF10_MSG,
+    LOG_XKQ1_MSG,
+    LOG_XKQ2_MSG,
     LOG_DF_MAV_STATS,
 
     LOG_MSG_SBPHEALTH,
