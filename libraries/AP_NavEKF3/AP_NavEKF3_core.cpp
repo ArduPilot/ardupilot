@@ -283,6 +283,7 @@ void NavEKF3_core::InitialiseVariables()
     posDown = 0.0f;
     posVelFusionDelayed = false;
     optFlowFusionDelayed = false;
+    flowFusionActive = false;
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
     posResetNE.zero();
@@ -371,6 +372,7 @@ void NavEKF3_core::InitialiseVariables()
     prevBodyVelFuseTime_ms = 0;
     bodyOdmMeasTime_ms = 0;
     bodyVelFusionDelayed = false;
+    bodyVelFusionActive = false;
 
     // zero data buffers
     storedIMU.reset();

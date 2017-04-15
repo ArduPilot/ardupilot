@@ -1025,8 +1025,9 @@ private:
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     Vector3f delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     float delTimeOF;                // time that delAngBodyOF is summed across
-    Vector3f accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
+    bool flowFusionActive;          // true when optical flow fusion is active
 
+    Vector3f accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
 
     // Range finder
     float baroHgtOffset;                    // offset applied when when switching to use of Baro height
@@ -1049,7 +1050,8 @@ private:
     Vector3 innovBodyVel;               // Body velocity XYZ innovations (rad/sec)
     uint32_t prevBodyVelFuseTime_ms;    // previous time all body velocity measurement components passed their innovation consistency checks (msec)
     uint32_t bodyOdmMeasTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
-    bool bodyVelFusionDelayed;          // true when body fame velocity fusion has been delayed
+    bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
+    bool bodyVelFusionActive;           // true when body frame velocity fusion is active
 
 
     // Range Beacon Sensor Fusion

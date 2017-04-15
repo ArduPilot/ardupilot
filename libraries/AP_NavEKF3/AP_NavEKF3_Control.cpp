@@ -285,7 +285,7 @@ void NavEKF3_core::setAidingMode()
         // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         if (PV_AidingMode == AID_NONE) {
             // We have ceased aiding
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 IMU%u has stopped aiding",(unsigned)imu_index);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 IMU%u stopped aiding",(unsigned)imu_index);
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
             posTimeout = true;
             velTimeout = true;
@@ -300,23 +300,23 @@ void NavEKF3_core::setAidingMode()
             meaHgtAtTakeOff = baroDataDelayed.hgt;
             // reset the vertical position state to faster recover from baro errors experienced during touchdown
             stateStruct.position.z = -meaHgtAtTakeOff;
+            // reset relative aiding sensor fusion activity status
+            flowFusionActive = false;
+            bodyVelFusionActive = false;
         } else if (PV_AidingMode == AID_RELATIVE) {
             // We are doing relative position navigation where velocity errors are constrained, but position drift will occur
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u started relative aiding",(unsigned)imu_index);
             if (readyToUseOptFlow()) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u is using optical flow",(unsigned)imu_index);
                 // Reset time stamps
                 flowValidMeaTime_ms = imuSampleTime_ms;
                 prevFlowFuseTime_ms = imuSampleTime_ms;
             } else if (readyToUseBodyOdm()) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u is using odometry",(unsigned)imu_index);
-                // Reset time stamps
+                 // Reset time stamps
                 lastbodyVelPassTime_ms = imuSampleTime_ms;
                 prevBodyVelFuseTime_ms = imuSampleTime_ms;
             }
-
             posTimeout = true;
             velTimeout = true;
-            prevFlowFuseTime_ms = imuSampleTime_ms;
         } else if (PV_AidingMode == AID_ABSOLUTE) {
             if (readyToUseGPS()) {
                 // We are commencing aiding using GPS - this is the preferred method

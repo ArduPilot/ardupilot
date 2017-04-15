@@ -8,6 +8,7 @@
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -1411,7 +1412,11 @@ void NavEKF3_core::FuseBodyVel()
         if ((bodyVelTestRatio[obsIndex]) < 1.0f) {
             // record the last time observations were accepted for fusion
             prevBodyVelFuseTime_ms = imuSampleTime_ms;
-
+            // notify first time only
+            if (!bodyVelFusionActive) {
+                bodyVelFusionActive = true;
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing odometry",(unsigned)imu_index);
+            }
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations
