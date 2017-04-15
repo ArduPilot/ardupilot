@@ -351,6 +351,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.rollDeg  = degrees(r);
     fdm.pitchDeg = degrees(p);
     fdm.yawDeg   = degrees(y);
+    fdm.quaternion.from_rotation_matrix(dcm);
     fdm.airspeed = airspeed_pitot;
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;

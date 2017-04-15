@@ -16,6 +16,7 @@ struct sitl_fdm {
     double xAccel, yAccel, zAccel;       // m/s/s in body frame
     double rollRate, pitchRate, yawRate; // degrees/s/s in body frame
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
+    Quaternion quaternion;
     double airspeed; // m/s
     double battery_voltage; // Volts
     double battery_current; // Amps

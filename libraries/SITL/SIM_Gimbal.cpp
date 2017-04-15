@@ -39,7 +39,7 @@ Gimbal::Gimbal(const struct sitl_fdm &_fdm) :
     mav_socket(false)
 {
     memset(&mavlink, 0, sizeof(mavlink));
-    dcm.from_euler(radians(fdm.rollDeg), radians(fdm.pitchDeg), radians(fdm.yawDeg));
+    fdm.quaternion.rotation_matrix(dcm);
 }
 
 
@@ -55,7 +55,7 @@ void Gimbal::update(void)
     last_update_us = now_us;
 
     Matrix3f vehicle_dcm;
-    vehicle_dcm.from_euler(radians(fdm.rollDeg), radians(fdm.pitchDeg), radians(fdm.yawDeg));
+    fdm.quaternion.rotation_matrix(vehicle_dcm);
 
     Vector3f vehicle_gyro = Vector3f(radians(fdm.rollRate),
                                      radians(fdm.pitchRate),
