@@ -307,6 +307,12 @@ void Copter::init_ardupilot()
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
 
+    // enable output to motors
+    arming.pre_arm_rc_checks(true);
+    if (ap.pre_arm_rc_check) {
+        enable_motor_output();
+    }
+
     cliSerial->printf("\nReady to FLY ");
 
     // flag that initialisation has completed
