@@ -1037,10 +1037,11 @@ void NavEKF3::getRotationBodyToNED(Matrix3f &mat) const
 }
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
-void NavEKF3::getQuaternion(Quaternion &quat) const
+void NavEKF3::getQuaternion(int8_t instance, Quaternion &quat) const
 {
+    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[primary].getQuaternion(quat);
+        core[instance].getQuaternion(quat);
     }
 }
 
