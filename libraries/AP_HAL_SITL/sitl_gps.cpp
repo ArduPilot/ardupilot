@@ -1041,9 +1041,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     if (!posRelOffsetBF.is_zero()) {
         // get a rotation matrix following DCM conventions (body to earth)
         Matrix3f rotmat;
-        rotmat.from_euler(radians(_sitl->state.rollDeg),
-                          radians(_sitl->state.pitchDeg),
-                          radians(_sitl->state.yawDeg));
+        _sitl->state.quaternion.rotation_matrix(rotmat);
 
         // rotate the antenna offset into the earth frame
         Vector3f posRelOffsetEF = rotmat * posRelOffsetBF;
