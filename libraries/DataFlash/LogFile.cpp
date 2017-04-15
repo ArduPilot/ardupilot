@@ -1035,9 +1035,11 @@ void DataFlash_Class::Log_Write_AHRS2(AP_AHRS &ahrs)
 {
     Vector3f euler;
     struct Location loc;
+    Quaternion quat;
     if (!ahrs.get_secondary_attitude(euler) || !ahrs.get_secondary_position(loc)) {
         return;
     }
+    ahrs.get_secondary_quaternion(quat);
     struct log_AHRS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AHR2_MSG),
         time_us : AP_HAL::micros64(),
@@ -1046,7 +1048,11 @@ void DataFlash_Class::Log_Write_AHRS2(AP_AHRS &ahrs)
         yaw   : (uint16_t)(wrap_360_cd(degrees(euler.z)*100)),
         alt   : loc.alt*1.0e-2f,
         lat   : loc.lat,
-        lng   : loc.lng
+        lng   : loc.lng,
+        q1    : quat.q1,
+        q2    : quat.q2,
+        q3    : quat.q3,
+        q4    : quat.q4,
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
