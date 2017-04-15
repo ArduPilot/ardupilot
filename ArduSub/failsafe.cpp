@@ -64,6 +64,32 @@ void Sub::mainloop_failsafe_check()
     }
 }
 
+void Sub::failsafe_sensors_check(void)
+{
+    // We need a depth sensor to do any sort of auto z control
+    if (sensor_health.depth) {
+        failsafe.sensor_health = false;
+        return;
+    }
+
+    // only report once
+    if (failsafe.sensor_health) {
+        return;
+    }
+
+    failsafe.sensor_health = true;
+    gcs_send_text(MAV_SEVERITY_CRITICAL, "Depth sensor error!");
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_SENSORS, ERROR_CODE_BAD_DEPTH);
+
+    if (control_mode == ALT_HOLD || control_mode == SURFACE || mode_requires_GPS(control_mode)) {
+        // This should always succeed
+        if (!set_mode(MANUAL, MODE_REASON_BAD_DEPTH)) {
+            // We should never get here
+            init_disarm_motors();
+        }
+    }
+}
+
 void Sub::failsafe_ekf_check(void)
 {
     static uint32_t last_ekf_good_ms = 0;
