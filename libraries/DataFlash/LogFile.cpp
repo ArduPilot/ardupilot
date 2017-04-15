@@ -1674,6 +1674,24 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             WriteBlock(&pkt10, sizeof(pkt10));
         }
     }
+    // write debug data for body frame odometry fusion
+    Vector3f velBodyInnov,velBodyInnovVar;
+    static uint32_t lastUpdateTime_ms = 0;
+    uint32_t updateTime_ms = ahrs.get_NavEKF3().getBodyFrameOdomDebug(-1, velBodyInnov, velBodyInnovVar);
+    if (updateTime_ms > lastUpdateTime_ms) {
+        struct log_ekfBodyOdomDebug pkt11 = {
+            LOG_PACKET_HEADER_INIT(LOG_XKFD_MSG),
+            time_us : time_us,
+            velInnovX : velBodyInnov.x,
+            velInnovY : velBodyInnov.y,
+            velInnovZ : velBodyInnov.z,
+            velInnovVarX : velBodyInnovVar.x,
+            velInnovVarY : velBodyInnovVar.y,
+            velInnovVarZ : velBodyInnovVar.z
+         };
+        WriteBlock(&pkt11, sizeof(pkt11));
+        updateTime_ms = lastUpdateTime_ms;
+    }
 }
 #endif
 
@@ -2052,4 +2070,22 @@ void DataFlash_Class::Log_Write_Rally(const AP_Rally &rally)
             WriteBlock(&pkt_rally, sizeof(pkt_rally));
         }
     }
+}
+
+// Write visual odometry sensor data
+void DataFlash_Class::Log_Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence)
+{
+    struct log_VisualOdom pkt_visualodom = {
+        LOG_PACKET_HEADER_INIT(LOG_VISUALODOM_MSG),
+        time_us             : AP_HAL::micros64(),
+        time_delta          : time_delta,
+        angle_delta_x       : angle_delta.x,
+        angle_delta_y       : angle_delta.y,
+        angle_delta_z       : angle_delta.z,
+        position_delta_x    : position_delta.x,
+        position_delta_y    : position_delta.y,
+        position_delta_z    : position_delta.z,
+        confidence          : confidence
+    };
+    WriteBlock(&pkt_visualodom, sizeof(log_VisualOdom));
 }

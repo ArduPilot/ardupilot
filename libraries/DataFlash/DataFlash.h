@@ -149,6 +149,7 @@ public:
                         const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control);
     void Log_Write_Rally(const AP_Rally &rally);
+    void Log_Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 

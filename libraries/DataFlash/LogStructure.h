@@ -408,6 +408,31 @@ struct PACKED log_RngBcnDebug {
     int16_t posD;           // Down position of receiver rel to EKF origin (cm)
 };
 
+// visual odometry sensor data
+struct PACKED log_VisualOdom {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float time_delta;
+    float angle_delta_x;
+    float angle_delta_y;
+    float angle_delta_z;
+    float position_delta_x;
+    float position_delta_y;
+    float position_delta_z;
+    float confidence;
+};
+
+struct PACKED log_ekfBodyOdomDebug {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float velInnovX;
+    float velInnovY;
+    float velInnovZ;
+    float velInnovVarX;
+    float velInnovVarY;
+    float velInnovVarZ;
+};
+
 struct PACKED log_Cmd {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -919,6 +944,8 @@ Format characters in the format string for binary log messages
       "XKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_XKF10_MSG, sizeof(log_RngBcnDebug), \
       "XKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD" }, \
+    { LOG_XKFD_MSG, sizeof(log_ekfBodyOdomDebug), \
+      "XKFD","Qffffff","TimeUS,IX,IY,IZ,IVX,IVY,IVZ" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
@@ -1006,7 +1033,9 @@ Format characters in the format string for binary log messages
     { LOG_RATE_MSG, sizeof(log_Rate), \
       "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
-      "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }
+      "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }, \
+    { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
+      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf" }
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -1114,6 +1143,7 @@ enum LogMessages {
     LOG_XKF8_MSG,
     LOG_XKF9_MSG,
     LOG_XKF10_MSG,
+    LOG_XKFD_MSG,
     LOG_DF_MAV_STATS,
 
     LOG_MSG_SBPHEALTH,
@@ -1131,6 +1161,7 @@ enum LogMessages {
     LOG_GIMBAL3_MSG,
     LOG_RATE_MSG,
     LOG_RALLY_MSG,
+    LOG_VISUALODOM_MSG,
 };
 
 enum LogOriginType {

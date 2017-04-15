@@ -67,6 +67,18 @@ void NavEKF3_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
     gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
 }
 
+// return data for debugging body frame odometry fusion
+uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velInnovVar)
+{
+    velInnov.x = innovBodyVel[0];
+    velInnov.y = innovBodyVel[1];
+    velInnov.z = innovBodyVel[2];
+    velInnovVar.x = varInnovBodyVel[0];
+    velInnovVar.y = varInnovBodyVel[1];
+    velInnovVar.z = varInnovBodyVel[2];
+    return bodyOdmDataDelayed.time_ms;
+}
+
 // return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
 bool NavEKF3_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED,
                                        float &offsetHigh, float &offsetLow, Vector3f &posNED)
@@ -339,7 +351,13 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    if (PV_AidingMode == AID_RELATIVE) {
+    // If in the last 10 seconds we have received flow data and no odometry data, then we are relying on optical flow
+    bool relyingOnFlowData = (imuSampleTime_ms - prevBodyVelFuseTime_ms > 1000)
+            && (imuSampleTime_ms - flowValidMeaTime_ms <= 10000);
+
+    // If replying on optical flow, limit speed to prevent sensor limit being exceeded and adjust
+    // nav gains to prevent body rate feedback into flow rates destabilising the control loop
+    if (PV_AidingMode == AID_RELATIVE && relyingOnFlowData) {
         // allow 1.0 rad/sec margin for angular motion
         ekfGndSpdLimit = MAX((frontend->_maxFlowRate - 1.0f), 0.0f) * MAX((terrainState - stateStruct.position[2]), rngOnGnd);
         // use standard gains up to 5.0 metres height and reduce above that

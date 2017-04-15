@@ -998,6 +998,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels.cpp
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels),
 
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    // @Group: VISO
+    // @Path: ../libraries/AP_VisualOdom/AP_VisualOdom.cpp
+    AP_SUBGROUPINFO(visual_odom, "VISO", 18, ParametersG2, AP_VisualOdom),
+#endif
+
     AP_GROUPEND
 };
 
