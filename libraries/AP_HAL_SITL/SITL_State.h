@@ -84,7 +84,7 @@ private:
 
     void set_height_agl(void);
     void _update_barometer(float height);
-    void _update_compass(float rollDeg, float pitchDeg, float yawDeg);
+    void _update_compass(void);
 
     void _set_signal_handlers(void) const;
 
@@ -123,10 +123,7 @@ private:
     void _update_gps(double latitude, double longitude, float altitude,
                      double speedN, double speedE, double speedD, bool have_lock);
 
-    void _update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
-                     double rollRate, 	double pitchRate,double yawRate,	// Local to plane
-                     double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
-                     float airspeed,	float altitude);
+    void _update_ins(float airspeed);
     void _check_rc_input(void);
     void _fdm_input_local(void);
     void _output_to_flightgear(void);

@@ -88,8 +88,8 @@ void SITL_State::_sitl_setup(const char *home_str)
         // setup some initial values
 #ifndef HIL_MODE
         _update_barometer(100);
-        _update_ins(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0, 100);
-        _update_compass(0, 0, 0);
+        _update_ins(0);
+        _update_compass();
         _update_gps(0, 0, 0, 0, 0, 0, false);
 #endif
         if (enable_gimbal) {
@@ -167,12 +167,9 @@ void SITL_State::_fdm_input_step(void)
                     _sitl->state.altitude,
                     _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
                     !_sitl->gps_disable);
-        _update_ins(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg,
-                    _sitl->state.rollRate, _sitl->state.pitchRate, _sitl->state.yawRate,
-                    _sitl->state.xAccel, _sitl->state.yAccel, _sitl->state.zAccel,
-                    _sitl->state.airspeed, _sitl->state.altitude);
+        _update_ins(_sitl->state.airspeed);
         _update_barometer(_sitl->state.altitude);
-        _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
+        _update_compass();
 
         if (_sitl->adsb_plane_count >= 0 &&
             adsb == nullptr) {
