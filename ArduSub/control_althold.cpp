@@ -9,8 +9,8 @@
 bool Sub::althold_init()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor, exit immediately.
-        gcs_send_text(MAV_SEVERITY_WARNING, "Depth hold requires external pressure sensor.");
+    if (!sensor_health.depth) { // can't hold depth without a depth sensor, exit immediately.
+        gcs_send_text(MAV_SEVERITY_WARNING, "BAD DEPTH");
         return false;
     }
 #endif

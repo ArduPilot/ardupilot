@@ -18,6 +18,8 @@ void Sub::read_barometer(void)
     baro_climbrate = barometer.get_climb_rate() * 100.0f;
 
     motors.set_air_density_ratio(barometer.get_air_density_ratio());
+
+    sensor_health.depth = barometer.healthy(depth_sensor_idx);
 }
 
 void Sub::init_rangefinder(void)

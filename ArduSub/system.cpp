@@ -134,14 +134,15 @@ void Sub::init_ardupilot()
     barometer.update();
 
     for (uint8_t i = 0; i < barometer.num_instances(); i++) {
-        if (barometer.get_type(i) == AP_Baro::BARO_TYPE_WATER && barometer.healthy(i)) {
+        if (barometer.get_type(i) == AP_Baro::BARO_TYPE_WATER) {
             barometer.set_primary_baro(i);
-            ap.depth_sensor_present = true;
+            depth_sensor_idx = i;
+            sensor_health.depth = barometer.healthy(i);
             break;
         }
     }
 
-    if (!ap.depth_sensor_present) {
+    if (!sensor_health.depth) {
         // We only have onboard baro
         // No external underwater depth sensor detected
         barometer.set_primary_baro(0);

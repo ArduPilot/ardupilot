@@ -237,7 +237,6 @@ private:
             enum HomeState home_state   : 2; // home status (unset, set, locked)
             uint8_t at_bottom           : 1; // true if we are at the bottom
             uint8_t at_surface          : 1; // true if we are at the surface
-            uint8_t depth_sensor_present: 1; // true if we have an external baro connected
         };
         uint32_t value;
     } ap;
@@ -268,9 +267,10 @@ private:
         uint8_t internal_pressure    : 1; // true if internal pressure is over threshold
         uint8_t internal_temperature : 1; // true if temperature is over threshold
         uint8_t crash                : 1; // true if we are crashed
+        uint8_t sensor_health        : 1; // true if at least one sensor has triggered a failsafe (currently only used for depth in depth enabled modes)
+
         uint32_t last_leak_warn_ms;      // last time a leak warning was sent to gcs
         uint32_t last_gcs_warn_ms;
-
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
         uint32_t last_pilot_input_ms; // last time we received pilot input in the form of MANUAL_CONTROL or RC_CHANNELS_OVERRIDE messages
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
@@ -282,9 +282,13 @@ private:
 
     // sensor health for logging
     struct {
-        uint8_t baro        : 1;    // true if baro is healthy
+        uint8_t baro        : 1;    // true if any single baro is healthy
+        uint8_t depth       : 1;    // true if depth sensor is healthy
         uint8_t compass     : 1;    // true if compass is healthy
     } sensor_health;
+
+    // Baro sensor instance index of the external water pressure sensor
+    uint8_t depth_sensor_idx;
 
     AP_Motors6DOF motors;
 
@@ -590,6 +594,7 @@ private:
     void stabilize_run();
     bool manual_init(void);
     void manual_run();
+    void failsafe_sensors_check(void);
     void failsafe_crash_check();
     void failsafe_ekf_check(void);
     void failsafe_battery_check(void);

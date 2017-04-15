@@ -156,9 +156,7 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
                              MAV_SYS_STATUS_SENSOR_GPS |
                              MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
 
-    if (ap.depth_sensor_present && barometer.all_healthy()) { // check all barometers
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    } else if (barometer.healthy(0)) { // check the internal barometer only
+    if (sensor_health.depth) { // check the internal barometer only
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
     if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
@@ -1259,7 +1257,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_FAILED;
                 }
             } else if (is_equal(packet.param3,1.0f)) {
-                if (!sub.ap.depth_sensor_present || sub.motors.armed() || sub.barometer.get_pressure() > 110000) {
+                if (!sub.sensor_health.depth || sub.motors.armed() || sub.barometer.get_pressure() > 110000) {
                     result = MAV_RESULT_FAILED;
                 } else {
                     sub.init_barometer(true);

@@ -56,7 +56,8 @@ enum mode_reason_t {
     MODE_REASON_FENCE_BREACH,
     MODE_REASON_TERRAIN_FAILSAFE,
     MODE_REASON_SURFACE_COMPLETE,
-    MODE_REASON_LEAK_FAILSAFE
+    MODE_REASON_LEAK_FAILSAFE,
+    MODE_REASON_BAD_DEPTH
 };
 
 // Acro Trainer types
@@ -193,6 +194,8 @@ enum RTLState {
 #define ERROR_SUBSYSTEM_NAVIGATION          22
 #define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
 #define ERROR_SUBSYSTEM_FAILSAFE_LEAK       24
+#define ERROR_SUBSYSTEM_FAILSAFE_SENSORS    25
+
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -220,8 +223,9 @@ enum RTLState {
 // EKF check definitions
 #define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
 #define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
+
 // Baro specific error codes
-#define ERROR_CODE_BARO_GLITCH              2
+#define ERROR_CODE_BAD_DEPTH              0
 
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
