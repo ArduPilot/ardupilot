@@ -26,20 +26,13 @@ using namespace HALSITL;
   setup the compass with new input
   all inputs are in degrees
  */
-void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
+void SITL_State::_update_compass(void)
 {
     static uint32_t last_update;
 
     if (_compass == nullptr) {
         // no compass in this sketch
         return;
-    }
-    yawDeg += _sitl->mag_error;
-    if (yawDeg > 180.0f) {
-        yawDeg -= 360.0f;
-    }
-    if (yawDeg < -180.0f) {
-        yawDeg += 360.0f;
     }
 
     // 100Hz
