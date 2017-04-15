@@ -19,6 +19,13 @@ enum ESCCalibrationModes {
 void Copter::esc_calibration_startup_check()
 {
 #if FRAME_CONFIG != HELI_FRAME
+    // delay up to 2 second for first radio input
+    uint8_t i = 0;
+    while ((i++ < 100) && (last_radio_update_ms == 0)) {
+        delay(20);
+        read_radio();
+    }
+
     // exit immediately if pre-arm rc checks fail
     arming.pre_arm_rc_checks(true);
     if (!ap.pre_arm_rc_check) {
