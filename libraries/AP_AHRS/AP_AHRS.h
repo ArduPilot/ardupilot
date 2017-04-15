@@ -420,6 +420,11 @@ public:
         return false;
     }
 
+    // return secondary attitude solution if available, as quaternion
+    virtual bool get_secondary_quaternion(Quaternion &quat) {
+        return false;
+    }
+    
     // return secondary position solution if available
     virtual bool get_secondary_position(struct Location &loc) {
         return false;
