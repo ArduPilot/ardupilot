@@ -1247,6 +1247,20 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
      };
     WriteBlock(&pkt5, sizeof(pkt5));
 
+    // log quaternion
+    Quaternion quat;
+    ahrs.get_NavEKF2().getQuaternion(0, quat);
+    struct log_Quaternion pktq1 = {
+        LOG_PACKET_HEADER_INIT(LOG_NKQ1_MSG),
+        time_us : time_us,
+        q1 : quat.q1,
+        q2 : quat.q2,
+        q3 : quat.q3,
+        q4 : quat.q4
+    };
+    WriteBlock(&pktq1, sizeof(pktq1));
+
+    
     // log innovations for the second IMU if enabled
     if (ahrs.get_NavEKF2().activeCores() >= 2) {
         // Write 6th EKF packet
@@ -1346,6 +1360,17 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             primary : (int8_t)primaryIndex
         };
         WriteBlock(&pkt9, sizeof(pkt9));
+
+        ahrs.get_NavEKF2().getQuaternion(1, quat);
+        struct log_Quaternion pktq2 = {
+            LOG_PACKET_HEADER_INIT(LOG_NKQ2_MSG),
+            time_us : time_us,
+            q1 : quat.q1,
+            q2 : quat.q2,
+            q3 : quat.q3,
+            q4 : quat.q4
+        };
+        WriteBlock(&pktq2, sizeof(pktq2));
     }
 
     // write range beacon fusion debug packet if the range value is non-zero
@@ -1542,6 +1567,19 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
      };
     WriteBlock(&pkt5, sizeof(pkt5));
 
+    // log quaternion
+    Quaternion quat;
+    ahrs.get_NavEKF3().getQuaternion(0, quat);
+    struct log_Quaternion pktq1 = {
+        LOG_PACKET_HEADER_INIT(LOG_XKQ1_MSG),
+        time_us : time_us,
+        q1 : quat.q1,
+        q2 : quat.q2,
+        q3 : quat.q3,
+        q4 : quat.q4
+    };
+    WriteBlock(&pktq1, sizeof(pktq1));
+    
     // log innovations for the second IMU if enabled
     if (ahrs.get_NavEKF3().activeCores() >= 2) {
         // Write 6th EKF packet
@@ -1640,6 +1678,17 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         };
         WriteBlock(&pkt9, sizeof(pkt9));
 
+        // log quaternion
+        ahrs.get_NavEKF3().getQuaternion(1, quat);
+        struct log_Quaternion pktq2 = {
+            LOG_PACKET_HEADER_INIT(LOG_XKQ2_MSG),
+            time_us : time_us,
+            q1 : quat.q1,
+            q2 : quat.q2,
+            q3 : quat.q3,
+            q4 : quat.q4
+        };
+        WriteBlock(&pktq2, sizeof(pktq2));        
     }
     // write range beacon fusion debug packet if the range value is non-zero
     uint8_t ID;
