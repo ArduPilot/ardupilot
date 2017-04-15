@@ -179,7 +179,7 @@ public:
     void getRotationBodyToNED(Matrix3f &mat) const;
 
     // return the quaternions defining the rotation from NED to XYZ (body) axes
-    void getQuaternion(Quaternion &quat) const;
+    void getQuaternion(int8_t instance, Quaternion &quat) const;
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
