@@ -145,9 +145,6 @@ private:
     // AP_Notify instance
     AP_Notify notify;
 
-    // used to detect MAVLink acks from GCS to stop compassmot
-    uint8_t command_ack_counter;
-
     // has a log download started?
     bool in_log_download;
 
