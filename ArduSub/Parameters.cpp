@@ -810,6 +810,7 @@ void Sub::load_parameters(void)
             AP_Arming::ARMING_CHECK_LOGGING);
     AP_Param::set_default_by_name("CIRCLE_RATE", 2.0f);
     AP_Param::set_default_by_name("ATC_ACCEL_Y_MAX", 110000.0f);
+    AP_Param::set_default_by_name("RC3_TRIM", 1100);
 }
 
 void Sub::convert_old_parameters(void)
