@@ -30,6 +30,11 @@ void Sub::init_rc_in()
     for (int i = 0; i < 6; i++) {
         hal.rcin->set_override(i, 1500);
     }
+
+    hal.rcin->set_override(7, g.cam_tilt_center); // camera tilt channel
+    hal.rcin->set_override(8, 1100); // lights 1 channel
+    hal.rcin->set_override(9, 1100); // lights 2 channel
+    hal.rcin->set_override(10, 1100); // video switch
 #endif
 }
 

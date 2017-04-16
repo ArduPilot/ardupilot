@@ -559,11 +559,11 @@ void Sub::set_neutral_controls()
 {
     int16_t channels[11];
 
-    for (uint8_t i = 0; i < 7; i++) {
+    for (uint8_t i = 0; i < 6; i++) {
         channels[i] = 1500;
     }
 
-    for (uint8_t i = 7; i < 11; i++) {
+    for (uint8_t i = 6; i < 11; i++) {
         channels[i] = 0xffff;
     }
 
