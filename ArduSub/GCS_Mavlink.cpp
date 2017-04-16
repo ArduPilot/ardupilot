@@ -1475,11 +1475,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_COMMAND_ACK: {      // MAV ID: 77
-        sub.command_ack_counter++;
-        break;
-    }
-
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET: { // MAV ID: 82
         // decode packet
         mavlink_set_attitude_target_t packet;
