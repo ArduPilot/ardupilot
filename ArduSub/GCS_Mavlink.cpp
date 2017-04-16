@@ -956,14 +956,8 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     }
 
     // GCS has sent us a mission item, store to EEPROM
-    case MAVLINK_MSG_ID_MISSION_ITEM: {         // MAV ID: 39
-        if (handle_mission_item(msg, sub.mission)) {
-            sub.DataFlash.Log_Write_EntireMission(sub.mission);
-        }
-        break;
-    }
-
-    case MAVLINK_MSG_ID_MISSION_ITEM_INT: {
+    case MAVLINK_MSG_ID_MISSION_ITEM:
+    case MAVLINK_MSG_ID_MISSION_ITEM_INT: {         // MAV ID: 39
         if (handle_mission_item(msg, sub.mission)) {
             sub.DataFlash.Log_Write_EntireMission(sub.mission);
         }
@@ -1101,15 +1095,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 AP_Param::erase_all();
                 sub.gcs_send_text(MAV_SEVERITY_WARNING, "All parameters reset, reboot board");
                 result= MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        case MAV_CMD_START_RX_PAIR:
-            // initiate bind procedure
-            if (!hal.rcin->rc_bind(packet.param1)) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
             }
             break;
 
@@ -1665,12 +1650,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_RADIO:
-    case MAVLINK_MSG_ID_RADIO_STATUS: {     // MAV ID: 109
-        handle_radio_status(msg, sub.DataFlash, sub.should_log(MASK_LOG_PM));
-        break;
-    }
-
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
     case MAVLINK_MSG_ID_LOG_ERASE:
         sub.in_log_download = true;
@@ -1831,6 +1810,8 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    // This adds support for leak detectors in a separate enclosure
+    // connected to a mavlink enabled subsystem
     case MAVLINK_MSG_ID_SYS_STATUS: {
         uint32_t MAV_SENSOR_WATER = 0x20000000;
         mavlink_sys_status_t packet;
