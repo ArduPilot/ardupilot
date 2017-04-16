@@ -157,10 +157,13 @@ void Copter::heli_update_rotor_speed_targets()
         Log_Write_Event(DATA_ROTOR_SPEED_BELOW_CRITICAL);
     }
     rotor_runup_complete_last = motors.rotor_runup_complete();
+
+	// Check that RC8 input is within the range of the RC8 calibration.  This is to weed out a problem in the RC/SBUS parsing.
+	bool out_of_bounds_check = ((g.rc_8.radio_in < (g.rc_8.radio_min.get() - 10)) || (g.rc_8.radio_in > (g.rc_8.radio_max.get() + 10)));
 	
-    // exit immediately during radio failsafe
+    // exit immediately during radio_failsafe or out_of_bounds data
 	// we will not process RSC controls during failsafe, they will remain static
-    if (failsafe.radio || failsafe.radio_counter != 0) {
+    if (out_of_bounds_check || failsafe.radio || (failsafe.radio_counter != 0)) {
         return;
     }	
 
