@@ -1486,21 +1486,21 @@ void NavEKF3_core::FuseBodyVel()
 // select fusion of body odometry measurements
 void NavEKF3_core::SelectBodyOdomFusion()
 {
-        // Check for data at the fusion time horizon
-        if (storedBodyOdm.recall(bodyOdmDataDelayed, imuDataDelayed.time_ms)) {
+    // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
+    // If so, don't fuse measurements on this time step to reduce frame over-runs
+    // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
+    if (magFusePerformed && (dtIMUavg < 0.005f) && !bodyVelFusionDelayed) {
+        bodyVelFusionDelayed = true;
+        return;
+    } else {
+        bodyVelFusionDelayed = false;
+    }
+
+    // Check for data at the fusion time horizon
+    if (storedBodyOdm.recall(bodyOdmDataDelayed, imuDataDelayed.time_ms)) {
 
         // start performance timer
         hal.util->perf_begin(_perf_FuseBodyOdom);
-
-        // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
-        // If so, don't fuse measurements on this time step to reduce frame over-runs
-        // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
-        if (magFusePerformed && dtIMUavg < 0.005f && !optFlowFusionDelayed) {
-            bodyVelFusionDelayed = true;
-            return;
-        } else {
-            bodyVelFusionDelayed = false;
-        }
 
         // Fuse data into the main filter
         FuseBodyVel();
