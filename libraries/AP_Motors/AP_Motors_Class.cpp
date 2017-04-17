@@ -125,15 +125,6 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
     }
 }
 
-void AP_Motors::rc_enable_ch(uint8_t chan)
-{
-    if (_motor_map_mask & (1U<<chan)) {
-        // we have a mapped motor number for this channel
-        chan = _motor_map[chan];
-    }
-    hal.rcout->enable_ch(chan);
-}
-
 /*
   map an internal motor mask to real motor mask
  */
