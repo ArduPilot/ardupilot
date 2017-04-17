@@ -79,7 +79,6 @@ void Copter::init_rc_out()
 void Copter::enable_motor_output()
 {
     // enable motors
-    motors->enable();
     motors->output_min();
 }
 
