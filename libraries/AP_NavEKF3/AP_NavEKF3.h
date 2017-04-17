@@ -200,8 +200,8 @@ public:
      * Write body frame linear and angular displacement measurements from a visual odometry sensor
      *
      * quality is a normalised confidence value from 0 to 100
-     * delPos is the XYZ change in linear position meaasured in body frame and relative to the inertial reference at time_ms (m)
-     * delAng is the XYZ angular rotation measured in body frame and relative to the inertial reference at time_ms (rad)
+     * delPos is the XYZ change in linear position measured in body frame and relative to the inertial reference at timeStamp_ms (m)
+     * delAng is the XYZ angular rotation measured in body frame and relative to the inertial reference at timeStamp_ms (rad)
      * delTime is the time interval for the measurement of delPos and delAng (sec)
      * timeStamp_ms is the timestamp of the last image used to calculate delPos and delAng (msec)
      * posOffset is the XYZ body frame position of the camera focal point (m)
