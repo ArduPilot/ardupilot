@@ -176,3 +176,11 @@ void SRV_Channels::calc_pwm(void)
         channels[i].calc_pwm(functions[channels[i].function].output_scaled);
     }
 }
+
+// set output value for a specific function channel as a pwm value
+void SRV_Channels::set_output_pwm_chan(uint8_t chan, uint16_t value)
+{
+    if (chan < NUM_SERVO_CHANNELS) {
+        channels[chan].set_output_pwm(value);
+    }
+}
