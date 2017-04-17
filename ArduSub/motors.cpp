@@ -118,11 +118,13 @@ void Sub::init_disarm_motors()
     // reset the mission
     mission.reset();
 
-    // suspend logging
-    if (!DataFlash.log_while_disarmed()) {
-        DataFlash.EnableWrites(false);
-    }
     DataFlash_Class::instance()->set_vehicle_armed(false);
+
+    if (DataFlash.log_while_disarmed()) {
+        start_logging(); // create a new log if necessary
+    } else {
+        DataFlash.EnableWrites(false); // suspend logging
+    }
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
