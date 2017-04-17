@@ -17,9 +17,12 @@ float QuadPlane::tilt_max_change(bool up)
     } else {
         rate = tilt.max_rate_down_dps;
     }
-    if (plane.control_mode == MANUAL && tilt.tilt_type != TILT_TYPE_BINARY) {
-        // allow a minimum of 90 DPS in manual, to give fast control
-        rate = MAX(rate, 90);
+    if (tilt.tilt_type != TILT_TYPE_BINARY && !up) {
+        if (plane.control_mode == MANUAL || (!in_vtol_mode() && !assisted_flight)) {
+            // allow a minimum of 90 DPS in manual or if we are not
+            // stabilising, to give fast control
+            rate = MAX(rate, 90);
+        }
     }
     return rate * plane.G_Dt / 90.0f;
 }
