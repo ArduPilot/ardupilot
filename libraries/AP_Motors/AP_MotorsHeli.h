@@ -68,9 +68,6 @@ public:
     // set update rate to motors - a value in hertz
     virtual void set_update_rate( uint16_t speed_hz ) = 0;
 
-    // enable - starts allowing signals to be sent to motors
-    virtual void enable() = 0;
-
     // output_min - sets servos to neutral point with motors stopped
     void output_min();
 

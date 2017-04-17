@@ -193,20 +193,6 @@ void AP_MotorsHeli_Dual::set_update_rate( uint16_t speed_hz )
     rc_set_freq(mask, _speed_hz);
 }
 
-// enable - starts allowing signals to be sent to motors
-void AP_MotorsHeli_Dual::enable()
-{
-    // enable output channels
-    rc_enable_ch(AP_MOTORS_MOT_1);
-    rc_enable_ch(AP_MOTORS_MOT_2);
-    rc_enable_ch(AP_MOTORS_MOT_3);
-    rc_enable_ch(AP_MOTORS_MOT_4);
-    rc_enable_ch(AP_MOTORS_MOT_5);
-    rc_enable_ch(AP_MOTORS_MOT_6);
-
-    rc_enable_ch(AP_MOTORS_HELI_DUAL_RSC);
-}
-
 // init_outputs
 bool AP_MotorsHeli_Dual::init_outputs()
 {
