@@ -398,81 +398,81 @@ private:
     // memory)
     Vector24 statesArray;
     struct state_elements {
-        Quaternion  quat;           // 0..3
-        Vector3f    velocity;       // 4..6
-        Vector3f    position;       // 7..9
-        Vector3f    gyro_bias;      // 10..12
-        Vector3f    accel_bias;     // 13..15
-        Vector3f    earth_magfield; // 16..18
-        Vector3f    body_magfield;  // 19..21
-        Vector2f    wind_vel;       // 22..23
+        Quaternion  quat;           // quaternion defining rotation from local NED earth frame to body frame
+        Vector3f    velocity;       // velocity of IMU in local NED earth frame (m/sec)
+        Vector3f    position;       // position of IMU in local NED earth frame (m)
+        Vector3f    gyro_bias;      // body frame delta angle IMU bias vector (rad)
+        Vector3f    accel_bias;     // body frame delta velocity IMU bias vector (m/sec)
+        Vector3f    earth_magfield; // earth frame magnetic field vector (Gauss)
+        Vector3f    body_magfield;  // body frame magnetic field vector (Gauss)
+        Vector2f    wind_vel;       // horizontal North East wind velocity vector in local NED earth frame (m/sec)
     } &stateStruct;
 
     struct output_elements {
-        Quaternion  quat;           // 0..3
-        Vector3f    velocity;       // 4..6
-        Vector3f    position;       // 7..9
+        Quaternion  quat;           // quaternion defining rotation from local NED earth frame to body frame
+        Vector3f    velocity;       // velocity of body frame origin in local NED earth frame (m/sec)
+        Vector3f    position;       // position of body frame origin in local NED earth frame (m)
     };
 
     struct imu_elements {
-        Vector3f    delAng;         // 0..2
-        Vector3f    delVel;         // 3..5
-        float       delAngDT;       // 6
-        float       delVelDT;       // 7
-        uint32_t    time_ms;        // 8
+        Vector3f    delAng;         // IMU delta angle measurements in body frame (rad)
+        Vector3f    delVel;         // IMU delta velocity measurements in body frame (m/sec)
+        float       delAngDT;       // time interval over which delAng has been measured (sec)
+        float       delVelDT;       // time interval over which delVelDT has been measured (sec)
+        uint32_t    time_ms;        // measurement timestamp (msec)
     };
 
     struct gps_elements {
-        Vector2f    pos;         // 0..1
-        float       hgt;         // 2
-        Vector3f    vel;         // 3..5
-        uint32_t    time_ms;     // 6
-        uint8_t     sensor_idx;  // 7
+        Vector2f    pos;            // horizontal North East position of the GPS antenna in local NED earth frame (m)
+        float       hgt;            // height of the GPS antenna in local NED earth frame (m)
+        Vector3f    vel;            // velocity of the GPS antenna in local NED earth frame (m/sec)
+        uint32_t    time_ms;        // measurement timestamp (msec)
+        uint8_t     sensor_idx;     // unique integer identifying the GPS sensor
     };
 
     struct mag_elements {
-        Vector3f    mag;         // 0..2
-        uint32_t    time_ms;     // 3
+        Vector3f    mag;            // body frame magnetic field measurements (Gauss)
+        uint32_t    time_ms;        // measurement timestamp (msec)
     };
 
     struct baro_elements {
-        float       hgt;         // 0
-        uint32_t    time_ms;     // 1
+        float       hgt;            // height of the pressure sensor in local NED earth frame (m)
+        uint32_t    time_ms;        // measurement timestamp (msec)
     };
 
     struct range_elements {
-        float       rng;         // 0
-        uint32_t    time_ms;     // 1
-        uint8_t     sensor_idx;  // 2
+        float       rng;            // distance measured by the range sensor (m)
+        uint32_t    time_ms;        // measurement timestamp (msec)
+        uint8_t     sensor_idx;     // integer either 0 or 1 uniquely identifying up to two range sensors
     };
 
     struct rng_bcn_elements {
-        float       rng;                // range measurement to each beacon (m)
-        Vector3f    beacon_posNED;      // NED position of the beacon (m)
-        float       rngErr;             // range measurement error 1-std (m)
-        uint8_t     beacon_ID;          // beacon identification number
-        uint32_t    time_ms;            // measurement timestamp (msec)
+        float       rng;            // range measurement to each beacon (m)
+        Vector3f    beacon_posNED;  // NED position of the beacon (m)
+        float       rngErr;         // range measurement error 1-std (m)
+        uint8_t     beacon_ID;      // beacon identification number
+        uint32_t    time_ms;        // measurement timestamp (msec)
     };
 
     struct tas_elements {
-        float       tas;         // 0
-        uint32_t    time_ms;     // 1
+        float       tas;            // true airspeed measurement (m/sec)
+        uint32_t    time_ms;        // measurement timestamp (msec)
     };
 
     struct of_elements {
-        Vector2f    flowRadXY;      // 0..1
-        Vector2f    flowRadXYcomp;  // 2..3
-        uint32_t    time_ms;        // 4
-        Vector3f    bodyRadXYZ;     //8..10
-        const Vector3f *body_offset;// 5..7
+        Vector2f    flowRadXY;      // raw (non motion compensated) optical flow angular rates about the XY body axes (rad/sec)
+        Vector2f    flowRadXYcomp;  // motion compensated XY optical flow angular rates about the XY body axes (rad/sec)
+        uint32_t    time_ms;        // measurement timestamp (msec)
+        Vector3f    bodyRadXYZ;     // body frame XYZ axis angular rates averaged across the optical flow measurement interval (rad/sec)
+        const Vector3f *body_offset;// pointer to XYZ position of the optical flow sensor in body frame (m)
     };
 
     struct bfodm_elements {
-        Vector3f        vel;            // 0..2 XYZ velocity measured in body frame (m/s)
-        float           velErr;         // 3 velocity measurement error 1-std (m/s)
-        const Vector3f *body_offset;    // 10..12 XYZ position of the velocity sensor in body frame (m)
-        Vector3f        angRate;        // 4..6 XYZ angular rate estimated from odometry rad/sec)
-        uint32_t        time_ms;        // 7 measurement timestamp (msec)
+        Vector3f        vel;        // XYZ velocity measured in body frame (m/s)
+        float           velErr;     // velocity measurement error 1-std (m/s)
+        const Vector3f *body_offset;// pointer to XYZ position of the velocity sensor in body frame (m)
+        Vector3f        angRate;    // angular rate estimated from odometry (rad/sec)
+        uint32_t        time_ms;    // measurement timestamp (msec)
     };
 
     // update the navigation filter status
