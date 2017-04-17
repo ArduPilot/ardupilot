@@ -220,7 +220,10 @@ void Sub::fifty_hz_loop()
 
     // Update servo output
     RC_Channels::set_pwm_all();
-    SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, g.cam_slew_limit, 0.02f);
+    // wait for outputs to initialize: TODO find a better way to do this
+    if (millis() > 10000) {
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, g.cam_slew_limit, 0.02f);
+    }
     SRV_Channels::output_ch_all();
 }
 
