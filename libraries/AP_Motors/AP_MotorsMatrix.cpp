@@ -40,19 +40,12 @@ void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame
 // set update rate to motors - a value in hertz
 void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
 {
-    uint8_t i;
-
     // record requested speed
     _speed_hz = speed_hz;
 
-    // check each enabled motor
-    uint32_t mask = 0;
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] ) {
-		mask |= 1U << i;
-        }
-    }
-    rc_set_freq( mask, _speed_hz );
+    // we can use a mask of 0xFF here as rc_set_freq masks with actual
+    // motor mask
+    rc_set_freq(0xFF, _speed_hz );
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
