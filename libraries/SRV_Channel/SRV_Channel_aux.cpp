@@ -460,6 +460,18 @@ int16_t SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t functi
     return 0;
 }
 
+/*
+  get mask of output channels for a function
+ */
+uint16_t SRV_Channels::get_output_channel_mask(SRV_Channel::Aux_servo_function_t function)
+{
+    if (function < SRV_Channel::k_nr_aux_servo_functions) {
+        return functions[function].channel_mask;
+    }
+    return 0;
+}
+
+
 // set the trim for a function channel to given pwm
 void SRV_Channels::set_trim_to_pwm_for(SRV_Channel::Aux_servo_function_t function, int16_t pwm)
 {
