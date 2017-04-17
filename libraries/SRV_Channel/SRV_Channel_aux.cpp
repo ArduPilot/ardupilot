@@ -408,6 +408,7 @@ bool SRV_Channels::set_aux_channel_default(SRV_Channel::Aux_servo_function_t fun
     channels[channel].function.set(function);
     channels[channel].aux_servo_function_setup();
     function_mask.set((uint8_t)function);
+    functions[function].channel_mask |= 1U<<channel;
     return true;
 }
 
@@ -465,6 +466,9 @@ int16_t SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t functi
  */
 uint16_t SRV_Channels::get_output_channel_mask(SRV_Channel::Aux_servo_function_t function)
 {
+    if (!initialised) {
+        update_aux_servo_function();
+    }
     if (function < SRV_Channel::k_nr_aux_servo_functions) {
         return functions[function].channel_mask;
     }
