@@ -85,6 +85,7 @@ private:
 
     uint32_t _io_timer_heartbeat;
     bool io_thread_alive() const;
+    uint8_t io_thread_warning_decimation_counter;
 
     uint16_t _cached_oldest_log;
 
