@@ -400,40 +400,53 @@ void AP_UAVCAN::do_cyclic(void)
         } else {
             if (rc_out_sem_take()) {
                 if (_rco_armed) {
-                    // TODO: several transmittions if did not fit in 15 servos
-                    uavcan::equipment::actuator::ArrayCommand msg;
+                    bool repeat_send;
 
-                    uint8_t k = 0;
-                    for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER && k < 15; i++) {
-                        uavcan::equipment::actuator::Command cmd;
+                    // if we have any Servos in bitmask
+                    if (_servo_bm > 0) {
+                        uint8_t starting_servo = 0;
 
-                        /*
-                         * Servo output uses a range of 1000-2000 PWM for scaling.
-                         * This converts output PWM from [1000:2000] range to [-1:1] range that
-                         * is passed to servo as unitless type via UAVCAN.
-                         * This approach allows for MIN/TRIM/MAX values to be used fully on
-                         * autopilot side and for servo it should have the setup to provide maximum
-                         * physically possible throws at [-1:1] limits.
-                         */
+                        do {
+                            repeat_send = false;
+                            uavcan::equipment::actuator::ArrayCommand msg;
 
-                        if (_rco_conf[i].active && ((((uint32_t) 1) << i) & _servo_bm)) {
-                            cmd.actuator_id = i + 1;
-
-                            // TODO: other types
-                            cmd.command_type = uavcan::equipment::actuator::Command::COMMAND_TYPE_UNITLESS;
-
-                            // TODO: failsafe, safety
-                            cmd.command_value = constrain_value(((float) _rco_conf[i].pulse - 1000.0) / 500.0 - 1.0, -1.0, 1.0);
-
-                            msg.commands.push_back(cmd);
-
+                            uint8_t i;
                             // UAVCAN can hold maximum of 15 commands in one frame
-                            k++;
-                        }
-                    }
+                            for (i = 0; starting_servo < UAVCAN_RCO_NUMBER && i < 15; starting_servo++) {
+                                uavcan::equipment::actuator::Command cmd;
 
-                    if (msg.commands.size() > 0) {
-                        act_out_array->broadcast(msg);
+                                /*
+                                 * Servo output uses a range of 1000-2000 PWM for scaling.
+                                 * This converts output PWM from [1000:2000] range to [-1:1] range that
+                                 * is passed to servo as unitless type via UAVCAN.
+                                 * This approach allows for MIN/TRIM/MAX values to be used fully on
+                                 * autopilot side and for servo it should have the setup to provide maximum
+                                 * physically possible throws at [-1:1] limits.
+                                 */
+
+                                if (_rco_conf[starting_servo].active && ((((uint32_t) 1) << (starting_servo)) & _servo_bm)) {
+                                    cmd.actuator_id = (starting_servo) + 1;
+
+                                    // TODO: other types
+                                    cmd.command_type = uavcan::equipment::actuator::Command::COMMAND_TYPE_UNITLESS;
+
+                                    // TODO: failsafe, safety
+                                    cmd.command_value = constrain_float(((float) _rco_conf[starting_servo].pulse - 1000.0) / 500.0 - 1.0, -1.0, 1.0);
+
+                                    msg.commands.push_back(cmd);
+
+                                    i++;
+                                }
+                            }
+
+                            if (i > 0) {
+                                act_out_array->broadcast(msg);
+
+                                if (i == 15) {
+                                    repeat_send = true;
+                                }
+                            }
+                        } while (repeat_send);
                     }
 
                     // if we have any ESC's in bitmask
@@ -442,6 +455,7 @@ void AP_UAVCAN::do_cyclic(void)
                         uavcan::equipment::esc::RawCommand esc_msg;
 
                         uint8_t active_esc_num = 0, max_esc_num = 0;
+                        uint8_t k = 0;
 
                         // find out how many esc we have enabled and if they are active at all
                         for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
