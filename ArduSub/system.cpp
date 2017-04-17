@@ -181,6 +181,10 @@ void Sub::init_ardupilot()
     // init vehicle capabilties
     init_capabilities();
 
+    if (DataFlash.log_while_disarmed()) {
+        start_logging(); // create a new log if necessary
+    }
+
     hal.console->print("\nInit complete");
 
     // flag that initialisation has completed
@@ -283,10 +287,7 @@ bool Sub::should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = motors.armed() || DataFlash.log_while_disarmed();
-    if (ret && !DataFlash.logging_started() && !in_log_download) {
-        start_logging();
-    }
+    bool ret = DataFlash.logging_started() && (motors.armed() || DataFlash.log_while_disarmed());
     return ret;
 #else
     return false;
