@@ -1088,9 +1088,6 @@ void QuadPlane::set_armed(bool armed)
         return;
     }
     motors->armed(armed);
-    if (armed) {
-        motors->enable();
-    }
 }
 
 
