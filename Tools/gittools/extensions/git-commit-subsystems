@@ -1,0 +1,121 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
+ROOT=$(dirname $(git -C $SCRIPT_DIR rev-parse --git-dir))
+GITTOOLS_DIR=$(realpath $SCRIPT_DIR/..)
+
+usage() {
+    cat >&$1 <<EOF
+Usage: git commit-subsystems [OPTIONS]
+
+Ardupilot's git extension.
+
+Creates a different commit for each ardupilot's subsystem (vehicles and
+libraries). The items in OPTIONS are passed down to the original git commit
+command. If hooks in Tools/gittools/hooks are installed, the commit message is
+used as a template such that occurrences of \$subsystem are replaced by the
+subsystem being currently committed.
+
+TIP: When using the same message for all subsystems being committed, commit
+options like -F or -m are very useful. Example:
+    git commit-subsystems -m "\$subsystem: refactoring feature X"
+
+NOTE: Using commit message from standard input (value "-" for option -F) isn't
+fully supported yet as it only works when there's only one subsystem staged.
+EOF
+}
+
+args=()
+
+while [[ -n "$1" ]]; do
+    case "$1" in
+    -h|--help)
+        usage 1
+        exit 0
+        ;;
+    *)
+        args+=("$1")
+        ;;
+    esac
+    shift
+done
+
+set -- "${args[@]}"
+
+if ! git diff-files --quiet --exit-code; then
+    echo "You have unstaged changes. Please, commit or stash them before committing subsystems." >&2
+    exit 1
+fi
+
+LIST=$ROOT/.git/COMMIT_SUBSYSTEMS_LIST
+
+echo > $LIST
+
+git diff --name-only --staged | $GITTOOLS_DIR/path-libraries.sh -p > $LIST
+git diff --name-only --staged | $GITTOOLS_DIR/path-nonlibraries.sh -p >> $LIST
+
+echo "Reseting changes in order to add files separately..."
+git reset >/dev/null
+
+# head before commits - for recovery
+RECOVERY_HEAD=$(git log -n 1 --format=%H)
+exit_hook() {
+    [[ $? -eq 0 ]] && return 0
+
+    set +e
+    echo
+    echo "Program interrupted or finished with error(s), reseting head..." >&2
+    git reset $RECOVERY_HEAD >/dev/null
+    echo "Trying to re-add files..." >&2
+    if [[ ! -f $LIST ]]; then
+        echo "File with list of added files not found..." >&2
+    else
+        error=false
+        cat $LIST | while read subsystem path; do
+            if ! git add -- "$path"; then
+                echo "Couldn't add \"$path\"..." >&2
+                error=true
+            fi
+        done
+
+        if $error; then
+            echo "This is embarrassing, couldn't re-add all files. Sorry." >&2
+        else
+            echo "Files re-added." >&2
+        fi
+    fi
+
+    return 1
+}
+
+set -e
+trap "exit 1" SIGINT
+trap exit_hook EXIT
+
+echo "Adding and committing subsystems..."
+exec 3< $LIST
+cur_subsystem=
+while read -u 3 subsystem path; do
+    if [[ $cur_subsystem != $subsystem ]]; then
+        if [[ -n $cur_subsystem ]]; then
+            if ! git commit "$@"; then
+                echo "Couldn't commit subsystem $cur_subsystem, aborting..." >&2
+                exit 1
+            fi
+            echo
+        fi
+        cur_subsystem=$subsystem
+    fi
+    if ! git add -- "$path"; then
+        echo "Couldn't add \"$path\", aborting..." >&2
+        exit 1
+    fi
+done
+# the last one
+if ! git commit "$@"; then
+    echo "Couldn't commit subsystem $cur_subsystem, aborting..." >&2
+    exit 1
+fi
+echo
+
+exec 3<&-

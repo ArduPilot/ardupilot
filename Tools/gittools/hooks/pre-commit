@@ -1,0 +1,24 @@
+#!/bin/bash
+export GIT_DIR=$(realpath $GIT_DIR)
+
+diff_cmd="git diff --name-only --staged"
+num_subsystems=$(
+    { $diff_cmd | Tools/gittools/path-nonlibraries.sh;
+      $diff_cmd | Tools/gittools/path-libraries.sh; } | wc -l)
+
+if ((num_subsystems > 1)) && [[ "$ARDUPILOT_SPLIT_CHECK" != "bypass" ]]; then
+    cat >&2 <<EOF
+pre-commit: multiples subsystems in commit, please either commit them
+separately or use git commit-subsystems...
+
+See: http://dev.ardupilot.com/wiki/submitting-patches-back-to-master/
+
+If you really want them committed together, please either use option
+--no-verify or set ARDUPILOT_SPLIT_CHECK=bypass.
+
+Commit aborted.
+EOF
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,4 @@
+#!/bin/bash
+export GIT_DIR=$(realpath $GIT_DIR)
+Tools/gittools/verify-version.sh
+exit 0
