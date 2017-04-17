@@ -3,8 +3,6 @@
 // enable_motor_output() - enable and output lowest possible value to motors
 void Sub::enable_motor_output()
 {
-    // enable motors
-    motors.enable();
     motors.output_min();
 }
 
