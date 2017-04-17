@@ -278,6 +278,9 @@ public:
     // return zero on error.
     static float get_output_norm(SRV_Channel::Aux_servo_function_t function);
 
+    // get output channel mask for a function
+    static uint16_t get_output_channel_mask(SRV_Channel::Aux_servo_function_t function);
+    
     // limit slew rate to given limit in percent per second
     static void limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt);
 
