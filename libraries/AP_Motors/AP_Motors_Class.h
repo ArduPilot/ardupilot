@@ -214,9 +214,7 @@ protected:
     float               _batt_resistance;       // latest battery resistance estimate in ohms
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
 
-    // mapping to output channels
-    uint8_t             _motor_map[AP_MOTORS_MAX_NUM_MOTORS];
-    uint16_t            _motor_map_mask;
+    // mask of what channels need fast output
     uint16_t            _motor_fast_mask;
 
     // pass through variables
