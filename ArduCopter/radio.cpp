@@ -99,9 +99,6 @@ void Copter::read_radio()
             ap.rc_receiver_present = true;
         }
 
-        // update output on any aux channels, for manual passthru
-        SRV_Channels::output_ch_all();
-
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
         radio_passthrough_to_motors();
 
