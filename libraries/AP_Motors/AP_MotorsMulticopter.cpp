@@ -162,6 +162,14 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("SPOOL_TIME",   36, AP_MotorsMulticopter,  _spool_up_time, AP_MOTORS_SPOOL_UP_TIME_DEFAULT),
+
+    // @Param: BOOST_SCALE
+    // @DisplayName: Motor boost scale
+    // @Description: This is a scaling factor for vehicles with a vertical booster motor used for extra lift. It is used with electric multicopters that have an internal combusion booster motor for longer endurance. The output to the BoostThrottle servo function is set to the current motor thottle times this scaling factor. A higher scaling factor will put more of the load on the booster motor. A value of 1 will set the BoostThrottle equal to the main throttle.
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("BOOST_SCALE",  37, AP_MotorsMulticopter,  _boost_scale, 0),
     
     AP_GROUPEND
 };
@@ -217,7 +225,20 @@ void AP_MotorsMulticopter::output()
     
     // convert rpy_thrust values to pwm
     output_to_motors();
+
+    // output any booster throttle
+    output_boost_throttle();
 };
+
+// output booster throttle, if any
+void AP_MotorsMulticopter::output_boost_throttle(void)
+{
+    if (_boost_scale > 0) {
+        float throttle = constrain_float(get_throttle() * _boost_scale, 0, 1);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_boost_throttle, throttle*1000);        
+    }
+}
+    
 
 // sends minimum values out to the motors
 void AP_MotorsMulticopter::output_min()
