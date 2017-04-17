@@ -72,19 +72,6 @@ void AP_MotorsMatrix::set_frame_class_and_type(motor_frame_class frame_class, mo
     set_update_rate(_speed_hz);
 }
 
-// enable - starts allowing signals to be sent to motors
-void AP_MotorsMatrix::enable()
-{
-    int8_t i;
-
-    // enable output channels
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] ) {
-            rc_enable_ch(i);
-        }
-    }
-}
-
 void AP_MotorsMatrix::output_to_motors()
 {
     int8_t i;
