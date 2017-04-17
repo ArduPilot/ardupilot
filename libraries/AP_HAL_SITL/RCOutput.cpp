@@ -69,14 +69,18 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
 
 void RCOutput::cork(void)
 {
-    memcpy(_pending, _sitlState->pwm_output, SITL_NUM_CHANNELS * sizeof(uint16_t));
-    _corked = true;
+    if (!_corked) {
+        memcpy(_pending, _sitlState->pwm_output, SITL_NUM_CHANNELS * sizeof(uint16_t));
+        _corked = true;
+    }
 }
 
 void RCOutput::push(void)
 {
-    memcpy(_sitlState->pwm_output, _pending, SITL_NUM_CHANNELS * sizeof(uint16_t));
-    _corked = false;
+    if (_corked) {
+        memcpy(_sitlState->pwm_output, _pending, SITL_NUM_CHANNELS * sizeof(uint16_t));
+        _corked = false;
+    }
 }
 
 #endif
