@@ -290,6 +290,9 @@ void Copter::motors_output()
         ap.in_arming_delay = false;
     }
 
+    // output any servo channels
+    SRV_Channels::calc_pwm();
+    
     // check if we are performing the motor test
     if (ap.motor_test) {
         motor_test_output();
