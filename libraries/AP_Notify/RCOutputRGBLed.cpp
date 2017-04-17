@@ -18,6 +18,7 @@
 #include "RCOutputRGBLed.h"
 
 #include <AP_Math/AP_Math.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -76,13 +77,13 @@ bool RCOutputRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     hal.rcout->cork();
 
     uint16_t usec_duty = usec_period * red / _led_bright;
-    hal.rcout->write(_red_channel, usec_duty);
+    SRV_Channels::set_output_pwm_chan(_red_channel, usec_duty);
 
     usec_duty = usec_period * green / _led_bright;
-    hal.rcout->write(_green_channel, usec_duty);
+    SRV_Channels::set_output_pwm_chan(_green_channel, usec_duty);
 
     usec_duty = usec_period * blue / _led_bright;
-    hal.rcout->write(_blue_channel, usec_duty);
+    SRV_Channels::set_output_pwm_chan(_blue_channel, usec_duty);
 
     return true;
 }
