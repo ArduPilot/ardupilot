@@ -98,9 +98,23 @@ float Plane::dragCoeff(float alpha) const
 }
 
 // Torque calculation function
-Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRudder, const Vector3f &force) const
+Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRudder, float inputThrust, const Vector3f &force) const
 {
-    const float alpha = angle_of_attack;
+    float alpha = angle_of_attack;
+
+	//calculate aerodynamic torque
+    float effective_airspeed = airspeed;
+
+    if (tailsitter) {
+        /*
+          tailsitters get airspeed from prop-wash
+         */
+        effective_airspeed += inputThrust * 20;
+
+        // reduce effective angle of attack as thrust increases
+        alpha *= constrain_float(1 - inputThrust, 0, 1);
+    }
+    
     const float s = coefficient.s;
     const float c = coefficient.c;
     const float b = coefficient.b;
@@ -129,10 +143,9 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	double q = gyro.y;
 	double r = gyro.z;
 
-	//calculate aerodynamic torque
-	double qbar = 1.0/2.0*rho*pow(airspeed,2)*s; //Calculate dynamic pressure
+	double qbar = 1.0/2.0*rho*pow(effective_airspeed,2)*s; //Calculate dynamic pressure
 	double la, na, ma;
-	if (is_zero(airspeed))
+	if (is_zero(effective_airspeed))
 	{
 		la = 0;
 		ma = 0;
@@ -140,9 +153,9 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	}
 	else
 	{
-		la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*airspeed) + c_l_r*b*r/(2*airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
-		ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*airspeed) + c_m_deltae*inputElevator);
-		na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*airspeed) + c_n_r*b*r/(2*airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
+		la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*effective_airspeed) + c_l_r*b*r/(2*effective_airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
+		ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*effective_airspeed) + c_m_deltae*inputElevator);
+		na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*effective_airspeed) + c_n_r*b*r/(2*effective_airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
 	}
 
 
@@ -254,9 +267,18 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     // calculate angle of attack
     angle_of_attack = atan2f(velocity_air_bf.z, velocity_air_bf.x);
     beta = atan2f(velocity_air_bf.y,velocity_air_bf.x);
+
+    if (tailsitter) {
+        /*
+          tailsitters get 4x the control surfaces
+         */
+        aileron *= 4;
+        elevator *= 4;
+        rudder *= 4;
+    }
     
     Vector3f force = getForce(aileron, elevator, rudder);
-    rot_accel = getTorque(aileron, elevator, rudder, force);
+    rot_accel = getTorque(aileron, elevator, rudder, thrust, force);
 
     // simulate engine RPM
     rpm1 = thrust * 7000;
