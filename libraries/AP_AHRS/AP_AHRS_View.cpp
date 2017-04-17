@@ -62,6 +62,9 @@ void AP_AHRS_View::update(bool skip_ins_update)
     roll_sensor  = degrees(roll) * 100;
     pitch_sensor = degrees(pitch) * 100;
     yaw_sensor   = degrees(yaw) * 100;
+    if (yaw_sensor < 0) {
+        yaw_sensor += 36000;
+    }
 
     ahrs.calc_trig(rot_body_to_ned,
                    trig.cos_roll, trig.cos_pitch, trig.cos_yaw,
