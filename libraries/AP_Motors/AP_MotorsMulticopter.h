@@ -137,6 +137,9 @@ protected:
     // apply any thrust compensation for the frame
     virtual void        thrust_compensation(void) {}
 
+    // output booster throttle, if any
+    virtual void        output_boost_throttle(void);
+    
     // save parameters as part of disarming
     void save_params_on_disarm();
 
@@ -168,6 +171,9 @@ protected:
 
     // time to spool motors to min throttle
     AP_Float            _spool_up_time;
+
+    // scaling for booster motor throttle
+    AP_Float            _boost_scale;
     
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
