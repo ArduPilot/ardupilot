@@ -1,0 +1,13 @@
+uint8 status
+uint32 time_week_ms
+uint16 time_week
+# Location
+int32 alt
+int32 lat
+int32 lng
+float32 ground_speed
+uint16 hdop
+uint8 num_sats
+float32 velocity_x
+float32 velocity_y
+float32 velocity_z

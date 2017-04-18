@@ -602,3 +602,39 @@ bool AP_Baro::all_healthy(void) const
      }
      return _num_sensors > 0;
 }
+
+/*
+  support for setters, used by ROS
+ */
+void AP_Baro::set_pressure(uint8_t instance, const float pressure)
+{
+    if (_num_sensors == 0) {
+        // we haven't initialised yet
+        return;
+    }
+    if (instance < BARO_MAX_INSTANCES) {
+        sensors[instance].pressure = pressure;
+    }
+}
+
+void AP_Baro::set_temperature(uint8_t instance, const float temperature)
+{
+    if (_num_sensors == 0) {
+        // we haven't initialised yet
+        return;
+    }
+    if (instance < BARO_MAX_INSTANCES) {
+        sensors[instance].temperature = temperature;
+    }
+}
+
+void AP_Baro::set_altitude(uint8_t instance, const float altitude)
+{
+    if (_num_sensors == 0) {
+        // we haven't initialised yet
+        return;
+    }
+    if (instance < BARO_MAX_INSTANCES) {
+        sensors[instance].altitude = altitude;
+    }
+}
