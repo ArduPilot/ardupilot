@@ -62,7 +62,7 @@ uint8_t PX4_I2C::map_bus_number(uint8_t bus) const
 /*
   implement wrapper for PX4 I2C driver
  */
-bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len)
+bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len, bool split_transfers)
 {
     set_address(address);
     if (!init_done) {
@@ -78,18 +78,26 @@ bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_le
     if (!init_ok) {
         return false;
     }
-    /*
-      splitting the transfer() into two pieces avoids a stop condition
-      with SCL low which is not supported on some devices (such as
-      LidarLite blue label)
-     */
-    if (send && send_len) {
-        if (transfer(send, send_len, nullptr, 0) != OK) {
-            return false;
+
+    if (split_transfers) {
+        /*
+          splitting the transfer() into two pieces avoids a stop condition
+          with SCL low which is not supported on some devices (such as
+          LidarLite blue label)
+        */
+        if (send && send_len) {
+            if (transfer(send, send_len, nullptr, 0) != OK) {
+                return false;
+            }
         }
-    }
-    if (recv && recv_len) {
-        if (transfer(nullptr, 0, recv, recv_len) != OK) {
+        if (recv && recv_len) {
+            if (transfer(nullptr, 0, recv, recv_len) != OK) {
+                return false;
+            }
+        }
+    } else {
+        // combined transfer
+        if (transfer(send, send_len, recv, recv_len) != OK) {
             return false;
         }
     }
@@ -120,7 +128,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
     perf_begin(perf);
-    bool ret = _px4dev.do_transfer(_address, send, send_len, recv, recv_len);
+    bool ret = _px4dev.do_transfer(_address, send, send_len, recv, recv_len, _split_transfers);
     perf_end(perf);
     return ret;
 }
