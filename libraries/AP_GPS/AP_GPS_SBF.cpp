@@ -292,14 +292,3 @@ AP_GPS_SBF::process_message(void)
     return false;
 }
 
-void
-AP_GPS_SBF::inject_data(const uint8_t *data, uint16_t len)
-{
-
-    if (port->txspace() > len) {
-        last_injected_data_ms = AP_HAL::millis();
-        port->write(data, len);
-    } else {
-        Debug("SBF: Not enough TXSPACE");
-    }
-}

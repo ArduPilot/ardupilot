@@ -34,8 +34,6 @@ public:
     // Methods
     bool read();
 
-    void inject_data(const uint8_t *data, uint16_t len) override;
-
 private:
 
     bool parse(uint8_t temp);

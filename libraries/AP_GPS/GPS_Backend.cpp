@@ -16,6 +16,14 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
+#define GPS_BACKEND_DEBUGGING 0
+
+#if GPS_BACKEND_DEBUGGING
+ # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#else
+ # define Debug(fmt, args ...)
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
@@ -112,3 +120,17 @@ void AP_GPS_Backend::fill_3d_velocity(void)
     state.velocity.z = 0;
     state.have_vertical_velocity = false;
 }
+
+void
+AP_GPS_Backend::inject_data(const uint8_t *data, uint16_t len)
+{
+    // not all backends have valid ports
+    if (port != nullptr) {
+        if (port->txspace() > len) {
+            port->write(data, len);
+        } else {
+            Debug("GPS %d: Not enough TXSPACE", state.instance + 1);
+        }
+    }
+}
+
