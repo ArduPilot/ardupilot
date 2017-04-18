@@ -152,6 +152,8 @@ void Plane::update_is_flying_5Hz(void)
 
     crash_detection_update();
 
+    crash_detection_update();
+
     if (should_log(MASK_LOG_MODE)) {
         Log_Write_Status();
     }
