@@ -502,7 +502,7 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_STATUS_MSG, sizeof(log_Status),
       "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit" },
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
-      "QTUN", "Qffffehhffff", "TimeUS,AngBst,ThrOut,DAlt,Alt,BarAlt,DCRt,CRt,DVx,DVy,DAx,DAy" },
+      "QTUN", "Qffffhhfffff", "TimeUS,AngBst,ThrOut,DAlt,Alt,DCRt,CRt,DVx,DVy,DAx,DAy,TMix" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
