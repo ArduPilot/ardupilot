@@ -796,6 +796,20 @@ struct PACKED log_AOA_SSA {
     float SSA;
 };
 
+struct PACKED log_Beacon {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t health;
+    uint8_t count;
+    float dist0;
+    float dist1;
+    float dist2;
+    float dist3;
+    float posx;
+    float posy;
+    float posz;
+};
+
 // #endif // SBP_HW_LOGGING
 
 #define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
@@ -914,7 +928,9 @@ Format characters in the format string for binary log messages
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QCBCB", "TimeUS,Dist1,Orient1,Dist2,Orient2" }, \
     { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
-      "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx" }
+      "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx" }, \
+    { LOG_BEACON_MSG, sizeof(log_Beacon), \
+      "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -1195,6 +1211,7 @@ enum LogMessages {
     LOG_RALLY_MSG,
     LOG_VISUALODOM_MSG,
     LOG_AOA_SSA_MSG,
+    LOG_BEACON_MSG,
 };
 
 enum LogOriginType {
