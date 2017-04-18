@@ -543,10 +543,12 @@ void PX4RCOutput::push()
     hal.gpio->pinMode(55, HAL_GPIO_OUTPUT);
     hal.gpio->write(55, 0);
 #endif
-    _corking = false;
-    if (_output_mode == MODE_PWM_ONESHOT) {
-        // run timer immediately in oneshot mode
-        _send_outputs();
+    if (_corking) {
+        _corking = false;
+        if (_output_mode == MODE_PWM_ONESHOT) {
+            // run timer immediately in oneshot mode
+            _send_outputs();
+        }
     }
 }
 
