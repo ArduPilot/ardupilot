@@ -776,6 +776,20 @@ void QuadPlane::init_hover(void)
 }
 
 /*
+  check for an EKF yaw reset
+ */
+void QuadPlane::check_yaw_reset(void)
+{
+    float yaw_angle_change_rad = 0.0f;
+    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
+    if (new_ekfYawReset_ms != ekfYawReset_ms) {
+        attitude_control->shift_ef_yaw_target(degrees(yaw_angle_change_rad) * 100);
+        ekfYawReset_ms = new_ekfYawReset_ms;
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF yaw reset %.2f", degrees(yaw_angle_change_rad));
+    }
+}
+
+/*
   hold hover with target climb rate
  */
 void QuadPlane::hold_hover(float target_climb_rate)
@@ -807,6 +821,8 @@ void QuadPlane::control_hover(void)
     } else {
         hold_hover(get_pilot_desired_climb_rate_cms());
     }
+
+    check_yaw_reset();
 }
 
 void QuadPlane::init_loiter(void)
@@ -964,6 +980,8 @@ void QuadPlane::control_loiter()
         pos_control->set_alt_target_from_climb_rate_ff(get_pilot_desired_climb_rate_cms(), plane.G_Dt, false);
     }
     run_z_controller();
+
+    check_yaw_reset();
 }
 
 /*
@@ -1850,6 +1868,8 @@ void QuadPlane::takeoff_controller(void)
     
     pos_control->set_alt_target_from_climb_rate(wp_nav->get_speed_up(), plane.G_Dt, true);
     run_z_controller();
+
+    check_yaw_reset();
 }
 
 /*
@@ -1919,6 +1939,7 @@ void QuadPlane::control_qrtl(void)
     } else {
         pos_control->set_alt_target(qrtl_alt*100UL);
     }
+    check_yaw_reset();
 }
 
 /*
