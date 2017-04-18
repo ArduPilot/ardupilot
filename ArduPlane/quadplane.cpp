@@ -2101,13 +2101,13 @@ void QuadPlane::Log_Write_QControl_Tuning()
         throttle_out        : motors->get_throttle(),
         desired_alt         : pos_control->get_alt_target() / 100.0f,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
-        baro_alt            : (int32_t)plane.barometer.get_altitude() * 100,
         desired_climb_rate  : (int16_t)pos_control->get_vel_target_z(),
         climb_rate          : (int16_t)inertial_nav.get_velocity_z(),
         dvx                 : desired_velocity.x*0.01f,
         dvy                 : desired_velocity.y*0.01f,
         dax                 : accel_target.x*0.01f,
         day                 : accel_target.y*0.01f,
+        throttle_mix        : attitude_control->get_throttle_mix(),
     };
     plane.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }

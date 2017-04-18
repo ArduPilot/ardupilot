@@ -96,13 +96,13 @@ public:
         float    throttle_out;
         float    desired_alt;
         float    inav_alt;
-        int32_t  baro_alt;
         int16_t  desired_climb_rate;
         int16_t  climb_rate;
         float    dvx;
         float    dvy;
         float    dax;
         float    day;
+        float    throttle_mix;
     };
         
 private:
