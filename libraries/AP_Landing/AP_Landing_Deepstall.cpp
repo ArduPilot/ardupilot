@@ -25,7 +25,7 @@
 // table of user settable parameters for deepstall
 const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 
-    // @Param: DS_V_FWD
+    // @Param: V_FWD
     // @DisplayName: Deepstall forward velocity
     // @Description: The forward velocity of the aircraft while stalled
     // @Range: 0 20
@@ -33,19 +33,19 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("V_FWD", 1, AP_Landing_Deepstall, forward_speed, 1),
 
-    // @Param: DS_SLOPE_A
+    // @Param: SLOPE_A
     // @DisplayName: Deepstall slope a
     // @Description: The a component of distance = a*wind + b
     // @User: Advanced
     AP_GROUPINFO("SLOPE_A", 2, AP_Landing_Deepstall, slope_a, 1),
 
-    // @Param: DS_SLOPE_B
+    // @Param: SLOPE_B
     // @DisplayName: Deepstall slope b
     // @Description: The a component of distance = a*wind + b
     // @User: Advanced
     AP_GROUPINFO("SLOPE_B", 3, AP_Landing_Deepstall, slope_b, 1),
 
-    // @Param: DS_APP_EXT
+    // @Param: APP_EXT
     // @DisplayName: Deepstall approach extension
     // @Description: The forward velocity of the aircraft while stalled
     // @Range: 10 200
@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("APP_EXT", 4, AP_Landing_Deepstall, approach_extension, 50),
 
-    // @Param: DS_V_DWN
+    // @Param: V_DWN
     // @DisplayName: Deepstall veloicty down
     // @Description: The downward velocity of the aircraft while stalled
     // @Range: 0 20
@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("V_DWN", 5, AP_Landing_Deepstall, down_speed, 2),
 
-    // @Param: DS_SLEW_SPD
+    // @Param: SLEW_SPD
     // @DisplayName: Deepstall slew speed
     // @Description: The speed at which the elevator slews to deepstall
     // @Range: 0 2
@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SLEW_SPD", 6, AP_Landing_Deepstall, slew_speed, 0.5),
 
-    // @Param: DS_ELEV_PWM
+    // @Param: ELEV_PWM
     // @DisplayName: Deepstall elevator PWM
     // @Description: The PWM value for the elevator at full deflection in deepstall
     // @Range: 900 2100
@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ELEV_PWM", 7, AP_Landing_Deepstall, elevator_pwm, 1500),
 
-    // @Param: DS_ARSP_MAX
+    // @Param: ARSP_MAX
     // @DisplayName: Deepstall enabled airspeed
     // @Description: The maximum aispeed where the deepstall steering controller is allowed to have control
     // @Range: 5 20
@@ -85,7 +85,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ARSP_MAX", 8, AP_Landing_Deepstall, handoff_airspeed, 15.0),
 
-    // @Param: DS_ARSP_MIN
+    // @Param: ARSP_MIN
     // @DisplayName: Deepstall minimum derating airspeed
     // @Description: Deepstall lowest airspeed where the deepstall controller isn't allowed full control
     // @Range: 5 20
@@ -93,7 +93,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ARSP_MIN", 9, AP_Landing_Deepstall, handoff_lower_limit_airspeed, 10.0),
 
-    // @Param: DS_L1
+    // @Param: L1
     // @DisplayName: Deepstall L1 period
     // @Description: Deepstall L1 navigational controller period
     // @Range: 5 50
@@ -101,14 +101,14 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("L1", 10, AP_Landing_Deepstall, L1_period, 30.0),
 
-    // @Param: DS_L1_I
+    // @Param: L1_I
     // @DisplayName: Deepstall L1 I gain
     // @Description: Deepstall L1 integratior gain
     // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("L1_I", 11, AP_Landing_Deepstall, L1_i, 0),
 
-    // @Param: DS_YAW_LIM
+    // @Param: YAW_LIM
     // @DisplayName: Deepstall yaw rate limit
     // @Description: The yaw rate limit while navigating in deepstall
     // @Range: 0 90
@@ -116,7 +116,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("YAW_LIM", 12, AP_Landing_Deepstall, yaw_rate_limit, 10),
 
-    // @Param: DS_L1_TCON
+    // @Param: L1_TCON
     // @DisplayName: Deepstall L1 time constant
     // @Description: Time constant for deepstall L1 control
     // @Range: 0 1
