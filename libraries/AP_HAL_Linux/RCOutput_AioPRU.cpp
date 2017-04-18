@@ -142,6 +142,9 @@ void RCOutput_AioPRU::cork(void)
 
 void RCOutput_AioPRU::push(void)
 {
+    if (!corked) {
+        return;
+    }
     corked = false;
     for (uint8_t i=0; i<PWM_CHAN_COUNT; i++) {
         if (pending_mask & (1U<<i)) {
