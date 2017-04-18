@@ -534,7 +534,7 @@ void Plane::set_servos_flaps(void)
                 }
                 break;
             case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
-                if (auto_flap_percent != 0 && in_preLaunch_flight_stage()) {
+                if (g.takeoff_flap_percent != 0 && in_preLaunch_flight_stage()) {
                     // TODO: move this to a new FLIGHT_PRE_TAKEOFF stage
                     auto_flap_percent = g.takeoff_flap_percent;
                 }
