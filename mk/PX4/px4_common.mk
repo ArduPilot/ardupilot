@@ -22,7 +22,6 @@ MODULES		+= drivers/px4fmu
 #MODULES	+= drivers/hott_telemetry
 #MODULES	+= drivers/blinkm
 #MODULES	+= modules/sensors
-MODULES		+= drivers/mkblctrl
 
 #
 # System commands
