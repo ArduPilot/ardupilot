@@ -14,7 +14,7 @@ extern const AP_HAL::HAL& hal;
 class PX4::PX4_I2C : public device::I2C {
 public:
     PX4_I2C(uint8_t bus);
-    bool do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len);
+    bool do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len, bool split_transfers);
 
     void set_retries(uint8_t retries) {
         _retries = retries;

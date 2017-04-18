@@ -65,6 +65,10 @@ public:
         return &businfo[_busnum<num_buses?_busnum:0].semaphore;
     }
 
+    void set_split_transfers(bool set) override {
+        _split_transfers = set;
+    }
+    
 private:
     static const uint8_t num_buses = 2;
     static DeviceBus businfo[num_buses];
@@ -74,6 +78,7 @@ private:
     uint8_t _address;
     perf_counter_t perf;
     char *pname;
+    bool _split_transfers;
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
