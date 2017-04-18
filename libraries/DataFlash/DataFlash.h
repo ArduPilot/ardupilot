@@ -20,6 +20,7 @@
 #include <DataFlash/LogStructure.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Rally/AP_Rally.h>
+#include <AP_Beacon/AP_Beacon.h>
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -150,6 +151,7 @@ public:
                         const AC_PosControl &pos_control);
     void Log_Write_Rally(const AP_Rally &rally);
     void Log_Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
+    void Log_Write_Beacon(AP_Beacon &beacon);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 
