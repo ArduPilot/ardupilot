@@ -76,7 +76,7 @@ for FrSky SPort Passthrough
 #define GPS_STATUS_LIMIT            0x3
 #define GPS_STATUS_OFFSET           4
 #define GPS_HDOP_OFFSET             6
-#define GPS_VDOP_OFFSET             14
+#define GPS_ADVSTATUS_OFFSET        14
 #define GPS_ALTMSL_OFFSET           22
 // for battery data
 #define BATT_VOLTAGE_LIMIT          0x1FF
