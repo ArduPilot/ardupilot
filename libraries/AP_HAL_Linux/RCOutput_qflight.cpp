@@ -180,8 +180,10 @@ void RCOutput_QFLIGHT::cork(void)
 
 void RCOutput_QFLIGHT::push(void)
 {
-    corked = false;
-    need_write = true;
+    if (corked) {
+        corked = false;
+        need_write = true;
+    }
 }
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE
