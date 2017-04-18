@@ -763,6 +763,22 @@ void QuadPlane::init_hover(void)
 }
 
 /*
+  check for an EKF yaw reset
+ */
+void QuadPlane::check_yaw_reset(void)
+{
+    float yaw_angle_change_rad = 0.0f;
+    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
+    if (new_ekfYawReset_ms != ekfYawReset_ms) {
+        // we only reset if the EKF yaw reset happened since the last
+        // mode change. This prevents a past reset from before 
+        attitude_control->shift_ef_yaw_target(degrees(yaw_angle_change_rad) * 100);
+        ekfYawReset_ms = new_ekfYawReset_ms;
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF yaw reset %.2f", degrees(yaw_angle_change_rad));
+    }
+}
+
+/*
   hold hover with target climb rate
  */
 void QuadPlane::hold_hover(float target_climb_rate)
@@ -1299,7 +1315,7 @@ void QuadPlane::update(void)
     if (!setup()) {
         return;
     }
-
+    
     if (plane.afs.should_crash_vehicle()) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         motors->output();
@@ -1311,6 +1327,8 @@ void QuadPlane::update(void)
         return;
     }
 
+    check_yaw_reset();
+    
     if (!in_vtol_mode()) {
         update_transition();
     } else {
