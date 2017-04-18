@@ -62,13 +62,11 @@ private:
     } _outputs[ORB_MULTI_MAX_INSTANCES] {};
     actuator_armed_s _armed;
 
-    orb_advert_t _actuator_direct_pub;
     orb_advert_t _actuator_armed_pub;
     uint16_t _esc_pwm_min;
     uint16_t _esc_pwm_max;
 
     void _init_alt_channels(void);
-    void _publish_actuators(void);
     void _arm_actuators(bool arm);
     void set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_t &rate_mask);
     bool _corking;

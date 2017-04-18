@@ -9,7 +9,6 @@
 #include <unistd.h>
 
 #include <drivers/drv_pwm_output.h>
-#include <uORB/topics/actuator_direct.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
 #include <drivers/drv_sbus.h>
@@ -75,9 +74,6 @@ void PX4RCOutput::init()
     for (uint8_t i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
         _period[i] = PWM_IGNORE_THIS_CHANNEL;
     }
-
-    // publish actuator vaules on demand
-    _actuator_direct_pub = nullptr;
 }
 
 
@@ -471,7 +467,7 @@ void PX4RCOutput::_send_outputs(void)
         }
         if (to_send > 0) {
             _arm_actuators(true);
-            
+
             ::write(_pwm_fd, _period, to_send*sizeof(_period[0]));
         }
         if (_max_channel > _servo_count) {
