@@ -89,38 +89,32 @@ void AP_MotorsCoax::output_to_motors()
     switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors
-            hal.rcout->cork();
             rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_roll_radio_passthrough, _servo1));
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_pitch_radio_passthrough, _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(-_roll_radio_passthrough, _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(-_pitch_radio_passthrough, _servo4));
             rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_6, get_pwm_output_min());
-            hal.rcout->push();
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
-            hal.rcout->cork();
             rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[0], _servo1));
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[1], _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[2], _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[3], _servo4));
             rc_write(AP_MOTORS_MOT_5, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_6, calc_spin_up_to_pwm());
-            hal.rcout->push();
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
             // set motor output based on thrust requests
-            hal.rcout->cork();
             rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_actuator_out[0], _servo1));
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_actuator_out[1], _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_actuator_out[2], _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_actuator_out[3], _servo4));
             rc_write(AP_MOTORS_MOT_5, calc_thrust_to_pwm(_thrust_yt_ccw));
             rc_write(AP_MOTORS_MOT_6, calc_thrust_to_pwm(_thrust_yt_cw));
-            hal.rcout->push();
             break;
     }
 }

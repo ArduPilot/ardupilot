@@ -449,8 +449,6 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     }
     float servo3_out = ((_rollFactor[CH_3] * roll_out) + (_pitchFactor[CH_3] * pitch_out))*0.45f + _collectiveFactor[CH_3] * coll_out_scaled;
 
-    hal.rcout->cork();
-
     // rescale from -1..1, so we can use the pwm calc that includes trim
     servo1_out = 2*servo1_out - 1;
     servo2_out = 2*servo2_out - 1;
@@ -463,8 +461,6 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
 
     // update the yaw rate using the tail rotor/servo
     move_yaw(yaw_out + yaw_offset);
-
-    hal.rcout->push();
 }
 
 // move_yaw

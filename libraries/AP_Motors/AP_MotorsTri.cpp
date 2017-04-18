@@ -90,32 +90,26 @@ void AP_MotorsTri::output_to_motors()
     switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors
-            hal.rcout->cork();
             rc_write(AP_MOTORS_MOT_1, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_2, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_4, get_pwm_output_min());
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
-            hal.rcout->push();
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
-            hal.rcout->cork();
             rc_write(AP_MOTORS_MOT_1, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_2, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_4, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
-            hal.rcout->push();
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
             // set motor output based on thrust requests
-            hal.rcout->cork();
             rc_write(AP_MOTORS_MOT_1, calc_thrust_to_pwm(_thrust_right));
             rc_write(AP_MOTORS_MOT_2, calc_thrust_to_pwm(_thrust_left));
             rc_write(AP_MOTORS_MOT_4, calc_thrust_to_pwm(_thrust_rear));
             rc_write(AP_MOTORS_CH_TRI_YAW, calc_yaw_radio_output(_pivot_angle, radians(_yaw_servo_angle_max_deg)));
-            hal.rcout->push();
             break;
     }
 }
