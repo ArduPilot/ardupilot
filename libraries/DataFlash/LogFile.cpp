@@ -2099,7 +2099,7 @@ void DataFlash_Class::Log_Write_RPM(const AP_RPM &rpm_sensor)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write an rate packet
+// Write a rate packet
 void DataFlash_Class::Log_Write_Rate(const AP_AHRS &ahrs,
                                      const AP_Motors &motors,
                                      const AC_AttitudeControl &attitude_control,
@@ -2175,4 +2175,28 @@ void DataFlash_Class::Log_Write_AOA_SSA(AP_AHRS &ahrs)
     };
 
     WriteBlock(&aoa_ssa, sizeof(aoa_ssa));
+}
+
+// Write beacon sensor (position) data
+void DataFlash_Class::Log_Write_Beacon(AP_Beacon &beacon)
+{
+    // position
+    Vector3f pos;
+    float accuracy = 0.0f;
+    beacon.get_vehicle_position_ned(pos, accuracy);
+
+    struct log_Beacon pkt_beacon = {
+       LOG_PACKET_HEADER_INIT(LOG_BEACON_MSG),
+       time_us         : AP_HAL::micros64(),
+       health          : (uint8_t)beacon.healthy(),
+       count           : (uint8_t)beacon.count(),
+       dist0           : beacon.beacon_distance(0),
+       dist1           : beacon.beacon_distance(1),
+       dist2           : beacon.beacon_distance(2),
+       dist3           : beacon.beacon_distance(3),
+       posx            : pos.x,
+       posy            : pos.y,
+       posz            : pos.z
+    };
+    WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
 }
