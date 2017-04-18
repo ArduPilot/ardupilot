@@ -101,8 +101,6 @@ public:
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
-    void inject_data(const uint8_t *data, uint16_t len) override;
-    
     bool is_configured(void) {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         if (!gps._auto_config) {
