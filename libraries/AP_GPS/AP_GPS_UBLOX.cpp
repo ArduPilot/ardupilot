@@ -1275,17 +1275,6 @@ AP_GPS_UBLOX::_configure_rate(void)
     _send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));
 }
 
-void
-AP_GPS_UBLOX::inject_data(const uint8_t *data, uint16_t len)
-{
-    if (port->txspace() > len) {
-        port->write(data, len);
-    } else {
-        Debug("UBX: Not enough TXSPACE");
-    }
-}
-
-
 static const char *reasons[] = {"navigation rate",
                                 "posllh rate",
                                 "status rate",

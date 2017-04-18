@@ -24,7 +24,7 @@
 class AP_GPS_Backend
 {
 public:
-	AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     // we declare a virtual destructor so that GPS drivers can
     // override with a custom destructor if need be.
@@ -41,7 +41,7 @@ public:
 
     virtual bool is_configured(void) { return true; }
 
-    virtual void inject_data(const uint8_t *data, uint16_t len) { return; }
+    virtual void inject_data(const uint8_t *data, uint16_t len);
 
     //MAVLink methods
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan) { return ; }
