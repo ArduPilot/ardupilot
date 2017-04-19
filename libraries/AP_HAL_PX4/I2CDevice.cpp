@@ -53,7 +53,13 @@ uint8_t PX4_I2C::map_bus_number(uint8_t bus) const
 #else
         return 1;
 #endif
-        
+    case 2:
+        // map to expansion bus 2
+#ifdef PX4_I2C_BUS_EXPANSION1
+        return PX4_I2C_BUS_EXPANSION1;
+#else
+        return 2;
+#endif
     }
     // default to bus 1
     return 1;
