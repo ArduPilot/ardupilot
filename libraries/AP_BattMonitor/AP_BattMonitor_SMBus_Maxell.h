@@ -33,10 +33,6 @@ private:
     // read_block - returns number of characters read if successful, zero if unsuccessful
     uint8_t read_block(uint8_t reg, uint8_t* data, bool append_zero) const;
 
-    // get_PEC - calculate PEC for a read or write from the battery
-    //  buff is the data that was read or will be written
-    uint8_t get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool reading, const uint8_t buff[], uint8_t len) const;
-
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     uint8_t _pec_confirmed; // count of the number of times PEC has been confirmed as working
     bool _pec_supported;    // true if pec is supported
