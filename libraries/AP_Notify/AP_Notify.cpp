@@ -208,7 +208,7 @@ void AP_Notify::init(bool enable_external_leds)
 
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
         case Board_Type_Navio2:
-            boardled = new DiscreteRGBLed(4, 27, 6, false)
+            boardled = new DiscreteRGBLed(4, 27, 6, false);
             break;
 
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
