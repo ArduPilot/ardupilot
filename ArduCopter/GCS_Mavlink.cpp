@@ -547,6 +547,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_WIND:
     case MSG_POSITION_TARGET_GLOBAL_INT:
     case MSG_SERVO_OUT:
+    case MSG_AOA_SSA:
         // unused
         break;
 
