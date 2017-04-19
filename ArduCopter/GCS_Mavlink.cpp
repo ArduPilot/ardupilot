@@ -1176,10 +1176,8 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
                 new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
-                if (!copter.far_from_EKF_origin(new_home_loc)) {
-                    if (copter.set_home_and_lock(new_home_loc)) {
-                        result = MAV_RESULT_ACCEPTED;
-                    }
+                if (copter.set_home_and_lock(new_home_loc)) {
+                    result = MAV_RESULT_ACCEPTED;
                 }
             }
             break;
@@ -2019,9 +2017,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             new_home_loc.lat = packet.latitude;
             new_home_loc.lng = packet.longitude;
             new_home_loc.alt = packet.altitude / 10;
-            if (copter.far_from_EKF_origin(new_home_loc)) {
-                break;
-            }
             copter.set_home_and_lock(new_home_loc);
         }
         break;
