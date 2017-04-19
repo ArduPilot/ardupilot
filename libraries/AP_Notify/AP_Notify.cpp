@@ -66,12 +66,12 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
 
-    // @Param: TONEALARM_TYPE
-    // @DisplayName: Type of Tone Alarm to be used
-    // @Description: This sets up the type of tones to be used, Defaults to PX4
-    // @Values: 0:Disabled,1:PX4,2:Solo,3:Linux
+    // @Param: BRD_TYPE
+    // @DisplayName: Board type for notify devices
+    // @Description: This sets up the notification devices based on board, Defaults to PX4
+    // @Values: 0:None,1:PX4,2:PX4_V4,3:Solo,4:VRBrain,5:VRBrain_45,6:Linux_Default,7:Navio,8:Navio3,9:BBBMini,10:Blue,11:RASPilot,12:MinLure,13:ERLEBrain2,14:PXFMini,15:BH,16:Disco
     // @User: Advanced
-    AP_GROUPINFO("BRD_TYPE", 4, AP_Notify, _board_type, 0),
+    AP_GROUPINFO("BRD_TYPE", 4, AP_Notify, _board_type, 1),
 
     AP_GROUPEND
 };
