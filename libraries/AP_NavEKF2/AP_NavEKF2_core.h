@@ -159,7 +159,7 @@ public:
     // All NED positions calcualted by the filter will be relative to this location
     // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
     // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(struct Location &loc);
+    bool setOriginLLH(const Location &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.

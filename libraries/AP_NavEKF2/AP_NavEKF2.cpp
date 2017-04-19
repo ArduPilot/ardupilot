@@ -997,7 +997,7 @@ bool NavEKF2::getOriginLLH(struct Location &loc) const
 // All NED positions calculated by the filter will be relative to this location
 // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
 // Returns false if the filter has rejected the attempt to set the origin
-bool NavEKF2::setOriginLLH(struct Location &loc)
+bool NavEKF2::setOriginLLH(const Location &loc)
 {
     if (!core) {
         return false;
