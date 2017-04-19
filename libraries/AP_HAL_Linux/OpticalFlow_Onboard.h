@@ -22,16 +22,29 @@
 #include "AP_HAL_Linux.h"
 #include "CameraSensor.h"
 #include "Flow_PX4.h"
+#include "PWM_Sysfs.h"
 #include "VideoIn.h"
+#include "AP_HAL/utility/RingBuffer.h"
 
-class Linux::OpticalFlow_Onboard : public AP_HAL::OpticalFlow {
+namespace Linux {
+
+class GyroSample {
 public:
-    void init(AP_HAL::OpticalFlow::Gyro_Cb);
+    Vector2f gyro;
+    uint64_t time_us;
+};
+
+class OpticalFlow_Onboard : public AP_HAL::OpticalFlow {
+public:
+    void init();
     bool read(AP_HAL::OpticalFlow::Data_Frame& frame);
+    void push_gyro(float gyro_x, float gyro_y, float dt);
+    void push_gyro_bias(float gyro_bias_x, float gyro_bias_y);
 
 private:
     void _run_optflow();
     static void *_read_thread(void *arg);
+    void _get_integrated_gyros(uint64_t timestamp, GyroSample &gyro);
     VideoIn* _videoin;
     VideoIn::Frame _last_video_frame;
     PWM_Sysfs_Base* _pwm;
@@ -54,8 +67,13 @@ private:
     float _pixel_flow_y_integral;
     float _gyro_x_integral;
     float _gyro_y_integral;
-    uint32_t _integration_timespan;
+    uint64_t _integration_timespan;
     uint8_t _surface_quality;
-    AP_HAL::OpticalFlow::Gyro_Cb _get_gyro;
-    Vector3f _last_gyro_rate;
+    Vector2f _last_gyro_rate;
+    Vector2f _gyro_bias;
+    Vector2f _integrated_gyro;
+    uint64_t _last_integration_time;
+    ObjectBuffer<GyroSample> *_gyro_ring_buffer;
 };
+
+}

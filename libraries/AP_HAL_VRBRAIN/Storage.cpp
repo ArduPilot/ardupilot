@@ -23,6 +23,7 @@ using namespace VRBRAIN;
 #define STORAGE_DIR "/fs/microsd/APM"
 #define OLD_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
 #define OLD_STORAGE_FILE_BAK STORAGE_DIR "/" SKETCHNAME ".bak"
+//#define SAVE_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".sav"
 #define MTD_PARAMS_FILE "/fs/mtd"
 #define MTD_SIGNATURE 0x14012014
 #define MTD_SIGNATURE_OFFSET (8192-4)
@@ -51,9 +52,11 @@ uint32_t VRBRAINStorage::_mtd_signature(void)
     if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
         AP_HAL::panic("Failed to seek in " MTD_PARAMS_FILE);
     }
+    bus_lock(true);
     if (read(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
         AP_HAL::panic("Failed to read signature from " MTD_PARAMS_FILE);
     }
+    bus_lock(false);
     close(mtd_fd);
     return v;
 }
@@ -71,9 +74,11 @@ void VRBRAINStorage::_mtd_write_signature(void)
     if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
         AP_HAL::panic("Failed to seek in " MTD_PARAMS_FILE);
     }
+    bus_lock(true);
     if (write(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
         AP_HAL::panic("Failed to write signature in " MTD_PARAMS_FILE);
     }
+    bus_lock(false);
     close(mtd_fd);
 }
 
@@ -103,10 +108,12 @@ void VRBRAINStorage::_upgrade_to_mtd(void)
     }
     close(old_fd);
     ssize_t ret;
+    bus_lock(true);
     if ((ret=::write(mtd_fd, _buffer, sizeof(_buffer))) != sizeof(_buffer)) {
         ::printf("mtd write of %u bytes returned %d errno=%d\n", sizeof(_buffer), ret, errno);
         AP_HAL::panic("Unable to write MTD for upgrade");
     }
+    bus_lock(false);
     close(mtd_fd);
 #if STORAGE_RENAME_OLD_FILE
     rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
@@ -156,7 +163,9 @@ void VRBRAINStorage::_storage_open(void)
 	}
         const uint16_t chunk_size = 128;
         for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
+            bus_lock(true);
             ssize_t ret = read(fd, &_buffer[ofs], chunk_size);
+            bus_lock(false);
             if (ret != chunk_size) {
                 ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
                          (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
@@ -164,6 +173,15 @@ void VRBRAINStorage::_storage_open(void)
             }
 	}
 	close(fd);
+
+#ifdef SAVE_STORAGE_FILE
+        fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        if (fd != -1) {
+            write(fd, _buffer, sizeof(_buffer));
+            close(fd);
+            ::printf("Saved storage file %s\n", SAVE_STORAGE_FILE);
+        }
+#endif
 	_initialised = true;
 }
 
@@ -203,6 +221,26 @@ void VRBRAINStorage::write_block(uint16_t loc, const void *src, size_t n)
 		memcpy(&_buffer[loc], src, n);
 		_mark_dirty(loc, n);
 	}
+}
+
+void VRBRAINStorage::bus_lock(bool lock)
+{
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 void VRBRAINStorage::_timer_tick(void)
@@ -254,12 +292,15 @@ void VRBRAINStorage::_timer_tick(void)
 	 */
 	if (lseek(_fd, i<<VRBRAIN_STORAGE_LINE_SHIFT, SEEK_SET) == (i<<VRBRAIN_STORAGE_LINE_SHIFT)) {
 		_dirty_mask &= ~write_mask;
-		if (write(_fd, &_buffer[i<<VRBRAIN_STORAGE_LINE_SHIFT], n<<VRBRAIN_STORAGE_LINE_SHIFT) != n<<VRBRAIN_STORAGE_LINE_SHIFT) {
-			// write error - likely EINTR
-			_dirty_mask |= write_mask;
-			close(_fd);
-			_fd = -1;
-			perf_count(_perf_errors);
+                bus_lock(true);
+		ssize_t ret = write(_fd, &_buffer[i<<VRBRAIN_STORAGE_LINE_SHIFT], n<<VRBRAIN_STORAGE_LINE_SHIFT);
+                bus_lock(false);
+                if (ret != n<<VRBRAIN_STORAGE_LINE_SHIFT) {
+                    // write error - likely EINTR
+                    _dirty_mask |= write_mask;
+                    close(_fd);
+                    _fd = -1;
+                    perf_count(_perf_errors);
 		}
 	}
 	perf_end(_perf_storage);

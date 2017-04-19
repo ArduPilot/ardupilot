@@ -461,7 +461,7 @@ uint32_t count = 0;
 		#else
 			data	=	pgm_read_word_near(0);	//*	get the first word of the user program
 		#endif
-			if (data != 0xffff)					//*	make sure its valid before jumping to it.
+			if (data != 0xffff)					//*	make sure it's valid before jumping to it.
 			{
 				asm volatile(
 						"clr	r30		\n\t"

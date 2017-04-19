@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 /*
@@ -8,6 +6,7 @@
 
 #define CRASH_DETECTION_DELAY_MS            500
 #define IS_FLYING_IMPACT_TIMER_MS           3000
+#define GPS_IS_FLYING_SPEED_CMS             150
 
 /*
   Do we think we are flying?
@@ -19,7 +18,7 @@ void Plane::update_is_flying_5Hz(void)
     bool is_flying_bool;
     uint32_t now_ms = AP_HAL::millis();
 
-    uint32_t ground_speed_thresh_cm = (g.min_gndspeed_cm > 0) ? ((uint32_t)(g.min_gndspeed_cm*0.9f)) : 500;
+    uint32_t ground_speed_thresh_cm = (aparm.min_gndspeed_cm > 0) ? ((uint32_t)(aparm.min_gndspeed_cm*0.9f)) : GPS_IS_FLYING_SPEED_CMS;
     bool gps_confirmed_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
                                     (gps.ground_speed_cm() >= ground_speed_thresh_cm);
 
@@ -71,12 +70,16 @@ void Plane::update_is_flying_5Hz(void)
                 crash_state.impact_detected = false;
             }
 
+            if (landing.is_on_approach() && fabsf(auto_state.sink_rate) > 0.2f) {
+                is_flying_bool = true;
+            }
+
             switch (flight_stage)
             {
-            case AP_SpdHgtControl::FLIGHT_TAKEOFF:
+            case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
                 break;
 
-            case AP_SpdHgtControl::FLIGHT_NORMAL:
+            case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
                 if (in_preLaunch_flight_stage()) {
                     // while on the ground, an uncalibrated airspeed sensor can drift to 7m/s so
                     // ensure we aren't showing a false positive.
@@ -86,21 +89,11 @@ void Plane::update_is_flying_5Hz(void)
                 }
                 break;
 
-            case AP_SpdHgtControl::FLIGHT_VTOL:
+            case AP_Vehicle::FixedWing::FLIGHT_VTOL:
                 // TODO: detect ground impacts
                 break;
 
-            case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
-                if (fabsf(auto_state.sink_rate) > 0.2f) {
-                    is_flying_bool = true;
-                }
-                break;
-
-            case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
-            case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-                break;
-
-            case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
+            case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
                 if (auto_state.sink_rate < -0.5f) {
                     // steep climb
                     is_flying_bool = true;
@@ -115,9 +108,7 @@ void Plane::update_is_flying_5Hz(void)
         // when disarmed assume not flying and need overwhelming evidence that we ARE flying
         is_flying_bool = airspeed_movement && gps_confirmed_movement;
 
-        if ((control_mode == AUTO) &&
-            ((flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) ||
-             (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL)) ) {
+        if ((flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF) || landing.is_flaring()) {
             is_flying_bool = false;
         }
     }
@@ -153,6 +144,11 @@ void Plane::update_is_flying_5Hz(void)
         }
     }
     previous_is_flying = new_is_flying;
+    adsb.set_is_flying(new_is_flying);
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.set_is_flying(new_is_flying);
+#endif
+    g2.stats.set_flying(new_is_flying);
 
     crash_detection_update();
 
@@ -185,7 +181,7 @@ bool Plane::is_flying(void)
  */
 void Plane::crash_detection_update(void)
 {
-    if (control_mode != AUTO || !g.crash_detection_enable)
+    if (control_mode != AUTO || !aparm.crash_detection_enable)
     {
         // crash detection is only available in AUTO mode
         crash_state.debounce_timer_ms = 0;
@@ -201,44 +197,7 @@ void Plane::crash_detection_update(void)
 
     if (!is_flying() && arming.is_armed())
     {
-        switch (flight_stage)
-        {
-        case AP_SpdHgtControl::FLIGHT_TAKEOFF:
-            if (g.takeoff_throttle_min_accel > 0 &&
-                    !throttle_suppressed) {
-                // if you have an acceleration holding back throttle, but you met the
-                // accel threshold but still not fying, then you either shook/hit the
-                // plane or it was a failed launch.
-                crashed = true;
-                crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
-            }
-            // TODO: handle auto missions without NAV_TAKEOFF mission cmd
-            break;
-
-        case AP_SpdHgtControl::FLIGHT_NORMAL:
-            if (!in_preLaunch_flight_stage() && been_auto_flying) {
-                crashed = true;
-                crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
-            }
-            break;
-
-        case AP_SpdHgtControl::FLIGHT_VTOL:
-            // we need a totally new method for this
-            crashed = false;
-            break;
-            
-        case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
-            if (been_auto_flying) {
-                crashed = true;
-                crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
-            }
-            // when altitude gets low, we automatically progress to FLIGHT_LAND_FINAL
-            // so ground crashes most likely can not be triggered from here. However,
-            // a crash into a tree would be caught here.
-            break;
-
-        case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
-        case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+        if (landing.is_expecting_impact()) {
             // We should be nice and level-ish in this flight stage. If not, we most
             // likely had a crazy landing. Throttle is inhibited already at the flare
             // but go ahead and notify GCS and perform any additional post-crash actions.
@@ -260,11 +219,47 @@ void Plane::crash_detection_update(void)
             }
 
             crash_state.checkedHardLanding = true;
-            break;
 
-        default:
-            break;
-        } // switch
+        } else if (landing.is_on_approach()) {
+            // when altitude gets low, we automatically flare so ground crashes
+            // most likely can not be triggered from here. However,
+            // a crash into a tree would be caught here.
+            if (been_auto_flying) {
+                crashed = true;
+                crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
+            }
+
+        } else {
+            switch (flight_stage)
+            {
+            case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
+                if (g.takeoff_throttle_min_accel > 0 &&
+                        !throttle_suppressed) {
+                    // if you have an acceleration holding back throttle, but you met the
+                    // accel threshold but still not fying, then you either shook/hit the
+                    // plane or it was a failed launch.
+                    crashed = true;
+                    crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
+                }
+                // TODO: handle auto missions without NAV_TAKEOFF mission cmd
+                break;
+
+            case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
+                if (!in_preLaunch_flight_stage() && been_auto_flying) {
+                    crashed = true;
+                    crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
+                }
+                break;
+
+            case AP_Vehicle::FixedWing::FLIGHT_VTOL:
+                // we need a totally new method for this
+                crashed = false;
+                break;
+
+            default:
+                break;
+            } // switch
+        }
     } else {
         crash_state.checkedHardLanding = false;
     }
@@ -280,7 +275,7 @@ void Plane::crash_detection_update(void)
     } else if ((now_ms - crash_state.debounce_timer_ms >= crash_state.debounce_time_total_ms) && !crash_state.is_crashed) {
         crash_state.is_crashed = true;
 
-        if (g.crash_detection_enable == CRASH_DETECT_ACTION_BITMASK_DISABLED) {
+        if (aparm.crash_detection_enable == CRASH_DETECT_ACTION_BITMASK_DISABLED) {
             if (crashed_near_land_waypoint) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected. No action taken");
             } else {
@@ -288,10 +283,9 @@ void Plane::crash_detection_update(void)
             }
         }
         else {
-            if (g.crash_detection_enable & CRASH_DETECT_ACTION_BITMASK_DISARM) {
+            if (aparm.crash_detection_enable & CRASH_DETECT_ACTION_BITMASK_DISARM) {
                 disarm_motors();
             }
-            auto_state.land_complete = true;
             if (crashed_near_land_waypoint) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");
             } else {
@@ -307,7 +301,7 @@ void Plane::crash_detection_update(void)
 bool Plane::in_preLaunch_flight_stage(void) {
     return (control_mode == AUTO &&
             throttle_suppressed &&
-            flight_stage == AP_SpdHgtControl::FLIGHT_NORMAL &&
+            flight_stage == AP_Vehicle::FixedWing::FLIGHT_NORMAL &&
             mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF);
 }
 

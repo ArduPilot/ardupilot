@@ -108,12 +108,13 @@ qurt: all
 %-asan: OPTFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer
 %-asan: LDFLAGS += -fsanitize=address
 
-# cope with -nologging
-%-nologging: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
-
 # cope with copter and hil targets
-FRAMES = quad tri hexa y6 octa octa-quad heli single coax obc nologging
-BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 px4-v4 sitl flymaple linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrbrain-v52 vrubrain-v51 vrubrain-v52 vrhero-v10 erle pxf navio navio2 raspilot bbbmini minlure erlebrain2 bhat qflight pxfmini
+FRAMES = heli
+BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 px4-v3 px4-v4 sitl flymaple linux erle pxf navio navio2 raspilot bbbmini minlure erlebrain2 bhat qflight pxfmini
+BOARDS += vrbrain
+BOARDS += vrbrain-v51 vrbrain-v52 vrbrain-v54
+BOARDS += vrcore-v10
+BOARDS += vrubrain-v51 vrubrain-v52
 
 define frame_template
 $(1)-$(2) : EXTRAFLAGS += "-DFRAME_CONFIG=$(shell echo $(2) | tr a-z A-Z | sed s/-/_/g)_FRAME "
@@ -157,4 +158,5 @@ clean:
 	@rm -fr $(BUILDROOT)
 
 include $(MK_DIR)/modules.mk
+include $(MK_DIR)/uavcangen.mk
 include $(MK_DIR)/mavgen.mk

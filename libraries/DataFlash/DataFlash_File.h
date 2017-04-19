@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /* 
    DataFlash logging - file oriented variant
 
@@ -10,6 +8,7 @@
 
 #if HAL_OS_POSIX_IO
 
+#include <AP_HAL/utility/RingBuffer.h>
 #include "DataFlash_Backend.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
@@ -34,39 +33,46 @@ public:
 
     // initialisation
     void Init() override;
-    bool CardInserted(void);
+    bool CardInserted(void) override;
 
     // erase handling
-    void EraseAll();
+    void EraseAll() override;
 
     // possibly time-consuming preparation handling:
-    bool NeedPrep();
-    void Prep();
+    bool NeedPrep() override;
+    void Prep() override;
 
     /* Write a block of data at current offset */
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
-    uint16_t bufferspace_available();
+    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) override;
+    uint32_t bufferspace_available() override;
 
     // high level interface
     uint16_t find_last_log() override;
-    void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
-    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
-    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
+    void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page) override;
+    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override;
+    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override;
     uint16_t get_num_logs() override;
     uint16_t start_new_log(void) override;
     void LogReadProcess(const uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
                         print_mode_fn print_mode,
-                        AP_HAL::BetterStream *port);
-    void DumpPageInfo(AP_HAL::BetterStream *port);
-    void ShowDeviceInfo(AP_HAL::BetterStream *port);
-    void ListAvailableLogs(AP_HAL::BetterStream *port);
+                        AP_HAL::BetterStream *port) override;
+    void DumpPageInfo(AP_HAL::BetterStream *port) override;
+    void ShowDeviceInfo(AP_HAL::BetterStream *port) override;
+    void ListAvailableLogs(AP_HAL::BetterStream *port) override;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    void flush(void);
+    void flush(void) override;
 #endif
-    void periodic_fullrate(const uint32_t now);
-    
+    void periodic_1Hz(const uint32_t now) override;
+    void periodic_fullrate(const uint32_t now) override;
+
+    // this method is used when reporting system status over mavlink
+    bool logging_enabled() const override;
+    bool logging_failed() const override;
+
+    void vehicle_was_disarmed() override;
+
 private:
     int _write_fd;
     int _read_fd;
@@ -76,6 +82,10 @@ private:
     volatile bool _initialised;
     volatile bool _open_error;
     const char *_log_directory;
+
+    uint32_t _io_timer_heartbeat;
+    bool io_thread_alive() const;
+    uint8_t io_thread_warning_decimation_counter;
 
     uint16_t _cached_oldest_log;
 
@@ -103,36 +113,35 @@ private:
     const float min_avail_space_percent = 10.0f;
 #endif
     // write buffer
-    uint8_t *_writebuf;
-    uint32_t _writebuf_size; // in bytes; may be == 65536, thus 32-bits
+    ByteBuffer _writebuf;
     const uint16_t _writebuf_chunk;
-    volatile uint16_t _writebuf_head;
-    volatile uint16_t _writebuf_tail;
     uint32_t _last_write_time;
 
     /* construct a file name given a log number. Caller must free. */
     char *_log_file_name(const uint16_t log_num) const;
+    char *_log_file_name_long(const uint16_t log_num) const;
+    char *_log_file_name_short(const uint16_t log_num) const;
     char *_lastlog_file_name() const;
     uint32_t _get_log_size(const uint16_t log_num) const;
     uint32_t _get_log_time(const uint16_t log_num) const;
 
-    void stop_logging(void);
+    void stop_logging(void) override;
 
     void _io_timer(void);
 
-    uint16_t critical_message_reserved_space() const {
+    uint32_t critical_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
-        uint16_t ret = 1024;
-        if (ret > _writebuf_size) {
+        uint32_t ret = 1024;
+        if (ret > _writebuf.get_size()) {
             // in this case you will only get critical messages
-            ret = _writebuf_size;
+            ret = _writebuf.get_size();
         }
         return ret;
     };
-    uint16_t non_messagewriter_message_reserved_space() const {
+    uint32_t non_messagewriter_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
-        uint16_t ret = 1024;
-        if (ret >= _writebuf_size) {
+        uint32_t ret = 1024;
+        if (ret >= _writebuf.get_size()) {
             // need to allow messages out from the messagewriters.  In
             // this case while you have a messagewriter you won't get
             // any other messages.  This should be a corner case!
@@ -140,6 +149,13 @@ private:
         }
         return ret;
     };
+
+    // free-space checks; filling up SD cards under NuttX leads to
+    // corrupt filesystems which cause loss of data, failure to gather
+    // data and failures-to-boot.
+    uint32_t _free_space_last_check_time; // milliseconds
+    const uint32_t _free_space_check_interval = 1000UL; // milliseconds
+    const uint32_t _free_space_min_avail = 8388608; // bytes
 
     AP_HAL::Semaphore *semaphore;
     

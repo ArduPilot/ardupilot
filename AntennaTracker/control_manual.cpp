@@ -1,9 +1,7 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Tracker.h"
 
 /*
- * control_manual.pde - manual control mode
+ * Manual control mode
  */
 
 /*
@@ -13,10 +11,12 @@
 void Tracker::update_manual(void)
 {
     // copy yaw and pitch input to output
-    channel_yaw.set_radio_out(constrain_int16(channel_yaw.get_radio_in(), channel_yaw.get_radio_min(), channel_yaw.get_radio_max()));
-    channel_pitch.set_radio_out(constrain_int16(channel_pitch.get_radio_in(), channel_pitch.get_radio_min(), channel_pitch.get_radio_max()));
-
-    // send output to servos
-    channel_yaw.output();
-    channel_pitch.output();
+    SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_yaw, RC_Channels::rc_channel(CH_YAW)->get_radio_in());
+    SRV_Channels::constrain_pwm(SRV_Channel::k_tracker_yaw);
+    
+    SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_pitch, RC_Channels::rc_channel(CH_PITCH)->get_radio_in());
+    SRV_Channels::constrain_pwm(SRV_Channel::k_tracker_pitch);
+    
+    SRV_Channels::calc_pwm();
+    SRV_Channels::output_ch_all();
 }

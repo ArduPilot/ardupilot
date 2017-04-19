@@ -18,7 +18,6 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <SITL/SITL.h>
 #include <SITL/SIM_Gimbal.h>
@@ -30,6 +29,7 @@ class HAL_SITL;
 class HALSITL::SITL_State {
     friend class HALSITL::Scheduler;
     friend class HALSITL::Util;
+    friend class HALSITL::GPIO;
 public:
     void init(int argc, char * const argv[]);
 
@@ -43,7 +43,6 @@ public:
     int gps2_pipe(void);
     ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
-    uint16_t last_pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
     bool new_rc_input;
     void loop_hook(void);
@@ -83,10 +82,11 @@ private:
     void _setup_timer(void);
     void _setup_adc(void);
 
-    float height_agl(void);
+    void set_height_agl(void);
     void _update_barometer(float height);
-    void _update_compass(float rollDeg, float pitchDeg, float yawDeg);
-    void _update_flow(void);
+    void _update_compass(void);
+
+    void _set_signal_handlers(void) const;
 
     struct gps_data {
         double latitude;
@@ -103,9 +103,9 @@ private:
 
     bool _gps_has_basestation_position;
     gps_data _gps_basestation_data;
-    void _gps_write(const uint8_t *p, uint16_t size);
-    void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size);
-    void _update_gps_ubx(const struct gps_data *d);
+    void _gps_write(const uint8_t *p, uint16_t size, uint8_t instance = 0);
+    void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size, uint8_t instance);
+    void _update_gps_ubx(const struct gps_data *d, uint8_t instance);
     void _update_gps_mtk(const struct gps_data *d);
     void _update_gps_mtk16(const struct gps_data *d);
     void _update_gps_mtk19(const struct gps_data *d);
@@ -114,21 +114,22 @@ private:
     void _update_gps_nmea(const struct gps_data *d);
     void _sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload);
     void _update_gps_sbp(const struct gps_data *d);
+    void _update_gps_sbp2(const struct gps_data *d);
     void _update_gps_file(const struct gps_data *d);
+    void _update_gps_nova(const struct gps_data *d);
+    void _nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen);
+    uint32_t CRC32Value(uint32_t icrc);
+    uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
     void _update_gps(double latitude, double longitude, float altitude,
                      double speedN, double speedE, double speedD, bool have_lock);
 
-    void _update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
-                     double rollRate, 	double pitchRate,double yawRate,	// Local to plane
-                     double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
-                     float airspeed,	float altitude);
-    void _fdm_input(void);
+    void _update_ins(float airspeed);
+    void _check_rc_input(void);
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
     void _simulator_servos(SITL::Aircraft::sitl_input &input);
     void _simulator_output(bool synthetic_clock_mode);
-    void _apply_servo_filter(float deltat);
     uint16_t _airspeed_sensor(float airspeed);
     uint16_t _ground_sonar();
     float _rand_float(void);
@@ -150,7 +151,6 @@ private:
     AP_InertialSensor *_ins;
     Scheduler *_scheduler;
     Compass *_compass;
-    OpticalFlow *_optical_flow;
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain *_terrain;
 #endif
@@ -158,12 +158,15 @@ private:
     SocketAPM _sitl_rc_in{true};
     SITL::SITL *_sitl;
     uint16_t _rcout_port;
-    uint16_t _simin_port;
+    uint16_t _rcin_port;
+    uint16_t _fg_view_port;
+    uint16_t _irlock_port;
     float _current;
 
     bool _synthetic_clock_mode;
 
     bool _use_rtscts;
+    bool _use_fg_view;
     
     const char *_fdm_address;
 

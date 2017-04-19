@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,6 +15,7 @@
 
 #include "AP_RPM.h"
 #include "RPM_PX4_PWM.h"
+#include "RPM_Pin.h"
 #include "RPM_SITL.h"
 
 extern const AP_HAL::HAL& hal;
@@ -25,47 +25,68 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PX4-PWM
+    // @Values: 0:None,1:PX4-PWM,2:AUXPIN
+    // @User: Standard
     AP_GROUPINFO("_TYPE",    0, AP_RPM, _type[0], 0),
 
     // @Param: _SCALING
     // @DisplayName: RPM scaling
     // @Description: Scaling factor between sensor reading and RPM.
     // @Increment: 0.001
+    // @User: Standard
     AP_GROUPINFO("_SCALING", 1, AP_RPM, _scaling[0], 1.0f),
 
     // @Param: _MAX
     // @DisplayName: Maximum RPM
     // @Description: Maximum RPM to report
     // @Increment: 1
+    // @User: Standard
     AP_GROUPINFO("_MAX", 2, AP_RPM, _maximum[0], 100000),
 
     // @Param: _MIN
     // @DisplayName: Minimum RPM
     // @Description: Minimum RPM to report
     // @Increment: 1
+    // @User: Standard
     AP_GROUPINFO("_MIN", 3, AP_RPM, _minimum[0], 10),
 
     // @Param: _MIN_QUAL
     // @DisplayName: Minimum Quality
     // @Description: Minimum data quality to be used
     // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("_MIN_QUAL", 4, AP_RPM, _quality_min[0], 0.5),
 
+    // @Param: _PIN
+    // @DisplayName: Input pin number
+    // @Description: Which pin to use
+    // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
+    // @User: Standard
+    AP_GROUPINFO("_PIN",    5, AP_RPM, _pin[0], 54),
+    
 #if RPM_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PX4-PWM
+    // @Values: 0:None,1:PX4-PWM,2:AUXPIN
+    // @User: Advanced
     AP_GROUPINFO("2_TYPE",    10, AP_RPM, _type[1], 0),
 
     // @Param: 2_SCALING
     // @DisplayName: RPM scaling
     // @Description: Scaling factor between sensor reading and RPM.
     // @Increment: 0.001
+    // @User: Advanced
     AP_GROUPINFO("2_SCALING", 11, AP_RPM, _scaling[1], 1.0f),
 #endif
 
+    // @Param: 2_PIN
+    // @DisplayName: RPM2 input pin number
+    // @Description: Which pin to use
+    // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
+    // @User: Standard
+    AP_GROUPINFO("2_PIN",    12, AP_RPM, _pin[1], -1),
+    
     AP_GROUPEND
 };
 
@@ -96,6 +117,9 @@ void AP_RPM::init(void)
         if (type == RPM_TYPE_PX4_PWM) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RPM_PX4_PWM(*this, instance, state[instance]);
+        } else if (type == RPM_TYPE_PIN) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RPM_Pin(*this, instance, state[instance]);
         }
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -103,7 +127,7 @@ void AP_RPM::init(void)
         state[instance].instance = instance;
         drivers[instance] = new AP_RPM_SITL(*this, instance, state[instance]);
 #endif
-        if (drivers[i] != NULL) {
+        if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
             num_instances = i+1;
@@ -117,7 +141,7 @@ void AP_RPM::init(void)
 void AP_RPM::update(void)
 {
     for (uint8_t i=0; i<num_instances; i++) {
-        if (drivers[i] != NULL) {
+        if (drivers[i] != nullptr) {
             if (_type[i] == RPM_TYPE_NONE) {
                 // allow user to disable a RPM sensor at runtime
                 continue;

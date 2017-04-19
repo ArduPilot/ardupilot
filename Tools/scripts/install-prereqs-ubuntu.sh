@@ -1,22 +1,37 @@
 #!/bin/bash
 set -e
+set -x
 
 OPT="/opt"
-BASE_PKGS="gawk make git arduino-core curl"
-PYTHON_PKGS="pymavlink MAVProxy droneapi catkin_pkg"
-PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
-          autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
-          zip genromfs python-empy libc6-i386"
-BEBOP_PKGS="g++-arm-linux-gnueabihf"
-SITL_PKGS="g++ python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing ccache realpath"
+BASE_PKGS="build-essential ccache g++ gawk git make wget"
+PYTHON_PKGS="future lxml pymavlink MAVProxy"
+PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
+          autoconf texinfo libftdi-dev zlib1g-dev \
+          zip genromfs python-empy cmake cmake-data"
+ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
+SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing realpath"
 ASSUME_YES=false
 
-read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
+UBUNTU_YEAR="15" # Ubuntu Year were changes append
+UBUNTU_MONTH="10" # Ubuntu Month were changes append
 
-if [ "$UBUNTU_CODENAME" = "xenial" ]; then
-    SITL_PKGS+=" python-wxgtk3.0"
+version=$(lsb_release -r -s)
+yrelease=$(echo "$version" | cut -d. -f1)
+mrelease=$(echo "$version" | cut -d. -f2)
+
+if [ "$yrelease" -ge "$UBUNTU_YEAR" ]; then
+    if [ "$yrelease" -gt "$UBUNTU_YEAR" ] || [ "$mrelease" -ge "$UBUNTU_MONTH" ]; then
+        SITL_PKGS+=" python-wxgtk3.0 libtool-bin"
+    else
+        SITL_PKGS+=" python-wxgtk2.8"
+    fi
+fi
+
+MACHINE_TYPE=$(uname -m)
+if [ ${MACHINE_TYPE} == 'x86_64' ]; then
+    PX4_PKGS+=" libc6-i386"
 else
-    SITL_PKGS+=" python-wxgtk2.8"
+  echo "no extra pkgs for i386"
 fi
 
 # GNU Tools for ARM Embedded Processors
@@ -59,12 +74,20 @@ else
     APT_GET="sudo apt-get"
 fi
 
+# possibly grab a newer cmake for older ubuntu releases
+read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
+if [ "$UBUNTU_CODENAME" = "precise" ]; then
+    sudo add-apt-repository ppa:george-edison55/precise-backports -y
+elif [ "$UBUNTU_CODENAME" = "trusty" ]; then
+    sudo add-apt-repository ppa:george-edison55/cmake-3.x -y
+fi
+
 sudo usermod -a -G dialout $USER
 
 $APT_GET remove modemmanager
 $APT_GET update
-$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $BEBOP_PKGS
-sudo pip2 -q install $PYTHON_PKGS
+$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS
+sudo pip2 -q install -U $PYTHON_PKGS
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (

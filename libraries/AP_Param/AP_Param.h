@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -50,32 +49,58 @@
 // no conflict with the parent
 #define AP_PARAM_NO_SHIFT           8
 
+// the var_info is a pointer, allowing for dynamic definition of the var_info tree
+#define AP_PARAM_FLAG_INFO_POINTER  16
+
+// vehicle and frame type flags, used to hide parameters when not
+// relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
+// enable parameters flagged in this way. frame type flags are stored
+// in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
+#define AP_PARAM_FRAME_TYPE_SHIFT   5
+
+// supported frame types for parameters
+#define AP_PARAM_FRAME_COPTER       (1<<0)
+#define AP_PARAM_FRAME_ROVER        (1<<1)
+#define AP_PARAM_FRAME_PLANE        (1<<2)
+#define AP_PARAM_FRAME_SUB          (1<<3)
+#define AP_PARAM_FRAME_TRICOPTER    (1<<4)
+#define AP_PARAM_FRAME_HELI         (1<<5)
+
 // a variant of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
 // is constant and known at compile time
 #define AP_VAROFFSET(type, element) (((ptrdiff_t)(&((const type *)1)->element))-1)
 
 // find the type of a variable given the class and element
-#define AP_CLASSTYPE(class, element) ((uint8_t)(((const class *) 1)->element.vtype))
+#define AP_CLASSTYPE(clazz, element) ((uint8_t)(((const clazz *) 1)->element.vtype))
 
 // declare a group var_info line
-#define AP_GROUPINFO_FLAGS(name, idx, class, element, def, flags) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), {def_value : def}, flags }
+#define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { AP_CLASSTYPE(clazz, element), idx, name, AP_VAROFFSET(clazz, element), {def_value : def}, flags }
+
+// declare a group var_info line with a frame type mask
+#define AP_GROUPINFO_FRAME(name, idx, clazz, element, def, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, (frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT )
+
+// declare a group var_info line with both flags and frame type mask
+#define AP_GROUPINFO_FLAGS_FRAME(name, idx, clazz, element, def, flags, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags|((frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT) )
 
 // declare a group var_info line
-#define AP_GROUPINFO(name, idx, class, element, def) AP_GROUPINFO_FLAGS(name, idx, class, element, def, 0)
+#define AP_GROUPINFO(name, idx, clazz, element, def) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, 0)
 
 // declare a nested group entry in a group var_info
-#define AP_NESTEDGROUPINFO(class, idx) { AP_PARAM_GROUP, idx, "", 0, { group_info : class::var_info }, 0 }
+#define AP_NESTEDGROUPINFO(clazz, idx) { AP_PARAM_GROUP, idx, "", 0, { group_info : clazz::var_info }, 0 }
 
 // declare a subgroup entry in a group var_info. This is for having another arbitrary object as a member of the parameter list of
 // an object
-#define AP_SUBGROUPINFO(element, name, idx, thisclass, elclass) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclass, element), { group_info : elclass::var_info }, AP_PARAM_FLAG_NESTED_OFFSET }
+#define AP_SUBGROUPINFO(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET }
 
 // declare a pointer subgroup entry in a group var_info
-#define AP_SUBGROUPPTR(element, name, idx, thisclass, elclass) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclass, element), { group_info : elclass::var_info }, AP_PARAM_FLAG_POINTER }
+#define AP_SUBGROUPPTR(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_POINTER }
 
-#define AP_GROUPEND     { AP_PARAM_NONE, 0xFF, "", 0, { group_info : NULL } }
-#define AP_VAREND       { AP_PARAM_NONE, "", 0, NULL, { group_info : NULL } }
+// declare a pointer subgroup entry in a group var_info with a pointer var_info
+#define AP_SUBGROUPVARPTR(element, name, idx, thisclazz, var_info) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info_ptr : &var_info }, AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER }
+
+#define AP_GROUPEND     { AP_PARAM_NONE, 0xFF, "", 0, { group_info : nullptr } }
+#define AP_VAREND       { AP_PARAM_NONE, "", 0, nullptr, { group_info : nullptr } }
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
@@ -105,9 +130,10 @@ public:
         ptrdiff_t offset; // offset within the object
         union {
             const struct GroupInfo *group_info;
+            const struct GroupInfo **group_info_ptr; // when AP_PARAM_FLAG_INFO_POINTER is set in flags
             const float def_value;
         };
-        uint8_t flags;
+        uint16_t flags;
     };
     struct Info {
         uint8_t type; // AP_PARAM_*
@@ -116,13 +142,14 @@ public:
         const void *ptr;    // pointer to the variable in memory
         union {
             const struct GroupInfo *group_info;
+            const struct GroupInfo **group_info_ptr; // when AP_PARAM_FLAG_INFO_POINTER is set in flags
             const float def_value;
         };
-        uint8_t flags;
+        uint16_t flags;
     };
     struct ConversionInfo {
         uint16_t old_key; // k_param_*
-        uint8_t old_group_element; // index in old object
+        uint32_t old_group_element; // index in old object
         enum ap_var_type type; // AP_PARAM_*
         const char *new_name;
     };
@@ -168,7 +195,7 @@ public:
     // level of nesting, so the first level of nesting gets 6 bits the 2nd
     // level gets the next 6 bits, and the 3rd level gets the last 6
     // bits. This limits groups to having at most 64 elements.
-    static uint32_t group_id(const struct GroupInfo *grpinfo, uint8_t base, uint8_t i, uint8_t shift);
+    static uint32_t group_id(const struct GroupInfo *grpinfo, uint32_t base, uint8_t i, uint8_t shift);
     
     /// Copy the variable's name, prefixed by any containing group name, to a
     /// buffer.
@@ -198,7 +225,7 @@ public:
     /// If the variable has no name, it cannot be found by this interface.
     ///
     /// @param  name            The full name of the variable to be found.
-    /// @return                 A pointer to the variable, or NULL if
+    /// @return                 A pointer to the variable, or nullptr if
     ///                         it does not exist.
     ///
     static AP_Param * find(const char *name, enum ap_var_type *ptype);
@@ -214,7 +241,7 @@ public:
     ///
     ///
     /// @param  idx             The index of the variable
-    /// @return                 A pointer to the variable, or NULL if
+    /// @return                 A pointer to the variable, or nullptr if
     ///                         it does not exist.
     ///
     static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token);
@@ -263,8 +290,12 @@ public:
     ///
     /// @return                False if any variable failed to load
     ///
-    static bool load_all(void);
+    static bool load_all(bool check_defaults_file=true);
 
+    /// reoad the hal.util defaults file. Called after pointer parameters have been allocated
+    ///
+    static void reload_defaults_file(bool panic_on_error=true);
+    
     static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
     
     // set a AP_Param variable to a specified value
@@ -278,22 +309,34 @@ public:
     // load default values for scalars in a group
     static void         setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info);
 
-    // set a value directly in an object. This should only be used by
-    // example code, not by mainline vehicle code
-    static void set_object_value(const void *object_pointer, 
-                                 const struct GroupInfo *group_info, 
+    // set a value directly in an object.
+    // return true if the name was found and set, else false.
+    // This should only be used by example code, not by mainline vehicle code
+    static bool set_object_value(const void *object_pointer,
+                                 const struct GroupInfo *group_info,
                                  const char *name, float value);
 
     // load default values for all scalars in the main sketch. This
     // does not recurse into the sub-objects    
     static void         setup_sketch_defaults(void);
 
+    // find an old parameter and return it.
+    static bool find_old_parameter(const struct ConversionInfo *info, AP_Param *value);
+    
     // convert old vehicle parameters to new object parameters
-    static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size);
+    static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
 
     // convert a single parameter with scaling
-    static void         convert_old_parameter(const struct ConversionInfo *info, float scaler);
+    enum {
+        CONVERT_FLAG_REVERSE=1, // handle _REV -> _REVERSED conversion
+        CONVERT_FLAG_FORCE=2    // store new value even if configured in eeprom already
+    };
+    static void         convert_old_parameter(const struct ConversionInfo *info, float scaler, uint8_t flags=0);
 
+    // move old class variables for a class that was sub-classed to one that isn't
+    static void         convert_parent_class(uint8_t param_key, void *object_pointer,
+                                             const struct AP_Param::GroupInfo *group_info);
+    
     /// Erase all variables in EEPROM.
     ///
     static void         erase_all(void);
@@ -315,7 +358,7 @@ public:
 
     /// Returns the first variable
     ///
-    /// @return             The first variable in _var_info, or NULL if
+    /// @return             The first variable in _var_info, or nullptr if
     ///                     there are none.
     ///
     static AP_Param *      first(ParamToken *token, enum ap_var_type *ptype);
@@ -335,16 +378,26 @@ public:
     static bool             check_var_info(void);
 
     // return true if the parameter is configured in the defaults file
-    bool configured_in_defaults_file(void);
+    bool configured_in_defaults_file(void) const;
 
     // return true if the parameter is configured in EEPROM/FRAM
-    bool configured_in_storage(void);
+    bool configured_in_storage(void) const;
 
     // return true if the parameter is configured
-    bool configured(void) { return configured_in_defaults_file() || configured_in_storage(); }
+    bool configured(void) const { return configured_in_defaults_file() || configured_in_storage(); }
 
     // count of parameters in tree
     static uint16_t count_parameters(void);
+
+    static void set_hide_disabled_groups(bool value) { _hide_disabled_groups = value; }
+
+    // set frame type flags. Used to unhide frame specific parameters
+    static void set_frame_type_flags(uint16_t flags_to_set) {
+        _frame_type_flags |= flags_to_set;
+    }
+
+    // check if a given frame type should be included
+    static bool check_frame_type(uint16_t flags);
     
 private:
     /// EEPROM header
@@ -386,6 +439,8 @@ private:
     static const uint8_t        _sentinal_type  = 0x1F;
     static const uint8_t        _sentinal_group = 0xFF;
 
+    static uint16_t             _frame_type_flags;
+
     static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
@@ -393,6 +448,12 @@ private:
     static bool adjust_group_offset(uint16_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset);
     static bool get_base(const struct Info &info, ptrdiff_t &base);
 
+    /// get group_info pointer based on flags
+    static const struct GroupInfo *get_group_info(const struct GroupInfo &ginfo);
+
+    /// get group_info pointer based on flags
+    static const struct GroupInfo *get_group_info(const struct Info &ginfo);
+        
     const struct Info *         find_var_info_group(
                                     const struct GroupInfo *    group_info,
                                     uint16_t                    vindex,
@@ -417,7 +478,7 @@ private:
                                     struct Param_header phdr, void **ptr,
                                     uint16_t vindex,
                                     const struct GroupInfo *group_info,
-                                    uint8_t group_base,
+                                    uint32_t group_base,
                                     uint8_t group_shift,
                                     ptrdiff_t group_offset);
     static const struct Info *  find_by_header(
@@ -449,28 +510,25 @@ private:
                                     uint16_t vindex, 
                                     const struct GroupInfo *group_info,
                                     bool *found_current,
-                                    uint8_t group_base,
+                                    uint32_t group_base,
                                     uint8_t group_shift,
                                     ptrdiff_t group_offset,
                                     ParamToken *token,
                                     enum ap_var_type *ptype);
 
     // find a default value given a pointer to a default value in flash
-    static float get_default_value(const float *def_value_ptr);
-
-    /*
-      find the def_value for a variable by name
-    */
-    static const float *find_def_value_ptr(const char *name);
+    static float get_default_value(const AP_Param *object_ptr, const float *def_value_ptr);
 
 #if HAL_OS_POSIX_IO == 1
     /*
       load a parameter defaults file. This happens as part of load_all()
      */
     static bool parse_param_line(char *line, char **vname, float &value);
-    static bool load_defaults_file(const char *filename);
+    static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults, bool panic_on_error);
+    static bool read_param_defaults_file(const char *filename);
+    static bool load_defaults_file(const char *filename, bool panic_on_error);
 #endif
-
+    
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
     
@@ -483,7 +541,7 @@ private:
       list of overridden values from load_defaults_file()
     */
     struct param_override {
-        const float *def_value_ptr;
+        const AP_Param *object_ptr;
         float value;
     };
     static struct param_override *param_overrides;
@@ -493,6 +551,8 @@ private:
     static const uint8_t        k_EEPROM_magic0      = 0x50;
     static const uint8_t        k_EEPROM_magic1      = 0x41; ///< "AP"
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
+
+    static bool _hide_disabled_groups;
 };
 
 /// Template class for scalar variables.
@@ -528,12 +588,19 @@ public:
             set(v);
         }
     }
-    
+
     /// Value setter - set value, tell GCS
     ///
     void set_and_notify(const T &v) {
-        set(v);
-        notify();
+// We do want to compare each value, even floats, since it being the same here
+// is the result of previously setting it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+        if (v != _value) {
+#pragma GCC diagnostic pop
+            set(v);
+            notify();
+        }
     }
 
     /// Combined set and save
@@ -630,6 +697,15 @@ public:
     ///
     void set(const T &v) {
         _value = v;
+    }
+
+    /// Value setter - set value, tell GCS
+    ///
+    void set_and_notify(const T &v) {
+        if (v != _value) {
+            set(v);
+            notify();
+        }
     }
 
     /// Combined set and save

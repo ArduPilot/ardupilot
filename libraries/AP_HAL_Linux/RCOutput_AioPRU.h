@@ -16,7 +16,9 @@
 #define RCOUT_PRUSS_IRAM_BASE 0x4a338000
 #define PWM_CHAN_COUNT 12
 
-class Linux::RCOutput_AioPRU : public AP_HAL::RCOutput {
+namespace Linux {
+
+class RCOutput_AioPRU : public AP_HAL::RCOutput {
     void     init();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
@@ -25,6 +27,8 @@ class Linux::RCOutput_AioPRU : public AP_HAL::RCOutput {
     void     write(uint8_t ch, uint16_t period_us);
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
+    void     cork(void) override;
+    void     push(void) override;
 
 private:
    static const uint32_t TICK_PER_US = 200;
@@ -39,4 +43,9 @@ private:
     };
 
     volatile struct pwm *pwm;
+    uint16_t pending[PWM_CHAN_COUNT];
+    uint32_t pending_mask;
+    bool corked;
 };
+
+}

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_Rally.h
 /// @brief   Handles rally point storage, retrieval and lookup
 
@@ -62,6 +60,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    virtual bool is_valid(const Location &rally_point) const { return true; }
+
     static StorageAccess _storage;
 
     // internal variables

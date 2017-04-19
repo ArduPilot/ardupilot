@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 /*
@@ -18,7 +16,7 @@ void Copter::update_home_from_EKF()
     }
 
     // special logic if home is set in-flight
-    if (motors.armed()) {
+    if (motors->armed()) {
         set_home_to_current_location_inflight();
     } else {
         // move home to current ekf location (this will set home_state to HOME_SET)

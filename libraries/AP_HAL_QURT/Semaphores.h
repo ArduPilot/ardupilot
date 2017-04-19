@@ -9,7 +9,7 @@
 class QURT::Semaphore : public AP_HAL::Semaphore {
 public:
     Semaphore() {
-        pthread_mutex_init(&_lock, NULL);
+        pthread_mutex_init(&_lock, nullptr);
     }
     bool give();
     bool take(uint32_t timeout_ms);

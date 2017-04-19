@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -58,6 +57,9 @@ public:
 
     // return the rotation matrix equivalent for this quaternion
     void        rotation_matrix(Matrix3f &m) const;
+
+    // return the rotation matrix equivalent for this quaternion after normalization
+    void        rotation_matrix_norm(Matrix3f &m) const;
 
     void		from_rotation_matrix(const Matrix3f &m);
 

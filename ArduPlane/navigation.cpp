@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 // set the nav_controller pointer to the right controller
@@ -9,7 +7,7 @@ void Plane::set_nav_controller(void)
 
     default:
     case AP_Navigation::CONTROLLER_DEFAULT:
-        // fall through to L1 as default controller
+        // no break, fall through to L1 as default controller
 
     case AP_Navigation::CONTROLLER_L1:
         nav_controller = &L1_controller;
@@ -24,6 +22,8 @@ void Plane::loiter_angle_reset(void)
 {
     loiter.sum_cd = 0;
     loiter.total_cd = 0;
+    loiter.reached_target_alt = false;
+    loiter.unable_to_acheive_target_alt = false;
 }
 
 /*
@@ -32,21 +32,38 @@ void Plane::loiter_angle_reset(void)
  */
 void Plane::loiter_angle_update(void)
 {
-    int32_t target_bearing_cd = nav_controller->target_bearing_cd();
+    static const int32_t lap_check_interval_cd = 3*36000;
+
+    const int32_t target_bearing_cd = nav_controller->target_bearing_cd();
     int32_t loiter_delta_cd;
+
     if (loiter.sum_cd == 0 && !reached_loiter_target()) {
         // we don't start summing until we are doing the real loiter
         loiter_delta_cd = 0;
     } else if (loiter.sum_cd == 0) {
         // use 1 cd for initial delta
         loiter_delta_cd = 1;
+        loiter.start_lap_alt_cm = current_loc.alt;
+        loiter.next_sum_lap_cd = lap_check_interval_cd;
     } else {
         loiter_delta_cd = target_bearing_cd - loiter.old_target_bearing_cd;
     }
+
     loiter.old_target_bearing_cd = target_bearing_cd;
     loiter_delta_cd = wrap_180_cd(loiter_delta_cd);
-
     loiter.sum_cd += loiter_delta_cd * loiter.direction;
+
+    if (labs(current_loc.alt - next_WP_loc.alt) < 500) {
+        loiter.reached_target_alt = true;
+        loiter.unable_to_acheive_target_alt = false;
+        loiter.next_sum_lap_cd = loiter.sum_cd + lap_check_interval_cd;
+
+    } else if (!loiter.reached_target_alt && labs(loiter.sum_cd) >= loiter.next_sum_lap_cd) {
+        // check every few laps for scenario where up/downdrafts inhibit you from loitering up/down for too long
+        loiter.unable_to_acheive_target_alt = labs(current_loc.alt - loiter.start_lap_alt_cm) < 500;
+        loiter.start_lap_alt_cm = current_loc.alt;
+        loiter.next_sum_lap_cd += lap_check_interval_cd;
+    }
 }
 
 //****************************************************************
@@ -63,7 +80,7 @@ void Plane::navigate()
         return;
     }
 
-    if (next_WP_loc.lat == 0) {
+    if (next_WP_loc.lat == 0 && next_WP_loc.lng == 0) {
         return;
     }
 
@@ -86,8 +103,6 @@ void Plane::calc_airspeed_errors()
 {
     float airspeed_measured_cm = airspeed.get_airspeed_cm();
 
-    // Normal airspeed target
-    target_airspeed_cm = g.airspeed_cruise_cm;
 
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B || 
@@ -96,37 +111,20 @@ void Plane::calc_airspeed_errors()
                                         aparm.airspeed_min) *
                               channel_throttle->get_control_in()) +
                              ((int32_t)aparm.airspeed_min * 100);
-    }
 
-    // Landing airspeed target
-    if (control_mode == AUTO) {
-        float land_airspeed = SpdHgt_Controller->get_land_airspeed();
-        switch (flight_stage) {
-        case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
-            if (land_airspeed >= 0) {
-                target_airspeed_cm = land_airspeed * 100;
-            }
-            break;
+    } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        // Landing airspeed target
+        target_airspeed_cm = landing.get_target_airspeed_cm();
 
-        case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
-        case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-            if (auto_state.land_pre_flare && aparm.land_pre_flare_airspeed > 0) {
-                // if we just preflared then continue using the pre-flare airspeed during final flare
-                target_airspeed_cm = aparm.land_pre_flare_airspeed * 100;
-            } else if (land_airspeed >= 0) {
-                target_airspeed_cm = land_airspeed * 100;
-            }
-            break;
-
-        default:
-            break;
-        }
+    } else {
+        // Normal airspeed target
+        target_airspeed_cm = aparm.airspeed_cruise_cm;
     }
 
     // Set target to current airspeed + ground speed undershoot,
     // but only when this is faster than the target airspeed commanded
     // above.
-    if (control_mode >= FLY_BY_WIRE_B && (g.min_gndspeed_cm > 0)) {
+    if (control_mode >= FLY_BY_WIRE_B && (aparm.min_gndspeed_cm > 0)) {
         int32_t min_gnd_target_airspeed = airspeed_measured_cm + groundspeed_undershoot;
         if (min_gnd_target_airspeed > target_airspeed_cm)
             target_airspeed_cm = min_gnd_target_airspeed;
@@ -156,7 +154,7 @@ void Plane::calc_gndspeed_undershoot()
 		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
 		yawVect.normalize();
 		float gndSpdFwd = yawVect * gndVel;
-        groundspeed_undershoot = (g.min_gndspeed_cm > 0) ? (g.min_gndspeed_cm - gndSpdFwd*100) : 0;
+        groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
     }
 }
 
@@ -164,17 +162,16 @@ void Plane::update_loiter(uint16_t radius)
 {
     if (radius <= 1) {
         // if radius is <=1 then use the general loiter radius. if it's small, use default
-        radius = (abs(g.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(g.loiter_radius);
+        radius = (abs(aparm.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(aparm.loiter_radius);
         if (next_WP_loc.flags.loiter_ccw == 1) {
             loiter.direction = -1;
         } else {
-            loiter.direction = (g.loiter_radius < 0) ? -1 : 1;
+            loiter.direction = (aparm.loiter_radius < 0) ? -1 : 1;
         }
     }
 
     if (loiter.start_time_ms != 0 &&
-        quadplane.available() &&
-        quadplane.guided_mode != 0) {
+        quadplane.guided_mode_enabled()) {
         if (!auto_state.vtol_loiter) {
             auto_state.vtol_loiter = true;
             // reset loiter start time, so we don't consider the point
@@ -185,7 +182,7 @@ void Plane::update_loiter(uint16_t radius)
     } else if (loiter.start_time_ms == 0 &&
         control_mode == AUTO &&
         !auto_state.no_crosstrack &&
-        get_distance(current_loc, next_WP_loc) > radius*2) {
+        get_distance(current_loc, next_WP_loc) > radius*3) {
         // if never reached loiter point and using crosstrack and somewhat far away from loiter point
         // navigate to it like in auto-mode for normal crosstrack behavior
         nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
@@ -198,12 +195,11 @@ void Plane::update_loiter(uint16_t radius)
             auto_state.wp_proportion > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
-            if (control_mode == GUIDED) {
+            if (control_mode == GUIDED || control_mode == AVOID_ADSB) {
                 // starting a loiter in GUIDED means we just reached the target point
                 gcs_send_mission_item_reached_message(0);
             }
-            if (quadplane.available() &&
-                quadplane.guided_mode != 0) {
+            if (quadplane.guided_mode_enabled()) {
                 quadplane.guided_start();
             }
         }

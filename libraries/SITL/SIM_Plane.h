@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +19,8 @@
 #pragma once
 
 #include "SIM_Aircraft.h"
+#include "SIM_ICEngine.h"
+#include <Filter/LowPassFilter.h>
 
 namespace SITL {
 
@@ -94,11 +95,16 @@ protected:
     bool reverse_thrust;
     bool elevons;
     bool vtail;
+    bool reverse_elevator_rudder;
+    bool ice_engine;
+    bool tailsitter;
+
+    ICEngine icengine{2, 14, 12, 13, 100};
 
     float liftCoeff(float alpha) const;
     float dragCoeff(float alpha) const;
     Vector3f getForce(float inputAileron, float inputElevator, float inputRudder) const;
-    Vector3f getTorque(float inputAileron, float inputElevator, float inputRudder, const Vector3f &force) const;
+    Vector3f getTorque(float inputAileron, float inputElevator, float inputRudder, float inputThrust, const Vector3f &force) const;
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
 };
 

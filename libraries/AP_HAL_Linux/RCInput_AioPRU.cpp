@@ -12,7 +12,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
 
 #include <errno.h>
 #include <fcntl.h>
@@ -35,7 +36,7 @@ using namespace Linux;
 
 void RCInput_AioPRU::init()
 {
-    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
     if (mem_fd == -1) {
         AP_HAL::panic("Unable to open /dev/mem");
     }

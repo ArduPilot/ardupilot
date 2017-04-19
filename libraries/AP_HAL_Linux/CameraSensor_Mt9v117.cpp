@@ -15,8 +15,10 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-
 #include "CameraSensor_Mt9v117.h"
+
+#include <utility>
+
 #include "GPIO.h"
 
 /* Cam sensor register definitions */
@@ -106,17 +108,18 @@ extern const AP_HAL::HAL& hal;
 using namespace Linux;
 
 CameraSensor_Mt9v117::CameraSensor_Mt9v117(const char *device_path,
-                                           AP_HAL::I2CDriver *i2c,
-                                           uint8_t addr,
+                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                            enum mt9v117_res res,
-                                           uint16_t nrst_gpio,
-                                           uint32_t clock_freq)
+                                           uint16_t nrst_gpio, uint32_t clock_freq)
     : CameraSensor(device_path)
-    , _i2c(i2c)
-    , _addr(addr)
+    , _dev(std::move(dev))
     , _nrst_gpio(nrst_gpio)
     , _clock_freq(clock_freq)
 {
+    if (!_dev) {
+        AP_HAL::panic("Could not find I2C bus for CameraSensor_Mt9v117");
+    }
+
     switch (res) {
     case MT9V117_QVGA:
         _init_sensor();
@@ -137,7 +140,7 @@ uint8_t CameraSensor_Mt9v117::_read_reg8(uint16_t reg)
     buf[0] = (uint8_t) (reg >> 8);
     buf[1] = (uint8_t) (reg & 0xFF);
 
-    if (!_i2c->do_transfer(_addr, buf, 2, buf, 1)) {
+    if (!_dev->transfer(buf, 2, buf, 1)) {
         hal.console->printf("mt9v117: error reading 0x%2x\n", reg);
         return 0;
     }
@@ -152,7 +155,7 @@ void CameraSensor_Mt9v117::_write_reg8(uint16_t reg, uint8_t val)
     buf[1] = (uint8_t) (reg & 0xFF);
     buf[2] = val;
 
-    if (!_i2c->do_transfer(_addr, buf, 3, NULL, 0)) {
+    if (!_dev->transfer(buf, 3, nullptr, 0)) {
         hal.console->printf("mt9v117: error writing 0x%2x\n", reg);
     }
 }
@@ -163,7 +166,7 @@ uint16_t CameraSensor_Mt9v117::_read_reg16(uint16_t reg)
     buf[0] = (uint8_t) (reg >> 8);
     buf[1] = (uint8_t) (reg & 0xFF);
 
-    if (!_i2c->do_transfer(_addr, buf, 2, buf, 2)) {
+    if (!_dev->transfer(buf, 2, buf, 2)) {
         hal.console->printf("mt9v117: error reading 0x%4x\n", reg);
         return 0;
     }
@@ -179,7 +182,7 @@ void CameraSensor_Mt9v117::_write_reg16(uint16_t reg, uint16_t val)
     buf[2] = (uint8_t) (val >> 8);
     buf[3] = (uint8_t) (val & 0xFF);
 
-    if (!_i2c->do_transfer(_addr, buf, 4, NULL, 0)) {
+    if (!_dev->transfer(buf, 4, nullptr, 0)) {
         hal.console->printf("mt9v117: error writing 0x%4x\n", reg);
     }
 }
@@ -194,7 +197,7 @@ void CameraSensor_Mt9v117::_write_reg32(uint16_t reg, uint32_t val)
     buf[4] = (uint8_t) ((val >> 8) & 0xFF);
     buf[5] = (uint8_t) (val & 0xFF);
 
-    if (!_i2c->do_transfer(_addr, buf, 6, NULL, 0)) {
+    if (!_dev->transfer(buf, 6, nullptr, 0)) {
         hal.console->printf("mt9v117: error writing 0x%8x\n", reg);
     }
 }
@@ -316,8 +319,7 @@ void CameraSensor_Mt9v117::_apply_patch()
 
     /* write patch */
     for (unsigned int i = 0; i < MT9V117_PATCH_LINE_NUM; i++) {
-        _i2c->do_transfer(_addr,
-                          _patch_lines[i].data, _patch_lines[i].size, NULL, 0);
+        _dev->transfer(_patch_lines[i].data, _patch_lines[i].size, nullptr, 0);
     }
 
     _write_reg16(LOGICAL_ADDRESS_ACCESS, 0x0000);
@@ -407,7 +409,7 @@ void CameraSensor_Mt9v117::_init_sensor()
 
     id = _read_reg16(CHIP_ID);
     if (id != MT9V117_CHIP_ID) {
-        AP_HAL::panic("Mt9v117: bad chip id\n");
+        AP_HAL::panic("Mt9v117: bad chip id 0x%04x\n", id);
     }
     _soft_reset();
     _apply_patch();

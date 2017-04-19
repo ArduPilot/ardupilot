@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
   A wrapper around the AP_InertialNav class which uses the NavEKF
   filter if available, and falls back to the AP_InertialNav filter

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
@@ -51,7 +50,9 @@ void RCOutput::write(uint8_t ch, uint16_t period_us)
         return;
     }
     period[ch] = period_us;
-    need_write = true;
+    if (!corked) {
+        need_write = true;
+    }
 }
 
 uint16_t RCOutput::read(uint8_t ch)
@@ -108,6 +109,16 @@ void RCOutput::timer_update(void)
     ::write(fd, (uint8_t *)&frame, sizeof(frame));
 }
 
+void RCOutput::cork(void)
+{
+    corked = true;
+}
+
+void RCOutput::push(void)
+{
+    need_write = true;
+    corked = false;
+}
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE
 

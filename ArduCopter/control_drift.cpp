@@ -1,9 +1,7 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 /*
- * control_drift.pde - init and run calls for drift flight mode
+ * Init and run calls for drift flight mode
  */
 
 #ifndef DRIFT_SPEEDGAIN
@@ -49,10 +47,15 @@ void Copter::drift_run()
     float pilot_throttle_scaled;
 
     // if landed and throttle at zero, set throttle to zero and exit immediately
-    if (!motors.armed() || !motors.get_interlock() || (ap.land_complete && ap.throttle_zero)) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+    if (!motors->armed() || !motors->get_interlock() || (ap.land_complete && ap.throttle_zero)) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        attitude_control->set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
+    }
+
+    // clear landing flag above zero throttle
+    if (!ap.throttle_zero) {
+        set_land_complete(false);
     }
 
     // convert pilot input to lean angles
@@ -82,7 +85,7 @@ void Copter::drift_run()
 
     // Roll velocity is feed into roll acceleration to minimize slip
     target_roll = roll_vel_error * -DRIFT_SPEEDGAIN;
-    target_roll = constrain_int16(target_roll, -4500, 4500);
+    target_roll = constrain_float(target_roll, -4500.0f, 4500.0f);
 
     // If we let go of sticks, bring us to a stop
     if(is_zero(target_pitch)){
@@ -95,13 +98,13 @@ void Copter::drift_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // output pilot's throttle with angle boost
-    attitude_control.set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true, g.throttle_filt);
+    attitude_control->set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true, g.throttle_filt);
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and z-axis velocity

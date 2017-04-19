@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 // Internal defines, don't edit and expect things to work
@@ -58,6 +57,7 @@ enum FlightMode {
     AUTO          = 10,
     RTL           = 11,
     LOITER        = 12,
+    AVOID_ADSB    = 14,
     GUIDED        = 15,
     INITIALISING  = 16,
     QSTABILIZE    = 17,
@@ -65,6 +65,25 @@ enum FlightMode {
     QLOITER       = 19,
     QLAND         = 20,
     QRTL          = 21
+};
+
+enum mode_reason_t {
+    MODE_REASON_UNKNOWN=0,
+    MODE_REASON_TX_COMMAND,
+    MODE_REASON_GCS_COMMAND,
+    MODE_REASON_RADIO_FAILSAFE,
+    MODE_REASON_BATTERY_FAILSAFE,
+    MODE_REASON_GCS_FAILSAFE,
+    MODE_REASON_EKF_FAILSAFE,
+    MODE_REASON_GPS_GLITCH,
+    MODE_REASON_MISSION_END,
+    MODE_REASON_FENCE_BREACH,
+    MODE_REASON_AVOIDANCE,
+    MODE_REASON_AVOIDANCE_RECOVERY,
+    MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING,
+    MODE_REASON_SOARING_THERMAL_DETECTED,
+    MODE_REASON_SOARING_IN_THERMAL,
+    MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED
 };
 
 // type of stick mixing enabled
@@ -79,7 +98,11 @@ enum ChannelMixing {
     MIXING_UPUP     = 1,
     MIXING_UPDN     = 2,
     MIXING_DNUP     = 3,
-    MIXING_DNDN     = 4
+    MIXING_DNDN     = 4,
+    MIXING_UPUP_SWP = 5,
+    MIXING_UPDN_SWP = 6,
+    MIXING_DNUP_SWP = 7,
+    MIXING_DNDN_SWP = 8,
 };
 
 /*
@@ -116,7 +139,13 @@ enum log_messages {
     LOG_STATUS_MSG,
     LOG_OPTFLOW_MSG,
     LOG_QTUN_MSG,
-    LOG_PARAMTUNE_MSG
+    LOG_PARAMTUNE_MSG,
+    LOG_THERMAL_MSG,
+    LOG_VARIO_MSG,
+    LOG_PIQR_MSG,
+    LOG_PIQP_MSG,
+    LOG_PIQY_MSG,
+    LOG_PIQA_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)

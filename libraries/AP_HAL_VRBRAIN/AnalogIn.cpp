@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -18,14 +16,14 @@
 #include <uORB/topics/system_power.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <errno.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+#include "GPIO.h"
 
 #define ANLOGIN_DEBUGGING 0
 
 // base voltage scaling for 12 bit 3.3V ADC
 #define VRBRAIN_VOLTAGE_SCALING (3.3f/4096.0f)
 
-#if ANALOGIN_DEBUGGING
+#if ANLOGIN_DEBUGGING
  # define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
  # define Debug(fmt, args ...)
@@ -41,8 +39,7 @@ static const struct {
     uint8_t pin;
     float scaling;
 } pin_scaling[] = {
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
-    {  0, 3.3f/4096 },
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRCORE_V10) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
     { 10, 3.3f/4096 },
     { 11, 3.3f/4096 },
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
@@ -52,11 +49,6 @@ static const struct {
     {  2, 3.3f/4096 },
     {  3, 3.3f/4096 },
     { 10, 3.3f/4096 },
-#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
-    { 10, 3.3f/4096 },
-    { 11, 3.3f/4096 },
-    { 14, 3.3f/4096 },
-    { 15, 3.3f/4096 },
 #else
 #error "Unknown board type for AnalogIn scaling"
 #endif
@@ -75,6 +67,11 @@ VRBRAINAnalogSource::VRBRAINAnalogSource(int16_t pin, float initial_value) :
     _sum_value(0),
     _sum_ratiometric(0)
 {
+
+
+
+
+
 }
 
 void VRBRAINAnalogSource::set_stop_pin(uint8_t p)
@@ -192,9 +189,9 @@ VRBRAINAnalogIn::VRBRAINAnalogIn() :
 
 void VRBRAINAnalogIn::init()
 {
-	_adc_fd = open(ADC_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
+	_adc_fd = open(ADC0_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
     if (_adc_fd == -1) {
-        AP_HAL::panic("Unable to open " ADC_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " ADC0_DEVICE_PATH);
 	}
     _battery_handle   = orb_subscribe(ORB_ID(battery_status));
     _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
@@ -251,7 +248,7 @@ void VRBRAINAnalogIn::_timer_tick(void)
     struct adc_msg_s buf_adc[VRBRAIN_ANALOG_MAX_CHANNELS];
 
     // cope with initial setup of stop pin
-    if (_channels[_current_stop_pin_i] == NULL ||
+    if (_channels[_current_stop_pin_i] == nullptr ||
         _channels[_current_stop_pin_i]->_stop_pin == -1) {
         next_stop_pin();
     }
@@ -266,7 +263,7 @@ void VRBRAINAnalogIn::_timer_tick(void)
                   (unsigned)buf_adc[i].am_data);
             for (uint8_t j=0; j<VRBRAIN_ANALOG_MAX_CHANNELS; j++) {
                 VRBRAIN::VRBRAINAnalogSource *c = _channels[j];
-                if (c != NULL && buf_adc[i].am_channel == c->_pin) {
+                if (c != nullptr && buf_adc[i].am_channel == c->_pin) {
                     // add a value if either there is no stop pin, or
                     // the stop pin has been settling for enough time
                     if (c->_stop_pin == -1 || 
@@ -282,41 +279,18 @@ void VRBRAINAnalogIn::_timer_tick(void)
         }
     }
 
-    // check for new battery data on FMUv1
-    if (_battery_handle != -1) {
-        struct battery_status_s battery;
-        bool updated = false;
-        if (orb_check(_battery_handle, &updated) == 0 && updated) {
-            orb_copy(ORB_ID(battery_status), _battery_handle, &battery);
-            if (battery.timestamp != _battery_timestamp) {
-                _battery_timestamp = battery.timestamp;
-                for (uint8_t j=0; j<VRBRAIN_ANALOG_MAX_CHANNELS; j++) {
-                    VRBRAIN::VRBRAINAnalogSource *c = _channels[j];
-                    if (c == NULL) continue;
-                    if (c->_pin == VRBRAIN_ANALOG_ORB_BATTERY_VOLTAGE_PIN) {
-                        c->_add_value(battery.voltage_v / VRBRAIN_VOLTAGE_SCALING, 0);
-                    }
-                    if (c->_pin == VRBRAIN_ANALOG_ORB_BATTERY_CURRENT_PIN) {
-                        // scale it back to voltage, knowing that the
-                        // px4io code scales by 90.0/5.0
-                        c->_add_value(battery.current_a * (5.0f/90.0f) / VRBRAIN_VOLTAGE_SCALING, 0);
-                    }
-                }
-            }
-        }
-    }
 }
 
 AP_HAL::AnalogSource* VRBRAINAnalogIn::channel(int16_t pin)
 {
     for (uint8_t j=0; j<VRBRAIN_ANALOG_MAX_CHANNELS; j++) {
-        if (_channels[j] == NULL) {
+        if (_channels[j] == nullptr) {
             _channels[j] = new VRBRAINAnalogSource(pin, 0.0f);
             return _channels[j];
         }
     }
-    hal.console->println("Out of analog channels");
-    return NULL;
+    hal.console->printf("Out of analog channels\n");
+    return nullptr;
 }
 
 #endif // CONFIG_HAL_BOARD

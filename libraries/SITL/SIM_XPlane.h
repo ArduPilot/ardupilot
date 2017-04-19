@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,6 +41,7 @@ public:
 
 private:
     bool receive_data(void);
+    void send_dref(const char *name, float value);
     void send_data(const struct sitl_input &input);
     void select_data(uint64_t usel_mask, uint64_t sel_mask);
 
@@ -64,9 +64,16 @@ private:
         uint32_t data_count;
         uint32_t frame_count;
     } report;
+    float last_flap;
 
+    // are we controlling a heli?
+    bool heli_frame;
+
+    uint64_t unselected_mask;
+    
     // throttle joystick input is very weird. See comments in the main code
-    const uint32_t throttle_magic = 123;
+    const float throttle_magic = 0.000123f;
+    const float throttle_magic_scale = 1.0e6;
     
     // DATA@ frame types. Thanks to TauLabs xplanesimulator.h
     // (which strangely enough acknowledges APM as a source!)
@@ -94,6 +101,12 @@ private:
         LatLonAlt           = 20,
 		LocVelDistTraveled  = 21,
         ThrottleCommand     = 25,
+        Mixture             = 29,
+        CarbHeat            = 30,
+        EngineRPM           = 37,
+        PropRPM             = 38,
+        PropPitch           = 39,
+        Generator           = 58,
 	};
 };
 

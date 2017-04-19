@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_HAL/utility/RingBuffer.h>
+
 #include "AP_HAL_PX4.h"
 #include <systemlib/perf_counter.h>
 
@@ -16,9 +18,9 @@ public:
     bool tx_pending();
 
     /* PX4 implementations of Stream virtual methods */
-    int16_t available();
-    int16_t txspace();
-    int16_t read();
+    uint32_t available() override;
+    uint32_t txspace() override;
+    int16_t read() override;
 
     /* PX4 implementations of Print virtual methods */
     size_t write(uint8_t c);
@@ -48,18 +50,8 @@ private:
 
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
-    uint8_t *_readbuf;
-    uint16_t _readbuf_size;
-
-    // _head is where the next available data is. _tail is where new
-    // data is put
-    volatile uint16_t _readbuf_head;
-    volatile uint16_t _readbuf_tail;
-
-    uint8_t *_writebuf;
-    uint16_t _writebuf_size;
-    volatile uint16_t _writebuf_head;
-    volatile uint16_t _writebuf_tail;
+    ByteBuffer _readbuf{0};
+    ByteBuffer _writebuf{0};
     perf_counter_t  _perf_uart;
 
     int _write_fd(const uint8_t *buf, uint16_t n);

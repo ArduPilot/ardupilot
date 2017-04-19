@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple test for the GCS_MAVLink routing 
 //
@@ -7,6 +5,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+
+void setup();
+void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -19,7 +20,7 @@ public:
 
 protected:
 
-    uint32_t telem_delay() const override { return 0; };
+    uint32_t telem_delay() const override { return 0; }
 
 private:
 
@@ -32,7 +33,7 @@ private:
 
 
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-static GCS_MAVLINK_routing gcs[MAVLINK_COMM_NUM_BUFFERS];
+static GCS_MAVLINK_routing gcs_link[MAVLINK_COMM_NUM_BUFFERS];
 
 extern mavlink_system_t mavlink_system;
 
@@ -44,8 +45,8 @@ static MAVLink_routing routing;
 
 void setup(void)
 {
-    hal.console->println("routing test startup...");
-    gcs[0].init(hal.uartA, MAVLINK_COMM_0);
+    hal.console->printf("routing test startup...");
+    gcs_link[0].init(hal.uartA, MAVLINK_COMM_0);
 }
 
 void loop(void)

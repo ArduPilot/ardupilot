@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,62 +22,42 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_MotorsCoax.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
 
-const AP_Param::GroupInfo AP_MotorsCoax::var_info[] = {
-    // variables from parent vehicle
-    AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
-
-    // parameters 1 ~ 29 were reserved for tradheli
-    // parameters 30 ~ 39 reserved for tricopter
-    // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
-
-    // 40 was ROLL_SV_REV
-    // 41 was PITCH_SV_REV
-    // 42 was YAW_SV_REV
-
-	// @Param: SV_SPEED
-    // @DisplayName: Servo speed 
-    // @Description: Servo update speed
-    // @Units: Hz
-    AP_GROUPINFO("SV_SPEED", 43, AP_MotorsCoax, _servo_speed, AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS),
-
-    // @Group: SV1_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo1, "SV1_", 44, AP_MotorsCoax, RC_Channel),
-    // @Group: SV2_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo2, "SV2_", 45, AP_MotorsCoax, RC_Channel),
-    // @Group: SV3_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo3, "SV3_", 46, AP_MotorsCoax, RC_Channel),
-    // @Group: SV4_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_servo4, "SV4_", 47, AP_MotorsCoax, RC_Channel),
-
-    AP_GROUPEND
-};
 // init
-void AP_MotorsCoax::Init()
+void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
-    // set update rate for the 3 motors (but not the servo on channel 7)
-    set_update_rate(_speed_hz);
-
+    _servo1 = SRV_Channels::get_channel_for(SRV_Channel::k_motor1, CH_1);
+    _servo2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
+    _servo3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
+    _servo4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
+    if (!_servo1 || !_servo2 || !_servo3 || !_servo4) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "MotorsCoax: unable to setup output channels");
+        // don't set initialised_ok
+        return;
+    }
+    
     // set the motor_enabled flag so that the main ESC can be calibrated like other frame types
     motor_enabled[AP_MOTORS_MOT_5] = true;
     motor_enabled[AP_MOTORS_MOT_6] = true;
 
     // we set four servos to angle
-    _servo1.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo2.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo3.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo4.set_type(RC_CHANNEL_TYPE_ANGLE);
-    _servo1.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-    _servo2.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-    _servo3.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-    _servo4.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    _servo1->set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    _servo2->set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    _servo3->set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    _servo4->set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+
+    // record successful initialisation if what we setup was the desired frame_class
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_COAX);
+}
+
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+void AP_MotorsCoax::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+{
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_COAX);
 }
 
 // set update rate to motors - a value in hertz
@@ -87,17 +66,10 @@ void AP_MotorsCoax::set_update_rate( uint16_t speed_hz )
     // record requested speed
     _speed_hz = speed_hz;
 
-    // set update rate for the 4 servos and 2 motors
     uint32_t mask =
-        1U << AP_MOTORS_MOT_1 |
-        1U << AP_MOTORS_MOT_2 |
-        1U << AP_MOTORS_MOT_3 |
-        1U << AP_MOTORS_MOT_4 ;
-    rc_set_freq(mask, _servo_speed);
-    uint32_t mask2 =
         1U << AP_MOTORS_MOT_5 |
         1U << AP_MOTORS_MOT_6 ;
-    rc_set_freq(mask2, _speed_hz);
+    rc_set_freq(mask, _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors
@@ -238,39 +210,24 @@ void AP_MotorsCoax::output_armed_stabilizing()
     _thrust_yt_cw = thrust_out - 0.5f * yaw_thrust;
 
     // limit thrust out for calculation of actuator gains
-    float thrust_out_actuator = MAX(_throttle_hover*0.5f,thrust_out);
+    float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5f,thrust_out), 0.1f, 1.0f);
 
-    if (is_zero(thrust_out_actuator)) {
+    if (is_zero(thrust_out)) {
         limit.roll_pitch = true;
-        if (roll_thrust < 0.0f) {
-            _actuator_out[0] = -1.0f;
-        } else if (roll_thrust > 0.0f) {
-            _actuator_out[0] = 1.0f;
-        } else {
-            _actuator_out[0] = 0.0f;
-        }
-        if (roll_thrust < 0.0f) {
-            _actuator_out[1] = -1.0f;
-        } else if (roll_thrust > 0.0f) {
-            _actuator_out[1] = 1.0f;
-        } else {
-            _actuator_out[1] = 0.0f;
-        }
-    } else {
-        // force of a lifting surface is approximately equal to the angle of attack times the airflow velocity squared
-        // static thrust is proportional to the airflow velocity squared
-        // therefore the torque of the roll and pitch actuators should be approximately proportional to
-        // the angle of attack multiplied by the static thrust.
-        _actuator_out[0] = roll_thrust/thrust_out_actuator;
-        _actuator_out[1] = pitch_thrust/thrust_out_actuator;
-        if (fabsf(_actuator_out[0]) > 1.0f) {
-            limit.roll_pitch = true;
-            _actuator_out[0] = constrain_float(_actuator_out[0], -1.0f, 1.0f);
-        }
-        if (fabsf(_actuator_out[1]) > 1.0f) {
-            limit.roll_pitch = true;
-            _actuator_out[1] = constrain_float(_actuator_out[1], -1.0f, 1.0f);
-        }
+    }
+    // force of a lifting surface is approximately equal to the angle of attack times the airflow velocity squared
+    // static thrust is proportional to the airflow velocity squared
+    // therefore the torque of the roll and pitch actuators should be approximately proportional to
+    // the angle of attack multiplied by the static thrust.
+    _actuator_out[0] = roll_thrust/thrust_out_actuator;
+    _actuator_out[1] = pitch_thrust/thrust_out_actuator;
+    if (fabsf(_actuator_out[0]) > 1.0f) {
+        limit.roll_pitch = true;
+        _actuator_out[0] = constrain_float(_actuator_out[0], -1.0f, 1.0f);
+    }
+    if (fabsf(_actuator_out[1]) > 1.0f) {
+        limit.roll_pitch = true;
+        _actuator_out[1] = constrain_float(_actuator_out[1], -1.0f, 1.0f);
     }
     _actuator_out[2] = -_actuator_out[0];
     _actuator_out[3] = -_actuator_out[1];

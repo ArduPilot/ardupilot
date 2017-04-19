@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,7 +44,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
 
     // see if we are waiting for disk read
     if (gcache.state == GRID_CACHE_DISKWAIT) {
-        // don't request data from the GCS till we know its not on disk
+        // don't request data from the GCS till we know it's not on disk
         return false;
     }
 

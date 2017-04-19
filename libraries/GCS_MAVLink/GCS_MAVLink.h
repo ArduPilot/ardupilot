@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	GCS_MAVLink.h
 /// @brief	One size fits all header for MAVLink integration.
 #pragma once

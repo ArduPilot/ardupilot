@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /* ************************************************************ */
 /* Test for DataFlash Log library                               */
 /* ************************************************************ */
@@ -21,6 +19,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <DataFlash/LogStructure.h>
 #include <AP_Motors/AP_Motors.h>
+#include <AP_Rally/AP_Rally.h>
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -125,7 +124,6 @@ public:
     void Log_Write_POS(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
     void Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
-    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
@@ -136,6 +134,7 @@ public:
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
+    void Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets);
     void Log_Write_Current(const AP_BattMonitor &battery);
     void Log_Write_Compass(const Compass &compass, uint64_t time_us=0);
     void Log_Write_Mode(uint8_t mode, uint8_t reason = 0);
@@ -149,6 +148,8 @@ public:
                         const AP_Motors &motors,
                         const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control);
+    void Log_Write_Rally(const AP_Rally &rally);
+    void Log_Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 
@@ -192,11 +193,21 @@ public:
     struct {
         AP_Int8 backend_types;
         AP_Int8 file_bufsize; // in kilobytes
+        AP_Int8 file_disarm_rot;
         AP_Int8 log_disarmed;
         AP_Int8 log_replay;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
+
+    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    // these methods cover only the first logging backend used -
+    // typically DataFlash_File.
+    bool logging_present() const;
+    bool logging_enabled() const;
+    bool logging_failed() const;
+
+    void set_vehicle_armed(bool armed_state);
 
 protected:
 
@@ -251,6 +262,17 @@ private:
     // fmt; includes the message header
     int16_t Log_Write_calc_msg_len(const char *fmt) const;
 
+    bool _armed;
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+    void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+#endif
+    
 private:
     static DataFlash_Class *_instance;
+
+    void validate_structures(const struct LogStructure *structures, const uint8_t num_types);
+    void dump_structure_field(const struct LogStructure *structure, const char *label, const uint8_t fieldnum);
+    void dump_structures(const struct LogStructure *structures, const uint8_t num_types);
 };

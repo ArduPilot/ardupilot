@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -39,31 +37,17 @@ void NavEKF2_core::SelectFlowFusion()
     // Perform Data Checks
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
-    // Check if the optical flow sensor has timed out
-    bool flowSensorTimeout = ((imuSampleTime_ms - flowValidMeaTime_ms) > 5000);
-    // Check if the fusion has timed out (flow measurements have been rejected for too long)
-    bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
     // check is the terrain offset estimate is still valid
     gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
     // Perform tilt check
-    bool tiltOK = (Tnb_flow.c.z > frontend->DCM33FlowMin);
-    // Constrain measurements to zero if we are using optical flow and are on the ground
-    if (frontend->_fusionModeGPS == 3 && !takeOffDetected && isAiding) {
+    bool tiltOK = (prevTnb.c.z > frontend->DCM33FlowMin);
+    // Constrain measurements to zero if takeoff is not detected and the height above ground
+    // is insuffient to achieve acceptable focus. This allows the vehicle to be picked up
+    // and carried to test optical flow operation
+    if (!takeOffDetected && ((terrainState - stateStruct.position.z) < 0.5f)) {
         ofDataDelayed.flowRadXYcomp.zero();
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
-    }
-
-    // If the flow measurements have been rejected for too long and we are relying on them, then revert to constant position mode
-    if ((flowSensorTimeout || flowFusionTimeout) && PV_AidingMode == AID_RELATIVE) {
-        PV_AidingMode = AID_NONE;
-        // reset the velocity
-        ResetVelocity();
-        // store the current position to be used to as a sythetic position measurement
-        lastKnownPositionNE.x = stateStruct.position.x;
-        lastKnownPositionNE.y = stateStruct.position.y;
-        // reset the position
-        ResetPosition();
     }
 
     // if we do have valid flow measurements, fuse data into a 1-state EKF to estimate terrain height
@@ -75,8 +59,8 @@ void NavEKF2_core::SelectFlowFusion()
         EstimateTerrainOffset();
     }
 
-    // Fuse optical flow data into the main filter if not excessively tilted and we are in the correct mode
-    if (flowDataToFuse && tiltOK && PV_AidingMode == AID_RELATIVE)
+    // Fuse optical flow data into the main filter
+    if (flowDataToFuse && tiltOK)
     {
         // Set the flow noise used by the fusion processes
         R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
@@ -106,8 +90,12 @@ void NavEKF2_core::EstimateTerrainOffset()
     float velHorizSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
     float losRateSq = velHorizSq / sq(heightAboveGndEst);
 
-    // don't update terrain offset state if there is no range finder and not generating enough LOS rate, or without GPS, as it is poorly observable
-    if (!rangeDataToFuse && (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f)) {
+    // don't update terrain offset state if there is no range finder
+    // don't update terrain state if not generating enough LOS rate, or without GPS, as it is poorly observable
+    // don't update terrain state if we are using it as a height reference in the main filter
+    bool cantFuseFlowData = (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f);
+    if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == HGT_SOURCE_RNG)) {
+        // skip update
         inhibitGndState = true;
     } else {
         inhibitGndState = false;
@@ -130,7 +118,7 @@ void NavEKF2_core::EstimateTerrainOffset()
         // fuse range finder data
         if (rangeDataToFuse) {
             // predict range
-            float predRngMeas = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / Tnb_flow.c.z;
+            float predRngMeas = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / prevTnb.c.z;
 
             // Copy required states to local variable names
             float q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
@@ -175,7 +163,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             }
         }
 
-        if (fuseOptFlowData) {
+        if (fuseOptFlowData && !cantFuseFlowData) {
 
             Vector3f relVelSensor; // velocity of sensor relative to ground in sensor axes
             float losPred; // predicted optical flow angular rate measurement
@@ -187,13 +175,13 @@ void NavEKF2_core::EstimateTerrainOffset()
             float H_OPT;
 
             // predict range to centre of image
-            float flowRngPred = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / Tnb_flow.c.z;
+            float flowRngPred = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / prevTnb.c.z;
 
             // constrain terrain height to be below the vehicle
             terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
 
             // calculate relative velocity in sensor frame
-            relVelSensor = Tnb_flow*stateStruct.velocity;
+            relVelSensor = prevTnb*stateStruct.velocity;
 
             // divide velocity by range, subtract body rates and apply scale factor to
             // get predicted sensed angular optical rates relative to X and Y sensor axes
@@ -313,10 +301,19 @@ void NavEKF2_core::FuseOptFlow()
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first
         // calculate range from ground plain to centre of sensor fov assuming flat earth
-        float range = constrain_float((heightAboveGndEst/Tnb_flow.c.z),rngOnGnd,1000.0f);
+        float range = constrain_float((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
 
-        // calculate relative velocity in sensor frame
-        relVelSensor = Tnb_flow*stateStruct.velocity;
+        // correct range for flow sensor offset body frame position offset
+        // the corrected value is the predicted range from the sensor focal point to the
+        // centre of the image on the ground assuming flat terrain
+        Vector3f posOffsetBody = (*ofDataDelayed.body_offset) - accelPosOffset;
+        if (!posOffsetBody.is_zero()) {
+            Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+            range -= posOffsetEarth.z / prevTnb.c.z;
+        }
+
+        // calculate relative velocity in sensor frame including the relative motion due to rotation
+        relVelSensor = prevTnb*stateStruct.velocity + ofDataDelayed.bodyRadXYZ % posOffsetBody;
 
         // divide velocity by range  to get predicted angular LOS rates relative to X and Y axes
         losPred[0] =  relVelSensor.y/range;

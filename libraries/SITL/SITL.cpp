@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,7 +46,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("GPS_BYTELOSS",  13, SITL,  gps_byteloss,  0),
     AP_GROUPINFO("GPS_NUMSATS",   14, SITL,  gps_numsats,   10),
     AP_GROUPINFO("MAG_ERROR",     15, SITL,  mag_error,  0),
-    AP_GROUPINFO("SERVO_RATE",    16, SITL,  servo_rate,  0),
+    AP_GROUPINFO("SERVO_SPEED",   16, SITL,  servo_speed,  0.14),
     AP_GROUPINFO("GPS_GLITCH",    17, SITL,  gps_glitch,  0),
     AP_GROUPINFO("GPS_HZ",        18, SITL,  gps_hertz,  5),
     AP_GROUPINFO("BATT_VOLTAGE",  19, SITL,  batt_voltage,  12.6f),
@@ -77,10 +76,21 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("ARSPD_FAIL",    43, SITL,  arspd_fail, 0),
     AP_GROUPINFO("GYR_SCALE",     44, SITL,  gyro_scale, 0),
     AP_GROUPINFO("ADSB_COUNT",    45, SITL,  adsb_plane_count, -1),
-    AP_GROUPINFO("ADSB_RADIUS",   46, SITL,  adsb_radius_m, 1000),
+    AP_GROUPINFO("ADSB_RADIUS",   46, SITL,  adsb_radius_m, 10000),
     AP_GROUPINFO("ADSB_ALT",      47, SITL,  adsb_altitude_m, 1000),
     AP_GROUPINFO("MAG_ALY",       48, SITL,  mag_anomaly_ned, 0),
     AP_GROUPINFO("MAG_ALY_HGT",   49, SITL,  mag_anomaly_hgt, 1.0f),
+    AP_GROUPINFO("PIN_MASK",      50, SITL,  pin_mask, 0),
+    AP_GROUPINFO("ADSB_TX",       51, SITL,  adsb_tx, 0),
+    AP_GROUPINFO("SPEEDUP",       52, SITL,  speedup, -1),
+    AP_GROUPINFO("IMU_POS",       53, SITL,  imu_pos_offset, 0),
+    AP_GROUPINFO("GPS_POS",       54, SITL,  gps_pos_offset, 0),
+    AP_GROUPINFO("SONAR_POS",     55, SITL,  rngfnd_pos_offset, 0),
+    AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
+    AP_GROUPINFO("ACC2_BIAS",     57, SITL,  accel2_bias, 0),
+    AP_GROUPINFO("GPS_NOISE",     58, SITL,  gps_noise, 0),
+    AP_GROUPINFO("GP2_GLITCH",    59, SITL,  gps2_glitch,  0),
+    AP_GROUPINFO("ENGINE_FAIL",   60, SITL,  engine_fail,  0),
     AP_GROUPEND
 };
 
@@ -129,7 +139,11 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class *DataFlash)
         yaw     : (uint16_t)(wrap_360_cd(yaw*100)),
         alt     : (float)state.altitude,
         lat     : (int32_t)(state.latitude*1.0e7),
-        lng     : (int32_t)(state.longitude*1.0e7)
+        lng     : (int32_t)(state.longitude*1.0e7),
+        q1      : state.quaternion.q1,
+        q2      : state.quaternion.q2,
+        q3      : state.quaternion.q3,
+        q4      : state.quaternion.q4,
     };
     DataFlash->WriteBlock(&pkt, sizeof(pkt));
 }

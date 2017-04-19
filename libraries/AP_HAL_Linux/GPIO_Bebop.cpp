@@ -1,8 +1,7 @@
 #include <AP_Common/AP_Common.h>
 
-#include "GPIO_Bebop.h"
-
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#include "GPIO_Bebop.h"
 
 const unsigned Linux::GPIO_Sysfs::pin_table[] = {
     [BEBOP_GPIO_CAMV_NRST] = 129,

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	AC_PID.cpp
 /// @brief	Generic PID algorithm
 
@@ -36,6 +34,11 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("FILT", 6, AC_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
 
+    // @Param: FF
+    // @DisplayName: FF FeedForward Gain
+    // @Description: FF Gain which produces an output value that is proportional to the demanded input
+    AP_GROUPINFO("FF",   7, AC_PID, _ff, 0),
+    
     AP_GROUPEND
 };
 
@@ -154,6 +157,13 @@ float AC_PID::get_d()
     _pid_info.D = (_kd * _derivative);
     return _pid_info.D;
 }
+
+float AC_PID::get_ff(float requested_rate)
+{
+    _pid_info.FF = (float)requested_rate * _ff;
+    return _pid_info.FF;
+}
+
 
 float AC_PID::get_pi()
 {

@@ -16,12 +16,15 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 
 #include "RCInput.h"
 #include "RCInput_DSM.h"
 
-class Linux::RCInput_DSM : public Linux::RCInput
+namespace Linux {
+
+class RCInput_DSM : public RCInput
 {
 public:
     void init() override;
@@ -32,5 +35,7 @@ private:
     const char *device_path;
     int32_t fd = -1;
 };
-#endif // CONFIG_HAL_BOARD_SUBTYPE
 
+}
+
+#endif // CONFIG_HAL_BOARD_SUBTYPE

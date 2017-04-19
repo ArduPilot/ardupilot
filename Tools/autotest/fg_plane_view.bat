@@ -1,7 +1,8 @@
 set AUTOTESTDIR="%~dp0\aircraft"
 
-c:
-cd "\Program Files\FlightGear 3.4.0\bin"
+FOR /F "delims=" %%D in ('dir /b "\Program Files"\FlightGear*') DO set FGDIR=%%D
+echo "Using FlightGear %FGDIR%"
+cd "\Program Files\%FGDIR%\bin"
 fgfs ^
     --native-fdm=socket,in,10,,5503,udp ^
     --fdm=external ^

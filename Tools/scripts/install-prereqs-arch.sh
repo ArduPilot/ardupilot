@@ -1,16 +1,17 @@
 #!/bin/bash
 set -e
+set -x
 
 command -v yaourt >/dev/null 2>&1 || { echo >&2 "Please install yaourt first. Aborting."; exit 1; }
 
 CWD=$(pwd)
 OPT="/opt"
 
-BASE_PKGS="wget curl base-devel git-core tk gsfonts"
-SITL_PKGS="python2-pip python-pip wxpython2.8 opencv python2-numpy python2-scipy ccache"
-PX4_PKGS="lib32-glibc zip zlib ncurses"
+BASE_PKGS="base-devel ccache git-core gsfonts tk wget"
+SITL_PKGS="python2-pip python-pip wxpython2.8 opencv python2-numpy python2-scipy"
+PX4_PKGS="lib32-glibc zip zlib ncurses cmake"
 
-PYTHON2_PKGS="pymavlink MAVProxy droneapi argparse matplotlib pyparsing catkin_pkg"
+PYTHON2_PKGS="future lxml pymavlink MAVProxy argparse matplotlib pyparsing"
 PYTHON3_PKGS="pyserial empy"
 ARCH_AUR_PKGS="genromfs"
 
@@ -35,8 +36,8 @@ function prompt_user() {
 sudo usermod -a -G uucp $USER
 
 sudo pacman -S --noconfirm $BASE_PKGS $SITL_PKGS $PX4_PKGS
-sudo pip2 -q install $PYTHON2_PKGS
-sudo pip3 -q install $PYTHON3_PKGS
+sudo pip2 -q install -U $PYTHON2_PKGS
+sudo pip3 -q install -U $PYTHON3_PKGS
 yaourt -S --noconfirm $ARCH_AUR_PKGS
 
 (

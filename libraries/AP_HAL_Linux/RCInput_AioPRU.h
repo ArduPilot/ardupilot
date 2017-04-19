@@ -18,16 +18,18 @@
 #include "AP_HAL_Linux.h"
 
 #define RCIN_PRUSS_RAM_BASE   0x4a303000
+
 // we use 300 ring buffer entries to guarantee that a full 25 byte
 // frame of 12 bits per byte
 
-class Linux::RCInput_AioPRU : public Linux::RCInput
-{
+namespace Linux {
+
+class RCInput_AioPRU : public RCInput {
 public:
     void init();
     void _timer_tick(void);
 
- private:
+protected:
     static const uint32_t TICK_PER_US = 200;
     static const uint32_t NUM_RING_ENTRIES = 300;
     // shared ring buffer with the PRU which records pin transitions
@@ -41,3 +43,5 @@ public:
     };
     volatile struct ring_buffer *ring_buffer;
 };
+
+}

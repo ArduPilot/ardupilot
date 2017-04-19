@@ -1,11 +1,13 @@
+#include "AnalogIn_Raspilot.h"
+
+#include <algorithm>
+
 #include <AP_HAL/AP_HAL.h>
 
-#include "AnalogIn_Raspilot.h"
 #include "px4io_protocol.h"
 
-AnalogSource_Raspilot::AnalogSource_Raspilot(int16_t pin):
-    _pin(pin),
-    _value(0.0f)
+AnalogSource_Raspilot::AnalogSource_Raspilot(int16_t pin)
+    : _pin(pin)
 {
 }
 
@@ -54,50 +56,36 @@ float AnalogIn_Raspilot::board_voltage(void)
     _vcc_pin_analog_source->set_pin(4);
 
     return 5.0;
-    //return _vcc_pin_analog_source->voltage_average() * 2.0;
 }
 
 AP_HAL::AnalogSource* AnalogIn_Raspilot::channel(int16_t pin)
 {
     for (uint8_t j = 0; j < _channels_number; j++) {
-        if (_channels[j] == NULL) {
+        if (_channels[j] == nullptr) {
             _channels[j] = new AnalogSource_Raspilot(pin);
             return _channels[j];
         }
     }
 
-    hal.console->println("Out of analog channels");
-    return NULL;
+    hal.console->printf("Out of analog channels\n");
+    return nullptr;
 }
 
 void AnalogIn_Raspilot::init()
 {
     _vcc_pin_analog_source = channel(4);
 
-    _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
-    _spi_sem = _spi->get_semaphore();
-
-    if (_spi_sem == NULL) {
-        AP_HAL::panic("PANIC: RCIutput_Raspilot did not get "
-                                  "valid SPI semaphore!");
-        return; // never reached
+    _dev = std::move(hal.spi->get_device("raspio"));
+    if (!_dev) {
+        AP_HAL::panic("Bus for AnalogIn_Raspilot not found");
+        return;
     }
 
-    hal.scheduler->suspend_timer_procs();
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AnalogIn_Raspilot::_update, void));
-    hal.scheduler->resume_timer_procs();
+    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AnalogIn_Raspilot::_update, void));
 }
 
 void AnalogIn_Raspilot::_update()
 {
-    if (AP_HAL::micros() - _last_update_timestamp < 100000) {
-        return;
-    }
-
-    if (!_spi_sem->take_nonblocking()) {
-        return;
-    }
-
     struct IOPacket tx = { }, rx = { };
     uint16_t count = RASPILOT_ADC_MAX_CHANNELS;
     tx.count_code = count | PKT_CODE_READ;
@@ -105,9 +93,12 @@ void AnalogIn_Raspilot::_update()
     tx.offset = 0;
     tx.crc = 0;
     tx.crc = crc_packet(&tx);
-    /* set raspilotio to read reg4 */
-    _spi->transaction((uint8_t *)&tx, (uint8_t *)&rx, sizeof(tx));
 
+    /* set raspilotio to read reg4 */
+    _dev->transfer((uint8_t *)&tx, sizeof(tx), (uint8_t *)&rx, sizeof(rx));
+
+    // TODO: should not delay for such huge values: converting this to a
+    // state-machine like driver would be better, adjusting the callback timer
     hal.scheduler->delay_microseconds(200);
 
     count = 0;
@@ -116,20 +107,17 @@ void AnalogIn_Raspilot::_update()
     tx.offset = 0;
     tx.crc = 0;
     tx.crc = crc_packet(&tx);
-    /* get reg4 data from raspilotio */
-    _spi->transaction((uint8_t *)&tx, (uint8_t *)&rx, sizeof(tx));
 
-    _spi_sem->give();
+    /* get reg4 data from raspilotio */
+    _dev->transfer((uint8_t *)&tx, sizeof(tx), (uint8_t *)&rx, sizeof(rx));
 
     for (int16_t i = 0; i < RASPILOT_ADC_MAX_CHANNELS; i++) {
         for (int16_t j=0; j < RASPILOT_ADC_MAX_CHANNELS; j++) {
             AnalogSource_Raspilot *source = _channels[j];
 
-            if (source != NULL && i == source->_pin) {
+            if (source != nullptr && i == source->_pin) {
                 source->_value = rx.regs[i] * 3.3 / 4096.0;
             }
         }
     }
-
-    _last_update_timestamp = AP_HAL::micros();
 }

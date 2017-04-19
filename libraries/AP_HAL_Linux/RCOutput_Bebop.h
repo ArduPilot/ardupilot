@@ -1,12 +1,19 @@
 #pragma once
 
 #include "AP_HAL_Linux.h"
+#include <AP_HAL/I2CDevice.h>
+
+struct bldc_info;
+
+namespace Linux {
 
 enum bebop_bldc_motor {
     BEBOP_BLDC_MOTOR_1 = 0,
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_DISCO
     BEBOP_BLDC_MOTOR_2,
     BEBOP_BLDC_MOTOR_3,
     BEBOP_BLDC_MOTOR_4,
+#endif
     BEBOP_BLDC_MOTORS_NUM,
 };
 
@@ -46,46 +53,37 @@ public:
     uint8_t temperature;
 };
 
-struct bldc_info {
-    uint8_t version_maj;
-    uint8_t version_min;
-    uint8_t type;
-    uint8_t n_motors;
-    uint16_t n_flights;
-    uint16_t last_flight_time;
-    uint32_t total_flight_time;
-    uint8_t last_error;
-}__attribute__((packed));
-
-class Linux::RCOutput_Bebop : public AP_HAL::RCOutput {
+class RCOutput_Bebop : public AP_HAL::RCOutput {
 public:
-    RCOutput_Bebop();
+    RCOutput_Bebop(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     static RCOutput_Bebop *from(AP_HAL::RCOutput *rcout) {
         return static_cast<RCOutput_Bebop*>(rcout);
     }
 
-    void     init();
-    void     set_freq(uint32_t chmask, uint16_t freq_hz);
-    uint16_t get_freq(uint8_t ch);
-    void     enable_ch(uint8_t ch);
-    void     disable_ch(uint8_t ch);
-    void     write(uint8_t ch, uint16_t period_us);
+    void     init() override;
+    void     set_freq(uint32_t chmask, uint16_t freq_hz) override;
+    uint16_t get_freq(uint8_t ch) override;
+    void     enable_ch(uint8_t ch) override;
+    void     disable_ch(uint8_t ch) override;
+    void     write(uint8_t ch, uint16_t period_us) override;
     void     cork() override;
     void     push() override;
-    uint16_t read(uint8_t ch);
-    void     read(uint16_t* period_us, uint8_t len);
-    void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm);
+    uint16_t read(uint8_t ch) override;
+    void     read(uint16_t* period_us, uint8_t len) override;
+    void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override;
     int      read_obs_data(BebopBLDC_ObsData &data);
+    void     play_note(uint8_t pwm, uint16_t period_us, uint16_t duration_ms);
 
 private:
-    AP_HAL::Semaphore *_i2c_sem;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     uint16_t _request_period_us[BEBOP_BLDC_MOTORS_NUM];
     uint16_t _period_us[BEBOP_BLDC_MOTORS_NUM];
     uint16_t _rpm[BEBOP_BLDC_MOTORS_NUM];
     uint16_t _frequency;
     uint16_t _min_pwm;
     uint16_t _max_pwm;
+    uint8_t _n_motors=4;
     uint8_t  _state;
     bool     _corking = false;
     uint16_t _max_rpm;
@@ -107,3 +105,5 @@ private:
     void _run_rcout();
     static void *_control_thread(void *arg);
 };
+
+}

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,6 +35,11 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     frame_height = 0.1f;
 
+    ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
+    
+    if (strstr(frame_str, "-heavy")) {
+        mass = 8;
+    }
     if (strstr(frame_str, "-revthrust")) {
         reverse_thrust = true;
     }
@@ -43,6 +47,18 @@ Plane::Plane(const char *home_str, const char *frame_str) :
         elevons = true;
     } else if (strstr(frame_str, "-vtail")) {
         vtail = true;
+    }
+    if (strstr(frame_str, "-elevrev")) {
+        reverse_elevator_rudder = true;
+    }
+   if (strstr(frame_str, "-tailsitter")) {
+       tailsitter = true;
+       ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
+       thrust_scale *= 1.5;
+   }
+
+    if (strstr(frame_str, "-ice")) {
+        ice_engine = true;
     }
 }
 
@@ -82,9 +98,23 @@ float Plane::dragCoeff(float alpha) const
 }
 
 // Torque calculation function
-Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRudder, const Vector3f &force) const
+Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRudder, float inputThrust, const Vector3f &force) const
 {
-    const float alpha = angle_of_attack;
+    float alpha = angle_of_attack;
+
+	//calculate aerodynamic torque
+    float effective_airspeed = airspeed;
+
+    if (tailsitter) {
+        /*
+          tailsitters get airspeed from prop-wash
+         */
+        effective_airspeed += inputThrust * 20;
+
+        // reduce effective angle of attack as thrust increases
+        alpha *= constrain_float(1 - inputThrust, 0, 1);
+    }
+    
     const float s = coefficient.s;
     const float c = coefficient.c;
     const float b = coefficient.b;
@@ -113,10 +143,9 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	double q = gyro.y;
 	double r = gyro.z;
 
-	//calculate aerodynamic torque
-	double qbar = 1.0/2.0*rho*pow(airspeed,2)*s; //Calculate dynamic pressure
+	double qbar = 1.0/2.0*rho*pow(effective_airspeed,2)*s; //Calculate dynamic pressure
 	double la, na, ma;
-	if (is_zero(airspeed))
+	if (is_zero(effective_airspeed))
 	{
 		la = 0;
 		ma = 0;
@@ -124,9 +153,9 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	}
 	else
 	{
-		la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*airspeed) + c_l_r*b*r/(2*airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
-		ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*airspeed) + c_m_deltae*inputElevator);
-		na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*airspeed) + c_n_r*b*r/(2*airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
+		la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*effective_airspeed) + c_l_r*b*r/(2*effective_airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
+		ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*effective_airspeed) + c_m_deltae*inputElevator);
+		na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*effective_airspeed) + c_n_r*b*r/(2*effective_airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
 	}
 
 
@@ -196,10 +225,14 @@ Vector3f Plane::getForce(float inputAileron, float inputElevator, float inputRud
 
 void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
-    float aileron  = (input.servos[0]-1500)/500.0f;
-    float elevator = (input.servos[1]-1500)/500.0f;
-    float rudder   = (input.servos[3]-1500)/500.0f;
+    float aileron  = filtered_servo_angle(input, 0);
+    float elevator = filtered_servo_angle(input, 1);
+    float rudder   = filtered_servo_angle(input, 3);
     float throttle;
+    if (reverse_elevator_rudder) {
+        elevator = -elevator;
+        rudder = -rudder;
+    }
     if (elevons) {
         // fake an elevon plane
         float ch1 = aileron;
@@ -207,6 +240,9 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         aileron  = (ch2-ch1)/2.0f;
         // the minus does away with the need for RC2_REV=-1
         elevator = -(ch2+ch1)/2.0f;
+
+        // assume no rudder
+        rudder = 0;
     } else if (vtail) {
         // fake a vtail plane
         float ch1 = elevator;
@@ -217,20 +253,36 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     }
 
     if (reverse_thrust) {
-        throttle = constrain_float((input.servos[2]-1500)/500.0f, -1, 1);
+        throttle = filtered_servo_angle(input, 2);
     } else {
-        throttle = constrain_float((input.servos[2]-1000)/1000.0f, 0, 1);
+        throttle = filtered_servo_range(input, 2);
     }
     
     float thrust     = throttle;
 
+    if (ice_engine) {
+        thrust = icengine.update(input);
+    }
+
     // calculate angle of attack
     angle_of_attack = atan2f(velocity_air_bf.z, velocity_air_bf.x);
     beta = atan2f(velocity_air_bf.y,velocity_air_bf.x);
+
+    if (tailsitter) {
+        /*
+          tailsitters get 4x the control surfaces
+         */
+        aileron *= 4;
+        elevator *= 4;
+        rudder *= 4;
+    }
     
     Vector3f force = getForce(aileron, elevator, rudder);
-    rot_accel = getTorque(aileron, elevator, rudder, force);
+    rot_accel = getTorque(aileron, elevator, rudder, thrust, force);
 
+    // simulate engine RPM
+    rpm1 = thrust * 7000;
+    
     // scale thrust to newtons
     thrust *= thrust_scale;
 
@@ -240,6 +292,12 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     // add some noise
     if (thrust_scale > 0) {
         add_noise(fabsf(thrust) / thrust_scale);
+    }
+
+    if (on_ground() && !tailsitter) {
+        // add some ground friction
+        Vector3f vel_body = dcm.transposed() * velocity_ef;
+        accel_body.x -= vel_body.x * 0.3f;
     }
 }
     

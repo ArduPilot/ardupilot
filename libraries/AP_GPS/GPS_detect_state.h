@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -69,8 +68,28 @@ struct SBP_detect_state {
         GET_MSG = 4,
         GET_CRC = 5
     } state:8;
+    uint16_t msg_type;
     uint8_t n_read;
     uint8_t msg_len;
     uint16_t crc_so_far;
     uint16_t crc;
+    uint8_t heartbeat_buff[4];
+};
+
+
+struct SBP2_detect_state {
+    enum {
+        WAITING = 0,
+        GET_TYPE = 1,
+        GET_SENDER = 2,
+        GET_LEN = 3,
+        GET_MSG = 4,
+        GET_CRC = 5
+    } state:8;
+    uint16_t msg_type;
+    uint8_t n_read;
+    uint8_t msg_len;
+    uint16_t crc_so_far;
+    uint16_t crc;
+    uint8_t heartbeat_buff[4];
 };

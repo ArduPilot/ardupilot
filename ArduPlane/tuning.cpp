@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 /*
@@ -87,7 +85,7 @@ const AP_Tuning_Plane::tuning_name AP_Tuning_Plane::tuning_names[] = {
 };
 
 /*
-  get a pointer to an AP_Float for a parameter, or NULL on fail
+  get a pointer to an AP_Float for a parameter, or nullptr on fail
  */
 AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
 {
@@ -239,6 +237,18 @@ void AP_Tuning_Plane::set_value(uint8_t parm, float value)
     default:
         AP_Float *f = get_param_pointer(parm);
         if (f != nullptr) {
+            uint64_t param_bit = (1ULL << parm);
+            if (!(param_bit & have_set)) {
+                // first time this param has been set by tuning. We
+                // need to see if a reversion value is available in
+                // FRAM, and if not then save one
+                float current_value = f->get();
+                if (!f->load()) {
+                    // there is no value in FRAM, set one
+                    f->set_and_save(current_value);
+                }
+                have_set |= param_bit;
+            }
             f->set_and_notify(value);
         }
         break;
@@ -263,7 +273,11 @@ void AP_Tuning_Plane::reload_value(uint8_t parm)
     default:
         AP_Float *f = get_param_pointer(parm);
         if (f != nullptr) {
-            f->load();
+            uint64_t param_bit = (1ULL << parm);
+            // only reload if we have set this parameter at some point
+            if (param_bit & have_set) {
+                f->load();
+            }
         }
         break;
     }
@@ -282,7 +296,12 @@ float AP_Tuning_Plane::controller_error(uint8_t parm)
     // than rmsD. Otherwise it is too easy to push D too high while
     // tuning a quadplane and end up with D dominating
     const float max_P_D_ratio = 3.0f;
-    
+
+    if (plane.quadplane.motors->get_throttle() < 0.1f) {
+        // don't report stale errors if not running VTOL motors
+        return 0;
+    }
+        
     switch(parm) {
     // special handling of dual-parameters
     case TUNING_RATE_ROLL_PI:

@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -71,8 +70,8 @@ private:
 
     // Receive buffer
     union PACKED {
+        DEFINE_BYTE_ARRAY_METHODS
         diyd_mtk_msg msg;
-        uint8_t bytes[0];
     } _buffer;
 
     // Buffer parse & GPS state update

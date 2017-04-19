@@ -1,9 +1,9 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>      // RC Channel Library
+#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 // rotor controller states
 enum RotorControlState {
@@ -24,8 +24,9 @@ enum RotorControlMode {
 class AP_MotorsHeli_RSC {
 public:
     friend class AP_MotorsHeli_Single;
+    friend class AP_MotorsHeli_Dual;
     
-    AP_MotorsHeli_RSC(RC_Channel_aux::Aux_servo_function_t aux_fn,
+    AP_MotorsHeli_RSC(SRV_Channel::Aux_servo_function_t aux_fn,
                       uint8_t default_channel) :
         _aux_fn(aux_fn),
         _default_channel(default_channel)
@@ -69,9 +70,9 @@ public:
     void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
 
     // set_power_output_range
-    void        set_power_output_range(float power_low, float power_high);
+    void        set_power_output_range(float power_low, float power_high, float power_negc, uint16_t slewrate);
 
-    // set_motor_load
+    // set_motor_load. +ve numbers for +ve collective. -ve numbers for negative collective
     void        set_motor_load(float load) { _load_feedforward = load; }
 
     // output - update value to send to ESC/Servo
@@ -81,7 +82,7 @@ private:
     uint64_t        _last_update_us;
     
     // channel setup for aux function
-    RC_Channel_aux::Aux_servo_function_t _aux_fn;
+    SRV_Channel::Aux_servo_function_t _aux_fn;
     uint8_t         _default_channel;
     
     // internal variables
@@ -97,7 +98,8 @@ private:
     bool            _runup_complete = false;    // flag for determining if runup is complete
     float           _power_output_low = 0.0f;   // setpoint for power output at minimum rotor power
     float           _power_output_high = 0.0f;  // setpoint for power output at maximum rotor power
-    float           _power_output_range = 0.0f; // maximum range of output power
+    float           _power_output_negc = 0.0f;  // setpoint for power output at full negative collective
+    uint16_t        _power_slewrate = 0;        // slewrate for throttle (percentage per second)
     float           _load_feedforward = 0.0f;   // estimate of motor load, range 0-1.0f
 
     AP_Int16        _pwm_min;

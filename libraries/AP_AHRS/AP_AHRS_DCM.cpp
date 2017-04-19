@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       APM_AHRS_DCM.cpp
  *
@@ -48,7 +47,7 @@ AP_AHRS_DCM::reset_gyro_drift(void)
 
 // run a full DCM update round
 void
-AP_AHRS_DCM::update(void)
+AP_AHRS_DCM::update(bool skip_ins_update)
 {
     float delta_t;
 
@@ -56,8 +55,10 @@ AP_AHRS_DCM::update(void)
         _last_startup_ms = AP_HAL::millis();
     }
 
-    // tell the IMU to grab some data
-    _ins.update();
+    if (!skip_ins_update) {
+        // tell the IMU to grab some data
+        _ins.update();
+    }
 
     // ask the IMU how much time this sensor reading represents
     delta_t = _ins.get_delta_time();
@@ -944,8 +945,7 @@ void AP_AHRS_DCM::estimate_wind(void)
 void
 AP_AHRS_DCM::euler_angles(void)
 {
-    _body_dcm_matrix = _dcm_matrix;
-    _body_dcm_matrix.rotateXYinv(_trim);
+    _body_dcm_matrix = _dcm_matrix * get_rotation_vehicle_body_to_autopilot_body();
     _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
     update_cd_values();
@@ -1003,6 +1003,12 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 {
     _home = loc;
     _home.options = 0;
+}
+
+//  a relative ground position to home in meters, Down
+void AP_AHRS_DCM::get_relative_position_D_home(float &posD) const
+{
+    posD = -_baro.get_altitude();
 }
 
 /*

@@ -1,20 +1,37 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include "Display.h"
+#include "Display_Backend.h"
+#include <AP_HAL/I2CDevice.h>
 
-#define SSD1306_I2C_ADDRESS 0x3C    // default I2C bus address
-#define SSD1306_ROWS 128		    // display rows
-#define SSD1306_COLUMNS 64		    // display columns
-#define SSD1306_COLUMNS_PER_PAGE 8
+#define SSD1306_COLUMNS 128		// display columns
+#define SSD1306_ROWS 64		    // display rows
+#define SSD1306_ROWS_PER_PAGE 8
 
-class Display_SSD1306_I2C: public Display {
+class Display_SSD1306_I2C: public Display_Backend {
+
 public:
-    virtual bool hw_init();
-    virtual bool hw_update();
-    virtual bool set_pixel(uint16_t x, uint16_t y);
-    virtual bool clear_pixel(uint16_t x, uint16_t y);
+
+    static Display_SSD1306_I2C *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev);
+
+    void hw_update() override;
+    void set_pixel(uint16_t x, uint16_t y) override;
+    void clear_pixel(uint16_t x, uint16_t y) override;
+    void clear_screen() override;
+
+protected:
+
+    Display_SSD1306_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    ~Display_SSD1306_I2C() override;
 
 private:
-    uint8_t _displaybuffer[SSD1306_ROWS * SSD1306_COLUMNS_PER_PAGE];
+
+    bool hw_init() override;
+
+    void _timer();
+
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    uint8_t _displaybuffer[SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE];
+    AP_HAL::Semaphore *_displaybuffer_sem;
+    bool _need_hw_update;
 };

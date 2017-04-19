@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -211,6 +210,21 @@ public:
         return v * (*this * v)/(v*v);
     }
 
+    // given a position p1 and a velocity v1 produce a vector
+    // perpendicular to v1 maximising distance from p1.  If p1 is the
+    // zero vector the return from the function will always be the
+    // zero vector - that should be checked for.
+    static Vector3<T> perpendicular(const Vector3<T> &p1, const Vector3<T> &v1)
+    {
+        T d = p1 * v1;
+        if (fabsf(d) < FLT_EPSILON) {
+            return p1;
+        }
+        Vector3<T> parallel = (v1 * d) / v1.length_squared();
+        Vector3<T> perpendicular = p1 - parallel;
+
+        return perpendicular;
+    }
 
 };
 

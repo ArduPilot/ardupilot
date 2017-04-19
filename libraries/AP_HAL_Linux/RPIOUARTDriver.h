@@ -3,9 +3,11 @@
 #include "AP_HAL_Linux.h"
 
 #include "UARTDriver.h"
+#include <AP_HAL/SPIDevice.h>
 
+namespace Linux {
 
-class Linux::RPIOUARTDriver : public Linux::UARTDriver {
+class RPIOUARTDriver : public UARTDriver {
 public:
     RPIOUARTDriver();
 
@@ -24,15 +26,15 @@ protected:
 private:
     bool _in_timer;
 
-    bool sem_take_nonblocking();
-    void sem_give();
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+    void _bus_timer(void);
 
-    uint32_t _last_update_timestamp;
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
     bool _external;
+    bool _registered_callback;
 
     bool _need_set_baud;
     uint32_t _baudrate;
 };
+
+}

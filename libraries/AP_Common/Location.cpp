@@ -10,18 +10,13 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_AHRS_NavEKF *Location_Class::_ahrs = NULL;
-AP_Terrain *Location_Class::_terrain = NULL;
-
-// scalers to convert latitude and longitude to meters.  Duplicated from location.cpp
-#define LOCATION_SCALING_FACTOR 0.011131884502145034f
-#define LOCATION_SCALING_FACTOR_INV 89.83204953368922f
+const AP_AHRS_NavEKF *Location_Class::_ahrs = nullptr;
+AP_Terrain *Location_Class::_terrain = nullptr;
 
 /// constructors
 Location_Class::Location_Class()
 {
-    lat = lng = alt = 0;
-    options = 0;
+    zero();
 }
 
 Location_Class::Location_Class(int32_t latitude, int32_t longitude, int32_t alt_in_cm, ALT_FRAME frame)
@@ -46,7 +41,7 @@ Location_Class::Location_Class(const Vector3f &ekf_offset_neu)
     set_alt_cm(ekf_offset_neu.z, ALT_FRAME_ABOVE_ORIGIN);
 
     // calculate lat, lon
-    if (_ahrs != NULL) {
+    if (_ahrs != nullptr) {
         Location ekf_origin;
         if (_ahrs->get_origin(ekf_origin)) {
             lat = ekf_origin.lat;
@@ -131,7 +126,7 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
     float alt_terr_cm = 0;
     if (frame == ALT_FRAME_ABOVE_TERRAIN || desired_frame == ALT_FRAME_ABOVE_TERRAIN) {
 #if AP_TERRAIN_AVAILABLE
-        if (_ahrs == NULL || _terrain == NULL || !_terrain->height_amsl(*(Location *)this, alt_terr_cm, true)) {
+        if (_ahrs == nullptr || _terrain == nullptr || !_terrain->height_amsl(*(Location *)this, alt_terr_cm, true)) {
             return false;
         }
         // convert terrain alt to cm
@@ -154,7 +149,7 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
             {
                 // fail if we cannot get ekf origin
                 Location ekf_origin;
-                if (_ahrs == NULL || !_ahrs->get_origin(ekf_origin)) {
+                if (_ahrs == nullptr || !_ahrs->get_origin(ekf_origin)) {
                     return false;
                 }
                 alt_abs = alt + ekf_origin.alt;
@@ -180,7 +175,7 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
             {
                 // fail if we cannot get ekf origin
                 Location ekf_origin;
-                if (_ahrs == NULL || !_ahrs->get_origin(ekf_origin)) {
+                if (_ahrs == nullptr || !_ahrs->get_origin(ekf_origin)) {
                     return false;
                 }
                 ret_alt_cm = alt_abs - ekf_origin.alt;
@@ -235,7 +230,8 @@ float Location_Class::get_distance(const struct Location &loc2) const
 // extrapolate latitude/longitude given distances (in meters) north and east
 void Location_Class::offset(float ofs_north, float ofs_east)
 {
-    if (!is_zero(ofs_north) || !is_zero(ofs_east)) {
+    // use is_equal() because is_zero() is a local class conflict and is_zero() in AP_Math does not belong to a class
+    if (!is_equal(ofs_north, 0.0f) || !is_equal(ofs_east, 0.0f)) {
         int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
         int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(*this);
         lat += dlat;

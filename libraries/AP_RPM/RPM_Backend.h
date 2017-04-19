@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,6 +31,13 @@ public:
     // update the state structure. All backends must implement this.
     virtual void update() = 0;
 
+    int8_t get_pin(void) const {
+        if (state.instance > 1) {
+            return -1;
+        }
+        return ap_rpm._pin[state.instance].get();
+    }
+    
 protected:
 
     AP_RPM &ap_rpm;

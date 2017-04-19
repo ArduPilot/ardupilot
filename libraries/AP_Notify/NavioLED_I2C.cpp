@@ -26,43 +26,37 @@ extern const AP_HAL::HAL& hal;
 
 bool NavioLED_I2C::hw_init()
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    _dev = hal.i2c_mgr->get_device(1, PCA9685_ADDRESS);
 
-    // take i2c bus sempahore
-    if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev) {
         return false;
     }
 
-    // disable recording of i2c lockup errors
-    hal.i2c->ignore_errors(true);
+    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&NavioLED_I2C::_timer, void));
 
-    // enable the led
-    bool ret = true;
-
-    // re-enable recording of i2c lockup errors
-    hal.i2c->ignore_errors(false);
-
-    // give back i2c semaphore
-    i2c_sem->give();
-
-    return ret;
+    return true;
 }
 
 // set_rgb - set color as a combination of red, green and blue values
 bool NavioLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    rgb.r = red;
+    rgb.g = green;
+    rgb.b = blue;
+    _need_update = true;
+    return true;
+}
 
-    // exit immediately if we can't take the semaphore
-    if (i2c_sem == NULL || !i2c_sem->take(5)) {
-        return false;
+void NavioLED_I2C::_timer(void)
+{
+    if (!_need_update) {
+        return;
     }
-
-    uint16_t red_adjusted = red * 0x10;
-    uint16_t green_adjusted = green * 0x10;
-    uint16_t blue_adjusted = blue * 0x10;
+    _need_update = false;
+    
+    uint16_t red_adjusted = rgb.r * 0x10;
+    uint16_t green_adjusted = rgb.g * 0x10;
+    uint16_t blue_adjusted = rgb.b * 0x10;
 
     uint8_t blue_channel_lsb = blue_adjusted & 0xFF;
     uint8_t blue_channel_msb = blue_adjusted >> 8;
@@ -74,15 +68,9 @@ bool NavioLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     uint8_t red_channel_msb = red_adjusted >> 8;
 
 
-    uint8_t transaction[] = {0x00, 0x00, blue_channel_lsb, blue_channel_msb,
-                   0x00, 0x00, green_channel_lsb, green_channel_msb,
-                   0x00, 0x00, red_channel_lsb, red_channel_msb
-    };
+    uint8_t transaction[] = {PCA9685_PWM, 0x00, 0x00, blue_channel_lsb, blue_channel_msb,
+			     0x00, 0x00, green_channel_lsb, green_channel_msb,
+			     0x00, 0x00, red_channel_lsb, red_channel_msb};
 
-
-    bool success = (hal.i2c->writeRegisters(PCA9685_ADDRESS, PCA9685_PWM, sizeof(transaction), transaction) == 0);
-
-    // give back i2c semaphore
-    i2c_sem->give();
-    return success;
+    _dev->transfer(transaction, sizeof(transaction), nullptr, 0);
 }

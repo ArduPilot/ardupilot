@@ -124,8 +124,15 @@ def ap_common_checks(cfg):
         mandatory=False,
     )
 
+    cfg.check(header_name='endian.h', mandatory=False)
+
+    cfg.check(header_name='byteswap.h', mandatory=False)
+
 @conf
 def check_librt(cfg, env):
+    if cfg.env.DEST_OS == 'darwin':
+        return True
+
     ret = cfg.check(
         compiler='cxx',
         fragment='''
@@ -150,18 +157,75 @@ def check_librt(cfg, env):
     return ret
 
 @conf
+def check_package(cfg, env, libname):
+    '''use pkg-config to look for an installed library that has a LIBNAME.pc file'''
+    capsname = libname.upper()
+
+    # we don't want check_cfg() changing the global environment during
+    # this test, in case it fails in the 2nd link step
+    cfg.env.stash()
+
+    cfg.check_cfg(package=libname, mandatory=False, global_define=True,
+                  args=['--libs', '--cflags'], uselib_store=capsname)
+
+    # we need to also check that we can link against the lib. We may
+    # have a pc file for the package, but its the wrong
+    # architecture. This can happen as PKG_CONFIG_PATH is not
+    # architecture specific
+    cfg.env.LIB += cfg.env['LIB_%s' % capsname]
+    cfg.env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
+    cfg.env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
+    cfg.env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
+
+    ret = cfg.check(
+        compiler='cxx',
+        fragment='''int main() { return 0; }''',
+        msg='Testing link with %s' % libname,
+        mandatory=False,
+        lib='dl'
+    )
+
+    if ret:
+        env.LIB += cfg.env['LIB_%s' % capsname]
+        env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
+        env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
+        env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
+
+    cfg.env.revert()
+
+@conf
 def check_lttng(cfg, env):
-    cfg.check_cfg(package='lttng-ust', mandatory=False, global_define=True,
-                  args=['--libs', '--cflags'])
-    env.LIB += cfg.env['LIB_LTTNG-UST']
+    if cfg.env.STATIC_LINKING:
+        # lttng-ust depends on libdl which means it can't be used in a static build
+        cfg.msg("Checking for 'lttng-ust':", 'disabled for static build', color='YELLOW')
+        return False
+    if cfg.options.disable_lttng:
+        cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
+        return False
+
+    check_package(cfg, env, 'lttng-ust')
     return True
 
 @conf
 def check_libiio(cfg, env):
-    cfg.check_cfg(package='libiio', mandatory=False, global_define=True,
-                  args=['--libs', '--cflags'])
-    env.LIB += cfg.env['LIB_LIBIIO']
-    # workaround bug in libiio 0.6 not including -ldl
-    if cfg.env['LIB_LIBIIO']:
-        env.LIB += ['dl']
+    if cfg.env.STATIC_LINKING:
+        # libiio depends on libdl which means it can't be used in a static build
+        cfg.msg("Checking for 'libiio':", 'disabled for static build', color='YELLOW')
+        return False
+    if cfg.options.disable_libiio:
+        cfg.msg("Checking for 'libiio':", 'disabled', color='YELLOW')
+        return False
+
+    check_package(cfg, env, 'libiio')
     return True
+
+@conf
+def check_libdl(cfg, env):
+    if cfg.env.STATIC_LINKING:
+        # using loadable modules for a static build is not recommended
+        cfg.msg("Checking for 'libdl':", 'disabled for static build', color='YELLOW')
+        return False
+    ret = cfg.check(compiler='cxx', lib='dl', mandatory=False, global_define=True, define_name='HAVE_LIBDL')
+    if ret:
+        env.LIB += cfg.env['LIB_DL']
+    return ret

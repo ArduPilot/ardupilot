@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,8 +16,9 @@
 #include "AP_Notify.h"
 
 #include "AP_BoardLED.h"
+#include "PixRacerLED.h"
 #include "Buzzer.h"
-#include "Display_SSD1306_I2C.h"
+#include "Display.h"
 #include "ExternalLED.h"
 #include "NavioLED_I2C.h"
 #include "OreoLED_PX4.h"
@@ -28,9 +28,11 @@
 #include "ToneAlarm_PX4_Solo.h"
 #include "ToshibaLED.h"
 #include "ToshibaLED_I2C.h"
-#include "ToshibaLED_PX4.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
+#include "DiscoLED.h"
+#include <stdio.h>
+
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
@@ -49,6 +51,20 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BUZZ_ENABLE", 1, AP_Notify, _buzzer_enable, BUZZER_ON),
 
+    // @Param: LED_OVERRIDE
+    // @DisplayName: Setup for MAVLink LED override
+    // @Description: This sets up the board RGB LED for override by MAVLink. Normal notify LED control is disabled
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("LED_OVERRIDE", 2, AP_Notify, _rgb_led_override, 0),
+
+    // @Param: DISPLAY_TYPE
+    // @DisplayName: Type of on-board I2C display
+    // @Description: This sets up the type of on-board I2C display. Disabled by default.
+    // @Values: 0:Disable,1:ssd1306,2:sh1106
+    // @User: Advanced
+    AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
+
     AP_GROUPEND
 };
 
@@ -59,12 +75,17 @@ AP_Notify::AP_Notify()
 }
 
 // static flags, to allow for direct class update from device drivers
-struct AP_Notify::notify_flags_type AP_Notify::flags;
+struct AP_Notify::notify_flags_and_values_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
+    PixRacerLED boardled;
+#else
     AP_BoardLED boardled;
-    ToshibaLED_PX4 toshibaled;
+#endif
+    ToshibaLED_I2C toshibaled;
+    Display display;
 
 #if AP_NOTIFY_SOLO_TONES == 1
     ToneAlarm_PX4_Solo tonealarm;
@@ -74,13 +95,13 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 
 #if AP_NOTIFY_OREOLED == 1
     OreoLED_PX4 oreoled;
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled, &display};
 #else
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &display};
 #endif
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    Buzzer buzzer;
+    ToneAlarm_PX4 tonealarm;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
     AP_BoardLED boardled;
 #else
@@ -88,7 +109,8 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #endif
     ToshibaLED_I2C toshibaled;
     ExternalLED externalled;
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &externalled, &buzzer};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &externalled, &tonealarm};
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
         NavioLED_I2C navioled;
@@ -100,8 +122,11 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         NotifyDevice *AP_Notify::_devices[] = {&navioled, &toshibaled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
         Buzzer buzzer;
-        Display_SSD1306_I2C display;
+        Display display;
         NotifyDevice *AP_Notify::_devices[] = {&display, &buzzer};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
+        AP_BoardLED boardled;
+        NotifyDevice *AP_Notify::_devices[] = {&boardled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
         ToshibaLED_I2C toshibaled;
         ToneAlarm_Linux tonealarm;
@@ -117,6 +142,10 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         AP_BoardLED boardled;
         RCOutputRGBLed bhled(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);
         NotifyDevice *AP_Notify::_devices[] = {&boardled, &bhled};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+        DiscoLED discoled;
+        ToneAlarm_Linux tonealarm;
+        NotifyDevice *AP_Notify::_devices[] = {&discoled, &tonealarm};
     #else
         AP_BoardLED boardled;
         ToshibaLED_I2C toshibaled;
@@ -137,6 +166,11 @@ void AP_Notify::init(bool enable_external_leds)
     // clear all flags and events
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
+
+    // clear flight mode string and text buffer
+    memset(_flight_mode_str, 0, sizeof(_flight_mode_str));
+    memset(_send_text, 0, sizeof(_send_text));
+    _send_text_updated_millis = 0;
 
     AP_Notify::flags.external_leds = enable_external_leds;
 
@@ -163,4 +197,26 @@ void AP_Notify::handle_led_control(mavlink_message_t *msg)
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->handle_led_control(msg);
     }
+}
+
+// handle a PLAY_TUNE message
+void AP_Notify::handle_play_tune(mavlink_message_t *msg)
+{
+    for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+        _devices[i]->handle_play_tune(msg);
+    }
+}
+
+// set flight mode string
+void AP_Notify::set_flight_mode_str(const char *str)
+{
+    strncpy(_flight_mode_str, str, 4);
+    _flight_mode_str[sizeof(_flight_mode_str)-1] = 0;
+}
+
+void AP_Notify::send_text(const char *str)
+{
+    strncpy(_send_text, str, sizeof(_send_text));
+    _send_text[sizeof(_send_text)-1] = 0;
+    _send_text_updated_millis = AP_HAL::millis();
 }

@@ -34,4 +34,9 @@ private:
     void _upgrade_to_mtd(void);
     uint32_t _mtd_signature(void);
     void _mtd_write_signature(void);
+
+
+
+
+    void bus_lock(bool lock);
 };

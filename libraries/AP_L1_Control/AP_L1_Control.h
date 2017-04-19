@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 /// @file    AP_L1_Control.h
@@ -18,11 +17,13 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Navigation/AP_Navigation.h>
+#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    AP_L1_Control(AP_AHRS &ahrs)
-        : _ahrs(ahrs)
+    AP_L1_Control(AP_AHRS &ahrs, const AP_SpdHgtControl * spdHgtControl)
+        : _ahrs(ahrs),
+          _spdHgtControl(spdHgtControl)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -44,6 +45,7 @@ public:
     int32_t target_bearing_cd(void) const;
     float turn_distance(float wp_radius) const;
     float turn_distance(float wp_radius, float turn_angle) const;
+    float loiter_radius (const float loiter_radius) const;
     void update_waypoint(const struct Location &prev_WP, const struct Location &next_WP);
     void update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction);
     void update_heading_hold(int32_t navigation_heading_cd);
@@ -65,9 +67,16 @@ public:
     // this supports the NAVl1_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+    void set_reverse(bool reverse) {
+        _reverse = reverse;
+    }
+
 private:
     // reference to the AHRS object
     AP_AHRS &_ahrs;
+
+    // pointer to the SpdHgtControl object
+    const AP_SpdHgtControl *_spdHgtControl;
 
     // lateral acceration in m/s required to fly to the
     // L1 reference point (+ve to right)
@@ -109,4 +118,10 @@ private:
     float _L1_xtrack_i_gain_prev = 0;
     uint32_t _last_update_waypoint_us;
     bool _data_is_stale = true;
+
+    AP_Float _loiter_bank_limit;
+
+    bool _reverse = false;
+    float get_yaw();
+    float get_yaw_sensor();
 };

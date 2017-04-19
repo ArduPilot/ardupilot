@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +25,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <stdio.h>
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #define SCHEDULER_DEFAULT_LOOP_RATE 400
 #else
 #define SCHEDULER_DEFAULT_LOOP_RATE  50
@@ -89,7 +88,7 @@ void AP_Scheduler::tick(void)
   run one tick
   this will run as many scheduler tasks as we can in the specified time
  */
-void AP_Scheduler::run(uint16_t time_available)
+void AP_Scheduler::run(uint32_t time_available)
 {
     uint32_t run_started_usec = AP_HAL::micros();
     uint32_t now = run_started_usec;

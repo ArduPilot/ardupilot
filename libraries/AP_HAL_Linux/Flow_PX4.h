@@ -16,7 +16,9 @@
 
 #include "AP_HAL_Linux.h"
 
-class Linux::Flow_PX4 {
+namespace Linux {
+
+class Flow_PX4 {
 public:
     Flow_PX4(uint32_t width, uint32_t bytesperline,
              uint32_t max_flow_pixel,
@@ -35,3 +37,5 @@ private:
     uint16_t _pixstep;
     uint8_t  _num_blocks;
 };
+
+}

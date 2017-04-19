@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 #pragma once
 
@@ -42,8 +41,11 @@
 #ifndef YAW_RANGE_DEFAULT
  # define YAW_RANGE_DEFAULT 360
 #endif
-#ifndef PITCH_RANGE_DEFAULT
- # define PITCH_RANGE_DEFAULT 180
+#ifndef PITCH_MIN_DEFAULT
+ # define PITCH_MIN_DEFAULT -90
+#endif
+#ifndef PITCH_MAX_DEFAULT
+ # define PITCH_MAX_DEFAULT 90
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

@@ -80,7 +80,7 @@ echo "Updating APM"
 pushd APM
 git checkout -f master
 git fetch origin
-git submodule update
+git submodule update --recursive --force
 git reset --hard origin/master
 git pull || report_pull_failure
 git clean -f -f -x -d -d
@@ -91,9 +91,7 @@ popd
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 
 echo "Updating pymavlink"
-pushd mavlink/pymavlink
-git fetch origin
-git reset --hard origin/master
+pushd APM/modules/mavlink/pymavlink
 git show
 python setup.py build install --user
 popd
@@ -135,9 +133,16 @@ echo $githash > "buildlogs/history/$hdate/githash.txt"
 
 killall -9 JSBSim || /bin/true
 
+# setup for libiio on Parrot boards
+export PKG_CONFIG_PATH=$HOME/APM/ParrotLib/lib
+
 # raise core limit
 ulimit -c 10000000
 
 timelimit 32000 APM/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
 
 ) >> build.log 2>&1
+
+# autotest done, let's mark GTD flags
+touch /tmp/.autotest.done
+

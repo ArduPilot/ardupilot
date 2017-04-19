@@ -1,9 +1,13 @@
-import math, util, rotmat, time
+import math
 import random
+import time
+import util
+
 from rotmat import Vector3, Matrix3
 
+
 class Aircraft(object):
-    '''a basic aircraft class'''
+    """A basic aircraft class."""
     def __init__(self):
         self.home_latitude = 0
         self.home_longitude = 0
@@ -11,20 +15,20 @@ class Aircraft(object):
         self.ground_level = 0
         self.frame_height = 0.0
 
-        self.latitude  = self.home_latitude
+        self.latitude = self.home_latitude
         self.longitude = self.home_longitude
-        self.altitude  = self.home_altitude
+        self.altitude = self.home_altitude
 
         self.dcm = Matrix3()
 
         # rotation rate in body frame
-        self.gyro = Vector3(0,0,0) # rad/s
+        self.gyro = Vector3(0, 0, 0)  # rad/s
 
-        self.velocity = Vector3(0, 0, 0) # m/s, North, East, Down
-        self.position = Vector3(0, 0, 0) # m North, East, Down
+        self.velocity = Vector3(0, 0, 0)  # m/s, North, East, Down
+        self.position = Vector3(0, 0, 0)  # m North, East, Down
         self.mass = 0.0
-        self.update_frequency = 50 # in Hz
-        self.gravity = 9.80665 # m/s/s
+        self.update_frequency = 50  # in Hz
+        self.gravity = 9.80665  # m/s/s
         self.accelerometer = Vector3(0, 0, -self.gravity)
 
         self.wind = util.Wind('0,0,0')
@@ -35,13 +39,13 @@ class Aircraft(object):
         self.accel_noise = 0.3
 
     def on_ground(self, position=None):
-        '''return true if we are on the ground'''
+        """Return true if we are on the ground."""
         if position is None:
             position = self.position
         return (-position.z) + self.home_altitude <= self.ground_level + self.frame_height
 
     def update_position(self):
-        '''update lat/lon/alt from position'''
+        """Update lat/lon/alt from position."""
 
         bearing = math.degrees(math.atan2(self.position.y, self.position.x))
         distance = math.sqrt(self.position.x**2 + self.position.y**2)
@@ -49,24 +53,24 @@ class Aircraft(object):
         (self.latitude, self.longitude) = util.gps_newpos(self.home_latitude, self.home_longitude,
                                                           bearing, distance)
 
-        self.altitude  = self.home_altitude - self.position.z
+        self.altitude = self.home_altitude - self.position.z
 
         velocity_body = self.dcm.transposed() * self.velocity
 
         self.accelerometer = self.accel_body.copy()
 
     def set_yaw_degrees(self, yaw_degrees):
-        '''rotate to the given yaw'''
+        """Rotate to the given yaw."""
         (roll, pitch, yaw) = self.dcm.to_euler()
         yaw = math.radians(yaw_degrees)
         self.dcm.from_euler(roll, pitch, yaw)
-        
+
     def time_advance(self, deltat):
-        '''advance time by deltat in seconds'''
+        """Advance time by deltat in seconds."""
         self.time_now += deltat
 
     def setup_frame_time(self, rate, speedup):
-        '''setup frame_time calculation'''
+        """Setup frame_time calculation."""
         self.rate = rate
         self.speedup = speedup
         self.frame_time = 1.0/rate
@@ -75,14 +79,14 @@ class Aircraft(object):
         self.achieved_rate = rate
 
     def adjust_frame_time(self, rate):
-        '''adjust frame_time calculation'''
+        """Adjust frame_time calculation."""
         self.rate = rate
         self.frame_time = 1.0/rate
         self.scaled_frame_time = self.frame_time/self.speedup
 
     def sync_frame_time(self):
-        '''try to synchronise simulation time with wall clock time, taking
-        into account desired speedup'''
+        """Try to synchronise simulation time with wall clock time, taking
+        into account desired speedup."""
         now = time.time()
         if now < self.last_wall_time + self.scaled_frame_time:
             time.sleep(self.last_wall_time+self.scaled_frame_time - now)
@@ -99,13 +103,10 @@ class Aircraft(object):
         self.last_wall_time = now
 
     def add_noise(self, throttle):
-        '''add noise based on throttle level (from 0..1)'''
+        """Add noise based on throttle level (from 0..1)."""
         self.gyro += Vector3(random.gauss(0, 1),
                              random.gauss(0, 1),
                              random.gauss(0, 1)) * throttle * self.gyro_noise
         self.accel_body += Vector3(random.gauss(0, 1),
                                    random.gauss(0, 1),
                                    random.gauss(0, 1)) * throttle * self.accel_noise
-        
-        
-        

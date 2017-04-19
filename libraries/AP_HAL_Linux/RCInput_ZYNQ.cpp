@@ -1,3 +1,5 @@
+#include "RCInput_ZYNQ.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -13,7 +15,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "GPIO.h"
-#include "RCInput.h"
+
+#define RCIN_ZYNQ_PULSE_INPUT_BASE  0x43c10000
 
 extern const AP_HAL::HAL& hal;
 
@@ -21,7 +24,7 @@ using namespace Linux;
 
 void RCInput_ZYNQ::init()
 {
-    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
     if (mem_fd == -1) {
         AP_HAL::panic("Unable to open /dev/mem");
     }

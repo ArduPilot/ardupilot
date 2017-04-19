@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -238,6 +237,30 @@ void ADSB::send_report(void)
         }
     }
     
+    // ADSB_transceiever is enabled, send the status report.
+    if (_sitl->adsb_tx && now - last_tx_report_ms > 1000) {
+        last_tx_report_ms = now;
+
+        mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
+        uint8_t saved_seq = chan0_status->current_tx_seq;
+        uint8_t saved_flags = chan0_status->flags;
+        chan0_status->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+        chan0_status->current_tx_seq = mavlink.seq;
+        const mavlink_uavionix_adsb_transceiver_health_report_t health_report = {UAVIONIX_ADSB_RF_HEALTH_OK};
+        len = mavlink_msg_uavionix_adsb_transceiver_health_report_encode(vehicle_system_id,
+                                              MAV_COMP_ID_ADSB,
+                                              &msg, &health_report);
+        chan0_status->current_tx_seq = saved_seq;
+        chan0_status->flags = saved_flags;
+
+        uint8_t msgbuf[len];
+        len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+        if (len > 0) {
+            mav_socket.send(msgbuf, len);
+            ::printf("ADSBsim send tx health packet\n");
+        }
+    }
+
 }
 
 } // namespace SITL

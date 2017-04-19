@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
   SToRM32 mount using serial protocol backend class
  */
@@ -143,9 +141,9 @@ private:
 
 
     union PACKED SToRM32_reply {
+        DEFINE_BYTE_ARRAY_METHODS
         SToRM32_reply_data_struct data;
         SToRM32_reply_ack_struct ack;
-        uint8_t bytes[0];
     } _buffer;
 
     // keep the last _current_angle values

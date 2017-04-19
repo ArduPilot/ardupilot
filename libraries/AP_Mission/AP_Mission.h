@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_Mission.h
 /// @brief   Handles the MAVLINK command mission stack.  Reads and writes mission to storage.
 
@@ -169,6 +167,13 @@ public:
         int8_t sec_utc; // absolute time's sec (utc)
     };
 
+    // DO_ENGINE_CONTROL support
+    struct PACKED Do_Engine_Control {
+        bool start_control; // start or stop engine
+        bool cold_start; // use cold start procedure
+        uint16_t height_delay_cm; // height delay for start
+    };
+    
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -220,6 +225,9 @@ public:
 
         // do vtol transition
         Do_VTOL_Transition do_vtol_transition;
+
+        // DO_ENGINE_CONTROL
+        Do_Engine_Control do_engine_control;
         
         // location
         Location location;      // Waypoint location
@@ -286,6 +294,7 @@ public:
     mission_state state() const { return _flags.state; }
 
     /// num_commands - returns total number of commands in the mission
+    ///                 this number includes offset 0, the home location
     uint16_t num_commands() const { return _cmd_total; }
 
     /// num_commands_max - returns maximum number of commands that can be stored
@@ -413,6 +422,11 @@ public:
     // return its index.  Returns 0 if no appropriate DO_LAND_START point can
     // be found.
     uint16_t get_landing_sequence_start();
+
+    // find the nearest landing sequence starting point (DO_LAND_START) and
+    // switch to that mission item.  Returns false if no DO_LAND_START
+    // available.
+    bool jump_to_landing_sequence(void);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];

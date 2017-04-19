@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
   Code for handling MAVLink2 signing
 
@@ -53,7 +51,13 @@ bool GCS_MAVLINK::signing_key_load(struct SigningKey &key)
     if (_signing_storage.size() < sizeof(key)) {
         return false;
     }
-    return _signing_storage.read_block(&key, 0, sizeof(key));
+    if (!_signing_storage.read_block(&key, 0, sizeof(key))) {
+        return false;
+    }
+    if (key.magic != SIGNING_KEY_MAGIC) {
+        return false;
+    }
+    return true;
 }
 
 /*
@@ -113,11 +117,10 @@ void GCS_MAVLINK::load_signing_key(void)
 {
     struct SigningKey key;
     if (!signing_key_load(key)) {
-        hal.console->printf("Failed to load signing key");
         return;
     }
     mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status == NULL) {
+    if (status == nullptr) {
         hal.console->printf("Failed to load signing key - no status");
         return;        
     }
@@ -141,11 +144,11 @@ void GCS_MAVLINK::load_signing_key(void)
     // enable signing on all channels
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         mavlink_status_t *cstatus = mavlink_get_channel_status((mavlink_channel_t)(MAVLINK_COMM_0 + i));
-        if (cstatus != NULL) {
+        if (cstatus != nullptr) {
             if (all_zero) {
                 // disable signing
-                cstatus->signing = NULL;
-                cstatus->signing_streams = NULL;
+                cstatus->signing = nullptr;
+                cstatus->signing_streams = nullptr;
             } else {
                 cstatus->signing = &signing;
                 cstatus->signing_streams = &signing_streams;

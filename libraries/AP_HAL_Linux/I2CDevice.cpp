@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
  *
@@ -46,6 +45,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
+#include "PollerThread.h"
+#include "Scheduler.h"
+#include "Semaphores.h"
+#include "Thread.h"
 #include "Util.h"
 
 /* Workaround broken header from i2c-tools */
@@ -73,46 +76,75 @@ static inline char *startswith(const char *s, const char *prefix)
 }
 
 /* Private struct to maintain for each bus */
-class I2CBus {
+class I2CBus : public TimerPollable::WrapperCb {
 public:
-    ~I2CBus()
-    {
-        if (fd >= 0) {
-            ::close(fd);
-        }
-    }
+    ~I2CBus();
 
-    int open(uint8_t n)
-    {
-        char path[sizeof("/dev/i2c-XXX")];
-        int r;
+    /*
+     * TimerPollable::WrapperCb methods to take
+     * and release semaphore while calling the callback
+     */
+    void start_cb() override;
+    void end_cb() override;
 
-        if (fd >= 0) {
-            return -EBUSY;
-        }
+    int open(uint8_t n);
 
-        r = snprintf(path, sizeof(path), "/dev/i2c-%u", n);
-        if (r < 0 || r >= (int)sizeof(path)) {
-            return -EINVAL;
-        }
-
-        fd = ::open(path, O_RDWR | O_CLOEXEC);
-        if (fd < 0) {
-            return -errno;
-        }
-
-        bus = n;
-
-        return fd;
-    }
-
+    PollerThread thread;
     Semaphore sem;
     int fd = -1;
     uint8_t bus;
-
     uint8_t ref;
 };
 
+I2CBus::~I2CBus()
+{
+    if (fd >= 0) {
+        ::close(fd);
+    }
+}
+
+void I2CBus::start_cb()
+{
+    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+}
+
+void I2CBus::end_cb()
+{
+    sem.give();
+}
+
+int I2CBus::open(uint8_t n)
+{
+    char path[sizeof("/dev/i2c-XXX")];
+    int r;
+
+    if (fd >= 0) {
+        return -EBUSY;
+    }
+
+    r = snprintf(path, sizeof(path), "/dev/i2c-%u", n);
+    if (r < 0 || r >= (int)sizeof(path)) {
+        return -EINVAL;
+    }
+
+    fd = ::open(path, O_RDWR | O_CLOEXEC);
+    if (fd < 0) {
+        return -errno;
+    }
+
+    bus = n;
+
+    return fd;
+}
+
+I2CDevice::I2CDevice(I2CBus &bus, uint8_t address)
+    : _bus(bus)
+    , _address(address)
+{
+    set_device_bus(bus.bus);
+    set_device_address(address);
+}
+    
 I2CDevice::~I2CDevice()
 {
     // Unregister itself from the I2CDeviceManager
@@ -122,6 +154,11 @@ I2CDevice::~I2CDevice()
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+    if (_split_transfers && send_len > 0 && recv_len > 0) {
+        return transfer(send, send_len, nullptr, 0) &&
+            transfer(nullptr, 0, recv, recv_len);
+    }
+
     struct i2c_msg msgs[2] = { };
     unsigned nmsgs = 0;
 
@@ -143,6 +180,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         nmsgs++;
     }
 
+    /* interpret it as an input error if nothing has to be done */
     if (!nmsgs) {
         return false;
     }
@@ -152,19 +190,21 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     i2c_data.msgs = msgs;
     i2c_data.nmsgs = nmsgs;
 
-    int r = -EINVAL;
+    int r;
     unsigned retries = _retries;
     do {
         r = ::ioctl(_bus.fd, I2C_RDWR, &i2c_data);
-    } while (r < 0 && retries-- > 0);
+    } while (r == -1 && retries-- > 0);
 
-    return r >= 0;
+    return r != -1;
 }
 
 bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
                                         uint32_t recv_len, uint8_t times)
 {
     const uint8_t max_times = I2C_RDRW_IOCTL_MAX_MSGS / 2;
+
+    first_reg |= _read_flag;
 
     while (times > 0) {
         uint8_t n = MIN(times, max_times);
@@ -189,13 +229,13 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
             recv += recv_len;
         };
 
-        int r = -EINVAL;
+        int r;
         unsigned retries = _retries;
         do {
             r = ::ioctl(_bus.fd, I2C_RDWR, &i2c_data);
-        } while (r < 0 && retries-- > 0);
+        } while (r == -1 && retries-- > 0);
 
-        if (r < 0) {
+        if (r == -1) {
             return false;
         }
 
@@ -210,9 +250,30 @@ AP_HAL::Semaphore *I2CDevice::get_semaphore()
     return &_bus.sem;
 }
 
-int I2CDevice::get_fd()
+AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(
+    uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
-    return _bus.fd;
+    TimerPollable *p = _bus.thread.add_timer(cb, &_bus, period_usec);
+    if (!p) {
+        AP_HAL::panic("Could not create periodic callback");
+    }
+
+    if (!_bus.thread.is_started()) {
+        char name[16];
+        snprintf(name, sizeof(name), "ap-i2c-%u", _bus.bus);
+
+        _bus.thread.set_stack_size(AP_LINUX_SENSORS_STACK_SIZE);
+        _bus.thread.start(name, AP_LINUX_SENSORS_SCHED_POLICY,
+                          AP_LINUX_SENSORS_SCHED_PRIO);
+    }
+
+    return static_cast<AP_HAL::Device::PeriodicHandle>(p);
+}
+
+bool I2CDevice::adjust_periodic_callback(
+    AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
+{
+    return _bus.thread.adjust_timer(static_cast<TimerPollable*>(h), period_usec);
 }
 
 I2CDeviceManager::I2CDeviceManager()
@@ -337,6 +398,19 @@ void I2CDeviceManager::_unregister(I2CBus &b)
             delete &b;
             break;
         }
+    }
+}
+
+void I2CDeviceManager::teardown()
+{
+    for (auto it = _buses.begin(); it != _buses.end(); it++) {
+        /* Try to stop thread - it may not even be started yet */
+        (*it)->thread.stop();
+    }
+
+    for (auto it = _buses.begin(); it != _buses.end(); it++) {
+        /* Try to join thread - failing is normal if thread was not started */
+        (*it)->thread.join();
     }
 }
 

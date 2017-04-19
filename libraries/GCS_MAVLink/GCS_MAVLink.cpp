@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,7 +28,12 @@ This provides some support code and variables for MAVLink enabled sketches
 
 
 #ifdef MAVLINK_SEPARATE_HELPERS
+// Shut up warnings about missing declarations; TODO: should be fixed on
+// mavlink/pymavlink project for when MAVLINK_SEPARATE_HELPERS is defined
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
 #include "include/mavlink/v2.0/mavlink_helpers.h"
+#pragma GCC diagnostic pop
 #endif
 
 AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
@@ -42,15 +46,12 @@ static uint8_t mavlink_locked_mask;
 // routing table
 MAVLink_routing GCS_MAVLINK::routing;
 
-// static dataflash pointer to support logging text messages
-DataFlash_Class *GCS_MAVLINK::dataflash_p;
-
 // static AP_SerialManager pointer
 const AP_SerialManager *GCS_MAVLINK::serialmanager_p;
 
 // snoop function for vehicle types that want to see messages for
 // other targets
-void (*GCS_MAVLINK::msg_snoop)(const mavlink_message_t* msg) = NULL;
+void (*GCS_MAVLINK::msg_snoop)(const mavlink_message_t* msg) = nullptr;
 
 /*
   lock a channel, preventing use by MAVLink
@@ -156,5 +157,5 @@ extern const AP_HAL::HAL& hal;
 bool comm_is_idle(mavlink_channel_t chan)
 {
 	mavlink_status_t *status = mavlink_get_channel_status(chan);
-	return status == NULL || status->parse_state <= MAVLINK_PARSE_STATE_IDLE;
+	return status == nullptr || status->parse_state <= MAVLINK_PARSE_STATE_IDLE;
 }

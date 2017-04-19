@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 
@@ -8,8 +6,12 @@
 */
 void Plane::parachute_check()
 {
+#if PARACHUTE == ENABLED
     parachute.update();
+#endif
 }
+
+#if PARACHUTE == ENABLED
 
 /*
   parachute_release - trigger the release of the parachute
@@ -51,3 +53,5 @@ bool Plane::parachute_manual_release()
 
     return true;
 }
+
+#endif

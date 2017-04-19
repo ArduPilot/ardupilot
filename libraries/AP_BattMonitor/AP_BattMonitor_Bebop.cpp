@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,15 +17,18 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO)
 
 #include "AP_BattMonitor_Bebop.h"
 #include <AP_HAL_Linux/RCOutput_Bebop.h>
+#include <AP_HAL_Linux/RCOutput_Disco.h>
 
-extern const AP_HAL::HAL& hal;
-
-#define BATTERY_CAPACITY (1200U) /* mAh */
 #define BATTERY_VOLTAGE_COMPENSATION_LANDED (0.2f)
+
+
+extern const AP_HAL::HAL &hal;
+
+using namespace Linux;
 
 /* polynomial compensation coefficients */
 static const float bat_comp_polynomial_coeffs[5] = {
@@ -38,11 +40,28 @@ static const float bat_comp_polynomial_coeffs[5] = {
 };
 
 /* battery percent lookup table */
-#define BATTERY_PERCENT_LUT_SIZE 12
 static const struct {
     float voltage;
     float percent;
-} bat_lut[BATTERY_PERCENT_LUT_SIZE] = {
+} bat_lut[] = {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+    {9.5, 0},
+    {11.04, 5},
+    {11.11, 10},
+    {11.21, 15},
+    {11.3, 25},
+    {11.4, 45},
+    {11.6, 55},
+    {11.9, 79},
+    {12.02, 84},
+    {12.11, 88},
+    {12.19, 91},
+    {12.26, 94},
+    {12.35, 96},
+    {12.45, 98},
+    {12.5, 100}
+#else
+    // bebop
     {10.50f, 0.0f},
     {10.741699f, 2.6063901f},
     {10.835779f, 5.1693798f},
@@ -55,11 +74,12 @@ static const struct {
     {11.746556f, 79.496082f},
     {12.110226f, 94.874021f},
     {12.3f, 100.0f }
+#endif
 };
-
+#define BATTERY_PERCENT_LUT_SIZE ARRAY_SIZE(bat_lut)
+      
 void AP_BattMonitor_Bebop::init(void)
 {
-    set_capacity(BATTERY_CAPACITY);
     _battery_voltage_max = bat_lut[BATTERY_PERCENT_LUT_SIZE - 1].voltage;
     _prev_vbat_raw = bat_lut[BATTERY_PERCENT_LUT_SIZE - 1].voltage;
     _prev_vbat = bat_lut[BATTERY_PERCENT_LUT_SIZE - 1].voltage;
@@ -141,9 +161,13 @@ void AP_BattMonitor_Bebop::read(void)
     int ret;
     uint32_t tnow;
     BebopBLDC_ObsData data;
-    float remaining, vbat, vbat_raw;
+    float capacity, remaining, vbat, vbat_raw;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     auto rcout = Linux::RCOutput_Bebop::from(hal.rcout);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+    auto rcout = Linux::RCOutput_Disco::from(hal.rcout);
+#endif
     tnow = AP_HAL::micros();
 
     ret = rcout->read_obs_data(data);
@@ -182,15 +206,15 @@ void AP_BattMonitor_Bebop::read(void)
         _battery_voltage_max = vbat;
     }
 
-    /* compute remaining battery percent */
+    /* compute remaining battery percent and get battery capacity */
     remaining = _compute_battery_percentage(vbat);
+    capacity = (float) get_capacity();
 
     /* fillup battery state */
     _state.voltage = vbat;
     _state.last_time_micros = tnow;
     _state.healthy = true;
-    _state.current_total_mah = BATTERY_CAPACITY -
-                (remaining * BATTERY_CAPACITY) / 100.0f;
+    _state.current_total_mah = capacity - (remaining * capacity) / 100.0f;
 }
 
 #endif

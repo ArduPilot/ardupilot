@@ -41,7 +41,9 @@
 #define RPI_GPIO_30   30   // Pin 5
 #define RPI_GPIO_31   31   // Pin 6
 
-class Linux::GPIO_RPI : public AP_HAL::GPIO {
+namespace Linux {
+
+class GPIO_RPI : public AP_HAL::GPIO {
 public:
     GPIO_RPI();
     void    init();
@@ -65,3 +67,5 @@ public:
 private:
     volatile uint32_t *_gpio;
 };
+
+}

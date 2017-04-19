@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_HAL_Linux_Namespace.h"
 
 #define OCTAVE_OFFSET 0
 
@@ -109,7 +108,9 @@
 
 #define TONE_NUMBER_OF_TUNES 11
 
-class Linux::ToneAlarm{
+namespace Linux {
+
+class ToneAlarm {
 public:
 	ToneAlarm();
 	void set_tune(uint8_t tone);
@@ -141,3 +142,5 @@ private:
 	int32_t duty_fd;
 	int32_t run_fd;
 };
+
+}

@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -125,7 +124,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: RSC_POWER_LOW
     // @DisplayName: Throttle Servo Low Power Position
-    // @Description: Throttle output at zero collective pitch.
+    // @Description: Throttle output at zero collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX. Zero collective pitch is defined by H_COL_MID.
     // @Range: 0 1000
     // @Increment: 10
     // @User: Standard
@@ -133,7 +132,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     
     // @Param: RSC_POWER_HIGH
     // @DisplayName: Throttle Servo High Power Position
-    // @Description: Throttle output at max collective pitch.
+    // @Description: Throttle output at maximum collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX.
     // @Range: 0 1000
     // @Increment: 10
     // @User: Standard
@@ -156,6 +155,22 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SV_TEST",  17, AP_MotorsHeli, _servo_test, 0),
 
+    // @Param: RSC_POWER_NEGC
+    // @DisplayName: Throttle servo negative collective power position
+    // @Description: Throttle output at full negative collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX. If this is equal to H_RSC_POWER_HIGH then you will have a symmetric V-curve for the throttle response.
+    // @Range: 1 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_POWER_NEGC", 18, AP_MotorsHeli, _rsc_power_negc, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
+
+    // @Param: RSC_SLEWRATE
+    // @DisplayName: Throttle servo slew rate
+    // @Description: This controls the maximum rate at which the throttle output can change, as a percentage per second. A value of 100 means the throttle can change over its full range in one second. A value of zero gives unlimited slew rate.
+    // @Range: 0 500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_SLEWRATE", 19, AP_MotorsHeli, _rsc_slewrate, 0),
+    
     AP_GROUPEND
 };
 
@@ -164,7 +179,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 //
 
 // init
-void AP_MotorsHeli::Init()
+void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // set update rate
     set_update_rate(_speed_hz);
@@ -179,10 +194,22 @@ void AP_MotorsHeli::Init()
     _throttle_radio_passthrough = 0.5f;
 
     // initialise Servo/PWM ranges and endpoints
-    init_outputs();
+    if (!init_outputs()) {
+        // don't set initialised_ok
+        return;
+    }
 
     // calculate all scalars
     calculate_scalars();
+
+    // record successful initialisation if what we setup was the desired frame_class
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
+}
+
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+void AP_MotorsHeli::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+{
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
 }
 
 // output_min - sets servos to neutral point with motors stopped
@@ -343,13 +370,13 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
 }
 
 // reset_swash_servo
-void AP_MotorsHeli::reset_swash_servo(RC_Channel& servo)
+void AP_MotorsHeli::reset_swash_servo(SRV_Channel *servo)
 {
-    servo.set_range_out(0, 1000);
+    servo->set_range(1000);
 
     // swash servos always use full endpoints as restricting them would lead to scaling errors
-    servo.set_radio_min(1000);
-    servo.set_radio_max(2000);
+    servo->set_output_min(1000);
+    servo->set_output_max(2000);
 }
 
 // update the throttle input filter

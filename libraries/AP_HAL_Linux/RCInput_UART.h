@@ -7,7 +7,9 @@
 
 #define CHANNELS 8
 
-class Linux::RCInput_UART : public Linux::RCInput
+namespace Linux {
+
+class RCInput_UART : public RCInput
 {
 public:
     RCInput_UART(const char *path);
@@ -25,3 +27,5 @@ private:
         uint16_t values[CHANNELS];
     } _data;
 };
+
+}

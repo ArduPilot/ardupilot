@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -45,6 +44,10 @@ public:
 
     const DataFlash_Class::PID_Info& get_pid_info(void) const { return _pid_info; }
 
+    void set_reverse(bool reverse) {
+        _reverse = reverse;
+    }
+
 private:
 	AP_Float _tau;
 	AP_Float _K_FF;
@@ -56,7 +59,13 @@ private:
 	uint32_t _last_t;
 	float _last_out;
 
+	AP_Float _deratespeed;
+	AP_Float _deratefactor;
+	AP_Float _mindegree;
+
     DataFlash_Class::PID_Info _pid_info {};
 
 	AP_AHRS &_ahrs;
+
+    bool _reverse;
 };

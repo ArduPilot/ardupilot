@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
@@ -47,9 +46,9 @@ public:
     }
 
     /* Implementations of Stream virtual methods */
-    int16_t available();
-    int16_t txspace();
-    int16_t read();
+    uint32_t available() override;
+    uint32_t txspace() override;
+    int16_t read() override;
 
     /* Implementations of Print virtual methods */
     size_t write(uint8_t c);
@@ -73,11 +72,15 @@ private:
     ByteBuffer _readbuffer{16384};
     ByteBuffer _writebuffer{16384};
 
+    const char *_uart_path;
+    uint32_t _uart_baudrate;
+
     // IPv4 address of target for uartC
     const char *_tcp_client_addr;
 
     void _tcp_start_connection(uint16_t port, bool wait_for_connection);
-    void _uart_start_connection(const char *path, uint32_t baudrate);
+    void _uart_start_connection(void);
+    void _check_reconnect();
     void _tcp_start_client(const char *address, uint16_t port);
     void _check_connection(void);
     static bool _select_check(int );

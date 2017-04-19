@@ -1,0 +1,107 @@
+#!nsh
+
+# APM startup script for NuttX on VRBRAIN
+
+# To disable APM startup add a /fs/microsd/APM/nostart file
+
+# check for an old file called APM, caused by 
+# a bug in an earlier firmware release
+if [ -f /fs/microsd/APM ]
+then
+    echo "APM file found - renaming"
+    mv /fs/microsd/APM /fs/microsd/APM.old
+fi
+
+if [ -f /fs/microsd/APM/nostart ]
+then
+    echo "APM/nostart found - skipping APM startup"
+    sh /etc/init.d/rc.error
+fi
+
+# mount binfs so we can find the built-in apps
+if [ -f /bin/reboot ]
+then
+    echo "binfs already mounted"
+else
+    echo "Mounting binfs"
+    if mount -t binfs /dev/null /bin
+    then
+            echo "binfs mounted OK"
+    else
+            sh /etc/init.d/rc.error
+    fi
+fi
+
+set sketch NONE
+if rm /fs/microsd/APM/boot.log
+then
+    echo "removed old boot.log"
+fi
+set logfile /fs/microsd/APM/BOOT.LOG
+
+if [ ! -f /bin/ArduPilot ]
+then
+    echo "/bin/ardupilot not found"
+    sh /etc/init.d/rc.error
+fi
+
+if mkdir /fs/microsd/APM > /dev/null
+then
+    echo "Created APM directory"
+fi
+
+echo "Starting uORB"
+if uorb start
+then
+    echo "uorb started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+echo "Starting ADC"
+if adc start
+then
+    echo "ADC started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+echo "Starting MTD driver"
+if mtd start /fs/mtd
+then
+    echo "MTD driver started OK"
+else
+    echo "MTD driver start failed"
+    sh /etc/init.d/rc.error           
+fi
+
+echo "MTD driver read test"
+if mtd readtest /fs/mtd
+then
+    echo "MTD driver readtest OK"
+else
+    echo "MTD driver failed to read"
+    sh /etc/init.d/rc.error           
+fi
+
+echo "FMU mode PWM"
+if fmu mode_pwm
+then
+    echo "Set FMU mode_pwm"
+fi
+
+
+echo "Starting ArduPilot"
+if ArduPilot start
+then
+    echo "ArduPilot started OK"
+else
+    echo "ArduPilot start failed"
+    sh /etc/init.d/rc.error
+fi
+
+echo "Exiting from nsh shell"
+exit
+
+echo "rc.APM finished"
+

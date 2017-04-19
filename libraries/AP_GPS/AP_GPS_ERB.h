@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,7 +32,7 @@ public:
     // Methods
     bool read();
 
-    AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK; }
+    AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
     static bool _detect(struct ERB_detect_state &state, uint8_t data);
 
@@ -85,12 +84,12 @@ private:
 
     // Receive buffer
     union PACKED {
+        DEFINE_BYTE_ARRAY_METHODS
         erb_ver ver;
         erb_pos pos;
         erb_stat stat;
         erb_dops dops;
         erb_vel vel;
-        uint8_t bytes[0];
     } _buffer;
 
     enum erb_protocol_bytes {
@@ -133,8 +132,6 @@ private:
 
     // Buffer parse & GPS state update
     bool _parse_gps();
-
-    void inject_data(uint8_t *data, uint8_t len);
 
     // used to update fix between status and position packets
     AP_GPS::GPS_Status next_fix;

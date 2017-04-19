@@ -23,7 +23,10 @@
 #define LOW             0
 #define HIGH            1
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
 #define LINUX_GPIO_NUM_BANKS 4
 #else
 // disable GPIO
@@ -103,7 +106,9 @@
 #define BBB_P9_41 20
 #define BBB_P9_42 7
 
-class Linux::GPIO_BBB : public AP_HAL::GPIO {
+namespace Linux {
+
+class GPIO_BBB : public AP_HAL::GPIO {
 private:
     struct GPIO {
         volatile uint32_t *base;
@@ -131,3 +136,5 @@ public:
     /* return true if USB cable is connected */
     bool    usb_connected(void);
 };
+
+}

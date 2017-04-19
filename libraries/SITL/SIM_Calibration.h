@@ -30,7 +30,7 @@ namespace SITL {
  * values must be in [1000, 2000], otherwise that will cause undefined
  * behavior.
  *
- * There are three control modes, that are set with PWM[4]:
+ * There are four control modes, that are set with PWM[4]:
  *
  *  1) Stop (1000 <= PWM[4] < 1100):
  *    Stop the vehicle, i.e., stop the actuation of the other modes.
@@ -43,7 +43,11 @@ namespace SITL {
  *        pwm(theta) = 1500 + 500 * round(theta / pi)
  *        where -pi <= theta <= pi
  *
- *  3) Angular Velocity (1200 <= PWM[4] <= 2000):
+ *  3) Simple autonomous compass calibration (1200 <= PWM[4] < 1300):
+ *    Move continuously the vehicle through six calibration poses and do a
+ *    rotation about each pose over a short period of time.
+ *
+ *  4) Angular Velocity (1300 <= PWM[4] <= 2000):
  *    Rotate the vehicle at a desired angular velocity. The angular velocity is
  *    specified by a rotation axis and an angular speed.
  *
@@ -55,7 +59,7 @@ namespace SITL {
  *    The angular speed value is specified by PWM[4]. The PWM value for a
  *    desired angular speed in radians/s is given by:
  *
- *        pwm(theta) = 1200 + 800 * round(theta / (2 * pi)),
+ *        pwm(theta) = 1300 + 700 * round(theta / (2 * pi)),
  *        where 0 <= theta <= 2 * pi
  */
 class Calibration : public Aircraft {
@@ -71,10 +75,15 @@ public:
 private:
     void _stop_control(const struct sitl_input& input, Vector3f& rot_accel);
 
+    void _attitude_set(float desired_roll, float desired_pitch, float desired_yaw,
+                       Vector3f& rot_accel);
+
     void _attitude_control(const struct sitl_input& input,
                            Vector3f& rot_accel);
 
     void _angular_velocity_control(const struct sitl_input& input,
                                    Vector3f& rot_accel);
+
+    void _calibration_poses(Vector3f& rot_accel);
 };
 }

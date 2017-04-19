@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -38,7 +36,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     if ((magTestRatio.x <= 1.0f && magTestRatio.y <= 1.0f && yawTestRatio <= 1.0f) || !consistentMagData) {
         magYawResetTimer_ms = imuSampleTime_ms;
     }
-    if (imuSampleTime_ms - magYawResetTimer_ms > 5000) {
+    if ((imuSampleTime_ms - magYawResetTimer_ms > 5000) && !motorsArmed) {
         // request reset of heading and magnetic field states
         magYawResetRequest = true;
         // reset timer to ensure that bad magnetometer data cannot cause a heading reset more often than every 5 seconds
@@ -144,6 +142,22 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
         gpsCheckStatus.bad_hAcc = false;
     }
 
+    // Check for vertical GPS accuracy
+    float vAcc = 0.0f;
+    bool vAccFail = false;
+    if (_ahrs->get_gps().vertical_accuracy(vAcc)) {
+        vAccFail = (vAcc > 7.5f * checkScaler) && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
+    }
+    // Report check result as a text string and bitmask
+    if (vAccFail) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "GPS vert error %.1fm (needs < %.1f)", (double)vAcc, (double)(7.5f * checkScaler));
+        gpsCheckStatus.bad_vAcc = true;
+    } else {
+        gpsCheckStatus.bad_vAcc = false;
+    }
+
     // fail if reported speed accuracy greater than threshold
     bool gpsSpdAccFail = (gpsSpdAccuracy > 1.0f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_SPD_ERR);
 
@@ -184,7 +198,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     // fail if magnetometer innovations are outside limits indicating bad yaw
     // with bad yaw we are unable to use GPS
     bool yawFail;
-    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f) && (frontend->_gpsCheck & MASK_GPS_YAW_ERR)) {
+    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f || yawTestRatio > 1.0f) && (frontend->_gpsCheck & MASK_GPS_YAW_ERR)) {
         yawFail = true;
     } else {
         yawFail = false;
@@ -209,7 +223,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // record time of fail
-    if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail) {
+    if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || vAccFail ||  yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail) {
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
 
@@ -360,11 +374,18 @@ void NavEKF2_core::detectFlight()
     prevInFlight = inFlight;
 
     // Store vehicle height and range prior to takeoff for use in post takeoff checks
-    if (onGround && prevOnGround) {
+    if (onGround) {
         // store vertical position at start of flight to use as a reference for ground relative checks
         posDownAtTakeoff = stateStruct.position.z;
         // store the range finder measurement which will be used as a reference to detect when we have taken off
         rngAtStartOfFlight = rangeDataNew.rng;
+        // if the magnetic field states have been set, then continue to update the vertical position
+        // quaternion and yaw innovation snapshots to use as a reference when we start to fly.
+        if (magStateInitComplete) {
+            posDownAtLastMagReset = stateStruct.position.z;
+            quatAtLastMagReset = stateStruct.quat;
+            yawInnovAtLastMagReset = innovYaw;
+        }
     }
 
 }
@@ -405,6 +426,15 @@ void NavEKF2_core::setTouchdownExpected(bool val)
 {
     touchdownExpectedSet_ms = imuSampleTime_ms;
     expectGndEffectTouchdown = val;
+}
+
+// Set to true if the terrain underneath is stable enough to be used as a height reference
+// in combination with a range finder. Set to false if the terrain underneath the vehicle
+// cannot be used as a height reference
+void NavEKF2_core::setTerrainHgtStable(bool val)
+{
+    terrainHgtStableSet_ms = imuSampleTime_ms;
+    terrainHgtStable = val;
 }
 
 // Detect takeoff for optical flow navigation

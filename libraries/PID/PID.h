@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	PID.h
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 #pragma once
@@ -40,9 +38,6 @@ public:
     /// @returns		The updated control output.
     ///
     float        get_pid(float error, float scaler = 1.0);
-
-	// get_pid() constrained to +/- 4500
-    int16_t     get_pid_4500(float error, float scaler = 1.0);
 
     /// Reset the PID integrator
     ///

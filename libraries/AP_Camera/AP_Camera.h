@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	AP_Camera.h
 /// @brief	Photo or video camera manager, with EEPROM-backed storage of constants.
 #pragma once

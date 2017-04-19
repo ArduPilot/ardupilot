@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -138,7 +137,7 @@ AP_GPS_SIRF::read(void)
         case 5:
             if (_gather) {                                              // gather data if requested
                 _accumulate(data);
-                _buffer.bytes[_payload_counter] = data;
+                _buffer[_payload_counter] = data;
                 if (++_payload_counter == _payload_length)
                     _step++;
             } else {

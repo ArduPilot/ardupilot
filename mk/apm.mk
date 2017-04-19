@@ -22,6 +22,7 @@ include $(MK_DIR)/help.mk
 # common makefile components
 include $(MK_DIR)/targets.mk
 include $(MK_DIR)/sketch_sources.mk
+include $(SKETCHBOOK)/modules/uavcan/libuavcan/include.mk
 
 ifneq ($(MAKECMDGOALS),clean)
 

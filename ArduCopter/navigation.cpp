@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 // run_nav_updates - top level call for the autopilot
@@ -26,12 +24,26 @@ void Copter::calc_distance_and_bearing()
 void Copter::calc_wp_distance()
 {
     // get target from loiter or wpinav controller
-    if (control_mode == LOITER || control_mode == CIRCLE) {
-        wp_distance = wp_nav.get_loiter_distance_to_target();
-    }else if (control_mode == AUTO || control_mode == RTL || (control_mode == GUIDED && guided_mode == Guided_WP)) {
-        wp_distance = wp_nav.get_wp_distance_to_destination();
-    }else{
+    switch (control_mode) {
+    case LOITER:
+    case CIRCLE:
+        wp_distance = wp_nav->get_loiter_distance_to_target();
+        break;
+
+    case AUTO:
+    case RTL:
+        wp_distance = wp_nav->get_wp_distance_to_destination();
+        break;
+
+    case GUIDED:
+        if (guided_mode == Guided_WP) {
+            wp_distance = wp_nav->get_wp_distance_to_destination();
+            break;
+        }
+        // no break
+    default:
         wp_distance = 0;
+        break;
     }
 }
 
@@ -39,12 +51,26 @@ void Copter::calc_wp_distance()
 void Copter::calc_wp_bearing()
 {
     // get target from loiter or wpinav controller
-    if (control_mode == LOITER || control_mode == CIRCLE) {
-        wp_bearing = wp_nav.get_loiter_bearing_to_target();
-    } else if (control_mode == AUTO || control_mode == RTL || (control_mode == GUIDED && guided_mode == Guided_WP)) {
-        wp_bearing = wp_nav.get_wp_bearing_to_destination();
-    } else {
+    switch (control_mode) {
+    case LOITER:
+    case CIRCLE:
+        wp_bearing = wp_nav->get_loiter_bearing_to_target();
+        break;
+
+    case AUTO:
+    case RTL:
+        wp_bearing = wp_nav->get_wp_bearing_to_destination();
+        break;
+
+    case GUIDED:
+        if (guided_mode == Guided_WP) {
+            wp_bearing = wp_nav->get_wp_bearing_to_destination();
+            break;
+        }
+        // no break
+    default:
         wp_bearing = 0;
+        break;
     }
 }
 

@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -14,6 +15,7 @@ ConsoleDevice::ConsoleDevice()
 
 ConsoleDevice::~ConsoleDevice()
 {
+    close();
 }
 
 bool ConsoleDevice::close()
@@ -30,7 +32,22 @@ bool ConsoleDevice::open()
 
     _closed = false;
 
+    if (!_set_signal_handlers()) {
+        close();
+        return false;
+    }
+
     return true;
+}
+
+bool ConsoleDevice::_set_signal_handlers(void) const
+{
+    struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = SIG_IGN;
+
+    return (sigaction(SIGTTIN, &sa, nullptr) == 0);
+
 }
 
 ssize_t ConsoleDevice::read(uint8_t *buf, uint16_t n)

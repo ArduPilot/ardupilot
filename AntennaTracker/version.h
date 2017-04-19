@@ -2,8 +2,8 @@
 
 #include "ap_version.h"
 
-#define THISFIRMWARE "AntennaTracker V0.8.0"
-#define FIRMWARE_VERSION 0,8,0,FIRMWARE_VERSION_TYPE_DEV
+#define THISFIRMWARE "AntennaTracker V1.0.0"
+#define FIRMWARE_VERSION 1,0,0,FIRMWARE_VERSION_TYPE_BETA
 
 #ifndef GIT_VERSION
 #define FIRMWARE_STRING THISFIRMWARE

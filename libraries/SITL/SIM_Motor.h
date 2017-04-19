@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,6 +38,12 @@ public:
     int8_t pitch_servo = -1;
     float pitch_min, pitch_max;
 
+    // support for servo slew rate
+    enum {SERVO_NORMAL, SERVO_RETRACT} servo_type;
+    float servo_rate = 0.24; // seconds per 60 degrees
+    uint64_t last_change_usec;
+    float last_roll_value, last_pitch_value;
+
     Motor(uint8_t _servo, float _angle, float _yaw_factor, uint8_t _display_order) :
         servo(_servo), // what servo output drives this motor
         angle(_angle), // angle in degrees from front
@@ -63,11 +68,13 @@ public:
         pitch_min(_pitch_min),
         pitch_max(_pitch_max)
     {}
-    
+
     void calculate_forces(const Aircraft::sitl_input &input,
                           float thrust_scale,
                           uint8_t motor_offset,
                           Vector3f &rot_accel, // rad/sec
-                          Vector3f &body_thrust) const; // Z is down
+                          Vector3f &body_thrust); // Z is down
+
+    uint16_t update_servo(uint16_t demand, uint64_t time_usec, float &last_value);
 };
 }

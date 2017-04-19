@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: -*- nil -*-
 #include "UARTDriver.h"
 
 #include <arpa/inet.h>
@@ -19,7 +18,6 @@
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/RingBuffer.h>
 
 #include "ConsoleDevice.h"
 #include "TCPServerDevice.h"
@@ -34,13 +32,11 @@ extern const AP_HAL::HAL& hal;
 using namespace Linux;
 
 UARTDriver::UARTDriver(bool default_console) :
-    device_path(NULL),
+    device_path(nullptr),
     _packetise(false),
-    _flow_control(FLOW_CONTROL_DISABLE)
+    _device{new ConsoleDevice()}
 {
     if (default_console) {
-        _device = new ConsoleDevice();
-        _device->open();
         _console = true;
     }
 }
@@ -63,61 +59,30 @@ void UARTDriver::begin(uint32_t b)
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    if (device_path == NULL && _console) {
-        _device = new ConsoleDevice();
-        _device->open();
-        _device->set_blocking(false);
-    } else if (!_initialised) {
-        if (device_path == NULL) {
-            return;
-        }
-
-        switch (_parseDevicePath(device_path)) {
-        case DEVICE_TCP:
-        {
-            _tcp_start_connection();
-            _flow_control = FLOW_CONTROL_ENABLE;
-            break;
-        }
-
-        case DEVICE_UDP:
-        {
-            _udp_start_connection();
-            _flow_control = FLOW_CONTROL_ENABLE;
-            break;
-        }
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-        case DEVICE_QFLIGHT:
-        {
-            _qflight_start_connection();
-            _flow_control = FLOW_CONTROL_DISABLE;
-            break;
-        }
-#endif
-
-        case DEVICE_SERIAL:
-        {
-            if (!_serial_start_connection()) {
-                break; /* Whatever it might mean */
-            }
-            break;
-        }
-        default:
-        {
-            // Notify that the option is not valid and select standart input and output
-            ::printf("Argument is not valid. Fallback to console.\n");
-            ::printf("Launch with --help to see an example.\n");
-
+    if (!_initialised) {
+        if (device_path == nullptr && _console) {
             _device = new ConsoleDevice();
-            _device->open();
-            _device->set_blocking(false);
-            break;
-        }
+        } else {
+            if (device_path == nullptr) {
+                return;
+            }
+
+            _device = _parseDevicePath(device_path);
+
+            if (!_device.get()) {
+                ::fprintf(stderr, "Argument is not valid. Fallback to console.\n"
+                          "Launch with --help to see an example.\n");
+                _device = new ConsoleDevice();
+            }
         }
     }
 
+    if (!_connected) {
+        _connected = _device->open();
+        _device->set_blocking(false);
+    }
     _initialised = false;
+
     while (_in_timer) hal.scheduler->delay(1);
 
     _device->set_speed(b);
@@ -139,54 +104,15 @@ void UARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
         txS = 32000;
     }
 
-    /*
-      allocate the read buffer
-    */
-    if (rxS != 0 && rxS != _readbuf_size) {
-        _readbuf_size = rxS;
-        if (_readbuf != NULL) {
-            free(_readbuf);
-        }
-        _readbuf = (uint8_t *)malloc(_readbuf_size);
-        _readbuf_head = 0;
-        _readbuf_tail = 0;
-    }
-
-    /*
-      allocate the write buffer
-    */
-    if (txS != 0 && txS != _writebuf_size) {
-        _writebuf_size = txS;
-        if (_writebuf != NULL) {
-            free(_writebuf);
-        }
-        _writebuf = (uint8_t *)malloc(_writebuf_size);
-        _writebuf_head = 0;
-        _writebuf_tail = 0;
-    }
-
-    if (_writebuf_size != 0 && _readbuf_size != 0) {
+    if (_writebuf.set_size(txS) && _readbuf.set_size(rxS)) {
         _initialised = true;
     }
 }
 
 void UARTDriver::_deallocate_buffers()
 {
-    if (_readbuf) {
-        free(_readbuf);
-        _readbuf = NULL;
-    }
-
-    if (_writebuf) {
-        free(_writebuf);
-        _writebuf = NULL;
-    }
-
-    _readbuf_size = _writebuf_size = 0;
-    _writebuf_head = 0;
-    _writebuf_tail = 0;
-    _readbuf_head = 0;
-    _readbuf_tail = 0;
+    _readbuf.set_size(0);
+    _writebuf.set_size(0);
 }
 
 /*
@@ -195,114 +121,80 @@ void UARTDriver::_deallocate_buffers()
         - tcp:*:1243:wait
         - udp:192.168.2.15:1243
 */
-UARTDriver::device_type UARTDriver::_parseDevicePath(const char *arg)
+AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
 {
     struct stat st;
 
     if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
-        return DEVICE_SERIAL;
+        return AP_HAL::OwnPtr<SerialDevice>(new UARTDevice(arg));
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
     } else if (strncmp(arg, "qflight:", 8) == 0) {
-        return DEVICE_QFLIGHT;
+        return AP_HAL::OwnPtr<SerialDevice>(new QFLIGHTDevice(device_path));
 #endif
     } else if (strncmp(arg, "tcp:", 4) != 0 &&
-               strncmp(arg, "udp:", 4) != 0) {
-        return DEVICE_UNKNOWN;
+               strncmp(arg, "udp:", 4) != 0 &&
+               strncmp(arg, "udpin:", 6)) {
+        return nullptr;
     }
 
     char *devstr = strdup(arg);
-    if (devstr == NULL) {
-        return DEVICE_UNKNOWN;
+
+    if (devstr == nullptr) {
+        return nullptr;
     }
 
-    char *saveptr = NULL;
+    char *saveptr = nullptr;
     char *protocol, *ip, *port, *flag;
 
     protocol = strtok_r(devstr, ":", &saveptr);
-    ip = strtok_r(NULL, ":", &saveptr);
-    port = strtok_r(NULL, ":", &saveptr);
-    flag = strtok_r(NULL, ":", &saveptr);
+    ip = strtok_r(nullptr, ":", &saveptr);
+    port = strtok_r(nullptr, ":", &saveptr);
+    flag = strtok_r(nullptr, ":", &saveptr);
 
-    device_type type = DEVICE_UNKNOWN;
-
-    if (ip == NULL || port == NULL) {
-        fprintf(stderr, "IP or port is set incorrectly.\n");
-        type = DEVICE_UNKNOWN;
-        goto errout;
+    if (ip == nullptr || port == nullptr) {
+        free(devstr);
+        return nullptr;
     }
 
     if (_ip) {
         free(_ip);
-        _ip = NULL;
+        _ip = nullptr;
     }
 
     if (_flag) {
         free(_flag);
-        _flag = NULL;
+        _flag = nullptr;
     }
 
     _base_port = (uint16_t) atoi(port);
     _ip = strdup(ip);
 
     /* Optional flag for TCP */
-    if (flag != NULL) {
+    if (flag != nullptr) {
         _flag = strdup(flag);
     }
 
-    if (strcmp(protocol, "udp") == 0) {
-        type = DEVICE_UDP;
+    AP_HAL::OwnPtr<SerialDevice> device = nullptr;
+
+    if (strcmp(protocol, "udp") == 0 || strcmp(protocol, "udpin") == 0) {
+        bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
+        _packetise = true;
+        if (strcmp(protocol, "udp") == 0) {
+            device = new UDPDevice(_ip, _base_port, bcast, false);
+        } else {
+            if (bcast) {
+                AP_HAL::panic("Can't combine udpin with bcast");
+            }
+            device = new UDPDevice(_ip, _base_port, false, true);
+
+        }
     } else {
-        type = DEVICE_TCP;
+        bool wait = (_flag && strcmp(_flag, "wait") == 0);
+        device = new TCPServerDevice(_ip, _base_port, wait);
     }
 
-errout:
-
     free(devstr);
-    return type;
-}
-
-
-bool UARTDriver::_serial_start_connection()
-{
-    _device = new UARTDevice(device_path);
-    _connected = _device->open();
-    _device->set_blocking(false);
-    _flow_control = FLOW_CONTROL_DISABLE;
-
-    return true;
-}
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-bool UARTDriver::_qflight_start_connection()
-{
-    _device = new QFLIGHTDevice(device_path);
-    _connected = _device->open();
-    _flow_control = FLOW_CONTROL_DISABLE;
-
-    return true;
-}
-#endif
-
-/*
-  start a UDP connection for the serial port
- */
-void UARTDriver::_udp_start_connection(void)
-{
-    bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
-    _device = new UDPDevice(_ip, _base_port, bcast);
-    _connected = _device->open();
-    _device->set_blocking(false);
-
-    /* try to write on MAVLink packet boundaries if possible */
-    _packetise = true;
-}
-
-void UARTDriver::_tcp_start_connection(void)
-{
-    bool wait = (_flag && strcmp(_flag, "wait") == 0);
-    _device = new TCPServerDevice(_ip, _base_port, wait);
-
-    _connected = _device->open();
+    return device;
 }
 
 /*
@@ -351,45 +243,43 @@ void UARTDriver::set_blocking_writes(bool blocking)
  */
 bool UARTDriver::tx_pending()
 {
-    return !BUF_EMPTY(_writebuf);
+    return (_writebuf.available() > 0);
 }
 
 /*
   return the number of bytes available to be read
  */
-int16_t UARTDriver::available()
+uint32_t UARTDriver::available()
 {
     if (!_initialised) {
         return 0;
     }
-    uint16_t _tail;
-    return BUF_AVAILABLE(_readbuf);
+    return _readbuf.available();
 }
 
 /*
   how many bytes are available in the output buffer?
  */
-int16_t UARTDriver::txspace()
+uint32_t UARTDriver::txspace()
 {
     if (!_initialised) {
         return 0;
     }
-    uint16_t _head;
-    return BUF_SPACE(_writebuf);
+    return _writebuf.space();
 }
 
 int16_t UARTDriver::read()
 {
-    uint8_t c;
-    if (!_initialised || _readbuf == NULL) {
+    if (!_initialised) {
         return -1;
     }
-    if (BUF_EMPTY(_readbuf)) {
+
+    uint8_t byte;
+    if (!_readbuf.read_byte(&byte)) {
         return -1;
     }
-    c = _readbuf[_readbuf_head];
-    BUF_ADVANCEHEAD(_readbuf, 1);
-    return c;
+
+    return byte;
 }
 
 /* Linux implementations of Print virtual methods */
@@ -398,17 +288,14 @@ size_t UARTDriver::write(uint8_t c)
     if (!_initialised) {
         return 0;
     }
-    uint16_t _head;
 
-    while (BUF_SPACE(_writebuf) == 0) {
+    while (_writebuf.space() == 0) {
         if (_nonblocking_writes) {
             return 0;
         }
         hal.scheduler->delay(1);
     }
-    _writebuf[_writebuf_tail] = c;
-    BUF_ADVANCETAIL(_writebuf, 1);
-    return 1;
+    return _writebuf.write(&c, 1);
 }
 
 /*
@@ -431,36 +318,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
-    uint16_t _head, space;
-    space = BUF_SPACE(_writebuf);
-    if (space == 0) {
-        return 0;
-    }
-    if (size > space) {
-        size = space;
-    }
-    if (_writebuf_tail < _head) {
-        // perform as single memcpy
-        assert(_writebuf_tail+size <= _writebuf_size);
-        memcpy(&_writebuf[_writebuf_tail], buffer, size);
-        BUF_ADVANCETAIL(_writebuf, size);
-        return size;
-    }
-
-    // perform as two memcpy calls
-    uint16_t n = _writebuf_size - _writebuf_tail;
-    if (n > size) n = size;
-    assert(_writebuf_tail+n <= _writebuf_size);
-    memcpy(&_writebuf[_writebuf_tail], buffer, n);
-    BUF_ADVANCETAIL(_writebuf, n);
-    buffer += n;
-    n = size - n;
-    if (n > 0) {
-        assert(_writebuf_tail+n <= _writebuf_size);
-        memcpy(&_writebuf[_writebuf_tail], buffer, n);
-        BUF_ADVANCETAIL(_writebuf, n);
-    }
-    return size;
+    return _writebuf.write(buffer, size);
 }
 
 /*
@@ -468,8 +326,6 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
  */
 int UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 {
-    int ret = 0;
-
     /*
       allow for delayed connection. This allows ArduPilot to start
       before a network interface is available.
@@ -481,14 +337,7 @@ int UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
         return 0;
     }
 
-    ret = _device->write(buf, n);
-
-    if (ret > 0) {
-        BUF_ADVANCEHEAD(_writebuf, ret);
-        return ret;
-    }
-
-    return ret;
+    return _device->write(buf, n);
 }
 
 /*
@@ -496,15 +345,7 @@ int UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
  */
 int UARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
-    int ret;
-
-    ret = _device->read(buf, n);
-
-    if (ret > 0) {
-        BUF_ADVANCETAIL(_readbuf, ret);
-    }
-
-    return ret;
+    return _device->read(buf, n);
 }
 
 
@@ -514,15 +355,12 @@ int UARTDriver::_read_fd(uint8_t *buf, uint16_t n)
  */
 bool UARTDriver::_write_pending_bytes(void)
 {
-    uint16_t n;
-
     // write any pending bytes
-    uint16_t _tail;
-    uint16_t available_bytes = BUF_AVAILABLE(_writebuf);
-    n = available_bytes;
+    uint32_t available_bytes = _writebuf.available();
+    uint16_t n = available_bytes;
+    int16_t b = _writebuf.peek(0);
     if (_packetise && n > 0 &&
-        (_writebuf[_writebuf_head] != MAVLINK_STX_MAVLINK1 &&
-         _writebuf[_writebuf_head] != MAVLINK_STX)) {
+        b != MAVLINK_STX_MAVLINK1 && b != MAVLINK_STX) {
         /*
           we have a non-mavlink packet at the start of the
           buffer. Look ahead for a MAVLink start byte, up to 256 bytes
@@ -531,7 +369,7 @@ bool UARTDriver::_write_pending_bytes(void)
         uint16_t limit = n>256?256:n;
         uint16_t i;
         for (i=0; i<limit; i++) {
-            uint8_t b = _writebuf[(_writebuf_head + i) % _writebuf_size];
+            b = _writebuf.peek(i);
             if (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX) {
                 n = i;
                 break;
@@ -542,7 +380,7 @@ bool UARTDriver::_write_pending_bytes(void)
             n = limit;
         }
     }
-    const uint8_t b = _writebuf[_writebuf_head];
+    b = _writebuf.peek(0);
     if (_packetise && n > 0 &&
         (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX)) {
         uint8_t min_length = (b == MAVLINK_STX_MAVLINK1)?8:12;
@@ -555,10 +393,10 @@ bool UARTDriver::_write_pending_bytes(void)
             // the length of the packet is the 2nd byte, and mavlink
             // packets have a 6 byte header plus 2 byte checksum,
             // giving len+8 bytes
-            uint8_t len = _writebuf[(_writebuf_head + 1) % _writebuf_size];
+            int16_t len = _writebuf.peek(1);
             if (b == MAVLINK_STX) {
                 // check for signed packet with extra 13 bytes
-                uint8_t incompat_flags = _writebuf[(_writebuf_head + 2) % _writebuf_size];
+                int16_t incompat_flags = _writebuf.peek(2);
                 if (incompat_flags & MAVLINK_IFLAG_SIGNED) {
                     min_length += MAVLINK_SIGNATURE_BLOCK_LEN;
                 }
@@ -575,30 +413,34 @@ bool UARTDriver::_write_pending_bytes(void)
     }
 
     if (n > 0) {
-        uint16_t n1 = _writebuf_size - _writebuf_head;
-        if (n1 >= n) {
-            // do as a single write
-            _write_fd(&_writebuf[_writebuf_head], n);
+        int ret;
+
+        if (_packetise) {
+            // keep as a single UDP packet
+            uint8_t tmpbuf[n];
+            _writebuf.peekbytes(tmpbuf, n);
+            ret = _write_fd(tmpbuf, n);
+            if (ret > 0)
+                _writebuf.advance(ret);
         } else {
-            // split into two writes
-            if (_packetise) {
-                // keep as a single UDP packet
-                uint8_t tmpbuf[n];
-                memcpy(tmpbuf, &_writebuf[_writebuf_head], n1);
-                if (n > n1) {
-                    memcpy(&tmpbuf[n1], &_writebuf[0], n-n1);
+            ByteBuffer::IoVec vec[2];
+            const auto n_vec = _writebuf.peekiovec(vec, n);
+            for (int i = 0; i < n_vec; i++) {
+                ret = _write_fd(vec[i].data, (uint16_t)vec[i].len);
+                if (ret < 0) {
+                    break;
                 }
-                _write_fd(tmpbuf, n);
-            } else {
-                int ret = _write_fd(&_writebuf[_writebuf_head], n1);
-                if (ret == n1 && n > n1) {
-                    _write_fd(&_writebuf[_writebuf_head], n - n1);
+                _writebuf.advance(ret);
+
+                /* We wrote less than we asked for, stop */
+                if ((unsigned)ret != vec[i].len) {
+                    break;
                 }
             }
         }
     }
 
-    return BUF_AVAILABLE(_writebuf) != available_bytes;
+    return _writebuf.available() != available_bytes;
 }
 
 /*
@@ -608,8 +450,6 @@ bool UARTDriver::_write_pending_bytes(void)
  */
 void UARTDriver::_timer_tick(void)
 {
-    uint16_t n;
-
     if (!_initialised) return;
 
     _in_timer = true;
@@ -620,21 +460,20 @@ void UARTDriver::_timer_tick(void)
     }
 
     // try to fill the read buffer
-    uint16_t _head;
-    n = BUF_SPACE(_readbuf);
-    if (n > 0) {
-        uint16_t n1 = _readbuf_size - _readbuf_tail;
-        if (n1 >= n) {
-            // one read will do
-            assert(_readbuf_tail+n <= _readbuf_size);
-            _read_fd(&_readbuf[_readbuf_tail], n);
-        } else {
-            assert(_readbuf_tail+n1 <= _readbuf_size);
-            int ret = _read_fd(&_readbuf[_readbuf_tail], n1);
-            if (ret == n1 && n > n1) {
-                assert(_readbuf_tail+(n-n1) <= _readbuf_size);
-                _read_fd(&_readbuf[_readbuf_tail], n - n1);
-            }
+    int ret;
+    ByteBuffer::IoVec vec[2];
+
+    const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
+    for (int i = 0; i < n_vec; i++) {
+        ret = _read_fd(vec[i].data, vec[i].len);
+        if (ret < 0) {
+            break;
+        }
+        _readbuf.commit((unsigned)ret);
+
+        /* stop reading as we read less than we asked for */
+        if ((unsigned)ret < vec[i].len) {
+            break;
         }
     }
 

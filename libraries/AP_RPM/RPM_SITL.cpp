@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,6 +40,8 @@ void AP_RPM_SITL::update(void)
     } else {
         state.rate_rpm = sitl->state.rpm2;
     }
+    state.rate_rpm *= ap_rpm._scaling[state.instance];
+    state.signal_quality = 0.5f;
     state.last_reading_ms = AP_HAL::millis();
 }
 

@@ -2,8 +2,10 @@
 
 #include "RCInput.h"
 
-class Linux::RCInput_Navio2 : public Linux::RCInput
-{
+
+namespace Linux {
+
+class RCInput_Navio2 : public RCInput {
 public:
     void init() override;
     void _timer_tick(void) override;
@@ -18,3 +20,5 @@ private:
     int channels[CHANNEL_COUNT];
     uint16_t periods[ARRAY_SIZE(channels)] = {0};
 };
+
+}

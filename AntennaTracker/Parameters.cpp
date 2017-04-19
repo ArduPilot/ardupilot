@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Tracker.h"
 
 /*
@@ -196,15 +194,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(yaw_range,              "YAW_RANGE", YAW_RANGE_DEFAULT),
 
-    // @Param: PITCH_RANGE
-    // @DisplayName: Pitch Range
-    // @Description: Pitch axis total range of motion in degrees
-    // @Units: degrees
-    // @Increment: 0.1
-    // @Range: 0 180
-    // @User: Standard
-    GSCALAR(pitch_range,            "PITCH_RANGE", PITCH_RANGE_DEFAULT),
-
     // @Param: DISTANCE_MIN
     // @DisplayName: Distance minimum to target
     // @Description: Tracker will track targets at least this distance away
@@ -216,8 +205,8 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Param: ALT_SOURCE
     // @DisplayName: Altitude Source
-    // @Description: What provides altitude information for vehicle
-    // @Values: 0:Barometer,1:GPS
+    // @Description: What provides altitude information for vehicle. Vehicle only assumes tracker has same altitude as vehicle's home
+    // @Values: 0:Barometer,1:GPS,2:GPS vehicle only
     // @User: Standard
     GSCALAR(alt_source,				"ALT_SOURCE",	0),
 
@@ -229,6 +218,24 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Range: 1 10
     // @User: Standard
     GSCALAR(mavlink_update_rate,	"MAV_UPDATE_RATE",	1),
+
+    // @Param: PITCH_MIN
+    // @DisplayName: Minimum Pitch Angle
+    // @Description: The lowest angle the pitch can reach
+    // @Units: Degrees
+    // @Increment: 1
+    // @Range: -90 0
+    // @User: Standard
+    GSCALAR(pitch_min,               "PITCH_MIN",	PITCH_MIN_DEFAULT),
+
+    // @Param: PITCH_MAX
+    // @DisplayName: Maximum Pitch Angle
+    // @Description: The highest angle the pitch can reach
+    // @Units: Degrees
+    // @Increment: 1
+    // @Range: 0 90
+    // @User: Standard
+    GSCALAR(pitch_max,               "PITCH_MAX",	PITCH_MAX_DEFAULT),
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
@@ -246,19 +253,19 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[0], gcs0,        "SR0_",     GCS_MAVLINK),
+    GOBJECTN(gcs_chan[0], gcs0,        "SR0_",     GCS_MAVLINK),
 
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
+    GOBJECTN(gcs_chan[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
+    GOBJECTN(gcs_chan[2],  gcs2,       "SR2_",     GCS_MAVLINK),
 
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
+    GOBJECTN(gcs_chan[3],  gcs3,       "SR3_",     GCS_MAVLINK),
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
@@ -295,16 +302,12 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
-    // RC channel
-    //-----------
-    // @Group: RC1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GOBJECT(channel_yaw,       "RC1_", RC_Channel),
+    // @Path: ../libraries/RC_Channel/RC_Channels.cpp
+    GOBJECT(rc_channels,     "RC", RC_Channels),
 
-    // @Group: RC2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GOBJECT(channel_pitch,     "RC2_", RC_Channel),
-
+    // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
+    GOBJECT(servo_channels,     "SERVO", SRV_Channels),
+    
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager,    "SERIAL",   AP_SerialManager),
@@ -392,7 +395,7 @@ void Tracker::load_parameters(void)
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->println("done.");
+        hal.console->printf("done.\n");
     }
 
     uint32_t before = AP_HAL::micros();

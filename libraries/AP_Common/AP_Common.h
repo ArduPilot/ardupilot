@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,7 +23,6 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 // used to pack structures
 #define PACKED __attribute__((__packed__))
@@ -43,6 +41,12 @@
 
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
+
+/* Declare and implement const and non-const versions of the array subscript
+ * operator. The object is treated as an array of type_ values. */
+#define DEFINE_BYTE_ARRAY_METHODS                                                                   \
+    inline uint8_t &operator[](size_t i) { return reinterpret_cast<uint8_t *>(this)[i]; }           \
+    inline uint8_t operator[](size_t i) const { return reinterpret_cast<const uint8_t *>(this)[i]; }
 
 #define LOCATION_ALT_MAX_M  83000   // maximum altitude (in meters) that can be fit into Location structure's alt field
 
@@ -64,6 +68,27 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 
 #define ARRAY_SIZE(_arr) sizeof(_ARRAY_SIZE_HELPER(_arr))
 
+/*
+ * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to
+ * be used for its internal variable.
+ *
+ * @uniq_: a unique name to use for variable name
+ * @expr_: the expression to be evaluated
+ */
+#define _UNUSED_RESULT(uniq_, expr_)                      \
+    do {                                                  \
+        decltype(expr_) uniq_ __attribute__((unused));    \
+        uniq_ = expr_;                                    \
+    } while (0)
+
+/*
+ * Allow to call a function annotated with warn_unused_result attribute
+ * without getting a warning, because sometimes this is what we want to do.
+ *
+ * @expr_: the expression to be evaluated
+ */
+#define UNUSED_RESULT(expr_) _UNUSED_RESULT(__unique_name_##__COUNTER__, expr_)
+
 // @}
 
 
@@ -72,7 +97,7 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 ///
 /// Data structures and types used throughout the libraries and applications. 0 = default
 /// bit 0: Altitude is stored               0: Absolute,	1: Relative
-/// bit 1: Chnage Alt between WP            0: Gradually,	1: ASAP
+/// bit 1: Change Alt between WP            0: Gradually,	1: ASAP
 /// bit 2: Direction of loiter command      0: Clockwise	1: Counter-Clockwise
 /// bit 3: Req.to hit WP.alt to continue    0: No,          1: Yes
 /// bit 4: Relative to Home					0: No,          1: Yes
@@ -100,7 +125,7 @@ struct PACKED Location {
     // allowing an accurate angle in centi-degrees. This keeps the
     // storage cost per mission item at 15 bytes, and allows mission
     // altitudes of up to +/- 83km
-    int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100)
+    int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100) see LOCATION_ALT_MAX_M
     int32_t lat;                                        ///< param 3 - Latitude * 10**7
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
@@ -123,19 +148,6 @@ enum HomeState {
 ///
 //@{
 
-
-/*  Product IDs for all supported products follow */
-
-#define AP_PRODUCT_ID_NONE                      0x00    // Hardware in the loop
-#define AP_PRODUCT_ID_SITL              0x03    // Software in the loop
-#define AP_PRODUCT_ID_PX4               0x04    // PX4 on NuttX
-#define AP_PRODUCT_ID_PX4_V2            0x05    // PX4 FMU2 on NuttX
-#define AP_PRODUCT_ID_PX4_V4            0x06    // PX4 FMU4 on NuttX
-#define AP_PRODUCT_ID_L3G4200D          0x101   // Linux with L3G4200D and ADXL345
-#define AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE 0x102   // Linux with the PixHawk Fire Cape
-#define AP_PRODUCT_ID_MPU9250           0x103   // MPU9250
-#define AP_PRODUCT_ID_VRBRAIN           0x150   // VRBRAIN on NuttX
-
 /*
   Return true if value is between lower and upper bound inclusive.
   False otherwise.
@@ -154,4 +166,3 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 #else
 #define SITL_printf(fmt, args ...)
 #endif
-

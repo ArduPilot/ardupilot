@@ -7,6 +7,9 @@
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_Notify/AP_BoardLED.h>        // Board LED library
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // create board led object
@@ -14,7 +17,7 @@ AP_BoardLED board_led;
 
 void setup()
 {
-    hal.console->println("AP_Notify library test");
+    hal.console->printf("AP_Notify library test\n");
 
     // initialise the board leds
     board_led.init();

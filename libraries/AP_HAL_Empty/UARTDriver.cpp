@@ -14,8 +14,8 @@ void UARTDriver::set_blocking_writes(bool blocking) {}
 bool UARTDriver::tx_pending() { return false; }
 
 /* Empty implementations of Stream virtual methods */
-int16_t UARTDriver::available() { return 0; }
-int16_t UARTDriver::txspace() { return 1; }
+uint32_t UARTDriver::available() { return 0; }
+uint32_t UARTDriver::txspace() { return 1; }
 int16_t UARTDriver::read() { return -1; }
 
 /* Empty implementations of Print virtual methods */

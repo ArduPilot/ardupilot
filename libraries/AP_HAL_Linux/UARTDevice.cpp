@@ -109,3 +109,24 @@ void UARTDevice::set_speed(uint32_t baudrate)
     cfsetspeed(&t, baudrate);
     tcsetattr(_fd, TCSANOW, &t);
 }
+
+void UARTDevice::set_flow_control(AP_HAL::UARTDriver::flow_control flow_control_setting)
+{
+    struct termios t;
+
+    if (_flow_control == flow_control_setting) {
+        return;
+    }
+
+    tcgetattr(_fd, &t);
+
+    if (flow_control_setting != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE) {
+        t.c_cflag |= CRTSCTS;
+    } else {
+        t.c_cflag &= ~CRTSCTS;
+    }
+
+    tcsetattr(_fd, TCSANOW, &t);
+
+    _flow_control = flow_control_setting;
+}

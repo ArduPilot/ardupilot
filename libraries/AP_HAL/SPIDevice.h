@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Copyright (C) 2015-2016  Intel Corporation. All rights reserved.
  *
@@ -27,6 +26,8 @@ namespace AP_HAL {
 
 class SPIDevice : public Device {
 public:
+    SPIDevice() : Device(BUS_TYPE_SPI) { }
+
     virtual ~SPIDevice() { }
     /* Device implementation */
 
@@ -37,16 +38,31 @@ public:
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) override = 0;
 
+    /*
+     * Like #transfer(), but both @send and @recv buffers are transmitted at
+     * the same time: because of this they need to be of the same size.
+     */
+    virtual bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
+                                     uint32_t len) = 0;
+
     /* See Device::get_semaphore() */
     virtual Semaphore *get_semaphore() override = 0;
 
     /* See Device::register_periodic_callback() */
-    virtual Device::PeriodicHandle *register_periodic_callback(
-        uint32_t period_usec, MemberProc) override = 0;
+    virtual Device::PeriodicHandle register_periodic_callback(
+        uint32_t period_usec, Device::PeriodicCb) override = 0;
 
-    virtual int get_fd() override = 0;
+    /* See Device::adjust_periodic_callback() */
+    virtual bool adjust_periodic_callback(
+        PeriodicHandle h, uint32_t period_usec) override { return false; }
 };
 
-/* SPIDeviceManager is temporarily provided by SPIDriver.h */
+class SPIDeviceManager {
+public:
+    virtual OwnPtr<SPIDevice> get_device(const char *name)
+    {
+        return nullptr;
+    }
+};
 
 }
