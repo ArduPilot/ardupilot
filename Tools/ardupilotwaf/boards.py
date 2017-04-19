@@ -128,6 +128,7 @@ class Board:
             '-Werror=array-bounds',
             '-Werror=uninitialized',
             '-Werror=init-self',
+            '-Werror=switch',
             '-Wfatal-errors',
         ]
 
