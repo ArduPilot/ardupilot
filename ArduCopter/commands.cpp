@@ -76,6 +76,18 @@ bool Copter::set_home(const Location& loc)
         return false;
     }
 
+    // set EKF origin to home if it hasn't been set yet and vehicle is disarmed
+    // this is required to allowing flying in AUTO and GUIDED with only an optical flow
+    Location ekf_origin;
+    if (!motors->armed() && !ahrs.get_origin(ekf_origin)) {
+        ahrs.set_origin(loc);
+    }
+
+    // check home is close to EKF origin
+    if (far_from_EKF_origin(loc)) {
+        return false;
+    }
+
     // set ahrs home (used for RTL)
     ahrs.set_home(loc);
 
