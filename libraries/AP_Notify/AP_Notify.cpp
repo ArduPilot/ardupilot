@@ -100,10 +100,11 @@ void AP_Notify::init(bool enable_external_leds)
         case Board_Type_ERLEBrain2:
         case Board_Type_PXFMini:
         case Board_Type_BH:
+        case Board_Type_BBBMini:
             boardled = new AP_BoardLED();
             break;
             
-        case Board_Type_BBBMini:
+        
         case Board_Type_RASPilot:
             boardled = nullptr;
             break;
