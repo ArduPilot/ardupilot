@@ -876,9 +876,18 @@ void Plane::servos_auto_trim(void)
     }
 
     // adjust trim on channels by a small amount according to I value
-    g2.servo_channels.adjust_trim(SRV_Channel::k_aileron, rollController.get_pid_info().I);
-    g2.servo_channels.adjust_trim(SRV_Channel::k_elevator, pitchController.get_pid_info().I);
+    float roll_I = rollController.get_pid_info().I;
+    float pitch_I = pitchController.get_pid_info().I;
+    
+    g2.servo_channels.adjust_trim(SRV_Channel::k_aileron, roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_elevator, pitch_I);
 
+    g2.servo_channels.adjust_trim(SRV_Channel::k_elevon_left,  pitch_I - roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_elevon_right, pitch_I + roll_I);
+
+    g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_left,  pitch_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_right, pitch_I);
+    
     auto_trim.last_trim_check = now;
 
     if (now - auto_trim.last_trim_save > 10000) {
