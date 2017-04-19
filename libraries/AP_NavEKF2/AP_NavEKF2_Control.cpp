@@ -403,7 +403,7 @@ bool NavEKF2_core::assume_zero_sideslip(void) const
 }
 
 // set the LLH location of the filters NED origin
-bool NavEKF2_core::setOriginLLH(struct Location &loc)
+bool NavEKF2_core::setOriginLLH(const Location &loc)
 {
     if (PV_AidingMode == AID_ABSOLUTE) {
         return false;
