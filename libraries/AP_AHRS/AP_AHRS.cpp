@@ -342,6 +342,7 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation)
  */
 void AP_AHRS::update_AOA_SSA(void)
 {
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     Vector3f aoa_velocity, aoa_wind;
 
     // get velocity and wind
@@ -375,4 +376,5 @@ void AP_AHRS::update_AOA_SSA(void)
     }
 
     _SSA = degrees(safe_asin(aoa_velocity.y / vel_len));
+#endif
 }
