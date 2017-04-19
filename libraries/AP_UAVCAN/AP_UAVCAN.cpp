@@ -460,7 +460,7 @@ void AP_UAVCAN::do_cyclic(void)
                         // find out how many esc we have enabled and if they are active at all
                         for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
                             if ((((uint32_t) 1) << i) & _esc_bm) {
-                                max_esc_num = i;
+                                max_esc_num = i + 1;
                                 if (_rco_conf[i].active) {
                                     active_esc_num++;
                                 }
