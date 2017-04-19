@@ -430,6 +430,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_LIMITS_STATUS:
     case MSG_FENCE_STATUS:
     case MSG_WIND:
+    case MSG_AOA_SSA:
         // unused
         break;
 
