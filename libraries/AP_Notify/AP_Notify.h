@@ -54,10 +54,24 @@ public:
     
     // ToneAlarm types
     enum ToneAlarm_Type {
-        ToneAlarm_Type_NONE     = 0,
-        ToneAlarm_Type_PX4      = 1,
-        ToneAlarm_Type_Solo     = 2,
-        ToneAlarm_Type_Linux    = 3
+        Board_Type_NONE         = 0,
+        Board_Type_PX4          = 1,
+        Board_Type_PX4_V4       = 2,
+        Board_Type_Solo         = 3,
+        Board_Type_VRBrain      = 4,
+        Board_Type_VRBrain_45   = 5,
+        Board_Type_Linux_Default= 6,
+        Board_Type_Navio        = 7,
+        Board_Type_Navio2       = 8,
+        Board_Type_BBBMini      = 9,
+        Board_Type_Blue         = 10,
+        Board_Type_RASPilot     = 11,
+        Board_Type_MinLure      = 12,
+        Board_Type_ERLEBrain2   = 13,
+        Board_Type_PXFMini      = 14,
+        Board_Type_BH           = 15,
+        Board_Type_Disco        = 16,
+        Board_Type_EnumEnd      = 100
     };
 
     /// notify_flags_type - bitmask of notification flags
@@ -146,13 +160,17 @@ private:
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
     AP_Int8 _display_type;
-    AP_Int8 _tone_type;
+    AP_Int8 _board_type;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed
     char _flight_mode_str[5];
     
+    NotifyDevice* boardled;
+    NotifyDevice* toshibaled;
     NotifyDevice* tonealarm;
+    NotifyDevice* oreoled;
+    NotifyDevice* display;
 
     static NotifyDevice* _devices[];
 };
