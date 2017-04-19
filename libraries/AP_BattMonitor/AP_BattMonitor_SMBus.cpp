@@ -2,6 +2,22 @@
 
 #define AP_BATTMONITOR_SMBUS_PEC_POLYNOME 0x07 // Polynome for CRC generation
 
+#define BATTMONITOR_SMBUS_TEMP 0x08 // temperature register
+
+// reads the temperature word from the battery
+// returns true if the read was successful
+bool AP_BattMonitor_SMBus::read_temp(void)
+{
+    uint16_t data;
+    if (read_word(BATTMONITOR_SMBUS_TEMP, data)) {
+        _state.temperature_time = AP_HAL::millis();
+        _state.temperature = ((float)(data - 2731)) * 0.1f;
+        return true;
+    }
+
+    return false;
+}
+
 // read word from register
 // returns true if read was successful, false if failed
 bool AP_BattMonitor_SMBus::read_word(uint8_t reg, uint16_t& data) const
