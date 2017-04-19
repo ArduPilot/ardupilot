@@ -6,11 +6,6 @@
 #include "AP_BattMonitor_SMBus_Solo.h"
 #include <utility>
 
-extern const AP_HAL::HAL& hal;
-
-#include <AP_HAL/AP_HAL.h>
-
-#define BATTMONITOR_SMBUS_SOLO_TEMP                 0x08    // temperature register
 #define BATTMONITOR_SMBUS_SOLO_REMAINING_CAPACITY   0x0f    // predicted remaining battery capacity in milliamps
 #define BATTMONITOR_SMBUS_SOLO_FULL_CHARGE_CAPACITY 0x10    // full capacity register
 #define BATTMONITOR_SMBUS_SOLO_MANUFACTURE_DATA     0x23    /// manufacturer data
@@ -37,9 +32,9 @@ extern const AP_HAL::HAL& hal;
 AP_BattMonitor_SMBus_Solo::AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon, uint8_t instance,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_BattMonitor_SMBus(mon, instance, mon_state)
-    , _dev(std::move(dev))
+    : AP_BattMonitor_SMBus(mon, instance, mon_state, std::move(dev))
 {
+    _pec_supported = true;
     _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_Solo::timer, void));
 }
 
@@ -127,30 +122,6 @@ void AP_BattMonitor_SMBus_Solo::timer()
          _state.temperature_time = AP_HAL::millis();
          _state.temperature = ((float)(data - 2731)) * 0.1f;
     }
-}
-
-// read word from register
-// returns true if read was successful, false if failed
-bool AP_BattMonitor_SMBus_Solo::read_word(uint8_t reg, uint16_t& data) const
-{
-    uint8_t buff[3];    // buffer to hold results
-
-    // read three bytes and place in last three bytes of buffer
-    if (!_dev->read_registers(reg, buff, sizeof(buff))) {
-        return false;
-    }
-
-    // check PEC
-    uint8_t pec = get_PEC(AP_BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, 2);
-    if (pec != buff[2]) {
-        return false;
-    }
-
-    // convert buffer to word
-    data = (uint16_t)buff[1]<<8 | (uint16_t)buff[0];
-
-    // return success
-    return true;
 }
 
 // read_block - returns number of characters read if successful, zero if unsuccessful
