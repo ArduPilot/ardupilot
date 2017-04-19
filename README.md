@@ -65,7 +65,7 @@
 >>   - ***Vehicle***: TradHeli
 >> - [Grant Morphett](https://github.com/gmorph):
 >>   - ***Vehicle***: Rover
->> - [Tom Pittenger] (https://github.com/magicrub)
+>> - [Tom Pittenger](https://github.com/magicrub)
 >>   - ***Vehicle***: Plane
 >> - [Paul Riseborough](https://github.com/priseborough)
 >>   - ***Subsystem***: AP_NavEKF2
@@ -95,9 +95,9 @@
 >>   - ***Board***: Bebop & Bebop 2
 >> - [Pritam Ghanghas](https://github.com/pritamghanghas)
 >>   - ***Board***: Raspilot
->> - [Matt Lawrence] (https://github.com/Pedals2Paddles)
+>> - [Matt Lawrence](https://github.com/Pedals2Paddles)
 >>   - ***Vehicle***: 3DR Solo & Solo based vehicles
 >> - [Gustavo José de Sousa](https://github.com/guludo)
 >>   - ***Subsystem***: Build system
->> - [Craig Elder] (https://github.com/CraigElder)
+>> - [Craig Elder](https://github.com/CraigElder)
 >>   - ***Administration***: ArduPilot Technical Community Manager
