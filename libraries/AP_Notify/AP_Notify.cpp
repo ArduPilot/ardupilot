@@ -33,6 +33,7 @@
 #include "DiscoLED.h"
 #include <stdio.h>
 
+#define CONFIG_NOTIFY_DEVICES_COUNT 5
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
@@ -65,6 +66,13 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
 
+    // @Param: BRD_TYPE
+    // @DisplayName: Board type for notify devices
+    // @Description: This sets up the notification devices based on board, Defaults to PX4
+    // @Values: 0:None,1:PX4,2:PX4_V4,3:Solo,4:VRBrain,5:VRBrain_45,6:Linux_Default,7:Navio,8:Navio3,9:BBBMini,10:Blue,11:RASPilot,12:MinLure,13:ERLEBrain2,14:PXFMini,15:BH,16:Disco
+    // @User: Advanced
+    AP_GROUPINFO("BRD_TYPE", 4, AP_Notify, _board_type, 1),
+
     AP_GROUPEND
 };
 
@@ -78,6 +86,8 @@ AP_Notify::AP_Notify()
 struct AP_Notify::notify_flags_and_values_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
 
+NotifyDevice *AP_Notify::_devices[] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+/*
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
     PixRacerLED boardled;
@@ -160,10 +170,152 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #endif
 
 #define CONFIG_NOTIFY_DEVICES_COUNT (ARRAY_SIZE(AP_Notify::_devices))
-
+*/
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
 {
+    // Select Board LED Type based on board
+    switch (_board_type) {
+        case Board_Type_PX4:
+        case Board_Type_Solo:
+        case Board_Type_VRBrain_45:
+        case Board_Type_Blue:
+        case Board_Type_ERLEBrain2:
+        case Board_Type_PXFMini:
+        case Board_Type_BH:
+            boardled = new AP_BoardLED();
+            break;
+            
+        case Board_Type_BBBMini:
+        case Board_Type_RASPilot:
+            boardled = nullptr;
+            break;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+        case Board_Type_VRBrain:
+            boardled = new VRBoard_LED();
+            break;
+#endif
+            
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
+        case Board_Type_PX4_V4:
+            boardled = new PixRacerLED();
+            break;
+
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+        case Board_Type_Navio:
+            boardled = new NavioLED_I2C();
+            break;
+
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
+        case Board_Type_Navio2:
+            boardled = new DiscreteRGBLed(4, 27, 6, false);
+            break;
+
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+        case Board_Type_BH:
+            boardled = new RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);
+            break;
+
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+        case Board_Type_Disco:
+            boardled = new DiscoLED();
+            break;
+
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+        case Board_Type_MinLure:
+            boardled = new RCOutputRGBLedOff(15, 13, 14, 255);
+            break;
+#endif
+            
+        default:
+            boardled = new AP_BoardLED();
+            break;
+    }
+    
+    // Select Toshiba Led based on board
+    switch (_board_type) {
+        case Board_Type_BBBMini:
+        case Board_Type_Blue:
+        case Board_Type_MinLure:
+        case Board_Type_ERLEBrain2:
+        case Board_Type_PXFMini:
+        case Board_Type_BH:
+        case Board_Type_Disco:
+            toshibaled = nullptr;
+        default:
+           toshibaled = new ToshibaLED_I2C();
+           break;
+    }
+    
+    // Select Display based on board
+    switch (_board_type) {
+        case Board_Type_PX4:
+        case Board_Type_PX4_V4:
+        case Board_Type_Solo:
+        case Board_Type_BBBMini:
+            display = new Display();
+            break;
+        default:
+            display = nullptr;
+            break;
+    }
+
+    // Select Tone Alarm Type based on board
+    switch (_board_type) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        case Board_Type_PX4:
+        case Board_Type_PX4_V4:
+        case Board_Type_VRBrain:
+        case Board_Type_VRBrain_45:
+            tonealarm = new ToneAlarm_PX4();
+            break;
+        case Board_Type_Solo:
+            tonealarm = new ToneAlarm_PX4_Solo();
+            break;
+#endif
+            
+        case Board_Type_BBBMini:
+            tonealarm = new Buzzer();
+            break;
+ 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+        case Board_Type_RASPilot:
+        case Board_Type_Disco:
+            tonealarm = new ToneAlarm_Linux();
+            break;
+#endif
+            
+        default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+            tonealarm = new ToneAlarm_Linux();
+#else
+            tonealarm = nullptr;
+#endif
+            break;
+    }
+
+    // Select Oreo Leds based on board
+    switch (_board_type) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        case Board_Type_Solo:
+            oreoled = new OreoLED_PX4();
+            break;
+#endif
+            
+        default:
+            oreoled = nullptr;
+            break;
+    }
+
+    
+    _devices[0] = boardled;
+    _devices[1] = toshibaled;
+    _devices[2] = tonealarm;
+    _devices[3] = oreoled;
+    _devices[4] = display;
+    
+    
     // clear all flags and events
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
@@ -176,8 +328,10 @@ void AP_Notify::init(bool enable_external_leds)
     AP_Notify::flags.external_leds = enable_external_leds;
 
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
-        _devices[i]->pNotify = this;
-        _devices[i]->init();
+        if (_devices[i] != nullptr) {
+            _devices[i]->pNotify = this;
+            _devices[i]->init();
+        }
     }
 }
 
@@ -185,7 +339,9 @@ void AP_Notify::init(bool enable_external_leds)
 void AP_Notify::update(void)
 {
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
-        _devices[i]->update();
+        if (_devices[i] != nullptr) {
+            _devices[i]->update();
+        }
     }
 
     //reset the events
@@ -196,7 +352,9 @@ void AP_Notify::update(void)
 void AP_Notify::handle_led_control(mavlink_message_t *msg)
 {
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
-        _devices[i]->handle_led_control(msg);
+        if (_devices[i] != nullptr) {
+            _devices[i]->handle_led_control(msg);
+        }
     }
 }
 
@@ -204,7 +362,9 @@ void AP_Notify::handle_led_control(mavlink_message_t *msg)
 void AP_Notify::handle_play_tune(mavlink_message_t *msg)
 {
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
-        _devices[i]->handle_play_tune(msg);
+        if (_devices[i] != nullptr) {
+            _devices[i]->handle_play_tune(msg);
+        }
     }
 }
 
