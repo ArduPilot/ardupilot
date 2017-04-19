@@ -124,6 +124,11 @@ public:
     // set home location
     void set_home(const Location &loc) override;
 
+    // set the EKF's origin location in 10e7 degrees.  This should only
+    // be called when the EKF has no absolute position reference (i.e. GPS)
+    // from which to decide the origin on its own
+    bool set_origin(const Location &loc) override;
+
     // returns the inertial navigation origin in lat/lon/alt
     bool get_origin(Location &ret) const;
 
