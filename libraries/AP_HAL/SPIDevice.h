@@ -68,7 +68,7 @@ public:
     virtual uint8_t get_count() { return 0; }
 
     /* Get spi device name at @idx */
-    virtual const char *get_device_name(uint8_t idx) { return 0; }
+    virtual const char *get_device_name(uint8_t idx) { return nullptr; }
 };
 
 }
