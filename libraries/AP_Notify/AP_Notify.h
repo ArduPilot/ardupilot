@@ -22,7 +22,7 @@
 
 
 #ifndef AP_NOTIFY_OREOLED
-#define AP_NOTIFY_OREOLED 0
+#define AP_NOTIFY_OREOLED 1
 #endif
 
 #ifndef AP_NOTIFY_SOLO_TONES

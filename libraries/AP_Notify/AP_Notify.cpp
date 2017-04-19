@@ -184,15 +184,17 @@ void AP_Notify::init(bool enable_external_leds)
         case Board_Type_BH:
             boardled = new AP_BoardLED();
             break;
-
-        case Board_Type_VRBrain:
-            boardled = new VRBoard_LED();
-            break;
             
         case Board_Type_BBBMini:
         case Board_Type_RASPilot:
             boardled = nullptr;
             break;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+        case Board_Type_VRBrain:
+            boardled = new VRBoard_LED();
+            break;
+#endif
             
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
         case Board_Type_PX4_V4:
@@ -292,17 +294,19 @@ void AP_Notify::init(bool enable_external_leds)
             break;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // Select Oreo Leds based on board
     switch (_board_type) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         case Board_Type_Solo:
             oreoled = new OreoLED_PX4();
             break;
+#endif
+            
         default:
             oreoled = nullptr;
             break;
     }
-#endif
+
     
     _devices[0] = boardled;
     _devices[1] = toshibaled;
