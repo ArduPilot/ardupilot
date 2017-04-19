@@ -29,6 +29,10 @@ public:
 
 protected:
 
+    // reads the temperature word from the battery
+    // returns true if the read was successful
+    bool read_temp(void);
+
      // read word from register
      // returns true if read was successful, false if failed
     bool read_word(uint8_t reg, uint16_t& data) const;
@@ -39,6 +43,7 @@ protected:
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     bool _pec_supported; // true if PEC is supported
+
 };
 
 // include specific implementations

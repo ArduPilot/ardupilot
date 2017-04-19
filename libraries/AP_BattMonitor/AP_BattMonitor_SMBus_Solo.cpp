@@ -117,11 +117,7 @@ void AP_BattMonitor_SMBus_Solo::timer()
         AP_Notify::flags.powering_off = _state.is_powering_off;
     }
 
-    // read temperature
-    if (read_word(BATTMONITOR_SMBUS_SOLO_TEMP, data)) {
-         _state.temperature_time = AP_HAL::millis();
-         _state.temperature = ((float)(data - 2731)) * 0.1f;
-    }
+    read_temp();
 }
 
 // read_block - returns number of characters read if successful, zero if unsuccessful
