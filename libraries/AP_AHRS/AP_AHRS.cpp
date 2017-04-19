@@ -349,15 +349,6 @@ void AP_AHRS::update_AOA_SSA(void)
         return;
     }
 
-    float vel_len = aoa_velocity.length();
-
-    // do not calculate if speed is too low
-    if (vel_len < 2.0) {
-        _AOA = 0;
-        _SSA = 0;
-        return;
-    }
-
     aoa_wind = wind_estimate();
 
     // Rotate vectors to the body frame and calculate velocity and wind
@@ -367,6 +358,14 @@ void AP_AHRS::update_AOA_SSA(void)
 
     // calculate relative velocity in body coordinates
     aoa_velocity = aoa_velocity - aoa_wind;
+    float vel_len = aoa_velocity.length();
+
+    // do not calculate if speed is too low
+    if (vel_len < 2.0) {
+        _AOA = 0;
+        _SSA = 0;
+        return;
+    }
 
     // Calculate AOA and SSA
     if (aoa_velocity.x > 0) {
@@ -375,9 +374,5 @@ void AP_AHRS::update_AOA_SSA(void)
         _AOA = 0;
     }
 
-    if (!is_zero(vel_len)) {
-        _SSA = degrees(safe_asin(aoa_velocity.y / vel_len));
-    } else {
-        _SSA = 0;
-    }
+    _SSA = degrees(safe_asin(aoa_velocity.y / vel_len));
 }
