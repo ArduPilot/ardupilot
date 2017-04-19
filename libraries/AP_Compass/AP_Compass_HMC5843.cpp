@@ -23,6 +23,8 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
 #ifdef HAL_COMPASS_HMC5843_I2C_ADDR
 
 #include <assert.h>
@@ -627,5 +629,7 @@ uint32_t AP_HMC5843_BusDriver_Auxiliary::get_bus_id(void) const
 {
     return _bus->get_bus_id();
 }
+
+#endif
 
 #endif
