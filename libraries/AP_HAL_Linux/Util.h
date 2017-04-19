@@ -47,7 +47,7 @@ public:
       set system clock in UTC microseconds
      */
     void set_system_clock(uint64_t time_utc_usec);
-    const char* get_custom_log_directory() { return custom_log_directory; }
+    const char* get_custom_log_directory() const override final { return custom_log_directory; }
     const char* get_custom_terrain_directory() const override final { return custom_terrain_directory; }
 
     void set_custom_log_directory(const char *_custom_log_directory) { custom_log_directory = _custom_log_directory; }
