@@ -441,6 +441,11 @@ public:
     // current barometer and GPS altitudes correspond to this altitude
     virtual void set_home(const Location &loc) = 0;
 
+    // set the EKF's origin location in 10e7 degrees.  This should only
+    // be called when the EKF has no absolute position reference (i.e. GPS)
+    // from which to decide the origin on its own
+    virtual bool set_origin(const Location &loc) { return false; }
+
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
     virtual bool have_inertial_nav(void) const {
