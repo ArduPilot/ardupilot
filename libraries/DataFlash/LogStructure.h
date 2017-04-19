@@ -787,6 +787,13 @@ struct PACKED log_Rally {
     int16_t altitude;
 };
 
+struct PACKED log_AOA_SSA {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float AOA;
+    float SSA;
+};
+
 // #endif // SBP_HW_LOGGING
 
 #define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
@@ -1183,6 +1190,7 @@ enum LogMessages {
     LOG_RATE_MSG,
     LOG_RALLY_MSG,
     LOG_VISUALODOM_MSG,
+    LOG_AOA_SSA_MSG,
 };
 
 enum LogOriginType {

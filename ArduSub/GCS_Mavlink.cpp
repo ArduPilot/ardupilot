@@ -649,6 +649,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_FENCE_STATUS:
     case MSG_WIND:
     case MSG_POSITION_TARGET_GLOBAL_INT:
+    case MSG_AOA_SSA:
         // unused
         break;
 

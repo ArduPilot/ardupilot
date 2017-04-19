@@ -92,6 +92,9 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     update_SITL();
 #endif
 
+    // update AOA and SSA
+    update_AOA_SSA();
+
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);
 
