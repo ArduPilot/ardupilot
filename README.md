@@ -15,7 +15,10 @@
 
 >>ArduRover (or APMrover2) : [code](https://github.com/ArduPilot/ardupilot/tree/master/APMrover2), [wiki](http://ardupilot.org/rover/index.html)
 
+>>ArduSub (or APM:Sub) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduSub), [wiki](http://ardusub.com/)
+
 >>Antenna Tracker : [code](https://github.com/ArduPilot/ardupilot/tree/master/AntennaTracker), [wiki](http://ardupilot.org/antennatracker/index.html)
+
 
 ### User Support & Discussion Forums ###
 >>Support Forum: [http://discuss.ardupilot.org/](http://discuss.ardupilot.org/)
@@ -75,7 +78,7 @@
 >>   - ***Subsystem***: DataFlash
 >>   - ***Subsystem***: Tools
 >> - [Michael du Breuil](https://github.com/WickedShell)
->>   - ***Subsystem***: uBlox GPS
+>>   - ***Subsystem***: GPS
 >> - [Francisco Ferreira](https://github.com/oxinarf)
 >>   - ***Bug Master***
 >> - [Matthias Badaire](https://github.com/badzz)
@@ -101,3 +104,5 @@
 >>   - ***Subsystem***: Build system
 >> - [Craig Elder](https://github.com/CraigElder)
 >>   - ***Administration***: ArduPilot Technical Community Manager
+>> - [Jacob Walser](https://github.com/jaxxzer)
+>>   - ***Vehicle***: Sub
