@@ -59,6 +59,7 @@ extern "C" int oreoled_main(int, char **);
 // init - initialised the device
 bool OreoLED_PX4::init()
 {
+/* This code is breaking master when the OreoLeds are enabled in PX4-V2 so I guesss no one uses it and its not needed?
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
     if (!AP_BoardConfig::px4_start_driver(oreoled_main, "oreoled", "start autoupdate")) {
         hal.console->printf("Unable to start oreoled driver\n");
@@ -67,7 +68,7 @@ bool OreoLED_PX4::init()
         hal.scheduler->delay(500);
     }
 #endif
-    
+*/
     // open the device
     _oreoled_fd = open(OREOLED0_DEVICE_PATH, O_RDWR);
     if (_oreoled_fd == -1) {
