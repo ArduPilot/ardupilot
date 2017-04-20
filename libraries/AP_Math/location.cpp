@@ -46,6 +46,15 @@ uint32_t get_distance_cm(const struct Location &loc1, const struct Location &loc
     return get_distance(loc1, loc2) * 100;
 }
 
+// return distance in meters between two 3D locations
+float get_distance3D(const struct Location &loc1, const struct Location &loc2)
+{
+    float dlat = (float)(loc2.lat - loc1.lat);
+    float dlong = ((float)(loc2.lng - loc1.lng)) * longitude_scale(loc2);
+    float dheight= ((float)(loc2.alt-loc1.alt))*0.01f;    //Alt comes in cm
+    return pythagorous3(dlat, dlong, dheight) * LOCATION_SCALING_FACTOR;
+}
+
 // return bearing in centi-degrees between two locations
 int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2)
 {

@@ -27,6 +27,9 @@ float        get_distance(const struct Location &loc1, const struct Location &lo
 // return distance in centimeters between two locations
 uint32_t     get_distance_cm(const struct Location &loc1, const struct Location &loc2);
 
+// return 3D distance in meters between two locations defined by Lat, Lon and Alt
+float        get_distance3D(const struct Location &loc1, const struct Location &loc2);
+
 // return bearing in centi-degrees between two locations
 int32_t      get_bearing_cd(const struct Location &loc1, const struct Location &loc2);
 
