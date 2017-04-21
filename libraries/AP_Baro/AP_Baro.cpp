@@ -93,7 +93,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Param: EXT_BUS
     // @DisplayName: External baro bus
     // @Description: This selects the bus number for looking for an I2C barometer
-    // @Values: -1:Disabled,0:Bus0:1:Bus1
+    // @Values: -1:Disabled,0:Bus0,1:Bus1
     // @User: Advanced
     AP_GROUPINFO("EXT_BUS", 7, AP_Baro, _ext_bus, -1),
 
