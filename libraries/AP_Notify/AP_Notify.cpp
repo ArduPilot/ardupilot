@@ -130,11 +130,6 @@ void AP_Notify::init(bool enable_external_leds)
             boardled = new DiscreteRGBLed(4, 27, 6, false);
             break;
 
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-        case Board_Type_BH:
-            boardled = new RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);
-            break;
-
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
         case Board_Type_Disco:
             boardled = new DiscoLED();
@@ -158,9 +153,15 @@ void AP_Notify::init(bool enable_external_leds)
         case Board_Type_MinLure:
         case Board_Type_ERLEBrain2:
         case Board_Type_PXFMini:
-        case Board_Type_BH:
         case Board_Type_Disco:
             toshibaled = nullptr;
+            
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+        case Board_Type_BH:
+            toshibaled = new RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);
+            break;
+#endif
+
         default:
            toshibaled = new ToshibaLED_I2C();
            break;
@@ -217,7 +218,9 @@ void AP_Notify::init(bool enable_external_leds)
     switch (_board_type) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         case Board_Type_Solo:
+#if !HAL_MINIMIZE_FEATURES
             oreoled = new OreoLED_PX4();
+#endif
             break;
 #endif
             
