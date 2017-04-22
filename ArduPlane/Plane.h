@@ -294,6 +294,9 @@ private:
     enum FlightMode previous_mode = INITIALISING;
     mode_reason_t previous_mode_reason = MODE_REASON_UNKNOWN;
 
+    // time of last mode change
+    uint32_t last_mode_change_ms;
+
     // Used to maintain the state of the previous control switch position
     // This is set to 254 when we need to re-read the switch
     uint8_t oldSwitchPosition = 254;
