@@ -55,7 +55,7 @@ class mavgen(Task.Task):
         mavgen = self.env.get_flat('MAVGEN')
         out = self.env.get_flat('OUTPUT_DIR')
         src = self.env.get_flat('SRC')
-        ret = self.exec_command('{} {} --lang=C --wire-protocol=2.0 --output {} {}'.format(
+        ret = self.exec_command("{} '{}' --lang=C --wire-protocol=2.0 --output '{}' '{}'".format(
                                 python, mavgen, out, self.inputs[0].abspath()))
 
         if ret != 0:
