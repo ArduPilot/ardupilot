@@ -801,7 +801,8 @@ void Plane::update_navigation()
             
     case RTL:
         if (quadplane.available() && quadplane.rtl_mode == 1 &&
-            nav_controller->reached_loiter_target()) {
+            nav_controller->reached_loiter_target() &&
+            AP_HAL::millis() - last_mode_change_ms > 1000) {
             set_mode(QRTL, MODE_REASON_UNKNOWN);
             break;
         } else if (g.rtl_autoland == 1 &&

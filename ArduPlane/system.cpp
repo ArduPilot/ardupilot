@@ -380,6 +380,9 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     // new mode means new loiter
     loiter.start_time_ms = 0;
 
+    // record time of mode change
+    last_mode_change_ms = AP_HAL::millis();
+    
     // assume non-VTOL mode
     auto_state.vtol_mode = false;
     auto_state.vtol_loiter = false;
