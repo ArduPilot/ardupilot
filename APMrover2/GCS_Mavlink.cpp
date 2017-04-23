@@ -174,13 +174,14 @@ void Rover::send_servo_out(mavlink_channel_t chan)
 
 void Rover::send_vfr_hud(mavlink_channel_t chan)
 {
+
     mavlink_msg_vfr_hud_send(
         chan,
         gps.ground_speed(),
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
         (uint16_t)(100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))),
-        current_loc.alt / 100.0,
+        (current_loc.alt-home.alt) / 100.0,
         0);
 }
 
