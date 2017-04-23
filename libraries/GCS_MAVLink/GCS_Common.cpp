@@ -967,7 +967,7 @@ void GCS_MAVLINK::send_message(enum ap_message id)
             break;
         }
         next_deferred_message++;
-        if (next_deferred_message == MSG_RETRY_DEFERRED) {
+        if (next_deferred_message == MSG_QUEUE_SIZE) {
             next_deferred_message = 0;
         }
         num_deferred_messages--;
@@ -984,7 +984,7 @@ void GCS_MAVLINK::send_message(enum ap_message id)
             return;
         }
         nextid++;
-        if (nextid == MSG_RETRY_DEFERRED) {
+        if (nextid == MSG_QUEUE_SIZE) {
             nextid = 0;
         }
     }
@@ -992,13 +992,13 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     if (num_deferred_messages != 0 ||
         !try_send_message(id)) {
         // can't send it now, so defer it
-        if (num_deferred_messages == MSG_RETRY_DEFERRED) {
+        if (num_deferred_messages == MSG_QUEUE_SIZE) {
             // the defer buffer is full, discard
             return;
         }
         nextid = next_deferred_message + num_deferred_messages;
-        if (nextid >= MSG_RETRY_DEFERRED) {
-            nextid -= MSG_RETRY_DEFERRED;
+        if (nextid >= MSG_QUEUE_SIZE) {
+            nextid -= MSG_QUEUE_SIZE;
         }
         deferred_messages[nextid] = id;
         num_deferred_messages++;
