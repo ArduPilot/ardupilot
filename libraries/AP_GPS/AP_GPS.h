@@ -19,7 +19,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -364,6 +363,8 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    void Write_DataFlash_Log_Startup_messages();
+
 protected:
 
     // dataflash for logging, if available
@@ -441,7 +442,6 @@ private:
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
-    void _broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index);
 
     /*
       buffer for re-assembling RTCM data for GPS injection.

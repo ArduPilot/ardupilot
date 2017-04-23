@@ -904,6 +904,7 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
     DataFlash.Log_Write_Rally(rally);
 #endif
     Log_Write_Home_And_Origin();
+    gps.Write_DataFlash_Log_Startup_messages();
 }
 
 

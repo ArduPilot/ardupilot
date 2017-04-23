@@ -114,9 +114,12 @@ public:
     }
 
     void broadcast_configuration_failure_reason(void) const override;
+    void Write_DataFlash_Log_Startup_messages() const override;
 
     // return velocity lag
     float get_lag(void) const override;
+
+    const char *name() const { return "u-blox"; }
 
 private:
     // u-blox UBX protocol essentials
@@ -520,6 +523,7 @@ private:
     uint8_t         _next_message;
     uint8_t         _ublox_port;
     bool            _have_version;
+    struct ubx_mon_ver _version;
     uint32_t        _unconfigured_messages;
     uint8_t         _hardware_generation;
 
@@ -557,10 +561,8 @@ private:
     void        _verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
 
     void unexpected_message(void);
-    void write_logging_headers(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
-    void log_mon_ver(void);
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
     void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
 

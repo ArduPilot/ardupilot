@@ -33,6 +33,9 @@ public:
 
     // This method is called from UAVCAN thread
     void handle_gnss_msg(const AP_GPS::GPS_State &msg) override;
+
+    const char *name() const { return "UAVCAN"; }
+
 private:
     bool _new_data;
 
