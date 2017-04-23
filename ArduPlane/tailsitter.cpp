@@ -39,6 +39,9 @@ bool QuadPlane::tailsitter_active(void)
  */
 void QuadPlane::tailsitter_output(void)
 {
+    if (!is_tailsitter()) {
+        return;
+    }
     if (!tailsitter_active()) {
         if (tailsitter.vectored_forward_gain > 0) {
             // thrust vectoring in fixed wing flight

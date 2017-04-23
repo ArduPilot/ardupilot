@@ -330,8 +330,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: TILT_TYPE
     // @DisplayName: Tiltrotor type
-    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE
-    // @Values: 0:Continuous,1:Binary
+    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE. A vectored yaw tiltrotor will use the tilt of the motors to control yaw in hover
+    // @Values: 0:Continuous,1:Binary,2:VectoredYaw
     AP_GROUPINFO("TILT_TYPE", 47, QuadPlane, tilt.tilt_type, TILT_TYPE_CONTINUOUS),
 
     // @Param: TAILSIT_ANGLE
@@ -380,6 +380,12 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     AP_GROUPINFO("TAILSIT_VHGAIN", 54, QuadPlane, tailsitter.vectored_hover_gain, 0.5),
+
+    // @Param: TILT_YAW_ANGLE
+    // @DisplayName: Tilt minimum angle for vectored yaw
+    // @Description: This is the angle of the tilt servos when in VTOL mode and at minimum output. This needs to be set for Q_TILT_TYPE=3 to enable vectored control for yaw of tricopter tilt quadplanes.
+    // @Range: 0 30
+    AP_GROUPINFO("TILT_YAW_ANGLE", 55, QuadPlane, tilt.tilt_yaw_angle, 0),
     
     AP_GROUPEND
 };
@@ -587,6 +593,13 @@ bool QuadPlane::setup(void)
     
     transition_state = TRANSITION_DONE;
 
+    if (tilt.tilt_mask != 0 && tilt.tilt_type == TILT_TYPE_VECTORED_YAW) {
+        // setup tilt servos for vectored yaw
+        SRV_Channels::set_range(SRV_Channel::k_tiltMotorLeft,  1000);
+        SRV_Channels::set_range(SRV_Channel::k_tiltMotorRight, 1000);
+    }
+
+    
     setup_defaults();
     
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane initialised");
