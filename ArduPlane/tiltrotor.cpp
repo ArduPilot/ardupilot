@@ -18,7 +18,14 @@ float QuadPlane::tilt_max_change(bool up)
         rate = tilt.max_rate_down_dps;
     }
     if (tilt.tilt_type != TILT_TYPE_BINARY && !up) {
-        if (plane.control_mode == MANUAL || (!in_vtol_mode() && !assisted_flight)) {
+        bool fast_tilt = false;
+        if (plane.control_mode == MANUAL) {
+            fast_tilt = true;
+        }
+        if (hal.util->get_soft_armed() && !in_vtol_mode() && !assisted_flight) {
+            fast_tilt = true;
+        }
+        if (fast_tilt) {
             // allow a minimum of 90 DPS in manual or if we are not
             // stabilising, to give fast control
             rate = MAX(rate, 90);
