@@ -60,7 +60,7 @@ void QuadPlane::tiltrotor_continuous_update(void)
     // the maximum rate of throttle change
     float max_change;
     
-    if (!in_vtol_mode() && !assisted_flight) {
+    if (!in_vtol_mode() && (!hal.util->get_soft_armed() || !assisted_flight)) {
         // we are in pure fixed wing mode. Move the tiltable motors all the way forward and run them as
         // a forward motor
         tiltrotor_slew(1);
