@@ -7,7 +7,6 @@
 #include <utility>
 
 #define BATTMONITOR_SMBUS_SOLO_REMAINING_CAPACITY   0x0f    // predicted remaining battery capacity in milliamps
-#define BATTMONITOR_SMBUS_SOLO_FULL_CHARGE_CAPACITY 0x10    // full capacity register
 #define BATTMONITOR_SMBUS_SOLO_MANUFACTURE_DATA     0x23    /// manufacturer data
 #define BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE         0x28    // cell voltage register
 #define BATTMONITOR_SMBUS_SOLO_CURRENT              0x2a    // current register
@@ -75,19 +74,12 @@ void AP_BattMonitor_SMBus_Solo::timer()
         _state.last_time_micros = tnow;
     }
 
-    // read battery design capacity
-    if (get_capacity() == 0) {
-        if (read_word(BATTMONITOR_SMBUS_SOLO_FULL_CHARGE_CAPACITY, data)) {
-            if (data > 0) {
-                set_capacity(data);
+    if (read_full_charge_capacity()) {
+        // only read remaining capacity once we have the full capacity
+        if (get_capacity() > 0) {
+            if (read_word(BATTMONITOR_SMBUS_SOLO_REMAINING_CAPACITY, data)) {
+                _state.current_total_mah = MAX(0, get_capacity() - data);
             }
-        }
-    }
-
-    // read remaining capacity
-    if (get_capacity() > 0) {
-        if (read_word(BATTMONITOR_SMBUS_SOLO_REMAINING_CAPACITY, data)) {
-            _state.current_total_mah = MAX(0, get_capacity() - data);
         }
     }
 
