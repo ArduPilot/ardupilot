@@ -198,3 +198,7 @@ bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
     return ((function >= SRV_Channel::k_motor1 && function <= SRV_Channel::k_motor8) ||
             (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12));
 }
+
+void SRV_Channel::set_output_unlimited_once() {
+    limited_pwm_mask &= ~(1U << ch_num);
+}

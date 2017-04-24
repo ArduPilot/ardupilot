@@ -207,7 +207,10 @@ private:
 
     // get normalised output from -1 to 1
     float get_output_norm(void);
-    
+
+    // set unlimited pwm mask for a channel function
+    void set_output_unlimited_once();
+
     // a bitmask type wide enough for NUM_SERVO_CHANNELS
     typedef uint16_t servo_mask_t;
 
