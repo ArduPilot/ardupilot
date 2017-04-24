@@ -139,6 +139,9 @@ private:
     // update transition handling
     void update_transition(void);
 
+    // check for an EKF yaw reset
+    void check_yaw_reset(void);
+    
     // hold hover (for transition)
     void hold_hover(float target_climb_rate);    
 
@@ -242,7 +245,10 @@ private:
 
     // ICEngine control on landing
     AP_Int8 land_icengine_cut;
-    
+
+    // time we last got an EKF yaw reset
+    uint32_t ekfYawReset_ms;
+
     struct {
         AP_Float gain;
         float integrator;
