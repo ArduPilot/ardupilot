@@ -418,6 +418,12 @@ void PX4RCOutput::_arm_actuators(bool arm)
     }
     _armed.lockdown = false;
     _armed.force_failsafe = false;
+
+    if (_actuator_armed_pub == nullptr) {
+        _actuator_armed_pub = orb_advertise(ORB_ID(actuator_armed), &_armed);
+    } else {
+        orb_publish(ORB_ID(actuator_armed), _actuator_armed_pub, &_armed);
+    }
 }
 
 void PX4RCOutput::_send_outputs(void)
@@ -464,6 +470,8 @@ void PX4RCOutput::_send_outputs(void)
             }
         }
         if (to_send > 0) {
+            _arm_actuators(true);
+            
             ::write(_pwm_fd, _period, to_send*sizeof(_period[0]));
         }
         if (_max_channel > _servo_count) {
