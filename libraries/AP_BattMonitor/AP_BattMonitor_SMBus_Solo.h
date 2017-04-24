@@ -11,7 +11,7 @@ class AP_BattMonitor_SMBus_Solo : public AP_BattMonitor_SMBus
 public:
 
     // Constructor
-    AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon, uint8_t instance,
+    AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon,
                              AP_BattMonitor::BattMonitor_State &mon_state,
                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
