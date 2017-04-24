@@ -68,7 +68,11 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     AP_GROUPINFO("_WATT_MAX", 9, AP_BattMonitor, _watt_max[0], AP_BATT_MAX_WATT_DEFAULT),
 #endif
 
-    // 10 is left for future expansion
+    // @Param: _SERIAL_NUM
+    // @DisplayName: Battery serial number
+    // @Description: Battery serial number, automatically filled in for SMBus batteries, otherwise will be -1
+    // @User: Advanced
+    AP_GROUPINFO("_SERIAL_NUM", 10, AP_BattMonitor, _serial_numbers[0], AP_BATT_SERIAL_NUMBER_DEFAULT),
 
 #if AP_BATT_MONITOR_MAX_INSTANCES > 1
     // @Param: 2_MONITOR
@@ -130,6 +134,12 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("2_WATT_MAX", 18, AP_BattMonitor, _watt_max[1], AP_BATT_MAX_WATT_DEFAULT),
 #endif
+
+    // @Param: 2_SERIAL_NUM
+    // @DisplayName: Battery serial number
+    // @Description: Battery serial number, automatically filled in for SMBus batteries, otherwise will be -1
+    // @User: Advanced
+    AP_GROUPINFO("2_SERIAL_NUM", 20, AP_BattMonitor, _serial_numbers[1], AP_BATT_SERIAL_NUMBER_DEFAULT),
 
 #endif // AP_BATT_MONITOR_MAX_INSTANCES > 1
 
