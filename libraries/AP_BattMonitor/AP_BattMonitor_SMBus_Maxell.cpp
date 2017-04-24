@@ -36,10 +36,10 @@ uint8_t maxell_cell_ids[] = { 0x3f,  // cell 1
 */
 
 // Constructor
-AP_BattMonitor_SMBus_Maxell::AP_BattMonitor_SMBus_Maxell(AP_BattMonitor &mon, uint8_t instance,
+AP_BattMonitor_SMBus_Maxell::AP_BattMonitor_SMBus_Maxell(AP_BattMonitor &mon,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_BattMonitor_SMBus(mon, instance, mon_state, std::move(dev))
+    : AP_BattMonitor_SMBus(mon, mon_state, std::move(dev))
 {
     _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_Maxell::timer, void));
 }

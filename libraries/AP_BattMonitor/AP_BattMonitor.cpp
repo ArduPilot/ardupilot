@@ -180,25 +180,25 @@ AP_BattMonitor::init()
             case BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY:
             case BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT:
                 state[instance].instance = instance;
-                drivers[instance] = new AP_BattMonitor_Analog(*this, instance, state[instance]);
+                drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance]);
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_SOLO:
                 state[instance].instance = instance;
-                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, instance, state[instance],
+                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance],
                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_MAXELL:
                 state[instance].instance = instance;
-                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, instance, state[instance],
+                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance],
                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 state[instance].instance = instance;
-                drivers[instance] = new AP_BattMonitor_Bebop(*this, instance, state[instance]);
+                drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance]);
                 _num_instances++;
 #endif
                 break;
