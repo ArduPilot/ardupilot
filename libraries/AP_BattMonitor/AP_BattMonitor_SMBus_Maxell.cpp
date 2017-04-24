@@ -82,6 +82,8 @@ void AP_BattMonitor_SMBus_Maxell::timer()
         _state.last_time_micros = tnow;
     }
 
+    read_full_charge_capacity();
+
     read_temp();
 
     read_serial_number();
