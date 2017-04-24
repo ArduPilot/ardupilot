@@ -22,7 +22,7 @@ class AP_BattMonitor_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-    AP_BattMonitor_Backend(AP_BattMonitor &mon, uint8_t instance, AP_BattMonitor::BattMonitor_State &mon_state);
+    AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state);
 
     // we declare a virtual destructor so that BattMonitor driver can
     // override with a custom destructor if need be
@@ -46,5 +46,4 @@ public:
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)
-    uint8_t                              _instance; // this instance
 };
