@@ -15,9 +15,6 @@ public:
                              AP_BattMonitor::BattMonitor_State &mon_state,
                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
-    // read does nothing, all done in timer
-    void read() override;
-
 private:
 
     void timer(void);

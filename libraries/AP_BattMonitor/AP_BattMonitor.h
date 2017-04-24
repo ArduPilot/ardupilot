@@ -14,6 +14,7 @@
 #define AP_BATT_CAPACITY_DEFAULT            3300
 #define AP_BATT_LOW_VOLT_TIMEOUT_MS         10000   // low voltage of 10 seconds will cause battery_exhausted to return true
 #define AP_BATT_MAX_WATT_DEFAULT            0
+#define AP_BATT_SERIAL_NUMBER_DEFAULT       -1
 
 #define AP_BATT_MONITOR_TIMEOUT             5000
 
@@ -147,6 +148,7 @@ protected:
     AP_Float    _curr_amp_offset[AP_BATT_MONITOR_MAX_INSTANCES];    /// offset voltage that is subtracted from current pin before conversion to amps
     AP_Int32    _pack_capacity[AP_BATT_MONITOR_MAX_INSTANCES];      /// battery pack capacity less reserve in mAh
     AP_Int16    _watt_max[AP_BATT_MONITOR_MAX_INSTANCES];           /// max battery power allowed. Reduce max throttle to reduce current to satisfy this limit
+    AP_Int32    _serial_numbers[AP_BATT_MONITOR_MAX_INSTANCES];     /// battery serial number, automatically filled in on SMBus batteries
 
 private:
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];
