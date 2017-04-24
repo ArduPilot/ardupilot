@@ -44,12 +44,6 @@ AP_BattMonitor_SMBus_Maxell::AP_BattMonitor_SMBus_Maxell(AP_BattMonitor &mon, ui
     _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_Maxell::timer, void));
 }
 
-/// Read the battery voltage and current.  Should be called at 10hz
-void AP_BattMonitor_SMBus_Maxell::read()
-{
-    // nothing to do - all done in timer()
-}
-
 void AP_BattMonitor_SMBus_Maxell::timer()
 {
 	// check if PEC is supported
@@ -89,6 +83,8 @@ void AP_BattMonitor_SMBus_Maxell::timer()
     }
 
     read_temp();
+
+    read_serial_number();
 }
 
 // read_block - returns number of characters read if successful, zero if unsuccessful
