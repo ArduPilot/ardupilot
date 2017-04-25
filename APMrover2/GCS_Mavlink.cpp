@@ -7,7 +7,7 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
 {
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint8_t system_status = MAV_STATE_ACTIVE;
-    uint32_t custom_mode = control_mode;
+    const uint32_t custom_mode = control_mode;
 
     if (failsafe.triggered != 0) {
         system_status = MAV_STATE_CRITICAL;
@@ -71,7 +71,7 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
 
 void Rover::send_attitude(mavlink_channel_t chan)
 {
-    Vector3f omega = ahrs.get_gyro();
+    const Vector3f omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
         chan,
         millis(),
@@ -100,7 +100,7 @@ void Rover::send_extended_status1(mavlink_channel_t chan)
         control_sensors_present,
         control_sensors_enabled,
         control_sensors_health,
-        (uint16_t)(scheduler.load_average(20000) * 1000),
+        static_cast<uint16_t>(scheduler.load_average(20000) * 1000),
         battery.voltage() * 1000,  // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
@@ -179,8 +179,8 @@ void Rover::send_vfr_hud(mavlink_channel_t chan)
         gps.ground_speed(),
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
-        (uint16_t)(100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))),
-        current_loc.alt / 100.0,
+        static_cast<uint16_t>(100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))),
+        current_loc.alt / 100.0f,
         0);
 }
 
@@ -196,7 +196,7 @@ void Rover::send_hwstatus(mavlink_channel_t chan)
 {
     mavlink_msg_hwstatus_send(
         chan,
-        hal.analogin->board_voltage()*1000,
+        hal.analogin->board_voltage() * 1000,
         0);
 }
 
@@ -281,7 +281,7 @@ void Rover::send_current_waypoint(mavlink_channel_t chan)
 
 uint32_t GCS_MAVLINK_Rover::telem_delay() const
 {
-    return (uint32_t)(rover.g.telem_delay);
+    return static_cast<uint32_t>(rover.g.telem_delay);
 }
 
 // try to send a message, return false if it won't fit in the serial tx buffer
@@ -948,7 +948,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             }
 
         case MAV_CMD_DO_SET_MODE:
-            switch ((uint16_t)packet.param1) {
+            switch (static_cast<uint16_t>(packet.param1)) {
             case MAV_MODE_MANUAL_ARMED:
             case MAV_MODE_MANUAL_DISARMED:
                 rover.set_mode(MANUAL);
@@ -979,7 +979,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_REPEAT_SERVO:
-            if (rover.ServoRelayEvents.do_repeat_servo(packet.param1, packet.param2, packet.param3, packet.param4*1000)) {
+            if (rover.ServoRelayEvents.do_repeat_servo(packet.param1, packet.param2, packet.param3, packet.param4 * 1000)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -991,7 +991,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_REPEAT_RELAY:
-            if (rover.ServoRelayEvents.do_repeat_relay(packet.param1, packet.param2, packet.param3*1000)) {
+            if (rover.ServoRelayEvents.do_repeat_relay(packet.param1, packet.param2, packet.param3 * 1000)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1059,18 +1059,18 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                     break;
                 }
                 Location new_home_loc {};
-                new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-                new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-                new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
+                new_home_loc.lat = static_cast<int32_t>(packet.param5 * 1.0e7f);
+                new_home_loc.lng = static_cast<int32_t>(packet.param6 * 1.0e7f);
+                new_home_loc.alt = static_cast<int32_t>(packet.param7 * 100.0f);
                 rover.ahrs.set_home(new_home_loc);
                 rover.home_is_set = HOME_SET_NOT_LOCKED;
                 rover.Log_Write_Home_And_Origin();
                 GCS_MAVLINK::send_home_all(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
-                rover.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
-                                        (double)(new_home_loc.lat * 1.0e-7f),
-                                        (double)(new_home_loc.lng * 1.0e-7f),
-                                        (uint32_t)(new_home_loc.alt * 0.01f));
+                rover.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
+                        static_cast<double>(new_home_loc.lat * 1.0e-7f),
+                        static_cast<double>(new_home_loc.lng * 1.0e-7f),
+                        static_cast<double>(new_home_loc.alt * 0.01f));
             }
             break;
         }
@@ -1498,7 +1498,7 @@ void Rover::mavlink_delay_cb()
 
     in_mavlink_delay = true;
 
-    uint32_t tnow = millis();
+    const uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs_send_message(MSG_HEARTBEAT);
@@ -1588,7 +1588,7 @@ void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     char str[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
     va_list arg_list;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
+    hal.util->vsnprintf(&str[0], sizeof(str), fmt, arg_list);
     va_end(arg_list);
     gcs().send_statustext(severity, 0xFF, str);
     notify.send_text(str);

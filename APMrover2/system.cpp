@@ -275,7 +275,7 @@ void Rover::set_reverse(bool reverse)
 
 void Rover::set_mode(enum mode mode)
 {
-    if (control_mode == mode){
+    if (control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
         return;
     }
@@ -394,7 +394,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
         control_mode != RTL &&
         control_mode != HOLD) {
         failsafe.triggered = failsafe.bits;
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Failsafe trigger 0x%x", (unsigned)failsafe.triggered);
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Failsafe trigger 0x%x", static_cast<uint32_t>(failsafe.triggered));
         switch (g.fs_action) {
         case 0:
             break;
@@ -474,7 +474,7 @@ void Rover::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->printf("RTL");
         break;
     default:
-        port->printf("Mode(%u)", (unsigned)mode);
+        port->printf("Mode(%u)", static_cast<uint32_t>(mode));
         break;
     }
 }
@@ -520,7 +520,7 @@ void Rover::notify_mode(enum mode new_mode)
  */
 uint8_t Rover::check_digital_pin(uint8_t pin)
 {
-    int8_t dpin = hal.gpio->analogPinToDigitalPin(pin);
+    const int8_t dpin = hal.gpio->analogPinToDigitalPin(pin);
     if (dpin == -1) {
         return 0;
     }
@@ -541,7 +541,7 @@ bool Rover::should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = hal.util->get_soft_armed() || DataFlash.log_while_disarmed();
+    const bool ret = hal.util->get_soft_armed() || DataFlash.log_while_disarmed();
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         start_logging();
     }
