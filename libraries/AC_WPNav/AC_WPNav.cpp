@@ -581,7 +581,10 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     // calculate how far along the track we are
     track_covered = curr_delta.x * _pos_delta_unit.x + curr_delta.y * _pos_delta_unit.y + curr_delta.z * _pos_delta_unit.z;
 
+    // calculate the point closest to the vehicle on the segment from origin to destination
     Vector3f track_covered_pos = _pos_delta_unit * track_covered;
+
+    // calculate the distance vector from the vehicle to the closest point on the segment from origin to destination
     track_error = curr_delta - track_covered_pos;
 
     // calculate the horizontal error
@@ -590,22 +593,11 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     // calculate the vertical error
     float track_error_z = fabsf(track_error.z);
 
-    // get position control leash lengths
-    float leash_xy = _pos_control.get_leash_xy();
-    float leash_z;
-    if (track_error.z >= 0) {
-        leash_z = _pos_control.get_leash_up_z();
-    }else{
-        leash_z = _pos_control.get_leash_down_z();
-    }
-
     // calculate how far along the track we could move the intermediate target before reaching the end of the leash
-    track_leash_slack = MIN(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
-    if (track_leash_slack < 0) {
-        track_desired_max = track_covered;
-    }else{
-        track_desired_max = track_covered + track_leash_slack;
-    }
+    float track_leash_length_abs = fabsf(_track_leash_length);
+    float track_error_max_abs = MAX(fabsf(track_error_z), fabsf(track_error_xy));
+    track_leash_slack = (track_leash_length_abs > track_error_max_abs) ? safe_sqrt(sq(_track_leash_length) - sq(track_error_max_abs)) : 0;
+    track_desired_max = track_covered + track_leash_slack;
 
     // check if target is already beyond the leash
     if (_track_desired > track_desired_max) {
