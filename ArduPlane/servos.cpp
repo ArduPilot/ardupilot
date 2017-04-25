@@ -650,12 +650,15 @@ void Plane::servos_twin_engine_mix(void)
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     float rud_gain = float(plane.g2.rudd_dt_gain) / 100;
     float rudder = rud_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / float(SERVO_MAX);
+
     float throttle_left, throttle_right;
-    
+
     if (throttle < 0 && aparm.throttle_min < 0) {
         // doing reverse thrust
         throttle_left  = constrain_float(throttle + 50 * rudder, -100, 0);
         throttle_right = constrain_float(throttle - 50 * rudder, -100, 0);
+    } else if (throttle <= 0) {
+        throttle_left  = throttle_right = 0;
     } else {
         // doing forward thrust
         throttle_left  = constrain_float(throttle + 50 * rudder, 0, 100);
@@ -663,6 +666,7 @@ void Plane::servos_twin_engine_mix(void)
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
+
 }
 
 
