@@ -36,6 +36,7 @@ public:
     enum AP_BeaconType {
         AP_BeaconType_None   = 0,
         AP_BeaconType_Pozyx  = 1,
+        AP_BeaconType_Marvelmind = 2,
         AP_BeaconType_SITL   = 10
     };
 
