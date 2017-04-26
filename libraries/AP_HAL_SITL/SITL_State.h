@@ -103,28 +103,28 @@ private:
 
     bool _gps_has_basestation_position;
     gps_data _gps_basestation_data;
-    void _gps_write(const uint8_t *p, uint16_t size, uint8_t instance = 0);
+    void _gps_write(const uint8_t *p, uint16_t size, uint8_t instance);
     void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size, uint8_t instance);
     void _update_gps_ubx(const struct gps_data *d, uint8_t instance);
-    void _update_gps_mtk(const struct gps_data *d);
-    void _update_gps_mtk16(const struct gps_data *d);
-    void _update_gps_mtk19(const struct gps_data *d);
+    void _update_gps_mtk(const struct gps_data *d, uint8_t instance);
+    void _update_gps_mtk16(const struct gps_data *d, uint8_t instance);
+    void _update_gps_mtk19(const struct gps_data *d, uint8_t instance);
     uint16_t _gps_nmea_checksum(const char *s);
-    void _gps_nmea_printf(const char *fmt, ...);
-    void _update_gps_nmea(const struct gps_data *d);
-    void _sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload);
-    void _update_gps_sbp(const struct gps_data *d);
-    void _update_gps_sbp2(const struct gps_data *d);
-    void _update_gps_file(const struct gps_data *d);
-    void _update_gps_nova(const struct gps_data *d);
-    void _nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen);
+    void _gps_nmea_printf(uint8_t instance, const char *fmt, ...);
+    void _update_gps_nmea(const struct gps_data *d, uint8_t instance);
+    void _sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload, uint8_t instance);
+    void _update_gps_sbp(const struct gps_data *d, uint8_t instance);
+    void _update_gps_sbp2(const struct gps_data *d, uint8_t instance);
+    void _update_gps_file(uint8_t instance);
+    void _update_gps_nova(const struct gps_data *d, uint8_t instance);
+    void _nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen, uint8_t instance);
     uint32_t CRC32Value(uint32_t icrc);
     uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
     void _update_gps(double latitude, double longitude, float altitude,
                      double speedN, double speedE, double speedD, bool have_lock);
-
     void _update_ins(float airspeed);
+    void _update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *d, uint8_t instance);
     void _check_rc_input(void);
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
