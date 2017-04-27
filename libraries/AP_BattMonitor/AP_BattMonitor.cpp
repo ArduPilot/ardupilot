@@ -143,6 +143,15 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 
 #endif // AP_BATT_MONITOR_MAX_INSTANCES > 1
 
+    // @Param: _VOLT_TIMER
+    // @DisplayName: Low voltage timeout
+    // @Description: This is the timeout in seconds before a low voltage event will be triggered. For aircraft with low C batteries it may be necessary to raise this in order to cope with low voltage on long takeoffs. A value of zero disables low voltage errors.
+    // @Units: Seconds
+    // @Increment: 1
+    // @Range: 0 120
+    // @User: Advanced
+    AP_GROUPINFO("_VOLT_TIMER", 21, AP_BattMonitor, _volt_timeout, AP_BATT_LOW_VOLT_TIMEOUT_DEFAULT),
+        
     AP_GROUPEND
 };
 
@@ -307,7 +316,7 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
         // this is the first time our voltage has dropped below minimum so start timer
         if (state[instance].low_voltage_start_ms == 0) {
             state[instance].low_voltage_start_ms = AP_HAL::millis();
-        } else if (AP_HAL::millis() - state[instance].low_voltage_start_ms > AP_BATT_LOW_VOLT_TIMEOUT_MS) {
+        } else if (_volt_timeout > 0 && AP_HAL::millis() - state[instance].low_voltage_start_ms > uint32_t(_volt_timeout.get())*1000U) {
             return true;
         }
     } else {
