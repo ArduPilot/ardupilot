@@ -51,7 +51,7 @@ protected:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     bool _pec_supported; // true if PEC is supported
 
-    uint16_t _serial_number;        // battery serial number
+    int32_t _serial_number;         // battery serial number
     uint16_t _full_charge_capacity; // full charge capacity, used to stash the value before setting the parameter
 
 };

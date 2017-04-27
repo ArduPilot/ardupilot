@@ -10,7 +10,8 @@ AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
                                            AP_BattMonitor::BattMonitor_State &mon_state,
                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
         : AP_BattMonitor_Backend(mon, mon_state),
-        _dev(std::move(dev))
+        _dev(std::move(dev)),
+        _serial_number(-1)
 {
     _mon._serial_numbers[_state.instance] = AP_BATT_SERIAL_NUMBER_DEFAULT;
     _mon._pack_capacity[_state.instance] = 0;
@@ -66,7 +67,7 @@ bool AP_BattMonitor_SMBus::read_serial_number(void) {
     uint16_t data;
 
     // don't recheck the serial number if we already have it
-    if (_serial_number != 0) {
+    if (_serial_number != -1) {
         return true;
     } else if (read_word(BATTMONITOR_SMBUS_SERIAL, data)) {
         _serial_number = data;
