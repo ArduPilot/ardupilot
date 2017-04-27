@@ -413,6 +413,8 @@ failed:
         // clear out the mixer CRC so that we will attempt to send it again
         last_mixer_crc = -1;
     }
+    // clear out the mixer CRC so that we will attempt to send it again
+    last_mixer_crc = -1;
     return ret;
 }
 
