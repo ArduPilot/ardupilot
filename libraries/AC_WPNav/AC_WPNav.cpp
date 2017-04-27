@@ -397,6 +397,7 @@ void AC_WPNav::wp_and_spline_init()
 
     // initialise position controller
     _pos_control.init_xy_controller();
+    _pos_control.clear_desired_velocity_ff_z();
 
     // initialise position controller speed and acceleration
     _pos_control.set_speed_xy(_wp_speed_cms);
