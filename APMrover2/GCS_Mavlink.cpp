@@ -993,6 +993,25 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_MANUAL_CONTROL:
+    {
+        if (msg->sysid != rover.g.sysid_my_gcs) {  // Only accept control from our gcs
+            break;
+        }
+
+        mavlink_manual_control_t packet;
+        mavlink_msg_manual_control_decode(msg, &packet);
+        
+        const int16_t roll = (packet.y == INT16_MAX) ? 0 : rover.channel_steer->get_radio_min() + (rover.channel_steer->get_radio_max() - rover.channel_steer->get_radio_min()) * (packet.y + 1000) / 2000.0f;
+        const int16_t throttle = (packet.z == INT16_MAX) ? 0 : rover.channel_throttle->get_radio_min() + (rover.channel_throttle->get_radio_max() - rover.channel_throttle->get_radio_min()) * (packet.z + 1000) / 2000.0f;
+        hal.rcin->set_override(uint8_t(rover.rcmap.roll() - 1), roll);
+        hal.rcin->set_override(uint8_t(rover.rcmap.throttle() - 1), throttle);
+
+        rover.failsafe.rc_override_timer = AP_HAL::millis();
+        rover.failsafe_trigger(FAILSAFE_EVENT_RC, false);
+        break;
+    }
+
     case MAVLINK_MSG_ID_HEARTBEAT:
         {
             // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
