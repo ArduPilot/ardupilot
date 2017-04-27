@@ -107,7 +107,12 @@ void Copter::guided_vel_control_start()
     // set guided_mode to velocity controller
     guided_mode = Guided_Velocity;
 
-    // initialize vertical speeds and leash lengths
+    // initialise horizontal speed, acceleration and jerk
+    pos_control->set_speed_xy(wp_nav->get_speed_xy());
+    pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
+    pos_control->set_jerk_xy_to_default();
+
+    // initialize vertical speeds and acceleration
     pos_control->set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control->set_accel_z(g.pilot_accel_z);
 
