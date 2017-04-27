@@ -2,7 +2,50 @@
 
 #define AP_BATTMONITOR_SMBUS_PEC_POLYNOME 0x07 // Polynome for CRC generation
 
-#define BATTMONITOR_SMBUS_TEMP 0x08 // temperature register
+#define BATTMONITOR_SMBUS_TEMP                 0x08   // temperature register
+#define BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY 0x10 // full charge capacity
+#define BATTMONITOR_SMBUS_SERIAL               0x1C // serial number
+
+AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
+                                           AP_BattMonitor::BattMonitor_State &mon_state,
+                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+        : AP_BattMonitor_Backend(mon, mon_state),
+        _dev(std::move(dev)),
+        _serial_number(-1)
+{
+    _mon._serial_numbers[_state.instance] = AP_BATT_SERIAL_NUMBER_DEFAULT;
+    _mon._pack_capacity[_state.instance] = 0;
+}
+
+/// read the battery_voltage and current, should be called at 10hz
+void AP_BattMonitor_SMBus::read(void)
+{
+    // nothing to be done here for actually interacting with the battery
+    // however we can use this to set any parameters that need to be set
+
+    if (_serial_number != _mon._serial_numbers[_state.instance]) {
+        _mon._serial_numbers[_state.instance].set_and_notify(_serial_number);
+    }
+
+    if (_full_charge_capacity != _mon._pack_capacity[_state.instance]) {
+        _mon._pack_capacity[_state.instance].set_and_notify(_full_charge_capacity);
+    }
+}
+
+// reads the pack full charge capacity
+// returns true if the read was successful, or if we already knew the pack capacity
+bool AP_BattMonitor_SMBus::read_full_charge_capacity(void)
+{
+    uint16_t data;
+
+    if (_full_charge_capacity != 0) {
+        return true;
+    } else if (read_word(BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY, data)) {
+        _full_charge_capacity = data;
+        return true;
+    }
+    return false;
+}
 
 // reads the temperature word from the battery
 // returns true if the read was successful
@@ -12,6 +55,22 @@ bool AP_BattMonitor_SMBus::read_temp(void)
     if (read_word(BATTMONITOR_SMBUS_TEMP, data)) {
         _state.temperature_time = AP_HAL::millis();
         _state.temperature = ((float)(data - 2731)) * 0.1f;
+        return true;
+    }
+
+    return false;
+}
+
+// reads the serial number if it's not already known
+// returns true if the read was successful or the number was already known
+bool AP_BattMonitor_SMBus::read_serial_number(void) {
+    uint16_t data;
+
+    // don't recheck the serial number if we already have it
+    if (_serial_number != -1) {
+        return true;
+    } else if (read_word(BATTMONITOR_SMBUS_SERIAL, data)) {
+        _serial_number = data;
         return true;
     }
 

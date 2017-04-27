@@ -16,12 +16,9 @@ class AP_BattMonitor_SMBus : public AP_BattMonitor_Backend
 public:
 
     /// Constructor
-    AP_BattMonitor_SMBus(AP_BattMonitor &mon, uint8_t instance,
+    AP_BattMonitor_SMBus(AP_BattMonitor &mon,
                     AP_BattMonitor::BattMonitor_State &mon_state,
-                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-        : AP_BattMonitor_Backend(mon, instance, mon_state),
-          _dev(std::move(dev))
-    {}
+                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     // virtual destructor to reduce compiler warnings
     virtual ~AP_BattMonitor_SMBus() {}
@@ -29,9 +26,19 @@ public:
 
 protected:
 
+    void read(void) override;
+
+    // reads the pack full charge capacity
+    // returns true if the read was successful, or if we already knew the pack capacity
+    bool read_full_charge_capacity(void);
+
     // reads the temperature word from the battery
     // returns true if the read was successful
     bool read_temp(void);
+
+    // reads the serial number if it's not already known
+    // returns true if the read was successful, or the number was already known
+    bool read_serial_number(void);
 
      // read word from register
      // returns true if read was successful, false if failed
@@ -43,6 +50,9 @@ protected:
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     bool _pec_supported; // true if PEC is supported
+
+    int32_t _serial_number;         // battery serial number
+    uint16_t _full_charge_capacity; // full charge capacity, used to stash the value before setting the parameter
 
 };
 
