@@ -87,12 +87,9 @@ void Copter::guided_pos_control_start()
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init();
 
-    // initialise wpnav to stopping point at current altitude
-    // To-Do: set to current location if disarmed?
-    // To-Do: set to stopping point altitude?
+    // initialise wpnav to stopping point
     Vector3f stopping_point;
-    stopping_point.z = inertial_nav.get_altitude();
-    wp_nav->get_wp_stopping_point_xy(stopping_point);
+    wp_nav->get_wp_stopping_point(stopping_point);
 
     // no need to check return status because terrain data is not used
     wp_nav->set_wp_destination(stopping_point, false);
