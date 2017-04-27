@@ -708,6 +708,7 @@ void NavEKF2_core::FuseMagnetometer()
             faultStatus.bad_zmag = true;
         }
         CovarianceInit();
+        hal.util->perf_end(_perf_test[5]);
         return;
     }
 
