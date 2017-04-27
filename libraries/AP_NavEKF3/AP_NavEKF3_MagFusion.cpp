@@ -695,6 +695,8 @@ void NavEKF3_core::FuseMagnetometer()
             } else if (obsIndex == 2) {
                 faultStatus.bad_zmag = true;
             }
+            CovarianceInit();
+            return;
         }
     }
 }
