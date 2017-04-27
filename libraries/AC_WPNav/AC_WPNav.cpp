@@ -557,6 +557,13 @@ void AC_WPNav::get_wp_stopping_point_xy(Vector3f& stopping_point) const
 	_pos_control.get_stopping_point_xy(stopping_point);
 }
 
+/// get_wp_stopping_point - returns vector to stopping point based on 3D position and velocity
+void AC_WPNav::get_wp_stopping_point(Vector3f& stopping_point) const
+{
+    _pos_control.get_stopping_point_xy(stopping_point);
+    _pos_control.get_stopping_point_z(stopping_point);
+}
+
 /// advance_wp_target_along_track - move target location along track from origin to destination
 bool AC_WPNav::advance_wp_target_along_track(float dt)
 {

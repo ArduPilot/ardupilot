@@ -168,6 +168,7 @@ public:
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
     void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
+    void get_wp_stopping_point(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
     float get_wp_distance_to_destination() const;
