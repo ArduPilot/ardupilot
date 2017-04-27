@@ -11,6 +11,8 @@
 bool Copter::rtl_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
+        // initialise waypoint and spline controller
+        wp_nav->wp_and_spline_init();
         rtl_build_path(!failsafe.terrain);
         rtl_climb_start();
         return true;
@@ -90,9 +92,6 @@ void Copter::rtl_climb_start()
 {
     rtl_state = RTL_InitialClimb;
     rtl_state_complete = false;
-
-    // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init();
 
     // RTL_SPEED == 0 means use WPNAV_SPEED
     if (g.rtl_speed_cms != 0) {
