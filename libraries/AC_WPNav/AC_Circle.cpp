@@ -8,7 +8,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @Param: RADIUS
     // @DisplayName: Circle Radius
     // @Description: Defines the radius of the circle the vehicle will fly when in Circle flight mode
-    // @Units: cm
+    // @Units: centimeters
     // @Range: 0 10000
     // @Increment: 100
     // @User: Standard
@@ -17,7 +17,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @Param: RATE
     // @DisplayName: Circle rate
     // @Description: Circle mode's turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
-    // @Units: deg/s
+    // @Units: degrees/second
     // @Range: -90 90
     // @Increment: 1
     // @User: Standard
