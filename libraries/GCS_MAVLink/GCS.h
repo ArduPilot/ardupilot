@@ -84,7 +84,7 @@ class GCS_MAVLINK
 public:
     GCS_MAVLINK();
     FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
-    void        update(run_cli_fn run_cli);
+    void        update(run_cli_fn run_cli, uint32_t max_time_us=1000);
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
@@ -343,6 +343,10 @@ private:
     // start page of log data
     uint16_t _log_data_page;
 
+    // perf counters
+    static AP_HAL::Util::perf_counter_t _perf_packet;
+    static AP_HAL::Util::perf_counter_t _perf_update;
+            
     // deferred message handling
     enum ap_message deferred_messages[MSG_RETRY_DEFERRED];
     uint8_t next_deferred_message;
