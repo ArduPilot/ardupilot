@@ -347,9 +347,12 @@ void NavEKF3_core::readIMUData()
     // Keep track of the number of IMU frames since the last state prediction
     framesSincePredict++;
 
-    // If 10msec has elapsed, and the frontend has allowed us to start a new predict cycle, then store the accumulated IMU data
-    // to be used by the state prediction, ignoring the frontend permission if more than 20msec has lapsed
-    if ((dtIMUavg*(float)framesSincePredict >= EKF_TARGET_DT && startPredictEnabled) || (dtIMUavg*(float)framesSincePredict >= 2.0f*EKF_TARGET_DT)) {
+    /*
+     * If the target EKF time step has been accumulated, and the frontend has allowed start of a new predict cycle,
+     * then store the accumulated IMU data to be used by the state prediction, ignoring the frontend permission if more
+     * than twice the target time has lapsed.
+     */
+    if ((imuDataDownSampledNew.delAngDT >= EKF_TARGET_DT && startPredictEnabled) || (imuDataDownSampledNew.delAngDT >= 2.0f*EKF_TARGET_DT)) {
 
         // convert the accumulated quaternion to an equivalent delta angle
         imuQuatDownSampleNew.to_axis_angle(imuDataDownSampledNew.delAng);
@@ -360,8 +363,8 @@ void NavEKF3_core::readIMUData()
         // Write data to the FIFO IMU buffer
         storedIMU.push_youngest_element(imuDataDownSampledNew);
 
-        // calculate the achieved average time step rate for the EKF
-        float dtNow = constrain_float(0.5f*(imuDataDownSampledNew.delAngDT+imuDataDownSampledNew.delVelDT),0.0f,10.0f*EKF_TARGET_DT);
+        // calculate the achieved average time step rate for the EKF using a combination spike and LPF
+        float dtNow = constrain_float(0.5f*(imuDataDownSampledNew.delAngDT+imuDataDownSampledNew.delVelDT),0.5f * dtEkfAvg, 2.0f * dtEkfAvg);
         dtEkfAvg = 0.98f * dtEkfAvg + 0.02f * dtNow;
 
         // zero the accumulated IMU data and quaternion
@@ -382,8 +385,7 @@ void NavEKF3_core::readIMUData()
         imuDataDelayed = storedIMU.pop_oldest_element();
 
         // protect against delta time going to zero
-        // TODO - check if calculations can tolerate 0
-        float minDT = 0.1f*dtEkfAvg;
+        float minDT = 0.1f * dtEkfAvg;
         imuDataDelayed.delAngDT = MAX(imuDataDelayed.delAngDT,minDT);
         imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
 
