@@ -296,6 +296,9 @@ public:
 
     // get the IMU index
     uint8_t getIMUIndex(void) const { return imu_index; }
+
+    // get timing statistics structure
+    void getTimingStatistics(struct ekf_timing &timing);
     
 private:
     // Reference to the global EKF frontend for parameters
@@ -702,6 +705,9 @@ private:
 
     // effective value of MAG_CAL
     uint8_t effective_magCal(void) const;
+
+    // update timing statistics structure
+    void updateTimingStatistics(void);
     
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH
@@ -1113,6 +1119,9 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
     AP_HAL::Util::perf_counter_t  _perf_test[10];
 
+    // timing statistics
+    struct ekf_timing timing;
+    
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 

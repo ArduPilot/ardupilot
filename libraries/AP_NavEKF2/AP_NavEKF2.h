@@ -310,6 +310,9 @@ public:
 
     // are we doing sensor logging inside the EKF?
     bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
+
+    // get timing statistics structure
+    void getTimingStatistics(int8_t instance, struct ekf_timing &timing);
     
 private:
     uint8_t num_cores; // number of allocated cores
