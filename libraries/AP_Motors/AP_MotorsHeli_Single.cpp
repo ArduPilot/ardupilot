@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Servo 1 Position
     // @Description: Angular location of swash servo #1
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: degrees
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV1_POS", 1, AP_MotorsHeli_Single, _servo1_pos, AP_MOTORS_HELI_SINGLE_SERVO1_POS),
@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Servo 2 Position
     // @Description: Angular location of swash servo #2
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: degrees
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV2_POS", 2, AP_MotorsHeli_Single, _servo2_pos, AP_MOTORS_HELI_SINGLE_SERVO2_POS),
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Servo 3 Position
     // @Description: Angular location of swash servo #3
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: degrees
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeli_Single, _servo3_pos, AP_MOTORS_HELI_SINGLE_SERVO3_POS),
@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Swashplate Phase Angle Compensation
     // @Description: Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     // @Range: -90 90
-    // @Units: Degrees
+    // @Units: degrees
     // @User: Advanced
     // @Increment: 1
     AP_GROUPINFO("PHANG", 7, AP_MotorsHeli_Single, _phase_angle, 0),
