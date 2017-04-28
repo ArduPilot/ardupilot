@@ -799,6 +799,8 @@ void NavEKF3_core::updateTimingStatistics(void)
     if (timing.count == 0) {
         timing.dtIMUavg_max = dtIMUavg;
         timing.dtIMUavg_min = dtIMUavg;
+        timing.dtEKFavg_max = dtEkfAvg;
+        timing.dtEKFavg_min = dtEkfAvg;
         timing.delAngDT_max = imuDataDelayed.delAngDT;
         timing.delAngDT_min = imuDataDelayed.delAngDT;
         timing.delVelDT_max = imuDataDelayed.delVelDT;
@@ -806,6 +808,8 @@ void NavEKF3_core::updateTimingStatistics(void)
     } else {
         timing.dtIMUavg_max = MAX(timing.dtIMUavg_max, dtIMUavg);
         timing.dtIMUavg_min = MIN(timing.dtIMUavg_min, dtIMUavg);
+        timing.dtEKFavg_max = MAX(timing.dtEKFavg_max, dtEkfAvg);
+        timing.dtEKFavg_min = MIN(timing.dtEKFavg_min, dtEkfAvg);
         timing.delAngDT_max = MAX(timing.delAngDT_max, imuDataDelayed.delAngDT);
         timing.delAngDT_min = MIN(timing.delAngDT_min, imuDataDelayed.delAngDT);
         timing.delVelDT_max = MAX(timing.delVelDT_max, imuDataDelayed.delVelDT);
