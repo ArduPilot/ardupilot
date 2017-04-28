@@ -76,57 +76,57 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: GYROFFS_X
     // @DisplayName: Gyro offsets of X axis
     // @Description: Gyro sensor offsets of X axis. This is setup on each boot during gyro calibrations
-    // @Units: rad/s
+    // @Units: radians/second
     // @User: Advanced
 
     // @Param: GYROFFS_Y
     // @DisplayName: Gyro offsets of Y axis
     // @Description: Gyro sensor offsets of Y axis. This is setup on each boot during gyro calibrations
-    // @Units: rad/s
+    // @Units: radians/second
     // @User: Advanced
 
     // @Param: GYROFFS_Z
     // @DisplayName: Gyro offsets of Z axis
     // @Description: Gyro sensor offsets of Z axis. This is setup on each boot during gyro calibrations
-    // @Units: rad/s
+    // @Units: radians/second
     // @User: Advanced
     AP_GROUPINFO("GYROFFS",     3, AP_InertialSensor, _gyro_offset[0],  0),
 
     // @Param: GYR2OFFS_X
     // @DisplayName: Gyro2 offsets of X axis
     // @Description: Gyro2 sensor offsets of X axis. This is setup on each boot during gyro calibrations
-    // @Units: rad/s
+    // @Units: radians/second
     // @User: Advanced
 
     // @Param: GYR2OFFS_Y
     // @DisplayName: Gyro2 offsets of Y axis
     // @Description: Gyro2 sensor offsets of Y axis. This is setup on each boot during gyro calibrations
-    // @Units: rad/s
+    // @Units: radians/second
     // @User: Advanced
 
     // @Param: GYR2OFFS_Z
     // @DisplayName: Gyro2 offsets of Z axis
     // @Description: Gyro2 sensor offsets of Z axis. This is setup on each boot during gyro calibrations
-    // @Units: rad/s
+    // @Units: radians/second
     // @User: Advanced
     AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
 
     // @Param: GYR3OFFS_X
     // @DisplayName: Gyro3 offsets of X axis
     // @Description: Gyro3 sensor offsets of X axis. This is setup on each boot during gyro calibrations
-    // @Units: rad/s
+    // @Units: radians/second
     // @User: Advanced
 
     // @Param: GYR3OFFS_Y
     // @DisplayName: Gyro3 offsets of Y axis
     // @Description: Gyro3 sensor offsets of Y axis. This is setup on each boot during gyro calibrations
-    // @Units: rad/s
+    // @Units: radians/second
     // @User: Advanced
 
     // @Param: GYR3OFFS_Z
     // @DisplayName: Gyro3 offsets of Z axis
     // @Description: Gyro3 sensor offsets of Z axis. This is setup on each boot during gyro calibrations
-    // @Units: rad/s
+    // @Units: radians/second
     // @User: Advanced
     AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
 
@@ -152,21 +152,21 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: ACCOFFS_X
     // @DisplayName: Accelerometer offsets of X axis
     // @Description: Accelerometer offsets of X axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: meters/second/second
     // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACCOFFS_Y
     // @DisplayName: Accelerometer offsets of Y axis
     // @Description: Accelerometer offsets of Y axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: meters/second/second
     // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACCOFFS_Z
     // @DisplayName: Accelerometer offsets of Z axis
     // @Description: Accelerometer offsets of Z axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: meters/second/second
     // @Range: -3.5 3.5
     // @User: Advanced
     AP_GROUPINFO("ACCOFFS",     13, AP_InertialSensor, _accel_offset[0], 0),
@@ -193,21 +193,21 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: ACC2OFFS_X
     // @DisplayName: Accelerometer2 offsets of X axis
     // @Description: Accelerometer2 offsets of X axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: meters/second/second
     // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACC2OFFS_Y
     // @DisplayName: Accelerometer2 offsets of Y axis
     // @Description: Accelerometer2 offsets of Y axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: meters/second/second
     // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACC2OFFS_Z
     // @DisplayName: Accelerometer2 offsets of Z axis
     // @Description: Accelerometer2 offsets of Z axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: meters/second/second
     // @Range: -3.5 3.5
     // @User: Advanced
     AP_GROUPINFO("ACC2OFFS",    15, AP_InertialSensor, _accel_offset[1],  0),
@@ -234,21 +234,21 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: ACC3OFFS_X
     // @DisplayName: Accelerometer3 offsets of X axis
     // @Description: Accelerometer3 offsets of X axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: meters/second/second
     // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACC3OFFS_Y
     // @DisplayName: Accelerometer3 offsets of Y axis
     // @Description: Accelerometer3 offsets of Y axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: meters/second/second
     // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACC3OFFS_Z
     // @DisplayName: Accelerometer3 offsets of Z axis
     // @Description: Accelerometer3 offsets of Z axis. This is setup using the acceleration calibration or level operations
-    // @Units: m/s/s
+    // @Units: meters/second/second
     // @Range: -3.5 3.5
     // @User: Advanced
     AP_GROUPINFO("ACC3OFFS",    17, AP_InertialSensor, _accel_offset[2],  0),
@@ -321,57 +321,57 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: POS1_X
     // @DisplayName: IMU accelerometer X position
     // @Description: X position of the first IMU Accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
 
     // @Param: POS1_Y
     // @DisplayName: IMU accelerometer Y position
     // @Description: Y position of the first IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
 
     // @Param: POS1_Z
     // @DisplayName: IMU accelerometer Z position
     // @Description: Z position of the first IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
     AP_GROUPINFO("POS1", 27, AP_InertialSensor, _accel_pos[0], 0.0f),
 
     // @Param: POS2_X
     // @DisplayName: IMU accelerometer X position
     // @Description: X position of the second IMU accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
 
     // @Param: POS2_Y
     // @DisplayName: IMU accelerometer Y position
     // @Description: Y position of the second IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
 
     // @Param: POS2_Z
     // @DisplayName: IMU accelerometer Z position
     // @Description: Z position of the second IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
     AP_GROUPINFO("POS2", 28, AP_InertialSensor, _accel_pos[1], 0.0f),
 
     // @Param: POS3_X
     // @DisplayName: IMU accelerometer X position
     // @Description: X position of the third IMU accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
 
     // @Param: POS3_Y
     // @DisplayName: IMU accelerometer Y position
     // @Description: Y position of the third IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
 
     // @Param: POS3_Z
     // @DisplayName: IMU accelerometer Z position
     // @Description: Z position of the third IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
     AP_GROUPINFO("POS3", 29, AP_InertialSensor, _accel_pos[2], 0.0f),
 
