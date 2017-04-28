@@ -16,7 +16,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: VSPEED
     // @DisplayName: Vertical v-speed
     // @Description: Rate of climb to trigger themalling speed
-    // @Units: m/s
+    // @Units: meters/second
     // @Range: 0 10
     // @User: Advanced
     AP_GROUPINFO("VSPEED", 2, SoaringController, thermal_vspeed, 0.7f),
@@ -49,7 +49,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: DIST_AHEAD
     // @DisplayName: Distance to thermal center
     // @Description: Initial guess of the distance to the thermal center
-    // @Units: metres
+    // @Units: meters
     // @Range: 0 100
     // @User: Advanced
     AP_GROUPINFO("DIST_AHEAD", 6, SoaringController, thermal_distance_ahead, 5.0f),
@@ -89,7 +89,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: POLAR_K
     // @DisplayName: Cl factor
     // @Description: Cl factor 2*m*g/(rho*S)
-    // @Units: m*m/s/s
+    // @Units: meters*meters/second/second
     // @Range: 0 0.5
     // @User: Advanced
     AP_GROUPINFO("POLAR_K", 11, SoaringController, polar_K, 25.6),
