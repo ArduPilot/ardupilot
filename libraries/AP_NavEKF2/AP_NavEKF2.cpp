@@ -1448,4 +1448,19 @@ void NavEKF2::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 
 }
 
+/*
+  get timing statistics structure
+*/
+void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing)
+{
+    if (instance < 0 || instance >= num_cores) {
+        instance = primary;
+    }
+    if (core) {
+        core[instance].getTimingStatistics(timing);
+    } else {
+        memset(&timing, 0, sizeof(timing));
+    }
+}
+
 #endif //HAL_CPU_CLASS
