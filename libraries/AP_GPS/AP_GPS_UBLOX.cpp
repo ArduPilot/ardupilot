@@ -908,7 +908,8 @@ AP_GPS_UBLOX::_parse_gps(void)
               _buffer.solution.fix_status,
               _buffer.solution.fix_type);
         if (havePvtMsg) {
-            state.time_week = _buffer.solution.week;
+            pending_time_week_iTOW = _buffer.solution.time;
+            pending_time_week = _buffer.solution.week;
             break;
         }
         if (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) {
@@ -1009,11 +1010,13 @@ AP_GPS_UBLOX::_parse_gps(void)
             state.hdop        = _buffer.pvt.p_dop;
             state.vdop        = _buffer.pvt.p_dop;
         }
-                    
-        state.last_gps_time_ms = AP_HAL::millis();
-        
-        // time
-        state.time_week_ms    = _buffer.pvt.itow;
+
+        if (pending_time_week_iTOW == _buffer.pvt.itow) {
+            state.last_gps_time_ms = AP_HAL::millis();
+            state.time_week = pending_time_week;
+            state.time_week_ms = _buffer.pvt.itow;
+        }
+
 #if UBLOX_FAKE_3DLOCK
         state.location.lng = 1491652300L;
         state.location.lat = -353632610L;
