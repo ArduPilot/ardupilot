@@ -67,7 +67,7 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
             MAX(_frontend->_flowDelay_ms ,
                 MAX(_frontend->_rngBcnDelay_ms ,
                     MAX(_frontend->magDelay_ms ,
-                        (uint16_t)(dtEkfAvg*1000.0f)
+                        (uint16_t)(EKF_TARGET_DT_MS)
                                   ))));
 
     // GPS sensing can have large delays and should not be included if disabled
@@ -97,7 +97,7 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     }
 
     // calculate the IMU buffer length required to accomodate the maximum delay with some allowance for jitter
-    imu_buffer_length = (maxTimeDelay_ms / (uint16_t)(dtEkfAvg*1000.0f)) + 1;
+    imu_buffer_length = (maxTimeDelay_ms / (uint16_t)(EKF_TARGET_DT_MS)) + 1;
 
     // set the observaton buffer length to handle the minimum time of arrival between observations in combination
     // with the worst case delay from current time to ekf fusion time
@@ -155,7 +155,7 @@ void NavEKF3_core::InitialiseVariables()
     // calculate the nominal filter update rate
     const AP_InertialSensor &ins = _ahrs->get_ins();
     localFilterTimeStep_ms = (uint8_t)(1000*ins.get_loop_delta_t());
-    localFilterTimeStep_ms = MAX(localFilterTimeStep_ms,10);
+    localFilterTimeStep_ms = MAX(localFilterTimeStep_ms, (uint8_t)EKF_TARGET_DT_MS);
 
     // initialise time stamps
     imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
@@ -849,16 +849,16 @@ void NavEKF3_core::CovariancePrediction()
     float dvy_b;        // Y axis delta velocity measurement bias (rad)
     float dvz_b;        // Z axis delta velocity measurement bias (rad)
 
-    // calculate covariance prediction process noise
+    // Calculate the time step used by the covariance prediction as an average of the gyro and accel integration period
+    // Constrain to prevent bad timing jitter causing numerical conditioning problems with the covariance prediction
+    dt = constrain_float(0.5f*(imuDataDelayed.delAngDT+imuDataDelayed.delVelDT),0.5f * dtEkfAvg, 2.0f * dtEkfAvg);
+
     // use filtered height rate to increase wind process noise when climbing or descending
-    // this allows for wind gradient effects.
-    // filter height rate using a 10 second time constant filter
-    dt = imuDataDelayed.delAngDT;
+    // this allows for wind gradient effects.Filter height rate using a 10 second time constant filter
     float alpha = 0.1f * dt;
     hgtRate = hgtRate * (1.0f - alpha) - stateStruct.velocity.z * alpha;
 
-    // use filtered height rate to increase wind process noise when climbing or descending
-    // this allows for wind gradient effects.
+    // calculate covariance prediction process noise
     windVelSigma  = dt * constrain_float(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_float(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
     dAngBiasSigma = sq(dt) * constrain_float(frontend->_gyroBiasProcessNoise, 0.0f, 1.0f);
     dVelBiasSigma = sq(dt) * constrain_float(frontend->_accelBiasProcessNoise, 0.0f, 1.0f);

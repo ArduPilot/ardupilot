@@ -58,6 +58,10 @@
 // initial accel bias uncertainty as a fraction of the state limit
 #define ACCEL_BIAS_LIM_SCALER 0.2f
 
+// target update time for the EKF in msec and sec
+#define EKF_TARGET_DT_MS    10.0f
+#define EKF_TARGET_DT       0.01f
+
 class AP_AHRS;
 
 class NavEKF3_core
@@ -781,8 +785,6 @@ private:
     bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool badMagYaw;                 // boolean true if the magnetometer is declared to be producing bad data
     bool badIMUdata;                // boolean true if the bad IMU data is detected
-
-    const float EKF_TARGET_DT = 0.01f;    // target EKF update time step
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Vector28 Kfusion;               // Kalman gain vector
