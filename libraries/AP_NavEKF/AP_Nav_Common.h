@@ -61,6 +61,8 @@ struct ekf_timing {
     uint32_t count;
     float dtIMUavg_min;
     float dtIMUavg_max;
+    float dtEKFavg_min;
+    float dtEKFavg_max;
     float delAngDT_max;
     float delAngDT_min;
     float delVelDT_max;
