@@ -53,3 +53,16 @@ union nav_gps_status {
     } flags;
     uint16_t value;
 };
+
+/*
+  structure to hold EKF timing statistics
+ */
+struct ekf_timing {
+    uint32_t count;
+    float dtIMUavg_min;
+    float dtIMUavg_max;
+    float delAngDT_max;
+    float delAngDT_min;
+    float delVelDT_max;
+    float delVelDT_min;
+};
