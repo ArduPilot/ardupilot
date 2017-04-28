@@ -1099,11 +1099,13 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 void DataFlash_Class::Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing)
 {
     Log_Write(name,
-              "TimeUS,Cnt,IMUMin,IMUMax,AngMin,AngMax,VelMin,VelMax", "QIffffff",
+              "TimeUS,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VelMin,VelMax", "QIffffffff",
               time_us,
               timing.count,
               (double)timing.dtIMUavg_min,
               (double)timing.dtIMUavg_max,
+              (double)timing.dtEKFavg_min,
+              (double)timing.dtEKFavg_max,
               (double)timing.delAngDT_min,
               (double)timing.delAngDT_max,
               (double)timing.delVelDT_min,
