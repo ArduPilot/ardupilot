@@ -265,6 +265,19 @@ void DataFlash_Class::Log_Write_MessageF(const char *fmt, ...)
     Log_Write_Message(msg);
 }
 
+void DataFlash_Class::backend_starting_new_log(const DataFlash_Backend *backend)
+{
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (backends[i] == backend) { // pointer comparison!
+            // reset sent masks
+            for (struct log_write_fmt *f = log_write_fmts; f; f=f->next) {
+                f->sent_mask &= ~(1<<i);
+            }
+            break;
+        }
+    }
+}
+
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \
         for (uint8_t i=0; i<_next_backend; i++) { \
