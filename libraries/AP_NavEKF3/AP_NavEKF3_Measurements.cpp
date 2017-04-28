@@ -387,6 +387,8 @@ void NavEKF3_core::readIMUData()
         imuDataDelayed.delAngDT = MAX(imuDataDelayed.delAngDT,minDT);
         imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
 
+        updateTimingStatistics();
+        
         // correct the extracted IMU data for sensor errors
         delAngCorrected = imuDataDelayed.delAng;
         delVelCorrected = imuDataDelayed.delVel;
@@ -785,6 +787,36 @@ void NavEKF3_core::readRngBcnData()
         rngBcnDataDelayed.beacon_posNED += bcnPosOffsetNED;
     }
 
+}
+
+/*
+  update timing statistics structure
+ */
+void NavEKF3_core::updateTimingStatistics(void)
+{
+    if (timing.count == 0) {
+        timing.dtIMUavg_max = dtIMUavg;
+        timing.dtIMUavg_min = dtIMUavg;
+        timing.delAngDT_max = imuDataDelayed.delAngDT;
+        timing.delAngDT_min = imuDataDelayed.delAngDT;
+        timing.delVelDT_max = imuDataDelayed.delVelDT;
+        timing.delVelDT_min = imuDataDelayed.delVelDT;
+    } else {
+        timing.dtIMUavg_max = MAX(timing.dtIMUavg_max, dtIMUavg);
+        timing.dtIMUavg_min = MIN(timing.dtIMUavg_min, dtIMUavg);
+        timing.delAngDT_max = MAX(timing.delAngDT_max, imuDataDelayed.delAngDT);
+        timing.delAngDT_min = MIN(timing.delAngDT_min, imuDataDelayed.delAngDT);
+        timing.delVelDT_max = MAX(timing.delVelDT_max, imuDataDelayed.delVelDT);
+        timing.delVelDT_min = MIN(timing.delVelDT_min, imuDataDelayed.delVelDT);
+    }
+    timing.count++;
+}
+
+// get timing statistics structure
+void NavEKF3_core::getTimingStatistics(struct ekf_timing &_timing)
+{
+    _timing = timing;
+    memset(&timing, 0, sizeof(timing));
 }
 
 #endif // HAL_CPU_CLASS
