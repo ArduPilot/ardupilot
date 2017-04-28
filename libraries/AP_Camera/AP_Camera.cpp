@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Param: SERVO_ON
     // @DisplayName: Servo ON PWM value
     // @Description: PWM value to move servo to when shutter is activated
-    // @Units: pwm
+    // @Units: PWM
     // @Range: 1000 2000
     // @User: Standard
     AP_GROUPINFO("SERVO_ON",    2, AP_Camera, _servo_on_pwm, AP_CAMERA_SERVO_ON_PWM),
@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Param: SERVO_OFF
     // @DisplayName: Servo OFF PWM value
     // @Description: PWM value to move servo to when shutter is deactivated
-    // @Units: pwm
+    // @Units: PWM
     // @Range: 1000 2000
     // @User: Standard
     AP_GROUPINFO("SERVO_OFF",   3, AP_Camera, _servo_off_pwm, AP_CAMERA_SERVO_OFF_PWM),
@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @DisplayName: Maximum photo roll angle.
     // @Description: Postpone shooting if roll is greater than limit. (0=Disable, will shoot regardless of roll).
     // @User: Standard
-    // @Units: Degrees
+    // @Units: degrees
     // @Range: 0 180
     AP_GROUPINFO("MAX_ROLL",  7, AP_Camera, _max_roll, 0),
  
