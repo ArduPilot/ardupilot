@@ -97,7 +97,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: This controls the amount of down pitch to add in FBWA and AUTOTUNE modes when at low throttle. No down trim is added when throttle is above TRIM_THROTTLE. Below TRIM_THROTTLE downtrim is added in proportion to the amount the throttle is below TRIM_THROTTLE. At zero throttle the full downpitch specified in this parameter is added. This parameter is meant to help keep airspeed up when flying in FBWA mode with low throttle, such as when on a landing approach, without relying on an airspeed sensor. A value of 2 degrees is good for many planes, although a higher value may be needed for high drag aircraft.
     // @Range: 0 15
     // @Increment: 0.1
-    // @Units: Degrees
+    // @Units: degrees
     // @User: Advanced
     GSCALAR(stab_pitch_down, "STAB_PITCH_DOWN",   2.0f),
 
@@ -136,7 +136,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_THR_MINSPD
     // @DisplayName: Takeoff throttle min speed
     // @Description: Minimum GPS ground speed in m/s used by the speed check that un-suppresses throttle in auto-takeoff. This can be be used for catapult launches where you want the motor to engage only after the plane leaves the catapult, but it is preferable to use the TKOFF_THR_MINACC and TKOFF_THR_DELAY parameters for catapult launches due to the errors associated with GPS measurements. For hand launches with a pusher prop it is strongly advised that this parameter be set to a value no less than 4 m/s to provide additional protection against premature motor start. Note that the GPS velocity will lag the real velocity by about 0.5 seconds. The ground speed check is delayed by the TKOFF_THR_DELAY parameter.
-    // @Units: m/s
+    // @Units: meters/second
     // @Range: 0 30
     // @Increment: 0.1
     // @User: User
@@ -145,7 +145,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_THR_MINACC
     // @DisplayName: Takeoff throttle min acceleration
     // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15.
-    // @Units: m/s/s
+    // @Units: meters/second/second
     // @Range: 0 30
     // @Increment: 0.1
     // @User: User
@@ -154,7 +154,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_THR_DELAY
     // @DisplayName: Takeoff throttle delay
     // @Description: This parameter sets the time delay (in 1/10ths of a second) that the ground speed check is delayed after the forward acceleration check controlled by TKOFF_THR_MINACC has passed. For hand launches with pusher propellers it is essential that this is set to a value of no less than 2 (0.2 seconds) to ensure that the aircraft is safely clear of the throwers arm before the motor can start. For bungee launches a larger value can be used (such as 30) to give time for the bungee to release from the aircraft before the motor is started.
-    // @Units: 0.1 seconds
+    // @Units: deciseconds
     // @Range: 0 127
     // @Increment: 1
     // @User: User
@@ -163,7 +163,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_TDRAG_ELEV
     // @DisplayName: Takeoff tail dragger elevator
     // @Description: This parameter sets the amount of elevator to apply during the initial stage of a takeoff. It is used to hold the tail wheel of a taildragger on the ground during the initial takeoff stage to give maximum steering. This option should be combined with the TKOFF_TDRAG_SPD1 option and the GROUND_STEER_ALT option along with tuning of the ground steering controller. A value of zero means to bypass the initial "tail hold" stage of takeoff. Set to zero for hand and catapult launch. For tail-draggers you should normally set this to 100, meaning full up elevator during the initial stage of takeoff. For most tricycle undercarriage aircraft a value of zero will work well, but for some tricycle aircraft a small negative value (say around -20 to -30) will apply down elevator which will hold the nose wheel firmly on the ground during initial acceleration. Only use a negative value if you find that the nosewheel doesn't grip well during takeoff. Too much down elevator on a tricycle undercarriage may cause instability in steering as the plane pivots around the nosewheel. Add down elevator 10 percent at a time.
-    // @Units: Percent
+    // @Units: percent
     // @Range: -100 100
     // @Increment: 1
     // @User: User
@@ -172,7 +172,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_TDRAG_SPD1
     // @DisplayName: Takeoff tail dragger speed1
     // @Description: This parameter sets the airspeed at which to stop holding the tail down and transition to rudder control of steering on the ground. When TKOFF_TDRAG_SPD1 is reached the pitch of the aircraft will be held level until TKOFF_ROTATE_SPD is reached, at which point the takeoff pitch specified in the mission will be used to "rotate" the pitch for takeoff climb. Set TKOFF_TDRAG_SPD1 to zero to go straight to rotation. This should be set to zero for hand launch and catapult launch. It should also be set to zero for tricycle undercarriages unless you are using the method above to genetly hold the nose wheel down. For tail dragger aircraft it should be set just below the stall speed.
-    // @Units: m/s
+    // @Units: meters/second
     // @Range: 0 30
     // @Increment: 0.1
     // @User: User
@@ -181,7 +181,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_ROTATE_SPD
     // @DisplayName: Takeoff rotate speed
     // @Description: This parameter sets the airspeed at which the aircraft will "rotate", setting climb pitch specified in the mission. If TKOFF_ROTATE_SPD is zero then the climb pitch will be used as soon as takeoff is started. For hand launch and catapult launches a TKOFF_ROTATE_SPD of zero should be set. For all ground launches TKOFF_ROTATE_SPD should be set above the stall speed, usually by about 10 to 30 percent
-    // @Units: m/s
+    // @Units: meters/second
     // @Range: 0 30
     // @Increment: 0.1
     // @User: User
@@ -190,7 +190,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_THR_SLEW
     // @DisplayName: Takeoff throttle slew rate
     // @Description: This parameter sets the slew rate for the throttle during auto takeoff. When this is zero the THR_SLEWRATE parameter is used during takeoff. For rolling takeoffs it can be a good idea to set a lower slewrate for takeoff to give a slower acceleration which can improve ground steering control. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on takeoff. Values below 20 are not recommended as they may cause the plane to try to climb out with too little throttle.
-    // @Units: percent
+    // @Units: percent/second
     // @Range: 0 127
     // @Increment: 1
     // @User: User
@@ -209,7 +209,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Takeoff flap percentage
     // @Description: The amount of flaps (as a percentage) to apply in automatic takeoff
     // @Range: 0 100
-    // @Units: Percent
+    // @Units: percent
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
@@ -252,7 +252,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: ALT_OFFSET
     // @DisplayName: Altitude offset
     // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission
-    // @Units: Meters
+    // @Units: meters
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Advanced
@@ -261,7 +261,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: WP_RADIUS
     // @DisplayName: Waypoint Radius
     // @Description: Defines the maximum distance from a waypoint that when crossed indicates the waypoint may be complete. To avoid the aircraft looping around the waypoint in case it misses by more than the WP_RADIUS an additional check is made to see if the aircraft has crossed a "finish line" passing through the waypoint and perpendicular to the flight path from the previous waypoint. If that finish line is crossed then the waypoint is considered complete. Note that the navigation controller may decide to turn later than WP_RADIUS before a waypoint, based on how sharp the turn is and the speed of the aircraft. It is safe to set WP_RADIUS much larger than the usual turn radius of your aircraft and the navigation controller will work out when to turn. If you set WP_RADIUS too small then you will tend to overshoot the turns.
-    // @Units: Meters
+    // @Units: meters
     // @Range: 1 32767
     // @Increment: 1
     // @User: Standard
@@ -270,7 +270,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: WP_MAX_RADIUS
     // @DisplayName: Waypoint Maximum Radius
     // @Description: Sets the maximum distance to a waypoint for the waypoint to be considered complete. This overrides the "cross the finish line" logic that is normally used to consider a waypoint complete. For normal AUTO behaviour this parameter should be set to zero. Using a non-zero value is only recommended when it is critical that the aircraft does approach within the given radius, and should loop around until it has done so. This can cause the aircraft to loop forever if its turn radius is greater than the maximum radius set.
-    // @Units: Meters
+    // @Units: meters
     // @Range: 0 32767
     // @Increment: 1
     // @User: Standard
@@ -279,7 +279,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: WP_LOITER_RAD
     // @DisplayName: Waypoint Loiter Radius
     // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise.
-    // @Units: Meters
+    // @Units: meters
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Standard
@@ -288,7 +288,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: RTL_RADIUS
     // @DisplayName: RTL loiter radius
     // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used.
-    // @Units: Meters
+    // @Units: meters
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Standard
@@ -366,7 +366,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: ARSPD_FBW_MIN
     // @DisplayName: Minimum Airspeed
     // @Description: This is the minimum airspeed you want to fly at in modes where the autopilot controls the airspeed. This should be set to a value around 20% higher than the level flight stall speed for the airframe. This value is also used in the STALL_PREVENTION code.
-    // @Units: m/s
+    // @Units: meters/second
     // @Range: 5 100
     // @Increment: 1
     // @User: Standard
@@ -375,7 +375,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: ARSPD_FBW_MAX
     // @DisplayName: Maximum Airspeed
     // @Description: This is the maximum airspeed that you want to allow for your airframe in auto-throttle modes. You should ensure that this value is sufficiently above the ARSPD_FBW_MIN value to allow for a sufficient flight envelope to accurately control altitude using airspeed. A value at least 50% above ARSPD_FBW_MIN is recommended.
-    // @Units: m/s
+    // @Units: meters/second
     // @Range: 5 100
     // @Increment: 1
     // @User: Standard
@@ -409,7 +409,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Fly By Wire B altitude change rate
     // @Description: This sets the rate in m/s at which FBWB and CRUISE modes will change its target altitude for full elevator deflection. Note that the actual climb rate of the aircraft can be lower than this, depending on your airspeed and throttle control settings. If you have this parameter set to the default value of 2.0, then holding the elevator at maximum deflection for 10 seconds would change the target altitude by 20 meters.
     // @Range: 1 10
-    // @Units: m/s
+    // @Units: meters/second
 	// @Increment: 0.1
     // @User: Standard
     GSCALAR(flybywire_climb_rate, "FBWB_CLIMB_RATE",  2.0f),
@@ -417,7 +417,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
     // @Description: The minimum throttle setting (as a percentage) which the autopilot will apply. For the final stage of an automatic landing this is always zero. If your ESC supports reverse, use a negative value to configure for reverse thrust.
-    // @Units: Percent
+    // @Units: percent
     // @Range: -100 100
     // @Increment: 1
     // @User: Standard
@@ -426,7 +426,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
     // @Description: The maximum throttle setting (as a percentage) which the autopilot will apply.
-    // @Units: Percent
+    // @Units: percent
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -435,7 +435,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TKOFF_THR_MAX
     // @DisplayName: Maximum Throttle for takeoff
     // @Description: The maximum throttle setting during automatic takeoff. If this is zero then THR_MAX is used for takeoff as well.
-    // @Units: Percent
+    // @Units: percent
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
@@ -444,7 +444,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate
     // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second.
-    // @Units: Percent
+    // @Units: percent/second
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
@@ -453,7 +453,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FLAP_SLEWRATE
     // @DisplayName: Flap slew rate
     // @Description: maximum percentage change in flap output per second. A setting of 25 means to not change the flap by more than 25% of the full flap range in one second. A value of 0 means no rate limiting.
-    // @Units: Percent
+    // @Units: percent/second
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
@@ -492,7 +492,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TRIM_THROTTLE
     // @DisplayName: Throttle cruise percentage
     // @Description: The target percentage of throttle to apply for normal flight
-    // @Units: Percent
+    // @Units: percent
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -540,7 +540,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
     // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage continuously for 10 seconds then the plane will switch to RTL mode.
-    // @Units: Volts
+    // @Units: Volt
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", 0),
@@ -618,7 +618,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: LIM_ROLL_CD
     // @DisplayName: Maximum Bank Angle
     // @Description: The maximum commanded bank angle in either direction
-    // @Units: centi-Degrees
+    // @Units: centidegrees
     // @Range: 0 9000
     // @Increment: 1
     // @User: Standard
@@ -627,7 +627,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: LIM_PITCH_MAX
     // @DisplayName: Maximum Pitch Angle
     // @Description: The maximum commanded pitch up angle
-    // @Units: centi-Degrees
+    // @Units: centidegrees
     // @Range: 0 9000
     // @Increment: 1
     // @User: Standard
@@ -636,7 +636,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: LIM_PITCH_MIN
     // @DisplayName: Minimum Pitch Angle
     // @Description: The minimum commanded pitch down angle
-    // @Units: centi-Degrees
+    // @Units: centidegrees
     // @Range: -9000 0
     // @Increment: 1
     // @User: Standard
@@ -670,7 +670,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: GROUND_STEER_ALT
     // @DisplayName: Ground steer altitude
     // @Description: Altitude at which to use the ground steering controller on the rudder. If non-zero then the STEER2SRV controller will be used to control the rudder for altitudes within this limit of the home altitude.
-    // @Units: Meters
+    // @Units: meters
     // @Range: -100 100
     // @Increment: 0.1
     // @User: Standard
@@ -752,7 +752,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: MIXING_OFFSET
     // @DisplayName: Mixing Offset
     // @Description: The offset for the Vtail and elevon output mixers, as a percentage. This can be used in combination with MIXING_GAIN to configure how the control surfaces respond to input. The response to aileron or elevator input can be increased by setting this parameter to a positive or negative value. A common usage is to enter a positive value to increase the aileron response of the elevons of a flying wing. The default value of zero will leave the aileron-input response equal to the elevator-input response.
-    // @Units: percent
+    // @Units: decipercent
     // @Range: -1000 1000
     // @User: User
     GSCALAR(mixing_offset,          "MIXING_OFFSET",  0),
@@ -760,7 +760,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: DSPOILR_RUD_RATE
     // @DisplayName: Differential spoilers rudder rate
     // @Description: Sets the amount of deflection that the rudder output will apply to the differential spoilers, as a percentage. The default value of 100 results in full rudder applying full deflection. A value of 0 will result in the differential spoilers exactly following the elevons (no rudder effect).
-    // @Units: percent
+    // @Units: decipercent
     // @Range: -1000 1000
     // @User: User
     GSCALAR(dspoiler_rud_rate,      "DSPOILR_RUD_RATE",  DSPOILR_RUD_RATE_DEFAULT),
@@ -794,28 +794,28 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: TRIM_ARSPD_CM
     // @DisplayName: Target airspeed
     // @Description: Airspeed in cm/s to aim for when airspeed is enabled in auto mode. This is a calibrated (apparent) airspeed.
-    // @Units: cm/s
+    // @Units: centimeters/second
     // @User: User
     ASCALAR(airspeed_cruise_cm,     "TRIM_ARSPD_CM",  AIRSPEED_CRUISE_CM),
 
     // @Param: SCALING_SPEED
     // @DisplayName: speed used for speed scaling calculations
     // @Description: Airspeed in m/s to use when calculating surface speed scaling. Note that changing this value will affect all PID values
-    // @Units: m/s
+    // @Units: meters/second
     // @User: Advanced
     GSCALAR(scaling_speed,        "SCALING_SPEED",    SCALING_SPEED),
 
     // @Param: MIN_GNDSPD_CM
     // @DisplayName: Minimum ground speed
     // @Description: Minimum ground speed in cm/s when under airspeed control
-    // @Units: cm/s
+    // @Units: centimeters/second
     // @User: Advanced
     ASCALAR(min_gndspeed_cm,      "MIN_GNDSPD_CM",  MIN_GNDSPEED_CM),
 
     // @Param: TRIM_PITCH_CD
     // @DisplayName: Pitch angle offset
     // @Description: offset to add to pitch - used for in-flight pitch trimming. It is recommended that instead of using this parameter you level your plane correctly on the ground for good flight attitude.
-    // @Units: centi-Degrees
+    // @Units: centidegrees
     // @User: Advanced
     GSCALAR(pitch_trim_cd,        "TRIM_PITCH_CD",  0),
 
@@ -857,7 +857,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Flap 1 percentage
     // @Description: The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps
     // @Range: 0 100
-    // @Units: Percent
+    // @Units: percent
     // @User: Advanced
     GSCALAR(flap_1_percent,         "FLAP_1_PERCNT",  FLAP_1_PERCENT),
 
@@ -866,7 +866,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: The speed in meters per second at which to engage FLAP_1_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED
     // @Range: 0 100
 	// @Increment: 1
-    // @Units: m/s
+    // @Units: meters/second
     // @User: Advanced
     GSCALAR(flap_1_speed,           "FLAP_1_SPEED",   FLAP_1_SPEED),
 
@@ -874,7 +874,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Flap 2 percentage
     // @Description: The percentage change in flap position when FLAP_2_SPEED is reached. Use zero to disable flaps
     // @Range: 0 100
-	// @Units: Percent
+	// @Units: percent
     // @User: Advanced
     GSCALAR(flap_2_percent,         "FLAP_2_PERCNT",  FLAP_2_PERCENT),
 
@@ -882,7 +882,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Flap 2 speed
     // @Description: The speed in meters per second at which to engage FLAP_2_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED
     // @Range: 0 100
-	// @Units: m/s
+	// @Units: meters/second
 	// @Increment: 1
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
@@ -950,8 +950,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: CRASH_ACC_THRESH
     // @DisplayName: Crash Deceleration Threshold
     // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensative (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
-    // @Units: m/s/s
-    // @Values: 10 127
+    // @Units: meters/second/second
+    // @Range: 10 127
     // @User: Advanced
     GSCALAR(crash_accel_threshold,          "CRASH_ACC_THRESH",   0),
 
@@ -1221,7 +1221,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: rudder differential thrust gain
     // @Description: gain control from rudder to differential thrust
     // @Range: 0 100
-    // @Units: Percent
+    // @Units: percent
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RUDD_DT_GAIN", 9, ParametersG2, rudd_dt_gain, 10),
