@@ -601,9 +601,15 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     // calculate the vertical error
     float track_error_z = fabsf(track_error.z);
 
-    // calculate how far along the track we could move the intermediate target before reaching the end of the leash
+    // get up leash if we are moving up, down leash if we are moving down
+    float leash_z = track_error.z >= 0 ? _pos_control.get_leash_up_z() : _pos_control.get_leash_down_z();
+
+    // use pythagoras's theorem calculate how far along the track we could move the intermediate target before reaching the end of the leash
+    //   track_desired_max is the distance from the vehicle to our target point along the track.  It is the "hypotenuse" which we want to be no longer than our leash (aka _track_leash_length)
+    //   track_error is the line from the vehicle to the closest point on the track.  It is the "opposite" side
+    //   track_leash_slack is the line from the closest point on the track to the target point.  It is the "adjacent" side.  We adjust this so the track_desired_max is no longer than the leash
     float track_leash_length_abs = fabsf(_track_leash_length);
-    float track_error_max_abs = MAX(fabsf(track_error_z), fabsf(track_error_xy));
+    float track_error_max_abs = MAX(_track_leash_length*track_error_z/leash_z, _track_leash_length*track_error_xy/_pos_control.get_leash_xy());
     track_leash_slack = (track_leash_length_abs > track_error_max_abs) ? safe_sqrt(sq(_track_leash_length) - sq(track_error_max_abs)) : 0;
     track_desired_max = track_covered + track_leash_slack;
 
