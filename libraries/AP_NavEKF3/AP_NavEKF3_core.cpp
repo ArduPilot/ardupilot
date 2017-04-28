@@ -200,7 +200,7 @@ void NavEKF3_core::InitialiseVariables()
     badIMUdata = false;
     finalInflightYawInit = false;
     finalInflightMagInit = false;
-    dtIMUavg = 0.0025f;
+    dtIMUavg = ins.get_loop_delta_t();
     dtEkfAvg = EKF_TARGET_DT;
     dt = 0;
     velDotNEDfilt.zero();
