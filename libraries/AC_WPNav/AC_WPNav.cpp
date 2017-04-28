@@ -120,6 +120,7 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
     _wp_last_update(0),
     _wp_step(0),
     _track_length(0.0f),
+    _track_length_xy(0.0f),
     _track_desired(0.0f),
     _limited_speed_xy_cms(0.0f),
     _track_accel(0.0f),
@@ -407,6 +408,9 @@ void AC_WPNav::wp_and_spline_init()
     _pos_control.set_accel_z(_wp_accel_z_cms);
     _pos_control.calc_leash_length_xy();
     _pos_control.calc_leash_length_z();
+
+    // initialise yaw heading to current heading target
+    _flags.wp_yaw_set = false;
 }
 
 /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
@@ -477,6 +481,7 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     Vector3f pos_delta = _destination - _origin;
 
     _track_length = pos_delta.length(); // get track length
+    _track_length_xy = safe_sqrt(sq(pos_delta.x)+sq(pos_delta.y));  // get horizontal track length (used to decide if we should update yaw)
 
     // calculate each axis' percentage of the total distance to the destination
     if (is_zero(_track_length)) {
@@ -490,14 +495,6 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
 
     // calculate leash lengths
     calculate_wp_leash_length();
-
-    // initialise yaw heading
-    if (_track_length >= WPNAV_YAW_DIST_MIN) {
-        _yaw = get_bearing_cd(_origin, _destination);
-    } else {
-        // set target yaw to current heading target
-        _yaw = _attitude_control.get_att_target_euler_cd().z;
-    }
 
     // get origin's alt-above-terrain
     float origin_terr_offset = 0.0f;
@@ -702,6 +699,20 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         }
     }
 
+    // update the target yaw if origin and destination are at least 2m apart horizontally
+    if (_track_length_xy >= WPNAV_YAW_DIST_MIN) {
+        if (_pos_control.get_leash_xy() < WPNAV_YAW_DIST_MIN) {
+            // if the leash is short (i.e. moving slowly) and destination is at least 2m horizontally, point along the segment from origin to destination
+            set_yaw_cd(get_bearing_cd(_origin, _destination));
+        } else {
+            Vector3f horiz_leash_xy = final_target - curr_pos;
+            horiz_leash_xy.z = 0;
+            if (horiz_leash_xy.length() > MIN(WPNAV_YAW_DIST_MIN, _pos_control.get_leash_xy()*WPNAV_YAW_LEASH_PCT_MIN)) {
+                set_yaw_cd(RadiansToCentiDegrees(atan2f(horiz_leash_xy.y,horiz_leash_xy.x)));
+            }
+        }
+    }
+
     // successfully advanced along track
     return true;
 }
@@ -814,6 +825,24 @@ void AC_WPNav::calculate_wp_leash_length()
 
     // set recalc leash flag to false
     _flags.recalc_wp_leash = false;
+}
+
+// returns target yaw in centi-degrees (used for wp and spline navigation)
+float AC_WPNav::get_yaw() const
+{
+    if (_flags.wp_yaw_set) {
+        return _yaw;
+    } else {
+        // if yaw has not been set return attitude controller's current target
+        return _attitude_control.get_att_target_euler_cd().z;
+    }
+}
+
+// set heading used for spline and waypoint navigation
+void AC_WPNav::set_yaw_cd(float heading_cd)
+{
+    _yaw = heading_cd;
+    _flags.wp_yaw_set = true;
 }
 
 ///
@@ -967,9 +996,6 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
         update_spline_solution(origin, destination, _spline_origin_vel, _spline_destination_vel);
     }
 
-    // initialise yaw heading to current heading
-    _yaw = _attitude_control.get_att_target_euler_cd().z;
-
     // store origin and destination locations
     _origin = origin;
     _destination = destination;
@@ -991,6 +1017,9 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     _flags.reached_destination = false;
     _flags.segment_type = SEGMENT_SPLINE;
     _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
+
+    // initialise yaw related variables
+    _track_length_xy = safe_sqrt(sq(_destination.x - _origin.x)+sq(_destination.y - _origin.y));  // horizontal track length (used to decide if we should update yaw)
 
     return true;
 }
@@ -1119,8 +1148,22 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         target_pos.z += terr_offset;
         _pos_control.set_pos_target(target_pos);
 
-        // update the yaw
-        _yaw = RadiansToCentiDegrees(atan2f(target_vel.y,target_vel.x));
+        // update the target yaw if origin and destination are at least 2m apart horizontally
+        if (_track_length_xy >= WPNAV_YAW_DIST_MIN) {
+            if (_pos_control.get_leash_xy() < WPNAV_YAW_DIST_MIN) {
+                // if the leash is very short (i.e. flying at low speed) use the target point's velocity along the track
+                if (!is_zero(target_vel.x) && !is_zero(target_vel.y)) {
+                    set_yaw_cd(RadiansToCentiDegrees(atan2f(target_vel.y,target_vel.x)));
+                }
+            } else {
+                // point vehicle along the leash (i.e. point vehicle towards target point on the segment from origin to destination)
+                float track_error_xy_length = safe_sqrt(sq(track_error.x)+sq(track_error.y));
+                if (track_error_xy_length > MIN(WPNAV_YAW_DIST_MIN, _pos_control.get_leash_xy()*WPNAV_YAW_LEASH_PCT_MIN)) {
+                    // To-Do: why is track_error sign reversed?
+                    set_yaw_cd(RadiansToCentiDegrees(atan2f(-track_error.y,-track_error.x)));
+                }
+            }
+        }
 
         // advance spline time to next step
         _spline_time += _spline_time_scale*dt;
