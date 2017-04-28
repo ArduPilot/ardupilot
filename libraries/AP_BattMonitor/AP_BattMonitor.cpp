@@ -244,15 +244,7 @@ bool AP_BattMonitor::is_powering_off(uint8_t instance) const {
 bool AP_BattMonitor::has_current(uint8_t instance) const
 {
     // check for analog voltage and current monitor or smbus monitor
-    if (instance < _num_instances && drivers[instance] != nullptr) {
-        return (_monitoring[instance] == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT ||
-                _monitoring[instance] == BattMonitor_TYPE_SOLO ||
-                _monitoring[instance] == BattMonitor_TYPE_BEBOP ||
-                _monitoring[instance] == BattMonitor_TYPE_MAXELL);
-    }
-
-    // not monitoring current
-    return false;
+    return instance < _num_instances && drivers[instance] != nullptr && _monitoring[instance] != BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY;
 }
 
 /// voltage - returns battery voltage in volts
