@@ -103,7 +103,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
     // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe.
-    // @Units: Volts
+    // @Units: Volt
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", FS_BATT_VOLTAGE_DEFAULT),
@@ -154,7 +154,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_TEMP_MAX
     // @DisplayName: Internal Temperature Failsafe Threshold
     // @Description: The maximum internal temperature allowed before triggering failsafe. Failsafe action is determined by FS_TEMP_ENABLE parameter.
-    // @Units: Degrees Centigrade
+    // @Units: degrees Celsius
     // @User: Standard
     GSCALAR(failsafe_temperature_max, "FS_TEMP_MAX", FS_TEMP_MAX_DEFAULT),
 
@@ -175,7 +175,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_PILOT_TIMEOUT
     // @DisplayName: Timeout for activation of pilot input failsafe
     // @Description: Controls the maximum interval between received pilot inputs before the failsafe action is triggered
-    // @Units: Seconds
+    // @Units: seconds
     // @Range 0.1 3.0
     // @User: Standard
     GSCALAR(failsafe_pilot_input_timeout, "FS_PILOT_TIMEOUT", 1.0f),
@@ -204,7 +204,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: PILOT_VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
-    // @Units: Centimeters/Second
+    // @Units: centimeters/second
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -213,7 +213,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
     // @Description: The vertical acceleration used when pilot is controlling the altitude
-    // @Units: cm/s/s
+    // @Units: centimeters/second/second
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -224,7 +224,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: The deadzone above and below mid throttle.  Used in AltHold, Loiter, PosHold flight modes
     // @User: Standard
     // @Range: 0 300
-    // @Units: pwm
+    // @Units: PWM
     // @Increment: 1
     GSCALAR(throttle_deadzone,  "THR_DZ",    THR_DZ_DEFAULT),
 
@@ -239,7 +239,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
-    // @Units: Centi-degrees
+    // @Units: centidegrees
     // @Range: 1000 8000
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
@@ -307,6 +307,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Size of PWM increment on camera tilt servo
     // @User: Standard
     // @Range: 30 400
+    // @Units: PWM
     GSCALAR(cam_tilt_step, "JS_CAM_TILT_STEP", 50),
 
     // @Param: JS_LIGHTS_STEP
@@ -314,6 +315,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Size of PWM increment on lights servo
     // @User: Standard
     // @Range: 30 400
+    // @Units: PWM
     GSCALAR(lights_step, "JS_LIGHTS_STEP", 100),
 
     // @Param: JS_THR_GAIN
@@ -328,6 +330,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Servo PWM at camera center position
     // @User: Standard
     // @Range: 1000 2000
+    // @Units: PWM
     GSCALAR(cam_tilt_center, "CAM_CENTER", 1500),
 
     // @Param: FRAME_CONFIG
@@ -474,7 +477,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: centimeters/second/second
     // @User: Advanced
 
     // @Param: VEL_XY_FILT_HZ
@@ -482,7 +485,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: centimeters/second/second
     // @User: Advanced
     GGROUP(pi_vel_xy,   "VEL_XY_",  AC_PI_2D),
 
@@ -510,7 +513,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 1000
-    // @Units: Percent*10
+    // @Units: decipercent
     // @User: Standard
 
     // @Param: ACCEL_Z_D
