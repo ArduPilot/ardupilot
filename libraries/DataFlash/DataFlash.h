@@ -272,7 +272,9 @@ private:
     void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
     void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
-    
+
+    void backend_starting_new_log(const DataFlash_Backend *backend);
+
 private:
     static DataFlash_Class *_instance;
 

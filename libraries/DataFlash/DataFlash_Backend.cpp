@@ -53,6 +53,7 @@ void DataFlash_Backend::periodic_tasks()
 void DataFlash_Backend::start_new_log_reset_variables()
 {
     _startup_messagewriter->reset();
+    _front.backend_starting_new_log(this);
 }
 
 void DataFlash_Backend::internal_error() {
