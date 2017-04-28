@@ -279,4 +279,6 @@ private:
     void validate_structures(const struct LogStructure *structures, const uint8_t num_types);
     void dump_structure_field(const struct LogStructure *structure, const char *label, const uint8_t fieldnum);
     void dump_structures(const struct LogStructure *structures, const uint8_t num_types);
+
+    void Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
 };
