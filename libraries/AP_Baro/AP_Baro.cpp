@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Param: ABS_PRESS
     // @DisplayName: Absolute Pressure
     // @Description: calibrated ground pressure in Pascals
-    // @Units: pascals
+    // @Units: Pascal
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Param: TEMP
     // @DisplayName: ground temperature
     // @Description: calibrated ground temperature in degrees Celsius
-    // @Units: degrees celsius
+    // @Units: degrees Celsius
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
@@ -107,7 +107,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Param: ABS_PRESS2
     // @DisplayName: Absolute Pressure
     // @Description: calibrated ground pressure in Pascals
-    // @Units: pascals
+    // @Units: Pascal
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
@@ -121,7 +121,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Param: ABS_PRESS3
     // @DisplayName: Absolute Pressure
     // @Description: calibrated ground pressure in Pascals
-    // @Units: pascals
+    // @Units: Pascal
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
