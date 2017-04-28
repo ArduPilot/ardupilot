@@ -29,7 +29,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall forward velocity
     // @Description: The forward velocity of the aircraft while stalled
     // @Range: 0 20
-    // @Units: m/s
+    // @Units: meters/second
     // @User: Advanced
     AP_GROUPINFO("V_FWD", 1, AP_Landing_Deepstall, forward_speed, 1),
 
@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall veloicty down
     // @Description: The downward velocity of the aircraft while stalled
     // @Range: 0 20
-    // @Units: m/s
+    // @Units: meters/second
     // @User: Advanced
     AP_GROUPINFO("V_DWN", 5, AP_Landing_Deepstall, down_speed, 2),
 
@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall enabled airspeed
     // @Description: The maximum aispeed where the deepstall steering controller is allowed to have control
     // @Range: 5 20
-    // @Units: m/s
+    // @Units: meters/second
     // @User: Advanced
     AP_GROUPINFO("ARSP_MAX", 8, AP_Landing_Deepstall, handoff_airspeed, 15.0),
 
@@ -89,7 +89,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall minimum derating airspeed
     // @Description: Deepstall lowest airspeed where the deepstall controller isn't allowed full control
     // @Range: 5 20
-    // @Units: m/s
+    // @Units: meters/second
     // @User: Advanced
     AP_GROUPINFO("ARSP_MIN", 9, AP_Landing_Deepstall, handoff_lower_limit_airspeed, 10.0),
 
