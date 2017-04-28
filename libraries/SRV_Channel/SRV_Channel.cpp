@@ -31,7 +31,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Param: MIN
     // @DisplayName: Minimum PWM
     // @Description: minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Param: MAX
     // @DisplayName: Maximum PWM
     // @Description: maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
@@ -49,7 +49,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Param: TRIM
     // @DisplayName: Trim PWM
     // @Description: Trim PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
