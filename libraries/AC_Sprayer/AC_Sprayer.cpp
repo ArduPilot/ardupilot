@@ -16,7 +16,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: PUMP_RATE
     // @DisplayName: Pump speed
     // @Description: Desired pump speed when traveling 1m/s expressed as a percentage
-    // @Units: percentage
+    // @Units: percent
     // @Range: 0 100
     // @User: Standard
     AP_GROUPINFO("PUMP_RATE",   1, AC_Sprayer, _pump_pct_1ms, AC_SPRAYER_DEFAULT_PUMP_RATE),
@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: SPINNER
     // @DisplayName: Spinner rotation speed
     // @Description: Spinner's rotation speed in PWM (a higher rate will disperse the spray over a wider area horizontally)
-    // @Units: ms
+    // @Units: milliseconds
     // @Range: 1000 2000
     // @User: Standard
     AP_GROUPINFO("SPINNER",     2, AC_Sprayer, _spinner_pwm, AC_SPRAYER_DEFAULT_SPINNER_PWM),
@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: SPEED_MIN
     // @DisplayName: Speed minimum
     // @Description: Speed minimum at which we will begin spraying
-    // @Units: cm/s
+    // @Units: centimeters/second
     // @Range: 0 1000
     // @User: Standard
     AP_GROUPINFO("SPEED_MIN",   3, AC_Sprayer, _speed_min, AC_SPRAYER_DEFAULT_SPEED_MIN),
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: PUMP_MIN
     // @DisplayName: Pump speed minimum
     // @Description: Minimum pump speed expressed as a percentage
-    // @Units: percentage
+    // @Units: percent
     // @Range: 0 100
     // @User: Standard
     AP_GROUPINFO("PUMP_MIN",   4, AC_Sprayer, _pump_min_pct, AC_SPRAYER_DEFAULT_PUMP_MIN),
