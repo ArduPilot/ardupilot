@@ -13,6 +13,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: ANGLE_MAX
     // @DisplayName: Avoidance max lean angle in non-GPS flight modes
     // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
+    // @Units: centidegrees
     // @Range: 0 4500
     // @User: Standard
     AP_GROUPINFO("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000),
