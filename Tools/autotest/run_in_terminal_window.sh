@@ -25,7 +25,7 @@ if [ -n "$SITL_RITW_TERMINAL" ]; then
   FILENAME="ritw-`date '+%Y%m%d%H%M%S'`"
   FILEPATH="$TMPDIR/$FILENAME"
   echo "#!/bin/sh" >"$FILEPATH"
-  echo "$*" >>"$FILEPATH"
+  printf "%q " "$@" >>"$FILEPATH"
   chmod +x "$FILEPATH"
   $SITL_RITW_TERMINAL "$FILEPATH" &
 elif [ -n "$DISPLAY" -a -n "$(which osascript)" ]; then
