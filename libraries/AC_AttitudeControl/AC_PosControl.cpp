@@ -888,13 +888,6 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 {
     Vector2f vel_xy_p, vel_xy_i;
 
-    // reset last velocity target to current target
-    if (_flags.reset_rate_to_accel_xy) {
-        _vel_last.x = _vel_target.x;
-        _vel_last.y = _vel_target.y;
-        _flags.reset_rate_to_accel_xy = false;
-    }
-
     // check if vehicle velocity is being overridden
     if (_flags.vehicle_horiz_vel_override) {
         _flags.vehicle_horiz_vel_override = false;
@@ -903,11 +896,18 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
         _vehicle_horiz_vel.y = _inav.get_velocity().y;
     }
 
+    // reset last velocity target to current target
+    if (_flags.reset_rate_to_accel_xy) {
+        _vel_last.x = _vel_desired.x;
+        _vel_last.y = _vel_desired.y;
+        _flags.reset_rate_to_accel_xy = false;
+    }
+
     // feed forward desired acceleration calculation
     if (dt > 0.0f) {
     	if (!_flags.freeze_ff_xy) {
-    		_accel_feedforward.x = (_vel_target.x - _vel_last.x)/dt;
-    		_accel_feedforward.y = (_vel_target.y - _vel_last.y)/dt;
+    	    _accel_feedforward.x = (_vel_desired.x - _vel_last.x)/dt;
+    	    _accel_feedforward.y = (_vel_desired.y - _vel_last.y)/dt;
         } else {
     		// stop the feed forward being calculated during a known discontinuity
     		_flags.freeze_ff_xy = false;
@@ -918,8 +918,8 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
     }
 
     // store this iteration's velocities for the next iteration
-    _vel_last.x = _vel_target.x;
-    _vel_last.y = _vel_target.y;
+    _vel_last.x = _vel_desired.x;
+    _vel_last.y = _vel_desired.y;
 
     // calculate velocity error
     _vel_error.x = _vel_target.x - _vehicle_horiz_vel.x;
