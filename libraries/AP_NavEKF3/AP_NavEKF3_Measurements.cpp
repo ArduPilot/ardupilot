@@ -302,8 +302,8 @@ void NavEKF3_core::readIMUData()
 {
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
-    // average IMU sampling rate
-    dtIMUavg = ins.get_loop_delta_t();
+    // calculate an averaged IMU update rate using a spike and lowpass filter combination
+    dtIMUavg = 0.02f * constrain_float(ins.get_loop_delta_t(),0.5f * dtIMUavg, 2.0f * dtIMUavg) + 0.98f * dtIMUavg;
 
     // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
