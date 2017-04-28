@@ -36,6 +36,9 @@ uint8_t GCS_MAVLINK::mavlink_active = 0;
 uint8_t GCS_MAVLINK::chan_is_streaming = 0;
 uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
 
+AP_HAL::Util::perf_counter_t GCS_MAVLINK::_perf_packet;
+AP_HAL::Util::perf_counter_t GCS_MAVLINK::_perf_update;
+
 GCS *GCS::_singleton = nullptr;
 
 GCS_MAVLINK::GCS_MAVLINK()
@@ -57,6 +60,13 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
     initialised = true;
     _queued_parameter = nullptr;
     reset_cli_timeout();
+
+    if (!_perf_packet) {
+        _perf_packet = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "GCS_Packet");
+    }
+    if (!_perf_update) {
+        _perf_update = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "GCS_Update");
+    }
 }
 
 
@@ -1036,11 +1046,15 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
 }
 
 void
-GCS_MAVLINK::update(run_cli_fn run_cli)
+GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
 {
     // receive new packets
     mavlink_message_t msg;
     mavlink_status_t status;
+    uint32_t tstart_us = AP_HAL::micros();
+
+    hal.util->perf_begin(_perf_update);
+
     status.packet_rx_drop_count = 0;
 
     // process received bytes
@@ -1065,13 +1079,26 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
             }
         }
 
+        bool parsed_packet = false;
+        
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
+            hal.util->perf_begin(_perf_packet);
             packetReceived(status, msg);
+            hal.util->perf_end(_perf_packet);
+            parsed_packet = true;
+        }
+
+        if (parsed_packet || i % 100 == 0) {
+            // make sure we don't spend too much time parsing mavlink messages
+            if (AP_HAL::micros() - tstart_us > max_time_us) {
+                break;
+            }
         }
     }
 
     if (!waypoint_receiving) {
+        hal.util->perf_end(_perf_update);    
         return;
     }
 
@@ -1087,6 +1114,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
         send_message(MSG_NEXT_WAYPOINT);
     }
 
+    hal.util->perf_end(_perf_update);    
 }
 
 
