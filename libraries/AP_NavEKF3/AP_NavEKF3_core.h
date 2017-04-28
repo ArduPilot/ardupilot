@@ -331,6 +331,9 @@ public:
     // get the IMU index
     uint8_t getIMUIndex(void) const { return imu_index; }
 
+    // get timing statistics structure
+    void getTimingStatistics(struct ekf_timing &timing);
+    
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF3 *frontend;
@@ -761,6 +764,9 @@ private:
     // initialise the quaternion covariances using rotation vector variances
     void initialiseQuatCovariances(Vector3f &rotVarVec);
 
+    // update timing statistics structure
+    void updateTimingStatistics(void);
+    
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool velHealth;                 // boolean true if velocity measurements have passed innovation consistency check
@@ -1205,6 +1211,9 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_FuseBodyOdom;
     AP_HAL::Util::perf_counter_t  _perf_test[10];
 
+    // timing statistics
+    struct ekf_timing timing;
+    
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 
