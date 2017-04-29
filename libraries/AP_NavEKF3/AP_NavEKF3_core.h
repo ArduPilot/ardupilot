@@ -59,8 +59,8 @@
 #define ACCEL_BIAS_LIM_SCALER 0.2f
 
 // target update time for the EKF in msec and sec
-#define EKF_TARGET_DT_MS    10.0f
-#define EKF_TARGET_DT       0.01f
+#define EKF_TARGET_DT_MS 10.0
+#define EKF_TARGET_DT    0.01
 
 class AP_AHRS;
 

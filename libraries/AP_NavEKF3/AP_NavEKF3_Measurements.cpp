@@ -352,7 +352,8 @@ void NavEKF3_core::readIMUData()
      * then store the accumulated IMU data to be used by the state prediction, ignoring the frontend permission if more
      * than twice the target time has lapsed.
      */
-    if ((imuDataDownSampledNew.delAngDT >= EKF_TARGET_DT && startPredictEnabled) || (imuDataDownSampledNew.delAngDT >= 2.0f*EKF_TARGET_DT)) {
+    if ((imuDataDownSampledNew.delAngDT >= (EKF_TARGET_DT-(dtIMUavg*0.5)) && startPredictEnabled) ||
+        (imuDataDownSampledNew.delAngDT >= 2.0f*EKF_TARGET_DT)) {
 
         // convert the accumulated quaternion to an equivalent delta angle
         imuQuatDownSampleNew.to_axis_angle(imuDataDownSampledNew.delAng);
