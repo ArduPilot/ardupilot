@@ -1257,6 +1257,8 @@ void AP_InertialSensor::update(void)
         }
     }
 
+    _last_update_usec = AP_HAL::micros();
+    
     _have_sample = false;
 }
 
