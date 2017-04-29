@@ -100,6 +100,7 @@ void Copter::esc_calibration_passthrough()
     // arm motors
     motors->armed(true);
     motors->enable();
+    SRV_Channels::enable_by_mask(motors->get_motor_mask());
 
     uint32_t last_notify_update_ms = 0;
     while(1) {
@@ -144,6 +145,7 @@ void Copter::esc_calibration_auto()
     // arm and enable motors
     motors->armed(true);
     motors->enable();
+    SRV_Channels::enable_by_mask(motors->get_motor_mask());
 
     // flash LEDS
     AP_Notify::flags.esc_calibration = true;
