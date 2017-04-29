@@ -712,16 +712,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
 
     copter.gcs_out_of_time = false;
 
-    if (_queued_parameter != nullptr) {
-        if (streamRates[STREAM_PARAMS].get() <= 0) {
-            streamRates[STREAM_PARAMS].set(10);
-        }
-        if (stream_trigger(STREAM_PARAMS)) {
-            send_message(MSG_NEXT_PARAM);
-        }
-        // don't send anything else at the same time as parameters
-        return;
-    }
+    send_queued_parameters();
 
     if (copter.gcs_out_of_time) return;
 
