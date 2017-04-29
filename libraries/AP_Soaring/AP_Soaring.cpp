@@ -132,9 +132,9 @@ SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, co
     _ahrs(ahrs),
     _spdHgt(spdHgt),
     _aparm(parms),
+    _vario(ahrs,spdHgt,parms),
     _loiter_rad(parms.loiter_radius),
-    _throttle_suppressed(true),
-    _vario(ahrs,spdHgt,parms)
+    _throttle_suppressed(true)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
