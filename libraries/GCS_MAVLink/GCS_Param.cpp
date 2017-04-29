@@ -340,3 +340,22 @@ void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type p
         dataflash->Log_Write_Parameter(param_name, param_value);
     }
 }
+
+/*
+  send queued parameters if needed
+ */
+bool GCS_MAVLINK::send_queued_parameters(void)
+{
+    if (_queued_parameter == nullptr) {
+        return false;
+    }
+    if (streamRates[STREAM_PARAMS].get() <= 0) {
+        streamRates[STREAM_PARAMS].set(10);
+    }
+    if (stream_trigger(STREAM_PARAMS)) {
+        send_message(MSG_NEXT_PARAM);
+    }
+    // let vehicle know if we're sending parameters, as it may decide
+    // not to send anything else
+    return true;
+}
