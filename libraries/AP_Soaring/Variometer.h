@@ -30,8 +30,6 @@ class Variometer {
     float _last_roll;
     float _last_total_E;
 
-    void get_altitude_wrt_home(float *alt);
-
 public:
     Variometer(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
     float alt;

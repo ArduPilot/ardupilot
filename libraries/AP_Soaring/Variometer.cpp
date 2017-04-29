@@ -14,9 +14,8 @@ Variometer::Variometer(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle
 
 void Variometer::update(const float polar_K, const float polar_B, const float polar_Cd0)
 {
-    Location current_loc;
-    _ahrs.get_position(current_loc);
-    get_altitude_wrt_home(&alt);
+    _ahrs.get_relative_position_D_home(alt);
+    alt = -alt;
 
     if (fabsf(alt - _last_alt) > 0.0001f) { // if no change in altitude then there will be no update of ekf buffer
         // Both filtered total energy rates and unfiltered are computed for the thermal switching logic and the EKF
@@ -26,7 +25,7 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
             aspd = _aparm.airspeed_cruise_cm / 100.0f;
         }
         _aspd_filt = ASPD_FILT * aspd + (1 - ASPD_FILT) * _aspd_filt;
-        float total_E = alt + 0.5 *_aspd_filt * _aspd_filt / GRAVITY_MSS;                                                  // Work out total energy
+        float total_E = alt + 0.5f *_aspd_filt * _aspd_filt / GRAVITY_MSS;                                                  // Work out total energy
         float sinkrate = correct_netto_rate(0.0f, (roll + _last_roll) / 2, _aspd_filt, polar_K, polar_Cd0, polar_B);                                     // Compute still-air sinkrate
         reading = (total_E - _last_total_E) / ((AP_HAL::micros64() - _prev_update_time) * 1e-6) + sinkrate;    // Unfiltered netto rate
         filtered_reading = TE_FILT * reading + (1 - TE_FILT) * filtered_reading;                       // Apply low pass timeconst filter for noise
@@ -79,10 +78,3 @@ float Variometer::correct_netto_rate(float climb_rate,
     //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "%f %f %f %f\n",temp_netto,dVdt,netto_rate,barometer.get_altitude());
     return netto_rate;
 }
-
-void Variometer::get_altitude_wrt_home(float *alt)
-{
-    _ahrs.get_relative_position_D_home(*alt);
-    *alt *= -1.0f;
-}
-
