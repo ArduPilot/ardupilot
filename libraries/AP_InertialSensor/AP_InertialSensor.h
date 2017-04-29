@@ -256,6 +256,10 @@ public:
     void acal_update();
 
     bool accel_cal_requires_reboot() const { return _accel_cal_requires_reboot; }
+
+    // return time in microseconds of last update() call
+    uint32_t get_last_update_usec(void) const { return _last_update_usec; }
+    
 private:
 
     // load backend drivers
@@ -395,6 +399,9 @@ private:
 
     // time between samples in microseconds
     uint32_t _sample_period_usec;
+
+    // last time update() completed
+    uint32_t _last_update_usec;
 
     // health of gyros and accels
     bool _gyro_healthy[INS_MAX_INSTANCES];
