@@ -49,6 +49,7 @@ GCS_MAVLINK::queued_param_send()
     uint16_t bytes_allowed;
     uint8_t count;
     uint32_t tnow = AP_HAL::millis();
+    uint32_t tstart = AP_HAL::micros();
 
     // use at most 30% of bandwidth on parameters. The constant 26 is
     // 1/(1000 * 1/8 * 0.001 * 0.3)
@@ -87,6 +88,11 @@ GCS_MAVLINK::queued_param_send()
 
         _queued_parameter = AP_Param::next_scalar(&_queued_parameter_token, &_queued_parameter_type);
         _queued_parameter_index++;
+
+        if (AP_HAL::micros() - tstart > 1000) {
+            // don't use more than 1ms sending blocks of parameters
+            break;
+        }
     }
     _queued_parameter_send_time_ms = tnow;
 }
