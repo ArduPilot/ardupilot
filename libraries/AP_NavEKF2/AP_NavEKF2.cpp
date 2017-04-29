@@ -609,8 +609,15 @@ bool NavEKF2::InitialiseFilter(void)
     if (_enable == 0) {
         return false;
     }
+    const AP_InertialSensor &ins = _ahrs->get_ins();
 
     imuSampleTime_us = AP_HAL::micros64();
+
+    // remember expected frame time
+    _frameTimeUsec = 1e6 / ins.get_sample_rate();
+
+    // expected number of IMU frames per prediction
+    _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
     // see if we will be doing logging
     DataFlash_Class *dataflash = DataFlash_Class::instance();
@@ -621,7 +628,6 @@ bool NavEKF2::InitialiseFilter(void)
     if (core == nullptr) {
 
         // don't run multiple filters for 1 IMU
-        const AP_InertialSensor &ins = _ahrs->get_ins();
         uint8_t mask = (1U<<ins.get_accel_count())-1;
         _imuMask.set(_imuMask.get() & mask);
         
@@ -690,10 +696,12 @@ void NavEKF2::UpdateFilter(void)
 
     bool statePredictEnabled[num_cores];
     for (uint8_t i=0; i<num_cores; i++) {
-        // if the previous core has only recently finished a new state prediction cycle, then
-        // don't start a new cycle to allow time for fusion operations to complete if the update
-        // rate is higher than 200Hz
-        if ((i > 0) && (core[i-1].getFramesSincePredict() < 2) && (ins.get_sample_rate() > 200)) {
+        // if we have not overrun by more than 3 IMU frames, and we
+        // have already used more than 1/3 of the CPU budget for this
+        // loop then suppress the prediction step. This allows
+        // multiple EKF instances to cooperate on scheduling
+        if (core[i].getFramesSincePredict() < (_framesPerPrediction+3) &&
+            (AP_HAL::micros() - ins.get_last_update_usec()) > _frameTimeUsec/3) {
             statePredictEnabled[i] = false;
         } else {
             statePredictEnabled[i] = true;
