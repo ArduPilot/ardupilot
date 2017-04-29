@@ -179,6 +179,9 @@ public:
 
     // send a PARAM_VALUE message to all active MAVLink connections.
     static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
+
+    // send queued parameters if needed
+    void send_queued_parameters(void);
     
     /*
       send a MAVLink message to all components with this vehicle's system id
