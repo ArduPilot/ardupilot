@@ -22,6 +22,12 @@
 
 extern const AP_HAL::HAL& hal;
 
+// queue of pending parameter requests and replies
+ObjectBuffer<GCS_MAVLINK::pending_param_request> GCS_MAVLINK::param_requests(20);
+ObjectBuffer<GCS_MAVLINK::pending_param_reply> GCS_MAVLINK::param_replies(5);
+
+bool GCS_MAVLINK::param_timer_registered;
+
 /**
  * @brief Send the next pending parameter, called from deferred message
  * handling code
@@ -29,10 +35,17 @@ extern const AP_HAL::HAL& hal;
 void
 GCS_MAVLINK::queued_param_send()
 {
-    if (!initialised || _queued_parameter == nullptr) {
+    if (!initialised) {
         return;
     }
 
+    // send one parameter async reply if pending
+    send_parameter_reply();
+
+    if (_queued_parameter == nullptr) {
+        return;
+    }
+    
     uint16_t bytes_allowed;
     uint8_t count;
     uint32_t tnow = AP_HAL::millis();
@@ -186,6 +199,11 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
 
 void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
 {
+    if (param_requests.space() == 0) {
+        // we can't process this right now, drop it
+        return;
+    }
+    
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(msg, &packet);
 
@@ -200,38 +218,23 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
         return;
     }
     reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
-    
-    enum ap_var_type p_type;
-    AP_Param *vp;
-    char param_name[AP_MAX_NAME_SIZE+1];
-    if (packet.param_index != -1) {
-        AP_Param::ParamToken token;
-        vp = AP_Param::find_by_index(packet.param_index, &p_type, &token);
-        if (vp == nullptr) {
-            return;
-        }
-        vp->copy_name_token(token, param_name, AP_MAX_NAME_SIZE, true);
-        param_name[AP_MAX_NAME_SIZE] = 0;
-    } else {
-        strncpy(param_name, packet.param_id, AP_MAX_NAME_SIZE);
-        param_name[AP_MAX_NAME_SIZE] = 0;
-        vp = AP_Param::find(param_name, &p_type);
-        if (vp == nullptr) {
-            return;
-        }
+
+    struct pending_param_request req;
+    req.chan = chan;
+    req.param_index = packet.param_index;
+    memcpy(req.param_name, packet.param_id, sizeof(req.param_name));
+    req.param_name[AP_MAX_NAME_SIZE] = 0;
+
+    // queue it for processing by io timer
+    param_requests.push(req);
+
+    if (!param_timer_registered) {
+        param_timer_registered = true;
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::param_io_timer, void));
     }
     
-    float value = vp->cast_to_float(p_type);
-    mavlink_msg_param_value_send_buf(
-        msg,
-        chan,
-        param_name,
-        value,
-        mav_var_type(p_type),
-        AP_Param::count_parameters(),
-        packet.param_index);
 }
-
+    
 void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash)
 {
     mavlink_param_set_t packet;
@@ -356,4 +359,71 @@ void GCS_MAVLINK::send_queued_parameters(void)
     if (stream_trigger(STREAM_PARAMS)) {
         send_message(MSG_NEXT_PARAM);
     }
+}
+
+
+/*
+  timer callback for async parameter requests
+ */
+void GCS_MAVLINK::param_io_timer(void)
+{
+    struct pending_param_request req;
+
+    if (param_replies.space() == 0) {
+        // no room
+        return;
+    }
+    
+    if (!param_requests.pop(req)) {
+        // nothing to do
+        return;
+    }
+
+    struct pending_param_reply reply;
+    AP_Param *vp;
+
+    if (req.param_index != -1) {
+        AP_Param::ParamToken token;
+        vp = AP_Param::find_by_index(req.param_index, &reply.p_type, &token);
+        if (vp == nullptr) {
+            return;
+        }
+        vp->copy_name_token(token, reply.param_name, AP_MAX_NAME_SIZE, true);
+    } else {
+        strncpy(reply.param_name, req.param_name, AP_MAX_NAME_SIZE+1);
+        vp = AP_Param::find(req.param_name, &reply.p_type);
+        if (vp == nullptr) {
+            return;
+        }
+    }
+
+    reply.chan = req.chan;
+    reply.param_name[AP_MAX_NAME_SIZE] = 0;
+    reply.value = vp->cast_to_float(reply.p_type);
+    reply.param_index = req.param_index;
+    reply.count = AP_Param::count_parameters();
+
+    // queue for transmission
+    param_replies.push(reply);
+}
+
+/*
+  send a reply to a PARAM_REQUEST_READ
+ */
+void GCS_MAVLINK::send_parameter_reply(void)
+{
+    struct pending_param_reply reply;
+    
+    if (!param_replies.pop(reply)) {
+        // nothing to do
+        return;
+    }
+    
+    mavlink_msg_param_value_send(
+        reply.chan,
+        reply.param_name,
+        reply.value,
+        mav_var_type(reply.p_type),
+        reply.count,
+        reply.param_index);
 }
