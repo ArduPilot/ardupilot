@@ -322,6 +322,9 @@ private:
     AP_Baro &_baro;
     const RangeFinder &_rng;
 
+    uint32_t _frameTimeUsec;        // time per IMU frame
+    uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
+    
     // EKF Mavlink Tuneable Parameters
     AP_Int8  _enable;               // zero to disable EKF2
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
