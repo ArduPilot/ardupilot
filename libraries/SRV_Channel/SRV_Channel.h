@@ -321,6 +321,9 @@ public:
     // assign and enable auxiliary channels
     static void enable_aux_servos(void);
 
+    // enable channels by mask
+    static void enable_by_mask(uint16_t mask);
+    
     // return the current function for a channel
     static SRV_Channel::Aux_servo_function_t channel_function(uint8_t channel);
 
