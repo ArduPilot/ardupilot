@@ -21,6 +21,7 @@
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -198,7 +199,7 @@ AP_GPS_SBF::process_message(void)
         log_ExtEventPVTGeodetic(sbf_msg.data.msg4007u);
     }
     // PVTGeodetic
-    if (blockid == 4007) {
+    else if (blockid == 4007) {
         const msg4007 &temp = sbf_msg.data.msg4007u;
 
         // Update time state
@@ -281,14 +282,33 @@ AP_GPS_SBF::process_message(void)
         return true;
     }
     // DOP
-    if (blockid == 4001) {
+    else if (blockid == 4001) {
         const msg4001 &temp = sbf_msg.data.msg4001u;
 
         last_hdop = temp.HDOP;
 
         state.hdop = last_hdop;
     }
+    // ReceiverStatus
+    else if (blockid == 4014) {
+        const msg4014 &temp = sbf_msg.data.msg4014u;
+        RxState = temp.RxState;
+    }
 
     return false;
 }
 
+void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
+{
+    if (gps._raw_data) {
+        if (!(RxState & SBF_DISK_MOUNTED)){
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
+        }
+        else if (RxState & SBF_DISK_FULL) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
+        }
+        else if (!(RxState & SBF_DISK_ACTIVITY)) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
+        }
+    }
+}
