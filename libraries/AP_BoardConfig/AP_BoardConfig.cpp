@@ -213,3 +213,10 @@ void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
     px4_setup_safety_mask();
 #endif
 }
+
+void AP_BoardConfig::init_safety()
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    px4_init_safety();
+#endif
+}
