@@ -316,6 +316,9 @@ void Copter::init_ardupilot()
         enable_motor_output();
     }
 
+    // disable safety if requested
+    BoardConfig.init_safety();    
+
     cliSerial->printf("\nReady to FLY ");
 
     // flag that initialisation has completed
