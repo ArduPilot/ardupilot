@@ -145,12 +145,10 @@ void AP_BoardConfig::px4_setup_safety_mask()
 }
 
 /*
-  setup safety switch
+  init safety state
  */
-void AP_BoardConfig::px4_setup_safety()
+void AP_BoardConfig::px4_init_safety()
 {
-    px4_setup_safety_mask();
-
     if (px4.safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
         hal.rcout->force_safety_no_wait();
@@ -533,7 +531,7 @@ void AP_BoardConfig::px4_setup()
 {
     px4_setup_peripherals();
     px4_setup_pwm();
-    px4_setup_safety();
+    px4_setup_safety_mask();
     px4_setup_uart();
     px4_setup_sbus();
     px4_setup_drivers();
