@@ -261,6 +261,8 @@ void Plane::init_ardupilot()
     }
 #endif
 
+    // disable safety if requested
+    BoardConfig.init_safety();
 }
 
 //********************************************************************************
