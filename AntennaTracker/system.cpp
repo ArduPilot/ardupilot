@@ -120,6 +120,8 @@ void Tracker::init_tracker()
         prepare_servos();
     }
 
+    // disable safety if requested
+    BoardConfig.init_safety();    
 }
 
 // updates the status of the notify objects
