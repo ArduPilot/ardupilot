@@ -23,6 +23,9 @@
 #include "GPS_Backend.h"
 
 #define SBF_SETUP_MSG "\nsso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic, msec100\n"
+#define SBF_DISK_ACTIVITY (1 << 7)
+#define SBF_DISK_FULL     (1 << 8)
+#define SBF_DISK_MOUNTED  (1 << 9)
 
 class AP_GPS_SBF : public AP_GPS_Backend
 {
@@ -36,6 +39,10 @@ public:
 
     const char *name() const override { return "SBF"; }
 
+    bool is_configured (void) override { return (!gps._raw_data || (RxState & SBF_DISK_ACTIVITY)); }
+
+    void broadcast_configuration_failure_reason(void) const override;
+
 private:
 
     bool parse(uint8_t temp);
@@ -47,7 +54,7 @@ private:
     uint8_t _init_blob_index = 0;
     uint32_t _init_blob_time = 0;
     const char* _initialisation_blob[5] = {
-    "sso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic, msec100\n",
+    "sso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic+ReceiverStatus, msec100\n",
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
     "spm, Rover, StandAlone+SBAS+DGPS+RTK\n",
@@ -57,6 +64,7 @@ private:
     uint32_t crc_error_counter = 0;
     uint32_t last_injected_data_ms = 0;
     bool validcommand = false;
+    uint32_t RxState;
 
     struct PACKED msg4007
     {
@@ -106,9 +114,22 @@ private:
          float VPL;
     };
 
+    struct PACKED msg4014 // ReceiverStatus (v2)
+    {
+         uint32_t TOW;
+         uint16_t WNc;
+         uint8_t CPULoad;
+         uint8_t ExtError;
+         uint32_t UpTime;
+         uint32_t RxState;
+         uint32_t RxError;
+         // remaining data is AGCData, which we don't have a use for, don't extract the data
+    };
+
     union PACKED msgbuffer {
         msg4007 msg4007u;
         msg4001 msg4001u;
+        msg4014 msg4014u;
         uint8_t bytes[128];
     };
 
