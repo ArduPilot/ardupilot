@@ -185,6 +185,9 @@ void Sub::init_ardupilot()
         start_logging(); // create a new log if necessary
     }
 
+    // disable safety if requested
+    BoardConfig.init_safety();    
+    
     hal.console->print("\nInit complete");
 
     // flag that initialisation has completed
