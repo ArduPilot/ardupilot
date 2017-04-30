@@ -31,31 +31,40 @@ NOINLINE void Copter::gcs_send_remote_data(mavlink_channel_t chan)
 	// Data is char[253]
 	static int fd = 0;
 	unsigned int bytes;
-	uint16_t segnr = 0;
+	static uint16_t segnr = 0;
 	char buf[253];
 	char msg[512];
-	const char *PIPE_NAME = "/tmp/apm_pipe";
+	const char *PIPE_NAME = "/ardupilot/apm_pipe";
 
 	if(fd <= 0){
 		fd = open(PIPE_NAME, O_RDONLY | O_NONBLOCK);	
+		gcs_send_text(MAV_SEVERITY_INFO, "Opened Unix Pipe for Remote Data");
 	}
 
 	if(access(PIPE_NAME, F_OK) == -1){
-		gcs_send_text(MAV_SEVERITY_INFO, "RDATA: Named pipe not found. Trying to create /tmp/apm_pipe");
+		//gcs_send_text(MAV_SEVERITY_INFO, "RDATA: Named pipe not found. Trying to create /ardupilot/apm_pipe");
 		if (mknod(PIPE_NAME, S_IFIFO | 0755, 0) != 0){
-			gcs_send_text(MAV_SEVERITY_INFO, "RDATA: Could not create new named pipe at /tmp/apm_pipe");
+			gcs_send_text(MAV_SEVERITY_INFO, "RDATA: Could not create new named pipe at /ardupilot/apm_pipe");
 			// If we can't make a FIFO don't worry about it, just exit
 			return;
 		}
 	}
 
-	if((bytes = read(fd, buf, 252)) > 0){
+
+//	if((bytes = read(fd, buf, 252)) > 0){
+	if((bytes = read(fd, buf, 50)) > 0){
 		buf[bytes] = '\0';
-		//sprintf(msg, "RDATA: Read %zu Bytes. Sending message: %s", bytes, buf);
-		//gcs_send_text(MAV_SEVERITY_INFO, msg);
-		mavlink_msg_remote_data_send(chan,
+		sprintf(msg, "%s", buf);
+		gcs_send_text(MAV_SEVERITY_INFO, msg);
+		/*mavlink_msg_remote_data_send(chan,
                                              segnr,
 			         	     buf);
+		*/
+		if(segnr < 65535){
+			segnr++;
+		} else {
+			segnr = 0;
+		} 
 	}
 	return;
 
