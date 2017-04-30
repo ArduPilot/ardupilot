@@ -16,6 +16,7 @@ public:
     };
 
     void init(void);
+    void init_safety(void);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -128,7 +129,7 @@ private:
     void px4_drivers_start(void);
     void px4_setup(void);
     void px4_setup_pwm(void);
-    void px4_setup_safety(void);
+    void px4_init_safety(void);
     void px4_setup_safety_mask(void);
     void px4_setup_uart(void);
     void px4_setup_sbus(void);
