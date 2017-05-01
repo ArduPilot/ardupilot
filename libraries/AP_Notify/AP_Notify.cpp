@@ -101,48 +101,48 @@ void AP_Notify::init(bool enable_external_leds)
         case Board_Type_PXFMini:
         case Board_Type_BH:
         case Board_Type_BBBMini:
-            boardled = new AP_BoardLED();
+            _devices[0] = new AP_BoardLED();
             break;
             
         
         case Board_Type_RASPilot:
-            boardled = nullptr;
+            _devices[0] = nullptr;
             break;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         case Board_Type_VRBrain:
-            boardled = new VRBoard_LED();
+            _devices[0] = new VRBoard_LED();
             break;
 #endif
             
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
         case Board_Type_PX4_V4:
-            boardled = new PixRacerLED();
+            _devices[0] = new PixRacerLED();
             break;
 
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
         case Board_Type_Navio:
-            boardled = new NavioLED_I2C();
+            _devices[0] = new NavioLED_I2C();
             break;
 
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
         case Board_Type_Navio2:
-            boardled = new DiscreteRGBLed(4, 27, 6, false);
+            _devices[0] = new DiscreteRGBLed(4, 27, 6, false);
             break;
 
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
         case Board_Type_Disco:
-            boardled = new DiscoLED();
+            _devices[0] = new DiscoLED();
             break;
 
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
         case Board_Type_MinLure:
-            boardled = new RCOutputRGBLedOff(15, 13, 14, 255);
+            _devices[0] = new RCOutputRGBLedOff(15, 13, 14, 255);
             break;
 #endif
             
         default:
-            boardled = new AP_BoardLED();
+            _devices[0] = new AP_BoardLED();
             break;
     }
     
@@ -154,16 +154,16 @@ void AP_Notify::init(bool enable_external_leds)
         case Board_Type_ERLEBrain2:
         case Board_Type_PXFMini:
         case Board_Type_Disco:
-            toshibaled = nullptr;
+            _devices[1] = nullptr;
             
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
         case Board_Type_BH:
-            toshibaled = new RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);
+            _devices[1] = new RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);
             break;
 #endif
 
         default:
-           toshibaled = new ToshibaLED_I2C();
+           _devices[1] = new ToshibaLED_I2C();
            break;
     }
     
@@ -173,10 +173,10 @@ void AP_Notify::init(bool enable_external_leds)
         case Board_Type_PX4_V4:
         case Board_Type_Solo:
         case Board_Type_BBBMini:
-            display = new Display();
+            _devices[4] = new Display();
             break;
         default:
-            display = nullptr;
+            _devices[4] = nullptr;
             break;
     }
 
@@ -187,29 +187,29 @@ void AP_Notify::init(bool enable_external_leds)
         case Board_Type_PX4_V4:
         case Board_Type_VRBrain:
         case Board_Type_VRBrain_45:
-            tonealarm = new ToneAlarm_PX4();
+            _devices[2] = new ToneAlarm_PX4();
             break;
         case Board_Type_Solo:
-            tonealarm = new ToneAlarm_PX4_Solo();
+            _devices[2] = new ToneAlarm_PX4_Solo();
             break;
 #endif
             
         case Board_Type_BBBMini:
-            tonealarm = new Buzzer();
+            _devices[2] = new Buzzer();
             break;
  
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         case Board_Type_RASPilot:
         case Board_Type_Disco:
-            tonealarm = new ToneAlarm_Linux();
+            _devices[2] = new ToneAlarm_Linux();
             break;
 #endif
             
         default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-            tonealarm = new ToneAlarm_Linux();
+            _devices[2] = new ToneAlarm_Linux();
 #else
-            tonealarm = nullptr;
+            _devices[2] = nullptr;
 #endif
             break;
     }
@@ -219,24 +219,16 @@ void AP_Notify::init(bool enable_external_leds)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         case Board_Type_Solo:
 #if !HAL_MINIMIZE_FEATURES
-            oreoled = new OreoLED_PX4();
+            _devices[3] = new OreoLED_PX4();
 #endif
             break;
 #endif
             
         default:
-            oreoled = nullptr;
+            _devices[3] = nullptr;
             break;
     }
 
-    
-    _devices[0] = boardled;
-    _devices[1] = toshibaled;
-    _devices[2] = tonealarm;
-    _devices[3] = oreoled;
-    _devices[4] = display;
-    
-    
     // clear all flags and events
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
