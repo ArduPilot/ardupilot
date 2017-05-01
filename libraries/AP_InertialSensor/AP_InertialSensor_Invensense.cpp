@@ -367,6 +367,9 @@ void AP_InertialSensor_Invensense::_fifo_reset()
     hal.scheduler->delay_microseconds(1);
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
     _last_stat_user_ctrl = user_ctrl | BIT_USER_CTRL_FIFO_EN;
+
+    notify_accel_fifo_reset(_accel_instance);
+    notify_gyro_fifo_reset(_gyro_instance);
 }
 
 bool AP_InertialSensor_Invensense::_has_auxiliary_bus()
@@ -587,7 +590,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
 
-        _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), fsync_set);
+        _notify_new_accel_raw_sample(_accel_instance, accel, 0, fsync_set);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
         _temp_filtered = _temp_filter.apply(temp);
@@ -653,7 +656,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
             _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
             
-            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, AP_HAL::micros64(), false);
+            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
             
             _accum.accel.zero();

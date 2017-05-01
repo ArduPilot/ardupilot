@@ -342,9 +342,20 @@ private:
     float _accel_max_abs_offsets[INS_MAX_INSTANCES];
 
     // accelerometer and gyro raw sample rate in units of Hz
-    uint16_t _accel_raw_sample_rates[INS_MAX_INSTANCES];
-    uint16_t _gyro_raw_sample_rates[INS_MAX_INSTANCES];
+    float  _accel_raw_sample_rates[INS_MAX_INSTANCES];
+    float  _gyro_raw_sample_rates[INS_MAX_INSTANCES];
 
+    // last sample time in microseconds. Use for deltaT calculations
+    // on non-FIFO sensors
+    uint64_t _accel_last_sample_us[INS_MAX_INSTANCES];
+    uint64_t _gyro_last_sample_us[INS_MAX_INSTANCES];
+
+    // sample times for checking real sensor rate for FIFO sensors
+    uint16_t _sample_accel_count[INS_MAX_INSTANCES];
+    uint32_t _sample_accel_start_us[INS_MAX_INSTANCES];
+    uint16_t _sample_gyro_count[INS_MAX_INSTANCES];
+    uint32_t _sample_gyro_start_us[INS_MAX_INSTANCES];
+    
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];
 
