@@ -914,8 +914,6 @@ void Copter::start_logging()
     if (g.log_bitmask != 0 && !in_log_download) {
         if (!ap.logging_started) {
             ap.logging_started = true;
-            DataFlash.set_mission(&mission);
-            DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
             DataFlash.StartNewLog();
         } else if (!DataFlash.logging_started()) {
             // dataflash may have stopped logging - when we get_log_data,
