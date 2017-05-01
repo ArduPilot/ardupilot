@@ -90,7 +90,6 @@ void Tracker::start_logging()
     if (g.log_bitmask != 0) {
         if (!logging_started) {
             logging_started = true;
-            DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
             DataFlash.StartNewLog();
         }
         // enable writes

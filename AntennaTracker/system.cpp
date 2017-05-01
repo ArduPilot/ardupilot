@@ -86,6 +86,9 @@ void Tracker::init_tracker()
 
     init_barometer(true);
 
+    // initialise DataFlash library
+    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
+
     // set serial ports non-blocking
     serial_manager.set_blocking_writes_all(false);
 
