@@ -609,7 +609,7 @@ void NavEKF2_core::calcFiltGpsHgtOffset()
     }
     lastOriginHgtTime_ms = imuDataDelayed.time_ms;
 
-    // calculate the observation variance assuming EKF error relative to datum is independant of GPS observation error
+    // calculate the observation variance assuming EKF error relative to datum is independent of GPS observation error
     // when not using GPS as height source
     float originHgtObsVar = sq(gpsHgtAccuracy) + P[8][8];
 
@@ -661,7 +661,7 @@ void NavEKF2_core::readAirSpdData()
 *              Range Beacon Measurements                *
 ********************************************************/
 
-// check for new airspeed data and update stored measurements if available
+// check for new range beacon data and push to data buffer if available
 void NavEKF2_core::readRngBcnData()
 {
     // get the location of the beacon data

@@ -667,7 +667,7 @@ bool NavEKF2::InitialiseFilter(void)
         primary = 0;
     }
 
-    // initialse the cores. We return success only if all cores
+    // initialise the cores. We return success only if all cores
     // initialise successfully
     bool ret = true;
     for (uint8_t i=0; i<num_cores; i++) {
