@@ -92,6 +92,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("GP2_GLITCH",    59, SITL,  gps2_glitch,  0),
     AP_GROUPINFO("ENGINE_FAIL",   60, SITL,  engine_fail,  0),
     AP_GROUPINFO("GPS2_TYPE",     61, SITL,  gps2_type,  SITL::GPS_TYPE_UBLOX),
+    AP_GROUPINFO("ODOM_ENABLE",   62, SITL,  odom_enable, 0),
     AP_GROUPEND
 };
 
