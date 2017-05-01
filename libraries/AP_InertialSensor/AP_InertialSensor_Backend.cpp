@@ -65,8 +65,17 @@ void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &s
 #if SENSOR_RATE_DEBUG
             printf("RATE: %.1f should be %.1f\n", observed_rate_hz, rate_hz);
 #endif
-            observed_rate_hz = constrain_float(observed_rate_hz, rate_hz*0.95, rate_hz*1.05);
-            rate_hz = 0.90 * rate_hz + 0.1 * observed_rate_hz;
+            float filter_constant = 0.98;
+            float upper_limit = 1.05;
+            float lower_limit = 0.95;
+            if (AP_HAL::millis() < 30000) {
+                // converge quickly for first 30s, then more slowly
+                filter_constant = 0.8;
+                upper_limit = 2.0;
+                lower_limit = 0.5;
+            }
+            observed_rate_hz = constrain_float(observed_rate_hz, rate_hz*lower_limit, rate_hz*upper_limit);
+            rate_hz = filter_constant * rate_hz + (1-filter_constant) * observed_rate_hz;
             count = 0;
             start_us = now;
         }
