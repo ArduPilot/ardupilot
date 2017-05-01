@@ -70,7 +70,7 @@ public:
         if (success) {
             element = buffer[bestIndex].element;
             _tail = (bestIndex+1)%_size;
-            //make time zero to stop using it again, 
+            //make time zero to stop using it again,
             //resolves corner case of reusing the element when head == tail
             buffer[bestIndex].element.time_ms = 0;
             return true;
