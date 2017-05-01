@@ -838,7 +838,9 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_error : ins.get_accel_error_count(0),
         temperature : ins.get_temperature(0),
         gyro_health : (uint8_t)ins.get_gyro_health(0),
-        accel_health : (uint8_t)ins.get_accel_health(0)
+        accel_health : (uint8_t)ins.get_accel_health(0),
+        gyro_rate : ins.get_gyro_rate_hz(0),
+        accel_rate : ins.get_accel_rate_hz(0),
     };
     WriteBlock(&pkt, sizeof(pkt));
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
@@ -860,7 +862,9 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_error : ins.get_accel_error_count(1),
         temperature : ins.get_temperature(1),
         gyro_health : (uint8_t)ins.get_gyro_health(1),
-        accel_health : (uint8_t)ins.get_accel_health(1)
+        accel_health : (uint8_t)ins.get_accel_health(1),
+        gyro_rate : ins.get_gyro_rate_hz(1),
+        accel_rate : ins.get_accel_rate_hz(1),
     };
     WriteBlock(&pkt2, sizeof(pkt2));
     if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
@@ -881,7 +885,9 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_error : ins.get_accel_error_count(2),
         temperature : ins.get_temperature(2),
         gyro_health : (uint8_t)ins.get_gyro_health(2),
-        accel_health : (uint8_t)ins.get_accel_health(2)
+        accel_health : (uint8_t)ins.get_accel_health(2),
+        gyro_rate : ins.get_gyro_rate_hz(2),
+        accel_rate : ins.get_accel_rate_hz(2),
     };
     WriteBlock(&pkt3, sizeof(pkt3));
 }
