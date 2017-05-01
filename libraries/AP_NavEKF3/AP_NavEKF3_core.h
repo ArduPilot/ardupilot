@@ -166,7 +166,7 @@ public:
     bool getOriginLLH(struct Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
+    // All NED positions calculated by the filter will be relative to this location
     // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
     // Returns false if the filter has rejected the attempt to set the origin
     bool setOriginLLH(const Location &loc);
@@ -1091,7 +1091,7 @@ private:
     uint8_t N_beacons;                  // Number of range beacons in use
     float maxBcnPosD;                   // maximum position of all beacons in the down direction (m)
     float minBcnPosD;                   // minimum position of all beacons in the down direction (m)
-    bool usingMinHypothesis;            // true when the min beacob constellatio offset hyopthesis is being used
+    bool usingMinHypothesis;            // true when the min beacon constellation offset hyopthesis is being used
 
     float bcnPosDownOffsetMax;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     float bcnPosOffsetMaxVar;           // Variance of the bcnPosDownOffsetMax state (m)
