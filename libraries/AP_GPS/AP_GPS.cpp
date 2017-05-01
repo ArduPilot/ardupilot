@@ -1018,19 +1018,6 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
     }
 }
 
-/*
-  inject data into all backends
-*/
-void AP_GPS::inject_data_all(const uint8_t *data, uint16_t len)
-{
-    uint8_t i;
-    for (i=0; i<num_instances; i++) {
-        if ((drivers[i] != nullptr) && (_type[i] != GPS_TYPE_NONE)) {
-            drivers[i]->inject_data(data, len);
-        }
-    }
-}
-
 void AP_GPS::Write_DataFlash_Log_Startup_messages()
 {
     if (_DataFlash == nullptr) {

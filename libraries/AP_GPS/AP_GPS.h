@@ -466,9 +466,6 @@ private:
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t *msg);
 
-    // inject data into all backends
-    void inject_data_all(const uint8_t *data, uint16_t len);
-
     // GPS blending and switching
     Vector2f _NE_pos_offset_m[GPS_MAX_RECEIVERS]; // Filtered North,East position offset from GPS instance to blended solution in _output_state.location (m)
     float _hgt_offset_cm[GPS_MAX_RECEIVERS]; // Filtered height offset from GPS instance relative to blended solution in _output_state.location (cm)
