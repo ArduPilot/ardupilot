@@ -1989,16 +1989,20 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
 uint16_t AP_Param::count_parameters(void)
 {
     // if we haven't cached the parameter count yet...
-    if (0 == _parameter_count) {
+    uint16_t ret = _parameter_count;
+    if (0 == ret) {
         AP_Param  *vp;
         AP_Param::ParamToken token;
 
         vp = AP_Param::first(&token, nullptr);
+        uint16_t count = 0;
         do {
-            _parameter_count++;
+            count++;
         } while (nullptr != (vp = AP_Param::next_scalar(&token, nullptr)));
+        _parameter_count = count;
+        ret = count;
     }
-    return _parameter_count;
+    return ret;
 }
 
 /*

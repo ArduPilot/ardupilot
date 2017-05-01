@@ -588,14 +588,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         handle_log_send(rover.DataFlash);
     }
 
-    if (_queued_parameter != nullptr) {
-        if (streamRates[STREAM_PARAMS].get() <= 0) {
-            streamRates[STREAM_PARAMS].set(10);
-        }
-        if (stream_trigger(STREAM_PARAMS)) {
-            send_message(MSG_NEXT_PARAM);
-        }
-    }
+    send_queued_parameters();
 
     if (rover.gcs_out_of_time) {
       return;

@@ -179,6 +179,9 @@ public:
 
     // send a PARAM_VALUE message to all active MAVLink connections.
     static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
+
+    // send queued parameters if needed
+    bool send_queued_parameters(void);
     
     /*
       send a MAVLink message to all components with this vehicle's system id
@@ -369,6 +372,35 @@ private:
  
     static const AP_SerialManager *serialmanager_p;
 
+    struct pending_param_request {
+        mavlink_channel_t chan;
+        int16_t param_index;
+        char param_name[AP_MAX_NAME_SIZE+1];
+    };
+
+    struct pending_param_reply {
+        mavlink_channel_t chan;        
+        float value;
+        enum ap_var_type p_type;
+        int16_t param_index;
+        uint16_t count;
+        char param_name[AP_MAX_NAME_SIZE+1];
+    };
+
+    // queue of pending parameter requests and replies
+    static ObjectBuffer<pending_param_request> param_requests;
+    static ObjectBuffer<pending_param_reply> param_replies;
+
+    // have we registered the IO timer callback?
+    static bool param_timer_registered;
+
+    // IO timer callback for parameters
+    void param_io_timer(void);
+    
+    // send an async parameter reply
+    void send_parameter_reply(void);
+    
+    
     // a vehicle can optionally snoop on messages for other systems
     static void (*msg_snoop)(const mavlink_message_t* msg);
 
