@@ -33,6 +33,18 @@ void AP_InertialSensor_Backend::notify_gyro_fifo_reset(uint8_t instance)
     _imu._sample_gyro_start_us[instance] = 0;
 }
 
+// set the amount of oversamping a accel is doing
+void AP_InertialSensor_Backend::_set_accel_oversampling(uint8_t instance, uint8_t n)
+{
+    _imu._accel_over_sampling[instance] = n;
+}
+
+// set the amount of oversamping a gyro is doing
+void AP_InertialSensor_Backend::_set_gyro_oversampling(uint8_t instance, uint8_t n)
+{
+    _imu._gyro_over_sampling[instance] = n;
+}
+
 /*
   update the sensor rate for FIFO sensors
 
@@ -116,6 +128,9 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 {
     float dt;
 
+    _update_sensor_rate(_imu._sample_gyro_count[instance], _imu._sample_gyro_start_us[instance],
+                        _imu._gyro_raw_sample_rates[instance]);
+
     /*
       we have two classes of sensors. FIFO based sensors produce data
       at a very predictable overall rate, but the data comes in
@@ -127,9 +142,6 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     if (sample_us != 0 && _imu._gyro_last_sample_us[instance] != 0) {
         dt = (sample_us - _imu._gyro_last_sample_us[instance]) * 1.0e-6;
     } else {
-        _update_sensor_rate(_imu._sample_gyro_count[instance], _imu._sample_gyro_start_us[instance],
-                            _imu._gyro_raw_sample_rates[instance]);
-
         // don't accept below 100Hz
         if (_imu._gyro_raw_sample_rates[instance] < 100) {
             return;
@@ -234,6 +246,9 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 {
     float dt;
 
+    _update_sensor_rate(_imu._sample_accel_count[instance], _imu._sample_accel_start_us[instance],
+                        _imu._accel_raw_sample_rates[instance]);
+
     /*
       we have two classes of sensors. FIFO based sensors produce data
       at a very predictable overall rate, but the data comes in
@@ -245,9 +260,6 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     if (sample_us != 0 && _imu._accel_last_sample_us[instance] != 0) {
         dt = (sample_us - _imu._accel_last_sample_us[instance]) * 1.0e-6;
     } else {
-        _update_sensor_rate(_imu._sample_accel_count[instance], _imu._sample_accel_start_us[instance],
-                            _imu._accel_raw_sample_rates[instance]);
-
         // don't accept below 100Hz
         if (_imu._accel_raw_sample_rates[instance] < 100) {
             return;

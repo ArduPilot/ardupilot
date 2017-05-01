@@ -125,6 +125,12 @@ protected:
     // sensors, and should be set to zero for FIFO based sensors
     void _notify_new_accel_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0, bool fsync_set=false);
 
+    // set the amount of oversamping a accel is doing
+    void _set_accel_oversampling(uint8_t instance, uint8_t n);
+
+    // set the amount of oversamping a gyro is doing
+    void _set_gyro_oversampling(uint8_t instance, uint8_t n);
+    
     // update the sensor rate for FIFO sensors
     void _update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz);
     
