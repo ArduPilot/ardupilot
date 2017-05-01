@@ -810,6 +810,10 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
         _fast_sampling = (_mpu_type != Invensense_MPU6000 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
         if (_fast_sampling) {
             hal.console->printf("MPU[%u]: enabled fast sampling\n", _accel_instance);
+
+            // for logging purposes set the oversamping rate
+            _set_accel_oversampling(_accel_instance, MPU_FIFO_DOWNSAMPLE_COUNT/2);
+            _set_gyro_oversampling(_accel_instance, MPU_FIFO_DOWNSAMPLE_COUNT);
         }
     }
     

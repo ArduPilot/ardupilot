@@ -133,6 +133,10 @@ public:
     bool accel_calibrated_ok_all() const;
     bool use_accel(uint8_t instance) const;
 
+    // get observed sensor rates, including any internal sampling multiplier
+    uint16_t get_gyro_rate_hz(uint8_t instance) const { return uint16_t(_gyro_raw_sample_rates[instance] * _gyro_over_sampling[instance]); }
+    uint16_t get_accel_rate_hz(uint8_t instance) const { return uint16_t(_accel_raw_sample_rates[instance] * _accel_over_sampling[instance]); }
+    
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
     const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(_primary_accel); }
@@ -344,6 +348,10 @@ private:
     // accelerometer and gyro raw sample rate in units of Hz
     float  _accel_raw_sample_rates[INS_MAX_INSTANCES];
     float  _gyro_raw_sample_rates[INS_MAX_INSTANCES];
+
+    // how many sensors samples per notify to the backend
+    uint8_t _accel_over_sampling[INS_MAX_INSTANCES];
+    uint8_t _gyro_over_sampling[INS_MAX_INSTANCES];
 
     // last sample time in microseconds. Use for deltaT calculations
     // on non-FIFO sensors
