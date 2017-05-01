@@ -683,7 +683,7 @@ void NavEKF3_core::readAirSpdData()
 *              Range Beacon Measurements                *
 ********************************************************/
 
-// check for new airspeed data and update stored measurements if available
+// check for new range beacon data and update position if available
 void NavEKF3_core::readRngBcnData()
 {
     // get the location of the beacon data
