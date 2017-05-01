@@ -517,10 +517,6 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 void Rover::start_logging()
 {
     in_mavlink_delay = true;
-    DataFlash.set_mission(&mission);
-    DataFlash.setVehicle_Startup_Log_Writer(
-        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
-        );
     DataFlash.StartNewLog();
     in_mavlink_delay = false;
 }
