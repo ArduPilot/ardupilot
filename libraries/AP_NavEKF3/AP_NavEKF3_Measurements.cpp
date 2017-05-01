@@ -380,7 +380,7 @@ void NavEKF3_core::readIMUData()
         // reset the counter used to let the frontend know how many frames have elapsed since we started a new update cycle
         framesSincePredict = 0;
 
-        // set the flag to let the filter know it has new IMU data nad needs to run
+        // set the flag to let the filter know it has new IMU data and needs to run
         runUpdates = true;
 
         // extract the oldest available data from the FIFO buffer
@@ -510,7 +510,7 @@ void NavEKF3_core::readGpsData()
             // Post-alignment checks
             calcGpsGoodForFlight();
 
-            // Read the GPS locaton in WGS-84 lat,long,height coordinates
+            // Read the GPS location in WGS-84 lat,long,height coordinates
             const struct Location &gpsloc = _ahrs->get_gps().location();
 
             // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
@@ -524,7 +524,7 @@ void NavEKF3_core::readGpsData()
                 // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
                 EKF_origin.alt = gpsloc.alt - baroDataNew.hgt;
 
-                // Set the uncertinty of the GPS origin height
+                // Set the uncertainty of the GPS origin height
                 ekfOriginHgtVar = sq(gpsHgtAccuracy);
 
             }
@@ -631,7 +631,7 @@ void NavEKF3_core::calcFiltGpsHgtOffset()
     }
     lastOriginHgtTime_ms = imuDataDelayed.time_ms;
 
-    // calculate the observation variance assuming EKF error relative to datum is independant of GPS observation error
+    // calculate the observation variance assuming EKF error relative to datum is independent of GPS observation error
     // when not using GPS as height source
     float originHgtObsVar = sq(gpsHgtAccuracy) + P[8][8];
 
@@ -683,7 +683,7 @@ void NavEKF3_core::readAirSpdData()
 *              Range Beacon Measurements                *
 ********************************************************/
 
-// check for new airspeed data and update stored measurements if available
+// check for new range beacon data and push to data buffer if available
 void NavEKF3_core::readRngBcnData()
 {
     // get the location of the beacon data
