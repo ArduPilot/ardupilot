@@ -165,6 +165,10 @@ void Sub::init_ardupilot()
     // initialise mission library
     mission.init();
 
+    // initialise DataFlash library
+    DataFlash.set_mission(&mission);
+    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
+
     startup_INS_ground();
 
     // we don't want writes to the serial port to cause us to pause
