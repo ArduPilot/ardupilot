@@ -744,7 +744,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
     accel_data *= _accel_scale;
 
     _rotate_and_correct_accel(_accel_instance, accel_data);
-    _notify_new_accel_raw_sample(_accel_instance, accel_data);
+    _notify_new_accel_raw_sample(_accel_instance, accel_data, AP_HAL::micros64());
 }
 
 /*
@@ -765,7 +765,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     gyro_data *= _gyro_scale;
 
     _rotate_and_correct_gyro(_gyro_instance, gyro_data);
-    _notify_new_gyro_raw_sample(_gyro_instance, gyro_data);
+    _notify_new_gyro_raw_sample(_gyro_instance, gyro_data, AP_HAL::micros64());
 }
 
 bool AP_InertialSensor_LSM9DS0::update()
