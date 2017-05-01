@@ -297,6 +297,12 @@ void Plane::startup_ground(void)
     // initialise mission library
     mission.init();
 
+    // initialise DataFlash library
+    DataFlash.set_mission(&mission);
+    DataFlash.setVehicle_Startup_Log_Writer(
+        FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
+        );
+
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
     failsafe.last_heartbeat_ms = millis();
