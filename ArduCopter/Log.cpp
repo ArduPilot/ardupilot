@@ -896,9 +896,7 @@ void Copter::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_pag
 void Copter::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
-    char frame_buf[20];
-    snprintf(frame_buf, sizeof(frame_buf), "Frame: %s", get_frame_string());
-    DataFlash.Log_Write_Message(frame_buf);
+    DataFlash.Log_Write_MessageF("Frame: %s", get_frame_string());
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 #if AC_RALLY
     DataFlash.Log_Write_Rally(rally);
