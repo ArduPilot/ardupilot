@@ -1226,6 +1226,23 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RUDD_DT_GAIN", 9, ParametersG2, rudd_dt_gain, 10),
 
+    // @Param: TKOFF_RDDR_FF
+    // @DisplayName: Takeoff aileron to Rudder feedforward
+    // @Description: This parameter sets aileron to rudder ff below the TKOFF_RDDR_FF_H hieght, helpful to resolve tendency of plane to roll during takeoff.
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: User
+    AP_GROUPINFO("TKOFF_RDDR_MIX", 10, ParametersG2, takeoff_rudder_mix, 0),
+
+    // @Param: TKOFF_RDDR_FF_H
+    // @DisplayName: Takeoff rudder feedforward min altitude
+    // @Description: Height below which the TKOFF_RDDR_FF will be active setting it to 0 will disable the takeoff roll to rudder feedforward
+    // @Units: m
+    // @Range: 0 10
+    // @Increment: 1.0
+    // @User: User
+    AP_GROUPINFO("TKOFF_RDDR_MIX_H", 11, ParametersG2, takeoff_rudder_mix_height, 0),
+
     AP_GROUPEND
 };
 

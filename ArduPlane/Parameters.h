@@ -543,6 +543,10 @@ public:
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
     
+    // Takeoff Rudder Mix
+    AP_Float takeoff_rudder_mix_height;
+    AP_Float takeoff_rudder_mix;
+
     // ArduSoar parameters
     SoaringController soaring_controller;
 
