@@ -414,12 +414,14 @@ void Display::draw_text(uint16_t x, uint16_t y, const char* c)
 #ifndef AP_NOTIFY_DISPLAY_USE_EMOJI
         if (*c >= ' ' && *c <= '~') {
             draw_char(x, y, *c - ' ');
-            x += 7;
+        } else {
+            // convert oob characters to spaces
+            draw_char(x, y, 0);
         }
 #else
         draw_char(x, y, *c);
-        x += 7;
 #endif
+        x += 7;
         c++;
     }
 }
