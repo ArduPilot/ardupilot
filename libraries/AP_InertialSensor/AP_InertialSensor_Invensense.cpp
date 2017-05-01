@@ -813,7 +813,7 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
 
             // for logging purposes set the oversamping rate
             _set_accel_oversampling(_accel_instance, MPU_FIFO_DOWNSAMPLE_COUNT/2);
-            _set_gyro_oversampling(_accel_instance, MPU_FIFO_DOWNSAMPLE_COUNT);
+            _set_gyro_oversampling(_gyro_instance, MPU_FIFO_DOWNSAMPLE_COUNT);
         }
     }
     
