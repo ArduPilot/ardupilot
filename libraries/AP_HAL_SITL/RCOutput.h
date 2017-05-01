@@ -2,11 +2,12 @@
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 #include "AP_HAL_SITL.h"
 
 class HALSITL::RCOutput : public AP_HAL::RCOutput {
 public:
-    explicit RCOutput(SITL_State *sitlState): _sitlState(sitlState), _freq_hz(50) {}
+    explicit RCOutput(SITL_State *sitlState): _sitlState(sitlState), _freq_hz(DEFAULT_RCOUTPUT_FREQ) {}
     void init() override;
     void set_freq(uint32_t chmask, uint16_t freq_hz) override;
     uint16_t get_freq(uint8_t ch) override;
@@ -23,7 +24,7 @@ private:
     uint16_t _freq_hz;
     uint16_t _enable_mask;
     bool _corked;
-    uint16_t _pending[SITL_NUM_CHANNELS];
+    uint16_t _pending[SITL_RC_OUTPUT_CHANNELS];
 };
 
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

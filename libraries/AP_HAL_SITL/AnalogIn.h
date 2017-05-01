@@ -1,9 +1,10 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_HAL_SITL_Namespace.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#define SITL_INPUT_MAX_CHANNELS 12
+#include "AP_HAL_SITL.h"
+
 
 class HALSITL::ADCSource : public AP_HAL::AnalogSource {
 public:
@@ -14,7 +15,7 @@ public:
     /* implement AnalogSource virtual api: */
     float read_average();
     float read_latest();
-    void set_pin(uint8_t p);
+    void set_pin(uint8_t pin);
     float voltage_average();
     float voltage_latest();
     float voltage_average_ratiometric() {
@@ -34,7 +35,7 @@ class HALSITL::AnalogIn : public AP_HAL::AnalogIn {
 public:
     explicit AnalogIn(SITL_State *sitlState): _sitlState(sitlState) {}
     void init();
-    AP_HAL::AnalogSource* channel(int16_t n);
+    AP_HAL::AnalogSource* channel(int16_t pin);
     float board_voltage(void) {
         return 5.0f;
     }
@@ -42,3 +43,4 @@ private:
     static ADCSource* _channels[SITL_INPUT_MAX_CHANNELS];
     SITL_State *_sitlState;
 };
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

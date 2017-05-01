@@ -73,4 +73,4 @@ void RCInput::clear_overrides()
 {
     memset(_override, 0, sizeof(_override));
 }
-#endif
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

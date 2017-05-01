@@ -1,13 +1,7 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
+#include <AP_HAL/AP_HAL_Boards.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
-#include "AP_HAL_SITL.h"
-#include "AP_HAL_SITL_Namespace.h"
-#include "HAL_SITL_Class.h"
-#include "RCInput.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -42,7 +36,7 @@ public:
     int gps_pipe(void);
     int gps2_pipe(void);
     ssize_t gps_read(int fd, void *buf, size_t count);
-    uint16_t pwm_output[SITL_NUM_CHANNELS];
+    uint16_t pwm_output[SITL_RC_OUTPUT_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
     bool new_rc_input;
     void loop_hook(void);
@@ -53,12 +47,12 @@ public:
     bool use_rtscts(void) const {
         return _use_rtscts;
     }
-    
+
     // simulated airspeed, sonar and battery monitor
-    uint16_t sonar_pin_value;    // pin 0
-    uint16_t airspeed_pin_value; // pin 1
-    uint16_t voltage_pin_value;  // pin 13
-    uint16_t current_pin_value;  // pin 12
+    uint16_t sonar_pin_value;     // pin 0
+    uint16_t airspeed_pin_value;  // pin 1
+    uint16_t voltage_pin_value;   // pin 13
+    uint16_t current_pin_value;   // pin 12
 
     // return TCP client address for uartC
     const char *get_client_address(void) const { return _client_address; }
@@ -72,7 +66,7 @@ public:
         "GPS2",
         "tcp:4",
     };
-    
+
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
@@ -83,7 +77,7 @@ private:
     void _setup_adc(void);
 
     void set_height_agl(void);
-    void _update_barometer(float height);
+    void _update_barometer(float altitude);
     void _update_compass(void);
 
     void _set_signal_handlers(void) const;
@@ -167,13 +161,13 @@ private:
 
     bool _use_rtscts;
     bool _use_fg_view;
-    
+
     const char *_fdm_address;
 
     // delay buffer variables
-    static const uint8_t mag_buffer_length = 250;
-    static const uint8_t wind_buffer_length = 50;
-    static const uint8_t baro_buffer_length = 50;
+    static const uint8_t MAG_BUFFER_LENGTH = 250;
+    static const uint8_t WIND_BUFFER_LENGTH = 50;
+    static const uint8_t BARO_BUFFER_LENGTH = 50;
 
     // magnetometer delay buffer variables
     struct readings_mag {
@@ -182,7 +176,7 @@ private:
     };
     uint8_t store_index_mag;
     uint32_t last_store_time_mag;
-    VectorN<readings_mag,mag_buffer_length> buffer_mag;
+    VectorN<readings_mag, MAG_BUFFER_LENGTH> buffer_mag;
     uint32_t time_delta_mag;
     uint32_t delayed_time_mag;
 
@@ -193,7 +187,7 @@ private:
     };
     uint8_t store_index_wind;
     uint32_t last_store_time_wind;
-    VectorN<readings_wind,wind_buffer_length> buffer_wind;
+    VectorN<readings_wind, WIND_BUFFER_LENGTH> buffer_wind;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
 
@@ -204,7 +198,7 @@ private:
     };
     uint8_t store_index_baro;
     uint32_t last_store_time_baro;
-    VectorN<readings_baro,baro_buffer_length> buffer_baro;
+    VectorN<readings_baro, BARO_BUFFER_LENGTH> buffer_baro;
     uint32_t time_delta_baro;
     uint32_t delayed_time_baro;
 
@@ -220,7 +214,7 @@ private:
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
-    
+
     // TCP address to connect uartC to
     const char *_client_address;
 
@@ -228,5 +222,4 @@ private:
 
     const char *_home_str;
 };
-
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
