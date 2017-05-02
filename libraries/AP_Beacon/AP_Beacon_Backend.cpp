@@ -68,6 +68,9 @@ void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vecto
 
     // set position after correcting yaw
     _frontend.beacon_state[beacon_instance].position = correct_for_orient_yaw(pos);
+
+    // update boundary for fence
+    _frontend.update_boundary_points();
 }
 
 // rotate vector to correct for beacon system yaw orientation
