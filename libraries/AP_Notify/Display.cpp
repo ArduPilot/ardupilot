@@ -324,9 +324,6 @@ bool Display::init(void)
         return true;
     }
 
-    _mstartpos = 0; // ticker shift position
-    _movedelay = 4; // ticker delay before shifting after new message displayed
-
     // initialise driver
     for(uint8_t i=0; i<8 && _driver == nullptr; i++) {
         if (! (I2C_BUS_PROBE_MASK & (1<<i))) {
