@@ -587,6 +587,14 @@ bool AP_AHRS_NavEKF::set_origin(const Location &loc)
     case EKF_TYPE3:
         return ret3;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL: {
+        struct SITL::sitl_fdm &fdm = _sitl->state;
+        fdm.home = loc;
+        return true;
+    }
+#endif
+
     default:
         return false;
     }
@@ -1411,8 +1419,9 @@ bool AP_AHRS_NavEKF::get_origin(Location &ret) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
-        ret = get_home();
-        return ret.lat != 0 || ret.lng != 0;
+        const struct SITL::sitl_fdm &fdm = _sitl->state;
+        ret = fdm.home;
+        return true;
 #endif
     }
 }
