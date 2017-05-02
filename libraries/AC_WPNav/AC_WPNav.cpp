@@ -512,6 +512,7 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     _flags.slowing_down = false;    // target is not slowing down yet
     _flags.segment_type = SEGMENT_STRAIGHT;
     _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
+    _flags.wp_yaw_set = false;
 
     // initialise the limited speed to current speed along the track
     const Vector3f &curr_vel = _inav.get_velocity();
@@ -1017,6 +1018,7 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     _flags.reached_destination = false;
     _flags.segment_type = SEGMENT_SPLINE;
     _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
+    _flags.wp_yaw_set = false;
 
     // initialise yaw related variables
     _track_length_xy = safe_sqrt(sq(_destination.x - _origin.x)+sq(_destination.y - _origin.y));  // horizontal track length (used to decide if we should update yaw)
