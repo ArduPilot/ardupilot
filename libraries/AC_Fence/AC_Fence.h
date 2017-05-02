@@ -9,12 +9,14 @@
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_Fence/AC_PolyFence_loader.h>
 #include <AP_Common/Location.h>
+#include <AP_Beacon/AP_Beacon.h>
 
 // bit masks for enabled fence types.  Used for TYPE parameter
 #define AC_FENCE_TYPE_NONE                          0       // fence disabled
 #define AC_FENCE_TYPE_ALT_MAX                       1       // high alt fence which usually initiates an RTL
 #define AC_FENCE_TYPE_CIRCLE                        2       // circular horizontal fence (usually initiates an RTL)
 #define AC_FENCE_TYPE_POLYGON                       4       // polygon horizontal fence
+#define AC_FENCE_TYPE_BEACON                        8       // beacon horizontal fence
 
 // valid actions should a fence be breached
 #define AC_FENCE_ACTION_REPORT_ONLY                 0       // report to GCS that boundary has been breached but take no further action
@@ -37,7 +39,7 @@ class AC_Fence
 public:
 
     /// Constructor
-    AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav);
+    AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AP_Beacon& beacon);
 
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
     void enable(bool true_false) { _enabled = true_false; }
@@ -111,6 +113,15 @@ public:
     /// returns true if we've breached the polygon boundary.  simple passthrough to underlying _poly_loader object
     bool boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points) const;
 
+
+    ///
+    /// beacon related methods
+    ///
+
+    /// returns pointer to array of beacon points and num_points is filled in with the total number
+    Vector2f* get_beacon_points(uint16_t& num_points) const;
+
+
     /// handler for polygon fence messages with GCS
     void handle_msg(mavlink_channel_t chan, mavlink_message_t* msg);
 
@@ -130,6 +141,7 @@ private:
     // pointers to other objects we depend upon
     const AP_AHRS& _ahrs;
     const AP_InertialNav& _inav;
+    const AP_Beacon& _beacon;
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control
@@ -166,4 +178,9 @@ private:
     bool            _boundary_create_attempted = false; // true if we have attempted to create the boundary array
     bool            _boundary_loaded = false;       // true if boundary array has been loaded from eeprom
     bool            _boundary_valid = false;        // true if boundary forms a closed polygon
+
+    // beacon fence variables
+    Vector2f        *_beacon_boundary = nullptr;        // array of boundary points.  Note: point 0 is the return point
+    uint8_t         _beacon_boundary_num_points = 0;    // number of points in the boundary array
+    bool            _beacon_boundary_valid = false;     // true if boundary forms a closed beacon polygon
 };
