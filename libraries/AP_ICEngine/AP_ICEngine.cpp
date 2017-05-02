@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @DisplayName: Time to run starter
     // @Description: This is the number of seconds to run the starter when trying to start the engine
     // @User: Standard
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.1 5
     AP_GROUPINFO("STARTER_TIME", 2, AP_ICEngine, starter_time, 3),
 
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @DisplayName: Time to wait between starts
     // @Description: Delay between start attempts
     // @User: Standard
-    // @Units: Seconds
+    // @Units: s
     // @Range: 1 10
     AP_GROUPINFO("START_DELAY", 3, AP_ICEngine, starter_delay, 2),
     
