@@ -814,6 +814,15 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
             // for logging purposes set the oversamping rate
             _set_accel_oversampling(_accel_instance, MPU_FIFO_DOWNSAMPLE_COUNT/2);
             _set_gyro_oversampling(_gyro_instance, MPU_FIFO_DOWNSAMPLE_COUNT);
+
+            /* set divider for internal sample rate to 0x1F when fast
+             sampling enabled. This reduces the impact of the slave
+             sensor on the sample rate. It ends up with around 75Hz
+             slave rate, and reduces the impact on the gyro and accel
+             sample rate, ending up with around 7760Hz gyro rate and
+             3880Hz accel rate
+             */
+            _register_write(MPUREG_I2C_SLV4_CTRL, 0x1F);
         }
     }
     
