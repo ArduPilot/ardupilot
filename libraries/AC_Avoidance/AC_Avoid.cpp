@@ -13,6 +13,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: ANGLE_MAX
     // @DisplayName: Avoidance max lean angle in non-GPS flight modes
     // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
+    // @Units: cdeg
     // @Range: 0 4500
     // @User: Standard
     AP_GROUPINFO("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000),
@@ -20,7 +21,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
     // @Description: Distance from object at which obstacle avoidance will begin in non-GPS modes
-    // @Units: meters
+    // @Units: m
     // @Range: 3 30
     // @User: Standard
     AP_GROUPINFO("DIST_MAX", 3,  AC_Avoid, _dist_max, AC_AVOID_NONGPS_DIST_MAX_DEFAULT),
@@ -28,7 +29,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: MARGIN
     // @DisplayName: Avoidance distance margin in GPS modes
     // @Description: Vehicle will attempt to stay at least this distance (in meters) from objects while in GPS modes
-    // @Units: meters
+    // @Units: m
     // @Range: 1 10
     // @User: Standard
     AP_GROUPINFO("MARGIN", 4, AC_Avoid, _margin, 2.0f),
