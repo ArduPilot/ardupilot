@@ -19,8 +19,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
-
 // constructor
 Display_SH1106_I2C::Display_SH1106_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev) :
     _dev(std::move(dev))
