@@ -488,7 +488,7 @@ void AP_Baro::init(void)
 #endif
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
-        AP_HAL::panic("Baro: unable to initialise driver");
+        AP_BoardConfig::sensor_config_error("Baro: unable to initialise driver");
     }
 }
 
