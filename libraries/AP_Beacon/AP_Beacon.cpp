@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @Param: _LATITUDE
     // @DisplayName: Beacon origin's latitude
     // @Description: Beacon origin's latitude
-    // @Units: degrees
+    // @Units: deg
     // @Increment: 0.000001
     // @Range: -90 90
     // @User: Advanced
@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @Param: _LONGITUDE
     // @DisplayName: Beacon origin's longitude
     // @Description: Beacon origin's longitude
-    // @Units: degrees
+    // @Units: deg
     // @Increment: 0.000001
     // @Range: -180 180
     // @User: Advanced
@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @Param: _ALT
     // @DisplayName: Beacon origin's altitude above sealevel in meters
     // @Description: Beacon origin's altitude above sealevel in meters
-    // @Units: meters
+    // @Units: m
     // @Increment: 1
     // @Range: 0 10000
     // @User: Advanced
@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @Param: _ORIENT_YAW
     // @DisplayName: Beacon systems rotation from north in degrees
     // @Description: Beacon systems rotation from north in degrees
-    // @Units: degrees
+    // @Units: deg
     // @Increment: 1
     // @Range: -180 +180
     // @User: Advanced
