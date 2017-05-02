@@ -109,7 +109,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: Minimum elevation
     // @Description: This sets the minimum elevation of satellites above the horizon for them to be used for navigation. Setting this to -100 leaves the minimum elevation set to the GPS modules default.
     // @Range: -100 90
-    // @Units: Degrees
+    // @Units: deg
     // @User: Advanced
     AP_GROUPINFO("MIN_ELEV", 6, AP_GPS, _min_elevation, -100),
 
@@ -168,7 +168,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: RATE_MS
     // @DisplayName: GPS update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
-    // @Units: milliseconds
+    // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
     // @User: Advanced
@@ -177,7 +177,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: RATE_MS2
     // @DisplayName: GPS 2 update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
-    // @Units: milliseconds
+    // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
     // @User: Advanced
@@ -224,7 +224,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: DELAY_MS
     // @DisplayName: GPS delay in milliseconds
     // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.
-    // @Units: milliseconds
+    // @Units: ms
     // @Range: 0 250
     // @User: Advanced
     AP_GROUPINFO("DELAY_MS", 18, AP_GPS, _delay_ms[0], 0),
@@ -232,7 +232,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: DELAY_MS2
     // @DisplayName: GPS 2 delay in milliseconds
     // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.
-    // @Units: milliseconds
+    // @Units: ms
     // @Range: 0 250
     // @User: Advanced
     AP_GROUPINFO("DELAY_MS2", 19, AP_GPS, _delay_ms[1], 0),
@@ -247,7 +247,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: BLEND_TC
     // @DisplayName: Blending time constant
     // @Description: Controls the slowest time constant applied to the calculation of GPS position and height offsets used to adjust different GPS receivers for steady state position differences.
-    // @Units: seconds
+    // @Units: s
     // @Range: 5.0 30.0
     // @User: Advanced
     AP_GROUPINFO("BLEND_TC", 21, AP_GPS, _blend_tc, 10.0f),
