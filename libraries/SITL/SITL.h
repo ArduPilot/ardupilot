@@ -9,6 +9,7 @@ namespace SITL {
 struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
     uint64_t timestamp_us;
+    Location home;
     double latitude, longitude; // degrees
     double altitude;  // MSL
     double heading;   // degrees
