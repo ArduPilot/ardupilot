@@ -59,6 +59,7 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel
     if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
         adjust_velocity_circle_fence(kP, accel_cmss_limited, desired_vel);
         adjust_velocity_polygon_fence(kP, accel_cmss_limited, desired_vel);
+        adjust_velocity_beacon_fence(kP, accel_cmss_limited, desired_vel);
     }
 
     if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0 && _proximity_enabled) {
@@ -251,6 +252,32 @@ void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2
     Vector2f* boundary = _fence.get_polygon_points(num_points);
 
     // adjust velocity using polygon
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, true, _fence.get_margin());
+}
+
+/*
+ * Adjusts the desired velocity for the beacon fence.
+ */
+void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel)
+{
+    // exit if the beacon fence is not enabled
+    if ((_fence.get_enabled_fences() & AC_FENCE_TYPE_BEACON) == 0) {
+        return;
+    }
+
+    // exit immediately if no desired velocity
+    if (desired_vel.is_zero()) {
+        return;
+    }
+
+    // get boundary from beacons
+    uint16_t num_points;
+    Vector2f* boundary = _fence.get_beacon_points(num_points);
+    if (boundary == nullptr) {
+        return;
+    }
+
+    // adjust velocity using beacon
     adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, true, _fence.get_margin());
 }
 
