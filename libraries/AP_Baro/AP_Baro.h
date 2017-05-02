@@ -149,6 +149,24 @@ public:
     // get baro drift amount
     float get_baro_drift_offset(void) { return _alt_offset_active; }
 
+    // update altitude_target
+    // alt_target: meters above home
+    void update_alt_target(float alt_target);
+
+
+    // store and buffer a single GPS alt reading
+    // gps_alt: GPS altitude in meters (AMSL)
+    void update_gps_alt(float gps_alt);
+
+    // set altitude reference (in meters)
+    void set_home_alt(float gps_alt);
+
+    // current alt_offset (in meters)
+    float get_offset() { return _alt_offset.get(); }
+
+    // current filtered gps altitude
+    float get_gps() { return _gps_alt_over_home.get(); }
+
 private:
     // how many drivers do we have?
     uint8_t _num_drivers;
@@ -176,6 +194,9 @@ private:
     float                               _alt_offset_active;
     AP_Int8                             _primary_baro; // primary chosen by user
     AP_Int8                             _ext_bus; // bus number for external barometer
+    AP_Float                            _adj_step;
+    AP_Int16                            _adj_delay;
+    AP_Int16                            _adj_timeconstant;
     float                               _last_altitude_EAS2TAS;
     float                               _EAS2TAS;
     float                               _external_temperature;
@@ -188,6 +209,10 @@ private:
 
     // when did we last notify the GCS of new pressure reference?
     uint32_t                            _last_notify_ms;
+    float                               _home_alt;          // GPS altitude of HOME in meters
+    float                               _last_alt_target;          // alt target above home in meters
+    uint16_t                            _adj_sample_count;         // GPS samples to pass before adjustment starts
+    LowPassFilterFloat                  _gps_alt_over_home;        // GPS alt over home in meters
 
     void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
     bool _add_backend(AP_Baro_Backend *backend);
