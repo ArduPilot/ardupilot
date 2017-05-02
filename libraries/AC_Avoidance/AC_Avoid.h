@@ -8,6 +8,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude controller library for sqrt controller
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
 #include <AP_Proximity/AP_Proximity.h>
+#include <AP_Beacon/AP_Beacon.h>
 
 #define AC_AVOID_ACCEL_CMSS_MAX         100.0f  // maximum acceleration/deceleration in cm/s/s used to avoid hitting fence
 
@@ -15,7 +16,8 @@
 #define AC_AVOID_DISABLED               0       // avoidance disabled
 #define AC_AVOID_STOP_AT_FENCE          1       // stop at fence
 #define AC_AVOID_USE_PROXIMITY_SENSOR   2       // stop based on proximity sensor output
-#define AC_AVOID_ALL                    3       // use fence and promiximity sensor
+#define AC_AVOID_STOP_AT_BEACON_FENCE   4       // stop based on beacon perimeter
+#define AC_AVOID_DEFAULT                (AC_AVOID_STOP_AT_FENCE | AC_AVOID_USE_PROXIMITY_SENSOR)
 
 // definitions for non-GPS avoidance
 #define AC_AVOID_NONGPS_DIST_MAX_DEFAULT    10.0f   // objects over 10m away are ignored (default value for DIST_MAX parameter)
@@ -29,7 +31,7 @@ class AC_Avoid {
 public:
 
     /// Constructor
-    AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity);
+    AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
 
     /*
      * Adjusts the desired velocity so that the vehicle can stop
@@ -64,6 +66,11 @@ private:
      * Adjusts the desired velocity for the polygon fence.
      */
     void adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2f &desired_vel);
+
+    /*
+     * Adjusts the desired velocity for the beacon fence.
+     */
+    void adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel);
 
     /*
      * Adjusts the desired velocity based on output from the proximity sensor
@@ -118,6 +125,7 @@ private:
     const AP_InertialNav& _inav;
     const AC_Fence& _fence;
     const AP_Proximity& _proximity;
+    const AP_Beacon* _beacon;
 
     // parameters
     AP_Int8 _enabled;
