@@ -202,10 +202,10 @@ void PX4Storage::_mtd_load(void)
         if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "readtest " MTD_PARAMS_FILE)) {
             printf("mtd: readtest OK\n");
         } else {
-            AP_BoardConfig::px4_sensor_error("mtd: failed readtest");
+            AP_BoardConfig::sensor_config_error("mtd: failed readtest");
         }
     } else {
-        AP_BoardConfig::px4_sensor_error("mtd: failed start");
+        AP_BoardConfig::sensor_config_error("mtd: failed start");
     }
 
     int fd = open(MTD_PARAMS_FILE, O_RDONLY);
