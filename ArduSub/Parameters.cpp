@@ -752,6 +752,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels.cpp
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels),
 
+    // @Group: BCN
+    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
+    AP_SUBGROUPINFO(beacon, "BCN", 18, ParametersG2, AP_Beacon),
+
     AP_GROUPEND
 };
 
@@ -759,6 +763,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
   constructor for g2 object
  */
 ParametersG2::ParametersG2(void)
+    : beacon(sub.serial_manager)
 #if PROXIMITY_ENABLED == ENABLED
     : proximity(sub.serial_manager)
 #endif

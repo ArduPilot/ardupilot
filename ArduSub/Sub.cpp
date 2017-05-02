@@ -68,7 +68,7 @@ Sub::Sub(void) :
           camera_mount(ahrs, current_loc),
 #endif
 #if AC_FENCE == ENABLED
-          fence(ahrs, inertial_nav),
+          fence(ahrs, inertial_nav, g2.beacon),
 #endif
 #if AC_RALLY == ENABLED
           rally(ahrs),
