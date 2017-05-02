@@ -52,7 +52,7 @@ AP_Baro_UAVCAN::~AP_Baro_UAVCAN()
 // Read the sensor
 void AP_Baro_UAVCAN::update(void)
 {
-    if (_sem_baro->take(0)) {
+    if (_sem_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _copy_to_frontend(_instance, _pressure, _temperature);
 
         _frontend.set_external_temperature(_temperature);
@@ -62,7 +62,7 @@ void AP_Baro_UAVCAN::update(void)
 
 void AP_Baro_UAVCAN::handle_baro_msg(float pressure, float temperature)
 {
-    if (_sem_baro->take(0)) {
+    if (_sem_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _pressure = pressure;
         _temperature = temperature - 273.15f;
         _last_timestamp = AP_HAL::micros64();
