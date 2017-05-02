@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall approach extension
     // @Description: The forward velocity of the aircraft while stalled
     // @Range: 10 200
-    // @Units: meters
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("APP_EXT", 4, AP_Landing_Deepstall, approach_extension, 50),
 
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall slew speed
     // @Description: The speed at which the elevator slews to deepstall
     // @Range: 0 2
-    // @Units: seconds
+    // @Units: s
     // @User: Advanced
     AP_GROUPINFO("SLEW_SPD", 6, AP_Landing_Deepstall, slew_speed, 0.5),
 
@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall L1 period
     // @Description: Deepstall L1 navigational controller period
     // @Range: 5 50
-    // @Units: meters
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("L1", 10, AP_Landing_Deepstall, L1_period, 30.0),
 
