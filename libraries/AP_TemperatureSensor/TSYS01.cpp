@@ -29,7 +29,7 @@ bool TSYS01::init()
         return false;
     }
 
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("PANIC: TSYS01: failed to take serial semaphore for init");
     }
 
