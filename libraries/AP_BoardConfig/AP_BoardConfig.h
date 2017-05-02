@@ -42,10 +42,12 @@ public:
     };
 #endif
 
+    // notify user of a fatal startup error related to available sensors. 
+    static void sensor_config_error(const char *reason);
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // public method to start a driver
     static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
-    static void px4_sensor_error(const char *reason);
 
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
