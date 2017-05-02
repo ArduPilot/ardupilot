@@ -219,7 +219,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Increment: 10
     // @RebootRequired: True
     // @User: Advanced
-    // @Units: milliseconds
+    // @Units: ms
     AP_GROUPINFO("HGT_DELAY", 12, NavEKF3, _hgtDelay_ms, 60),
 
     // Magnetometer measurement parameters
@@ -230,7 +230,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.01 0.5
     // @Increment: 0.01
     // @User: Advanced
-    // @Units: gauss
+    // @Units: Gauss
     AP_GROUPINFO("MAG_M_NSE", 13, NavEKF3, _magNoise, MAG_M_NSE_DEFAULT),
 
     // @Param: MAG_CAL
@@ -321,7 +321,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Increment: 10
     // @RebootRequired: True
     // @User: Advanced
-    // @Units: milliseconds
+    // @Units: ms
     AP_GROUPINFO("FLOW_DELAY", 23, NavEKF3, _flowDelay_ms, FLOW_MEAS_DELAY),
 
     // State and Covariance Predition Parameters
@@ -451,7 +451,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This state process noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field estimation faster and noisier.
     // @Range: 0.00001 0.01
     // @User: Advanced
-    // @Units: gauss/s
+    // @Units: Gauss/s
     AP_GROUPINFO("MAGE_P_NSE", 40, NavEKF3, _magEarthProcessNoise, MAGE_P_NSE_DEFAULT),
 
     // @Param: MAGB_P_NSE
@@ -459,7 +459,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This state process noise controls the growth of body magnetic field state error estimates. Increasing it makes magnetometer bias error estimation faster and noisier.
     // @Range: 0.00001 0.01
     // @User: Advanced
-    // @Units: gauss/s
+    // @Units: Gauss/s
     AP_GROUPINFO("MAGB_P_NSE", 41, NavEKF3, _magBodyProcessNoise, MAGB_P_NSE_DEFAULT),
 
     // @Param: RNG_USE_HGT
@@ -503,7 +503,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Increment: 10
     // @RebootRequired: True
     // @User: Advanced
-    // @Units: milliseconds
+    // @Units: ms
     AP_GROUPINFO("BCN_DELAY", 46, NavEKF3, _rngBcnDelay_ms, 50),
 
     // @Param: RNG_USE_SPD
