@@ -17,7 +17,6 @@ bool Plane::auto_takeoff_check(void)
 
     // Reset states if process has been interrupted
     if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timer interrupted AUTO");
 	    takeoff_state.launchTimerStarted = false;
 	    takeoff_state.last_tkoff_arm_time = 0;
         takeoff_state.last_check_ms = now;
