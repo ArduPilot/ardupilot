@@ -66,6 +66,10 @@ void Sub::mainloop_failsafe_check()
 
 void Sub::failsafe_sensors_check(void)
 {
+    if (!ap.depth_sensor_present) {
+        return;
+    }
+
     // We need a depth sensor to do any sort of auto z control
     if (sensor_health.depth) {
         failsafe.sensor_health = false;
@@ -99,7 +103,6 @@ void Sub::failsafe_ekf_check(void)
         failsafe.ekf = false;
         AP_Notify::flags.ekf_bad = false;
         return;
-
     }
 
     float posVar, hgtVar, tasVar;

@@ -233,6 +233,7 @@ private:
             enum HomeState home_state   : 2; // home status (unset, set, locked)
             uint8_t at_bottom           : 1; // true if we are at the bottom
             uint8_t at_surface          : 1; // true if we are at the surface
+            uint8_t depth_sensor_present: 1; // true if there is a depth sensor detected at boot
         };
         uint32_t value;
     } ap;
