@@ -1315,8 +1315,8 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 case MAV_FRAME_BODY_NED:
                 case MAV_FRAME_BODY_OFFSET_NED: {
                     // rotate from body-frame to NE frame
-                    float ne_x = packet.x*rover.ahrs.cos_yaw() - packet.y*rover.ahrs.sin_yaw();
-                    float ne_y = packet.x*rover.ahrs.sin_yaw() + packet.y*rover.ahrs.cos_yaw();
+                    const float ne_x = packet.x * rover.ahrs.cos_yaw() - packet.y * rover.ahrs.sin_yaw();
+                    const float ne_y = packet.x * rover.ahrs.sin_yaw() + packet.y * rover.ahrs.cos_yaw();
                     // add offset to current location
                     location_offset(target_loc, ne_x, ne_y);
                     }
@@ -1377,7 +1377,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             if (rover.control_mode != GUIDED) {
                 break;
             }
-
             // check for supported coordinate frames
             if (packet.coordinate_frame != MAV_FRAME_GLOBAL_INT &&
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
@@ -1385,7 +1384,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
                 break;
             }
-
             bool pos_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
             bool vel_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
             bool acc_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
