@@ -268,10 +268,13 @@ bool AP_Beacon::update_boundary_points()
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     // reorder points to create fence region by Pozyx anchor
     // swap 3rd point and 4th point if 4 points exist
-    if (num_beacons == AP_BEACON_MAX_BEACONS && _type == AP_BeaconType_Pozyx) {
-        Vector2f point_2d = _boundary[2];
-        _boundary[2] = _boundary[3];
-        _boundary[3] = point_2d;
+    // http://ardupilot.org/copter/docs/common-pozyx.html
+    if (_type == AP_BeaconType_Pozyx) {
+        if (num_beacons == AP_BEACON_MAX_BEACONS) {
+            Vector2f point_2d = _boundary[2];
+            _boundary[2] = _boundary[3];
+            _boundary[3] = point_2d;
+        }
     }
 #endif
 
