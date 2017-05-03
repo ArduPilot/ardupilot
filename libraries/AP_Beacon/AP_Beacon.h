@@ -125,6 +125,6 @@ private:
     BeaconState beacon_state[AP_BEACON_MAX_BEACONS];
 
     // fence boundary
-    Vector2f *_boundary = nullptr;
-    uint8_t boundary_num_beacons = 0;
+    Vector2f *_boundary;
+    uint8_t boundary_num_beacons;
 };
