@@ -45,26 +45,26 @@ known_units = {
              'ds'      : 'deciseconds'           ,
              'cs'      : 'centiseconds'          ,
              'ms'      : 'milliseconds'          ,
-             'PWM'     : 'PWM in microseconds'   , # should be microseconds, this is NOT a SI unit, but follows https://github.com/ArduPilot/ardupilot/pull/5538#issuecomment-271943061 and µs is not 7bit-ASCII
+             'PWM'     : 'PWM in microseconds'   , # should be microseconds, this is NOT a SI unit, but follows https://github.com/ArduPilot/ardupilot/pull/5538#issuecomment-271943061
              'Hz'      : 'hertz'                 ,
 # distance
-             'km'      : 'kilometers'                , # metre is the SI unit name, _NOT_ meter
-             'm'       : 'meters'                    , # metre is the SI unit name, _NOT_ meter
-             'm/s'     : 'meters per second'         , # metre is the SI unit name, _NOT_ meter
-             'm/s/s'   : 'meters per square second'  , # metre is the SI unit name, _NOT_ meter
-             'm/s/s/s' : 'meters per cubic second'   , # metre is the SI unit name, _NOT_ meter
-             'cm'      : 'centimeters'               , # metre is the SI unit name, _NOT_ meter
-             'cm/s'    : 'centimeters per second'    , # metre is the SI unit name, _NOT_ meter
-             'cm/s/s'  : 'centimeters per square second', # metre is the SI unit name, _NOT_ meter
-             'cm/s/s/s': 'centimeters per cubic second' , # metre is the SI unit name, _NOT_ meter
-             'mm'      : 'millimeters'               , # metre is the SI unit name, _NOT_ meter
+             'km'      : 'kilometers'                , # metre is the SI unit name, meter is the american spelling of it
+             'm'       : 'meters'                    , # metre is the SI unit name, meter is the american spelling of it
+             'm/s'     : 'meters per second'         , # metre is the SI unit name, meter is the american spelling of it
+             'm/s/s'   : 'meters per square second'  , # metre is the SI unit name, meter is the american spelling of it
+             'm/s/s/s' : 'meters per cubic second'   , # metre is the SI unit name, meter is the american spelling of it
+             'cm'      : 'centimeters'               , # metre is the SI unit name, meter is the american spelling of it
+             'cm/s'    : 'centimeters per second'    , # metre is the SI unit name, meter is the american spelling of it
+             'cm/s/s'  : 'centimeters per square second', # metre is the SI unit name, meter is the american spelling of it
+             'cm/s/s/s': 'centimeters per cubic second' , # metre is the SI unit name, meter is the american spelling of it
+             'mm'      : 'millimeters'               , # metre is the SI unit name, meter is the american spelling of it
 # temperature
-             'degC'    : 'degrees Celsius'       , # °C   would be the correct abreviation, but it is not 7bit-ASCII
+             'degC'    : 'degrees Celsius'       ,
 # angle
-             'deg'     : 'degrees'               , # °    would be the correct abreviation, but it is not 7bit-ASCII
-             'deg/s'   : 'degrees per second'    , # °/s  would be the correct abreviation, but it is not 7bit-ASCII
-             'cdeg'    : 'centidegrees'          , # c°   would be the correct abreviation, but it is not 7bit-ASCII
-             'cdeg/s'  : 'centidegrees per second', # c°/s would be the correct abreviation, but it is not 7bit-ASCII
+             'deg'     : 'degrees'               ,
+             'deg/s'   : 'degrees per second'    ,
+             'cdeg'    : 'centidegrees'          ,
+             'cdeg/s'  : 'centidegrees per second',
              'cdeg/s/s': 'centidegrees per square second' ,
              'rad'     : 'radians'               ,
              'rad/s'   : 'radians per second'    ,
@@ -83,13 +83,13 @@ known_units = {
 # ratio
              '%'       : 'percent'               ,
              '%/s'     : 'percent per second'    ,
-             'd%'      : 'decipercent'           , # ‰ would be the correct abreviation, but it is not 7bit-ASCII. decipercent is strange, but "per-mille" is even more exotic
+             'd%'      : 'decipercent'           , # decipercent is strange, but "per-mille" is even more exotic
 # compound
-             'm.m/s/s' : 'square meter per square second', # m·m/s/s would be the correct abreviation, but it is not 7bit-ASCII
-             'deg/m/s' : 'degrees per meter per second'  , # °/m/s would be the correct abreviation, but it is not 7bit-ASCII
+             'm.m/s/s' : 'square meter per square second',
+             'deg/m/s' : 'degrees per meter per second'  ,
              'm/s/m'   : 'meters per second per meter'   , # Why not use Hz here ????
              'mGauss/A': 'milligauss per ampere' ,
-             'mA.h'    : 'milliampere hour'      , # mA·h would be the correct abreviation, but it is not 7bit-ASCII
+             'mA.h'    : 'milliampere hour'      ,
              'A/V'     : 'ampere per volt'       ,
              'm/V'     : 'meters per volt'       ,
              'gravities': 'standard acceleration due to gravity' , # g_n would be a more correct unit, but IMHO no one understands what g_n means
