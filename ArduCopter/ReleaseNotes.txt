@@ -21,7 +21,7 @@ Changes from 3.5-rc4
     c) dataflash log over mavlink fixes
     d) EKF recovery from severe errors
     e) reduce twitch when transitioning from spline to straight line waypoints in AUTO
-    f) enable motors after initialisation completes (resolves some OneShot ESC calibration issues)
+    f) enable motors after initialisation completes (resolves some BLHeli ESC initialisation and calibration issues)
 ------------------------------------------------------------------
 Copter 3.5-rc4 08-Apr-2017
 Changes from 3.5-rc3
