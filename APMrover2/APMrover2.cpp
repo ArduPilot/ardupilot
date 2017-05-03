@@ -569,11 +569,12 @@ void Rover::update_navigation()
 
     case RTL:
         // no loitering around the wp with the rover, goes direct to the wp position
-        calc_lateral_acceleration();
-        calc_nav_steer();
         if (verify_RTL()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
             set_mode(HOLD);
+        } else {
+            calc_lateral_acceleration();
+            calc_nav_steer();
         }
         break;
 
@@ -585,13 +586,14 @@ void Rover::update_navigation()
 
         case Guided_WP:
             // no loitering around the wp with the rover, goes direct to the wp position
-            calc_lateral_acceleration();
-            calc_nav_steer();
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
                 SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
                 SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
                 lateral_acceleration = 0;
+            } else {
+                calc_lateral_acceleration();
+                calc_nav_steer();
             }
             break;
 
