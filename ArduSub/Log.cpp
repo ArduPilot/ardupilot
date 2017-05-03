@@ -427,6 +427,7 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+#if BEACON_ENABLED == ENABLED
 // Write beacon position and distances
 void Sub::Log_Write_Beacon()
 {
@@ -436,6 +437,7 @@ void Sub::Log_Write_Beacon()
     }
     DataFlash.Log_Write_Beacon(g2.beacon);
 }
+#endif
 
 const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
