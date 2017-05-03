@@ -24,7 +24,7 @@ void Sub::update_surface_and_bottom_detector()
     // check that we are not moving up or down
     bool vel_stationary = velocity.z > -0.05 && velocity.z < 0.05;
 
-    if (sensor_health.depth) { // we can use the external pressure sensor for a very accurate and current measure of our z axis position
+    if (ap.depth_sensor_present && sensor_health.depth) { // we can use the external pressure sensor for a very accurate and current measure of our z axis position
         current_depth = barometer.get_altitude(); // cm
 
 
