@@ -396,6 +396,32 @@ void Rover::nav_set_yaw_speed()
     return;
 }
 
+void Rover::nav_set_speed()
+{
+    // if we haven't received a MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED message within the last 3 seconds bring the rover to a halt
+    if ((millis() - guided_yaw_speed.msg_time_ms) > 3000) {
+        gcs_send_text(MAV_SEVERITY_WARNING, "SET_VELOCITY not recvd last 3secs, stopping");
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
+        lateral_acceleration = 0.0f;
+        prev_WP = current_loc;
+        next_WP = current_loc;
+        set_guided_WP(current_loc);  // exit Guided_Velocity to prevent spam
+        return;
+    }
+    prev_WP = current_loc;
+    next_WP = current_loc;
+
+    const int32_t steer_value = steerController.get_steering_out_rate(guided_target_steer_speed);
+    location_update(next_WP, (steer_value + ahrs.yaw_sensor) * 0.01f, 4.0f);  // put the next wp at 4m forward at steer direction
+    nav_controller->update_waypoint(current_loc, next_WP);
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steer_value);
+    calc_throttle(guided_target_speed);
+
+    Log_Write_GuidedTarget(guided_mode, Vector3f(guided_target_steer_speed, 0.0f, 0.0f), Vector3f(guided_target_speed, 0.0f, 0.0f));
+}
+
 /********************************************************************************/
 //  Condition (May) commands
 /********************************************************************************/
