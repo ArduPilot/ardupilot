@@ -1,5 +1,28 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5-rc5 03-May-2017
+Changes from 3.5-rc4
+1) Intel Aero RTF support
+2) Smart battery fetches serial number, temperature and individual cell voltages
+3) Vehicle heads towards target point instead of next waypoint during straight line waypoint mission commands in AUTO
+4) Visual Odometry supported using VISION_POSITION_DELTA mavlink message
+5) Do-Set-Home sets EKF origin allowing user to specify vehicle starting position without GPS
+6) Object avoidance parameter (AVOID_MARGIN) allows configuring distance to maintain from objects
+7) Motor output can be duplicated to multiple channels
+8) IRLock can be connected to any I2C bus
+9) Piksi "Multi" GPS support
+10) Performance Improvements:
+    a) inter-EKF scheduling cooperation (improves load balancing when using multiple EKFs)
+    b) parameter requests from GCS processed asynchronously (resolves bad flight behaviour when fetching params in-flight) 
+    c) display performance improvements
+1) Bug fixes including:
+    a) LSM303D (Pixhawk's backup IMU) timing fixes
+    b) auxiliary PWM outputs update even when RC input stops
+    c) dataflash log over mavlink fixes
+    d) EKF recovery from severe errors
+    e) reduce twitch when transitioning from spline to straight line waypoints in AUTO
+    f) enable motors after initialisation completes (resolves some OneShot ESC calibration issues)
+------------------------------------------------------------------
 Copter 3.5-rc4 08-Apr-2017
 Changes from 3.5-rc3
 1) Bug fixes including:
