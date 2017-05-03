@@ -39,7 +39,7 @@ class AC_Fence
 public:
 
     /// Constructor
-    AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AP_Beacon& beacon);
+    AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AP_Beacon* beacon = nullptr);
 
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
     void enable(bool true_false) { _enabled = true_false; }
@@ -141,7 +141,7 @@ private:
     // pointers to other objects we depend upon
     const AP_AHRS& _ahrs;
     const AP_InertialNav& _inav;
-    const AP_Beacon& _beacon;
+    const AP_Beacon* _beacon;
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control

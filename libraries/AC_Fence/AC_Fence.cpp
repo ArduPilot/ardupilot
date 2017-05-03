@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 };
 
 /// Default constructor.
-AC_Fence::AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AP_Beacon& beacon) :
+AC_Fence::AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AP_Beacon* beacon) :
     _ahrs(ahrs),
     _inav(inav),
     _beacon(beacon),
@@ -243,9 +243,9 @@ uint8_t AC_Fence::check_fence(float curr_alt)
     }
 
     // beacon fence check
-    if ((_enabled_fences & AC_FENCE_TYPE_BEACON) != 0 ) {
+    if ((_enabled_fences & AC_FENCE_TYPE_BEACON) != 0 && _beacon != nullptr) {
         uint16_t num_points;
-        Vector2f* boundary = _beacon.get_boundary_points(num_points);
+        Vector2f* boundary = _beacon->get_boundary_points(num_points);
         // boundary is null or num_points is not enough (at least 3 points)
         if (boundary == nullptr || num_points < AP_BEACON_MINIMUM_FENCE_BEACONS) {
             _beacon_boundary_valid = false;
