@@ -129,7 +129,7 @@ void Rover::calc_throttle(float target_speed) {
 
     float reduction = 1.0f - steer_rate * speed_turn_reduction;
 
-    if (control_mode >= AUTO && wp_distance <= g.speed_turn_dist) {
+    if (control_mode >= AUTO && guided_mode != Guided_Velocity && wp_distance <= g.speed_turn_dist) {
         // in auto-modes we reduce speed when approaching waypoints
         const float reduction2 = 1.0f - speed_turn_reduction;
         if (reduction2 < reduction) {
@@ -171,8 +171,10 @@ void Rover::calc_throttle(float target_speed) {
         set_reverse(true);
     }
 
-    if (use_pivot_steering()) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+    if (guided_mode != Guided_Velocity) {
+        if (use_pivot_steering()) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        }
     }
 }
 

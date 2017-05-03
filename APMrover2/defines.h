@@ -42,9 +42,9 @@ enum mode {
 
 enum GuidedMode {
     Guided_WP,
-    Guided_Angle
+    Guided_Angle,
+    Guided_Velocity
 };
-
 
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
@@ -91,6 +91,13 @@ enum GuidedMode {
 #define MAVLINK_SET_POS_TYPE_MASK_FORCE           (1<<9)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE      (1<<10)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE (1<<11)
+
+// for mavlink SET_ATTITUDE_TARGET messages
+#define MAVLINK_SET_ATT_TYPE_MASK_ROLL_RATE_IGNORE     (1<<0)
+#define MAVLINK_SET_ATT_TYPE_MASK_PITCH_RATE_IGNORE    (1<<1)
+#define MAVLINK_SET_ATT_TYPE_MASK_YAW_RATE_IGNORE      (1<<2)
+#define MAVLINK_SET_ATT_TYPE_MASK_THROTTLE_IGNORE      (1<<6)
+#define MAVLINK_SET_ATT_TYPE_MASK_ATTITUDE_IGNORE      (1<<7)
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_CRASH_CHECK  12
