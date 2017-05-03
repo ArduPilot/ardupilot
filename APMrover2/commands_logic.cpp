@@ -379,7 +379,7 @@ void Rover::nav_set_yaw_speed()
         gcs_send_text(MAV_SEVERITY_WARNING, "NAV_SET_YAW_SPEED not recvd last 3secs, stopping");
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
-        lateral_acceleration = 0;
+        lateral_acceleration = 0.0f;
         return;
     }
 
@@ -389,11 +389,10 @@ void Rover::nav_set_yaw_speed()
     // speed param in the message gives speed as a proportion of cruise speed.
     // 0.5 would set speed to the cruise speed
     // 1 is double the cruise speed.
-    float target_speed = g.speed_cruise * guided_control.target_speed * 2;
+    const float target_speed = g.speed_cruise * guided_control.target_speed * 2.0f;
     calc_throttle(target_speed);
 
-    Log_Write_GuidedTarget(guided_mode, Vector3f(steering, 0, 0), Vector3f(target_speed, 0, 0));
-    return;
+    Log_Write_GuidedTarget(guided_mode, Vector3f(steering, 0.0f, 0.0f), Vector3f(target_speed, 0.0f, 0.0f));
 }
 
 void Rover::nav_set_speed()

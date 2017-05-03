@@ -1,14 +1,4 @@
 #include "Rover.h"
-
-/* Functions in this file:
-    void set_next_WP(const AP_Mission::Mission_Command& cmd)
-    void set_guided_WP(void)
-    void init_home()
-    void restart_nav()
-************************************************************
-*/
-
-
 /*
  *  set_auto_WP - sets the target location the vehicle should drive to in Auto mode
  */
