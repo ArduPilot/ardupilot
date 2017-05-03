@@ -314,7 +314,7 @@ bool AC_Fence::check_destination_within_fence(const Location_Class& loc)
     }
 
     // beacon fence check
-    if ((get_enabled_fences() & AC_FENCE_TYPE_BEACON) && _beacon_boundary_num_points > 0) {
+    if ((get_enabled_fences() & AC_FENCE_TYPE_BEACON) && _beacon_boundary_valid) {
         // check ekf has a good location
         Location temp_loc;
         if (_inav.get_location(temp_loc)) {
