@@ -15,7 +15,9 @@ void Sub::read_barometer(void)
         Log_Write_Baro();
     }
 
-    sensor_health.depth = barometer.healthy(depth_sensor_idx);
+    if (ap.depth_sensor_present) {
+        sensor_health.depth = barometer.healthy(depth_sensor_idx);
+    }
 }
 
 void Sub::init_rangefinder(void)

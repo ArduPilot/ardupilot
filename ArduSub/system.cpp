@@ -123,8 +123,7 @@ void Sub::init_ardupilot()
     USERHOOK_INIT
 #endif
 
-    // read Baro pressure at ground
-    //-----------------------------
+    // Init baro and determine if we have external (depth) pressure sensor
     init_barometer(false);
     barometer.update();
 
@@ -132,12 +131,13 @@ void Sub::init_ardupilot()
         if (barometer.get_type(i) == AP_Baro::BARO_TYPE_WATER) {
             barometer.set_primary_baro(i);
             depth_sensor_idx = i;
-            sensor_health.depth = barometer.healthy(i);
-            break;
+            ap.depth_sensor_present = true;
+            sensor_health.depth = barometer.healthy(depth_sensor_idx); // initialize health flag
+            break; // Go with the first one we find
         }
     }
 
-    if (!sensor_health.depth) {
+    if (!ap.depth_sensor_present) {
         // We only have onboard baro
         // No external underwater depth sensor detected
         barometer.set_primary_baro(0);
