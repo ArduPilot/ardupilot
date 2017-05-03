@@ -474,10 +474,14 @@ void Rover::update_current_mode(void)
             } else {
                 calc_lateral_acceleration();
                 calc_nav_steer();
-                calc_throttle(g.speed_cruise);
-                Log_Write_GuidedTarget(guided_mode, Vector3f(guided_WP.lat, guided_WP.lng, guided_WP.alt),
-                                       Vector3f(g.speed_cruise, SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0));
+                calc_throttle(guided_target_speed);
+                Log_Write_GuidedTarget(guided_mode, Vector3f(next_WP.lat, next_WP.lng, next_WP.alt),
+                                       Vector3f(guided_target_speed, SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0));
             }
+            break;
+
+        case Guided_Velocity:
+            nav_set_speed();
             break;
 
         default:
@@ -589,6 +593,10 @@ void Rover::update_navigation()
                 SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
                 lateral_acceleration = 0;
             }
+            break;
+
+        case Guided_Velocity:
+            nav_set_speed();
             break;
 
         default:
