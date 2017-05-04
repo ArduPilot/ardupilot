@@ -55,16 +55,31 @@ void AP_MotorsTailsitter::output_to_motors()
     switch (_spool_mode) {
         case SHUT_DOWN:
             _throttle = 0;
+            // set limits flags
+            limit.roll_pitch = true;
+            limit.yaw = true;
+            limit.throttle_lower = true;
+            limit.throttle_upper = true;
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
             _throttle = constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
+            // set limits flags
+            limit.roll_pitch = true;
+            limit.yaw = true;
+            limit.throttle_lower = true;
+            limit.throttle_upper = true;
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
             throttle_left  = constrain_float(_throttle + _rudder*0.5, 0, 1);
             throttle_right = constrain_float(_throttle - _rudder*0.5, 0, 1);
+            // initialize limits flags
+            limit.roll_pitch = false;
+            limit.yaw = false;
+            limit.throttle_lower = false;
+            limit.throttle_upper = false;
             break;
     }
     // outputs are setup here, and written to the HAL by the plane servos loop
