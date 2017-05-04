@@ -2,7 +2,7 @@
 
 #include "ap_version.h"
 
-#define THISFIRMWARE "ArduSub V3.5-rc1"
+#define THISFIRMWARE "ArduSub V3.5-rc2"
 #define FIRMWARE_VERSION 3,5,0,FIRMWARE_VERSION_TYPE_RC
 
 #ifndef GIT_VERSION
