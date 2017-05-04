@@ -128,7 +128,7 @@ skip_board_waf() {
 skip_frame() {
     sboard=$1
     sframe=$2
-    if [ "$sboard" = "bebop" ]; then
+    if [ "$sboard" = "bebop" -o "$sboard" = "aerofc-v1" ]; then
         if [ "$sframe" != "quad" -a "$sframe" != "none" ]; then
             return 0
         fi
@@ -305,7 +305,7 @@ build_arducopter() {
 
     checkout ArduCopter "latest" "" ""
     
-    for b in erlebrain2 navio navio2 pxf pxfmini bebop; do
+    for b in erlebrain2 navio navio2 pxf pxfmini bebop aerofc-v1; do
         echo "Building board: $b"
         for f in $frames; do
             if [ "$f" = "none" ]; then
@@ -331,7 +331,11 @@ build_arducopter() {
                 error_count=$((error_count+1))
                 continue
             }
-            copyit $BUILDROOT/$b/bin/arducopter$framesuffix $ddir $tag "ArduCopter"
+            extension = ""
+            if [ -f $BUILDROOT/$b/bin/arducopter${framesuffix}.px4 ]; then
+                exension = ".px4"
+            fi
+            copyit $BUILDROOT/$b/bin/arducopter${framesuffix}${extension} $ddir $tag "ArduCopter"
             touch $binaries/Copter/$tag
         done
     done
