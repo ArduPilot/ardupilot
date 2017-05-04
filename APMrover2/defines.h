@@ -103,3 +103,4 @@ enum fs_crash_action {
   FS_CRASH_HOLD_AND_DISARM = 2
 };
 
+#define DISTANCE_HOME_MAX 0.5f  // Distance max to home location before changing it when disarm

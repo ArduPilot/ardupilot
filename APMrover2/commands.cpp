@@ -97,9 +97,11 @@ void Rover::update_home()
     if (home_is_set == HOME_SET_NOT_LOCKED) {
         Location loc;
         if (ahrs.get_position(loc)) {
-            ahrs.set_home(loc);
-            Log_Write_Home_And_Origin();
-            GCS_MAVLINK::send_home_all(gps.location());
+            if (get_distance(loc, ahrs.get_home()) > DISTANCE_HOME_MAX) {
+                ahrs.set_home(loc);
+                Log_Write_Home_And_Origin();
+                GCS_MAVLINK::send_home_all(gps.location());
+            }
         }
     }
     barometer.update_calibration();
