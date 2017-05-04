@@ -18,6 +18,7 @@
 #include "AP_Beacon_Pozyx.h"
 #include "AP_Beacon_Marvelmind.h"
 #include "AP_Beacon_SITL.h"
+#include <utility>
 
 extern const AP_HAL::HAL &hal;
 
@@ -271,9 +272,7 @@ bool AP_Beacon::update_boundary_points()
     // http://ardupilot.org/copter/docs/common-pozyx.html
     if (_type == AP_BeaconType_Pozyx) {
         if (num_beacons == AP_BEACON_MAX_BEACONS) {
-            Vector2f point_2d = _boundary[2];
-            _boundary[2] = _boundary[3];
-            _boundary[3] = point_2d;
+            std::swap(_boundary[2],_boundary[3]);
         }
     }
 #endif
