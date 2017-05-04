@@ -26,7 +26,7 @@ def build(bld):
     )
 
     bld.ap_program(
-        program_name='ardurover',
+        program_name='APMrover2',
         program_groups=['bin', 'rover'],
         use=vehicle + '_libs',
     )
