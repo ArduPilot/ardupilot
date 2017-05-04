@@ -77,6 +77,12 @@ Other changes:
     - Various unused flags, members and methods
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.4.1 04-May-2017
+
+Don't report battery percentage estimate. The estimate is only correct if battery
+is fully charged at boot. User should rely on voltage estimate.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 3.4 30-Dec-2016 / Sub 3.4-rc3 14-Dec-2016
 First Stable Release
 
