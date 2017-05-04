@@ -66,8 +66,22 @@ void QuadPlane::tailsitter_output(void)
         // thrust vectoring VTOL modes
         float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
         float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-        float tilt_left  = (elevator + aileron) * tailsitter.vectored_hover_gain;
-        float tilt_right = (elevator - aileron) * tailsitter.vectored_hover_gain;
+        /*
+          apply extra elevator when at high pitch errors, using a
+          power law. This allows the motors to point straight up for
+          takeoff without integrator windup
+         */
+        int32_t pitch_error_cd = (plane.nav_pitch_cd - ahrs_view->pitch_sensor) * 0.5;
+        float extra_pitch = constrain_float(pitch_error_cd, -4500, 4500) / 4500.0;
+        float extra_sign = extra_pitch > 0?1:-1;
+        float extra_elevator = extra_sign * powf(fabsf(extra_pitch), tailsitter.vectored_hover_power) * 4500;
+        float tilt_left  = extra_elevator + (elevator + aileron) * tailsitter.vectored_hover_gain;
+        float tilt_right = extra_elevator + (elevator - aileron) * tailsitter.vectored_hover_gain;
+        if (fabsf(tilt_left) >= 4500 || fabsf(tilt_right) >= 4500) {
+            // prevent integrator windup
+            motors->limit.roll_pitch = 1;
+            motors->limit.yaw = 1;
+        }
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
     }
