@@ -1085,7 +1085,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_NAV_TAKEOFF: {
-            // param3 : horizontal navigation by pilot acceptable
+            // param1 : horizontal navigation by pilot acceptable
             // param4 : yaw angle   (not supported)
             // param5 : latitude    (not supported)
             // param6 : longitude   (not supported)
@@ -1093,7 +1093,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
             float takeoff_alt = packet.param7 * 100;      // Convert m to cm
 
-            if(copter.do_user_takeoff(takeoff_alt, is_zero(packet.param3))) {
+            if(copter.do_user_takeoff(takeoff_alt, is_zero(packet.param1))) {
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_FAILED;
