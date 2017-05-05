@@ -1173,7 +1173,7 @@ bool AP_GPS::calc_blend_weights(void)
     float sum_of_all_weights = 0.0f;
 
     // calculate a weighting using the reported horizontal position
-    float hpos_blend_weights[GPS_MAX_RECEIVERS] = {};
+    float hpos_blend_weights[GPS_MAX_RECEIVERS] = { 0 };
     if (horizontal_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_HPOS_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_hpos_weights = 0.0f;
@@ -1193,7 +1193,7 @@ bool AP_GPS::calc_blend_weights(void)
     }
 
     // calculate a weighting using the reported vertical position accuracy
-    float vpos_blend_weights[GPS_MAX_RECEIVERS] = {};
+    float vpos_blend_weights[GPS_MAX_RECEIVERS] = { 0 };
     if (vertical_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_VPOS_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_vpos_weights = 0.0f;
@@ -1213,7 +1213,7 @@ bool AP_GPS::calc_blend_weights(void)
     }
 
     // calculate a weighting using the reported speed accuracy
-    float spd_blend_weights[GPS_MAX_RECEIVERS] = {};
+    float spd_blend_weights[GPS_MAX_RECEIVERS] = { 0 };
     if (speed_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_SPD_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_spd_weights = 0.0f;
