@@ -28,7 +28,6 @@ LIBRARIES += AP_Mount
 LIBRARIES += AP_Camera
 LIBRARIES += GCS_MAVLink
 LIBRARIES += AP_SerialManager
-LIBRARIES += AP_Airspeed
 LIBRARIES += AP_Vehicle
 LIBRARIES += DataFlash
 LIBRARIES += AP_RCMapper
