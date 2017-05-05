@@ -105,8 +105,8 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     ret -= 272764785UL;
 
     // get GPS week and time
-    state.time_week = ret / SEC_PER_WEEK;
-    state.time_week_ms = (ret % SEC_PER_WEEK) * MSEC_PER_SEC;
+    state.time_week = ret / AP_SEC_PER_WEEK;
+    state.time_week_ms = (ret % AP_SEC_PER_WEEK) * AP_MSEC_PER_SEC;
     state.time_week_ms += msec;
 }
 
