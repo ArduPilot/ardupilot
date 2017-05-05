@@ -328,7 +328,7 @@ bool AP_GPS::vertical_accuracy(uint8_t instance, float &vacc) const
  */
 uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
 {
-    uint64_t fix_time_ms = UNIX_OFFSET_MSEC + gps_week * MSEC_PER_WEEK + gps_ms;
+    uint64_t fix_time_ms = UNIX_OFFSET_MSEC + gps_week * AP_MSEC_PER_WEEK + gps_ms;
     return fix_time_ms;
 }
 
@@ -765,8 +765,8 @@ void AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms
     istate.num_sats = _num_sats;
     istate.last_gps_time_ms = tnow;
     uint64_t gps_time_ms = time_epoch_ms - UNIX_OFFSET_MSEC;
-    istate.time_week     = gps_time_ms / MSEC_PER_WEEK;
-    istate.time_week_ms  = gps_time_ms - istate.time_week * MSEC_PER_WEEK;
+    istate.time_week     = gps_time_ms / AP_MSEC_PER_WEEK;
+    istate.time_week_ms  = gps_time_ms - istate.time_week * AP_MSEC_PER_WEEK;
     timing[instance].last_message_time_ms = tnow;
     timing[instance].last_fix_time_ms = tnow;
     _type[instance].set(GPS_TYPE_HIL);
