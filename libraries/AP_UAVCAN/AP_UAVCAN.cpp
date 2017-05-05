@@ -78,8 +78,8 @@ static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::g
                         uint64_t epoch_ms = uavcan::UtcTime(msg.gnss_timestamp).toUSec();
                         epoch_ms /= 1000;
                         uint64_t gps_ms = epoch_ms - UNIX_OFFSET_MSEC;
-                        state->time_week = (uint16_t)(gps_ms / MSEC_PER_WEEK);
-                        state->time_week_ms = (uint32_t)(gps_ms - (state->time_week) * MSEC_PER_WEEK);
+                        state->time_week = (uint16_t)(gps_ms / AP_MSEC_PER_WEEK);
+                        state->time_week_ms = (uint32_t)(gps_ms - (state->time_week) * AP_MSEC_PER_WEEK);
                     }
                 }
 
