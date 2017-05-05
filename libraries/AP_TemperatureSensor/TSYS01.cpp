@@ -58,7 +58,7 @@ bool TSYS01::init()
 
     /* Request 20Hz update */
     // Max conversion time is 9.04 ms
-    _dev->register_periodic_callback(50 * USEC_PER_MSEC,
+    _dev->register_periodic_callback(50 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&TSYS01::_timer, void));
     return true;
 }
