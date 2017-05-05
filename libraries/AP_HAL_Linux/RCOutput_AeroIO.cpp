@@ -276,12 +276,12 @@ uint16_t RCOutput_AeroIO::_usec_to_hw(uint16_t freq, uint16_t usec)
 {
     float f = freq;
     float u = usec;
-    return 0xFFFF * u * f / USEC_PER_SEC;
+    return 0xFFFF * u * f / AP_USEC_PER_SEC;
 }
 
 uint16_t RCOutput_AeroIO::_hw_to_usec(uint16_t freq, uint16_t hw_val)
 {
     float p = hw_val;
     float f = freq;
-    return p * USEC_PER_SEC / (0xFFFF * f);
+    return p * AP_USEC_PER_SEC / (0xFFFF * f);
 }
