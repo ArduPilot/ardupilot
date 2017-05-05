@@ -821,6 +821,8 @@ void QuadPlane::control_hover(void)
     } else {
         hold_hover(get_pilot_desired_climb_rate_cms());
     }
+
+    check_yaw_reset();
 }
 
 void QuadPlane::init_loiter(void)
@@ -978,6 +980,8 @@ void QuadPlane::control_loiter()
         pos_control->set_alt_target_from_climb_rate_ff(get_pilot_desired_climb_rate_cms(), plane.G_Dt, false);
     }
     run_z_controller();
+
+    check_yaw_reset();
 }
 
 /*
@@ -1867,6 +1871,8 @@ void QuadPlane::takeoff_controller(void)
     
     pos_control->set_alt_target_from_climb_rate(wp_nav->get_speed_up(), plane.G_Dt, true);
     run_z_controller();
+
+    check_yaw_reset();
 }
 
 /*
@@ -1936,6 +1942,7 @@ void QuadPlane::control_qrtl(void)
     } else {
         pos_control->set_alt_target(qrtl_alt*100UL);
     }
+    check_yaw_reset();
 }
 
 /*
