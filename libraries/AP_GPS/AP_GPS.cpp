@@ -794,7 +794,7 @@ void AP_GPS::setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vac
 }
 
 /**
-   Lock a GPS port, prevening the GPS driver from using it. This can
+   Lock a GPS port, preventing the GPS driver from using it. This can
    be used to allow a user to control a GPS port via the
    SERIAL_CONTROL protocol
  */
@@ -1165,7 +1165,7 @@ bool AP_GPS::calc_blend_weights(void)
     // Check if we can do blending using reported accuracy
     bool can_do_blending = (horizontal_accuracy_sum_sq > 0.0f || vertical_accuracy_sum_sq > 0.0f || speed_accuracy_sum_sq > 0.0f);
 
-    // if we cant do blending using reported accuracy, return false and hard switch logic will be used instead
+    // if we can't do blending using reported accuracy, return false and hard switch logic will be used instead
     if (!can_do_blending) {
         return false;
     }
