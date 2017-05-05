@@ -24,7 +24,6 @@ LIBRARIES += AP_Terrain
 LIBRARIES += AP_Rally
 LIBRARIES += AP_Notify
 LIBRARIES += AP_BattMonitor
-LIBRARIES += AP_Airspeed
 LIBRARIES += RC_Channel
 LIBRARIES += AP_BoardConfig
 LIBRARIES += AP_OpticalFlow
