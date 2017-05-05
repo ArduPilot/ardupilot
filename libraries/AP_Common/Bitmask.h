@@ -16,6 +16,8 @@
   simple bitmask class
  */
 
+#pragma once
+
 class Bitmask {
 public:
     Bitmask(uint16_t numbits) :
