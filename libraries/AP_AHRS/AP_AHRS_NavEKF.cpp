@@ -293,9 +293,10 @@ void AP_AHRS_NavEKF::update_SITL(void)
                                   radians(fdm.yawRate));
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            _accel_ef_ekf[i] = Vector3f(fdm.xAccel,
-                                        fdm.yAccel,
-                                        fdm.zAccel);
+            Vector3f accel(fdm.xAccel,
+                           fdm.yAccel,
+                           fdm.zAccel);
+            _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
         }
         _accel_ef_ekf_blended = _accel_ef_ekf[0];
 
