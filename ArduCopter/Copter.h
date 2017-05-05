@@ -874,7 +874,7 @@ private:
     void land_nogps_run();
     int32_t land_get_alt_above_ground(void);
     void land_run_vertical_control(bool pause_descent = false);
-    void land_run_horizontal_control();
+    void land_run_horizontal_control(bool fixed_yaw=false, float yaw_command_cd=0);
     void land_do_not_use_GPS();
     void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
