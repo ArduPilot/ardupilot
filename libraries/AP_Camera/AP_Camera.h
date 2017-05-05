@@ -19,8 +19,6 @@
 
 #define AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE  AP_CAMERA_TRIGGER_TYPE_SERVO    // default is to use servo to trigger camera
 
-#define AP_CAMERA_TRIGGER_DEFAULT_DURATION  10      // default duration servo or relay is held open in 10ths of a second (i.e. 10 = 1 second)
-
 #define AP_CAMERA_SERVO_ON_PWM              1300    // default PWM value to move servo to when shutter is activated
 #define AP_CAMERA_SERVO_OFF_PWM             1100    // default PWM value to move servo to when shutter is deactivated
 
@@ -71,14 +69,15 @@ public:
 
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
+private:
 
 private:
     AP_Int8         _trigger_type;      // 0:Servo,1:Relay
-    AP_Int8         _trigger_duration;  // duration in 10ths of a second that the camera shutter is held open
+    AP_Float        _trigger_duration;  // duration in seconds that the camera shutter is held open
     AP_Int8         _relay_on;          // relay value to trigger camera
     AP_Int16        _servo_on_pwm;      // PWM value to move servo to when shutter is activated
     AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
-    uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
+    uint64_t        _trigger_end_us;    // when trigger should end
     AP_Relay       *_apm_relay;         // pointer to relay object from the base class Relay.
     AP_Int8         _auto_mode_only;    // if 1: trigger by distance only if in AUTO mode.
     bool            _is_in_auto_mode;   // true if in AUTO mode
@@ -91,6 +90,9 @@ private:
     static void     capture_callback(void *context, uint32_t chan_index,
                                      hrt_abstime edge_time, uint32_t edge_state, uint32_t overflow);
 #endif
+
+    // setup callback for end of trigger
+    void setup_trigger_end(void);
     
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
     AP_Int16        _min_interval;      // Minimum time between shots required by camera
@@ -128,4 +130,8 @@ private:
     // return true if we are using a feedback pin
     bool using_feedback_pin(void) const { return _feedback_pin > 0; }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    static void trigger_callback(AP_Camera *obj);
+    struct hrt_call wait_call;
+#endif
 };

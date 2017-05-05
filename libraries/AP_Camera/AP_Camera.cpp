@@ -23,14 +23,8 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, _trigger_type, AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE),
 
-    // @Param: DURATION
-    // @DisplayName: Duration that shutter is held open
-    // @Description: How long the shutter will be held open in 10ths of a second (i.e. enter 10 for 1second, 50 for 5seconds)
-    // @Units: ds
-    // @Range: 0 50
-    // @User: Standard
-    AP_GROUPINFO("DURATION",    1, AP_Camera, _trigger_duration, AP_CAMERA_TRIGGER_DEFAULT_DURATION),
-
+    // 1 was used by the old duration in 0.1 seconds
+    
     // @Param: SERVO_ON
     // @DisplayName: Servo ON PWM value
     // @Description: PWM value in microseconds to move servo to when shutter is activated
@@ -91,6 +85,15 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Values: 0:TriggerLow,1:TriggerHigh
     // @User: Standard
     AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
+
+    // @Param: TRIGG_TIME
+    // @DisplayName: Duration that shutter is held open
+    // @Description: How long the shutter will be held open in seconds
+    // @Units: seconds
+    // @Increment: 0.01
+    // @Range: 0 5
+    // @User: Standard
+    AP_GROUPINFO("TRIGG_TIME",    10, AP_Camera, _trigger_duration, 0.1),
     
     // @Param: AUTO_ONLY
     // @DisplayName: Distance-trigging in AUTO mode only
@@ -109,14 +112,31 @@ extern const AP_HAL::HAL& hal;
  */
 volatile bool   AP_Camera::_camera_triggered;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+// microsecond accurate triggering on stm32
+void AP_Camera::trigger_callback(AP_Camera *obj)
+{
+    obj->trigger_pic_cleanup();
+}
+#endif
+
+// set end time for a trigger
+void AP_Camera::setup_trigger_end(void)
+{
+    uint64_t duration_us = _trigger_duration * 1e6;
+    _trigger_end_us = AP_HAL::micros64() + duration_us;
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    hrt_call_after(&wait_call, duration_us, (hrt_callout)trigger_callback, this);
+#endif
+}
+
 /// Servo operated camera
 void
 AP_Camera::servo_pic()
 {
 	SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_on_pwm);
 
-	// leave a message that it should be active for this many loops (assumes 50hz loops)
-	_trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+    setup_trigger_end();
 }
 
 /// basic relay activation
@@ -129,8 +149,7 @@ AP_Camera::relay_pic()
         _apm_relay->off(0);
     }
 
-    // leave a message that it should be active for this many loops (assumes 50hz loops)
-    _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+    setup_trigger_end();
 }
 
 /// single entry point to take pictures
@@ -158,21 +177,23 @@ void AP_Camera::trigger_pic()
 void
 AP_Camera::trigger_pic_cleanup()
 {
-    if (_trigger_counter) {
-        _trigger_counter--;
-    } else {
-        switch (_trigger_type) {
-            case AP_CAMERA_TRIGGER_TYPE_SERVO:
-                SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_off_pwm);
-                break;
-            case AP_CAMERA_TRIGGER_TYPE_RELAY:
-                if (_relay_on) {
-                    _apm_relay->off(0);
-                } else {
-                    _apm_relay->on(0);
-                }
-                break;
+    uint64_t now = AP_HAL::micros64();
+    if (_trigger_end_us == 0 || now < _trigger_end_us) {
+        return;
+    }
+    _trigger_end_us = 0;
+    
+    switch (_trigger_type) {
+    case AP_CAMERA_TRIGGER_TYPE_SERVO:
+        SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_off_pwm);
+        break;
+    case AP_CAMERA_TRIGGER_TYPE_RELAY:
+        if (_relay_on) {
+            _apm_relay->off(0);
+        } else {
+            _apm_relay->on(0);
         }
+        break;
     }
 }
 
