@@ -41,6 +41,9 @@ void Tracker::init_tracker()
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
     
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
 
     // initialise notify
     notify.init(false);
