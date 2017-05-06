@@ -235,15 +235,12 @@ bool AP_Beacon::update_boundary_points()
         return false;
     }
 
-    // delete to recreate boundary
-    if (_boundary != nullptr) {
-        delete _boundary;
-        _boundary = nullptr;
+    // create boundary (5 points with a closing point) at once
+    if (_boundary == nullptr) {
+        _boundary = (Vector2f *)calloc(1, (AP_BEACON_MAX_BEACONS + 1) * sizeof(Vector2f));
     }
 
-    // check if we need to create array
-    _boundary = (Vector2f *)calloc(1, (num_beacons + 1) * sizeof(Vector2f));
-
+    // check if boundary is available
     if (_boundary == nullptr) {
         return false;
     } else {
