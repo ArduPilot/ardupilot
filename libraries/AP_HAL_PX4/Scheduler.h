@@ -90,6 +90,11 @@ private:
     pthread_t _uart_thread_ctx;
     pthread_t _uavcan_thread_ctx;
 
+    struct _uavcan_thread_arg {
+        PX4Scheduler *sched;
+        uint8_t uavcan_number;
+    };
+
     static void *_timer_thread(void *arg);
     static void *_io_thread(void *arg);
     static void *_storage_thread(void *arg);
