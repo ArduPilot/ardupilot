@@ -16,6 +16,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #if HAL_WITH_UAVCAN
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #endif
 
@@ -489,34 +490,35 @@ void PX4RCOutput::_send_outputs(void)
             }
         }
 
-        if(AP_BoardConfig::get_can_enable() >= 1)
-        {
 #if HAL_WITH_UAVCAN
-
-            if(hal.can_mgr != nullptr)
-            {
-                AP_UAVCAN *ap_uc = hal.can_mgr->get_UAVCAN();
-                if(ap_uc != nullptr)
+        if (AP_BoardConfig_CAN::get_can_num_ifaces() >= 1)
+        {
+            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+                if (hal.can_mgr[i] != nullptr)
                 {
-                    if(ap_uc->rc_out_sem_take())
+                    AP_UAVCAN *ap_uc = hal.can_mgr[i]->get_UAVCAN();
+                    if (ap_uc != nullptr)
                     {
-                        for(uint8_t i = 0; i < _max_channel; i++)
+                        if (ap_uc->rc_out_sem_take())
                         {
-                            ap_uc->rco_write(_period[i], i);
-                        }
+                            for (uint8_t j = 0; j < _max_channel; j++)
+                            {
+                                ap_uc->rco_write(_period[j], j);
+                            }
 
-                        if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-                            ap_uc->rco_arm_actuators(true);
-                        } else {
-                            ap_uc->rco_arm_actuators(false);
-                        }
+                            if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+                                ap_uc->rco_arm_actuators(true);
+                            } else {
+                                ap_uc->rco_arm_actuators(false);
+                            }
 
-                        ap_uc->rc_out_sem_give();
+                            ap_uc->rc_out_sem_give();
+                        }
                     }
                 }
             }
-#endif // HAL_WITH_UAVCAN
         }
+#endif // HAL_WITH_UAVCAN
 
         perf_end(_perf_rcout);
         _last_output = now;
