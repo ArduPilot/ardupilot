@@ -61,6 +61,7 @@
 #include <APM_Control/APM_Control.h>
 #include <AP_L1_Control/AP_L1_Control.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 
 #include "AP_Arming.h"
@@ -128,6 +129,11 @@ private:
 
     // board specific config
     AP_BoardConfig BoardConfig;
+
+#if HAL_WITH_UAVCAN
+    // board specific config for CAN bus
+    AP_BoardConfig_CAN BoardConfig_CAN;
+#endif
 
     // primary control channels
     RC_Channel *channel_steer;
