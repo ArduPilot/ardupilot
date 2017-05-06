@@ -22,6 +22,7 @@ public:
         //
         k_param_format_version = 0,
         k_param_software_type,
+        k_param_BoardConfig_CAN,
 
         // Misc
         //
