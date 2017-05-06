@@ -38,6 +38,7 @@
 #include "GPS_Backend.h"
 
 #if HAL_WITH_UAVCAN
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include "AP_GPS_UAVCAN.h"
 #endif
@@ -417,23 +418,29 @@ void AP_GPS::detect_instance(uint8_t instance)
 
 #if HAL_WITH_UAVCAN
     // user has to explicitly set the UAVCAN type, do not use AUTO
-    // do not try to detect the UAVCAN type, assume it's there
     case GPS_TYPE_UAVCAN:
         dstate->auto_detected_baud = false; // specified, not detected
-        if (AP_BoardConfig::get_can_enable() >= 1) {
-            new_gps = new AP_GPS_UAVCAN(*this, state[instance], nullptr);
+        if (AP_BoardConfig_CAN::get_can_num_ifaces() >= 1) {
+            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+                if (hal.can_mgr[i] != nullptr) {
+                    AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
 
-            // register new listener at first empty node
-            if (hal.can_mgr != nullptr) {
-                AP_UAVCAN *ap_uavcan = hal.can_mgr->get_UAVCAN();
-                if (ap_uavcan != nullptr) {
-                    ap_uavcan->register_gps_listener(new_gps, 0);
+                    if (uavcan != nullptr) {
+                        uint8_t gps_node = uavcan->find_gps_without_listener();
 
-                    if (AP_BoardConfig::get_can_debug() >= 2) {
-                        hal.console->printf("AP_GPS_UAVCAN registered\n\r");
+                        if (gps_node != UINT8_MAX) {
+                            new_gps = new AP_GPS_UAVCAN(*this, state[instance], nullptr);
+                            ((AP_GPS_UAVCAN*) new_gps)->set_uavcan_manager(i);
+                            if (uavcan->register_gps_listener_to_node(new_gps, gps_node)) {
+                                if (AP_BoardConfig_CAN::get_can_debug() >= 2) {
+                                    printf("AP_GPS_UAVCAN registered\n\r");
+                                }
+                                goto found_gps;
+                            } else {
+                                delete new_gps;
+                            }
+                        }
                     }
-
-                    goto found_gps;
                 }
             }
         }
