@@ -121,6 +121,8 @@ void AP_OpticalFlow_PX4Flow::timer(void)
         
         _applyYaw(state.flowRate);
         _applyYaw(state.bodyRate);
+
+	 hal.util->px4flow_ground_distance = frame.ground_distance;
     }
 
     _update_frontend(state);
