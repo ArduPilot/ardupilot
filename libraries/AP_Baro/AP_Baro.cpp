@@ -25,6 +25,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "AP_Baro_SITL.h"
@@ -394,6 +395,16 @@ void AP_Baro::init(void)
     return;
 #endif
     
+#if HAL_WITH_UAVCAN
+    bool added;
+    do {
+        added = _add_backend(AP_Baro_UAVCAN::probe(*this));
+        if (_num_drivers == BARO_MAX_DRIVERS || _num_sensors == BARO_MAX_INSTANCES) {
+            return;
+        }
+    } while (added);
+#endif
+
 #if HAL_BARO_DEFAULT == HAL_BARO_PX4 || HAL_BARO_DEFAULT == HAL_BARO_VRBRAIN
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PX4V1:
@@ -479,19 +490,6 @@ void AP_Baro::init(void)
                                           std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
 #endif
     }
-    
-#if HAL_WITH_UAVCAN
-    // If there is place left - allocate one UAVCAN based baro
-    if ((AP_BoardConfig::get_can_enable() != 0) && (hal.can_mgr != nullptr))
-    {
-        if(_num_drivers < BARO_MAX_DRIVERS && _num_sensors < BARO_MAX_INSTANCES)
-        {
-            printf("Creating AP_Baro_UAVCAN\n\r");
-            drivers[_num_drivers] = new AP_Baro_UAVCAN(*this);
-            _num_drivers++;
-        }
-    }
-#endif
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_BoardConfig::sensor_config_error("Baro: unable to initialise driver");
@@ -617,3 +615,4 @@ void AP_Baro::set_pressure_correction(uint8_t instance, float p_correction)
         sensors[instance].p_correction = p_correction;
     }
 }
+
