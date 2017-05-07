@@ -236,8 +236,12 @@ bool AP_Beacon::update_boundary_points()
     }
 
     // create boundary (5 points with a closing point) at once
-    if (_boundary == nullptr) {
-        _boundary = (Vector2f *)calloc(1, (AP_BEACON_MAX_BEACONS + 1) * sizeof(Vector2f));
+    if (!boundary_create_attempted) {
+        uint32_t array_size = (AP_BEACON_MAX_BEACONS + 1) * sizeof(Vector2f);
+        if (hal.util->available_memory() >= 100U + array_size) {
+            _boundary = (Vector2f *)calloc(1, array_size);
+        }
+        boundary_create_attempted = true;
     }
 
     // check if boundary is available
