@@ -47,6 +47,11 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask();
 
+    // output a thrust to all motors that match a given motor
+    // mask. This is used to control tiltrotor motors in forward
+    // flight. Thrust is in the range 0 to 1
+    void                output_motor_mask(float thrust, uint8_t mask) override;
+    
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
