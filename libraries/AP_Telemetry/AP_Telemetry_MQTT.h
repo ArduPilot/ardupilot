@@ -15,7 +15,6 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <string>
@@ -26,12 +25,17 @@ extern "C" {
 #endif
 
 #include "define_MQTT.h"
-#include "MQTTAsync.h"
-#include "LinkedList.h"
+#include "Mqtt/MQTTAsync.h"
+#include "Mqtt/LinkedList.h"
 
 #if defined( __cplusplus)
 }
 #endif
+
+#define MQTT_ENABLED 1
+ 
+#define MQTT_SERVICE MQTT_ENABLED
+
 
 // mqtt send_log on / off
 enum Mqtt_send_log {
@@ -51,6 +55,9 @@ public:
   static MQTTAsync* get_MQTTClient();
   static AP_Telemetry_MQTT* get_telemetry_mqtt();
   static AP_Telemetry_MQTT* init_telemetry_mqtt(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart);
+  static void set_mqtt_server(const char* server);
+  static void set_mqtt_user(const char* user);
+  static void set_mqtt_password(const char* password);
   // update - provide an opportunity to read/send telemetry
   void update() override;
   void send_log(const char *str) override;
@@ -62,12 +69,14 @@ public:
   enum Mqtt_connection_status connection_status = MQTT_DISCONNECTED;
   enum Mqtt_send_log send_log_flag = MQTT_SEND_LOG_ON;
 
-private: 
+
+private:
+  AP_Telemetry_MQTT(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart);
   List* recv_msg_list;
   static AP_Telemetry_MQTT* telemetry_mqtt;
   static MQTTAsync mqtt_client;
+  static MQTTAsync_connectOptions conn_options;
   void init_mqtt();
-  AP_Telemetry_MQTT(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart);
   void MQTTHandle_error(int rc);
   pthread_mutex_t* mqtt_mutex;
   pthread_mutex_t mqtt_mutex_store;

@@ -234,22 +234,22 @@ def copyMqtt(cfg):
             break
     version = '{}.{}'.format(major, minor)
     sedcmd = 'sed -e "s/@CLIENT_VERSION@/{}/g" -e "s/@BUILD_TIMESTAMP@/{}/g" {} > {}'.format(
-        version, now, mqttroot + 'VersionInfo.h.in', cfg.path.make_node('libraries/AP_Telemetry/VersionInfo.h'))
+        version, now, mqttroot + 'VersionInfo.h.in', cfg.path.make_node('libraries/AP_Telemetry/Mqtt/VersionInfo.h'))
     cfg.exec_command(sedcmd)
     srcs = os.listdir(mqttroot)
     for s in srcs:
         if ('.c' in s or '.h' in s) and 'samples' not in s:
             print(cfg.path.make_node('/modules/Mqtt/src/' + s))
-            print(cfg.path.make_node('libraries/AP_Telemetry/' + s))
+            print(cfg.path.make_node('libraries/AP_Telemetry/Mqtt/' + s))
             cfg.exec_command('cp -f {} {}'.format(
                 cfg.path.make_node('/modules/Mqtt/src/' + s),
-                cfg.path.make_node('libraries/AP_Telemetry/' + s))
+                cfg.path.make_node('libraries/AP_Telemetry/Mqtt/' + s))
             )
 
 def cleanMqtt(bld):
     print('Cleanup Mqtt files from AP_Telemetry direcotry')
     mqttroot =  bld.srcnode.abspath() + '/modules/Mqtt/src/'
-    aptroot = bld.srcnode.abspath() + '/libraries/AP_Telemetry/'
+    aptroot = bld.srcnode.abspath() + '/libraries/AP_Telemetry/Mqtt'
     mqttfiles = os.listdir(mqttroot)
     for f in mqttfiles:
         tgt = "{}{}".format(aptroot, f)

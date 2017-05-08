@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <string>
+#include <getopt.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -29,12 +30,14 @@ extern int mqtt_to_mavlink_message(const char* cmd, mavlink_message_t *msg);
 
 MQTTAsync AP_Telemetry_MQTT::mqtt_client;
 AP_Telemetry_MQTT* AP_Telemetry_MQTT::telemetry_mqtt = nullptr;
+MQTTAsync_connectOptions AP_Telemetry_MQTT::conn_options = MQTTAsync_connectOptions_initializer;
 int mqtt_msg_arrived(void *context, char *topicname, int topicLen, MQTTAsync_message* message);
 void onConnect(void *context, MQTTAsync_successData* response);
 void onConnectFailure(void* context, MQTTAsync_failureData* response);
 
  // MQTT Client accessor
- MQTTAsync* AP_Telemetry_MQTT::get_MQTTClient(){
+ MQTTAsync* AP_Telemetry_MQTT::get_MQTTClient()
+ {
    return &mqtt_client;
  }
 
@@ -57,8 +60,7 @@ void onConnectFailure(void* context, MQTTAsync_failureData* response);
    AP_Telemetry_Backend(frontend, uart)
  {}
 
- void AP_Telemetry_MQTT::init_mqtt()
- {
+ void AP_Telemetry_MQTT::init_mqtt(){
    int rc;
    mqtt_mutex_store = PTHREAD_MUTEX_INITIALIZER;
    mqtt_mutex = &mqtt_mutex_store;
@@ -72,37 +74,54 @@ void onConnectFailure(void* context, MQTTAsync_failureData* response);
        printf("init: error %d initializing mqtt_mutex\n", rc);
        MQTTHandle_error(rc);
      } else {
-     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 
-     conn_opts.keepAliveInterval = 20;
-     conn_opts.cleansession = 1;     
-     conn_opts.username = getenv("MQTT_USER");
-     conn_opts.password = getenv("MQTT_PASSWORD");
+     conn_options.keepAliveInterval = 20;
+     conn_options.cleansession = 1;
 
-     conn_opts.onSuccess = onConnect;
-     conn_opts.onFailure = onConnectFailure;
-     conn_opts.context = mqtt_client;
+     conn_options.onSuccess = onConnect;
+     conn_options.onFailure = onConnectFailure;
+     conn_options.context = mqtt_client;
 
      char clientid[9] = "no_id";
      srand((unsigned int)time(0));
      sprintf(clientid, "client_%d", rand()%100);
+     char** server = (char**)conn_options.serverURIs;
 
-     if((rc = MQTTAsync_create(&mqtt_client, getenv("MQTT_SERVER"), clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != 0)
-       {
+     if((rc = MQTTAsync_create(&mqtt_client, "tcp://192.168.11.12:1883", clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != 0)
+       //     if((rc = MQTTAsync_create(&mqtt_client, *(conn_options.serverURIs), clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != 0)
+      {
 	 printf("Failed to create Client, return code %d\n", rc);
 	 MQTTHandle_error(rc);
        }
 
-     MQTTAsync_setCallbacks(mqtt_client, NULL, NULL, mqtt_msg_arrived, NULL);     
-     if ((rc = MQTTAsync_connect(mqtt_client, &conn_opts)) != MQTTASYNC_SUCCESS)
+     MQTTAsync_setCallbacks(mqtt_client, NULL, NULL, mqtt_msg_arrived, NULL);
+     if ((rc = MQTTAsync_connect(mqtt_client, &conn_options)) != MQTTASYNC_SUCCESS)
        {
 	 printf("Failed to start connect, return code %d\n", rc);
 	 MQTTHandle_error(rc);
        }
+     connection_status = MQTT_CONNECTED;
    }
  }
 
-void AP_Telemetry_MQTT::send_log(const char *str)
+void AP_Telemetry_MQTT::set_mqtt_server(const char* server)
+{
+  char* tmp;
+  tmp = (char*)server;
+  conn_options.serverURIs = &tmp;
+}
+
+void AP_Telemetry_MQTT::set_mqtt_user(const char* user)
+{
+  conn_options.username = user;
+}
+
+void AP_Telemetry_MQTT::set_mqtt_password(const char* password)
+{
+  conn_options.password = password;
+}
+
+void AP_Telemetry_MQTT::send_log(const char* str)
 {
   char topic[MAX_PAYLOAD];
   if(send_log_flag == MQTT_SEND_LOG_ON)
@@ -136,11 +155,14 @@ void AP_Telemetry_MQTT::send_message(const char *str, const char *topic)
 
 void AP_Telemetry_MQTT::subscribe_mqtt_topic(const char *topic, int qos)
 {
-  int rc;
-  if ((rc = MQTTAsync_subscribe(mqtt_client, topic, qos, NULL)) != MQTTASYNC_SUCCESS)
+  if(connection_status == MQTT_CONNECTED)
     {
-      printf("Failed to start subscribe, return code %d\n", rc);
-      MQTTHandle_error(rc);
+      int rc;
+      if ((rc = MQTTAsync_subscribe(mqtt_client, topic, qos, NULL)) != MQTTASYNC_SUCCESS)
+	{
+	  printf("Failed to start subscribe, return code %d\n", rc);
+	  MQTTHandle_error(rc);
+	}
     }
 }
 
