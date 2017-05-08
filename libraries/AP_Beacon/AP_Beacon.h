@@ -61,10 +61,10 @@ public:
     // update state of all beacons
     void update(void);
 
-    // return origin of position estimate system
+    // return origin of position estimate system in lat/lon
     bool get_origin(Location &origin_loc) const;
 
-    // return vehicle position in NED from position estimate system's origin
+    // return vehicle position in NED from position estimate system's origin in meters
     bool get_vehicle_position_ned(Vector3f& pos, float& accuracy_estimate) const;
 
     // return the number of beacons
@@ -84,10 +84,10 @@ public:
     // return distance to beacon in meters
     float beacon_distance(uint8_t beacon_instance) const;
 
-    // return NED position of beacon relative to the beacon systems origin
+    // return NED position of beacon in meters relative to the beacon systems origin
     Vector3f beacon_position(uint8_t beacon_instance) const;
 
-    // return last update time from beacon
+    // return last update time from beacon in milliseconds
     uint32_t beacon_last_update_ms(uint8_t beacon_instance) const;
 
     static const struct AP_Param::GroupInfo var_info[];
