@@ -287,9 +287,8 @@ bool XPlane::receive_data(void)
 
     if (data_mask != required_mask) {
         // ask XPlane to change what data it sends
-        uint64_t usel = data_mask & ~required_mask;
+        uint64_t usel = (data_mask & ~required_mask) & ~unselected_mask;
         uint64_t sel = required_mask & ~data_mask;
-        usel &= ~unselected_mask;
         if (usel || sel) {
             select_data(usel, sel);
             goto failed;
