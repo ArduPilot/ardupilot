@@ -330,6 +330,12 @@ private:
     int32_t quarter_turn_count;
     uint8_t last_turn_state;
 
+    // Input gain
+    float gain;
+
+    // Flag indicating if we are currently using input hold
+    bool input_hold_engaged;
+
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
     Location_Class current_loc;
@@ -489,6 +495,7 @@ private:
     void rpm_update();
 #endif
     void send_temperature(mavlink_channel_t chan);
+    bool send_info(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
     void gcs_send_mission_item_reached_message(uint16_t mission_index);

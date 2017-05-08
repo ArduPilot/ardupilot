@@ -16,7 +16,6 @@ int16_t yTrim = 0;
 int16_t video_switch = 1100;
 int16_t x_last, y_last, z_last;
 uint16_t buttons_prev;
-float gain;
 
 // Servo control output channels
 // TODO: Allow selecting output channels
@@ -325,6 +324,7 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             xTrim = x_last;
             yTrim = y_last;
             gcs_send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
+            input_hold_engaged = abs(zTrim) > 20 || abs(xTrim) > 20 || abs(yTrim) > 20;
         }
         break;
     case JSButton::button_function_t::k_relay_1_on:
