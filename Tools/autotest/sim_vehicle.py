@@ -471,6 +471,10 @@ _options = {
             },
         },
     },
+    "rover": {
+        "waf_target": "bin/ardurover",
+        "default_params_filename": "Rover.parm",
+    },
 }
 
 def default_waf_target(vehicle):
