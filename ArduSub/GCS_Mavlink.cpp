@@ -357,6 +357,55 @@ void NOINLINE Sub::send_temperature(mavlink_channel_t chan)
         celsius.temperature() * 100);
 }
 
+bool NOINLINE Sub::send_info(mavlink_channel_t chan)
+{
+    // Just do this all at once, hopefully the hard-wire telemetry requirement means this is ok
+    // Name is char[10]
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
+    mavlink_msg_named_value_float_send(
+            chan,
+            AP_HAL::millis(),
+            "CamTilt",
+            1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_tilt) / 2.0f + 0.5f));
+
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
+    mavlink_msg_named_value_float_send(
+            chan,
+            AP_HAL::millis(),
+            "TetherTrn",
+            quarter_turn_count/4);
+
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
+    mavlink_msg_named_value_float_send(
+            chan,
+            AP_HAL::millis(),
+            "Lights1",
+            SRV_Channels::get_output_norm(SRV_Channel::k_rcin9) / 2.0f + 0.5f);
+
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
+    mavlink_msg_named_value_float_send(
+            chan,
+            AP_HAL::millis(),
+            "Lights2",
+            SRV_Channels::get_output_norm(SRV_Channel::k_rcin10) / 2.0f + 0.5f);
+
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
+    mavlink_msg_named_value_float_send(
+            chan,
+            AP_HAL::millis(),
+            "PilotGain",
+            gain);
+
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
+    mavlink_msg_named_value_float_send(
+            chan,
+            AP_HAL::millis(),
+            "InputHold",
+            input_hold_engaged);
+
+    return true;
+}
+
 /*
   send PID tuning message
  */
@@ -438,10 +487,16 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     }
 
     switch (id) {
+
+    case MSG_NAMED_FLOAT:
+        sub.send_info(chan);
+        break;
+
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
         last_heartbeat_time = AP_HAL::millis();
         sub.send_heartbeat(chan);
+        sub.send_info(chan);
         break;
 
     case MSG_EXTENDED_STATUS1:
@@ -722,6 +777,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         send_message(MSG_GPS2_RTK);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_LIMITS_STATUS);
+        send_message(MSG_NAMED_FLOAT);
     }
 
     if (sub.gcs_out_of_time) {
