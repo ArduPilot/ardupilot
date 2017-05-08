@@ -325,8 +325,9 @@ build_arducopter() {
             skip_build $tag $ddir && continue
             skip_frame $b $f && continue
             options=$(board_options $b)
-            waf configure --board $b $options --out $BUILDROOT clean \
-                    build --targets bin/arducopter$framesuffix || {
+            waf configure --board $b $options --out $BUILDROOT && \
+                waf clean && \
+                waf build --targets bin/arducopter$framesuffix || {
                 echo "Failed build of ArduCopter $b$framesuffix $tag"
                 error_count=$((error_count+1))
                 continue
