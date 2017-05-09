@@ -589,6 +589,9 @@ private:
     // last valid RC input time
     uint32_t last_radio_update_ms;
 
+    // last esc calibration notification update
+    uint32_t esc_calibration_notify_update_ms;
+
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
     // last visual odometry update time
     uint32_t visual_odom_last_update_ms;
@@ -939,6 +942,7 @@ private:
     void esc_calibration_startup_check();
     void esc_calibration_passthrough();
     void esc_calibration_auto();
+    void esc_calibration_notify();
     bool should_disarm_on_failsafe();
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();
