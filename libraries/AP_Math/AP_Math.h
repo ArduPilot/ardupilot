@@ -183,32 +183,32 @@ static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one :
 
 inline uint32_t hz_to_nsec(uint32_t freq)
 {
-    return NSEC_PER_SEC / freq;
+    return AP_NSEC_PER_SEC / freq;
 }
 
 inline uint32_t nsec_to_hz(uint32_t nsec)
 {
-    return NSEC_PER_SEC / nsec;
+    return AP_NSEC_PER_SEC / nsec;
 }
 
 inline uint32_t usec_to_nsec(uint32_t usec)
 {
-    return usec * NSEC_PER_USEC;
+    return usec * AP_NSEC_PER_USEC;
 }
 
 inline uint32_t nsec_to_usec(uint32_t nsec)
 {
-    return nsec / NSEC_PER_USEC;
+    return nsec / AP_NSEC_PER_USEC;
 }
 
 inline uint32_t hz_to_usec(uint32_t freq)
 {
-    return USEC_PER_SEC / freq;
+    return AP_USEC_PER_SEC / freq;
 }
 
 inline uint32_t usec_to_hz(uint32_t usec)
 {
-    return USEC_PER_SEC / usec;
+    return AP_USEC_PER_SEC / usec;
 }
 
 /*

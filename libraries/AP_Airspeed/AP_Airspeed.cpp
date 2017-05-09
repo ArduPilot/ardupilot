@@ -22,6 +22,7 @@
 #include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <utility>
 #include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
@@ -58,8 +59,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: USE
     // @DisplayName: Airspeed use
-    // @Description: use airspeed for flight control
-    // @Values: 1:Use,0:Don't Use
+    // @Description: use airspeed for flight control. When set to 0 airspeed sensor can be logged and displayed on a GCS but won't be used for flight. When set to 1 it will be logged and used. When set to 2 it will be only used when the throttle is zero, which can be useful in gliders with airspeed sensors behind a propeller
+    // @Values: 0:Don't Use,1:use,2:UseWhenZeroThrottle
     // @User: Standard
     AP_GROUPINFO("USE",    1, AP_Airspeed, _use, 0),
 
@@ -291,4 +292,18 @@ void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
     _hil_pressure = diff_pressure;
     _hil_set = true;
     _healthy = true;
+}
+
+bool AP_Airspeed::use(void) const
+{
+    if (!enabled() || !_use) {
+        return false;
+    }
+    if (_use == 2 && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != 0) {
+        // special case for gliders with airspeed sensors behind the
+        // propeller. Allow airspeed to be disabled when throttle is
+        // running
+        return false;
+    }
+    return true;
 }

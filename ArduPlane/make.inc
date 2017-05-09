@@ -15,7 +15,6 @@ LIBRARIES += Filter
 LIBRARIES += AP_Buffer
 LIBRARIES += AP_Relay
 LIBRARIES += AP_Camera
-LIBRARIES += AP_Airspeed
 LIBRARIES += AP_Terrain
 LIBRARIES += AP_AdvancedFailsafe
 LIBRARIES += APM_Control

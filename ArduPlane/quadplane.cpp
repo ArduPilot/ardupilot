@@ -386,6 +386,13 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Description: This is the angle of the tilt servos when in VTOL mode and at minimum output. This needs to be set for Q_TILT_TYPE=3 to enable vectored control for yaw of tricopter tilt quadplanes.
     // @Range: 0 30
     AP_GROUPINFO("TILT_YAW_ANGLE", 55, QuadPlane, tilt.tilt_yaw_angle, 0),
+
+    // @Param: TAILSIT_VHPOW
+    // @DisplayName: Tailsitter vector thrust gain power
+    // @Description: This controls the amount of extra pitch given to the vectored control when at high pitch errors
+    // @Range: 0 4
+    // @Increment: 0.1
+    AP_GROUPINFO("TAILSIT_VHPOW", 56, QuadPlane, tailsitter.vectored_hover_power, 2.5),
     
     AP_GROUPEND
 };

@@ -338,8 +338,6 @@ private:
     struct Location prev_WP;
     // The location of the current/active waypoint.  Used for track following
     struct Location next_WP;
-    // The location of the active waypoint in Guided mode.
-    struct Location guided_WP;
 
     // IMU variables
     // The main loop execution time.  Seconds
@@ -391,18 +389,18 @@ private:
     // we need to run the speed controller
     bool auto_throttle_mode;
 
+    // Guided control
+    GuidedMode guided_mode;             // controls which controller is run (waypoint or velocity)
+    // Store parameters from Guided msg
+    struct {
+      float turn_angle;          // target heading in centi-degrees
+      float target_speed;        // target speed in m/s
+      float target_steer_speed;  // target steer speed in degree/s
+      uint32_t msg_time_ms;      // time of last guided message
+    } guided_control;
+
     // Store the time the last GPS message was received.
     uint32_t last_gps_msg_ms{0};
-
-    // Store parameters from NAV_SET_YAW_SPEED
-    struct {
-        float turn_angle;
-        float target_speed;
-        uint32_t msg_time_ms;
-    } guided_yaw_speed;
-
-    // Guided
-    GuidedMode guided_mode;  // stores which GUIDED mode the vehicle is in
 
 private:
     // private member functions
@@ -471,8 +469,9 @@ private:
     void calc_lateral_acceleration();
     void calc_nav_steer();
     void set_servos(void);
-    void set_next_WP(const struct Location& loc);
-    void set_guided_WP(void);
+    void set_auto_WP(const struct Location& loc);
+    void set_guided_WP(const struct Location& loc);
+    void set_guided_velocity(float target_steer_speed, float target_speed);
     void init_home();
     void restart_nav();
     void exit_mission();
@@ -570,6 +569,7 @@ private:
     void accel_cal_update(void);
     void nav_set_yaw_speed();
     bool do_yaw_rotation();
+    void nav_set_speed();
     bool in_stationary_loiter(void);
     void set_loiter_active(const AP_Mission::Mission_Command& cmd);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);

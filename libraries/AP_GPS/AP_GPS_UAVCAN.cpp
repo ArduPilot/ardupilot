@@ -50,7 +50,7 @@ AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
 // Consume new data and mark it received
 bool AP_GPS_UAVCAN::read(void)
 {
-    if (_sem_gnss->take(0)) {
+    if (_sem_gnss->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         if (_new_data) {
             _new_data = false;
 
@@ -67,7 +67,7 @@ bool AP_GPS_UAVCAN::read(void)
 
 void AP_GPS_UAVCAN::handle_gnss_msg(const AP_GPS::GPS_State &msg)
 {
-    if (_sem_gnss->take(0)) {
+    if (_sem_gnss->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _interm_state = msg;
         _new_data = true;
         _sem_gnss->give();

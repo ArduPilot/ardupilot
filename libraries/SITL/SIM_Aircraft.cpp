@@ -330,6 +330,10 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         smooth_sensors();
     }
     fdm.timestamp_us = time_now_us;
+    if (fdm.home.lat == 0 && fdm.home.lng == 0) {
+        // initialise home
+        fdm.home = home;
+    }
     fdm.latitude  = location.lat * 1.0e-7;
     fdm.longitude = location.lng * 1.0e-7;
     fdm.altitude  = location.alt * 1.0e-2;

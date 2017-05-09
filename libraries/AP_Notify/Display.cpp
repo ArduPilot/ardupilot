@@ -324,9 +324,6 @@ bool Display::init(void)
         return true;
     }
 
-    _mstartpos = 0; // ticker shift position
-    _movedelay = 4; // ticker delay before shifting after new message displayed
-
     // initialise driver
     for(uint8_t i=0; i<8 && _driver == nullptr; i++) {
         if (! (I2C_BUS_PROBE_MASK & (1<<i))) {
@@ -538,15 +535,15 @@ void Display::update_text_empty(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE] = {};
     memset(msg, ' ', sizeof(msg)-1);
-    _movedelay = 4;
+    _movedelay = 0;
     _mstartpos = 0;
     draw_text(COLUMN(0), ROW(r), msg);
 }
 
 void Display::update_text(uint8_t r)
 {
-    char msg [DISPLAY_MESSAGE_SIZE] = {0};
-    char txt [NOTIFY_TEXT_BUFFER_SIZE] = {0};
+    char msg [DISPLAY_MESSAGE_SIZE] = {};
+    char txt [NOTIFY_TEXT_BUFFER_SIZE] = {};
 
     const bool text_is_valid = AP_HAL::millis() - pNotify->_send_text_updated_millis < _send_text_valid_millis;
     if (!text_is_valid) {
@@ -554,24 +551,26 @@ void Display::update_text(uint8_t r)
         return;
     }
 
-    snprintf(txt, NOTIFY_TEXT_BUFFER_SIZE, "%s", pNotify->get_text());
-    _mstartpos++;
-    for (uint8_t i = 0; i < (sizeof(msg) - 1); i++) {
-        if (txt[i + _mstartpos - 1] != 0) {
-            msg[i] = txt[i + _mstartpos - 1];
-        } else {
-            msg[i] = ' ';
-            _movedelay = 4;
-            _mstartpos = 0;
-        }
-    }
-
-    if (_mstartpos > sizeof(txt) - sizeof(msg)) {
-        _mstartpos = 0;
-    }
     if (_movedelay > 0) {
         _movedelay--;
-        _mstartpos = 0;
+        return;
     }
+
+    snprintf(txt, sizeof(txt), "%s", pNotify->get_text());
+
+    memset(msg, ' ', sizeof(msg)-1); // leave null termination
+    const uint8_t len = strlen(&txt[_mstartpos]);
+    const uint8_t to_copy = (len < sizeof(msg)-1) ? len : (sizeof(msg)-1);
+    memcpy(msg, &txt[_mstartpos], to_copy);
+
+    if (len <= sizeof(msg)-1) {
+        // end-of-message reached; pause scrolling a while
+        _movedelay = 4;
+        // reset startpos so we start scrolling from the start again:
+        _mstartpos = 0;
+    } else {
+        _mstartpos++;
+    }
+
     draw_text(COLUMN(0), ROW(0), msg);
  }

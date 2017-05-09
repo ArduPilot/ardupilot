@@ -34,8 +34,8 @@ private:
 
     bool _healthy;
 
-    uint8_t _mstartpos;
-    uint8_t _movedelay;
+    uint8_t _mstartpos; // ticker shift position
+    uint8_t _movedelay; // ticker delay before shifting after new message displayed
     uint8_t _screenpage;
 
     // stop showing text in display after this many millis:

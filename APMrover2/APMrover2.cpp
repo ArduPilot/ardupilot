@@ -359,6 +359,13 @@ void Rover::one_second_loop(void)
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
 
+    // update home position if not soft armed and gps position has
+    // changed. Update every 1s at most
+    if (!hal.util->get_soft_armed() &&
+        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        update_home();
+    }
+
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
@@ -429,10 +436,6 @@ void Rover::update_GPS_10Hz(void)
             do_take_picture();
         }
 #endif
-
-        if (!hal.util->get_soft_armed()) {
-            update_home();
-        }
     }
 }
 
@@ -474,10 +477,14 @@ void Rover::update_current_mode(void)
             } else {
                 calc_lateral_acceleration();
                 calc_nav_steer();
-                calc_throttle(g.speed_cruise);
-                Log_Write_GuidedTarget(guided_mode, Vector3f(guided_WP.lat, guided_WP.lng, guided_WP.alt),
-                                       Vector3f(g.speed_cruise, SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0));
+                calc_throttle(rover.guided_control.target_speed);
+                Log_Write_GuidedTarget(guided_mode, Vector3f(next_WP.lat, next_WP.lng, next_WP.alt),
+                                       Vector3f(rover.guided_control.target_speed, SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0.0f));
             }
+            break;
+
+        case Guided_Velocity:
+            nav_set_speed();
             break;
 
         default:
@@ -565,11 +572,12 @@ void Rover::update_navigation()
 
     case RTL:
         // no loitering around the wp with the rover, goes direct to the wp position
-        calc_lateral_acceleration();
-        calc_nav_steer();
         if (verify_RTL()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
             set_mode(HOLD);
+        } else {
+            calc_lateral_acceleration();
+            calc_nav_steer();
         }
         break;
 
@@ -581,14 +589,19 @@ void Rover::update_navigation()
 
         case Guided_WP:
             // no loitering around the wp with the rover, goes direct to the wp position
-            calc_lateral_acceleration();
-            calc_nav_steer();
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
                 SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
                 SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
                 lateral_acceleration = 0;
+            } else {
+                calc_lateral_acceleration();
+                calc_nav_steer();
             }
+            break;
+
+        case Guided_Velocity:
+            nav_set_speed();
             break;
 
         default:

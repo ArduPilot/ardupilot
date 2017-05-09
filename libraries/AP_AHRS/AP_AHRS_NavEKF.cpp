@@ -293,9 +293,10 @@ void AP_AHRS_NavEKF::update_SITL(void)
                                   radians(fdm.yawRate));
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            _accel_ef_ekf[i] = Vector3f(fdm.xAccel,
-                                        fdm.yAccel,
-                                        fdm.zAccel);
+            Vector3f accel(fdm.xAccel,
+                           fdm.yAccel,
+                           fdm.zAccel);
+            _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
         }
         _accel_ef_ekf_blended = _accel_ef_ekf[0];
 
@@ -585,6 +586,14 @@ bool AP_AHRS_NavEKF::set_origin(const Location &loc)
 
     case EKF_TYPE3:
         return ret3;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL: {
+        struct SITL::sitl_fdm &fdm = _sitl->state;
+        fdm.home = loc;
+        return true;
+    }
+#endif
 
     default:
         return false;
@@ -1410,8 +1419,9 @@ bool AP_AHRS_NavEKF::get_origin(Location &ret) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
-        ret = get_home();
-        return ret.lat != 0 || ret.lng != 0;
+        const struct SITL::sitl_fdm &fdm = _sitl->state;
+        ret = fdm.home;
+        return true;
 #endif
     }
 }

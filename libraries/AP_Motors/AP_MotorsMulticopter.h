@@ -87,7 +87,7 @@ public:
     // output a thrust to all motors that match a given motor
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
-    void                output_motor_mask(float thrust, uint8_t mask);
+    virtual void        output_motor_mask(float thrust, uint8_t mask);
 
     // get minimum or maximum pwm value that can be output to motors
     int16_t             get_pwm_output_min() const;
@@ -137,6 +137,9 @@ protected:
     // apply any thrust compensation for the frame
     virtual void        thrust_compensation(void) {}
 
+    // output booster throttle, if any
+    virtual void        output_boost_throttle(void);
+    
     // save parameters as part of disarming
     void save_params_on_disarm();
 
@@ -168,6 +171,9 @@ protected:
 
     // time to spool motors to min throttle
     AP_Float            _spool_up_time;
+
+    // scaling for booster motor throttle
+    AP_Float            _boost_scale;
     
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
