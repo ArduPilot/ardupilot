@@ -15,7 +15,8 @@
 
 #include "AP_RangeFinder_PX4FLOW.h"
 #include <AP_HAL/AP_HAL.h>
-#include <stdio.h>
+#include <AP_OpticalFlow/AP_OpticalFlow_PX4Flow.h>
+#include <atomic>
 
 extern const AP_HAL::HAL& hal;
 
@@ -39,6 +40,6 @@ bool AP_RangeFinder_PX4FLOW::detect(RangeFinder &_ranger, uint8_t instance)
 */
 void AP_RangeFinder_PX4FLOW::update(void)
 {
-    state.distance_cm = static_cast<float>(hal.util->px4flow_ground_distance) / 10.0f;
+    state.distance_cm = static_cast<float>(AP_OpticalFlow_PX4Flow::ground_distance.load(std::memory_order_relaxed)) / 10.0f;
     update_status();
 }

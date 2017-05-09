@@ -114,8 +114,7 @@ public:
     // allocate and free DMA-capable memory if possible. Otherwise return normal memory
     virtual void *dma_allocate(size_t size) { return malloc(size); }
     virtual void dma_free(void *ptr, size_t size) { return free(ptr); }
-   
-    uint16_t px4flow_ground_distance; 
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
