@@ -161,12 +161,20 @@ void NavEKF3_core::setWindMagStateLearningMode()
 
     // Adjust the indexing limits used to address the covariance, states and other EKF arrays to avoid unnecessary operations
     // if we are not using those states
-    if (inhibitMagStates && inhibitWindStates && inhibitDelVelBiasStates) {
-        stateIndexLim = 12;
-    } else if (inhibitMagStates && !inhibitWindStates) {
-        stateIndexLim = 15;
-    } else if (inhibitWindStates) {
-        stateIndexLim = 21;
+    if (inhibitWindStates) {
+        if (inhibitMagStates) {
+            if (inhibitDelVelBiasStates) {
+                if (inhibitDelAngBiasStates) {
+                    stateIndexLim = 9;
+                } else {
+                    stateIndexLim = 12;
+                }
+            } else {
+                stateIndexLim = 15;
+            }
+        } else {
+            stateIndexLim = 21;
+        }
     } else {
         stateIndexLim = 23;
     }
