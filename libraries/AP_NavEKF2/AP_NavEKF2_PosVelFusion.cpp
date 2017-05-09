@@ -208,7 +208,7 @@ bool NavEKF2_core::resetHeightDatum(void)
     stateStruct.position.z = 0.0f;
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
     if (validOrigin) {
-        EKF_origin.alt += oldHgt*100;
+        ekfGpsRefHgt += (double)oldHgt;
     }
     // adjust the terrain state
     terrainState += oldHgt;
@@ -822,9 +822,14 @@ void NavEKF2_core::selectHeightForFusion()
         }
     }
 
-    // calculate offset to GPS height data that enables us to switch to GPS height during operation
-    if (gpsDataToFuse && (activeHgtSource != HGT_SOURCE_GPS)) {
-            calcFiltGpsHgtOffset();
+    // If we are not using GPS as the primary height sensor, correct EKF origin height so that
+    // combined local NED position height and origin height remains consistent with the GPS altitude
+    // This also enables the GPS height to be used as a backup height source
+    if (gpsDataToFuse &&
+            (((frontend->_originHgtMode & (1 << 0)) && (activeHgtSource == HGT_SOURCE_BARO)) ||
+            ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == HGT_SOURCE_RNG)))
+            ) {
+        correctEkfOriginHeight();
     }
 
     // Select the height measurement source
