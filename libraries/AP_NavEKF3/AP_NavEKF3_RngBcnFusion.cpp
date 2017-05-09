@@ -147,12 +147,25 @@ void NavEKF3_core::FuseRngBcn()
         Kfusion[5] = -t26*(P[5][7]*t4*t9+P[5][8]*t3*t9+P[5][9]*t2*t9);
         Kfusion[7] = -t26*(t22+P[7][8]*t3*t9+P[7][9]*t2*t9);
         Kfusion[8] = -t26*(t16+P[8][7]*t4*t9+P[8][9]*t2*t9);
-        Kfusion[10] = -t26*(P[10][7]*t4*t9+P[10][8]*t3*t9+P[10][9]*t2*t9);
-        Kfusion[11] = -t26*(P[11][7]*t4*t9+P[11][8]*t3*t9+P[11][9]*t2*t9);
-        Kfusion[12] = -t26*(P[12][7]*t4*t9+P[12][8]*t3*t9+P[12][9]*t2*t9);
+
+        if (!inhibitDelAngBiasStates) {
+            Kfusion[10] = -t26*(P[10][7]*t4*t9+P[10][8]*t3*t9+P[10][9]*t2*t9);
+            Kfusion[11] = -t26*(P[11][7]*t4*t9+P[11][8]*t3*t9+P[11][9]*t2*t9);
+            Kfusion[12] = -t26*(P[12][7]*t4*t9+P[12][8]*t3*t9+P[12][9]*t2*t9);
+        } else {
+            // zero indexes 10 to 12 = 3*4 bytes
+            memset(&Kfusion[10], 0, 12);
+        }
+
+        if (!inhibitDelVelBiasStates) {
         Kfusion[13] = -t26*(P[13][7]*t4*t9+P[13][8]*t3*t9+P[13][9]*t2*t9);
         Kfusion[14] = -t26*(P[14][7]*t4*t9+P[14][8]*t3*t9+P[14][9]*t2*t9);
         Kfusion[15] = -t26*(P[15][7]*t4*t9+P[15][8]*t3*t9+P[15][9]*t2*t9);
+        } else {
+            // zero indexes 13 to 15 = 3*4 bytes
+            memset(&Kfusion[13], 0, 12);
+        }
+
         // only allow the range observations to modify the vertical states if we are using it as a height reference
         if (activeHgtSource == HGT_SOURCE_BCN) {
             Kfusion[6] = -t26*(P[6][7]*t4*t9+P[6][8]*t3*t9+P[6][9]*t2*t9);
@@ -173,8 +186,14 @@ void NavEKF3_core::FuseRngBcn()
             // zero indexes 16 to 21 = 6*4 bytes
             memset(&Kfusion[16], 0, 24);
         }
+
+        if (!inhibitWindStates) {
         Kfusion[22] = -t26*(P[22][7]*t4*t9+P[22][8]*t3*t9+P[22][9]*t2*t9);
         Kfusion[23] = -t26*(P[23][7]*t4*t9+P[23][8]*t3*t9+P[23][9]*t2*t9);
+        } else {
+            // zero indexes 22 to 23 = 2*4 bytes
+            memset(&Kfusion[22], 0, 8);
+        }
 
         // Calculate innovation using the selected offset value
         Vector3f delta = stateStruct.position - rngBcnDataDelayed.beacon_posNED;
