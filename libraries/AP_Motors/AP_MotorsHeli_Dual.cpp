@@ -431,10 +431,10 @@ void AP_MotorsHeli_Dual::update_motor_control(RotorControlState state)
 //
 // move_actuators - moves swash plate to attitude of parameters passed in
 //                - expected ranges:
-//                       roll : -4500 ~ 4500
-//                       pitch: -4500 ~ 4500
-//                       collective: 0 ~ 1000
-//                       yaw:   -4500 ~ 4500
+//                       roll : -1 ~ +1
+//                       pitch: -1 ~ +1
+//                       collective: 0 ~ 1
+//                       yaw:   -1 ~ +1
 //
 void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
