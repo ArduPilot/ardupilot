@@ -274,6 +274,7 @@ void NavEKF2_core::InitialiseVariables()
     memset(&storedRngMeas, 0, sizeof(storedRngMeas));
     terrainHgtStable = true;
     ekfOriginHgtVar = 0.0f;
+    ekfGpsRefHgt = 0.0;
     velOffsetNED.zero();
     posOffsetNED.zero();
 
