@@ -531,6 +531,13 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAG_MASK", 49, NavEKF3, _magMask, 0),
 
+    // @Param: OGN_HGT_MASK
+    // @DisplayName: Bitmask control of EKF origin height adjustment
+    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be adjusted so that the height returned by the getLLH() function is corrected for primary height sensor drift and change in datum over time. This parameter controls when the WGS-84 reference height used by the EKF to convert GPS height to local height will be adjusted. Adjustment is performed using a Bayes filter and only operates when GPS quality permits. The parameter also controls whether the adjustments to the GPS reference datum also update the reported height of the EKF origin.
+    // @Bitmask: 0:When using Baro hgt,1:When using range height,2:Update Origin
+    // @User: Advanced
+    AP_GROUPINFO("OGN_HGT_MASK", 50, NavEKF3, _originHgtMode, 7),
+
     AP_GROUPEND
 };
 
