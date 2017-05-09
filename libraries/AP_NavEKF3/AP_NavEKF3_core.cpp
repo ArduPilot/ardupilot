@@ -235,6 +235,8 @@ void NavEKF3_core::InitialiseVariables()
     manoeuvring = false;
     inhibitWindStates = true;
     inhibitMagStates = true;
+    inhibitDelVelBiasStates = true;
+    inhibitDelAngBiasStates = true;
     gndOffsetValid =  false;
     validOrigin = false;
     takeoffExpectedSet_ms = 0;
