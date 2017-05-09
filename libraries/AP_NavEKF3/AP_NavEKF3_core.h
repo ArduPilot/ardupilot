@@ -747,8 +747,8 @@ private:
     // calculate a filtered offset between baro height measurement and EKF height estimate
     void calcFiltBaroOffset();
 
-    // calculate a filtered offset between GPS height measurement and EKF height estimate
-    void calcFiltGpsHgtOffset();
+    // correct the height of the EKF origin to be consistent with GPS Data using a Bayes filter.
+    void correctEkfOriginHeight();
 
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
@@ -864,7 +864,7 @@ private:
     bool inhibitDelVelBiasStates;   // true when delta velocity bias states are inactive
     bool inhibitDelAngBiasStates;
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
-    struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
+    struct Location EKF_origin;     // LLH origin of the NED axis system
     bool validOrigin;               // true when the EKF origin is valid
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     float gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
@@ -942,6 +942,7 @@ private:
     bool delAngBiasLearned;         // true when the gyro bias has been learned
     nav_filter_status filterStatus; // contains the status of various filter outputs
     float ekfOriginHgtVar;          // Variance of the the EKF WGS-84 origin height estimate (m^2)
+    double ekfGpsRefHgt;            // floating point representation of the WGS-84 reference height used to convert GPS height to local height (m)
     uint32_t lastOriginHgtTime_ms;  // last time the ekf's WGS-84 origin height was corrected
     Vector3f outputTrackError;      // attitude (rad), velocity (m/s) and position (m) tracking error magnitudes from the output observer
     Vector3f velOffsetNED;          // This adds to the earth frame velocity estimate at the IMU to give the velocity at the body origin (m/s)
