@@ -25,7 +25,6 @@
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm_Linux.h"
 #include "ToneAlarm_PX4.h"
-#include "ToneAlarm_PX4_Solo.h"
 #include "ToshibaLED.h"
 #include "ToshibaLED_I2C.h"
 #include "VRBoard_LED.h"
@@ -86,12 +85,7 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #endif
     ToshibaLED_I2C toshibaled;
     Display display;
-
-#if AP_NOTIFY_SOLO_TONES == 1
-    ToneAlarm_PX4_Solo tonealarm;
-#else
     ToneAlarm_PX4 tonealarm;
-#endif
 
 #if AP_NOTIFY_OREOLED == 1
     OreoLED_PX4 oreoled;
