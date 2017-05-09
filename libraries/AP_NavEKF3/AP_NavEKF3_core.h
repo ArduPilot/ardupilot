@@ -59,8 +59,8 @@
 #define ACCEL_BIAS_LIM_SCALER 0.2f
 
 // target update time for the EKF in msec and sec
-#define EKF_TARGET_DT_MS 10.0
-#define EKF_TARGET_DT    0.01
+#define EKF_TARGET_DT_MS 12
+#define EKF_TARGET_DT    0.012f
 
 // mag fusion final reset altitude (using NED frame so altitude is negative)
 #define EKF3_MAG_FINAL_RESET_ALT 2.5f
@@ -192,6 +192,9 @@ public:
 
     // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     void getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+
+    // return the diagonals from the covariance matrix
+    void getStateVariances(float stateVar[24]);
 
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
@@ -497,9 +500,6 @@ private:
     // force symmetry on the state covariance matrix
     void ForceSymmetry();
 
-    // copy covariances across from covariance prediction calculation and fix numerical errors
-    void CopyCovariances();
-
     // constrain variances (diagonal terms) in the state covariance matrix
     void ConstrainVariances();
 
@@ -747,8 +747,8 @@ private:
     // calculate a filtered offset between baro height measurement and EKF height estimate
     void calcFiltBaroOffset();
 
-    // calculate a filtered offset between GPS height measurement and EKF height estimate
-    void calcFiltGpsHgtOffset();
+    // correct the height of the EKF origin to be consistent with GPS Data using a Bayes filter.
+    void correctEkfOriginHeight();
 
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
@@ -773,6 +773,9 @@ private:
 
     // update timing statistics structure
     void updateTimingStatistics(void);
+
+    // Update the state index limit based on which states are active
+    void updateStateIndexLim(void);
     
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
@@ -847,11 +850,6 @@ private:
     uint32_t lastSynthYawTime_ms;   // time stamp when synthetic yaw measurement was last fused to maintain covariance health (msec)
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
     Matrix24 nextP;                 // Predicted covariance matrix before addition of process noise to diagonals
-    Vector24 processNoise;          // process noise added to diagonals of predicted covariance matrix
-    Vector21 SF;                    // intermediate variables used to calculate predicted covariance matrix
-    Vector8 SG;                     // intermediate variables used to calculate predicted covariance matrix
-    Vector11 SQ;                    // intermediate variables used to calculate predicted covariance matrix
-    Vector11 SPP;                   // intermediate variables used to calculate predicted covariance matrix
     Vector2f lastKnownPositionNE;   // last known position
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
@@ -861,10 +859,10 @@ private:
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states are inactive
-    bool inhibitDelVelBiasStates;   // true when delta velocity bias states are inactive
-    bool inhibitDelAngBiasStates;
+    bool inhibitDelVelBiasStates;   // true when IMU delta velocity bias states are inactive
+    bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
-    struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
+    struct Location EKF_origin;     // LLH origin of the NED axis system
     bool validOrigin;               // true when the EKF origin is valid
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     float gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
@@ -942,6 +940,7 @@ private:
     bool delAngBiasLearned;         // true when the gyro bias has been learned
     nav_filter_status filterStatus; // contains the status of various filter outputs
     float ekfOriginHgtVar;          // Variance of the the EKF WGS-84 origin height estimate (m^2)
+    double ekfGpsRefHgt;            // floating point representation of the WGS-84 reference height used to convert GPS height to local height (m)
     uint32_t lastOriginHgtTime_ms;  // last time the ekf's WGS-84 origin height was corrected
     Vector3f outputTrackError;      // attitude (rad), velocity (m/s) and position (m) tracking error magnitudes from the output observer
     Vector3f velOffsetNED;          // This adds to the earth frame velocity estimate at the IMU to give the velocity at the body origin (m/s)

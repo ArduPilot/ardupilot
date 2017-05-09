@@ -241,6 +241,7 @@ struct PACKED log_EKF1 {
     int16_t gyrX;
     int16_t gyrY;
     int16_t gyrZ;
+    int32_t originHgt;
 };
 
 struct PACKED log_EKF2 {
@@ -442,6 +443,23 @@ struct PACKED log_ekfBodyOdomDebug {
     float velInnovVarX;
     float velInnovVarY;
     float velInnovVarZ;
+};
+
+struct PACKED log_ekfStateVar {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float v00;
+    float v01;
+    float v02;
+    float v03;
+    float v04;
+    float v05;
+    float v06;
+    float v07;
+    float v08;
+    float v09;
+    float v10;
+    float v11;
 };
 
 struct PACKED log_Cmd {
@@ -946,7 +964,7 @@ Format characters in the format string for binary log messages
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4" }, \
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
-      "NKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+      "NKF1","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH" }, \
     { LOG_NKF2_MSG, sizeof(log_NKF2), \
       "NKF2","QbccccchhhhhhB","TimeUS,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI" }, \
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
@@ -956,7 +974,7 @@ Format characters in the format string for binary log messages
     { LOG_NKF5_MSG, sizeof(log_NKF5), \
       "NKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos" }, \
     { LOG_NKF6_MSG, sizeof(log_EKF1), \
-      "NKF6","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+      "NKF6","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH" }, \
     { LOG_NKF7_MSG, sizeof(log_NKF2), \
       "NKF7","QbccccchhhhhhB","TimeUS,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI" }, \
     { LOG_NKF8_MSG, sizeof(log_NKF3), \
@@ -968,7 +986,7 @@ Format characters in the format string for binary log messages
     { LOG_NKQ1_MSG, sizeof(log_Quaternion), "NKQ1", QUAT_FMT, QUAT_LABELS }, \
     { LOG_NKQ2_MSG, sizeof(log_Quaternion), "NKQ2", QUAT_FMT, QUAT_LABELS }, \
     { LOG_XKF1_MSG, sizeof(log_EKF1), \
-      "XKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+      "XKF1","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH" }, \
     { LOG_XKF2_MSG, sizeof(log_NKF2a), \
       "XKF2","QccccchhhhhhB","TimeUS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI" }, \
     { LOG_XKF3_MSG, sizeof(log_NKF3), \
@@ -978,7 +996,7 @@ Format characters in the format string for binary log messages
     { LOG_XKF5_MSG, sizeof(log_NKF5), \
       "XKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos" }, \
     { LOG_XKF6_MSG, sizeof(log_EKF1), \
-      "XKF6","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+      "XKF6","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH" }, \
     { LOG_XKF7_MSG, sizeof(log_NKF2a), \
       "XKF7","QccccchhhhhhB","TimeUS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI" }, \
     { LOG_XKF8_MSG, sizeof(log_NKF3), \
@@ -991,6 +1009,10 @@ Format characters in the format string for binary log messages
     { LOG_XKQ2_MSG, sizeof(log_Quaternion), "XKQ2", QUAT_FMT, QUAT_LABELS }, \
     { LOG_XKFD_MSG, sizeof(log_ekfBodyOdomDebug), \
       "XKFD","Qffffff","TimeUS,IX,IY,IZ,IVX,IVY,IVZ" }, \
+    { LOG_XKV1_MSG, sizeof(log_ekfStateVar), \
+      "XKV1","Qffffffffffff","TimeUS,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11" }, \
+    { LOG_XKV2_MSG, sizeof(log_ekfStateVar), \
+      "XKV2","Qffffffffffff","TimeUS,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
@@ -1193,6 +1215,8 @@ enum LogMessages {
     LOG_XKQ1_MSG,
     LOG_XKQ2_MSG,
     LOG_XKFD_MSG,
+    LOG_XKV1_MSG,
+    LOG_XKV2_MSG,
     LOG_DF_MAV_STATS,
 
     LOG_MSG_SBPHEALTH,
