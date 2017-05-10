@@ -40,6 +40,6 @@ bool AP_RangeFinder_PX4FLOW::detect(RangeFinder &_ranger, uint8_t instance)
 */
 void AP_RangeFinder_PX4FLOW::update(void)
 {
-    state.distance_cm = static_cast<float>(AP_OpticalFlow_PX4Flow::ground_distance.load(std::memory_order_relaxed)) / 10.0f;
+    state.distance_cm = static_cast<float>(AP_OpticalFlow_PX4Flow::ground_distance.load(std::memory_order_relaxed)) * 0.1f;
     update_status();
 }
