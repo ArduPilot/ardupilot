@@ -97,6 +97,9 @@ void Copter::esc_calibration_passthrough()
     // send message to GCS
     gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Passing pilot throttle to ESCs");
 
+    // disable safety if requested
+    BoardConfig.init_safety();
+
     // arm motors
     motors->armed(true);
     motors->enable();
@@ -109,7 +112,7 @@ void Copter::esc_calibration_passthrough()
         // read pilot input
         read_radio();
 
-        // we run at high rate do make oneshot ESCs happy. Normal ESCs
+        // we run at high rate to make oneshot ESCs happy. Normal ESCs
         // will only see pulses at the RC_SPEED
         delay(3);
 
@@ -138,6 +141,9 @@ void Copter::esc_calibration_auto()
 
     // send message to GCS
     gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Auto calibration");
+
+    // disable safety if requested
+    BoardConfig.init_safety();
 
     // arm and enable motors
     motors->armed(true);
