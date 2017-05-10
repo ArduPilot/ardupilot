@@ -233,14 +233,8 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
 
     // queue it for processing by io timer
     param_requests.push(req);
-
-    if (!param_timer_registered) {
-        param_timer_registered = true;
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::param_io_timer, void));
-    }
-    
 }
-    
+
 void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash)
 {
     mavlink_param_set_t packet;
@@ -355,6 +349,11 @@ void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type p
  */
 void GCS_MAVLINK::send_queued_parameters(void)
 {
+    if (!param_timer_registered) {
+        param_timer_registered = true;
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::param_io_timer, void));
+    }
+
     if (_queued_parameter == nullptr &&
         param_replies.empty()) {
         return;
@@ -374,6 +373,10 @@ void GCS_MAVLINK::send_queued_parameters(void)
 void GCS_MAVLINK::param_io_timer(void)
 {
     struct pending_param_request req;
+
+    // this is mostly a no-op, but doing this here means we won't
+    // block the main thread counting parameters (~30ms on PH)
+    AP_Param::count_parameters();
 
     if (param_replies.space() == 0) {
         // no room
