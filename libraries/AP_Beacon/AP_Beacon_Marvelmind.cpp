@@ -45,7 +45,7 @@ AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Calculate CRC (Modbus) for array of bytes
+// Calculate Modbus CRC16 for array of bytes
 // buf: input buffer
 // len: size of buffer
 // returncode: CRC value
