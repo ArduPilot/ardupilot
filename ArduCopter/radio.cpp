@@ -59,9 +59,6 @@ void Copter::init_rc_out()
     hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif
 
-    // check if we should enter esc calibration mode
-    esc_calibration_startup_check();
-
     // refresh auxiliary channel to function map
     SRV_Channels::update_aux_servo_function();
 
@@ -72,6 +69,9 @@ void Copter::init_rc_out()
     uint16_t safety_ignore_mask = (~copter.motors->get_motor_mask()) & 0x3FFF;
     BoardConfig.set_default_safety_ignore_mask(safety_ignore_mask);
 #endif
+
+    // check if we should enter esc calibration mode
+    esc_calibration_startup_check();
 }
 
 
