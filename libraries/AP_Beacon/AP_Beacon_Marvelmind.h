@@ -108,16 +108,16 @@ private:
     void set_stationary_beacons_positions_and_distances();
 
     // Variables for Ardupilot
-    AP_HAL::UARTDriver *uart = nullptr;
-    uint32_t last_update_ms = 0;
+    AP_HAL::UARTDriver *uart;
+    uint32_t last_update_ms;
 
     // cache the vehicle position in NED coordinates [m]
     Vector3f vehicle_position_NED__m;
-    bool vehicle_position_initialized = false;
+    bool vehicle_position_initialized;
 
     // cache the beacon positions in NED coordinates [m]
     Vector3f beacon_position_NED__m[AP_BEACON_MAX_BEACONS];
-    bool beacon_position_initialized = false;
+    bool beacon_position_initialized;
 };
 
 #endif /* AP_BEACON_MARVELMIND_H_ */
