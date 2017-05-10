@@ -286,7 +286,7 @@ void _usage(void)
 void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
     const char *module_path = AP_MODULE_DEFAULT_DIRECTORY;
-    
+
     assert(callbacks);
 
     int opt;
@@ -355,15 +355,15 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
             module_path = gopt.optarg;
             break;
 #if MQTT_SERVICE == MQTT_ENABLED
-        case 'Q':
+	case 'Q':
 	    AP_Telemetry_MQTT::set_mqtt_server(gopt.optarg);
-            break;
+	    break;
         case 'U':
-	  AP_Telemetry_MQTT::set_mqtt_user(gopt.optarg);
-            break;
+	    AP_Telemetry_MQTT::set_mqtt_user(gopt.optarg);
+	    break;
         case 'P':
 	    AP_Telemetry_MQTT::set_mqtt_password(gopt.optarg);
-            break;
+	    break;
 #endif
         case 'h':
             _usage();

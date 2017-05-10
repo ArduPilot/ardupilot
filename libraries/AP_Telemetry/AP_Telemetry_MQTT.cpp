@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <string>
+
 #include <getopt.h>
 
 extern const AP_HAL::HAL& hal;
@@ -31,84 +32,81 @@ extern int mqtt_to_mavlink_message(const char* cmd, mavlink_message_t *msg);
 MQTTAsync AP_Telemetry_MQTT::mqtt_client;
 AP_Telemetry_MQTT* AP_Telemetry_MQTT::telemetry_mqtt = nullptr;
 MQTTAsync_connectOptions AP_Telemetry_MQTT::conn_options = MQTTAsync_connectOptions_initializer;
+char const* AP_Telemetry_MQTT::mqtt_server;
 int mqtt_msg_arrived(void *context, char *topicname, int topicLen, MQTTAsync_message* message);
 void onConnect(void *context, MQTTAsync_successData* response);
 void onConnectFailure(void* context, MQTTAsync_failureData* response);
 
- // MQTT Client accessor
- MQTTAsync* AP_Telemetry_MQTT::get_MQTTClient()
- {
-   return &mqtt_client;
- }
+// MQTT Client accessor
+MQTTAsync* AP_Telemetry_MQTT::get_MQTTClient()
+{
+  return &mqtt_client;
+}
 
- AP_Telemetry_MQTT* AP_Telemetry_MQTT::get_telemetry_mqtt()
- {
-   return telemetry_mqtt;
- }
+AP_Telemetry_MQTT* AP_Telemetry_MQTT::get_telemetry_mqtt()
+{
+  return telemetry_mqtt;
+}
 
- AP_Telemetry_MQTT* AP_Telemetry_MQTT::init_telemetry_mqtt(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart)
- {
-   if(telemetry_mqtt == nullptr)
-     {
-       telemetry_mqtt = new AP_Telemetry_MQTT(frontend, uart);
-       telemetry_mqtt->init_mqtt();
-     }
-   return telemetry_mqtt;
- }
+AP_Telemetry_MQTT* AP_Telemetry_MQTT::init_telemetry_mqtt(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart)
+{
+  if(telemetry_mqtt == nullptr)
+    {
+      telemetry_mqtt = new AP_Telemetry_MQTT(frontend, uart);
+      telemetry_mqtt->init_mqtt();
+    }
+  return telemetry_mqtt;
+}
 
- AP_Telemetry_MQTT::AP_Telemetry_MQTT(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart) :
-   AP_Telemetry_Backend(frontend, uart)
- {}
+AP_Telemetry_MQTT::AP_Telemetry_MQTT(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart) :
+  AP_Telemetry_Backend(frontend, uart)
+{}
 
- void AP_Telemetry_MQTT::init_mqtt(){
-   int rc;
-   mqtt_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-   mqtt_mutex = &mqtt_mutex_store;
-   pthread_mutexattr_t attr;
-   pthread_mutexattr_init(&attr);
+void AP_Telemetry_MQTT::init_mqtt(){
+  int rc;
+  mqtt_mutex_store = PTHREAD_MUTEX_INITIALIZER;
+  mqtt_mutex = &mqtt_mutex_store;
+  pthread_mutexattr_t attr;
+  pthread_mutexattr_init(&attr);
 
-   recv_msg_list = ListInitialize();
-   pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
-   if ((rc = pthread_mutex_init(mqtt_mutex, &attr)) != 0)
-     {
-       printf("init: error %d initializing mqtt_mutex\n", rc);
-       MQTTHandle_error(rc);
-     } else {
+  recv_msg_list = ListInitialize();
+  pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+  if ((rc = pthread_mutex_init(mqtt_mutex, &attr)) != 0)
+    {
+      printf("init: error %d initializing mqtt_mutex\n", rc);
+      MQTTHandle_error(rc);
+    } else {
 
-     conn_options.keepAliveInterval = 20;
-     conn_options.cleansession = 1;
+    conn_options.keepAliveInterval = 20;
+    conn_options.cleansession = 1;
 
-     conn_options.onSuccess = onConnect;
-     conn_options.onFailure = onConnectFailure;
-     conn_options.context = mqtt_client;
+    conn_options.onSuccess = onConnect;
+    conn_options.onFailure = onConnectFailure;
+    conn_options.context = mqtt_client;
 
-     char clientid[9] = "no_id";
-     srand((unsigned int)time(0));
-     sprintf(clientid, "client_%d", rand()%100);
-     char** server = (char**)conn_options.serverURIs;
+    char clientid[9] = "no_id";
+    srand((unsigned int)time(0));
+    sprintf(clientid, "client_%d", rand()%100);
 
-     if((rc = MQTTAsync_create(&mqtt_client, "tcp://192.168.11.12:1883", clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != 0)
-       //     if((rc = MQTTAsync_create(&mqtt_client, *(conn_options.serverURIs), clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != 0)
+    if((rc = MQTTAsync_create(&mqtt_client, mqtt_server, clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != 0)
       {
-	 printf("Failed to create Client, return code %d\n", rc);
-	 MQTTHandle_error(rc);
-       }
+	printf("Failed to create Client, return code %d\n", rc);
+	MQTTHandle_error(rc);
+      }
 
-     MQTTAsync_setCallbacks(mqtt_client, NULL, NULL, mqtt_msg_arrived, NULL);
-     if ((rc = MQTTAsync_connect(mqtt_client, &conn_options)) != MQTTASYNC_SUCCESS)
-       {
-	 printf("Failed to start connect, return code %d\n", rc);
-	 MQTTHandle_error(rc);
-       }
-     connection_status = MQTT_CONNECTED;
-   }
- }
+    MQTTAsync_setCallbacks(mqtt_client, NULL, NULL, mqtt_msg_arrived, NULL);
+    if ((rc = MQTTAsync_connect(mqtt_client, &conn_options)) != MQTTASYNC_SUCCESS)
+      {
+	printf("Failed to start connect, return code %d\n", rc);
+	MQTTHandle_error(rc);
+      }
+    connection_status = MQTT_CONNECTED;
+  }
+}
 
 void AP_Telemetry_MQTT::set_mqtt_server(const char* server)
 {
-  char* tmp;
-  tmp = (char*)server;
-  conn_options.serverURIs = &tmp;
+  mqtt_server = server;
 }
 
 void AP_Telemetry_MQTT::set_mqtt_user(const char* user)
@@ -131,7 +129,7 @@ void AP_Telemetry_MQTT::send_log(const char* str)
 	  sprintf(topic, "$ardupilot/copter/quad/log/%04d/location",
 		  mavlink_system.sysid);
 	  send_message(str, topic);
-       }
+	}
     }
 }
 
@@ -182,27 +180,27 @@ int AP_Telemetry_MQTT::recv_mavlink_message(mavlink_message_t *msg)
 void AP_Telemetry_MQTT::pop_mqtt_message(char* str_mqtt)
 {
   MQTTAsync_message* message = nullptr;
-   if(pthread_mutex_lock(AP_Telemetry_MQTT::mqtt_mutex) == 0)
-   {
-     message = (MQTTAsync_message*)ListDetachHead(recv_msg_list);
-     pthread_mutex_unlock(AP_Telemetry_MQTT::mqtt_mutex);
-     if(message != nullptr)
-       {
-	 strncpy(str_mqtt, (char *)message->payload, message->payloadlen);
-	 str_mqtt[message->payloadlen] = 0;
-       }
-   }
+  if(pthread_mutex_lock(AP_Telemetry_MQTT::mqtt_mutex) == 0)
+    {
+      message = (MQTTAsync_message*)ListDetachHead(recv_msg_list);
+      pthread_mutex_unlock(AP_Telemetry_MQTT::mqtt_mutex);
+      if(message != nullptr)
+	{
+	  strncpy(str_mqtt, (char*)message->payload, message->payloadlen);
+	  str_mqtt[message->payloadlen] = 0;
+	}
+    }
 }
 
 void AP_Telemetry_MQTT::append_mqtt_message(MQTTAsync_message* message)
 {
-   if(pthread_mutex_lock(mqtt_mutex) == 0)
-  {
+  if(pthread_mutex_lock(mqtt_mutex) == 0)
+    {
       ListAppend(recv_msg_list, message, sizeof(MQTTAsync_message));
       pthread_mutex_unlock(mqtt_mutex);
-      } else {
-      MQTTAsync_freeMessage(&message);
-    }
+    } else {
+    MQTTAsync_freeMessage(&message);
+  }
 }
 
 void AP_Telemetry_MQTT::MQTTHandle_error(int rc)
@@ -251,7 +249,7 @@ void AP_Telemetry_MQTT::update()
 	::sprintf(buf,"lat:%ld lon:%ld alt:%ld\n",
 		  (long)loc.lat,
 		  (long)loc.lng,
-		(long)loc.alt);
+		  (long)loc.alt);
       }
     }
   }

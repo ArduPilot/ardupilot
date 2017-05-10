@@ -76,6 +76,7 @@ private:
   static AP_Telemetry_MQTT* telemetry_mqtt;
   static MQTTAsync mqtt_client;
   static MQTTAsync_connectOptions conn_options;
+  static char const* mqtt_server;
   void init_mqtt();
   void MQTTHandle_error(int rc);
   pthread_mutex_t* mqtt_mutex;
