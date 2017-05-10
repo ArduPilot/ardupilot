@@ -125,6 +125,9 @@ void Copter::esc_calibration_auto()
 #if FRAME_CONFIG != HELI_FRAME
     bool printed_msg = false;
 
+    // clear esc flag for next time
+    g.esc_calibrate.set_and_save(ESCCAL_NONE);
+
     if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
         // run at full speed for oneshot ESCs (actually done on push)
         motors->set_update_rate(g.rc_speed);
@@ -168,9 +171,6 @@ void Copter::esc_calibration_auto()
 
     // reduce throttle to minimum
     motors->set_throttle_passthrough_for_esc_calibration(0.0f);
-
-    // clear esc parameter
-    g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
     // block until we restart
     while(1) {
