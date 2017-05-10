@@ -92,7 +92,7 @@ public:
     uint32_t beacon_last_update_ms(uint8_t beacon_instance) const;
 
     // update fence boundary array
-    bool update_boundary_points();
+    void update_boundary_points();
 
     // return fence boundary array
     Vector2f* get_boundary_points(uint16_t& num_points) const;
@@ -125,7 +125,7 @@ private:
     BeaconState beacon_state[AP_BEACON_MAX_BEACONS];
 
     // fence boundary
-    Vector2f *_boundary;
+    Vector2f *boundary;
     uint8_t boundary_num_beacons;
     bool boundary_create_attempted;
 };

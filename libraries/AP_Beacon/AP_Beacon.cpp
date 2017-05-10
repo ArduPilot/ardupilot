@@ -227,44 +227,44 @@ uint32_t AP_Beacon::beacon_last_update_ms(uint8_t beacon_instance) const
 }
 
 // create fence boundary points
-bool AP_Beacon::update_boundary_points()
+void AP_Beacon::update_boundary_points()
 {
     // we need three points at least to create fence
     // if already tried to create boundary, return false
     if (!device_ready() || num_beacons < AP_BEACON_MINIMUM_FENCE_BEACONS || boundary_num_beacons == num_beacons) {
-        return false;
+        return;
     }
 
     // create boundary (5 points with a closing point) at once
     if (!boundary_create_attempted) {
         uint32_t array_size = (AP_BEACON_MAX_BEACONS + 1) * sizeof(Vector2f);
         if (hal.util->available_memory() >= 100U + array_size) {
-            _boundary = (Vector2f *)calloc(1, array_size);
+            boundary = (Vector2f *)calloc(1, array_size);
         }
         boundary_create_attempted = true;
     }
 
     // check if boundary is available
-    if (_boundary == nullptr) {
-        return false;
+    if (boundary == nullptr) {
+        return;
     } else {
         boundary_num_beacons = num_beacons;
     }
 
     // accumulate beacon points
     for (uint8_t index = 0; index < num_beacons; index++) {
-        // if a beacon is not healthy, delete _boundary to renew array
+        // if a beacon is not healthy, delete boundary to renew array
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         if (!beacon_healthy(index)) {
-            delete _boundary;
-            _boundary = nullptr;
-            return false;
+            delete boundary;
+            boundary = nullptr;
+            return;
         }
 #endif
         Vector3f point_3d = beacon_position(index);
         Vector2f point_2d(point_3d.x, point_3d.y);
 
-        _boundary[index] = point_2d;
+        boundary[index] = point_2d;
     }
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
@@ -273,15 +273,15 @@ bool AP_Beacon::update_boundary_points()
     // http://ardupilot.org/copter/docs/common-pozyx.html
     if (_type == AP_BeaconType_Pozyx) {
         if (num_beacons == AP_BEACON_MAX_BEACONS) {
-            std::swap(_boundary[2],_boundary[3]);
+            std::swap(boundary[2], boundary[3]);
         }
     }
 #endif
 
     // to close boundary region
-    _boundary[num_beacons] = _boundary[0];
+    boundary[num_beacons] = boundary[0];
 
-    return true;
+    return;
 }
 
 // return fence boundary array
@@ -292,7 +292,7 @@ Vector2f* AP_Beacon::get_boundary_points(uint16_t& num_points) const
     }
 
     num_points = static_cast<uint16_t>(num_beacons + 1);
-    return _boundary;
+    return boundary;
 }
 
 // check if the device is ready
