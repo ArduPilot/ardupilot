@@ -4,6 +4,7 @@
 #include <AP_Param/AP_Param.h>
 #include <Filter/Filter.h>
 #include <Filter/DerivativeFilter.h>
+#include <AP_GPS/AP_GPS.h>
 
 // maximum number of sensor instances
 #define BARO_MAX_INSTANCES 3
@@ -16,6 +17,13 @@
 #define BARO_TIMEOUT_MS                 500     // timeout in ms since last successful read
 #define BARO_DATA_CHANGE_TIMEOUT_MS     2000    // timeout in ms since last successful read that involved temperature of pressure changing
 
+// maximum vertical accuracy from GPS that will be accepted as baro correction (meters)
+#define BARO_MAX_GPS_ACCURACY 2.0f
+// maximum possible GPS altitude error value (meters)
+#define BARO_GPS_MAX_ERR    5.0f
+// maximum age limit of GPS fix time
+#define BARO_MAX_GPS_DELAY 500
+
 class AP_Baro_Backend;
 
 class AP_Baro
@@ -25,6 +33,7 @@ class AP_Baro
 
 public:
     AP_Baro();
+    AP_Baro(AP_GPS &gps);
 
     /* Do not allow copies */
     AP_Baro(const AP_Baro &other) = delete;
@@ -171,6 +180,9 @@ public:
 
     // set a pressure correction from AP_TempCalibration
     void set_pressure_correction(uint8_t instance, float p_correction);
+    
+    // returns GPS offset
+    float get_gps_offset(uint8_t i) { return _gps_alt_error[i].get(); }
 
 private:
     // singleton
@@ -218,6 +230,15 @@ private:
     uint32_t                            _last_notify_ms;
 
     bool _add_backend(AP_Baro_Backend *backend);
+
+    AP_GPS *_gps;
+    bool _gps_calibrated, _gps_available;
+    float _gps_calibration_altitude;
+    LowPassFilterFloat _gps_alt_error[BARO_MAX_INSTANCES];
+    AP_Float _gps_adj_step;
+    AP_Int16 _gps_adj_timeconstant;
+
+    void update_gps_calibration(void);
 };
 
 namespace AP {
