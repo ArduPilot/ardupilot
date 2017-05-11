@@ -126,8 +126,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, _ground_clearance_cm[0], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: _ADDR
-    // @DisplayName: Bus address of sensor
-    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
+    // @DisplayName: I2C address of sensor
+    // @Description: This designates the I2C address for I2C sensor types.
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
