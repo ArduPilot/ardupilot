@@ -118,6 +118,12 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         return true;
     }
 
+    // if _enabled_fences has AC_FENCE_TYPE_BEACON but _beacon_boundary_valid is false return false
+    if (_enabled_fences & AC_FENCE_TYPE_BEACON && !_beacon_boundary_valid) {
+        fail_msg =  "fence requires beacons";
+        return false;
+    }
+
     // check no limits are currently breached
     if (_breached_fences != AC_FENCE_TYPE_NONE) {
         fail_msg =  "vehicle outside fence";
