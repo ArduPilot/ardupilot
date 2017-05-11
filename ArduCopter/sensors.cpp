@@ -43,8 +43,16 @@ void Copter::read_rangefinder(void)
         DataFlash.Log_Write_RFND(rangefinder);
     }
 
-    bool rangefinder_alt_meas_valid = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
-    float rangefinder_alt_meas = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
+    int8_t rangefinder_in_use = -1;
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        if (rangefinder.get_orientation(i) == ROTATION_PITCH_270 && rangefinder.status(i) == RangeFinder::RangeFinder_Good && rangefinder.range_valid_count(i) >= RANGEFINDER_HEALTH_MAX) {
+            rangefinder_in_use = i;
+            break;
+        }
+    }
+
+    bool rangefinder_alt_meas_valid = (rangefinder_in_use != -1);
+    float rangefinder_alt_meas = rangefinder.distance_cm(rangefinder_in_use);
 
  #if RANGEFINDER_TILT_CORRECTION == ENABLED
     // correct alt for angle of the rangefinder
