@@ -12,17 +12,9 @@
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
-
-#include <AP_Math/AP_Math.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
-#include <SITL/SITL.h>
-#include "Scheduler.h"
-#include <AP_Math/AP_Math.h>
-#include <AP_ADC/AP_ADC.h>
 #include "SITL_State.h"
-#include <fenv.h>
+#include <SITL/SITL.h>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
