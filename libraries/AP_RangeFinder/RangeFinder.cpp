@@ -159,6 +159,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ORIENT", 53, RangeFinder, _orientation[0], ROTATION_PITCH_270),
 
+    // @Param: _BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("_BUS", 57, RangeFinder, _i2c_bus[0], HAL_DEFAULT_I2C_ACCESSORY_BUS),
+
+
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
@@ -277,6 +285,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("2_ORIENT", 54, RangeFinder, _orientation[1], ROTATION_PITCH_270),
+
+    // @Param: 2_BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("2_BUS", 58, RangeFinder, _i2c_bus[1], HAL_DEFAULT_I2C_ACCESSORY_BUS),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -398,6 +413,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("3_ORIENT", 55, RangeFinder, _orientation[2], ROTATION_PITCH_270),
+
+    // @Param: 3_BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("3_BUS", 59, RangeFinder, _i2c_bus[2], HAL_DEFAULT_I2C_ACCESSORY_BUS),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -519,6 +541,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("4_ORIENT", 56, RangeFinder, _orientation[3], ROTATION_PITCH_270),
+
+    // @Param: 4_BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("4_BUS", 60, RangeFinder, _i2c_bus[3], HAL_DEFAULT_I2C_ACCESSORY_BUS),
 #endif
     
     AP_GROUPEND
