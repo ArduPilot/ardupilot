@@ -23,7 +23,7 @@ public:
     void update();
 
     // reorder boundary for fence
-    void reorder_boundary_for_fence();
+    void reorder_boundary_for_fence() override;
 
 private:
 
