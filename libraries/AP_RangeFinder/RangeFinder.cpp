@@ -641,12 +641,13 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
         break;
     case RangeFinder_TYPE_MBI2C:
-        _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance]));
+        if (_i2c_address[instance]) {
+            _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance], hal.i2c_mgr->get_device(_i2c_bus[instance], _i2c_address[instance])));
+        }
         break;
     case RangeFinder_TYPE_LWI2C:
         if (_i2c_address[instance]) {
-            _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
-                hal.i2c_mgr->get_device(_i2c_bus[instance], _i2c_address[instance])));
+            _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance], hal.i2c_mgr->get_device(_i2c_bus[instance], _i2c_address[instance])));
         }
         break;
     case RangeFinder_TYPE_TRONE:
