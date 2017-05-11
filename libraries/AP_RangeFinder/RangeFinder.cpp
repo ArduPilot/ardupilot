@@ -131,7 +131,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_ADDR", 23, RangeFinder, _address[0], 0),
+    AP_GROUPINFO("_ADDR", 23, RangeFinder, _i2c_address[0], 0),
 
     // @Param: _POS_X
     // @DisplayName:  X position offset
@@ -250,7 +250,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("2_ADDR", 24, RangeFinder, _address[1], 0),
+    AP_GROUPINFO("2_ADDR", 24, RangeFinder, _i2c_address[1], 0),
 
     // @Param: 2_POS_X
     // @DisplayName:  X position offset
@@ -371,7 +371,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("3_ADDR", 36, RangeFinder, _address[2], 0),
+    AP_GROUPINFO("3_ADDR", 36, RangeFinder, _i2c_address[2], 0),
 
     // @Param: 3_POS_X
     // @DisplayName:  X position offset
@@ -492,7 +492,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("4_ADDR", 48, RangeFinder, _address[3], 0),
+    AP_GROUPINFO("4_ADDR", 48, RangeFinder, _i2c_address[3], 0),
 
     // @Param: 4_POS_X
     // @DisplayName:  X position offset
@@ -615,9 +615,9 @@ void RangeFinder::detect_instance(uint8_t instance)
         _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance]));
         break;
     case RangeFinder_TYPE_LWI2C:
-        if (_address[instance]) {
+        if (_i2c_address[instance]) {
             _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
-                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, _address[instance])));
+                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, _i2c_address[instance])));
         }
         break;
     case RangeFinder_TYPE_TRONE:
