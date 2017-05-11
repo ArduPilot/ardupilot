@@ -87,7 +87,7 @@ void SITL_State::_sitl_setup(const char *home_str)
     if (_sitl != nullptr) {
         // setup some initial values
 #ifndef HIL_MODE
-        _update_ins(0);
+        _update_airspeed(0);
         _update_compass();
         _update_gps(0, 0, 0, 0, 0, 0, false);
         _update_rangefinder(0);
@@ -166,7 +166,7 @@ void SITL_State::_fdm_input_step(void)
                     _sitl->state.altitude,
                     _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
                     !_sitl->gps_disable);
-        _update_ins(_sitl->state.airspeed);
+        _update_airspeed(_sitl->state.airspeed);
         _update_compass();
         _update_rangefinder(_sitl->state.range);
 

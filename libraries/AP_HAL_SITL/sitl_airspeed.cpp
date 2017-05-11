@@ -1,7 +1,7 @@
 /*
   SITL handling
 
-  This emulates the ADS7844 ADC
+  This simulates an analog airspeed sensor
 
   Andrew Tridgell November 2011
  */
@@ -31,16 +31,22 @@ using namespace HALSITL;
 /*
   convert airspeed in m/s to an airspeed sensor value
  */
-uint16_t SITL_State::_airspeed_sensor(float airspeed)
+void SITL_State::_update_airspeed(float airspeed)
 {
     const float airspeed_ratio = 1.9936f;
     const float airspeed_offset = 2013;
     float airspeed_pressure, airspeed_raw;
 
+    // Check sensor failure
+    airspeed = is_zero(_sitl->arspd_fail) ? airspeed : _sitl->arspd_fail;
+    // Add noise
+    airspeed = airspeed + (_sitl->arspd_noise * rand_float());
+
     airspeed_pressure = (airspeed*airspeed) / airspeed_ratio;
     airspeed_raw = airspeed_pressure + airspeed_offset;
     if (airspeed_raw/4 > 0xFFFF) {
-        return 0xFFFF;
+        airspeed_pin_value = 0xFFFF;
+        return;
     }
     // add delay
     uint32_t now = AP_HAL::millis();
@@ -75,21 +81,7 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
         airspeed_raw = buffer_wind[best_index_wind].data;
     }
 
-    return airspeed_raw/4;
-}
-
-/*
-  setup the INS input channels with new input
- */
-void SITL_State::_update_ins(float airspeed)
-{
-    if (_ins == nullptr) {
-        // no inertial sensor in this sketch
-        return;
-    }
-
-    const float airspeed_simulated = is_zero(_sitl->arspd_fail) ? airspeed : _sitl->arspd_fail;
-    airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->arspd_noise * rand_float()));
+    airspeed_pin_value = airspeed_raw/4;
 }
 
 #endif
