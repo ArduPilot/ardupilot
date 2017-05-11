@@ -22,6 +22,9 @@ public:
     // update
     void update();
 
+    // reorder boundary for fence
+    void reorder_boundary_for_fence();
+
 private:
 
     enum ParseState{

@@ -31,6 +31,9 @@ public:
     // update
     virtual void update() = 0;
 
+    // reorder boundary for fence
+    virtual void reorder_boundary_for_fence() {};
+
     // set vehicle position, pos should be in the beacon's local frame
     void set_vehicle_position(const Vector3f& pos, float accuracy_estimate);
 

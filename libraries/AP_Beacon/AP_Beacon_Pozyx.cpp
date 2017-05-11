@@ -17,6 +17,7 @@
 #include "AP_Beacon_Pozyx.h"
 #include <ctype.h>
 #include <stdio.h>
+#include <utility>
 
 extern const AP_HAL::HAL& hal;
 
@@ -172,5 +173,19 @@ void AP_Beacon_Pozyx::parse_buffer()
     // record success
     if (parsed) {
         last_update_ms = AP_HAL::millis();
+    }
+}
+
+// reorder boundary for fence
+// swap 3rd point and 4th point if 4 points exist
+// http://ardupilot.org/copter/docs/common-pozyx.html
+void AP_Beacon_Pozyx::reorder_boundary_for_fence()
+{
+    uint16_t num_points;
+    Vector2f* boundary = _frontend.get_boundary_points(num_points);
+
+    // num_points includes close point
+    if (num_points - 1 == AP_BEACON_MAX_BEACONS) {
+        std::swap(boundary[2], boundary[3]);
     }
 }

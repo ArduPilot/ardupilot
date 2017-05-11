@@ -18,7 +18,6 @@
 #include "AP_Beacon_Pozyx.h"
 #include "AP_Beacon_Marvelmind.h"
 #include "AP_Beacon_SITL.h"
-#include <utility>
 
 extern const AP_HAL::HAL &hal;
 
@@ -120,6 +119,9 @@ void AP_Beacon::update(void)
         return;
     }
     _driver->update();
+
+    // update boundary for fence
+    update_boundary_points();
 }
 
 // return origin of position estimate system
@@ -230,7 +232,7 @@ uint32_t AP_Beacon::beacon_last_update_ms(uint8_t beacon_instance) const
 void AP_Beacon::update_boundary_points()
 {
     // we need three points at least to create fence
-    // if already tried to create boundary, return false
+    // if beacon number is same return
     if (!device_ready() || num_beacons < AP_BEACON_MINIMUM_FENCE_BEACONS || boundary_num_beacons == num_beacons) {
         return;
     }
@@ -267,16 +269,9 @@ void AP_Beacon::update_boundary_points()
         boundary[index] = point_2d;
     }
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    // reorder points to create fence region by Pozyx anchor
-    // swap 3rd point and 4th point if 4 points exist
-    // http://ardupilot.org/copter/docs/common-pozyx.html
-    if (_type == AP_BeaconType_Pozyx) {
-        if (num_beacons == AP_BEACON_MAX_BEACONS) {
-            std::swap(boundary[2], boundary[3]);
-        }
-    }
-#endif
+    // reorder points to create fence if need
+    // it depends on each beacon layout.
+    _driver->reorder_boundary_for_fence();
 
     // to close boundary region
     boundary[num_beacons] = boundary[0];
