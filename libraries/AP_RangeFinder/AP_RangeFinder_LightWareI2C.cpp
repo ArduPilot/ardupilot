@@ -72,10 +72,6 @@ bool AP_RangeFinder_LightWareI2C::get_reading(uint16_t &reading_cm)
 {
     be16_t val;
 
-    if (ranger._i2c_address[state.instance] == 0) {
-        return false;
-    }
-
     // read the high and low byte distance registers
     bool ret = _dev->read((uint8_t *) &val, sizeof(val));
     if (ret) {
