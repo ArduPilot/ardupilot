@@ -106,6 +106,7 @@ private:
     void create_marvelmind_hedge();
     void start_marvelmind_hedge();
     void set_stationary_beacons_positions_and_distances();
+    void order_stationary_beacons();
 
     // Variables for Ardupilot
     AP_HAL::UARTDriver *uart;
