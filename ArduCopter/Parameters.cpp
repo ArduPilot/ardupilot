@@ -392,6 +392,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
     // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B
     // @User: Standard
+    // @RebootRequired: True
     GSCALAR(frame_type, "FRAME_TYPE", AP_Motors::MOTOR_FRAME_TYPE_X),
 
     // @Param: CH7_OPT
@@ -988,6 +989,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Controls major frame class for multicopter component
     // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("FRAME_CLASS", 15, ParametersG2, frame_class, 0),
 
     // @Group: SERVO
