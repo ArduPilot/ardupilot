@@ -173,6 +173,7 @@ void AP_Beacon_Marvelmind::process_beacons_positions_datagram()
             hedge->positions_beacons.updated = true;
         }
     }
+    order_stationary_beacons();
 }
 
 void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
@@ -207,6 +208,7 @@ void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
             hedge->positions_beacons.updated = true;
         }
     }
+    order_stationary_beacons();
 }
 
 void AP_Beacon_Marvelmind::update(void)
@@ -394,5 +396,27 @@ void AP_Beacon_Marvelmind::set_stationary_beacons_positions_and_distances()
         }
         hedge->positions_beacons.updated = false;
         hedge->_have_new_values = false;
+    }
+}
+
+void AP_Beacon_Marvelmind::order_stationary_beacons()
+{
+    if(hedge->positions_beacons.updated) {
+        bool swapped = false;
+        uint8_t j = hedge->positions_beacons.num_beacons;
+        do
+        {
+            swapped = false;
+            StationaryBeaconPosition beacon_to_swap;
+            for(uint8_t i = 1; i < j; i++) {
+                if(hedge->positions_beacons.beacons[i-1].address > hedge->positions_beacons.beacons[i].address) {
+                    beacon_to_swap = hedge->positions_beacons.beacons[i];
+                    hedge->positions_beacons.beacons[i] = hedge->positions_beacons.beacons[i-1];
+                    hedge->positions_beacons.beacons[i-1] = beacon_to_swap;
+                    swapped = true;
+                }
+            }
+            j--;
+        } while(swapped);
     }
 }
