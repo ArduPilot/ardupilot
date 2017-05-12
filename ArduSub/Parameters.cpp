@@ -176,7 +176,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Timeout for activation of pilot input failsafe
     // @Description: Controls the maximum interval between received pilot inputs before the failsafe action is triggered
     // @Units: Seconds
-    // @Range 0.1 3.0
+    // @Range: 0.1 3.0
     // @User: Standard
     GSCALAR(failsafe_pilot_input_timeout, "FS_PILOT_TIMEOUT", 1.0f),
 
