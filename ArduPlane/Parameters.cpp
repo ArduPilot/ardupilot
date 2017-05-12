@@ -914,6 +914,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: This enables and disables hardware in the loop mode. If HIL_MODE is 1 then on the next reboot all sensors are replaced with HIL sensors which come from the GCS.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+    // @RebootRequired: True
     GSCALAR(hil_mode,               "HIL_MODE",      0),
 #endif
 
