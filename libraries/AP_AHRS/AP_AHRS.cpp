@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @DisplayName: Maximum wind
     // @Description: This sets the maximum allowable difference between ground speed and airspeed. This allows the plane to cope with a failing airspeed sensor. A value of zero means to use the airspeed as is.
     // @Range: 0 127
-    // @Units: m/s
+    // @Units: meters/second
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("WIND_MAX",  6,    AP_AHRS, _wind_max, 0.0f),
@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_X
     // @DisplayName: AHRS Trim Roll
     // @Description: Compensates for the roll angle difference between the control board and the frame. Positive values make the vehicle roll right.
-    // @Units: Radians
+    // @Units: radians
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Standard
@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_Y
     // @DisplayName: AHRS Trim Pitch
     // @Description: Compensates for the pitch angle difference between the control board and the frame. Positive values make the vehicle pitch up/back.
-    // @Units: Radians
+    // @Units: radians
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Standard
@@ -85,7 +85,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_Z
     // @DisplayName: AHRS Trim Yaw
     // @Description: Not Used
-    // @Units: Radians
+    // @Units: radians
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Advanced

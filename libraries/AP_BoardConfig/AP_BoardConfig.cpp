@@ -153,7 +153,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @DisplayName: Target IMU temperature
     // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. A value of -1 disables heating.
     // @Range: -1 80
-    // @Units: degreesC
+    // @Units: degrees Celsius
     // @User: Advanced
     AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif

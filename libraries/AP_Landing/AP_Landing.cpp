@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: PITCH_CD
     // @DisplayName: Landing Pitch
     // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
-    // @Units: centi-Degrees
+    // @Units: centidegrees
     // @User: Advanced
     AP_GROUPINFO("PITCH_CD", 3, AP_Landing, pitch_cd, 0),
 
@@ -85,7 +85,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: PF_ARSPD
     // @DisplayName: Landing pre-flare airspeed
     // @Description: Desired airspeed during pre-flare flight stage. This is useful to reduce airspeed just before the flare. Use 0 to disable.
-    // @Units: m/s
+    // @Units: meters/second
     // @Range: 0 30
     // @Increment: 0.1
     // @User: Advanced
@@ -127,7 +127,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @DisplayName: Landing flap percentage
     // @Description: The amount of flaps (as a percentage) to apply in the landing approach and flare of an automatic landing
     // @Range: 0 100
-    // @Units: Percent
+    // @Units: percent
     // @User: Advanced
     AP_GROUPINFO("FLAP_PERCNT", 13, AP_Landing, flap_percent, 0),
 

@@ -222,7 +222,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH_MIN
     // @DisplayName: Minimum Pitch Angle
     // @Description: The lowest angle the pitch can reach
-    // @Units: Degrees
+    // @Units: degrees
     // @Increment: 1
     // @Range: -90 0
     // @User: Standard
@@ -231,7 +231,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH_MAX
     // @DisplayName: Maximum Pitch Angle
     // @Description: The highest angle the pitch can reach
-    // @Units: Degrees
+    // @Units: degrees
     // @Increment: 1
     // @Range: 0 90
     // @User: Standard
@@ -331,7 +331,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Description: Pitch axis controller I gain maximum.  Constrains the maximum pwm change that the I gain will output
     // @Range: 0 4000
     // @Increment: 10
-    // @Units: Percent*10
+    // @Units: decipercent
     // @User: Standard
 
     // @Param: PITCH2SRV_D
@@ -361,7 +361,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Description: Yaw axis controller I gain maximum.  Constrains the maximum pwm change that the I gain will output
     // @Range: 0 4000
     // @Increment: 10
-    // @Units: Percent*10
+    // @Units: decipercent
     // @User: Standard
 
     // @Param: YAW2SRV_D

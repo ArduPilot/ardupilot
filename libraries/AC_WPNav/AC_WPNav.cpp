@@ -9,7 +9,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: SPEED
     // @DisplayName: Waypoint Horizontal Speed Target
     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally during a WP mission
-    // @Units: cm/s
+    // @Units: centimeters/second
     // @Range: 20 2000
     // @Increment: 50
     // @User: Standard
@@ -18,7 +18,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: RADIUS
     // @DisplayName: Waypoint Radius
     // @Description: Defines the distance from a waypoint, that when crossed indicates the wp has been hit.
-    // @Units: cm
+    // @Units: centimeters
     // @Range: 100 1000
     // @Increment: 1
     // @User: Standard
@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: SPEED_UP
     // @DisplayName: Waypoint Climb Speed Target
     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain while climbing during a WP mission
-    // @Units: cm/s
+    // @Units: centimeters/second
     // @Range: 10 1000
     // @Increment: 50
     // @User: Standard
@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: SPEED_DN
     // @DisplayName: Waypoint Descent Speed Target
     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain while descending during a WP mission
-    // @Units: cm/s
+    // @Units: centimeters/second
     // @Range: 10 500
     // @Increment: 10
     // @User: Standard
@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: LOIT_SPEED
     // @DisplayName: Loiter Horizontal Maximum Speed
     // @Description: Defines the maximum speed in cm/s which the aircraft will travel horizontally while in loiter mode
-    // @Units: cm/s
+    // @Units: centimeters/second
     // @Range: 20 2000
     // @Increment: 50
     // @User: Standard
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: ACCEL
     // @DisplayName: Waypoint Acceleration 
     // @Description: Defines the horizontal acceleration in cm/s/s used during missions
-    // @Units: cm/s/s
+    // @Units: centimeters/second/second
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: ACCEL_Z
     // @DisplayName: Waypoint Vertical Acceleration
     // @Description: Defines the vertical acceleration in cm/s/s used during missions
-    // @Units: cm/s/s
+    // @Units: centimeters/second/second
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: LOIT_JERK
     // @DisplayName: Loiter maximum jerk
     // @Description: Loiter maximum jerk in cm/s/s/s
-    // @Units: cm/s/s/s
+    // @Units: centimeters/second/second/second
     // @Range: 500 5000
     // @Increment: 1
     // @User: Advanced
@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: LOIT_MAXA
     // @DisplayName: Loiter maximum acceleration
     // @Description: Loiter maximum acceleration in cm/s/s.  Higher values cause the copter to accelerate and stop more quickly.
-    // @Units: cm/s/s
+    // @Units: centimeters/second/second
     // @Range: 100 981
     // @Increment: 1
     // @User: Advanced
@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: LOIT_MINA
     // @DisplayName: Loiter minimum acceleration
     // @Description: Loiter minimum acceleration in cm/s/s. Higher values stop the copter more quickly when the stick is centered, but cause a larger jerk when the copter stops.
-    // @Units: cm/s/s
+    // @Units: centimeters/second/second
     // @Range: 25 250
     // @Increment: 1
     // @User: Advanced

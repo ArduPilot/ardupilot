@@ -18,7 +18,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all VTOL flight modes
-    // @Units: Centi-degrees
+    // @Units: centidegrees
     // @Range: 1000 8000
     // @User: Advanced
     AP_GROUPINFO("ANGLE_MAX", 10, QuadPlane, aparm.angle_max, 3000),
@@ -64,7 +64,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: centimeters/second/second
     // @User: Advanced
     AP_SUBGROUPINFO(pi_vel_xy, "VXY_",  14, QuadPlane, AC_PI_2D),
 
@@ -91,7 +91,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 1000
-    // @Units: Percent*10
+    // @Units: decipercent
     // @User: Standard
 
     // @Param: AZ_D
@@ -115,7 +115,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
-    // @Units: Centimeters/Second
+    // @Units: centimeters/second
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -124,7 +124,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
     // @Description: The vertical acceleration used when pilot is controlling the altitude
-    // @Units: cm/s/s
+    // @Units: centimeters/second/second
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -164,7 +164,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: ASSIST_SPEED
     // @DisplayName: Quadplane assistance speed
     // @Description: This is the speed below which the quad motors will provide stability and lift assistance in fixed wing modes. Zero means no assistance except during transition
-    // @Units: m/s
+    // @Units: meters/second
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
@@ -182,7 +182,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: LAND_SPEED
     // @DisplayName: Land speed
     // @Description: The descent speed for the final stage of landing in cm/s
-    // @Units: cm/s
+    // @Units: centimeters/second
     // @Range: 30 200
     // @Increment: 10
     // @User: Standard
@@ -191,7 +191,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: LAND_FINAL_ALT
     // @DisplayName: Land final altitude
     // @Description: The altitude at which we should switch to Q_LAND_SPEED descent rate
-    // @Units: m
+    // @Units: meters
     // @Range: 0.5 50
     // @Increment: 0.1
     // @User: Standard
@@ -204,7 +204,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Description: Maximum pitch during transition to auto fixed wing flight
     // @User: Standard
     // @Range: 0 30
-    // @Units: Degrees
+    // @Units: degrees
     // @Increment: 1
     AP_GROUPINFO("TRAN_PIT_MAX", 29, QuadPlane, transition_pitch_max, 3),
 
@@ -251,7 +251,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: RTL_ALT
     // @DisplayName: QRTL return altitude
     // @Description: The altitude which QRTL mode heads to initially
-    // @Units: m
+    // @Units: meters
     // @Range: 1 200
     // @Increment: 1
     // @User: Standard

@@ -186,7 +186,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @DisplayName: Sink rate max for landing approach stage
     // @Description: The sink rate max for the landing approach stage of landing. This will need to be large for steep landing approaches especially when using reverse thrust. If 0, then use TECS_SINK_MAX.
     // @Range: 0.0 20.0
-    // @Units: m/s
+    // @Units: meters/second
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("APPR_SMAX", 21, AP_TECS, _maxSinkRate_approach, 0),
@@ -195,7 +195,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @DisplayName: Land sink rate change
     // @Description: When zero, the flare sink rate (TECS_LAND_SINK) is a fixed sink demand. With this enabled the flare sinkrate will increase/decrease the flare sink demand as you get further beyond the LAND waypoint. Has no effect before the waypoint. This value is added to TECS_LAND_SINK proportional to distance traveled after wp. With an increasing sink rate you can still land in a given distance if you're traveling too fast and cruise passed the land point. A positive value will force the plane to land sooner proportional to distance passed land point. A negative number will tell the plane to slowly climb allowing for a pitched-up stall landing. Recommend 0.2 as initial value.
     // @Range: -2.0 2.0
-    // @Units: m/s/m
+    // @Units: meters/second/meter
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("LAND_SRC", 22, AP_TECS, _land_sink_rate_change, 0),

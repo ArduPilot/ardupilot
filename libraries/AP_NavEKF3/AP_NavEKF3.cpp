@@ -136,7 +136,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
-    // @Units: m/s
+    // @Units: meters/second
     AP_GROUPINFO("VELNE_M_NSE", 2, NavEKF3, _gpsHorizVelNoise, VELNE_M_NSE_DEFAULT),
 
     // @Param: VELD_M_NSE
@@ -145,7 +145,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
-    // @Units: m/s
+    // @Units: meters/second
     AP_GROUPINFO("VELD_M_NSE", 3, NavEKF3, _gpsVertVelNoise, VELD_M_NSE_DEFAULT),
 
     // @Param: VEL_I_GATE
@@ -162,7 +162,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m
+    // @Units: meters
     AP_GROUPINFO("POSNE_M_NSE", 5, NavEKF3, _gpsHorizPosNoise, POSNE_M_NSE_DEFAULT),
 
     // @Param: POS_I_GATE
@@ -179,7 +179,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 10 100
     // @Increment: 5
     // @User: Advanced
-    // @Units: m
+    // @Units: meters
     AP_GROUPINFO("GLITCH_RAD", 7, NavEKF3, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
 
     // 8 previously used for EKF3_GPS_DELAY parameter that has been deprecated.
@@ -201,7 +201,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m
+    // @Units: meters
     AP_GROUPINFO("ALT_M_NSE", 10, NavEKF3, _baroAltNoise, ALT_M_NSE_DEFAULT),
 
     // @Param: HGT_I_GATE
@@ -230,7 +230,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.01 0.5
     // @Increment: 0.01
     // @User: Advanced
-    // @Units: gauss
+    // @Units: Gauss
     AP_GROUPINFO("MAG_M_NSE", 13, NavEKF3, _magNoise, MAG_M_NSE_DEFAULT),
 
     // @Param: MAG_CAL
@@ -256,7 +256,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.5 5.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m/s
+    // @Units: meters/second
     AP_GROUPINFO("EAS_M_NSE", 16, NavEKF3, _easNoise, 1.4f),
 
     // @Param: EAS_I_GATE
@@ -275,7 +275,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m
+    // @Units: meters
     AP_GROUPINFO("RNG_M_NSE", 18, NavEKF3, _rngNoise, 0.5f),
 
     // @Param: RNG_I_GATE
@@ -294,7 +294,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 1.0 4.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: rad/s
+    // @Units: radians/second
     AP_GROUPINFO("MAX_FLOW", 20, NavEKF3, _maxFlowRate, 2.5f),
 
     // @Param: FLOW_M_NSE
@@ -303,7 +303,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
-    // @Units: rad/s
+    // @Units: radians/second
     AP_GROUPINFO("FLOW_M_NSE", 21, NavEKF3, _flowNoise, FLOW_M_NSE_DEFAULT),
 
     // @Param: FLOW_I_GATE
@@ -332,7 +332,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.0001 0.1
     // @Increment: 0.0001
     // @User: Advanced
-    // @Units: rad/s
+    // @Units: radians/second
     AP_GROUPINFO("GYRO_P_NSE", 24, NavEKF3, _gyrNoise, GYRO_P_NSE_DEFAULT),
 
     // @Param: ACC_P_NSE
@@ -341,7 +341,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.01 1.0
     // @Increment: 0.01
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: meters/second/second
     AP_GROUPINFO("ACC_P_NSE", 25, NavEKF3, _accNoise, ACC_P_NSE_DEFAULT),
 
     // @Param: GBIAS_P_NSE
@@ -349,7 +349,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This state  process noise controls growth of the gyro delta angle bias state error estimate. Increasing it makes rate gyro bias estimation faster and noisier.
     // @Range: 0.00001 0.001
     // @User: Advanced
-    // @Units: rad/s/s
+    // @Units: radians/second/second
     AP_GROUPINFO("GBIAS_P_NSE", 26, NavEKF3, _gyroBiasProcessNoise, GBIAS_P_NSE_DEFAULT),
 
     // 27 previously used for EK2_GSCL_P_NSE parameter that has been removed
@@ -359,7 +359,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.00001 0.001
     // @User: Advanced
-    // @Units: m/s/s/s
+    // @Units: meters/second/second/second
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF3, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
 
     // 29 previously used for EK2_MAG_P_NSE parameter that has been replaced with EK3_MAGE_P_NSE and EK3_MAGB_P_NSE
@@ -370,7 +370,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.01 1.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: meters/second/second
     AP_GROUPINFO("WIND_P_NSE", 30, NavEKF3, _windVelProcessNoise, 0.1f),
 
     // @Param: WIND_PSCALE
@@ -400,7 +400,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This scales the thresholds that are used to check GPS accuracy before it is used by the EKF. A value of 100 is the default. Values greater than 100 increase and values less than 100 reduce the maximum GPS error the EKF will accept. A value of 200 will double the allowable GPS error.
     // @Range: 50 200
     // @User: Advanced
-    // @Units: %
+    // @Units: percent
     AP_GROUPINFO("CHECK_SCALE", 34, NavEKF3, _gpsCheckScaler, CHECK_SCALER_DEFAULT),
 
     // @Param: NOAID_M_NSE
@@ -408,7 +408,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This sets the amount of position variation that the EKF allows for when operating without external measurements (eg GPS or optical flow). Increasing this parameter makes the EKF attitude estimate less sensitive to vehicle manoeuvres but more sensitive to IMU errors.
     // @Range: 0.5 50.0
     // @User: Advanced
-    // @Units: m
+    // @Units: meters
     AP_GROUPINFO("NOAID_M_NSE", 35, NavEKF3, _noaidHorizNoise, 10.0f),
 
     // @Param: LOG_MASK
@@ -426,7 +426,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
-    // @Units: rad
+    // @Units: radians
     AP_GROUPINFO("YAW_M_NSE", 37, NavEKF3, _yawNoise, 0.5f),
 
     // @Param: YAW_I_GATE
@@ -443,7 +443,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 10 50
     // @Increment: 5
     // @User: Advanced
-    // @Units: cs
+    // @Units: centiseconds
     AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF3, _tauVelPosOutput, 25),
 
     // @Param: MAGE_P_NSE
@@ -451,7 +451,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This state process noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field estimation faster and noisier.
     // @Range: 0.00001 0.01
     // @User: Advanced
-    // @Units: gauss/s
+    // @Units: Gauss/second
     AP_GROUPINFO("MAGE_P_NSE", 40, NavEKF3, _magEarthProcessNoise, MAGE_P_NSE_DEFAULT),
 
     // @Param: MAGB_P_NSE
@@ -459,7 +459,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This state process noise controls the growth of body magnetic field state error estimates. Increasing it makes magnetometer bias error estimation faster and noisier.
     // @Range: 0.00001 0.01
     // @User: Advanced
-    // @Units: gauss/s
+    // @Units: Gauss/second
     AP_GROUPINFO("MAGB_P_NSE", 41, NavEKF3, _magBodyProcessNoise, MAGB_P_NSE_DEFAULT),
 
     // @Param: RNG_USE_HGT
@@ -468,7 +468,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: -1 70
     // @Increment: 1
     // @User: Advanced
-    // @Units: %
+    // @Units: percent
     AP_GROUPINFO("RNG_USE_HGT", 42, NavEKF3, _useRngSwHgt, -1),
 
     // @Param: TERR_GRAD
@@ -485,7 +485,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m
+    // @Units: meters
     AP_GROUPINFO("BCN_M_NSE", 44, NavEKF3, _rngBcnNoise, 1.0f),
 
     // @Param: BCN_I_GTE
@@ -512,7 +512,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 2.0 6.0
     // @Increment: 0.5
     // @User: Advanced
-    // @Units: m/s
+    // @Units: meters/second
     AP_GROUPINFO("RNG_USE_SPD", 47, NavEKF3, _useRngSwSpd, 2.0f),
 
     // @Param: ACC_BIAS_LIM
@@ -521,7 +521,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.5 2.5
     // @Increment: 0.1
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: meters/second/second
     AP_GROUPINFO("ACC_BIAS_LIM", 48, NavEKF3, _accBiasLim, 1.0f),
 
     // @Param: MAG_MASK

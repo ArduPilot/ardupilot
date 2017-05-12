@@ -29,7 +29,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Range: 0 360
     // @Increment: 1
     // @User: Advanced
-    // @Units: Centi-degrees
+    // @Units: centidegrees
     AP_GROUPINFO("YAW_ALIGN",    2, AC_PrecLand, _yaw_align, 0),
 
     // @Param: LAND_OFS_X
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Range: -20 20
     // @Increment: 1
     // @User: Advanced
-    // @Units: Centimeters
+    // @Units: centimeters
     AP_GROUPINFO("LAND_OFS_X",    3, AC_PrecLand, _land_ofs_cm_x, 0),
 
     // @Param: LAND_OFS_Y
@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Range: -20 20
     // @Increment: 1
     // @User: Advanced
-    // @Units: Centimeters
+    // @Units: centimeters
     AP_GROUPINFO("LAND_OFS_Y",    4, AC_PrecLand, _land_ofs_cm_y, 0),
 
     // @Param: EST_TYPE
@@ -67,19 +67,19 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: CAM_POS_X
     // @DisplayName: Camera X position offset
     // @Description: X position of the camera in body frame. Positive X is forward of the origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
 
     // @Param: CAM_POS_Y
     // @DisplayName: Camera Y position offset
     // @Description: Y position of the camera in body frame. Positive Y is to the right of the origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
 
     // @Param: CAM_POS_Z
     // @DisplayName: Camera Z position offset
     // @Description: Z position of the camera in body frame. Positive Z is down from the origin.
-    // @Units: m
+    // @Units: meters
     // @User: Advanced
     AP_GROUPINFO("CAM_POS", 7, AC_PrecLand, _cam_offset, 0.0f),
 
