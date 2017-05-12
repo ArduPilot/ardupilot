@@ -28,7 +28,8 @@ AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder &_ranger, uint8_t ins
         ranger(_ranger),
         state(_state) 
 {
-    _sem = hal.util->new_semaphore();    
+    _sem = hal.util->new_semaphore();
+    state.instance = instance;
 }
 
 // update status based on distance measurement

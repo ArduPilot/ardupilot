@@ -525,7 +525,6 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 };
 
 RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default) :
-    num_instances(0),
     estimated_terrain_height(0),
     serial_manager(_serial_manager)
 {
@@ -548,17 +547,9 @@ RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orient
  */
 void RangeFinder::init(void)
 {
-    if (num_instances != 0) {
-        // init called a 2nd time?
-        return;
-    }
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         detect_instance(i);
-        if (drivers[i] != nullptr) {
-            // we loaded a driver for this instance, so it must be
-            // present (although it may not be healthy)
-            num_instances = i+1;
-        }
+
         // initialise pre-arm check variables
         state[i].pre_arm_check = false;
         state[i].pre_arm_distance_min = 9999;  // initialise to an arbitrary large value
@@ -576,7 +567,7 @@ void RangeFinder::init(void)
  */
 void RangeFinder::update(void)
 {
-    for (uint8_t i=0; i<num_instances; i++) {
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         if (drivers[i] != nullptr) {
             if (_type[i] == RangeFinder_TYPE_NONE) {
                 // allow user to disable a rangefinder at runtime
@@ -595,11 +586,15 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
     if (!backend) {
         return false;
     }
-    if (num_instances == RANGEFINDER_MAX_INSTANCES) {
-        AP_HAL::panic("Too many RANGERS backends");
+    if (backend->get_instance() >= RANGEFINDER_MAX_INSTANCES) {
+        AP_HAL::panic("Rangefinder instance out of range");
+    }
+    if (drivers[backend->get_instance()] != nullptr) {
+        AP_HAL::panic("Rangefinder instance conflict");
     }
 
-    drivers[num_instances++] = backend;
+    drivers[backend->get_instance()] = backend;
+    _num_instances++;
     return true;
 }
 
@@ -633,63 +628,54 @@ void RangeFinder::detect_instance(uint8_t instance)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     case RangeFinder_TYPE_PX4_PWM:
         if (AP_RangeFinder_PX4_PWM::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PX4_PWM(*this, instance, state[instance]);
+            _add_backend(new AP_RangeFinder_PX4_PWM(*this, instance, state[instance]));
         }
         break;
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     case RangeFinder_TYPE_BBB_PRU:
         if (AP_RangeFinder_BBB_PRU::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_BBB_PRU(*this, instance, state[instance]);
+            _add_backend(new AP_RangeFinder_BBB_PRU(*this, instance, state[instance]));
         }
         break;
 #endif
     case RangeFinder_TYPE_LWSER:
         if (AP_RangeFinder_LightWareSerial::detect(*this, instance, serial_manager)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager);
+            _add_backend(new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager));
         }
         break;
     case RangeFinder_TYPE_LEDDARONE:
         if (AP_RangeFinder_LeddarOne::detect(*this, instance, serial_manager)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LeddarOne(*this, instance, state[instance], serial_manager);
+            _add_backend(new AP_RangeFinder_LeddarOne(*this, instance, state[instance], serial_manager));
         }
         break;
     case RangeFinder_TYPE_ULANDING:
         if (AP_RangeFinder_uLanding::detect(*this, instance, serial_manager)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_uLanding(*this, instance, state[instance], serial_manager);
+            _add_backend(new AP_RangeFinder_uLanding(*this, instance, state[instance], serial_manager));
         }
         break;
 #if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
     case RangeFinder_TYPE_BEBOP:
         if (AP_RangeFinder_Bebop::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_Bebop(*this, instance, state[instance]);
+            _add_backend(new AP_RangeFinder_Bebop(*this, instance, state[instance]));
         }
         break;
 #endif
     case RangeFinder_TYPE_MAVLink:
         if (AP_RangeFinder_MAVLink::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MAVLink(*this, instance, state[instance]);
+            _add_backend(new AP_RangeFinder_MAVLink(*this, instance, state[instance]));
         }
         break;
     case RangeFinder_TYPE_MBSER:
         if (AP_RangeFinder_MaxsonarSerialLV::detect(*this, instance, serial_manager)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MaxsonarSerialLV(*this, instance, state[instance], serial_manager);
+            _add_backend(new AP_RangeFinder_MaxsonarSerialLV(*this, instance, state[instance], serial_manager));
         }
         break;
     case RangeFinder_TYPE_ANALOG:
         // note that analog will always come back as present if the pin is valid
         if (AP_RangeFinder_analog::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_analog(*this, instance, state[instance]);
+            _add_backend(new AP_RangeFinder_analog(*this, instance, state[instance]));
         }
         break;
     default:
@@ -724,9 +710,9 @@ RangeFinder::RangeFinder_Status RangeFinder::status_orient(enum Rotation orienta
 void RangeFinder::handle_msg(mavlink_message_t *msg)
 {
     uint8_t i;
-    for (i=0; i<num_instances; i++) {
+    for (i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         if ((drivers[i] != nullptr) && (_type[i] != RangeFinder_TYPE_NONE)) {
-          drivers[i]->handle_msg(msg);
+            drivers[i]->handle_msg(msg);
         }
     }
 }
@@ -741,8 +727,8 @@ bool RangeFinder::has_orientation(enum Rotation orientation) const
 // find first range finder instance with the specified orientation
 bool RangeFinder::find_instance(enum Rotation orientation, uint8_t &instance) const
 {
-    for (uint8_t i=0; i<num_instances; i++) {
-        if (_orientation[i] == orientation) {
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        if (_orientation[i] == orientation && drivers[i] != nullptr) {
             instance = i;
             return true;
         }
@@ -830,7 +816,7 @@ uint8_t RangeFinder::range_valid_count_orient(enum Rotation orientation) const
  */
 bool RangeFinder::pre_arm_check() const
 {
-    for (uint8_t i=0; i<num_instances; i++) {
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         // if driver is valid but pre_arm_check is false, return false
         if ((drivers[i] != nullptr) && (_type[i] != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
             return false;

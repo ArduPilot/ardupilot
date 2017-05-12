@@ -100,10 +100,10 @@ public:
     AP_Int8  _orientation[RANGEFINDER_MAX_INSTANCES];
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     // Return the number of range finder instances
     uint8_t num_sensors(void) const {
-        return num_instances;
+        return _num_instances;
     }
 
     // detect and initialise any available rangefinders
@@ -116,8 +116,6 @@ public:
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(mavlink_message_t *msg);
 
-#define _RangeFinder_STATE(instance) state[instance]
-
     // return true if we have a range finder with the specified orientation
     bool has_orientation(enum Rotation orientation) const;
 
@@ -126,16 +124,16 @@ public:
 
     // get orientation of a given range finder
     enum Rotation get_orientation(uint8_t instance) const {
-        return (instance<num_instances? (enum Rotation)_orientation[instance].get() : ROTATION_NONE);
+        return (instance<RANGEFINDER_MAX_INSTANCES? (enum Rotation)_orientation[instance].get() : ROTATION_NONE);
     }
 
     uint16_t distance_cm(uint8_t instance) const {
-        return (instance<num_instances? _RangeFinder_STATE(instance).distance_cm : 0);
+        return state[instance].distance_cm;
     }
     uint16_t distance_cm_orient(enum Rotation orientation) const;
 
     uint16_t voltage_mv(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).voltage_mv;
+        return state[instance].voltage_mv;
     }
     uint16_t voltage_mv_orient(enum Rotation orientation) const;
 
@@ -164,7 +162,7 @@ public:
 
     // returns count of consecutive good readings
     uint8_t range_valid_count(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).range_valid_count;
+        return state[instance].range_valid_count;
     }
     uint8_t range_valid_count_orient(enum Rotation orientation) const;
 
@@ -192,7 +190,8 @@ public:
 private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
-    uint8_t num_instances:3;
+
+    uint8_t _num_instances;
     float estimated_terrain_height;
     AP_SerialManager &serial_manager;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
