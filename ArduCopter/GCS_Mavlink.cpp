@@ -801,6 +801,12 @@ GCS_MAVLINK_Copter::data_stream_send(void)
     }
 }
 
+void GCS_MAVLINK_Copter::send_deferred_param_request_list()
+{
+    if (param_request_during_startup) {
+        handle_param_request_list();
+    }
+}
 
 bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
@@ -859,20 +865,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
     {
-        // if we have not yet initialised (including allocating the motors
-        // object) we drop this request. That prevents the GCS from getting
-        // a confusing parameter count during bootup
-        if (!copter.ap.initialised) {
-            break;
-        }
-
-        // mark the firmware version in the tlog
-        send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
-
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
-#endif
-        GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "Frame: %s", copter.get_frame_string());
         handle_param_request_list();
         break;
     }
@@ -2146,6 +2138,18 @@ void Copter::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 }
 
 /*
+ *  send reply to request for parameter list received during initialisation
+ */
+void Copter::gcs_send_deferred_param_request_list(void)
+{
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs_chan[i].initialised) {
+            gcs_chan[i].send_deferred_param_request_list();
+        }
+    }
+}
+
+/*
   return true if we will accept this packet. Used to implement SYSID_ENFORCE
  */
 bool GCS_MAVLINK_Copter::accept_packet(const mavlink_status_t &status, mavlink_message_t &msg)
@@ -2157,4 +2161,27 @@ bool GCS_MAVLINK_Copter::accept_packet(const mavlink_status_t &status, mavlink_m
         return true;
     }
     return (msg.sysid == copter.g.sysid_my_gcs);
+}
+
+void GCS_MAVLINK_Copter::handle_param_request_list()
+{
+    // if we have not yet initialised (including allocating the motors
+    // object) we drop this request. That prevents the GCS from getting
+    // a confusing parameter count during bootup
+    if (!copter.ap.initialised_params) {
+        param_request_during_startup = true;
+        return;
+    }
+    param_request_during_startup = false;
+
+    // mark the firmware version in the tlog
+    send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
+
+#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
+    send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
+#endif
+    GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "Frame: %s", copter.get_frame_string());
+
+    // call parent handler
+    GCS_MAVLINK::handle_param_request_list();
 }
