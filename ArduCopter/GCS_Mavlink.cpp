@@ -873,7 +873,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
 #endif
         GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "Frame: %s", copter.get_frame_string());
-        handle_param_request_list(msg);
+        handle_param_request_list();
         break;
     }
 
