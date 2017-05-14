@@ -3,18 +3,13 @@
 /*****************************************
     Throttle slew limit
 *****************************************/
-void Rover::throttle_slew_limit(int16_t last_throttle) {
-    // if slew limit rate is set to zero then do not slew limit
-    if (g.throttle_slewrate && last_throttle != 0) {
-        // limit throttle change by the given percentage per second
-        float temp = g.throttle_slewrate * G_Dt * 0.01f * fabsf(channel_throttle->get_radio_max() - channel_throttle->get_radio_min());
-        // allow a minimum change of 1 PWM per cycle
-        if (temp < 1) {
-            temp = 1;
-        }
-        uint16_t pwm;
-        if (SRV_Channels::get_output_pwm(SRV_Channel::k_throttle, pwm)) {
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, constrain_int16(pwm, last_throttle - temp, last_throttle + temp));
+void Rover::throttle_slew_limit(void)
+{
+    if (g.throttle_slewrate > 0) {
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, g.throttle_slewrate, G_Dt);
+        if (g.skid_steer_out) {
+            // when skid steering also limit 2nd channel
+            SRV_Channels::limit_slew_rate(SRV_Channel::k_steering, g.throttle_slewrate, G_Dt);
         }
     }
 }
@@ -288,9 +283,6 @@ void Rover::set_servos(void) {
                 SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
             }
         }
-
-        // limit throttle movement speed
-        throttle_slew_limit(last_throttle);
     }
 
     // record last throttle before we apply skid steering
@@ -322,6 +314,11 @@ void Rover::set_servos(void) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100 * motor2);
     }
 
+    if (control_mode != MANUAL && control_mode != LEARNING) {
+        // limit throttle movement speed
+        throttle_slew_limit();
+    }
+    
     if (!arming.is_armed()) {
         // Some ESCs get noisy (beep error msgs) if PWM == 0.
         // This little segment aims to avoid this.
