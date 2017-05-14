@@ -321,7 +321,7 @@ void Copter::init_ardupilot()
     }
 
     // disable safety if requested
-    BoardConfig.init_safety();    
+    BoardConfig.init_safety();
 
     cliSerial->printf("\nReady to FLY ");
 
@@ -446,7 +446,7 @@ void Copter::update_auto_armed()
         if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
-#if FRAME_CONFIG == HELI_FRAME 
+#if FRAME_CONFIG == HELI_FRAME
         // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
         // so that rotor runup is checked again before attempting to take-off
         if(ap.land_complete && !motors->rotor_runup_complete()) {
@@ -523,6 +523,8 @@ uint8_t Copter::get_frame_mav_type()
         case AP_Motors::MOTOR_FRAME_OCTA:
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
             return MAV_TYPE_OCTOROTOR;
+        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
+            return MAV_TYPE_DODECAROTOR;
         case AP_Motors::MOTOR_FRAME_HELI:
         case AP_Motors::MOTOR_FRAME_HELI_DUAL:
             return MAV_TYPE_HELICOPTER;
@@ -551,6 +553,8 @@ const char* Copter::get_frame_string()
             return "OCTA";
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
             return "OCTA_QUAD";
+        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
+            return "DODECA_HEXA";
         case AP_Motors::MOTOR_FRAME_HELI:
             return "HELI";
         case AP_Motors::MOTOR_FRAME_HELI_DUAL:
@@ -581,6 +585,7 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_Y6:
         case AP_Motors::MOTOR_FRAME_OCTA:
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
         default:
             motors = new AP_MotorsMatrix(MAIN_LOOP_RATE);
             motors_var_info = AP_MotorsMatrix::var_info;
@@ -614,7 +619,7 @@ void Copter::allocate_motors(void)
             motors = new AP_MotorsHeli_Single(MAIN_LOOP_RATE);
             motors_var_info = AP_MotorsHeli_Single::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
-            break;            
+            break;
 #endif
     }
     if (motors == nullptr) {
