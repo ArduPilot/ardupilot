@@ -302,6 +302,11 @@ _options = {
                 # param fetch happens asynchronously
                 "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
             },
+            "dodeca-hexa": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter-dodecahexa.parm",
+            },
             "hexa": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
@@ -486,7 +491,7 @@ def options_for_frame(frame, vehicle, opts):
     if frame in frames:
         ret = _options[vehicle]["frames"][frame]
     else:
-        for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
+        for p in ["dodeca-hexa", "octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
             if frame.startswith(p):
                 ret = _options[vehicle]["frames"][p]
                 break
