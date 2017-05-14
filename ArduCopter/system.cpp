@@ -536,6 +536,8 @@ uint8_t Copter::get_frame_mav_type()
         case AP_Motors::MOTOR_FRAME_COAX:
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
             return MAV_TYPE_COAXIAL;
+        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
+            return MAV_TYPE_HEXAROTOR;
     }
     // unknown frame so return generic
     return MAV_TYPE_GENERIC;
@@ -567,6 +569,8 @@ const char* Copter::get_frame_string()
             return "COAX";
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
             return "TAILSITTER";
+        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
+            return "DODECA_HEXA";
         case AP_Motors::MOTOR_FRAME_UNDEFINED:
         default:
             return "UNKNOWN";
@@ -585,6 +589,7 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_Y6:
         case AP_Motors::MOTOR_FRAME_OCTA:
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
         default:
             motors = new AP_MotorsMatrix(MAIN_LOOP_RATE);
             motors_var_info = AP_MotorsMatrix::var_info;
