@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // @Param: SERVO_RTRACT
     // @DisplayName: Landing Gear Servo Retracted PWM Value
-    // @Description: Servo PWM value when landing gear is retracted
+    // @Description: Servo PWM value in microseconds when landing gear is retracted
     // @Range: 1000 2000
     // @Units: pwm
     // @Increment: 1
@@ -19,7 +19,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // @Param: SERVO_DEPLOY
     // @DisplayName: Landing Gear Servo Deployed PWM Value
-    // @Description: Servo PWM value when landing gear is deployed
+    // @Description: Servo PWM value in microseconds when landing gear is deployed
     // @Range: 1000 2000
     // @Units: pwm
     // @Increment: 1
