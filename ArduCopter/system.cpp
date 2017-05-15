@@ -184,7 +184,14 @@ void Copter::init_ardupilot()
     // allocate the motors class
     allocate_motors();
 
-    init_rc_out();              // sets up motors and output to escs
+    // sets up motors and output to escs
+    init_rc_out();
+
+    // motors initialised so parameters can be sent
+    ap.initialised_params = true;
+
+    // send parameter list now if requested during startup
+    gcs_send_deferred_param_request_list();
 
     // initialise which outputs Servo and Relay events can use
     ServoRelayEvents.set_channel_mask(~motors->get_motor_mask());

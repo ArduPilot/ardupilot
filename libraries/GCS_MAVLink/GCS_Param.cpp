@@ -186,11 +186,8 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
     }
 }
 
-void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_param_request_list()
 {
-    mavlink_param_request_list_t packet;
-    mavlink_msg_param_request_list_decode(msg, &packet);
-
     // send system ID if we can
     char sysid[40];
     if (hal.util->get_system_id(sysid)) {

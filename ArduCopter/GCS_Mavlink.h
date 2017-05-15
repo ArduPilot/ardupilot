@@ -11,13 +11,16 @@ class GCS_MAVLINK_Copter : public GCS_MAVLINK
 public:
 
     void data_stream_send(void) override;
+    void send_deferred_param_request_list();
 
 protected:
 
     uint32_t telem_delay() const override;
 
     bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) override;
-    
+
+    void handle_param_request_list() override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
@@ -27,4 +30,7 @@ private:
 
     void packetReceived(const mavlink_status_t &status,
                         mavlink_message_t &msg) override;
+
+    // cache parameter request during startup
+    bool param_request_during_startup = false;
 };
