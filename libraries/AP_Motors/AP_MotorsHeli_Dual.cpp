@@ -147,7 +147,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // @Param: COL2_MIN
     // @DisplayName: Collective Pitch Minimum for rear swashplate
-    // @Description: Lowest possible servo position for the rear swashplate
+    // @Description: Lowest possible servo position in PWM microseconds for the rear swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -156,7 +156,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // @Param: COL2_MAX
     // @DisplayName: Collective Pitch Maximum for rear swashplate
-    // @Description: Highest possible servo position for the rear swashplate
+    // @Description: Highest possible servo position in PWM microseconds for the rear swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -165,7 +165,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // @Param: COL2_MID
     // @DisplayName: Collective Pitch Mid-Point for rear swashplate
-    // @Description: Swash servo position corresponding to zero collective pitch for the rear swashplate (or zero lift for Asymmetrical blades)
+    // @Description: Swash servo position in PWM microseconds corresponding to zero collective pitch for the rear swashplate (or zero lift for Asymmetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1

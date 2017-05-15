@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: GYR_GAIN
     // @DisplayName: External Gyro Gain
-    // @Description: PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
+    // @Description: PWM in microseconds sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 1
@@ -100,7 +100,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
   
     // @Param: TAIL_SPEED
     // @DisplayName: Direct Drive VarPitch Tail ESC speed
-    // @Description: Direct Drive VarPitch Tail ESC speed.  Only used when TailType is DirectDrive VarPitch
+    // @Description: Direct Drive VarPitch Tail ESC speed in PWM microseconds.  Only used when TailType is DirectDrive VarPitch
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 1
@@ -109,7 +109,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: GYR_GAIN_ACRO
     // @DisplayName: External Gyro Gain for ACRO
-    // @Description: PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro. A value of zero means to use H_GYR_GAIN
+    // @Description: PWM in microseconds sent to external gyro on ch7 when tail type is Servo w/ ExtGyro. A value of zero means to use H_GYR_GAIN
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 1
