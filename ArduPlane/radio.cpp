@@ -169,6 +169,52 @@ void Plane::rudder_arm_disarm_check()
 	}
 }
 
+/*
+  check for pilot input on rudder stick for airspeed calibration
+*/
+void Plane::rudder_airspeed_cal_check()
+{
+    // to trigger an airspeed calibration via RC input:
+    // - feature must be enabled
+    // - airspeed sensor must be enabled
+    // - are not flying
+    // - must be disarmed
+    // - must have high throttle
+    // - must have full left rudder
+    // - must hold for 3 seconds
+
+    if (g2.allow_airspeed_cal_via_RC == 1 &&
+        airspeed.enabled() &&
+        !plane.is_flying() &&
+        !hal.util->get_soft_armed() &&
+        channel_throttle->percent_input() > 90 &&
+        channel_rudder->get_control_in() < -4000)
+    {
+        if (!airspeed.is_calibration_active() && airspeed_cal_via_RC_timer != 1) {
+            // conditions are right, lets check timer and trigger airspeed calibration
+            // timer = 0 -> has been resetm ready to trigger
+            // timer = 1 -> has already triggered and the condition to trigger is still being held
+            // timer = else -> we're within the 3 second timer window
+            uint32_t now = millis();
+
+            if (airspeed_cal_via_RC_timer == 0) {
+                airspeed_cal_via_RC_timer = now;
+
+            } else if (now - airspeed_cal_via_RC_timer > 3000) {
+                // time to calibrate!
+                plane.init_barometer(false);
+                plane.zero_airspeed(false);
+
+                // set to magical number 1 to block continuous calibrations while holding the sticks
+                airspeed_cal_via_RC_timer = 1;
+            }
+        }
+    }
+    else {
+        airspeed_cal_via_RC_timer = 0;
+    }
+}
+
 void Plane::read_radio()
 {
     if (!hal.rcin->new_input()) {
@@ -228,6 +274,7 @@ void Plane::read_radio()
     }
 
     rudder_arm_disarm_check();
+    rudder_airspeed_cal_check();
 
     if (g.rudder_only != 0) {
         // in rudder only mode we discard rudder input and get target

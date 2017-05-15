@@ -1226,6 +1226,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RUDD_DT_GAIN", 9, ParametersG2, rudd_dt_gain, 10),
 
+    // @Param: ARSPD_CAL_RC
+    // @DisplayName: Enable airspeed calibration using RC input
+    // @Description: Enable airspeed calibration using RC input. When aircraft is disarmmed, holding max throttle and left rudder will trigger an airspeed sensor calibration.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("ARSPD_CAL_RC", 10, ParametersG2, allow_airspeed_cal_via_RC,  0),
+
     AP_GROUPEND
 };
 
