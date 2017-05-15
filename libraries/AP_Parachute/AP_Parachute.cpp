@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
 
     // @Param: SERVO_ON
     // @DisplayName: Parachute Servo ON PWM value
-    // @Description: Parachute Servo PWM value when parachute is released
+    // @Description: Parachute Servo PWM value in microseconds when parachute is released
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
 
     // @Param: SERVO_OFF
     // @DisplayName: Servo OFF PWM value
-    // @Description: Parachute Servo PWM value when parachute is not released
+    // @Description: Parachute Servo PWM value in microseconds when parachute is not released
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
