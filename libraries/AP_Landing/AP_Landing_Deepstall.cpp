@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 
     // @Param: ELEV_PWM
     // @DisplayName: Deepstall elevator PWM
-    // @Description: The PWM value for the elevator at full deflection in deepstall
+    // @Description: The PWM value in microseconds for the elevator at full deflection in deepstall
     // @Range: 900 2100
     // @Units: PWM
     // @User: Advanced
