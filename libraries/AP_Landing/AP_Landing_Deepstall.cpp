@@ -190,12 +190,24 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             return false;
         }
         stage = DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT;
-        //compute optimal path for landing
-        build_approach_path();
+        loiter_sum_cd = 0; // reset the loiter counter
         // no break
         }
     case DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT:
+        // rebuild the approach path if we have done less then a full circle to allow it to be
+        // more into the wind as the estimator continues to refine itself, and allow better
+        // compensation on windy days. This is limited to a single full circle though, as on
+        // a no wind day you could be in this loop forever otherwise.
+        if (loiter_sum_cd < 36000) {
+            build_approach_path();
+        }
         if (!verify_breakout(current_loc, arc_entry, height)) {
+            int32_t target_bearing = landing.nav_controller->target_bearing_cd();
+            int32_t delta = wrap_180_cd(target_bearing - last_target_bearing);
+            if (delta > 0) { // only accumulate turns in the correct direction
+                loiter_sum_cd += delta;
+            }
+            last_target_bearing = target_bearing;
             landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, 1);
             return false;
         }
@@ -354,6 +366,8 @@ const DataFlash_Class::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
 
 void AP_Landing_Deepstall::build_approach_path(void)
 {
+    float loiter_radius = landing.nav_controller->loiter_radius(landing.aparm.loiter_radius);
+
     Vector3f wind = landing.ahrs.wind_estimate();
     // TODO: Support a user defined approach heading
     target_heading_deg = (degrees(atan2f(-wind.y, -wind.x)));
@@ -366,16 +380,13 @@ void AP_Landing_Deepstall::build_approach_path(void)
 
     float expected_travel_distance = predict_travel_distance(wind, landing_point.alt / 100);
     float approach_extension_m = expected_travel_distance + approach_extension;
-    // an approach extension of 0 can result in a divide by 0
-    if (fabsf(approach_extension_m) < 1.0f) {
-        approach_extension_m = 1.0f;
-    }
+    // an approach extensions must be at least half the loiter radius, or the aircraft has a
+    // decent chance to be misaligned on final approach
+    approach_extension_m = MAX(approach_extension_m, loiter_radius * 0.5f);
 
     location_update(arc_exit, target_heading_deg + 180, approach_extension_m);
     memcpy(&arc, &arc_exit, sizeof(Location));
     memcpy(&arc_entry, &arc_exit, sizeof(Location));
-
-    float loiter_radius = landing.nav_controller->loiter_radius(landing.aparm.loiter_radius);
 
     // TODO: Support loitering on either side of the approach path
     location_update(arc, target_heading_deg + 90.0, loiter_radius);
