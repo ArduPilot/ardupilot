@@ -287,7 +287,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on channel 3 below which throttle failsafe triggers
+    // @Description: The PWM level in microseconds on channel 3 below which throttle failsafe triggers
     // @Range: 925 1100
     // @Units: PWM
     // @Increment: 1
@@ -296,7 +296,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: THR_DZ
     // @DisplayName: Throttle deadzone
-    // @Description: The deadzone above and below mid throttle.  Used in AltHold, Loiter, PosHold flight modes
+    // @Description: The deadzone above and below mid throttle in PWM microseconds. Used in AltHold, Loiter, PosHold flight modes
     // @User: Standard
     // @Range: 0 300
     // @Units: PWM
