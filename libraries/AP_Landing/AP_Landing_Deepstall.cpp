@@ -343,6 +343,11 @@ bool AP_Landing_Deepstall::is_throttle_suppressed(void) const
     return stage == DEEPSTALL_STAGE_LAND;
 }
 
+bool AP_Landing_Deepstall::is_flying_forward(void) const
+{
+    return stage != DEEPSTALL_STAGE_LAND;
+}
+
 bool AP_Landing_Deepstall::get_target_altitude_location(Location &location)
 {
     memcpy(&location, &landing_point, sizeof(Location));
