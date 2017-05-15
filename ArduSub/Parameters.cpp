@@ -221,7 +221,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: THR_DZ
     // @DisplayName: Throttle deadzone
-    // @Description: The deadzone above and below mid throttle.  Used in AltHold, Loiter, PosHold flight modes
+    // @Description: The PWM deadzone in microseconds above and below mid throttle. Used in AltHold, Loiter, PosHold flight modes
     // @User: Standard
     // @Range: 0 300
     // @Units: PWM
@@ -304,7 +304,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: JS_CAM_TILT_STEP
     // @DisplayName: Camera tilt step size
-    // @Description: Size of PWM increment on camera tilt servo
+    // @Description: Size of PWM increment in microseconds on camera tilt servo
     // @User: Standard
     // @Range: 30 400
     // @Units: PWM
@@ -312,7 +312,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: JS_LIGHTS_STEP
     // @DisplayName: Lights step size
-    // @Description: Size of PWM increment on lights servo
+    // @Description: Size of PWM increment in microseconds on lights servo
     // @User: Standard
     // @Range: 30 400
     // @Units: PWM
@@ -327,7 +327,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: CAM_CENTER
     // @DisplayName: Camera tilt mount center
-    // @Description: Servo PWM at camera center position
+    // @Description: Servo PWM in microseconds at camera center position
     // @User: Standard
     // @Range: 1000 2000
     // @Units: PWM
