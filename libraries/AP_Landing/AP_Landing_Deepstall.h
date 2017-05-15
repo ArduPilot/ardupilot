@@ -95,6 +95,7 @@ private:
     bool get_target_altitude_location(Location &location);
     int32_t get_target_airspeed_cm(void) const;
     bool is_throttle_suppressed(void) const;
+    bool is_flying_forward(void) const;
 
     const DataFlash_Class::PID_Info& get_pid_info(void) const;
 
