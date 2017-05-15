@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
     // @Param: SERVO_ON
     // @DisplayName: Servo ON PWM value
-    // @Description: PWM value to move servo to when shutter is activated
+    // @Description: PWM value in microseconds to move servo to when shutter is activated
     // @Units: PWM
     // @Range: 1000 2000
     // @User: Standard
@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
     // @Param: SERVO_OFF
     // @DisplayName: Servo OFF PWM value
-    // @Description: PWM value to move servo to when shutter is deactivated
+    // @Description: PWM value in microseconds to move servo to when shutter is deactivated
     // @Units: PWM
     // @Range: 1000 2000
     // @User: Standard
