@@ -179,7 +179,7 @@ private:
     bool            _boundary_valid = false;        // true if boundary forms a closed polygon
 
     // beacon fence variables
-    Vector2f        *_beacon_boundary = nullptr;    // array of boundary points.  Note: point 0 is the return point
-    uint8_t         _beacon_boundary_num_points = 0;// number of points in the boundary array
-    bool            _beacon_boundary_valid = false; // true if boundary forms a closed beacon polygon
+    Vector2f        *_beacon_boundary;              // array of boundary points.  Note: point 0 is the return point
+    uint8_t         _beacon_boundary_num_points;    // number of points in the boundary array
+    bool            _beacon_boundary_valid;         // true if boundary forms a closed beacon polygon
 };
