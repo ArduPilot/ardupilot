@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: YAW_HEADROOM
     // @DisplayName: Matrix Yaw Min
-    // @Description: Yaw control is given at least this pwm range
+    // @Description: Yaw control is given at least this pwm in microseconds range
     // @Range: 0 500
     // @Units: PWM
     // @User: Advanced
@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: PWM_MIN
     // @DisplayName: PWM output miniumum
-    // @Description: This sets the min PWM output value that will ever be output to the motors, 0 = use input RC3_MIN
+    // @Description: This sets the min PWM output value in microseconds that will ever be output to the motors, 0 = use input RC3_MIN
     // @Units: PWM
     // @Range: 0 2000
     // @User: Advanced
@@ -98,7 +98,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: PWM_MAX
     // @DisplayName: PWM output maximum
-    // @Description: This sets the max PWM value that will ever be output to the motors, 0 = use input RC3_MAX
+    // @Description: This sets the max PWM value in microseconds that will ever be output to the motors, 0 = use input RC3_MAX
     // @Units: PWM
     // @Range: 0 2000
     // @User: Advanced
