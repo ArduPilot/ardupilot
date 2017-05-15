@@ -30,7 +30,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
     // @DisplayName: RC min PWM
-    // @Description: RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @Description: RC minimum PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
     // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
@@ -39,7 +39,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
 
     // @Param: TRIM
     // @DisplayName: RC trim PWM
-    // @Description: RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @Description: RC trim (neutral) PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
     // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
 
     // @Param: MAX
     // @DisplayName: RC max PWM
-    // @Description: RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @Description: RC maximum PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
     // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
@@ -64,7 +64,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
 
     // @Param: DZ
     // @DisplayName: RC dead-zone
-    // @Description: dead zone around trim or bottom
+    // @Description: PWM dead zone in microseconds around trim or bottom
     // @Units: PWM
     // @Range: 0 200
     // @User: Advanced
