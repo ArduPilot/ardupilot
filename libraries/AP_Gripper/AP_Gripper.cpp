@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
 
     // @Param: GRAB
     // @DisplayName: Gripper Grab PWM
-    // @Description: PWM value sent to Gripper to initiate grabbing the cargo
+    // @Description: PWM value in microseconds sent to Gripper to initiate grabbing the cargo
     // @User: Advanced
     // @Range: 1000 2000
     // @Units: PWM
@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
 
     // @Param: RELEASE
     // @DisplayName: Gripper Release PWM
-    // @Description: PWM value sent to Gripper to release the cargo
+    // @Description: PWM value in microseconds sent to Gripper to release the cargo
     // @User: Advanced
     // @Range: 1000 2000
     // @Units: PWM
@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
 
     // @Param: NEUTRAL
     // @DisplayName: Neutral PWM
-    // @Description: PWM value sent to grabber when not grabbing or releasing
+    // @Description: PWM value in microseconds sent to grabber when not grabbing or releasing
     // @User: Advanced
     // @Range: 1000 2000
     // @Units: PWM
