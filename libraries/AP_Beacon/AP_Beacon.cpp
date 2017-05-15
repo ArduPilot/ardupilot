@@ -128,7 +128,7 @@ bool AP_Beacon::get_origin(Location &origin_loc) const
         return false;
     }
 
-    // check for unitialised origin
+    // check for un-initialised origin
     if (is_zero(origin_lat) && is_zero(origin_lon) && is_zero(origin_alt)) {
         return false;
     }
@@ -142,7 +142,7 @@ bool AP_Beacon::get_origin(Location &origin_loc) const
     return true;
 }
 
-// return position in NED from position estimate system's origin
+// return position in NED from position estimate system's origin in meters
 bool AP_Beacon::get_vehicle_position_ned(Vector3f &position, float& accuracy_estimate) const
 {
     if (!device_ready()) {
@@ -206,7 +206,7 @@ float AP_Beacon::beacon_distance(uint8_t beacon_instance) const
     return beacon_state[beacon_instance].distance;
 }
 
-// return beacon position
+// return beacon position in meters
 Vector3f AP_Beacon::beacon_position(uint8_t beacon_instance) const
 {
     if (!device_ready() || beacon_instance >= num_beacons) {
@@ -216,7 +216,7 @@ Vector3f AP_Beacon::beacon_position(uint8_t beacon_instance) const
     return beacon_state[beacon_instance].position;
 }
 
-// return last update time from beacon
+// return last update time from beacon in milliseconds
 uint32_t AP_Beacon::beacon_last_update_ms(uint8_t beacon_instance) const
 {
     if (_type == AP_BeaconType_None || beacon_instance >= num_beacons) {
