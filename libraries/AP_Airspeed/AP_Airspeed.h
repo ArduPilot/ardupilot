@@ -134,6 +134,8 @@ public:
 
     void setHIL(float airspeed, float diff_pressure, float temperature);
 
+    bool is_calibration_active() { return (_cal.start_ms != 0); }
+
     static const struct AP_Param::GroupInfo var_info[];
 
     enum pitot_tube_order { PITOT_TUBE_ORDER_POSITIVE = 0,

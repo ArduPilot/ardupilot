@@ -247,7 +247,7 @@ void AP_Airspeed::read(void)
         return;
     }
     float raw_pressure = get_pressure();
-    if (_cal.start_ms != 0) {
+    if (is_calibration_active()) {
         update_calibration(raw_pressure);
     }
     
