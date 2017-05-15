@@ -59,13 +59,13 @@ known_units = {
              'cm/s/s/s': 'centimeters per cubic second' , # metre is the SI unit name, meter is the american spelling of it
              'mm'      : 'millimeters'               , # metre is the SI unit name, meter is the american spelling of it
 # temperature
-             'degC'    : 'degrees Celsius'       ,
+             'degC'    : 'degrees Celsius'       ,     # Not SI, but Kelvin is too cumbersome for most users
 # angle
-             'deg'     : 'degrees'               ,
-             'deg/s'   : 'degrees per second'    ,
-             'cdeg'    : 'centidegrees'          ,
-             'cdeg/s'  : 'centidegrees per second',
-             'cdeg/s/s': 'centidegrees per square second' ,
+             'deg'     : 'degrees'               ,     # Not SI, but is some situations more user-friendly than radians
+             'deg/s'   : 'degrees per second'    ,     # Not SI, but is some situations more user-friendly than radians
+             'cdeg'    : 'centidegrees'          ,     # Not SI, but is some situations more user-friendly than radians
+             'cdeg/s'  : 'centidegrees per second',    # Not SI, but is some situations more user-friendly than radians
+             'cdeg/s/s': 'centidegrees per square second' , # Not SI, but is some situations more user-friendly than radians
              'rad'     : 'radians'               ,
              'rad/s'   : 'radians per second'    ,
              'rad/s/s' : 'radians per square second' ,
