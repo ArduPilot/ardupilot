@@ -1,5 +1,12 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5-rc6 15-May-2017
+Changes from 3.5-rc5
+1) Bug fixes and minor enhancements:
+    a) ESC calibration fix when not using safety switch (was waiting for safety switch to be pushed)
+    b) Parameter loading improvements (responds sooner after startup, counts parameters in separate thread)
+    c) Pilot radio passthrough fix for tradheli, single copter, coax copter
+------------------------------------------------------------------
 Copter 3.5-rc5 03-May-2017
 Changes from 3.5-rc4
 1) Intel Aero RTF support
