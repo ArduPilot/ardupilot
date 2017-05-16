@@ -426,6 +426,19 @@ void Plane::send_rangefinder(mavlink_channel_t chan)
         rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
 }
 
+void Plane::send_altitude(mavlink_channel_t chan)
+{
+    mavlink_msg_altitude_send(
+        chan,
+        AP_HAL::micros64(),
+        (float)(home.alt * 0.01f),          // altitude_monotonic
+        (float)(current_loc.alt * 0.01f),   // altitude_amsl
+        -1,                                 // altitude_local where coordinate origin is (0, 0, 0)
+        relative_altitude(),                // altitude_relative
+        relative_ground_altitude(true),     // altitude_terrain
+        -1);                                // bottom_clearance
+}
+
 void Plane::send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
@@ -473,6 +486,11 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_ATTITUDE:
         CHECK_PAYLOAD_SIZE(ATTITUDE);
         plane.send_attitude(chan);
+        break;
+
+    case MSG_ALTITUDE:
+        CHECK_PAYLOAD_SIZE(ALTITUDE);
+        plane.send_altitude(chan);
         break;
 
     case MSG_LOCATION:
@@ -877,6 +895,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
 
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
+        send_message(MSG_ALTITUDE);
         send_message(MSG_SIMSTATE);
         send_message(MSG_RPM);
         send_message(MSG_AOA_SSA);

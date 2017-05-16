@@ -815,6 +815,7 @@ private:
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
+    void send_altitude(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
 
     void send_aoa_ssa(mavlink_channel_t chan);
