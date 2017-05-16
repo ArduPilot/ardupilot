@@ -77,7 +77,7 @@ private:
         StationaryBeaconsPositions positions_beacons;
         bool verbose;   // verbose flag which activate console output, default: False
         bool pause;     //  pause flag. If True, class would not read serial data
-        bool terminationRequired;   //  If True, thread would exit from main loop and stop
+        bool termination_required;  //  If True, thread would exit from main loop and stop
         void (*receive_data_callback)(PositionValue position); //  receive_data_callback is callback function to receive data
 
         uint8_t _last_values_count;
