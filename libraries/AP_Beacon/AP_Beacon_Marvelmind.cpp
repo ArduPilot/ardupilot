@@ -338,7 +338,7 @@ void AP_Beacon_Marvelmind::create_marvelmind_hedge()
     hedge->_last_values_count = 0;
     hedge->_last_values_next = 0;
     hedge->_have_new_values = false;
-    hedge->terminationRequired = false;
+    hedge->termination_required = false;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -351,7 +351,7 @@ void AP_Beacon_Marvelmind::start_marvelmind_hedge()
         if (hedge->verbose) {
             hal.console->printf("MarvelMind: Not enough memory");
         }
-        hedge->terminationRequired = true;
+        hedge->termination_required = true;
         return;
     }
     for (uint8_t i = 0; i < hedge->max_buffered_positions; i++) {
@@ -401,7 +401,7 @@ void AP_Beacon_Marvelmind::set_stationary_beacons_positions_and_distances()
 
 void AP_Beacon_Marvelmind::order_stationary_beacons()
 {
-    if(hedge->positions_beacons.updated) {
+    if (hedge->positions_beacons.updated) {
         bool swapped = false;
         uint8_t j = hedge->positions_beacons.num_beacons;
         do
@@ -409,7 +409,7 @@ void AP_Beacon_Marvelmind::order_stationary_beacons()
             swapped = false;
             StationaryBeaconPosition beacon_to_swap;
             for(uint8_t i = 1; i < j; i++) {
-                if(hedge->positions_beacons.beacons[i-1].address > hedge->positions_beacons.beacons[i].address) {
+                if (hedge->positions_beacons.beacons[i-1].address > hedge->positions_beacons.beacons[i].address) {
                     beacon_to_swap = hedge->positions_beacons.beacons[i];
                     hedge->positions_beacons.beacons[i] = hedge->positions_beacons.beacons[i-1];
                     hedge->positions_beacons.beacons[i-1] = beacon_to_swap;
