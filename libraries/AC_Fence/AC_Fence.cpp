@@ -141,14 +141,14 @@ uint8_t AC_Fence::check_fence(float curr_alt)
 
     // return immediately if disabled
     if (!_enabled || _enabled_fences == AC_FENCE_TYPE_NONE) {
-        return AC_FENCE_TYPE_NONE;
+        return ret;
     }
 
     // check if pilot is attempting to recover manually
     if (_manual_recovery_start_ms != 0) {
         // we ignore any fence breaches during the manual recovery period which is about 10 seconds
         if ((AP_HAL::millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
-            return AC_FENCE_TYPE_NONE;
+            return ret;
         } else {
             // recovery period has passed so reset manual recovery time and continue with fence breach checks
             _manual_recovery_start_ms = 0;
