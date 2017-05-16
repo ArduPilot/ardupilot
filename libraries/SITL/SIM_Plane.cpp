@@ -70,6 +70,7 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     }
    if (strstr(frame_str, "-tailsitter")) {
        tailsitter = true;
+       elevons = true;
        ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
        thrust_scale *= 1.5;
    }
