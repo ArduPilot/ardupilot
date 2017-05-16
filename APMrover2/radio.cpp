@@ -16,6 +16,10 @@ void Rover::set_control_channels(void)
     SRV_Channels::set_angle(SRV_Channel::k_steering, SERVO_MAX);
     SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
 
+    // left/right throttle as -1000 to 1000 values
+    SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
+    SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
+
     // For a rover safety is TRIM throttle
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
@@ -95,7 +99,7 @@ void Rover::rudder_arm_disarm_check()
             // not at full right rudder
             rudder_arm_timer = 0;
         }
-    } else if (!motor_active() & !g.skid_steer_out) {
+    } else if (!motor_active() & !have_skid_steering()) {
         // when armed and motor not active (not moving), full left rudder starts disarming counter
         // This is disabled for skid steering otherwise when tring to turn a skid steering rover around
         // the rover would disarm
