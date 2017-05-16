@@ -84,6 +84,9 @@ void AP_BattMonitor_SMBus_Maxell::timer()
 
     read_full_charge_capacity();
 
+    // FIXME: Preform current integration if the remaining capacity can't be requested
+    read_remaining_capacity();
+
     read_temp();
 
     read_serial_number();

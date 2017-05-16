@@ -6,7 +6,6 @@
 #include "AP_BattMonitor_SMBus_Solo.h"
 #include <utility>
 
-#define BATTMONITOR_SMBUS_SOLO_REMAINING_CAPACITY   0x0f    // predicted remaining battery capacity in milliamps
 #define BATTMONITOR_SMBUS_SOLO_MANUFACTURE_DATA     0x23    /// manufacturer data
 #define BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE         0x28    // cell voltage register
 #define BATTMONITOR_SMBUS_SOLO_CURRENT              0x2a    // current register
@@ -39,7 +38,6 @@ AP_BattMonitor_SMBus_Solo::AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon,
 
 void AP_BattMonitor_SMBus_Solo::timer()
 {
-    uint16_t data;
     uint8_t buff[8];
     uint32_t tnow = AP_HAL::micros();
 
@@ -74,14 +72,8 @@ void AP_BattMonitor_SMBus_Solo::timer()
         _state.last_time_micros = tnow;
     }
 
-    if (read_full_charge_capacity()) {
-        // only read remaining capacity once we have the full capacity
-        if (get_capacity() > 0) {
-            if (read_word(BATTMONITOR_SMBUS_SOLO_REMAINING_CAPACITY, data)) {
-                _state.current_total_mah = MAX(0, get_capacity() - data);
-            }
-        }
-    }
+    read_full_charge_capacity();
+    read_remaining_capacity();
 
     // read the button press indicator
     if (read_block(BATTMONITOR_SMBUS_SOLO_MANUFACTURE_DATA, buff, 6, false) == 6) {
