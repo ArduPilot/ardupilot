@@ -28,8 +28,10 @@ void Rover::set_control_channels(void)
         }
     }
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
-    // take a proportion of speed.
-    hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+    // take a proportion of speed. Default to 1000 to 2000 for systems without
+    // a k_throttle output
+    hal.rcout->set_esc_scaling(1000, 2000);
+    g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
 }
 
 void Rover::init_rc_in()
