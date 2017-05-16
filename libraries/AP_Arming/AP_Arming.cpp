@@ -338,6 +338,14 @@ bool AP_Arming::compass_checks(bool report)
         }
     }
 
+    // check if start angle is between +- 5 degrees.
+    if ((ahrs.yaw_sensor > 500) && (ahrs.yaw_sensor < 35500)) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Yaw too large for auto start %d deg", ahrs.yaw_sensor / 100);
+        }
+        return false;
+    }
+
     return true;
 }
 
