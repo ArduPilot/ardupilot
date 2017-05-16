@@ -167,7 +167,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     if (send && send_len != 0) {
         msgs[nmsgs].addr = _address;
         msgs[nmsgs].flags = 0;
-        msgs[nmsgs].buf = const_cast<uint8_t*>(send);
+        msgs[nmsgs].buf = reinterpret_cast<decltype(msgs[nmsgs].buf)>(const_cast<uint8_t*>(send));
         msgs[nmsgs].len = send_len;
         nmsgs++;
     }
@@ -175,7 +175,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     if (recv && recv_len != 0) {
         msgs[nmsgs].addr = _address;
         msgs[nmsgs].flags = I2C_M_RD;
-        msgs[nmsgs].buf = recv;
+        msgs[nmsgs].buf = reinterpret_cast<decltype(msgs[nmsgs].buf)>(recv);
         msgs[nmsgs].len = recv_len;
         nmsgs++;
     }
@@ -219,11 +219,11 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
         for (uint8_t i = 0; i < i2c_data.nmsgs; i += 2) {
             msgs[i].addr = _address;
             msgs[i].flags = 0;
-            msgs[i].buf = &first_reg;
+            msgs[i].buf = reinterpret_cast<decltype(msgs[i].buf)>(&first_reg);
             msgs[i].len = 1;
             msgs[i + 1].addr = _address;
             msgs[i + 1].flags = I2C_M_RD;
-            msgs[i + 1].buf = recv;
+            msgs[i + 1].buf = reinterpret_cast<decltype(msgs[i + 1].buf)>(recv);
             msgs[i + 1].len = recv_len;
 
             recv += recv_len;
