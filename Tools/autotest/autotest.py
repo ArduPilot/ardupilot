@@ -15,7 +15,8 @@ import sys
 import time
 import traceback
 
-import apmrover2
+from apmrover2_test import *
+#import apmrover2
 import arducopter
 import arduplane
 import quadplane
@@ -313,7 +314,9 @@ def run_step(step):
         return quadplane.fly_QuadPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
 
     if step == 'drive.APMrover2':
-        return apmrover2.drive_APMrover2(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
+        apmrover2 = AutotestRover(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
+        apmrover2.init()
+        return apmrover2.drive_APMrover2()
     
     if step == 'dive.ArduSub':
         return ardusub.dive_ArduSub(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
