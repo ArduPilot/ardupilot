@@ -337,7 +337,36 @@ void Copter::autotune_do_gcs_announcements()
     if (now - autotune_announce_time < AUTOTUNE_ANNOUNCE_INTERVAL_MS) {
         return;
     }
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: %s", autotune_type_string());
+    float tune_rp = 0.0f;
+    float tune_rd = 0.0f;
+    float tune_sp = 0.0f;
+    float tune_accel = 0.0f;
+    char axis = '?';
+    switch (autotune_state.axis) {
+    case AUTOTUNE_AXIS_ROLL:
+        tune_rp = tune_roll_rp;
+        tune_rd = tune_roll_rd;
+        tune_sp = tune_roll_sp;
+        tune_accel = tune_roll_accel;
+        axis = 'R';
+        break;
+    case AUTOTUNE_AXIS_PITCH:
+        tune_rp = tune_pitch_rp;
+        tune_rd = tune_pitch_rd;
+        tune_sp = tune_pitch_sp;
+        tune_accel = tune_pitch_accel;
+        axis = 'P';
+        break;
+    case AUTOTUNE_AXIS_YAW:
+        tune_rp = tune_yaw_rp;
+        tune_rd = tune_yaw_rLPF;
+        tune_sp = tune_yaw_sp;
+        tune_accel = tune_yaw_accel;
+        axis = 'Y';
+        break;
+    }
+
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: (%c) %s", axis, autotune_type_string());
     autotune_send_step_string();
     if (!is_zero(lean_angle)) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: lean=%f target=%f", lean_angle, autotune_target_angle);
@@ -347,30 +376,6 @@ void Copter::autotune_do_gcs_announcements()
     }
     if (!is_zero(rotation_rate)) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: rotation=%f target=%f", rotation_rate*0.01f, autotune_target_rate*0.01f);
-    }
-    float tune_rp = 0.0f;
-    float tune_rd = 0.0f;
-    float tune_sp = 0.0f;
-    float tune_accel = 0.0f;
-    switch (autotune_state.axis) {
-    case AUTOTUNE_AXIS_ROLL:
-        tune_rp = tune_roll_rp;
-        tune_rd = tune_roll_rd;
-        tune_sp = tune_roll_sp;
-        tune_accel = tune_roll_accel;
-        break;
-    case AUTOTUNE_AXIS_PITCH:
-        tune_rp = tune_pitch_rp;
-        tune_rd = tune_pitch_rd;
-        tune_sp = tune_pitch_sp;
-        tune_accel = tune_pitch_accel;
-        break;
-    case AUTOTUNE_AXIS_YAW:
-        tune_rp = tune_yaw_rp;
-        tune_rd = tune_yaw_rLPF;
-        tune_sp = tune_yaw_sp;
-        tune_accel = tune_yaw_accel;
-        break;
     }
     switch (autotune_state.tune_type) {
     case AUTOTUNE_TYPE_RD_UP:
