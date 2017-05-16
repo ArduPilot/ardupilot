@@ -400,6 +400,13 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:AUTO,1:FIXED_WING,2:QUADROTOR,3:COAXIAL,4:HELICOPTER,7:AIRSHIP,8:FREE_BALLOON,9:ROCKET,10:GROUND_ROVER,11:SURFACE_BOAT,12:SUBMARINE,16:FLAPPING_WING,17:KITE,19:VTOL_DUOROTOR,20:VTOL_QUADROTOR,21:VTOL_TILTROTOR
     AP_GROUPINFO("MAV_TYPE", 57, QuadPlane, mav_type, 0),
     
+    // @Param: TAILSIT_TCOMP
+    // @DisplayName: Tailsitter pitch error thrust gain in hover
+    // @Description: This sets the ratio of thrust boost to pitch error used in hover for a tailsitter
+    // @Range: 0 1
+    // @Increment: 0.01
+    AP_GROUPINFO("TAILSIT_TCGAIN", 57, QuadPlane, tailsitter.tcomp_gain, 0.5),
+
     AP_GROUPEND
 };
 

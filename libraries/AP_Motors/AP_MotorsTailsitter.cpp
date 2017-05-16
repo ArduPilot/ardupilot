@@ -101,21 +101,61 @@ void AP_MotorsTailsitter::output_to_motors()
 // calculate outputs to the motors
 void AP_MotorsTailsitter::output_armed_stabilizing()
 {
-    _aileron = -_yaw_in;
-    _elevator = _pitch_in;
-    _rudder = _roll_in;
-    _throttle = get_throttle();
+    float   roll_thrust;                // roll thrust input value, +/- 1.0
+    float   pitch_thrust;               // pitch thrust input value, +/- 1.0
+    float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
+    float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
+//    float   elevon_thrust;              // demand for elevon thrust
+
+    // apply voltage and air pressure compensation
+    // roll, pitch, yaw should only be scaled by air density
+    roll_thrust = _roll_in * get_compensation_gain();
+    pitch_thrust = _pitch_in * get_compensation_gain();
+    yaw_thrust = _yaw_in * get_compensation_gain();
+    throttle_thrust = get_throttle() * get_compensation_gain();
+
+//    elevon_thrust = MAX(fabsf(pitch_thrust), fabsf(yaw_thrust));
+//
+//    // boost throttle to reduce elevon thrust demand
+//    throttle_thrust *= (1.0f + elevon_thrust);
+//
+//    // override boost at low throttle demand (for safety)
+//    if (get_throttle() < (0.5f * _throttle_hover)) {
+//        throttle_thrust *= (get_throttle() / (0.5f * _throttle_hover));
+//    }
 
     // sanity check throttle is above zero and below current limited throttle
-    if (_throttle <= 0.0f) {
-        _throttle = 0.0f;
+    if (throttle_thrust <= 0.0f) {
+        throttle_thrust = 0.0f;
         limit.throttle_lower = true;
     }
-    if (_throttle >= _throttle_thrust_max) {
-        _throttle = _throttle_thrust_max;
+    // _throttle_thrust_max seems to be set to 1.0, leaving no headroom for differential thrust
+    // make sure we have at least a 10% margin
+    if (throttle_thrust >= MIN(_throttle_thrust_max, 0.9f)) {
+        throttle_thrust = MIN(_throttle_thrust_max, 0.9f);
         limit.throttle_upper = true;
     }
+    if (is_zero(throttle_thrust)) {
+        limit.roll_pitch = true;
+        limit.yaw = true;
+    }
 
-    _throttle = constrain_float(_throttle, 0.1, 1);
+//    // temporary debug logging
+//    static int dec_count=0;
+//    if (dec_count++ >= 3) {
+//        dec_count = 0;
+//        DataFlash_Class::instance()->Log_Write("TCOMP", "TimeUS,Rthr,Pthr,Ythr,Tthr,Ethr", "Qfffff",
+//                                               AP_HAL::micros64(),
+//                                               roll_thrust, pitch_thrust, yaw_thrust,
+//                                               throttle_thrust, elevon_thrust);
+//    }
+//
+    // in tailsitter (nose-up) config, aileron controls earth-frame yaw (reversed)
+    _aileron = -yaw_thrust;
+    // and rudder controls earth-frame roll
+    _rudder = roll_thrust;
+    // elevator and throttle controls are unchanged
+    _elevator = pitch_thrust;
+    _throttle = throttle_thrust;
 }
 

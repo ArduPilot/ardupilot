@@ -62,6 +62,36 @@ void QuadPlane::tailsitter_output(void)
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
 
+    if (tailsitter.tcomp_gain > 0) {
+        // boost throttle when pitch or yaw error is large
+        float pitch_error_cd = (plane.nav_pitch_cd - ahrs_view->pitch_sensor) * 0.5;
+        float pitch_error_norm = constrain_float(fabsf(pitch_error_cd), 0, 4500) / 4500.0;
+
+        float yaw_error_cd = (attitude_control->get_att_target_euler_cd().z - ahrs_view->yaw_sensor) * 0.5;
+        float yaw_error_norm = constrain_float(fabsf(yaw_error_cd), 0, 4500) / 4500.0;
+
+        float norm_err_max = fmaxf(yaw_error_norm, pitch_error_norm);
+        float thr_boost = 1.0f + norm_err_max * tailsitter.tcomp_gain;
+
+        int16_t thr_scaledL = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft);
+        int16_t thr_scaledR = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight);
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, thr_boost * thr_scaledL);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, thr_boost * thr_scaledR);
+
+        // temporary debug logging
+        static int dec_count=0;
+        if (dec_count++ >= 3) {
+            dec_count = 0;
+            DataFlash_Class::instance()->Log_Write("TCOM", "TimeUS,Perr,YErr,ThrB", "Qfff",
+                                                   AP_HAL::micros64(),
+                                                   (double) pitch_error_norm,
+                                                   (double) yaw_error_norm,
+                                                   (double) thr_boost);
+        }
+
+    }
+
     if (tailsitter.vectored_hover_gain > 0) {
         // thrust vectoring VTOL modes
         float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
