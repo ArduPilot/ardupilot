@@ -17,63 +17,61 @@
 
 #include "Sub.h"
 
-#define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Sub, &sub, func, rate_hz, max_time_micros)
-
 /*
   scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called (in hz)
   and the maximum time they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task Sub::scheduler_tasks[] = {
-    SCHED_TASK(fifty_hz_loop,         50,     75),
-    SCHED_TASK(update_GPS,            50,    200),
+const AP_Task<Sub> Sub::scheduler_tasks[] = {
+    AP_Task<Sub>::create(&Sub::fifty_hz_loop,         50,     75),
+    AP_Task<Sub>::create(&Sub::update_GPS,            50,    200),
 #if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,  200,    160),
+    AP_Task<Sub>::create(&Sub::update_optical_flow,  200,    160),
 #endif
-    SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK(read_rangefinder,      20,    100),
-    SCHED_TASK(update_altitude,       10,    100),
-    SCHED_TASK(three_hz_loop,          3,     75),
-    SCHED_TASK(update_turn_counter,   10,     50),
-    SCHED_TASK(compass_accumulate,   100,    100),
-    SCHED_TASK(barometer_accumulate,  50,     90),
-    SCHED_TASK(update_notify,         50,     90),
-    SCHED_TASK(one_hz_loop,            1,    100),
-    SCHED_TASK(gcs_check_input,      400,    180),
-    SCHED_TASK(gcs_send_heartbeat,     1,    110),
-    SCHED_TASK(gcs_send_deferred,     50,    550),
-    SCHED_TASK(gcs_data_stream_send,  50,    550),
-    SCHED_TASK(update_mount,          50,     75),
+    AP_Task<Sub>::create(&Sub::update_batt_compass,   10,    120),
+    AP_Task<Sub>::create(&Sub::read_rangefinder,      20,    100),
+    AP_Task<Sub>::create(&Sub::update_altitude,       10,    100),
+    AP_Task<Sub>::create(&Sub::three_hz_loop,          3,     75),
+    AP_Task<Sub>::create(&Sub::update_turn_counter,   10,     50),
+    AP_Task<Sub>::create(&Sub::compass_accumulate,   100,    100),
+    AP_Task<Sub>::create(&Sub::barometer_accumulate,  50,     90),
+    AP_Task<Sub>::create(&Sub::update_notify,         50,     90),
+    AP_Task<Sub>::create(&Sub::one_hz_loop,            1,    100),
+    AP_Task<Sub>::create(&Sub::gcs_check_input,      400,    180),
+    AP_Task<Sub>::create(&Sub::gcs_send_heartbeat,     1,    110),
+    AP_Task<Sub>::create(&Sub::gcs_send_deferred,     50,    550),
+    AP_Task<Sub>::create(&Sub::gcs_data_stream_send,  50,    550),
+    AP_Task<Sub>::create(&Sub::update_mount,          50,     75),
 #if CAMERA == ENABLED
-    SCHED_TASK(update_trigger,        50,     75),
+    AP_Task<Sub>::create(&Sub::update_trigger,        50,     75),
 #endif
-    SCHED_TASK(ten_hz_logging_loop,   10,    350),
-    SCHED_TASK(twentyfive_hz_logging, 25,    110),
-    SCHED_TASK(dataflash_periodic,    400,    300),
-    SCHED_TASK(perf_update,           0.1,    75),
+    AP_Task<Sub>::create(&Sub::ten_hz_logging_loop,   10,    350),
+    AP_Task<Sub>::create(&Sub::twentyfive_hz_logging, 25,    110),
+    AP_Task<Sub>::create(&Sub::dataflash_periodic,    400,    300),
+    AP_Task<Sub>::create(&Sub::perf_update,           0.1,    75),
 #if RPM_ENABLED == ENABLED
-    SCHED_TASK(rpm_update,            10,    200),
+    AP_Task<Sub>::create(&Sub::rpm_update,            10,    200),
 #endif
-    SCHED_TASK(compass_cal_update,   100,    100),
-    SCHED_TASK(accel_cal_update,      10,    100),
-    SCHED_TASK(terrain_update,        10,    100),
+    AP_Task<Sub>::create(&Sub::compass_cal_update,   100,    100),
+    AP_Task<Sub>::create(&Sub::accel_cal_update,      10,    100),
+    AP_Task<Sub>::create(&Sub::terrain_update,        10,    100),
 #if GRIPPER_ENABLED == ENABLED
-    SCHED_TASK(gripper_update,            10,     75),
+    AP_Task<Sub>::create(&Sub::gripper_update,            10,     75),
 #endif
 #ifdef USERHOOK_FASTLOOP
-    SCHED_TASK(userhook_FastLoop,    100,     75),
+    AP_Task<Sub>::create(&Sub::userhook_FastLoop,    100,     75),
 #endif
 #ifdef USERHOOK_50HZLOOP
-    SCHED_TASK(userhook_50Hz,         50,     75),
+    AP_Task<Sub>::create(&Sub::userhook_50Hz,         50,     75),
 #endif
 #ifdef USERHOOK_MEDIUMLOOP
-    SCHED_TASK(userhook_MediumLoop,   10,     75),
+    AP_Task<Sub>::create(&Sub::userhook_MediumLoop,   10,     75),
 #endif
 #ifdef USERHOOK_SLOWLOOP
-    SCHED_TASK(userhook_SlowLoop,     3.3,    75),
+    AP_Task<Sub>::create(&Sub::userhook_SlowLoop,     3.3,    75),
 #endif
 #ifdef USERHOOK_SUPERSLOWLOOP
-    SCHED_TASK(userhook_SuperSlowLoop, 1,   75),
+    AP_Task<Sub>::create(&Sub::userhook_SuperSlowLoop, 1,   75),
 #endif
 };
 
