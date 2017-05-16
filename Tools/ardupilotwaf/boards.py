@@ -97,6 +97,10 @@ class Board:
                 '-Wno-gnu-variable-sized-type-not-at-end',
                 '-Wno-c++11-narrowing'
             ]
+        else:
+            env.CXXFLAGS += [
+                '-fdiagnostics-color=always',
+            ]
 
         if cfg.env.DEBUG:
             env.CFLAGS += [
@@ -144,7 +148,8 @@ class Board:
             ]
         else:
             env.CXXFLAGS += [
-                '-Werror=unused-but-set-variable'
+                '-Werror=unused-but-set-variable',
+                '-fdiagnostics-color=always',
             ]
 
         if cfg.env.DEBUG:
