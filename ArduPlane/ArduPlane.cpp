@@ -52,7 +52,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(gcs_update,             50,    500),
     SCHED_TASK(gcs_data_stream_send,   50,    500),
     SCHED_TASK(update_events,          50,    150),
-    SCHED_TASK(check_usb_mux,          10,    100),
     SCHED_TASK(read_battery,           10,    300),
     SCHED_TASK(compass_accumulate,     50,    200),
     SCHED_TASK(barometer_accumulate,   50,    150),
@@ -381,7 +380,7 @@ void Plane::one_second_loop()
 void Plane::log_perf_info()
 {
     if (scheduler.debug() != 0) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "PERF: %u/%u Dt=%u/%u Log=%u\n",
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "PERF: %u/%u Dt=%u/%u Log=%u",
                           (unsigned)perf.num_long,
                           (unsigned)perf.mainLoop_count,
                           (unsigned)perf.G_Dt_max,
@@ -596,9 +595,14 @@ void Plane::update_flight_mode(void)
         steer_state.hold_course_cd = -1;
     }
 
-    // ensure we are fly-forward
-    if (quadplane.in_vtol_mode()) {
+    // ensure we are fly-forward when we are flying as a pure fixed
+    // wing aircraft. This helps the EKF produce better state
+    // estimates as it can make stronger assumptions
+    if (quadplane.in_vtol_mode() ||
+        quadplane.in_assisted_flight()) {
         ahrs.set_fly_forward(false);
+    } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        ahrs.set_fly_forward(landing.is_flying_forward());
     } else {
         ahrs.set_fly_forward(true);
     }
@@ -801,7 +805,8 @@ void Plane::update_navigation()
             
     case RTL:
         if (quadplane.available() && quadplane.rtl_mode == 1 &&
-            nav_controller->reached_loiter_target()) {
+            nav_controller->reached_loiter_target() &&
+            AP_HAL::millis() - last_mode_change_ms > 1000) {
             set_mode(QRTL, MODE_REASON_UNKNOWN);
             break;
         } else if (g.rtl_autoland == 1 &&

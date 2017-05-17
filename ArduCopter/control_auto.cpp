@@ -538,15 +538,12 @@ bool Copter::auto_loiter_start()
     }
     auto_mode = Auto_Loiter;
 
-    Vector3f origin = inertial_nav.get_position();
-
     // calculate stopping point
     Vector3f stopping_point;
-    pos_control->get_stopping_point_xy(stopping_point);
-    pos_control->get_stopping_point_z(stopping_point);
+    wp_nav->get_wp_stopping_point(stopping_point);
 
     // initialise waypoint controller target to stopping point
-    wp_nav->set_wp_origin_and_destination(origin, stopping_point);
+    wp_nav->set_wp_destination(stopping_point);
 
     // hold yaw at current heading
     set_auto_yaw_mode(AUTO_YAW_HOLD);

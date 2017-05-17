@@ -9,7 +9,6 @@
 #include <unistd.h>
 
 #include <drivers/drv_pwm_output.h>
-#include <uORB/topics/actuator_direct.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
 #include <drivers/drv_sbus.h>
@@ -75,9 +74,6 @@ void PX4RCOutput::init()
     for (uint8_t i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
         _period[i] = PWM_IGNORE_THIS_CHANNEL;
     }
-
-    // publish actuator vaules on demand
-    _actuator_direct_pub = nullptr;
 }
 
 
@@ -418,6 +414,12 @@ void PX4RCOutput::_arm_actuators(bool arm)
     }
     _armed.lockdown = false;
     _armed.force_failsafe = false;
+
+    if (_actuator_armed_pub == nullptr) {
+        _actuator_armed_pub = orb_advertise(ORB_ID(actuator_armed), &_armed);
+    } else {
+        orb_publish(ORB_ID(actuator_armed), _actuator_armed_pub, &_armed);
+    }
 }
 
 void PX4RCOutput::_send_outputs(void)
@@ -464,6 +466,8 @@ void PX4RCOutput::_send_outputs(void)
             }
         }
         if (to_send > 0) {
+            _arm_actuators(true);
+
             ::write(_pwm_fd, _period, to_send*sizeof(_period[0]));
         }
         if (_max_channel > _servo_count) {
@@ -495,8 +499,7 @@ void PX4RCOutput::_send_outputs(void)
                             ap_uc->rco_write(_period[i], i);
                         }
 
-                        bool armed = hal.util->get_soft_armed();
-                        if (armed) {
+                        if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
                             ap_uc->rco_arm_actuators(true);
                         } else {
                             ap_uc->rco_arm_actuators(false);
@@ -540,10 +543,12 @@ void PX4RCOutput::push()
     hal.gpio->pinMode(55, HAL_GPIO_OUTPUT);
     hal.gpio->write(55, 0);
 #endif
-    _corking = false;
-    if (_output_mode == MODE_PWM_ONESHOT) {
-        // run timer immediately in oneshot mode
-        _send_outputs();
+    if (_corking) {
+        _corking = false;
+        if (_output_mode == MODE_PWM_ONESHOT) {
+            // run timer immediately in oneshot mode
+            _send_outputs();
+        }
     }
 }
 

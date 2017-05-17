@@ -20,7 +20,7 @@ bool Semaphore::take(uint32_t timeout_ms)
         // don't ever wait on a semaphore in interrupt context
         return take_nonblocking();
     }
-    if (timeout_ms == 0) {
+    if (timeout_ms == HAL_SEMAPHORE_BLOCK_FOREVER) {
         return pthread_mutex_lock(&_lock) == 0;
     }
     if (take_nonblocking()) {

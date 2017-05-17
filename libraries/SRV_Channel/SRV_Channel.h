@@ -105,6 +105,11 @@ public:
         k_throttleRight         = 74,
         k_tiltMotorLeft         = 75,            ///< vectored thrust, left tilt
         k_tiltMotorRight        = 76,            ///< vectored thrust, right tilt
+        k_elevon_left           = 77,
+        k_elevon_right          = 78,
+        k_vtail_left            = 79,
+        k_vtail_right           = 80,
+        k_boost_throttle        = 81,            ///< vertical booster throttle
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -317,6 +322,9 @@ public:
     // assign and enable auxiliary channels
     static void enable_aux_servos(void);
 
+    // enable channels by mask
+    static void enable_by_mask(uint16_t mask);
+    
     // return the current function for a channel
     static SRV_Channel::Aux_servo_function_t channel_function(uint8_t channel);
 

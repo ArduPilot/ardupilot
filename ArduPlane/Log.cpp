@@ -160,8 +160,15 @@ void Plane::Log_Write_Attitude(void)
     Vector3f targets;       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
     targets.x = nav_roll_cd;
     targets.y = nav_pitch_cd;
-    targets.z = 0;          //Plane does not have the concept of navyaw. This is a placeholder.
 
+    if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
+        // when VTOL active log the copter target yaw
+        targets.z = wrap_360_cd(quadplane.attitude_control->get_att_target_euler_cd().z);
+    } else {
+        //Plane does not have the concept of navyaw. This is a placeholder.
+        targets.z = 0;
+    }
+    
     if (quadplane.tailsitter_active()) {
         DataFlash.Log_Write_AttitudeView(*quadplane.ahrs_view, targets);
     } else {
@@ -548,16 +555,12 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     DataFlash.Log_Write_Mode(control_mode);
     DataFlash.Log_Write_Rally(rally);
     Log_Write_Home_And_Origin();
+    gps.Write_DataFlash_Log_Startup_messages();
 }
 
 // start a new log
 void Plane::start_logging() 
 {
-    DataFlash.set_mission(&mission);
-    DataFlash.setVehicle_Startup_Log_Writer(
-        FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
-        );
-
     DataFlash.StartNewLog();
 }
 

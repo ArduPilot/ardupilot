@@ -136,6 +136,9 @@ void RCOutput_Sysfs::cork(void)
 
 void RCOutput_Sysfs::push(void)
 {
+    if (!_corked) {
+        return;
+    }
     for (uint8_t i=0; i<_channel_count; i++) {
         if ((1U<<i) & _pending_mask) {
             _pwm_channels[i]->set_duty_cycle(usec_to_nsec(_pending[i]));

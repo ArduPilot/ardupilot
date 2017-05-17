@@ -284,15 +284,15 @@ private:
     // RSSI 
     AP_RSSI rssi;      
 
-    // remember if USB is connected, so we can adjust baud rate
-    bool usb_connected;
-
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     enum FlightMode control_mode = INITIALISING;
     mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
     enum FlightMode previous_mode = INITIALISING;
     mode_reason_t previous_mode_reason = MODE_REASON_UNKNOWN;
+
+    // time of last mode change
+    uint32_t last_mode_change_ms;
 
     // Used to maintain the state of the previous control switch position
     // This is set to 254 when we need to re-read the switch
@@ -712,6 +712,12 @@ private:
         // lookahead value for height error reporting
         float lookahead;
 #endif
+
+        // last input for FBWB/CRUISE height control
+        float last_elevator_input;
+
+        // last time we checked for pilot control of height
+        uint32_t last_elev_check_us;
     } target_altitude {};
 
     float relative_altitude = 0.0f;
@@ -979,7 +985,6 @@ private:
     void startup_INS_ground(void);
     void update_notify();
     void resetPerfData(void);
-    void check_usb_mux(void);
     void print_comma(void);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
@@ -1058,6 +1063,8 @@ private:
     bool suppress_throttle(void);
     void channel_output_mixer_pwm(uint8_t mixing_type, uint16_t & chan1, uint16_t & chan2)const;
     void channel_output_mixer(uint8_t mixing_type, SRV_Channel::Aux_servo_function_t servo1, SRV_Channel::Aux_servo_function_t servo2);
+    void channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
+                                SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out);
     void flaperon_update(int8_t flap_percent);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);

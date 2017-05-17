@@ -543,13 +543,18 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(afs, "AFS_", 5, ParametersG2, AP_AdvancedFailsafe),
 #endif
 
+    // @Group: BCN
+    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
+    AP_SUBGROUPINFO(beacon, "BCN", 6, ParametersG2, AP_Beacon),
+
     AP_GROUPEND
 };
 
 
 ParametersG2::ParametersG2(void)
+    : beacon(rover.serial_manager)
 #if ADVANCED_FAILSAFE == ENABLED
-    : afs(rover.mission, rover.barometer, rover.gps, rover.rcmap)
+    , afs(rover.mission, rover.barometer, rover.gps, rover.rcmap)
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -599,15 +604,15 @@ void Rover::load_parameters(void)
         cliSerial->printf("done.\n");
     }
 
-    unsigned long before = micros();
+    const uint32_t before = micros();
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_ROVER);
-    
+
     SRV_Channels::set_default_function(CH_1, SRV_Channel::k_steering);
     SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttle);
-    
+
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
                                       Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
                                       Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
@@ -617,9 +622,7 @@ void Rover::load_parameters(void)
                                       Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old };
     const uint16_t old_aux_chan_mask = 0x3FFA;
     SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, &rcmap);
-    
-    cliSerial->printf("load_all took %luus\n", micros() - before);
-    
+    cliSerial->printf("load_all took %uus\n", micros() - before);
     // set a more reasonable default NAVL1_PERIOD for rovers
     L1_controller.set_default_period(NAVL1_PERIOD);
 }

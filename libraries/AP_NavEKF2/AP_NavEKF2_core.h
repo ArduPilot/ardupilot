@@ -47,6 +47,9 @@
 #define HGT_SOURCE_GPS  2
 #define HGT_SOURCE_BCN  3
 
+// target EKF update time step
+#define EKF_TARGET_DT 0.01f
+
 class AP_AHRS;
 
 class NavEKF2_core
@@ -156,7 +159,7 @@ public:
     bool getOriginLLH(struct Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
+    // All NED positions calculated by the filter will be relative to this location
     // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
     // Returns false if the filter has rejected the attempt to set the origin
     bool setOriginLLH(const Location &loc);
@@ -296,6 +299,9 @@ public:
 
     // get the IMU index
     uint8_t getIMUIndex(void) const { return imu_index; }
+
+    // get timing statistics structure
+    void getTimingStatistics(struct ekf_timing &timing);
     
 private:
     // Reference to the global EKF frontend for parameters
@@ -702,6 +708,9 @@ private:
 
     // effective value of MAG_CAL
     uint8_t effective_magCal(void) const;
+
+    // update timing statistics structure
+    void updateTimingStatistics(void);
     
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH
@@ -721,8 +730,6 @@ private:
     bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool badMagYaw;                 // boolean true if the magnetometer is declared to be producing bad data
     bool badIMUdata;                // boolean true if the bad IMU data is detected
-
-    const float EKF_TARGET_DT = 0.01f;    // target EKF update time step
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Vector28 Kfusion;               // Kalman gain vector
@@ -1113,6 +1120,9 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
     AP_HAL::Util::perf_counter_t  _perf_test[10];
 
+    // timing statistics
+    struct ekf_timing timing;
+    
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 

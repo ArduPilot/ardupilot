@@ -523,7 +523,7 @@ fail_whoami:
 void AP_InertialSensor_LSM9DS0::start(void)
 {
     _gyro_instance = _imu.register_gyro(760, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_L3GD20));
-    _accel_instance = _imu.register_accel(800, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D));
+    _accel_instance = _imu.register_accel(1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D));
 
     if (whoami_g == LSM9DS0_G_WHOAMI_H) {
         set_gyro_orientation(_gyro_instance, _rotation_gH);
@@ -744,7 +744,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
     accel_data *= _accel_scale;
 
     _rotate_and_correct_accel(_accel_instance, accel_data);
-    _notify_new_accel_raw_sample(_accel_instance, accel_data);
+    _notify_new_accel_raw_sample(_accel_instance, accel_data, AP_HAL::micros64());
 }
 
 /*
@@ -765,7 +765,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     gyro_data *= _gyro_scale;
 
     _rotate_and_correct_gyro(_gyro_instance, gyro_data);
-    _notify_new_gyro_raw_sample(_gyro_instance, gyro_data);
+    _notify_new_gyro_raw_sample(_gyro_instance, gyro_data, AP_HAL::micros64());
 }
 
 bool AP_InertialSensor_LSM9DS0::update()

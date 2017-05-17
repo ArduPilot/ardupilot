@@ -512,6 +512,7 @@ uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
     }
 
     _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
+    _gyro_over_sampling[_gyro_count] = 1;
 
     bool saved = _gyro_id[_gyro_count].load();
 
@@ -544,6 +545,8 @@ uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz,
     }
 
     _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
+    _accel_over_sampling[_accel_count] = 1;
+
     bool saved = _accel_id[_accel_count].load();
 
     if (!saved) {
@@ -1257,6 +1260,8 @@ void AP_InertialSensor::update(void)
         }
     }
 
+    _last_update_usec = AP_HAL::micros();
+    
     _have_sample = false;
 }
 

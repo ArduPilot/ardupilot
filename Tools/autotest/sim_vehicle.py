@@ -379,6 +379,11 @@ _options = {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane-tilttri.parm",
             },
+            "quadplane-tilttrivec": {
+                "make_target": "sitl",
+                "waf_target": "bin/arduplane",
+                "default_params_filename": "default_params/quadplane-tilttrivec.parm",
+            },
             "quadplane-tri": {
                 "make_target": "sitl",
                 "waf_target": "bin/arduplane",
@@ -825,7 +830,7 @@ parser = CompatOptionParser("sim_vehicle.py",
                "you are simulating, for example, start in the ArduPlane directory to " \
                "simulate ArduPlane")
 
-parser.add_option("-v", "--vehicle", type='choice', default=None, help="vehicle type (%s)" % vehicle_options_string, choices=_options.keys())
+parser.add_option("-v", "--vehicle", type='choice', default=None, help="vehicle type (%s)" % vehicle_options_string, choices=list(_options.keys()))
 parser.add_option("-f", "--frame", type='string', default=None, help="""set vehicle frame type
 
 %s""" % (generate_frame_help()))

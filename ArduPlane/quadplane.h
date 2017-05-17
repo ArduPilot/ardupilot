@@ -139,6 +139,9 @@ private:
     // update transition handling
     void update_transition(void);
 
+    // check for an EKF yaw reset
+    void check_yaw_reset(void);
+    
     // hold hover (for transition)
     void hold_hover(float target_climb_rate);    
 
@@ -242,7 +245,10 @@ private:
 
     // ICEngine control on landing
     AP_Int8 land_icengine_cut;
-    
+
+    // time we last got an EKF yaw reset
+    uint32_t ekfYawReset_ms;
+
     struct {
         AP_Float gain;
         float integrator;
@@ -326,7 +332,9 @@ private:
     uint32_t last_ctrl_log_ms;
 
     // types of tilt mechanisms
-    enum {TILT_TYPE_CONTINUOUS=0, TILT_TYPE_BINARY=1};
+    enum {TILT_TYPE_CONTINUOUS=0,
+          TILT_TYPE_BINARY=1,
+          TILT_TYPE_VECTORED_YAW=2};
     
     // tiltrotor control variables
     struct {
@@ -335,6 +343,7 @@ private:
         AP_Int16 max_rate_down_dps;
         AP_Int8  max_angle_deg;
         AP_Int8  tilt_type;
+        AP_Float tilt_yaw_angle;
         float current_tilt;
         float current_throttle;
         bool motors_active:1;
@@ -360,6 +369,7 @@ private:
         AP_Int8 input_mask_chan;
         AP_Float vectored_forward_gain;
         AP_Float vectored_hover_gain;
+        AP_Float vectored_hover_power;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller
@@ -377,6 +387,7 @@ private:
     void tiltrotor_update(void);
     void tiltrotor_continuous_update(void);
     void tiltrotor_binary_update(void);
+    void tiltrotor_vectored_yaw(void);
     void tilt_compensate_up(float *thrust, uint8_t num_motors);
     void tilt_compensate_down(float *thrust, uint8_t num_motors);
     void tilt_compensate(float *thrust, uint8_t num_motors);

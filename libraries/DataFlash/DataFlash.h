@@ -129,6 +129,7 @@ public:
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
     void Log_Write_Message(const char *message);
+    void Log_Write_MessageF(const char *fmt, ...);
     void Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);    
@@ -271,11 +272,15 @@ private:
     void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
     void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
-    
+
+    void backend_starting_new_log(const DataFlash_Backend *backend);
+
 private:
     static DataFlash_Class *_instance;
 
     void validate_structures(const struct LogStructure *structures, const uint8_t num_types);
     void dump_structure_field(const struct LogStructure *structure, const char *label, const uint8_t fieldnum);
     void dump_structures(const struct LogStructure *structures, const uint8_t num_types);
+
+    void Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
 };

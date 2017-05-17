@@ -97,6 +97,13 @@ static Motor tilttri_motors[] =
     Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, AP_MOTORS_MOT_7, 60, -60, -1, 0, 0),
 };
 
+static Motor tilttri_vectored_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1, -1, 0, 0, 7, 10, -90),
+    Motor(AP_MOTORS_MOT_2,  -60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3, -1, 0, 0, 8, 10, -90),
+    Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2)
+};
+
 static Motor y6_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,  60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
@@ -135,6 +142,7 @@ static Frame supported_frames[] =
     Frame("octa-quad", 8, octa_quad_motors),
     Frame("octa",      8, octa_motors),
     Frame("tri",       3, tri_motors),
+    Frame("tilttrivec",3, tilttri_vectored_motors),
     Frame("tilttri",   3, tilttri_motors),
     Frame("y6",        6, y6_motors),
     Frame("firefly",   6, firefly_motors)

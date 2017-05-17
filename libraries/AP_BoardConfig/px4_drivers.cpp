@@ -20,7 +20,6 @@
 #include "AP_BoardConfig.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <GCS_MAVLink/GCS.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -145,12 +144,10 @@ void AP_BoardConfig::px4_setup_safety_mask()
 }
 
 /*
-  setup safety switch
+  init safety state
  */
-void AP_BoardConfig::px4_setup_safety()
+void AP_BoardConfig::px4_init_safety()
 {
-    px4_setup_safety_mask();
-
     if (px4.safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
         hal.rcout->force_safety_no_wait();
@@ -318,7 +315,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
     case PX4_BOARD_AEROFC:
         break;
     default:
-        px4_sensor_error("Unknown board type");
+        sensor_config_error("Unknown board type");
         break;
     }
 }
@@ -354,7 +351,7 @@ void AP_BoardConfig::px4_setup_px4io(void)
         if (px4_start_driver(px4io_main, "px4io", "start norc")) {
             printf("px4io started OK\n");
         } else {
-            px4_sensor_error("px4io start failed");
+            sensor_config_error("px4io start failed");
         }
     }
 
@@ -380,7 +377,7 @@ void AP_BoardConfig::px4_setup_px4io(void)
                 px4_tone_alarm("MSPAA");
             } else {
                 px4_tone_alarm("MNGGG");
-                px4_sensor_error("PX4IO restart failed");
+                sensor_config_error("PX4IO restart failed");
             }
         } else {
             printf("PX4IO update failed\n");
@@ -399,7 +396,7 @@ void AP_BoardConfig::px4_setup_peripherals(void)
         hal.analogin->init();
         printf("ADC started OK\n");
     } else {
-        px4_sensor_error("no ADC found");
+        sensor_config_error("no ADC found");
     }
 
 #if HAL_PX4_HAVE_PX4IO
@@ -418,7 +415,7 @@ void AP_BoardConfig::px4_setup_peripherals(void)
     if (px4_start_driver(fmu_main, "fmu", fmu_mode)) {
         printf("fmu %s started OK\n", fmu_mode);
     } else {
-        px4_sensor_error("fmu start failed");
+        sensor_config_error("fmu start failed");
     }
 
     hal.gpio->init();
@@ -495,7 +492,7 @@ void AP_BoardConfig::px4_autodetect(void)
         px4.board_type.set(PX4_BOARD_PIXHAWK);
         hal.console->printf("Detected Pixhawk\n");
     } else {
-        px4_sensor_error("Unable to detect board type");
+        sensor_config_error("Unable to detect board type");
     }
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     // only one choice
@@ -509,31 +506,13 @@ void AP_BoardConfig::px4_autodetect(void)
 }
 
 /*
-  fail startup of a required sensor
- */
-void AP_BoardConfig::px4_sensor_error(const char *reason)
-{
-    /*
-      to give the user the opportunity to connect to USB we keep
-      repeating the error.  The mavlink delay callback is initialised
-      before this, so the user can change parameters (and in
-      particular BRD_TYPE if needed)
-    */
-    while (true) {
-        printf("Sensor failure: %s\n", reason);
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
-        hal.scheduler->delay(3000);
-    }
-}
-
-/*
   setup px4 peripherals and drivers
  */
 void AP_BoardConfig::px4_setup()
 {
     px4_setup_peripherals();
     px4_setup_pwm();
-    px4_setup_safety();
+    px4_setup_safety_mask();
     px4_setup_uart();
     px4_setup_sbus();
     px4_setup_drivers();

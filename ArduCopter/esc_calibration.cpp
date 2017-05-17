@@ -97,24 +97,22 @@ void Copter::esc_calibration_passthrough()
     // send message to GCS
     gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Passing pilot throttle to ESCs");
 
+    // disable safety if requested
+    BoardConfig.init_safety();
+
     // arm motors
     motors->armed(true);
     motors->enable();
+    SRV_Channels::enable_by_mask(motors->get_motor_mask());
 
-    uint32_t last_notify_update_ms = 0;
     while(1) {
-        // flash LEDS
-        AP_Notify::flags.esc_calibration = true;
-        uint32_t now = AP_HAL::millis();
-        if (now - last_notify_update_ms > 20) {
-            last_notify_update_ms = now;
-            update_notify();
-        }
+        // flash LEDs
+        esc_calibration_notify();
 
         // read pilot input
         read_radio();
 
-        // we run at high rate do make oneshot ESCs happy. Normal ESCs
+        // we run at high rate to make oneshot ESCs happy. Normal ESCs
         // will only see pulses at the RC_SPEED
         delay(3);
 
@@ -130,6 +128,9 @@ void Copter::esc_calibration_auto()
 #if FRAME_CONFIG != HELI_FRAME
     bool printed_msg = false;
 
+    // clear esc flag for next time
+    g.esc_calibrate.set_and_save(ESCCAL_NONE);
+
     if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
         // run at full speed for oneshot ESCs (actually done on push)
         motors->set_update_rate(g.rc_speed);
@@ -141,12 +142,16 @@ void Copter::esc_calibration_auto()
     // send message to GCS
     gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Auto calibration");
 
+    // disable safety if requested
+    BoardConfig.init_safety();
+
     // arm and enable motors
     motors->armed(true);
     motors->enable();
+    SRV_Channels::enable_by_mask(motors->get_motor_mask());
 
-    // flash LEDS
-    AP_Notify::flags.esc_calibration = true;
+    // flash LEDs
+    esc_calibration_notify();
 
     // raise throttle to maximum
     delay(10);
@@ -158,6 +163,7 @@ void Copter::esc_calibration_auto()
             printed_msg = true;
         }
         motors->set_throttle_passthrough_for_esc_calibration(1.0f);
+        esc_calibration_notify();
         delay(3);
     }
 
@@ -165,19 +171,29 @@ void Copter::esc_calibration_auto()
     uint32_t tstart = millis();
     while (millis() - tstart < 5000) {
         motors->set_throttle_passthrough_for_esc_calibration(1.0f);
+        esc_calibration_notify();
         delay(3);
     }
 
     // reduce throttle to minimum
     motors->set_throttle_passthrough_for_esc_calibration(0.0f);
 
-    // clear esc parameter
-    g.esc_calibrate.set_and_save(ESCCAL_NONE);
-
     // block until we restart
     while(1) {
-        delay(3);
         motors->set_throttle_passthrough_for_esc_calibration(0.0f);
+        esc_calibration_notify();
+        delay(3);
     }
 #endif // FRAME_CONFIG != HELI_FRAME
+}
+
+// flash LEDs to notify the user that ESC calibration is happening
+void Copter::esc_calibration_notify()
+{
+    AP_Notify::flags.esc_calibration = true;
+    uint32_t now = AP_HAL::millis();
+    if (now - esc_calibration_notify_update_ms > 20) {
+        esc_calibration_notify_update_ms = now;
+        update_notify();
+    }
 }

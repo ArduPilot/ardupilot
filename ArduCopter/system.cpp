@@ -184,7 +184,11 @@ void Copter::init_ardupilot()
     // allocate the motors class
     allocate_motors();
 
-    init_rc_out();              // sets up motors and output to escs
+    // sets up motors and output to escs
+    init_rc_out();
+
+    // motors initialised so parameters can be sent
+    ap.initialised_params = true;
 
     // initialise which outputs Servo and Relay events can use
     ServoRelayEvents.set_channel_mask(~motors->get_motor_mask());
@@ -197,7 +201,7 @@ void Copter::init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
-    // give AHRS the rnage beacon sensor
+    // give AHRS the range beacon sensor
     ahrs.set_beacon(&g2.beacon);
 
     // Do GPS init
@@ -288,6 +292,10 @@ void Copter::init_ardupilot()
     // initialise mission library
     mission.init();
 
+    // initialise DataFlash library
+    DataFlash.set_mission(&mission);
+    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
+
     // initialise the flight mode and aux switch
     // ---------------------------
     reset_control_switch();
@@ -315,6 +323,9 @@ void Copter::init_ardupilot()
     if (ap.pre_arm_rc_check) {
         enable_motor_output();
     }
+
+    // disable safety if requested
+    BoardConfig.init_safety();    
 
     cliSerial->printf("\nReady to FLY ");
 

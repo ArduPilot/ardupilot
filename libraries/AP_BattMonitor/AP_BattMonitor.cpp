@@ -68,7 +68,11 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     AP_GROUPINFO("_WATT_MAX", 9, AP_BattMonitor, _watt_max[0], AP_BATT_MAX_WATT_DEFAULT),
 #endif
 
-    // 10 is left for future expansion
+    // @Param: _SERIAL_NUM
+    // @DisplayName: Battery serial number
+    // @Description: Battery serial number, automatically filled in for SMBus batteries, otherwise will be -1
+    // @User: Advanced
+    AP_GROUPINFO("_SERIAL_NUM", 10, AP_BattMonitor, _serial_numbers[0], AP_BATT_SERIAL_NUMBER_DEFAULT),
 
 #if AP_BATT_MONITOR_MAX_INSTANCES > 1
     // @Param: 2_MONITOR
@@ -131,8 +135,23 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     AP_GROUPINFO("2_WATT_MAX", 18, AP_BattMonitor, _watt_max[1], AP_BATT_MAX_WATT_DEFAULT),
 #endif
 
+    // @Param: 2_SERIAL_NUM
+    // @DisplayName: Battery serial number
+    // @Description: Battery serial number, automatically filled in for SMBus batteries, otherwise will be -1
+    // @User: Advanced
+    AP_GROUPINFO("2_SERIAL_NUM", 20, AP_BattMonitor, _serial_numbers[1], AP_BATT_SERIAL_NUMBER_DEFAULT),
+
 #endif // AP_BATT_MONITOR_MAX_INSTANCES > 1
 
+    // @Param: _VOLT_TIMER
+    // @DisplayName: Low voltage timeout
+    // @Description: This is the timeout in seconds before a low voltage event will be triggered. For aircraft with low C batteries it may be necessary to raise this in order to cope with low voltage on long takeoffs. A value of zero disables low voltage errors.
+    // @Units: Seconds
+    // @Increment: 1
+    // @Range: 0 120
+    // @User: Advanced
+    AP_GROUPINFO("_VOLT_TIMER", 21, AP_BattMonitor, _volt_timeout, AP_BATT_LOW_VOLT_TIMEOUT_DEFAULT),
+        
     AP_GROUPEND
 };
 
@@ -170,25 +189,25 @@ AP_BattMonitor::init()
             case BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY:
             case BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT:
                 state[instance].instance = instance;
-                drivers[instance] = new AP_BattMonitor_Analog(*this, instance, state[instance]);
+                drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance]);
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_SOLO:
                 state[instance].instance = instance;
-                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, instance, state[instance],
+                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance],
                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_MAXELL:
                 state[instance].instance = instance;
-                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, instance, state[instance],
+                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance],
                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 state[instance].instance = instance;
-                drivers[instance] = new AP_BattMonitor_Bebop(*this, instance, state[instance]);
+                drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance]);
                 _num_instances++;
 #endif
                 break;
@@ -297,7 +316,7 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
         // this is the first time our voltage has dropped below minimum so start timer
         if (state[instance].low_voltage_start_ms == 0) {
             state[instance].low_voltage_start_ms = AP_HAL::millis();
-        } else if (AP_HAL::millis() - state[instance].low_voltage_start_ms > AP_BATT_LOW_VOLT_TIMEOUT_MS) {
+        } else if (_volt_timeout > 0 && AP_HAL::millis() - state[instance].low_voltage_start_ms > uint32_t(_volt_timeout.get())*1000U) {
             return true;
         }
     } else {

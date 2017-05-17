@@ -83,6 +83,7 @@ struct PACKED log_IMU {
     uint32_t gyro_error, accel_error;
     float temperature;
     uint8_t gyro_health, accel_health;
+    uint16_t gyro_rate, accel_rate;
 };
 
 struct PACKED log_IMUDT {
@@ -835,8 +836,8 @@ struct PACKED log_Beacon {
 #define IMT_LABELS "TimeUS,DelT,DelvT,DelaT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ"
 #define IMT_FMT    "Qfffffffff"
 
-#define IMU_LABELS "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt"
-#define IMU_FMT   "QffffffIIfBB"
+#define IMU_LABELS "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz"
+#define IMU_FMT   "QffffffIIfBBHH"
 
 #define MAG_LABELS "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S"
 #define MAG_FMT   "QhhhhhhhhhBI"

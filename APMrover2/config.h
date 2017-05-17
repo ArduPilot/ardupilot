@@ -86,13 +86,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// INPUT_VOLTAGE
-//
-#ifndef INPUT_VOLTAGE
-  #define INPUT_VOLTAGE    4.68  //  4.68 is the average value for a sample set.  This is the value at the processor with 5.02 applied at the servo rail
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
   #define MAGNETOMETER ENABLED
@@ -212,24 +205,6 @@
 #ifndef THROTTLE_MAX
   #define THROTTLE_MAX    100
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Attitude control gains
-//
-#ifndef SERVO_STEER_P
-  #define SERVO_STEER_P          0.4
-#endif
-#ifndef SERVO_STEER_I
-  #define SERVO_STEER_I          0.0
-#endif
-#ifndef SERVO_STEER_D
-  #define SERVO_STEER_D          0.0
-#endif
-#ifndef SERVO_STEER_INT_MAX
-  #define SERVO_STEER_INT_MAX    5
-#endif
-#define SERVO_STEER_INT_MAX_CENTIDEGREE (SERVO_STEER_INT_MAX * 100)
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control

@@ -42,7 +42,7 @@ Yuta Yoshinuma
 Yasuyuki Suzuki
 Koji Hosaka
 Mitsuhiro Komiya
-Eduardo Cáceres (eduherminio)
+Eduardo Caceres (eduherminio)
 steven test
 Fnoop hello :)
 Yuichiro Shibata
@@ -80,3 +80,5 @@ Adhita Selvaraj
 Guilherme Sousa
 Thomas Hehn (tomsal)
 Anastasia Solari (solarblue)
+Quan Nguyen
+Kotaro Iochi

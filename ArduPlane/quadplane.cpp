@@ -330,8 +330,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: TILT_TYPE
     // @DisplayName: Tiltrotor type
-    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE
-    // @Values: 0:Continuous,1:Binary
+    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE. A vectored yaw tiltrotor will use the tilt of the motors to control yaw in hover
+    // @Values: 0:Continuous,1:Binary,2:VectoredYaw
     AP_GROUPINFO("TILT_TYPE", 47, QuadPlane, tilt.tilt_type, TILT_TYPE_CONTINUOUS),
 
     // @Param: TAILSIT_ANGLE
@@ -380,6 +380,19 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     AP_GROUPINFO("TAILSIT_VHGAIN", 54, QuadPlane, tailsitter.vectored_hover_gain, 0.5),
+
+    // @Param: TILT_YAW_ANGLE
+    // @DisplayName: Tilt minimum angle for vectored yaw
+    // @Description: This is the angle of the tilt servos when in VTOL mode and at minimum output. This needs to be set for Q_TILT_TYPE=3 to enable vectored control for yaw of tricopter tilt quadplanes.
+    // @Range: 0 30
+    AP_GROUPINFO("TILT_YAW_ANGLE", 55, QuadPlane, tilt.tilt_yaw_angle, 0),
+
+    // @Param: TAILSIT_VHPOW
+    // @DisplayName: Tailsitter vector thrust gain power
+    // @Description: This controls the amount of extra pitch given to the vectored control when at high pitch errors
+    // @Range: 0 4
+    // @Increment: 0.1
+    AP_GROUPINFO("TAILSIT_VHPOW", 56, QuadPlane, tailsitter.vectored_hover_power, 2.5),
     
     AP_GROUPEND
 };
@@ -587,6 +600,13 @@ bool QuadPlane::setup(void)
     
     transition_state = TRANSITION_DONE;
 
+    if (tilt.tilt_mask != 0 && tilt.tilt_type == TILT_TYPE_VECTORED_YAW) {
+        // setup tilt servos for vectored yaw
+        SRV_Channels::set_range(SRV_Channel::k_tiltMotorLeft,  1000);
+        SRV_Channels::set_range(SRV_Channel::k_tiltMotorRight, 1000);
+    }
+
+    
     setup_defaults();
     
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane initialised");
@@ -739,7 +759,7 @@ void QuadPlane::run_z_controller(void)
         // controller. We need to assume the integrator may be way off
 
         // the base throttle we start at is the current throttle we are using
-        float base_throttle = constrain_float(motors->get_throttle() - motors->get_throttle_hover(), 0, 1) * 1000;
+        float base_throttle = constrain_float(motors->get_throttle() - motors->get_throttle_hover(), -1, 1) * 1000;
         pid_accel_z.set_integrator(base_throttle);
 
         last_pidz_init_ms = now;
@@ -760,6 +780,20 @@ void QuadPlane::init_hover(void)
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     init_throttle_wait();
+}
+
+/*
+  check for an EKF yaw reset
+ */
+void QuadPlane::check_yaw_reset(void)
+{
+    float yaw_angle_change_rad = 0.0f;
+    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
+    if (new_ekfYawReset_ms != ekfYawReset_ms) {
+        attitude_control->shift_ef_yaw_target(degrees(yaw_angle_change_rad) * 100);
+        ekfYawReset_ms = new_ekfYawReset_ms;
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF yaw reset %.2f", degrees(yaw_angle_change_rad));
+    }
 }
 
 /*
@@ -1299,7 +1333,7 @@ void QuadPlane::update(void)
     if (!setup()) {
         return;
     }
-
+    
     if (plane.afs.should_crash_vehicle()) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         motors->output();
@@ -1311,6 +1345,8 @@ void QuadPlane::update(void)
         return;
     }
 
+    check_yaw_reset();
+    
     if (!in_vtol_mode()) {
         update_transition();
     } else {
@@ -1608,13 +1644,14 @@ void QuadPlane::vtol_position_controller(void)
         // run loiter controller
         wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                             plane.nav_pitch_cd,
-                                                                             get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
-                                                                             smoothing_gain);
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
         plane.nav_pitch_cd = pos_control->get_pitch();
+
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+                                                                      plane.nav_pitch_cd,
+                                                                      get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
+                                                                      smoothing_gain);
         break;
 
     case QPOS_POSITION1: {

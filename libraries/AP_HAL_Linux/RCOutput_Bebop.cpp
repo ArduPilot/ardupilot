@@ -418,6 +418,9 @@ void RCOutput_Bebop::cork()
 
 void RCOutput_Bebop::push()
 {
+    if (!_corking) {
+        return;
+    }
     _corking = false;
     pthread_mutex_lock(&_mutex);
     memcpy(_period_us, _request_period_us, sizeof(_period_us));

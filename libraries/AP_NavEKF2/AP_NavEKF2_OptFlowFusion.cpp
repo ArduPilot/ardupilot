@@ -37,8 +37,8 @@ void NavEKF2_core::SelectFlowFusion()
     // Perform Data Checks
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
-    // check is the terrain offset estimate is still valid
-    gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
+    // check is the terrain offset estimate is still valid - if we are using range finder as the main height reference, the ground is assumed to be at 0
+    gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) || (activeHgtSource == HGT_SOURCE_RNG);
     // Perform tilt check
     bool tiltOK = (prevTnb.c.z > frontend->DCM33FlowMin);
     // Constrain measurements to zero if takeoff is not detected and the height above ground

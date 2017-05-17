@@ -123,8 +123,7 @@ void Sub::init_ardupilot()
     USERHOOK_INIT
 #endif
 
-    // read Baro pressure at ground
-    //-----------------------------
+    // Init baro and determine if we have external (depth) pressure sensor
     init_barometer(false);
     barometer.update();
 
@@ -132,12 +131,13 @@ void Sub::init_ardupilot()
         if (barometer.get_type(i) == AP_Baro::BARO_TYPE_WATER) {
             barometer.set_primary_baro(i);
             depth_sensor_idx = i;
-            sensor_health.depth = barometer.healthy(i);
-            break;
+            ap.depth_sensor_present = true;
+            sensor_health.depth = barometer.healthy(depth_sensor_idx); // initialize health flag
+            break; // Go with the first one we find
         }
     }
 
-    if (!sensor_health.depth) {
+    if (!ap.depth_sensor_present) {
         // We only have onboard baro
         // No external underwater depth sensor detected
         barometer.set_primary_baro(0);
@@ -165,6 +165,10 @@ void Sub::init_ardupilot()
     // initialise mission library
     mission.init();
 
+    // initialise DataFlash library
+    DataFlash.set_mission(&mission);
+    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
+
     startup_INS_ground();
 
     // we don't want writes to the serial port to cause us to pause
@@ -185,6 +189,9 @@ void Sub::init_ardupilot()
         start_logging(); // create a new log if necessary
     }
 
+    // disable safety if requested
+    BoardConfig.init_safety();    
+    
     hal.console->print("\nInit complete");
 
     // flag that initialisation has completed

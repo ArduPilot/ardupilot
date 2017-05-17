@@ -149,6 +149,12 @@ public:
     // get baro drift amount
     float get_baro_drift_offset(void) { return _alt_offset_active; }
 
+    // simple atmospheric model
+    static void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
+
+    // set a pressure correction from AP_TempCalibration
+    void set_pressure_correction(uint8_t instance, float p_correction);
+    
 private:
     // how many drivers do we have?
     uint8_t _num_drivers;
@@ -170,6 +176,7 @@ private:
         float temperature;              // temperature in degrees C
         float altitude;                 // calculated altitude
         AP_Float ground_pressure;
+        float p_correction;
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
@@ -189,6 +196,5 @@ private:
     // when did we last notify the GCS of new pressure reference?
     uint32_t                            _last_notify_ms;
 
-    void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
     bool _add_backend(AP_Baro_Backend *backend);
 };

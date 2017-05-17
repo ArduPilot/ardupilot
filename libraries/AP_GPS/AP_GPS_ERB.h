@@ -36,6 +36,8 @@ public:
 
     static bool _detect(struct ERB_detect_state &state, uint8_t data);
 
+    const char *name() const override { return "ERB"; }
+
 private:
     struct PACKED erb_header {
         uint8_t preamble1;

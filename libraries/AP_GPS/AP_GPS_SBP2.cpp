@@ -252,8 +252,8 @@ AP_GPS_SBP2::_attempt_state_update()
         return false;
 
     } else if (last_pos_llh.tow == last_vel_ned.tow
-            && (distMod(last_gps_time.tow, last_vel_ned.tow, MSEC_PER_WEEK) < 10000)
-            && (distMod(last_dops.tow, last_vel_ned.tow, MSEC_PER_WEEK) < 60000)
+            && (distMod(last_gps_time.tow, last_vel_ned.tow, AP_MSEC_PER_WEEK) < 10000)
+            && (distMod(last_dops.tow, last_vel_ned.tow, AP_MSEC_PER_WEEK) < 60000)
             && (last_vel_ned.tow > last_full_update_tow || (last_gps_time.wn > last_full_update_wn && last_vel_ned.tow < last_full_update_tow))) {
 
         //We have an aligned VEL and LLH, and a recent DOPS and TIME.

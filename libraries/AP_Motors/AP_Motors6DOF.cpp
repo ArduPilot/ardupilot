@@ -183,13 +183,11 @@ void AP_Motors6DOF::output_min()
 
     // fill the motor_out[] array for HIL use and send minimum value to each motor
     // ToDo find a field to store the minimum pwm instead of hard coding 1500
-    hal.rcout->cork();
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             rc_write(i, 1500);
         }
     }
-    hal.rcout->push();
 }
 
 int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
@@ -233,13 +231,11 @@ void AP_Motors6DOF::output_to_motors()
     }
 
     // send output to each motor
-    hal.rcout->cork();
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             rc_write(i, motor_out[i]);
         }
     }
-    hal.rcout->push();
 }
 
 // output_armed - sends commands to the motors

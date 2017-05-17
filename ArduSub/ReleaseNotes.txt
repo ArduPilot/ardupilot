@@ -1,7 +1,15 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub 3.5-rc1
+Sub 3.5 09-May-2017 / Sub 3.5-rc2 04-May-2017
+
+Changes from 3.5-rc1:
+
+- Bugfix for external baro failsafe handling when no baro is
+connected at boot
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.5-rc1 17-April-2017
 
 Major changes:
 
@@ -75,6 +83,12 @@ Other changes:
     - Helicopter references
     - HIL_MODE
     - Various unused flags, members and methods
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.4.1 04-May-2017
+
+Don't report battery percentage estimate. The estimate is only correct if battery
+is fully charged at boot. User should rely on voltage estimate.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 3.4 30-Dec-2016 / Sub 3.4-rc3 14-Dec-2016

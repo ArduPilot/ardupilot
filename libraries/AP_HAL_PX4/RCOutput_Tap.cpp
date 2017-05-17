@@ -79,7 +79,7 @@ extern const AP_HAL::HAL &hal;
 /****** ESC data types ******/
 
 #define ESC_HAVE_CURRENT_SENSOR
-#define MIN_BOOT_TIME_USEC (550 * USEC_PER_MSEC)
+#define MIN_BOOT_TIME_USEC (550 * AP_USEC_PER_MSEC)
 
 static const uint8_t crcTable[256] = {
     0x00, 0xE7, 0x29, 0xCE, 0x52, 0xB5, 0x7B, 0x9C, 0xA4, 0x43, 0x8D, 0x6A,
@@ -362,7 +362,7 @@ void RCOutput_Tap::init()
 
     hrt_abstime uptime_usec = hrt_absolute_time();
     if (uptime_usec < MIN_BOOT_TIME_USEC) {
-        hal.scheduler->delay((MIN_BOOT_TIME_USEC - uptime_usec) / USEC_PER_MSEC);
+        hal.scheduler->delay((MIN_BOOT_TIME_USEC - uptime_usec) / AP_USEC_PER_MSEC);
     }
 
     /* Issue Basic Config */

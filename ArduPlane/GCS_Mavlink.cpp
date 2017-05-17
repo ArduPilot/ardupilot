@@ -810,14 +810,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         handle_log_send(plane.DataFlash);
     }
 
-    if (_queued_parameter != nullptr) {
-        if (streamRates[STREAM_PARAMS].get() <= 0) {
-            streamRates[STREAM_PARAMS].set(10);
-        }
-        if (stream_trigger(STREAM_PARAMS)) {
-            send_message(MSG_NEXT_PARAM);
-        }
-    }
+    send_queued_parameters();
 
     if (plane.gcs_out_of_time) return;
 
@@ -2163,7 +2156,6 @@ void Plane::mavlink_delay_cb()
         last_5s = tnow;
         gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
-    check_usb_mux();
 
     in_mavlink_delay = false;
 }

@@ -274,6 +274,7 @@ private:
             uint8_t land_repo_active        : 1; // 22      // true if the pilot is overriding the landing position
             uint8_t motor_interlock_switch  : 1; // 23      // true if pilot is requesting motor interlock enable
             uint8_t in_arming_delay         : 1; // 24      // true while we are armed but waiting to spin motors
+            uint8_t initialised_params      : 1; // 25      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
         };
         uint32_t value;
     } ap;
@@ -588,6 +589,9 @@ private:
 
     // last valid RC input time
     uint32_t last_radio_update_ms;
+
+    // last esc calibration notification update
+    uint32_t esc_calibration_notify_update_ms;
 
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
     // last visual odometry update time
@@ -939,6 +943,7 @@ private:
     void esc_calibration_startup_check();
     void esc_calibration_passthrough();
     void esc_calibration_auto();
+    void esc_calibration_notify();
     bool should_disarm_on_failsafe();
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();

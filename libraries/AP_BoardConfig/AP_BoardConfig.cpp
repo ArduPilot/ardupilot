@@ -19,7 +19,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_BoardConfig.h"
+#include <stdio.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <sys/types.h>
@@ -212,4 +214,29 @@ void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
     px4.ignore_safety_channels.set_default(mask);
     px4_setup_safety_mask();
 #endif
+}
+
+void AP_BoardConfig::init_safety()
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    px4_init_safety();
+#endif
+}
+
+/*
+  notify user of a fatal startup error related to available sensors. 
+*/
+void AP_BoardConfig::sensor_config_error(const char *reason)
+{
+    /*
+      to give the user the opportunity to connect to USB we keep
+      repeating the error.  The mavlink delay callback is initialised
+      before this, so the user can change parameters (and in
+      particular BRD_TYPE if needed)
+    */
+    while (true) {
+        printf("Sensor failure: %s\n", reason);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
+        hal.scheduler->delay(3000);
+    }
 }

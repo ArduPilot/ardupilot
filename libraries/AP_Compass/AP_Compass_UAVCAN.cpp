@@ -98,7 +98,7 @@ void AP_Compass_UAVCAN::read(void)
         return;
     }
 
-    if (_mag_baro->take(0)) {
+    if (_mag_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _sum /= _count;
 
         publish_filtered_field(_sum, _instance);
@@ -123,7 +123,7 @@ void AP_Compass_UAVCAN::handle_mag_msg(Vector3f &mag)
     // correct raw_field for known errors
     correct_field(raw_field, _instance);
 
-    if (_mag_baro->take(0)) {
+    if (_mag_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         // accumulate into averaging filter
         _sum += raw_field;
         _count++;

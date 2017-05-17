@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -431,10 +430,10 @@ void AP_MotorsHeli_Dual::update_motor_control(RotorControlState state)
 //
 // move_actuators - moves swash plate to attitude of parameters passed in
 //                - expected ranges:
-//                       roll : -4500 ~ 4500
-//                       pitch: -4500 ~ 4500
-//                       collective: 0 ~ 1000
-//                       yaw:   -4500 ~ 4500
+//                       roll : -1 ~ +1
+//                       pitch: -1 ~ +1
+//                       collective: 0 ~ 1
+//                       yaw:   -1 ~ +1
 //
 void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
@@ -445,25 +444,25 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     limit.throttle_upper = false;
 
     if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE) {
-      if (pitch_out < -_cyclic_max/4500.0f) {
-          pitch_out = -_cyclic_max/4500.0f;
-          limit.roll_pitch = true;
-      }
+        if (pitch_out < -_cyclic_max/4500.0f) {
+            pitch_out = -_cyclic_max/4500.0f;
+            limit.roll_pitch = true;
+        }
 
-      if (pitch_out > _cyclic_max/4500.0f) {
-          pitch_out = _cyclic_max/4500.0f;
-          limit.roll_pitch = true;
-      }
+        if (pitch_out > _cyclic_max/4500.0f) {
+            pitch_out = _cyclic_max/4500.0f;
+            limit.roll_pitch = true;
+        }
     } else {
-      if (roll_out < -_cyclic_max/4500.0f) {
-        roll_out = -_cyclic_max/4500.0f;
-        limit.roll_pitch = true;
-      }
+        if (roll_out < -_cyclic_max/4500.0f) {
+            roll_out = -_cyclic_max/4500.0f;
+            limit.roll_pitch = true;
+        }
 
-      if (roll_out > _cyclic_max/4500.0f) {
-        roll_out = _cyclic_max/4500.0f;
-        limit.roll_pitch = true;
-      }
+        if (roll_out > _cyclic_max/4500.0f) {
+            roll_out = _cyclic_max/4500.0f;
+            limit.roll_pitch = true;
+        }
     }
 
 
@@ -543,16 +542,12 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     servo6_out = 2*servo6_out - 1;
 
     // actually move the servos
-    hal.rcout->cork();
-
     rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(servo1_out, _swash_servo_1));
     rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(servo2_out, _swash_servo_2));
     rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(servo3_out, _swash_servo_3));
     rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(servo4_out, _swash_servo_4));
     rc_write(AP_MOTORS_MOT_5, calc_pwm_output_1to1(servo5_out, _swash_servo_5));
     rc_write(AP_MOTORS_MOT_6, calc_pwm_output_1to1(servo6_out, _swash_servo_6));
-
-    hal.rcout->push();
 }
 
 

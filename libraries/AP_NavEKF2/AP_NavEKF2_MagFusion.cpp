@@ -163,7 +163,7 @@ void NavEKF2_core::realignYawGPS()
 
             // calculate new filter quaternion states from Euler angles
             stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
-            // reset the velocity and posiiton states as they will be inaccurate due to bad yaw
+            // reset the velocity and position states as they will be inaccurate due to bad yaw
             ResetVelocity();
             ResetPosition();
 
@@ -707,6 +707,9 @@ void NavEKF2_core::FuseMagnetometer()
         } else if (obsIndex == 2) {
             faultStatus.bad_zmag = true;
         }
+        CovarianceInit();
+        hal.util->perf_end(_perf_test[5]);
+        return;
     }
 
     hal.util->perf_end(_perf_test[5]);

@@ -230,6 +230,27 @@ void Plane::channel_output_mixer(uint8_t mixing_type, SRV_Channel::Aux_servo_fun
 
 
 /*
+  mixer for elevon and vtail channels setup using designated servo
+  function values. This mixer operates purely on scaled values,
+  allowing the user to trim and limit individual servos using the
+  SERVOn_* parameters
+ */
+void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
+                                   SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out)
+{
+    // the order is setup so that non-reversed servos go "up", and
+    // func1 is the "left" channel. Users can adjust with channel
+    // reversal as needed
+    float in1 = SRV_Channels::get_output_scaled(func1_in);
+    float in2 = SRV_Channels::get_output_scaled(func2_in);
+    float out1 = constrain_float((in2 - in1) * g.mixing_gain, -4500, 4500);
+    float out2 = constrain_float((in2 + in1) * g.mixing_gain, -4500, 4500);
+    SRV_Channels::set_output_scaled(func1_out, out1);
+    SRV_Channels::set_output_scaled(func2_out, out2);
+}
+
+
+/*
   setup flaperon output channels
  */
 void Plane::flaperon_update(int8_t flap_percent)
@@ -614,6 +635,11 @@ void Plane::servo_output_mixers(void)
                                                 (int16_t(ch4)-1500) * (int16_t)(SERVO_MAX/300) / (int16_t)2);
         }
     }
+
+
+    // allow for extra elevon and vtail channels
+    channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right);
+    channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
 }
 
 /*
@@ -624,12 +650,15 @@ void Plane::servos_twin_engine_mix(void)
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     float rud_gain = float(plane.g2.rudd_dt_gain) / 100;
     float rudder = rud_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / float(SERVO_MAX);
+
     float throttle_left, throttle_right;
-    
+
     if (throttle < 0 && aparm.throttle_min < 0) {
         // doing reverse thrust
         throttle_left  = constrain_float(throttle + 50 * rudder, -100, 0);
         throttle_right = constrain_float(throttle - 50 * rudder, -100, 0);
+    } else if (throttle <= 0) {
+        throttle_left  = throttle_right = 0;
     } else {
         // doing forward thrust
         throttle_left  = constrain_float(throttle + 50 * rudder, 0, 100);
@@ -637,6 +666,7 @@ void Plane::servos_twin_engine_mix(void)
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
+
 }
 
 
@@ -850,9 +880,18 @@ void Plane::servos_auto_trim(void)
     }
 
     // adjust trim on channels by a small amount according to I value
-    g2.servo_channels.adjust_trim(SRV_Channel::k_aileron, rollController.get_pid_info().I);
-    g2.servo_channels.adjust_trim(SRV_Channel::k_elevator, pitchController.get_pid_info().I);
+    float roll_I = rollController.get_pid_info().I;
+    float pitch_I = pitchController.get_pid_info().I;
+    
+    g2.servo_channels.adjust_trim(SRV_Channel::k_aileron, roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_elevator, pitch_I);
 
+    g2.servo_channels.adjust_trim(SRV_Channel::k_elevon_left,  pitch_I - roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_elevon_right, pitch_I + roll_I);
+
+    g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_left,  pitch_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_right, pitch_I);
+    
     auto_trim.last_trim_check = now;
 
     if (now - auto_trim.last_trim_save > 10000) {

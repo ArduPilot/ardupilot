@@ -7,6 +7,8 @@
 
 DataFlash_Class *DataFlash_Class::_instance;
 
+extern const AP_HAL::HAL& hal;
+
 const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @Param: _BACKEND_TYPE
     // @DisplayName: DataFlash Backend Storage type
@@ -249,6 +251,31 @@ bool DataFlash_Class::logging_failed() const
         return true;
     }
     return backends[0]->logging_failed();
+}
+
+void DataFlash_Class::Log_Write_MessageF(const char *fmt, ...)
+{
+    char msg[64] {};
+
+    va_list ap;
+    va_start(ap, fmt);
+    hal.util->vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+
+    Log_Write_Message(msg);
+}
+
+void DataFlash_Class::backend_starting_new_log(const DataFlash_Backend *backend)
+{
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (backends[i] == backend) { // pointer comparison!
+            // reset sent masks
+            for (struct log_write_fmt *f = log_write_fmts; f; f=f->next) {
+                f->sent_mask &= ~(1<<i);
+            }
+            break;
+        }
+    }
 }
 
 #define FOR_EACH_BACKEND(methodcall)              \

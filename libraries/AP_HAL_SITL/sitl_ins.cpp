@@ -107,13 +107,13 @@ uint16_t SITL_State::_ground_sonar(void)
         // adjust for apparent altitude with roll
         altitude /= cosf(radians(_sitl->state.rollDeg)) * cosf(radians(_sitl->state.pitchDeg));
 
-        altitude += _sitl->sonar_noise * _rand_float();
+        altitude += _sitl->sonar_noise * rand_float();
 
         // Altitude in in m, scaler in meters/volt
         voltage = altitude / _sitl->sonar_scale;
         voltage = constrain_float(voltage, 0, 5.0f);
 
-        if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f) {
+        if (_sitl->sonar_glitch >= (rand_float() + 1.0f)/2.0f) {
             voltage = 5.0f;
         }
     }
@@ -133,7 +133,7 @@ void SITL_State::_update_ins(float airspeed)
 
     sonar_pin_value    = _ground_sonar();
     float airspeed_simulated = (fabsf(_sitl->arspd_fail) > 1.0e-6f) ? _sitl->arspd_fail : airspeed;
-    airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->arspd_noise * _rand_float()));
+    airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->arspd_noise * rand_float()));
 }
 
 #endif

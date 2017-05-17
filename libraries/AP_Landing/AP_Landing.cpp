@@ -589,3 +589,20 @@ bool AP_Landing::is_throttle_suppressed(void) const
     }
 }
 
+/*
+ * returns false when the vehicle might not be flying forward while landing
+ */
+bool AP_Landing::is_flying_forward(void) const
+{
+    if (!flags.in_progress) {
+        return true;
+    }
+
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return deepstall.is_flying_forward();
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return true;
+    }
+}

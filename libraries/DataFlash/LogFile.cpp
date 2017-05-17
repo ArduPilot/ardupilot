@@ -584,14 +584,13 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
 
 // This function starts a new log file in the DataFlash, and writes
 // the format of supported messages in the log
+// This function is ONLY called from the vehicle code.
+// DataFlash_MAVLink, for example, will NOT call this function if the
+// remote end disconnects and reconnects!
 void DataFlash_Class::StartNewLog(void)
 {
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->start_new_log();
-    }
-    // reset sent masks
-    for (struct log_write_fmt *f = log_write_fmts; f; f=f->next) {
-        f->sent_mask = 0;
     }
 }
 
@@ -838,7 +837,9 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_error : ins.get_accel_error_count(0),
         temperature : ins.get_temperature(0),
         gyro_health : (uint8_t)ins.get_gyro_health(0),
-        accel_health : (uint8_t)ins.get_accel_health(0)
+        accel_health : (uint8_t)ins.get_accel_health(0),
+        gyro_rate : ins.get_gyro_rate_hz(0),
+        accel_rate : ins.get_accel_rate_hz(0),
     };
     WriteBlock(&pkt, sizeof(pkt));
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
@@ -860,7 +861,9 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_error : ins.get_accel_error_count(1),
         temperature : ins.get_temperature(1),
         gyro_health : (uint8_t)ins.get_gyro_health(1),
-        accel_health : (uint8_t)ins.get_accel_health(1)
+        accel_health : (uint8_t)ins.get_accel_health(1),
+        gyro_rate : ins.get_gyro_rate_hz(1),
+        accel_rate : ins.get_accel_rate_hz(1),
     };
     WriteBlock(&pkt2, sizeof(pkt2));
     if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
@@ -881,7 +884,9 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_error : ins.get_accel_error_count(2),
         temperature : ins.get_temperature(2),
         gyro_health : (uint8_t)ins.get_gyro_health(2),
-        accel_health : (uint8_t)ins.get_accel_health(2)
+        accel_health : (uint8_t)ins.get_accel_health(2),
+        gyro_rate : ins.get_gyro_rate_hz(2),
+        accel_rate : ins.get_accel_rate_hz(2),
     };
     WriteBlock(&pkt3, sizeof(pkt3));
 }
@@ -1090,6 +1095,26 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     if (ahrs.get_NavEKF3().activeCores() > 0) {
         Log_Write_EKF3(ahrs, optFlowEnabled);
     }
+}
+
+
+/*
+  write an EKF timing message
+ */
+void DataFlash_Class::Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing)
+{
+    Log_Write(name,
+              "TimeUS,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VelMin,VelMax", "QIffffffff",
+              time_us,
+              timing.count,
+              (double)timing.dtIMUavg_min,
+              (double)timing.dtIMUavg_max,
+              (double)timing.dtEKFavg_min,
+              (double)timing.dtEKFavg_max,
+              (double)timing.delAngDT_min,
+              (double)timing.delAngDT_max,
+              (double)timing.delVelDT_min,
+              (double)timing.delVelDT_max);
 }
 
 void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
@@ -1410,6 +1435,17 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
                 };
                 WriteBlock(&pkt10, sizeof(pkt10));
             }
+        }
+    }
+
+    // log EKF timing statistics every 5s
+    static uint32_t lastTimingLogTime_ms = 0;
+    if (AP_HAL::millis() - lastTimingLogTime_ms > 5000) {
+        lastTimingLogTime_ms = AP_HAL::millis();
+        struct ekf_timing timing;
+        for (uint8_t i=0; i<ahrs.get_NavEKF2().activeCores(); i++) {
+            ahrs.get_NavEKF2().getTimingStatistics(i, timing);
+            Log_Write_EKF_Timing(i==0?"NKT1":"NKT2", time_us, timing);
         }
     }
 }
@@ -1746,6 +1782,17 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
          };
         WriteBlock(&pkt11, sizeof(pkt11));
         updateTime_ms = lastUpdateTime_ms;
+    }
+
+    // log EKF timing statistics every 5s
+    static uint32_t lastTimingLogTime_ms = 0;
+    if (AP_HAL::millis() - lastTimingLogTime_ms > 5000) {
+        lastTimingLogTime_ms = AP_HAL::millis();
+        struct ekf_timing timing;
+        for (uint8_t i=0; i<ahrs.get_NavEKF3().activeCores(); i++) {
+            ahrs.get_NavEKF3().getTimingStatistics(i, timing);
+            Log_Write_EKF_Timing(i==0?"XKT1":"XKT2", time_us, timing);
+        }
     }
 }
 #endif

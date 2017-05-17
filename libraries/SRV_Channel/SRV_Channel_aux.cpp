@@ -94,6 +94,7 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_heli_rsc:
     case k_heli_tail_rsc:
     case k_motor_tilt:
+    case k_boost_throttle:
         set_range(1000);
         break;
     case k_aileron_with_input:
@@ -108,6 +109,10 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_flaperon2:
     case k_tiltMotorLeft:
     case k_tiltMotorRight:
+    case k_elevon_left:
+    case k_elevon_right:
+    case k_vtail_left:
+    case k_vtail_right:
         set_angle(4500);
         break;
     case k_throttle:
@@ -153,6 +158,16 @@ void SRV_Channels::enable_aux_servos()
         // see if it is a valid function
         if (function < SRV_Channel::k_nr_aux_servo_functions) {
             hal.rcout->enable_ch(channels[i].ch_num);
+        }
+    }
+}
+
+/// enable output channels using a channel mask
+void SRV_Channels::enable_by_mask(uint16_t mask)
+{
+    for (uint8_t i = 0; i < 16; i++) {
+        if (mask & (1U<<i)) {
+            hal.rcout->enable_ch(i);
         }
     }
 }

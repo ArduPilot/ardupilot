@@ -58,7 +58,7 @@ int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
             }
             cliSerial->printf("\n");
         }
-        if (cliSerial->available() > 0){
+        if (cliSerial->available() > 0) {
             return (0);
         }
     }
@@ -96,7 +96,7 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
             fail_test++;
         }
 
-        if (oldSwitchPosition != readSwitch()){
+        if (oldSwitchPosition != readSwitch()) {
             cliSerial->printf("CONTROL MODE CHANGED: ");
             print_mode(cliSerial, readSwitch());
             cliSerial->printf("\n");
@@ -146,8 +146,8 @@ int8_t Rover::test_wp(uint8_t argc, const Menu::arg *argv)
 {
     delay(1000);
 
-    cliSerial->printf("%u waypoints\n", (unsigned)mission.num_commands());
-    cliSerial->printf("Hit radius: %f\n", (double)g.waypoint_radius.get());
+    cliSerial->printf("%u waypoints\n", static_cast<uint32_t>(mission.num_commands()));
+    cliSerial->printf("Hit radius: %f\n", static_cast<double>(g.waypoint_radius.get()));
 
     for (uint8_t i = 0; i < mission.num_commands(); i++) {
         AP_Mission::Mission_Command temp_cmd;
@@ -161,14 +161,14 @@ int8_t Rover::test_wp(uint8_t argc, const Menu::arg *argv)
 
 void Rover::test_wp_print(const AP_Mission::Mission_Command& cmd)
 {
-    cliSerial->printf("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n",
-                    (int)cmd.index,
-                    (int)cmd.id,
-                    (int)cmd.content.location.options,
-                    (int)cmd.p1,
-                    (long)cmd.content.location.alt,
-                    (long)cmd.content.location.lat,
-                    (long)cmd.content.location.lng);
+    cliSerial->printf("command #: %d id:%d options:%d p1:%d p2:%d p3:%d p4:%d \n",
+            static_cast<int32_t>(cmd.index),
+            static_cast<int32_t>(cmd.id),
+            static_cast<int32_t>(cmd.content.location.options),
+            static_cast<int32_t>(cmd.p1),
+            (cmd.content.location.alt),
+            (cmd.content.location.lat),
+            (cmd.content.location.lng));
 }
 
 int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
@@ -183,7 +183,7 @@ int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
     while (1) {
         delay(20);
         uint8_t switchPosition = readSwitch();
-        if (oldSwitchPosition != switchPosition){
+        if (oldSwitchPosition != switchPosition) {
             cliSerial->printf("Position %d\n",  switchPosition);
             oldSwitchPosition = switchPosition;
         }
@@ -221,11 +221,11 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
         if (gps.last_message_time_ms() != last_message_time_ms) {
             last_message_time_ms = gps.last_message_time_ms();
             const Location &loc = gps.location();
-            cliSerial->printf("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n",
-                                (long)loc.lat,
-                                (long)loc.lng,
-                                (long)loc.alt/100,
-                                (int)gps.num_sats());
+            cliSerial->printf("Lat: %d, Lon %d, Alt: %dm, #sats: %d\n",
+                    (loc.lat),
+                    (loc.lng),
+                    (loc.alt/100),
+                    (gps.num_sats()));
         } else {
             cliSerial->printf(".");
         }
@@ -267,11 +267,11 @@ int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
         Vector3f gyros = ins.get_gyro();
         Vector3f accels = ins.get_accel();
         cliSerial->printf("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n",
-                            (int)ahrs.roll_sensor / 100,
-                            (int)ahrs.pitch_sensor / 100,
-                            (uint16_t)ahrs.yaw_sensor / 100,
-                            (double)gyros.x, (double)gyros.y, (double)gyros.z,
-                            (double)accels.x, (double)accels.y, (double)accels.z);
+                static_cast<int32_t>(ahrs.roll_sensor / 100),
+                static_cast<int32_t>(ahrs.pitch_sensor / 100),
+                static_cast<uint16_t>(ahrs.yaw_sensor / 100),
+                static_cast<double>(gyros.x), static_cast<double>(gyros.y), static_cast<double>(gyros.z),
+                static_cast<double>(accels.x), static_cast<double>(accels.y), static_cast<double>(accels.z));
         if (cliSerial->available() > 0) {
             return (0);
         }
@@ -336,9 +336,9 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
                 const Vector3f mag_ofs = compass.get_offsets();
                 const Vector3f mag = compass.get_field();
                 cliSerial->printf("Heading: %f, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n",
-                                    (double)(wrap_360_cd(ToDeg(heading) * 100)) /100,
-                                    (double)mag.x, (double)mag.y, (double)mag.z,
-                                    (double)mag_ofs.x, (double)mag_ofs.y, (double)mag_ofs.z);
+                        static_cast<double>((wrap_360_cd(ToDeg(heading) * 100)) /100),
+                        static_cast<double>(mag.x), static_cast<double>(mag.y), static_cast<double>(mag.z),
+                        static_cast<double>(mag_ofs.x), static_cast<double>(mag_ofs.y), static_cast<double>(mag_ofs.z));
             } else {
                 cliSerial->printf("compass not healthy\n");
             }
@@ -408,14 +408,14 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
 
         if (now - last_print >= 200) {
             cliSerial->printf("sonar1 dist=%.1f:%.1fcm volt1=%.2f:%.2f   sonar2 dist=%.1f:%.1fcm volt2=%.2f:%.2f\n",
-                                (double)sonar_dist_cm_min,
-                                (double)sonar_dist_cm_max,
-                                (double)voltage_min,
-                                (double)voltage_max,
-                                (double)sonar2_dist_cm_min,
-                                (double)sonar2_dist_cm_max,
-                                (double)voltage2_min,
-                                (double)voltage2_max);
+                    static_cast<double>(sonar_dist_cm_min),
+                    static_cast<double>(sonar_dist_cm_max),
+                    static_cast<double>(voltage_min),
+                    static_cast<double>(voltage_max),
+                    static_cast<double>(sonar2_dist_cm_min),
+                    static_cast<double>(sonar2_dist_cm_max),
+                    static_cast<double>(voltage2_min),
+                    static_cast<double>(voltage2_max));
             voltage_min = voltage_max = 0.0f;
             voltage2_min = voltage2_max = 0.0f;
             sonar_dist_cm_min = sonar_dist_cm_max = 0.0f;

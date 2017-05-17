@@ -7,11 +7,11 @@
 extern const AP_HAL::HAL& hal;
 
 /// Constructor
-AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon, uint8_t instance, AP_BattMonitor::BattMonitor_State &mon_state) :
-    AP_BattMonitor_Backend(mon, instance, mon_state)
+AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state) :
+    AP_BattMonitor_Backend(mon, mon_state)
 {
-    _volt_pin_analog_source = hal.analogin->channel(mon._volt_pin[instance]);
-    _curr_pin_analog_source = hal.analogin->channel(mon._curr_pin[instance]);
+    _volt_pin_analog_source = hal.analogin->channel(mon._volt_pin[_state.instance]);
+    _curr_pin_analog_source = hal.analogin->channel(mon._curr_pin[_state.instance]);
 
     // always healthy
     _state.healthy = true;

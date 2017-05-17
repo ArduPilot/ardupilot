@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   24 state EKF based on the derivation in https://github.com/PX4/ecl/
   blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
@@ -57,6 +56,10 @@
 
 // initial accel bias uncertainty as a fraction of the state limit
 #define ACCEL_BIAS_LIM_SCALER 0.2f
+
+// target update time for the EKF in msec and sec
+#define EKF_TARGET_DT_MS 10.0
+#define EKF_TARGET_DT    0.01
 
 class AP_AHRS;
 
@@ -162,7 +165,7 @@ public:
     bool getOriginLLH(struct Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
+    // All NED positions calculated by the filter will be relative to this location
     // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
     // Returns false if the filter has rejected the attempt to set the origin
     bool setOriginLLH(const Location &loc);
@@ -331,6 +334,9 @@ public:
     // get the IMU index
     uint8_t getIMUIndex(void) const { return imu_index; }
 
+    // get timing statistics structure
+    void getTimingStatistics(struct ekf_timing &timing);
+    
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF3 *frontend;
@@ -761,6 +767,9 @@ private:
     // initialise the quaternion covariances using rotation vector variances
     void initialiseQuatCovariances(Vector3f &rotVarVec);
 
+    // update timing statistics structure
+    void updateTimingStatistics(void);
+    
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool velHealth;                 // boolean true if velocity measurements have passed innovation consistency check
@@ -775,8 +784,6 @@ private:
     bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool badMagYaw;                 // boolean true if the magnetometer is declared to be producing bad data
     bool badIMUdata;                // boolean true if the bad IMU data is detected
-
-    const float EKF_TARGET_DT = 0.01f;    // target EKF update time step
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Vector28 Kfusion;               // Kalman gain vector
@@ -1083,7 +1090,7 @@ private:
     uint8_t N_beacons;                  // Number of range beacons in use
     float maxBcnPosD;                   // maximum position of all beacons in the down direction (m)
     float minBcnPosD;                   // minimum position of all beacons in the down direction (m)
-    bool usingMinHypothesis;            // true when the min beacob constellatio offset hyopthesis is being used
+    bool usingMinHypothesis;            // true when the min beacon constellation offset hyopthesis is being used
 
     float bcnPosDownOffsetMax;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     float bcnPosOffsetMaxVar;           // Variance of the bcnPosDownOffsetMax state (m)
@@ -1205,6 +1212,9 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_FuseBodyOdom;
     AP_HAL::Util::perf_counter_t  _perf_test[10];
 
+    // timing statistics
+    struct ekf_timing timing;
+    
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 
