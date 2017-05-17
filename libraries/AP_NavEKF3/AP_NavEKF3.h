@@ -80,7 +80,7 @@ public:
     // An out of range instance (eg -1) returns data for the the primary instance
     void getVelNED(int8_t instance, Vector3f &vel);
 
-    // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s for the specified instance
+    // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
     // but will always be kinematically consistent with the z component of the EKF position state
