@@ -323,7 +323,7 @@ private:
     // For example in a delay command the condition_start records that start time for the delay
     int32_t condition_start;
 
-    // Use for stoping navigation in auto mode and do rotation on spot.
+    // Use for stopping navigation in auto mode and do rotation on spot.
     bool do_auto_rotation;
 
     // 3D Location vectors
@@ -345,7 +345,7 @@ private:
     float G_Dt;
 
     // Performance monitoring
-    // Timer used to accrue data and trigger recording of the performanc monitoring log message
+    // Timer used to accrue data and trigger recording of the performance monitoring log message
     int32_t perf_mon_timer;
     // The maximum main loop execution time recorded in the current performance monitoring interval
     uint32_t G_Dt_max;
