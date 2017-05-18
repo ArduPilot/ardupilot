@@ -272,6 +272,7 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
     case MSG_MISSION_ITEM_REACHED:
     case MSG_POSITION_TARGET_GLOBAL_INT:
     case MSG_AOA_SSA:
+    case MSG_LANDING:
         break; // just here to prevent a warning
     }
     return true;
