@@ -182,3 +182,9 @@ uint16_t SRV_Channel::get_limit_pwm(LimitValue limit) const
     }
 }
 
+// return true if function is for a multicopter motor
+bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
+{
+    return ((function >= SRV_Channel::k_motor1 && function <= SRV_Channel::k_motor8) ||
+            (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12));
+}
