@@ -374,9 +374,6 @@ void Copter::autotune_do_gcs_announcements()
     if (!is_zero(rotation_rate)) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: rotation=%f target=%f", rotation_rate*0.01f, autotune_target_rate*0.01f);
     }
-    if (!is_zero(rotation_rate)) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: rotation=%f target=%f", rotation_rate*0.01f, autotune_target_rate*0.01f);
-    }
     switch (autotune_state.tune_type) {
     case AUTOTUNE_TYPE_RD_UP:
     case AUTOTUNE_TYPE_RD_DOWN:
