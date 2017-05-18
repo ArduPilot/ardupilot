@@ -1,17 +1,16 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include <stdio.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
-
 #include "UDPDevice.h"
 
-UDPDevice::UDPDevice(const char *ip, uint16_t port, bool bcast):
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
+
+#include <AP_HAL/AP_HAL.h>
+
+UDPDevice::UDPDevice(const char *ip, uint16_t port, bool bcast, bool input):
     _ip(ip),
     _port(port),
-    _bcast(bcast)
+    _bcast(bcast),
+    _input(input)
 {
 }
 
@@ -26,6 +25,10 @@ ssize_t UDPDevice::write(const uint8_t *buf, uint16_t n)
     }
     if (_connected) {
         return socket.send(buf, n);
+    }
+    if (_input) {
+        // can't send yet
+        return -1;
     }
     return socket.sendto(buf, n, _ip, _port);
 }
@@ -44,6 +47,10 @@ ssize_t UDPDevice::read(uint8_t *buf, uint16_t n)
 
 bool UDPDevice::open()
 {
+    if (_input) {
+        socket.bind(_ip, _port);
+        return true;
+    }
     if (_bcast) {
         // open now, then connect on first received packet
         socket.set_broadcast();
@@ -67,5 +74,3 @@ void UDPDevice::set_speed(uint32_t speed)
 {
 
 }
-
-#endif

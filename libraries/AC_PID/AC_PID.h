@@ -1,15 +1,12 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
 /// @file	AC_PID.h
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 
-#ifndef __AC_PID_H__
-#define __AC_PID_H__
-
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 #include <DataFlash/DataFlash.h>
 
 #define AC_PID_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
@@ -42,7 +39,8 @@ public:
     float       get_p();
     float       get_i();
     float       get_d();
-
+    float       get_ff(float requested_rate);
+    
     // reset_I - reset the integrator
     void        reset_I();
 
@@ -59,12 +57,13 @@ public:
     void operator() (float p, float i, float d, float imaxval, float input_filt_hz, float dt );
 
     // get accessors
-    float       kP() const { return _kp.get(); }
-    float       kI() const { return _ki.get(); }
-    float       kD() const { return _kd.get(); }
+    AP_Float   &kP() { return _kp; }
+    AP_Float   &kI() { return _ki; }
+    AP_Float   &kD() { return _kd; }
+    AP_Float   &filt_hz() { return _filt_hz; }
     float       imax() const { return _imax.get(); }
-    float       filt_hz() const { return _filt_hz.get(); }
     float       get_filt_alpha() const;
+    float       ff() const { return _ff.get(); }
 
     // set accessors
     void        kP(const float v) { _kp.set(v); }
@@ -72,6 +71,7 @@ public:
     void        kD(const float v) { _kd.set(v); }
     void        imax(const float v) { _imax.set(fabsf(v)); }
     void        filt_hz(const float v);
+    void        ff(const float v) { _ff.set(v); }
 
     float       get_integrator() const { return _integrator; }
     void        set_integrator(float i) { _integrator = i; }
@@ -92,6 +92,7 @@ protected:
     AP_Float        _kd;
     AP_Float        _imax;
     AP_Float        _filt_hz;                   // PID Input filter frequency in Hz
+    AP_Float        _ff;
 
     // flags
     struct ac_pid_flags {
@@ -106,5 +107,3 @@ protected:
 
     DataFlash_Class::PID_Info        _pid_info;
 };
-
-#endif // __AC_PID_H__

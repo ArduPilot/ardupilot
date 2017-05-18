@@ -1,7 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#include "Plane.h"
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,13 +12,16 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "Plane.h"
+#include "version.h"
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 /*
   constructor for main Plane class
  */
-
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
-
 Plane::Plane(void)
+    : DataFlash{FIRMWARE_STRING}
 {
     // C++11 doesn't allow in-class initialisation of bitfields
     auto_state.takeoff_complete = true;

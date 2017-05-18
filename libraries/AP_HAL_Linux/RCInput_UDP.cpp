@@ -1,20 +1,20 @@
+#include <stdio.h>
+
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #include "RCInput_UDP.h"
-#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-LinuxRCInput_UDP::LinuxRCInput_UDP() :
+RCInput_UDP::RCInput_UDP() :
     _port(0),
     _last_buf_ts(0),
     _last_buf_seq(0)
 {}
 
-void LinuxRCInput_UDP::init(void *)
+void RCInput_UDP::init()
 {
     _port = RCINPUT_UDP_DEF_PORT;
     if(!_socket.bind("0.0.0.0", _port)) {
@@ -26,7 +26,7 @@ void LinuxRCInput_UDP::init(void *)
     return;
 }
 
-void LinuxRCInput_UDP::_timer_tick(void)
+void RCInput_UDP::_timer_tick(void)
 {
     uint64_t delay;
     uint16_t seq_inc;
@@ -39,7 +39,7 @@ void LinuxRCInput_UDP::_timer_tick(void)
         }
         if (_last_buf_ts != 0 &&
             (delay = _buf.timestamp_us - _last_buf_ts) > 100000) {
-            hal.console->printf("no rc cmds received for %llu\n", delay);
+            hal.console->printf("no rc cmds received for %llu\n", (unsigned long long)delay);
         }
         _last_buf_ts = _buf.timestamp_us;
 
@@ -51,4 +51,3 @@ void LinuxRCInput_UDP::_timer_tick(void)
         _update_periods(_buf.pwms, RCINPUT_UDP_NUM_CHANNELS);
     }
 }
-#endif

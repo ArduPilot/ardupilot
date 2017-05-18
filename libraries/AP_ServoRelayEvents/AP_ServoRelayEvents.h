@@ -1,14 +1,10 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
  * AP_ServoRelayEvent.h
  *
  * handle DO_SET_SERVO, DO_REPEAT_SERVO, DO_SET_RELAY and
  * DO_REPEAT_RELAY commands
  */
-
-#ifndef __AP_SERVORELAYEVENTS_H__
-#define __AP_SERVORELAYEVENTS_H__
+#pragma once
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Relay/AP_Relay.h>
@@ -62,5 +58,3 @@ private:
 	// PWM for servos
 	uint16_t servo_value;
 };
-
-#endif /* AP_SERVORELAYEVENTS_H_ */

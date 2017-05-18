@@ -45,7 +45,7 @@
 // V2.2.3 - Implemented 0.5us cut filter to remove servo input capture jitter.
 
 // 04-08-2011
-// V2.2.4 - Implemented PPM passtrough funtion.
+// V2.2.4 - Implemented PPM passtrough function.
 //          Shorting channel 2&3 enabled ppm passtrough on channel 1.
 
 // 04-08-2011
@@ -147,9 +147,7 @@
 //         - ppm_encoder_init() will now make sure PPM output always starts with fail-safe (900us) value on throttle after a brown-out reset
 
 // -------------------------------------------------------------
-
-#ifndef _PPM_ENCODER_H_
-#define _PPM_ENCODER_H_
+#pragma once
 
 #include <avr/io.h>
 
@@ -1055,6 +1053,3 @@ void ppm_encoder_init( void )
     }
 }
 // ------------------------------------------------------------------------------
-
-#endif // _PPM_ENCODER_H_
-

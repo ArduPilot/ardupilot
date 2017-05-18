@@ -2,12 +2,14 @@
 
 #include "Util.h"
 
-class Linux::LinuxUtilRPI : public Linux::LinuxUtil {
-public:
-    LinuxUtilRPI();
+namespace Linux {
 
-    static LinuxUtilRPI *from(AP_HAL::Util *util) {
-        return static_cast<LinuxUtilRPI*>(util);
+class UtilRPI : public Util {
+public:
+    UtilRPI();
+
+    static UtilRPI *from(AP_HAL::Util *util) {
+        return static_cast<UtilRPI*>(util);
     }
 
     /* return the Raspberry Pi version */
@@ -20,3 +22,5 @@ protected:
 private:
     int _rpi_version = 0;
 };
+
+}

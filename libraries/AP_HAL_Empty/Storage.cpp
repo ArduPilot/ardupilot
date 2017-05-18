@@ -4,16 +4,16 @@
 
 using namespace Empty;
 
-EmptyStorage::EmptyStorage()
+Storage::Storage()
 {}
 
-void EmptyStorage::init(void*)
+void Storage::init()
 {}
 
-void EmptyStorage::read_block(void* dst, uint16_t src, size_t n) {
+void Storage::read_block(void* dst, uint16_t src, size_t n) {
     memset(dst, 0, n);
 }
 
-void EmptyStorage::write_block(uint16_t loc, const void* src, size_t n)
+void Storage::write_block(uint16_t loc, const void* src, size_t n)
 {}
 

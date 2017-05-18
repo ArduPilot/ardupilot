@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,10 +22,9 @@
   base class constructor.
   This incorporates initialisation as well.
 */
-AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, uint8_t instance, AP_BattMonitor::BattMonitor_State &mon_state) :
+AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state) :
         _mon(mon),
-        _state(mon_state),
-        _instance(instance)
+        _state(mon_state)
 {
 }
 
@@ -41,8 +39,8 @@ uint8_t AP_BattMonitor_Backend::capacity_remaining_pct() const
     }
 }
 
-/// set capacity for this instance
-void AP_BattMonitor_Backend::set_capacity(uint32_t capacity)
+/// get capacity for this instance
+int32_t AP_BattMonitor_Backend::get_capacity() const
 {
-    _mon._pack_capacity[_instance] = capacity;
+    return _mon.pack_capacity_mah(_state.instance);
 }

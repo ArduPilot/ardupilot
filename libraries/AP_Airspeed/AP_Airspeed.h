@@ -1,30 +1,24 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_AIRSPEED_H__
-#define __AP_AIRSPEED_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+
 #include "AP_Airspeed_Backend.h"
-#include "AP_Airspeed_analog.h"
-#include "AP_Airspeed_PX4.h"
-#include "AP_Airspeed_I2C.h"
 
 class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
     // constructor
-    Airspeed_Calibration(const AP_Vehicle::FixedWing &parms);
+    Airspeed_Calibration();
 
     // initialise the calibration
     void init(float initial_ratio);
 
     // take current airspeed in m/s and ground speed vector and return
     // new scaling factor
-    float update(float airspeed, const Vector3f &vg);
+    float update(float airspeed, const Vector3f &vg, int16_t max_airspeed_allowed_during_cal);
 
 private:
     // state of kalman filter for airspeed ratio estimation
@@ -33,29 +27,15 @@ private:
     const float Q1; // process noise matrix bottom right element
     Vector3f state; // state vector
     const float DT; // time delta
-    const AP_Vehicle::FixedWing &aparm;
 };
 
 class AP_Airspeed
 {
 public:
+    friend class AP_Airspeed_Backend;
+    
     // constructor
-    AP_Airspeed(const AP_Vehicle::FixedWing &parms) :
-        _raw_airspeed(0.0f),
-        _airspeed(0.0f),
-        _last_pressure(0.0f),
-        _raw_pressure(0.0f),
-        _EAS2TAS(1.0f),
-        _healthy(false),
-        _hil_set(false),
-        _last_update_ms(0),
-        _calibration(parms),
-        _last_saved_ratio(0.0f),
-        _counter(0),
-        analog(_pin)
-    {
-		AP_Param::setup_object_defaults(this, var_info);
-    };
+    AP_Airspeed();
 
     void init(void);
 
@@ -95,18 +75,16 @@ public:
     }
 
     // return true if airspeed is enabled, and airspeed use is set
-    bool        use(void) const {
-        return _enable && _use;
-    }
+    bool        use(void) const;
 
     // return true if airspeed is enabled
     bool        enabled(void) const {
-        return _enable;
+        return _type.get() != TYPE_NONE;
     }
 
     // force disable the airspeed sensor
     void        disable(void) {
-        _enable.set(0);
+        _type.set(TYPE_NONE);
     }
 
     // used by HIL to set the airspeed
@@ -125,9 +103,9 @@ public:
         return _offset;
     }
 
-    // return the current raw pressure
-    float get_raw_pressure(void) const {
-        return _raw_pressure;
+    // return the current corrected pressure
+    float get_corrected_pressure(void) const {
+        return _corrected_pressure;
     }
 
     // set the apparent to true airspeed ratio
@@ -141,15 +119,15 @@ public:
     }
 
     // update airspeed ratio calibration
-    void update_calibration(const Vector3f &vground);
+    void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
 	// log data to MAVLink
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
 
     // return health status of sensor
-    bool healthy(void) const { return _healthy && fabsf(_offset) > 0; }
+    bool healthy(void) const { return _healthy && fabsf(_offset) > 0 && enabled(); }
 
-    void setHIL(float pressure) { _healthy=_hil_set=true; _hil_pressure=pressure; };
+    void setHIL(float pressure) { _healthy=_hil_set=true; _hil_pressure=pressure; }
 
     // return time in ms of last update
     uint32_t last_update_ms(void) const { return _last_update_ms; }
@@ -158,45 +136,52 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    enum pitot_tube_order { PITOT_TUBE_ORDER_POSITIVE =0, 
-                            PITOT_TUBE_ORDER_NEGATIVE =1, 
-                            PITOT_TUBE_ORDER_AUTO     =2};
+    enum pitot_tube_order { PITOT_TUBE_ORDER_POSITIVE = 0,
+                            PITOT_TUBE_ORDER_NEGATIVE = 1,
+                            PITOT_TUBE_ORDER_AUTO     = 2 };
 
+    enum airspeed_type {
+        TYPE_NONE=0,
+        TYPE_I2C_MS4525=1,
+        TYPE_ANALOG=2,
+        TYPE_I2C_MS5525=3,
+    };
+    
 private:
     AP_Float        _offset;
     AP_Float        _ratio;
+    AP_Float        _psi_range;
     AP_Int8         _use;
-    AP_Int8         _enable;
+    AP_Int8         _type;
     AP_Int8         _pin;
+    AP_Int8         _bus;
     AP_Int8         _autocal;
     AP_Int8         _tube_order;
     AP_Int8         _skip_cal;
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;
-    float			_raw_pressure;
+    float			_corrected_pressure;
     float           _EAS2TAS;
     bool		    _healthy:1;
     bool		    _hil_set:1;
     float           _hil_pressure;
     uint32_t        _last_update_ms;
 
+    // state of runtime calibration
+    struct {
+        uint32_t        start_ms;
+        uint16_t        count;
+        float           sum;
+        uint16_t        read_count;
+    } _cal;
+
     Airspeed_Calibration _calibration;
     float _last_saved_ratio;
     uint8_t _counter;
 
     float get_pressure(void);
+    void update_calibration(float raw_pressure);
 
-    AP_Airspeed_Analog analog;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    AP_Airspeed_PX4    digital;
-#else
-    AP_Airspeed_I2C    digital;
-#endif
+    AP_Airspeed_Backend *sensor;
 };
-
-// the virtual pin for digital airspeed sensors
-#define AP_AIRSPEED_I2C_PIN 65
-
-#endif // __AP_AIRSPEED_H__
-

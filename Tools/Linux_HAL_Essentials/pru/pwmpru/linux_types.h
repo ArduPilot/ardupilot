@@ -1,5 +1,4 @@
-#ifndef LINUX_TYPES_H
-#define LINUX_TYPES_H
+#pragma once
 
 #include <stdint.h>
 
@@ -14,6 +13,3 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 
 #define __packed __attribute__((packed))
-
-
-#endif

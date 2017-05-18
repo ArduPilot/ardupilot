@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import boards
+
+def build(bld):
+    if not isinstance(bld.get_board(), boards.linux):
+        return
+
+    vehicle = bld.path.name
+
+    bld.ap_stlib(
+        name=vehicle + '_libs',
+        ap_vehicle=vehicle,
+        ap_libraries=bld.ap_common_vehicle_libraries() + [
+            'AP_InertialNav',
+            'AP_Beacon',
+        ],
+    )
+
+    bld.ap_program(
+        program_groups='tools',
+        use=vehicle + '_libs',
+    )

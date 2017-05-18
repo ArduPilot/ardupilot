@@ -32,7 +32,7 @@
 	
 		#define baud_setting 16	// See page 231 of the data sheet
 
-		// Comment - this software rearranges the channel order from the tranmsitter to match APM useage
+		// Comment - this software rearranges the channel order from the tranmsitter to match APM usage
 		//			Ch1 = Aileron = Spectrum Ch2
 		//			Ch2 = Elevator = Spectrum Ch3
 		//			Ch3 = Throttle = Spectrum Ch1
@@ -184,7 +184,7 @@ ISR(TIMER1_COMPA_vect) {
 			falling_edge = TRUE;
 			ch_index++;
 		} else {
-			// set timer top to max to minimize interupt execution when not sending a frame
+			// set timer top to max to minimize interrupt execution when not sending a frame
 			OCR1A = 0xffff;
 		}
 	} else {
@@ -193,7 +193,7 @@ ISR(TIMER1_COMPA_vect) {
 			OCR1A = 4800;			//16 * 300,  300 usec negative going pulse width;
 			falling_edge = FALSE;
 		} else {
-			// set timer top to max to minimize interupt execution when not sending a frame
+			// set timer top to max to minimize interrupt execution when not sending a frame
 			OCR1A = 0xffff;
 		}
 	}

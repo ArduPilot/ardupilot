@@ -1,14 +1,6 @@
-#ifndef __AP_HAL_LINUX_STORAGE_H__
-#define __AP_HAL_LINUX_STORAGE_H__
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
-#define LINUX_STORAGE_USE_FRAM 1
-#else
-#define LINUX_STORAGE_USE_FRAM 0
-#endif
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_HAL_Linux_Namespace.h"
 
 #define LINUX_STORAGE_SIZE HAL_STORAGE_SIZE
 #define LINUX_STORAGE_MAX_WRITE 512
@@ -16,16 +8,18 @@
 #define LINUX_STORAGE_LINE_SIZE (1<<LINUX_STORAGE_LINE_SHIFT)
 #define LINUX_STORAGE_NUM_LINES (LINUX_STORAGE_SIZE/LINUX_STORAGE_LINE_SIZE)
 
-class Linux::LinuxStorage : public AP_HAL::Storage
+namespace Linux {
+
+class Storage : public AP_HAL::Storage
 {
 public:
-    LinuxStorage() : _fd(-1),_dirty_mask(0) { }
+    Storage() : _fd(-1),_dirty_mask(0) { }
 
-    static LinuxStorage *from(AP_HAL::Storage *storage) {
-        return static_cast<LinuxStorage*>(storage);
+    static Storage *from(AP_HAL::Storage *storage) {
+        return static_cast<Storage*>(storage);
     }
 
-    void init(void* machtnichts) {}
+    void init() {}
     uint8_t  read_byte(uint16_t loc);
     uint16_t read_word(uint16_t loc);
     uint32_t read_dword(uint16_t loc);
@@ -47,7 +41,4 @@ protected:
     volatile uint32_t _dirty_mask;
 };
 
-#include "Storage_FRAM.h"
-
-#endif // __AP_HAL_LINUX_STORAGE_H__
-
+}

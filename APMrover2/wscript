@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+    vehicle = bld.path.name
+    bld.ap_stlib(
+        name=vehicle + '_libs',
+        ap_vehicle=vehicle,
+        ap_libraries=bld.ap_common_vehicle_libraries() + [
+            'APM_Control',
+            'AP_Arming',
+            'AP_Camera',
+            'AP_L1_Control',
+            'AP_Menu',
+            'AP_Mount',
+            'AP_Navigation',
+            'AP_RCMapper',
+            'AP_RSSI',
+            'AP_Relay',
+            'AP_ServoRelayEvents',
+            'PID',
+            'AP_Stats',
+            'AP_Beacon',
+            'AP_AdvancedFailsafe',
+        ],
+    )
+
+    bld.ap_program(
+        program_name='ardurover',
+        program_groups=['bin', 'rover'],
+        use=vehicle + '_libs',
+    )

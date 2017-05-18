@@ -1,17 +1,18 @@
-#ifndef __AP_HAL_LINUX_RPIOUARTDRIVER_H__
-#define __AP_HAL_LINUX_RPIOUARTDRIVER_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
 #include "UARTDriver.h"
+#include <AP_HAL/SPIDevice.h>
 
+namespace Linux {
 
-class Linux::LinuxRPIOUARTDriver : public Linux::LinuxUARTDriver {
+class RPIOUARTDriver : public UARTDriver {
 public:
-    LinuxRPIOUARTDriver();
+    RPIOUARTDriver();
 
-    static LinuxRPIOUARTDriver *from(AP_HAL::UARTDriver *uart) {
-        return static_cast<LinuxRPIOUARTDriver*>(uart);
+    static RPIOUARTDriver *from(AP_HAL::UARTDriver *uart) {
+        return static_cast<RPIOUARTDriver*>(uart);
     }
 
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
@@ -25,17 +26,15 @@ protected:
 private:
     bool _in_timer;
 
-    bool sem_take_nonblocking();
-    void sem_give();
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+    void _bus_timer(void);
 
-    uint32_t _last_update_timestamp;
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
     bool _external;
+    bool _registered_callback;
 
     bool _need_set_baud;
     uint32_t _baudrate;
 };
 
-#endif //__AP_HAL_LINUX_RPIOUARTDRIVER_H__
+}

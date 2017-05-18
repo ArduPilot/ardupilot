@@ -1,18 +1,23 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Tracker.h"
 
-void Tracker::init_barometer(void)
+void Tracker::init_barometer(bool full_calibration)
 {
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Calibrating barometer"));    
-    barometer.calibrate();
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("barometer calibration complete"));
+    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
+    if (full_calibration) {
+        barometer.calibrate();
+    } else {
+        barometer.update_calibration();
+    }
+    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 
 // read the barometer and return the updated altitude in meters
 void Tracker::update_barometer(void)
 {
     barometer.update();
+    if (should_log(MASK_LOG_IMU)) {
+        Log_Write_Baro();
+    }
 }
 
 
@@ -33,8 +38,11 @@ void Tracker::update_compass(void)
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
         compass.learn_offsets();
+        if (should_log(MASK_LOG_COMPASS)) {
+            DataFlash.Log_Write_Compass(compass);
+        }
     } else {
-        ahrs.set_compass(NULL);
+        ahrs.set_compass(nullptr);
     }
 }
 
@@ -66,6 +74,20 @@ void Tracker::compass_cal_update() {
 }
 
 /*
+    Accel calibration
+*/
+void Tracker::accel_cal_update() {
+    if (hal.util->get_soft_armed()) {
+        return;
+    }
+    ins.acal_update();
+    float trim_roll, trim_pitch;
+    if (ins.get_new_trim(trim_roll, trim_pitch)) {
+        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+    }
+}
+
+/*
   read the GPS
  */
 void Tracker::update_GPS(void)
@@ -78,13 +100,13 @@ void Tracker::update_GPS(void)
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         last_gps_msg_ms = gps.last_message_time_ms();
         
-        if(ground_start_count > 1) {
+        if (ground_start_count > 1) {
             ground_start_count--;
         } else if (ground_start_count == 1) {
             // We countdown N number of good GPS fixes
             // so that the altitude is more accurate
             // -------------------------------------
-            if (current_loc.lat == 0) {
+            if (current_loc.lat == 0 && current_loc.lng == 0) {
                 ground_start_count = 5;
 
             } else {
@@ -94,7 +116,12 @@ void Tracker::update_GPS(void)
                 set_home(current_loc);
 
                 // set system clock for log timestamps
-                hal.util->set_system_clock(gps.time_epoch_usec());
+                uint64_t gps_timestamp = gps.time_epoch_usec();
+                
+                hal.util->set_system_clock(gps_timestamp);
+                
+                // update signing timestamp
+                GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically
@@ -102,6 +129,11 @@ void Tracker::update_GPS(void)
                 }
                 ground_start_count = 0;
             }
+        }
+
+        // log GPS data
+        if (should_log(MASK_LOG_GPS)) {
+            DataFlash.Log_Write_GPS(gps, 0);
         }
     }
 }

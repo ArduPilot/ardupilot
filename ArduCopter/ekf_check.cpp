@@ -1,11 +1,9 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 /**
  *
- * ekf_check.pde - detects failures of the ekf or inertial nav system
- *                 triggers an alert to the pilot and helps take countermeasures
+ * Detects failures of the ekf or inertial nav system triggers an alert
+ * to the pilot and helps take countermeasures
  *
  */
 
@@ -32,12 +30,12 @@ void Copter::ekf_check()
 {
     // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
     Location temp_loc;
-    if (!ahrs.get_NavEKF_const().getOriginLLH(temp_loc)) {
+    if (!ahrs.get_origin(temp_loc)) {
         return;
     }
 
     // return immediately if motors are not armed, ekf check is disabled, not using ekf or usb is connected
-    if (!motors.armed() || ap.usb_connected || (g.fs_ekf_thresh <= 0.0f)) {
+    if (!motors->armed() || ap.usb_connected || (g.fs_ekf_thresh <= 0.0f)) {
         ekf_check_state.fail_count = 0;
         ekf_check_state.bad_variance = false;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
@@ -59,9 +57,9 @@ void Copter::ekf_check()
                 // log an error in the dataflash
                 Log_Write_Error(ERROR_SUBSYSTEM_EKFCHECK, ERROR_CODE_EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
-                if ((hal.scheduler->millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("EKF variance"));
-                    ekf_check_state.last_warn_time = hal.scheduler->millis();
+                if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
+                    gcs_send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
+                    ekf_check_state.last_warn_time = AP_HAL::millis();
                 }
                 failsafe_ekf_event();
             }
@@ -107,7 +105,7 @@ bool Copter::ekf_over_threshold()
     Vector2f offset;
     float compass_variance;
     float vel_variance;
-    ahrs.get_NavEKF().getVariances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
+    ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
     compass_variance = magVar.length();
 
     // return true if compass and velocity variance over the threshold
@@ -124,12 +122,12 @@ void Copter::failsafe_ekf_event()
     }
 
     // do nothing if motors disarmed
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         return;
     }
 
     // do nothing if not in GPS flight mode and ekf-action is not land-even-stabilize
-    if (!mode_requires_GPS(control_mode) && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
+    if ((control_mode != LAND) && !mode_requires_GPS(control_mode) && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
         return;
     }
 
@@ -141,12 +139,12 @@ void Copter::failsafe_ekf_event()
     switch (g.fs_ekf_action) {
         case FS_EKF_ACTION_ALTHOLD:
             // AltHold
-            if (!set_mode(ALT_HOLD)) {
-                set_mode_land_with_pause();
+            if (failsafe.radio || !set_mode(ALT_HOLD, MODE_REASON_EKF_FAILSAFE)) {
+                set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
             }
             break;
         default:
-            set_mode_land_with_pause();
+            set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
             break;
     }
 
@@ -167,4 +165,26 @@ void Copter::failsafe_ekf_off_event(void)
     // clear flag and log recovery
     failsafe.ekf = false;
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_RESOLVED);
+}
+
+// check for ekf yaw reset and adjust target heading, also log position reset
+void Copter::check_ekf_reset()
+{
+    // check for yaw reset
+    float yaw_angle_change_rad = 0.0f;
+    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
+    if (new_ekfYawReset_ms != ekfYawReset_ms) {
+        attitude_control->shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
+        ekfYawReset_ms = new_ekfYawReset_ms;
+        Log_Write_Event(DATA_EKF_YAW_RESET);
+    }
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+    // check for change in primary EKF (log only, AC_WPNav handles position target adjustment)
+    if ((EKF2.getPrimaryCoreIndex() != ekf_primary_core) && (EKF2.getPrimaryCoreIndex() != -1)) {
+        ekf_primary_core = EKF2.getPrimaryCoreIndex();
+        Log_Write_Error(ERROR_SUBSYSTEM_EKF_PRIMARY, ekf_primary_core);
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "EKF primary changed:%d\n", (unsigned)ekf_primary_core);
+    }
+#endif
 }

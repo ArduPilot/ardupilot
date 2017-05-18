@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# default rcS running mode script
+
+echo $((1024*1024)) > /proc/sys/net/core/wmem_max	# inscrease the max socket size
+if test -x /data/ftp/internal_000/APM/start_ardupilot.sh; then
+  ulogger -t "rcS_mode_default" -p I "Launching ArduPilot"
+  /data/ftp/internal_000/APM/start_ardupilot.sh
+else
+  ulogger -t "rcS_mode_default" -p I "Launching Dragon"
+  DragonStarter.sh -out2null &
+fi
+sleep 1
+

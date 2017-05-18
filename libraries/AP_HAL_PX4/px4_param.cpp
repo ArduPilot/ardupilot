@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   This replaces the PX4Firmware parameter system with dummy
   functions. The ArduPilot parameter system uses different formatting
@@ -17,13 +16,16 @@
 
 #include "uORB/uORB.h"
 #include "uORB/topics/parameter_update.h"
-
+        
 /** parameter update topic */
 ORB_DEFINE(parameter_update, struct parameter_update_s);
 
 param_t param_find(const char *name)
 {
+#if 0
+    // useful for driver debugging
     ::printf("PX4: param_find(%s)\n", name);
+#endif
     return PARAM_INVALID;
 }
 
@@ -37,4 +39,9 @@ int param_set(param_t param, const void *val)
     return -1;
 }
 
+int
+param_set_no_notification(param_t param, const void *val)
+{
+    return -1;
+}
 #endif // CONFIG_HAL_BOARD

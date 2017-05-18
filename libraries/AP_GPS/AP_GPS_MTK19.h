@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,10 +19,10 @@
 //
 //	GPS configuration : Custom protocol per "Customize Function Specification, 3D Robotics, v1.6, v1.7, v1.8, v1.9"
 //
-#ifndef AP_GPS_MTK19_h
-#define AP_GPS_MTK19_h
+#pragma once
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 #include "AP_GPS_MTK_Common.h"
 
 #define MTK_GPS_REVISION_V16  16
@@ -36,6 +35,8 @@ public:
     bool        read(void);
 
     static bool _detect(struct MTK19_detect_state &state, uint8_t data);
+
+    const char *name() const override { return "MTK19"; }
 
 private:
     struct PACKED diyd_mtk_msg {
@@ -77,9 +78,7 @@ private:
 
     // Receive buffer
     union {
+        DEFINE_BYTE_ARRAY_METHODS
         diyd_mtk_msg msg;
-        uint8_t bytes[];
     } _buffer;
 };
-
-#endif  // AP_GPS_MTK19_H

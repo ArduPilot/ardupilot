@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,100 +12,100 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/* 
+/*
    main Rover class, containing all vehicle specific state
 */
+#pragma once
 
-#ifndef _ROVER_H_
-#define _ROVER_H_
-
-#define THISFIRMWARE "ArduRover v2.51-beta"
-#define FIRMWARE_VERSION 2,51,0,FIRMWARE_VERSION_TYPE_BETA
-
-#include <math.h>
+#include <cmath>
 #include <stdarg.h>
 
 // Libraries
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Menu/AP_Menu.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
-#include <AP_GPS/AP_GPS.h>         // ArduPilot GPS library
-#include <AP_ADC/AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
+#include <AP_GPS/AP_GPS.h>                          // ArduPilot GPS library
+#include <AP_ADC/AP_ADC.h>                          // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_Baro/AP_Baro.h>
-#include <AP_Compass/AP_Compass.h>     // ArduPilot Mega Magnetometer Library
-#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
-#include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
-#include <AP_NavEKF/AP_NavEKF.h>
+#include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
+#include <AP_Math/AP_Math.h>                        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
+#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
+#include <AP_AHRS/AP_AHRS.h>                        // ArduPilot Mega DCM Library
 #include <AP_NavEKF2/AP_NavEKF2.h>
-#include <AP_Mission/AP_Mission.h>     // Mission command library
+#include <AP_NavEKF3/AP_NavEKF3.h>
+#include <AP_Mission/AP_Mission.h>                  // Mission command library
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Terrain/AP_Terrain.h>
-#include <PID/PID.h>            // PID library
-#include <RC_Channel/RC_Channel.h>     // RC Channel Library
-#include <AP_RangeFinder/AP_RangeFinder.h>	// Range finder library
-#include <Filter/Filter.h>			// Filter library
-#include <Filter/Butter.h>			// Filter library - butterworth filter
-#include <AP_Buffer/AP_Buffer.h>      // FIFO buffer library
-#include <Filter/ModeFilter.h>		// Mode Filter from Filter library
-#include <Filter/AverageFilter.h>	// Mode Filter from Filter library
-#include <AP_Relay/AP_Relay.h>       // APM relay
+#include <PID/PID.h>                                // PID library
+#include <RC_Channel/RC_Channel.h>                  // RC Channel Library
+#include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
+#include <Filter/Filter.h>                          // Filter library
+#include <Filter/Butter.h>                          // Filter library - butterworth filter
+#include <AP_Buffer/AP_Buffer.h>                    // FIFO buffer library
+#include <Filter/ModeFilter.h>                      // Mode Filter from Filter library
+#include <Filter/AverageFilter.h>                   // Mode Filter from Filter library
+#include <AP_Relay/AP_Relay.h>                      // APM relay
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Mount/AP_Mount.h>		// Camera/Antenna mount
-#include <AP_Camera/AP_Camera.h>		// Camera triggering
-#include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
-#include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
-#include <AP_Airspeed/AP_Airspeed.h>    // needed for AHRS build
-#include <AP_Vehicle/AP_Vehicle.h>     // needed for AHRS build
+#include <AP_Mount/AP_Mount.h>                      // Camera/Antenna mount
+#include <AP_Camera/AP_Camera.h>                    // Camera triggering
+#include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
+#include <AP_Airspeed/AP_Airspeed.h>                // needed for AHRS build
+#include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
 #include <DataFlash/DataFlash.h>
-#include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
-#include <SITL/SITL.h>
-#include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
-#include <stdarg.h>
+#include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
+#include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
 #include <AP_Navigation/AP_Navigation.h>
 #include <APM_Control/APM_Control.h>
 #include <AP_L1_Control/AP_L1_Control.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_VRBRAIN/AP_HAL_VRBRAIN.h>
-#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#include "AP_Arming.h"
 #include "compat.h"
 
-#include <AP_Notify/AP_Notify.h>      // Notify library
-#include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
-#include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
-#include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
+#include <AP_Notify/AP_Notify.h>                    // Notify library
+#include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
+#include <AP_OpticalFlow/AP_OpticalFlow.h>          // Optical Flow library
+#include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
+#include <AP_Button/AP_Button.h>
+#include <AP_Stats/AP_Stats.h>                      // statistics library
+#include <AP_Beacon/AP_Beacon.h>
 
 // Configuration
 #include "config.h"
 
 // Local modules
 #include "defines.h"
+#if ADVANCED_FAILSAFE == ENABLED
+#include "afs_rover.h"
+#endif
 #include "Parameters.h"
-#include <GCS_MAVLink/GCS.h>
+#include "GCS_Mavlink.h"
 
-#include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_Declination/AP_Declination.h>          // ArduPilot Mega Declination Helper Library
 
-class Rover {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
+
+class Rover : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
+    friend class GCS_MAVLINK_Rover;
     friend class Parameters;
+    friend class ParametersG2;
+    friend class AP_Arming_Rover;
+#if ADVANCED_FAILSAFE == ENABLED
+    friend class AP_AdvancedFailsafe_Rover;
+#endif
 
     Rover(void);
 
-    // public member functions
-    void setup(void);
-    void loop(void);
+    // HAL::Callbacks implementation.
+    void setup(void) override;
+    void loop(void) override;
 
 private:
     AP_HAL::BetterStream* cliSerial;
@@ -116,11 +115,9 @@ private:
     // variables
     AP_Param param_loader;
 
-    // the rate we run the main loop at
-    const AP_InertialSensor::Sample_rate ins_sample_rate;
-
     // all settable parameters
     Parameters g;
+    ParametersG2 g2;
 
     // main loop scheduler
     AP_Scheduler scheduler;
@@ -136,7 +133,7 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_learn;
 
-    DataFlash_Class DataFlash{FIRMWARE_STRING};
+    DataFlash_Class DataFlash;
 
     bool in_log_download;
 
@@ -145,19 +142,23 @@ private:
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
-    RangeFinder sonar { serial_manager };
+    RangeFinder sonar { serial_manager, ROTATION_NONE };
+    AP_Button button;
 
     // flight modes convenience array
-    AP_Int8	*modes;
+    AP_Int8 *modes;
 
-// Inertial Navigation EKF
+    // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF EKF{&ahrs, barometer, sonar};
     NavEKF2 EKF2{&ahrs, barometer, sonar};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, sonar, EKF, EKF2};
+    NavEKF3 EKF3{&ahrs, barometer, sonar};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, sonar, EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs {ins, barometer, gps};
 #endif
+
+    // Arming/Disarming management class
+    AP_Arming_Rover arming {ahrs, barometer, compass, battery};
 
     AP_L1_Control L1_controller;
 
@@ -170,19 +171,23 @@ private:
     // Mission library
     AP_Mission mission;
 
-    OpticalFlow optflow;
-    
-    // RSSI 
-    AP_RSSI rssi;          
+#if AP_AHRS_NAVEKF_AVAILABLE
+    OpticalFlow optflow{ahrs};
+#endif
+
+    // RSSI
+    AP_RSSI rssi;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL sitl;
+    SITL::SITL sitl;
 #endif
 
     // GCS handling
     AP_SerialManager serial_manager;
     const uint8_t num_gcs;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Rover gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
+    GCS _gcs;  // avoid using this; use gcs()
+    GCS &gcs() { return _gcs; }
 
     // relay support
     AP_Relay relay;
@@ -199,7 +204,7 @@ private:
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
-    // current_loc uses the baro/gps soloution for altitude rather than gps only.
+    // current_loc uses the baro/gps solution for altitude rather than gps only.
     AP_Mount camera_mount;
 #endif
 
@@ -224,7 +229,7 @@ private:
 
     // Failsafe
     // A tracking variable for type of failsafe active
-    // Used for failsafe based on loss of RC signal or GCS signal. See 
+    // Used for failsafe based on loss of RC signal or GCS signal. See
     // FAILSAFE_EVENT_*
     struct {
         uint8_t bits;
@@ -250,7 +255,7 @@ private:
     int32_t next_navigation_leg_cd;
 
     // ground speed error in m/s
-    float groundspeed_error;	
+    float groundspeed_error;
 
     // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
     int16_t     throttle_nudge;
@@ -268,7 +273,7 @@ private:
         float turn_angle;
         uint16_t sonar1_distance_cm;
         uint16_t sonar2_distance_cm;
-        
+
         // time when we last detected an obstacle, in milliseconds
         uint32_t detected_time_ms;
     } obstacle;
@@ -278,7 +283,7 @@ private:
 
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
-    float 	ground_speed;
+    float ground_speed;
     int16_t throttle_last;
     int16_t throttle;
 
@@ -291,10 +296,14 @@ private:
     // Battery Sensors
     AP_BattMonitor battery;
 
-    // Battery Sensors
 #if FRSKY_TELEM_ENABLED == ENABLED
+    // FrSky telemetry support
     AP_Frsky_Telem frsky_telemetry;
 #endif
+
+    uint32_t control_sensors_present;
+    uint32_t control_sensors_enabled;
+    uint32_t control_sensors_health;
 
     // Navigation control variables
     // The instantaneous desired lateral acceleration in m/s/s
@@ -312,35 +321,37 @@ private:
     int32_t condition_value;
     // A starting value used to check the status of a conditional command.
     // For example in a delay command the condition_start records that start time for the delay
-    int32_t	condition_start;
+    int32_t condition_start;
+
+    // Use for stopping navigation in auto mode and do rotation on spot.
+    bool do_auto_rotation;
 
     // 3D Location vectors
     // Location structure defined in AP_Common
     // The home location used for RTL.  The location is set when we first get stable GPS lock
     const struct Location &home;
 
-    // Flag for if we have gps lock and have set the home location
-    bool home_is_set;
+    // Flag for if we have g_gps lock and have set the home location in AHRS
+    enum HomeState home_is_set = HOME_UNSET;
+
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
     struct Location prev_WP;
     // The location of the current/active waypoint.  Used for track following
     struct Location next_WP;
-    // The location of the active waypoint in Guided mode.
-    struct Location guided_WP;
 
     // IMU variables
     // The main loop execution time.  Seconds
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
-    float G_Dt;		
+    float G_Dt;
 
     // Performance monitoring
-    // Timer used to accrue data and trigger recording of the performanc monitoring log message
-    int32_t	perf_mon_timer;
+    // Timer used to accrue data and trigger recording of the performance monitoring log message
+    int32_t perf_mon_timer;
     // The maximum main loop execution time recorded in the current performance monitoring interval
     uint32_t G_Dt_max;
 
     // System Timers
-    // Time in microseconds of start of main control loop. 
+    // Time in microseconds of start of main control loop.
     uint32_t fast_loopTimer_us;
     // Number of milliseconds used in last main loop cycle
     uint32_t delta_us_fast_loop;
@@ -349,6 +360,9 @@ private:
 
     // set if we are driving backwards
     bool in_reverse;
+
+    // set if the users asks for auto reverse
+    bool in_auto_reverse;
 
     static const AP_Scheduler::Task scheduler_tasks[];
 
@@ -362,15 +376,37 @@ private:
     static const LogStructure log_structure[];
 
     // Loiter control
-    uint16_t loiter_time_max; // How long we should loiter at the nav_waypoint (time in seconds)
-    uint32_t loiter_time;     // How long have we been loitering - The start time in millis
+    uint16_t loiter_duration;       // How long we should loiter at the nav_waypoint (time in seconds)
+    uint32_t loiter_start_time;     // How long have we been loitering - The start time in millis
+    bool active_loiter;             // TRUE if we actively return to the loitering waypoint if we drift off
+    float distance_past_wp;         // record the distance we have gone past the wp
+    bool previously_reached_wp;     // set to true if we have EVER reached the waypoint
 
-    float distance_past_wp; // record the distance we have gone past the wp
+    // time that rudder/steering arming has been running
+    uint32_t rudder_arm_timer;
+
+    // true if we are in an auto-throttle mode, which means
+    // we need to run the speed controller
+    bool auto_throttle_mode;
+
+    // Guided control
+    GuidedMode guided_mode;             // controls which controller is run (waypoint or velocity)
+    // Store parameters from Guided msg
+    struct {
+      float turn_angle;          // target heading in centi-degrees
+      float target_speed;        // target speed in m/s
+      float target_steer_speed;  // target steer speed in degree/s
+      uint32_t msg_time_ms;      // time of last guided message
+    } guided_control;
+
+    // Store the time the last GPS message was received.
+    uint32_t last_gps_msg_ms{0};
 
 private:
     // private member functions
     void ahrs_update();
     void mount_update(void);
+    void update_trigger(void);
     void update_alt();
     void gcs_failsafe_check(void);
     void compass_accumulate(void);
@@ -386,42 +422,44 @@ private:
     void update_navigation();
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
+    void update_sensor_status_flags(void);
     void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
-    void send_radio_out(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void send_hwstatus(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
-    void send_statustext(mavlink_channel_t chan);
     bool telemetry_delayed(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_update(void);
-    void gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str);
+    void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void gcs_retry_deferred(void);
 
     void do_erase_logs(void);
     void Log_Write_Performance();
     void Log_Write_Steering();
-    bool Log_Write_Startup(uint8_t type);
+    void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
     void Log_Write_Nav_Tuning();
     void Log_Write_Sonar();
+    void Log_Write_Beacon();
     void Log_Write_Current();
     void Log_Write_Attitude();
     void Log_Write_RC(void);
+    void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
     void Log_Write_Home_And_Origin();
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
-    void start_logging() ;
+    void start_logging();
+    void Log_Arm_Disarm();
 
     void load_parameters(void);
     void throttle_slew_limit(int16_t last_throttle);
@@ -431,8 +469,9 @@ private:
     void calc_lateral_acceleration();
     void calc_nav_steer();
     void set_servos(void);
-    void set_next_WP(const struct Location& loc);
-    void set_guided_WP(void);
+    void set_auto_WP(const struct Location& loc);
+    void set_guided_WP(const struct Location& loc);
+    void set_guided_velocity(float target_steer_speed, float target_speed);
     void init_home();
     void restart_nav();
     void exit_mission();
@@ -440,18 +479,21 @@ private:
     bool verify_RTL();
     bool verify_wait_delay();
     bool verify_within_distance();
+    bool verify_yaw();
+#if CAMERA == ENABLED
     void do_take_picture();
     void log_picture();
+#endif
     void update_commands(void);
     void delay(uint32_t ms);
     void mavlink_delay(uint32_t ms);
-    uint32_t millis();
-    uint32_t micros();
     void read_control_switch();
     uint8_t readSwitch(void);
     void reset_control_switch();
     void read_trim_switch();
     void update_events(void);
+    void button_update(void);
+    void stats_update();
     void navigate();
     void set_control_channels(void);
     void init_rc_in();
@@ -461,8 +503,10 @@ private:
     bool throttle_failsafe_active();
     void trim_control_surfaces();
     void trim_radio();
-    void init_barometer(void);
+    void init_barometer(bool full_calibration);
     void init_sonar(void);
+    void init_beacon();
+    void update_beacon();
     void read_battery(void);
     void read_receiver_rssi(void);
     void read_sonars(void);
@@ -472,7 +516,6 @@ private:
     void report_throttle();
     void report_compass();
     void report_modes();
-    void print_PID(PID * pid);
     void print_radio_values();
     void print_switch(uint8_t p, uint8_t m);
     void print_done();
@@ -493,22 +536,47 @@ private:
     void check_usb_mux(void);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
-    void frsky_telemetry_send(void);
-    void print_hit_enter();    
-    void gcs_send_text_fmt(const prog_char_t *fmt, ...);
+    void print_hit_enter();
+    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
+    void notify_mode(enum mode new_mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
+    void do_yaw(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
+#if CAMERA == ENABLED
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
+#endif
+    void do_set_reverse(const AP_Mission::Mission_Command& cmd);
     void init_capabilities(void);
+    void rudder_arm_disarm_check();
+    void change_arm_state(void);
+    bool disarm_motors(void);
+    bool arm_motors(AP_Arming::ArmingMethod method);
+    bool motor_active();
+    void update_home();
+    void accel_cal_update(void);
+    void nav_set_yaw_speed();
+    bool do_yaw_rotation();
+    void nav_set_speed();
+    bool in_stationary_loiter(void);
+    void set_loiter_active(const AP_Mission::Mission_Command& cmd);
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
+    void crash_check();
+#if ADVANCED_FAILSAFE == ENABLED
+    void afs_fs_check(void);
+#endif
 
 public:
     bool print_log_menu(void);
@@ -542,6 +610,7 @@ public:
 #endif
 
     void dataflash_periodic(void);
+    void update_soft_armed();
 };
 
 #define MENU_FUNC(func) FUNCTOR_BIND(&rover, &Rover::func, int8_t, uint8_t, const Menu::arg *)
@@ -549,4 +618,5 @@ public:
 extern const AP_HAL::HAL& hal;
 extern Rover rover;
 
-#endif // _ROVER_H_
+using AP_HAL::millis;
+using AP_HAL::micros;

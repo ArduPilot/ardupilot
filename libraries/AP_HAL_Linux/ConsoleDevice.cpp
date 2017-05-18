@@ -1,19 +1,21 @@
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "ConsoleDevice.h"
 
-#include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
-#include <fcntl.h>
 
-ConsoleDevice::ConsoleDevice() 
+ConsoleDevice::ConsoleDevice()
 {
 }
 
 ConsoleDevice::~ConsoleDevice()
 {
+    close();
 }
 
 bool ConsoleDevice::close()
@@ -30,7 +32,22 @@ bool ConsoleDevice::open()
 
     _closed = false;
 
+    if (!_set_signal_handlers()) {
+        close();
+        return false;
+    }
+
     return true;
+}
+
+bool ConsoleDevice::_set_signal_handlers(void) const
+{
+    struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = SIG_IGN;
+
+    return (sigaction(SIGTTIN, &sa, nullptr) == 0);
+
 }
 
 ssize_t ConsoleDevice::read(uint8_t *buf, uint16_t n)
@@ -55,10 +72,10 @@ void ConsoleDevice::set_blocking(bool blocking)
 {
     int rd_flags;
     int wr_flags;
-   
+
     rd_flags  = fcntl(_rd_fd, F_GETFL, 0);
     wr_flags  = fcntl(_wr_fd, F_GETFL, 0);
-    
+
     if (blocking) {
         rd_flags = rd_flags & ~O_NONBLOCK;
         wr_flags = wr_flags & ~O_NONBLOCK;
@@ -80,5 +97,3 @@ void ConsoleDevice::set_blocking(bool blocking)
 void ConsoleDevice::set_speed(uint32_t baudrate)
 {
 }
-
-#endif

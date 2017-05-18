@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,16 +17,17 @@
 */
 
 #include "Rover.h"
+#include "version.h"
 
 Rover::Rover(void) :
     param_loader(var_info),
-    ins_sample_rate(AP_InertialSensor::RATE_50HZ),
-    channel_steer(NULL),
-    channel_throttle(NULL),
-    channel_learn(NULL),
+    channel_steer(nullptr),
+    channel_throttle(nullptr),
+    channel_learn(nullptr),
+    DataFlash{FIRMWARE_STRING},
     in_log_download(false),
     modes(&g.mode1),
-    L1_controller(ahrs),
+    L1_controller(ahrs, nullptr),
     nav_controller(&L1_controller),
     steerController(ahrs),
     mission(ahrs,
@@ -46,9 +46,10 @@ Rover::Rover(void) :
     ground_start_count(20),
     throttle(500),
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry(ahrs, battery),
+    frsky_telemetry(ahrs, battery, sonar),
 #endif
+    do_auto_rotation(false),
     home(ahrs.get_home()),
-    G_Dt(0.02)
+    G_Dt(0.02f)
 {
 }

@@ -2,8 +2,7 @@
  * prucomm.h - structure definitions for communication
  *
  */
-#ifndef PRUCOMM_H
-#define PRUCOMM_H
+#pragma once
 
 #include "pru_defs.h"
 
@@ -71,5 +70,3 @@ struct cxt {
 
 /* the command is at the start of shared DPRAM */
 #define PWM_CMD		((volatile struct pwm_cmd *)DPRAM_SHARED)
-
-#endif

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
@@ -8,11 +7,11 @@
 extern const AP_HAL::HAL& hal;
 
 /// Constructor
-AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon, uint8_t instance, AP_BattMonitor::BattMonitor_State &mon_state) :
-    AP_BattMonitor_Backend(mon, instance, mon_state)
+AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state) :
+    AP_BattMonitor_Backend(mon, mon_state)
 {
-    _volt_pin_analog_source = hal.analogin->channel(mon._volt_pin[instance]);
-    _curr_pin_analog_source = hal.analogin->channel(mon._curr_pin[instance]);
+    _volt_pin_analog_source = hal.analogin->channel(mon._volt_pin[_state.instance]);
+    _curr_pin_analog_source = hal.analogin->channel(mon._curr_pin[_state.instance]);
 
     // always healthy
     _state.healthy = true;
@@ -31,7 +30,7 @@ AP_BattMonitor_Analog::read()
     // read current
     if (_mon.has_current(_state.instance)) {
         // calculate time since last current read
-        uint32_t tnow = hal.scheduler->micros();
+        uint32_t tnow = AP_HAL::micros();
         float dt = tnow - _state.last_time_micros;
 
         // this copes with changing the pin at runtime

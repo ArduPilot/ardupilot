@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,14 +15,8 @@
 
 // Copyright (C) 2010 Swift Navigation Inc.
 // Contact: Fergus Noble <fergus@swift-nav.com>
-   
-#ifndef __EDC_H_
-#define __EDC_H_
+#pragma once
 
-#include <AP_Progmem/AP_Progmem.h>
-
-#include <stdint.h>
+#include <inttypes.h>
 
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
-
-#endif /* __EDC_H_ */

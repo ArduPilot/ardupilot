@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,6 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_RangeFinder_PX4_PWM.h"
 
 #include <sys/types.h>
@@ -30,9 +30,13 @@
 #include <uORB/topics/pwm_input.h>
 #include <stdio.h>
 #include <errno.h>
-#include <math.h>
+#include <cmath>
 
 extern const AP_HAL::HAL& hal;
+
+extern "C" {
+    int pwm_input_main(int, char **);
+};
 
 /* 
    The constructor also initialises the rangefinder. Note that this
@@ -81,6 +85,12 @@ AP_RangeFinder_PX4_PWM::~AP_RangeFinder_PX4_PWM()
 */
 bool AP_RangeFinder_PX4_PWM::detect(RangeFinder &_ranger, uint8_t instance)
 {
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1) && \
+    !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+    if (AP_BoardConfig::px4_start_driver(pwm_input_main, "pwm_input", "start")) {
+        hal.console->printf("started pwm_input driver\n");
+    }
+#endif
     int fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
     if (fd == -1) {
         return false;
@@ -100,7 +110,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
     float sum_cm = 0;
     uint16_t count = 0;
     const float scaling = ranger._scaling[state.instance];
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
 
     while (::read(_fd, &pwm, sizeof(pwm)) == sizeof(pwm)) {
         // report the voltage as the pulse width, so we get the raw
@@ -147,7 +157,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
     }
 
     // if we have not taken a reading in the last 0.2s set status to No Data
-    if (hal.scheduler->micros64() - _last_timestamp >= 200000) {
+    if (AP_HAL::micros64() - _last_timestamp >= 200000) {
         set_status(RangeFinder::RangeFinder_NoData);
     }
 

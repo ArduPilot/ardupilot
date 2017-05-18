@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   MAVLink SERIAL_CONTROL handling
  */
@@ -33,8 +32,8 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
     mavlink_serial_control_t packet;
     mavlink_msg_serial_control_decode(msg, &packet);
 
-    AP_HAL::UARTDriver *port = NULL;
-    AP_HAL::Stream *stream = NULL;
+    AP_HAL::UARTDriver *port = nullptr;
+    AP_HAL::Stream *stream = nullptr;
 
     if (packet.flags & SERIAL_CONTROL_FLAG_REPLY) {
         // how did this packet get to us?
@@ -68,7 +67,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
         return;
     }
     
-    if (exclusive && port != NULL) {
+    if (exclusive && port != nullptr) {
         // force flow control off for exclusive access. This protocol
         // is used to talk to bootloaders which may not have flow
         // control support
@@ -76,7 +75,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
     }
 
     // optionally change the baudrate
-    if (packet.baudrate != 0 && port != NULL) {
+    if (packet.baudrate != 0 && port != nullptr) {
         port->begin(packet.baudrate);
     }
 
@@ -132,11 +131,11 @@ more_data:
     }
 
     if (packet.flags & SERIAL_CONTROL_FLAG_BLOCKING) {
-        while (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_SERIAL_CONTROL) {
+        while (!HAVE_PAYLOAD_SPACE(chan, SERIAL_CONTROL)) {
             hal.scheduler->delay(1);
         }
     } else {
-        if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_SERIAL_CONTROL) {
+        if (!HAVE_PAYLOAD_SPACE(chan, SERIAL_CONTROL)) {
             // no space for reply
             return;
         }
@@ -154,6 +153,7 @@ more_data:
     _mav_finalize_message_chan_send(chan, 
                                     MAVLINK_MSG_ID_SERIAL_CONTROL,
                                     (const char *)&packet,
+                                    MAVLINK_MSG_ID_SERIAL_CONTROL_MIN_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_CRC);
     if ((flags & SERIAL_CONTROL_FLAG_MULTI) && packet.count != 0) {

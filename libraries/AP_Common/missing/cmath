@@ -1,0 +1,42 @@
+#pragma once
+
+#include_next <cmath>
+
+#ifndef WAF_BUILD
+#  ifdef __GLIBC__
+#    if __GLIBC_PREREQ(2, 23)
+#      define GLIBC_FIX_NEEDED 1
+#    else
+#      define GLIBC_FIX_NEEDED 0
+#    endif
+#  else
+#    define GLIBC_FIX_NEEDED 0
+#  endif
+#  if GLIBC_FIX_NEEDED || defined (__CYGWIN__)
+#    ifndef HAVE_CMATH_ISFINITE
+#      define HAVE_CMATH_ISFINITE
+#      define NEED_CMATH_ISFINITE_STD_NAMESPACE
+#    endif
+#    ifndef HAVE_CMATH_ISINF
+#      define HAVE_CMATH_ISINF
+#      define NEED_CMATH_ISINF_STD_NAMESPACE
+#    endif
+#    ifndef HAVE_CMATH_ISNAN
+#      define HAVE_CMATH_ISNAN
+#      define NEED_CMATH_ISNAN_STD_NAMESPACE
+#    endif
+#  undef GLIBC_FIX_NEEDED
+#  endif
+#endif
+
+#if defined(HAVE_CMATH_ISFINITE) && defined(NEED_CMATH_ISFINITE_STD_NAMESPACE)
+using std::isfinite;
+#endif
+
+#if defined(HAVE_CMATH_ISINF) && defined(NEED_CMATH_ISINF_STD_NAMESPACE)
+using std::isinf;
+#endif
+
+#if defined(HAVE_CMATH_ISNAN) && defined(NEED_CMATH_ISNAN_STD_NAMESPACE)
+using std::isnan;
+#endif

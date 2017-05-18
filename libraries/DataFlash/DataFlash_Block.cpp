@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       DataFlash.cpp - DataFlash log library generic code
  */
@@ -13,11 +12,11 @@ extern AP_HAL::HAL& hal;
 // this if (and only if!) the low level format changes
 #define DF_LOGGING_FORMAT    0x28122013
 
-uint16_t DataFlash_Block::bufferspace_available()
+uint32_t DataFlash_Block::bufferspace_available()
 {
     // because DataFlash_Block devices are ring buffers, we *always*
     // have room...
-    return df_NumPages * df_PageSize; 
+    return df_NumPages * df_PageSize;
 }
 
 // *** DATAFLASH PUBLIC FUNCTIONS ***
@@ -34,7 +33,7 @@ void DataFlash_Block::FinishWrite(void)
     // Write Buffer to flash, NO WAIT
     BufferToPage(df_BufferNum, df_PageAdr, 0);      
     df_PageAdr++;
-    // If we reach the end of the memory, start from the begining    
+    // If we reach the end of the memory, start from the beginning    
     if (df_PageAdr > df_NumPages)
         df_PageAdr = 1;
 
@@ -73,7 +72,7 @@ bool DataFlash_Block::WritePrioritisedBlock(const void *pBuffer, uint16_t size,
             BlockWrite(df_BufferNum, df_BufferIdx, &ph, sizeof(ph), pBuffer, n);
             df_BufferIdx += n + sizeof(ph);
         } else {
-            BlockWrite(df_BufferNum, df_BufferIdx, NULL, 0, pBuffer, n);
+            BlockWrite(df_BufferNum, df_BufferIdx, nullptr, 0, pBuffer, n);
             df_BufferIdx += n;
         }
 
@@ -271,12 +270,12 @@ int16_t DataFlash_Block::get_log_data(uint16_t log_num, uint16_t page, uint32_t 
     if (adding_fmt_headers) {
         // the log doesn't start with a FMT message, we need to add
         // them
-        const uint16_t fmt_header_size = _num_types * sizeof(struct log_Format);
+        const uint16_t fmt_header_size = num_types() * sizeof(struct log_Format);
         while (offset < fmt_header_size && len > 0) {
             struct log_Format pkt;
             uint8_t t = offset / sizeof(pkt);
             uint8_t ofs = offset % sizeof(pkt);
-            Log_Fill_Format(&_structures[t], pkt);
+            Log_Fill_Format(structure(t), pkt);
             uint8_t n = sizeof(pkt) - ofs;
             if (n > len) {
                 n = len;

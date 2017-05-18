@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,9 +12,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __AP_TERRAIN_H__
-#define __AP_TERRAIN_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -94,7 +91,7 @@ public:
     void update(void);
 
     // return status enum for health reporting
-    enum TerrainStatus status(void);
+    enum TerrainStatus status(void) const { return system_status; }
 
     // send any pending terrain request message
     void send_request(mavlink_channel_t chan);
@@ -105,9 +102,16 @@ public:
     void handle_terrain_check(mavlink_channel_t chan, mavlink_message_t *msg);
     void handle_terrain_data(mavlink_message_t *msg);
 
-    // return terrain height in meters above sea level for a location
-    // return false if not available
-    bool height_amsl(const Location &loc, float &height);
+    /*
+      find the terrain height in meters above sea level for a location
+
+      return false if not available
+
+      if corrected is true then terrain alt is adjusted so that
+      the terrain altitude matches the home altitude at the home location
+      (i.e. we assume home is at the terrain altitude)
+     */
+    bool height_amsl(const Location &loc, float &height, bool corrected);
 
     /* 
        find difference between home terrain height and the terrain
@@ -164,6 +168,11 @@ public:
       log terrain status to DataFlash
      */
     void log_terrain_data(DataFlash_Class &dataflash);
+
+    /*
+      get some statistics for TERRAIN_REPORT
+     */
+    void get_statistics(uint16_t &pending, uint16_t &loaded);
 
 private:
     // allocate the terrain subsystem data
@@ -295,7 +304,6 @@ private:
       get some statistics for TERRAIN_REPORT
      */
     uint8_t bitcount64(uint64_t b);
-    void get_statistics(uint16_t &pending, uint16_t &loaded);
 
     /*
       disk IO functions
@@ -404,7 +412,9 @@ private:
     // grid spacing during rally check
     uint16_t last_rally_spacing;
 
-    char *file_path = NULL;    
+    char *file_path = nullptr;
+
+    // status
+    enum TerrainStatus system_status = TerrainStatusDisabled;
 };
 #endif // AP_TERRAIN_AVAILABLE
-#endif // __AP_TERRAIN_H__

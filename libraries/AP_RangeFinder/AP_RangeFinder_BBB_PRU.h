@@ -1,5 +1,4 @@
-#ifndef __AP_RANGEFINDER_PRU_H__
-#define __AP_RANGEFINDER_PRU_H__
+#pragma once
 
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
@@ -11,6 +10,7 @@
 #define PRU0_IRAM_SIZE 0x2000
 
 #define PRU0_DRAM_BASE 0x4a300000
+#define PRU0_DRAM_SIZE 0x2000
 
 struct range {
         uint32_t distance;
@@ -32,4 +32,3 @@ public:
 private:
 
 };
-#endif  // __AP_RANGEFINDER_PRU_H__

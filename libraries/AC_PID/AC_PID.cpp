@@ -1,12 +1,10 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	AC_PID.cpp
 /// @brief	Generic PID algorithm
 
 #include <AP_Math/AP_Math.h>
 #include "AC_PID.h"
 
-const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
@@ -30,12 +28,17 @@ const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
     // @Description: The maximum/minimum value that the I term can output
     AP_GROUPINFO("IMAX", 5, AC_PID, _imax, 0),
 
-    // @Param: FILT_HZ
+    // @Param: FILT
     // @DisplayName: PID Input filter frequency in Hz
     // @Description: Input filter frequency in Hz
-    // @Unit: Hz
-    AP_GROUPINFO("FILT_HZ", 6, AC_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
+    // @Units: Hz
+    AP_GROUPINFO("FILT", 6, AC_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
 
+    // @Param: FF
+    // @DisplayName: FF FeedForward Gain
+    // @Description: FF Gain which produces an output value that is proportional to the demanded input
+    AP_GROUPINFO("FF",   7, AC_PID, _ff, 0),
+    
     AP_GROUPEND
 };
 
@@ -74,7 +77,7 @@ void AC_PID::filt_hz(float hz)
     _filt_hz.set(fabsf(hz));
 
     // sanity check _filt_hz
-    _filt_hz = max(_filt_hz, AC_PID_FILT_HZ_MIN);
+    _filt_hz = MAX(_filt_hz, AC_PID_FILT_HZ_MIN);
 }
 
 // set_input_filter_all - set input to PID controller
@@ -155,6 +158,13 @@ float AC_PID::get_d()
     return _pid_info.D;
 }
 
+float AC_PID::get_ff(float requested_rate)
+{
+    _pid_info.FF = (float)requested_rate * _ff;
+    return _pid_info.FF;
+}
+
+
 float AC_PID::get_pi()
 {
     return get_p() + get_i();
@@ -209,6 +219,6 @@ float AC_PID::get_filt_alpha() const
     }
 
     // calculate alpha
-    float rc = 1/(M_2PI_F*_filt_hz);
+    float rc = 1/(M_2PI*_filt_hz);
     return _dt / (_dt + rc);
 }

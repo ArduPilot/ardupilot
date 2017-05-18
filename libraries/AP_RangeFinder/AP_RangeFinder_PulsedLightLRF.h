@@ -1,10 +1,8 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_RANGEFINDER_PULSEDLIGHTLRF_H__
-#define __AP_RANGEFINDER_PULSEDLIGHTLRF_H__
+#pragma once
 
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
+#include <AP_HAL/I2CDevice.h>
 
 /* Connection diagram
  *
@@ -14,47 +12,40 @@
  *        |                                                                                  |
  *        |                                      J1-3(I2C Clk) J1-2(I2C Data) J1-1(GND)      |
  *        ------------------------------------------------------------------------------------
- *
- * To connect to APM2.x:
- *    APM I2C Clock <-> J1-3
- *    APM I2C Data  <-> J1-2 
- *    APM GND (from output Rail) <-> J1-1 J2-5
- *    APM 5V (from output Rail fed by ESC or BEC) <-> J2-2
- *
- *  APM2.x's I2C connector from outside edge: GND, Data, CLK, 3.3V
  */
-
-// i2c address
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR   0x62
-
-// min and max distances
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_MIN_DISTANCE 0
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_MAX_DISTANCE 1400
-
-// registers
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_MEASURE_REG           0x00
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG          0x8f    // high byte of distance measurement
-
-// command register values
-#define AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE        0x04    // Varies based on sensor revision, 0x04 is newest, 0x61 is older
 
 class AP_RangeFinder_PulsedLightLRF : public AP_RangeFinder_Backend
 {
 
 public:
-    // constructor
-    AP_RangeFinder_PulsedLightLRF(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state);
-
     // static detection function
-    static bool detect(RangeFinder &ranger, uint8_t instance);
+    static AP_RangeFinder_Backend *detect(uint8_t bus, RangeFinder &ranger, uint8_t instance,
+                                          RangeFinder::RangeFinder_State &_state,
+                                          RangeFinder::RangeFinder_Type rftype);
 
     // update state
-    void update(void);
+    void update(void) override {}
 
 
 private:
+    // constructor
+    AP_RangeFinder_PulsedLightLRF(uint8_t bus, RangeFinder &ranger, uint8_t instance,
+                                  RangeFinder::RangeFinder_State &_state,
+                                  RangeFinder::RangeFinder_Type rftype);
+
     // start a reading
-    static bool start_reading(void);
-    static bool get_reading(uint16_t &reading_cm);
+    bool init(void);
+    void timer(void);
+    bool lidar_transfer(const uint8_t *send, unsigned send_len, uint8_t *recv, unsigned recv_len);
+    
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+
+    uint8_t sw_version;
+    uint8_t hw_version;
+    uint8_t check_reg_counter;
+    bool v2_hardware;
+    uint16_t last_distance_cm;
+    RangeFinder::RangeFinder_Type rftype;
+    
+    enum { PHASE_MEASURE, PHASE_COLLECT } phase;
 };
-#endif  // __AP_RANGEFINDER_PULSEDLIGHTLRF_H__

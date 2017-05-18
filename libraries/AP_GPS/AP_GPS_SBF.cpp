@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,8 +21,7 @@
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
 #include <DataFlash/DataFlash.h>
-
-#if GPS_RTK_AVAILABLE
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -44,10 +42,10 @@ do {                                            \
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
-{	
+{
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
-	
-	port->write((const uint8_t*)_initialisation_blob[0], strlen(_initialisation_blob[0]));
+
+    port->write((const uint8_t*)_initialisation_blob[0], strlen(_initialisation_blob[0]));
 }
 
 // Process all bytes available from the stream
@@ -55,16 +53,22 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_SBF::read(void)
 {
-	uint32_t now = hal.scheduler->millis();
-	
-	if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
-		if (now > _init_blob_time) {
-			port->write((const uint8_t*)_initialisation_blob[_init_blob_index], strlen(_initialisation_blob[_init_blob_index]));
-			_init_blob_time = now + 70;
-			_init_blob_index++;
-		}
-	}
-	
+    uint32_t now = AP_HAL::millis();
+
+    if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
+        const char *init_str = _initialisation_blob[_init_blob_index];
+        if (validcommand) {
+            _init_blob_index++;
+            validcommand = false;
+            _init_blob_time = 0;
+        }
+
+        if (now > _init_blob_time) {
+            port->write((const uint8_t*)init_str, strlen(init_str));
+            _init_blob_time = now + 1000;
+        }
+    }
+
     bool ret = false;
     while (port->available() > 0) {
         uint8_t temp = port->read();
@@ -89,6 +93,9 @@ AP_GPS_SBF::parse(uint8_t temp)
         case sbf_msg_parser_t::PREAMBLE2:
             if (temp == SBF_PREAMBLE2) {
                 sbf_msg.sbf_state = sbf_msg_parser_t::CRC1;
+            } else if (temp == 'R') {
+                validcommand = true;
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
             }
             else
             {
@@ -154,11 +161,11 @@ AP_GPS_SBF::parse(uint8_t temp)
 void
 AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
         return;
     }
 
-    uint64_t now = hal.scheduler->micros64();
+    uint64_t now = AP_HAL::micros64();
 
     struct log_GPS_SBF_EVENT header = {
         LOG_PACKET_HEADER_INIT(LOG_GPS_SBF_EVENT_MSG),
@@ -192,7 +199,7 @@ AP_GPS_SBF::process_message(void)
         log_ExtEventPVTGeodetic(sbf_msg.data.msg4007u);
     }
     // PVTGeodetic
-    if (blockid == 4007) {
+    else if (blockid == 4007) {
         const msg4007 &temp = sbf_msg.data.msg4007u;
 
         // Update time state
@@ -200,36 +207,36 @@ AP_GPS_SBF::process_message(void)
             state.time_week = temp.WNc;
             state.time_week_ms = (uint32_t)(temp.TOW);
         }
-		
-		state.last_gps_time_ms = hal.scheduler->millis();
+
+        state.last_gps_time_ms = AP_HAL::millis();
 
         state.hdop = last_hdop;
 
-        // Update velocity state (dont use −2·10^10)
+        // Update velocity state (don't use −2·10^10)
         if (temp.Vn > -200000) {
             state.velocity.x = (float)(temp.Vn);
             state.velocity.y = (float)(temp.Ve);
             state.velocity.z = (float)(-temp.Vu);
-			
-			state.have_vertical_velocity = true;
+
+            state.have_vertical_velocity = true;
 
             float ground_vector_sq = state.velocity[0] * state.velocity[0] + state.velocity[1] * state.velocity[1];
             state.ground_speed = (float)safe_sqrt(ground_vector_sq);
 
-            state.ground_course_cd = (int32_t)(100 * ToDeg(atan2f(state.velocity[1], state.velocity[0])));
-            state.ground_course_cd = wrap_360_cd(state.ground_course_cd);
-			
-			state.horizontal_accuracy = (float)temp.HAccuracy * 0.01f;
-			state.vertical_accuracy = (float)temp.VAccuracy * 0.01f;
-			state.have_horizontal_accuracy = true;
-			state.have_vertical_accuracy = true;
+            state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+            
+            // value is expressed as twice the rms error = int16 * 0.01/2
+            state.horizontal_accuracy = (float)temp.HAccuracy * 0.005f;
+            state.vertical_accuracy = (float)temp.VAccuracy * 0.005f;
+            state.have_horizontal_accuracy = true;
+            state.have_vertical_accuracy = true;
         }
 
-        // Update position state (dont use −2·10^10)
+        // Update position state (don't use −2·10^10)
         if (temp.Latitude > -200000) {
-            state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * 1e7);
-            state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * 1e7);
-            state.location.alt = (int32_t)((float)temp.Height * 1e2f);
+            state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
+            state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
+            state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f);
         }
 
         if (temp.NrSV != 255) {
@@ -251,19 +258,19 @@ AP_GPS_SBF::process_message(void)
                 state.status = AP_GPS::GPS_OK_FIX_3D;
                 break;
             case 4: // rtk fixed
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;
             case 5: // rtk float
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                 break;
             case 6: // sbas
-                state.status = AP_GPS::GPS_OK_FIX_3D;
+                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
                 break;
             case 7: // moving rtk fixed
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;
             case 8: // moving rtk float
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                 break;
         }
         
@@ -275,28 +282,33 @@ AP_GPS_SBF::process_message(void)
         return true;
     }
     // DOP
-    if (blockid == 4001) {
+    else if (blockid == 4001) {
         const msg4001 &temp = sbf_msg.data.msg4001u;
 
         last_hdop = temp.HDOP;
-		
-		state.hdop = last_hdop;
+
+        state.hdop = last_hdop;
+    }
+    // ReceiverStatus
+    else if (blockid == 4014) {
+        const msg4014 &temp = sbf_msg.data.msg4014u;
+        RxState = temp.RxState;
     }
 
     return false;
 }
 
-void
-AP_GPS_SBF::inject_data(uint8_t *data, uint8_t len)
+void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
-
-    if (port->txspace() > len) {
-        last_injected_data_ms = hal.scheduler->millis();
-        port->write(data, len);
-    } else {
-        Debug("SBF: Not enough TXSPACE");
+    if (gps._raw_data) {
+        if (!(RxState & SBF_DISK_MOUNTED)){
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
+        }
+        else if (RxState & SBF_DISK_FULL) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
+        }
+        else if (!(RxState & SBF_DISK_ACTIVITY)) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
+        }
     }
 }
-
-
-#endif // GPS_RTK_AVAILABLE

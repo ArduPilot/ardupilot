@@ -12,6 +12,8 @@ import bisect
 import sys
 import ctypes
 
+from VehicleType import VehicleType, VehicleTypeString
+
 class Format(object):
     '''Data channel format as specified by the FMT lines in the log file'''
     def __init__(self,msgType,msgLen,name,types,labels):
@@ -30,9 +32,9 @@ class Format(object):
         '''using format characters from libraries/DataFlash/DataFlash.h to cast strings to basic python int/float/string types
         tries a cast, if it does not work, well, acceptable as the text logs do not match the format, e.g. MODE is expected to be int'''
         try:
-            if valueType in "fcCeEL":
+            if valueType in "fcCeELd":
                 return float(value)
-            elif valueType in "bBhHiIM":
+            elif valueType in "bBhHiIMQq":
                 return int(value)
             elif valueType in "nNZ":
                 return str(value)
@@ -383,10 +385,16 @@ class DataflashLogHelper:
         '''returns an human readable error string if the log is essentially empty, otherwise returns None'''
         # naive check for now, see if the throttle output was ever above 20%
         throttleThreshold = 20
-        if logdata.vehicleType == "ArduCopter":
+        if logdata.vehicleType == VehicleType.Copter:
             throttleThreshold = 200 # copter uses 0-1000, plane+rover use 0-100
         if "CTUN" in logdata.channels:
-            maxThrottle = logdata.channels["CTUN"]["ThrOut"].max()
+            try:
+                maxThrottle = logdata.channels["CTUN"]["ThrOut"].max()
+            except KeyError as e:
+                # ThrOut was shorted to ThO at some stage...
+                maxThrottle = logdata.channels["CTUN"]["ThO"].max()
+                # at roughly the same time ThO became a range from 0 to 1
+                throttleThreshold = 0.2
             if maxThrottle < throttleThreshold:
                 return "Throttle never above 20%"
         return None
@@ -403,7 +411,8 @@ class DataflashLog(object):
     def __init__(self, logfile=None, format="auto", ignoreBadlines=False):
         self.filename = None
 
-        self.vehicleType     = "" # ArduCopter, ArduPlane, ArduRover, etc, verbatim as given by header
+        self.vehicleType     = None # from VehicleType enumeration; value derived from header
+        self.vehicleTypeString = None # set at same time has the enum value
         self.firmwareVersion = ""
         self.firmwareHash    = ""
         self.freeRAM         = 0
@@ -419,13 +428,14 @@ class DataflashLog(object):
         self.durationSecs = 0
         self.lineCount    = 0
         self.skippedLines = 0
-        
+        self.backpatch_these_modechanges = []
+
         if logfile:
             self.read(logfile, format, ignoreBadlines)
 
     def getCopterType(self):
         '''returns quad/hex/octo/tradheli if this is a copter log'''
-        if self.vehicleType != "ArduCopter":
+        if self.vehicleType != VehicleType.Copter:
             return None
         motLabels = []
         if "MOT" in self.formats: # not listed in PX4 log header for some reason?
@@ -482,8 +492,8 @@ class DataflashLog(object):
                 if i in self.channels["GPS"]:
                     timeLabel = i
                     break
-            firstTimeGPS = self.channels["GPS"][timeLabel].listData[0][1]
-            lastTimeGPS  = self.channels["GPS"][timeLabel].listData[-1][1]
+            firstTimeGPS = int(self.channels["GPS"][timeLabel].listData[0][1])
+            lastTimeGPS  = int(self.channels["GPS"][timeLabel].listData[-1][1])
             if timeLabel == 'TimeUS':
                 firstTimeGPS /= 1000
                 lastTimeGPS /= 1000
@@ -491,6 +501,62 @@ class DataflashLog(object):
 
         # TODO: calculate logging rate based on timestamps
         # ...
+
+    msg_vehicle_to_vehicle_map = {
+        "ArduCopter": VehicleType.Copter,
+        "APM:Copter": VehicleType.Copter,
+        "ArduPlane": VehicleType.Plane,
+        "ArduRover": VehicleType.Rover
+    }
+
+    # takes the vehicle type supplied via "MSG" and sets vehicleType from
+    # the VehicleType enumeration
+    def set_vehicleType_from_MSG_vehicle(self, MSG_vehicle):
+        ret = self.msg_vehicle_to_vehicle_map.get(MSG_vehicle, None)
+        if ret is None:
+            raise ValueError("Unknown vehicle type (%s)" % (MSG_vehicle))
+        self.vehicleType = ret
+        self.vehicleTypeString = VehicleTypeString[ret]
+
+    def handleModeChange(self, lineNumber, e):
+        if self.vehicleType == VehicleType.Copter:
+            try:
+                modes = {0:'STABILIZE',
+                    1:'ACRO',
+                    2:'ALT_HOLD',
+                    3:'AUTO',
+                    4:'GUIDED',
+                    5:'LOITER',
+                    6:'RTL',
+                    7:'CIRCLE',
+                    9:'LAND',
+                    10:'OF_LOITER',
+                    11:'DRIFT',
+                    13:'SPORT',
+                    14:'FLIP',
+                    15:'AUTOTUNE',
+                    16:'HYBRID',}
+                if hasattr(e, 'ThrCrs'):
+                    self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ThrCrs)
+                else:
+                    # assume it has ModeNum:
+                    self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ModeNum)
+            except:
+                if hasattr(e, 'ThrCrs'):
+                    self.modeChanges[lineNumber] = (e.Mode, e.ThrCrs)
+                else:
+                    # assume it has ModeNum:
+                    self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
+        elif self.vehicleType in [VehicleType.Plane, VehicleType.Copter, VehicleType.Rover]:
+            self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
+        else:
+            # if you've gotten to here the chances are we don't
+            # know what vehicle you're flying...
+            raise Exception("Unknown log type for MODE line vehicletype=({}) line=({})".format(self.vehicleTypeString, repr(e)))
+
+    def backPatchModeChanges(self):
+        for (lineNumber, e) in self.backpatch_these_modechanges:
+            self.handleModeChange(lineNumber, e)
 
     def process(self, lineNumber, e):
         if e.NAME == 'FMT':
@@ -505,38 +571,18 @@ class DataflashLog(object):
         elif e.NAME == "MSG":
             if not self.vehicleType:
                 tokens = e.Message.split(' ')
-                vehicleTypes = ["ArduPlane", "ArduCopter", "ArduRover"]
-                self.vehicleType = tokens[0]
+                self.set_vehicleType_from_MSG_vehicle(tokens[0]);
+                self.backPatchModeChanges()
                 self.firmwareVersion = tokens[1]
                 if len(tokens) == 3:
                     self.firmwareHash = tokens[2][1:-1]
             else:
                 self.messages[lineNumber] = e.Message
         elif e.NAME == "MODE":
-            if self.vehicleType in ["ArduCopter"]:
-                try:
-                    modes = {0:'STABILIZE',
-                        1:'ACRO',
-                        2:'ALT_HOLD',
-                        3:'AUTO',
-                        4:'GUIDED',
-                        5:'LOITER',
-                        6:'RTL',
-                        7:'CIRCLE',
-                        9:'LAND',
-                        10:'OF_LOITER',
-                        11:'DRIFT',
-                        13:'SPORT',
-                        14:'FLIP',
-                        15:'AUTOTUNE',
-                        16:'HYBRID',}
-                    self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ThrCrs)
-                except:
-                    self.modeChanges[lineNumber] = (e.Mode, e.ThrCrs)
-            elif self.vehicleType in ["ArduPlane", "APM:Plane", "ArduRover", "APM:Rover", "APM:Copter"]:
-                self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
+            if self.vehicleType is None:
+                self.backpatch_these_modechanges.append( (lineNumber, e) )
             else:
-                raise Exception("Unknown log type for MODE line {} {}".format(self.vehicleType, repr(e)))
+                self.handleModeChange(lineNumber, e)
         # anything else must be the log data
         else:
             groupName = e.NAME
@@ -583,7 +629,7 @@ class DataflashLog(object):
                     elif tokens2[0] in knownHardwareTypes:
                         self.hardwareType = line      # not sure if we can parse this more usefully, for now only need to report it back verbatim
                     elif (len(tokens2) == 2 or len(tokens2) == 3) and tokens2[1][0].lower() == "v":  # e.g. ArduCopter V3.1 (5c6503e2)
-                        self.vehicleType     = tokens2[0]
+                        self.set_vehicleType_from_MSG_vehicle(tokens2[0])
                         self.firmwareVersion = tokens2[1]
                         if len(tokens2) == 3:
                             self.firmwareHash    = tokens2[2][1:-1]
@@ -630,6 +676,8 @@ class DataflashLog(object):
                     if h.head1 == 0xff and h.head2 == 0xff and h.msgid == 0xff:
                         print("Assuming EOF due to dataflash block tail filled with \\xff... (offset={off})".format(off=offset), file=sys.stderr)
                         break
+                    offset += 1
+                    continue
 
             if h.msgid in self._formats:
                 typ = self._formats[h.msgid]

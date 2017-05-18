@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -124,7 +123,7 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
         if (cache[i].grid.lat == info.grid_lat && 
             cache[i].grid.lon == info.grid_lon &&
             cache[i].grid.spacing == grid_spacing) {
-            cache[i].last_access_ms = hal.scheduler->millis();
+            cache[i].last_access_ms = AP_HAL::millis();
             return cache[i];
         }
         if (cache[i].last_access_ms < cache[oldest_i].last_access_ms) {
@@ -145,7 +144,7 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
     grid.grid.lat_degrees = info.lat_degrees;
     grid.grid.lon_degrees = info.lon_degrees;
     grid.grid.version = TERRAIN_GRID_FORMAT_VERSION;
-    grid.last_access_ms = hal.scheduler->millis();
+    grid.last_access_ms = AP_HAL::millis();
 
     // mark as waiting for disk read
     grid.state = GRID_CACHE_DISKWAIT;

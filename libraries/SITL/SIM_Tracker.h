@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,16 +16,16 @@
   antenna-tracker simulator class
 */
 
-#ifndef _SIM_TRACKER_H
-#define _SIM_TRACKER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
+
+namespace SITL {
 
 /*
   a antenna tracker simulator
  */
-class Tracker : public Aircraft
-{
+class Tracker : public Aircraft {
 public:
     Tracker(const char *home_str, const char *frame_str);
     void update(const struct sitl_input &input);
@@ -45,7 +44,6 @@ private:
     const float yaw_range = 170;
     const float zero_yaw = 270;  // yaw direction at startup
     const float zero_pitch = 10; // pitch at startup
-    bool verbose = false;
     uint64_t last_debug_us = 0;
 
     float pitch_input;
@@ -57,4 +55,4 @@ private:
     void update_onoff_servos(float &yaw_rate, float &pitch_rate);
 };
 
-#endif
+} // namespace SITL

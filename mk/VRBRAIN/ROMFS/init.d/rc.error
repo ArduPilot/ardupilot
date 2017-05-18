@@ -1,0 +1,14 @@
+echo "Error in startup"
+
+tone_alarm MNCC
+
+if [ $HAVE_RGBLED == 1 ]
+then
+        rgbled rgb 16 0 0
+fi
+
+nshterm /dev/ttyACM0 &
+sleep 1
+nshterm /dev/ttyS0 &
+sleep 1
+exit

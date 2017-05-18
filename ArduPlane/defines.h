@@ -1,15 +1,10 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef _DEFINES_H
-#define _DEFINES_H
+#pragma once
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 
 #define TRUE 1
 #define FALSE 0
-#define ToRad(x) radians(x)	// *pi/180
-#define ToDeg(x) degrees(x)	// *180/pi
 
 #define DEBUG 0
 #define LOITER_RANGE 60 // for calculating power outside of loiter radius
@@ -62,8 +57,33 @@ enum FlightMode {
     AUTO          = 10,
     RTL           = 11,
     LOITER        = 12,
+    AVOID_ADSB    = 14,
     GUIDED        = 15,
-    INITIALISING  = 16
+    INITIALISING  = 16,
+    QSTABILIZE    = 17,
+    QHOVER        = 18,
+    QLOITER       = 19,
+    QLAND         = 20,
+    QRTL          = 21
+};
+
+enum mode_reason_t {
+    MODE_REASON_UNKNOWN=0,
+    MODE_REASON_TX_COMMAND,
+    MODE_REASON_GCS_COMMAND,
+    MODE_REASON_RADIO_FAILSAFE,
+    MODE_REASON_BATTERY_FAILSAFE,
+    MODE_REASON_GCS_FAILSAFE,
+    MODE_REASON_EKF_FAILSAFE,
+    MODE_REASON_GPS_GLITCH,
+    MODE_REASON_MISSION_END,
+    MODE_REASON_FENCE_BREACH,
+    MODE_REASON_AVOIDANCE,
+    MODE_REASON_AVOIDANCE_RECOVERY,
+    MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING,
+    MODE_REASON_SOARING_THERMAL_DETECTED,
+    MODE_REASON_SOARING_IN_THERMAL,
+    MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED
 };
 
 // type of stick mixing enabled
@@ -78,7 +98,11 @@ enum ChannelMixing {
     MIXING_UPUP     = 1,
     MIXING_UPDN     = 2,
     MIXING_DNUP     = 3,
-    MIXING_DNDN     = 4
+    MIXING_DNDN     = 4,
+    MIXING_UPUP_SWP = 5,
+    MIXING_UPDN_SWP = 6,
+    MIXING_DNUP_SWP = 7,
+    MIXING_DNDN_SWP = 8,
 };
 
 /*
@@ -109,14 +133,19 @@ enum log_messages {
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,
-    LOG_TECS_MSG,
     LOG_RC_MSG,
     LOG_SONAR_MSG,
     LOG_ARM_DISARM_MSG,
-    LOG_STATUS_MSG 
-#if OPTFLOW == ENABLED
-    ,LOG_OPTFLOW_MSG
-#endif
+    LOG_STATUS_MSG,
+    LOG_OPTFLOW_MSG,
+    LOG_QTUN_MSG,
+    LOG_PARAMTUNE_MSG,
+    LOG_THERMAL_MSG,
+    LOG_VARIO_MSG,
+    LOG_PIQR_MSG,
+    LOG_PIQP_MSG,
+    LOG_PIQY_MSG,
+    LOG_PIQA_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -135,7 +164,6 @@ enum log_messages {
 #define MASK_LOG_RC                     (1<<13)
 #define MASK_LOG_SONAR                  (1<<14)
 #define MASK_LOG_ARM_DISARM             (1<<15)
-#define MASK_LOG_WHEN_DISARMED          (1UL<<16)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 
 // Waypoint Modes
@@ -190,4 +218,18 @@ enum {
     CRASH_DETECT_ACTION_BITMASK_DISARM = (1<<0),
     // note: next enum will be (1<<1), then (1<<2), then (1<<3)
 };
-#endif // _DEFINES_H
+
+enum {
+    USE_REVERSE_THRUST_NEVER                    = 0,
+    USE_REVERSE_THRUST_AUTO_ALWAYS              = (1<<0),
+    USE_REVERSE_THRUST_AUTO_LAND_APPROACH       = (1<<1),
+    USE_REVERSE_THRUST_AUTO_LOITER_TO_ALT       = (1<<2),
+    USE_REVERSE_THRUST_AUTO_LOITER_ALL          = (1<<3),
+    USE_REVERSE_THRUST_AUTO_WAYPOINT            = (1<<4),
+    USE_REVERSE_THRUST_LOITER                   = (1<<5),
+    USE_REVERSE_THRUST_RTL                      = (1<<6),
+    USE_REVERSE_THRUST_CIRCLE                   = (1<<7),
+    USE_REVERSE_THRUST_CRUISE                   = (1<<8),
+    USE_REVERSE_THRUST_FBWB                     = (1<<9),
+    USE_REVERSE_THRUST_GUIDED                   = (1<<10),
+};

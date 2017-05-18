@@ -9,11 +9,12 @@
  * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
-
 #include "edc.h"
- 
-/* CRC16 implementation acording to CCITT standards */
-static const uint16_t crc16tab[256] PROGMEM = {
+
+#include <inttypes.h>
+
+/* CRC16 implementation according to CCITT standards */
+static const uint16_t crc16tab[256] = {
   0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7,
   0x8108, 0x9129, 0xA14A, 0xB16B, 0xC18C, 0xD1AD, 0xE1CE, 0xF1EF,
   0x1231, 0x0210, 0x3273, 0x2252, 0x52B5, 0x4294, 0x72F7, 0x62D6,
@@ -50,7 +51,7 @@ static const uint16_t crc16tab[256] PROGMEM = {
 
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc)
 {
-  for (uint32_t i = 0; i < len; i++)
-    crc = (crc << 8) ^ (uint16_t) pgm_read_word(&crc16tab[((crc >> 8) ^ *buf++) & 0x00FF]);
-  return crc;
+    for (uint32_t i = 0; i < len; i++)
+        crc = (crc << 8) ^ crc16tab[((crc >> 8) ^ *buf++) & 0x00FF];
+    return crc;
 }

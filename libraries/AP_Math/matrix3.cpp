@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * matrix3.cpp
  * Copyright (C) Andrew Tridgell 2012
@@ -16,6 +15,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma GCC optimize("O3")
 
 #include "AP_Math.h"
 
@@ -47,13 +48,13 @@ void Matrix3<T>::from_euler(float roll, float pitch, float yaw)
 template <typename T>
 void Matrix3<T>::to_euler(float *roll, float *pitch, float *yaw) const
 {
-    if (pitch != NULL) {
+    if (pitch != nullptr) {
         *pitch = -safe_asin(c.x);
     }
-    if (roll != NULL) {
+    if (roll != nullptr) {
         *roll = atan2f(c.y, c.z);
     }
-    if (yaw != NULL) {
+    if (yaw != nullptr) {
         *yaw = atan2f(b.x, a.x);
     }
 }
@@ -110,44 +111,6 @@ void Matrix3<T>::rotate(const Vector3<T> &g)
     temp_matrix.c.x = c.y * g.z - c.z * g.y;
     temp_matrix.c.y = c.z * g.x - c.x * g.z;
     temp_matrix.c.z = c.x * g.y - c.y * g.x;
-
-    (*this) += temp_matrix;
-}
-
-// apply an additional rotation from a body frame gyro vector
-// to a rotation matrix.
-template <typename T>
-void Matrix3<T>::rotateXY(const Vector3<T> &g)
-{
-    Matrix3<T> temp_matrix;
-    temp_matrix.a.x = -a.z * g.y;
-    temp_matrix.a.y = a.z * g.x;
-    temp_matrix.a.z = a.x * g.y - a.y * g.x;
-    temp_matrix.b.x = -b.z * g.y;
-    temp_matrix.b.y = b.z * g.x;
-    temp_matrix.b.z = b.x * g.y - b.y * g.x;
-    temp_matrix.c.x = -c.z * g.y;
-    temp_matrix.c.y = c.z * g.x;
-    temp_matrix.c.z = c.x * g.y - c.y * g.x;
-
-    (*this) += temp_matrix;
-}
-
-// apply an additional inverse rotation to a rotation matrix but 
-// only use X, Y elements from rotation vector
-template <typename T>
-void Matrix3<T>::rotateXYinv(const Vector3<T> &g)
-{
-    Matrix3<T> temp_matrix;
-    temp_matrix.a.x =   a.z * g.y;
-    temp_matrix.a.y = - a.z * g.x;
-    temp_matrix.a.z = - a.x * g.y + a.y * g.x;
-    temp_matrix.b.x =   b.z * g.y;
-    temp_matrix.b.y = - b.z * g.x;
-    temp_matrix.b.z = - b.x * g.y + b.y * g.x;
-    temp_matrix.c.x =   c.z * g.y;
-    temp_matrix.c.y = - c.z * g.x;
-    temp_matrix.c.z = - c.x * g.y + c.y * g.x;
 
     (*this) += temp_matrix;
 }
@@ -218,6 +181,47 @@ Matrix3<T> Matrix3<T>::transposed(void) const
 }
 
 template <typename T>
+T Matrix3<T>::det() const
+{
+    return a.x * (b.y * c.z - b.z * c.y) +
+           a.y * (b.z * c.x - b.x * c.z) +
+           a.z * (b.x * c.y - b.y * c.x);
+}
+
+template <typename T>
+bool Matrix3<T>::inverse(Matrix3<T>& inv) const
+{
+    T d = det();
+
+    if (is_zero(d)) {
+        return false;
+    }
+
+    inv.a.x = (b.y * c.z - c.y * b.z) / d;
+    inv.a.y = (a.z * c.y - a.y * c.z) / d;
+    inv.a.z = (a.y * b.z - a.z * b.y) / d;
+    inv.b.x = (b.z * c.x - b.x * c.z) / d;
+    inv.b.y = (a.x * c.z - a.z * c.x) / d;
+    inv.b.z = (b.x * a.z - a.x * b.z) / d;
+    inv.c.x = (b.x * c.y - c.x * b.y) / d;
+    inv.c.y = (c.x * a.y - a.x * c.y) / d;
+    inv.c.z = (a.x * b.y - b.x * a.y) / d;
+
+    return true;
+}
+
+template <typename T>
+bool Matrix3<T>::invert()
+{
+    Matrix3<T> inv;
+    bool success = inverse(inv);
+    if (success) {
+        *this = inv;
+    }
+    return success;
+}
+
+template <typename T>
 void Matrix3<T>::zero(void)
 {
     a.x = a.y = a.z = 0;
@@ -225,33 +229,58 @@ void Matrix3<T>::zero(void)
     c.x = c.y = c.z = 0;
 }
 
+// create rotation matrix for rotation about the vector v by angle theta
+// See: http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToMatrix/
+template <typename T>
+void Matrix3<T>::from_axis_angle(const Vector3<T> &v, float theta)
+{
+    float C = cosf(theta);
+    float S = sinf(theta);
+    float t = 1.0f - C;
+    Vector3f normv = v.normalized();
+    float x = normv.x;
+    float y = normv.y;
+    float z = normv.z;
+    
+    a.x = t*x*x + C;
+    a.y = t*x*y - z*S;
+    a.z = t*x*z + y*S;
+    b.x = t*x*y + z*S;
+    b.y = t*y*y + C;
+    b.z = t*y*z - x*S;
+    c.x = t*x*z - y*S;
+    c.y = t*y*z + x*S;
+    c.z = t*z*z + C;
+}
+
 
 // only define for float
 template void Matrix3<float>::zero(void);
 template void Matrix3<float>::rotate(const Vector3<float> &g);
-template void Matrix3<float>::rotateXY(const Vector3<float> &g);
-template void Matrix3<float>::rotateXYinv(const Vector3<float> &g);
 template void Matrix3<float>::normalize(void);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw) const;
 template void Matrix3<float>::from_euler312(float roll, float pitch, float yaw);
+template void Matrix3<float>::from_axis_angle(const Vector3<float> &v, float theta);
 template Vector3<float> Matrix3<float>::to_euler312(void) const;
 template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;
 template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
 template Matrix3<float> Matrix3<float>::transposed(void) const;
+template float Matrix3<float>::det() const;
+template bool Matrix3<float>::inverse(Matrix3<float>& inv) const;
+template bool Matrix3<float>::invert();
 template Vector2<float> Matrix3<float>::mulXY(const Vector3<float> &v) const;
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 template void Matrix3<double>::zero(void);
 template void Matrix3<double>::rotate(const Vector3<double> &g);
-template void Matrix3<double>::rotateXY(const Vector3<double> &g);
-template void Matrix3<double>::rotateXYinv(const Vector3<double> &g);
 template void Matrix3<double>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<double>::to_euler(float *roll, float *pitch, float *yaw) const;
 template Vector3<double> Matrix3<double>::operator *(const Vector3<double> &v) const;
 template Vector3<double> Matrix3<double>::mul_transpose(const Vector3<double> &v) const;
 template Matrix3<double> Matrix3<double>::operator *(const Matrix3<double> &m) const;
 template Matrix3<double> Matrix3<double>::transposed(void) const;
+template double Matrix3<double>::det() const;
+template bool Matrix3<double>::inverse(Matrix3<double>& inv) const;
+template bool Matrix3<double>::invert();
 template Vector2<double> Matrix3<double>::mulXY(const Vector3<double> &v) const;
-#endif

@@ -177,7 +177,7 @@ DEBUG = dwarf-2
 
 
 # List any extra directories to look for include files here.
-#     Each directory must be seperated by a space.
+#     Each directory must be separated by a space.
 #     Use forward slashes for directory separators.
 #     For a directory that has spaces, enclose it in quotes.
 EXTRAINCDIRS = $(LUFA_PATH)/
@@ -316,7 +316,7 @@ MATH_LIB = -lm
 
 
 # List any extra directories to look for libraries here.
-#     Each directory must be seperated by a space.
+#     Each directory must be separated by a space.
 #     Use forward slashes for directory separators.
 #     For a directory that has spaces, enclose it in quotes.
 EXTRALIBDIRS = 

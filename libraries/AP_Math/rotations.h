@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * rotations.h
  * Copyright (C) Andrew Tridgell 2012
@@ -16,7 +15,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#pragma once
 
 // these rotations form a full set - every rotation in the following
 // list when combined with another in the list forms an entry which is
@@ -64,7 +63,7 @@ enum Rotation {
     ROTATION_ROLL_270_PITCH_270  = 35,
     ROTATION_ROLL_90_PITCH_180_YAW_90 = 36,
     ROTATION_ROLL_90_YAW_270     = 37,
-    ROTATION_YAW_293_PITCH_68_ROLL_90 = 38,
+    ROTATION_ROLL_90_PITCH_68_YAW_293 = 38,
     ROTATION_MAX
 };
 /*

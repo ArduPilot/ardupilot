@@ -1,7 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef _DEFINES_H
-#define _DEFINES_H
+#pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
@@ -30,9 +27,9 @@ enum autopilot_yaw_mode {
 #define CH6_PWM_TRIGGER_LOW     1200
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
-#define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
-#define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800)
-#define AUX_SWITCH_HIGH             2       // indicates auxiliar switch is in the high position (pwm >1800)
+#define AUX_SWITCH_LOW              0       // indicates auxiliary switch is in the low position (pwm <1200)
+#define AUX_SWITCH_MIDDLE           1       // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
+#define AUX_SWITCH_HIGH             2       // indicates auxiliary switch is in the high position (pwm >1800)
 
 // Aux Switch enumeration
 enum aux_sw_func {
@@ -43,16 +40,16 @@ enum aux_sw_func {
     AUXSW_SAVE_TRIM =            5, // save current position as level
     AUXSW_SAVE_WP =              7, // save mission waypoint or RTL if in auto mode
     AUXSW_CAMERA_TRIGGER =       9, // trigger camera servo or relay
-    AUXSW_SONAR =               10, // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
+    AUXSW_RANGEFINDER =         10, // allow enabling or disabling rangefinder in flight which helps avoid surface tracking when you are far above the ground
     AUXSW_FENCE =               11, // allow enabling or disabling fence in flight
-    AUXSW_RESETTOARMEDYAW =     12, // changes yaw to be same as when quad was armed
+    AUXSW_RESETTOARMEDYAW =     12, // deprecated.  changes yaw to be same as when quad was armed
     AUXSW_SUPERSIMPLE_MODE =    13, // change to simple mode in middle, super simple at top
     AUXSW_ACRO_TRAINER =        14, // low = disabled, middle = leveled, high = leveled and limited
     AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
     AUXSW_AUTO =                16, // change to auto flight mode
     AUXSW_AUTOTUNE =            17, // auto tune
     AUXSW_LAND =                18, // change to LAND flight mode
-    AUXSW_EPM =                 19, // Operate the EPM cargo gripper low=off, middle=neutral, high=on
+    AUXSW_GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
     AUXSW_PARACHUTE_ENABLE  =   21, // Parachute enable/disable
     AUXSW_PARACHUTE_RELEASE =   22, // Parachute release
     AUXSW_PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
@@ -65,27 +62,29 @@ enum aux_sw_func {
     AUXSW_LOST_COPTER_SOUND =   30, // Play lost copter sound
     AUXSW_MOTOR_ESTOP =         31, // Emergency Stop Switch
     AUXSW_MOTOR_INTERLOCK =     32, // Motor On/Off switch
-    AUXSW_BRAKE =               33  // Brake flight mode
+    AUXSW_BRAKE =               33, // Brake flight mode
+	AUXSW_RELAY2 =              34, // Relay2 pin on/off (in Mission planner set CH8_OPT  = 34)
+    AUXSW_RELAY3 =              35, // Relay3 pin on/off (in Mission planner set CH9_OPT  = 35)
+    AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
+    AUXSW_THROW =               37,  // change to THROW flight mode
+    AUXSW_AVOID_ADSB =          38,  // enable AP_Avoidance library
+    AUXSW_PRECISION_LOITER =    39,  // enable precision loiter
+    AUXSW_AVOID_PROXIMITY =     40,  // enable object avoidance using proximity sensors (ie. horizontal lidar)
+    AUXSW_ARMDISARM =           41,  // arm or disarm vehicle
+    AUXSW_SWITCH_MAX,
 };
 
 // Frame types
 #define UNDEFINED_FRAME 0
-#define QUAD_FRAME 1
-#define TRI_FRAME 2
-#define HEXA_FRAME 3
-#define Y6_FRAME 4
-#define OCTA_FRAME 5
-#define HELI_FRAME 6
-#define OCTA_QUAD_FRAME 7
-#define SINGLE_FRAME 8
-#define COAX_FRAME 9
+#define MULTICOPTER_FRAME 1
+#define HELI_FRAME 2
 
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_SENSORS                1
 
 // Auto Pilot Modes enumeration
-enum autopilot_modes {
+enum control_mode_t {
     STABILIZE =     0,  // manual airframe angle with manual throttle
     ACRO =          1,  // manual body-frame angular rate with manual throttle
     ALT_HOLD =      2,  // manual airframe angle with automatic throttle
@@ -95,13 +94,35 @@ enum autopilot_modes {
     RTL =           6,  // automatic return to launching point
     CIRCLE =        7,  // automatic circular flight with automatic throttle
     LAND =          9,  // automatic landing with horizontal position control
-    OF_LOITER =    10,  // deprecated
     DRIFT =        11,  // semi-automous position, yaw and throttle control
     SPORT =        13,  // manual earth-frame angular rate control with manual throttle
     FLIP =         14,  // automatically flip the vehicle on the roll axis
     AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    BRAKE =        17   // full-brake using inertial/GPS system, no pilot input
+    BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
+    THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
+    AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
+    GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
+};
+
+enum mode_reason_t {
+    MODE_REASON_UNKNOWN=0,
+    MODE_REASON_TX_COMMAND,
+    MODE_REASON_GCS_COMMAND,
+    MODE_REASON_RADIO_FAILSAFE,
+    MODE_REASON_BATTERY_FAILSAFE,
+    MODE_REASON_GCS_FAILSAFE,
+    MODE_REASON_EKF_FAILSAFE,
+    MODE_REASON_GPS_GLITCH,
+    MODE_REASON_MISSION_END,
+    MODE_REASON_THROTTLE_LAND_ESCAPE,
+    MODE_REASON_FENCE_BREACH,
+    MODE_REASON_TERRAIN_FAILSAFE,
+    MODE_REASON_BRAKE_TIMEOUT,
+    MODE_REASON_FLIP_COMPLETE,
+    MODE_REASON_AVOIDANCE,
+    MODE_REASON_AVOIDANCE_RECOVERY,
+    MODE_REASON_THROW_COMPLETE,
 };
 
 // Tuning enumeration
@@ -130,7 +151,7 @@ enum tuning_func {
     TUNING_DECLINATION =                38, // compass declination in radians
     TUNING_CIRCLE_RATE =                39, // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
     TUNING_ACRO_YAW_KP =                40, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
-    TUNING_SONAR_GAIN =                 41, // sonar gain
+    TUNING_RANGEFINDER_GAIN =           41, // rangefinder gain
     TUNING_EKF_VERTICAL_POS =           42, // EKF's baro vs accel (higher rely on accels more, baro impact is reduced).  Range should be 0.2 ~ 4.0?  2.0 is default
     TUNING_EKF_HORIZONTAL_POS =         43, // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
     TUNING_EKF_ACCEL_NOISE =            44, // EKF's accel noise (lower means trust accels more, gps & baro less).  Range should be 0.02 ~ 0.5  0.5 is default (but very robust at that level)
@@ -176,7 +197,8 @@ enum AutoMode {
     Auto_Circle,
     Auto_Spline,
     Auto_NavGuided,
-    Auto_Loiter
+    Auto_Loiter,
+    Auto_NavPayloadPlace,
 };
 
 // Guided modes
@@ -184,7 +206,8 @@ enum GuidedMode {
     Guided_TakeOff,
     Guided_WP,
     Guided_Velocity,
-    Guided_PosVel
+    Guided_PosVel,
+    Guided_Angle,
 };
 
 // RTL states
@@ -198,7 +221,7 @@ enum RTLState {
 
 // Alt_Hold states
 enum AltHoldModeState {
-    AltHold_Disarmed,
+    AltHold_MotorStopped,
     AltHold_Takeoff,
     AltHold_Flying,
     AltHold_Landed
@@ -206,10 +229,18 @@ enum AltHoldModeState {
 
 // Loiter states
 enum LoiterModeState {
-    Loiter_Disarmed,
+    Loiter_MotorStopped,
     Loiter_Takeoff,
     Loiter_Flying,
     Loiter_Landed
+};
+
+// Sport states
+enum SportModeState {
+    Sport_MotorStopped,
+    Sport_Takeoff,
+    Sport_Flying,
+    Sport_Landed
 };
 
 // Flip states
@@ -222,9 +253,44 @@ enum FlipState {
     Flip_Abandon
 };
 
-// LAND state
-#define LAND_STATE_FLY_TO_LOCATION  0
-#define LAND_STATE_DESCENDING       1
+// Throw stages
+enum ThrowModeStage {
+    Throw_Disarmed,
+    Throw_Detecting,
+    Throw_Uprighting,
+    Throw_HgtStabilise,
+    Throw_PosHold
+};
+
+// Throw types
+enum ThrowModeType {
+    ThrowType_Upward = 0,
+    ThrowType_Drop = 1
+};
+
+enum LandStateType {
+    LandStateType_FlyToLocation = 0,
+    LandStateType_Descending = 1
+};
+
+enum PayloadPlaceStateType {
+    PayloadPlaceStateType_FlyToLocation,
+    PayloadPlaceStateType_Calibrating_Hover_Start,
+    PayloadPlaceStateType_Calibrating_Hover,
+    PayloadPlaceStateType_Descending_Start,
+    PayloadPlaceStateType_Descending,
+    PayloadPlaceStateType_Releasing_Start,
+    PayloadPlaceStateType_Releasing,
+    PayloadPlaceStateType_Released,
+    PayloadPlaceStateType_Ascending_Start,
+    PayloadPlaceStateType_Ascending,
+    PayloadPlaceStateType_Done,
+};
+
+// bit options for DEV_OPTIONS parameter
+enum DevOptions {
+    DevOptionADSBMAVLink = 1,
+};
 
 //  Logging parameters
 #define TYPE_AIRSTART_MSG               0x00
@@ -232,7 +298,6 @@ enum FlipState {
 #define LOG_CONTROL_TUNING_MSG          0x04
 #define LOG_NAV_TUNING_MSG              0x05
 #define LOG_PERFORMANCE_MSG             0x06
-#define LOG_STARTUP_MSG                 0x0A
 #define LOG_OPTFLOW_MSG                 0x0C
 #define LOG_EVENT_MSG                   0x0D
 #define LOG_PID_MSG                     0x0E    // deprecated
@@ -246,11 +311,13 @@ enum FlipState {
 #define LOG_DATA_FLOAT_MSG              0x18
 #define LOG_AUTOTUNE_MSG                0x19
 #define LOG_AUTOTUNEDETAILS_MSG         0x1A
-#define LOG_RATE_MSG                    0x1D
 #define LOG_MOTBATT_MSG                 0x1E
 #define LOG_PARAMTUNE_MSG               0x1F
 #define LOG_HELI_MSG                    0x20
 #define LOG_PRECLAND_MSG                0x21
+#define LOG_GUIDEDTARGET_MSG            0x22
+#define LOG_THROW_MSG                   0x23
+#define LOG_PROXIMITY_MSG               0x24
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -268,24 +335,18 @@ enum FlipState {
 #define MASK_LOG_COMPASS                (1<<13)
 #define MASK_LOG_INAV                   (1<<14) // deprecated
 #define MASK_LOG_CAMERA                 (1<<15)
-#define MASK_LOG_WHEN_DISARMED          (1UL<<16)
 #define MASK_LOG_MOTBATT                (1UL<<17)
 #define MASK_LOG_IMU_FAST               (1UL<<18)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ANY                    0xFFFF
 
 // DATA - event logging
-#define DATA_MAVLINK_FLOAT                  1
-#define DATA_MAVLINK_INT32                  2
-#define DATA_MAVLINK_INT16                  3
-#define DATA_MAVLINK_INT8                   4
 #define DATA_AP_STATE                       7
 #define DATA_SYSTEM_TIME_SET                8
 #define DATA_INIT_SIMPLE_BEARING            9
 #define DATA_ARMED                          10
 #define DATA_DISARMED                       11
 #define DATA_AUTO_ARMED                     15
-#define DATA_TAKEOFF                        16
 #define DATA_LAND_COMPLETE_MAYBE            17
 #define DATA_LAND_COMPLETE                  18
 #define DATA_NOT_LANDED                     28
@@ -306,15 +367,13 @@ enum FlipState {
 #define DATA_AUTOTUNE_SAVEDGAINS            37
 #define DATA_SAVE_TRIM                      38
 #define DATA_SAVEWP_ADD_WP                  39
-#define DATA_SAVEWP_CLEAR_MISSION_RTL       40
 #define DATA_FENCE_ENABLE                   41
 #define DATA_FENCE_DISABLE                  42
 #define DATA_ACRO_TRAINER_DISABLED          43
 #define DATA_ACRO_TRAINER_LEVELING          44
 #define DATA_ACRO_TRAINER_LIMITED           45
-#define DATA_EPM_GRAB                       46
-#define DATA_EPM_RELEASE                    47
-#define DATA_EPM_NEUTRAL                    48  // deprecated
+#define DATA_GRIPPER_GRAB                   46
+#define DATA_GRIPPER_RELEASE                47
 #define DATA_PARACHUTE_DISABLED             49
 #define DATA_PARACHUTE_ENABLED              50
 #define DATA_PARACHUTE_RELEASED             51
@@ -327,6 +386,13 @@ enum FlipState {
 #define DATA_ROTOR_RUNUP_COMPLETE           58  // Heli only
 #define DATA_ROTOR_SPEED_BELOW_CRITICAL     59  // Heli only
 #define DATA_EKF_ALT_RESET                  60
+#define DATA_LAND_CANCELLED_BY_PILOT        61
+#define DATA_EKF_YAW_RESET                  62
+#define DATA_AVOIDANCE_ADSB_ENABLE          63
+#define DATA_AVOIDANCE_ADSB_DISABLE         64
+#define DATA_AVOIDANCE_PROXIMITY_ENABLE     65
+#define DATA_AVOIDANCE_PROXIMITY_DISABLE    66
+#define DATA_GPS_PRIMARY_CHANGED            67
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -351,6 +417,11 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
 #define ERROR_SUBSYSTEM_BARO                18
 #define ERROR_SUBSYSTEM_CPU                 19
+#define ERROR_SUBSYSTEM_FAILSAFE_ADSB       20
+#define ERROR_SUBSYSTEM_TERRAIN             21
+#define ERROR_SUBSYSTEM_NAVIGATION          22
+#define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
+#define ERROR_SUBSYSTEM_EKF_PRIMARY         24
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -369,7 +440,13 @@ enum FlipState {
 #define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
 // subsystem specific error codes -- flip
 #define ERROR_CODE_FLIP_ABANDONED           2
-// subsystem specific error codes -- autotune
+// subsystem specific error codes -- terrain
+#define ERROR_CODE_MISSING_TERRAIN_DATA     2
+// subsystem specific error codes -- navigation
+#define ERROR_CODE_FAILED_TO_SET_DESTINATION    2
+#define ERROR_CODE_RESTARTED_RTL            3
+#define ERROR_CODE_FAILED_CIRCLE_INIT       4
+#define ERROR_CODE_DEST_OUTSIDE_FENCE       5
 
 // parachute failed to deploy because of low altitude or landed
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2
@@ -402,6 +479,11 @@ enum FlipState {
 #define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
 #define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
 
+// GCS failsafe definitions (FS_GCS_ENABLE parameter)
+#define FS_GCS_DISABLED                     0
+#define FS_GCS_ENABLED_ALWAYS_RTL           1
+#define FS_GCS_ENABLED_CONTINUE_MISSION     2
+
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe
 #define FS_EKF_ACTION_ALTHOLD               2       // switch to ALTHOLD mode on EKF failsafe
@@ -417,5 +499,5 @@ enum FlipState {
 
 // for PILOT_THR_BHV parameter
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)
-
-#endif // _DEFINES_H
+#define THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND (1<<1)
+#define THR_BEHAVE_DISARM_ON_LAND_DETECT (1<<2)

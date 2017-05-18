@@ -23,13 +23,19 @@ void MsgHandler::add_field_type(char type, size_t size)
 
 uint8_t MsgHandler::size_for_type(char type)
 {
-    return size_for_type_table[(uint8_t)(type > 'A' ? (type-'A') : (type-'a'))];
+    uint8_t ret = size_for_type_table[(uint8_t)(type > 'A' ? (type-'A') : (type-'a'))];
+    if (ret == 0) {
+        ::fprintf(stderr, "Unknown type (%c)\n", type);
+        abort();
+    }
+    return ret;
 }
 
 void MsgHandler::init_field_types()
 {
     add_field_type('b', sizeof(int8_t));
     add_field_type('c', sizeof(int16_t));
+    add_field_type('d', sizeof(double));
     add_field_type('e', sizeof(int32_t));
     add_field_type('f', sizeof(float));
     add_field_type('h', sizeof(int16_t));
@@ -207,12 +213,22 @@ void MsgHandler::ground_vel_from_msg(uint8_t *msg,
                                     const char *label_course,
                                     const char *label_vz)
 {
-    uint32_t ground_speed;
-    int32_t ground_course;
-    require_field(msg, label_speed, ground_speed);
+    float ground_speed;
+    float ground_course;
+    // in older logs speed and course are integers
+    if (!field_value(msg, label_speed, ground_speed)) {
+        uint32_t speed_cms;
+        require_field(msg, label_speed, speed_cms);
+        ground_speed = speed_cms * 0.01f;
+    }
+    if (!field_value(msg, label_course, ground_course)) {
+        uint32_t course_cd;
+        require_field(msg, label_course, course_cd);
+        ground_course = course_cd * 0.01f;
+    }
     require_field(msg, label_course, ground_course);
-    vel[0] = ground_speed*0.01f*cosf(radians(ground_course*0.01f));
-    vel[1] = ground_speed*0.01f*sinf(radians(ground_course*0.01f));
+    vel[0] = ground_speed*cosf(radians(ground_course));
+    vel[1] = ground_speed*sinf(radians(ground_course));
     vel[2] = require_field_float(msg, label_vz);
 }
 

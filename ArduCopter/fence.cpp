@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 // Code to integrate AC_Fence library with main ArduCopter code
@@ -20,7 +18,7 @@ void Copter::fence_check()
     new_breaches = fence.check_fence(current_loc.alt/100.0f);
 
     // return immediately if motors are not armed
-    if(!motors.armed()) {
+    if(!motors->armed()) {
         return;
     }
 
@@ -37,12 +35,12 @@ void Copter::fence_check()
             }else{
                 // if we are within 100m of the fence, RTL
                 if (fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
-                    if (!set_mode(RTL)) {
-                        set_mode(LAND);
+                    if (!set_mode(RTL, MODE_REASON_FENCE_BREACH)) {
+                        set_mode(LAND, MODE_REASON_FENCE_BREACH);
                     }
                 }else{
                     // if more than 100m outside the fence just force a land
-                    set_mode(LAND);
+                    set_mode(LAND, MODE_REASON_FENCE_BREACH);
                 }
             }
         }

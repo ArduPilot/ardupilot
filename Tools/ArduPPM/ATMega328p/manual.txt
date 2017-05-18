@@ -20,7 +20,7 @@ Emphasis has been put on code simplicity and reliability.
 
 Code has not yet been massively tested in the field.
 
-Nevertheless extensive tests have been done in the lab with a limited set of different receivers, and a limited number of users did report very sucessfull results.
+Nevertheless extensive tests have been done in the lab with a limited set of different receivers, and a limited number of users did report very successful results.
 
 
 Carefully check that your radio is working perfectly before you fly.

@@ -4,18 +4,12 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Math/AP_Math.h>
 #include <PID/PID.h> // ArduPilot Mega RC Library
 
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
+void setup();
+void loop();
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 long radio_in;
 long radio_trim;
@@ -24,7 +18,7 @@ PID pid;
 
 void setup()
 {
-    hal.console->println("ArduPilot Mega PID library test");
+    hal.console->printf("ArduPilot Mega PID library test\n");
 
     hal.scheduler->delay(1000);
     //rc.trim();
@@ -40,9 +34,11 @@ void setup()
     pid.kD(0);
     pid.imax(0);
     pid.load_gains();
-    hal.console->printf_P(
-            PSTR("P %f  I %f  D %f  imax %f\n"),
-            pid.kP(), pid.kI(), pid.kD(), pid.imax());
+    hal.console->printf(
+            "P %f  I %f  D %f  imax %d\n",
+            (double)pid.kP(),
+            (double)pid.kI(),
+            (double)pid.kD(), pid.imax());
 }
 
 void loop()
@@ -52,8 +48,8 @@ void loop()
     long error  = hal.rcin->read(0) - radio_trim;
     long control= pid.get_pid(error, 1);
 
-    hal.console->print("control: ");
-    hal.console->println(control,BASE_DEC);
+    hal.console->printf("control: ");
+    hal.console->printf("%ld\n", control);
 }
 
 AP_HAL_MAIN();

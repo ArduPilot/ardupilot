@@ -1,464 +1,266 @@
 # VRBRAIN build is via external build system
 
 ifneq ($(VRBRAIN_ROOT),)
-
-# cope with relative paths
-ifeq ($(wildcard $(VRBRAIN_ROOT)/nuttx-configs),)
-VRBRAIN_ROOT := $(shell cd $(SKETCHBOOK)/$(VRBRAIN_ROOT) && pwd)
+$(error VRBRAIN_ROOT found in config.mk - Please see http://dev.ardupilot.org/wiki/git-submodules/)
 endif
 
-# check it is a valid VRBRAIN Firmware tree
-ifeq ($(wildcard $(VRBRAIN_ROOT)/nuttx-configs),)
-$(error ERROR: VRBRAIN_ROOT not set correctly - no nuttx-configs directory found)
+ifneq ($(NUTTX_SRC),)
+$(error NUTTX_SRC found in config.mk - Please see http://dev.ardupilot.org/wiki/git-submodules/)
 endif
 
-# default to VRBRAIN NuttX above the VRBRAIN Firmware tree
-ifeq ($(VRBRAIN_NUTTX_SRC),)
-VRBRAIN_NUTTX_SRC := $(shell cd $(VRBRAIN_ROOT)/NuttX/nuttx && pwd)/
+ifneq ($(UAVCAN_DIR),)
+$(error UAVCAN_DIR found in config.mk - Please see http://dev.ardupilot.org/wiki/git-submodules/)
 endif
 
-# cope with relative paths for VRBRAIN_NUTTX_SRC
-ifeq ($(wildcard $(VRBRAIN_NUTTX_SRC)/configs),)
-VRBRAIN_NUTTX_SRC := $(shell cd $(SKETCHBOOK)/$(VRBRAIN_NUTTX_SRC) && pwd)/
+# these can be overridden in developer.mk
+VRBRAINFIRMWARE_DIRECTORY ?= $(SKETCHBOOK)/modules/PX4Firmware
+VRBRAINNUTTX_DIRECTORY ?= $(SKETCHBOOK)/modules/PX4NuttX
+UAVCAN_DIRECTORY ?= $(SKETCHBOOK)/modules/uavcan
+
+VRBRAIN_ROOT := $(shell cd $(VRBRAINFIRMWARE_DIRECTORY) && pwd)
+NUTTX_ROOT := $(shell cd $(VRBRAINNUTTX_DIRECTORY) && pwd)
+NUTTX_SRC := $(NUTTX_ROOT)/nuttx/
+UAVCAN_DIR=$(shell cd $(UAVCAN_DIRECTORY) && pwd)/
+
+# warn if user has old PX4Firmware or PX4NuttX trees
+ifneq ($(wildcard $(SKETCHBOOK)/../PX4Firmware),)
+$(warning *** You have an old PX4Firmware tree - see http://dev.ardupilot.com/wiki/git-submodules/)
+endif
+ifneq ($(wildcard $(SKETCHBOOK)/../PX4NuttX),)
+$(warning *** You have an old PX4NuttX tree - see http://dev.ardupilot.com/wiki/git-submodules/)
+endif
+ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)
+$(warning *** You have an old uavcan tree - see http://dev.ardupilot.com/wiki/git-submodules/)
 endif
 
-ifeq ($(wildcard $(VRBRAIN_NUTTX_SRC)configs),)
-$(error ERROR: VRBRAIN_NUTTX_SRC not set correctly - no configs directory found)
+NUTTX_GIT_VERSION ?= $(shell cd $(NUTTX_SRC) && git rev-parse HEAD | cut -c1-8)
+PX4_GIT_VERSION   ?= $(shell cd $(VRBRAIN_ROOT) && git rev-parse HEAD | cut -c1-8)
+
+EXTRAFLAGS += -DNUTTX_GIT_VERSION="\"$(NUTTX_GIT_VERSION)\""
+EXTRAFLAGS += -DPX4_GIT_VERSION="\"$(PX4_GIT_VERSION)\""
+EXTRAFLAGS += -DUAVCAN=1
+
+# Add missing parts from libc and libstdc++
+EXTRAFLAGS += -DHAVE_STD_NULLPTR_T=0
+EXTRAFLAGS += -DHAVE_OCLOEXEC=0
+
+EXTRAFLAGS += -I$(BUILDROOT)/libraries/GCS_MAVLink/include/mavlink
+
+# we have different config files for vrbrain_v52, vrbrain_v54
+VRBRAIN_MK_DIR=$(MK_DIR)/VRBRAIN
+
+VRBRAIN_V51_CONFIG_FILE=config_vrbrain-v51_APM.mk
+VRBRAIN_V52_CONFIG_FILE=config_vrbrain-v52_APM.mk
+VRBRAIN_V54_CONFIG_FILE=config_vrbrain-v54_APM.mk
+VRCORE_V10_CONFIG_FILE=config_vrcore-v10_APM.mk
+VRUBRAIN_V51_CONFIG_FILE=config_vrubrain-v51_APM.mk
+VRUBRAIN_V52_CONFIG_FILE=config_vrubrain-v52_APM.mk
+
+SKETCHFLAGS=$(SKETCHLIBINCLUDES) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_VRBRAIN -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
+
+WARNFLAGS = -Wall -Wextra -Wlogical-op -Werror -Wno-unknown-pragmas -Wno-redundant-decls -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function
+OPTFLAGS = -fsingle-precision-constant
+
+# avoid VRBRAIN submodules
+export GIT_SUBMODULES_ARE_EVIL = 1
+
+PYTHONPATH=$(SKETCHBOOK)/mk/VRBRAIN/Tools/genmsg/src:$(SKETCHBOOK)/mk/VRBRAIN/Tools/gencpp/src
+export PYTHONPATH
+
+VRBRAIN_MAKE = $(v)+ GIT_SUBMODULES_ARE_EVIL=1 ARDUPILOT_BUILD=1 $(MAKE) -C $(SKETCHBOOK) -f $(VRBRAIN_ROOT)/Makefile.make EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) $(OPTFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) VRBRAIN_ROOT=$(VRBRAIN_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
+VRBRAIN_MAKE_ARCHIVES = $(MAKE) -C $(VRBRAIN_ROOT) -f $(VRBRAIN_ROOT)/Makefile.make NUTTX_SRC=$(NUTTX_SRC) CCACHE=$(CCACHE) archives MAXOPTIMIZATION="-Os"
+
+HASHADDER_FLAGS += --ardupilot "$(SKETCHBOOK)"
+
+ifneq ($(wildcard $(VRBRAIN_ROOT)),)
+HASHADDER_FLAGS += --px4 "$(VRBRAIN_ROOT)/"
 endif
-
-
-
-
-
-
-
-# we have different config files for vrbrain_v40, vrbrain_v45, vrbrain_v50, vrbrain_v51, vrbrain_v52, vrubrain_v51, vrubrain_v52 and vrhero_v10
-VRBRAIN_MK_DIR=$(SRCROOT)/$(MK_DIR)/VRBRAIN
-
-VRBRAIN_VB40_CONFIG_FILE=config_vrbrain-v40_APM.mk
-VRBRAIN_VB45_CONFIG_FILE=config_vrbrain-v45_APM.mk
-VRBRAIN_VB45P_CONFIG_FILE=config_vrbrain-v45P_APM.mk
-VRBRAIN_VB50_CONFIG_FILE=config_vrbrain-v50_APM.mk
-VRBRAIN_VB51_CONFIG_FILE=config_vrbrain-v51_APM.mk
-VRBRAIN_VB51P_CONFIG_FILE=config_vrbrain-v51P_APM.mk
-VRBRAIN_VB51PRO_CONFIG_FILE=config_vrbrain-v51Pro_APM.mk
-VRBRAIN_VB51PROP_CONFIG_FILE=config_vrbrain-v51ProP_APM.mk
-VRBRAIN_VB52_CONFIG_FILE=config_vrbrain-v52_APM.mk
-VRBRAIN_VB52P_CONFIG_FILE=config_vrbrain-v52P_APM.mk
-VRBRAIN_VB52PRO_CONFIG_FILE=config_vrbrain-v52Pro_APM.mk
-VRBRAIN_VB52PROP_CONFIG_FILE=config_vrbrain-v52ProP_APM.mk
-VRBRAIN_VU51_CONFIG_FILE=config_vrubrain-v51_APM.mk
-VRBRAIN_VU51P_CONFIG_FILE=config_vrubrain-v51P_APM.mk
-VRBRAIN_VU52_CONFIG_FILE=config_vrubrain-v52_APM.mk
-VRBRAIN_VU52P_CONFIG_FILE=config_vrubrain-v52P_APM.mk
-
-VRBRAIN_VH10_CONFIG_FILE=config_vrhero-v10_APM.mk
-
-SKETCHFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_VRBRAIN -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
-
-WARNFLAGS = -Wno-psabi -Wno-packed
-
-VRBRAIN_MAKE = $(v) make -C $(SKETCHBOOK) -f $(VRBRAIN_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) VRBRAIN_ROOT=$(VRBRAIN_ROOT) VRBRAIN_NUTTX_SRC=$(VRBRAIN_NUTTX_SRC) MAXOPTIMIZATION="-Os"
-VRBRAIN_MAKE_ARCHIVES = make -C $(VRBRAIN_ROOT) VRBRAIN_NUTTX_SRC=$(VRBRAIN_NUTTX_SRC) CCACHE=$(CCACHE) archives MAXOPTIMIZATION="-Os"
+ifneq ($(wildcard $(NUTTX_SRC)/..),)
+HASHADDER_FLAGS += --nuttx "$(NUTTX_SRC)../"
+endif
+HASHADDER_FLAGS += --uavcan "$(UAVCAN_DIR)"
 
 .PHONY: module_mk
 module_mk:
+	$(v) echo "Building $(SKETCHBOOK)/module.mk"
 	$(RULEHDR)
 	$(v) echo "# Auto-generated file - do not edit" > $(SKETCHBOOK)/module.mk.new
 	$(v) echo "MODULE_COMMAND = ArduPilot" >> $(SKETCHBOOK)/module.mk.new
-	$(v) echo "SRCS = Build.$(SKETCH)/$(SKETCH).cpp $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
+	$(v) echo "SRCS = $(subst $(SKETCHBOOK)/,,$(wildcard $(SRCROOT)/*.cpp)) $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
 	$(v) echo "MODULE_STACKSIZE = 4096" >> $(SKETCHBOOK)/module.mk.new
+	$(v) echo "EXTRACXXFLAGS = -Wframe-larger-than=1300" >> $(SKETCHBOOK)/module.mk.new
 	$(v) cmp $(SKETCHBOOK)/module.mk $(SKETCHBOOK)/module.mk.new 2>/dev/null || mv $(SKETCHBOOK)/module.mk.new $(SKETCHBOOK)/module.mk
 	$(v) rm -f $(SKETCHBOOK)/module.mk.new
 
-vrbrain-v40: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v40.export $(SKETCHCPP) module_mk
+vrbrain-v51: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB40_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB40_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrbrain-v40_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB40_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrbrain-v40.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v40.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v40.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v40_APM.vrx $(SKETCH)-vrbrain-v40.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v40_APM.hex $(SKETCH)-vrbrain-v40.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v40_APM.bin $(SKETCH)-vrbrain-v40.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v40.vrx"
-
-vrbrain-v45: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v45.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB45_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB45_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrbrain-v45_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB45_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrbrain-v45.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v45.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v45.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v45_APM.vrx $(SKETCH)-vrbrain-v45.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v45_APM.hex $(SKETCH)-vrbrain-v45.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v45_APM.bin $(SKETCH)-vrbrain-v45.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v45.vrx"
-
-vrbrain-v45P: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v45P.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB45P_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB45P_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrbrain-v45P_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB45P_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrbrain-v45P.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v45P.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v45P.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v45P_APM.vrx $(SKETCH)-vrbrain-v45P.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v45P_APM.hex $(SKETCH)-vrbrain-v45P.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v45P_APM.bin $(SKETCH)-vrbrain-v45P.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v45P.vrx"
-
-vrbrain-v50: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v50.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB50_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB50_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrbrain-v50_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB50_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrbrain-v50.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v50.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v50.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v50_APM.vrx $(SKETCH)-vrbrain-v50.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v50_APM.hex $(SKETCH)-vrbrain-v50.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v50_APM.bin $(SKETCH)-vrbrain-v50.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v50.vrx"
-
-vrbrain-v51: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB51_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRBRAIN_V51_CONFIG_FILE)
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_V51_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/nuttx/
 	$(v) $(VRBRAIN_MAKE) vrbrain-v51_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51_CONFIG_FILE)
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRBRAIN_V51_CONFIG_FILE)
 	$(v) rm -f $(SKETCH)-vrbrain-v51.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v51.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v51.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51_APM.vrx $(SKETCH)-vrbrain-v51.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51_APM.hex $(SKETCH)-vrbrain-v51.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51_APM.bin $(SKETCH)-vrbrain-v51.bin
+	$(v) arm-none-eabi-size $(VRBRAIN_ROOT)/Build/vrbrain-v51_APM.build/firmware.elf
+	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51_APM.px4 $(SKETCH)-vrbrain-v51.vrx
+	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-vrbrain-v51.vrx" "$(SKETCH)-vrbrain-v51.vrx"
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v51.vrx"
 
-vrbrain-v51P: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v51P.export $(SKETCHCPP) module_mk
+vrbrain-v52: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(VRBRAIN_ROOT)/Archives/vrbrain-v52.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51P_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB51P_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrbrain-v51P_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51P_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrbrain-v51P.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v51P.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v51P.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51P_APM.vrx $(SKETCH)-vrbrain-v51P.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51P_APM.hex $(SKETCH)-vrbrain-v51P.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51P_APM.bin $(SKETCH)-vrbrain-v51P.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v51P.vrx"
-
-vrbrain-v51Pro: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v51Pro.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51PRO_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB51PRO_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrbrain-v51Pro_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51PRO_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrbrain-v51Pro.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v51Pro.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v51Pro.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51Pro_APM.vrx $(SKETCH)-vrbrain-v51Pro.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51Pro_APM.hex $(SKETCH)-vrbrain-v51Pro.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51Pro_APM.bin $(SKETCH)-vrbrain-v51Pro.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v51Pro.vrx"
-
-vrbrain-v51ProP: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v51ProP.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51PROP_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB51PROP_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrbrain-v51ProP_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB51PROP_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrbrain-v51ProP.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v51ProP.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v51ProP.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51ProP_APM.vrx $(SKETCH)-vrbrain-v51ProP.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51ProP_APM.hex $(SKETCH)-vrbrain-v51ProP.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v51ProP_APM.bin $(SKETCH)-vrbrain-v51ProP.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v51ProP.vrx"
-
-vrbrain-v52: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v52.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB52_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB52_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRBRAIN_V52_CONFIG_FILE)
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_V52_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/nuttx/
 	$(v) $(VRBRAIN_MAKE) vrbrain-v52_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB52_CONFIG_FILE)
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRBRAIN_V52_CONFIG_FILE)
 	$(v) rm -f $(SKETCH)-vrbrain-v52.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v52.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v52.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52_APM.vrx $(SKETCH)-vrbrain-v52.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52_APM.hex $(SKETCH)-vrbrain-v52.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52_APM.bin $(SKETCH)-vrbrain-v52.bin
+	$(v) arm-none-eabi-size $(VRBRAIN_ROOT)/Build/vrbrain-v52_APM.build/firmware.elf
+	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52_APM.px4 $(SKETCH)-vrbrain-v52.vrx
+	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-vrbrain-v52.vrx" "$(SKETCH)-vrbrain-v52.vrx"
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v52.vrx"
 
-vrbrain-v52P: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v52P.export $(SKETCHCPP) module_mk
+vrbrain-v54: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(VRBRAIN_ROOT)/Archives/vrbrain-v54.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB52P_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB52P_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrbrain-v52P_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB52P_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrbrain-v52P.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v52P.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v52P.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52P_APM.vrx $(SKETCH)-vrbrain-v52P.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52P_APM.hex $(SKETCH)-vrbrain-v52P.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52P_APM.bin $(SKETCH)-vrbrain-v52P.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v52P.vrx"
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRBRAIN_V54_CONFIG_FILE)
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_V54_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/nuttx/
+	$(v) $(VRBRAIN_MAKE) vrbrain-v54_APM
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRBRAIN_V54_CONFIG_FILE)
+	$(v) rm -f $(SKETCH)-vrbrain-v54.vrx
+	$(v) arm-none-eabi-size $(VRBRAIN_ROOT)/Build/vrbrain-v54_APM.build/firmware.elf
+	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v54_APM.px4 $(SKETCH)-vrbrain-v54.vrx
+	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-vrbrain-v54.vrx" "$(SKETCH)-vrbrain-v54.vrx"
+	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v54.vrx"
 
-vrbrain-v52Pro: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v52Pro.export $(SKETCHCPP) module_mk
+vrcore-v10: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(VRBRAIN_ROOT)/Archives/vrcore-v10.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB52PRO_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB52PRO_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrbrain-v52Pro_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB52PRO_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrbrain-v52Pro.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v52Pro.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v52Pro.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52Pro_APM.vrx $(SKETCH)-vrbrain-v52Pro.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52Pro_APM.hex $(SKETCH)-vrbrain-v52Pro.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52Pro_APM.bin $(SKETCH)-vrbrain-v52Pro.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v52Pro.vrx"
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRCORE_V10_CONFIG_FILE)
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRCORE_V10_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/nuttx/
+	$(v) $(VRBRAIN_MAKE) vrcore-v10_APM
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRCORE_V10_CONFIG_FILE)
+	$(v) rm -f $(SKETCH)-vrcore-v10.vrx
+	$(v) arm-none-eabi-size $(VRBRAIN_ROOT)/Build/vrcore-v10_APM.build/firmware.elf
+	$(v) cp $(VRBRAIN_ROOT)/Images/vrcore-v10_APM.px4 $(SKETCH)-vrcore-v10.vrx
+	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-vrcore-v10.vrx" "$(SKETCH)-vrcore-v10.vrx"
+	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrcore-v10.vrx"
 
-vrbrain-v52ProP: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrbrain-v52ProP.export $(SKETCHCPP) module_mk
+vrubrain-v51: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(VRBRAIN_ROOT)/Archives/vrubrain-v51.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB52PROP_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VB52PROP_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrbrain-v52ProP_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VB52PROP_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrbrain-v52ProP.vrx
-	$(v) rm -f $(SKETCH)-vrbrain-v52ProP.hex
-	$(v) rm -f $(SKETCH)-vrbrain-v52ProP.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52ProP_APM.vrx $(SKETCH)-vrbrain-v52ProP.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52ProP_APM.hex $(SKETCH)-vrbrain-v52ProP.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52ProP_APM.bin $(SKETCH)-vrbrain-v52ProP.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v52ProP.vrx"
-
-vrubrain-v51: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrubrain-v51.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU51_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VU51_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRUBRAIN_V51_CONFIG_FILE)
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRUBRAIN_V51_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/nuttx/
 	$(v) $(VRBRAIN_MAKE) vrubrain-v51_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU51_CONFIG_FILE)
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRUBRAIN_V51_CONFIG_FILE)
 	$(v) rm -f $(SKETCH)-vrubrain-v51.vrx
-	$(v) rm -f $(SKETCH)-vrubrain-v51.hex
-	$(v) rm -f $(SKETCH)-vrubrain-v51.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51_APM.vrx $(SKETCH)-vrubrain-v51.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51_APM.hex $(SKETCH)-vrubrain-v51.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51_APM.bin $(SKETCH)-vrubrain-v51.bin
-	$(v) echo "MICRO VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrubrain-v51.vrx"
+	$(v) arm-none-eabi-size $(VRBRAIN_ROOT)/Build/vrubrain-v51_APM.build/firmware.elf
+	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51_APM.px4 $(SKETCH)-vrubrain-v51.vrx
+	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-vrubrain-v51.vrx" "$(SKETCH)-vrubrain-v51.vrx"
+	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrubrain-v51.vrx"
 
-vrubrain-v51P: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrubrain-v51P.export $(SKETCHCPP) module_mk
+vrubrain-v52: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(VRBRAIN_ROOT)/Archives/vrubrain-v52.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU51P_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VU51P_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrubrain-v51P_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU51P_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrubrain-v51P.vrx
-	$(v) rm -f $(SKETCH)-vrubrain-v51P.hex
-	$(v) rm -f $(SKETCH)-vrubrain-v51P.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51P_APM.vrx $(SKETCH)-vrubrain-v51P.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51P_APM.hex $(SKETCH)-vrubrain-v51P.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v51P_APM.bin $(SKETCH)-vrubrain-v51P.bin
-	$(v) echo "MICRO VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrubrain-v51P.vrx"
-
-vrubrain-v52: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrubrain-v52.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU52_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VU52_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRUBRAIN_V52_CONFIG_FILE)
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRUBRAIN_V52_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/nuttx/
 	$(v) $(VRBRAIN_MAKE) vrubrain-v52_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU52_CONFIG_FILE)
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRUBRAIN_V52_CONFIG_FILE)
 	$(v) rm -f $(SKETCH)-vrubrain-v52.vrx
-	$(v) rm -f $(SKETCH)-vrubrain-v52.hex
-	$(v) rm -f $(SKETCH)-vrubrain-v52.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v52_APM.vrx $(SKETCH)-vrubrain-v52.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v52_APM.hex $(SKETCH)-vrubrain-v52.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v52_APM.bin $(SKETCH)-vrubrain-v52.bin
-	$(v) echo "MICRO VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrubrain-v52.vrx"
+	$(v) arm-none-eabi-size $(VRBRAIN_ROOT)/Build/vrubrain-v52_APM.build/firmware.elf
+	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v52_APM.px4 $(SKETCH)-vrubrain-v52.vrx
+	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-vrubrain-v52.vrx" "$(SKETCH)-vrubrain-v52.vrx"
+	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrubrain-v52.vrx"
 
-vrubrain-v52P: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrubrain-v52P.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU52P_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VU52P_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrubrain-v52P_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VU52P_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrubrain-v52P.vrx
-	$(v) rm -f $(SKETCH)-vrubrain-v52P.hex
-	$(v) rm -f $(SKETCH)-vrubrain-v52P.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v52P_APM.vrx $(SKETCH)-vrubrain-v52P.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v52P_APM.hex $(SKETCH)-vrubrain-v52P.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrubrain-v52P_APM.bin $(SKETCH)-vrubrain-v52P.bin
-	$(v) echo "MICRO VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrubrain-v52P.vrx"
 
-vrhero-v10: $(BUILDROOT)/make.flags $(VRBRAIN_ROOT)/Archives/vrhero-v10.export $(SKETCHCPP) module_mk
-	$(RULEHDR)
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VH10_CONFIG_FILE)
-	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_VH10_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/
-	$(v) $(VRBRAIN_MAKE) vrhero-v10_APM
-	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/$(VRBRAIN_VH10_CONFIG_FILE)
-	$(v) rm -f $(SKETCH)-vrhero-v10.vrx
-	$(v) rm -f $(SKETCH)-vrhero-v10.hex
-	$(v) rm -f $(SKETCH)-vrhero-v10.bin
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrhero-v10_APM.vrx $(SKETCH)-vrhero-v10.vrx
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrhero-v10_APM.hex $(SKETCH)-vrhero-v10.hex
-	$(v) cp $(VRBRAIN_ROOT)/Images/vrhero-v10_APM.bin $(SKETCH)-vrhero-v10.bin
-	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrhero-v10.vrx"
 
-vrbrainStd: vrbrain-v45 vrbrain-v51 vrbrain-v52 vrubrain-v51 vrubrain-v52
-vrbrainStdP: vrbrain-v45P vrbrain-v51P vrbrain-v52P vrubrain-v51P
-vrbrainPro: vrbrain-v51Pro vrbrain-v52Pro
-vrbrainProP: vrbrain-v51ProP vrbrain-v52ProP
+vrbrainStd: vrbrain-v51 vrbrain-v52 vrbrain-v54 vrcore-v10 vrubrain-v51
+vrbrainStdP: 
+vrbrainPro: 
+vrbrainProP: 
 
 vrbrain: vrbrainStd vrbrainStdP vrbrainPro vrbrainProP
 
-#vrbrain-clean: clean vrbrain-build-clean vrbrain-archives-clean
-vrbrain-clean: clean vrbrain-build-clean
-
-vrbrain-build-clean:
-	$(v) /bin/rm -rf $(VRBRAIN_ROOT)/makefiles/build $(VRBRAIN_ROOT)/Build
+vrbrain-clean: clean CHECK_MODULES vrbrain-archives-clean vrbrain-cleandep
+	$(v) /bin/rm -rf $(VRBRAIN_ROOT)/makefiles/build $(VRBRAIN_ROOT)/Build $(VRBRAIN_ROOT)/Images/*.px4 $(VRBRAIN_ROOT)/Images/*.bin
+	$(v) /bin/rm -rf $(VRBRAIN_ROOT)/src/modules/uORB/topics $(VRBRAIN_ROOT)/src/platforms/nuttx/px4_messages
 
 vrbrain-cleandep: clean
+	$(v) mkdir -p $(VRBRAIN_ROOT)/Build
 	$(v) find $(VRBRAIN_ROOT)/Build -type f -name '*.d' | xargs rm -f
-
-vrbrain-v40-upload: vrbrain-v40
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrbrain-v40_APM upload
-
-vrbrain-v45-upload: vrbrain-v45
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrbrain-v45_APM upload
-
-vrbrain-v45P-upload: vrbrain-v45P
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrbrain-v45P_APM upload
-
-vrbrain-v50-upload: vrbrain-v50
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrbrain-v50_APM upload
+	$(v) find $(UAVCAN_DIRECTORY) -type f -name '*.d' | xargs rm -f
+	$(v) find $(SKETCHBOOK)/$(SKETCH) -type f -name '*.d' | xargs rm -f
 
 vrbrain-v51-upload: vrbrain-v51
 	$(RULEHDR)
 	$(v) $(VRBRAIN_MAKE) vrbrain-v51_APM upload
 
-vrbrain-v51P-upload: vrbrain-v51P
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrbrain-v51P_APM upload
-
-vrbrain-v51Pro-upload: vrbrain-v51Pro
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrbrain-v51Pro_APM upload
-
-vrbrain-v51ProP-upload: vrbrain-v51ProP
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrbrain-v51ProP_APM upload
-
 vrbrain-v52-upload: vrbrain-v52
 	$(RULEHDR)
 	$(v) $(VRBRAIN_MAKE) vrbrain-v52_APM upload
 
-vrbrain-v52P-upload: vrbrain-v52P
+vrbrain-v54-upload: vrbrain-v54
 	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrbrain-v52P_APM upload
+	$(v) $(VRBRAIN_MAKE) vrbrain-v54_APM upload
 
-vrbrain-v52Pro-upload: vrbrain-v52Pro
+vrcore-v10-upload: vrcore-v10
 	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrbrain-v52Pro_APM upload
-
-vrbrain-v52ProP-upload: vrbrain-v52ProP
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrbrain-v52ProP_APM upload
+	$(v) $(VRBRAIN_MAKE) vrcore-v10_APM upload
 
 vrubrain-v51-upload: vrubrain-v51
 	$(RULEHDR)
 	$(v) $(VRBRAIN_MAKE) vrubrain-v51_APM upload
 
-vrubrain-v51P-upload: vrubrain-v51P
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrubrain-v51P_APM upload
-
 vrubrain-v52-upload: vrubrain-v52
 	$(RULEHDR)
 	$(v) $(VRBRAIN_MAKE) vrubrain-v52_APM upload
 
-vrubrain-v52P-upload: vrubrain-v52P
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrubrain-v52P_APM upload
-
-vrhero-v10-upload: vrhero-v10
-	$(RULEHDR)
-	$(v) $(VRBRAIN_MAKE) vrhero-v10_APM upload
-
-vrbrain-upload: vrbrain-v40-upload
+vrbrain-upload: vrbrain-v52-upload
 
 vrbrain-archives-clean:
 	$(v) /bin/rm -rf $(VRBRAIN_ROOT)/Archives
 
-$(VRBRAIN_ROOT)/Archives/vrbrain-v40.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+# These targets can't run in parallel because they all need to generate a tool
+# to generate the config.h inside them. This could trigger races if done in
+# parallel, trying to generate the tool and replacing it while the header is already
+# being generated
+#
+# We could serialize inside PX4Firmware, but it's easier to serialize here
+# while maintaining the rest of the build parallelized
 
-$(VRBRAIN_ROOT)/Archives/vrbrain-v45.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
-
-$(VRBRAIN_ROOT)/Archives/vrbrain-v45P.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
-
-$(VRBRAIN_ROOT)/Archives/vrbrain-v50.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+.NOTPARALLEL: \
+	$(VRBRAIN_ROOT)/Archives/vrbrain-v51.export \
+	$(VRBRAIN_ROOT)/Archives/vrbrain-v52.export \
+	$(VRBRAIN_ROOT)/Archives/vrbrain-v54.export \
+	$(VRBRAIN_ROOT)/Archives/vrcore-v10.export \
+	$(VRBRAIN_ROOT)/Archives/vrubrain-v51.export \
+	$(VRBRAIN_ROOT)/Archives/vrubrain-v52.export
 
 $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
-
-$(VRBRAIN_ROOT)/Archives/vrbrain-v51P.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
-
-$(VRBRAIN_ROOT)/Archives/vrbrain-v51Pro.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
-
-$(VRBRAIN_ROOT)/Archives/vrbrain-v51ProP.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+	$(v) $(VRBRAIN_MAKE_ARCHIVES) BOARDS="vrbrain-v51"
 
 $(VRBRAIN_ROOT)/Archives/vrbrain-v52.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+	$(v) $(VRBRAIN_MAKE_ARCHIVES) BOARDS="vrbrain-v52"
 
-$(VRBRAIN_ROOT)/Archives/vrbrain-v52P.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+$(VRBRAIN_ROOT)/Archives/vrbrain-v54.export:
+	$(v) $(VRBRAIN_MAKE_ARCHIVES) BOARDS="vrbrain-v54"
 
-$(VRBRAIN_ROOT)/Archives/vrbrain-v52Pro.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
-
-$(VRBRAIN_ROOT)/Archives/vrbrain-v52ProP.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+$(VRBRAIN_ROOT)/Archives/vrcore-v10.export:
+	$(v) $(VRBRAIN_MAKE_ARCHIVES) BOARDS="vrcore-v10"
 
 $(VRBRAIN_ROOT)/Archives/vrubrain-v51.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
-
-$(VRBRAIN_ROOT)/Archives/vrubrain-v51P.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+	$(v) $(VRBRAIN_MAKE_ARCHIVES) BOARDS="vrubrain-v51"
 
 $(VRBRAIN_ROOT)/Archives/vrubrain-v52.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
-
-$(VRBRAIN_ROOT)/Archives/vrubrain-v52P.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
-
-$(VRBRAIN_ROOT)/Archives/vrhero-v10.export:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+	$(v) $(VRBRAIN_MAKE_ARCHIVES) BOARDS="vrubrain-v52"
 
 vrbrain-archives:
-	$(v) $(VRBRAIN_MAKE_ARCHIVES)
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="vrbrain-v51 vrbrain-v52 vrbrain-v54 vrcore-v10 vrubrain-v51 vrubrain-v52"
 
-else
-
-vrbrain_nx:
-	$(error ERROR: You need to add VRBRAIN_ROOT to your config.mk)
-
-vrbrain-clean: vrbrain
-
-vrbrain-upload: vrbrain
-
-endif
+vrbrain-info: module_mk
+	@echo "VRBRAINFIRMWARE_DIRECTORY    $(VRBRAINFIRMWARE_DIRECTORY)"
+	@echo "VRBRAINNUTTX_DIRECTORY       $(VRBRAINNUTTX_DIRECTORY)"
+	@echo "NUTTX_ROOT                   $(NUTTX_ROOT)"
+	@echo "VRBRAIN_ROOT                 $(VRBRAIN_ROOT)"
+	@echo "NUTTX_SRC                    $(NUTTX_SRC)"
+	@echo "SKETCHLIBS                   $(SKETCHLIBS)"
+	@echo "SKETCHLIBNAMES               $(SKETCHLIBNAMES)"
+	@echo "SKETCHLIBSRCDIRS             $(SKETCHLIBSRCDIRS)"
+	@echo "SKETCHLIBSRCS                $(SKETCHLIBSRCS)"
+	@echo "SKETCHLIBOBJS                $(SKETCHLIBOBJS)"
+	@echo "SKETCHLIBINCLUDES            $(SKETCHLIBINCLUDES)"
+	@echo "SKETCHLIBSRCSRELATIVE        $(SKETCHLIBSRCSRELATIVE)"
+	@echo "SRCS                         $(subst $(SKETCHBOOK)/,,$(wildcard $(SRCROOT)/*.cpp))"
+	@echo "HASHADDER_FLAGS              $(HASHADDER_FLAGS)"

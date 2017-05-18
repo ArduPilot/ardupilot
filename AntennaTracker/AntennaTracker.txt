@@ -162,7 +162,7 @@ Use Mission Planner to calibrate the tracker:
 - click on OK
 - rotate the complete antenna tracker assembly around, in 3 dimensions, making sure to
 rotate the tracker to every possible orientation in the 1 minute you have
-available. DONT just move the yaw and pitch motors around. You will probably have to
+available. DON'T just move the yaw and pitch motors around. You will probably have to
 pick the whole thing up.
 - At the end of the minute, Mission Planner will update AntennaTrackers compass offsets.
 

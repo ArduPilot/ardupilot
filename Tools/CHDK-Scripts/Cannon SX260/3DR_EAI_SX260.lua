@@ -583,7 +583,7 @@ else
             -- intervalometer timing
             next_shot_time = next_shot_time + interval
 
-            -- set focus at infinity ? (maybe redundant for AFL & MF mode but makes sure its set right)
+            -- set focus at infinity ? (maybe redundant for AFL & MF mode but makes sure it's set right)
             if (focus_mode > 0) then
                 set_focus(infx)
                 sleep(100)

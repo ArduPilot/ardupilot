@@ -122,7 +122,7 @@ def is_valid_msg_type(x):
     base = bare_msg_type(x)
     if not is_legal_resource_name(base):
         return False
-    #parse array indicies
+    #parse array indices
     x = x[len(base):]
     state = 0
     i = 0

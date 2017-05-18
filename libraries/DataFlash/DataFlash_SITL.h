@@ -1,12 +1,12 @@
 /* ************************************************************ */
 /* DataFlash_SITL Log library                                 */
 /* ************************************************************ */
-#ifndef __DATAFLASH_SITL_H__
-#define __DATAFLASH_SITL_H__
+#pragma once
+
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL/AP_HAL.h>
 #include "DataFlash_Block.h"
 
 class DataFlash_SITL : public DataFlash_Block
@@ -27,7 +27,7 @@ private:
     // write size bytes of data to a page. The caller must ensure that
     // the data fits within the page, otherwise it will wrap to the
     // start of the page
-    // If pHeader is not NULL then write the header bytes before the data
+    // If pHeader is not nullptr then write the header bytes before the data
     void		    BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr, 
 				       const void *pHeader, uint8_t hdr_size,
 				       const void *pBuffer, uint16_t size);
@@ -36,16 +36,13 @@ private:
     // the data fits within the page, otherwise it will wrap to the
     // start of the page
     bool 		    BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size);
-    
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+
 public:
-    DataFlash_SITL(DataFlash_Class &front) :
-        DataFlash_Block(front) { }
-    void        Init(const struct LogStructure *structure, uint8_t num_types);
+    DataFlash_SITL(DataFlash_Class &front, DFMessageWriter_DFLogStart *writer) :
+        DataFlash_Block(front, writer) { }
+    void        Init() override;
     void        ReadManufacturerID();
     bool        CardInserted();
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#endif // __DATAFLASH_SITL_H__

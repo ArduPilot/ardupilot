@@ -1,7 +1,0 @@
-Multirotor mixer for PX4FMU
-===========================
-
-This file defines a single mixer for a quadrotor in the V configuration.  All controls
-are mixed 100%.
-
-R: 4v 10000 10000 10000 0

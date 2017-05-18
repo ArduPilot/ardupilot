@@ -9,6 +9,7 @@
 
 import DataflashLog
 import traceback
+from VehicleType import VehicleType
 
 try:
 
@@ -16,7 +17,8 @@ try:
 	logdata = DataflashLog.DataflashLog()
 	logdata.read("examples/robert_lefebvre_octo_PM.log", ignoreBadlines=False)
 	assert(logdata.filename        == "examples/robert_lefebvre_octo_PM.log")
-	assert(logdata.vehicleType     == "ArduCopter")
+	assert(logdata.vehicleType     == VehicleType.Copter)
+	assert(logdata.vehicleTypeString     == "ArduCopter")
 	assert(logdata.firmwareVersion == "V3.0.1")
 	assert(logdata.firmwareHash    == "5c6503e2")
 	assert(logdata.freeRAM         == 1331)
@@ -38,7 +40,7 @@ try:
 	assert(logdata.channels['CTUN']['CRate'].listData[3]   == (317, 35))
 	assert(logdata.channels['CTUN']['CRate'].listData[51]  == (421, 31))
 	assert(logdata.channels['CTUN']['CRate'].listData[115] == (563, -8))
-	assert(int(logdata.filesizeKB) == 302)
+	assert(int(logdata.filesizeKB) == 307)
 	assert(logdata.durationSecs    == 155)
 	assert(logdata.lineCount       == 4750)
 

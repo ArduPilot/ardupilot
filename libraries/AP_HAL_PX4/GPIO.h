@@ -1,7 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_HAL_PX4_GPIO_H__
-#define __AP_HAL_PX4_GPIO_H__
+#pragma once
 
 #include "AP_HAL_PX4.h"
 
@@ -30,30 +27,30 @@
 class PX4::PX4GPIO : public AP_HAL::GPIO {
 public:
     PX4GPIO();
-    void    init();
-    void    pinMode(uint8_t pin, uint8_t output);
-    int8_t  analogPinToDigitalPin(uint8_t pin);
-    uint8_t read(uint8_t pin);
-    void    write(uint8_t pin, uint8_t value);
-    void    toggle(uint8_t pin);
+    void    init() override;
+    void    pinMode(uint8_t pin, uint8_t output) override;
+    int8_t  analogPinToDigitalPin(uint8_t pin) override;
+    uint8_t read(uint8_t pin) override;
+    void    write(uint8_t pin, uint8_t value) override;
+    void    toggle(uint8_t pin) override;
 
     /* Alternative interface: */
-    AP_HAL::DigitalSource* channel(uint16_t n);
+    AP_HAL::DigitalSource* channel(uint16_t n) override;
 
     /* Interrupt interface: */
-    bool attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode);
+    bool attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode) override;
 
     /* return true if USB cable is connected */
-    bool usb_connected(void);
+    bool usb_connected(void) override;
 
     // used by UART code to avoid a hw bug in the AUAV-X2
     void set_usb_connected(void) { _usb_connected = true; }
 
 private:
-    int _led_fd;
-    int _tone_alarm_fd;
-    int _gpio_fmu_fd;
-    int _gpio_io_fd;
+    int _led_fd = -1;
+    int _tone_alarm_fd = -1;
+    int _gpio_fmu_fd = -1;
+    int _gpio_io_fd = -1;
     bool _usb_connected = false;
 };
 
@@ -67,5 +64,3 @@ public:
 private:
     uint8_t _v;
 };
-
-#endif // __AP_HAL_PX4_GPIO_H__
