@@ -39,6 +39,7 @@ void SRV_Channel::output_ch(void)
         passthrough_from = int8_t(function - k_rcin1);
         break;
     case k_motor1 ... k_motor8:
+    case k_motor9 ... k_motor12:
         // handled by AP_Motors::rc_write()
         return;
     }
