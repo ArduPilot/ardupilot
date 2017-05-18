@@ -758,7 +758,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(gps, "GPS_", AP_GPS),
 
     // @Group: SCHED_
-    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.tpp
+    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.h
     GOBJECT(scheduler, "SCHED_", AP_Scheduler<Copter>),
 
 #if AC_FENCE == ENABLED

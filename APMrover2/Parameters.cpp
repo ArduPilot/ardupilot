@@ -383,7 +383,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(compass,                "COMPASS_", Compass),
 
     // @Group: SCHED_
-    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.tpp
+    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.h
     GOBJECT(scheduler, "SCHED_", AP_Scheduler<Rover>),
 
     // barometer ground calibration. The GND_ prefix is chosen for
