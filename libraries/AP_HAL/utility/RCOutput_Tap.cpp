@@ -50,7 +50,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_AEROFC_V1
+#ifdef HAL_RCOUTPUT_TAP_DEVICE
 
 #include "RCOutput_Tap.h"
 
@@ -70,8 +70,6 @@
 #else
 #define debug(fmt, args...)
 #endif
-
-#define UART_DEVICE_PATH "/dev/ttyS0"
 
 extern const AP_HAL::HAL &hal;
 
@@ -316,11 +314,11 @@ void RCOutput_Tap::_uart_close()
 bool RCOutput_Tap::_uart_open()
 {
     // open uart
-    _uart_fd = open(UART_DEVICE_PATH, O_RDWR | O_NOCTTY | O_NONBLOCK);
+    _uart_fd = open(HAL_RCOUTPUT_TAP_DEVICE, O_RDWR | O_NOCTTY | O_NONBLOCK);
     int termios_state = -1;
 
     if (_uart_fd < 0) {
-        ::fprintf(stderr, "failed to open uart device! %s\n", UART_DEVICE_PATH);
+        ::fprintf(stderr, "failed to open uart device! %s\n", HAL_RCOUTPUT_TAP_DEVICE);
         return -1;
     }
 
@@ -335,13 +333,13 @@ bool RCOutput_Tap::_uart_open()
     // set baud rate
     if (cfsetispeed(&uart_config, speed) < 0 || cfsetospeed(&uart_config, speed) < 0) {
         ::fprintf(stderr, "failed to set baudrate for %s: %d\n",
-                  UART_DEVICE_PATH, termios_state);
+                  HAL_RCOUTPUT_TAP_DEVICE, termios_state);
         _uart_close();
         return false;
     }
 
     if ((termios_state = tcsetattr(_uart_fd, TCSANOW, &uart_config)) < 0) {
-        fprintf(stderr, "tcsetattr failed for %s\n", UART_DEVICE_PATH);
+        fprintf(stderr, "tcsetattr failed for %s\n", HAL_RCOUTPUT_TAP_DEVICE);
         _uart_close();
         return false;
     }
@@ -354,7 +352,7 @@ void RCOutput_Tap::init()
     _perf_rcout = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "APM_rcout");
 
     if (!_uart_open()) {
-        AP_HAL::panic("Unable to open " UART_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " HAL_RCOUTPUT_TAP_DEVICE);
         return;
     }
 
@@ -383,7 +381,7 @@ void RCOutput_Tap::init()
     int ret = _send_packet(packet);
     if (ret < 0) {
         _uart_close();
-        AP_HAL::panic("Unable to send configuration to " UART_DEVICE_PATH);
+        AP_HAL::panic("Unable to send configuration to " HAL_RCOUTPUT_TAP_DEVICE);
         return;
     }
 
