@@ -28,7 +28,7 @@
   they are expected to take (in microseconds)
  */
 const AP_Task<Plane> Plane::scheduler_tasks[] = {
-                           // Units:   Hz      us
+                                               // Units:   Hz      us
     AP_Task<Plane>::create(&Plane::ahrs_update,           400,    400),
     AP_Task<Plane>::create(&Plane::read_radio,             50,    100),
     AP_Task<Plane>::create(&Plane::check_short_failsafe,   50,    100),
