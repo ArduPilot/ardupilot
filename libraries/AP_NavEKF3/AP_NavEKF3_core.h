@@ -847,10 +847,6 @@ private:
     uint32_t lastSynthYawTime_ms;   // time stamp when synthetic yaw measurement was last fused to maintain covariance health (msec)
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
     Matrix24 nextP;                 // Predicted covariance matrix before addition of process noise to diagonals
-    Vector21 SF;                    // intermediate variables used to calculate predicted covariance matrix
-    Vector8 SG;                     // intermediate variables used to calculate predicted covariance matrix
-    Vector11 SQ;                    // intermediate variables used to calculate predicted covariance matrix
-    Vector11 SPP;                   // intermediate variables used to calculate predicted covariance matrix
     Vector2f lastKnownPositionNE;   // last known position
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
