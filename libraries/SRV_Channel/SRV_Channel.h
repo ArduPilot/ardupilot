@@ -110,6 +110,10 @@ public:
         k_vtail_left            = 79,
         k_vtail_right           = 80,
         k_boost_throttle        = 81,            ///< vertical booster throttle
+        k_motor9                = 82,
+        k_motor10               = 83,
+        k_motor11               = 84,
+        k_motor12               = 85,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
