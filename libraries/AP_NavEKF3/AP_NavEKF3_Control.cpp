@@ -61,8 +61,10 @@ void NavEKF3_core::setWindMagStateLearningMode()
     bool setWindInhibit = (!useAirspeed() && !assume_zero_sideslip()) || onGround || (PV_AidingMode == AID_NONE);
     if (!inhibitWindStates && setWindInhibit) {
         inhibitWindStates = true;
+        updateStateIndexLim();
     } else if (inhibitWindStates && !setWindInhibit) {
         inhibitWindStates = false;
+        updateStateIndexLim();
         // set states and variances
         if (yawAlignComplete && useAirspeed()) {
             // if we have airspeed and a valid heading, set the wind states to the reciprocal of the vehicle heading
@@ -108,8 +110,10 @@ void NavEKF3_core::setWindMagStateLearningMode()
     bool setMagInhibit = !magCalRequested || magCalDenied;
     if (!inhibitMagStates && setMagInhibit) {
         inhibitMagStates = true;
+        updateStateIndexLim();
     } else if (inhibitMagStates && !setMagInhibit) {
         inhibitMagStates = false;
+        updateStateIndexLim();
         if (magFieldLearned) {
             // if we have already learned the field states, then retain the learned variances
             P[16][16] = earthMagFieldVar.x;
@@ -139,6 +143,8 @@ void NavEKF3_core::setWindMagStateLearningMode()
     if (tiltAlignComplete && inhibitDelVelBiasStates) {
         // activate the states
         inhibitDelVelBiasStates = false;
+        updateStateIndexLim();
+
         // set the initial covariance values
         P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
         P[14][14] = P[13][13];
@@ -148,6 +154,8 @@ void NavEKF3_core::setWindMagStateLearningMode()
     if (tiltAlignComplete && inhibitDelAngBiasStates) {
         // activate the states
         inhibitDelAngBiasStates = false;
+        updateStateIndexLim();
+
         // set the initial covariance values
         P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
         P[11][11] = P[10][10];
@@ -161,6 +169,13 @@ void NavEKF3_core::setWindMagStateLearningMode()
         finalInflightMagInit = false;
     }
 
+    updateStateIndexLim();
+}
+
+// Adjust the indexing limits used to address the covariance, states and other EKF arrays to avoid unnecessary operations
+// if we are not using those states
+void NavEKF3_core::updateStateIndexLim()
+{
     // Adjust the indexing limits used to address the covariance, states and other EKF arrays to avoid unnecessary operations
     // if we are not using those states
     if (inhibitWindStates) {

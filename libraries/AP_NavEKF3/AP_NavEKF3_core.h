@@ -770,6 +770,9 @@ private:
 
     // update timing statistics structure
     void updateTimingStatistics(void);
+
+    // Update the stte index limit based on which states are active
+    void updateStateIndexLim(void);
     
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
@@ -857,8 +860,8 @@ private:
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states are inactive
-    bool inhibitDelVelBiasStates;   // true when delta velocity bias states are inactive
-    bool inhibitDelAngBiasStates;
+    bool inhibitDelVelBiasStates;   // true when IMU delta velocity bias states are inactive
+    bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
     struct Location EKF_origin;     // LLH origin of the NED axis system
     bool validOrigin;               // true when the EKF origin is valid
