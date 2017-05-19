@@ -42,6 +42,28 @@ inline bool is_zero(const T fVal1) {
     return (fabsf(static_cast<float>(fVal1)) < FLT_EPSILON);
 }
 
+/* 
+ * @brief: Check whether a float is greater than zero
+ */
+template <class T>
+inline bool is_positive(const T fVal1) {
+    static_assert(std::is_floating_point<T>::value || std::is_base_of<T,AP_Float>::value,
+                  "Template parameter not of type float");
+    return (static_cast<float>(fVal1) > FLT_EPSILON);
+}
+
+
+/* 
+ * @brief: Check whether a float is less than zero
+ */
+template <class T>
+inline bool is_negative(const T fVal1) {
+    static_assert(std::is_floating_point<T>::value || std::is_base_of<T,AP_Float>::value,
+                  "Template parameter not of type float");
+    return (static_cast<float>(fVal1) < (-1.0 * FLT_EPSILON));
+}
+
+
 /*
  * A variant of asin() that checks the input ranges and ensures a valid angle
  * as output. If nan is given as input then zero is returned.
