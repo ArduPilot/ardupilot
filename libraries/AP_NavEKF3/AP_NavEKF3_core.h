@@ -497,9 +497,6 @@ private:
     // force symmetry on the state covariance matrix
     void ForceSymmetry();
 
-    // copy covariances across from covariance prediction calculation and fix numerical errors
-    void CopyCovariances();
-
     // constrain variances (diagonal terms) in the state covariance matrix
     void ConstrainVariances();
 
@@ -847,7 +844,6 @@ private:
     uint32_t lastSynthYawTime_ms;   // time stamp when synthetic yaw measurement was last fused to maintain covariance health (msec)
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
     Matrix24 nextP;                 // Predicted covariance matrix before addition of process noise to diagonals
-    Vector24 processNoise;          // process noise added to diagonals of predicted covariance matrix
     Vector21 SF;                    // intermediate variables used to calculate predicted covariance matrix
     Vector8 SG;                     // intermediate variables used to calculate predicted covariance matrix
     Vector11 SQ;                    // intermediate variables used to calculate predicted covariance matrix
