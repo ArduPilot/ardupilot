@@ -39,6 +39,7 @@
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_AEROFC_V1
 #define HAL_STORAGE_SIZE            16384
 #define USE_FLASH_STORAGE           1
+#define HAL_RCOUTPUT_TAP_DEVICE "/dev/ttyS0"
 // we don't have any sdcard
 #undef HAL_BOARD_LOG_DIRECTORY
 #undef HAL_BOARD_TERRAIN_DIRECTORY
