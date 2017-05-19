@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RCOutput_Tap.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
@@ -31,7 +32,6 @@
 #include "RCInput_115200.h"
 #include "RCInput_Multi.h"
 #include "RCInput_ZYNQ.h"
-#include "RCOutput_AeroIO.h"
 #include "RCOutput_AioPRU.h"
 #include "RCOutput_Bebop.h"
 #include "RCOutput_Disco.h"
@@ -205,7 +205,7 @@ static RCOutput_Disco rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_DISCO_BL
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
 static RCOutput_Sysfs rcoutDriver(0, 0, 14);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-static RCOutput_AeroIO rcoutDriver;
+static ap::RCOutput_Tap rcoutDriver;
 #else
 static Empty::RCOutput rcoutDriver;
 #endif
