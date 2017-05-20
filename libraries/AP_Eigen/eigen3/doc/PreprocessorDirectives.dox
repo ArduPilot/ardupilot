@@ -1,0 +1,135 @@
+namespace Eigen {
+
+/** \page TopicPreprocessorDirectives Preprocessor directives
+
+You can control some aspects of %Eigen by defining the preprocessor tokens using \c \#define. These macros
+should be defined before any %Eigen headers are included. Often they are best set in the project options.
+
+This page lists the preprocessor tokens recognized by %Eigen.
+
+\eigenAutoToc
+
+
+\section TopicPreprocessorDirectivesMajor Macros with major effects
+
+These macros have a major effect and typically break the API (Application Programming Interface) and/or the
+ABI (Application Binary Interface). This can be rather dangerous: if parts of your program are compiled with
+one option, and other parts (or libraries that you use) are compiled with another option, your program may
+fail to link or exhibit subtle bugs. Nevertheless, these options can be useful for people who know what they
+are doing.
+
+ - \b EIGEN2_SUPPORT and \b EIGEN2_SUPPORT_STAGEnn_xxx are disabled starting from the 3.3 release.
+   Defining one of these will raise a compile-error. If you need to compile Eigen2 code,
+   <a href="http://eigen.tuxfamily.org/index.php?title=Eigen2">check this site</a>.
+ - \b EIGEN_DEFAULT_DENSE_INDEX_TYPE - the type for column and row indices in matrices, vectors and array
+   (DenseBase::Index). Set to \c std::ptrdiff_t by default.
+ - \b EIGEN_DEFAULT_IO_FORMAT - the IOFormat to use when printing a matrix if no %IOFormat is specified.
+   Defaults to the %IOFormat constructed by the default constructor IOFormat::IOFormat().
+ - \b EIGEN_INITIALIZE_MATRICES_BY_ZERO - if defined, all entries of newly constructed matrices and arrays are
+   initialized to zero, as are new entries in matrices and arrays after resizing. Not defined by default.
+   \warning The unary (resp. binary) constructor of \c 1x1 (resp. \c 2x1 or \c 1x2) fixed size matrices is
+   always interpreted as an initialization constructor where the argument(s) are the coefficient values
+   and not the sizes. For instance, \code Vector2d v(2,1); \endcode will create a vector with coeficients [2,1],
+   and \b not a \c 2x1 vector initialized with zeros (i.e., [0,0]). If such cases might occur, then it is
+   recommended to use the default constructor with a explicit call to resize:
+   \code
+   Matrix<?,SizeAtCompileTime,1> v;
+   v.resize(size);
+   Matrix<?,RowsAtCompileTime,ColsAtCompileTime> m;
+   m.resize(rows,cols);
+   \endcode
+ - \b EIGEN_INITIALIZE_MATRICES_BY_NAN - if defined, all entries of newly constructed matrices and arrays are
+   initialized to NaN, as are new entries in matrices and arrays after resizing. This option is especially
+   useful for debugging purpose, though a memory tool like <a href="http://valgrind.org/">valgrind</a> is
+   preferable. Not defined by default.
+   \warning See the documentation of \c EIGEN_INITIALIZE_MATRICES_BY_ZERO for a discussion on a limitations
+   of these macros when applied to \c 1x1, \c 1x2, and \c 2x1 fixed-size matrices.
+ - \b EIGEN_NO_AUTOMATIC_RESIZING - if defined, the matrices (or arrays) on both sides of an assignment 
+   <tt>a = b</tt> have to be of the same size; otherwise, %Eigen automatically resizes \c a so that it is of
+   the correct size. Not defined by default.
+
+
+\section TopicPreprocessorDirectivesAssertions Assertions
+
+The %Eigen library contains many assertions to guard against programming errors, both at compile time and at
+run time. However, these assertions do cost time and can thus be turned off.
+
+ - \b EIGEN_NO_DEBUG - disables %Eigen's assertions if defined. Not defined by default, unless the
+   \c NDEBUG macro is defined (this is a standard C++ macro which disables all asserts). 
+ - \b EIGEN_NO_STATIC_ASSERT - if defined, compile-time static assertions are replaced by runtime assertions; 
+   this saves compilation time. Not defined by default.
+ - \b eigen_assert - macro with one argument that is used inside %Eigen for assertions. By default, it is
+   basically defined to be \c assert, which aborts the program if the assertion is violated. Redefine this
+   macro if you want to do something else, like throwing an exception.
+ - \b EIGEN_MPL2_ONLY - disable non MPL2 compatible features, or in other words disable the features which
+   are still under the LGPL.
+
+
+\section TopicPreprocessorDirectivesPerformance Alignment, vectorization and performance tweaking
+
+ - \b EIGEN_MALLOC_ALREADY_ALIGNED - Can be set to 0 or 1 to tell whether default system \c malloc already
+   returns aligned buffers. In not defined, then this information is automatically deduced from the compiler
+   and system preprocessor tokens.
+ - \b EIGEN_DONT_ALIGN - disables alignment completely. %Eigen will not try to align its objects and does not
+   expect that any objects passed to it are aligned. This will turn off vectorization. Not defined by default.
+ - \b EIGEN_DONT_ALIGN_STATICALLY - disables alignment of arrays on the stack. Not defined by default, unless
+   \c EIGEN_DONT_ALIGN is defined.
+ - \b EIGEN_DONT_PARALLELIZE - if defined, this disables multi-threading. This is only relevant if you enabled OpenMP.
+   See \ref TopicMultiThreading for details.
+ - \b EIGEN_DONT_VECTORIZE - disables explicit vectorization when defined. Not defined by default, unless 
+   alignment is disabled by %Eigen's platform test or the user defining \c EIGEN_DONT_ALIGN.
+ - \b EIGEN_FAST_MATH - enables some optimizations which might affect the accuracy of the result. This currently
+   enables the SSE vectorization of sin() and cos(), and speedups sqrt() for single precision. Defined to 1 by default.
+   Define it to 0 to disable.
+ - \b EIGEN_UNROLLING_LIMIT - defines the size of a loop to enable meta unrolling. Set it to zero to disable
+   unrolling. The size of a loop here is expressed in %Eigen's own notion of "number of FLOPS", it does not
+   correspond to the number of iterations or the number of instructions. The default is value 100.
+ - \b EIGEN_STACK_ALLOCATION_LIMIT - defines the maximum bytes for a buffer to be allocated on the stack. For internal
+   temporary buffers, dynamic memory allocation is employed as a fall back. For fixed-size matrices or arrays, exceeding
+   this threshold raises a compile time assertion. Use 0 to set no limit. Default is 128 KB.
+ - \b EIGEN_HAS_POSIX_MEMALIGN - defines whether aligned memory allocation can be performed through the \c posix_memalign
+   function. The availability of \c posix_memalign is automatically checked on most platform, but this option allows to
+   by-pass %Eigen's built-in rules.
+
+
+\section TopicPreprocessorDirectivesPlugins Plugins
+
+It is possible to add new methods to many fundamental classes in %Eigen by writing a plugin. As explained in
+the section \ref ExtendingMatrixBase, the plugin is specified by defining a \c EIGEN_xxx_PLUGIN macro. The
+following macros are supported; none of them are defined by default.
+
+ - \b EIGEN_ARRAY_PLUGIN - filename of plugin for extending the Array class.
+ - \b EIGEN_ARRAYBASE_PLUGIN - filename of plugin for extending the ArrayBase class.
+ - \b EIGEN_CWISE_PLUGIN - filename of plugin for extending the Cwise class.
+ - \b EIGEN_DENSEBASE_PLUGIN - filename of plugin for extending the DenseBase class.
+ - \b EIGEN_DYNAMICSPARSEMATRIX_PLUGIN - filename of plugin for extending the DynamicSparseMatrix class.
+ - \b EIGEN_MATRIX_PLUGIN - filename of plugin for extending the Matrix class.
+ - \b EIGEN_MATRIXBASE_PLUGIN - filename of plugin for extending the MatrixBase class.
+ - \b EIGEN_PLAINOBJECTBASE_PLUGIN - filename of plugin for extending the PlainObjectBase class.
+ - \b EIGEN_QUATERNION_PLUGIN - filename of plugin for extending the Quaternion class.
+ - \b EIGEN_QUATERNIONBASE_PLUGIN - filename of plugin for extending the QuaternionBase class.
+ - \b EIGEN_SPARSEMATRIX_PLUGIN - filename of plugin for extending the SparseMatrix class.
+ - \b EIGEN_SPARSEMATRIXBASE_PLUGIN - filename of plugin for extending the SparseMatrixBase class.
+ - \b EIGEN_SPARSEVECTOR_PLUGIN - filename of plugin for extending the SparseVector class.
+ - \b EIGEN_TRANSFORM_PLUGIN - filename of plugin for extending the Transform class.
+ - \b EIGEN_FUNCTORS_PLUGIN - filename of plugin for adding new functors and specializations of functor_traits.
+
+
+\section TopicPreprocessorDirectivesDevelopers Macros for Eigen developers
+
+These macros are mainly meant for people developing %Eigen and for testing purposes. Even though, they might be useful for power users and the curious for debugging and testing purpose, they \b should \b not \b be \b used by real-word code.
+
+ - \b EIGEN_DEFAULT_TO_ROW_MAJOR - when defined, the default storage order for matrices becomes row-major
+   instead of column-major. Not defined by default.
+ - \b EIGEN_INTERNAL_DEBUGGING - if defined, enables assertions in %Eigen's internal routines. This is useful
+   for debugging %Eigen itself. Not defined by default.
+ - \b EIGEN_NO_MALLOC - if defined, any request from inside the %Eigen to allocate memory from the heap
+   results in an assertion failure. This is useful to check that some routine does not allocate memory
+   dynamically. Not defined by default.
+ - \b EIGEN_RUNTIME_NO_MALLOC - if defined, a new switch is introduced which can be turned on and off by
+   calling <tt>set_is_malloc_allowed(bool)</tt>. If malloc is not allowed and %Eigen tries to allocate memory
+   dynamically anyway, an assertion failure results. Not defined by default.
+
+*/
+
+}
