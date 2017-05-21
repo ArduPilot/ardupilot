@@ -1291,7 +1291,6 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     };
     WriteBlock(&pktq1, sizeof(pktq1));
 
-    
     // log innovations for the second IMU if enabled
     if (ahrs.get_NavEKF2().activeCores() >= 2) {
         // Write 6th EKF packet
@@ -1783,6 +1782,45 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         WriteBlock(&pkt11, sizeof(pkt11));
         updateTime_ms = lastUpdateTime_ms;
     }
+
+    // log state variances
+    float stateVar[24];
+    ahrs.get_NavEKF3().getStateVariances(-1, stateVar);
+    struct log_ekfStateVar pktv1 = {
+        LOG_PACKET_HEADER_INIT(LOG_XKV1_MSG),
+        time_us : time_us,
+        v00 : stateVar[0],
+        v01 : stateVar[1],
+        v02 : stateVar[2],
+        v03 : stateVar[3],
+        v04 : stateVar[4],
+        v05 : stateVar[5],
+        v06 : stateVar[6],
+        v07 : stateVar[7],
+        v08 : stateVar[8],
+        v09 : stateVar[9],
+        v10 : stateVar[10],
+        v11 : stateVar[11]
+    };
+    WriteBlock(&pktv1, sizeof(pktv1));
+    struct log_ekfStateVar pktv2 = {
+        LOG_PACKET_HEADER_INIT(LOG_XKV2_MSG),
+        time_us : time_us,
+        v00 : stateVar[12],
+        v01 : stateVar[13],
+        v02 : stateVar[14],
+        v03 : stateVar[15],
+        v04 : stateVar[16],
+        v05 : stateVar[17],
+        v06 : stateVar[18],
+        v07 : stateVar[19],
+        v08 : stateVar[20],
+        v09 : stateVar[21],
+        v10 : stateVar[22],
+        v11 : stateVar[23]
+    };
+    WriteBlock(&pktv2, sizeof(pktv2));
+
 
     // log EKF timing statistics every 5s
     static uint32_t lastTimingLogTime_ms = 0;
