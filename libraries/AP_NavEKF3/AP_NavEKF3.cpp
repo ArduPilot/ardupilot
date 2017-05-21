@@ -1087,6 +1087,15 @@ void NavEKF3::getVariances(int8_t instance, float &velVar, float &posVar, float 
     }
 }
 
+// return the diagonals from the covariance matrix for the specified instance
+void NavEKF3::getStateVariances(int8_t instance, float stateVar[24])
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        core[instance].getStateVariances(stateVar);
+    }
+}
+
 // should we use the compass? This is public so it can be used for
 // reporting via ahrs.use_compass()
 bool NavEKF3::use_compass(void) const

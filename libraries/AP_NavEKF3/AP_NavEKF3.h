@@ -183,6 +183,9 @@ public:
     // An out of range instance (eg -1) returns data for the the primary instance
     void getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset);
 
+    // return the diagonals from the covariance matrix for the specified instance
+    void getStateVariances(int8_t instance, float stateVar[24]);
+
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;

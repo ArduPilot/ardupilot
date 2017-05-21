@@ -453,6 +453,13 @@ void  NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Ve
     offset   = posResetNE;
 }
 
+// return the diagonals from the covariance matrix
+void  NavEKF3_core::getStateVariances(float stateVar[24])
+{
+    for (uint8_t i=0; i<24; i++) {
+        stateVar[i] = P[i][i];
+    }
+}
 
 /*
 return the filter fault status as a bitmasked integer
