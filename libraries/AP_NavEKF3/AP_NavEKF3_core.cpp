@@ -1419,7 +1419,7 @@ void NavEKF3_core::ConstrainVariances()
     }
 
     if (!inhibitDelVelBiasStates) {
-        for (uint8_t i=13; i<=15; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(10.0f * dtEkfAvg));
+        for (uint8_t i=13; i<=15; i++) P[i][i] = constrain_float(P[i][i],1e-9f,sq(10.0f * dtEkfAvg));
     } else {
         zeroCols(P,13,15);
         zeroRows(P,13,15);
