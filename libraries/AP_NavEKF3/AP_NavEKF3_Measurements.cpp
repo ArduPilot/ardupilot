@@ -441,7 +441,9 @@ void NavEKF3_core::readGpsData()
             // estimate when the GPS fix was valid, allowing for GPS processing and other delays
             // ideally we should be using a timing signal from the GPS receiver to set this time
             // Use the driver specified delay
-            gpsDataNew.time_ms = lastTimeGpsReceived_ms - (uint32_t)(_ahrs->get_gps().get_lag() * 1000.0f);
+            float gps_delay_sec = 0;
+            _ahrs->get_gps().get_lag(gps_delay_sec);
+            gpsDataNew.time_ms = lastTimeGpsReceived_ms - (uint32_t)(gps_delay_sec * 1000.0f);
 
             // Correct for the average intersampling delay due to the filter updaterate
             gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
