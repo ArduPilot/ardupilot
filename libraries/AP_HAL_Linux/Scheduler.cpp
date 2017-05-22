@@ -106,7 +106,7 @@ void Scheduler::init()
         const struct sched_table *t = &sched_table[i];
 
         t->thread->set_rate(t->rate);
-        t->thread->set_stack_size(256 * 1024);
+        t->thread->set_stack_size(1024 * 1024);
         t->thread->start(t->name, t->policy, t->prio);
     }
 
