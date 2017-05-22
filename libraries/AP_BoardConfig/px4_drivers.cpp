@@ -300,6 +300,11 @@ void AP_BoardConfig::px4_setup_drivers(void)
     if (px4.board_type == PX4_BOARD_PH2SLIM ||
         px4.board_type == PX4_BOARD_PIXHAWK2) {
         _imu_target_temperature.set_default(60);
+        if (_imu_target_temperature.get() < 0) {
+            // don't allow a value of -1 on the cube, or it could cook
+            // the IMU
+            _imu_target_temperature.set(60);
+        }
     }
 
     px4_configured_board = (enum px4_board_type)px4.board_type.get();
@@ -453,11 +458,42 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 #define LSM_WHOAMI_LSM303D 0x49
 
 /*
+  validation of the board type
+ */
+void AP_BoardConfig::validate_board_type(void)
+{
+    /* some boards can be damaged by the user setting the wrong board
+       type.  The key one is the cube which has a heater which can
+       cook the IMUs if the user uses an old paramater file. We
+       override the board type for that specific case
+     */
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    if (px4.board_type == PX4_BOARD_PIXHAWK &&
+        (spi_check_register(HAL_INS_MPU60x0_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
+         spi_check_register(HAL_INS_MPU9250_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
+         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
+         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
+        spi_check_register(HAL_INS_LSM9DS0_EXT_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
+        // Pixhawk2 has LSM303D and MPUxxxx on external bus. If we
+        // detect those, then force PIXHAWK2, even if the user has
+        // configured for PIXHAWK1
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V3)
+        // force user to load the right firmware
+        sensor_config_error("Pixhawk2 requires FMUv3 firmware");        
+#endif
+        px4.board_type.set(PX4_BOARD_PIXHAWK2);
+        hal.console->printf("Forced PIXHAWK2\n");
+    }
+#endif
+}
+
+/*
   auto-detect board type
  */
 void AP_BoardConfig::px4_autodetect(void)
 {
     if (px4.board_type != PX4_BOARD_AUTO) {
+        validate_board_type();
         // user has chosen a board type
         return;
     }
