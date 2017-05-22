@@ -374,12 +374,23 @@ void RCInput_RPI::init_DMA()
 // We must stop DMA when the process is killed
 void RCInput_RPI::set_sigaction()
 {
+    struct sigaction sa, sa_old;
+
+    memset(&sa_old, 0, sizeof(sa));
+    memset(&sa, 0, sizeof(sa));
+
+    /* Ignore signals */
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGWINCH, &sa, nullptr);
+    sigaction(SIGTTOU, &sa, nullptr);
+    sigaction(SIGTTIN, &sa, nullptr);
+
+    /*
+     * Catch all other signals to ensure DMA is disabled - some of them may
+     * already be handled elsewhere in cases we consider normal termination.
+     * In those cases the teardown() method must be called.
+     */
     for (int i = 0; i < NSIG; i++) {
-        // catch all signals to ensure DMA is disabled - some of them may
-        // already be handled elsewhere in cases we consider normal
-        // termination. In those cases the teardown() method must be called.
-        struct sigaction sa, sa_old;
-        memset(&sa, 0, sizeof(sa));
         sigaction(i, nullptr, &sa_old);
 
         if (sa_old.sa_handler == nullptr) {
