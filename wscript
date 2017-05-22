@@ -125,7 +125,7 @@ def _collect_autoconfig_files(cfg):
         for p in paths:
             if p in cfg.files or not os.path.isfile(p):
                 continue
-            
+
             with open(p, 'rb') as f:
                 cfg.hash = Utils.h_list((cfg.hash, f.read()))
                 cfg.files.append(p)
@@ -269,7 +269,6 @@ def collect_dirs_to_recurse(bld, globs, **kw):
     for g in globs:
         for d in bld.srcnode.ant_glob(g + '/wscript', **kw):
             dirs.append(d.parent.relpath())
-
     return dirs
 
 def list_boards(ctx):
