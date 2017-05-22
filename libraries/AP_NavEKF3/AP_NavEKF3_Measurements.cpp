@@ -353,7 +353,7 @@ void NavEKF3_core::readIMUData()
      * than twice the target time has lapsed. Adjust the target EKF step time threshold to allow for timing jitter in the
      * IMU data.
      */
-    if ((imuDataDownSampledNew.delAngDT >= (EKF_TARGET_DT-(dtIMUavg*0.5)) && startPredictEnabled) ||
+    if ((imuDataDownSampledNew.delAngDT >= (EKF_TARGET_DT-(dtIMUavg*0.5f)) && startPredictEnabled) ||
         (imuDataDownSampledNew.delAngDT >= 2.0f*EKF_TARGET_DT)) {
 
         // convert the accumulated quaternion to an equivalent delta angle
