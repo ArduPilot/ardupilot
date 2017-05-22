@@ -40,12 +40,12 @@
 ////
 InnerLoopController::InnerLoopController()
 {
-	kPhi = 1.9;   // roll loop forward gain
-	kP = 1;       // roll loop damping gain
-	kR = 2;       // yaw damper gain
-	kTheta = 3;   // pitch loop forward gain
-	kQ = 1.2;     // pitch loop damping gain
-	kAlt = 0.2;   // altitude loop forward gain
+	kPhi = 1.5;   // roll loop forward gain
+	kP = 0.5;       // roll loop damping gain
+	kR = 0.5;       // yaw damper gain
+	kTheta = 1.5;   // pitch loop forward gain
+	kQ = 0.5;     // pitch loop damping gain
+	kAlt = 0.5;   // altitude loop forward gain
 
 	// initialize integrators
 	intYawDamper = 0;

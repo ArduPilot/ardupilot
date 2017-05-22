@@ -596,10 +596,10 @@ void Plane::update_flight_mode(void)
 
 			ControlSurfaceDeflections CSD = uw_mode_2_state.ILC.computeControl(psiDotErr, p, q, r, phi, theta, uB, vB, wB, rad_ref, alt_ref, alt, dt);
 
-			calc_throttle();
+			channel_throttle->servo_out = 40;
 			channel_roll->servo_out = -g.uw_gain_aileron*CSD.GetAileron()*100*180/3.14; //Units: centi-degrees
 			channel_pitch->servo_out = -g.uw_gain_elevator*CSD.GetElevator()*100*180/3.14; //Units: centi-degrees
-			channel_rudder->servo_out = -g.uw_gain_rudder*CSD.GetRudder()*100*180/3.14; //Units: centi-degrees
+			steering_control.steering = steering_control.rudder = -g.uw_gain_rudder*CSD.GetRudder()*100*180/3.14; //Units: centi-degrees
 			break;
 		}
 
@@ -628,10 +628,10 @@ void Plane::update_flight_mode(void)
 
 			ControlSurfaceDeflections CSD = uw_mode_2_state.ILC.computeControl(psiDotErr, p, q, r, phi, theta, uB, vB, wB, rad_ref, alt_ref, alt, dt);
 
-			calc_throttle();
+			channel_throttle->servo_out = 40;
 			channel_roll->servo_out = -g.uw_gain_aileron*CSD.GetAileron()*100*180/3.14; //Units: centi-degrees
 			channel_pitch->servo_out = -g.uw_gain_elevator*CSD.GetElevator()*100*180/3.14; //Units: centi-degrees
-			channel_rudder->servo_out = -g.uw_gain_rudder*CSD.GetRudder()*100*180/3.14; //Units: centi-degrees
+			steering_control.steering = steering_control.rudder = -g.uw_gain_rudder*CSD.GetRudder()*100*180/3.14; //Units: centi-degrees
 			break;
 		}
 		
