@@ -59,8 +59,8 @@
 #define ACCEL_BIAS_LIM_SCALER 0.2f
 
 // target update time for the EKF in msec and sec
-#define EKF_TARGET_DT_MS 12.5
-#define EKF_TARGET_DT    0.0125
+#define EKF_TARGET_DT_MS 12
+#define EKF_TARGET_DT    0.012f
 
 // mag fusion final reset altitude (using NED frame so altitude is negative)
 #define EKF3_MAG_FINAL_RESET_ALT 2.5f
