@@ -1035,24 +1035,32 @@ void AP_GPS::Write_DataFlash_Log_Startup_messages()
 
 /*
   return the expected lag (in seconds) in the position and velocity readings from the gps
+  return true if the GPS hardware configuration is known or the delay parameter has been set
  */
-float AP_GPS::get_lag(uint8_t instance) const
+bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 {
     // return lag of blended GPS
     if (instance == GPS_MAX_RECEIVERS) {
-        return _blended_lag_sec;
+        lag_sec = _blended_lag_sec;
+        // auto switching uses all GPS receivers, so all must be configured
+        return all_configured();
     }
 
     if (_delay_ms[instance] > 0) {
         // if the user has specified a non zero time delay, always return that value
-        return 0.001f * (float)_delay_ms[instance];
+        lag_sec = 0.001f * (float)_delay_ms[instance];
+        // the user is always right !!
+        return true;
     } else if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
-        // no GPS was detected in this instance
-        // so return a default delay of 1 measurement interval
-        return 0.001f * (float)get_rate_ms(instance);
+        // no GPS was detected in this instance so return a default delay of 1 measurement interval
+        lag_sec = 0.001f * (float)get_rate_ms(instance);
+        // check lack of GPS is consistent with user expectation
+        return state[instance].status == NO_GPS;
     } else {
         // the user has not specified a delay so we determine it from the GPS type
-        return drivers[instance]->get_lag();
+        lag_sec = drivers[instance]->get_lag();
+        // check that for a valid GPS configuration
+        return (_type[instance] != GPS_TYPE_NONE && (drivers[instance] == nullptr || !drivers[instance]->is_configured()));
     }
 }
 
@@ -1451,7 +1459,9 @@ void AP_GPS::calc_blended_state(void)
         if (_blend_weights[i] > 0.0f) {
             temp_time_1 += (double)timing[i].last_fix_time_ms * (double) _blend_weights[i];
             temp_time_2 += (double)timing[i].last_message_time_ms * (double)_blend_weights[i];
-            _blended_lag_sec += get_lag(i) * _blend_weights[i];
+            float gps_lag_sec = 0;
+            get_lag(i, gps_lag_sec);
+            _blended_lag_sec += gps_lag_sec * _blend_weights[i];
         }
     }
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = (uint32_t)temp_time_1;
