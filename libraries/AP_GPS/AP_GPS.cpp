@@ -1039,7 +1039,7 @@ void AP_GPS::Write_DataFlash_Log_Startup_messages()
 bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 {
     // return lag of blended GPS
-    if (instance == GPS_MAX_RECEIVERS) {
+    if (instance == GPS_BLENDED_INSTANCE) {
         lag_sec = _blended_lag_sec;
         // auto switching uses all GPS receivers, so all must be configured
         return all_configured();
