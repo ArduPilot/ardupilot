@@ -43,7 +43,7 @@
 
 #define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500     // restart tuning if pilot has left sticks in middle for 2 seconds
 #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000     // timeout for tuning mode's testing step
-#define AUTOTUNE_LEVEL_ANGLE_CD             300     // angle which qualifies as level
+#define AUTOTUNE_LEVEL_ANGLE_CD             500     // angle which qualifies as level
 #define AUTOTUNE_LEVEL_RATE_RP_CD          1000     // rate which qualifies as level for roll and pitch
 #define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the copter to be level
@@ -329,7 +329,10 @@ void Copter::autotune_run()
             }
             // reset pilot override time
             autotune_override_time = millis();
-            autotune_state.have_position = false;
+            if (!zero_rp_input) {
+                // only reset position on roll or pitch input
+                autotune_state.have_position = false;
+            }
         }else if (autotune_state.pilot_override) {
             // check if we should resume tuning after pilot's override
             if (millis() - autotune_override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
