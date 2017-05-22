@@ -210,8 +210,6 @@ AP_GPS_SBF::process_message(void)
 
         state.last_gps_time_ms = AP_HAL::millis();
 
-        state.hdop = last_hdop;
-
         // Update velocity state (don't use −2·10^10)
         if (temp.Vn > -200000) {
             state.velocity.x = (float)(temp.Vn);
@@ -285,9 +283,8 @@ AP_GPS_SBF::process_message(void)
     else if (blockid == 4001) {
         const msg4001 &temp = sbf_msg.data.msg4001u;
 
-        last_hdop = temp.HDOP;
-
-        state.hdop = last_hdop;
+        state.hdop = temp.HDOP;
+        state.vdop = temp.VDOP;
     }
     // ReceiverStatus
     else if (blockid == 4014) {
