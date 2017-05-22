@@ -447,6 +447,7 @@ void AP_GPS::detect_instance(uint8_t instance)
     state[instance].instance = instance;
     state[instance].status = NO_GPS;
     state[instance].hdop = 9999;
+    state[instance].vdop = 9999;
 
     switch (_type[instance]) {
     // by default the sbf/trimble gps outputs no data on its port, until configured.
@@ -578,6 +579,7 @@ void AP_GPS::update_instance(uint8_t instance)
         // not enabled
         state[instance].status = NO_GPS;
         state[instance].hdop = 9999;
+        state[instance].vdop = 9999;
         return;
     }
     if (locked_ports & (1U<<instance)) {
@@ -613,6 +615,7 @@ void AP_GPS::update_instance(uint8_t instance)
             state[instance].instance = instance;
             state[instance].status = NO_GPS;
             state[instance].hdop = 9999;
+            state[instance].vdop = 9999;
             timing[instance].last_message_time_ms = tnow;
         }
     } else {
