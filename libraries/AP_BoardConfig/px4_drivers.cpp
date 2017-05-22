@@ -299,11 +299,11 @@ void AP_BoardConfig::px4_setup_drivers(void)
 
     if (px4.board_type == PX4_BOARD_PH2SLIM ||
         px4.board_type == PX4_BOARD_PIXHAWK2) {
-        _imu_target_temperature.set_default(60);
+        _imu_target_temperature.set_default(45);
         if (_imu_target_temperature.get() < 0) {
             // don't allow a value of -1 on the cube, or it could cook
             // the IMU
-            _imu_target_temperature.set(60);
+            _imu_target_temperature.set(45);
         }
     }
 
