@@ -302,7 +302,7 @@ void Copter::autotune_send_step_string()
     }
     switch (autotune_state.step) {
     case AUTOTUNE_STEP_WAITING_FOR_LEVEL:
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: WFL (%s) (%f > %f)", autotune_level_issue_string(), autotune_level_problem.current*0.01f, autotune_level_problem.maximum*0.01f);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: WFL (%s) (%f > %f)", autotune_level_issue_string(), (double)(autotune_level_problem.current*0.01f), (double)(autotune_level_problem.maximum*0.01f));
         return;
     case AUTOTUNE_STEP_UPDATE_GAINS:
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: UPDATING_GAINS");
@@ -369,20 +369,20 @@ void Copter::autotune_do_gcs_announcements()
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: (%c) %s", axis, autotune_type_string());
     autotune_send_step_string();
     if (!is_zero(lean_angle)) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: lean=%f target=%f", lean_angle, autotune_target_angle);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: lean=%f target=%f", (double)lean_angle, (double)autotune_target_angle);
     }
     if (!is_zero(rotation_rate)) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: rotation=%f target=%f", rotation_rate*0.01f, autotune_target_rate*0.01f);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: rotation=%f target=%f", (double)(rotation_rate*0.01f), (double)(autotune_target_rate*0.01f));
     }
     switch (autotune_state.tune_type) {
     case AUTOTUNE_TYPE_RD_UP:
     case AUTOTUNE_TYPE_RD_DOWN:
     case AUTOTUNE_TYPE_RP_UP:
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", tune_rp, tune_rd);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", (double)tune_rp, (double)tune_rd);
         break;
     case AUTOTUNE_TYPE_SP_DOWN:
     case AUTOTUNE_TYPE_SP_UP:
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: p=%f accel=%f", tune_sp, tune_accel);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: p=%f accel=%f", (double)tune_sp, (double)tune_accel);
         break;
     }
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: success %u/%u", autotune_counter, AUTOTUNE_SUCCESS_COUNT);
