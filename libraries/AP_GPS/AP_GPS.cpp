@@ -1059,8 +1059,8 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
     } else {
         // the user has not specified a delay so we determine it from the GPS type
         lag_sec = drivers[instance]->get_lag();
-        // check that for a valid GPS configuration
-        return (_type[instance] != GPS_TYPE_NONE && (drivers[instance] == nullptr || !drivers[instance]->is_configured()));
+        // check for a valid GPS configuration
+        return drivers[instance]->is_configured();
     }
 }
 
