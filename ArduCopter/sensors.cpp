@@ -170,6 +170,8 @@ void Copter::read_battery(void)
     }
     if (battery.has_current()) {
         motors->set_current(battery.current_amps());
+        motors->set_resistance(battery.get_resistance());
+        motors->set_voltage_resting_estimate(battery.voltage_resting_estimate());
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
