@@ -18,6 +18,9 @@
 
 #define AP_BATT_MONITOR_TIMEOUT             5000
 
+#define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
+#define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
+
 // declare backend class
 class AP_BattMonitor_Backend;
 class AP_BattMonitor_Analog;
@@ -65,6 +68,8 @@ public:
         cells       cell_voltages;      // battery cell voltages in millivolts, 10 cells matches the MAVLink spec
         float       temperature;        // battery temperature in celsius
         uint32_t    temperature_time;   // timestamp of the last recieved temperature message
+        float       voltage_resting_estimate; // voltage with sag removed based on current and resistance estimate
+        float       resistance;         // resistance calculated by comparing resting voltage vs in flight voltage
     };
 
     // Return the number of battery monitor instances
@@ -92,6 +97,10 @@ public:
     /// voltage - returns battery voltage in millivolts
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
+
+    /// get voltage with sag removed (based on battery current draw and resistance)
+    float voltage_resting_estimate(uint8_t instance) const;
+    float voltage_resting_estimate() const { return voltage_resting_estimate(AP_BATT_PRIMARY_INSTANCE); }
 
     /// current_amps - returns the instantaneous current draw in amperes
     float current_amps(uint8_t instance) const;
@@ -134,6 +143,10 @@ public:
     // temperature
     bool get_temperature(float &temperature) const { return get_temperature(temperature, AP_BATT_PRIMARY_INSTANCE); };
     bool get_temperature(float &temperature, const uint8_t instance) const;
+
+    // get battery resistance estimate in ohms
+    float get_resistance() const { return get_resistance(AP_BATT_PRIMARY_INSTANCE); }
+    float get_resistance(uint8_t instance) const { return state[instance].resistance; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
