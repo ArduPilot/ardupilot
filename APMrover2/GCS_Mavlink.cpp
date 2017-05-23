@@ -56,7 +56,7 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
 #endif
 
     // we are armed if we are not initialising
-    if (control_mode != INITIALISING && hal.util->get_soft_armed()) {
+    if (control_mode != INITIALISING && arming.is_armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
