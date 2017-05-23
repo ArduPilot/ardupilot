@@ -40,11 +40,15 @@ void Copter::sport_run()
     float target_roll_rate = channel_roll->get_control_in() * g.acro_rp_p;
     float target_pitch_rate = channel_pitch->get_control_in() * g.acro_rp_p;
 
-    int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
+    // get attitude targets
+    const Vector3f att_target = attitude_control->get_att_target_euler_cd();
+
+    // Calculate trainer mode earth frame rate command for roll
+    int32_t roll_angle = wrap_180_cd(att_target.x);
     target_roll_rate -= constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
 
     // Calculate trainer mode earth frame rate command for pitch
-    int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
+    int32_t pitch_angle = wrap_180_cd(att_target.y);
     target_pitch_rate -= constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
 
     if (roll_angle > aparm.angle_max){
