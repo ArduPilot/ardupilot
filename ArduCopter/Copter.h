@@ -653,6 +653,7 @@ private:
     void update_mount();
     void update_trigger(void);
     void update_batt_compass(void);
+    void fourhundred_hz_logging();
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
     void three_hz_loop();
@@ -729,6 +730,7 @@ private:
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
     void Log_Write_Attitude();
+    void Log_Write_EKF_POS();
     void Log_Write_MotBatt();
     void Log_Write_Event(uint8_t id);
     void Log_Write_Data(uint8_t id, int32_t value);
