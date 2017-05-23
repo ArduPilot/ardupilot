@@ -155,7 +155,9 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         read_radio();
         
         // pass through throttle to motors
+        hal.rcout->cork();
         motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
+        hal.rcout->push();
         
         // read some compass values
         compass.read();
