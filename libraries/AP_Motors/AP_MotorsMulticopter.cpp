@@ -183,10 +183,6 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     AP_Motors(loop_rate, speed_hz),
     _spool_mode(SHUT_DOWN),
     _spin_up_ratio(0.0f),
-    _batt_voltage_resting(0.0f),
-    _batt_current_resting(0.0f),
-    _batt_resistance(0.0f),
-    _batt_timer(0),
     _lift_max(1.0f),
     _throttle_limit(1.0f),
     _throttle_thrust_max(0.0f),
@@ -211,9 +207,6 @@ void AP_MotorsMulticopter::output()
 {
     // update throttle filter
     update_throttle_filter();
-
-    // update battery resistance
-    update_battery_resistance();
 
     // calc filtered battery voltage and lift_max
     update_lift_max_from_batt_voltage();
@@ -328,43 +321,14 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
 
     _batt_voltage_min = MAX(_batt_voltage_min, _batt_voltage_max * 0.6f);
 
-    // add current based voltage sag to battery voltage
-    float batt_voltage = _batt_voltage + (_batt_current-_batt_current_resting) * _batt_resistance;
-    batt_voltage = constrain_float(batt_voltage, _batt_voltage_min, _batt_voltage_max);
+    // contrain resting voltage estimate (resting voltage is actual voltage with sag removed based on current draw and resistance)
+    _batt_voltage_resting_estimate = constrain_float(_batt_voltage_resting_estimate, _batt_voltage_min, _batt_voltage_max);
 
     // filter at 0.5 Hz
-    float batt_voltage_filt = _batt_voltage_filt.apply(batt_voltage/_batt_voltage_max, 1.0f/_loop_rate);
+    float batt_voltage_filt = _batt_voltage_filt.apply(_batt_voltage_resting_estimate/_batt_voltage_max, 1.0f/_loop_rate);
 
     // calculate lift max
     _lift_max = batt_voltage_filt*(1-_thrust_curve_expo) + _thrust_curve_expo*batt_voltage_filt*batt_voltage_filt;
-}
-
-// update_battery_resistance - calculate battery resistance when throttle is above hover_out
-void AP_MotorsMulticopter::update_battery_resistance()
-{
-    // if disarmed reset resting voltage and current
-    if (!_flags.armed) {
-        _batt_voltage_resting = _batt_voltage;
-        _batt_current_resting = _batt_current;
-        _batt_timer = 0;
-    } else if (_batt_voltage_resting > _batt_voltage && _batt_current_resting < _batt_current) {
-        // update battery resistance when throttle is over hover throttle
-        float batt_resistance = (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting);
-        if ((_batt_timer < 400) && ((_batt_current_resting*2.0f) < _batt_current)) {
-            if (get_throttle() >= get_throttle_hover()) {
-                // filter reaches 90% in 1/4 the test time
-                _batt_resistance += 0.05f*(batt_resistance - _batt_resistance);
-                _batt_timer += 1;
-            } else {
-                // initialize battery resistance to prevent change in resting voltage estimate
-                _batt_resistance = batt_resistance;
-            }
-        }
-        // make sure battery resistance value doesn't result in the predicted battery voltage exceeding the resting voltage
-        if(batt_resistance < _batt_resistance){
-            _batt_resistance = batt_resistance;
-        }
-    }
 }
 
 float AP_MotorsMulticopter::get_compensation_gain() const
