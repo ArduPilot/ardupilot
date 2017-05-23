@@ -227,6 +227,7 @@ AP_BattMonitor::read()
     for (uint8_t i=0; i<_num_instances; i++) {
         if (drivers[i] != nullptr && _monitoring[i] != BattMonitor_TYPE_NONE) {
             drivers[i]->read();
+            drivers[i]->update_resistance_estimate();
         }
     }
 }
@@ -256,6 +257,17 @@ float AP_BattMonitor::voltage(uint8_t instance) const
 {
     if (instance < _num_instances) {
         return _BattMonitor_STATE(instance).voltage;
+    } else {
+        return 0.0f;
+    }
+}
+
+/// get voltage with sag removed (based on battery current draw and resistance)
+float AP_BattMonitor::voltage_resting_estimate(uint8_t instance) const
+{
+    if (instance < _num_instances) {
+        // resting voltage should always be greater than or equal to the raw voltage
+        return MAX(_BattMonitor_STATE(instance).voltage, _BattMonitor_STATE(instance).voltage_resting_estimate);
     } else {
         return 0.0f;
     }
