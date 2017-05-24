@@ -343,7 +343,8 @@ _options = {
             },
             "gazebo-iris": {
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/gazebo-iris.parm",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/gazebo-iris.parm"],
             },
             # HELICOPTER
             "heli": {
