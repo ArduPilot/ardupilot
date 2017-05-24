@@ -25,6 +25,12 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#define SCHEDULER_DEFAULT_LOOP_RATE 400
+#else
+#define SCHEDULER_DEFAULT_LOOP_RATE  50
+#endif
+
 /*
   A task scheduler for APM main loops
 
@@ -46,9 +52,8 @@ struct AP_Task {
     uint16_t    _max_time_micros;
 
     // We define this as a constexpr, because of concerns regarding RAM usage in PX4
-    static constexpr AP_Task<Vehicle> create(task_fn_t function, float rate_hz, uint16_t max_time_micros) {
-        // XSTRING is a macro for stringification
-        return { function, XSTRING(function), rate_hz, max_time_micros };
+    static constexpr AP_Task<Vehicle> create(task_fn_t function, float rate_hz, uint16_t max_time_micros, const char* name) {
+        return { function, name, rate_hz, max_time_micros };
     }
 };
 
@@ -58,7 +63,7 @@ class AP_Scheduler {
   
 public:
     // constructor, which takes the pointer of the parent object. The second parameter defines the standard loop rate
-    AP_Scheduler(Vehicle *parent, const uint16_t loop_rate = 50)
+    AP_Scheduler(Vehicle *parent, const uint16_t loop_rate = 50) : _parent(parent)
     {
         _tasks = nullptr;
         _last_run = nullptr;
@@ -113,10 +118,14 @@ public:
     // tasks in microseconds
     void run(uint32_t time_available)
     {
+        _debug = 5;
+
         // break condition
-        if (_tasks == nullptr) {
+        if (_tasks == nullptr || _parent == nullptr) {
             return;
         }
+
+        uint32_t now = AP_HAL::micros();
 
         if (_debug > 1 && _perf_counters == nullptr) {
             _perf_counters = new AP_HAL::Util::perf_counter_t[_num_tasks];
@@ -128,62 +137,59 @@ public:
         }
 
         for (uint8_t i = 0; i < _num_tasks; i++) {
-            const uint16_t dt = _tick_counter - _last_run[i];
-            const uint16_t pre_interval_ticks = _loop_rate_hz / _tasks[i]._rate_hz;
-            const uint16_t interval_ticks = pre_interval_ticks > 1 ? pre_interval_ticks : 1;
+            uint16_t dt = _tick_counter - _last_run[i];
+            uint16_t interval_ticks = (float) _loop_rate_hz / _tasks[i]._rate_hz;
+            interval_ticks = interval_ticks < 1 ? 1 : interval_ticks;
 
-            if (dt < interval_ticks) {
-                continue;
-            }
-
-            // we've slipped a whole run of this task!
-            if (_debug > 4 && dt >= interval_ticks*2) {
-                print_task_info("Scheduler slip task", i, dt, interval_ticks);
-            }
-
-            if (_tasks[i]._max_time_micros <= time_available) {
-                // run it
-                _task_time_started = AP_HAL::micros();
-                current_task = i;
-                if (_debug > 1 && _perf_counters[i]) {
-                    hal.util->perf_begin(_perf_counters[i]);
+            if (dt >= interval_ticks) {
+                // we've slipped a whole run of this task!
+                if (_debug > 4 && dt >= interval_ticks*2) {
+                    print_task_info("Scheduler slip task", i, dt, interval_ticks);
                 }
 
-                // call that function
-                if (_parent) {
+                if (_tasks[i]._max_time_micros <= time_available) {
+                    // run it
+                    _task_time_started = now;
+                    current_task = i;
+                    if (_debug > 1 && _perf_counters != nullptr && _perf_counters[i]) {
+                        hal.util->perf_begin(_perf_counters[i]);
+                    }
+
+                    // call that function
                     task_fn_t func = _tasks[i]._function;
                     (_parent->*func)();
+
+                    if (_debug > 1 && _perf_counters != nullptr && _perf_counters[i]) {
+                        hal.util->perf_end(_perf_counters[i]);
+                    }
+                    current_task = -1;
+
+                    // record the tick counter when we ran. This drives
+                    // when we next run the event
+                    _last_run[i] = _tick_counter;
+
+                    // work out how long the event actually took
+                    now = AP_HAL::micros();
+                    uint32_t time_taken = now - _task_time_started;
+
+                    // the event overrun!
+                    if (_debug > 4 && time_taken > _tasks[i]._max_time_micros) {
+                        print_task_info("Scheduler overrun task", i, dt, time_taken);
+                    }
+
+                    if (time_taken >= time_available) {
+                        update_spare_ticks();
+                        return;
+                    }
+                    time_available -= time_taken;
                 }
-
-                if (_debug > 1 && _perf_counters != nullptr && _perf_counters[i]) {
-                    hal.util->perf_end(_perf_counters[i]);
-                }
-                current_task = -1;
-
-                // record the tick counter when we ran. This drives
-                // when we next run the event
-                _last_run[i] = _tick_counter;
-
-                // work out how long the event actually took
-                const uint32_t time_taken = AP_HAL::micros() - _task_time_started;
-
-                // the event overrun!
-                if (_debug > 4 && time_taken > _tasks[i]._max_time_micros) {
-                    print_task_info("Scheduler overrun task", i, dt, time_taken);
-                }
-
-                if (time_taken >= time_available) {
-                    update_spare_ticks(0);
-                    return;
-                }
-                time_available -= time_taken;
             }
         }
 
         _spare_micros += time_available;
 
         // update number of spare microseconds
-        update_spare_ticks(time_available);
+        update_spare_ticks();
     }
 
     // return the number of microseconds available for the current task or -1 if there is currently no task executed
@@ -229,7 +235,7 @@ public:
 
 protected:
     // updates the tick members
-    void update_spare_ticks(const uint32_t time_available)
+    void update_spare_ticks(void)
     {
         _spare_ticks++;
         if (_spare_ticks == 32) {
@@ -303,7 +309,7 @@ const AP_Param::GroupInfo AP_Scheduler<Vehicle>::var_info[] = {
     // @Values: 50:50Hz,100:100Hz,200:200Hz,250:250Hz,300:300Hz,400:400Hz
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("LOOP_RATE",  1, AP_Scheduler, _loop_rate_hz, 50),
+    AP_GROUPINFO("LOOP_RATE",  1, AP_Scheduler, _loop_rate_hz, SCHEDULER_DEFAULT_LOOP_RATE),
 
     AP_GROUPEND
 };
