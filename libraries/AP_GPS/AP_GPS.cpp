@@ -446,8 +446,8 @@ void AP_GPS::detect_instance(uint8_t instance)
 
     state[instance].instance = instance;
     state[instance].status = NO_GPS;
-    state[instance].hdop = 9999;
-    state[instance].vdop = 9999;
+    state[instance].hdop = GPS_UNKNOWN_DOP;
+    state[instance].vdop = GPS_UNKNOWN_DOP;
 
     switch (_type[instance]) {
     // by default the sbf/trimble gps outputs no data on its port, until configured.
@@ -578,8 +578,8 @@ void AP_GPS::update_instance(uint8_t instance)
     if (_type[instance] == GPS_TYPE_NONE) {
         // not enabled
         state[instance].status = NO_GPS;
-        state[instance].hdop = 9999;
-        state[instance].vdop = 9999;
+        state[instance].hdop = GPS_UNKNOWN_DOP;
+        state[instance].vdop = GPS_UNKNOWN_DOP;
         return;
     }
     if (locked_ports & (1U<<instance)) {
@@ -614,8 +614,8 @@ void AP_GPS::update_instance(uint8_t instance)
             memset(&state[instance], 0, sizeof(state[instance]));
             state[instance].instance = instance;
             state[instance].status = NO_GPS;
-            state[instance].hdop = 9999;
-            state[instance].vdop = 9999;
+            state[instance].hdop = GPS_UNKNOWN_DOP;
+            state[instance].vdop = GPS_UNKNOWN_DOP;
             timing[instance].last_message_time_ms = tnow;
         }
     } else {
@@ -1255,8 +1255,8 @@ void AP_GPS::calc_blended_state(void)
     state[GPS_BLENDED_INSTANCE].time_week = 0;
     state[GPS_BLENDED_INSTANCE].ground_speed = 0.0f;
     state[GPS_BLENDED_INSTANCE].ground_course = 0.0f;
-    state[GPS_BLENDED_INSTANCE].hdop = 9999;
-    state[GPS_BLENDED_INSTANCE].vdop = 9999;
+    state[GPS_BLENDED_INSTANCE].hdop = GPS_UNKNOWN_DOP;
+    state[GPS_BLENDED_INSTANCE].vdop = GPS_UNKNOWN_DOP;
     state[GPS_BLENDED_INSTANCE].num_sats = 0;
     state[GPS_BLENDED_INSTANCE].velocity.zero();
     state[GPS_BLENDED_INSTANCE].speed_accuracy = 1e6f;
