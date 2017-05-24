@@ -120,30 +120,31 @@ protected:
     float ground_level;
     float home_yaw;
     float frame_height;
-    Matrix3f dcm;              // rotation matrix, APM conventions, from body to earth
-    Vector3f gyro;             // rad/s
-    Vector3f gyro_prev;        // rad/s
-    Vector3f ang_accel;        // rad/s/s
-    Vector3f velocity_ef;      // m/s, earth frame
-    Vector3f wind_ef;          // m/s, earth frame
-    Vector3f velocity_air_ef;  // velocity relative to airmass, earth frame
-    Vector3f velocity_air_bf;  // velocity relative to airmass, body frame
-    Vector3f position;         // meters, NED from origin
-    float mass;                // kg
-    Vector3f accel_body;       // m/s/s NED, body frame
-    float airspeed;            // m/s, apparent airspeed
-    float airspeed_pitot;      // m/s, apparent airspeed, as seen by fwd pitot tube
-    float battery_voltage = -1;
-    float battery_current = 0;
+    Matrix3f dcm;                   // rotation matrix, APM conventions, from body to earth
+    Vector3f gyro;                  // rad/s
+    Vector3f gyro_prev;             // rad/s
+    Vector3f ang_accel;             // rad/s/s
+    Vector3f velocity_ef;           // m/s, earth frame
+    Vector3f wind_ef;               // m/s, earth frame
+    Vector3f velocity_air_ef;       // velocity relative to airmass, earth frame
+    Vector3f velocity_air_bf;       // velocity relative to airmass, body frame
+    Vector3f position;              // meters, NED from origin
+    float mass;                     // kg
+    Vector3f accel_body;            // m/s/s NED, body frame
+    float airspeed;                 // m/s, apparent airspeed
+    float airspeed_pitot;           // m/s, apparent airspeed, as seen by fwd pitot tube
+    float battery_voltage = -1.0f;
+    float battery_current = 0.0f;
     float rpm1 = 0;
     float rpm2 = 0;
     uint8_t rcin_chan_count = 0;
     float rcin[8];
+    float range = -1.0f;            // rangefinder detection in m
 
     // Wind Turbulence simulated Data
-    float turbulence_azimuth = 0;
-    float turbulence_horizontal_speed = 0;  // m/s
-    float turbulence_vertical_speed = 0;    // m/s
+    float turbulence_azimuth = 0.0f;
+    float turbulence_horizontal_speed = 0.0f;  // m/s
+    float turbulence_vertical_speed = 0.0f;    // m/s
 
     Vector3f mag_bf;  // local earth magnetic field vector in Gauss, earth frame
 
@@ -161,7 +162,7 @@ protected:
     const char *autotest_dir;
     const char *frame;
     bool use_time_sync = true;
-    float last_speedup = -1;
+    float last_speedup = -1.0f;
 
     enum {
         GROUND_BEHAVIOR_NONE = 0,
@@ -190,7 +191,7 @@ protected:
     void update_mag_field_bf(void);
 
     /* advance time by deltat in seconds */
-    void time_advance(float deltat);
+    void time_advance();
 
     /* setup the frame step time */
     void setup_frame_time(float rate, float speedup);
@@ -249,11 +250,11 @@ private:
     LowPassFilterFloat servo_filter[4];
 
     /* set this always to the sampling in degrees for the table below */
-    #define SAMPLING_RES        10.0f
-    #define SAMPLING_MIN_LAT    -60.0f
-    #define SAMPLING_MAX_LAT    60.0f
-    #define SAMPLING_MIN_LON    -180.0f
-    #define SAMPLING_MAX_LON    180.0f
+    static constexpr float SAMPLING_RES = 10.0f;
+    static constexpr float SAMPLING_MIN_LAT = -60.0f;
+    static constexpr float SAMPLING_MAX_LAT = 60.0f;
+    static constexpr float SAMPLING_MIN_LON = -180.0f;
+    static constexpr float SAMPLING_MAX_LON = 180.0f;
 
     /* table data containing magnetic declination angle in degrees */
     const float declination_table[13][37] =

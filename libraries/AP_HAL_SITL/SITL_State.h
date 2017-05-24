@@ -84,7 +84,7 @@ private:
 
     void set_height_agl(void);
     void _update_compass(void);
-
+    void _update_rangefinder(float range_value);
     void _set_signal_handlers(void) const;
 
     struct gps_data {
@@ -122,7 +122,7 @@ private:
 
     void _update_gps(double latitude, double longitude, float altitude,
                      double speedN, double speedE, double speedD, bool have_lock);
-    void _update_ins(float airspeed);
+    void _update_airspeed(float airspeed);
     void _update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *d, uint8_t instance);
     void _check_rc_input(void);
     void _fdm_input_local(void);

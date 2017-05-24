@@ -159,16 +159,6 @@ void Aircraft::update_position(void)
 
     location.alt  = static_cast<int32_t>(home.alt - position.z * 100.0f);
 
-    // we only advance time if it hasn't been advanced already by the
-    // backend
-    if (last_time_us == time_now_us) {
-        time_now_us += frame_time_us;
-    }
-    last_time_us = time_now_us;
-    if (use_time_sync) {
-        sync_frame_time();
-    }
-
 #if 0
     // logging of raw sitl data
     Vector3f accel_ef = dcm * accel_body;
@@ -216,9 +206,17 @@ void Aircraft::update_mag_field_bf()
 }
 
 /* advance time by deltat in seconds */
-void Aircraft::time_advance(float deltat)
+void Aircraft::time_advance()
 {
-    time_now_us += deltat * 1.0e6f;
+    // we only advance time if it hasn't been advanced already by the
+    // backend
+    if (last_time_us == time_now_us) {
+        time_now_us += frame_time_us;
+    }
+    last_time_us = time_now_us;
+    if (use_time_sync) {
+        sync_frame_time();
+    }
 }
 
 /* setup the frame step time */
@@ -362,6 +360,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.rpm1 = rpm1;
     fdm.rpm2 = rpm2;
     fdm.rcin_chan_count = rcin_chan_count;
+    fdm.range = range;
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
 
