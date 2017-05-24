@@ -168,6 +168,7 @@ parser.add_option("--valgrind", default=False, action='store_true', help='run Ar
 parser.add_option("--gdb", default=False, action='store_true', help='run ArduPilot binaries under gdb')
 parser.add_option("--debug", default=False, action='store_true', help='make built binaries debug binaries')
 parser.add_option("-j", default=None, type='int', help='build CPUs')
+parser.add_option("--frame", type='string', default=None, help='specify frame type')
 
 opts, args = parser.parse_args()
 
@@ -301,7 +302,7 @@ def run_step(step):
         return get_default_params('ArduSub', binary)
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
+        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
 
     if step == 'fly.CopterAVC':
         return arducopter.fly_CopterAVC(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
