@@ -354,8 +354,7 @@ bool Plane::setup_failsafe_mixing(void)
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
-        if (SRV_Channels::channel_function(i) >= SRV_Channel::k_motor1 &&
-            SRV_Channels::channel_function(i) <= SRV_Channel::k_motor8) {
+        if (SRV_Channel::is_motor(SRV_Channels::channel_function(i))) {
             pwm_values.values[i] = quadplane.thr_min_pwm;
         } else {
             pwm_values.values[i] = 900;
@@ -367,8 +366,7 @@ bool Plane::setup_failsafe_mixing(void)
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
-        if (SRV_Channels::channel_function(i) >= SRV_Channel::k_motor1 &&
-            SRV_Channels::channel_function(i) <= SRV_Channel::k_motor8) {
+        if (SRV_Channel::is_motor(SRV_Channels::channel_function(i))) {
             hal.rcout->write(i, quadplane.thr_min_pwm);
             pwm_values.values[i] = quadplane.thr_min_pwm;
         } else {
@@ -415,6 +413,5 @@ failed:
     }
     return ret;
 }
-
 
 #endif // CONFIG_HAL_BOARD
