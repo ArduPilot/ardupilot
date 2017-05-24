@@ -34,6 +34,9 @@ public:
     // read the latest battery voltage
     virtual void read() = 0;
 
+    /// returns true if battery monitor instance provides current info
+    virtual bool has_current() const = 0;
+
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
 

@@ -23,6 +23,8 @@ public:
     // virtual destructor to reduce compiler warnings
     virtual ~AP_BattMonitor_SMBus() {}
 
+    // all smart batteries provide current info
+    bool has_current() const override { return true; }
 
 protected:
 
