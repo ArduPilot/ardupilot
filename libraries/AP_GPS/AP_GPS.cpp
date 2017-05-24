@@ -228,6 +228,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Units: ms
     // @Range: 0 250
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("DELAY_MS", 18, AP_GPS, _delay_ms[0], 0),
 
     // @Param: DELAY_MS2
@@ -236,6 +237,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Units: ms
     // @Range: 0 250
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("DELAY_MS2", 19, AP_GPS, _delay_ms[1], 0),
 
     // @Param: BLEND_MASK
@@ -1052,15 +1054,17 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
         // the user is always right !!
         return true;
     } else if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
-        // no GPS was detected in this instance so return a default delay of 1 measurement interval
-        lag_sec = 0.001f * (float)get_rate_ms(instance);
-        // check lack of GPS is consistent with user expectation
-        return state[instance].status == NO_GPS;
+        // no GPS was detected in this instance so return the worst possible lag term
+        if (_type[instance] == GPS_TYPE_NONE) {
+            lag_sec = 0.0f;
+            return true;
+        } else {
+            lag_sec = GPS_WORST_LAG_SEC;
+        }
+        return _type[instance] == GPS_TYPE_AUTO;
     } else {
         // the user has not specified a delay so we determine it from the GPS type
-        lag_sec = drivers[instance]->get_lag();
-        // check for a valid GPS configuration
-        return drivers[instance]->is_configured();
+        return drivers[instance]->get_lag(lag_sec);
     }
 }
 

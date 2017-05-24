@@ -43,8 +43,8 @@ public:
 
     void broadcast_configuration_failure_reason(void) const override;
 
-     // return velocity lag
-     float get_lag(void) const override { return 0.08f; } ;
+    // get the velocity lag, returns true if the driver is confident in the returned value
+    bool get_lag(float &lag_sec) const override { lag_sec = 0.08f; return true; } ;
 
 private:
 
