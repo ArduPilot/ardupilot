@@ -1,4 +1,5 @@
 #include "Copter.h"
+#include <time.h>
 
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()

@@ -11,7 +11,7 @@ class GCS_MAVLINK_Copter : public GCS_MAVLINK
 public:
 
     void data_stream_send(void) override;
-    
+
     void handleMessage(mavlink_message_t * msg) override;
 
 protected:
