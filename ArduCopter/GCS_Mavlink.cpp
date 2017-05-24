@@ -1223,6 +1223,12 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             }
             result = MAV_RESULT_ACCEPTED;
             break;
+
+        case MAV_CMD_DO_TRIGGER_CONTROL:
+            copter.camera.trigger_pic(true);
+            copter.log_picture();
+            result = MAV_RESULT_ACCEPTED;
+            break;
 #endif // CAMERA == ENABLED
         case MAV_CMD_DO_MOUNT_CONTROL:
 #if MOUNT == ENABLED
