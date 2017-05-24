@@ -92,9 +92,13 @@ void AP_Mission::resume()
     }
 
     // ensure cache coherence
-    // don't bother checking if the read is successful. If it fails _nav_cmd
-    // won't change and we'll continue flying the old cached command.
-    read_cmd_from_storage(_nav_cmd.index, _nav_cmd);
+    if (!read_cmd_from_storage(_nav_cmd.index, _nav_cmd)) {
+        // if we failed to read the command from storage, then the command may have
+        // been from a previously loaded mission it is illogical to ever resume
+        // flying to a command that has been excluded from the current mission
+        start();
+        return;
+    }
 
     // restart active navigation command. We run these on resume()
     // regardless of whether the mission was stopped, as we may be
