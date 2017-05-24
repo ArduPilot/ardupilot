@@ -123,8 +123,8 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
             loc.alt = packet.alt;
             state.location = loc;
             state.location.options = 0;
-            state.hdop = MAX(packet.eph, 9999);
-            state.vdop = MAX(packet.epv, 9999);
+            state.hdop = MIN(packet.eph, GPS_UNKNOWN_DOP);
+            state.vdop = MIN(packet.epv, GPS_UNKNOWN_DOP);
             if (packet.vel < 65535) {
                 state.ground_speed = packet.vel / 100.0f;
             }
