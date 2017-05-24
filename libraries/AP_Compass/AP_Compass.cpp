@@ -532,7 +532,22 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR),
                                               both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_YAW_270),
                     AP_Compass_HMC5843::name, both_i2c_external);
+
+        
 #if !HAL_MINIMIZE_FEATURES
+        // AK09916 on ICM20948
+        ADD_BACKEND(AP_Compass_AK09916::probe_ICM20948(*this,
+                                                       hal.i2c_mgr->get_device(1, HAL_COMPASS_AK09916_I2C_ADDR),
+                                                       hal.i2c_mgr->get_device(1, HAL_COMPASS_ICM20948_I2C_ADDR),
+                                                       true, ROTATION_NONE),
+                     AP_Compass_AK09916::name, true);
+
+        ADD_BACKEND(AP_Compass_AK09916::probe_ICM20948(*this,
+                                                       hal.i2c_mgr->get_device(0, HAL_COMPASS_AK09916_I2C_ADDR),
+                                                       hal.i2c_mgr->get_device(0, HAL_COMPASS_ICM20948_I2C_ADDR),
+                                                       both_i2c_external, ROTATION_NONE),
+                     AP_Compass_AK09916::name, true);
+        
 #if 0
         // lis3mdl - this is disabled for now due to an errata on pixhawk2 GPS unit, pending investigation
         ADD_BACKEND(AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_LIS3MDL_I2C_ADDR),
