@@ -54,7 +54,7 @@ private:
     uint8_t _init_blob_index = 0;
     uint32_t _init_blob_time = 0;
     const char* _initialisation_blob[5] = {
-    "sso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic+ReceiverStatus, msec100\n",
+    "sso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic+ReceiverStatus+VelCovGeodetic, msec100\n",
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
     "spm, Rover, StandAlone+SBAS+DGPS+RTK\n",
@@ -65,7 +65,15 @@ private:
     bool validcommand = false;
     uint32_t RxState;
 
-    struct PACKED msg4007
+    enum sbf_ids {
+        DOP = 4001,
+        PVTGeodetic = 4007,
+        ReceiverStatus = 4014,
+        ExtEventPVTGeodetic = 4038,
+        VelCovGeodetic = 5908
+    };
+
+    struct PACKED msg4007 // PVTGeodetic
     {
          uint32_t TOW;
          uint16_t WNc;
@@ -99,7 +107,7 @@ private:
          uint8_t Misc;
     };
   
-    struct PACKED msg4001
+    struct PACKED msg4001 // DOP
     {
          uint32_t TOW;
          uint16_t WNc;
@@ -125,10 +133,29 @@ private:
          // remaining data is AGCData, which we don't have a use for, don't extract the data
     };
 
+    struct PACKED msg5908 // VelCovGeodetic
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint8_t Mode;
+        uint8_t Error;
+        float Cov_VnVn;
+        float Cov_VeVe;
+        float Cov_VuVu;
+        float Cov_DtDt;
+        float Cov_VnVe;
+        float Cov_VnVu;
+        float Cov_VnDt;
+        float Cov_VeVu;
+        float Cov_VeDt;
+        float Cov_VuDt;
+    };
+
     union PACKED msgbuffer {
         msg4007 msg4007u;
         msg4001 msg4001u;
         msg4014 msg4014u;
+        msg5908 msg5908u;
         uint8_t bytes[128];
     };
 
