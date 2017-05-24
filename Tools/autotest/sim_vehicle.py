@@ -305,27 +305,32 @@ _options = {
             "hexa": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-hexa.parm",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-hexa.parm" ],
             },
             "octa-quad": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-octaquad.parm",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-octaquad.parm" ],
             },
             "octa": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-octa.parm",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-octa.parm" ],
             },
             "tri": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-tri.parm",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-tri.parm" ],
             },
             "y6": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-y6.parm",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-y6.parm" ],
             },
             "firefly": {
                 "waf_target": "bin/arduplane",
