@@ -59,7 +59,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _ublox_port(255),
     _have_version(false),
     _unconfigured_messages(CONFIG_ALL),
-    _hardware_generation(0),
+    _hardware_generation(UBLOX_UNKNOWN_HARDWARE_GENERATION),
     _new_position(0),
     _new_speed(0),
     _disable_counter(0),
@@ -104,7 +104,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_POLL_SVINFO:
         // not required once we know what generation we are on
-        if(_hardware_generation == 0) {
+        if(_hardware_generation == UBLOX_UNKNOWN_HARDWARE_GENERATION) {
             if (!_send_message(CLASS_NAV, MSG_NAV_SVINFO, 0, 0)) {
                 _next_message--;
             }
@@ -1307,19 +1307,27 @@ AP_GPS_UBLOX::broadcast_configuration_failure_reason(void) const {
 /*
   return velocity lag in seconds
  */
-float AP_GPS_UBLOX::get_lag(void) const
+bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
 {
     switch (_hardware_generation) {
+    case UBLOX_UNKNOWN_HARDWARE_GENERATION:
+        lag_sec = 0.22f;
+        // always bail out in this case, it's used to indicate we have yet to receive a valid
+        // hardware generation, however the user may have inhibited us detecting the generation
+        // so if we aren't allowed to do configuration, we will accept this as the default delay
+        return gps._auto_config != 1;
     case UBLOX_5:
     case UBLOX_6:
     default:
-        return 0.22f;
+        lag_sec = 0.22f;
+        break;
     case UBLOX_7:
     case UBLOX_M8:
         // based on flight logs the 7 and 8 series seem to produce about 120ms lag
-        return 0.12f;
+        lag_sec = 0.12f;
         break;
     };
+    return true;
 }
 
 void AP_GPS_UBLOX::Write_DataFlash_Log_Startup_messages() const
