@@ -233,7 +233,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on the throttle channel below which throttle failsafe triggers.
-    // @Range: 925 1100
+    // @Range: 910 1100
     // @Increment: 1
     // @User: Standard
     GSCALAR(fs_throttle_value,      "FS_THR_VALUE",     910),
