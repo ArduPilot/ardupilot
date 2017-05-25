@@ -51,6 +51,12 @@ public:
         BattMonitor_TYPE_MAXELL                     = 7
     };
 
+    // low voltage sources (used for BATT_LOW_TYPE parameter)
+    enum BattMonitor_LowVoltage_Source {
+        BattMonitor_LowVoltageSource_Raw            = 0,
+        BattMonitor_LowVoltageSource_SagCompensated = 1
+    };
+
     struct cells {
         uint16_t cells[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
     };
@@ -99,6 +105,7 @@ public:
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
 
     /// get voltage with sag removed (based on battery current draw and resistance)
+    /// this will always be greater than or equal to the raw voltage
     float voltage_resting_estimate(uint8_t instance) const;
     float voltage_resting_estimate() const { return voltage_resting_estimate(AP_BATT_PRIMARY_INSTANCE); }
 
@@ -163,6 +170,7 @@ protected:
     AP_Int16    _watt_max[AP_BATT_MONITOR_MAX_INSTANCES];           /// max battery power allowed. Reduce max throttle to reduce current to satisfy this limit
     AP_Int32    _serial_numbers[AP_BATT_MONITOR_MAX_INSTANCES];     /// battery serial number, automatically filled in on SMBus batteries
     AP_Int8     _low_voltage_timeout;                               /// timeout in seconds before a low voltage event will be triggered
+    AP_Int8     _low_voltage_source;                                /// voltage type used for detection of low voltage event
 
 private:
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];

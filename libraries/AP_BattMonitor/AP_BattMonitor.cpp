@@ -152,6 +152,13 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_LOW_TIMER", 21, AP_BattMonitor, _low_voltage_timeout, AP_BATT_LOW_VOLT_TIMEOUT_DEFAULT),
 
+    // @Param: _LOW_TYPE
+    // @DisplayName: Low voltage type
+    // @Description: Voltage type used for detection of low voltage event
+    // @Values: 0:Raw Voltage, 1:Sag Compensated Voltage
+    // @User: Advanced
+    AP_GROUPINFO("_LOW_TYPE", 22, AP_BattMonitor, _low_voltage_source, BattMonitor_LowVoltageSource_Raw),
+
     AP_GROUPEND
 };
 
@@ -263,6 +270,7 @@ float AP_BattMonitor::voltage(uint8_t instance) const
 }
 
 /// get voltage with sag removed (based on battery current draw and resistance)
+/// this will always be greater than or equal to the raw voltage
 float AP_BattMonitor::voltage_resting_estimate(uint8_t instance) const
 {
     if (instance < _num_instances) {
@@ -319,8 +327,20 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
         return false;
     }
 
+    // use voltage or sag compensated voltage
+    float voltage_used;
+    switch ((enum BattMonitor_LowVoltage_Source)_low_voltage_source.get()) {
+        case BattMonitor_LowVoltageSource_Raw:
+        default:
+            voltage_used = state[instance].voltage;
+            break;
+        case BattMonitor_LowVoltageSource_SagCompensated:
+            voltage_used = voltage_resting_estimate(instance);
+            break;
+    }
+
     // check voltage
-    if ((state[instance].voltage > 0) && (low_voltage > 0) && (state[instance].voltage < low_voltage)) {
+    if ((voltage_used > 0) && (low_voltage > 0) && (voltage_used < low_voltage)) {
         // this is the first time our voltage has dropped below minimum so start timer
         if (state[instance].low_voltage_start_ms == 0) {
             state[instance].low_voltage_start_ms = AP_HAL::millis();
