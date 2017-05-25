@@ -198,9 +198,9 @@ void AP_Motors::add_motor_num(int8_t motor_num)
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
         uint8_t chan;
-        SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+motor_num);
+        SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)(motor_num < 8?(SRV_Channel::k_motor1 + motor_num) : (SRV_Channel::k_motor9 + (motor_num - 8)));
         SRV_Channels::set_aux_channel_default(function, motor_num);
-        if (SRV_Channels::find_channel((SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+motor_num),
+        if (SRV_Channels::find_channel((SRV_Channel::Aux_servo_function_t)(motor_num < 8?(SRV_Channel::k_motor1 + motor_num) : (SRV_Channel::k_motor9 + (motor_num - 8))),
                                        chan) && chan != motor_num) {
             _motor_map[motor_num] = chan;
             _motor_map_mask |= 1U<<motor_num;

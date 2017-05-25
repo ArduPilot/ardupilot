@@ -302,6 +302,16 @@ _options = {
                 # param fetch happens asynchronously
                 "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
             },
+            "dodeca-hexa": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter-dodecahexa.parm",
+            },
+            "dodeca-hexax": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter-dodecahexax.parm",
+            },
             "hexa": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",

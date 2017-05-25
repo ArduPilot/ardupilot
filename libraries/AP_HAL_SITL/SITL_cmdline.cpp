@@ -90,6 +90,8 @@ static const struct {
     { "x",                  MultiCopter::create },
     { "hexa",               MultiCopter::create },
     { "octa",               MultiCopter::create },
+    { "dodeca-hexa",        MultiCopter::create },
+    { "dodeca-hexax",       MultiCopter::create },
     { "tri",                MultiCopter::create },
     { "y6",                 MultiCopter::create },
     { "heli",               Helicopter::create },
