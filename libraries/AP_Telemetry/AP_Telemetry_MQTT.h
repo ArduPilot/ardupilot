@@ -34,16 +34,13 @@ extern "C" {
 
 #define MQTT_ENABLED 1
  
-#define MQTT_SERVICE MQTT_ENABLED
-
-
 // mqtt send_log on / off
 enum Mqtt_send_log {
     MQTT_SEND_LOG_OFF = 0,
     MQTT_SEND_LOG_ON  = 1,
 };
 
-//mqtt status for connection
+// mqtt status for mqtt connection
 enum Mqtt_connection_status {
   MQTT_DISCONNECTED = 0,
   MQTT_CONNECTED = 1,

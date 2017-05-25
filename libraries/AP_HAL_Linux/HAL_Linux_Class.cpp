@@ -277,10 +277,12 @@ void _usage(void)
     printf("\tmodule support:\n");
     printf("\t                   --module-directory %s\n", AP_MODULE_DEFAULT_DIRECTORY);
     printf("\t                   -M %s\n", AP_MODULE_DEFAULT_DIRECTORY);
+#ifdef MQTT_ENABLED
     printf("\tmqtt options:\n");
     printf("\t                   --mqtt_server tcp:\\192.168.1.x:xxxx\n");
     printf("\t                   --mqtt_user user_name\n");
     printf("\t                   --mqtt_password password\n");
+#endif
 }
 
 void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
@@ -304,9 +306,11 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {"log-directory",       true,  0, 'l'},
         {"terrain-directory",   true,  0, 't'},
         {"module-directory",    true,  0, 'M'},
+#ifdef MQTT_ENABLED
         {"mqtt_server",         true,  0, 'Q'},
         {"mqtt_user",           true,  0, 'U'},
         {"mqtt_password",       true,  0, 'P'},
+#endif
         {"help",                false,  0, 'h'},
         {0, false, 0, 0}
     };
@@ -354,7 +358,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         case 'M':
             module_path = gopt.optarg;
             break;
-#if MQTT_SERVICE == MQTT_ENABLED
+#ifdef MQTT_ENABLED
 	case 'Q':
 	    AP_Telemetry_MQTT::set_mqtt_server(gopt.optarg);
 	    break;

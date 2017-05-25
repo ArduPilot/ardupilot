@@ -41,6 +41,7 @@ void Copter::userhook_SlowLoop()
 void Copter::userhook_SuperSlowLoop()
 {
     //  put your 1Hz code here
+#ifdef MQTT_ENABLED
     Location loc;
     if (ahrs.get_position(loc)) {
         char buf[100];
@@ -74,6 +75,7 @@ void Copter::userhook_SuperSlowLoop()
             telemetry.send_text("Message arrived.");
             gcs_chan[0].handleMessage(&msg);
         }
+#endif
 }
 #endif
 
