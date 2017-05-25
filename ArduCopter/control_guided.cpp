@@ -59,6 +59,16 @@ bool Copter::guided_takeoff_start(float final_alt_above_home)
     Location_Class target_loc = current_loc;
     target_loc.set_alt_cm(final_alt_above_home, Location_Class::ALT_FRAME_ABOVE_HOME);
 
+    // Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
+
+    // getting altitude target, no sanity check needed as input command does not allow to send an alt above terrain
+    int32_t alt_target;
+    target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_target);
+
+    if (alt_target < 100) {
+        target_loc.set_alt_cm(100, Location_Class::ALT_FRAME_ABOVE_HOME);
+    }
+
     if (!wp_nav->set_wp_destination(target_loc)) {
         // failure to set destination can only be because of missing terrain data
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
