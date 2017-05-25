@@ -19,8 +19,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include "AP_Telemetry.h"
 
-class AP_Telemetry_Backend
-{
+class AP_Telemetry_Backend {
 public:
 
     AP_Telemetry_Backend(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart);
@@ -28,7 +27,9 @@ public:
     // update - provide an opportunity to read/send telemetry
     virtual void update() = 0;
 
-  virtual int recv_mavlink_message(mavlink_message_t *msg){return 0;}
+    virtual int recv_mavlink_message(mavlink_message_t *msg) {
+        return 0;
+    }
 
     // send text
     virtual void send_log(const char *str) {}

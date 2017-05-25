@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 #define MQTT_ENABLED 1
- 
+
 // mqtt send_log on / off
 enum Mqtt_send_log {
     MQTT_SEND_LOG_OFF = 0,
@@ -42,84 +42,83 @@ enum Mqtt_send_log {
 
 // mqtt status for mqtt connection
 enum Mqtt_connection_status {
-  MQTT_DISCONNECTED = 0,
-  MQTT_CONNECTED = 1,
+    MQTT_DISCONNECTED = 0,
+    MQTT_CONNECTED = 1,
 };
 
-class AP_Telemetry_MQTT : public AP_Telemetry_Backend
-{
+class AP_Telemetry_MQTT : public AP_Telemetry_Backend {
 public:
     // get_MQTTClient - provide the address of the mqtt_client instance
-  static MQTTAsync* get_MQTTClient();
+    static MQTTAsync* get_MQTTClient();
 
     //get_telemetry_mqtt - provide the address of the AP_Telemetry_MQTT's client instance
-  static AP_Telemetry_MQTT* get_telemetry_mqtt();
+    static AP_Telemetry_MQTT* get_telemetry_mqtt();
 
     // init_telemetry_mqtt - initialize the AP_Telemetry_MQTT library and mqtt client
-  static AP_Telemetry_MQTT* init_telemetry_mqtt(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart);
+    static AP_Telemetry_MQTT* init_telemetry_mqtt(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart);
 
     // set_mqtt_xxx - set the parameter for the mqtt connection (read from command line options)
-  static void set_mqtt_server(const char* server);
-  static void set_mqtt_user(const char* user);
-  static void set_mqtt_password(const char* password);
+    static void set_mqtt_server(const char* server);
+    static void set_mqtt_user(const char* user);
+    static void set_mqtt_password(const char* password);
 
-  // update - provide an opportunity to read/send telemetry
-  void update() override;
+    // update - provide an opportunity to read/send telemetry
+    void update() override;
 
     // send_log - Send gps location on the log topic
-  void send_log(const char *str) override;
+    void send_log(const char *str) override;
 
     // recv_mavlink_message - Read message if any from the wating queue
-  int recv_mavlink_message(mavlink_message_t *msg) override;
+    int recv_mavlink_message(mavlink_message_t *msg) override;
 
     // subscribe_mqtt_topic - Mqtt action to directely subscribe to a topic
-  void subscribe_mqtt_topic(const char* topic, int qos);
+    void subscribe_mqtt_topic(const char* topic, int qos);
 
     // send_message - Mqtt action to send a payload on a mqtt topic
-  void send_message(const char* str, const char* topic);
+    void send_message(const char* str, const char* topic);
 
     // pop_mqtt_message - Retrieve mqtt message from the waiting queue
-  void pop_mqtt_message(char* str_mqtt);
+    void pop_mqtt_message(char* str_mqtt);
 
     // append_mqtt_message - Append a message to the waiting queue
-  void append_mqtt_message(MQTTAsync_message* message);
+    void append_mqtt_message(MQTTAsync_message* message);
 
     // MQTTHandle_error - Error handler when Mqtt function return a failure
-  void MQTTHandle_error(int rc);
+    void MQTTHandle_error(int rc);
 
     // connection_status - Current status of the mqtt connection
-  enum Mqtt_connection_status connection_status = MQTT_DISCONNECTED;
+    enum Mqtt_connection_status connection_status = MQTT_DISCONNECTED;
 
     // send_log_flag - Flag that enable to send mqtt message
-  enum Mqtt_send_log send_log_flag = MQTT_SEND_LOG_ON;
+    enum Mqtt_send_log send_log_flag = MQTT_SEND_LOG_ON;
 
 
 private:
     // Private constructor to limit to a single instance
-  AP_Telemetry_MQTT(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart);
+    AP_Telemetry_MQTT(AP_Telemetry &frontend, AP_HAL::UARTDriver* uart);
 
     // recv_msg_list - Waiting list for mqtt message
-  List* recv_msg_list;
+    List* recv_msg_list;
 
     // telemetry_mqtt - Pointer to single instance of the AP_Telemetry_MQTT
-  static AP_Telemetry_MQTT* telemetry_mqtt;
+    static AP_Telemetry_MQTT* telemetry_mqtt;
 
     // mqtt_client - Instance of the mqtt client
-  static MQTTAsync mqtt_client;
+    static MQTTAsync mqtt_client;
 
     // conn_options - Structure that store the option for the mqtt connection
-  static MQTTAsync_connectOptions conn_options;
+    static MQTTAsync_connectOptions conn_options;
 
     // mqtt_server - Endpoint for the mqtt message broker
-  static char const* mqtt_server;
+    static char const* mqtt_server;
 
     // init_mqtt - Create and initialize the mqtt connection
-  void init_mqtt();
+    void init_mqtt();
 
     // mqtt_mutex - Mutex to protect the mqtt critical section
-  pthread_mutex_t* mqtt_mutex;
-  pthread_mutex_t mqtt_mutex_store;
+    pthread_mutex_t* mqtt_mutex;
+    pthread_mutex_t mqtt_mutex_store;
 
     // _last_send_ms - Timer to schedule the sending of message
-  uint32_t _last_send_ms;
+    uint32_t _last_send_ms;
 };

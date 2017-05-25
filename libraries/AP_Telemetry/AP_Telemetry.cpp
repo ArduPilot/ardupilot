@@ -25,50 +25,50 @@ AP_Telemetry::AP_Telemetry()
 // perform required initialisation
 void AP_Telemetry::init(const AP_SerialManager &serial_manager, const AP_AHRS &ahrs)
 {
-  // only perform once
-  if (_num_instances > 0) {
-    return;
-  }
+    // only perform once
+    if (_num_instances > 0) {
+        return;
+    }
 
-  // add pointer to ahrs
-  _ahrs = &ahrs;
+    // add pointer to ahrs
+    _ahrs = &ahrs;
 
-  // check for supported protocols
-  AP_HAL::UARTDriver *uart;
-  if ((uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_MQTT, 0)) == nullptr) {
-    _drivers[_num_instances] = AP_Telemetry_MQTT::init_telemetry_mqtt(*this, uart);
-    _num_instances++;
-  }
+    // check for supported protocols
+    AP_HAL::UARTDriver *uart;
+    if ((uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_MQTT, 0)) == nullptr) {
+        _drivers[_num_instances] = AP_Telemetry_MQTT::init_telemetry_mqtt(*this, uart);
+        _num_instances++;
+    }
 }
 
 void AP_Telemetry::send_text(const char *str)
 {
-  for (uint8_t i=0; i<AP_TELEMETRY_MAX_INSTANCES; i++) {
-    if (_drivers[i] != nullptr) {
-      _drivers[i]->send_log(str);
+    for (uint8_t i=0; i<AP_TELEMETRY_MAX_INSTANCES; i++) {
+        if (_drivers[i] != nullptr) {
+            _drivers[i]->send_log(str);
+        }
     }
-  }
 
 }
 
 int AP_Telemetry::recv_mavlink_message(mavlink_message_t *msg)
 {
-  int ret;
-  ret = 0;
-  for (uint8_t i=0; i<AP_TELEMETRY_MAX_INSTANCES; i++) {
-    if (_drivers[i] != nullptr) {
-      ret = _drivers[i]->recv_mavlink_message(msg);
+    int ret;
+    ret = 0;
+    for (uint8_t i=0; i<AP_TELEMETRY_MAX_INSTANCES; i++) {
+        if (_drivers[i] != nullptr) {
+            ret = _drivers[i]->recv_mavlink_message(msg);
+        }
     }
-  }
-  return ret;
+    return ret;
 }
 
 // provide an opportunity to read/send telemetry
 void AP_Telemetry::update()
 {
-  for (uint8_t i=0; i<AP_TELEMETRY_MAX_INSTANCES; i++) {
-    if (_drivers[i] != nullptr) {
-      _drivers[i]->update();
+    for (uint8_t i=0; i<AP_TELEMETRY_MAX_INSTANCES; i++) {
+        if (_drivers[i] != nullptr) {
+            _drivers[i]->update();
+        }
     }
-  }
 }

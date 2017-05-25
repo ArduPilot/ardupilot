@@ -25,8 +25,7 @@
 
 class AP_Telemetry_Backend;
 
-class AP_Telemetry
-{
+class AP_Telemetry {
 public:
 
     friend class AP_Telemetry_Backend;
