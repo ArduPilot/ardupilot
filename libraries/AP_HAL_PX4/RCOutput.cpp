@@ -101,7 +101,9 @@ void PX4RCOutput::_init_alt_channels(void)
 void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_t &rate_mask) 
 {
     if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
-        freq_hz = 2000; // this maps to 16kHz due to 8MHz clock
+        freq_hz /= 8; // divide by 8 for 8MHz clock
+        // remember max period
+        _period_max = 1000000UL/freq_hz;
     }
     
     // we can't set this per channel
@@ -331,14 +333,13 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
         // map from the PWM range to 0 t0 100% duty cycle. For 16kHz
         // this ends up being 0 to 500 pulse width in units of
         // 125usec.
-        const uint32_t period_max = 1000000UL/(16000/8);
         if (period_us <= _esc_pwm_min) {
             period_us = 0;
         } else if (period_us >= _esc_pwm_max) {
-            period_us = period_max;
+            period_us = _period_max;
         } else {
             uint32_t pdiff = period_us - _esc_pwm_min;
-            period_us = pdiff*period_max/(_esc_pwm_max - _esc_pwm_min);
+            period_us = pdiff*_period_max/(_esc_pwm_max - _esc_pwm_min);
         }
     }
     
