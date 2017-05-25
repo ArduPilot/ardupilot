@@ -214,14 +214,16 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
             // replace this very old entry with this new data
             index = oldest_index;
         }
+
+        if (index == -1) {
+            // no room for this (old?!) data
+            return;
+        }
+
         _obstacles[index].src = src;
         _obstacles[index].src_id = src_id;
     }
 
-    if (index == -1) {
-        // no room for this (old?!) data
-        return;
-    }
     _obstacles[index]._location = loc;
     _obstacles[index]._velocity = vel_ned;
     _obstacles[index].timestamp_ms = obstacle_timestamp_ms;
