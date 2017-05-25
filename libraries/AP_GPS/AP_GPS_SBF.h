@@ -43,6 +43,9 @@ public:
 
     void broadcast_configuration_failure_reason(void) const override;
 
+     // return velocity lag
+     float get_lag(void) const override { return 0.08f; } ;
+
 private:
 
     bool parse(uint8_t temp);
