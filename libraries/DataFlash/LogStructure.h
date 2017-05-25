@@ -777,7 +777,7 @@ struct PACKED log_SbpRAW2 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint16_t msg_type;
-    uint8_t data2[192];
+    uint8_t data2[104];
 };
 
 struct PACKED log_Rally {
@@ -1085,11 +1085,11 @@ Format characters in the format string for binary log messages
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
-      "SBPH", "QIII",   "TimeUS,CrcError,LastInject,IARhyp" }, \
+      "SBPH", "QIII", "TimeUS,CrcError,LastInject,IARhyp" }, \
     { LOG_MSG_SBPRAW1, sizeof(log_SbpRAW1), \
-      "SBR1", "QHHBZ",      "TimeUS,msg_type,sender_id,msg_len,d1" }, \
+      "SBR1", "QHHBQQQQQQQQ", "TimeUS,msg_type,sender_id,msg_len,1,2,3,4,5,6,7,8" }, \
     { LOG_MSG_SBPRAW2, sizeof(log_SbpRAW2), \
-      "SBR2", "QHZZZ",      "TimeUS,msg_type,d2,d3,d4" }
+      "SBR2", "QHQQQQQQQQQQQQQ", "TimeUS,msg_type,1,2,3,4,5,6,7,8,9,10,11,12,13" }
 // #endif
 
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES, LOG_SBP_STRUCTURES

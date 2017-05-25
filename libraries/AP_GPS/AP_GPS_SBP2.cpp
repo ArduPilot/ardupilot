@@ -476,7 +476,17 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
             time_us         : time_us,
             msg_type        : msg_type,
         };
-        memcpy(pkt2.data2, &msg_buff[64], MIN(msg_len - 64,192));
+        memcpy(pkt2.data2, &msg_buff[64], MIN(msg_len - 64,104));
         gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
+
+        if (msg_len > 168) {
+            struct log_SbpRAW2 pkt3 = {
+                LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW2),
+                time_us         : time_us,
+                msg_type        : msg_type,
+            };
+            memcpy(pkt3.data2, &msg_buff[168], MIN(msg_len - 168,104));
+            gps._DataFlash->WriteBlock(&pkt3, sizeof(pkt3));
+        }
     }
 };
