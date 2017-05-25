@@ -1,5 +1,15 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5-rc7 25-May-2017
+Changes from 3.5-rc6
+1) Bug fixes and minor enhancements:
+    a) fix OneShot ESC calibration and compass-mot calibration
+    b) fix Navio2 and ErleBrain crashes caused by insufficient memory allocated to scheduler
+    c) AutoTune with position hold only resets target position when roll and/or pitch sticks moved
+    d) fix Acro, Sport trainer mode to stop attitude targets going beyond angle limits
+    e) sanity check WPNAV_RADIUS is non-zero
+    f) MarvelMind driver fixes (still a work-in-progress)
+------------------------------------------------------------------
 Copter 3.5-rc6 15-May-2017
 Changes from 3.5-rc5
 1) Bug fixes and minor enhancements:
