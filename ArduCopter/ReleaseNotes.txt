@@ -9,6 +9,7 @@ Changes from 3.5-rc6
     d) fix Acro, Sport trainer mode to stop attitude targets going beyond angle limits
     e) sanity check WPNAV_RADIUS is non-zero
     f) MarvelMind driver fixes (still a work-in-progress)
+    g) Sanity check command when resuming mission in Auto
 ------------------------------------------------------------------
 Copter 3.5-rc6 15-May-2017
 Changes from 3.5-rc5
