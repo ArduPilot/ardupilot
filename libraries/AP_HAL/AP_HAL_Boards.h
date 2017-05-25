@@ -106,6 +106,7 @@
 #define HAL_COMPASS_NAVIO              15
 #define HAL_COMPASS_AERO               16
 #define HAL_COMPASS_OCPOC_ZYNQ         17
+#define HAL_COMPASS_EDGE               18
 
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1
