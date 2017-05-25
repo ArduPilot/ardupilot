@@ -729,6 +729,7 @@ private:
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
     void Log_Write_Attitude();
+    void Log_Write_EKF_POS();
     void Log_Write_MotBatt();
     void Log_Write_Event(uint8_t id);
     void Log_Write_Data(uint8_t id, int32_t value);
@@ -1002,6 +1003,7 @@ private:
     void update_throttle_thr_mix();
     void update_ground_effect_detector(void);
     void landinggear_update();
+    void fast_att_logging();
     void update_notify();
     void motor_test_output();
     bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc);

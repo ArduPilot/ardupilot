@@ -109,6 +109,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if FRAME_CONFIG == HELI_FRAME
     SCHED_TASK(check_dynamic_flight,  50,     75),
 #endif
+    SCHED_TASK(fast_att_logging,      400,     50),
     SCHED_TASK(update_notify,         50,     90),
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK(ekf_check,             10,     75),
@@ -298,21 +299,6 @@ void Copter::fast_loop()
     if (should_log(MASK_LOG_ANY)) {
         Log_Sensor_Health();
     }
-
-#if HIL_MODE == HIL_MODE_DISABLED
-    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
-        Vector3f targets = attitude_control->get_att_target_euler_cd();
-        targets.z = wrap_360_cd(targets.z);
-        DataFlash.Log_Write_Attitude(ahrs, targets);
-        DataFlash.Log_Write_Rate(ahrs, *motors, *attitude_control, *pos_control);
-        if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
-        }
-    }
-#endif
 }
 
 // rc_loops - reads user input from transmitter/receiver
@@ -389,6 +375,17 @@ void Copter::update_batt_compass(void)
     }
 }
 
+// Full rate logging of attitude, rate and pid loops
+// should be run at 400hz
+void Copter::fast_att_logging()
+{
+#if HIL_MODE == HIL_MODE_DISABLED
+    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
+        Log_Write_Attitude();
+    }
+#endif
+}
+
 // ten_hz_logging_loop
 // should be run at 10hz
 void Copter::ten_hz_logging_loop()
@@ -396,16 +393,7 @@ void Copter::ten_hz_logging_loop()
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        Vector3f targets = attitude_control->get_att_target_euler_cd();
-        targets.z = wrap_360_cd(targets.z);
-        DataFlash.Log_Write_Attitude(ahrs, targets);
-        DataFlash.Log_Write_Rate(ahrs, *motors, *attitude_control, *pos_control);
-        if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
-        }
+        Log_Write_EKF_POS();
     }
     if (should_log(MASK_LOG_MOTBATT)) {
         Log_Write_MotBatt();
@@ -445,7 +433,7 @@ void Copter::twentyfive_hz_logging()
 
 #if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
-        Log_Write_Attitude();
+        Log_Write_EKF_POS();
     }
 
     // log IMU data if we're not already logging at the higher rate
