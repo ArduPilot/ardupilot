@@ -807,7 +807,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
-    GOBJECT(rssi, "RSSI_",  AP_RSSI),      
+    GOBJECT(rssi, "RSSI_",  AP_RSSI),
     
 #if RANGEFINDER_ENABLED == ENABLED
     // @Group: RNGFND
@@ -885,7 +885,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 
-    // @Group: 
+    // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
     
