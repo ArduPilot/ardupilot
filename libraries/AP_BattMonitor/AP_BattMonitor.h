@@ -149,8 +149,7 @@ protected:
     AP_Int32    _pack_capacity[AP_BATT_MONITOR_MAX_INSTANCES];      /// battery pack capacity less reserve in mAh
     AP_Int16    _watt_max[AP_BATT_MONITOR_MAX_INSTANCES];           /// max battery power allowed. Reduce max throttle to reduce current to satisfy this limit
     AP_Int32    _serial_numbers[AP_BATT_MONITOR_MAX_INSTANCES];     /// battery serial number, automatically filled in on SMBus batteries
-
-    AP_Int8     _volt_timeout;
+    AP_Int8     _low_voltage_timeout;                               /// timeout in seconds before a low voltage event will be triggered
 
 private:
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];
