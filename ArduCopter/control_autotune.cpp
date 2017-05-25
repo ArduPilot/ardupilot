@@ -132,6 +132,7 @@ static struct autotune_state_struct {
     AutoTuneStepType    step                : 2;    // see AutoTuneStepType for what steps are performed
     AutoTuneTuneType    tune_type           : 3;    // see AutoTuneTuneType
     uint8_t             ignore_next         : 1;    // true = ignore the next test
+    uint8_t             twitch_first_iter   : 1;    // true on first iteration of a twitch (used to signal we must step the attitude or rate target)
     bool                use_poshold         : 1;    // true = enable position hold
     bool                have_position       : 1;    // true = start_position is value
     Vector3f            start_position;
@@ -579,6 +580,7 @@ void Copter::autotune_attitude_control()
             autotune_state.step = AUTOTUNE_STEP_TWITCHING;
             autotune_step_start_time = millis();
             autotune_step_stop_time = autotune_step_start_time + AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
+            autotune_state.twitch_first_iter = true;
             autotune_test_max = 0.0f;
             autotune_test_min = 0.0f;
             rotation_rate_filt.reset(0.0f);
@@ -633,28 +635,33 @@ void Copter::autotune_attitude_control()
 
         // disable rate limits
         attitude_control->use_ff_and_input_shaping(false);
+        // hold current attitude
+        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
 
         if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
-            // Testing increasing stabilize P gain so will set lean angle target
-            switch (autotune_state.axis) {
-            case AUTOTUNE_AXIS_ROLL:
-                // request roll to 20deg
-                attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw( direction_sign * autotune_target_angle + autotune_start_angle, 0.0f, 0.0f, get_smoothing_gain());
-                break;
-            case AUTOTUNE_AXIS_PITCH:
-                // request pitch to 20deg
-                attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw( 0.0f, direction_sign * autotune_target_angle + autotune_start_angle, 0.0f, get_smoothing_gain());
-                break;
-            case AUTOTUNE_AXIS_YAW:
-                // request pitch to 20deg
-                attitude_control->input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, wrap_180_cd(direction_sign * autotune_target_angle + autotune_start_angle), false, get_smoothing_gain());
-                break;
+            // step angle targets on first iteration
+            if (autotune_state.twitch_first_iter) {
+                autotune_state.twitch_first_iter = false;
+                // Testing increasing stabilize P gain so will set lean angle target
+                switch (autotune_state.axis) {
+                case AUTOTUNE_AXIS_ROLL:
+                    // request roll to 20deg
+                    attitude_control->input_angle_step_bf_roll_pitch_yaw(direction_sign * autotune_target_angle, 0.0f, 0.0f);
+                    break;
+                case AUTOTUNE_AXIS_PITCH:
+                    // request pitch to 20deg
+                    attitude_control->input_angle_step_bf_roll_pitch_yaw(0.0f, direction_sign * autotune_target_angle, 0.0f);
+                    break;
+                case AUTOTUNE_AXIS_YAW:
+                    // request pitch to 20deg
+                    attitude_control->input_angle_step_bf_roll_pitch_yaw(0.0f, 0.0f, direction_sign * autotune_target_angle);
+                    break;
+                }
             }
         } else {
             // Testing rate P and D gains so will set body-frame rate targets.
             // Rate controller will use existing body-frame rates and convert to motor outputs
             // for all axes except the one we override here.
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw( 0.0f, 0.0f, 0.0f, get_smoothing_gain());
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
                 // override body-frame roll rate
