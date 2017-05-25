@@ -90,16 +90,16 @@ void AP_Telemetry_MQTT::init_mqtt(){
 
     if((rc = MQTTAsync_create(&mqtt_client, mqtt_server, clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != 0)
       {
-	printf("Failed to create Client, return code %d\n", rc);
-	MQTTHandle_error(rc);
+          printf("Failed to create Client, return code %d\n", rc);
+          MQTTHandle_error(rc);
       }
 
     MQTTAsync_setCallbacks(mqtt_client, NULL, NULL, mqtt_msg_arrived, NULL);
     if ((rc = MQTTAsync_connect(mqtt_client, &conn_options)) != MQTTASYNC_SUCCESS)
-      {
-	printf("Failed to start connect, return code %d\n", rc);
-	MQTTHandle_error(rc);
-      }
+        {
+            printf("Failed to start connect, return code %d\n", rc);
+            MQTTHandle_error(rc);
+        }
     connection_status = MQTT_CONNECTED;
   }
 }
@@ -205,6 +205,15 @@ void AP_Telemetry_MQTT::append_mqtt_message(MQTTAsync_message* message)
 
 void AP_Telemetry_MQTT::MQTTHandle_error(int rc)
 {
+    switch(rc){
+    case MQTTASYNC_SUCCESS:
+        break;
+    default :
+        connection_status = MQTT_DISCONNECTED;
+        MQTTAsync_reconnect(mqtt_client);
+        break;
+    }
+
 }
 
 void onConnect(void *context, MQTTAsync_successData* response)
@@ -222,8 +231,7 @@ void onConnect(void *context, MQTTAsync_successData* response)
 
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
-  MQTTAsync client = (MQTTAsync)context;
-  MQTTAsync_reconnect(client);
+    AP_Telemetry_MQTT::get_telemetry_mqtt()->MQTTHandle_error(MQTTASYNC_DISCONNECTED);
 }
 
 int mqtt_msg_arrived(void *context, char *topicName, int topicLen, MQTTAsync_message* message)

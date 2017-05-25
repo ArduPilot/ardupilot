@@ -66,6 +66,7 @@ public:
   void send_message(const char* str, const char* topic);
   void pop_mqtt_message(char* str_mqtt);
   void append_mqtt_message(MQTTAsync_message* message);
+  void MQTTHandle_error(int rc);
   enum Mqtt_connection_status connection_status = MQTT_DISCONNECTED;
   enum Mqtt_send_log send_log_flag = MQTT_SEND_LOG_ON;
 
@@ -78,7 +79,6 @@ private:
   static MQTTAsync_connectOptions conn_options;
   static char const* mqtt_server;
   void init_mqtt();
-  void MQTTHandle_error(int rc);
   pthread_mutex_t* mqtt_mutex;
   pthread_mutex_t mqtt_mutex_store;
   int mqtt_send_log_timer_val;
