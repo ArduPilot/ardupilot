@@ -325,7 +325,7 @@ void Copter::init_ardupilot()
     }
 
     // disable safety if requested
-    BoardConfig.init_safety();    
+    BoardConfig.init_safety();
 
     cliSerial->printf("\nReady to FLY ");
 
@@ -450,7 +450,7 @@ void Copter::update_auto_armed()
         if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
-#if FRAME_CONFIG == HELI_FRAME 
+#if FRAME_CONFIG == HELI_FRAME
         // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
         // so that rotor runup is checked again before attempting to take-off
         if(ap.land_complete && !motors->rotor_runup_complete()) {
@@ -618,7 +618,7 @@ void Copter::allocate_motors(void)
             motors = new AP_MotorsHeli_Single(MAIN_LOOP_RATE);
             motors_var_info = AP_MotorsHeli_Single::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
-            break;            
+            break;
 #endif
     }
     if (motors == nullptr) {
