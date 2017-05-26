@@ -35,7 +35,6 @@ def build(bld):
             'AP_Arming',
             'AP_VisualOdom',
             'AP_Telemetry',
-            'AP_Telemetry/Mqtt'
         ],
     )
 

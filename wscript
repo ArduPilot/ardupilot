@@ -125,7 +125,7 @@ def _collect_autoconfig_files(cfg):
         for p in paths:
             if p in cfg.files or not os.path.isfile(p):
                 continue
-
+            
             with open(p, 'rb') as f:
                 cfg.hash = Utils.h_list((cfg.hash, f.read()))
                 cfg.files.append(p)
@@ -163,11 +163,8 @@ def configure(cfg):
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('uavcangen')
-    cfg.load('telemetry_mqtt')
     
     if cfg.options.mqtt_telemetry:
-        cfg.env.MQTT_TELEMETRY = cfg.options.mqtt_telemetry
-        cleanMqtt(cfg)
         copyMqtt(cfg)
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
@@ -234,29 +231,29 @@ def copyMqtt(cfg):
             break
     version = '{}.{}'.format(major, minor)
     sedcmd = 'sed -e "s/@CLIENT_VERSION@/{}/g" -e "s/@BUILD_TIMESTAMP@/{}/g" {} > {}'.format(
-        version, now, mqttroot + 'VersionInfo.h.in', cfg.path.make_node('libraries/AP_Telemetry/Mqtt/VersionInfo.h'))
+        version, now, mqttroot + 'VersionInfo.h.in', cfg.path.make_node('libraries/AP_Telemetry/VersionInfo.h'))
     cfg.exec_command(sedcmd)
     srcs = os.listdir(mqttroot)
     for s in srcs:
         if ('.c' in s or '.h' in s) and 'samples' not in s:
-            print(cfg.path.make_node('/modules/Mqtt/src/' + s))
-            print(cfg.path.make_node('libraries/AP_Telemetry/Mqtt/' + s))
             cfg.exec_command('cp -f {} {}'.format(
                 cfg.path.make_node('/modules/Mqtt/src/' + s),
-                cfg.path.make_node('libraries/AP_Telemetry/Mqtt/' + s))
+                cfg.path.make_node('libraries/AP_Telemetry/' + s))
             )
 
 def cleanMqtt(bld):
     print('Cleanup Mqtt files from AP_Telemetry direcotry')
-    mqttroot =  bld.srcnode.abspath() + '/modules/Mqtt/src/'
-    aptroot = bld.srcnode.abspath() + '/libraries/AP_Telemetry/Mqtt'
-    mqttfiles = os.listdir(mqttroot)
+    aptroot = bld.path.make_node('/libraries/AP_Telemetry/')
+    mqttroot = bld.path.make_node('/modules/Mqtt/src/')
+    mqttfiles = os.listdir("{}".format(mqttroot))
     for f in mqttfiles:
-        tgt = "{}{}".format(aptroot, f)
+        tgt = "{}/{}".format(aptroot, f)
         if os.path.exists(tgt):
             os.remove(tgt)
-        if f == 'VersionInfo.h' and os.path.exists(tgt):
-            os.remove("{}{}".format(aptroot, "VersionInfo.h"));
+    
+def shutdown(ctx):
+    if not ctx.options.mqtt_telemetry:
+        cleanMqtt(ctx.exec_dict["bld"])
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
@@ -269,6 +266,7 @@ def collect_dirs_to_recurse(bld, globs, **kw):
     for g in globs:
         for d in bld.srcnode.ant_glob(g + '/wscript', **kw):
             dirs.append(d.parent.relpath())
+
     return dirs
 
 def list_boards(ctx):

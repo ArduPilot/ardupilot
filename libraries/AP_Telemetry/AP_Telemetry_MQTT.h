@@ -25,8 +25,8 @@ extern "C" {
 #endif
 
 #include "define_MQTT.h"
-#include "Mqtt/MQTTAsync.h"
-#include "Mqtt/LinkedList.h"
+#include "MQTTAsync.h"
+#include "LinkedList.h"
 
 #if defined( __cplusplus)
 }
