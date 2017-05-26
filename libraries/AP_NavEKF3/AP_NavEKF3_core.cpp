@@ -864,9 +864,14 @@ void NavEKF3_core::CovariancePrediction()
 
     if (!inhibitDelVelBiasStates) {
         float dVelBiasVar = sq(sq(dt) * constrain_float(frontend->_accelBiasProcessNoise, 0.0f, 1.0f));
-        for (uint8_t i=3; i<=4; i++) processNoiseVariance[i] = dVelBiasVar;
-        if (!expectGndEffectTakeoff) {
-            processNoiseVariance[5] = dVelBiasVar;
+        for (uint8_t i=3; i<=5; i++) {
+            uint8_t stateIndex = i + 10;
+            if (P[stateIndex][stateIndex] > 1E-8f) {
+                processNoiseVariance[i] = dVelBiasVar;
+            } else {
+                // increase the process noise variance up to a maximum of 100 x the nominal value if the variance is below the target minimum
+                processNoiseVariance[i] = 10.0f * dVelBiasVar * (1e-8f / fmaxf(P[stateIndex][stateIndex],1e-9f));
+            }
         }
     }
 
@@ -1416,7 +1421,34 @@ void NavEKF3_core::ConstrainVariances()
     }
 
     if (!inhibitDelVelBiasStates) {
-        for (uint8_t i=13; i<=15; i++) P[i][i] = constrain_float(P[i][i],1e-9f,sq(10.0f * dtEkfAvg));
+        // limit delta velocity bias state variance levels and request a reset if below the safe minimum
+        bool resetRequired = false;
+        for (uint8_t i=13; i<=15; i++) {
+            if (P[i][i] > 1E-9f) {
+                // variance is above the safe minimum
+                P[i][i] = fminf(P[i][i], sq(10.0f * dtEkfAvg));
+            } else {
+                // Set the variance to the target minimum and request a covariance reset
+                P[i][i] = 1E-8f;
+                resetRequired = true;
+            }
+        }
+
+        // If any one axis is below the safe minimum, all delta velocity covariance terms must be reset to zero
+        if (resetRequired) {
+            float delVelBiasVar[3];
+            // store all delta velocity bias variances
+            for (uint8_t i=0; i<=2; i++) {
+                delVelBiasVar[i] = P[i+13][i+13];
+            }
+            // reset all delta velocity bias covariances
+            zeroCols(P,13,15);
+            // restore all delta velocity bias variances
+            for (uint8_t i=0; i<=2; i++) {
+                P[i+13][i+13] = delVelBiasVar[i];
+            }
+        }
+
     } else {
         zeroCols(P,13,15);
         zeroRows(P,13,15);
