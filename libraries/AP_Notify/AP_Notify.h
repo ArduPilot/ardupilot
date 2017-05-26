@@ -22,11 +22,11 @@
 
 
 #ifndef AP_NOTIFY_OREOLED
-#define AP_NOTIFY_OREOLED 0
+#define AP_NOTIFY_OREOLED 1
 #endif
 
 #ifndef AP_NOTIFY_SOLO_TONES
-#define AP_NOTIFY_SOLO_TONES 0
+#define AP_NOTIFY_SOLO_TONES 1
 #endif
 
 // Device parameters values
@@ -72,6 +72,7 @@ public:
         uint32_t compass_cal_running: 1;    // 1 if a compass calibration is running
         uint32_t leak_detected      : 1;    // 1 if leak detected
         float    battery_voltage       ;    // battery voltage
+        uint32_t gps_fusion         : 1;    // 0 = GPS fix rejected by EKF, not usable for flight. 1 = GPS in use by EKF, usable for flight
 
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)

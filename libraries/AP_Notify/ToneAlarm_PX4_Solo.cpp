@@ -21,7 +21,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include "ToneAlarm_PX4_Solo.h"
 #include "AP_Notify.h"
-
+#include <GCS_MAVLink/GCS.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -31,6 +31,9 @@
 #include <drivers/drv_tone_alarm.h>
 #include <stdio.h>
 #include <errno.h>
+
+uint8_t gps_usable_last;
+uint8_t ekf_status_bad_last;
 
 extern const AP_HAL::HAL& hal;
 
@@ -73,6 +76,11 @@ const ToneAlarm_PX4_Solo::Tone ToneAlarm_PX4_Solo::_tones[] {
     { "MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c", false }
 };
 
+
+
+//
+// Initialize the tones
+//
 bool ToneAlarm_PX4_Solo::init()
 {
     // open the tone alarm device
@@ -85,16 +93,22 @@ bool ToneAlarm_PX4_Solo::init()
     // set initial boot states. This prevents us issuing a arming
     // warning in plane and rover on every boot
     flags.armed = AP_Notify::flags.armed;
+    flags.armed_last = 0;
     flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
     flags.pre_arm_check = 1;
     flags.gps_connected = 1;
     _cont_tone_playing = -1;
     _gps_disconnected_time = 0;
     _init_time = AP_HAL::millis();
+    gps_usable_last = 0;
+    ekf_status_bad_last = 0;
     return true;
 }
 
+
+//
 // play_tune - play one of the pre-defined tunes
+//
 void ToneAlarm_PX4_Solo::play_tone(const uint8_t tone_index)
 {
     uint32_t tnow_ms = AP_HAL::millis();
@@ -110,9 +124,13 @@ void ToneAlarm_PX4_Solo::play_tone(const uint8_t tone_index)
     play_string(tone_requested.str);
 }
 
+
+
 void ToneAlarm_PX4_Solo::play_string(const char *str) {
     write(_tonealarm_fd, str, strlen(str) + 1);
 }
+
+
 
 void ToneAlarm_PX4_Solo::stop_cont_tone() {
     if(_cont_tone_playing == _tone_playing) {
@@ -121,6 +139,8 @@ void ToneAlarm_PX4_Solo::stop_cont_tone() {
     }
     _cont_tone_playing = -1;
 }
+
+
 
 void ToneAlarm_PX4_Solo::check_cont_tone() {
     uint32_t tnow_ms = AP_HAL::millis();
@@ -133,6 +153,8 @@ void ToneAlarm_PX4_Solo::check_cont_tone() {
     }
 }
 
+
+
 // update - updates led according to timed_updated.  Should be called at 50Hz
 void ToneAlarm_PX4_Solo::update()
 {
@@ -142,7 +164,39 @@ void ToneAlarm_PX4_Solo::update()
     }
 
     check_cont_tone();
+        
+    // lost vehicle tone
+    // Can be initiated by the lost vehicle notify flag or the radio failsafe notify flag
+    if (flags.vehicle_lost != MAX(AP_Notify::flags.vehicle_lost,flags.failsafe_radio_alarm)) {
+        flags.vehicle_lost = MAX(AP_Notify::flags.vehicle_lost,flags.failsafe_radio_alarm);
+        if (flags.vehicle_lost) {
+            play_tone(AP_NOTIFY_PX4_TONE_LOUD_VEHICLE_LOST_CTS);
+        } else {
+            stop_cont_tone();
+        }
+    }
 
+    // Notify the user when RC contact is lost
+    if (flags.failsafe_radio != AP_Notify::flags.failsafe_radio) {
+        flags.failsafe_radio = AP_Notify::flags.failsafe_radio;
+        if (flags.failsafe_radio) {
+            if (AP_Notify::flags.armed) {
+                flags.failsafe_radio_alarm = true;
+            } else {
+                play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK);
+            }
+        } else {
+            if (AP_Notify::flags.armed) {
+                play_tone(AP_NOTIFY_PX4_TONE_LOUD_POS_FEEDBACK);
+                flags.failsafe_radio_alarm = false;
+            } else {
+                play_tone(AP_NOTIFY_PX4_TONE_QUIET_POS_FEEDBACK);
+                flags.failsafe_radio_alarm = false;
+            }
+        }
+    }
+    
+   
     if (AP_Notify::flags.powering_off) {
         if (!flags.powering_off) {
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN);
@@ -162,39 +216,6 @@ void ToneAlarm_PX4_Solo::update()
         }
     }
     flags.compass_cal_running = AP_Notify::flags.compass_cal_running;
-
-    /*if (!hal.util->get_test_mode()) {    //don't notify for GPS disconnection when under Jig
-        //play tone if UBLOX gps not detected : Solo Specific
-        if(AP_Notify::flags.initialising || AP_HAL::millis()-_init_time < 10000) {
-            _gps_disconnected_time = AP_HAL::millis();
-        }
-        if(!AP_Notify::flags.initialising && (AP_HAL::millis() - _gps_disconnected_time) > 10000){
-            if (AP_Notify::flags.gps_connected != flags.gps_connected) {
-                if(!AP_Notify::flags.gps_connected) {
-                    play_tone(AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED);
-                } else {
-                    if(_cont_tone_playing == AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED) {
-                        stop_cont_tone();
-                    }
-                }
-            }
-            flags.gps_connected = AP_Notify::flags.gps_connected;
-        }
-    } else {
-        if(_cont_tone_playing == AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED) {
-            stop_cont_tone();
-        }
-    }
-
-   if (flags.test_mode != hal.util->get_test_mode()) {
-        flags.test_mode = hal.util->get_test_mode();
-        if (hal.util->get_test_mode()) {
-            play_tone(AP_NOTIFY_PX4_TONE_LOUD_POS_FEEDBACK);
-        } else {
-            play_tone(AP_NOTIFY_PX4_TONE_LOUD_NEG_FEEDBACK);
-        }
-        return;
-    }*/
     
     if (AP_Notify::events.compass_cal_canceled) {
         play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
@@ -263,23 +284,8 @@ void ToneAlarm_PX4_Solo::update()
     if (AP_Notify::events.arming_failed) {
         play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK);
     }
+    
 
-    // notify the user when RC contact is lost
-    if (flags.failsafe_radio != AP_Notify::flags.failsafe_radio) {
-        flags.failsafe_radio = AP_Notify::flags.failsafe_radio;
-        if (flags.failsafe_radio) {
-            // armed case handled by events.failsafe_mode_change
-            if (!AP_Notify::flags.armed) {
-                play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK);
-            }
-        } else {
-            if (AP_Notify::flags.armed) {
-                play_tone(AP_NOTIFY_PX4_TONE_LOUD_POS_FEEDBACK);
-            } else {
-                play_tone(AP_NOTIFY_PX4_TONE_QUIET_POS_FEEDBACK);
-            }
-        }
-    }
 
     // notify the user when pre_arm checks are passing
     if (flags.pre_arm_check != AP_Notify::flags.pre_arm_check) {
@@ -295,10 +301,14 @@ void ToneAlarm_PX4_Solo::update()
         if (flags.armed) {
             // arming tune
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_ARMING_WARNING);
+            if (!AP_Notify::flags.gps_fusion) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "WARNING: GPS Not Usable"); //Notify the GCS
+                play_tone(AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED); //Make some noise
+            }
         }else{
             // disarming tune
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_DISARMED);
-            stop_cont_tone();
+            if (!flags.vehicle_lost) { stop_cont_tone();}
         }
     }
 
@@ -320,16 +330,51 @@ void ToneAlarm_PX4_Solo::update()
         }
     }
 
-    // lost vehicle tone
-    if (flags.vehicle_lost != AP_Notify::flags.vehicle_lost) {
-        flags.vehicle_lost = AP_Notify::flags.vehicle_lost;
-        if (flags.vehicle_lost) {
-            play_tone(AP_NOTIFY_PX4_TONE_LOUD_VEHICLE_LOST_CTS);
-        } else {
-            stop_cont_tone();
+    
+    
+    //
+    // Operator notification of GPS usability while armed
+    //
+    if (AP_Notify::flags.armed) {
+        
+        if ((AP_Notify::flags.gps_fusion) == gps_usable_last) {
+            //No change, do nothing
+            
+        } else if (!(AP_Notify::flags.gps_fusion) && gps_usable_last) {
+            //GPS has become unusable
+            gps_usable_last = 0; //Set the last check for false
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "WARNING: GPS Not Usable"); //Notify the GCS
+            play_tone(AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED); //Make some noise
+            
+        } else if (AP_Notify::flags.gps_fusion && (!(gps_usable_last))) {
+            //GPS has become usable
+            gps_usable_last = 1; //Set the last check for true
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS is now usable"); //Notify the GCS
+            play_tone(AP_NOTIFY_PX4_TONE_LOUD_POS_FEEDBACK); //Make some noise
         }
     }
-
+    
+    
+    // Operator notification of an EKF related warning
+    if (AP_Notify::flags.armed) {
+        
+        if ((AP_Notify::flags.ekf_bad) == ekf_status_bad_last) {
+            //No change, do nothing
+            
+        } else if (AP_Notify::flags.ekf_bad && !ekf_status_bad_last) {
+            //EKF warning
+            ekf_status_bad_last = 1; //Set the last check for true
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "WARNING: EKF Position Variance"); //Notify the GCS
+            play_tone(AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED); //Make some noise
+            
+        } else if (!AP_Notify::flags.ekf_bad && ekf_status_bad_last) {
+            //EKF cleared
+            ekf_status_bad_last = 0; //Set the last check for true
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF position error cleared"); //Notify the GCS
+            play_tone(AP_NOTIFY_PX4_TONE_LOUD_POS_FEEDBACK); //Make some noise
+        }
+    }
+    
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

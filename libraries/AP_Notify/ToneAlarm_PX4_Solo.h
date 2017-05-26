@@ -53,10 +53,12 @@ private:
     /// tonealarm_type - bitmask of states we track
     struct tonealarm_type {
         uint8_t armed                 : 1;    // 0 = disarmed, 1 = armed
+        uint8_t armed_last            : 1;    // 0 = disarmed, 1 = armed
         uint8_t failsafe_battery      : 1;    // 1 if battery failsafe
         uint8_t parachute_release     : 1;    // 1 if parachute is being released
         uint8_t pre_arm_check         : 1;    // 0 = failing checks, 1 = passed
         uint8_t failsafe_radio        : 1;    // 1 if radio failsafe
+        uint8_t failsafe_radio_alarm  : 1;    // 1 if radio failsafe engaged while armed
         uint8_t vehicle_lost          : 1;    // 1 if lost copter tone requested
         uint8_t compass_cal_running   : 1;    // 1 if compass calibration is running
         uint8_t gps_connected         : 1;
