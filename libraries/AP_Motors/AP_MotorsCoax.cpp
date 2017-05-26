@@ -213,8 +213,8 @@ void AP_MotorsCoax::output_armed_stabilizing()
     // static thrust is proportional to the airflow velocity squared
     // therefore the torque of the roll and pitch actuators should be approximately proportional to
     // the angle of attack multiplied by the static thrust.
-    _actuator_out[0] = roll_thrust/thrust_out_actuator;
-    _actuator_out[1] = pitch_thrust/thrust_out_actuator;
+    _actuator_out[0] = roll_thrust;
+    _actuator_out[1] = pitch_thrust;
     if (fabsf(_actuator_out[0]) > 1.0f) {
         limit.roll_pitch = true;
         _actuator_out[0] = constrain_float(_actuator_out[0], -1.0f, 1.0f);
