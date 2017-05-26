@@ -924,6 +924,74 @@ def fly_mission(mavproxy, mav, height_accuracy=-1.0, target_altitude=None):
     wait_mode(mav, 'LOITER')
     return ret
 
+def fly_motor_fail(mavproxy, mav, fail_servo=0, fail_mul=1.0, holdtime=30):
+    """Test flight with reduced motor efficiency"""
+
+    if (fail_servo < 0) or (fail_servo > 7):
+        raise ValueError('fail_servo must be between 0-7')
+
+    mavproxy.send('switch 5\n')  # loiter mode
+    wait_mode(mav, 'LOITER')
+    time.sleep(3)
+    # Get initial values
+    m = mav.recv_match(type='VFR_HUD', blocking=True) 
+    start_altitude = m.alt
+    start_heading = m.heading
+    start_attitude = mav.recv_match(type='ATTITUDE', blocking=True)
+    start_yaw_rate = start_attitude.yawspeed
+    start_yaw = start_attitude.yaw
+
+    print("test: Fly with motor {0} efficiency at {1}%".format(fail_servo+1,fail_mul))
+    change_alt(mavproxy,mav,alt_min=50)
+    mavproxy.send('param set SIM_ENGINE_FAIL %u\n' % fail_servo)
+    mavproxy.send('param set SIM_ENGINE_MUL %f\n' % fail_mul)
+    tstart = get_sim_time(mav)
+    ti = tstart
+    integration_error_alt = 0
+    integration_error_yaw_rate = 0
+    integration_error_yaw = 0
+    while get_sim_time(mav) < tstart + holdtime:
+        servo_data = mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+        hud_data = mav.recv_match(type='VFR_HUD', blocking=True)
+        attitude_data = mav.recv_match(type='ATTITUDE', blocking=True)
+
+        servo_list=[servo_data.servo1_raw, servo_data.servo2_raw, servo_data.servo3_raw, servo_data.servo4_raw, servo_data.servo5_raw, servo_data.servo6_raw, servo_data.servo7_raw, servo_data.servo8_raw]
+        os.system('cls' if os.name=='nt' else 'clear') #Cross platform clear screen
+
+        print("##### Motor failure test ####\n\n")
+        print("Time since failure %f\n" % (get_sim_time(mav)-tstart))
+        output_message = "PWM output per motor: \n"
+        for i, val in enumerate(servo_list):
+            if val>0: #Prevent printing of unused servo channels
+                if i==fail_servo:
+                    output_message += "[failed] "
+                if val > 1900:
+                    output_message += "[oversaturated] "
+                if val < 1200:
+                    output_message += "[undersaturated] "
+                output_message += "servo " + str(i+1) + " " + str(val) + "; "
+                output_message += '\n'
+
+        print(output_message)
+        print("Altitude %f meters" % (hud_data.alt))
+        print("Altitude drop of %f meters" % (start_altitude-hud_data.alt))
+        print("Yaw rate increased of %f rad/s" % (attitude_data.yawspeed-start_yaw_rate))
+        print("Yaw variation of %f degrees" % (attitude_data.yaw-start_yaw))
+
+        print("## Error Integration from initial values ##")
+        integration_error_alt += (hud_data.alt-start_altitude)/(get_sim_time(mav)-ti)
+        print("Altitude integrated error: %f" % integration_error_alt)
+        integration_error_yaw_rate += (attitude_data.yawspeed-start_yaw_rate)/(get_sim_time(mav)-ti)
+        print("Yaw rate integrated error: %f" % integration_error_yaw_rate)
+        integration_error_yaw += (attitude_data.yaw-start_yaw)/(get_sim_time(mav)-ti)
+        print("Yaw integrated error: %f" % integration_error_yaw)
+        ti = get_sim_time(mav)
+        if hud_data.alt < 0:
+            break #Stop on crash
+    time.sleep(3)
+    #Reset motor efficiency
+    mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
+    return True
 
 def load_mission_from_file(mavproxy, mav, filename):
     """Load a mission from a file to flight controller."""
@@ -972,7 +1040,30 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
 
     # setup test parameters
     if params_file is None:
-        params_file = "{testdir}/default_params/copter.parm"
+        if frame == 'hexa':
+            params_file = "{testdir}/default_params/copter-hexa.parm"
+        elif frame == 'octa-quad':
+            params_file = "{testdir}/default_params/copter-octaquad.parm"
+        elif frame == 'octa':
+            params_file = "{testdir}/default_params/copter-octa.parm"
+        elif frame == 'tri':
+            params_file = "{testdir}/default_params/copter-tri.parm"
+        elif frame == 'y6':
+            params_file = "{testdir}/default_params/copter-y6.parm"
+        elif frame == 'firefly':
+            params_file = "{testdir}/default_params/firefly.parm"
+        elif frame == 'gazebo-iris':
+            params_file = "{testdir}/default_params/gazebo-iris.parm"
+        elif frame == 'heli':
+            params_file = "{testdir}/default_params/copter-heli.parm"
+        elif frame == 'heli-dual':
+            params_file = "{testdir}/default_params/copter-heli-dual.parm"
+        elif frame == 'singlecopter':
+            params_file = "{testdir}/default_params/copter-single.parm"
+        elif frame == 'coax':
+            params_file = "{testdir}/default_params/copter-coax.parm"
+        else:
+            params_file = "{testdir}/default_params/copter.parm"
     mavproxy.send("param load %s\n" % params_file.format(testdir=testdir))
     mavproxy.expect('Loaded [0-9]+ parameters')
     mavproxy.send("param set LOG_REPLAY 1\n")
@@ -1276,6 +1367,11 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
         else:
             print("Flew copter mission OK")
 
+        print("# Fly motor failure test")
+        if not fly_motor_fail(mavproxy, mav, fail_mul=0, fail_servo=0):
+            failed_test_msg = "fly motor failure test failed"
+            print(failed_test_msg)
+            failed = True
         # wait for disarm
         mav.motors_disarmed_wait()
 
