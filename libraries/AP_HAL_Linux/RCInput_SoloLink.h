@@ -39,10 +39,7 @@ private:
 
     union packet {
         struct PACKED {
-            /* changes at every packet */
-            uint32_t _unknown0;
-            /* apparently doesn't change: version? */
-            uint32_t _unknown1;
+            uint64_t timestamp_usec;
             le16_t seq;
             le16_t channel[8];
         };
