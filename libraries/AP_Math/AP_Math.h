@@ -49,7 +49,7 @@ template <class T>
 inline bool is_positive(const T fVal1) {
     static_assert(std::is_floating_point<T>::value || std::is_base_of<T,AP_Float>::value,
                   "Template parameter not of type float");
-    return (static_cast<float>(fVal1) > FLT_EPSILON);
+    return (static_cast<float>(fVal1) >= FLT_EPSILON);
 }
 
 
@@ -60,7 +60,7 @@ template <class T>
 inline bool is_negative(const T fVal1) {
     static_assert(std::is_floating_point<T>::value || std::is_base_of<T,AP_Float>::value,
                   "Template parameter not of type float");
-    return (static_cast<float>(fVal1) < (-1.0 * FLT_EPSILON));
+    return (static_cast<float>(fVal1) <= (-1.0 * FLT_EPSILON));
 }
 
 
