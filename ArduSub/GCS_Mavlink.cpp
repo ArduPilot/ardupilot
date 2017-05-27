@@ -1208,6 +1208,10 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             }
             result = MAV_RESULT_ACCEPTED;
             break;
+        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+            sub.camera.set_trigger_distance(packet.param1);
+            result = MAV_RESULT_ACCEPTED;
+            break;
 #endif // CAMERA == ENABLED
         case MAV_CMD_DO_MOUNT_CONTROL:
 #if MOUNT == ENABLED
