@@ -87,7 +87,8 @@ class VehicleInfo(object):
             "heli-dual": {
                 "make_target": "sitl-heli-dual",
                 "waf_target": "bin/arducopter-heli",
-                "default_params_filename": "default_params/copter-heli-dual.parm",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                                            "default_params/copter-heli-dual.parm"],
             },
             "heli-compound": {
                 "make_target": "sitl-heli-compound",
