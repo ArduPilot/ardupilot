@@ -62,6 +62,12 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/firefly.parm",
             },
+            "dodeca-hexa": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-dodecahexa.parm" ],
+            },
             # SIM
             "IrisRos": {
                 "waf_target": "bin/arducopter",
