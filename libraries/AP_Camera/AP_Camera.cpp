@@ -91,7 +91,14 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Values: 0:TriggerLow,1:TriggerHigh
     // @User: Standard
     AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
-    
+
+    // @Param: _OFF_POS
+    // @DisplayName: Relative position in meters from Mount to CG in NEF referential.
+    // @Description: Allows you to get camera messages and logs consistent with mount position.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("OFF_POS", 10, AP_Camera, _offset_positions, 0),
+
     AP_GROUPEND
 };
 
@@ -252,19 +259,20 @@ bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
  */
 void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS &ahrs, const Location &current_loc)
 {
+    Location offset_location = location(ahrs, current_loc);
     float altitude, altitude_rel;
-    if (current_loc.flags.relative_alt) {
-        altitude = current_loc.alt+ahrs.get_home().alt;
-        altitude_rel = current_loc.alt;
+    if (offset_location.flags.relative_alt) {
+        altitude = offset_location.alt+ahrs.get_home().alt;
+        altitude_rel = offset_location.alt;
     } else {
-        altitude = current_loc.alt;
-        altitude_rel = current_loc.alt - ahrs.get_home().alt;
+        altitude = offset_location.alt;
+        altitude_rel = offset_location.alt - ahrs.get_home().alt;
     }
 
-    mavlink_msg_camera_feedback_send(chan, 
+    mavlink_msg_camera_feedback_send(chan,
         gps.time_epoch_usec(),
         0, 0, _image_index,
-        current_loc.lat, current_loc.lng,
+        offset_location.lat, offset_location.lng,
         altitude/100.0f, altitude_rel/100.0f,
         ahrs.roll_sensor/100.0f, ahrs.pitch_sensor/100.0f, ahrs.yaw_sensor/100.0f,
         0.0f,CAMERA_FEEDBACK_PHOTO);
@@ -397,4 +405,16 @@ failed:
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Camera::feedback_pin_timer, void));
     }
     _timer_installed = true;
+}
+
+Location AP_Camera::location(const AP_AHRS &ahrs, Location camera_location) const {
+    Vector3f offsets = _offset_positions.get();
+
+    Matrix3f vehicle_dcm;
+    vehicle_dcm.from_euler(ahrs.roll, ahrs.pitch, ahrs.yaw);
+
+    Vector3f rotated_offsets = vehicle_dcm * offsets;
+    location_offset(camera_location, rotated_offsets.x, rotated_offsets.y);
+    camera_location.alt += rotated_offsets.z;
+    return camera_location;
 }

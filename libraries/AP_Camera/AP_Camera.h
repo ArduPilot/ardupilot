@@ -69,7 +69,10 @@ public:
 
     // return true if we are using a feedback pin
     bool using_feedback_pin(void) const { return _feedback_pin > 0; }
-    
+
+    // location - get location of gimbal position considering offsets to CG
+    Location location(const AP_AHRS &ahrs, Location camera_location) const;
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
@@ -105,4 +108,6 @@ private:
     static volatile bool   _camera_triggered;
     bool            _timer_installed:1;
     uint8_t         _last_pin_state;
+
+    AP_Vector3f    _offset_positions;   // Optical Center offsets from center of gravity
 };
