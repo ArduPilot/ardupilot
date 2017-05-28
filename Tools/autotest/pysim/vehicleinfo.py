@@ -102,7 +102,8 @@ class VehicleInfo(object):
             "coaxcopter": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-coax.parm",
+                "default_params_filename": ["default_params/copter-single.parm",
+                                            "default_params/copter-coax.parm"],
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
