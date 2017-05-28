@@ -71,6 +71,7 @@ private:
         _GPS_SENTENCE_RMC = 32,
         _GPS_SENTENCE_GGA = 64,
         _GPS_SENTENCE_VTG = 96,
+        _GPS_SENTENCE_HDT = 128,
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -139,6 +140,7 @@ private:
     int32_t _new_altitude;                                      ///< altitude parsed from a term
     int32_t _new_speed;                                                 ///< speed parsed from a term
     int32_t _new_course;                                        ///< course parsed from a term
+    float   _new_gps_yaw;                                        ///< yaw parsed from a term
     uint16_t _new_hdop;                                                 ///< HDOP parsed from a term
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
     uint8_t _new_quality_indicator;                                     ///< GPS quality indicator parsed from a term
@@ -146,6 +148,7 @@ private:
     uint32_t _last_RMC_ms = 0;
     uint32_t _last_GGA_ms = 0;
     uint32_t _last_VTG_ms = 0;
+    uint32_t _last_HDT_ms = 0;
 
     /// @name	Init strings
     ///			In ::init, an attempt is made to configure the GPS
@@ -159,3 +162,11 @@ private:
 
     static const char _initialisation_blob[];
 };
+
+#define AP_GPS_NMEA_HEMISPHERE_INIT_STRING \
+        "$JATT,NMEAHE,0\r\n" /* Prefix of GP on the HDT message */      \
+        "$JASC,GPGGA,5\r\n" /* GGA at 5Hz */                            \
+        "$JASC,GPRMC,5\r\n" /* RMC at 5Hz */                            \
+        "$JASC,GPVTG,5\r\n" /* VTG at 5Hz */                            \
+        "$JASC,GPHDT,5\r\n" /* HDT at 5Hz */                            \
+        "$JMODE,SBASR,YES\r\n" /* Enable SBAS */
