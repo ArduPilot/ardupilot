@@ -168,6 +168,8 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("GND_BEHAV",   41, SITL,  gnd_behav, -1),
     AP_GROUPINFO("BARO_COUNT",  42, SITL,  baro_count,  1),
 
+    AP_GROUPINFO("GPS_HDG",     43, SITL,  gps_hdg_enabled, 0),
+
     AP_GROUPEND
 
 };
