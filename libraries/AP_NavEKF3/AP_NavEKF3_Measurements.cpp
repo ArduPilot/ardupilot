@@ -865,6 +865,17 @@ void NavEKF3_core::readRngBcnData()
 
 }
 
+/********************************************************
+*              Independant yaw sensor measurements      *
+********************************************************/
+
+void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type)
+{
+//TODO
+}
+
+
+
 /*
   update timing statistics structure
  */
