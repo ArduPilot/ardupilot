@@ -85,7 +85,7 @@ void SITL_State::_sitl_setup(const char *home_str)
         // setup some initial values
 #ifndef HIL_MODE
         _update_airspeed(0);
-        _update_gps(0, 0, 0, 0, 0, 0, false);
+        _update_gps(0, 0, 0, 0, 0, 0, 0, false);
         _update_rangefinder(0);
 #endif
         if (enable_gimbal) {
@@ -170,7 +170,7 @@ void SITL_State::_fdm_input_step(void)
     _scheduler->sitl_begin_atomic();
 
     if (_update_count == 0 && _sitl != nullptr) {
-        _update_gps(0, 0, 0, 0, 0, 0, false);
+        _update_gps(0, 0, 0, 0, 0, 0, 0, false);
         _scheduler->timer_event();
         _scheduler->sitl_end_atomic();
         return;
@@ -180,6 +180,7 @@ void SITL_State::_fdm_input_step(void)
         _update_gps(_sitl->state.latitude, _sitl->state.longitude,
                     _sitl->state.altitude,
                     _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
+                    _sitl->state.yawDeg,
                     !_sitl->gps_disable);
         _update_airspeed(_sitl->state.airspeed);
         _update_rangefinder(_sitl->state.range);
