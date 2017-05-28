@@ -223,6 +223,12 @@ bool AP_GPS_NMEA::_have_new_message()
     if (_last_VTG_ms != 0) {
         _last_VTG_ms = 1;
     }
+
+    if (now - _last_HDT_ms > 300) {
+        // we have lost GPS yaw
+        state.have_gps_yaw = false;
+    }
+
     _last_GGA_ms = 1;
     _last_RMC_ms = 1;
     return true;
@@ -293,6 +299,11 @@ bool AP_GPS_NMEA::_term_complete()
                     fill_3d_velocity();
                     // VTG has no fix indicator, can't change fix status
                     break;
+                case _GPS_SENTENCE_HDT:
+                    _last_HDT_ms = now;
+                    state.gps_yaw = wrap_360(_new_gps_yaw*0.01f);
+                    state.have_gps_yaw = true;
+                    break;
                 }
             } else {
                 switch (_sentence_type) {
@@ -327,6 +338,10 @@ bool AP_GPS_NMEA::_term_complete()
             _sentence_type = _GPS_SENTENCE_RMC;
         } else if (strcmp(term_type, "GGA") == 0) {
             _sentence_type = _GPS_SENTENCE_GGA;
+        } else if (strcmp(term_type, "HDT") == 0) {
+            _sentence_type = _GPS_SENTENCE_HDT;
+            // HDT doesn't have a data qualifier
+            _gps_data_good = true;
         } else if (strcmp(term_type, "VTG") == 0) {
             _sentence_type = _GPS_SENTENCE_VTG;
             // VTG may not contain a data qualifier, presume the solution is good
@@ -338,7 +353,7 @@ bool AP_GPS_NMEA::_term_complete()
         return false;
     }
 
-    // 32 = RMC, 64 = GGA, 96 = VTG
+    // 32 = RMC, 64 = GGA, 96 = VTG, 128 = HDT
     if (_sentence_type != _GPS_SENTENCE_OTHER && _term[0]) {
         switch (_sentence_type + _term_number) {
         // operational status
@@ -399,6 +414,9 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_RMC + 7: // Speed (GPRMC)
         case _GPS_SENTENCE_VTG + 5: // Speed (VTG)
             _new_speed = (_parse_decimal_100(_term) * 514) / 1000;       // knots-> m/sec, approximiates * 0.514
+            break;
+        case _GPS_SENTENCE_HDT + 1: // Course (HDT)
+            _new_gps_yaw = _parse_decimal_100(_term);
             break;
         case _GPS_SENTENCE_RMC + 8: // Course (GPRMC)
         case _GPS_SENTENCE_VTG + 1: // Course (VTG)
