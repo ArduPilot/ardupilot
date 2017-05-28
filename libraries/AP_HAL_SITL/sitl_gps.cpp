@@ -675,10 +675,20 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
                      2.0,
                      d->altitude);
     float speed_knots = norm(d->speedN, d->speedE) * M_PER_SEC_TO_KNOTS;
+
     float heading = ToDeg(atan2f(d->speedE, d->speedN));
     if (heading < 0) {
         heading += 360.0f;
     }
+
+    //$GPVTG,133.18,T,120.79,M,0.11,N,0.20,K,A*24    
+    _gps_nmea_printf(instance, "$GPVTG,%.2f,T,%.2f,M,%.2f,N,%.2f,K,A",
+                     tstring,
+                     heading,
+                     heading,
+                     speed_knots,
+                     speed_knots * KNOTS_TO_METERS_PER_SECOND * 3.6);
+    
     _gps_nmea_printf(instance, "$GPRMC,%s,%c,%s,%s,%.2f,%.2f,%s,,",
                      tstring,
                      d->have_lock?'A':'V',
@@ -687,6 +697,10 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
                      speed_knots,
                      heading,
                      dstring);
+
+    if (_sitl->gps_hdg_enabled) {
+        _gps_nmea_printf(instance, "$GPHDT,%.2f,T", d->yaw);
+    }
 }
 
 void SITL_State::_sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload, uint8_t instance)
@@ -1151,7 +1165,8 @@ void SITL_State::_update_gps_file(uint8_t instance)
   possibly send a new GPS packet
  */
 void SITL_State::_update_gps(double latitude, double longitude, float altitude,
-                             double speedN, double speedE, double speedD, bool have_lock)
+                             double speedN, double speedE, double speedD,
+                             double yaw, bool have_lock)
 {
     struct gps_data d;
     char c;
@@ -1195,6 +1210,8 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 
     d.latitude = latitude;
     d.longitude = longitude;
+    d.yaw = yaw;
+    
     // add an altitude error controlled by a slow sine wave
     d.altitude = altitude + _sitl->gps_noise * sinf(AP_HAL::millis() * 0.0005f);
 
