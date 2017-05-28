@@ -209,6 +209,43 @@ void NavEKF3_core::realignYawGPS()
     }
 }
 
+void NavEKF3_core::alignYawAngle()
+{
+    // calculate the variance for the rotation estimate expressed as a rotation vector
+    // this will be used later to reset the quaternion state covariances
+    Vector3f angleErrVarVec = calcRotVecVariances();
+
+    if (yawAngDataDelayed.type == 2) {
+        Vector3f euler321;
+        stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
+        stateStruct.quat.to_euler(euler321.x, euler321.y, yawAngDataDelayed.yawAng);
+    } else if (yawAngDataDelayed.type == 1) {
+        Vector3f euler312 = stateStruct.quat.to_vector312();
+        stateStruct.quat.from_vector312(euler312.x, euler312.y, yawAngDataDelayed.yawAng);
+    }
+
+    // set the yaw angle variance to a larger value to reflect the uncertainty in yaw
+    angleErrVarVec.z = sq(yawAngDataDelayed.yawAngErr);
+
+    // reset the quaternion covariances using the rotation vector variances
+    zeroRows(P,0,3);
+    zeroCols(P,0,3);
+    initialiseQuatCovariances(angleErrVarVec);
+
+    // send yaw alignment information to console
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned",(unsigned)imu_index);
+
+
+    // record the yaw reset event
+    recordYawReset();
+
+    // clear any pending yaw reset requests
+    gpsYawResetRequest = false;
+    magYawResetRequest = false;
+
+
+}
+
 /********************************************************
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
@@ -234,12 +271,16 @@ void NavEKF3_core::SelectMagFusion()
         magTimeout = true;
     }
 
-    // check for availability of magnetometer data to fuse
+    // check for availability of magnetometer or other yaw data to fuse
     magDataToFuse = storedMag.recall(magDataDelayed,imuDataDelayed.time_ms);
 
+    bool yawDataToFuse = storedYawAng.recall(yawAngDataDelayed,imuDataDelayed.time_ms);
+
     // Control reset of yaw and magnetic field states if we are using compass data
-    if (magDataToFuse && use_compass()) {
+    if (use_compass() && magDataToFuse) {
         controlMagYawReset();
+    } else if (!use_compass() && yawDataToFuse) {
+
     }
 
     // determine if conditions are right to start a new fusion cycle
