@@ -102,6 +102,7 @@ private:
         double speedN;
         double speedE;
         double speedD;
+        double yaw;
         bool have_lock;
     };
 
@@ -129,7 +130,8 @@ private:
     uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
     void _update_gps(double latitude, double longitude, float altitude,
-                     double speedN, double speedE, double speedD, bool have_lock);
+                     double speedN, double speedE, double speedD,
+                     double yaw, bool have_lock);
     void _update_airspeed(float airspeed);
     void _update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *d, uint8_t instance);
     void _check_rc_input(void);
