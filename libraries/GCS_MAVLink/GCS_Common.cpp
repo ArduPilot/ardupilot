@@ -1509,7 +1509,7 @@ void GCS_MAVLINK::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_C
     }
 }
 
-void GCS_MAVLINK::send_accelcal_vehicle_position(uint8_t position)
+void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
 {
     if (HAVE_PAYLOAD_SPACE(chan, COMMAND_LONG)) {
         mavlink_msg_command_long_send(
