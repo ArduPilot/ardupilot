@@ -22,7 +22,7 @@ class Format(object):
         self.msgLen  = msgLen
         self.name    = name
         self.types   = types
-        self.labels  = labels.split(',')
+        self.labels  = labels
 
     def __str__(self):
         return "%8s %s" % (self.name, `self.labels`)
@@ -43,13 +43,14 @@ class Format(object):
         return value
 
     def to_class(self):
+        labels = self.labels.split(',')
         members = dict(
             NAME = self.name,
-            labels = self.labels[:],
+            labels = labels[:],
         )
 
         fieldtypes = [i for i in self.types]
-        fieldlabels = self.labels[:]
+        fieldlabels = labels[:]
 
         # field access
         for (label, _type) in zip(fieldlabels, fieldtypes):
