@@ -158,9 +158,9 @@ void NavEKF3_core::FuseRngBcn()
         }
 
         if (!inhibitDelVelBiasStates) {
-        Kfusion[13] = -t26*(P[13][7]*t4*t9+P[13][8]*t3*t9+P[13][9]*t2*t9);
-        Kfusion[14] = -t26*(P[14][7]*t4*t9+P[14][8]*t3*t9+P[14][9]*t2*t9);
-        Kfusion[15] = -t26*(P[15][7]*t4*t9+P[15][8]*t3*t9+P[15][9]*t2*t9);
+            Kfusion[13] = -t26*(P[13][7]*t4*t9+P[13][8]*t3*t9+P[13][9]*t2*t9);
+            Kfusion[14] = -t26*(P[14][7]*t4*t9+P[14][8]*t3*t9+P[14][9]*t2*t9);
+            Kfusion[15] = -t26*(P[15][7]*t4*t9+P[15][8]*t3*t9+P[15][9]*t2*t9);
         } else {
             // zero indexes 13 to 15 = 3*4 bytes
             memset(&Kfusion[13], 0, 12);
@@ -188,8 +188,8 @@ void NavEKF3_core::FuseRngBcn()
         }
 
         if (!inhibitWindStates) {
-        Kfusion[22] = -t26*(P[22][7]*t4*t9+P[22][8]*t3*t9+P[22][9]*t2*t9);
-        Kfusion[23] = -t26*(P[23][7]*t4*t9+P[23][8]*t3*t9+P[23][9]*t2*t9);
+            Kfusion[22] = -t26*(P[22][7]*t4*t9+P[22][8]*t3*t9+P[22][9]*t2*t9);
+            Kfusion[23] = -t26*(P[23][7]*t4*t9+P[23][8]*t3*t9+P[23][9]*t2*t9);
         } else {
             // zero indexes 22 to 23 = 2*4 bytes
             memset(&Kfusion[22], 0, 8);
