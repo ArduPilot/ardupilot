@@ -1310,16 +1310,15 @@ void NavEKF3_core::CovariancePrediction()
         }
     }
 
-    // covariance matrix is symmetrical, so copy upper half to lower half
-    for (uint8_t row = 1; row <= stateIndexLim; row++) {
+    // covariance matrix is symmetrical, so copy diagonals and copy lower half in nextP
+    // to lower and upper half in P
+    for (uint8_t row = 0; row <= stateIndexLim; row++) {
+        // copy diagonals
+        P[row][row] = nextP[row][row];
+        // copy off diagonals
         for (uint8_t column = 0 ; column < row; column++) {
             P[row][column] = P[column][row] = nextP[column][row];
         }
-    }
-
-    // copy variances (diagonals)
-    for (uint8_t i = 0; i <= stateIndexLim; i++) {
-        P[i][i] = nextP[i][i];
     }
 
     // constrain values to prevent ill-conditioning
