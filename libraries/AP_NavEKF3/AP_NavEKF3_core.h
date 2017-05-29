@@ -770,7 +770,7 @@ private:
     // update timing statistics structure
     void updateTimingStatistics(void);
 
-    // Update the stte index limit based on which states are active
+    // Update the state index limit based on which states are active
     void updateStateIndexLim(void);
     
     // Variables
