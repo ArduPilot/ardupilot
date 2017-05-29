@@ -622,6 +622,7 @@ void NavEKF2_core::correctEkfOriginHeight()
     // correct the EKF origin and variance estimate if the innovation is less than 5-sigma
     if (ratio < 25.0f && gpsAccuracyGood) {
         ekfGpsRefHgt -= (double)(gain * innovation);
+        ekfOriginHgtVar -= MAX(gain * ekfOriginHgtVar , 0.0f);
     }
 }
 
