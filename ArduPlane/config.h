@@ -155,24 +155,6 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// THROTTLE_FAILSAFE
-// THROTTLE_FS_VALUE
-// SHORT_FAILSAFE_ACTION
-// LONG_FAILSAFE_ACTION
-#ifndef THROTTLE_FAILSAFE
- # define THROTTLE_FAILSAFE              ENABLED
-#endif
-#ifndef THROTTLE_FS_VALUE
- # define THROTTLE_FS_VALUE              950
-#endif
-#ifndef SHORT_FAILSAFE_ACTION
- # define SHORT_FAILSAFE_ACTION          0
-#endif
-#ifndef LONG_FAILSAFE_ACTION
- # define LONG_FAILSAFE_ACTION           0
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // AUTO_TRIM
 //
 #ifndef AUTO_TRIM
