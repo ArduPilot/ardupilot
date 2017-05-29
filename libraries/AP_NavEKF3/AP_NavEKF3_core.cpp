@@ -1424,25 +1424,34 @@ void NavEKF3_core::ConstrainVariances()
     }
 
     if (!inhibitDelVelBiasStates) {
+        // limit delta velocity bias state variance levels and request a reset if below the safe minimum
+        bool resetRequired = false;
         for (uint8_t i=13; i<=15; i++) {
             if (P[i][i] > 1E-9f) {
+                // variance is above the safe minimum
                 P[i][i] = fminf(P[i][i], sq(10.0f * dtEkfAvg));
             } else {
-                // Set the variance to a safe value
+                // Set the variance to the target minimum and request a covariance reset
                 P[i][i] = 1E-8f;
-                float delVelBiasVar[3];
-                // save the variances
-                for (uint8_t j=13; j<=15; j++) {
-                    delVelBiasVar[j-13] = P[j][j];
-                }
-                // reset covariances
-                zeroCols(P,13,15);
-                // restore variances
-                for (uint8_t j=13; j<=15; j++) {
-                    P[j][j] = delVelBiasVar[j-13];
-                }
+                resetRequired = true;
             }
         }
+
+        // If any one axis is below the safe minimum, all delta velocity covariance terms must be reset to zero
+        if (resetRequired) {
+            float delVelBiasVar[3];
+            // store all delta velocity bias variances
+            for (uint8_t i=0; i<=2; i++) {
+                delVelBiasVar[i] = P[i+13][i+13];
+            }
+            // reset all delta velocity bias covariances
+            zeroCols(P,13,15);
+            // restore all delta velocity bias variances
+            for (uint8_t i=0; i<=2; i++) {
+                P[i+13][i+13] = delVelBiasVar[i];
+            }
+        }
+
     } else {
         zeroCols(P,13,15);
         zeroRows(P,13,15);
