@@ -224,19 +224,19 @@ void NOINLINE Copter::send_proximity(mavlink_channel_t chan, uint16_t count_max)
 
     // send horizontal distances
     AP_Proximity::Proximity_Distance_Array dist_array;
-    uint8_t horiz_count = MIN(count_max, 8);    // send at most 8 horizontal distances
+    uint8_t horiz_count = MIN(count_max, PROXIMITY_MAX_DIRECTION);  // send at most PROXIMITY_MAX_DIRECTION horizontal distances
     if (g2.proximity.get_horizontal_distances(dist_array)) {
         for (uint8_t i=0; i<horiz_count; i++) {
             mavlink_msg_distance_sensor_send(
                 chan,
-                AP_HAL::millis(),               //  time since system boot
+                AP_HAL::millis(),                               //  time since system boot
                 (uint16_t)(g2.proximity.distance_min() * 100),  // minimum distance the sensor can measure in centimeters
                 (uint16_t)(g2.proximity.distance_max() * 100),  // maximum distance the sensor can measure in centimeters
-                (uint16_t)(dist_array.distance[i] * 100),   // current distance reading (in cm?)
-                MAV_DISTANCE_SENSOR_LASER,      // type from MAV_DISTANCE_SENSOR enum
-                0,                              // onboard ID of the sensor
-                dist_array.orientation[i],      //  direction the sensor faces from MAV_SENSOR_ORIENTATION enum
-                1);                             // Measurement covariance in centimeters, 0 for unknown / invalid readings
+                (uint16_t)(dist_array.distance[i] * 100),       // current distance reading (in cm?)
+                MAV_DISTANCE_SENSOR_LASER,                      // type from MAV_DISTANCE_SENSOR enum
+                PROXIMITY_SENSOR_ID_START + i,                  // onboard ID of the sensor
+                dist_array.orientation[i],                      //  direction the sensor faces from MAV_SENSOR_ORIENTATION enum
+                0);                                             // Measurement covariance in centimeters, 0 for unknown / invalid readings
         }
         // check if we still have room to send upwards distance
         send_upwards = (count_max > 8);
@@ -247,14 +247,14 @@ void NOINLINE Copter::send_proximity(mavlink_channel_t chan, uint16_t count_max)
     if (send_upwards && g2.proximity.get_upward_distance(dist_up)) {
         mavlink_msg_distance_sensor_send(
             chan,
-            AP_HAL::millis(),               //  time since system boot
-            (uint16_t)(g2.proximity.distance_min() * 100),  // minimum distance the sensor can measure in centimeters
-            (uint16_t)(g2.proximity.distance_max() * 100),  // maximum distance the sensor can measure in centimeters
-            (uint16_t)(dist_up * 100),      // current distance reading
-            MAV_DISTANCE_SENSOR_LASER,      // type from MAV_DISTANCE_SENSOR enum
-            0,                              // onboard ID of the sensor
-            MAV_SENSOR_ROTATION_PITCH_90,   // direction upwards
-            1);                             // Measurement covariance in centimeters, 0 for unknown / invalid readings
+            AP_HAL::millis(),                                        //  time since system boot
+            (uint16_t)(g2.proximity.distance_min() * 100),           // minimum distance the sensor can measure in centimeters
+            (uint16_t)(g2.proximity.distance_max() * 100),           // maximum distance the sensor can measure in centimeters
+            (uint16_t)(dist_up * 100),                               // current distance reading
+            MAV_DISTANCE_SENSOR_LASER,                               // type from MAV_DISTANCE_SENSOR enum
+            PROXIMITY_SENSOR_ID_START + PROXIMITY_MAX_DIRECTION +1,  // onboard ID of the sensor
+            MAV_SENSOR_ROTATION_PITCH_90,                            // direction upwards
+            0);                                                      // Measurement covariance in centimeters, 0 for unknown / invalid readings
     }
 #endif
 }
