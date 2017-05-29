@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_RangeFinder_Backend(_ranger, instance, _state)
+    : AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_LASER)
     , _dev(std::move(dev)) {}
 
 /*

@@ -154,6 +154,10 @@ public:
     }
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
 
+    MAV_DISTANCE_SENSOR get_sensor_type(uint8_t instance) const;
+
+    MAV_DISTANCE_SENSOR get_sensor_type_orient(enum Rotation orientation) const;
+
     // query status
     RangeFinder_Status status(uint8_t instance) const;
     RangeFinder_Status status_orient(enum Rotation orientation) const;
