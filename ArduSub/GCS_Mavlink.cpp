@@ -561,6 +561,8 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 #if RANGEFINDER_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         sub.send_rangefinder(chan);
+        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+        send_distance_sensor_downward(sub.rangefinder);
 #endif
         break;
 
