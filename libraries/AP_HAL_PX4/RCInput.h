@@ -41,4 +41,7 @@ private:
     perf_counter_t _perf_rcin;
     pthread_mutex_t rcin_mutex;
     int16_t _rssi = -1;
+
+    uint8_t last_input_source = input_rc_s::RC_INPUT_SOURCE_UNKNOWN;
+    const char *input_source_name(uint8_t id) const;
 };
