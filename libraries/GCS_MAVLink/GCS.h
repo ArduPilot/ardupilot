@@ -142,6 +142,8 @@ public:
     void send_power_status(void);
     void send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const;
     bool send_battery_status(const AP_BattMonitor &battery) const;
+    void send_distance_sensor(const RangeFinder &rangefinder, const uint8_t instance) const;
+    bool send_distance_sensor(const RangeFinder &rangefinder) const;
     void send_ahrs2(AP_AHRS &ahrs);
     bool send_gps_raw(AP_GPS &gps);
     void send_system_time(AP_GPS &gps);
