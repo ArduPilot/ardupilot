@@ -329,7 +329,9 @@ void Rover::set_servos(void) {
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
     // send values to the PWM timers for output
     // ----------------------------------------
+    hal.rcout->cork();
     SRV_Channels::output_ch_all();
+    hal.rcout->push();
 #endif
 }
 
