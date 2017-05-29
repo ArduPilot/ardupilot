@@ -125,22 +125,6 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// failsafe defaults
-#ifndef THROTTLE_FAILSAFE
-  #define THROTTLE_FAILSAFE      ENABLED
-#endif
-#ifndef THROTTLE_FS_VALUE
-  #define THROTTLE_FS_VALUE      950
-#endif
-#ifndef LONG_FAILSAFE_ACTION
-  #define LONG_FAILSAFE_ACTION   0
-#endif
-#ifndef GCS_HEARTBEAT_FAILSAFE
-  #define GCS_HEARTBEAT_FAILSAFE DISABLED
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
 // THROTTLE_OUT
 //
 #ifndef THROTTE_OUT
