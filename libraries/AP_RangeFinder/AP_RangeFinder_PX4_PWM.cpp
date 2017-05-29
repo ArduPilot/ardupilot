@@ -44,7 +44,7 @@ extern "C" {
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-	AP_RangeFinder_Backend(_ranger, instance, _state),
+	AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_UNKNOWN),
     _last_timestamp(0),
     _last_pulse_time_ms(0),
     _disable_time_ms(0),
