@@ -219,6 +219,32 @@ bool GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery) const
     return true;
 }
 
+void GCS_MAVLINK::send_distance_sensor(const RangeFinder &rangefinder, const uint8_t instance) const
+{
+    if (rangefinder.status(instance) != RangeFinder::RangeFinder_NotConnected &&
+        rangefinder.status(instance) != RangeFinder::RangeFinder_NoData) {
+        mavlink_msg_distance_sensor_send(
+                chan,
+                AP_HAL::millis(),                       // time since system boot TODO: take time of measurement
+                rangefinder.min_distance_cm(instance),  // minimum distance the sensor can measure in centimeters
+                rangefinder.max_distance_cm(instance),  // maximum distance the sensor can measure in centimeters
+                rangefinder.distance_cm(instance),      // current distance reading (in cm?)
+                rangefinder.get_sensor_type(instance),  // type from MAV_DISTANCE_SENSOR enum
+                instance,                               // onboard ID of the sensor == instance
+                rangefinder.get_orientation(instance),  // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
+                0);                                     // Measurement covariance in centimeters, 0 for unknown / invalid readings
+    }
+}
+
+bool GCS_MAVLINK::send_distance_sensor(const RangeFinder &rangefinder) const
+{
+    for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
+        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+        send_distance_sensor(rangefinder, i);
+    }
+    return true;
+}
+
 // report AHRS2 state
 void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
 {
