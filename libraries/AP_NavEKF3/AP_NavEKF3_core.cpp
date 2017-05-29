@@ -915,7 +915,7 @@ void NavEKF3_core::CovariancePrediction()
     // we calculate the lower diagonal and copy to take advantage of symmetry
 
     // intermediate calculations
-    float SF[21];
+    Vector21 SF;
     SF[0] = dvz - dvz_b;
     SF[1] = dvy - dvy_b;
     SF[2] = dvx - dvx_b;
@@ -938,7 +938,7 @@ void NavEKF3_core::CovariancePrediction()
     SF[19] = sq(q1);
     SF[20] = sq(q0);
 
-    float SG[8];
+    Vector8 SG;
     SG[0] = q0/2;
     SG[1] = sq(q3);
     SG[2] = sq(q2);
@@ -948,7 +948,7 @@ void NavEKF3_core::CovariancePrediction()
     SG[6] = 2*q1*q3;
     SG[7] = 2*q1*q2;
 
-    float SQ[11];
+    Vector11 SQ;
     SQ[0] = dvzVar*(SG[5] - 2*q0*q1)*(SG[1] - SG[2] - SG[3] + SG[4]) - dvyVar*(SG[5] + 2*q0*q1)*(SG[1] - SG[2] + SG[3] - SG[4]) + dvxVar*(SG[6] - 2*q0*q2)*(SG[7] + 2*q0*q3);
     SQ[1] = dvzVar*(SG[6] + 2*q0*q2)*(SG[1] - SG[2] - SG[3] + SG[4]) - dvxVar*(SG[6] - 2*q0*q2)*(SG[1] + SG[2] - SG[3] - SG[4]) + dvyVar*(SG[5] + 2*q0*q1)*(SG[7] - 2*q0*q3);
     SQ[2] = dvzVar*(SG[5] - 2*q0*q1)*(SG[6] + 2*q0*q2) - dvyVar*(SG[7] - 2*q0*q3)*(SG[1] - SG[2] + SG[3] - SG[4]) - dvxVar*(SG[7] + 2*q0*q3)*(SG[1] + SG[2] - SG[3] - SG[4]);
@@ -961,7 +961,7 @@ void NavEKF3_core::CovariancePrediction()
     SQ[9] = sq(SG[0]);
     SQ[10] = sq(q1);
 
-    float SPP[11] = {};
+    Vector11 SPP;
     SPP[0] = SF[12] + SF[13] - 2*q2*SF[2];
     SPP[1] = SF[17] - SF[18] - SF[19] + SF[20];
     SPP[2] = SF[17] - SF[18] + SF[19] - SF[20];
