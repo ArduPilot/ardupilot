@@ -8,6 +8,8 @@
 #include <drivers/drv_hrt.h>
 #include <uORB/uORB.h>
 
+#include <GCS_MAVLink/GCS.h>
+
 using namespace PX4;
 
 extern const AP_HAL::HAL& hal;
@@ -38,6 +40,10 @@ bool PX4RCInput::new_input()
     _last_read = _rcin.timestamp_last_signal;
     _override_valid = false;
     pthread_mutex_unlock(&rcin_mutex);
+    if (_rcin.input_source != last_input_source) {
+        gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s\n", input_source_name(_rcin.input_source));
+        last_input_source = _rcin.input_source;
+    }
     return valid;
 }
 
@@ -110,6 +116,30 @@ void PX4RCInput::clear_overrides()
         set_override(i, 0);
     }
 }
+
+const char *PX4RCInput::input_source_name(uint8_t id) const
+{
+    switch(id) {
+    case input_rc_s::RC_INPUT_SOURCE_UNKNOWN:         return "UNKNOWN";
+    case input_rc_s::RC_INPUT_SOURCE_PX4FMU_PPM:      return "PX4FMU_PPM";
+    case input_rc_s::RC_INPUT_SOURCE_PX4IO_PPM:       return "PX4IO_PPM";
+    case input_rc_s::RC_INPUT_SOURCE_PX4IO_SPEKTRUM:  return "PX4IO_SPEKTRUM";
+    case input_rc_s::RC_INPUT_SOURCE_PX4IO_SBUS:      return "PX4IO_SBUS";
+    case input_rc_s::RC_INPUT_SOURCE_PX4IO_ST24:      return "PX4IO_ST24";
+    case input_rc_s::RC_INPUT_SOURCE_MAVLINK:         return "MAVLINK";
+    case input_rc_s::RC_INPUT_SOURCE_QURT:            return "QURT";
+    case input_rc_s::RC_INPUT_SOURCE_PX4FMU_SPEKTRUM: return "PX4FMU_SPEKTRUM";
+    case input_rc_s::RC_INPUT_SOURCE_PX4FMU_SBUS:     return "PX4FMU_SBUS";
+    case input_rc_s::RC_INPUT_SOURCE_PX4FMU_ST24:     return "PX4FMU_ST24";
+    case input_rc_s::RC_INPUT_SOURCE_PX4FMU_SUMD:     return "PX4FMU_SUMD";
+    case input_rc_s::RC_INPUT_SOURCE_PX4FMU_DSM:      return "PX4FMU_DSM";
+    case input_rc_s::RC_INPUT_SOURCE_PX4IO_SUMD:      return "PX4IO_SUMD";
+    case input_rc_s::RC_INPUT_SOURCE_PX4FMU_SRXL:     return "PX4FMU_SRXL";
+    case input_rc_s::RC_INPUT_SOURCE_PX4IO_SRXL:      return "PX4IO_SRXL";
+    default:                                          return "ERROR";
+    }
+}
+
 
 void PX4RCInput::_timer_tick(void)
 {
