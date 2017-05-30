@@ -82,6 +82,7 @@ private:
 
     int _send_packet(EscPacket &p);
     bool _uart_open();
+    bool _uart_set_speed(int speed);
     void _uart_close();
 
     AP_HAL::Util::perf_counter_t _perf_rcout;
