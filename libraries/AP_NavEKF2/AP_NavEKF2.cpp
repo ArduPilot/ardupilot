@@ -998,15 +998,17 @@ bool NavEKF2::getLLH(struct Location &loc) const
     return core[primary].getLLH(loc);
 }
 
-// return the latitude and longitude and height used to set the NED origin
+// Return the latitude and longitude and height used to set the NED origin for the specified instance
+// An out of range instance (eg -1) returns data for the the primary instance
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF2::getOriginLLH(struct Location &loc) const
+bool NavEKF2::getOriginLLH(int8_t instance, struct Location &loc) const
 {
+    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[primary].getOriginLLH(loc);
+    return core[instance].getOriginLLH(loc);
 }
 
 // set the latitude and longitude and height used to set the NED origin
