@@ -241,6 +241,7 @@ struct PACKED log_EKF1 {
     int16_t gyrX;
     int16_t gyrY;
     int16_t gyrZ;
+    int32_t originHgt;
 };
 
 struct PACKED log_EKF2 {
@@ -978,7 +979,7 @@ Format characters in the format string for binary log messages
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4" }, \
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
-      "NKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+      "NKF1","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH" }, \
     { LOG_NKF2_MSG, sizeof(log_NKF2), \
       "NKF2","QbccccchhhhhhB","TimeUS,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI" }, \
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
@@ -988,7 +989,7 @@ Format characters in the format string for binary log messages
     { LOG_NKF5_MSG, sizeof(log_NKF5), \
       "NKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos" }, \
     { LOG_NKF6_MSG, sizeof(log_EKF1), \
-      "NKF6","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+      "NKF6","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH" }, \
     { LOG_NKF7_MSG, sizeof(log_NKF2), \
       "NKF7","QbccccchhhhhhB","TimeUS,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI" }, \
     { LOG_NKF8_MSG, sizeof(log_NKF3), \
@@ -1000,7 +1001,7 @@ Format characters in the format string for binary log messages
     { LOG_NKQ1_MSG, sizeof(log_Quaternion), "NKQ1", QUAT_FMT, QUAT_LABELS }, \
     { LOG_NKQ2_MSG, sizeof(log_Quaternion), "NKQ2", QUAT_FMT, QUAT_LABELS }, \
     { LOG_XKF1_MSG, sizeof(log_EKF1), \
-      "XKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+      "XKF1","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH" }, \
     { LOG_XKF2_MSG, sizeof(log_NKF2a), \
       "XKF2","QccccchhhhhhB","TimeUS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI" }, \
     { LOG_XKF3_MSG, sizeof(log_NKF3), \
@@ -1010,7 +1011,7 @@ Format characters in the format string for binary log messages
     { LOG_XKF5_MSG, sizeof(log_NKF5), \
       "XKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos" }, \
     { LOG_XKF6_MSG, sizeof(log_EKF1), \
-      "XKF6","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+      "XKF6","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH" }, \
     { LOG_XKF7_MSG, sizeof(log_NKF2a), \
       "XKF7","QccccchhhhhhB","TimeUS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI" }, \
     { LOG_XKF8_MSG, sizeof(log_NKF3), \
