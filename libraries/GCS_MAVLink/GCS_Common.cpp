@@ -245,6 +245,17 @@ bool GCS_MAVLINK::send_distance_sensor(const RangeFinder &rangefinder) const
     return true;
 }
 
+void GCS_MAVLINK::send_distance_sensor_downward(const RangeFinder &rangefinder) const
+{
+    // exit immediately if rangefinder is disabled or not downward looking
+    if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
+        return;
+    }
+    uint8_t instance;
+    rangefinder.find_instance(ROTATION_PITCH_270, instance);
+    send_distance_sensor(rangefinder, instance);
+}
+
 // report AHRS2 state
 void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
 {
