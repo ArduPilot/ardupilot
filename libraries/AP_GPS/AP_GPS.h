@@ -419,9 +419,9 @@ private:
 
     // state of auto-detection process, per instance
     struct detect_state {
-        uint32_t detect_started_ms;
         uint32_t last_baud_change_ms;
         uint8_t current_baud;
+        bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
