@@ -32,6 +32,9 @@ void SRV_Channel::output_ch(void)
     // take care of special function cases
     switch(function)
     {
+    case k_none:
+        // disabled
+        return;
     case k_manual:              // manual
         passthrough_from = ch_num;
         break;
