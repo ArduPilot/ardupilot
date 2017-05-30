@@ -207,20 +207,6 @@ void NOINLINE Copter::send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
-#if RANGEFINDER_ENABLED == ENABLED
-void NOINLINE Copter::send_rangefinder(mavlink_channel_t chan)
-{
-    // exit immediately if rangefinder is disabled
-    if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
-        return;
-    }
-    mavlink_msg_rangefinder_send(
-            chan,
-            rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f,
-            rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
-}
-#endif
-
 void NOINLINE Copter::send_proximity(mavlink_channel_t chan, uint16_t count_max)
 {
 #if PROXIMITY_ENABLED == ENABLED
@@ -472,7 +458,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_RANGEFINDER:
 #if RANGEFINDER_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        copter.send_rangefinder(chan);
+        send_rangefinder(copter.rangefinder);
         CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
         send_distance_sensor_downward(copter.rangefinder);
 #endif
