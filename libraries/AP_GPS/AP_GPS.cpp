@@ -396,7 +396,7 @@ void AP_GPS::detect_instance(uint8_t instance)
     switch (_type[instance]) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
     case GPS_TYPE_QURT:
-        dstate->detect_started_ms = 0; // specified, not detected
+        dstate->auto_detected_baud = false; // specified, not detected
         new_gps = new AP_GPS_QURT(*this, state[instance], _port[instance]);
         goto found_gps;
         break;
@@ -405,7 +405,7 @@ void AP_GPS::detect_instance(uint8_t instance)
     // user has to explicitly set the MAV type, do not use AUTO
     // do not try to detect the MAV type, assume it's there
     case GPS_TYPE_MAV:
-        dstate->detect_started_ms = 0; // specified, not detected
+        dstate->auto_detected_baud = false; // specified, not detected
         new_gps = new AP_GPS_MAV(*this, state[instance], nullptr);
         goto found_gps;
         break;
@@ -414,7 +414,7 @@ void AP_GPS::detect_instance(uint8_t instance)
     // user has to explicitly set the UAVCAN type, do not use AUTO
     // do not try to detect the UAVCAN type, assume it's there
     case GPS_TYPE_UAVCAN:
-        dstate->detect_started_ms = 0; // specified, not detected
+        dstate->auto_detected_baud = false; // specified, not detected
         if (AP_BoardConfig::get_can_enable() >= 1) {
             new_gps = new AP_GPS_UAVCAN(*this, state[instance], nullptr);
 
@@ -449,6 +449,10 @@ void AP_GPS::detect_instance(uint8_t instance)
     state[instance].hdop = GPS_UNKNOWN_DOP;
     state[instance].vdop = GPS_UNKNOWN_DOP;
 
+    // all remaining drivers automatically cycle through baud rates to detect
+    // the correct baud rate, and should have the selected baud broadcast
+    dstate->auto_detected_baud = true;
+
     switch (_type[instance]) {
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
@@ -465,12 +469,6 @@ void AP_GPS::detect_instance(uint8_t instance)
 
     default:
         break;
-    }
-
-    // record the time when we started detection. This is used as a flag to
-    // indicate that the detected GPS baud rate should be broadcast
-    if (dstate->detect_started_ms == 0) {
-        dstate->detect_started_ms = now;
     }
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
