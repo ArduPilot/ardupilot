@@ -372,7 +372,7 @@ bool NavEKF2_core::getOriginLLH(struct Location &loc) const
         loc = EKF_origin;
         // report internally corrected reference height if enabled
         if (frontend->_originHgtMode & (1<<2)) {
-            loc.alt = 100 * ekfGpsRefHgt;
+            loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);
         }
     }
     return validOrigin;
