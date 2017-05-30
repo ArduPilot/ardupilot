@@ -867,6 +867,10 @@ void AP_GPS::inject_data(uint8_t *data, uint16_t len)
 
 void AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint16_t len)
 {
+    if (locked_ports & (1U<<instance)) {
+        // the port is locked by another driver
+        return;
+    }
     if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
         drivers[instance]->inject_data(data, len);
     }
