@@ -308,7 +308,13 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
 {
     if(validOrigin) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-        loc.alt =  100 * (int32_t)(ekfGpsRefHgt - (double)outputDataNew.position.z);
+        if (frontend->_originHgtMode & (1<<2)) {
+            // The reported origin height is being updated to match ekfGpsRefHgt
+            loc.alt =  100 * (int32_t)(ekfGpsRefHgt - (double)outputDataNew.position.z);
+        } else {
+            // The reported origin height is being held constant
+            loc.alt =  EKF_origin.alt - (int32_t)(100.0f * outputDataNew.position.z);
+        }
         loc.flags.relative_alt = 0;
         loc.flags.terrain_alt = 0;
 
