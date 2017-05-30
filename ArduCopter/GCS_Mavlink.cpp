@@ -473,6 +473,8 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #if RANGEFINDER_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         copter.send_rangefinder(chan);
+        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+        send_distance_sensor_downward(copter.rangefinder);
 #endif
         CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
         copter.send_proximity(chan, comm_get_txspace(chan) / (packet_overhead()+9));
