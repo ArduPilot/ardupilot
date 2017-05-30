@@ -156,10 +156,11 @@ public:
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
     bool getLLH(struct Location &loc) const;
 
-    // return the latitude and longitude and height used to set the NED origin
+    // Return the latitude and longitude and height used to set the NED origin for the specified instance
+    // An out of range instance (eg -1) returns data for the the primary instance
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(struct Location &loc) const;
+    bool getOriginLLH(int8_t instance, struct Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
