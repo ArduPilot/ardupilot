@@ -1129,12 +1129,16 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector3f dVelBias;
     Vector3f gyroBias;
     float posDownDeriv;
+    Location originLLH;
     ahrs.get_NavEKF2().getEulerAngles(0,euler);
     ahrs.get_NavEKF2().getVelNED(0,velNED);
     ahrs.get_NavEKF2().getPosNE(0,posNE);
     ahrs.get_NavEKF2().getPosD(0,posD);
     ahrs.get_NavEKF2().getGyroBias(0,gyroBias);
     posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative(0);
+    if (!ahrs.get_NavEKF2().getOriginLLH(0,originLLH)) {
+        originLLH.alt = 0;
+    }
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NKF1_MSG),
         time_us : time_us,
@@ -1150,7 +1154,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         posD    : (float)(posD), // metres Down
         gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
         gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
-        gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
+        gyrZ    : (int16_t)(100*degrees(gyroBias.z)), // cd/sec, displayed as deg/sec due to format string
+        originHgt : originLLH.alt // WGS-84 altitude of EKF origin in cm
     };
     WriteBlock(&pkt, sizeof(pkt));
 
@@ -1300,6 +1305,9 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         ahrs.get_NavEKF2().getPosD(1,posD);
         ahrs.get_NavEKF2().getGyroBias(1,gyroBias);
         posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative(1);
+        if (!ahrs.get_NavEKF2().getOriginLLH(1,originLLH)) {
+            originLLH.alt = 0;
+        }
         struct log_EKF1 pkt6 = {
             LOG_PACKET_HEADER_INIT(LOG_NKF6_MSG),
             time_us : time_us,
@@ -1315,7 +1323,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             posD    : (float)(posD), // metres Down
             gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
             gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
-            gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
+            gyrZ    : (int16_t)(100*degrees(gyroBias.z)), // cd/sec, displayed as deg/sec due to format string
+            originHgt : originLLH.alt // WGS-84 altitude of EKF origin in cm
         };
         WriteBlock(&pkt6, sizeof(pkt6));
 
@@ -1462,12 +1471,17 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector3f dVelBias;
     Vector3f gyroBias;
     float posDownDeriv;
+    Location originLLH;
     ahrs.get_NavEKF3().getEulerAngles(0,euler);
     ahrs.get_NavEKF3().getVelNED(0,velNED);
     ahrs.get_NavEKF3().getPosNE(0,posNE);
     ahrs.get_NavEKF3().getPosD(0,posD);
     ahrs.get_NavEKF3().getGyroBias(0,gyroBias);
     posDownDeriv = ahrs.get_NavEKF3().getPosDownDerivative(0);
+    if (!ahrs.get_NavEKF3().getOriginLLH(0,originLLH)) {
+        originLLH.alt = 0;
+    }
+    ahrs.get_NavEKF3().getOriginLLH(0,originLLH);
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_XKF1_MSG),
         time_us : time_us,
@@ -1483,7 +1497,8 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         posD    : (float)(posD), // metres Down
         gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
         gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
-        gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
+        gyrZ    : (int16_t)(100*degrees(gyroBias.z)), // cd/sec, displayed as deg/sec due to format string
+        originHgt : originLLH.alt // WGS-84 altitude of EKF origin in cm
     };
     WriteBlock(&pkt, sizeof(pkt));
 
@@ -1630,6 +1645,9 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         ahrs.get_NavEKF3().getPosD(1,posD);
         ahrs.get_NavEKF3().getGyroBias(1,gyroBias);
         posDownDeriv = ahrs.get_NavEKF3().getPosDownDerivative(1);
+        if (!ahrs.get_NavEKF3().getOriginLLH(1,originLLH)) {
+            originLLH.alt = 0;
+        }
         struct log_EKF1 pkt6 = {
             LOG_PACKET_HEADER_INIT(LOG_XKF6_MSG),
             time_us : time_us,
@@ -1645,7 +1663,8 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             posD    : (float)(posD), // metres Down
             gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
             gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
-            gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
+            gyrZ    : (int16_t)(100*degrees(gyroBias.z)), // cd/sec, displayed as deg/sec due to format string
+            originHgt : originLLH.alt // WGS-84 altitude of EKF origin in cm
         };
         WriteBlock(&pkt6, sizeof(pkt6));
 
