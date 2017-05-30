@@ -322,24 +322,22 @@ bool RCOutput_Tap::_uart_open()
         return -1;
     }
 
-    // set baud rate
-    int speed = 250000;
     struct termios uart_config;
+    memset(&uart_config, 0, sizeof(uart_config));
     tcgetattr(_uart_fd, &uart_config);
 
     // clear ONLCR flag (which appends a CR for every LF)
     uart_config.c_oflag &= ~ONLCR;
 
-    // set baud rate
-    if (cfsetispeed(&uart_config, speed) < 0 || cfsetospeed(&uart_config, speed) < 0) {
-        ::fprintf(stderr, "failed to set baudrate for %s: %d\n",
-                  HAL_RCOUTPUT_TAP_DEVICE, termios_state);
+    if ((termios_state = tcsetattr(_uart_fd, TCSANOW, &uart_config)) < 0) {
+        ::fprintf(stderr, "tcsetattr failed for %s\n", HAL_RCOUTPUT_TAP_DEVICE);
         _uart_close();
         return false;
     }
 
-    if ((termios_state = tcsetattr(_uart_fd, TCSANOW, &uart_config)) < 0) {
-        fprintf(stderr, "tcsetattr failed for %s\n", HAL_RCOUTPUT_TAP_DEVICE);
+    if (!_uart_set_speed(250000)) {
+        ::fprintf(stderr, "failed to set baudrate for %s: %m\n",
+                  HAL_RCOUTPUT_TAP_DEVICE);
         _uart_close();
         return false;
     }
