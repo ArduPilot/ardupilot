@@ -467,8 +467,8 @@ void AP_GPS::detect_instance(uint8_t instance)
         break;
     }
 
-    // record the time when we started detection. This is used to try
-    // to avoid initialising a uBlox as a NMEA GPS
+    // record the time when we started detection. This is used as a flag to
+    // indicate that the detected GPS baud rate should be broadcast
     if (dstate->detect_started_ms == 0) {
         dstate->detect_started_ms = now;
     }
@@ -539,13 +539,9 @@ void AP_GPS::detect_instance(uint8_t instance)
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
-        } else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
-            // prevent false detection of NMEA mode in
-            // a MTK or UBLOX which has booted in NMEA mode
-            if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
-                AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
-                new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
-            }
+        } else if (_type[instance] == GPS_TYPE_NMEA &&
+                   AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
+            new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
         }
     }
 
