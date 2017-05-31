@@ -1924,21 +1924,32 @@ void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery)
         struct log_Current pkt = {
             LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
             time_us             : AP_HAL::micros64(),
-            battery_voltage     : battery.voltage(0),
+            voltage             : battery.voltage(0),
+            voltage_resting     : battery.voltage_resting_estimate(0),
             current_amps        : battery.current_amps(0),
             current_total       : battery.current_total_mah(0),
             temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
+            resistance          : battery.get_resistance(0)
         };
-        AP_BattMonitor::cells cells = battery.get_cell_voltages(0);
-
-        // check battery structure can hold all cells
-        static_assert(ARRAY_SIZE(cells.cells) == (sizeof(pkt.cell_voltages) / sizeof(pkt.cell_voltages[0])),
-                      "Battery cell number doesn't match in library and log structure");
-
-        for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
-            pkt.cell_voltages[i] = cells.cells[i] + 1;
-        }
         WriteBlock(&pkt, sizeof(pkt));
+
+        // individual cell voltages
+        if (battery.has_cell_voltages(0)) {
+            const AP_BattMonitor::cells &cells = battery.get_cell_voltages(0);
+            struct log_Current_Cells cell_pkt = {
+                LOG_PACKET_HEADER_INIT(LOG_CURRENT_CELLS_MSG),
+                time_us             : AP_HAL::micros64(),
+                voltage             : battery.voltage(0)
+            };
+            for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
+                cell_pkt.cell_voltages[i] = cells.cells[i] + 1;
+            }
+            WriteBlock(&cell_pkt, sizeof(cell_pkt));
+
+            // check battery structure can hold all cells
+            static_assert(ARRAY_SIZE(cells.cells) == (sizeof(cell_pkt.cell_voltages) / sizeof(cell_pkt.cell_voltages[0])),
+                          "Battery cell number doesn't match in library and log structure");
+        }
     }
 
     if (battery.num_instances() >= 2) {
@@ -1947,16 +1958,28 @@ void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery)
         struct log_Current pkt = {
             LOG_PACKET_HEADER_INIT(LOG_CURRENT2_MSG),
             time_us             : AP_HAL::micros64(),
-            battery_voltage     : battery.voltage(1),
+            voltage             : battery.voltage(1),
+            voltage_resting     : battery.voltage_resting_estimate(1),
             current_amps        : battery.current_amps(1),
             current_total       : battery.current_total_mah(1),
             temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
+            resistance          : battery.get_resistance(1)
         };
-        AP_BattMonitor::cells cells = battery.get_cell_voltages(1);
-        for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
-            pkt.cell_voltages[i] = cells.cells[i] + 1;
-        }
         WriteBlock(&pkt, sizeof(pkt));
+
+        // individual cell voltages
+        if (battery.has_cell_voltages(1)) {
+            const AP_BattMonitor::cells &cells = battery.get_cell_voltages(1);
+            struct log_Current_Cells cell_pkt = {
+                LOG_PACKET_HEADER_INIT(LOG_CURRENT_CELLS_MSG),
+                time_us             : AP_HAL::micros64(),
+                voltage             : battery.voltage(1)
+            };
+            for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
+                cell_pkt.cell_voltages[i] = cells.cells[i] + 1;
+            }
+            WriteBlock(&cell_pkt, sizeof(cell_pkt));
+        }
     }
 }
 
