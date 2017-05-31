@@ -513,10 +513,18 @@ struct PACKED log_PID {
 struct PACKED log_Current {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    float    battery_voltage;
+    float    voltage;
+    float    voltage_resting;
     float    current_amps;
     float    current_total;
     int16_t  temperature; // degrees C * 100
+    float    resistance;
+};
+
+struct PACKED log_Current_Cells {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    voltage;
     uint16_t cell_voltages[10];
 };
 
@@ -848,8 +856,11 @@ struct PACKED log_Beacon {
 #define QUAT_LABELS "TimeUS,Q1,Q2,Q3,Q4"
 #define QUAT_FMT    "Qffff"
 
-#define CURR_LABELS "TimeUS,Volt,Curr,CurrTot,Temp,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
-#define CURR_FMT    "QfffcHHHHHHHHHH"
+#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,Temp,Res"
+#define CURR_FMT    "Qffffcf"
+
+#define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
+#define CURR_CELL_FMT    "QfHHHHHHHHHH"
 
 /*
 Format characters in the format string for binary log messages
@@ -920,6 +931,10 @@ Format characters in the format string for binary log messages
       "CURR", CURR_FMT,CURR_LABELS }, \
     { LOG_CURRENT2_MSG, sizeof(log_Current), \
       "CUR2", CURR_FMT,CURR_LABELS }, \
+    { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
+      "BCL", CURR_CELL_FMT, CURR_CELL_LABELS }, \
+    { LOG_CURRENT_CELLS2_MSG, sizeof(log_Current_Cells), \
+      "BCL2", CURR_CELL_FMT, CURR_CELL_LABELS }, \
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
@@ -1136,6 +1151,8 @@ enum LogMessages {
     LOG_ATTITUDE_MSG,
     LOG_CURRENT_MSG,
     LOG_CURRENT2_MSG,
+    LOG_CURRENT_CELLS_MSG,
+    LOG_CURRENT_CELLS2_MSG,
     LOG_COMPASS_MSG,
     LOG_COMPASS2_MSG,
     LOG_COMPASS3_MSG,
