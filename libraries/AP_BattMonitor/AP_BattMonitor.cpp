@@ -365,7 +365,7 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
 bool AP_BattMonitor::overpower_detected() const
 {
     bool result = false;
-    for (int instance = 0; instance < _num_instances; instance++) {
+    for (uint8_t instance = 0; instance < _num_instances; instance++) {
         result |= overpower_detected(instance);
     }
     return result;
