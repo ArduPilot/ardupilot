@@ -384,6 +384,15 @@ bool AP_BattMonitor::overpower_detected(uint8_t instance) const
 #endif
 }
 
+bool AP_BattMonitor::has_cell_voltages(const uint8_t instance) const
+{
+    if (instance < _num_instances && drivers[instance] != nullptr) {
+        return drivers[instance]->has_cell_voltages();
+    }
+
+    return false;
+}
+
 // return the current cell voltages, returns the first monitor instances cells if the instance is out of range
 const AP_BattMonitor::cells & AP_BattMonitor::get_cell_voltages(const uint8_t instance) const
 {

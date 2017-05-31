@@ -37,6 +37,9 @@ public:
     /// returns true if battery monitor instance provides current info
     virtual bool has_current() const = 0;
 
+    // returns true if battery monitor provides individual cell voltages
+    virtual bool has_cell_voltages() const { return false; }
+
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
 
