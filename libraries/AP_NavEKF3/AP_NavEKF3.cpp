@@ -119,6 +119,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This enables EKF3. Enabling EKF3 only makes the maths run, it does not mean it will be used for flight control. To use it for flight control set AHRS_EKF_TYPE=3. A reboot or restart will need to be performed after changing the value of EK3_ENABLE for it to take effect.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF3, _enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // GPS measurement parameters
@@ -193,6 +194,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK3_GPS_TYPE = 3). Setting 2 uses GPS. Setting 3 uses the range beacon data. NOTE - the EK3_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
     // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF3, _altSource, 0),
 
     // @Param: ALT_M_NSE
@@ -220,6 +222,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
+    // @RebootRequired: True
     AP_GROUPINFO("HGT_DELAY", 12, NavEKF3, _hgtDelay_ms, 60),
 
     // Magnetometer measurement parameters
@@ -238,6 +241,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This determines when the filter will use the 3-axis magnetometer fusion model that estimates both earth and body fixed magnetic field states and when it will use a simpler magnetic heading fusion model that does not use magnetic field states. The 3-axis magnetometer fusion is only suitable for use when the external magnetic field environment is stable. EK3_MAG_CAL = 0 uses heading fusion on ground, 3-axis fusion in-flight, and is the default setting for Plane users. EK3_MAG_CAL = 1 uses 3-axis fusion only when manoeuvring. EK3_MAG_CAL = 2 uses heading fusion at all times, is recommended if the external magnetic field is varying and is the default for rovers. EK3_MAG_CAL = 3 uses heading fusion on the ground and 3-axis fusion after the first in-air field and yaw reset has completed, and is the default for copters. EK3_MAG_CAL = 4 uses 3-axis fusion at all times. NOTE : Use of simple heading magnetometer fusion makes vehicle compass calibration and alignment errors harder for the EKF to detect which reduces the sensitivity of the Copter EKF failsafe algorithm. NOTE: The fusion mode can be forced to 2 for specific EKF cores using the EK3_MAG_MASK parameter.
     // @Values: 0:When flying,1:When manoeuvring,2:Never,3:After first climb yaw reset,4:Always
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("MAG_CAL", 14, NavEKF3, _magCal, MAG_CAL_DEFAULT),
 
     // @Param: MAG_I_GATE
@@ -322,6 +326,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
+    // @RebootRequired: True
     AP_GROUPINFO("FLOW_DELAY", 23, NavEKF3, _flowDelay_ms, FLOW_MEAS_DELAY),
 
     // State and Covariance Predition Parameters
@@ -393,6 +398,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: 1 byte bitmap of IMUs to use in EKF3. A separate instance of EKF3 will be started for each IMU selected. Set to 1 to use the first IMU only (default), set to 2 to use the second IMU only, set to 3 to use the first and second IMU. Additional IMU's can be used up to a maximum of 6 if memory and processing resources permit. There may be insufficient memory and processing resources to run multiple instances. If this occurs EKF3 will fail to start.
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("IMU_MASK",     33, NavEKF3, _imuMask, 3),
     
     // @Param: CHECK_SCALE
@@ -416,6 +422,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This sets the IMU mask of sensors to do full logging for
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("LOG_MASK", 36, NavEKF3, _logging_mask, 1),
 
     // control of magentic yaw angle fusion
@@ -504,6 +511,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
+    // @RebootRequired: True
     AP_GROUPINFO("BCN_DELAY", 46, NavEKF3, _rngBcnDelay_ms, 50),
 
     // @Param: RNG_USE_SPD
@@ -529,13 +537,15 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: 1 byte bitmap of EKF cores that will disable magnetic field states and use simple magnetic heading fusion at all times. This parameter enables specified cores to be used as a backup for flight into an environment with high levels of external magnetic interference which may degrade the EKF attitude estimate when using 3-axis magnetometer fusion. NOTE : Use of a different magnetometer fusion algorithm on different cores makes unwanted EKF core switches due to magnetometer errors more likely.
     // @Bitmask: 0:FirstEKF,1:SecondEKF,2:ThirdEKF,3:FourthEKF,4:FifthEKF,5:SixthEKF
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("MAG_MASK", 49, NavEKF3, _magMask, 0),
 
     // @Param: OGN_HGT_MASK
     // @DisplayName: Bitmask control of EKF origin height adjustment
-    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be adjusted so that the height returned by the getLLH() function is corrected for primary height sensor drift and change in datum over time. This parameter controls when the WGS-84 reference height used by the EKF to convert GPS height to local height will be adjusted. Adjustment is performed using a Bayes filter and only operates when GPS quality permits. The parameter also controls whether the adjustments to the GPS reference datum also update the reported height of the EKF origin.
-    // @Bitmask: 0:When using Baro hgt,1:When using range height,2:Update Origin
+    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be adjusted so that the height returned by the getLLH() function is corrected for primary height sensor drift and change in datum over time. This parameter controls when the WGS-84 reference height used by the EKF to convert GPS height to local height will be adjusted. Adjustment is performed using a Bayes filter and only operates when GPS quality permits. Adjustment is on by default. The parameter also controls whether the adjustments to the GPS reference datum are applied to the local vertical position (default) or whether they are applied to the reported EKF origin height.
+    // @Bitmask: 0:Correct datum when using Baro hgt,1:Correct datum when using range height,2:Correct reported origin height
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("OGN_HGT_MASK", 50, NavEKF3, _originHgtMode, 7),
 
     AP_GROUPEND
