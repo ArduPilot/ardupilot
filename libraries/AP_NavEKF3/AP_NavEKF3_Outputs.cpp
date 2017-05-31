@@ -279,13 +279,21 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
     return false;
 }
 
-// Write the last calculated D position of the body frame origin relative to the reference point (m).
+// Write the last calculated D position of the body frame origin relative to the EKF origin (m).
 // Return true if the estimate is valid
 bool NavEKF3_core::getPosD(float &posD) const
 {
     // The EKF always has a height estimate regardless of mode of operation
-    // correct for the IMU offset (EKF calculations are at the IMU)
-    posD = outputDataNew.position.z + posOffsetNED.z;
+    // Correct for the IMU offset (EKF calculations are at the IMU)
+    // Correct for
+    if (frontend->_originHgtMode & (1<<2)) {
+        // Any sensor height drift corrections relative to the WGS-84 reference are applied to the origin.
+        posD = outputDataNew.position.z + posOffsetNED.z;
+    } else {
+        // The origin height is static and corrections are applied to the local vertical position
+        // so that height returned by getLLH() = height returned by getOriginLLH - posD
+        posD = outputDataNew.position.z + posOffsetNED.z + 0.01f * (float)EKF_origin.alt - (float)ekfGpsRefHgt;
+    }
 
     // Return the current height solution status
     return filterStatus.flags.vert_pos;
