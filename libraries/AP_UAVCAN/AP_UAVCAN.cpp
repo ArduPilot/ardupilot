@@ -25,6 +25,7 @@
 #include <uavcan/equipment/actuator/Command.hpp>
 #include <uavcan/equipment/actuator/Status.hpp>
 #include <uavcan/equipment/esc/RawCommand.hpp>
+#include <uavcan/equipment/ecu/Status.hpp>
 
 extern const AP_HAL::HAL& hal;
 
@@ -64,6 +65,18 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
 
     AP_GROUPEND
 };
+
+static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg)
+{
+    hal.console->printf("ECU Status Message: TPS pos = %f\n", (msg.throttle_position / 2.5));
+    if (hal.can_mgr != nullptr) {
+            hal.console->printf("HAL CANMANAGER UAVCAN not nullptr - ECU Status Message: TPS pos = %f\n", (msg.throttle_position / 2.5));
+        AP_UAVCAN *ap_uavcan = hal.can_mgr->get_UAVCAN();
+        if (ap_uavcan != nullptr) {
+            hal.console->printf("AP UAVCAN not nullptr - ECU Status Message: TPS pos = %f\n", (msg.throttle_position / 2.5));
+        }
+    }
+}
 
 static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
 {
@@ -369,9 +382,16 @@ bool AP_UAVCAN::try_init(void)
                         debug_uavcan(1, "UAVCAN: node start problem\n\r");
                     }
 
+                    uavcan::Subscriber<uavcan::equipment::ecu::Status> *ecu_status;
+                    ecu_status = new uavcan::Subscriber<uavcan::equipment::ecu::Status>(*node);
+                    const int ecu_status_start_res = ecu_status->start(ecu_status_cb);
+                    if (ecu_status_start_res < 0) {
+                        debug_uavcan(1, "UAVCAN ECU Subscriber start failure!\n\r");
+                        return false;
+                    }
+
                     uavcan::Subscriber<uavcan::equipment::gnss::Fix> *gnss_fix;
                     gnss_fix = new uavcan::Subscriber<uavcan::equipment::gnss::Fix>(*node);
-
                     const int gnss_fix_start_res = gnss_fix->start(gnss_fix_cb_arr[_uavcan_i]);
                     if (gnss_fix_start_res < 0) {
                         debug_uavcan(1, "UAVCAN GNSS subscriber start problem\n\r");
@@ -427,6 +447,7 @@ bool AP_UAVCAN::try_init(void)
                     _initialized = true;
 
                     debug_uavcan(1, "UAVCAN: init done\n\r");
+                        hal.console->printf("UAVCAN INIT DONE!\n\r");
 
                     return true;
                 }
