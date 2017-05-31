@@ -32,6 +32,7 @@
 #define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #define GPS_RTK_INJECT_TO_ALL 127
 #define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
+#define GPS_UNKNOWN_DOP UINT16_MAX // set unknown DOP's to maximum value, which is also correct for MAVLink
 
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
@@ -418,9 +419,9 @@ private:
 
     // state of auto-detection process, per instance
     struct detect_state {
-        uint32_t detect_started_ms;
         uint32_t last_baud_change_ms;
         uint8_t current_baud;
+        bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;

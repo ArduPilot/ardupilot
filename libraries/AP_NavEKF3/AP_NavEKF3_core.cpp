@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -96,10 +94,10 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , _frontend->tasDelay_ms);
     }
 
-    // calculate the IMU buffer length required to accomodate the maximum delay with some allowance for jitter
+    // calculate the IMU buffer length required to accommodate the maximum delay with some allowance for jitter
     imu_buffer_length = (maxTimeDelay_ms / (uint16_t)(EKF_TARGET_DT_MS)) + 1;
 
-    // set the observaton buffer length to handle the minimum time of arrival between observations in combination
+    // set the observation buffer length to handle the minimum time of arrival between observations in combination
     // with the worst case delay from current time to ekf fusion time
     // allow for worst case 50% extension of the ekf fusion time horizon delay due to timing jitter
     uint16_t ekf_delay_ms = maxTimeDelay_ms + (int)(ceil((float)maxTimeDelay_ms * 0.5f));
@@ -682,7 +680,7 @@ void NavEKF3_core::calcOutputStates()
     correctDeltaAngle(delAngNewCorrected, imuDataNew.delAngDT);
     correctDeltaVelocity(delVelNewCorrected, imuDataNew.delVelDT);
 
-    // apply corections to track EKF solution
+    // apply corrections to track EKF solution
     Vector3f delAng = delAngNewCorrected + delAngCorrection;
 
     // convert the rotation vector to its equivalent quaternion
@@ -764,7 +762,7 @@ void NavEKF3_core::calcOutputStates()
         timeDelay = MAX(timeDelay, dtIMUavg);
         float errorGain = 0.5f / timeDelay;
 
-        // calculate a corrrection to the delta angle
+        // calculate a correction to the delta angle
         // that will cause the INS to track the EKF quaternions
         delAngCorrection = deltaAngErr * errorGain * dtIMUavg;
 
@@ -1432,7 +1430,7 @@ void NavEKF3_core::ConstrainVariances()
 // constrain states to prevent ill-conditioning
 void NavEKF3_core::ConstrainStates()
 {
-    // quaternionsare limited between +-1
+    // quaternions are limited between +-1
     for (uint8_t i=0; i<=3; i++) statesArray[i] = constrain_float(statesArray[i],-1.0f,1.0f);
     // velocity limit 500 m/sec (could set this based on some multiple of max airspeed * EAS2TAS)
     for (uint8_t i=4; i<=6; i++) statesArray[i] = constrain_float(statesArray[i],-5.0e2f,5.0e2f);
@@ -1506,7 +1504,7 @@ Quaternion NavEKF3_core::calcQuatAndFieldStates(float roll, float pitch)
         lastYawReset_ms = imuSampleTime_ms;
         // calculate an initial quaternion using the new yaw value
         initQuat.from_euler(roll, pitch, yaw);
-        // zero the attitude covariances becasue the corelations will now be invalid
+        // zero the attitude covariances because the correlations will now be invalid
         zeroAttCovOnly();
 
         // calculate initial Tbn matrix and rotate Mag measurements into NED

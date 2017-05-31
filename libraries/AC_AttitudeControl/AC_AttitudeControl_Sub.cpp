@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: Percent
+    // @Units: %
     // @User: Standard
 
     // @Param: RAT_RLL_D
@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: Percent
+    // @Units: %
     // @User: Standard
 
     // @Param: RAT_PIT_D
@@ -116,7 +116,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: Percent
+    // @Units: %
     // @User: Standard
 
     // @Param: RAT_YAW_D

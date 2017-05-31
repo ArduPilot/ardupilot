@@ -650,6 +650,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_WIND:
     case MSG_POSITION_TARGET_GLOBAL_INT:
     case MSG_AOA_SSA:
+    case MSG_LANDING:
         // unused
         break;
 
@@ -1205,6 +1206,10 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                                    packet.param6)) {
                 sub.log_picture();
             }
+            result = MAV_RESULT_ACCEPTED;
+            break;
+        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+            sub.camera.set_trigger_distance(packet.param1);
             result = MAV_RESULT_ACCEPTED;
             break;
 #endif // CAMERA == ENABLED

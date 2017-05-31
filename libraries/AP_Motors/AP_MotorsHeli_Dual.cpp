@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,7 +27,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 1 Position
     // @Description: Angular location of swash servo #1
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV1_POS", 1, AP_MotorsHeli_Dual, _servo1_pos, AP_MOTORS_HELI_DUAL_SERVO1_POS),
@@ -37,7 +36,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 2 Position
     // @Description: Angular location of swash servo #2
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV2_POS", 2, AP_MotorsHeli_Dual, _servo2_pos,  AP_MOTORS_HELI_DUAL_SERVO2_POS),
@@ -46,7 +45,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 3 Position
     // @Description: Angular location of swash servo #3
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeli_Dual, _servo3_pos,  AP_MOTORS_HELI_DUAL_SERVO3_POS),
@@ -55,7 +54,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 4 Position
     // @Description: Angular location of swash servo #4
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV4_POS", 4, AP_MotorsHeli_Dual, _servo4_pos, AP_MOTORS_HELI_DUAL_SERVO4_POS),
@@ -64,7 +63,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 5 Position
     // @Description: Angular location of swash servo #5
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV5_POS", 5, AP_MotorsHeli_Dual, _servo5_pos, AP_MOTORS_HELI_DUAL_SERVO5_POS),
@@ -73,7 +72,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Servo 6 Position
     // @Description: Angular location of swash servo #6
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV6_POS", 6, AP_MotorsHeli_Dual, _servo6_pos, AP_MOTORS_HELI_DUAL_SERVO6_POS),
@@ -82,7 +81,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Swashplate 1 Phase Angle Compensation
     // @Description: Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     // @Range: -90 90
-    // @Units: Degrees
+    // @Units: deg
     // @User: Advanced
     // @Increment: 1
     AP_GROUPINFO("PHANG1", 7, AP_MotorsHeli_Dual, _swash1_phase_angle, 0),
@@ -91,7 +90,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @DisplayName: Swashplate 2 Phase Angle Compensation
     // @Description: Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     // @Range: -90 90
-    // @Units: Degrees
+    // @Units: deg
     // @User: Advanced
     // @Increment: 1
     AP_GROUPINFO("PHANG2", 8, AP_MotorsHeli_Dual, _swash2_phase_angle, 0),
@@ -431,10 +430,10 @@ void AP_MotorsHeli_Dual::update_motor_control(RotorControlState state)
 //
 // move_actuators - moves swash plate to attitude of parameters passed in
 //                - expected ranges:
-//                       roll : -4500 ~ 4500
-//                       pitch: -4500 ~ 4500
-//                       collective: 0 ~ 1000
-//                       yaw:   -4500 ~ 4500
+//                       roll : -1 ~ +1
+//                       pitch: -1 ~ +1
+//                       collective: 0 ~ 1
+//                       yaw:   -1 ~ +1
 //
 void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
@@ -445,25 +444,25 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     limit.throttle_upper = false;
 
     if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE) {
-      if (pitch_out < -_cyclic_max/4500.0f) {
-          pitch_out = -_cyclic_max/4500.0f;
-          limit.roll_pitch = true;
-      }
+        if (pitch_out < -_cyclic_max/4500.0f) {
+            pitch_out = -_cyclic_max/4500.0f;
+            limit.roll_pitch = true;
+        }
 
-      if (pitch_out > _cyclic_max/4500.0f) {
-          pitch_out = _cyclic_max/4500.0f;
-          limit.roll_pitch = true;
-      }
+        if (pitch_out > _cyclic_max/4500.0f) {
+            pitch_out = _cyclic_max/4500.0f;
+            limit.roll_pitch = true;
+        }
     } else {
-      if (roll_out < -_cyclic_max/4500.0f) {
-        roll_out = -_cyclic_max/4500.0f;
-        limit.roll_pitch = true;
-      }
+        if (roll_out < -_cyclic_max/4500.0f) {
+            roll_out = -_cyclic_max/4500.0f;
+            limit.roll_pitch = true;
+        }
 
-      if (roll_out > _cyclic_max/4500.0f) {
-        roll_out = _cyclic_max/4500.0f;
-        limit.roll_pitch = true;
-      }
+        if (roll_out > _cyclic_max/4500.0f) {
+            roll_out = _cyclic_max/4500.0f;
+            limit.roll_pitch = true;
+        }
     }
 
 

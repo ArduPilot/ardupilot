@@ -85,7 +85,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: Landing Collective Minimum
     // @Description: Minimum collective position while landed or landing
     // @Range: 0 500
-    // @Units: pwm
+    // @Units: PWM
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("LAND_COL_MIN", 9, AP_MotorsHeli, _land_collective_min, AP_MOTORS_HELI_LAND_COLLECTIVE_MIN),
@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: RSC Ramp Time
     // @Description: Time in seconds for the output to the main rotor's ESC to reach full speed
     // @Range: 0 60
-    // @Units: Seconds
+    // @Units: s
     // @User: Standard
     AP_GROUPINFO("RSC_RAMP_TIME", 10, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
 
@@ -102,7 +102,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: RSC Runup Time
     // @Description: Time in seconds for the main rotor to reach full speed.  Must be longer than RSC_RAMP_TIME
     // @Range: 0 60
-    // @Units: Seconds
+    // @Units: s
     // @User: Standard
     AP_GROUPINFO("RSC_RUNUP_TIME", 11, AP_MotorsHeli, _rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
 
@@ -142,7 +142,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: Cyclic Pitch Angle Max
     // @Description: Maximum pitch angle of the swash plate
     // @Range: 0 18000
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Increment: 100
     // @User: Advanced
     AP_GROUPINFO("CYC_MAX", 16, AP_MotorsHeli, _cyclic_max, AP_MOTORS_HELI_SWASH_CYCLIC_MAX),

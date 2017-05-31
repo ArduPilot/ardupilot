@@ -16,15 +16,15 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 
     // @Param: _VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery voltage sensing on pins A0 ~ A13. For APM2.x power brick it should be set to 13. On the PX4-v1 it should be set to 100. On the Pixhawk, Pixracer and NAVIO board's PM connector it should be set to 2, Pixhawk2 Power2 is 13.
-    // @Values: -1:Disabled, 0:A0, 1:A1, 2:Pixhawk/Pixracer/Navio2, 5:A5, 10:A10, 13:A13/Pixhawk2_PM2, 100:PX4-v1
+    // @Description: Setting this to 0 ~ 13 will enable battery voltage sensing on pins A0 ~ A13. On the PX4-v1 it should be set to 100. On the Pixhawk, Pixracer and NAVIO boards it should be set to 2, Pixhawk2 Power2 is 13.
+    // @Values: -1:Disabled, 0:A0, 1:A1, 2:Pixhawk/Pixracer/Navio2, 13:Pixhawk2_PM2, 100:PX4-v1
     // @User: Standard
     AP_GROUPINFO("_VOLT_PIN", 1, AP_BattMonitor, _volt_pin[0], AP_BATT_VOLT_PIN),
 
     // @Param: _CURR_PIN
     // @DisplayName: Battery Current sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 12. On the PX4 it should be set to 101. On the Pixhawk powered from the PM connector it should be set to 3, Pixhawk2 Power2 is 12.
-    // @Values: -1:Disabled, 1:A1, 2:A2, 3:Pixhawk/Pixracer/Navio2, 11:A11, 12:A12/Pixhawk2_PM2, 101:PX4-v1
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. On the PX4-v1 it should be set to 101. On the Pixhawk, Pixracer and NAVIO boards it should be set to 3, Pixhawk2 Power2 is 14.
+    // @Values: -1:Disabled, 1:A1, 2:A2, 3:Pixhawk/Pixracer/Navio2, 14:Pixhawk2_PM2, 101:PX4-v1
     // @User: Standard
     AP_GROUPINFO("_CURR_PIN", 2, AP_BattMonitor, _curr_pin[0], AP_BATT_CURR_PIN),
 
@@ -37,21 +37,21 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: _AMP_PERVOLT
     // @DisplayName: Amps per volt
     // @Description: Number of amps that a 1V reading on the current sensor corresponds to. On the APM2 or Pixhawk using the 3DR Power brick this should be set to 17. For the Pixhawk with the 3DR 4in1 ESC this should be 17.
-    // @Units: Amps/Volt
+    // @Units: A/V
     // @User: Standard
     AP_GROUPINFO("_AMP_PERVOLT", 4, AP_BattMonitor, _curr_amp_per_volt[0], AP_BATT_CURR_AMP_PERVOLT_DEFAULT),
 
     // @Param: _AMP_OFFSET
     // @DisplayName: AMP offset
     // @Description: Voltage offset at zero current on current sensor
-    // @Units: Volts
+    // @Units: V
     // @User: Standard
     AP_GROUPINFO("_AMP_OFFSET", 5, AP_BattMonitor, _curr_amp_offset[0], 0),
 
     // @Param: _CAPACITY
     // @DisplayName: Battery capacity
     // @Description: Capacity of the battery in mAh when full
-    // @Units: mAh
+    // @Units: mA.h
     // @Increment: 50
     // @User: Standard
     AP_GROUPINFO("_CAPACITY", 6, AP_BattMonitor, _pack_capacity[0], AP_BATT_CAPACITY_DEFAULT),
@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: _WATT_MAX
     // @DisplayName: Maximum allowed power (Watts)
     // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
-    // @Units: Watts
+    // @Units: W
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_WATT_MAX", 9, AP_BattMonitor, _watt_max[0], AP_BATT_MAX_WATT_DEFAULT),
@@ -84,15 +84,15 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 
     // @Param: 2_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery voltage sensing on pins A0 ~ A13. For APM2.x power brick it should be set to 13. On the PX4-v1 it should be set to 100. On the Pixhawk, Pixracer and NAVIO board's PM connector it should be set to 2, Pixhawk2 Power2 is 13.
-    // @Values: -1:Disabled, 0:A0, 1:A1, 2:Pixhawk/Pixracer/Navio2, 5:A5, 10:A10, 13:A13/Pixhawk2_PM2, 100:PX4-v1
+    // @Description: Setting this to 0 ~ 13 will enable battery voltage sensing on pins A0 ~ A13. On the PX4-v1 it should be set to 100. On the Pixhawk, Pixracer and NAVIO boards it should be set to 2, Pixhawk2 Power2 is 13.
+    // @Values: -1:Disabled, 0:A0, 1:A1, 2:Pixhawk/Pixracer/Navio2, 13:Pixhawk2_PM2, 100:PX4-v1
     // @User: Standard
     AP_GROUPINFO("2_VOLT_PIN", 12, AP_BattMonitor, _volt_pin[1], AP_BATT_VOLT_PIN),
 
     // @Param: 2_CURR_PIN
     // @DisplayName: Battery Current sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 12. On the PX4 it should be set to 101. On the Pixhawk powered from the PM connector it should be set to 3, Pixhawk2 Power2 is 12.
-    // @Values: -1:Disabled, 1:A1, 2:A2, 3:Pixhawk/Pixracer/Navio2, 11:A11, 12:A12/Pixhawk2_PM2, 101:PX4-v1
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. On the PX4-v1 it should be set to 101. On the Pixhawk, Pixracer and NAVIO boards it should be set to 3, Pixhawk2 Power2 is 14.
+    // @Values: -1:Disabled, 1:A1, 2:A2, 3:Pixhawk/Pixracer/Navio2, 14:Pixhawk2_PM2, 101:PX4-v1
     // @User: Standard
     AP_GROUPINFO("2_CURR_PIN", 13, AP_BattMonitor, _curr_pin[1], AP_BATT_CURR_PIN),
 
@@ -105,21 +105,21 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: 2_AMP_PERVOL
     // @DisplayName: Amps per volt
     // @Description: Number of amps that a 1V reading on the current sensor corresponds to. On the APM2 or Pixhawk using the 3DR Power brick this should be set to 17. For the Pixhawk with the 3DR 4in1 ESC this should be 17.
-    // @Units: Amps/Volt
+    // @Units: A/V
     // @User: Standard
     AP_GROUPINFO("2_AMP_PERVOL", 15, AP_BattMonitor, _curr_amp_per_volt[1], AP_BATT_CURR_AMP_PERVOLT_DEFAULT),
 
     // @Param: 2_AMP_OFFSET
     // @DisplayName: AMP offset
     // @Description: Voltage offset at zero current on current sensor
-    // @Units: Volts
+    // @Units: V
     // @User: Standard
     AP_GROUPINFO("2_AMP_OFFSET", 16, AP_BattMonitor, _curr_amp_offset[1], 0),
 
     // @Param: 2_CAPACITY
     // @DisplayName: Battery capacity
     // @Description: Capacity of the battery in mAh when full
-    // @Units: mAh
+    // @Units: mA.h
     // @Increment: 50
     // @User: Standard
     AP_GROUPINFO("2_CAPACITY", 17, AP_BattMonitor, _pack_capacity[1], AP_BATT_CAPACITY_DEFAULT),
@@ -129,7 +129,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: 2_WATT_MAX
     // @DisplayName: Maximum allowed current
     // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
-    // @Units: Amps
+    // @Units: A
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_WATT_MAX", 18, AP_BattMonitor, _watt_max[1], AP_BATT_MAX_WATT_DEFAULT),
@@ -146,7 +146,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: _VOLT_TIMER
     // @DisplayName: Low voltage timeout
     // @Description: This is the timeout in seconds before a low voltage event will be triggered. For aircraft with low C batteries it may be necessary to raise this in order to cope with low voltage on long takeoffs. A value of zero disables low voltage errors.
-    // @Units: Seconds
+    // @Units: s
     // @Increment: 1
     // @Range: 0 120
     // @User: Advanced

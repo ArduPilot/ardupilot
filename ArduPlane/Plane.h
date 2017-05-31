@@ -712,6 +712,12 @@ private:
         // lookahead value for height error reporting
         float lookahead;
 #endif
+
+        // last input for FBWB/CRUISE height control
+        float last_elevator_input;
+
+        // last time we checked for pilot control of height
+        uint32_t last_elev_check_us;
     } target_altitude {};
 
     float relative_altitude = 0.0f;

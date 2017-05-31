@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   24 state EKF based on the derivation in https://github.com/PX4/ecl/
   blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
@@ -101,7 +100,7 @@ public:
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
 
-    // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+    // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
     // but will always be kinematically consistent with the z component of the EKF position state
     float getPosDownDerivative(void) const;
@@ -874,7 +873,7 @@ private:
     uint32_t lastYawReset_ms;       // System time at which the last yaw reset occurred. Returned by getLastYawResetAngle
     bool tiltAlignComplete;         // true when tilt alignment is complete
     bool yawAlignComplete;          // true when yaw alignment is complete
-    bool magStateInitComplete;      // true when the magnetic field sttes have been initialised
+    bool magStateInitComplete;      // true when the magnetic field states have been initialised
     uint8_t stateIndexLim;          // Max state index used during matrix and array operations
     imu_elements imuDataDelayed;    // IMU data at the fusion time horizon
     imu_elements imuDataNew;        // IMU data at the current time horizon
@@ -928,7 +927,7 @@ private:
     uint8_t magSelectIndex;         // Index of the magnetometer that is being used by the EKF
     bool runUpdates;                // boolean true when the EKF updates can be run
     uint32_t framesSincePredict;    // number of frames lapsed since EKF instance did a state prediction
-    bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycele
+    bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycle
     uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
     float posDownObsNoise;          // observation noise variance on the vertical position used by the state and covariance update step (m^2)
     Vector3f delAngCorrected;       // corrected IMU delta angle vector at the EKF time horizon (rad)
@@ -944,7 +943,7 @@ private:
     Vector3f velOffsetNED;          // This adds to the earth frame velocity estimate at the IMU to give the velocity at the body origin (m/s)
     Vector3f posOffsetNED;          // This adds to the earth frame position estimate at the IMU to give the position at the body origin (m)
     uint32_t firstInitTime_ms;      // First time the initialise function was called (msec)
-    uint32_t lastInitFailReport_ms; // Last time the buffer initialisation failure report wass sent (msec)
+    uint32_t lastInitFailReport_ms; // Last time the buffer initialisation failure report was sent (msec)
 
     // Specify source of data to be used for a partial state reset
     // Checking the availability and quality of the data source specified is the responsibility of the caller
@@ -960,21 +959,21 @@ private:
     resetDataSource posResetSource; // preferred soure of data for position reset
     resetDataSource velResetSource; // preferred source of data for a velocity reset
 
-    // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
-    float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
+    // variables used to calculate a vertical velocity that is kinematically consistent with the vertical position
+    float posDownDerivative;        // Rate of change of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
     float posDown;                  // Down position state used in calculation of posDownRate
 
     // variables used by the pre-initialisation GPS checks
     struct Location gpsloc_prev;    // LLH location of previous GPS measurement
     uint32_t lastPreAlignGpsCheckTime_ms;   // last time in msec the GPS quality was checked during pre alignment checks
     float gpsDriftNE;               // amount of drift detected in the GPS position during pre-flight GPs checks
-    float gpsVertVelFilt;           // amount of filterred vertical GPS velocity detected durng pre-flight GPS checks
+    float gpsVertVelFilt;           // amount of filtered vertical GPS velocity detected during pre-flight GPS checks
     float gpsHorizVelFilt;          // amount of filtered horizontal GPS velocity detected during pre-flight GPS checks
 
     // variable used by the in-flight GPS quality check
     bool gpsSpdAccPass;             // true when reported GPS speed accuracy passes in-flight checks
     bool ekfInnovationsPass;        // true when GPS innovations pass in-flight checks
-    float sAccFilterState1;         // state variable for LPF applid to reported GPS speed accuracy
+    float sAccFilterState1;         // state variable for LPF applied to reported GPS speed accuracy
     float sAccFilterState2;         // state variable for peak hold filter applied to reported GPS speed
     uint32_t lastGpsCheckTime_ms;   // last time in msec the GPS quality was checked
     uint32_t lastInnovPassTime_ms;  // last time in msec the GPS innovations passed
@@ -1052,7 +1051,7 @@ private:
     bfodm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
     bfodm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
     uint8_t bodyOdmStoreIndex;          // Body  frame odometry  data storage index
-    uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innvovation consistency checks (msec)
+    uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innovation consistency checks (msec)
     Vector3 bodyVelTestRatio;           // Innovation test ratios for body velocity XYZ measurements
     Vector3 varInnovBodyVel;            // Body velocity XYZ innovation variances (rad/sec)^2
     Vector3 innovBodyVel;               // Body velocity XYZ innovations (rad/sec)
@@ -1067,10 +1066,10 @@ private:
     rng_bcn_elements rngBcnDataNew;     // Range beacon data at the current time horizon
     rng_bcn_elements rngBcnDataDelayed; // Range beacon data at the fusion time horizon
     uint8_t rngBcnStoreIndex;           // Range beacon data storage index
-    uint32_t lastRngBcnPassTime_ms;     // time stamp when the range beacon measurement last passed innvovation consistency checks (msec)
+    uint32_t lastRngBcnPassTime_ms;     // time stamp when the range beacon measurement last passed innovation consistency checks (msec)
     float rngBcnTestRatio;              // Innovation test ratio for range beacon measurements
     bool rngBcnHealth;                  // boolean true if range beacon measurements have passed innovation consistency check
-    bool rngBcnTimeout;                 // boolean true if range beacon measurements have faled innovation consistency checks for too long
+    bool rngBcnTimeout;                 // boolean true if range beacon measurements have failed innovation consistency checks for too long
     float varInnovRngBcn;               // range beacon observation innovation variance (m^2)
     float innovRngBcn;                  // range beacon observation innovation (m)
     uint32_t lastTimeRngBcn_ms[10];     // last time we received a range beacon measurement (msec)
@@ -1091,7 +1090,7 @@ private:
     uint8_t N_beacons;                  // Number of range beacons in use
     float maxBcnPosD;                   // maximum position of all beacons in the down direction (m)
     float minBcnPosD;                   // minimum position of all beacons in the down direction (m)
-    bool usingMinHypothesis;            // true when the min beacon constellation offset hyopthesis is being used
+    bool usingMinHypothesis;            // true when the min beacon constellation offset hypothesis is being used
 
     float bcnPosDownOffsetMax;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     float bcnPosOffsetMaxVar;           // Variance of the bcnPosDownOffsetMax state (m)
@@ -1132,7 +1131,7 @@ private:
     // control of post takeoff magentic field and heading resets
     bool finalInflightYawInit;      // true when the final post takeoff initialisation of yaw angle has been performed
     bool finalInflightMagInit;      // true when the final post takeoff initialisation of magnetic field states been performed
-    bool magStateResetRequest;      // true if magnetic field states need to be reset using the magneteomter measurements
+    bool magStateResetRequest;      // true if magnetic field states need to be reset using the magnetomter measurements
     bool magYawResetRequest;        // true if the vehicle yaw and magnetic field states need to be reset using the magnetometer measurements
     bool gpsYawResetRequest;        // true if the vehicle yaw needs to be reset to the GPS course
     float posDownAtLastMagReset;    // vertical position last time the mag states were reset (m)
@@ -1177,7 +1176,7 @@ private:
         bool bad_horiz_vel:1;
     } gpsCheckStatus;
 
-    // states held by magnetomter fusion across time steps
+    // states held by magnetometer fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
     // to level computational load as this is an expensive operation
     struct {

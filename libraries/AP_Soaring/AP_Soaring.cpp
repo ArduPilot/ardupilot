@@ -49,7 +49,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: DIST_AHEAD
     // @DisplayName: Distance to thermal center
     // @Description: Initial guess of the distance to the thermal center
-    // @Units: metres
+    // @Units: m
     // @Range: 0 100
     // @User: Advanced
     AP_GROUPINFO("DIST_AHEAD", 6, SoaringController, thermal_distance_ahead, 5.0f),
@@ -57,7 +57,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: MIN_THML_S
     // @DisplayName: Minimum thermalling time
     // @Description: Minimum number of seconds to spend thermalling
-    // @Units: seconds
+    // @Units: s
     // @Range: 0 32768
     // @User: Advanced
     AP_GROUPINFO("MIN_THML_S", 7, SoaringController, min_thermal_s, 20),
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: MIN_CRSE_S
     // @DisplayName: Minimum cruising time
     // @Description: Minimum number of seconds to spend cruising
-    // @Units: seconds
+    // @Units: s
     // @Range: 0 32768
     // @User: Advanced
     AP_GROUPINFO("MIN_CRSE_S", 8, SoaringController, min_cruise_s, 30),
@@ -89,7 +89,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: POLAR_K
     // @DisplayName: Cl factor
     // @Description: Cl factor 2*m*g/(rho*S)
-    // @Units: m*m/s/s
+    // @Units: m.m/s/s
     // @Range: 0 0.5
     // @User: Advanced
     AP_GROUPINFO("POLAR_K", 11, SoaringController, polar_K, 25.6),
@@ -97,7 +97,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: ALT_MAX
     // @DisplayName: Maximum soaring altitude, relative to the home location
     // @Description: Don't thermal any higher than this.
-    // @Units: meters
+    // @Units: m
     // @Range: 0 1000.0
     // @User: Advanced
     AP_GROUPINFO("ALT_MAX", 12, SoaringController, alt_max, 350.0),
@@ -105,7 +105,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: ALT_MIN
     // @DisplayName: Minimum soaring altitude, relative to the home location
     // @Description: Don't get any lower than this.
-    // @Units: meters
+    // @Units: m
     // @Range: 0 1000.0
     // @User: Advanced
     AP_GROUPINFO("ALT_MIN", 13, SoaringController, alt_min, 50.0),
@@ -113,7 +113,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: ALT_CUTOFF
     // @DisplayName: Maximum power altitude, relative to the home location
     // @Description: Cut off throttle at this alt.
-    // @Units: meters
+    // @Units: m
     // @Range: 0 1000.0
     // @User: Advanced
     AP_GROUPINFO("ALT_CUTOFF", 14, SoaringController, alt_cutoff, 250.0),

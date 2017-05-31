@@ -7,7 +7,7 @@ import sys
 from optparse import OptionParser
 
 from param import (Library, Parameter, Vehicle, known_group_fields,
-                   known_param_fields, required_param_fields)
+                   known_param_fields, required_param_fields, known_units)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
 from wikiemit import WikiEmit
@@ -203,6 +203,10 @@ def validate(param):
         if not is_number(max_value):
             error("Max value not number: %s %s" % (param.name, max_value))
             return
+    # Validate units
+    if (hasattr(param, "Units")):
+        if (param.__dict__["Units"] != "") and (param.__dict__["Units"] not in known_units):
+            error("unknown units field '%s'" % param.__dict__["Units"])
 
 for vehicle in vehicles:
     for param in vehicle.params:

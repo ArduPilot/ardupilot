@@ -190,16 +190,16 @@ AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
 bool
 AP_GPS_SBF::process_message(void)
 {
-    uint16_t blockid = (sbf_msg.blockid & 4095u);
+    uint16_t blockid = (sbf_msg.blockid & 8191u);
 
     Debug("BlockID %d", blockid);
 
-    // ExtEventPVTGeodetic
-    if (blockid == 4038) {
+    switch (blockid) {
+    case ExtEventPVTGeodetic:
         log_ExtEventPVTGeodetic(sbf_msg.data.msg4007u);
-    }
-    // PVTGeodetic
-    else if (blockid == 4007) {
+        break;
+    case PVTGeodetic:
+    {
         const msg4007 &temp = sbf_msg.data.msg4007u;
 
         // Update time state
@@ -209,8 +209,6 @@ AP_GPS_SBF::process_message(void)
         }
 
         state.last_gps_time_ms = AP_HAL::millis();
-
-        state.hdop = last_hdop;
 
         // Update velocity state (don't use −2·10^10)
         if (temp.Vn > -200000) {
@@ -274,25 +272,43 @@ AP_GPS_SBF::process_message(void)
                 break;
         }
         
-        if ((temp.Mode & 64) > 0) // gps is in base mode
+        if ((temp.Mode & 64) > 0) { // gps is in base mode
             state.status = AP_GPS::NO_FIX;
-        if ((temp.Mode & 128) > 0) // gps only has 2d fix
+        } else if ((temp.Mode & 128) > 0) { // gps only has 2d fix
             state.status = AP_GPS::GPS_OK_FIX_2D;
+        }
                     
         return true;
     }
-    // DOP
-    else if (blockid == 4001) {
+    case DOP:
+    {
         const msg4001 &temp = sbf_msg.data.msg4001u;
 
-        last_hdop = temp.HDOP;
-
-        state.hdop = last_hdop;
+        state.hdop = temp.HDOP;
+        state.vdop = temp.VDOP;
+        break;
     }
-    // ReceiverStatus
-    else if (blockid == 4014) {
+    case ReceiverStatus:
+    {
         const msg4014 &temp = sbf_msg.data.msg4014u;
         RxState = temp.RxState;
+        break;
+    }
+    case VelCovGeodetic:
+    {
+        const msg5908 &temp = sbf_msg.data.msg5908u;
+
+        // select the maximum variance, as the EKF will apply it to all the columnds in it's estimate
+        // FIXME: Support returning the covariance matric to the EKF
+        float max_variance_squared = MAX(temp.Cov_VnVn, MAX(temp.Cov_VeVe, temp.Cov_VuVu));
+        if (is_positive(max_variance_squared)) {
+            state.have_speed_accuracy = true;
+            state.speed_accuracy = sqrt(max_variance_squared);
+        } else {
+            state.have_speed_accuracy = false;
+        }
+        break;
+    }
     }
 
     return false;

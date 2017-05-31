@@ -153,7 +153,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @DisplayName: Target IMU temperature
     // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. A value of -1 disables heating.
     // @Range: -1 80
-    // @Units: degreesC
+    // @Units: degC
     // @User: Advanced
     AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif
@@ -170,7 +170,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #if HAL_PX4_HAVE_PX4IO
-    // @Param: BRD_IO_ENABLE
+    // @Param: IO_ENABLE
     // @DisplayName: Enable IO co-processor
     // @Description: This allows for the IO co-processor on FMUv1 and FMUv2 to be disabled
     // @Values: 0:Disabled,1:Enabled

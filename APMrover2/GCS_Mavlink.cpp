@@ -56,7 +56,7 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
 #endif
 
     // we are armed if we are not initialising
-    if (control_mode != INITIALISING && hal.util->get_soft_armed()) {
+    if (control_mode != INITIALISING && arming.is_armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -487,6 +487,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_GIMBAL_REPORT:
     case MSG_RPM:
     case MSG_POSITION_TARGET_GLOBAL_INT:
+    case MSG_LANDING:
         break;  // just here to prevent a warning
     }
     return true;
@@ -858,7 +859,12 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             }
             result = MAV_RESULT_ACCEPTED;
             break;
-#endif  // CAMERA == ENABLED
+
+        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+            rover.camera.set_trigger_distance(packet.param1);
+            result = MAV_RESULT_ACCEPTED;
+            break;
+#endif // CAMERA == ENABLED
 
             case MAV_CMD_DO_MOUNT_CONTROL:
 #if MOUNT == ENABLED

@@ -563,6 +563,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_POSITION_TARGET_GLOBAL_INT:
     case MSG_SERVO_OUT:
     case MSG_AOA_SSA:
+    case MSG_LANDING:
         // unused
         break;
 
@@ -862,7 +863,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // if we have not yet initialised (including allocating the motors
         // object) we drop this request. That prevents the GCS from getting
         // a confusing parameter count during bootup
-        if (!copter.ap.initialised) {
+        if (!copter.ap.initialised_params) {
             break;
         }
 
@@ -1223,6 +1224,12 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             }
             result = MAV_RESULT_ACCEPTED;
             break;
+
+        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+            copter.camera.set_trigger_distance(packet.param1);
+            result = MAV_RESULT_ACCEPTED;
+            break;
+
 #endif // CAMERA == ENABLED
         case MAV_CMD_DO_MOUNT_CONTROL:
 #if MOUNT == ENABLED

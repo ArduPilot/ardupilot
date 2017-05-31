@@ -141,7 +141,7 @@ void AP_GPS_Backend::_detection_message(char *buffer, const uint8_t buflen) cons
     const uint8_t instance = state.instance;
     const struct AP_GPS::detect_state dstate = gps.detect_state[instance];
 
-    if (dstate.detect_started_ms > 0) {
+    if (dstate.auto_detected_baud) {
         hal.util->snprintf(buffer, buflen,
                  "GPS %d: detected as %s at %d baud",
                  instance + 1,

@@ -699,6 +699,8 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_AOA_SSA:
         CHECK_PAYLOAD_SIZE(AOA_SSA);
         plane.send_aoa_ssa(chan);
+    case MSG_LANDING:
+        plane.landing.send_landing_message(chan);
         break;
     }
     return true;
@@ -884,6 +886,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         if (plane.control_mode != MANUAL) {
             send_message(MSG_PID_TUNING);
         }
+        send_message(MSG_LANDING);
     }
 
     if (plane.gcs_out_of_time) return;
@@ -1163,6 +1166,11 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                                      packet.param6)) {
                 plane.log_picture();
             }
+            result = MAV_RESULT_ACCEPTED;
+            break;
+
+      case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+            plane.camera.set_trigger_distance(packet.param1);
             result = MAV_RESULT_ACCEPTED;
             break;
 #endif // CAMERA == ENABLED

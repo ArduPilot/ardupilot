@@ -207,9 +207,9 @@ def kill_tasks():
             'runsim.py',
             'AntennaTracker.elf',
         }
-        for vehicle in _options:
-            for frame in _options[vehicle]["frames"]:
-                frame_info = _options[vehicle]["frames"][frame]
+        for vehicle in vinfo.options:
+            for frame in vinfo.options[vehicle]["frames"]:
+                frame_info = vinfo.options[vehicle]["frames"][frame]
                 if "waf_target" not in frame_info:
                     continue
                 exe_name = os.path.basename(frame_info["waf_target"])
@@ -274,253 +274,8 @@ def wait_unlimited():
     """Wait until signal received"""
     time.sleep(987654321987654321)
 
-
-"""
-make_target: option passed to make to create binaries.  Usually sitl, and "-debug" may be appended if -D is passed to sim_vehicle.py
-default_params_filename: filename of default parameters file.  Taken to be relative to autotest dir.
-extra_mavlink_cmds: extra parameters that will be passed to mavproxy
-"""
-_options = {
-    "ArduCopter": {
-        "default_frame": "quad",
-        "frames": {
-            # COPTER
-            "+": {
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
-            },
-            "quad": {
-                "model": "+",
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
-            },
-            "X": {
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
-                # this param set FRAME doesn't actually work because mavproxy
-                # won't set a parameter unless it knows of it, and the
-                # param fetch happens asynchronously
-                "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
-            },
-            "hexa": {
-                "make_target": "sitl",
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-hexa.parm",
-            },
-            "octa-quad": {
-                "make_target": "sitl",
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-octaquad.parm",
-            },
-            "octa": {
-                "make_target": "sitl",
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-octa.parm",
-            },
-            "tri": {
-                "make_target": "sitl",
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-tri.parm",
-            },
-            "y6": {
-                "make_target": "sitl",
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-y6.parm",
-            },
-            "firefly": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/firefly.parm",
-            },
-            # SIM
-            "IrisRos": {
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
-            },
-            "gazebo-iris": {
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/gazebo-iris.parm",
-            },
-            # HELICOPTER
-            "heli": {
-                "make_target": "sitl-heli",
-                "waf_target": "bin/arducopter-heli",
-                "default_params_filename": "default_params/copter-heli.parm",
-            },
-            "heli-dual": {
-                "make_target": "sitl-heli-dual",
-                "waf_target": "bin/arducopter-heli",
-                "default_params_filename": "default_params/copter-heli-dual.parm",
-            },
-            "heli-compound": {
-                "make_target": "sitl-heli-compound",
-                "waf_target": "bin/arducopter-heli",
-            },
-            "singlecopter": {
-                "make_target": "sitl",
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-single.parm",
-            },
-            "coaxcopter": {
-                "make_target": "sitl",
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-coax.parm",
-            },
-            "calibration": {
-                "extra_mavlink_cmds": "module load sitl_calibration;",
-            },
-        },
-    },
-    "ArduPlane": {
-        "default_frame": "jsbsim",
-        "frames": {
-            # PLANE
-            "quadplane-tilttri": {
-                "make_target": "sitl",
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/quadplane-tilttri.parm",
-            },
-            "quadplane-tilttrivec": {
-                "make_target": "sitl",
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/quadplane-tilttrivec.parm",
-            },
-            "quadplane-tri": {
-                "make_target": "sitl",
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/quadplane-tri.parm",
-            },
-            "quadplane-cl84" : {
-                "make_target" : "sitl",
-                "waf_target" : "bin/arduplane",
-                "default_params_filename": "default_params/quadplane-cl84.parm",
-            },
-            "quadplane": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/quadplane.parm",
-            },
-            "plane-elevon": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-elevons.parm",
-            },
-            "plane-vtail": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-vtail.parm",
-            },
-            "plane-tailsitter": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-tailsitter.parm",
-            },
-            "plane": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane.parm",
-            },
-            "gazebo-zephyr": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/gazebo-zephyr.parm",
-            },
-            "last_letter": {
-                "waf_target": "bin/arduplane",
-            },
-            "CRRCSim": {
-                "waf_target": "bin/arduplane",
-            },
-            "jsbsim": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-jsbsim.parm",
-            },
-            "calibration": {
-                "extra_mavlink_cmds": "module load sitl_calibration;",
-            },
-        },
-    },
-    "APMrover2": {
-        "default_frame": "rover",
-        "frames": {
-            # ROVER
-            "rover": {
-                "waf_target": "bin/ardurover",
-                "default_params_filename": "default_params/rover.parm",
-            },
-            "rover-skid": {
-                "waf_target": "bin/ardurover",
-                "default_params_filename": "default_params/rover-skid.parm",
-            },
-            "gazebo-rover": {
-                "waf_target": "bin/ardurover",
-                "default_params_filename": "default_params/rover-skid.parm",
-            },
-            "calibration": {
-                "extra_mavlink_cmds": "module load sitl_calibration;",
-            },
-        },
-    },
-    "ArduSub": {
-        "default_frame": "vectored",
-        "frames": {
-            "vectored": {
-                "waf_target": "bin/ardusub",
-                "default_params_filename": "default_params/sub.parm",
-            },
-        },
-    },
-    "AntennaTracker": {
-        "default_frame": "tracker",
-        "frames": {
-            "tracker": {
-                "waf_target": "bin/antennatracker",
-            },
-        },
-    },
-}
-
-def default_waf_target(vehicle):
-    """Returns a waf target based on vehicle type, which is often determined by which directory the user is in"""
-    default_frame = _options[vehicle]["default_frame"]
-    return _options[vehicle]["frames"][default_frame]["waf_target"]
-
-
-def options_for_frame(frame, vehicle, opts):
-    """Return informatiom about how to sitl for frame e.g. build-type==sitl"""
-    ret = None
-    frames = _options[vehicle]["frames"]
-    if frame in frames:
-        ret = _options[vehicle]["frames"][frame]
-    else:
-        for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
-            if frame.startswith(p):
-                ret = _options[vehicle]["frames"][p]
-                break
-    if ret is None:
-        if frame.endswith("-heli"):
-            ret = _options[vehicle]["frames"]["heli"]
-    if ret is None:
-        progress("WARNING: no config for frame (%s)" % frame)
-        ret = {}
-
-    if "model" not in ret:
-        ret["model"] = frame
-
-    if "sitl-port" not in ret:
-        ret["sitl-port"] = True
-
-    if opts.model is not None:
-        ret["model"] = opts.model
-
-    if (ret["model"].find("xplane") != -1 or ret["model"].find("flightaxis") != -1):
-        ret["sitl-port"] = False
-
-    if "make_target" not in ret:
-        ret["make_target"] = "sitl"
-
-    if "waf_target" not in ret:
-        ret["waf_target"] = default_waf_target(vehicle)
-
-    if opts.build_target is not None:
-        ret["make_target"] = opts.build_target
-        ret["waf_target"] = opts.build_target
-
-    return ret
-
+from pysim import vehicleinfo
+vinfo = vehicleinfo.VehicleInfo()
 
 def do_build_waf(opts, frame_options):
     """Build sitl using waf"""
@@ -687,8 +442,8 @@ def start_antenna_tracker(autotest, opts):
     progress("Preparing antenna tracker")
     tracker_home = find_location_by_name(find_autotest_dir(), opts.tracker_location)
     vehicledir = os.path.join(autotest, "../../" + "AntennaTracker")
-    tracker_default_frame = _options["AntennaTracker"]["default_frame"]
-    tracker_frame_options = _options["AntennaTracker"]["frames"][tracker_default_frame]
+    tracker_default_frame = vinfo.options["AntennaTracker"]["default_frame"]
+    tracker_frame_options = vinfo.options["AntennaTracker"]["frames"][tracker_default_frame]
     do_build(vehicledir, opts, tracker_frame_options)
     tracker_instance = 1
     os.chdir(vehicledir)
@@ -813,12 +568,12 @@ def start_mavproxy(opts, stuff):
     progress("MAVProxy exited")
 
 
-vehicle_options_string = '|'.join(_options.keys())
+vehicle_options_string = '|'.join(vinfo.options.keys())
 
 def generate_frame_help():
     ret = ""
-    for vehicle in _options:
-        frame_options_string = '|'.join(_options[vehicle]["frames"].keys())
+    for vehicle in vinfo.options:
+        frame_options_string = '|'.join(vinfo.options[vehicle]["frames"].keys())
         ret += "%s: %s\n" % (vehicle, frame_options_string)
     return ret
 
@@ -830,7 +585,7 @@ parser = CompatOptionParser("sim_vehicle.py",
                "you are simulating, for example, start in the ArduPlane directory to " \
                "simulate ArduPlane")
 
-parser.add_option("-v", "--vehicle", type='choice', default=None, help="vehicle type (%s)" % vehicle_options_string, choices=_options.keys())
+parser.add_option("-v", "--vehicle", type='choice', default=None, help="vehicle type (%s)" % vehicle_options_string, choices=list(vinfo.options.keys()))
 parser.add_option("-f", "--frame", type='string', default=None, help="""set vehicle frame type
 
 %s""" % (generate_frame_help()))
@@ -920,20 +675,20 @@ if cmd_opts.vehicle is None:
     cwd = os.getcwd()
     cmd_opts.vehicle = os.path.basename(cwd)
 
-if cmd_opts.vehicle not in _options:
+if cmd_opts.vehicle not in vinfo.options:
     # try in parent directories, useful for having config in subdirectories
     cwd = os.getcwd()
     while cwd:
         bname = os.path.basename(cwd)
         if not bname:
             break
-        if bname in _options:
+        if bname in vinfo.options:
             cmd_opts.vehicle = bname
             break
         cwd = os.path.dirname(cwd)
 
 # try to validate vehicle
-if cmd_opts.vehicle not in _options:
+if cmd_opts.vehicle not in vinfo.options:
     progress('''
 ** Is (%s) really your vehicle type?
 Perhaps you could try -v %s
@@ -943,13 +698,13 @@ You could also try changing directory to e.g. the ArduCopter subdirectory
 
 # determine frame options (e.g. build type might be "sitl")
 if cmd_opts.frame is None:
-    cmd_opts.frame = _options[cmd_opts.vehicle]["default_frame"]
+    cmd_opts.frame = vinfo.options[cmd_opts.vehicle]["default_frame"]
 
 # setup ports for this instance
 mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10 * cmd_opts.instance)
 simout_port = "127.0.0.1:" + str(5501 + 10 * cmd_opts.instance)
 
-frame_infos = options_for_frame(cmd_opts.frame, cmd_opts.vehicle, cmd_opts)
+frame_infos = vinfo.options_for_frame(cmd_opts.frame, cmd_opts.vehicle, cmd_opts)
 
 if frame_infos["model"] == "jsbsim":
     check_jsbsim_version()
