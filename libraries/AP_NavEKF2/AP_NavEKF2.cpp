@@ -543,12 +543,15 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     AP_GROUPINFO("MAG_MASK", 48, NavEKF2, _magMask, 0),
 
     // @Param: OGN_HGT_MASK
-    // @DisplayName: Bitmask control of EKF origin height adjustment
-    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be adjusted so that the height returned by the getLLH() function is corrected for primary height sensor drift and change in datum over time. This parameter controls when the WGS-84 reference height used by the EKF to convert GPS height to local height will be adjusted. Adjustment is performed using a Bayes filter and only operates when GPS quality permits. Adjustment is on by default. The parameter also controls whether the adjustments to the GPS reference datum are applied to the local vertical position (default) or whether they are applied to the reported EKF origin height.
-    // @Bitmask: 0:Correct datum when using Baro hgt,1:Correct datum when using range height,2:Correct reported origin height
+    // @DisplayName: Bitmask control of EKF reference height correction
+    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference.
+    // If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be corrected so that the height returned by the getLLH() function is compensated for primary height sensor drift and change in datum over time.
+    // The first two bit positions control when the height datum will be corrected. Correction is performed using a Bayes filter and only operates when GPS quality permits.
+    // The third bit position controls where the corrections to the GPS reference datum are applied. Corrections can be applied to the local vertical position (default) to the reported EKF origin height.
+    // @Bitmask: 0:Correct when using Baro height,1:Correct when using range finder height,2:Apply corrections to origin height
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("OGN_HGT_MASK", 49, NavEKF2, _originHgtMode, 7),
+    AP_GROUPINFO("OGN_HGT_MASK", 49, NavEKF2, _originHgtMode, 0),
 
     AP_GROUPEND
 };
