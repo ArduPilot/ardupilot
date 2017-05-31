@@ -45,9 +45,9 @@ void AP_Proximity_RangeFinder::update(void)
                 uint8_t sector = (uint8_t)rngfnd->get_orientation(i);
                 _angle[sector] = sector * 45;
                 _distance[sector] = rngfnd->distance_cm(i) / 100.0f;
-                _distance_valid[sector] = true;
                 _distance_min = rngfnd->min_distance_cm(i) / 100.0f;
                 _distance_max = rngfnd->max_distance_cm(i) / 100.0f;
+                _distance_valid[sector] = (_distance[sector] >= _distance_min) && (_distance[sector] <= _distance_max);
                 _last_update_ms = AP_HAL::millis();
                 update_boundary_for_sector(sector);
             }
