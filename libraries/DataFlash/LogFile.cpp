@@ -1481,7 +1481,6 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     if (!ahrs.get_NavEKF3().getOriginLLH(0,originLLH)) {
         originLLH.alt = 0;
     }
-    ahrs.get_NavEKF3().getOriginLLH(0,originLLH);
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_XKF1_MSG),
         time_us : time_us,
