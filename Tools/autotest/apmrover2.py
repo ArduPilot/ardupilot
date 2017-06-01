@@ -33,30 +33,30 @@ def drive_left_circuit(mavproxy, mav):
     wait_mode(mav, 'MANUAL')
     mavproxy.send('rc 3 2000\n')
 
-    print("Driving left circuit")
+    progress("Driving left circuit")
     # do 4 turns
     for i in range(0, 4):
         # hard left
-        print("Starting turn %u" % i)
+        progress("Starting turn %u" % i)
         mavproxy.send('rc 1 1000\n')
         if not wait_heading(mav, 270 - (90*i), accuracy=10):
             return False
         mavproxy.send('rc 1 1500\n')
-        print("Starting leg %u" % i)
+        progress("Starting leg %u" % i)
         if not wait_distance(mav, 50, accuracy=7):
             return False
     mavproxy.send('rc 3 1500\n')
-    print("Circuit complete")
+    progress("Circuit complete")
     return True
 
 
 def drive_RTL(mavproxy, mav):
     """Drive to home."""
-    print("Driving home in RTL")
+    progress("Driving home in RTL")
     mavproxy.send('switch 3\n')
     if not wait_location(mav, homeloc, accuracy=22, timeout=90):
         return False
-    print("RTL Complete")
+    progress("RTL Complete")
     return True
 
 
@@ -66,7 +66,7 @@ def drive_RTL(mavproxy, mav):
 def drive_mission(mavproxy, mav, filename):
     """Drive a mission from a file."""
     global homeloc
-    print("Driving mission %s" % filename)
+    progress("Driving mission %s" % filename)
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
@@ -77,7 +77,7 @@ def drive_mission(mavproxy, mav, filename):
     if not wait_waypoint(mav, 1, 4, max_dist=5):
         return False
     wait_mode(mav, 'HOLD')
-    print("Mission OK")
+    progress("Mission OK")
     return True
 
 vinfo = vehicleinfo.VehicleInfo()
@@ -103,7 +103,7 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
     sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=10)
     mavproxy = util.start_MAVProxy_SITL('APMrover2')
 
-    print("WAITING FOR PARAMETERS")
+    progress("WAITING FOR PARAMETERS")
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
@@ -126,10 +126,10 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
     mavproxy = util.start_MAVProxy_SITL('APMrover2', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
-    print("LOGFILE %s" % logfile)
+    progress("LOGFILE %s" % logfile)
 
     buildlog = util.reltopdir("../buildlogs/APMrover2-test.tlog")
-    print("buildlog=%s" % buildlog)
+    progress("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
     try:
@@ -144,13 +144,13 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
     expect_list_clear()
     expect_list_extend([sitl, mavproxy])
 
-    print("Started simulator")
+    progress("Started simulator")
 
     # get a mavlink connection going
     try:
         mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
     except Exception as msg:
-        print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+        progress("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
         raise
     mav.message_hooks.append(message_hook)
     mav.idle_hooks.append(idle_hook)
@@ -158,43 +158,43 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
     failed = False
     e = 'None'
     try:
-        print("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
+        progress("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
         mav.wait_heartbeat()
-        print("Setting up RC parameters")
+        progress("Setting up RC parameters")
         set_rc_default(mavproxy)
         mavproxy.send('rc 8 1800\n')
-        print("Waiting for GPS fix")
+        progress("Waiting for GPS fix")
         mav.wait_gps_fix()
         homeloc = mav.location()
-        print("Home location: %s" % homeloc)
+        progress("Home location: %s" % homeloc)
         mavproxy.send('switch 6\n')  # Manual mode
         wait_mode(mav, 'MANUAL')
-        print("Waiting reading for arm")
+        progress("Waiting reading for arm")
         wait_ready_to_arm(mavproxy)
         if not arm_vehicle(mavproxy, mav):
-            print("Failed to ARM")
+            progress("Failed to ARM")
             failed = True
-        print("#")
-        print("########## Drive a square and save WPs with CH7 switch  ##########")
-        print("#")
+        progress("#")
+        progress("########## Drive a square and save WPs with CH7 switch  ##########")
+        progress("#")
         # Drive a square in learning mode
         if not drive_mission(mavproxy, mav, os.path.join(testdir, "rover1.txt")):
-            print("Failed mission")
+            progress("Failed mission")
             failed = True
         if not disarm_vehicle(mavproxy, mav):
-            print("Failed to DISARM")
+            progress("Failed to DISARM")
             failed = True
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/APMrover2-log.bin")):
-            print("Failed log download")
+            progress("Failed log download")
             failed = True
 #        if not drive_left_circuit(mavproxy, mav):
-#            print("Failed left circuit")
+#            progress("Failed left circuit")
 #            failed = True
 #        if not drive_RTL(mavproxy, mav):
-#            print("Failed RTL")
+#            progress("Failed RTL")
 #            failed = True
     except pexpect.TIMEOUT as e:
-        print("Failed with timeout")
+        progress("Failed with timeout")
         failed = True
 
     mav.close()
@@ -207,6 +207,6 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         shutil.copy(valgrind_log, util.reltopdir("../buildlogs/APMrover2-valgrind.log"))
 
     if failed:
-        print("FAILED: %s" % e)
+        progress("FAILED: %s" % e)
         return False
     return True
