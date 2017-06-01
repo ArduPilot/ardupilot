@@ -1453,6 +1453,38 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_DO_CHANGE_SPEED:
+            // param1 : Speed type (0=Airspeed, 1=Ground Speed)
+            // param2 : New speed in m/s
+            // param3 : Throttle ( Percent, -1 indicates no change)
+            // param4 : unused
+            // param5 : unused
+            // param6 : unused
+            // param7 : unused
+            result = MAV_RESULT_ACCEPTED;
+            switch ((uint16_t)packet.param1)
+            {
+                case 0:             // Airspeed
+                    if (packet.param2 > 0) {
+                        plane.g.airspeed_cruise_cm.set(packet.param2 * 100);
+                        plane.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set airspeed %u m/s", (unsigned)packet.param2);
+                    }
+                    break;
+                case 1:             // Ground speed
+                    plane.g.min_gndspeed_cm.set(packet.param2 * 100);
+                    plane.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)packet.param2);
+                    break;
+                default:
+                    result = MAV_RESULT_FAILED;
+                    break;
+            }
+
+            if (result == MAV_RESULT_ACCEPTED && packet.param3 > 0 && packet.param3 <= 100) {
+                plane.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set throttle %u", (unsigned)packet.param3);
+                plane.aparm.throttle_cruise.set(packet.param3);
+            }
+            break;
+
         case MAV_CMD_DO_SET_HOME:
             // param1 : use current (1=use current location, 0=use specified location)
             // param5 : latitude
