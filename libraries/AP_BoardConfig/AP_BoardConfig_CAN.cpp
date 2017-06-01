@@ -29,6 +29,8 @@
 #include <unistd.h>
 
 #include <AP_HAL_PX4/CAN.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <AP_HAL_Linux/CAN.h>
 #endif
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -90,8 +92,9 @@ void AP_BoardConfig_CAN::init()
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     px4_setup_canbus();
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    linux_setup_canbus();
 #endif
-
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -155,6 +158,38 @@ void AP_BoardConfig_CAN::px4_setup_canbus(void)
             // Delay for magnetometer and barometer discovery
             hal.scheduler->delay(5000);
         }
+    }
+}
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+void AP_BoardConfig_CAN::linux_setup_canbus(void) {
+    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
+    
+        uint8_t drv_num = _var_info_can[i]._driver_number;
+
+        if (drv_num != 0 && drv_num <= MAX_NUMBER_OF_CAN_DRIVERS) {
+            if (hal.can_mgr[drv_num - 1] == nullptr) {
+                const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new Linux::LinuxCANDriver;
+            }
+            
+            if (hal.can_mgr[drv_num - 1] != nullptr) {
+                _var_info_can_protocol[i]._uavcan = new AP_UAVCAN;
+                if (_var_info_can_protocol[i]._uavcan != nullptr) {
+                    AP_Param::load_object_from_eeprom(_var_info_can_protocol[i]._uavcan, AP_UAVCAN::var_info);
+                
+                    hal.can_mgr[i]->set_UAVCAN(_var_info_can_protocol[i]._uavcan);
+                    _var_info_can_protocol[i]._uavcan->set_parent_can_mgr(hal.can_mgr[i]); 
+                
+                    if (!hal.can_mgr[i]->begin(_var_info_can[i]._can_bitrate, i)) {
+                        hal.console->printf("Failed to initialize can_mgr\n");
+                    } else {
+                        hal.console->printf("can_mgr initialized well\n");
+                    }
+                } else {
+                    hal.console->printf("AP_UAVCAN failed to allocate\n");
+                }
+            }
+        }
+    
     }
 }
 #endif
