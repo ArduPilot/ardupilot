@@ -1571,6 +1571,10 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         AP_Notify::handle_play_tune(msg);
         break;
 
+    case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
+        rover.g2.visual_odom.handle_msg(msg);
+        break;
+
     default:
         handle_common_message(msg);
         break;
