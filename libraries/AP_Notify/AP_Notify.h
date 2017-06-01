@@ -20,15 +20,6 @@
 
 #include "NotifyDevice.h"
 
-
-#ifndef AP_NOTIFY_OREOLED
-#define AP_NOTIFY_OREOLED 0
-#endif
-
-#ifndef AP_NOTIFY_SOLO_TONES
-#define AP_NOTIFY_SOLO_TONES 0
-#endif
-
 // Device parameters values
 #define RGB_LED_OFF     0
 #define RGB_LED_LOW     1
@@ -50,7 +41,14 @@ class AP_Notify
     friend class Display;           // Display needs access to notify parameters
 public:
     // Constructor
-    AP_Notify();
+    AP_Notify();   
+
+    // Oreo LED Themes
+    enum Oreo_LED_Theme {
+        OreoLED_Disabled        = 0,    // Disabled the OLED driver entirely
+        OreoLED_Aircraft        = 1,    // Standard aviation themed lighting
+        OreoLED_Automobile      = 2,    // Automobile themed lighting (white front, red back)
+    };
 
     /// notify_flags_type - bitmask of notification flags
     struct notify_flags_and_values_type {
@@ -72,6 +70,7 @@ public:
         uint32_t compass_cal_running: 1;    // 1 if a compass calibration is running
         uint32_t leak_detected      : 1;    // 1 if leak detected
         float    battery_voltage       ;    // battery voltage
+        uint32_t gps_fusion         : 1;    // 0 = GPS fix rejected by EKF, not usable for flight. 1 = GPS in use by EKF, usable for flight
 
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
@@ -138,6 +137,7 @@ private:
     AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
     AP_Int8 _display_type;
+    AP_Int8 _oreo_theme;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed
