@@ -486,7 +486,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: MOT_SLW_LMT_EN
     // @DisplayName: Motor Output Slew Rate Limiting
     // @Description: Enables slew rate limiting on the motor outputs.
-    // @Value: 0:Disabled, 1:Enabled
+    // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     GSCALAR(motors_limit_slew_rate, "MOT_SLW_LMT_EN",  MOT_SLW_LMT_EN_DEFAULT),
 
