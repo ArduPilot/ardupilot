@@ -98,6 +98,9 @@ public:
     static int8_t _st_can_debug[MAX_NUMBER_OF_CAN_INTERFACES];
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     void px4_setup_canbus(void);
-#endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    void linux_setup_canbus(void);
+#endif // HAL_BOARD_LINUX
+
 };
 #endif
