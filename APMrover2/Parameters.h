@@ -319,6 +319,9 @@ public:
     AP_AdvancedFailsafe_Rover afs;
 #endif
     AP_Beacon beacon;
+
+    // Visual Odometry camera
+    AP_VisualOdom visual_odom;
 };
 
 extern const AP_Param::Info var_info[];

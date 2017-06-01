@@ -161,6 +161,9 @@ void Rover::init_ardupilot()
     // init beacons used for non-gps position estimation
     init_beacon();
 
+    // init visual odometry
+    init_visual_odom();
+
     // and baro for EKF
     init_barometer(true);
 

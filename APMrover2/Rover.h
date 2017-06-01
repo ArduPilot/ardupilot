@@ -73,6 +73,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_Beacon/AP_Beacon.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 
 // Configuration
 #include "config.h"
@@ -402,6 +403,9 @@ private:
     // Store the time the last GPS message was received.
     uint32_t last_gps_msg_ms{0};
 
+    // last visual odometry update time
+    uint32_t visual_odom_last_update_ms;
+
 private:
     // private member functions
     void ahrs_update();
@@ -507,6 +511,8 @@ private:
     void init_sonar(void);
     void init_beacon();
     void update_beacon();
+    void init_visual_odom();
+    void update_visual_odom();
     void read_battery(void);
     void read_receiver_rssi(void);
     void read_sonars(void);

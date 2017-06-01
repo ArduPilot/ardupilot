@@ -28,6 +28,33 @@ void Rover::update_beacon()
     g2.beacon.update();
 }
 
+// init visual odometry sensor
+void Rover::init_visual_odom()
+{
+    g2.visual_odom.init();
+}
+
+// update visual odometry sensor
+void Rover::update_visual_odom()
+{
+    // check for updates
+    if (g2.visual_odom.enabled() && (g2.visual_odom.get_last_update_ms() != visual_odom_last_update_ms)) {
+        visual_odom_last_update_ms = g2.visual_odom.get_last_update_ms();
+        const float time_delta_sec = g2.visual_odom.get_time_delta_usec() / 1000000.0f;
+        ahrs.writeBodyFrameOdom(g2.visual_odom.get_confidence(),
+                                g2.visual_odom.get_position_delta(),
+                                g2.visual_odom.get_angle_delta(),
+                                time_delta_sec,
+                                visual_odom_last_update_ms,
+                                g2.visual_odom.get_pos_offset());
+        // log sensor data
+        DataFlash.Log_Write_VisualOdom(time_delta_sec,
+                                       g2.visual_odom.get_angle_delta(),
+                                       g2.visual_odom.get_position_delta(),
+                                       g2.visual_odom.get_confidence());
+    }
+}
+
 // read_battery - reads battery voltage and current and invokes failsafe
 // should be called at 10hz
 void Rover::read_battery(void)
@@ -154,7 +181,9 @@ void Rover::update_sensor_status_flags(void)
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
-
+    if (g2.visual_odom.enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+    }
     if (rover.DataFlash.logging_present()) {  // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
@@ -208,6 +237,9 @@ void Rover::update_sensor_status_flags(void)
     }
     if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
+    }
+    if (g2.visual_odom.enabled() && !g2.visual_odom.healthy()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
     if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
