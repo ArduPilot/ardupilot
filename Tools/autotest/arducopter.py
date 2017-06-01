@@ -1,11 +1,4 @@
-# fly ArduCopter in SITL
-# Flight mode switch positions are set-up in arducopter.param to be
-#   switch 1 = Circle
-#   switch 2 = Land
-#   switch 3 = RTL
-#   switch 4 = Auto
-#   switch 5 = Loiter
-#   switch 6 = Stabilize
+#!/usr/bin/env python
 from __future__ import print_function
 import math
 import os
