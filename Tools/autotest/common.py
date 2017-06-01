@@ -134,7 +134,7 @@ def save_mission_to_file(mavproxy, filename):
     mavproxy.send('wp save %s\n' % filename)
     mavproxy.expect('Saved ([0-9]+) waypoints')
     num_wp = int(mavproxy.match.group(1))
-    print("num_wp: %d" % num_wp)
+    progress("num_wp: %d" % num_wp)
     return num_wp
 
 
@@ -148,7 +148,7 @@ def arm_vehicle(mavproxy, mav):
     """Arm vehicle with mavlink arm message."""
     mavproxy.send('arm throttle\n')
     mav.motors_armed_wait()
-    print("ARMED")
+    progress("ARMED")
     return True
 
 
@@ -156,7 +156,7 @@ def disarm_vehicle(mavproxy, mav):
     """Disarm vehicle with mavlink disarm message."""
     mavproxy.send('disarm\n')
     mav.motors_disarmed_wait()
-    print("DISARMED")
+    progress("DISARMED")
     return True
 
 
@@ -197,29 +197,29 @@ def wait_altitude(mav, alt_min, alt_max, timeout=30):
     previous_alt = 0
 
     tstart = get_sim_time(mav)
-    print("Waiting for altitude between %u and %u" % (alt_min, alt_max))
+    progress("Waiting for altitude between %u and %u" % (alt_min, alt_max))
     while get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         climb_rate = m.alt - previous_alt
         previous_alt = m.alt
-        print("Wait Altitude: Cur:%u, min_alt:%u, climb_rate: %u" % (m.alt, alt_min, climb_rate))
+        progress("Wait Altitude: Cur:%u, min_alt:%u, climb_rate: %u" % (m.alt, alt_min, climb_rate))
         if m.alt >= alt_min and m.alt <= alt_max:
-            print("Altitude OK")
+            progress("Altitude OK")
             return True
-    print("Failed to attain altitude range")
+    progress("Failed to attain altitude range")
     return False
 
 
 def wait_groundspeed(mav, gs_min, gs_max, timeout=30):
     """Wait for a given ground speed range."""
     tstart = get_sim_time(mav)
-    print("Waiting for groundspeed between %.1f and %.1f" % (gs_min, gs_max))
+    progress("Waiting for groundspeed between %.1f and %.1f" % (gs_min, gs_max))
     while get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
-        print("Wait groundspeed %.1f, target:%.1f" % (m.groundspeed, gs_min))
+        progress("Wait groundspeed %.1f, target:%.1f" % (m.groundspeed, gs_min))
         if m.groundspeed >= gs_min and m.groundspeed <= gs_max:
             return True
-    print("Failed to attain groundspeed range")
+    progress("Failed to attain groundspeed range")
     return False
 
 
@@ -231,46 +231,46 @@ def wait_ready_to_arm(mavproxy):
 def wait_roll(mav, roll, accuracy, timeout=30):
     """Wait for a given roll in degrees."""
     tstart = get_sim_time(mav)
-    print("Waiting for roll of %d at %s" % (roll, time.ctime()))
+    progress("Waiting for roll of %d at %s" % (roll, time.ctime()))
     while get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='ATTITUDE', blocking=True)
         p = math.degrees(m.pitch)
         r = math.degrees(m.roll)
-        print("Roll %d Pitch %d" % (r, p))
+        progress("Roll %d Pitch %d" % (r, p))
         if math.fabs(r - roll) <= accuracy:
-            print("Attained roll %d" % roll)
+            progress("Attained roll %d" % roll)
             return True
-    print("Failed to attain roll %d" % roll)
+    progress("Failed to attain roll %d" % roll)
     return False
 
 
 def wait_pitch(mav, pitch, accuracy, timeout=30):
     """Wait for a given pitch in degrees."""
     tstart = get_sim_time(mav)
-    print("Waiting for pitch of %u at %s" % (pitch, time.ctime()))
+    progress("Waiting for pitch of %u at %s" % (pitch, time.ctime()))
     while get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='ATTITUDE', blocking=True)
         p = math.degrees(m.pitch)
         r = math.degrees(m.roll)
-        print("Pitch %d Roll %d" % (p, r))
+        progress("Pitch %d Roll %d" % (p, r))
         if math.fabs(p - pitch) <= accuracy:
-            print("Attained pitch %d" % pitch)
+            progress("Attained pitch %d" % pitch)
             return True
-    print("Failed to attain pitch %d" % pitch)
+    progress("Failed to attain pitch %d" % pitch)
     return False
 
 
 def wait_heading(mav, heading, accuracy=5, timeout=30):
     """Wait for a given heading."""
     tstart = get_sim_time(mav)
-    print("Waiting for heading %u with accuracy %u" % (heading, accuracy))
+    progress("Waiting for heading %u with accuracy %u" % (heading, accuracy))
     while get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
-        print("Heading %u" % m.heading)
+        progress("Heading %u" % m.heading)
         if math.fabs(m.heading - heading) <= accuracy:
-            print("Attained heading %u" % heading)
+            progress("Attained heading %u" % heading)
             return True
-    print("Failed to attain heading %u" % heading)
+    progress("Failed to attain heading %u" % heading)
     return False
 
 
@@ -281,14 +281,14 @@ def wait_distance(mav, distance, accuracy=5, timeout=30):
     while get_sim_time(mav) < tstart + timeout:
         pos = mav.location()
         delta = get_distance(start, pos)
-        print("Distance %.2f meters" % delta)
+        progress("Distance %.2f meters" % delta)
         if math.fabs(delta - distance) <= accuracy:
-            print("Attained distance %.2f meters OK" % delta)
+            progress("Attained distance %.2f meters OK" % delta)
             return True
         if delta > (distance + accuracy):
-            print("Failed distance - overshoot delta=%f distance=%f" % (delta, distance))
+            progress("Failed distance - overshoot delta=%f distance=%f" % (delta, distance))
             return False
-    print("Failed to attain distance %u" % distance)
+    progress("Failed to attain distance %u" % distance)
     return False
 
 
@@ -297,18 +297,18 @@ def wait_location(mav, loc, accuracy=5, timeout=30, target_altitude=None, height
     tstart = get_sim_time(mav)
     if target_altitude is None:
         target_altitude = loc.alt
-    print("Waiting for location %.4f,%.4f at altitude %.1f height_accuracy=%.1f" % (
+    progress("Waiting for location %.4f,%.4f at altitude %.1f height_accuracy=%.1f" % (
         loc.lat, loc.lng, target_altitude, height_accuracy))
     while get_sim_time(mav) < tstart + timeout:
         pos = mav.location()
         delta = get_distance(loc, pos)
-        print("Distance %.2f meters alt %.1f" % (delta, pos.alt))
+        progress("Distance %.2f meters alt %.1f" % (delta, pos.alt))
         if delta <= accuracy:
             if height_accuracy != -1 and math.fabs(pos.alt - target_altitude) > height_accuracy:
                 continue
-            print("Reached location (%.2f meters)" % delta)
+            progress("Reached location (%.2f meters)" % delta)
             return True
-    print("Failed to attain location")
+    progress("Failed to attain location")
     return False
 
 
@@ -320,9 +320,9 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, time
     current_wp = start_wp
     mode = mav.flightmode
 
-    print("\ntest: wait for waypoint ranges start=%u end=%u\n\n" % (wpnum_start, wpnum_end))
+    progress("\ntest: wait for waypoint ranges start=%u end=%u\n\n" % (wpnum_start, wpnum_end))
     # if start_wp != wpnum_start:
-    #    print("test: Expected start waypoint %u but got %u" % (wpnum_start, start_wp))
+    #    progress("test: Expected start waypoint %u but got %u" % (wpnum_start, start_wp))
     #    return False
 
     while get_sim_time(mav) < tstart + timeout:
@@ -333,34 +333,34 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, time
 
         # if we changed mode, fail
         if mav.flightmode != mode:
-            print('Exited %s mode' % mode)
+            progress('Exited %s mode' % mode)
             return False
 
-        print("test: WP %u (wp_dist=%u Alt=%d), current_wp: %u, wpnum_end: %u" % (seq, wp_dist, m.alt, current_wp, wpnum_end))
+        progress("test: WP %u (wp_dist=%u Alt=%d), current_wp: %u, wpnum_end: %u" % (seq, wp_dist, m.alt, current_wp, wpnum_end))
         if seq == current_wp+1 or (seq > current_wp+1 and allow_skip):
-            print("test: Starting new waypoint %u" % seq)
+            progress("test: Starting new waypoint %u" % seq)
             tstart = get_sim_time(mav)
             current_wp = seq
             # the wp_dist check is a hack until we can sort out the right seqnum
             # for end of mission
         # if current_wp == wpnum_end or (current_wp == wpnum_end-1 and wp_dist < 2):
         if (current_wp == wpnum_end and wp_dist < max_dist):
-            print("Reached final waypoint %u" % seq)
+            progress("Reached final waypoint %u" % seq)
             return True
         if (seq >= 255):
-            print("Reached final waypoint %u" % seq)
+            progress("Reached final waypoint %u" % seq)
             return True
         if seq > current_wp+1:
-            print("Failed: Skipped waypoint! Got wp %u expected %u" % (seq, current_wp+1))
+            progress("Failed: Skipped waypoint! Got wp %u expected %u" % (seq, current_wp+1))
             return False
-    print("Failed: Timed out waiting for waypoint %u of %u" % (wpnum_end, wpnum_end))
+    progress("Failed: Timed out waiting for waypoint %u of %u" % (wpnum_end, wpnum_end))
     return False
 
 
 def wait_mode(mav, mode, timeout=None):
     """Wait for mode to change."""
-    print("Waiting for mode %s" % mode)
+    progress("Waiting for mode %s" % mode)
     mav.wait_heartbeat()
     mav.recv_match(condition='MAV.flightmode.upper()=="%s".upper()' % mode, timeout=timeout, blocking=True)
-    print("Got mode %s" % mode)
+    progress("Got mode %s" % mode)
     return mav.flightmode
