@@ -2,7 +2,7 @@ from __future__ import print_function
 import math
 import time
 
-from pymavlink import mavwp
+from pymavlink import mavwp, mavutil
 
 from pysim import util
 
@@ -11,6 +11,9 @@ from pysim import util
 expect_list = []
 
 
+#################################################
+# GENERAL UTILITIES
+#################################################
 def expect_list_clear():
     """clear the expect list."""
     global expect_list
@@ -45,6 +48,121 @@ def expect_callback(e):
         util.pexpect_drain(p)
 
 
+#################################################
+# SIM UTILITIES
+#################################################
+def progress(text):
+    """Display sim_vehicle progress text."""
+    print("AUTOTEST: " + text)
+
+
+def get_sim_time(mav):
+    """Get SITL time."""
+    m = mav.recv_match(type='SYSTEM_TIME', blocking=True)
+    return m.time_boot_ms * 1.0e-3
+
+
+def sim_location(mav):
+    """Return current simulator location."""
+    m = mav.recv_match(type='SIMSTATE', blocking=True)
+    return mavutil.location(m.lat*1.0e-7, m.lng*1.0e-7, 0, math.degrees(m.yaw))
+
+
+def save_wp(mavproxy, mav):
+    """Trigger RC 7 to save waypoint."""
+    mavproxy.send('rc 7 1000\n')
+    mav.recv_match(condition='RC_CHANNELS.chan7_raw==1000', blocking=True)
+    wait_seconds(mav, 1)
+    mavproxy.send('rc 7 2000\n')
+    mav.recv_match(condition='RC_CHANNELS.chan7_raw==2000', blocking=True)
+    wait_seconds(mav, 1)
+    mavproxy.send('rc 7 1000\n')
+    mav.recv_match(condition='RC_CHANNELS.chan7_raw==1000', blocking=True)
+    wait_seconds(mav, 1)
+
+
+def log_download(mavproxy, mav, filename, timeout=360):
+    """Download latest log."""
+    mavproxy.send("log list\n")
+    mavproxy.expect("numLogs")
+    mav.wait_heartbeat()
+    mav.wait_heartbeat()
+    mavproxy.send("set shownoise 0\n")
+    mavproxy.send("log download latest %s\n" % filename)
+    mavproxy.expect("Finished downloading", timeout=timeout)
+    mav.wait_heartbeat()
+    mav.wait_heartbeat()
+    return True
+
+
+def show_gps_and_sim_positions(mavproxy, on_off):
+    """Allow to display gps and actual position on map."""
+    if on_off is True:
+        # turn on simulator display of gps and actual position
+        mavproxy.send('map set showgpspos 1\n')
+        mavproxy.send('map set showsimpos 1\n')
+    else:
+        # turn off simulator display of gps and actual position
+        mavproxy.send('map set showgpspos 0\n')
+        mavproxy.send('map set showsimpos 0\n')
+
+
+def mission_count(filename):
+    """Load a mission from a file and return number of waypoints."""
+    wploader = mavwp.MAVWPLoader()
+    wploader.load(filename)
+    num_wp = wploader.count()
+    return num_wp
+
+
+def load_mission_from_file(mavproxy, filename):
+    """Load a mission from a file to flight controller."""
+    mavproxy.send('wp load %s\n' % filename)
+    mavproxy.expect('Flight plan received')
+    mavproxy.send('wp list\n')
+    mavproxy.expect('Requesting [0-9]+ waypoints')
+
+    # update num_wp
+    wploader = mavwp.MAVWPLoader()
+    wploader.load(filename)
+    num_wp = wploader.count()
+    return num_wp
+
+
+def save_mission_to_file(mavproxy, filename):
+    """Save a mission to a file"""
+    mavproxy.send('wp save %s\n' % filename)
+    mavproxy.expect('Saved ([0-9]+) waypoints')
+    num_wp = int(mavproxy.match.group(1))
+    print("num_wp: %d" % num_wp)
+    return num_wp
+
+
+def set_rc_default(mavproxy):
+    """Setup all simulated RC control to 1500."""
+    for chan in range(1, 16):
+        mavproxy.send('rc %u 1500\n' % chan)
+
+
+def arm_vehicle(mavproxy, mav):
+    """Arm vehicle with mavlink arm message."""
+    mavproxy.send('arm throttle\n')
+    mav.motors_armed_wait()
+    print("ARMED")
+    return True
+
+
+def disarm_vehicle(mavproxy, mav):
+    """Disarm vehicle with mavlink disarm message."""
+    mavproxy.send('disarm\n')
+    mav.motors_disarmed_wait()
+    print("DISARMED")
+    return True
+
+
+#################################################
+# NAVIGATION UTILITIES
+#################################################
 def get_distance(loc1, loc2):
     """Get ground distance between two locations."""
     dlat = loc2.lat - loc1.lat
@@ -62,16 +180,15 @@ def get_bearing(loc1, loc2):
     return bearing
 
 
+#################################################
+# WAIT UTILITIES
+#################################################
 def wait_seconds(mav, seconds_to_wait):
+    """Wait some second in SITL time."""
     tstart = get_sim_time(mav)
     tnow = tstart
     while tstart + seconds_to_wait > tnow:
         tnow = get_sim_time(mav)
-
-
-def get_sim_time(mav):
-    m = mav.recv_match(type='SYSTEM_TIME', blocking=True)
-    return m.time_boot_ms * 1.0e-3
 
 
 def wait_altitude(mav, alt_min, alt_max, timeout=30):
@@ -240,49 +357,10 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, time
     return False
 
 
-def save_wp(mavproxy, mav):
-    mavproxy.send('rc 7 1000\n')
-    mav.recv_match(condition='RC_CHANNELS.chan7_raw==1000', blocking=True)
-    wait_seconds(mav, 1)
-    mavproxy.send('rc 7 2000\n')
-    mav.recv_match(condition='RC_CHANNELS.chan7_raw==2000', blocking=True)
-    wait_seconds(mav, 1)
-    mavproxy.send('rc 7 1000\n')
-    mav.recv_match(condition='RC_CHANNELS.chan7_raw==1000', blocking=True)
-    wait_seconds(mav, 1)
-
-
 def wait_mode(mav, mode, timeout=None):
+    """Wait for mode to change."""
     print("Waiting for mode %s" % mode)
+    mav.wait_heartbeat()
     mav.recv_match(condition='MAV.flightmode.upper()=="%s".upper()' % mode, timeout=timeout, blocking=True)
     print("Got mode %s" % mode)
     return mav.flightmode
-
-
-def mission_count(filename):
-    """Load a mission from a file and return number of waypoints."""
-    wploader = mavwp.MAVWPLoader()
-    wploader.load(filename)
-    num_wp = wploader.count()
-    return num_wp
-
-
-def sim_location(mav):
-    """Return current simulator location."""
-    from pymavlink import mavutil
-    m = mav.recv_match(type='SIMSTATE', blocking=True)
-    return mavutil.location(m.lat*1.0e-7, m.lng*1.0e-7, 0, math.degrees(m.yaw))
-
-
-def log_download(mavproxy, mav, filename, timeout=360):
-    """Download latest log."""
-    mavproxy.send("log list\n")
-    mavproxy.expect("numLogs")
-    mav.wait_heartbeat()
-    mav.wait_heartbeat()
-    mavproxy.send("set shownoise 0\n")
-    mavproxy.send("log download latest %s\n" % filename)
-    mavproxy.expect("Finished downloading", timeout=timeout)
-    mav.wait_heartbeat()
-    mav.wait_heartbeat()
-    return True
