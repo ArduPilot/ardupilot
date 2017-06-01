@@ -185,9 +185,9 @@ const AP_Param::GroupInfo AP_MotorsMatrixSlewRateLimited::var_info[] = {
  * Constructor
  */
 AP_MotorsMatrixSlewRateLimited::AP_MotorsMatrixSlewRateLimited(uint16_t loop_rate, uint16_t speed_hz) :
+     AP_MotorsMatrix(loop_rate, speed_hz),
     _next_state_transition_time(0),
-    _recovery_state(MOTOR_STATE_NORMAL),
-    AP_MotorsMatrix(loop_rate, speed_hz)
+    _recovery_state(MOTOR_STATE_NORMAL)
 {
     AP_Param::setup_object_defaults(this, var_info);
     memset(_motor_out_pwm, 0, sizeof(_motor_out_pwm));
@@ -316,7 +316,7 @@ bool AP_MotorsMatrixSlewRateLimited::detect_motor_failure(uint32_t tnow_ms)
 
     if (!motor_fail_criteria_met) {
         _last_motor_good_time = tnow_ms;
-    } else if(tnow_ms - _last_motor_good_time > _detection_time) {
+    } else if(tnow_ms - _last_motor_good_time > (uint32_t)_detection_time) {
         // if criteria for a motor failure are met continuously for _detection_time seconds
        failed = true;
     }
