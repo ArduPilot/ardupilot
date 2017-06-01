@@ -2,41 +2,31 @@
 from __future__ import print_function
 import os
 import shutil
-
 import pexpect
-from pymavlink import mavutil
 
 from common import *
 from pysim import util
 from pysim import vehicleinfo
+from pymavlink import mavutil, mavwp
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 
+#################################################
+# CONFIG
+#################################################
 
-# HOME=mavutil.location(-35.362938,149.165085,584,270)
+# HOME = mavutil.location(-35.362938, 149.165085, 584, 270)
 HOME = mavutil.location(40.071374969556928, -105.22978898137808, 1583.702759, 246)
+
 homeloc = None
+num_wp = 0
+speedup_default = 10
 
 
-def arm_rover(mavproxy, mav):
-    wait_ready_to_arm(mavproxy);
-
-    mavproxy.send('arm throttle\n')
-    mavproxy.expect('ARMED')
-
-    print("ROVER ARMED")
-    return True
-
-
-def disarm_rover(mavproxy, mav):
-    mavproxy.send('disarm\n')
-    mavproxy.expect('DISARMED')
-
-    print("ROVER DISARMED")
-    return True
-
-
+##########################################################
+#   TESTS DRIVE
+##########################################################
 def drive_left_circuit(mavproxy, mav):
     """Drive a left circuit, 50m on a side."""
     mavproxy.send('switch 6\n')
@@ -70,13 +60,9 @@ def drive_RTL(mavproxy, mav):
     return True
 
 
-def setup_rc(mavproxy):
-    """Setup RC override control."""
-    for chan in [1, 2, 3, 4, 5, 6, 7]:
-        mavproxy.send('rc %u 1500\n' % chan)
-    mavproxy.send('rc 8 1800\n')
-
-
+#################################################
+# AUTOTEST ALL
+#################################################
 def drive_mission(mavproxy, mav, filename):
     """Drive a mission from a file."""
     global homeloc
@@ -175,18 +161,27 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         print("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
         mav.wait_heartbeat()
         print("Setting up RC parameters")
-        setup_rc(mavproxy)
+        set_rc_default(mavproxy)
+        mavproxy.send('rc 8 1800\n')
         print("Waiting for GPS fix")
         mav.wait_gps_fix()
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
-        if not arm_rover(mavproxy, mav):
+        mavproxy.send('switch 6\n')  # Manual mode
+        wait_mode(mav, 'MANUAL')
+        print("Waiting reading for arm")
+        wait_ready_to_arm(mavproxy)
+        if not arm_vehicle(mavproxy, mav):
             print("Failed to ARM")
             failed = True
+        print("#")
+        print("########## Drive a square and save WPs with CH7 switch  ##########")
+        print("#")
+        # Drive a square in learning mode
         if not drive_mission(mavproxy, mav, os.path.join(testdir, "rover1.txt")):
             print("Failed mission")
             failed = True
-        if not disarm_rover(mavproxy, mav):
+        if not disarm_vehicle(mavproxy, mav):
             print("Failed to DISARM")
             failed = True
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/APMrover2-log.bin")):
