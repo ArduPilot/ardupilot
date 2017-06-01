@@ -25,9 +25,7 @@ def takeoff(mavproxy, mav):
     """Takeoff get to 30m altitude."""
 
     wait_ready_to_arm(mav)
-
-    mavproxy.send('arm throttle\n')
-    mavproxy.expect('ARMED')
+    arm_vehicle(mavproxy, mav)
 
     mavproxy.send('switch 4\n')
     wait_mode(mav, 'FBWA')
@@ -411,14 +409,6 @@ def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
     return wait_level_flight(mavproxy, mav)
 
 
-def setup_rc(mavproxy):
-    """Setup RC override control."""
-    for chan in [1, 2, 4, 5, 6, 7]:
-        mavproxy.send('rc %u 1500\n' % chan)
-    mavproxy.send('rc 3 1000\n')
-    mavproxy.send('rc 8 1800\n')
-
-
 def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=None):
     """Fly a mission from a file."""
     global homeloc
@@ -494,7 +484,9 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         progress("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
         mav.wait_heartbeat()
         progress("Setting up RC parameters")
-        setup_rc(mavproxy)
+        set_rc_default(mavproxy)
+        mavproxy.send('rc 3 1000\n')
+        mavproxy.send('rc 8 1800\n')
         progress("Waiting for GPS fix")
         mav.recv_match(condition='VFR_HUD.alt>10', blocking=True)
         mav.wait_gps_fix()

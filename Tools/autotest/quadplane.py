@@ -37,8 +37,7 @@ def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     mavproxy.expect('DISARMED')
     # wait for blood sample here
     mavproxy.send('wp set 20\n')
-    mavproxy.send('arm throttle\n')
-    mavproxy.expect('ARMED')
+    arm_vehicle(mavproxy, mav)
     if not wait_waypoint(mav, 20, 34, max_dist=60, timeout=1200):
         return False
     mavproxy.expect('DISARMED')
@@ -110,8 +109,7 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         # wait for EKF and GPS checks to pass
         wait_seconds(mav, 30)
 
-        mavproxy.send('arm throttle\n')
-        mavproxy.expect('ARMED')
+        arm_vehicle(mavproxy, mav)
 
         if not fly_mission(mavproxy, mav,
                            os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016.txt"),
