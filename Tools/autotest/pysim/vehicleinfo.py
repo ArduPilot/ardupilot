@@ -235,7 +235,7 @@ class VehicleInfo(object):
             if frame.endswith("-heli"):
                 ret = self.options[vehicle]["frames"]["heli"]
         if ret is None:
-            progress("WARNING: no config for frame (%s)" % frame)
+            print("WARNING: no config for frame (%s)" % frame)
             ret = {}
 
         if "model" not in ret:
@@ -254,7 +254,7 @@ class VehicleInfo(object):
             ret["make_target"] = "sitl"
 
         if "waf_target" not in ret:
-            ret["waf_target"] = default_waf_target(vehicle)
+            ret["waf_target"] = self.default_waf_target(vehicle)
 
         if opts.build_target is not None:
             ret["make_target"] = opts.build_target
