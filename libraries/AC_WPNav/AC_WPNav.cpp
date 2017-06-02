@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     AP_GROUPINFO("LOIT_SPEED",  4, AC_WPNav, _loiter_speed_cms, WPNAV_LOITER_SPEED),
 
     // @Param: ACCEL
-    // @DisplayName: Waypoint Acceleration 
+    // @DisplayName: Waypoint Acceleration
     // @Description: Defines the horizontal acceleration in cm/s/s used during missions
     // @Units: cm/s/s
     // @Range: 50 500
@@ -102,7 +102,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("RFND_USE",   10, AC_WPNav, _rangefinder_use, 1),
-    
+
     AP_GROUPEND
 };
 
@@ -262,12 +262,12 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     // constrain and scale the desired acceleration
     float des_accel_change_total = norm(des_accel_diff.x, des_accel_diff.y);
     float accel_change_max = _loiter_jerk_max_cmsss * nav_dt;
-    
+
     if (_loiter_jerk_max_cmsss > 0.0f && des_accel_change_total > accel_change_max && des_accel_change_total > 0.0f) {
         des_accel_diff.x = accel_change_max * des_accel_diff.x/des_accel_change_total;
         des_accel_diff.y = accel_change_max * des_accel_diff.y/des_accel_change_total;
     }
-    
+
     // adjust the desired acceleration
     _loiter_desired_accel += des_accel_diff;
 
@@ -747,7 +747,7 @@ bool AC_WPNav::update_wpnav()
         _pos_control.set_accel_xy(_wp_accel_cms);
         _pos_control.set_jerk_xy_to_default();
         _pos_control.set_accel_z(_wp_accel_z_cms);
-    
+
         // sanity check dt
         if (dt >= 0.2f) {
             dt = 0.0f;
@@ -769,7 +769,6 @@ bool AC_WPNav::update_wpnav()
 
         _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f, false);
         check_wp_leash_length();
-
         _wp_last_update = AP_HAL::millis();
     }
 
@@ -1061,7 +1060,6 @@ bool AC_WPNav::update_spline()
 
         // run horizontal position controller
         _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f, false);
-
         _wp_last_update = AP_HAL::millis();
     }
     return ret;
@@ -1160,7 +1158,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
                 }
             } else {
                 // point vehicle along the leash (i.e. point vehicle towards target point on the segment from origin to destination)
-                float track_error_xy_length = safe_sqrt(sq(track_error.x)+sq(track_error.y));
+                float track_error_xy_length = safe_sqrt(sq(track_error.x) + sq(track_error.y));
                 if (track_error_xy_length > MIN(WPNAV_YAW_DIST_MIN, _pos_control.get_leash_xy()*WPNAV_YAW_LEASH_PCT_MIN)) {
                     // To-Do: why is track_error sign reversed?
                     set_yaw_cd(RadiansToCentiDegrees(atan2f(-track_error.y,-track_error.x)));

@@ -1,0 +1,38 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	0	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+auto_init	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^bool Copter::auto_init(bool ignore_checks)$/;"	function	line:21	class:Copter	signature:(bool ignore_checks)
+auto_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_run()$/;"	function	line:55	class:Copter	signature:()
+auto_takeoff_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_takeoff_start(const Location& dest_loc)$/;"	function	line:102	class:Copter	signature:(const Location& dest_loc)
+auto_takeoff_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_takeoff_run()$/;"	function	line:150	class:Copter	signature:()
+auto_wp_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_wp_start(const Vector3f& destination)$/;"	function	line:203	class:Copter	signature:(const Vector3f& destination)
+auto_wp_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_wp_start(const Location_Class& dest_loc)$/;"	function	line:218	class:Copter	signature:(const Location_Class& dest_loc)
+auto_wp_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_wp_run()$/;"	function	line:238	class:Copter	signature:()
+auto_spline_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_spline_start(const Location_Class& destination, bool stopped_at_start,$/;"	function	line:296	class:Copter	signature:(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination)
+auto_spline_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_spline_run()$/;"	function	line:318	class:Copter	signature:()
+auto_land_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_land_start()$/;"	function	line:367	class:Copter	signature:()
+auto_land_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_land_start(const Vector3f& destination)$/;"	function	line:378	class:Copter	signature:(const Vector3f& destination)
+auto_land_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_land_run()$/;"	function	line:397	class:Copter	signature:()
+auto_rtl_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_rtl_start()$/;"	function	line:423	class:Copter	signature:()
+auto_rtl_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_rtl_run()$/;"	function	line:433	class:Copter	signature:()
+auto_circle_movetoedge_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m)$/;"	function	line:441	class:Copter	signature:(const Location_Class &circle_center, float radius_m)
+auto_circle_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_circle_start()$/;"	function	line:495	class:Copter	signature:()
+auto_circle_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_circle_run()$/;"	function	line:505	class:Copter	signature:()
+auto_nav_guided_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_nav_guided_start()$/;"	function	line:519	class:Copter	signature:()
+auto_nav_guided_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_nav_guided_run()$/;"	function	line:532	class:Copter	signature:()
+auto_loiter_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^bool Copter::auto_loiter_start()$/;"	function	line:541	class:Copter	signature:()
+auto_loiter_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_loiter_run()$/;"	function	line:564	class:Copter	signature:()
+get_default_auto_yaw_mode	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^uint8_t Copter::get_default_auto_yaw_mode(bool rtl)$/;"	function	line:598	class:Copter	signature:(bool rtl)
+set_auto_yaw_mode	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::set_auto_yaw_mode(uint8_t yaw_mode)$/;"	function	line:622	class:Copter	signature:(uint8_t yaw_mode)
+set_auto_yaw_look_at_heading	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle)$/;"	function	line:659	class:Copter	signature:(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle)
+set_auto_yaw_roi	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::set_auto_yaw_roi(const Location &roi_location)$/;"	function	line:692	class:Copter	signature:(const Location &roi_location)
+get_auto_heading	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^float Copter::get_auto_heading(void)$/;"	function	line:730	class:Copter	signature:(void)
+auto_payload_place_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_payload_place_start()$/;"	function	line:759	class:Copter	signature:()
+auto_payload_place_start	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_payload_place_start(const Vector3f& destination)$/;"	function	line:771	class:Copter	signature:(const Vector3f& destination)
+auto_payload_place_run_should_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^bool Copter::auto_payload_place_run_should_run()$/;"	function	line:789	class:Copter	signature:()
+auto_payload_place_run	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_payload_place_run()$/;"	function	line:813	class:Copter	signature:()
+auto_payload_place_run_loiter	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_payload_place_run_loiter()$/;"	function	line:851	class:Copter	signature:()
+auto_payload_place_run_descend	/home/swiftgust/ardupilot/ArduCopter/control_auto.cpp	/^void Copter::auto_payload_place_run_descend()$/;"	function	line:867	class:Copter	signature:()

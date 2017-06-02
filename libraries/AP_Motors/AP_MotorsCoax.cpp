@@ -34,12 +34,13 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
     _servo2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
     _servo3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
     _servo4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
+    _servo7 = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, CH_7);
     if (!_servo1 || !_servo2 || !_servo3 || !_servo4) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "MotorsCoax: unable to setup output channels");
         // don't set initialised_ok
         return;
     }
-    
+
     // set the motor_enabled flag so that the main ESC can be calibrated like other frame types
     motor_enabled[AP_MOTORS_MOT_5] = true;
     motor_enabled[AP_MOTORS_MOT_6] = true;
@@ -95,15 +96,17 @@ void AP_MotorsCoax::output_to_motors()
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(-_pitch_radio_passthrough, _servo4));
             rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_6, get_pwm_output_min());
+            rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(_forward_radio_passthrough, _servo7));
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
-            rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[0], _servo1));
-            rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[1], _servo2));
-            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[2], _servo3));
-            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[3], _servo4));
+            rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1( _actuator_out[0], _servo1));
+            rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1( _actuator_out[1], _servo2));
+            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1( _actuator_out[2], _servo3));
+            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1( _actuator_out[3], _servo4));
             rc_write(AP_MOTORS_MOT_5, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_6, calc_spin_up_to_pwm());
+            rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(_forward_radio_passthrough, _servo7));
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
@@ -115,6 +118,8 @@ void AP_MotorsCoax::output_to_motors()
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_actuator_out[3], _servo4));
             rc_write(AP_MOTORS_MOT_5, calc_thrust_to_pwm(_thrust_yt_ccw));
             rc_write(AP_MOTORS_MOT_6, calc_thrust_to_pwm(_thrust_yt_cw));
+            rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(_forward_radio_passthrough, _servo7));
+            //rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(thrust_auxiliary, _servo7));
             break;
     }
 }
@@ -129,7 +134,8 @@ uint16_t AP_MotorsCoax::get_motor_mask()
         1U << AP_MOTORS_MOT_3 |
         1U << AP_MOTORS_MOT_4 |
         1U << AP_MOTORS_MOT_5 |
-        1U << AP_MOTORS_MOT_6;
+        1U << AP_MOTORS_MOT_6 |
+        1U << AP_MOTORS_MOT_7;
     return rc_map_mask(mask);
 }
 
@@ -143,8 +149,9 @@ void AP_MotorsCoax::output_armed_stabilizing()
     float   thrust_min_rpy;             // the minimum throttle setting that will not limit the roll and pitch output
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
     float   thrust_out;                 //
-    float   rp_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
-    float   actuator_allowed = 0.0f;    // amount of yaw we can fit in
+    //float   yaw_compensator = 0.0f;     // yaw thrust compensator whenever thrust_out cannot enable enough yaw thrust
+    //float   rp_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
+    //float   actuator_allowed = 0.0f;    // amount of yaw we can fit in
 
     // apply voltage and air pressure compensation
     roll_thrust = _roll_in * get_compensation_gain();
@@ -155,18 +162,20 @@ void AP_MotorsCoax::output_armed_stabilizing()
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {
         throttle_thrust = 0.0f;
-        limit.throttle_lower = true;
     }
     if (throttle_thrust >= _throttle_thrust_max) {
         throttle_thrust = _throttle_thrust_max;
+        limit.throttle_lower = true;
         limit.throttle_upper = true;
     }
 
     _throttle_avg_max = constrain_float(_throttle_avg_max, throttle_thrust, _throttle_thrust_max);
 
+    /*
     float rp_thrust_max = MAX(fabsf(roll_thrust), fabsf(pitch_thrust));
 
     // calculate how much roll and pitch must be scaled to leave enough range for the minimum yaw
+
     if (is_zero(rp_thrust_max)) {
         rp_scale = 1.0f;
     } else {
@@ -176,12 +185,11 @@ void AP_MotorsCoax::output_armed_stabilizing()
         }
     }
 
-    actuator_allowed = 2.0f * (1.0f - rp_scale * rp_thrust_max);
+    actuator_allowed = 2.0f * (1.0f - rp_scale * rp_thrust_max); // for Coaxial Fan systems.
     if (fabsf(yaw_thrust) > actuator_allowed) {
         yaw_thrust = constrain_float(yaw_thrust, -actuator_allowed, actuator_allowed);
         limit.yaw = true;
     }
-
     // calculate the minimum thrust that doesn't limit the roll, pitch and yaw forces
     thrust_min_rpy = MAX(fabsf(rp_scale * rp_thrust_max), fabsf(yaw_thrust));
 
@@ -192,19 +200,31 @@ void AP_MotorsCoax::output_armed_stabilizing()
         thr_adj = MIN(thrust_min_rpy, _throttle_avg_max) - _throttle_avg_max;
     }
 
+*/
     // calculate the throttle setting for the lift fan
-    thrust_out = _throttle_avg_max + thr_adj;
+    thrust_out = _throttle_avg_max + throttle_thrust; //+ thr_adj;
+
+    // scale up yaw thrust if throttle goes too high.
+    //To-Do : Add yaw thrust compensator to throttle limit
+    // to handling problem like unable to control yaw when throttle is high.
+    if (thrust_out + fabsf(yaw_thrust) > 1.0f)
+    {
+
+      //yaw_thrust = yaw_thrust/(0.5f * thrust_out);
+      //yaw_thrust = constrain_float(yaw_thrust, 1.0f, 2.0f);
+      yaw_thrust = yaw_thrust * 2.0f;
+    }
 
     if (fabsf(yaw_thrust) > thrust_out) {
         yaw_thrust = constrain_float(yaw_thrust, -thrust_out, thrust_out);
         limit.yaw = true;
     }
 
-    _thrust_yt_ccw = thrust_out + 0.5f * yaw_thrust;
-    _thrust_yt_cw = thrust_out - 0.5f * yaw_thrust;
+    _thrust_yt_ccw = thrust_out  + 1.0f * yaw_thrust;
+    _thrust_yt_cw  = thrust_out  - 1.0f * yaw_thrust;
 
     // limit thrust out for calculation of actuator gains
-    float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5f,thrust_out), 0.1f, 1.0f);
+    float thrust_out_actuator = constrain_float(MAX(_throttle_hover,thrust_out*1.1f), 0.9f, 1.1f);
 
     if (is_zero(thrust_out)) {
         limit.roll_pitch = true;
@@ -215,6 +235,7 @@ void AP_MotorsCoax::output_armed_stabilizing()
     // the angle of attack multiplied by the static thrust.
     _actuator_out[0] = roll_thrust/thrust_out_actuator;
     _actuator_out[1] = pitch_thrust/thrust_out_actuator;
+
     if (fabsf(_actuator_out[0]) > 1.0f) {
         limit.roll_pitch = true;
         _actuator_out[0] = constrain_float(_actuator_out[0], -1.0f, 1.0f);
@@ -263,8 +284,20 @@ void AP_MotorsCoax::output_test(uint8_t motor_seq, int16_t pwm)
             // motor 2
             rc_write(AP_MOTORS_MOT_6, pwm);
             break;
+        case 7:
+            // motor 3 (rear)
+            rc_write(AP_MOTORS_MOT_7,pwm);
+            break;
         default:
             // do nothing
             break;
     }
+}
+
+void calc_auxiliary_thrust_to_pwm()
+{
+  float thrust_auxiliary;   // compounded thrust
+
+  thrust_auxiliary = constrain_float(_forward_in * get_compensation_gain(), 0.0f, 1.0f);
+
 }

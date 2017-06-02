@@ -346,6 +346,11 @@ _options = {
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/gazebo-iris.parm"],
             },
+    	   "gazebo-X2": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/gazebo-X2.parm",
+					    
+            },
             # HELICOPTER
             "heli": {
                 "make_target": "sitl-heli",
@@ -370,7 +375,7 @@ _options = {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter-coax.parm",
-            },
+	    },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
             },

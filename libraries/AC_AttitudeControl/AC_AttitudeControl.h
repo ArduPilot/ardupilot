@@ -104,6 +104,7 @@ public:
     // Ensure attitude controller have zero errors to relax rate controller output
     void relax_attitude_controllers();
 
+    void reset_attitude_controllers();
     // reset rate controller I terms
     void reset_rate_controller_I_terms();
 
@@ -260,7 +261,7 @@ public:
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     virtual void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) {};
-    
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

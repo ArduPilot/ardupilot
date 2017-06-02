@@ -56,6 +56,9 @@ protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
 
+    // output - calculates rear thrust commands to pwm
+    void                calc_auxiliary_thrust_to_pwm();
+
     float               _actuator_out[NUM_ACTUATORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     float               _thrust_yt_ccw;
     float               _thrust_yt_cw;
@@ -63,4 +66,5 @@ protected:
     SRV_Channel         *_servo2;
     SRV_Channel         *_servo3;
     SRV_Channel         *_servo4;
+    SRV_Channel         *_servo7;
 };
