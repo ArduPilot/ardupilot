@@ -172,6 +172,8 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("BOOST_SCALE",  37, AP_MotorsMulticopter,  _boost_scale, 0),
+
+    // 38 RESERVED for BAT_POW_MAX
     
     AP_GROUPEND
 };
