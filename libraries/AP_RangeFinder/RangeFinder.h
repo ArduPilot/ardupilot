@@ -20,6 +20,8 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
+class OpticalFlow;
+
 // Maximum number of range finder instances available on this platform
 #define RANGEFINDER_MAX_INSTANCES 2
 #define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10
@@ -32,6 +34,7 @@ class RangeFinder
 {
 public:
     friend class AP_RangeFinder_Backend;
+    friend class AP_RangeFinder_PX4FLOW;
 
     RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default);
 
@@ -101,7 +104,11 @@ public:
     AP_Int8  _orientation[RANGEFINDER_MAX_INSTANCES];
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+ 
+    void set_optflow(const OpticalFlow* optflow) {
+        _optflow = optflow;
+    }
+
     // Return the number of range finder instances
     uint8_t num_sensors(void) const {
         return num_instances;
@@ -191,6 +198,7 @@ public:
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
 
 private:
+    const OpticalFlow* _optflow = nullptr;
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances:3;

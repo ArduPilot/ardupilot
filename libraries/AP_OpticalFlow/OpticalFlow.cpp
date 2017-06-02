@@ -79,6 +79,8 @@ OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
 
     // healthy flag will be overwritten on update
     _flags.healthy = false;
+
+    ahrs.set_optflow(this);
 }
 
 void OpticalFlow::init(void)

@@ -44,6 +44,11 @@ public:
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
+    void set_optflow(const OpticalFlow *optflow) override {
+        _rng.set_optflow(optflow);
+        _optflow = optflow;
+    }
+
     // Constructor
     AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
                    NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
@@ -263,6 +268,7 @@ private:
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
     }
 
+    RangeFinder &_rng;
     NavEKF2 &EKF2;
     NavEKF3 &EKF3;
     bool _ekf2_started;

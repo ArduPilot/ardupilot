@@ -29,8 +29,6 @@ extern const AP_HAL::HAL& hal;
 
 #define PX4FLOW_BASE_I2C_ADDR 0x42
 
-std::atomic<uint16_t> AP_OpticalFlow_PX4Flow::ground_distance;
-
 // constructor
 AP_OpticalFlow_PX4Flow::AP_OpticalFlow_PX4Flow(OpticalFlow &_frontend) :
     OpticalFlow_backend(_frontend)
@@ -124,7 +122,7 @@ void AP_OpticalFlow_PX4Flow::timer(void)
         _applyYaw(state.flowRate);
         _applyYaw(state.bodyRate);
 
-	ground_distance.store(frame.ground_distance, std::memory_order_relaxed);
+        state.ground_distance = frame.ground_distance;
     }
 
     _update_frontend(state);

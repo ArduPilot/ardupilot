@@ -136,7 +136,7 @@ public:
         return _compass;
     }
 
-    void set_optflow(const OpticalFlow *optflow) {
+    virtual void set_optflow(const OpticalFlow *optflow) {
         _optflow = optflow;
     }
 
