@@ -70,7 +70,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
 #endif
 
     // we are armed if we are not initialising
-    if (motors->armed()) {
+    if (motors != nullptr && motors->armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
