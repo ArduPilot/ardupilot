@@ -1006,7 +1006,7 @@ void NavEKF2_core::FuseDeclination(float declErr)
     float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
     // Calculate the innovation
-    float innovation = atanf(t4) - magDecAng;
+    float innovation = atan2f(magE , magN) - magDecAng;
 
     // limit the innovation to protect against data errors
     if (innovation > 0.5f) {
