@@ -286,7 +286,13 @@ public:
     uint16_t get_offsets_max(void) const {
         return (uint16_t)_offset_max.get();
     }
-    
+
+    static Compass *get_instance(void) {
+        static Compass _instance;
+        return &_instance;
+    }
+
+
 private:
     /// Register a new compas driver, allocating an instance number
     ///
