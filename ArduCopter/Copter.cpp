@@ -23,7 +23,13 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 Copter::Copter(void) :
     DataFlash{FIRMWARE_STRING},
     flight_modes(&g.flight_mode1),
-    mission(ahrs, 
+    barometer(*AP_Baro::get_instance()),
+    compass(*Compass::get_instance()),
+    ins(*AP_InertialSensor::get_instance()),
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    sitl(*SITL::SITL::get_instance()),
+#endif
+    mission(ahrs,
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
