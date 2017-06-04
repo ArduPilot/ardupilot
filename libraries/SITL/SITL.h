@@ -167,6 +167,11 @@ public:
 
     // convert a set of roll rates from body frame to earth frame
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
+
+    static SITL *get_instance(void) {
+        static SITL _instance;
+        return &_instance;
+    }
 };
 
 } // namespace SITL
