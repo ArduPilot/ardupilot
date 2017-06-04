@@ -12,7 +12,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/* 
+/*
    main Rover class, containing all vehicle specific state
 */
 
@@ -25,6 +25,12 @@ Rover::Rover(void) :
     channel_throttle(nullptr),
     channel_learn(nullptr),
     DataFlash{FIRMWARE_STRING},
+    barometer(*AP_Baro::get_instance()),
+    compass(*Compass::get_instance()),
+    ins(*AP_InertialSensor::get_instance()),
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    sitl(*SITL::SITL::get_instance()),
+#endif
     in_log_download(false),
     modes(&g.mode1),
     L1_controller(ahrs, nullptr),
