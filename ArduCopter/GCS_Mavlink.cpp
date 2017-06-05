@@ -1074,6 +1074,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
+                
+            } else if (is_equal(packet.param5,4.0f)) {
+                // simple accel calibration
+                result = copter.ins.simple_accel_cal(copter.ahrs);
+
             } else if (is_equal(packet.param6,1.0f)) {
                 // compassmot calibration
                 result = copter.mavlink_compassmot(chan);
