@@ -981,11 +981,6 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
         if (_accel_offset[i].get().is_zero()) {
             return false;
         }
-        // exactly 1.0 scaling is extremely unlikely
-        const Vector3f &scaling = _accel_scale[i].get();
-        if (is_equal(scaling.x,1.0f) && is_equal(scaling.y,1.0f) && is_equal(scaling.z,1.0f)) {
-            return false;
-        }
         // zero scaling also indicates not calibrated
         if (_accel_scale[i].get().is_zero()) {
             return false;
