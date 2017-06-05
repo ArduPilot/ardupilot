@@ -72,10 +72,6 @@ bool Copter::set_home(const Location& loc, bool lock)
 
     // init inav and compass declination
     if (ap.home_state == HOME_UNSET) {
-        // Set compass declination automatically
-        if (g.compass_enabled) {
-            compass.set_initial_location(gps.location().lat, gps.location().lng);
-        }
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
         scaleLongDown = longitude_scale(loc);
         // record home is set

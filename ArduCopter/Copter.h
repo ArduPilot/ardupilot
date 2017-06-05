@@ -285,6 +285,7 @@ private:
             uint8_t motor_interlock_switch  : 1; // 23      // true if pilot is requesting motor interlock enable
             uint8_t in_arming_delay         : 1; // 24      // true while we are armed but waiting to spin motors
             uint8_t initialised_params      : 1; // 25      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
+            uint8_t compass_init_location   : 1; // 26      // true when the compass's initial location has been set
         };
         uint32_t value;
     } ap;

@@ -109,6 +109,28 @@ void Copter::init_compass()
     ahrs.set_compass(&compass);
 }
 
+/*
+  if the compass is enabled then try to accumulate a reading
+  also update initial location used for declination
+ */
+void Copter::compass_accumulate(void)
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    compass.accumulate();
+
+    // update initial location used for declination
+    if (!ap.compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            ap.compass_init_location = true;
+        }
+    }
+}
+
 // initialise optical flow sensor
 void Copter::init_optflow()
 {
