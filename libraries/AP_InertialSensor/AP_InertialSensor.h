@@ -27,6 +27,7 @@
 
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
+class AP_AHRS;
 
 /*
   forward declare DataFlash class. We can't include DataFlash.h
@@ -263,6 +264,9 @@ public:
     // update accel calibrator
     void acal_update();
 
+    // simple accel calibration
+    uint8_t simple_accel_cal(AP_AHRS &ahrs);
+    
     bool accel_cal_requires_reboot() const { return _accel_cal_requires_reboot; }
 
     // return time in microseconds of last update() call
