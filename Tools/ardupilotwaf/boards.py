@@ -269,6 +269,12 @@ class linux(Board):
             'AP_HAL_Linux',
         ]
 
+    def build(self, bld):
+        super(linux, self).build(bld)
+        if bld.options.upload:
+            waflib.Options.commands.append('rsync')
+            # Avoid infinite recursion
+            bld.options.upload = False
 
 class minlure(linux):
     def configure_env(self, cfg, env):
