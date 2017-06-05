@@ -179,16 +179,6 @@ void Copter::setup()
 }
 
 /*
-  if the compass is enabled then try to accumulate a reading
- */
-void Copter::compass_accumulate(void)
-{
-    if (g.compass_enabled) {
-        compass.accumulate();
-    }
-}
-
-/*
   try to accumulate a baro reading
  */
 void Copter::barometer_accumulate(void)
