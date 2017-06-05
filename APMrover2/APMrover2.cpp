@@ -173,6 +173,9 @@ void Rover::ahrs_update()
 
     ahrs.update();
 
+    // update home from EKF if necessary
+    update_home_from_EKF();
+
     // if using the EKF get a speed update now (from accelerometers)
     Vector3f velocity;
     if (ahrs.get_velocity_NED(velocity)) {
@@ -399,44 +402,23 @@ void Rover::update_GPS_10Hz(void)
 {
     have_position = ahrs.get_position(current_loc);
 
-    if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.last_message_time_ms() != last_gps_msg_ms) {
         last_gps_msg_ms = gps.last_message_time_ms();
 
-        if (ground_start_count > 1) {
-            ground_start_count--;
+        // set system time if necessary
+        set_system_time_from_GPS();
 
-        } else if (ground_start_count == 1) {
-            // We countdown N number of good GPS fixes
-            // so that the altitude is more accurate
-            // -------------------------------------
-            if (current_loc.lat == 0 && current_loc.lng == 0) {
-                ground_start_count = 20;
-            } else {
-                init_home();
+        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
 
-                // set system clock for log timestamps
-                const uint64_t gps_timestamp = gps.time_epoch_usec();
-
-                hal.util->set_system_clock(gps_timestamp);
-
-                // update signing timestamp
-                GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
-
-                if (g.compass_enabled) {
-                    // Set compass declination automatically
-                    compass.set_initial_location(gps.location().lat, gps.location().lng);
-                }
-                ground_start_count = 0;
-            }
-        }
-        // get ground speed estimate from AHRS
-        ground_speed = ahrs.groundspeed();
+            // get ground speed estimate from AHRS
+            ground_speed = ahrs.groundspeed();
 
 #if CAMERA == ENABLED
-        if (camera.update_location(current_loc, rover.ahrs) == true) {
-            do_take_picture();
-        }
+            if (camera.update_location(current_loc, rover.ahrs) == true) {
+                do_take_picture();
+            }
 #endif
+        }
     }
 }
 
