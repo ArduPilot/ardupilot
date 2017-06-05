@@ -94,6 +94,8 @@ void AP_InertialSensor_SITL::generate_accel(uint8_t instance)
 
     Vector3f accel = Vector3f(xAccel, yAccel, zAccel) + _imu.get_accel_offsets(instance);
 
+    _rotate_and_correct_accel(accel_instance[instance], accel);
+    
     _notify_new_accel_raw_sample(accel_instance[instance], accel, AP_HAL::micros64());
 }
 
@@ -126,6 +128,8 @@ void AP_InertialSensor_SITL::generate_gyro(uint8_t instance)
     gyro.y *= (1 + scale.y*0.01);
     gyro.z *= (1 + scale.z*0.01);
 
+    _rotate_and_correct_gyro(gyro_instance[instance], gyro);
+    
     _notify_new_gyro_raw_sample(gyro_instance[instance], gyro, AP_HAL::micros64());
 }
 
