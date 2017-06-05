@@ -115,7 +115,7 @@ void Copter::init_ardupilot()
 
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
-    
+
     // initialise serial ports
     serial_manager.init();
 
@@ -125,7 +125,7 @@ void Copter::init_ardupilot()
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
-    
+
     BoardConfig.init();
 
     // init cargo gripper
@@ -142,7 +142,7 @@ void Copter::init_ardupilot()
 
     // Init RSSI
     rssi.init();
-    
+
     barometer.init();
 
     // we start by assuming USB connected, as we initialed the serial
@@ -175,7 +175,7 @@ void Copter::init_ardupilot()
     // trad heli specific initialisation
     heli_init();
 #endif
-    
+
     init_rc_in();               // sets up rc channels from radio
 
     // default frame class to match firmware if possible
@@ -459,7 +459,7 @@ void Copter::update_auto_armed()
 #endif // HELI_FRAME
     }else{
         // arm checks
-        
+
 #if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
         if(motors->armed() && !ap.throttle_zero && motors->rotor_runup_complete()) {
@@ -612,7 +612,7 @@ void Copter::allocate_motors(void)
             motors_var_info = AP_MotorsHeli_Dual::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
             break;
-            
+
         case AP_Motors::MOTOR_FRAME_HELI:
         default:
             motors = new AP_MotorsHeli_Single(MAIN_LOOP_RATE);
@@ -633,10 +633,10 @@ void Copter::allocate_motors(void)
 
     const struct AP_Param::GroupInfo *ac_var_info;
 
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_CONFIG != HELI_FRAME || FRAME_CONFIG != COMPOUND_FRAME
     attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
     ac_var_info = AC_AttitudeControl_Multi::var_info;
-#else
+#elif FRAME_CONFIG = HELI_FRAME
     attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
     ac_var_info = AC_AttitudeControl_Heli::var_info;
 #endif
@@ -644,7 +644,7 @@ void Copter::allocate_motors(void)
         AP_HAL::panic("Unable to allocate AttitudeControl");
     }
     AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
-        
+
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control,
                                     g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                                     g.p_pos_xy, g.pi_vel_xy);
@@ -667,7 +667,7 @@ void Copter::allocate_motors(void)
 
     // reload lines from the defaults file that may now be accessible
     AP_Param::reload_defaults_file();
-    
+
     // now setup some frame-class specific defaults
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
     case AP_Motors::MOTOR_FRAME_Y6:

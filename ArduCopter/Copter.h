@@ -505,7 +505,13 @@ private:
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
     AC_AttitudeControl *attitude_control;
+    
+    #if FRAME_CONFIG != COMPOUND_FRAME
     AC_PosControl *pos_control;
+    #else
+    AC_PosControl_Compound *pos_control;
+    #endif
+
     AC_WPNav *wp_nav;
     AC_Circle *circle_nav;
 

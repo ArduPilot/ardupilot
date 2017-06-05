@@ -118,8 +118,8 @@ void AP_MotorsCoax::output_to_motors()
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_actuator_out[3], _servo4));
             rc_write(AP_MOTORS_MOT_5, calc_thrust_to_pwm(_thrust_yt_ccw));
             rc_write(AP_MOTORS_MOT_6, calc_thrust_to_pwm(_thrust_yt_cw));
-            rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(_forward_radio_passthrough, _servo7));
-            //rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(thrust_auxiliary, _servo7));
+            //rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(_forward_radio_passthrough, _servo7));
+            rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(_forward_thrust, _servo7));
             break;
     }
 }
@@ -146,8 +146,8 @@ void AP_MotorsCoax::output_armed_stabilizing()
     float   pitch_thrust;               // pitch thrust input value, +/- 1.0
     float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
     float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
-    float   thrust_min_rpy;             // the minimum throttle setting that will not limit the roll and pitch output
-    float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+    //float   thrust_min_rpy;             // the minimum throttle setting that will not limit the roll and pitch output
+    //float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
     float   thrust_out;                 //
     //float   yaw_compensator = 0.0f;     // yaw thrust compensator whenever thrust_out cannot enable enough yaw thrust
     //float   rp_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
@@ -158,7 +158,10 @@ void AP_MotorsCoax::output_armed_stabilizing()
     pitch_thrust = _pitch_in * get_compensation_gain();
     yaw_thrust = _yaw_in * get_compensation_gain();
     throttle_thrust = get_throttle() * get_compensation_gain();
+    _forward_thrust = get_forward() * get_compensation_gain();
 
+    _forward_thrust = constrain_float(_forward_thrust, 0.0f, 1.0f);
+    //forward_thrust = calc_auxiliary_thrust_to_pwm(forward_thrust);
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {
         throttle_thrust = 0.0f;
@@ -171,36 +174,6 @@ void AP_MotorsCoax::output_armed_stabilizing()
 
     _throttle_avg_max = constrain_float(_throttle_avg_max, throttle_thrust, _throttle_thrust_max);
 
-    /*
-    float rp_thrust_max = MAX(fabsf(roll_thrust), fabsf(pitch_thrust));
-
-    // calculate how much roll and pitch must be scaled to leave enough range for the minimum yaw
-
-    if (is_zero(rp_thrust_max)) {
-        rp_scale = 1.0f;
-    } else {
-        rp_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), 0.5f*(float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
-        if (rp_scale < 1.0f) {
-            limit.roll_pitch = true;
-        }
-    }
-
-    actuator_allowed = 2.0f * (1.0f - rp_scale * rp_thrust_max); // for Coaxial Fan systems.
-    if (fabsf(yaw_thrust) > actuator_allowed) {
-        yaw_thrust = constrain_float(yaw_thrust, -actuator_allowed, actuator_allowed);
-        limit.yaw = true;
-    }
-    // calculate the minimum thrust that doesn't limit the roll, pitch and yaw forces
-    thrust_min_rpy = MAX(fabsf(rp_scale * rp_thrust_max), fabsf(yaw_thrust));
-
-    thr_adj = throttle_thrust - _throttle_avg_max;
-    if (thr_adj < (thrust_min_rpy - _throttle_avg_max)) {
-        // Throttle can't be reduced to the desired level because this would mean roll or pitch control
-        // would not be able to reach the desired level because of lack of thrust.
-        thr_adj = MIN(thrust_min_rpy, _throttle_avg_max) - _throttle_avg_max;
-    }
-
-*/
     // calculate the throttle setting for the lift fan
     thrust_out = _throttle_avg_max + throttle_thrust; //+ thr_adj;
 
@@ -293,11 +266,11 @@ void AP_MotorsCoax::output_test(uint8_t motor_seq, int16_t pwm)
             break;
     }
 }
-
-void calc_auxiliary_thrust_to_pwm()
+/*
+float calc_auxiliary_thrust_to_pwm(float forward_thrust)
 {
-  float thrust_auxiliary;   // compounded thrust
-
-  thrust_auxiliary = constrain_float(_forward_in * get_compensation_gain(), 0.0f, 1.0f);
+  // Simple function for now.
+    return forward_thrust = constrain_float(forward_thrust, 0.0f, 1.0f);
 
 }
+*/

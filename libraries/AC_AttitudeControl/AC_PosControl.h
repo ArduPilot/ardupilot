@@ -145,7 +145,7 @@ public:
 
     /// get_alt_error - returns altitude error in cm
     float get_alt_error() const;
-    
+
     // returns horizontal error in cm
     float get_horizontal_error() const;
 
@@ -198,7 +198,7 @@ public:
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
     void set_limit_accel_xy(void) { _limit.accel_xy = true; }
-    
+
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration
     ///     should be called whenever the speed, acceleration or position kP is modified
     void calc_leash_length_xy();
@@ -358,7 +358,7 @@ protected:
 
     /// accel_to_lean_angles - horizontal desired acceleration to lean angles
     ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-    void accel_to_lean_angles(float dt_xy, float ekfNavVelGainScaler, bool use_althold_lean_angle);
+    virtual void accel_to_lean_angles(float dt_xy, float ekfNavVelGainScaler, bool use_althold_lean_angle);
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
