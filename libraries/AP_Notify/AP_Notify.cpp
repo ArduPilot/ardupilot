@@ -64,6 +64,20 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Values: 0:Disable,1:ssd1306,2:sh1106
     // @User: Advanced
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
+	
+    // @Param: SOLO_LED_ENABLE
+    // @DisplayName: 3DR Solo OreoLEDs
+    // @Description: This enables the Solo's motor arm LEDs
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("SOLO_LED_ENABLE", 4, AP_Notify, _solo_led_enable, 0),
+
+    // @Param: SOLO_TONES_ENABLE
+    // @DisplayName: 3DR Solo notification tones
+    // @Description: This enables the Solo's custom notification tones
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("SOLO_TONES_ENABLE", 5, AP_Notify, _solo_tones_enable, 0),
 
     AP_GROUPEND
 };
@@ -86,19 +100,6 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #endif
     ToshibaLED_I2C toshibaled;
     Display display;
-
-#if AP_NOTIFY_SOLO_TONES == 1
-    ToneAlarm_PX4_Solo tonealarm;
-#else
-    ToneAlarm_PX4 tonealarm;
-#endif
-
-#if AP_NOTIFY_OREOLED == 1
-    OreoLED_PX4 oreoled;
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled, &display};
-#else
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &display};
-#endif
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ToneAlarm_PX4 tonealarm;
@@ -165,6 +166,21 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
 {
+    // Check the solo tones parameter and set tone alarm. Formerly a hard coded parameter on compile
+    if (_solo_tones_enable)
+        ToneAlarm_PX4_Solo tonealarm;
+    else
+        ToneAlarm_PX4 tonealarm;
+    endif
+
+    //Check the solo LED parameter and set notify devices. Formerly a hard coded parameter on compile.
+    if (_solo_led_enable)
+        OreoLED_PX4 oreoled;
+        NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled, &display};
+    else
+        NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &display};
+    endif
+    
     // clear all flags and events
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
