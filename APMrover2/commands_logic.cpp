@@ -542,12 +542,9 @@ void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void Rover::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 && have_position) {
-        init_home();
+        set_home_to_current_location(false);
     } else {
-        ahrs.set_home(cmd.content.location);
-        home_is_set = HOME_SET_NOT_LOCKED;
-        Log_Write_Home_And_Origin();
-        GCS_MAVLINK::send_home_all(cmd.content.location);
+        set_home(cmd.content.location, false);
     }
 }
 

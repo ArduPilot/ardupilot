@@ -243,10 +243,6 @@ private:
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
 
-    // A counter used to count down valid gps fixes to allow the gps estimate to settle
-    // before recording our home position (and executing a ground start if we booted with an air start)
-    uint8_t ground_start_count;
-
     // true if we have a position estimate from AHRS
     bool have_position;
 
@@ -334,6 +330,9 @@ private:
 
     // Flag for if we have g_gps lock and have set the home location in AHRS
     enum HomeState home_is_set = HOME_UNSET;
+
+    // true if the system time has been set from the GPS
+    bool system_time_set;
 
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
     struct Location prev_WP;
@@ -476,7 +475,10 @@ private:
     void set_auto_WP(const struct Location& loc);
     void set_guided_WP(const struct Location& loc);
     void set_guided_velocity(float target_steer_speed, float target_speed);
-    void init_home();
+    void update_home_from_EKF();
+    bool set_home_to_current_location(bool lock);
+    bool set_home(const Location& loc, bool lock);
+    void set_system_time_from_GPS();
     void restart_nav();
     void exit_mission();
     void do_RTL(void);
