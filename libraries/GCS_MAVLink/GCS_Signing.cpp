@@ -75,7 +75,7 @@ void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t *msg)
     memcpy(key.secret_key, packet.secret_key, 32);
 
     if (!signing_key_save(key)) {
-        hal.console->printf("Failed to save signing key");
+        hal.console->print("Failed to save signing key");
         return;
     }
 
@@ -121,7 +121,7 @@ void GCS_MAVLINK::load_signing_key(void)
     }
     mavlink_status_t *status = mavlink_get_channel_status(chan);
     if (status == nullptr) {
-        hal.console->printf("Failed to load signing key - no status");
+        hal.console->print("Failed to load signing key - no status");
         return;        
     }
     memcpy(signing.secret_key, key.secret_key, 32);
