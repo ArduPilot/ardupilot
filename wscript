@@ -82,6 +82,15 @@ Don't update git submodules. Useful for building with submodules at specific
 revisions.
 ''')
 
+    g.add_option('--rsync-dest',
+        dest='rsync_dest',
+        action='store',
+        default='',
+        help='''
+Destination for the rsync Waf command. It can be passed during configuration in
+order to save typing.
+''')
+
     g.add_option('--enable-benchmarks',
         action='store_true',
         default=False,
@@ -190,6 +199,11 @@ def configure(cfg):
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/',
     ])
+
+    cfg.find_program('rsync', mandatory=False)
+    if cfg.options.rsync_dest:
+        cfg.msg('Setting rsync destination to', cfg.options.rsync_dest)
+        cfg.env.RSYNC_DEST = cfg.options.rsync_dest
 
     # TODO: Investigate if code could be changed to not depend on the
     # source absolute path.
@@ -412,3 +426,32 @@ class LocalInstallContext(Build.InstallContext):
         r = super(LocalInstallContext, self).execute()
         self.options.destdir = old_destdir
         return r
+
+class RsyncContext(LocalInstallContext):
+    """runs linstall and then rsyncs BLD/install with the target system"""
+    cmd = 'rsync'
+
+    def __init__(self, **kw):
+        super(RsyncContext, self).__init__(**kw)
+        self.add_pre_fun(RsyncContext.create_rsync_taskgen)
+
+    def create_rsync_taskgen(self):
+        if 'RSYNC' not in self.env:
+            self.fatal('rsync program seems not to be installed, can\'t continue')
+
+        self.add_group()
+
+        tg = self(
+            name='rsync',
+            rule='${RSYNC} -a ${RSYNC_SRC}/ ${RSYNC_DEST}',
+            always=True,
+        )
+
+        tg.env.RSYNC_SRC = self.local_destdir
+        if self.options.rsync_dest:
+            self.env.RSYNC_DEST = self.options.rsync_dest
+
+        if 'RSYNC_DEST' not in tg.env:
+            self.fatal('Destination for rsync not defined. Either pass --rsync-dest here or during configuration.')
+
+        tg.post()
