@@ -699,6 +699,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_AOA_SSA:
         CHECK_PAYLOAD_SIZE(AOA_SSA);
         plane.send_aoa_ssa(chan);
+        break;
     case MSG_LANDING:
         plane.landing.send_landing_message(chan);
         break;
