@@ -35,7 +35,7 @@
  *
  * The PixHawk 2.0 in the 3DR Solo uses 3.3V logic levels for PWM signaling to
  * the Solo ESC's. The Solo ESC's use 5V logic levels. Although not ideal, under
- * normal conditions, the 3.3V output is voltage is sufficient to be recognized
+ * normal conditions, the 3.3V voltage is sufficient to be recognized
  * as "logic high" by the 5V logic of the ESC's. However, during times of high
  * motor output, the Solo power distribution system allows the ground voltage at
  * the ESC to "drift upwards" by up to 1 volt. Under these conditions, the
@@ -116,40 +116,37 @@ const AP_Param::GroupInfo AP_MotorsMatrixSlewRateLimited::var_info[] = {
 
     // @Param: SLW_RT_NORM
     // @DisplayName: Normal Motor Slew Rate
-    // @Description: Maximum allowed change in motor PWM output per second
-    // @Units: pwm/sec
-    // @Range: 0 65535
+    // @Description: Maximum allowed change in motor PWM output per second, during normal operation
+    // @Units: PWM/s
+    // @Range: 0 25000
     // @User: Advanced
     AP_GROUPINFO("SLW_RT_NORM", 1, AP_MotorsMatrixSlewRateLimited, _normal_slew_rate, AP_MOTORS_NORMAL_SLEW_RATE_DEFAULT),
 
     // @Param: SLW_RT_RCOV
     // @DisplayName: Recovery Motor Slew Rate
     // @Description: Maximum allowed change in motor PWM output per second, during recovery / restart
-    // @Units: pwm/sec
-    // @Range: 0 65535
+    // @Units: PWM/s
+    // @Range: 0 25000
     // @User: Advanced
     AP_GROUPINFO("SLW_RT_RCOV", 2, AP_MotorsMatrixSlewRateLimited, _recovery_slew_rate, AP_MOTORS_RECOVERY_SLEW_RATE_DEFAULT),
 
     // @Param: SLW_RCOV_OUT
     // @DisplayName: Motor Recovery Output Power
     // @Description: Motor output level to use when starting motor recovery (proportion of max pwm output)
-    // @Units:
     // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("SLW_RCOV_OUT", 3, AP_MotorsMatrixSlewRateLimited, _recovery_output, AP_MOTORS_RECOVERY_OUTPUT_DEFAULT),
 
     // @Param: SLW_DET_HIGH
     // @DisplayName: Motor Failure Detection High Threshold
-    // @Description: Motor output level high threshold for failure detection
-    // @Units:
+    // @Description: Motor output level high threshold for failure detection (proportion of max pwm output)
     // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("SLW_DET_HIGH", 4, AP_MotorsMatrixSlewRateLimited, _detection_high_threshold, AP_MOTORS_RECOVERY_HIGH_MOTOR_THRESHOLD_DEFAULT),
 
     // @Param: SLW_DET_LOW
     // @DisplayName: Motor Failure Detection Low Threshold
-    // @Description: Motor output level low threshold for failure detection
-    // @Units:
+    // @Description: Motor output level low threshold for failure detection (proportion of max pwm output)
     // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("SLW_DET_LOW", 5, AP_MotorsMatrixSlewRateLimited, _detection_low_threshold, AP_MOTORS_RECOVERY_LOW_AVG_THRESHOLD_DEFAULT),
@@ -157,15 +154,15 @@ const AP_Param::GroupInfo AP_MotorsMatrixSlewRateLimited::var_info[] = {
     // @Param: SLW_DET_TIME
     // @DisplayName: Motor Failure Detection Time
     // @Description: Minimum time exceeding threshold to trigger failure detection
-    // @Units: milliseconds
-    // @Range: 0 2
+    // @Units: ms
+    // @Range: 0 2000
     // @User: Advanced
     AP_GROUPINFO("SLW_DET_TIME", 6, AP_MotorsMatrixSlewRateLimited, _detection_time, AP_MOTORS_RECOVERY_DETECTION_TIME_DEFAULT),
 
     // @Param: SLW_DET_FREQ
     // @DisplayName: Motor Failure Detection Filter Frequency
     // @Description: Frequency used in failure detection low pass filter
-    // @Units: hertz
+    // @Units: Hz
     // @Range: 0 10
     // @User: Advanced
     AP_GROUPINFO("SLW_DET_FREQ", 7, AP_MotorsMatrixSlewRateLimited, _detection_filter_frequency, AP_MOTORS_RECOVERY_MOT_FILT_HZ_DEFAULT),
@@ -173,8 +170,8 @@ const AP_Param::GroupInfo AP_MotorsMatrixSlewRateLimited::var_info[] = {
     // @Param: SLW_DLY_TIME
     // @DisplayName: Motor Failure Post Recovery Delay Time
     // @Description: Time after motor recovery during which failure detection is disabled
-    // @Units: milliseconds
-    // @Range: 0 2
+    // @Units: ms
+    // @Range: 0 2000
     // @User: Advanced
     AP_GROUPINFO("SLW_DLY_TIME", 8, AP_MotorsMatrixSlewRateLimited, _post_recovery_time, AP_MOTORS_RECOVERY_POST_DELAY_DEFAULT),
 
