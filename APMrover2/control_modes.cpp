@@ -99,7 +99,7 @@ void Rover::read_trim_switch()
                     mission.clear();
                     if (channel_steer->get_control_in() > 3000) {
                         // if roll is full right store the current location as home
-                        init_home();
+                        set_home_to_current_location(false);
                     }
                     break;
 

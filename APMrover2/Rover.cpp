@@ -43,7 +43,6 @@ Rover::Rover(void) :
     camera_mount(ahrs, current_loc),
 #endif
     control_mode(INITIALISING),
-    ground_start_count(20),
     throttle(500),
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry(ahrs, battery, sonar),
