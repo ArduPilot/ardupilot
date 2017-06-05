@@ -256,7 +256,7 @@ void GCS_MAVLINK::send_distance_sensor_downward(const RangeFinder &rangefinder) 
     send_distance_sensor(rangefinder, instance);
 }
 
-void GCS_MAVLINK::send_rangefinder(const RangeFinder &rangefinder) const
+void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder) const
 {
     // exit immediately if rangefinder is disabled or not downward looking
     if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
