@@ -49,13 +49,13 @@ protected:
     void                output_armed_stabilizing();
 
     // add_motor using raw roll, pitch, throttle and yaw factors
-    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
+    void                add_motor_raw(float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
 
     // add_motor using just position and yaw_factor (or prop direction)
-    void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order);
+    void                add_motor(float angle_degrees, float yaw_factor, uint8_t testing_order);
 
     // add_motor using separate roll and pitch factors (for asymmetrical frames) and prop direction
-    void                add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order);
+    void                add_motor(float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order);
 
     // remove_motor
     void                remove_motor(int8_t motor_num);
@@ -74,6 +74,7 @@ protected:
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
     float               _thrust_rpyt_out[AP_MOTORS_MAX_NUM_MOTORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
+    int8_t              _motor_num;  // Motors number
     motor_frame_class   _last_frame_class; // most recently requested frame class (i.e. quad, hexa, octa, etc)
     motor_frame_type    _last_frame_type; // most recently requested frame type (i.e. plus, x, v, etc)
 };
