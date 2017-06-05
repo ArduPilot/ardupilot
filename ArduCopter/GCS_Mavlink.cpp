@@ -458,7 +458,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_RANGEFINDER:
 #if RANGEFINDER_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        send_rangefinder(copter.rangefinder);
+        send_rangefinder_downward(copter.rangefinder);
         CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
         send_distance_sensor_downward(copter.rangefinder);
 #endif
