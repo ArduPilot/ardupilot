@@ -568,3 +568,4 @@ class aerofc_v1(px4):
         self.board_name = 'aerofc-v1'
         self.romfs_exclude(['oreoled.bin'])
         self.board_rc = True
+        self.param_defaults = '../../../Tools/Frame_params/intel-aero-rtf.param'
