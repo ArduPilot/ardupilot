@@ -780,6 +780,16 @@ struct PACKED log_SbpRAW2 {
     uint8_t data2[104];
 };
 
+struct PACKED log_SbpEvent {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint16_t wn;
+    uint32_t tow;
+    int32_t ns_residual;
+    uint8_t level;
+    uint8_t quality;
+};
+
 struct PACKED log_Rally {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1089,7 +1099,9 @@ Format characters in the format string for binary log messages
     { LOG_MSG_SBPRAW1, sizeof(log_SbpRAW1), \
       "SBR1", "QHHBQQQQQQQQ", "TimeUS,msg_type,sender_id,msg_len,1,2,3,4,5,6,7,8" }, \
     { LOG_MSG_SBPRAW2, sizeof(log_SbpRAW2), \
-      "SBR2", "QHQQQQQQQQQQQQQ", "TimeUS,msg_type,1,2,3,4,5,6,7,8,9,10,11,12,13" }
+      "SBR2", "QHQQQQQQQQQQQQQ", "TimeUS,msg_type,1,2,3,4,5,6,7,8,9,10,11,12,13" }, \
+    { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
+      "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality" }
 // #endif
 
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES, LOG_SBP_STRUCTURES
@@ -1202,7 +1214,7 @@ enum LogMessages {
     LOG_MSG_SBPTRACKING2,
     LOG_MSG_SBPRAW1,
     LOG_MSG_SBPRAW2,
-    LOG_MSG_SBPRAWx,
+    LOG_MSG_SBPEVENT,
     LOG_TRIGGER_MSG,
 
     LOG_GIMBAL1_MSG,
