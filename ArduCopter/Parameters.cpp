@@ -483,6 +483,13 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(poshold_brake_angle_max, "PHLD_BRAKE_ANGLE",  POSHOLD_BRAKE_ANGLE_DEFAULT),
 #endif
 
+    // @Param: MOT_SLW_LMT_EN
+    // @DisplayName: Motor Output Slew Rate Limiting
+    // @Description: Enables slew rate limiting on the motor outputs.
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    GSCALAR(motors_limit_slew_rate, "MOT_SLW_LMT_EN",  MOT_SLW_LMT_EN_DEFAULT),
+
     // @Param: LAND_REPOSITION
     // @DisplayName: Land repositioning
     // @Description: Enables user input during LAND mode, the landing phase of RTL, and auto mode landings.

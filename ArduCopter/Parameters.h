@@ -217,6 +217,9 @@ public:
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
 
+        // Enable / Disable slew rate limiter
+        k_param_motors_limit_slew_rate = 134,
+
         //
         // 135 : reserved for Solo until features merged with master
         //
@@ -411,6 +414,8 @@ public:
     AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
     AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
     
+    AP_Int8         motors_limit_slew_rate;     // Enable slew rate limiting on motors (e.g. Solo ESC workaround)
+
     // Waypoints
     //
     AP_Int32        rtl_loiter_time;
