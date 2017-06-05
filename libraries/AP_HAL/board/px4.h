@@ -35,7 +35,8 @@
 #define HAL_STORAGE_SIZE            16384
 #define USE_FLASH_STORAGE           1
 // we don't have any sdcard
-#undef HAL_OS_POSIX_IO
+#undef HAL_BOARD_LOG_DIRECTORY
+#undef HAL_BOARD_TERRAIN_DIRECTORY
 #else
 #error "Unknown PX4 board type"
 #endif
