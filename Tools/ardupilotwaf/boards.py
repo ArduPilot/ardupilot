@@ -423,7 +423,7 @@ class linux(Board):
         cfg.check_libiio(env)
 
         env.LINKFLAGS += ['-pthread',]
-        env.AP_LIBRARIES = [
+        env.AP_LIBRARIES += [
             'AP_HAL_Linux',
         ]
 
