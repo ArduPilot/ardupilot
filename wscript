@@ -397,3 +397,18 @@ for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
         program_group_list=program_group,
         doc='builds all programs of %s group' % program_group,
     )
+
+class LocalInstallContext(Build.InstallContext):
+    """runs install using BLD/install as destdir, where BLD is the build variant directory"""
+    cmd = 'linstall'
+
+    def __init__(self, **kw):
+        super(LocalInstallContext, self).__init__(**kw)
+        self.local_destdir = os.path.join(self.variant_dir, 'install')
+
+    def execute(self):
+        old_destdir = self.options.destdir
+        self.options.destdir = self.local_destdir
+        r = super(LocalInstallContext, self).execute()
+        self.options.destdir = old_destdir
+        return r
