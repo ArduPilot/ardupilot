@@ -139,15 +139,13 @@ void AP_Motors::rc_enable_ch(uint8_t chan)
  */
 uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
 {
-    uint32_t mask2 = 0;
-    for (uint8_t i=0; i<32; i++) {
+    uint32_t mask2 = mask & (0xFFFFFFFFu ^ ((1 << AP_MOTORS_MAX_NUM_MOTORS) - 1));
+    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         uint32_t bit = 1UL<<i;
         if (mask & bit) {
             if ((i < AP_MOTORS_MAX_NUM_MOTORS) && (_motor_map_mask & bit)) {
                 // we have a mapped motor number for this channel
                 mask2 |= (1UL << _motor_map[i]);
-            } else {
-                mask2 |= bit;
             }
         }
     }
