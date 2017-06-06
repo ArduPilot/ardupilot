@@ -127,10 +127,10 @@ bool OreoLED_PX4::slow_counter()
 
     update_counter++;
     if (update_counter < 5) {
-        return 1;
+        return true;
     } else {
         update_counter = 0;
-        return 0;
+        return false;
     }
 }
 
