@@ -427,6 +427,9 @@ class linux(Board):
             'AP_HAL_Linux',
         ]
 
+        if self.with_uavcan:
+            cfg.define('UAVCAN_EXCEPTIONS', 0)
+    
     def build(self, bld):
         super(linux, self).build(bld)
         if bld.options.upload:
