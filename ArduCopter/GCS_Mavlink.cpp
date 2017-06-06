@@ -862,7 +862,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // if we have not yet initialised (including allocating the motors
         // object) we drop this request. That prevents the GCS from getting
         // a confusing parameter count during bootup
-        if (!copter.ap.initialised_params) {
+        if (!copter.ap.initialised_params && !AP_BoardConfig::in_sensor_config_error()) {
             break;
         }
 
