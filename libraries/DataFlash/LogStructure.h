@@ -928,9 +928,9 @@ Format characters in the format string for binary log messages
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
       "ARSP",  "QffcffB",  "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
-      "CURR", CURR_FMT,CURR_LABELS }, \
+      "BAT", CURR_FMT,CURR_LABELS }, \
     { LOG_CURRENT2_MSG, sizeof(log_Current), \
-      "CUR2", CURR_FMT,CURR_LABELS }, \
+      "BAT2", CURR_FMT,CURR_LABELS }, \
     { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
       "BCL", CURR_CELL_FMT, CURR_CELL_LABELS }, \
     { LOG_CURRENT_CELLS2_MSG, sizeof(log_Current_Cells), \
