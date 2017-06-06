@@ -7,6 +7,7 @@
 
 #define AP_LANDINGGEAR_SERVO_RETRACT_PWM_DEFAULT    1250    // default PWM value to move servo to when landing gear is up
 #define AP_LANDINGGEAR_SERVO_DEPLOY_PWM_DEFAULT     1750    // default PWM value to move servo to when landing gear is down
+#define AP_LANDINGGEAR_TIME_TO_DEPLOY_SECONDS_DEFAULT     30    // default time in seconds to deploy landing gear
 
 // Gear command modes
 enum LandingGearCommandMode {
@@ -49,6 +50,11 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
+    AP_INT16 get_lgear_time() {
+     return _lgear_time_seconds;
+    }
+
+
 private:
 
     bool     _retract_enabled;          // true if landing gear retraction is enabled
@@ -56,7 +62,8 @@ private:
     // Parameters
     AP_Int16    _servo_retract_pwm;     // PWM value to move servo to when gear is retracted
     AP_Int16    _servo_deploy_pwm;      // PWM value to move servo to when gear is deployed
-
+    AP_Int16    _lgear_time_seconds;    // Time in seconds that the landing takes to deploy completely
+    
     // internal variables
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
     bool        _force_deploy;          // used by main code to force landing gear to deploy, such as in Land mode

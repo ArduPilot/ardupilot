@@ -26,6 +26,15 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SERVO_DEPLOY", 1, AP_LandingGear, _servo_deploy_pwm, AP_LANDINGGEAR_SERVO_DEPLOY_PWM_DEFAULT),
 
+    // @Param: SERVO_DEPLOY
+    // @DisplayName: Time the landing gear takes to be fully deployed
+    // @Description: Seconds that the landing gear takes to be fully deployed
+    // @Range: 1 120
+    // @Units: seconds
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("LGEAR_TIME", 1, AP_LandingGear, _lgear_time_seconds, AP_LANDINGGEAR_TIME_TO_DEPLOY_SECONDS_DEFAULT),
+    
     AP_GROUPEND
 };
 
@@ -42,17 +51,17 @@ void AP_LandingGear::deploy()
     SRV_Channels::set_output_pwm(SRV_Channel::k_landing_gear_control, _servo_deploy_pwm);
 
     // set deployed flag
-    _deployed = true;    
+    _deployed = true;
 }
 
 /// retract - retract landing gear
 void AP_LandingGear::retract()
-{    
+{
     // set servo PWM to retracted position
     SRV_Channels::set_output_pwm(SRV_Channel::k_landing_gear_control, _servo_retract_pwm);
 
     // reset deployed flag
-    _deployed = false;   
+    _deployed = false;
 }
 
 /// update - should be called at 10hz

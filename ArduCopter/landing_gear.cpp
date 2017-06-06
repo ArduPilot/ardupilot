@@ -12,6 +12,9 @@ void Copter::landinggear_update(){
 
         // if we are doing an automatic landing procedure, force the landing gear to deploy.
         // To-Do: should we pause the auto-land procedure to give time for gear to come down?
+        if (((current_loc.alt-rtl_alt*1.1f)/inertial_nav.get_velocity_z())<landinggear.get_lgear_time()) {
+            landinggear.force_deploy(true);
+        }
         if (control_mode == LAND ||
            (control_mode == RTL && (rtl_state == RTL_LoiterAtHome || rtl_state == RTL_Land || rtl_state == RTL_FinalDescent)) ||
            (control_mode == AUTO && auto_mode == Auto_Land) ||
