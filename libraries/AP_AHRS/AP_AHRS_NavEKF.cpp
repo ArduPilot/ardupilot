@@ -1003,7 +1003,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
             return EKF_TYPE_NONE;
         }
         if (!filt_state.flags.horiz_vel ||
-            !filt_state.flags.horiz_pos_abs) {
+            (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel)) {
             if ((!_compass || !_compass->use_for_yaw()) &&
                 _gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
                 _gps.ground_speed() < 2) {
