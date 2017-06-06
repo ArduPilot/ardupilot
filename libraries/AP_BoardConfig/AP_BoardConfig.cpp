@@ -226,8 +226,11 @@ void AP_BoardConfig::init_safety()
 /*
   notify user of a fatal startup error related to available sensors. 
 */
+bool AP_BoardConfig::_in_sensor_config_error;
+
 void AP_BoardConfig::sensor_config_error(const char *reason)
 {
+    _in_sensor_config_error = true;
     /*
       to give the user the opportunity to connect to USB we keep
       repeating the error.  The mavlink delay callback is initialised

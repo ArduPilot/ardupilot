@@ -44,7 +44,10 @@ public:
 
     // notify user of a fatal startup error related to available sensors. 
     static void sensor_config_error(const char *reason);
-    
+    // permit other libraries (in particular, GCS_MAVLink) to detect
+    // that we're never going to boot properly:
+    static bool in_sensor_config_error(void) { return _in_sensor_config_error; }
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // public method to start a driver
     static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
@@ -148,6 +151,8 @@ private:
 #endif
 
 #endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
+
+    static bool _in_sensor_config_error;
 
     // target temperarure for IMU in Celsius, or -1 to disable
     AP_Int8 _imu_target_temperature;
