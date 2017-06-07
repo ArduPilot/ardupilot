@@ -23,5 +23,8 @@ copter:
 rover:
 	$(MAKE) -C APMrover2 $(TARGET)
 
+sub:
+	$(MAKE) -C ArduSub $(TARGET)
+
 antennatracker:
 	$(MAKE) -C AntennaTracker $(TARGET)
