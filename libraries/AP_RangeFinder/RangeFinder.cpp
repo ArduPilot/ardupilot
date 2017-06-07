@@ -126,12 +126,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, _ground_clearance_cm[0], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: _ADDR
-    // @DisplayName: Bus address of sensor
-    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
+    // @DisplayName: I2C address of sensor
+    // @Description: This designates the I2C address for I2C sensor types.
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_ADDR", 23, RangeFinder, _address[0], 0),
+    AP_GROUPINFO("_ADDR", 23, RangeFinder, _i2c_address[0], 0),
 
     // @Param: _POS_X
     // @DisplayName:  X position offset
@@ -158,6 +158,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("_ORIENT", 53, RangeFinder, _orientation[0], ROTATION_PITCH_270),
+
+    // @Param: _BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("_BUS", 57, RangeFinder, _i2c_bus[0], HAL_DEFAULT_I2C_ACCESSORY_BUS),
+
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
@@ -250,7 +258,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("2_ADDR", 24, RangeFinder, _address[1], 0),
+    AP_GROUPINFO("2_ADDR", 24, RangeFinder, _i2c_address[1], 0),
 
     // @Param: 2_POS_X
     // @DisplayName:  X position offset
@@ -277,6 +285,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("2_ORIENT", 54, RangeFinder, _orientation[1], ROTATION_PITCH_270),
+
+    // @Param: 2_BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("2_BUS", 58, RangeFinder, _i2c_bus[1], HAL_DEFAULT_I2C_ACCESSORY_BUS),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -371,7 +386,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("3_ADDR", 36, RangeFinder, _address[2], 0),
+    AP_GROUPINFO("3_ADDR", 36, RangeFinder, _i2c_address[2], 0),
 
     // @Param: 3_POS_X
     // @DisplayName:  X position offset
@@ -398,6 +413,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("3_ORIENT", 55, RangeFinder, _orientation[2], ROTATION_PITCH_270),
+
+    // @Param: 3_BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("3_BUS", 59, RangeFinder, _i2c_bus[2], HAL_DEFAULT_I2C_ACCESSORY_BUS),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -492,7 +514,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("4_ADDR", 48, RangeFinder, _address[3], 0),
+    AP_GROUPINFO("4_ADDR", 48, RangeFinder, _i2c_address[3], 0),
 
     // @Param: 4_POS_X
     // @DisplayName:  X position offset
@@ -519,6 +541,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("4_ORIENT", 56, RangeFinder, _orientation[3], ROTATION_PITCH_270),
+
+    // @Param: 4_BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("4_BUS", 60, RangeFinder, _i2c_bus[3], HAL_DEFAULT_I2C_ACCESSORY_BUS),
 #endif
     
     AP_GROUPEND
@@ -617,12 +646,13 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
         break;
     case RangeFinder_TYPE_MBI2C:
-        _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance]));
+        if (_i2c_address[instance]) {
+            _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance], hal.i2c_mgr->get_device(_i2c_bus[instance], _i2c_address[instance])));
+        }
         break;
     case RangeFinder_TYPE_LWI2C:
-        if (_address[instance]) {
-            _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
-                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, _address[instance])));
+        if (_i2c_address[instance]) {
+            _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance], hal.i2c_mgr->get_device(_i2c_bus[instance], _i2c_address[instance])));
         }
         break;
     case RangeFinder_TYPE_TRONE:
