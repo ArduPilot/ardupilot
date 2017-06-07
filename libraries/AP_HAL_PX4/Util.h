@@ -77,4 +77,6 @@ private:
         uint32_t last_update_ms;
         int fd = -1;
     } _heater;
+
+    void heater_output(unsigned duty_cycle);
 };

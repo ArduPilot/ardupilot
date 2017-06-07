@@ -183,6 +183,9 @@ void PX4Util::perf_count(perf_counter_t h)
 void PX4Util::set_imu_temp(float current)
 {
     if (!_heater.target || *_heater.target == -1) {
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V3)
+        heater_output(0);
+#endif
         return;
     }
 
@@ -218,13 +221,17 @@ void PX4Util::set_imu_temp(float current)
     
     // hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", _heater.integrator, output, current, err);
 
+    heater_output((unsigned)output);
+}
+
+void PX4Util::heater_output(unsigned output)
+{
     if (_heater.fd == -1) {
         _heater.fd = open("/dev/px4io", O_RDWR);
     }
     if (_heater.fd != -1) {
-        ioctl(_heater.fd, GPIO_SET_HEATER_DUTY_CYCLE, (unsigned)output);
+        ioctl(_heater.fd, GPIO_SET_HEATER_DUTY_CYCLE, output);
     }
-   
 }
 
 void PX4Util::set_imu_target_temp(int8_t *target)
