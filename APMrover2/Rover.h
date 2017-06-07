@@ -334,6 +334,9 @@ private:
     // true if the system time has been set from the GPS
     bool system_time_set;
 
+    // true if the compass's initial location has been set
+    bool compass_init_location;
+
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
     struct Location prev_WP;
     // The location of the current/active waypoint.  Used for track following
