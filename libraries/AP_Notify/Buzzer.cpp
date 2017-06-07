@@ -178,7 +178,7 @@ void Buzzer::update()
     // check ekf bad
     if (_flags.ekf_bad != AP_Notify::flags.ekf_bad) {
         _flags.ekf_bad = AP_Notify::flags.ekf_bad;
-        if (_flags.ekf_bad) {
+        if (_flags.ekf_bad && AP_Notify::flags.armed) {
             // ekf bad warning buzz
             play_pattern(EKF_BAD);
         }
