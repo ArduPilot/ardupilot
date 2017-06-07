@@ -77,7 +77,7 @@ Copter::Copter(void) :
     camera_mount(ahrs, current_loc),
 #endif
 #if AC_FENCE == ENABLED
-    fence(ahrs, inertial_nav),
+    fence(ahrs, inertial_nav, g2.beacon),
 #endif
 #if AC_AVOID_ENABLED == ENABLED
     avoid(ahrs, inertial_nav, fence, g2.proximity),

@@ -225,6 +225,73 @@ uint32_t AP_Beacon::beacon_last_update_ms(uint8_t beacon_instance) const
     return beacon_state[beacon_instance].distance_update_ms;
 }
 
+// create fence boundary points
+bool AP_Beacon::update_boundary_points()
+{
+    // we need three points at least to create fence
+    // if already tried to create boundary, return false
+    if (!device_ready() || num_beacons < AP_BEACON_MINIMUM_FENCE_BEACONS || boundary_num_beacons == num_beacons) {
+        return false;
+    }
+
+    // delete to recreate boundary
+    if (_boundary != nullptr) {
+        delete _boundary;
+        _boundary = nullptr;
+    }
+
+    // check if we need to create array
+    _boundary = (Vector2f *)calloc(1, (num_beacons + 1) * sizeof(Vector2f));
+
+    if (_boundary == nullptr) {
+        return false;
+    } else {
+        boundary_num_beacons = num_beacons;
+    }
+
+    // accumulate beacon points
+    for (uint8_t index = 0; index < num_beacons; index++) {
+        // if a beacon is not healthy, delete _boundary to renew array
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+        if (!beacon_healthy(index)) {
+            delete _boundary;
+            _boundary = nullptr;
+            return false;
+        }
+#endif
+        Vector3f point_3d = beacon_position(index);
+        Vector2f point_2d(point_3d.x, point_3d.y);
+
+        _boundary[index] = point_2d;
+    }
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    // reorder points to create fence region by Pozyx anchor
+    // swap 3rd point and 4th point if 4 points exist
+    if (num_beacons == AP_BEACON_MAX_BEACONS && _type == AP_BeaconType_Pozyx) {
+        Vector2f point_2d = _boundary[2];
+        _boundary[2] = _boundary[3];
+        _boundary[3] = point_2d;
+    }
+#endif
+
+    // to close boundary region
+    _boundary[num_beacons] = _boundary[0];
+
+    return true;
+}
+
+// return fence boundary array
+Vector2f* AP_Beacon::get_boundary_points(uint16_t& num_points) const
+{
+    if (!device_ready()) {
+        return nullptr;
+    }
+
+    num_points = static_cast<uint16_t>(num_beacons + 1);
+    return _boundary;
+}
+
 // check if the device is ready
 bool AP_Beacon::device_ready(void) const
 {

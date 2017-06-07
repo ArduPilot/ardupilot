@@ -458,6 +458,8 @@ private:
     void update_turn_counter();
     void read_AHRS(void);
     void update_altitude();
+    void init_beacon();
+    void update_beacon();
     void set_home_state(enum HomeState new_home_state);
     bool home_is_set();
     float get_smoothing_gain();
@@ -514,6 +516,7 @@ private:
     void Log_Write_Home_And_Origin();
     void Log_Sensor_Health();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
+    void Log_Write_Beacon();
     void Log_Write_Vehicle_Startup_Messages();
     void start_logging() ;
     void load_parameters(void);
