@@ -143,6 +143,9 @@ void Copter::sport_run()
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
 
+#if FRAME_CONFIG != HELI_FRAME
+        attitude_control->relax_attitude_controllers();
+#endif
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->input_euler_rate_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
