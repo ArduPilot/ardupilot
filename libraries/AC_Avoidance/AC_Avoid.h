@@ -66,6 +66,11 @@ private:
     void adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2f &desired_vel);
 
     /*
+     * Adjusts the desired velocity for the beacon fence.
+     */
+    void adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel);
+
+    /*
      * Adjusts the desired velocity based on output from the proximity sensor
      */
     void adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &desired_vel);
