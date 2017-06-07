@@ -28,14 +28,8 @@ static struct {
 // should be called at 10hz
 void Copter::ekf_check()
 {
-    // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
-    Location temp_loc;
-    if (!ahrs.get_origin(temp_loc)) {
-        return;
-    }
-
-    // return immediately if motors are not armed, ekf check is disabled, not using ekf or usb is connected
-    if (!motors->armed() || ap.usb_connected || (g.fs_ekf_thresh <= 0.0f)) {
+    // return immediately if ekf check is disabled
+    if (g.fs_ekf_thresh <= 0.0f) {
         ekf_check_state.fail_count = 0;
         ekf_check_state.bad_variance = false;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
@@ -43,19 +37,32 @@ void Copter::ekf_check()
         return;
     }
 
-    // compare compass and velocity variance vs threshold
+    // Don't trigger the EKF failsafe action if motors aren't armed,
+    // USB is connected or EKF origin hasn't been set yet
+    Location temp_loc;
+    bool should_act = true;
+    if (!motors->armed() || ap.usb_connected || !ahrs.get_origin(temp_loc)) {
+        should_act = false;
+    }
+
+    // compare variances vs threshold
     if (ekf_over_threshold() || ekf_check_position_problem()) {
-        // if compass is not yet flagged as bad
-        if (!ekf_check_state.bad_variance) {
-            // increase counter
-            ekf_check_state.fail_count++;
-            // if counter above max then trigger failsafe
-            if (ekf_check_state.fail_count >= EKF_CHECK_ITERATIONS_MAX) {
-                // limit count from climbing too high
-                ekf_check_state.fail_count = EKF_CHECK_ITERATIONS_MAX;
+        // increase counter
+        ekf_check_state.fail_count++;
+
+        // if counter above max then do the appropriate actions
+        if (ekf_check_state.fail_count >= EKF_CHECK_ITERATIONS_MAX) {
+            // limit count from climbing too high
+            ekf_check_state.fail_count = EKF_CHECK_ITERATIONS_MAX;
+
+            // if compass is not yet flagged as bad
+            if (!ekf_check_state.bad_variance) {
                 ekf_check_state.bad_variance = true;
                 // log an error in the dataflash
                 Log_Write_Error(ERROR_SUBSYSTEM_EKFCHECK, ERROR_CODE_EKFCHECK_BAD_VARIANCE);
+            }
+
+            if (should_act) {
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
