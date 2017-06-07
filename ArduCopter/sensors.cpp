@@ -100,6 +100,10 @@ void Copter::rpm_update(void)
 // initialise compass
 void Copter::init_compass()
 {
+    if (!g.compass_enabled) {
+        return;
+    }
+
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
         cliSerial->printf("COMPASS INIT ERROR\n");
