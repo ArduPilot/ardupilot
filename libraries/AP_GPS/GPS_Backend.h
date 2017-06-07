@@ -61,6 +61,7 @@ public:
     void broadcast_gps_type() const;
     virtual void Write_DataFlash_Log_Startup_messages() const;
 
+    virtual bool is_healthy() const { return true; }
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
