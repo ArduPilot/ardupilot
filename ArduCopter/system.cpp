@@ -207,8 +207,7 @@ void Copter::init_ardupilot()
     // Do GPS init
     gps.init(&DataFlash, serial_manager);
 
-    if(g.compass_enabled)
-        init_compass();
+    init_compass();
 
 #if OPTFLOW == ENABLED
     // make optflow available to AHRS
