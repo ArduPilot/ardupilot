@@ -34,6 +34,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: SYS_NUM_RESETS
     // @DisplayName: Num Resets
     // @Description: Number of APM board resets
+    // @ReadOnly: True
     // @User: Advanced
     GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
 
