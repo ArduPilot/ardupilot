@@ -57,6 +57,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @DisplayName: Fence polygon point total
     // @Description: Number of polygon points saved in eeprom (do not update manually)
     // @Range: 1 20
+    // @ReadOnly: True
     // @User: Standard
     AP_GROUPINFO("TOTAL",       6,  AC_Fence,   _total, 0),
 
