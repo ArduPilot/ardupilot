@@ -516,6 +516,11 @@ private:
 
     uint32_t        _last_vel_time;
     uint32_t        _last_pos_time;
+
+    // information to ensure time_week and time_week_ms are always correlated:
+    uint32_t        pending_time_week_iTOW;
+    uint16_t        pending_time_week;
+
     uint32_t        _last_cfg_sent_time;
     uint8_t         _num_cfg_save_tries;
     uint32_t        _last_config_time;
