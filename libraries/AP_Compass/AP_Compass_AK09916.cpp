@@ -98,11 +98,11 @@ AP_Compass_AK09916::AP_Compass_AK09916(Compass &compass,
                                        enum Rotation _rotation,
                                        enum bus_type _bus_type)
     : AP_Compass_Backend(compass)
+    , bus_type(_bus_type)
     , dev(std::move(_dev))
     , dev_icm(std::move(_dev_icm))
     , force_external(_force_external)
     , rotation(_rotation)
-    , bus_type(_bus_type)
 {
 }
 
