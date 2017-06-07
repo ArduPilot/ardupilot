@@ -145,15 +145,8 @@ void Rover::init_ardupilot()
     log_init();
 #endif
 
-    if (g.compass_enabled == true) {
-        if (!compass.init()|| !compass.read()) {
-            cliSerial->printf("Compass initialisation failed!\n");
-            g.compass_enabled = false;
-        } else {
-            ahrs.set_compass(&compass);
-            // compass.get_offsets();  // load offsets to account for airframe magnetic interference
-        }
-    }
+    // initialise compass
+    init_compass();
 
     // initialise sonar
     init_sonar();

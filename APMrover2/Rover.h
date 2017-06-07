@@ -415,6 +415,7 @@ private:
     void update_trigger(void);
     void update_alt();
     void gcs_failsafe_check(void);
+    void init_compass(void);
     void compass_accumulate(void);
     void compass_cal_update(void);
     void update_compass(void);
