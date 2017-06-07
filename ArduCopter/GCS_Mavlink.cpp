@@ -1293,6 +1293,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 }
             } else if (is_equal(packet.param6,1.0f)) {
                 // compassmot calibration
+                if (!copter.ins.accel_calibrated_ok_all()) {
+                    send_text(MAV_SEVERITY_NOTICE,"Calibrate accelerometers before compasses");
+                    result = MAV_RESULT_FAILED;
+                    break;
+                }
                 result = copter.mavlink_compassmot(chan);
             }
             break;
