@@ -236,16 +236,6 @@ void Rover::gcs_failsafe_check(void)
 }
 
 /*
-  if the compass is enabled then try to accumulate a reading
- */
-void Rover::compass_accumulate(void)
-{
-    if (g.compass_enabled) {
-        compass.accumulate();
-    }
-}
-
-/*
   check for new compass data - 10Hz
  */
 void Rover::update_compass(void)
