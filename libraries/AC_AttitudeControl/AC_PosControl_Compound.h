@@ -30,6 +30,8 @@ public:
   // empty destructor to suppress compiler warning
   virtual ~AC_PosControl_Compound() {}
 
+  // enable radio passthorugh forward thruster for stablize, alt_hold , ...
+  void set_radio_passthrough_forward_thruster(float forward_radio_passthrough);
   //enable use of thruster from radio inputs;
   //void set_radio_passthrough_auxiliary_thruster(float forward_radio_passthrough);
   //switch to accel forward to use thruster instead of pitch down.
@@ -38,5 +40,9 @@ public:
   // accel forward command to rear thruster throttle
   void run_auxiliary_thruster_controller(float accel_forward);
 
+  // set use of forward thrster
+  void set_use_thruster(bool use_thruster);
+
   float _thrust_out;  // scaled throttle to be pass to motor controller.
+  bool _use_thruster; // flag for use thruster
 };

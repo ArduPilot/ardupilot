@@ -32,11 +32,13 @@ void Copter::init_rc_in()
     channel_pitch->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(1000);
-    channel_forward->set_range(1400); // forward thruster of compound helicopter.
-    channel_lateral->set_range(1400); // lateral thruster input for later use.
+    channel_forward->set_range(1000); // forward thruster of compound helicopter.
+    channel_lateral->set_range(1000); // lateral thruster input for later use.
     //set auxiliary servo ranges
     RC_Channels::rc_channel(CH_5)->set_range(1000);
     RC_Channels::rc_channel(CH_6)->set_range(1000);
+
+    // replaced for forward/lateral thruster
     //RC_Channels::rc_channel(CH_7)->set_range(1000);
     //RC_Channels::rc_channel(CH_8)->set_range(1000);
 

@@ -43,6 +43,7 @@ bool Copter::guided_init(bool ignore_checks)
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         // start in position control mode
         guided_pos_control_start();
+        pos_control->set_use_thruster(true);
         return true;
     }else{
         return false;
@@ -74,7 +75,7 @@ bool Copter::guided_takeoff_start(float final_alt_above_home)
 
     // get initial alt for WP_NAVALT_MIN
     auto_takeoff_set_start_alt();
-    
+
     return true;
 }
 

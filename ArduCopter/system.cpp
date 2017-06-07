@@ -633,7 +633,7 @@ void Copter::allocate_motors(void)
 
     const struct AP_Param::GroupInfo *ac_var_info;
 
-#if FRAME_CONFIG != HELI_FRAME || FRAME_CONFIG != COMPOUND_FRAME
+#if FRAME_CONFIG != HELI_FRAME
     attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
     ac_var_info = AC_AttitudeControl_Multi::var_info;
 #elif FRAME_CONFIG = HELI_FRAME
@@ -645,7 +645,7 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
 
-    pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control,
+    pos_control = new AC_PosControl_Compound(*ahrs_view, inertial_nav, *motors, *attitude_control,
                                     g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                                     g.p_pos_xy, g.pi_vel_xy);
     if (pos_control == nullptr) {

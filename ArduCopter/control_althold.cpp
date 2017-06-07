@@ -158,6 +158,9 @@ void Copter::althold_run()
         // call position controller
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control->update_z_controller();
+
+        // enable compound thruster
+        pos_control->set_radio_passthrough_forward_thruster(channel_forward->get_radio_in());
         break;
     }
 }

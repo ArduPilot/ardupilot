@@ -96,7 +96,7 @@ void AP_MotorsCoax::output_to_motors()
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(-_pitch_radio_passthrough, _servo4));
             rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_6, get_pwm_output_min());
-            rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(_forward_radio_passthrough, _servo7));
+            rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(0.0f, _servo7));
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
@@ -118,7 +118,6 @@ void AP_MotorsCoax::output_to_motors()
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_actuator_out[3], _servo4));
             rc_write(AP_MOTORS_MOT_5, calc_thrust_to_pwm(_thrust_yt_ccw));
             rc_write(AP_MOTORS_MOT_6, calc_thrust_to_pwm(_thrust_yt_cw));
-            //rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(_forward_radio_passthrough, _servo7));
             rc_write(AP_MOTORS_MOT_7, calc_pwm_output_0to1(_forward_thrust, _servo7));
             break;
     }
@@ -160,7 +159,6 @@ void AP_MotorsCoax::output_armed_stabilizing()
     throttle_thrust = get_throttle() * get_compensation_gain();
     _forward_thrust = get_forward() * get_compensation_gain();
 
-    _forward_thrust = constrain_float(_forward_thrust, 0.0f, 1.0f);
     //forward_thrust = calc_auxiliary_thrust_to_pwm(forward_thrust);
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {
@@ -206,8 +204,8 @@ void AP_MotorsCoax::output_armed_stabilizing()
     // static thrust is proportional to the airflow velocity squared
     // therefore the torque of the roll and pitch actuators should be approximately proportional to
     // the angle of attack multiplied by the static thrust.
-    _actuator_out[0] = roll_thrust/thrust_out_actuator;
-    _actuator_out[1] = pitch_thrust/thrust_out_actuator;
+    _actuator_out[0] = roll_thrust;
+    _actuator_out[1] = pitch_thrust;
 
     if (fabsf(_actuator_out[0]) > 1.0f) {
         limit.roll_pitch = true;

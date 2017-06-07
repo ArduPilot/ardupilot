@@ -43,6 +43,7 @@ bool Copter::auto_init(bool ignore_checks)
 
         // start/resume the mission (based on MIS_RESTART parameter)
         mission.start_or_resume();
+        pos_control->set_use_thruster(true);
         return true;
     }else{
         return false;

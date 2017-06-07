@@ -58,4 +58,7 @@ void Copter::stabilize_run()
 
     // output pilot's throttle
     attitude_control->set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
+
+    // enable compound thruster
+    pos_control->set_radio_passthrough_forward_thruster(channel_forward->get_radio_in());
 }

@@ -56,6 +56,9 @@
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
+// Compound Position Controller
+#include <AC_AttitudeControl/AC_PosControl_Compound.h>
+
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
@@ -505,12 +508,12 @@ private:
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
     AC_AttitudeControl *attitude_control;
-    
-    #if FRAME_CONFIG != COMPOUND_FRAME
-    AC_PosControl *pos_control;
-    #else
+
+    //#if FRAME_CONFIG != COMPOUND_FRAME
     AC_PosControl_Compound *pos_control;
-    #endif
+    //#else
+    //AC_PosControl_Compound *pos_control;
+    //#endif
 
     AC_WPNav *wp_nav;
     AC_Circle *circle_nav;
