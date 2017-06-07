@@ -106,10 +106,6 @@ bool Rover::set_home(const Location& loc, bool lock)
 
     // init compass declination
     if (home_is_set == HOME_UNSET) {
-        // Set compass declination automatically
-        if (g.compass_enabled) {
-            compass.set_initial_location(loc.lat, loc.lng);
-        }
         // record home is set
         home_is_set = HOME_SET_NOT_LOCKED;
 

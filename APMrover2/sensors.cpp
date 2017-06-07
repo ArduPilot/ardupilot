@@ -1,5 +1,27 @@
 #include "Rover.h"
 
+/*
+  if the compass is enabled then try to accumulate a reading
+  also update initial location used for declination
+ */
+void Rover::compass_accumulate(void)
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    compass.accumulate();
+
+    // update initial location used for declination
+    if (!compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            compass_init_location = true;
+        }
+    }
+}
+
 void Rover::init_barometer(bool full_calibration)
 {
     gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
