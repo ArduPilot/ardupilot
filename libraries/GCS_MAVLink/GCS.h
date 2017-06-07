@@ -373,6 +373,9 @@ protected:
     virtual int16_t vfr_hud_throttle() const { return 0; }
     Vector3f vfr_hud_velned;
 
+    static constexpr const float magic_force_arm_value = 2989.0f;
+    static constexpr const float magic_force_disarm_value = 21196.0f;
+
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
