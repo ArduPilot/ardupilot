@@ -126,12 +126,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, _ground_clearance_cm[0], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: _ADDR
-    // @DisplayName: Bus address of sensor
-    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
+    // @DisplayName: I2C address of sensor
+    // @Description: This designates the I2C address for I2C sensor types.
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_ADDR", 23, RangeFinder, _address[0], 0),
+    AP_GROUPINFO("_ADDR", 23, RangeFinder, _i2c_address[0], 0),
 
     // @Param: _POS_X
     // @DisplayName:  X position offset
@@ -158,6 +158,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("_ORIENT", 53, RangeFinder, _orientation[0], ROTATION_PITCH_270),
+
+    // @Param: _BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("_BUS", 57, RangeFinder, _i2c_bus[0], HAL_DEFAULT_I2C_ACCESSORY_BUS),
+
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
@@ -250,7 +258,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("2_ADDR", 24, RangeFinder, _address[1], 0),
+    AP_GROUPINFO("2_ADDR", 24, RangeFinder, _i2c_address[1], 0),
 
     // @Param: 2_POS_X
     // @DisplayName:  X position offset
@@ -277,6 +285,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("2_ORIENT", 54, RangeFinder, _orientation[1], ROTATION_PITCH_270),
+
+    // @Param: 2_BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("2_BUS", 58, RangeFinder, _i2c_bus[1], HAL_DEFAULT_I2C_ACCESSORY_BUS),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -371,7 +386,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("3_ADDR", 36, RangeFinder, _address[2], 0),
+    AP_GROUPINFO("3_ADDR", 36, RangeFinder, _i2c_address[2], 0),
 
     // @Param: 3_POS_X
     // @DisplayName:  X position offset
@@ -398,6 +413,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("3_ORIENT", 55, RangeFinder, _orientation[2], ROTATION_PITCH_270),
+
+    // @Param: 3_BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("3_BUS", 59, RangeFinder, _i2c_bus[2], HAL_DEFAULT_I2C_ACCESSORY_BUS),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -492,7 +514,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("4_ADDR", 48, RangeFinder, _address[3], 0),
+    AP_GROUPINFO("4_ADDR", 48, RangeFinder, _i2c_address[3], 0),
 
     // @Param: 4_POS_X
     // @DisplayName:  X position offset
@@ -519,13 +541,19 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("4_ORIENT", 56, RangeFinder, _orientation[3], ROTATION_PITCH_270),
+
+    // @Param: 4_BUS
+    // @DisplayName: I2C bus of sensor
+    // @Description: This designates which I2C bus the sensor is on.
+    // @Values: 0:Bus0,1:Bus1
+    // @User: Standard
+    AP_GROUPINFO("4_BUS", 60, RangeFinder, _i2c_bus[3], HAL_DEFAULT_I2C_ACCESSORY_BUS),
 #endif
     
     AP_GROUPEND
 };
 
 RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default) :
-    num_instances(0),
     estimated_terrain_height(0),
     serial_manager(_serial_manager)
 {
@@ -548,17 +576,9 @@ RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orient
  */
 void RangeFinder::init(void)
 {
-    if (num_instances != 0) {
-        // init called a 2nd time?
-        return;
-    }
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         detect_instance(i);
-        if (drivers[i] != nullptr) {
-            // we loaded a driver for this instance, so it must be
-            // present (although it may not be healthy)
-            num_instances = i+1;
-        }
+
         // initialise pre-arm check variables
         state[i].pre_arm_check = false;
         state[i].pre_arm_distance_min = 9999;  // initialise to an arbitrary large value
@@ -576,7 +596,7 @@ void RangeFinder::init(void)
  */
 void RangeFinder::update(void)
 {
-    for (uint8_t i=0; i<num_instances; i++) {
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         if (drivers[i] != nullptr) {
             if (_type[i] == RangeFinder_TYPE_NONE) {
                 // allow user to disable a rangefinder at runtime
@@ -595,11 +615,15 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
     if (!backend) {
         return false;
     }
-    if (num_instances == RANGEFINDER_MAX_INSTANCES) {
-        AP_HAL::panic("Too many RANGERS backends");
+    if (backend->get_instance() >= RANGEFINDER_MAX_INSTANCES) {
+        AP_HAL::panic("Rangefinder instance out of range");
+    }
+    if (drivers[backend->get_instance()] != nullptr) {
+        AP_HAL::panic("Rangefinder instance conflict");
     }
 
-    drivers[num_instances++] = backend;
+    drivers[backend->get_instance()] = backend;
+    _num_instances++;
     return true;
 }
 
@@ -617,12 +641,13 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
         break;
     case RangeFinder_TYPE_MBI2C:
-        _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance]));
+        if (_i2c_address[instance]) {
+            _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance], hal.i2c_mgr->get_device(_i2c_bus[instance], _i2c_address[instance])));
+        }
         break;
     case RangeFinder_TYPE_LWI2C:
-        if (_address[instance]) {
-            _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
-                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, _address[instance])));
+        if (_i2c_address[instance]) {
+            _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance], hal.i2c_mgr->get_device(_i2c_bus[instance], _i2c_address[instance])));
         }
         break;
     case RangeFinder_TYPE_TRONE:
@@ -633,63 +658,54 @@ void RangeFinder::detect_instance(uint8_t instance)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     case RangeFinder_TYPE_PX4_PWM:
         if (AP_RangeFinder_PX4_PWM::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PX4_PWM(*this, instance, state[instance]);
+            _add_backend(new AP_RangeFinder_PX4_PWM(*this, instance, state[instance]));
         }
         break;
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     case RangeFinder_TYPE_BBB_PRU:
         if (AP_RangeFinder_BBB_PRU::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_BBB_PRU(*this, instance, state[instance]);
+            _add_backend(new AP_RangeFinder_BBB_PRU(*this, instance, state[instance]));
         }
         break;
 #endif
     case RangeFinder_TYPE_LWSER:
         if (AP_RangeFinder_LightWareSerial::detect(*this, instance, serial_manager)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager);
+            _add_backend(new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager));
         }
         break;
     case RangeFinder_TYPE_LEDDARONE:
         if (AP_RangeFinder_LeddarOne::detect(*this, instance, serial_manager)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LeddarOne(*this, instance, state[instance], serial_manager);
+            _add_backend(new AP_RangeFinder_LeddarOne(*this, instance, state[instance], serial_manager));
         }
         break;
     case RangeFinder_TYPE_ULANDING:
         if (AP_RangeFinder_uLanding::detect(*this, instance, serial_manager)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_uLanding(*this, instance, state[instance], serial_manager);
+            _add_backend(new AP_RangeFinder_uLanding(*this, instance, state[instance], serial_manager));
         }
         break;
 #if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
     case RangeFinder_TYPE_BEBOP:
         if (AP_RangeFinder_Bebop::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_Bebop(*this, instance, state[instance]);
+            _add_backend(new AP_RangeFinder_Bebop(*this, instance, state[instance]));
         }
         break;
 #endif
     case RangeFinder_TYPE_MAVLink:
         if (AP_RangeFinder_MAVLink::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MAVLink(*this, instance, state[instance]);
+            _add_backend(new AP_RangeFinder_MAVLink(*this, instance, state[instance]));
         }
         break;
     case RangeFinder_TYPE_MBSER:
         if (AP_RangeFinder_MaxsonarSerialLV::detect(*this, instance, serial_manager)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MaxsonarSerialLV(*this, instance, state[instance], serial_manager);
+            _add_backend(new AP_RangeFinder_MaxsonarSerialLV(*this, instance, state[instance], serial_manager));
         }
         break;
     case RangeFinder_TYPE_ANALOG:
         // note that analog will always come back as present if the pin is valid
         if (AP_RangeFinder_analog::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_analog(*this, instance, state[instance]);
+            _add_backend(new AP_RangeFinder_analog(*this, instance, state[instance]));
         }
         break;
     default:
@@ -724,9 +740,9 @@ RangeFinder::RangeFinder_Status RangeFinder::status_orient(enum Rotation orienta
 void RangeFinder::handle_msg(mavlink_message_t *msg)
 {
     uint8_t i;
-    for (i=0; i<num_instances; i++) {
+    for (i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         if ((drivers[i] != nullptr) && (_type[i] != RangeFinder_TYPE_NONE)) {
-          drivers[i]->handle_msg(msg);
+            drivers[i]->handle_msg(msg);
         }
     }
 }
@@ -741,8 +757,8 @@ bool RangeFinder::has_orientation(enum Rotation orientation) const
 // find first range finder instance with the specified orientation
 bool RangeFinder::find_instance(enum Rotation orientation, uint8_t &instance) const
 {
-    for (uint8_t i=0; i<num_instances; i++) {
-        if (_orientation[i] == orientation) {
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        if (_orientation[i] == orientation && drivers[i] != nullptr) {
             instance = i;
             return true;
         }
@@ -830,7 +846,7 @@ uint8_t RangeFinder::range_valid_count_orient(enum Rotation orientation) const
  */
 bool RangeFinder::pre_arm_check() const
 {
-    for (uint8_t i=0; i<num_instances; i++) {
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         // if driver is valid but pre_arm_check is false, return false
         if ((drivers[i] != nullptr) && (_type[i] != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
             return false;

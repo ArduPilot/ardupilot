@@ -320,6 +320,9 @@ void Copter::Log_Write_Control_Tuning()
     }
 #endif
 
+    int32_t rangefinder_height_above_terrain_cm = -1;
+    get_rangefinder_height_above_terrain(rangefinder_height_above_terrain_cm);
+
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         time_us             : AP_HAL::micros64(),
@@ -331,7 +334,7 @@ void Copter::Log_Write_Control_Tuning()
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
         desired_rangefinder_alt : (int16_t)target_rangefinder_alt,
-        rangefinder_alt     : rangefinder_state.alt_cm,
+        rangefinder_alt     : (int16_t)rangefinder_height_above_terrain_cm,
         terr_alt            : terr_alt,
         target_climb_rate   : (int16_t)pos_control->get_vel_target_z(),
         climb_rate          : climb_rate

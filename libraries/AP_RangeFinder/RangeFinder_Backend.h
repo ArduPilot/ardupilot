@@ -38,6 +38,8 @@ public:
 
     virtual void handle_msg(mavlink_message_t *msg) { return; }
 
+    uint8_t get_instance() { return state.instance; }
+
 protected:
 
     // update status based on distance measurement

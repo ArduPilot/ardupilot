@@ -38,7 +38,7 @@ void AP_Proximity_RangeFinder::update(void)
     }
 
     // look through all rangefinders
-    for (uint8_t i=0; i<rngfnd->num_sensors(); i++) {
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         if (rngfnd->has_data(i)) {
             // check for horizontal range finders
             if (rngfnd->get_orientation(i) <= ROTATION_YAW_315) {

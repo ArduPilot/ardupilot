@@ -253,7 +253,7 @@ int8_t Copter::test_rangefinder(uint8_t argc, const Menu::arg *argv)
         delay(100);
         rangefinder.update();
 
-        for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {
+        for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
             cliSerial->printf("Dev%d: status %d distance_cm %d\n",
                     (int)i,
                     (int)rangefinder.status(i),

@@ -151,16 +151,16 @@ void Copter::land_nogps_run()
  */
 int32_t Copter::land_get_alt_above_ground(void)
 {
-    int32_t alt_above_ground;
-    if (rangefinder_alt_ok()) {
-        alt_above_ground = rangefinder_state.alt_cm_filt.get();
+    int32_t height_above_terrain_cm;
+    bool rangefinder_height_above_terrain_cm_valid = get_rangefinder_height_above_terrain(height_above_terrain_cm);
+
+    if (rangefinder_height_above_terrain_cm_valid) {
+        return height_above_terrain_cm;
+    } else if (pos_control->is_active_xy() && current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, height_above_terrain_cm)) {
+        return height_above_terrain_cm;
     } else {
-        bool navigating = pos_control->is_active_xy();
-        if (!navigating || !current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
-            alt_above_ground = current_loc.alt;
-        }
+        return current_loc.alt;
     }
-    return alt_above_ground;
 }
 
 void Copter::land_run_vertical_control(bool pause_descent)
@@ -196,7 +196,10 @@ void Copter::land_run_vertical_control(bool pause_descent)
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
-        if (doing_precision_landing && rangefinder_alt_ok() && rangefinder_state.alt_cm > 35.0f && rangefinder_state.alt_cm < 200.0f) {
+        int32_t rangefinder_height_above_terrain_cm;
+        bool rangefinder_height_above_terrain_cm_valid = get_rangefinder_height_above_terrain(rangefinder_height_above_terrain_cm);
+
+        if (doing_precision_landing && rangefinder_height_above_terrain_cm_valid && rangefinder_height_above_terrain_cm > 35 && rangefinder_height_above_terrain_cm < 200) {
             float max_descent_speed = abs(g.land_speed)/2.0f;
             float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
