@@ -48,6 +48,13 @@ public:
         int16_t num_times;      // num times to repeat.  -1 = repeat forever
     };
 
+    // land into wind
+    struct PACKED Land_Wind_Command {
+        uint16_t deg_start;     //allowed angle - start of interval (0=north, 90=east)
+        uint16_t deg_stop;      //allowed angle - stop of interval (0=north, 90=east)
+        uint16_t altitude;      //altitude over the next waypoint
+    };
+
     // condition delay command structure
     struct PACKED Conditional_Delay_Command {
         float seconds;          // period of delay in seconds
@@ -177,6 +184,9 @@ public:
     union PACKED Content {
         // jump structure
         Jump_Command jump;
+
+        // nav into wind
+        Land_Wind_Command wind;
 
         // conditional delay
         Conditional_Delay_Command delay;

@@ -591,6 +591,13 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;                         // minimum pitch (plane only)
         break;
 
+    case MAV_CMD_NAV_INTO_WIND:                         // MAV ID: 26
+        cmd.p1 = packet.param1;                         //distance(radius) from next waypoint
+        cmd.content.wind.deg_start = packet.param2;     //allowed angle - start of interval (0=north, 90=east)
+        cmd.content.wind.deg_stop = packet.param3;      //allowed angle - stop of interval (0=north, 90=east)
+        cmd.content.wind.altitude = packet.param4;      //altitude over the next waypoint
+        break;
+
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:           // MAV ID: 30
         copy_location = true;                           // lat/lng used for heading lock
         cmd.p1 = packet.param1;                         // Climb/Descend
@@ -1037,6 +1044,13 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_NAV_TAKEOFF:                           // MAV ID: 22
         copy_location = true;                           // only altitude is used
         packet.param1 = cmd.p1;                         // minimum pitch (plane only)
+        break;
+
+    case MAV_CMD_NAV_INTO_WIND:                         // MAV ID: 26
+        packet.param1 = cmd.p1;                         //distance(radius) from next waypoint
+        packet.param2 = cmd.content.wind.deg_start;     //allowed angle - start of interval (0=north, 90=east)
+        packet.param3 = cmd.content.wind.deg_stop;      //allowed angle - stop of interval (0=north, 90=east)
+        packet.param4 = cmd.content.wind.altitude;      //altitude over the next waypoint
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:           // MAV ID: 30
