@@ -414,18 +414,6 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-void Plane::send_rangefinder(mavlink_channel_t chan)
-{
-    if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
-        // no sonar to report
-        return;
-    }
-    mavlink_msg_rangefinder_send(
-        chan,
-        rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f,
-        rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
-}
-
 void Plane::send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
@@ -597,7 +585,9 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        plane.send_rangefinder(chan);
+        send_rangefinder_downward(plane.rangefinder);
+        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+        send_distance_sensor_downward(plane.rangefinder);
         break;
 
     case MSG_TERRAIN:

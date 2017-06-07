@@ -881,3 +881,24 @@ const Vector3f &RangeFinder::get_pos_offset_orient(enum Rotation orientation) co
     }
     return pos_offset_zero;
 }
+
+MAV_DISTANCE_SENSOR RangeFinder::get_sensor_type(uint8_t instance) const {
+    // sanity check instance
+    if (instance >= RANGEFINDER_MAX_INSTANCES) {
+        return MAV_DISTANCE_SENSOR_ENUM_END;
+    }
+
+    if (drivers[instance] == nullptr || _type[instance] == RangeFinder_TYPE_NONE) {
+        return MAV_DISTANCE_SENSOR_ENUM_END;
+    }
+    return drivers[instance]->get_sensor_type();
+}
+
+MAV_DISTANCE_SENSOR RangeFinder::get_sensor_type_orient(enum Rotation orientation) const
+{
+    uint8_t i;
+    if (find_instance(orientation, i)) {
+        return get_sensor_type(i);
+    }
+    return MAV_DISTANCE_SENSOR_ENUM_END;
+}

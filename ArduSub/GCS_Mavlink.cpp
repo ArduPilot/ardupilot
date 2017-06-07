@@ -339,20 +339,6 @@ void NOINLINE Sub::send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
-#if RANGEFINDER_ENABLED == ENABLED
-void NOINLINE Sub::send_rangefinder(mavlink_channel_t chan)
-{
-    // exit immediately if rangefinder is disabled
-    if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
-        return;
-    }
-    mavlink_msg_rangefinder_send(
-        chan,
-        rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f,
-        rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
-}
-#endif
-
 /*
   send RPM packet
  */
@@ -560,7 +546,9 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_RANGEFINDER:
 #if RANGEFINDER_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        sub.send_rangefinder(chan);
+        send_rangefinder_downward(sub.rangefinder);
+        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+        send_distance_sensor_downward(sub.rangefinder);
 #endif
         break;
 

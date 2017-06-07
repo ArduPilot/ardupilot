@@ -40,7 +40,7 @@ volatile struct range *rangerpru;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_BBB_PRU::AP_RangeFinder_BBB_PRU(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state)
+    AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_ULTRASOUND)
 {
 }
 

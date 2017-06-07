@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state)
+    AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_LASER)
 {
     last_update_ms = AP_HAL::millis();
     distance_cm = 0;
