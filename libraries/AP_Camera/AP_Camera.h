@@ -100,6 +100,7 @@ private:
     // pin number for accurate camera feedback messages
     AP_Int8         _feedback_pin;
     AP_Int8         _feedback_polarity;
+    AP_Int8         _feedback_location_source;
 
     // this is set to 1 when camera trigger pin has fired
     static volatile bool   _camera_triggered;
