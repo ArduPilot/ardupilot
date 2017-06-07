@@ -215,11 +215,6 @@ bool AP_Terrain::height_above_terrain(float &terrain_altitude, bool extrapolate)
     if (!height_terrain_difference_home(terrain_difference, extrapolate)) {
         return false;
     }
-    Location loc;
-    if (!ahrs.get_position(loc)) {
-        // we don't know where we are
-        return false;
-    }
 
     float relative_home_altitude;
     ahrs.get_relative_position_D_home(relative_home_altitude);
