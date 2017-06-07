@@ -1,5 +1,20 @@
 #include "Rover.h"
 
+// initialise compass
+void Rover::init_compass()
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    if (!compass.init()|| !compass.read()) {
+        cliSerial->printf("Compass initialisation failed!\n");
+        g.compass_enabled = false;
+    } else {
+        ahrs.set_compass(&compass);
+    }
+}
+
 /*
   if the compass is enabled then try to accumulate a reading
   also update initial location used for declination
