@@ -961,12 +961,12 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (is_equal(packet.param1,1.0f)) {
                 // attempt to arm and return success or failure
-                const bool do_arming_checks = !is_equal(packet.param2,2989.0f);
+                const bool do_arming_checks = !is_equal(packet.param2,magic_force_arm_value);
                 if (copter.init_arm_motors(true, do_arming_checks)) {
                     result = MAV_RESULT_ACCEPTED;
                 }
             } else if (is_zero(packet.param1))  {
-                if (copter.ap.land_complete || is_equal(packet.param2,21196.0f)) {
+                if (copter.ap.land_complete || is_equal(packet.param2,magic_force_disarm_value)) {
                     // force disarming by setting param2 = 21196 is deprecated
                     copter.init_disarm_motors();
                     result = MAV_RESULT_ACCEPTED;
