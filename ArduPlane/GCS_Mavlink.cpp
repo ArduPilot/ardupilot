@@ -975,7 +975,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (is_equal(packet.param1,1.0f)) {
                 // run pre_arm_checks and arm_checks and display failures
-                const bool do_arming_checks = !is_equal(packet.param2,2989.0f);
+                const bool do_arming_checks = !is_equal(packet.param2,magic_force_arm_value);
                 if (plane.arm_motors(AP_Arming::MAVLINK, do_arming_checks)) {
                     result = MAV_RESULT_ACCEPTED;
                 } else {
