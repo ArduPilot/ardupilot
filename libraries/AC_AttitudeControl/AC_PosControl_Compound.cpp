@@ -10,7 +10,7 @@ AC_PosControl_Compound::AC_PosControl_Compound(const AP_AHRS_View& ahrs, const A
     _ahrs(ahrs),
     _motors(motors),
     _thrust_out(0.0f),
-    _use_thruster(false)
+    _use_thruster(true)
 {}
 
 //To-Do: enable radio passthrough for stick-auto modes like stabilize, alt-hold, etc...
@@ -29,7 +29,68 @@ void AC_PosControl_Compound::set_use_thruster(bool use_thruster)
     _motors.set_forward(-1.0f);
 }
 
-// To-Do : Just Addition of use Forward Thruster when certain amount of accel_forward is requested.
+// rate_to_accel_xy - horizontal desired rate to desired acceleration
+///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
+void AC_PosControl_Compound::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
+{
+    Vector2f vel_xy_p, vel_xy_i;
+
+    // reset last velocity target to current target
+    if (_flags.reset_rate_to_accel_xy) {
+        _vel_last.x = _vel_target.x;
+        _vel_last.y = _vel_target.y;
+        _flags.reset_rate_to_accel_xy = false;
+    }
+
+    // check if vehicle velocity is being overridden
+    if (_flags.vehicle_horiz_vel_override) {
+        _flags.vehicle_horiz_vel_override = false;
+    } else {
+        _vehicle_horiz_vel.x = _inav.get_velocity().x;
+        _vehicle_horiz_vel.y = _inav.get_velocity().y;
+    }
+
+    // feed forward desired acceleration calculation
+    if (dt > 0.0f) {
+    	if (!_flags.freeze_ff_xy) {
+    		_accel_feedforward.x = (_vel_target.x - _vel_last.x)/dt;
+    		_accel_feedforward.y = (_vel_target.y - _vel_last.y)/dt;
+        } else {
+    		// stop the feed forward being calculated during a known discontinuity
+    		_flags.freeze_ff_xy = false;
+    	}
+    } else {
+    	_accel_feedforward.x = 0.0f;
+    	_accel_feedforward.y = 0.0f;
+    }
+
+    // store this iteration's velocities for the next iteration
+    _vel_last.x = _vel_target.x;
+    _vel_last.y = _vel_target.y;
+
+    // calculate velocity error
+    _vel_error.x = _vel_target.x - _vehicle_horiz_vel.x;
+    _vel_error.y = _vel_target.y - _vehicle_horiz_vel.y;
+
+    // call pi controller
+    _pi_vel_xy.set_input(_vel_error);
+
+    // get p
+    vel_xy_p = _pi_vel_xy.get_p();
+
+    // update i term if we have not hit the accel or throttle limits OR the i term will reduce
+    if (!_limit.accel_xy && !_motors.limit.throttle_upper) {
+        vel_xy_i = _pi_vel_xy.get_i();
+    } else {
+        vel_xy_i = _pi_vel_xy.get_i_shrink();
+    }
+
+    // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
+    _accel_target.x = _accel_feedforward.x + (vel_xy_p.x + vel_xy_i.x) * ekfNavVelGainScaler;
+    _accel_target.y = _accel_feedforward.y + (vel_xy_p.y + vel_xy_i.y) * ekfNavVelGainScaler;
+}
+
+// Just some addition of use Forward Thruster when certain amount of accel_forward is requested.
 void AC_PosControl_Compound::accel_to_lean_angles(float dt, float ekfNavVelGainScaler, bool use_althold_lean_angle)
 {
     float accel_total;                          // total acceleration in cm/s/s
@@ -88,33 +149,37 @@ void AC_PosControl_Compound::accel_to_lean_angles(float dt, float ekfNavVelGainS
     float cos_pitch_target = cosf(_pitch_target*M_PI/18000);
     _roll_target = constrain_float(atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
 
+    //To-Do : Do not allow use thruster which requires level of precision like circle, land modes, ...
+    // To-Do 2 : Possibly There would be optimal way to mix pitch down and rear throttle controller.
     if (_use_thruster)
     {
-      if (accel_forward >= 100.0f)
+      if (accel_forward >= 0.0f)
         {
             use_althold_lean_angle = false;
             _pitch_target = 0.0f; // do not allow pitch down to accelerate
 
-            //To-Do : Do not allow use thruster which requires level of precision like circle, land modes, ...
             run_auxiliary_thruster_controller(accel_forward);
         }
       else
       {
             use_althold_lean_angle = true;
             run_auxiliary_thruster_controller(0.0f);
+            _motors.set_forward(0.0f);
       }
     }
 
 }
 
 // Forward thruster controller from requested Position/Velocity/Acceleration command.
+
 void AC_PosControl_Compound::run_auxiliary_thruster_controller(float accel_forward)
 {
      if (accel_forward > 0.0f)
      {
-      Vector3f accel_NED = _ahrs.get_accel_ef_blended();
-      float accel_error = 0.01f * accel_forward - accel_NED.x; // accel error in m/s/s this would be noisy controller
-      _thrust_out = accel_error * 0.5f; // simple P controller.
+      //Vector3f accel_NED = _ahrs.get_accel_ef_blended();
+      //float accel_error = 0.01f * accel_forward - accel_NED.x; // accel error in m/s/s this would be noisy controller
+      //float thrust_feedforward = ;
+      _thrust_out = 0.01f * accel_forward * 1.0f; // simple P + Feedforward controller.
       //To-do : Implement accel forward to throttle controller like fixed-wing
       _motors.set_forward(_thrust_out);
      }

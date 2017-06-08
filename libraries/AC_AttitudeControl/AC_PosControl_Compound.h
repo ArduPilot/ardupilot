@@ -17,8 +17,6 @@ public:
                 AP_Motors& motors, AC_AttitudeControl& attitude_control,
                 AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
                 AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);
-  //AC_AttitudeControl_Compound(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
-	//AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
 
   //AC_PID& throttle_pid = 0;
 
@@ -33,6 +31,8 @@ public:
   // enable radio passthorugh forward thruster for stablize, alt_hold , ...
   void set_radio_passthrough_forward_thruster(float forward_radio_passthrough);
   //enable use of thruster from radio inputs;
+
+  virtual void rate_to_accel_xy(float dt, float ekfNavVelGainScaler);
   //void set_radio_passthrough_auxiliary_thruster(float forward_radio_passthrough);
   //switch to accel forward to use thruster instead of pitch down.
   virtual void accel_to_lean_angles(float dt_xy, float ekfNavVelGainScaler, bool use_althold_lean_angle);

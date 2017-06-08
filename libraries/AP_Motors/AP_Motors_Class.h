@@ -49,6 +49,13 @@ public:
         MOTOR_FRAME_TYPE_Y6B = 10,
         MOTOR_FRAME_TYPE_Y6F = 11 // for FireFlyY6
     };
+    // Compound System Enumerator, Only Forward is Implemented now.
+    enum motor_auxiliary_class {
+        MOTOR_COMPOUND_NONE = 0,
+        MOTOR_COMPOUND_FORWARD = 1, // Forward Thrust Compounding System
+        MOTOR_COMPOUND_LATERAL = 2, // Lateral Thrust Compoudning System
+        MOTOR_COMPOUND_BOTH = 3 // Forward+Lateral Thrust Compounding System
+    };
 
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);

@@ -354,7 +354,7 @@ protected:
 
     /// rate_to_accel_xy - horizontal desired rate to desired acceleration
     ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
-    void rate_to_accel_xy(float dt, float ekfNavVelGainScaler);
+    virtual void rate_to_accel_xy(float dt, float ekfNavVelGainScaler);
 
     /// accel_to_lean_angles - horizontal desired acceleration to lean angles
     ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles

@@ -195,7 +195,7 @@ void AP_MotorsCoax::output_armed_stabilizing()
     _thrust_yt_cw  = thrust_out  - 1.0f * yaw_thrust;
 
     // limit thrust out for calculation of actuator gains
-    float thrust_out_actuator = constrain_float(MAX(_throttle_hover,thrust_out*1.1f), 0.9f, 1.1f);
+    float thrust_out_actuator = constrain_float(MAX(_throttle_hover,thrust_out*1.1f), 1.0f, 1.1f);
 
     if (is_zero(thrust_out)) {
         limit.roll_pitch = true;
@@ -204,8 +204,8 @@ void AP_MotorsCoax::output_armed_stabilizing()
     // static thrust is proportional to the airflow velocity squared
     // therefore the torque of the roll and pitch actuators should be approximately proportional to
     // the angle of attack multiplied by the static thrust.
-    _actuator_out[0] = roll_thrust;
-    _actuator_out[1] = pitch_thrust;
+    _actuator_out[0] = roll_thrust/thrust_out_actuator;
+    _actuator_out[1] = pitch_thrust/thrust_out_actuator;
 
     if (fabsf(_actuator_out[0]) > 1.0f) {
         limit.roll_pitch = true;

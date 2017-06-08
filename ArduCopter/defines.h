@@ -78,7 +78,12 @@ enum aux_sw_func {
 #define UNDEFINED_FRAME 0
 #define MULTICOPTER_FRAME 1
 #define HELI_FRAME 2
-#define COMPOUND_FRAME 3
+
+// Sub System
+#define NORMAL_FRAME 0
+#define FORWARD_COMPOUND_FRAME 1
+#define LATERAL_COMPOUND_FRAME 2
+#define BOTH_COMPOUND_FRAME 3
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_SENSORS                1
