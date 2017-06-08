@@ -58,7 +58,7 @@ private:
      * Device periodic callback to read data from the sensor.
      */
     bool init();
-    bool timer();
+    void timer();
     void accumulate_field(Vector3f &field);
 
     uint8_t compass_instance;
