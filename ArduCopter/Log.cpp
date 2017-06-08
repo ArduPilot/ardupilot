@@ -917,6 +917,10 @@ void Copter::start_logging()
             // dataflash may have stopped logging - when we get_log_data,
             // for example.  Try to restart:
             DataFlash.StartNewLog();
+        } else if (!DataFlash.logging_started()) {
+            // dataflash may have stopped logging - when we get_log_data,
+            // for example.  Try to restart:
+            DataFlash.StartNewLog();
         }
         // enable writes
         DataFlash.EnableWrites(true);
