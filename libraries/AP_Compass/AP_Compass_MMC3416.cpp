@@ -112,7 +112,7 @@ bool AP_Compass_MMC3416::init()
     
     // call timer() at 100Hz
     dev->register_periodic_callback(10000,
-                                    FUNCTOR_BIND_MEMBER(&AP_Compass_MMC3416::timer, bool));
+                                    FUNCTOR_BIND_MEMBER(&AP_Compass_MMC3416::timer, void));
 
     // wait 250ms for the compass to make it's initial readings
     hal.scheduler->delay(250);
@@ -120,7 +120,7 @@ bool AP_Compass_MMC3416::init()
     return true;
 }
 
-bool AP_Compass_MMC3416::timer()
+void AP_Compass_MMC3416::timer()
 {
     const uint16_t measure_count_limit = 50;
     const uint16_t zero_offset = 32768; // 16 bit mode
@@ -280,8 +280,6 @@ bool AP_Compass_MMC3416::timer()
         break;
     }
     }
-
-    return true;
 }
 
 /*
