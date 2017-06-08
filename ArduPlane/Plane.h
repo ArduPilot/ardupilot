@@ -784,6 +784,9 @@ private:
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
+    // time that airspeed cal triggered by RC has been running
+    uint32_t airspeed_cal_via_RC_timer;
+
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};
 
@@ -946,6 +949,7 @@ private:
     void init_rc_out_main();
     void init_rc_out_aux();
     void rudder_arm_disarm_check();
+    void rudder_airspeed_cal_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);
     void trim_control_surfaces();

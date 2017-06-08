@@ -548,6 +548,9 @@ public:
 
     // dual motor tailsitter rudder to differential thrust scaling: 0-100%
     AP_Int8 rudd_dt_gain;
+
+    // enable airspeed sensor calibration via RC input command
+    AP_Int8 allow_airspeed_cal_via_RC;
 };
 
 extern const AP_Param::Info var_info[];
