@@ -24,6 +24,7 @@ class AP_Beacon_Backend;
 
 #define AP_BEACON_MAX_BEACONS 4
 #define AP_BEACON_TIMEOUT_MS 300
+#define AP_BEACON_MINIMUM_FENCE_BEACONS 3
 
 class AP_Beacon
 {
@@ -90,6 +91,9 @@ public:
     // return last update time from beacon in milliseconds
     uint32_t beacon_last_update_ms(uint8_t beacon_instance) const;
 
+    // return fence boundary array
+    const Vector2f* get_boundary_points(uint16_t& num_points) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -116,4 +120,8 @@ private:
     // individual beacon data
     uint8_t num_beacons = 0;
     BeaconState beacon_state[AP_BEACON_MAX_BEACONS];
+
+    // fence boundary
+    Vector2f *boundary;
+    uint8_t boundary_num_beacons;
 };
