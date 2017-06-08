@@ -225,6 +225,18 @@ uint32_t AP_Beacon::beacon_last_update_ms(uint8_t beacon_instance) const
     return beacon_state[beacon_instance].distance_update_ms;
 }
 
+// return fence boundary array
+const Vector2f* AP_Beacon::get_boundary_points(uint16_t& num_points) const
+{
+    if (!device_ready()) {
+        num_points = 0;
+        return nullptr;
+    }
+
+    num_points = boundary_num_points + 1;
+    return boundary;
+}
+
 // check if the device is ready
 bool AP_Beacon::device_ready(void) const
 {
