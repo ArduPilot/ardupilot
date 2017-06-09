@@ -546,14 +546,22 @@ uint8_t Rover::check_digital_pin(uint8_t pin)
  */
 bool Rover::should_log(uint32_t mask)
 {
-    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
+    if (in_mavlink_delay) {
         return false;
     }
-    const bool ret = hal.util->get_soft_armed() || DataFlash.log_while_disarmed();
-    if (ret && !DataFlash.logging_started() && !in_log_download) {
+    if (!(mask & g.log_bitmask)) {
+        return false;
+    }
+    if (!hal.util->get_soft_armed() && !DataFlash.log_while_disarmed()) {
+        return false;
+    }
+    if (in_log_download) {
+        return false;
+    }
+    if (!DataFlash.logging_started()) {
         start_logging();
     }
-    return ret;
+    return true;
 }
 
 /*
