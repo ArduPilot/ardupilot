@@ -561,7 +561,7 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
 // start a new log
 void Plane::start_logging() 
 {
-    DataFlash.StartNewLog();
+    DataFlash.StartUnstartedLogging();
 }
 
 /*
