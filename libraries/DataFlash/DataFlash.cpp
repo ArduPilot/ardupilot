@@ -242,7 +242,12 @@ bool DataFlash_Class::logging_enabled() const
     if (_next_backend == 0) {
         return false;
     }
-    return backends[0]->logging_enabled();
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (backends[i]->logging_enabled()) {
+            return true;
+        }
+    }
+    return false;
 }
 bool DataFlash_Class::logging_failed() const
 {
@@ -250,7 +255,12 @@ bool DataFlash_Class::logging_failed() const
         // we should not have been called!
         return true;
     }
-    return backends[0]->logging_failed();
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (backends[i]->logging_failed()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void DataFlash_Class::Log_Write_MessageF(const char *fmt, ...)
