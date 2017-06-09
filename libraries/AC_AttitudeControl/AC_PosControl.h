@@ -156,7 +156,7 @@ public:
     void get_stopping_point_z(Vector3f& stopping_point) const;
 
     /// init_takeoff - initialises target altitude if we are taking off
-    void init_takeoff();
+    virtual void init_takeoff();
 
     // is_active - returns true if the z-axis position controller has been run very recently
     bool is_active_z() const;

@@ -5,12 +5,13 @@
 AC_PosControl_Compound::AC_PosControl_Compound(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                              AP_Motors& motors, AC_AttitudeControl& attitude_control,
                              AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
-                             AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy) :
+                             AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy, AC_P& throttle_p) :
     AC_PosControl(ahrs, inav, motors, attitude_control, p_pos_z, p_vel_z, pid_accel_z, p_pos_xy, pi_vel_xy),
     _ahrs(ahrs),
     _motors(motors),
     _thrust_out(0.0f),
-    _use_thruster(true)
+    _use_thruster(true),
+    _throttle_p(throttle_p)
 {}
 
 //To-Do: enable radio passthrough for stick-auto modes like stabilize, alt-hold, etc...
@@ -23,12 +24,17 @@ void AC_PosControl_Compound::set_radio_passthrough_forward_thruster(float forwar
 
 void AC_PosControl_Compound::set_use_thruster(bool use_thruster)
 {
-  _use_thruster = use_thruster;
+    _use_thruster = use_thruster;
 
-  if (_use_thruster)
-    _motors.set_forward(-1.0f);
+    if (_use_thruster)
+      _motors.set_forward(-1.0f);
 }
 
+void AC_PosControl_Compound::init_takeoff()
+{
+    AC_PosControl::init_takeoff();
+    set_use_thruster(false);
+}
 // rate_to_accel_xy - horizontal desired rate to desired acceleration
 ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
 void AC_PosControl_Compound::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
@@ -178,8 +184,8 @@ void AC_PosControl_Compound::run_auxiliary_thruster_controller(float accel_forwa
      {
       //Vector3f accel_NED = _ahrs.get_accel_ef_blended();
       //float accel_error = 0.01f * accel_forward - accel_NED.x; // accel error in m/s/s this would be noisy controller
-      //float thrust_feedforward = ;
-      _thrust_out = 0.01f * accel_forward * 1.0f; // simple P + Feedforward controller.
+      //float radio_feedforward = ;
+      _thrust_out = 0.01f * _throttle_p.get_p(accel_forward); // simple P + Feedforward controller.
       //To-do : Implement accel forward to throttle controller like fixed-wing
       _motors.set_forward(_thrust_out);
      }

@@ -1,12 +1,12 @@
 #include "Copter.h"
 
-// Code to detect a crash main ArduCopter code
-#define CRASH_CHECK_TRIGGER_SEC         3       // 2 seconds inverted indicates a crash
-#define CRASH_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees beyond angle max is signal we are inverted
-#define CRASH_CHECK_ACCEL_MAX           10.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
+// Code to detect a crash in the main ArduCopter code
+#define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
+#define CRASH_CHECK_ANGLE_DEVIATION_DEG 45.0f   // 30 degrees beyond angle max is signal we are inverted
+#define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
 
 // crash_check - disarms motors if a crash has been detected
-// crashes are detected by the vehicle being more than 20 degrees beyond it's angle limits continuously for more than 1 second
+// crashes are detected by the vehicle being more than 30 degrees beyond it's angle limits continuously for more than 2 second
 // called at MAIN_LOOP_RATE
 void Copter::crash_check()
 {
@@ -26,13 +26,15 @@ void Copter::crash_check()
         return;
     }
 
-    // vehicle not crashed if 1hz filtered acceleration is more than 3m/s (1G on Z-axis has been subtracted)
+    // vehicle is not crashed if 1hz filtered acceleration is more than 3m/s (1G on Z-axis has been subtracted)
     if (land_accel_ef_filter.get().length() >= CRASH_CHECK_ACCEL_MAX) {
         crash_counter_accel = 0;
         return;
     }
-    else
+    else if (land_accel_ef_filter.get().length() >= 5.0f * CRASH_CHECK_ACCEL_MAX)
     {
+      float last_accel_length = land_accel_ef_filter.get().length();
+      // To-Do: Check Impulse acceleration
       crash_counter_accel++;
     }
 
@@ -48,12 +50,12 @@ void Copter::crash_check()
     crash_counter_angle++;
     }
 
-    if (crash_counter_angle % scheduler.get_loop_rate_hz() == 100)
+    if (crash_counter_angle % scheduler.get_loop_rate_hz() >= 0.5f * scheduler.get_loop_rate_hz())
     {
       gcs_send_text(MAV_SEVERITY_ALERT, "Possible Crash: Angle is too deviated");
     }
 
-    if (crash_counter_accel % scheduler.get_loop_rate_hz() == 100)
+    if (crash_counter_accel >= 1)
     {
       gcs_send_text(MAV_SEVERITY_ALERT, "Possible Crash: Accel is too high");
     }
@@ -68,11 +70,11 @@ void Copter::crash_check()
         init_disarm_motors();
     }
 
-    if (crash_counter_accel >= (CRASH_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
+    if (crash_counter_accel >= 1) {
         // log an error in the dataflash
         Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
         // send message to gcs
-        gcs_send_text(MAV_SEVERITY_EMERGENCY,"Crash due to accel: Disarming");
+        gcs_send_text(MAV_SEVERITY_EMERGENCY,"Crash due to Accel: Disarming");
         // disarm motors
         init_disarm_motors();
     }

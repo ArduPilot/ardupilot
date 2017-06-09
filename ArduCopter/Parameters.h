@@ -187,7 +187,7 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
-                
+
         //
         // 100: Inertial Nav
         //
@@ -410,7 +410,7 @@ public:
 
     AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
     AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
-    
+
     // Waypoints
     //
     AP_Int32        rtl_loiter_time;
@@ -479,6 +479,8 @@ public:
     AC_P                    p_pos_xy;
     AC_P                    p_alt_hold;
 
+    AC_P                    throttle_p;
+
     // Autotune
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
@@ -498,7 +500,9 @@ public:
         //----------------------------------------------------------------------
         p_pos_xy                (POS_XY_P),
 
-        p_alt_hold              (ALT_HOLD_P)
+        p_alt_hold              (ALT_HOLD_P),
+
+        throttle_p              (THROTTLE_P)
     {
     }
 };
@@ -548,7 +552,7 @@ public:
 
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
-    
+
 #if ADVANCED_FAILSAFE == ENABLED
     // advanced failsafe library
     AP_AdvancedFailsafe_Copter afs;
@@ -566,7 +570,7 @@ public:
 
     // RC input channels
     RC_Channels rc_channels;
-    
+
     // control over servo output ranges
     SRV_Channels servo_channels;
 };
