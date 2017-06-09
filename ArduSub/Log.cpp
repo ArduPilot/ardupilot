@@ -479,9 +479,7 @@ void Sub::start_logging()
 
     // dataflash may have stopped logging - when we get_log_data,
     // for example.  Always try to restart:
-    if (!DataFlash.logging_started()) {
-        DataFlash.StartNewLog();
-    }
+    DataFlash.StartUnstartedLogging();
 }
 
 void Sub::log_init(void)
