@@ -42,7 +42,7 @@ public:
         DataFlash_Block(front, writer) { }
     void        Init() override;
     void        ReadManufacturerID();
-    bool        CardInserted();
+    bool        CardInserted() const;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

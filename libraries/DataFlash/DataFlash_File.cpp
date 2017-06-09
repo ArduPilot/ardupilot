@@ -509,10 +509,27 @@ void DataFlash_File::EraseAll()
     }
 }
 
+bool DataFlash_File::WritesOK() const
+{
+    if (!DataFlash_Backend::WritesOK()) {
+        return false;
+    }
+    if (_write_fd == -1) {
+        return false;
+    }
+    if (!_initialised) {
+        return false;
+    }
+    if (_open_error) {
+        return false;
+    }
+    return true;
+}
+
 /* Write a block of data at current offset */
 bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-    if (_write_fd == -1 || !_initialised || _open_error || !_writes_enabled) {
+    if (!WritesOK()) {
         return false;
     }
 
