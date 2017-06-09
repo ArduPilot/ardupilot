@@ -517,7 +517,7 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 void Rover::start_logging()
 {
     in_mavlink_delay = true;
-    DataFlash.StartNewLog();
+    DataFlash.StartUnstartedLogging();
     in_mavlink_delay = false;
 }
 
