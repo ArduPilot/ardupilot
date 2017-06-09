@@ -265,5 +265,9 @@ bool DataFlash_Backend::WritesOK() const
     if (!_writes_enabled) {
         return false;
     }
+    if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
+        return false;
+    }
+
     return true;
 }
