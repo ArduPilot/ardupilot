@@ -13,7 +13,7 @@ public:
     DataFlash_Block(DataFlash_Class &front, DFMessageWriter_DFLogStart *writer) :
         DataFlash_Backend(front, writer) { }
 
-    virtual bool CardInserted(void) = 0;
+    virtual bool CardInserted(void) const = 0;
 
     // erase handling
     void EraseAll();
@@ -115,6 +115,8 @@ protected:
     uint16_t df_NumPages;
 
     virtual void ReadManufacturerID() = 0;
+
+    bool WritesOK() const override;
 };
 
 
