@@ -906,21 +906,25 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
 }
 
 
-// start a new log
-void Copter::start_logging() 
+void Copter::start_logging()
 {
-    if (g.log_bitmask != 0 && !in_log_download) {
-        if (!ap.logging_started) {
-            ap.logging_started = true;
-            DataFlash.StartNewLog();
-        } else if (!DataFlash.logging_started()) {
-            // dataflash may have stopped logging - when we get_log_data,
-            // for example.  Try to restart:
-            DataFlash.StartNewLog();
-        }
-        // enable writes
-        DataFlash.EnableWrites(true);
+    if (g.log_bitmask == 0) {
+        return;
     }
+    if (in_log_download) {
+        return;
+    }
+
+    ap.logging_started = true;
+
+    // dataflash may have stopped logging - when we get_log_data,
+    // for example.  Always try to restart:
+    if (!DataFlash.logging_started()) {
+        DataFlash.StartNewLog();
+    }
+
+    // enable writes
+    DataFlash.EnableWrites(true);
 }
 
 void Copter::log_init(void)
