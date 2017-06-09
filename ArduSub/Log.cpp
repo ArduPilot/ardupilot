@@ -482,9 +482,6 @@ void Sub::start_logging()
     if (!DataFlash.logging_started()) {
         DataFlash.StartNewLog();
     }
-
-    // enable writes
-    DataFlash.EnableWrites(true);
 }
 
 void Sub::log_init(void)
