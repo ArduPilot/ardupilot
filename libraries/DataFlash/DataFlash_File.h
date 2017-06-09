@@ -73,6 +73,10 @@ public:
 
     void vehicle_was_disarmed() override;
 
+protected:
+
+    bool WritesOK() const override;
+
 private:
     int _write_fd;
     int _read_fd;
