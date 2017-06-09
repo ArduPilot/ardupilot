@@ -32,6 +32,9 @@ void Sub::init_ardupilot()
 
     BoardConfig.init();
 
+    // identify ourselves correctly with the ground station
+    mavlink_system.sysid = g.sysid_this_mav;
+    
     // initialise serial port
     serial_manager.init();
 
@@ -59,9 +62,6 @@ void Sub::init_ardupilot()
     for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
-
-    // identify ourselves correctly with the ground station
-    mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
