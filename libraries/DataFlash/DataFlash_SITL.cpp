@@ -55,7 +55,7 @@ void DataFlash_SITL::ReadManufacturerID()
 	df_device = 0x0203;
 }
 
-bool DataFlash_SITL::CardInserted(void)
+bool DataFlash_SITL::CardInserted(void) const
 {
     return true;
 }

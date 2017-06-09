@@ -259,3 +259,11 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
 
     return WritePrioritisedBlock(buffer, msg_len, is_critical);
 }
+
+bool DataFlash_Backend::WritesOK() const
+{
+    if (!_writes_enabled) {
+        return false;
+    }
+    return true;
+}

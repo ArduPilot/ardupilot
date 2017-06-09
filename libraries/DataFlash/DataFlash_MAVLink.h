@@ -67,6 +67,10 @@ public:
 
     void remote_log_block_status_msg(mavlink_channel_t chan, mavlink_message_t* msg) override;
 
+protected:
+
+    bool WritesOK() const override;
+
 private:
 
     struct dm_block {

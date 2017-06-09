@@ -140,6 +140,8 @@ protected:
                           print_mode_fn print_mode,
                           AP_HAL::BetterStream *port);
 
+    virtual bool WritesOK() const;
+
     bool _writes_enabled = false;
 
     /*

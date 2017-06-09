@@ -42,13 +42,27 @@ void DataFlash_Block::FinishWrite(void)
     df_BufferIdx = 0;
 }
 
+bool DataFlash_Block::WritesOK() const
+{
+    if (!DataFlash_Backend::WritesOK()) {
+        return false;
+    }
+    if (!CardInserted()) {
+        return false;
+    }
+    if (!log_write_started) {
+        return false;
+    }
+    return true;
+}
+
 bool DataFlash_Block::WritePrioritisedBlock(const void *pBuffer, uint16_t size,
     bool is_critical)
 {
     // is_critical is ignored - we're a ring buffer and never run out
     // of space.  possibly if we do more complicated bandwidth
     // limiting we can reservice bandwidth based on is_critical
-    if (!CardInserted() || !log_write_started || !_writes_enabled) {
+    if (!WritesOK()) {
         return false;
     }
 
