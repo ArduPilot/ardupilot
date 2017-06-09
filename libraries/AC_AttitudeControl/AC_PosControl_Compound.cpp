@@ -1,7 +1,22 @@
 #include "AC_PosControl_Compound.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+/*
+const AP_Param::GroupInfo AC_PosControl_Compound::var_info[] = {
+    // 0 was used for HOVER
 
+    // @Param: _
+    // @DisplayName: XY Acceleration filter cutoff frequency
+    // @Description: Lower values will slow the response of the navigation controller and reduce twitchiness
+    // @Units: Hz
+    // @Range: 0.5 5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("_ACC_XY_FILT", 1, AC_PosControl_Compound, throttle_p, throttle_p.kP()),
+
+    AP_GROUPEND
+};
+*/
 AC_PosControl_Compound::AC_PosControl_Compound(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                              AP_Motors& motors, AC_AttitudeControl& attitude_control,
                              AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
@@ -11,22 +26,23 @@ AC_PosControl_Compound::AC_PosControl_Compound(const AP_AHRS_View& ahrs, const A
     _motors(motors),
     _thrust_out(0.0f),
     _use_thruster(true),
-    _throttle_p(throttle_p)
+    _throttle_p(throttle_p),
+    _radio_forward_in(-1.0f);
 {}
 
 //To-Do: enable radio passthrough for stick-auto modes like stabilize, alt-hold, etc...
 
 void AC_PosControl_Compound::set_radio_passthrough_forward_thruster(float forward_radio_passthrough)
 {
-    float radio_forward = forward_radio_passthrough;
-    _motors.set_forward(radio_forward);
+    _radio_forward_in = constraint_float(forward_radio_passthrough,-1.0f, 1.0f);
+    _motors.set_forward(_radio_forward_in);
 }
 
 void AC_PosControl_Compound::set_use_thruster(bool use_thruster)
 {
     _use_thruster = use_thruster;
 
-    if (_use_thruster)
+    if (!_use_thruster)
       _motors.set_forward(-1.0f);
 }
 
@@ -37,6 +53,7 @@ void AC_PosControl_Compound::init_takeoff()
 }
 // rate_to_accel_xy - horizontal desired rate to desired acceleration
 ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
+/*
 void AC_PosControl_Compound::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 {
     Vector2f vel_xy_p, vel_xy_i;
@@ -95,6 +112,7 @@ void AC_PosControl_Compound::rate_to_accel_xy(float dt, float ekfNavVelGainScale
     _accel_target.x = _accel_feedforward.x + (vel_xy_p.x + vel_xy_i.x) * ekfNavVelGainScaler;
     _accel_target.y = _accel_feedforward.y + (vel_xy_p.y + vel_xy_i.y) * ekfNavVelGainScaler;
 }
+*/
 
 // Just some addition of use Forward Thruster when certain amount of accel_forward is requested.
 void AC_PosControl_Compound::accel_to_lean_angles(float dt, float ekfNavVelGainScaler, bool use_althold_lean_angle)
@@ -156,7 +174,7 @@ void AC_PosControl_Compound::accel_to_lean_angles(float dt, float ekfNavVelGainS
     _roll_target = constrain_float(atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
 
     //To-Do : Do not allow use thruster which requires level of precision like circle, land modes, ...
-    // To-Do 2 : Possibly There would be optimal way to mix pitch down and rear throttle controller.
+    // To-Do 2 : Possibly There would be optimal ways to mix pitch down and rear throttle controller.
     if (_use_thruster)
     {
       if (accel_forward >= 0.0f)
@@ -170,22 +188,21 @@ void AC_PosControl_Compound::accel_to_lean_angles(float dt, float ekfNavVelGainS
       {
             use_althold_lean_angle = true;
             run_auxiliary_thruster_controller(0.0f);
-            _motors.set_forward(0.0f);
+            _motors.set_forward(-1.0f);
       }
     }
 
 }
 
-// Forward thruster controller from requested Position/Velocity/Acceleration command.
-
+// Forward thruster controller command from requested Position/Velocity/Acceleration command.
 void AC_PosControl_Compound::run_auxiliary_thruster_controller(float accel_forward)
 {
      if (accel_forward > 0.0f)
      {
       //Vector3f accel_NED = _ahrs.get_accel_ef_blended();
       //float accel_error = 0.01f * accel_forward - accel_NED.x; // accel error in m/s/s this would be noisy controller
-      //float radio_feedforward = ;
-      _thrust_out = 0.01f * _throttle_p.get_p(accel_forward); // simple P + Feedforward controller.
+      //float radio_feedforward = _radio_forward_in - 0.5; // decelerate if less than 50% forward radio channel / accelerate if more than 50% RC-in
+      _thrust_out = 0.01f * _throttle_p.get_p(accel_forward); // simple P controller in m/s/s
       //To-do : Implement accel forward to throttle controller like fixed-wing
       _motors.set_forward(_thrust_out);
      }

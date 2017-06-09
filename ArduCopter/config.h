@@ -474,6 +474,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // Compound Systsem Parameters
 //
+#ifndef COMPOUND_SYSTEM_ENABLED
+  # define COMPOUND_SYSTEM_ENABLED        ENABLED // compound system enabled
+#endif
+
 #ifndef THROTTLE_P
   # define THROTTLE_P           1.0f
 #endif

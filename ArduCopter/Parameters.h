@@ -479,8 +479,9 @@ public:
     AC_P                    p_pos_xy;
     AC_P                    p_alt_hold;
 
+    #if COMPOUND_SYSTEM_ENABLED
     AC_P                    throttle_p;
-
+    #endif
     // Autotune
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
@@ -501,8 +502,9 @@ public:
         p_pos_xy                (POS_XY_P),
 
         p_alt_hold              (ALT_HOLD_P),
-
+    #if COMPOUND_SYSTEM_ENABLED
         throttle_p              (THROTTLE_P)
+    #endif 
     {
     }
 };

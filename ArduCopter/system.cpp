@@ -645,9 +645,16 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
 
+#if COMPOUND_SYSTEM_ENABLED
     pos_control = new AC_PosControl_Compound(*ahrs_view, inertial_nav, *motors, *attitude_control,
                                     g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                                     g.p_pos_xy, g.pi_vel_xy, g.throttle_p);
+#elif
+    pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control,
+                                g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
+                                g.p_pos_xy, g.pi_vel_xy);
+#endif
+
     if (pos_control == nullptr) {
         AP_HAL::panic("Unable to allocate PosControl");
     }

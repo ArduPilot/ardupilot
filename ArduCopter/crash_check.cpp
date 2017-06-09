@@ -31,11 +31,21 @@ void Copter::crash_check()
         crash_counter_accel = 0;
         return;
     }
-    else if (land_accel_ef_filter.get().length() >= 5.0f * CRASH_CHECK_ACCEL_MAX)
+
+    // check accel impulse whether if vehicle is crahsing
+
+    else if (fabsf(last_accel_length - land_accel_ef_filter.get().length()) >= 10.0f)
     {
-      float last_accel_length = land_accel_ef_filter.get().length();
+      last_accel_length = land_accel_ef_filter.get().length();
       // To-Do: Check Impulse acceleration
       crash_counter_accel++;
+
+      // if accel is stationary after impulse input
+      if (land_accel_ef_filter.get().length() <= CRASH_CHECK_ACCEL_MAX) {
+          crash_counter_accel++;
+          return;
+      }
+
     }
 
     // check for angle error over 30 degrees
@@ -70,7 +80,7 @@ void Copter::crash_check()
         init_disarm_motors();
     }
 
-    if (crash_counter_accel >= 1) {
+    if (crash_counter_accel >= 2) {
         // log an error in the dataflash
         Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
         // send message to gcs

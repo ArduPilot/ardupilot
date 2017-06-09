@@ -19,6 +19,7 @@ bool Copter::circle_init(bool ignore_checks)
 
         // initialise circle controller including setting the circle center based on vehicle speed
         circle_nav->init();
+        // do not allow forward thruster use in circle mode.
         pos_control->set_use_thruster(false);
         return true;
     }else{

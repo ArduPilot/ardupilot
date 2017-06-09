@@ -23,10 +23,14 @@ public:
 
   const AP_AHRS_View &        _ahrs;
   //const AP_InertialNav&       _inav;
-  AP_Motors&            _motors;
+  AP_Motors&                  _motors;
  //AC_AttitudeControl&         _attitude_control;
 
- AC_P& _throttle_p;
+  AC_P& _throttle_p;
+
+  ///////////////////////////////////////////////////////////////////
+  /////////////////////////////// Functions /////////////////////////
+
   // empty destructor to suppress compiler warning
   virtual ~AC_PosControl_Compound() {}
 
@@ -34,20 +38,25 @@ public:
   void set_radio_passthrough_forward_thruster(float forward_radio_passthrough);
   //enable use of thruster from radio inputs;
 
-  // set use of forward thrster
+  // set use of forward thruster
   void set_use_thruster(bool use_thruster);
 
-  // Do not allow use thruster when taking-off
+  // Inherited : Do not allow use thruster when taking-off
   virtual void  init_takeoff();
 
-  virtual void rate_to_accel_xy(float dt, float ekfNavVelGainScaler);
-  //void set_radio_passthrough_auxiliary_thruster(float forward_radio_passthrough);
-  //switch to accel forward to use thruster instead of pitch down.
+  // Inherited : Not in Use.
+  //virtual void rate_to_accel_xy(float dt, float ekfNavVelGainScaler);
+
+  // Inherited :switch to accel forward to use thruster instead of pitch down.
   virtual void accel_to_lean_angles(float dt_xy, float ekfNavVelGainScaler, bool use_althold_lean_angle);
 
   // accel forward command to rear thruster throttle
   void run_auxiliary_thruster_controller(float accel_forward);
 
+  //////////////////////////////////////////////////////////////////
+  //////////////////////////// Variables ///////////////////////////
+
   float _thrust_out;  // scaled throttle to be pass to motor controller.
   bool _use_thruster; // flag for use thruster
+  float _radio_forward_in; // forward channel in from radio.
 };

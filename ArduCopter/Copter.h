@@ -466,7 +466,7 @@ private:
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
-
+    float last_accel_length;
     // filtered pilot's throttle input used to cancel landing if throttle held high
     LowPassFilterFloat rc_throttle_control_in_filter;
 
@@ -509,11 +509,11 @@ private:
     // To-Do: move inertial nav up or other navigation variables down here
     AC_AttitudeControl *attitude_control;
 
-    //#if FRAME_CONFIG != COMPOUND_FRAME
+    #if COMPOUND_SYSTEM_ENABLED
     AC_PosControl_Compound *pos_control;
-    //#else
-    //AC_PosControl_Compound *pos_control;
-    //#endif
+    #else
+    AC_PosControl *pos_control;
+    #endif
 
     AC_WPNav *wp_nav;
     AC_Circle *circle_nav;
