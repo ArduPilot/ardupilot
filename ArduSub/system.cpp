@@ -291,11 +291,19 @@ bool Sub::optflow_position_ok()
 bool Sub::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
+    if (in_mavlink_delay) {
         return false;
     }
-    bool ret = DataFlash.logging_started() && (motors.armed() || DataFlash.log_while_disarmed());
-    return ret;
+    if (!(mask & g.log_bitmask)) {
+        return false;
+    }
+    if (!motors.armed() && !DataFlash.log_while_disarmed()) {
+        return false;
+    }
+    if (!DataFlash.logging_started()) {
+        start_logging();
+    }
+    return true;
 #else
     return false;
 #endif
