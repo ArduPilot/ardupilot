@@ -253,7 +253,10 @@ void Tracker::check_usb_mux(void)
  */
 bool Tracker::should_log(uint32_t mask)
 {
-    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
+    if (in_mavlink_delay) {
+        return false;
+    }
+    if (!(mask & g.log_bitmask)) {
         return false;
     }
     return true;
