@@ -26,7 +26,7 @@ void AC_PosControl_Compound::set_use_thruster(bool use_thruster)
 {
     _use_thruster = use_thruster;
 
-    if (_use_thruster)
+    if (!_use_thruster)
       _motors.set_forward(-1.0f);
 }
 
