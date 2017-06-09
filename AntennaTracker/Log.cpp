@@ -90,7 +90,7 @@ void Tracker::start_logging()
     if (g.log_bitmask != 0) {
         if (!logging_started) {
             logging_started = true;
-            DataFlash.StartNewLog();
+            DataFlash.StartUnstartedLogging();
         }
     }
 }
