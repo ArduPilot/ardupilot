@@ -212,6 +212,7 @@ public:
     bool logging_failed() const;
 
     void set_vehicle_armed(bool armed_state);
+    bool vehicle_is_armed() const { return _armed; }
 
 protected:
 
