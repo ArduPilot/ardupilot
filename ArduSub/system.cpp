@@ -300,9 +300,7 @@ bool Sub::should_log(uint32_t mask)
     if (!motors.armed() && !DataFlash.log_while_disarmed()) {
         return false;
     }
-    if (!DataFlash.logging_started()) {
-        start_logging();
-    }
+    start_logging();
     return true;
 #else
     return false;
