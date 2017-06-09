@@ -922,9 +922,6 @@ void Copter::start_logging()
     if (!DataFlash.logging_started()) {
         DataFlash.StartNewLog();
     }
-
-    // enable writes
-    DataFlash.EnableWrites(true);
 }
 
 void Copter::log_init(void)
