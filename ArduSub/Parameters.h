@@ -356,6 +356,11 @@ public:
     AP_Proximity proximity;
 #endif
 
+#if BEACON_ENABLED == ENABLED
+    // beacon (non-GPS positioning) library
+    AP_Beacon beacon;
+#endif
+
     // RC input channels
     RC_Channels rc_channels;
 

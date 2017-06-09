@@ -119,6 +119,9 @@ void AP_Beacon::update(void)
         return;
     }
     _driver->update();
+
+    // update boundary for fence
+    update_boundary_points();
 }
 
 // return origin of position estimate system
@@ -223,6 +226,68 @@ uint32_t AP_Beacon::beacon_last_update_ms(uint8_t beacon_instance) const
         return 0;
     }
     return beacon_state[beacon_instance].distance_update_ms;
+}
+
+// create fence boundary points
+void AP_Beacon::update_boundary_points()
+{
+    // we need three points at least to create fence
+    // if beacon number is same return
+    if (!device_ready() || num_beacons < AP_BEACON_MINIMUM_FENCE_BEACONS || boundary_num_beacons == num_beacons) {
+        return;
+    }
+
+    // create boundary (5 points with a closing point) at once
+    if (!boundary_create_attempted) {
+        uint32_t array_size = (AP_BEACON_MAX_BEACONS + 1) * sizeof(Vector2f);
+        if (hal.util->available_memory() >= 100U + array_size) {
+            boundary = (Vector2f *)calloc(1, array_size);
+        }
+        boundary_create_attempted = true;
+    }
+
+    // check if boundary is available
+    if (boundary == nullptr) {
+        return;
+    } else {
+        boundary_num_beacons = num_beacons;
+    }
+
+    // accumulate beacon points
+    for (uint8_t index = 0; index < num_beacons; index++) {
+        // if a beacon is not healthy, delete boundary to renew array
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+        if (!beacon_healthy(index)) {
+            delete boundary;
+            boundary = nullptr;
+            return;
+        }
+#endif
+        Vector3f point_3d = beacon_position(index);
+        Vector2f point_2d(point_3d.x, point_3d.y);
+
+        boundary[index] = point_2d;
+    }
+
+    // reorder points to create fence if need
+    // it depends on each beacon layout.
+    _driver->reorder_boundary_for_fence();
+
+    // to close boundary region
+    boundary[num_beacons] = boundary[0];
+
+    return;
+}
+
+// return fence boundary array
+Vector2f* AP_Beacon::get_boundary_points(uint16_t& num_points) const
+{
+    if (!device_ready()) {
+        return nullptr;
+    }
+
+    num_points = static_cast<uint16_t>(num_beacons + 1);
+    return boundary;
 }
 
 // check if the device is ready

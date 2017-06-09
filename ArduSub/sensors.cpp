@@ -69,6 +69,20 @@ void Sub::read_rangefinder(void)
 #endif
 }
 
+#if BEACON_ENABLED == ENABLED
+// init beacons used for non-gps position estimates
+void Sub::init_beacon()
+{
+    g2.beacon.init();
+}
+
+// update beacons
+void Sub::update_beacon()
+{
+    g2.beacon.update();
+}
+#endif
+
 // return true if rangefinder_alt can be used
 bool Sub::rangefinder_alt_ok()
 {

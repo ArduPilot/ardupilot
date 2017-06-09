@@ -84,6 +84,11 @@ void Sub::init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
+#if BEACON_ENABLED == ENABLED
+    // give AHRS the rnage beacon sensor
+    ahrs.set_beacon(&g2.beacon);
+#endif
+
     // Do GPS init
     gps.init(&DataFlash, serial_manager);
 
@@ -155,6 +160,11 @@ void Sub::init_ardupilot()
     // initialise rangefinder
 #if RANGEFINDER_ENABLED == ENABLED
     init_rangefinder();
+#endif
+
+#if BEACON_ENABLED == ENABLED
+    // init beacons used for non-gps position estimation
+    init_beacon();
 #endif
 
     // initialise AP_RPM library
