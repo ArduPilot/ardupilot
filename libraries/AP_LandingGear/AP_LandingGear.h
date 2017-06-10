@@ -32,9 +32,6 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     }
 
-    /// enabled - returns true if landing gear retract is enabled
-    bool enabled() const { return _retract_enabled; }
-
     /// deployed - returns true if the landing gear is deployed
     bool deployed() const { return _deployed; }
 
