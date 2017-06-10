@@ -213,7 +213,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri
+    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri, 10: TailSitter
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 46, QuadPlane, frame_class, 1),
 
