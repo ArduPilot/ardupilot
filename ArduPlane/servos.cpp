@@ -255,29 +255,20 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
  */
 void Plane::flaperon_update(int8_t flap_percent)
 {
-    if (!SRV_Channels::function_assigned(SRV_Channel::k_flaperon1) ||
-        !SRV_Channels::function_assigned(SRV_Channel::k_flaperon2)) {
+    if (!SRV_Channels::function_assigned(SRV_Channel::k_flaperon_left) &&
+        !SRV_Channels::function_assigned(SRV_Channel::k_flaperon_right)) {
         return;
     }
-    uint16_t ch1, ch2;
     /*
       flaperons are implemented as a mixer between aileron and a
       percentage of flaps. Flap input can come from a manual channel
       or from auto flaps.
-
-      Use k_flaperon1 and k_flaperon2 channel trims to center servos.
-      Then adjust aileron trim for level flight (note that aileron trim is affected
-      by mixing gain). flapin_channel's trim is not used.
      */
-     
-    if (!SRV_Channels::get_output_pwm(SRV_Channel::k_aileron, ch1)) {
-        return;
-    }
-    // The *5 is to take a percentage to a value from -500 to 500 for the mixer
-    ch2 = 1500 - flap_percent * 5;
-    channel_output_mixer_pwm(g.flaperon_output, ch1, ch2);
-    SRV_Channels::set_output_pwm_trimmed(SRV_Channel::k_flaperon1, ch1);
-    SRV_Channels::set_output_pwm_trimmed(SRV_Channel::k_flaperon2, ch2);
+    float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    float flaperon_left  = constrain_float(aileron + flap_percent * 45, -4500, 4500);
+    float flaperon_right = constrain_float(aileron - flap_percent * 45, -4500, 4500);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, flaperon_right);
 }
 
 /*
@@ -579,9 +570,8 @@ void Plane::set_servos_flaps(void)
         SRV_Channels::limit_slew_rate(SRV_Channel::k_flap, g.flap_slewrate, G_Dt);
     }    
 
-    if (g.flaperon_output != MIXING_DISABLED && g.elevon_output == MIXING_DISABLED && g.mix_mode == 0) {
-        flaperon_update(auto_flap_percent);
-    }
+    // output to flaperons, if any
+    flaperon_update(auto_flap_percent);
 }
 
 
