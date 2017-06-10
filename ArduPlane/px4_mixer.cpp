@@ -99,8 +99,8 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             rev = false;
             mix = mix_max*mixmul[g.elevon_output][0];
         } else if (function == SRV_Channel::k_aileron || 
-                   function == SRV_Channel::k_flaperon1 || 
-                   function == SRV_Channel::k_flaperon2) {
+                   function == SRV_Channel::k_flaperon_left || 
+                   function == SRV_Channel::k_flaperon_right) {
             // a secondary aileron. We don't mix flap input in yet for flaperons
             c1 = rcmap.roll()-1;
         } else if (function == SRV_Channel::k_elevator) {
