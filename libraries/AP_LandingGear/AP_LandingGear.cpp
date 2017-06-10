@@ -61,7 +61,7 @@ void AP_LandingGear::update()
     // if there is a force deploy active, disable retraction, then reset force deploy to consume it
     // gear will be deployed automatically because _retract_enabled is false.
     // this will disable retract switch until it is cycled through deploy position
-    if ( _force_deploy){
+    if (_force_deploy){
             enable(false);
             force_deploy(false);
         }
