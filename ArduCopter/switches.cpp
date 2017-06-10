@@ -191,7 +191,6 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_MISSION_RESET:
         case AUXSW_ATTCON_FEEDFWD:
         case AUXSW_ATTCON_ACCEL_LIM:
-        case AUXSW_LANDING_GEAR:
         case AUXSW_MOTOR_ESTOP:
         case AUXSW_MOTOR_INTERLOCK:
         case AUXSW_AVOID_ADSB:
@@ -492,13 +491,10 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
        case AUXSW_LANDING_GEAR:
             switch (ch_flag) {
                 case AUX_SWITCH_LOW:
-                    landinggear.set_cmd_mode(LandingGear_Deploy);
-                    break;
-                case AUX_SWITCH_MIDDLE:
-                    landinggear.set_cmd_mode(LandingGear_Auto);
+                    landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
                     break;
                 case AUX_SWITCH_HIGH:
-                    landinggear.set_cmd_mode(LandingGear_Retract);
+                    landinggear.set_position(AP_LandingGear::LandingGear_Retract);
                     break;
             }
             break;
