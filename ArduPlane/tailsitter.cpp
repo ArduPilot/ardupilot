@@ -62,13 +62,27 @@ void QuadPlane::tailsitter_output(void)
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
 
+    static float orig_kP = -1.0f;
+
     if (tailsitter.tcomp_gain > 0) {
+        if (orig_kP < 0.0f) {
+            orig_kP = attitude_control->get_rate_pitch_pid().kP();
+        }
         // boost throttle when pitch or yaw error is large
         float pitch_error_cd = (plane.nav_pitch_cd - ahrs_view->pitch_sensor) * 0.5;
         float pitch_error_norm = constrain_float(fabsf(pitch_error_cd), 0, 4500) / 4500.0;
 
-        float yaw_error_cd = (attitude_control->get_att_target_euler_cd().z - ahrs_view->yaw_sensor) * 0.5;
+        float elevon_L = SRV_Channels::get_output_norm(SRV_Channel::k_elevon_left);
+        float elevon_R = SRV_Channels::get_output_norm(SRV_Channel::k_elevon_right);
+
+        float yaw_error_cd = (wrap_360_cd(attitude_control->get_att_target_euler_cd().z) - ahrs_view->yaw_sensor) * 0.5;
         float yaw_error_norm = constrain_float(fabsf(yaw_error_cd), 0, 4500) / 4500.0;
+
+        // if elevons are near saturation, prioritize pitch over yaw by attenuating aileron control
+        float elevon_margin = 1.0f - 0.5f * fmaxf(fabsf(elevon_L), fabsf(elevon_R));
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,
+                elevon_margin * SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
 
         float norm_err_max = fmaxf(yaw_error_norm, pitch_error_norm);
         float thr_boost = 1.0f + norm_err_max * tailsitter.tcomp_gain;
@@ -79,15 +93,30 @@ void QuadPlane::tailsitter_output(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, thr_boost * thr_scaledL);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, thr_boost * thr_scaledR);
 
+        // reduce pitch PID gains in proportion to throttle level
+        float avg_thr_norm = (thr_scaledL + thr_scaledR) / 200.0f;
+        float gain_scale = fminf(1.0f, 0.5f / avg_thr_norm);
+        float pitch_kP = gain_scale * orig_kP;
+        attitude_control->get_rate_pitch_pid().kP(pitch_kP);
+
         // temporary debug logging
         static int dec_count=0;
         if (dec_count++ >= 3) {
             dec_count = 0;
-            DataFlash_Class::instance()->Log_Write("TCOM", "TimeUS,Perr,YErr,ThrB", "Qfff",
+            hal.console->printf("target_yaw: %5.3f, yaw: %5.3f\n",
+                    (double) attitude_control->get_att_target_euler_cd().z,
+                    (double) ahrs_view->yaw_sensor);
+            DataFlash_Class::instance()->Log_Write("TCOM", "TimeUS,Perr,YErr,ThrB,ElvM,PkP,DesY,Yaw,Gscl", "Qffffffff",
                                                    AP_HAL::micros64(),
                                                    (double) pitch_error_norm,
                                                    (double) yaw_error_norm,
-                                                   (double) thr_boost);
+                                                   (double) thr_boost,
+                                                   (double) elevon_margin,
+                                                   (double) pitch_kP,
+                                                   (double) wrap_360_cd(attitude_control->get_att_target_euler_cd().z),
+                                                   (double) ahrs_view->yaw_sensor,
+                                                   (double) gain_scale
+                                                   );
         }
 
     }
