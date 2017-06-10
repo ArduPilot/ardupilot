@@ -843,16 +843,9 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FLAP_IN_CHANNEL
     // @DisplayName: Flap input channel
-    // @Description: An RC input channel to use for flaps control. If this is set to a RC channel number then that channel will be used for manual flaps control. When enabled, the percentage of flaps is taken as the percentage travel from the TRIM value of the channel to the MIN value of the channel. A value above the TRIM values will give inverse flaps (spoilers). This option needs to be enabled in conjunction with a FUNCTION setting on an output channel to one of the flap functions. When a FLAP_IN_CHANNEL is combined with auto-flaps the higher of the two flap percentages is taken. You must also enable a FLAPERON_OUTPUT flaperon mixer setting if using flaperons.
+    // @Description: An RC input channel to use for flaps control. If this is set to a RC channel number then that channel will be used for manual flaps control. When enabled, the percentage of flaps is taken as the percentage travel from the TRIM value of the channel to the MIN value of the channel. A value above the TRIM values will give inverse flaps (spoilers). This option needs to be enabled in conjunction with a FUNCTION setting on an output channel to one of the flap functions. When a FLAP_IN_CHANNEL is combined with auto-flaps the higher of the two flap percentages is taken.
     // @User: User
     GSCALAR(flapin_channel,         "FLAP_IN_CHANNEL",  0),
-
-    // @Param: FLAPERON_OUTPUT
-    // @DisplayName: Flaperon output
-    // @Description: Enable flaperon output in software. If enabled then the APM will provide software flaperon mixing on the FLAPERON1 and FLAPERON2 output channels specified using the FUNCTION on two auxiliary channels. There are 8 different mixing modes available, which refer to the 8 ways the flap and aileron outputs can be mapped to the two flaperon servos. Please also see the MIXING_GAIN parameter for the output gain of the mixer. FLAPERON_OUTPUT cannot be combined with ELEVON_OUTPUT or ELEVON_MIXING.
-    // @Values: 0:Disabled,1:UpUp,2:UpDown,3:DownUp,4:DownDown,5:UpUpSwap,6:UpDownSwap,7:DownUpSwap,8:DownDownSwap
-    // @User: User
-    GSCALAR(flaperon_output,        "FLAPERON_OUTPUT",  0),
 
     // @Param: FLAP_1_PERCNT
     // @DisplayName: Flap 1 percentage

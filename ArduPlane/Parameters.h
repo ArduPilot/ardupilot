@@ -105,7 +105,7 @@ public:
         k_param_BoardConfig,
         k_param_rssi_range,     // unused, replaced by rssi_ library parameters
         k_param_flapin_channel,
-        k_param_flaperon_output,
+        k_param_flaperon_output, // unused
         k_param_gps,
         k_param_autotune_level,
         k_param_rally,
@@ -497,7 +497,6 @@ public:
     AP_Float takeoff_pitch_limit_reduction_sec;
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
-    AP_Int8 flaperon_output;
 #if AP_TERRAIN_AVAILABLE
     AP_Int8 terrain_follow;
     AP_Int16 terrain_lookahead;
