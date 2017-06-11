@@ -278,6 +278,17 @@ void DataFlash_Class::backend_starting_new_log(const DataFlash_Backend *backend)
     }
 }
 
+// start any backend which hasn't started; this is only called from
+// the vehicle code
+void DataFlash_Class::StartUnstartedLogging(void)
+{
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (!backends[i]->logging_started()) {
+            backends[i]->start_new_log();
+        }
+    }
+}
+
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \
         for (uint8_t i=0; i<_next_backend; i++) { \
