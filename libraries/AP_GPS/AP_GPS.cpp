@@ -490,12 +490,12 @@ void AP_GPS::detect_instance(uint8_t instance)
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
-        if (_auto_config == 1) {
+        if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
             send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
         }
     }
 
-    if (_auto_config == 1) {
+    if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
         send_blob_update(instance);
     }
 
@@ -594,7 +594,7 @@ void AP_GPS::update_instance(uint8_t instance)
         return;
     }
 
-    if (_auto_config == 1) {
+    if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
         send_blob_update(instance);
     }
 

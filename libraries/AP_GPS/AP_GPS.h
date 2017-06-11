@@ -487,4 +487,11 @@ private:
 
     // calculate the blended state
     void calc_blended_state(void);
+
+    // Auto configure types
+    enum GPS_AUTO_CONFIG {
+        GPS_AUTO_CONFIG_DISABLE = 0,
+        GPS_AUTO_CONFIG_ENABLE  = 1
+    };
+
 };
