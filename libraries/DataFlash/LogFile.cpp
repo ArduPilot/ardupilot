@@ -582,18 +582,6 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
     port->printf("\n");
 }
 
-// This function starts a new log file in the DataFlash, and writes
-// the format of supported messages in the log
-// This function is ONLY called from the vehicle code.
-// DataFlash_MAVLink, for example, will NOT call this function if the
-// remote end disconnects and reconnects!
-void DataFlash_Class::StartNewLog(void)
-{
-    for (uint8_t i=0; i<_next_backend; i++) {
-        backends[i]->start_new_log();
-    }
-}
-
 /*
   write a structure format to the log - should be in frontend
  */
