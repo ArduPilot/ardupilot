@@ -392,7 +392,10 @@ protected:
     AP_Float _blend_tc;
 
 private:
-    // return gps update rate in milliseconds
+    // returns the desired gps update rate in milliseconds
+    // this does not provide any gurantee that the GPS is updating at the requested
+    // rate it is simply a helper for use in the backends for determining what rate
+    // they should be configuring the GPS to run at
     uint16_t get_rate_ms(uint8_t instance) const;
 
     struct GPS_timing {
