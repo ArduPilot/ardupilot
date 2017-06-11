@@ -92,8 +92,6 @@ void Tracker::start_logging()
             logging_started = true;
             DataFlash.StartNewLog();
         }
-        // enable writes
-        DataFlash.EnableWrites(true);
     }
 }
 
