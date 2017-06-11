@@ -105,7 +105,9 @@ public:
 
     void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
 
-    void StartNewLog(void);
+    /* poke backends to start if they're not already started */
+    void StartUnstartedLogging(void);
+
     void EnableWrites(bool enable);
 
     void StopLogging();
