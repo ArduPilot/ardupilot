@@ -1068,7 +1068,10 @@ const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
 }
 
 /*
-  return gps update rate in milliseconds
+  returns the desired gps update rate in milliseconds
+  this does not provide any gurantee that the GPS is updating at the requested
+  rate it is simply a helper for use in the backends for determining what rate
+  they should be configuring the GPS to run at
 */
 uint16_t AP_GPS::get_rate_ms(uint8_t instance) const
 {
