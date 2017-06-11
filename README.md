@@ -88,6 +88,7 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Subsystem***: DataFlash
   - ***Subsystem***: Tools
 - [Michael du Breuil](https://github.com/WickedShell)
+  - ***Subsystem***: SMBus Batteries
   - ***Subsystem***: GPS
 - [Francisco Ferreira](https://github.com/oxinarf)
   - ***Bug Master***
