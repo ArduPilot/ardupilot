@@ -79,7 +79,7 @@ void
 AP_GPS_UBLOX::_request_next_config(void)
 {
     // don't request config if we shouldn't configure the GPS
-    if (gps._auto_config == 0) {
+    if (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         return;
     }
 
@@ -1315,7 +1315,7 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
         // always bail out in this case, it's used to indicate we have yet to receive a valid
         // hardware generation, however the user may have inhibited us detecting the generation
         // so if we aren't allowed to do configuration, we will accept this as the default delay
-        return gps._auto_config != 1;
+        return gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_ENABLE;
     case UBLOX_5:
     case UBLOX_6:
     default:
