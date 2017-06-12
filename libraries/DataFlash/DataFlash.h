@@ -74,10 +74,6 @@ public:
     bool NeedErase(void);
     void EraseAll();
 
-    // possibly expensive calls to start log system:
-    bool NeedPrep();
-    void Prep();
-
     // get a pointer to structures
     const struct LogStructure *get_structures(uint8_t &num_types) {
         num_types = _num_types;
@@ -286,4 +282,8 @@ private:
     void dump_structures(const struct LogStructure *structures, const uint8_t num_types);
 
     void Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
+
+    // possibly expensive calls to start log system:
+    void Prep();
+    bool NeedPrep();
 };
