@@ -4,6 +4,7 @@
 
 #include "DataFlash_File.h"
 #include "DataFlash_MAVLink.h"
+#include <GCS_MAVLink/GCS.h>
 
 DataFlash_Class *DataFlash_Class::_instance;
 
@@ -49,6 +50,7 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
 
 void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_types)
 {
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Preparing log system");
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     validate_structures(structures, num_types);
     dump_structures(structures, num_types);
@@ -104,6 +106,10 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->Init();
     }
+
+    Prep();
+
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Prepared log system");
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

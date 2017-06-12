@@ -397,6 +397,9 @@ void DataFlash_File::Prep_MinSpace()
 #endif
 
 void DataFlash_File::Prep() {
+    if (!NeedPrep()) {
+        return;
+    }
     if (hal.util->get_soft_armed()) {
         // do not want to do any filesystem operations while we are e.g. flying
         return;
