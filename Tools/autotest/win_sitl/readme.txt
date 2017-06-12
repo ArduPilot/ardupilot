@@ -1,6 +1,6 @@
 SITL for Windows Automatic Installation Scripts
 
-This is a collection of batch files to automatically install and run APM SITL (http://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html) on a Windows-based PC/laptop.
+This is a collection of batch files to automatically install and run APM SITL required libraries (http://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html) on a Windows-based PC/laptop.
 
 The scripts are based on the SITL setup instructions here: http://ardupilot.org/dev/docs/sitl-native-on-windows.html
 Prerequisites:
@@ -8,16 +8,21 @@ Prerequisites:
     None! The scripts will take care of everything.
     You will need an Internet connection and an hour of time (will be less with a fast Internet connection) for the scripts to download and install everything.
 
-Assumptions:
+1) Assumptions:
 
-    The scripts will install Cygwin, MAVProxy and the APM source to C:\cygwin. So access to the C:\ drive is required.
+    The scripts will install Cygwin (to C:\cygwin) and MAVProxy. So access to the C:\ drive is required.
+    
+    There are 2 options for installation: Just the development environment (2A) , or the development environment plus APM source code (2B). The first option is for users that already have the APM source code on their computer (or wish to have it in a particular folder). The second option will download and configure the APM source code too, which is easier for new users.
 
-Installing:
+2A) Installing just the Development Environment:
 
-    Download these scripts and unzip
-    Run the script "InstallCygwinAPM.ps1" (right click -> Run in Powershell). This will install Cygwin to C:\cygwin and MAVProxy to C:\Program Files (x86)\MAVProxy
+    Run the script "InstallDevEnvironment.ps1" (right click -> Run in Powershell). This will install Cygwin to C:\cygwin and MAVProxy to C:\Program Files (x86)\MAVProxy
+    
+2B) Installing the Development Environment and APM source code:
 
-Running SITL:
+    Run the script "InstallDevEnvironmentAndAPMSource.ps1" (right click -> Run in Powershell). This will install Cygwin to C:\cygwin and MAVProxy to C:\Program Files (x86)\MAVProxy. The APM source code will be in C:\cygwin\home\<username>\ardupilot
+    
+3) Running SITL:
 
 There are several options for running SITL. In all cases, SITL will output a mavlink stream on 127.0.0.1:14550 (UDP) for connection to any GCS software (Such as Mission Planner).
 
@@ -29,13 +34,7 @@ To continue with the current EEPROM, run:
     RunPlane.bat for running APM:Plane
     RunRover.bat for running APM:Rover
 
-To delete the old EEPROM and start with all default settings, run:
-
-    ResetRunCopter.bat for a quadcopter running APM:Copter
-    ResetRunPlane.bat for running APM:Plane
-    ResetRunRover.bat for running APM:Rover
-
-Updating the APM source code
+4) Updating the APM source code
 
 To update the APM code with the latest of Github, run UpdateAPMSource.bat. Note this is bleeding-edge source code and some bugs may be present.
 Deleting the SITL environment
