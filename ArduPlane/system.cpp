@@ -82,6 +82,8 @@ void Plane::init_ardupilot()
                          "\n\nFree RAM: %u\n",
                       (unsigned)hal.util->available_memory());
 
+    // init vehicle capabilties
+    init_capabilities();
 
     //
     // Check the EEPROM format version before loading any parameters from EEPROM
@@ -101,7 +103,7 @@ void Plane::init_ardupilot()
 #endif
 
     set_control_channels();
-    
+
 #if HAVE_PX4_MIXER
     if (!quadplane.enable) {
         // this must be before BoardConfig.init() so if
@@ -118,12 +120,14 @@ void Plane::init_ardupilot()
 
     gcs().set_dataflash(&DataFlash);
 
+    // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
 
     // initialise serial ports
     serial_manager.init();
-    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
+    // setup first port early to allow BoardConfig to report errors
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // specify callback function for CLI menu system
 #if CLI_ENABLED == ENABLED
@@ -139,31 +143,29 @@ void Plane::init_ardupilot()
     // setup any board specific drivers
     BoardConfig.init();
 
-    relay.init();
-
     // initialise notify system
     notify.init(false);
+    AP_Notify::flags.failsafe_battery = false;
     notify_flight_mode(control_mode);
-
-    init_rc_out_main();
-    
-    // allow servo set on all channels except first 4
-    ServoRelayEvents.set_channel_mask(0xFFF0);
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
-    g.num_resets.set_and_save(g.num_resets+1);
+    g.num_resets.set_and_save(g.num_resets + 1);
 
-    // init baro before we start the GCS, so that the CLI baro test works
-    barometer.init();
+    // sets up rc channels from radio
+    init_rc_in();
+    init_rc_out_main();
+    /*
+    *  setup the 'main loop is dead' check. Note that this relies on
+    *  the RC library being initialised.
+    */
+    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
-    // initialise rangefinder
-    init_rangefinder();
+    // initialise which outputs Servo and Relay events can use
+    // allow servo set on all channels except first 4
+    ServoRelayEvents.set_channel_mask(0xFFF0);
 
-    // initialise battery monitoring
-    battery.init();
-
-    rpm_sensor.init();
+    relay.init();
 
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
@@ -179,11 +181,14 @@ void Plane::init_ardupilot()
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
+    // initialise battery monitor
+    battery.init();
+    // init baro before we start the GCS, so that the CLI baro test works
+    barometer.init();
+    // Init RSSI
+    rssi.init();
 
-    // initialise airspeed sensor
-    airspeed.init();
-
-    if (g.compass_enabled==true) {
+    if (g.compass_enabled == true) {
         bool compass_ok = compass.init() && compass.read();
 #if HIL_SUPPORT
     if (g.hil_mode != 0) {
@@ -197,21 +202,34 @@ void Plane::init_ardupilot()
             ahrs.set_compass(&compass);
         }
     }
-    
-#if OPTFLOW == ENABLED
-    // make optflow available to libraries
-    if (optflow.enabled()) {
-        ahrs.set_optflow(&optflow);
-    }
-#endif
-
-    // give AHRS the airspeed sensor
-    ahrs.set_airspeed(&airspeed);
 
     // GPS Initialization
     gps.init(&DataFlash, serial_manager);
 
-    init_rc_in();               // sets up rc channels from radio
+#if CLI_ENABLED == ENABLED
+    gcs().handle_interactive_setup();
+#endif // CLI_ENABLED
+
+    quadplane.setup();
+
+    // initialise sensor
+#if OPTFLOW == ENABLED
+    // make optflow available to libraries
+    if (optflow.enabled()) {
+        optflow.init();
+        ahrs.set_optflow(&optflow);
+    }
+#endif
+    // initialise airspeed sensor
+    airspeed.init();
+
+    // give AHRS the airspeed sensor
+    ahrs.set_airspeed(&airspeed);
+
+    // initialise rangefinder
+    init_rangefinder();
+
+    rpm_sensor.init();
 
 #if MOUNT == ENABLED
     // initialise camera mount
@@ -222,20 +240,6 @@ void Plane::init_ardupilot()
     hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
     hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
 #endif
-
-    /*
-     *  setup the 'main loop is dead' check. Note that this relies on
-     *  the RC library being initialised.
-     */
-    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
-
-#if CLI_ENABLED == ENABLED
-    gcs().handle_interactive_setup();
-#endif // CLI_ENABLED
-
-    init_capabilities();
-
-    quadplane.setup();
 
     AP_Param::reload_defaults_file();
     
@@ -253,13 +257,6 @@ void Plane::init_ardupilot()
     // set the correct flight mode
     // ---------------------------
     reset_control_switch();
-
-    // initialise sensor
-#if OPTFLOW == ENABLED
-    if (optflow.enabled()) {
-        optflow.init();
-    }
-#endif
 
     // disable safety if requested
     BoardConfig.init_safety();

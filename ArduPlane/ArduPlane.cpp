@@ -101,10 +101,6 @@ void Plane::setup()
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    AP_Notify::flags.failsafe_battery = false;
-
-    rssi.init();
-
     init_ardupilot();
 
     // initialise the main loop scheduler
