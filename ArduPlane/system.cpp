@@ -152,7 +152,14 @@ void Plane::init_ardupilot()
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets + 1);
 
+    // sets up rc channels from radio
+    init_rc_in();
     init_rc_out_main();
+    /*
+    *  setup the 'main loop is dead' check. Note that this relies on
+    *  the RC library being initialised.
+    */
+    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
     // initialise which outputs Servo and Relay events can use
     // allow servo set on all channels except first 4
@@ -198,13 +205,6 @@ void Plane::init_ardupilot()
 
     // GPS Initialization
     gps.init(&DataFlash, serial_manager);
-
-    init_rc_in();               // sets up rc channels from radio
-    /*
-     *  setup the 'main loop is dead' check. Note that this relies on
-     *  the RC library being initialised.
-     */
-    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
 #if CLI_ENABLED == ENABLED
     gcs().handle_interactive_setup();
