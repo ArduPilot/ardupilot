@@ -139,8 +139,10 @@ bool AP_Compass_BMM150::init()
     }
     hal.scheduler->delay(2);
 
+    _dev->setup_checked_registers(4);
+
     /* Change power state from suspend mode to sleep mode */
-    ret = _dev->write_register(POWER_AND_OPERATIONS_REG, POWER_CONTROL_VAL);
+    ret = _dev->write_register(POWER_AND_OPERATIONS_REG, POWER_CONTROL_VAL, true);
     if (!ret) {
         goto bus_error;
     }
@@ -167,16 +169,16 @@ bool AP_Compass_BMM150::init()
      * - ODR = 20
      * But we are going to use 30Hz of ODR
      */
-    ret = _dev->write_register(REPETITIONS_XY_REG, (47 - 1) / 2);
+    ret = _dev->write_register(REPETITIONS_XY_REG, (47 - 1) / 2, true);
     if (!ret) {
         goto bus_error;
     }
-    ret = _dev->write_register(REPETITIONS_Z_REG, 83 - 1);
+    ret = _dev->write_register(REPETITIONS_Z_REG, 83 - 1, true);
     if (!ret) {
         goto bus_error;
     }
     /* Change operation mode from sleep to normal and set ODR */
-    ret = _dev->write_register(OP_MODE_SELF_TEST_ODR_REG, NORMAL_MODE | ODR_30HZ);
+    ret = _dev->write_register(OP_MODE_SELF_TEST_ODR_REG, NORMAL_MODE | ODR_30HZ, true);
     if (!ret) {
         goto bus_error;
     }
@@ -189,9 +191,13 @@ bool AP_Compass_BMM150::init()
     _dev->set_device_type(DEVTYPE_BMM150);
     set_dev_id(_compass_instance, _dev->get_bus_id());
 
+    _perf_err = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "BMM150_err");
+
     _dev->register_periodic_callback(MEASURE_TIME_USEC,
             FUNCTOR_BIND_MEMBER(&AP_Compass_BMM150::_update, void));
 
+    _last_read_ms = AP_HAL::millis();
+    
     return true;
 
 bus_error:
@@ -246,6 +252,14 @@ void AP_Compass_BMM150::_update()
 
     /* Checking data ready status */
     if (!ret || !(data[3] & 0x1)) {
+        _dev->check_next_register();
+        uint32_t now = AP_HAL::millis();
+        if (now - _last_read_ms > 250) {
+            // cope with power cycle to sensor
+            _last_read_ms = now;
+            _dev->write_register(POWER_AND_OPERATIONS_REG, SOFT_RESET);
+            _dev->write_register(POWER_AND_OPERATIONS_REG, POWER_CONTROL_VAL, true);
+        }
         return;
     }
 
@@ -272,6 +286,8 @@ void AP_Compass_BMM150::_update()
     /* correct raw_field for known errors */
     correct_field(raw_field, _compass_instance);
 
+    _last_read_ms = AP_HAL::millis();
+    
     if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
@@ -282,6 +298,8 @@ void AP_Compass_BMM150::_update()
         _accum_count = 5;
     }
     _sem->give();
+
+    _dev->check_next_register();
 }
 
 void AP_Compass_BMM150::read()
