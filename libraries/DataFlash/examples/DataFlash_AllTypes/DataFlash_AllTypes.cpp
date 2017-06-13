@@ -190,11 +190,6 @@ void DataFlashTest_AllTypes::setup(void)
     hal.scheduler->delay(20);
     dataflash.ShowDeviceInfo(hal.console);
 
-    if (dataflash.NeedPrep()) {
-        hal.console->printf("Preparing dataflash...\n");
-        dataflash.Prep();
-    }
-
     Log_Write_TypeMessages();
     Log_Write_TypeMessages_Log_Write();
 
