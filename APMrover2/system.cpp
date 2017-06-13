@@ -121,10 +121,19 @@ void Rover::init_ardupilot()
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets + 1);
 
-    set_control_channels();
 
+    rc_override_active = hal.rcin->set_overrides(rc_override, 8);
+
+    set_control_channels();
+    // sets up rc channels from radio
+    init_rc_in();
     // sets up motors and output to escs
     init_rc_out();
+    /*
+      setup the 'main loop is dead' check. Note that this relies on
+      the RC library being initialised.
+     */
+    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
     // initialise which outputs Servo and Relay events can use
     // allow servo set on all channels except first 4
@@ -170,15 +179,6 @@ void Rover::init_ardupilot()
 
     // Do GPS init
     gps.init(&DataFlash, serial_manager);
-
-    rc_override_active = hal.rcin->set_overrides(rc_override, 8);
-
-    init_rc_in();        // sets up rc channels from radio
-    /*
-      setup the 'main loop is dead' check. Note that this relies on
-      the RC library being initialised.
-     */
-    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
 #if CLI_ENABLED == ENABLED
     // If the switch is in 'menu' mode, run the main menu.
