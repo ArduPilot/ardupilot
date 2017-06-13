@@ -150,8 +150,15 @@ void Copter::init_ardupilot()
     // allocate the motors class
     allocate_motors();
 
+    // sets up rc channels from radio
+    init_rc_in();
     // sets up motors and output to escs
     init_rc_out();
+    /*
+    *  setup the 'main loop is dead' check. Note that this relies on
+    *  the RC library being initialised.
+    */
+    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
     // motors initialised so parameters can be sent
     ap.initialised_params = true;
@@ -195,13 +202,6 @@ void Copter::init_ardupilot()
 
     // Do GPS init
     gps.init(&DataFlash, serial_manager);
-
-    init_rc_in();  // sets up rc channels from radio
-    /*
-     *  setup the 'main loop is dead' check. Note that this relies on
-     *  the RC library being initialised.
-     */
-    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
 #if CLI_ENABLED == ENABLED
     if (g.cli_enabled) {
