@@ -249,7 +249,7 @@ void AP_Compass_BMM150::_update()
         return;
     }
 
-    const uint16_t rhall = le16toh(data[3] >> 2);
+    const uint16_t rhall = le16toh(data[3]) >> 2;
 
     Vector3f raw_field = Vector3f{
         (float) _compensate_xy(((int16_t)le16toh(data[0])) >> 3,
