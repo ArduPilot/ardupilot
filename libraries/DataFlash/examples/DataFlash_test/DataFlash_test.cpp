@@ -50,11 +50,6 @@ void DataFlashTest::setup(void)
     hal.scheduler->delay(20);
     dataflash.ShowDeviceInfo(hal.console);
 
-    if (dataflash.NeedPrep()) {
-        hal.console->printf("Preparing dataflash...\n");
-        dataflash.Prep();
-    }
-
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
     dataflash.StartUnstartedLogging();
