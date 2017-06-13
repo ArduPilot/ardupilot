@@ -178,28 +178,28 @@ AP_GPS_SBP2::_sbp_process_message() {
     //Here, we copy messages into local structs.
     switch (parser_state.msg_type) {
         case SBP_HEARTBEAT_MSGTYPE:
-            last_heartbeat = *((struct sbp_heartbeat_t*)parser_state.msg_buff);
+            memcpy(&last_heartbeat, parser_state.msg_buff, sizeof(struct sbp_heartbeat_t));
             last_heartbeat_received_ms = AP_HAL::millis();
             break;
 
         case SBP_GPS_TIME_MSGTYPE:
-            last_gps_time = *((struct sbp_gps_time_t*)parser_state.msg_buff);
+            memcpy(&last_gps_time, parser_state.msg_buff, sizeof(struct sbp_gps_time_t));
             break;
 
         case SBP_VEL_NED_MSGTYPE:
-            last_vel_ned = *((struct sbp_vel_ned_t*)parser_state.msg_buff);
+            memcpy(&last_vel_ned, parser_state.msg_buff, sizeof(struct sbp_vel_ned_t));
             break;
 
         case SBP_POS_LLH_MSGTYPE:
-            last_pos_llh = *((struct sbp_pos_llh_t*)parser_state.msg_buff);
+            memcpy(&last_pos_llh, parser_state.msg_buff, sizeof(struct sbp_pos_llh_t));
             break;
 
         case SBP_DOPS_MSGTYPE:
-            last_dops = *((struct sbp_dops_t*)parser_state.msg_buff);
+            memcpy(&last_dops, parser_state.msg_buff, sizeof(struct sbp_dops_t));
             break;
 
         case SBP_EXT_EVENT_MSGTYPE:
-            last_event = *((struct sbp_ext_event_t*)parser_state.msg_buff);
+            memcpy(&last_event, parser_state.msg_buff, sizeof(struct sbp_ext_event_t));
             logging_ext_event();
             break;
 
