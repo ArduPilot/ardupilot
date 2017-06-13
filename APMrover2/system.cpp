@@ -83,10 +83,12 @@ void Rover::init_ardupilot()
                       "\n\nFree RAM: %u\n",
                       hal.util->available_memory());
 
+    // init vehicle capabilties
+    init_capabilities();
+
     //
     // Check the EEPROM format version before loading any parameters from EEPROM.
     //
-
     load_parameters();
 
     // initialise stats module
@@ -94,6 +96,7 @@ void Rover::init_ardupilot()
 
     gcs().set_dataflash(&DataFlash);
 
+    // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
 
     // initialise serial ports
@@ -106,6 +109,7 @@ void Rover::init_ardupilot()
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
+    // setup any board specific drivers
     BoardConfig.init();
 
     // initialise notify system
@@ -113,18 +117,20 @@ void Rover::init_ardupilot()
     AP_Notify::flags.failsafe_battery = false;
     notify_mode(control_mode);
 
-    ServoRelayEvents.set_channel_mask(0xFFF0);
+    // keep a record of how many resets have happened. This can be
+    // used to detect in-flight resets
+    g.num_resets.set_and_save(g.num_resets + 1);
 
     set_control_channels();
 
-    battery.init();
+    // sets up motors and output to escs
+    init_rc_out();
 
-    // keep a record of how many resets have happened. This can be
-    // used to detect in-flight resets
-    g.num_resets.set_and_save(g.num_resets+1);
+    // initialise which outputs Servo and Relay events can use
+    // allow servo set on all channels except first 4
+    ServoRelayEvents.set_channel_mask(0xFFF0);
 
-    // init baro before we start the GCS, so that the CLI baro test works
-    barometer.init();
+    relay.init();
 
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
@@ -145,8 +151,15 @@ void Rover::init_ardupilot()
     log_init();
 #endif
 
+    // initialise battery monitor
+    battery.init();
+    // init baro before we start the GCS, so that the CLI baro test works
+    barometer.init();
+    // Init RSSI
+    rssi.init();
+
     if (g.compass_enabled == true) {
-        if (!compass.init()|| !compass.read()) {
+        if (!compass.init() || !compass.read()) {
             cliSerial->printf("Compass initialisation failed!\n");
             g.compass_enabled = false;
         } else {
@@ -155,39 +168,17 @@ void Rover::init_ardupilot()
         }
     }
 
-    // initialise sonar
-    init_sonar();
-
-    // init beacons used for non-gps position estimation
-    init_beacon();
-
-    // and baro for EKF
-    init_barometer(true);
-
     // Do GPS init
     gps.init(&DataFlash, serial_manager);
 
     rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
     init_rc_in();        // sets up rc channels from radio
-    init_rc_out();        // sets up the timer libs
-
-    relay.init();
-
-#if MOUNT == ENABLED
-    // initialise camera mount
-    camera_mount.init(&DataFlash, serial_manager);
-#endif
-
     /*
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
-
-    // give AHRS the range beacon sensor
-    ahrs.set_beacon(&g2.beacon);
-
 
 #if CLI_ENABLED == ENABLED
     // If the switch is in 'menu' mode, run the main menu.
@@ -208,7 +199,23 @@ void Rover::init_ardupilot()
     }
 #endif
 
-    init_capabilities();
+    // read Baro pressure at ground
+    //-----------------------------
+    init_barometer(true);
+
+    // initialise sonar
+    init_sonar();
+
+    // init beacons used for non-gps position estimation
+    init_beacon();
+
+    // give AHRS the range beacon sensor
+    ahrs.set_beacon(&g2.beacon);
+
+#if MOUNT == ENABLED
+    // initialise camera mount
+    camera_mount.init(&DataFlash, serial_manager);
+#endif
 
     startup_ground();
 
