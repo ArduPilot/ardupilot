@@ -134,7 +134,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Auto-landing type
     // @Description: Specifies the auto-landing type to use
-    // @Values: 0:Standard Glide Slope
+    // @Values: 0:Standard Glide Slope, 1:Deepstall
     // @User: Standard
     AP_GROUPINFO("TYPE",    14, AP_Landing, type, TYPE_STANDARD_GLIDE_SLOPE),
 
