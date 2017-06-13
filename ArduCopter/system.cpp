@@ -93,9 +93,6 @@ void Copter::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    // init vehicle capabilties
-    init_capabilities();
-
     cliSerial->printf("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n",
                       (unsigned)hal.util->available_memory());
@@ -104,6 +101,9 @@ void Copter::init_ardupilot()
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
     //
     report_version();
+
+    // init vehicle capabilties
+    init_capabilities();
 
     // load parameters from EEPROM
     load_parameters();
@@ -125,25 +125,42 @@ void Copter::init_ardupilot()
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
-    
-    BoardConfig.init();
 
-    // init cargo gripper
-#if GRIPPER_ENABLED == ENABLED
-    g2.gripper.init();
-#endif
+    // setup any board specific drivers
+    BoardConfig.init();
 
     // initialise notify system
     notify.init(true);
     notify_flight_mode(control_mode);
 
-    // initialise battery monitor
-    battery.init();
+    // keep a record of how many resets have happened. This can be
+    // used to detect in-flight resets
+    // g.num_resets.set_and_save(g.num_resets + 1); // TODO : NOT USED YET?
 
-    // Init RSSI
-    rssi.init();
-    
-    barometer.init();
+    // update motor interlock state
+    update_using_interlock();
+
+#if FRAME_CONFIG == HELI_FRAME
+    // trad heli specific initialisation
+    heli_init();
+#endif
+    // default frame class to match firmware if possible
+    set_default_frame_class();
+
+    // allocate the motors class
+    allocate_motors();
+
+    // sets up motors and output to escs
+    init_rc_out();
+
+    // motors initialised so parameters can be sent
+    ap.initialised_params = true;
+
+    // initialise which outputs Servo and Relay events can use
+    // allow servo set on all channels except those used by ap_motor
+    ServoRelayEvents.set_channel_mask(~motors->get_motor_mask());
+
+    relay.init();
 
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
@@ -167,82 +184,24 @@ void Copter::init_ardupilot()
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
+    // initialise battery monitor
+    battery.init();
+    // init baro before we start the GCS, so that the CLI baro test works
+    barometer.init();
+    // Init RSSI
+    rssi.init();
 
-    // update motor interlock state
-    update_using_interlock();
+    init_compass();
 
-#if FRAME_CONFIG == HELI_FRAME
-    // trad heli specific initialisation
-    heli_init();
-#endif
-    
-    init_rc_in();               // sets up rc channels from radio
+    // Do GPS init
+    gps.init(&DataFlash, serial_manager);
 
-    // default frame class to match firmware if possible
-    set_default_frame_class();
-
-    // allocate the motors class
-    allocate_motors();
-
-    // sets up motors and output to escs
-    init_rc_out();
-
-    // motors initialised so parameters can be sent
-    ap.initialised_params = true;
-
-    // initialise which outputs Servo and Relay events can use
-    ServoRelayEvents.set_channel_mask(~motors->get_motor_mask());
-
-    relay.init();
-
+    init_rc_in();  // sets up rc channels from radio
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
-
-    // give AHRS the range beacon sensor
-    ahrs.set_beacon(&g2.beacon);
-
-    // Do GPS init
-    gps.init(&DataFlash, serial_manager);
-
-    init_compass();
-
-#if OPTFLOW == ENABLED
-    // make optflow available to AHRS
-    ahrs.set_optflow(&optflow);
-#endif
-
-    // init Location class
-    Location_Class::set_ahrs(&ahrs);
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    Location_Class::set_terrain(&terrain);
-    wp_nav->set_terrain(&terrain);
-#endif
-#if AC_AVOID_ENABLED == ENABLED
-    wp_nav->set_avoidance(&avoid);
-#endif
-
-    attitude_control->parameter_sanity_check();
-    pos_control->set_dt(MAIN_LOOP_SECONDS);
-
-    // init the optical flow sensor
-    init_optflow();
-
-#if MOUNT == ENABLED
-    // initialise camera mount
-    camera_mount.init(&DataFlash, serial_manager);
-#endif
-
-#if PRECISION_LANDING == ENABLED
-    // initialise precision landing
-    init_precland();
-#endif
-
-#ifdef USERHOOK_INIT
-    USERHOOK_INIT
-#endif
 
 #if CLI_ENABLED == ENABLED
     if (g.cli_enabled) {
@@ -282,6 +241,9 @@ void Copter::init_ardupilot()
     // init beacons used for non-gps position estimation
     init_beacon();
 
+    // give AHRS the range beacon sensor
+    ahrs.set_beacon(&g2.beacon);
+
     // init visual odometry
     init_visual_odom();
 
@@ -294,6 +256,46 @@ void Copter::init_ardupilot()
     // initialise DataFlash library
     DataFlash.set_mission(&mission);
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
+
+    // init the optical flow sensor
+    init_optflow();
+
+#if OPTFLOW == ENABLED
+    // make optflow available to AHRS
+    ahrs.set_optflow(&optflow);
+#endif
+
+    // init cargo gripper
+#if GRIPPER_ENABLED == ENABLED
+    g2.gripper.init();
+#endif
+
+    // init Location class
+    Location_Class::set_ahrs(&ahrs);
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+    Location_Class::set_terrain(&terrain);
+    wp_nav->set_terrain(&terrain);
+#endif
+#if AC_AVOID_ENABLED == ENABLED
+    wp_nav->set_avoidance(&avoid);
+#endif
+
+    attitude_control->parameter_sanity_check();
+    pos_control->set_dt(MAIN_LOOP_SECONDS);
+
+#if MOUNT == ENABLED
+    // initialise camera mount
+    camera_mount.init(&DataFlash, serial_manager);
+#endif
+
+#if PRECISION_LANDING == ENABLED
+    // initialise precision landing
+    init_precland();
+#endif
+
+#ifdef USERHOOK_INIT
+    USERHOOK_INIT
+#endif
 
     // initialise the flight mode and aux switch
     // ---------------------------
