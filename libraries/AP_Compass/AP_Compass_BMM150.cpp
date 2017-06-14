@@ -133,6 +133,9 @@ bool AP_Compass_BMM150::init()
         return false;
     }
 
+    // 10 retries for init
+    _dev->set_retries(10);
+    
     /* Do a soft reset */
     ret = _dev->write_register(POWER_AND_OPERATIONS_REG, SOFT_RESET);
     if (!ret) {
@@ -194,6 +197,9 @@ bool AP_Compass_BMM150::init()
 
     _perf_err = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "BMM150_err");
 
+    // 2 retries for run
+    _dev->set_retries(2);
+    
     _dev->register_periodic_callback(MEASURE_TIME_USEC,
             FUNCTOR_BIND_MEMBER(&AP_Compass_BMM150::_update, void));
 
