@@ -1926,3 +1926,40 @@ void DataFlash_Class::Log_Write_Beacon(AP_Beacon &beacon)
     };
     WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
 }
+
+
+void DataFlash_Class::Log_Write_EcotronsEFI(AP_EcotronsEFI& efis)
+{
+    EFI_State* first_efi_state = efis.get_state(0);
+
+    struct log_EcotronsEFI pkt_ecotronsefi = {
+        LOG_PACKET_HEADER_INIT(LOG_ECOTRONSEFI_MSG),
+        time_us                     : AP_HAL::micros64(),
+        ecu_index                   : first_efi_state->ecu_index,
+        rpm                         : first_efi_state->rpm,
+        fuel_level                  : first_efi_state->fuel_level_percent,
+        fuel_flow                   : first_efi_state->fuel_flow_rate,
+        engine_load                 : first_efi_state->engine_load_percent,
+        throttle_position           : first_efi_state->throttle_position_percent,
+        end_of_start                : first_efi_state->end_of_start,
+        crank_sensor_error          : first_efi_state->crank_sensor_error,
+        spark_dwell_time            : first_efi_state->spark_dwell_time_ms,
+        barometric_pressure         : first_efi_state->barometric_pressure,
+        intake_manifold_pressure    : first_efi_state->intake_manifold_pressure,
+        intake_manifold_temperature : first_efi_state->intake_manifold_temperature,
+        coolant_temperature         : first_efi_state->coolant_temperature,
+        battery_voltage             : first_efi_state->battery_voltage
+        /*,
+        ignition_timing0            : first_efi_state->ignition_timing_crank_angle[0],
+        ignition_timing1            : first_efi_state->ignition_timing_crank_angle[1],
+        ignition_timing2            : first_efi_state->ignition_timing_crank_angle[2],
+        ignition_timing3            : first_efi_state->ignition_timing_crank_angle[3],
+        injection_timing0           : first_efi_state->injection_time_ms[0],
+        injection_timing1           : first_efi_state->injection_time_ms[1],
+        injection_timing2           : first_efi_state->injection_time_ms[2],
+        injection_timing3           : first_efi_state->injection_time_ms[3]
+*/
+    };
+
+    WriteBlock(&pkt_ecotronsefi, sizeof(pkt_ecotronsefi));
+}

@@ -855,6 +855,35 @@ struct PACKED log_Beacon {
     float posz;
 };
 
+struct PACKED log_EcotronsEFI {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t  ecu_index; 
+    float    rpm;
+    float    fuel_level;
+    float    fuel_flow;                 
+    float    engine_load;                
+    float    throttle_position;          
+    bool     end_of_start;               
+    bool     crank_sensor_error;         
+    float    spark_dwell_time;           
+    float    barometric_pressure;        
+    float    intake_manifold_pressure;   
+    float    intake_manifold_temperature;
+    float    coolant_temperature;        
+    float    battery_voltage;            
+    /*
+    double    ignition_timing0;           
+    double    ignition_timing1;          
+    double    ignition_timing2;           
+    double    ignition_timing3;           
+    double    injection_timing0;          
+    double    injection_timing1;          
+    double    injection_timing2;          
+    double    injection_timing3;      
+    */    
+};
+
 // #endif // SBP_HW_LOGGING
 
 #define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
@@ -897,6 +926,9 @@ struct PACKED log_Beacon {
 
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"
+
+#define ECOT_LABELS "TimeUS,LP,RPM,FL,FF,Load,TPS,EOS,CErr,SDT,BaroP,MP,MT,ECT,Volt" /*,IgnT0,IgnT1,IgnT2,IgnT3,IT0,IT1,IT2,IT3"*/
+#define ECOT_FMT    "QBfffffBBffffff" /* dddddddd"*/
 
 /*
 Format characters in the format string for binary log messages
@@ -1135,7 +1167,8 @@ Format characters in the format string for binary log messages
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }, \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
-      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf" }
+      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf" }, \
+    { LOG_ECOTRONSEFI_MSG, sizeof(log_EcotronsEFI), "ECOT", ECOT_FMT, ECOT_LABELS } 
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -1274,6 +1307,7 @@ enum LogMessages {
     LOG_VISUALODOM_MSG,
     LOG_AOA_SSA_MSG,
     LOG_BEACON_MSG,
+    LOG_ECOTRONSEFI_MSG,
 };
 
 enum LogOriginType {
