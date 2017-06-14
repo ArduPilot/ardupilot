@@ -22,6 +22,7 @@
 
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
+#include <stdio.h>
 
 #define CHIP_ID_REG 0x40
 #define CHIP_ID_VAL 0x32
@@ -232,15 +233,23 @@ int16_t AP_Compass_BMM150::_compensate_xy(int16_t xy, uint32_t rhall, int32_t tx
 
 int16_t AP_Compass_BMM150::_compensate_z(int16_t z, uint32_t rhall)
 {
-    int32_t dividend = ((int32_t)(z - _dig.z4)) << 15;
-    dividend -= (_dig.z3 * (rhall - _dig.xyz1)) >> 2;
+    int32_t dividend = int32_t(z - _dig.z4) << 15;
+    int32_t dividend2 = dividend - ((_dig.z3 * (int32_t(rhall) - int32_t(_dig.xyz1))) >> 2);
 
-    int32_t divisor = ((int32_t)_dig.z1) * (rhall << 1);
+    int32_t divisor = int32_t(_dig.z1) * (rhall << 1);
     divisor += 0x8000;
     divisor >>= 16;
     divisor += _dig.z2;
 
-    return constrain_int32(dividend / divisor, -0x8000, 0x8000);
+    int16_t ret = constrain_int32(dividend2 / divisor, -0x8000, 0x8000);
+#if 0
+    static uint8_t counter;
+    if (counter++ == 0) {
+        printf("ret=%d z=%d rhall=%u z1=%d z2=%d z3=%d z4=%d xyz1=%d dividend=%d dividend2=%d divisor=%d\n",
+               ret, z, rhall, _dig.z1, _dig.z2, _dig.z3, _dig.z4, _dig.xyz1, dividend, dividend2, divisor);
+    }
+#endif
+    return ret;
 }
 
 void AP_Compass_BMM150::_update()
@@ -259,6 +268,7 @@ void AP_Compass_BMM150::_update()
             _last_read_ms = now;
             _dev->write_register(POWER_AND_OPERATIONS_REG, SOFT_RESET);
             _dev->write_register(POWER_AND_OPERATIONS_REG, POWER_CONTROL_VAL, true);
+            hal.util->perf_count(_perf_err);
         }
         return;
     }
