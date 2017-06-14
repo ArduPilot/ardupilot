@@ -127,29 +127,29 @@ static uint8_t count_commas(const char *string)
 }
 
 /// pretty-print field information from a log structure
-void DataFlash_Class::dump_structure_field(const struct LogStructure *structure, const char *label, const uint8_t fieldnum)
+void DataFlash_Class::dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum)
 {
     ::fprintf(stderr, "  %s\n", label);
 }
 
 /// pretty-print log structures
 /// @note structures MUST be well-formed
-void DataFlash_Class::dump_structures(const struct LogStructure *structures, const uint8_t num_types)
+void DataFlash_Class::dump_structures(const struct LogStructure *logstructures, const uint8_t num_types)
 {
 #if DEBUG_LOG_STRUCTURES
     for (uint16_t i=0; i<num_types; i++) {
-        const struct LogStructure *structure = &structures[i];
-        ::fprintf(stderr, "%s\n", structure->name);
+        const struct LogStructure *logstructure = &logstructures[i];
+        ::fprintf(stderr, "%s\n", logstructure->name);
         char label[32] = { };
         uint8_t labeloffset = 0;
         int8_t fieldnum = 0;
-        for (uint8_t j=0; j<strlen(structure->labels); j++) {
-            char labelchar = structure->labels[j];
+        for (uint8_t j=0; j<strlen(logstructure->labels); j++) {
+            char labelchar = logstructure->labels[j];
             if (labelchar == '\0') {
                 break;
             }
             if (labelchar == ',') {
-                dump_structure_field(structure, label, fieldnum);
+                dump_structure_field(logstructure, label, fieldnum);
                 fieldnum++;
                 labeloffset = 0;
                 memset(label, '\0', 32);
@@ -157,20 +157,20 @@ void DataFlash_Class::dump_structures(const struct LogStructure *structures, con
                 label[labeloffset++] = labelchar;
             }
         }
-        dump_structure_field(structure, label, fieldnum);
+        dump_structure_field(logstructure, label, fieldnum);
         ::fprintf(stderr, "\n"); // just add a CR to the output
     }
 #endif
 }
 
-void DataFlash_Class::validate_structures(const struct LogStructure *structures, const uint8_t num_types)
+void DataFlash_Class::validate_structures(const struct LogStructure *logstructures, const uint8_t num_types)
 {
     Debug("Validating structures");
     bool passed = true;
 
     bool seen_ids[256] = { };
     for (uint16_t i=0; i<num_types; i++) {
-        const struct LogStructure *logstructure = &structures[i];
+        const struct LogStructure *logstructure = &logstructures[i];
 
 #if DEBUG_LOG_STRUCTURES
         Debug("offset=%d ID=%d NAME=%s\n", i, logstructure->msg_type, logstructure->name);
@@ -213,15 +213,15 @@ void DataFlash_Class::validate_structures(const struct LogStructure *structures,
 
 #else
 
-void DataFlash_Class::dump_structure_field(const struct LogStructure *_structure, const char *label, const uint8_t fieldnum)
+void DataFlash_Class::dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum)
 {
 }
 
-void DataFlash_Class::dump_structures(const struct LogStructure *structures, const uint8_t num_types)
+void DataFlash_Class::dump_structures(const struct LogStructure *logstructures, const uint8_t num_types)
 {
 }
 
-void DataFlash_Class::validate_structures(const struct LogStructure *structures, const uint8_t num_types)
+void DataFlash_Class::validate_structures(const struct LogStructure *logstructures, const uint8_t num_types)
 {
     return;
 }
