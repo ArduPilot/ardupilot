@@ -305,6 +305,18 @@ void DataFlash_Class::StartUnstartedLogging(void)
     }
 }
 
+bool DataFlash_Class::should_log() const
+{
+    if (!vehicle_is_armed() && !log_while_disarmed()) {
+        return false;
+    }
+    if (_next_backend == 0) {
+        return false;
+    }
+    return true;
+}
+
+
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \
         for (uint8_t i=0; i<_next_backend; i++) { \
