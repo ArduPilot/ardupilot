@@ -101,10 +101,27 @@ bool AP_Compass_BMM150::_load_trim_values()
         le16_t dig_z3;
         int8_t dig_xy2;
         uint8_t dig_xy1;
-    } PACKED trim_registers;
+    } PACKED trim_registers, trim_registers2;
 
-    if (!_dev->read_registers(DIG_X1_REG, (uint8_t *)&trim_registers,
-                              sizeof(trim_registers))) {
+    // read the registers twice to confirm we have the right
+    // values. There is no CRC in the registers and these values are
+    // vital to correct operation
+    int8_t tries = 4;
+    while (tries--) {
+        if (!_dev->read_registers(DIG_X1_REG, (uint8_t *)&trim_registers,
+                                  sizeof(trim_registers))) {
+            continue;
+        }
+        if (!_dev->read_registers(DIG_X1_REG, (uint8_t *)&trim_registers2,
+                                  sizeof(trim_registers))) {
+            continue;
+        }
+        if (memcmp(&trim_registers, &trim_registers2, sizeof(trim_registers)) == 0) {
+            break;
+        }
+    }
+    if (-1 == tries) {
+        hal.console->printf("BMM150: Failed to load trim registers\n");
         return false;
     }
 
@@ -135,30 +152,40 @@ bool AP_Compass_BMM150::init()
 
     // 10 retries for init
     _dev->set_retries(10);
-    
-    /* Do a soft reset */
-    ret = _dev->write_register(POWER_AND_OPERATIONS_REG, SOFT_RESET);
-    if (!ret) {
-        goto bus_error;
-    }
-    hal.scheduler->delay(2);
 
+    // use checked registers to cope with bus errors
     _dev->setup_checked_registers(4);
+    
+    int8_t boot_tries = 4;
+    while (boot_tries--) {
+        /* Do a soft reset */
+        ret = _dev->write_register(POWER_AND_OPERATIONS_REG, SOFT_RESET);
+        hal.scheduler->delay(2);
+        if (!ret) {
+            continue;
+        }
 
-    /* Change power state from suspend mode to sleep mode */
-    ret = _dev->write_register(POWER_AND_OPERATIONS_REG, POWER_CONTROL_VAL, true);
-    if (!ret) {
-        goto bus_error;
-    }
-    hal.scheduler->delay(2);
+        /* Change power state from suspend mode to sleep mode */
+        ret = _dev->write_register(POWER_AND_OPERATIONS_REG, POWER_CONTROL_VAL, true);
+        hal.scheduler->delay(2);
+        if (!ret) {
+            continue;
+        }
 
-    ret = _dev->read_registers(CHIP_ID_REG, &val, 1);
-    if (!ret) {
-        goto bus_error;
+        ret = _dev->read_registers(CHIP_ID_REG, &val, 1);
+        if (!ret) {
+            continue;
+        }
+        if (val == CHIP_ID_VAL) {
+            // found it
+            break;
+        }
+        if (boot_tries == 0) {
+            hal.console->printf("BMM150: Wrong chip ID 0x%02x should be 0x%02x\n", val, CHIP_ID_VAL);
+        }
     }
-    if (val != CHIP_ID_VAL) {
-        hal.console->printf("BMM150: Wrong id\n");
-        goto fail;
+    if (-1 == boot_tries) {
+        goto bus_error;
     }
 
     ret = _load_trim_values();
@@ -209,7 +236,6 @@ bool AP_Compass_BMM150::init()
 
 bus_error:
     hal.console->printf("BMM150: Bus communication error\n");
-fail:
     _dev->get_semaphore()->give();
     return false;
 }
