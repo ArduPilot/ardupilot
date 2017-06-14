@@ -69,13 +69,6 @@ bool RCOutputRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
         hal.rcout->set_freq(mask, freq_motor);
     }
 
-    /*
-     * Not calling push() to have a better performance on RCOutput's that
-     * implements cork()/push(), so this changes will be committed together
-     * with the motors.
-     */
-    hal.rcout->cork();
-
     uint16_t usec_duty = usec_period * red / _led_bright;
     SRV_Channels::set_output_pwm_chan(_red_channel, usec_duty);
 
