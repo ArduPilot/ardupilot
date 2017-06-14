@@ -259,5 +259,8 @@ bool Tracker::should_log(uint32_t mask)
     if (!(mask & g.log_bitmask)) {
         return false;
     }
+    if (!DataFlash.should_log()) {
+        return false;
+    }
     return true;
 }
