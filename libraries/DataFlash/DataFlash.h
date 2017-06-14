@@ -167,6 +167,9 @@ public:
 
     void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
 
+    // returns true of logging of a message should be attempted
+    bool should_log() const;
+
     bool logging_started(void);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
