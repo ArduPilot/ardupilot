@@ -147,10 +147,11 @@ public:
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
     bool getLLH(struct Location &loc) const;
 
-    // return the latitude and longitude and height used to set the NED origin
+    // Return the latitude and longitude and height used to set the NED origin for the specified instance
+    // An out of range instance (eg -1) returns data for the the primary instance
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(struct Location &loc) const;
+    bool getOriginLLH(int8_t instance, struct Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
@@ -182,6 +183,9 @@ public:
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
     void getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset);
+
+    // return the diagonals from the covariance matrix for the specified instance
+    void getStateVariances(int8_t instance, float stateVar[24]);
 
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
@@ -390,6 +394,7 @@ private:
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
     AP_Float _accBiasLim;           // Accelerometer bias limit (m/s/s)
     AP_Int8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
+    AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
