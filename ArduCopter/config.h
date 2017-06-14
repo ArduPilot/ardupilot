@@ -88,6 +88,10 @@
  # define RANGEFINDER_ENABLED ENABLED
 #endif
 
+#ifndef ECOTRONSEFI_ENABLED
+  # define ECOTRONSEFI_ENABLED ENABLED
+#endif
+
 #ifndef RANGEFINDER_HEALTH_MAX
  # define RANGEFINDER_HEALTH_MAX 3          // number of good reads that indicates a healthy rangefinder
 #endif

@@ -97,6 +97,20 @@ void Copter::rpm_update(void)
     }
 }
 
+/*
+  update Ecotrons EFIs
+ */
+void Copter::ecotronsEFI_update(void)
+{
+    //uint64_t start = AP_HAL::micros64();
+    ecotrons_efi.update();
+    if (should_log(MASK_LOG_RCIN)) {
+        DataFlash.Log_Write_EcotronsEFI(ecotrons_efi);
+    }
+    //uint64_t end = AP_HAL::micros64();
+    //printf("Time taken by ecotrons update: %llu microseconds \n", end - start);
+}
+
 // initialise compass
 void Copter::init_compass()
 {

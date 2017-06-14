@@ -244,6 +244,7 @@ public:
         k_param_auto_slew_rate,     // deprecated - can be deleted
         k_param_rangefinder_type_old,     // deprecated
         k_param_super_simple = 155,
+        k_param_ecotrons_efi = 156,
         k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
         k_param_copter_leds_mode,   // deprecated - remove with next eeprom number change
         k_param_ahrs, // AHRS group // 159

@@ -821,6 +821,12 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(rangefinder,   "RNGFND", RangeFinder),
 #endif
 
+#if ECOTRONSEFI_ENABLED == ENABLED
+    // @Group: ECOTR
+    // @Path: ../libraries/AP_EcotronsEFI/AP_EcotronsEFI.cpp
+    GOBJECT(ecotrons_efi,  "ECOTR", AP_EcotronsEFI),
+#endif
+
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     // @Group: TERRAIN_
     // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp

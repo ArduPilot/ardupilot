@@ -289,6 +289,9 @@ void Copter::init_ardupilot()
     // initialise AP_RPM library
     rpm_sensor.init();
 
+    // initialize AP_EcotronsEFI library
+    ecotrons_efi.init();
+
     // initialise mission library
     mission.init();
 
