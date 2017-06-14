@@ -497,7 +497,7 @@ bool Copter::should_log(uint32_t mask)
     if (!(mask & g.log_bitmask)) {
         return false;
     }
-    if (!motors->armed() && !DataFlash.log_while_disarmed()) {
+    if (!DataFlash.should_log()) {
         return false;
     }
     if (in_log_download) {
