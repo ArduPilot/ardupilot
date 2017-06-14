@@ -285,5 +285,4 @@ private:
 
     // possibly expensive calls to start log system:
     void Prep();
-    bool NeedPrep();
 };
