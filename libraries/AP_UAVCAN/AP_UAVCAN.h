@@ -15,6 +15,7 @@
 #include <AP_GPS/GPS_Backend.h>
 #include <AP_Baro/AP_Baro_Backend.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_EcotronsEFI/AP_EcotronsEFI.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
@@ -34,6 +35,7 @@
 #define AP_UAVCAN_MAX_GPS_NODES 4
 #define AP_UAVCAN_MAX_MAG_NODES 4
 #define AP_UAVCAN_MAX_BARO_NODES 4
+#define AP_UAVCAN_MAX_EFI_NODES 4
 
 #define AP_UAVCAN_SW_VERS_MAJOR 1
 #define AP_UAVCAN_SW_VERS_MINOR 0
@@ -94,6 +96,13 @@ public:
     uint8_t register_mag_listener_to_node(AP_Compass_Backend* new_listener, uint8_t node);
     void update_mag_state(uint8_t node);
 
+
+    uint8_t register_efi_listener(AP_EcotronsEFI_Backend* new_listener,
+                                  uint8_t preferred_channel);
+    void remove_efi_listener(AP_EcotronsEFI_Backend* rem_listener);
+    EFI_State *find_efi_node(uint8_t node);
+    void update_efi_state(uint8_t node);
+
     // synchronization for RC output
     bool rc_out_sem_take();
     void rc_out_sem_give();
@@ -125,6 +134,15 @@ private:
     Mag_Info _mag_node_state[AP_UAVCAN_MAX_MAG_NODES];
     uint8_t _mag_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
     AP_Compass_Backend* _mag_listeners[AP_UAVCAN_MAX_LISTENERS];
+
+    // ------------------------- ECU
+    uint8_t _efi_nodes[AP_UAVCAN_MAX_EFI_NODES];
+    uint8_t _efi_node_taken[AP_UAVCAN_MAX_EFI_NODES];
+    EFI_State _efi_node_state[AP_UAVCAN_MAX_EFI_NODES];
+    uint8_t _efi_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
+    AP_EcotronsEFI_Backend* _efi_listeners[AP_UAVCAN_MAX_LISTENERS];
+
+
 
     struct {
         uint16_t pulse;

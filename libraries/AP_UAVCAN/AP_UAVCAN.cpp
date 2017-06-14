@@ -68,13 +68,85 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
 
 static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg)
 {
-    hal.console->printf("ECU Status Message: TPS pos = %f\n", (msg.throttle_position / 2.5));
     if (hal.can_mgr != nullptr) {
-            hal.console->printf("HAL CANMANAGER UAVCAN not nullptr - ECU Status Message: TPS pos = %f\n", (msg.throttle_position / 2.5));
         AP_UAVCAN *ap_uavcan = hal.can_mgr->get_UAVCAN();
         if (ap_uavcan != nullptr) {
-            hal.console->printf("AP UAVCAN not nullptr - ECU Status Message: TPS pos = %f\n", (msg.throttle_position / 2.5));
-        }
+            EFI_State *state = ap_uavcan->find_efi_node(msg.getSrcNodeID().get());
+
+            // Conversion as described in 1120.Status.uavcan
+            uint8_t ecu_index = msg.ecu_index;
+            bool end_of_start = msg.end_of_start;
+            bool crank_sensor_error = msg.crank_sensor_error;
+            uint8_t engine_load_percent = msg.engine_load_percents;
+            float spark_dwell_time_ms = msg.spark_dwell_time / 10.0;
+            float engine_speed_rpm = msg.engine_speed / 8.0;
+            float barometric_pressure_kpa = msg.barometric_pressure / 2.0;
+            float throttle_position_percent = msg.throttle_position / 2.5;
+            float coolant_temperature_degc = msg.coolant_temperature - 40.0;
+            float battery_voltage_volts = msg.battery_voltage / 20.0;
+            float intake_manifold_pressure_kpa = msg.intake_manifold_pressure * 2.0;
+            float intake_manifold_temperature_degc = msg.intake_manifold_pressure - 40.0;
+            float fuel_level_percent = msg.fuel_level / 2.5;
+            float fuel_flow_grams_per_min = msg.fuel_flow / 86.251509;
+
+            for (int i = 0; i < 4; i++) {
+                state->ignition_timing_crank_angle[i] = (msg.ignition_timing[i] / 128.0) - 200.0;
+            }
+
+            for (int i = 0; i < 4; i++) {
+                state->injection_time_ms[i] = msg.inject_time[i] / 1000.0;
+            }
+
+            // Copy remaining data to state struct
+            state->ecu_index = ecu_index;
+            state->end_of_start = end_of_start;
+            state->crank_sensor_error = crank_sensor_error;
+            state->engine_load_percent = engine_load_percent;
+            state->spark_dwell_time_ms = spark_dwell_time_ms;
+            state->rpm = engine_speed_rpm;
+            state->barometric_pressure = barometric_pressure_kpa;
+            state->throttle_position_percent = throttle_position_percent;
+            state->coolant_temperature = coolant_temperature_degc;
+            state->battery_voltage = battery_voltage_volts;
+            state->intake_manifold_pressure = intake_manifold_pressure_kpa;
+            state->intake_manifold_temperature = intake_manifold_temperature_degc;
+            state->fuel_level_percent = fuel_level_percent;
+            state->fuel_flow_rate = fuel_flow_grams_per_min;
+
+/*
+            printf("<---> ECU DATA MESSAGE <--->\n"
+                    "ECU Index: %d\n"
+                    "End Of Start: %s\n"
+                    "Crank Sensor Error: %s\n"
+                    "Engine Load Percent: %d\n"
+                    "Spark Dwell Time: %.2f ms\n"
+                    "Engine Speed: %f rpm\n"
+                    "Baro Pressure: %.5f kPa\n"
+                    "Throttle Position: %.5f%%\n"
+                    "Coolant Temp: %.2f degC\n"
+                    "Battery Voltage: %.5f V\n"
+                    "Intake Manifold Pressure: %.5f kPa\n"
+                    "Intake Manifold Temperature: %.2f degC\n"
+                    "Fuel Level: %.2f%%\n"
+                    "Fuel Flow: %.5f g/min\n"
+                    "Ignition Timing Cylinder 1: %.5f CrA\n"
+                    "Ignition Timing Cylinder 2: %.5f CrA\n"
+                    "Injection Time Cylinder 1: %.5f ms\n",
+                    ecu_index, 
+                    end_of_start ? "true" : "false", 
+                    crank_sensor_error ? "true" : "false", 
+                    engine_load_percent, spark_dwell_time_ms,
+                    engine_speed_rpm, barometric_pressure_kpa, throttle_position_percent, coolant_temperature_degc,
+                    battery_voltage_volts, intake_manifold_pressure_kpa, intake_manifold_temperature_degc, 
+                    fuel_level_percent, fuel_flow_grams_per_min,
+                    state->ignition_timing_crank_angle[0],
+                    state->ignition_timing_crank_angle[1],
+                    state->injection_time_ms[0]
+                    );
+  */                  
+            ap_uavcan->update_efi_state(msg.getSrcNodeID().get());
+        } 
+        
     }
 }
 
@@ -316,6 +388,11 @@ AP_UAVCAN::AP_UAVCAN() :
         _mag_node_taken[i] = 0;
     }
 
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
+        _efi_nodes[i] = 255;
+        _efi_node_taken[i] = 0;
+    }
+
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
         _gps_listener_to_node[i] = UINT8_MAX;
         _gps_listeners[i] = nullptr;
@@ -325,6 +402,9 @@ AP_UAVCAN::AP_UAVCAN() :
 
         _mag_listener_to_node[i] = UINT8_MAX;
         _mag_listeners[i] = nullptr;
+
+        _efi_listener_to_node[i] = 255;
+        _efi_listeners[i] = nullptr;
     }
 
     _rc_out_sem = hal.util->new_semaphore();
@@ -1055,5 +1135,97 @@ void AP_UAVCAN::update_mag_state(uint8_t node)
         }
     }
 }
+
+//EFI
+uint8_t AP_UAVCAN::register_efi_listener(AP_EcotronsEFI_Backend* new_listener, uint8_t preferred_channel)
+{
+    uint8_t sel_place = 255, ret = 0;
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
+        if (_efi_listeners[i] == nullptr) {
+            sel_place = i;
+            break;
+        }
+    }
+
+    if (sel_place != 255) {
+        if (preferred_channel != 0) {
+            if (preferred_channel < AP_UAVCAN_MAX_EFI_NODES) {
+                _efi_listeners[sel_place] = new_listener;
+                _efi_listener_to_node[sel_place] = preferred_channel - 1;
+                _efi_node_taken[_efi_listener_to_node[sel_place]]++;
+                ret = preferred_channel;
+
+                debug_uavcan(2, "reg_EcotronsEFI place:%d, chan: %d\n\r", sel_place, preferred_channel);
+            }
+        } else {
+            for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
+                if (_efi_node_taken[i] == 0) {
+                    _efi_listeners[sel_place] = new_listener;
+                    _efi_listener_to_node[sel_place] = i;
+                    _efi_node_taken[i]++;
+                    ret = i + 1;
+
+                    debug_uavcan(2, "reg_EFI place:%d, chan: %d\n\r", sel_place, i);
+                    break;
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
+void AP_UAVCAN::remove_efi_listener(AP_EcotronsEFI_Backend* rem_listener)
+{
+    // Check for all listeners and compare pointers
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
+        if (_efi_listeners[i] == rem_listener) {
+            _efi_listeners[i] = nullptr;
+
+            // Also decrement usage counter and reset listening node
+            if (_efi_node_taken[_efi_listener_to_node[i]] > 0) {
+                _efi_node_taken[_efi_listener_to_node[i]]--;
+            }
+            _efi_listener_to_node[i] = 255;
+        }
+    }
+}
+
+EFI_State *AP_UAVCAN::find_efi_node(uint8_t node)
+{
+    // Check if such node is already defined
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
+        if (_efi_nodes[i] == node) {
+            return &_efi_node_state[i];
+        }
+    }
+
+    // If not - try to find free space for it
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
+        if (_efi_nodes[i] == 255) {
+            _efi_nodes[i] = node;
+            return &_efi_node_state[i];
+        }
+    }
+
+    // If no space is left - return nullptr
+    return nullptr;
+}
+
+void AP_UAVCAN::update_efi_state(uint8_t node)
+{
+    // Go through all listeners of specified node and call their's update methods
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
+        if (_efi_nodes[i] == node) {
+            for (uint8_t j = 0; j < AP_UAVCAN_MAX_LISTENERS; j++) {
+                if (_efi_listener_to_node[j] == i) {
+                    _efi_listeners[j]->handle_efi_msg(_efi_node_state[i]);
+                }
+            }
+        }
+    }
+}
+
+
 
 #endif // HAL_WITH_UAVCAN
