@@ -413,7 +413,6 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         uint16_t sender_id,
         uint8_t msg_len,
         uint8_t *msg_buff) {
-
     if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
       return;
     }
@@ -425,29 +424,54 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
 
     uint64_t time_us = AP_HAL::micros64();
 
-    struct log_SbpRAW1 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW1),
-        time_us         : time_us,
-        msg_type        : msg_type,
-        sender_id       : sender_id,
-        msg_len         : msg_len,
-    };
-    memcpy(pkt.data1, msg_buff, MIN(msg_len,64));
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
-
-    if (msg_len > 64) {
-
-        struct log_SbpRAW2 pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW2),
-            time_us         : time_us,
-            msg_type        : msg_type,
-        };
-        memcpy(pkt2.data2, &msg_buff[64], msg_len - 64);
-        gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
-
+    uint8_t pages = 0;
+    if (msg_len <= 48) {
+        pages = 1;
+    } else if (msg_len <= 152) {
+        pages = 2;
+    } else {
+        pages = 3;
     }
 
+    if (pages > 0) {
+        struct log_SbpRAWH pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWH),
+            time_us         : time_us,
+            msg_type        : msg_type,
+            sender_id       : sender_id,
+            index           : 1,
+            pages           : pages,
+            msg_len         : msg_len,
+        };
+        memcpy(pkt.data, msg_buff, MIN(msg_len,48));
+        gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    }
+    if (pages > 1) {
+        struct log_SbpRAWM pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWM),
+            time_us         : time_us,
+            msg_type        : msg_type,
+            sender_id       : sender_id,
+            index           : 2,
+            pages           : pages,
+            msg_len         : msg_len,
+        };
+        memcpy(pkt2.data, &msg_buff[48], MIN(msg_len - 48,104));
+        gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
+    }
+    if (pages > 2) {
+        struct log_SbpRAWM pkt3 = {
+            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWM),
+            time_us         : time_us,
+            msg_type        : msg_type,
+            sender_id       : sender_id,
+            index           : 3,
+            pages           : pages,
+            msg_len         : msg_len,
+        };
+        memcpy(pkt3.data, &msg_buff[152], MIN(msg_len - 152,104));
+        gps._DataFlash->WriteBlock(&pkt3, sizeof(pkt3));
+    }
 };
-
 
 #endif // SBP_HW_LOGGING

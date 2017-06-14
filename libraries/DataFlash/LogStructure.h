@@ -764,20 +764,28 @@ struct PACKED log_SbpHealth {
     uint32_t last_iar_num_hypotheses;
 };
 
-struct PACKED log_SbpRAW1 {
+struct PACKED log_SbpRAWH {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint16_t msg_type;
     uint16_t sender_id;
+    uint8_t index;
+    uint8_t pages;
     uint8_t msg_len;
-    uint8_t data1[64];
+    uint8_t res;
+    uint8_t data[48];
 };
 
-struct PACKED log_SbpRAW2 {
+struct PACKED log_SbpRAWM {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint16_t msg_type;
-    uint8_t data2[104];
+    uint16_t sender_id;
+    uint8_t index;
+    uint8_t pages;
+    uint8_t msg_len;
+    uint8_t res;
+    uint8_t data[104];
 };
 
 struct PACKED log_SbpEvent {
@@ -1096,10 +1104,10 @@ Format characters in the format string for binary log messages
 #define LOG_SBP_STRUCTURES \
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
       "SBPH", "QIII", "TimeUS,CrcError,LastInject,IARhyp" }, \
-    { LOG_MSG_SBPRAW1, sizeof(log_SbpRAW1), \
-      "SBR1", "QHHBQQQQQQQQ", "TimeUS,msg_type,sender_id,msg_len,1,2,3,4,5,6,7,8" }, \
-    { LOG_MSG_SBPRAW2, sizeof(log_SbpRAW2), \
-      "SBR2", "QHQQQQQQQQQQQQQ", "TimeUS,msg_type,1,2,3,4,5,6,7,8,9,10,11,12,13" }, \
+    { LOG_MSG_SBPRAWH, sizeof(log_SbpRAWH), \
+      "SBRH", "QQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6" }, \
+    { LOG_MSG_SBPRAWM, sizeof(log_SbpRAWM), \
+      "SBRM", "QQQQQQQQQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6,7,8,9,10,11,12,13" }, \
     { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
       "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality" }
 // #endif
@@ -1212,8 +1220,8 @@ enum LogMessages {
     LOG_MSG_SBPBASELINE,
     LOG_MSG_SBPTRACKING1,
     LOG_MSG_SBPTRACKING2,
-    LOG_MSG_SBPRAW1,
-    LOG_MSG_SBPRAW2,
+    LOG_MSG_SBPRAWH,
+    LOG_MSG_SBPRAWM,
     LOG_MSG_SBPEVENT,
     LOG_TRIGGER_MSG,
 
