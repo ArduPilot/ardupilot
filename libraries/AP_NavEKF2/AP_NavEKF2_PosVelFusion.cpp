@@ -234,6 +234,15 @@ void NavEKF2_core::SelectVelPosFusion()
     // read GPS data from the sensor and check for new data in the buffer
     readGpsData();
     gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
+
+    if (gpsDataToFuse && imuDataDelayed.time_ms != gpsDataDelayed.time_ms) {
+        // adjust for any remaining time difference between the time
+        // of the GPS data and the time we are fusing at. We expect
+        // this to be small, but with RTK GPS it starts to become
+        // significant
+        propogateGpsData(gpsDataDelayed, imuDataDelayed.time_ms);
+    }
+    
     // Determine if we need to fuse position and velocity data on this time step
     if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
         // correct GPS data for position offset of antenna phase centre relative to the IMU

@@ -23,6 +23,7 @@
 #include <AP_HAL/Util.h>
 #include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS.h>
+#include <stdio.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
@@ -62,6 +63,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _hardware_generation(0),
     _new_position(0),
     _new_speed(0),
+    _new_timestamp(0),
     _disable_counter(0),
     next_fix(AP_GPS::NO_FIX),
     _cfg_needs_save(false),
@@ -944,6 +946,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.last_gps_time_ms = AP_HAL::millis();
         state.hdop = 130;
 #endif
+        _last_sol_time = _buffer.solution.time;
+        _new_timestamp = true;
         break;
     case MSG_PVT:
         Debug("MSG_PVT");
@@ -1089,8 +1093,10 @@ AP_GPS_UBLOX::_parse_gps(void)
 
     // we only return true when we get new position and speed data
     // this ensures we don't use stale data
-    if (_new_position && _new_speed && _last_vel_time == _last_pos_time) {
-        _new_speed = _new_position = false;
+    if (_new_position && _new_speed && _new_timestamp &&
+        _last_vel_time == _last_pos_time &&
+        _last_sol_time == _last_pos_time) {
+        _new_speed = _new_position = _new_timestamp = false;
         return true;
     }
     return false;

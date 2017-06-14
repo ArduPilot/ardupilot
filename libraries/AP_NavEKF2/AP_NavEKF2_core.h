@@ -553,6 +553,9 @@ private:
     // check for new valid GPS data and update stored measurement if available
     void readGpsData();
 
+    // propogate GPS position data forward to the given time
+    void propogateGpsData(gps_elements &gpsData, uint32_t new_time_ms);
+    
     // check for new altitude measurement data and update stored measurement if available
     void readBaroData();
 
@@ -782,6 +785,7 @@ private:
     uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTasPassTime_ms;    // time stamp when airspeed measurement last passed innovation consistency check (msec)
     uint32_t lastTimeGpsReceived_ms;// last time we received GPS data
+    uint32_t lastTimeGpsFix_ms;     // last fix time we received GPS data
     uint32_t timeAtLastAuxEKF_ms;   // last time the auxiliary filter was run to fuse range or optical flow measurements
     uint32_t secondLastGpsTime_ms;  // time of second last GPS fix used to determine how long since last update
     uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy

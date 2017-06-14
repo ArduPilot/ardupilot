@@ -108,6 +108,7 @@ public:
     AP_Vector3f gps_glitch;  // glitch offsets in lat, lon and altitude
     AP_Vector3f gps2_glitch; // glitch offsets in lat, lon and altitude for 2nd GPS
     AP_Int8  gps_hertz;   // GPS update rate in Hz
+    AP_Int16 gps_timing_jitter; // GPS UART timing jitter
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input

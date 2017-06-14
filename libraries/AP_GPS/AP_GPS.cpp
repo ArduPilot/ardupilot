@@ -36,6 +36,7 @@
 #include "AP_GPS_UBLOX.h"
 #include "AP_GPS_MAV.h"
 #include "GPS_Backend.h"
+#include <stdio.h>
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -619,9 +620,32 @@ void AP_GPS::update_instance(uint8_t instance)
     } else {
         timing[instance].last_message_time_ms = tnow;
         if (state[instance].status >= GPS_OK_FIX_2D) {
-            timing[instance].last_fix_time_ms = tnow;
+            estimate_fix_time(instance, tnow);
         }
     }
+}
+
+/*
+  estimate the fix time on the sensor in terms of the system clock in
+  milliseconds
+ */
+void AP_GPS::estimate_fix_time(uint8_t instance, uint32_t now)
+{
+    const uint64_t ms_per_week = 604800000ULL;
+    uint64_t gps_ms = (state[instance].time_week*ms_per_week) + (uint64_t)state[instance].time_week_ms;
+    uint64_t offset = gps_ms - now;
+    /*
+      we need to estimate the timing jitter on the UART. We do this by
+      looking for the largest offset between gps time and the system
+      clock. We also reset if time changes by more than 5 seconds, as
+      that may mean we had a previously corrupt timestamp from a GPS
+     */
+    if (timing[instance].gps_ms_offset == 0 ||
+        offset > timing[instance].gps_ms_offset ||
+        timing[instance].gps_ms_offset - offset > 5000U) {
+        timing[instance].gps_ms_offset = offset;
+    }
+    timing[instance].last_fix_time_ms = gps_ms - timing[instance].gps_ms_offset;
 }
 
 /*

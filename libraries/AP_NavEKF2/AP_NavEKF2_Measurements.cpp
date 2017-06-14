@@ -401,6 +401,19 @@ bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
 *             Global Position Measurement               *
 ********************************************************/
 
+/*
+  propogate forward the position data in a GPS measurement to the
+  given time.
+ */
+void NavEKF2_core::propogateGpsData(gps_elements &gpsData, uint32_t new_time_ms)
+{
+    float dtime = (new_time_ms - gpsData.time_ms) * 1.0e-3f;
+    gpsData.pos.x += dtime * gpsData.vel.x;
+    gpsData.pos.y += dtime * gpsData.vel.y;
+    gpsData.hgt -= dtime * gpsData.vel.z;
+    gpsData.time_ms = new_time_ms;
+}
+
 // check for new valid GPS data and update stored measurement if available
 void NavEKF2_core::readGpsData()
 {
@@ -412,20 +425,15 @@ void NavEKF2_core::readGpsData()
             gpsCheckStatus.bad_fix = false;
 
             // store fix time from previous read
-            secondLastGpsTime_ms = lastTimeGpsReceived_ms;
+            secondLastGpsTime_ms = lastTimeGpsFix_ms;
 
             // get current fix time
             lastTimeGpsReceived_ms = _ahrs->get_gps().last_message_time_ms();
-
+            lastTimeGpsFix_ms = _ahrs->get_gps().last_fix_time_ms();
+            
             // estimate when the GPS fix was valid, allowing for GPS processing and other delays
             // ideally we should be using a timing signal from the GPS receiver to set this time
-            gpsDataNew.time_ms = lastTimeGpsReceived_ms - frontend->_gpsDelay_ms;
-
-            // Correct for the average intersampling delay due to the filter updaterate
-            gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
-
-            // Prevent time delay exceeding age of oldest IMU data in the buffer
-            gpsDataNew.time_ms = MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms);
+            gpsDataNew.time_ms = lastTimeGpsFix_ms - frontend->_gpsDelay_ms;
 
             // Get which GPS we are using for position information
             gpsDataNew.sensor_idx = _ahrs->get_gps().primary_sensor();
@@ -435,7 +443,7 @@ void NavEKF2_core::readGpsData()
 
             // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
             // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
-            float alpha = constrain_float(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
+            float alpha = constrain_float(0.0002f * (lastTimeGpsFix_ms - secondLastGpsTime_ms),0.0f,1.0f);
             gpsSpdAccuracy *= (1.0f - alpha);
             float gpsSpdAccRaw;
             if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {
@@ -511,6 +519,15 @@ void NavEKF2_core::readGpsData()
             if (validOrigin) {
                 gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
                 gpsDataNew.hgt = 0.01f * (gpsloc.alt - EKF_origin.alt);
+
+                // Prevent time delay exceeding age of oldest IMU data
+                // in the buffer by propogating the GPS position data
+                // forward if need be. This only is needed if we have
+                // really large timing jitter on the GPS
+                if (imuDataDelayed.time_ms > gpsDataNew.time_ms) {
+                    propogateGpsData(gpsDataNew, imuDataDelayed.time_ms);
+                }
+                
                 storedGPS.push(gpsDataNew);
                 // declare GPS available for use
                 gpsNotAvailable = false;

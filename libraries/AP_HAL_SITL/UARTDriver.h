@@ -75,6 +75,12 @@ private:
     const char *_uart_path;
     uint32_t _uart_baudrate;
 
+    struct {
+        bool enabled;
+        uint64_t delay_till_us;
+        uint16_t promised;
+    } _jitter;
+
     // IPv4 address of target for uartC
     const char *_tcp_client_addr;
 
