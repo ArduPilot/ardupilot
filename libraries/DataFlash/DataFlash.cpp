@@ -364,15 +364,6 @@ bool DataFlash_Class::CardInserted(void) {
     return false;
 }
 
-bool DataFlash_Class::NeedPrep() {
-    for (uint8_t i=0; i< _next_backend; i++) {
-        if (backends[i]->NeedPrep()) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void DataFlash_Class::Prep() {
     FOR_EACH_BACKEND(Prep());
 }
