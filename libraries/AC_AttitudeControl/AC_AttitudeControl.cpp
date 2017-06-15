@@ -376,6 +376,31 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
     attitude_controller_run_quat();
 }
 
+// Command an angular step
+// Used to command a step in angle without exciting the orthogonal axis during autotune
+void AC_AttitudeControl::input_step_bf_roll_pitch_yaw(float roll_step_bf_cds, float pitch_step_bf_cds, float yaw_step_bf_cds)
+{
+    // Convert from centidegrees on public interface to radians
+    float roll_step_rads = radians(roll_step_bf_cds*0.01f);
+    float pitch_step_rads = radians(pitch_step_bf_cds*0.01f);
+    float yaw_step_rads = radians(yaw_step_bf_cds*0.01f);
+
+    // calculate the attitude target euler angles
+    _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
+
+    Quaternion attitude_target_update_quat;
+    attitude_target_update_quat.from_axis_angle(Vector3f(roll_step_rads, pitch_step_rads, yaw_step_rads));
+    _attitude_target_quat = _attitude_target_quat * attitude_target_update_quat;
+    _attitude_target_quat.normalize();
+
+    // Set rate feedforward requests to zero
+    _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
+    _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+
+    // Call quaternion attitude controller
+    attitude_controller_run_quat();
+}
+
 // Calculates the body frame angular velocities to follow the target attitude
 void AC_AttitudeControl::attitude_controller_run_quat()
 {
