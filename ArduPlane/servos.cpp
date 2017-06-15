@@ -741,9 +741,6 @@ void Plane::set_servos(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
     }
 
-    // support twin-engine aircraft
-    servos_twin_engine_mix();
-    
     // run output mixer and send values to the hal for output
     servos_output();
 }
@@ -757,6 +754,9 @@ void Plane::set_servos(void)
 void Plane::servos_output(void)
 {
     hal.rcout->cork();
+
+    // support twin-engine aircraft
+    servos_twin_engine_mix();
 
     // cope with tailsitters
     quadplane.tailsitter_output();
