@@ -178,10 +178,7 @@ public:
     void flush(void);
 #endif
 
-    // for DataFlash_MAVLink:
-    void remote_log_block_status_msg(mavlink_channel_t chan,
-                                     mavlink_message_t* msg);
-    // end for DataFlash_MAVLink:
+    void handle_mavlink_msg(mavlink_channel_t chan, mavlink_message_t* msg);
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 

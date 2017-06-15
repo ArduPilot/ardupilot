@@ -460,12 +460,14 @@ bool DataFlash_Class::logging_started(void) {
     return false;
 }
 
-// for DataFlash_MAVLink
-void DataFlash_Class::remote_log_block_status_msg(mavlink_channel_t chan,
-                                                  mavlink_message_t* msg) {
-    FOR_EACH_BACKEND(remote_log_block_status_msg(chan, msg));
+void DataFlash_Class::handle_mavlink_msg(mavlink_channel_t chan, mavlink_message_t* msg)
+{
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+        FOR_EACH_BACKEND(remote_log_block_status_msg(chan, msg));
+        break;
+    }
 }
-// end for DataFlash_MAVLink
 
 void DataFlash_Class::periodic_tasks() {
      FOR_EACH_BACKEND(periodic_tasks());
