@@ -18,7 +18,7 @@ public:
 
     void internal_error();
 
-    virtual bool CardInserted(void) = 0;
+    virtual bool CardInserted(void) const = 0;
 
     // erase handling
     virtual void EraseAll() = 0;
