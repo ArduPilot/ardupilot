@@ -40,9 +40,9 @@ void AP_MotorsHeli_RSC::set_power_output_range(float power_low, float power_high
 void AP_MotorsHeli_RSC::output(RotorControlState state)
 {
     float dt;
-    uint64_t now = AP_HAL::micros64();
-    float last_control_output = _control_output;
-    
+    const uint64_t now = AP_HAL::micros64();
+    const float last_control_output = _control_output;
+
     if (_last_update_us == 0) {
         _last_update_us = now;
         dt = 0.001f;
@@ -50,8 +50,8 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         dt = 1.0e-6f * (now - _last_update_us);
         _last_update_us = now;
     }
-    
-    switch (state){
+
+    switch (state) {
         case ROTOR_CONTROL_STOP:
             // set rotor ramp to decrease speed to zero, this happens instantly inside update_rotor_ramp()
             update_rotor_ramp(0.0f, dt);
@@ -94,10 +94,10 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
 
     if (_power_slewrate > 0) {
         // implement slew rate for throttle
-        float max_delta = dt * _power_slewrate * 0.01f;
-        _control_output = constrain_float(_control_output, last_control_output-max_delta, last_control_output+max_delta);
+        const float max_delta = dt * _power_slewrate * 0.01f;
+        _control_output = constrain_float(_control_output, last_control_output - max_delta, last_control_output + max_delta);
     }
-    
+
     // output to rsc servo
     write_rsc(_control_output);
 }
@@ -121,7 +121,7 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
         if (_rotor_ramp_output > rotor_ramp_input) {
             _rotor_ramp_output = rotor_ramp_input;
         }
-    }else{
+    } else {
         // ramping down happens instantly
         _rotor_ramp_output = rotor_ramp_input;
     }
@@ -134,7 +134,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     if (_runup_time < _ramp_time) {
         _runup_time = _ramp_time;
     }
-    if (_runup_time <= 0 ) {
+    if (_runup_time <= 0) {
         _runup_time = 1;
     }
 
@@ -145,7 +145,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
         if (_rotor_runup_output > _rotor_ramp_output) {
             _rotor_runup_output = _rotor_ramp_output;
         }
-    }else{
+    } else {
         _rotor_runup_output -= runup_increment;
         if (_rotor_runup_output < _rotor_ramp_output) {
             _rotor_runup_output = _rotor_ramp_output;
@@ -155,7 +155,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     // update run-up complete flag
 
     // if control mode is disabled, then run-up complete always returns true
-    if ( _control_mode == ROTOR_CONTROL_MODE_DISABLED ){
+    if (_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
         _runup_complete = true;
         return;
     }
@@ -182,7 +182,7 @@ float AP_MotorsHeli_RSC::get_rotor_speed() const
 // servo_out parameter is of the range 0 ~ 1
 void AP_MotorsHeli_RSC::write_rsc(float servo_out)
 {
-    if (_control_mode == ROTOR_CONTROL_MODE_DISABLED){
+    if (_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
         // do not do servo output to avoid conflicting with other output on the channel
         // ToDo: We should probably use RC_Channel_Aux to avoid this problem
         return;

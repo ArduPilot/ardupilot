@@ -25,7 +25,7 @@ class AP_MotorsHeli_RSC {
 public:
     friend class AP_MotorsHeli_Single;
     friend class AP_MotorsHeli_Dual;
-    
+
     AP_MotorsHeli_RSC(SRV_Channel::Aux_servo_function_t aux_fn,
                       uint8_t default_channel) :
         _aux_fn(aux_fn),
@@ -40,7 +40,7 @@ public:
 
     // set_critical_speed
     void        set_critical_speed(float critical_speed) { _critical_speed = critical_speed; }
-    
+
     // get_critical_speed
     float       get_critical_speed() const { return _critical_speed; }
 
@@ -80,32 +80,32 @@ public:
 
 private:
     uint64_t        _last_update_us;
-    
+
     // channel setup for aux function
     SRV_Channel::Aux_servo_function_t _aux_fn;
     uint8_t         _default_channel;
-    
+
     // internal variables
     RotorControlMode _control_mode = ROTOR_CONTROL_MODE_DISABLED;   // motor control mode, Passthrough or Setpoint
-    float           _critical_speed = 0.0f;     // rotor speed below which flight is not possible
-    float           _idle_output = 0.0f;        // motor output idle speed
-    float           _desired_speed = 0.0f;      // latest desired rotor speed from pilot
-    float           _control_output = 0.0f;     // latest logic controlled output
-    float           _rotor_ramp_output = 0.0f;  // scalar used to ramp rotor speed between _rsc_idle_output and full speed (0.0-1.0f)
-    float           _rotor_runup_output = 0.0f; // scalar used to store status of rotor run-up time (0.0-1.0f)
-    int8_t          _ramp_time = 0;             // time in seconds for the output to the main rotor's ESC to reach full speed
-    int8_t          _runup_time = 0;            // time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
-    bool            _runup_complete = false;    // flag for determining if runup is complete
-    float           _power_output_low = 0.0f;   // setpoint for power output at minimum rotor power
-    float           _power_output_high = 0.0f;  // setpoint for power output at maximum rotor power
-    float           _power_output_negc = 0.0f;  // setpoint for power output at full negative collective
-    uint16_t        _power_slewrate = 0;        // slewrate for throttle (percentage per second)
-    float           _load_feedforward = 0.0f;   // estimate of motor load, range 0-1.0f
+    float           _critical_speed = 0.0f;      // rotor speed below which flight is not possible
+    float           _idle_output = 0.0f;         // motor output idle speed
+    float           _desired_speed = 0.0f;       // latest desired rotor speed from pilot
+    float           _control_output = 0.0f;      // latest logic controlled output
+    float           _rotor_ramp_output = 0.0f;   // scalar used to ramp rotor speed between _rsc_idle_output and full speed (0.0-1.0f)
+    float           _rotor_runup_output = 0.0f;  // scalar used to store status of rotor run-up time (0.0-1.0f)
+    int8_t          _ramp_time = 0;              // time in seconds for the output to the main rotor's ESC to reach full speed
+    int8_t          _runup_time = 0;             // time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
+    bool            _runup_complete = false;     // flag for determining if runup is complete
+    float           _power_output_low = 0.0f;    // setpoint for power output at minimum rotor power
+    float           _power_output_high = 0.0f;   // setpoint for power output at maximum rotor power
+    float           _power_output_negc = 0.0f;   // setpoint for power output at full negative collective
+    uint16_t        _power_slewrate = 0;         // slewrate for throttle (percentage per second)
+    float           _load_feedforward = 0.0f;    // estimate of motor load, range 0-1.0f
 
     AP_Int16        _pwm_min;
     AP_Int16        _pwm_max;
     AP_Int8         _pwm_rev;
-    
+
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
 
