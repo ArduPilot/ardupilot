@@ -46,8 +46,8 @@ RC_Channel rc1(0), rc2(1), rc3(2), rc4(3);
 RC_Channel rc7(6), rsc(8), h1(0), h2(1), h3(2), h4(3);
 
 // uncomment the row below depending upon what frame you are using
-//AP_MotorsTri	motors(400);
-AP_MotorsMatrix   motors(400);
+//AP_MotorsTri motors(400);
+AP_MotorsMatrix motors(400);
 //AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
 //AP_MotorsSingle motors(400);
 //AP_MotorsCoax motors(400);
@@ -61,14 +61,14 @@ void setup()
     motors.set_update_rate(490);
     motors.init(AP_Motors::MOTOR_FRAME_QUAD, AP_Motors::MOTOR_FRAME_TYPE_X);
 #if HELI_TEST == 0
-    motors.set_throttle_range(1000,2000);
+    motors.set_throttle_range(1000, 2000);
     motors.set_throttle_avg_max(0.5f);
 #endif
     motors.enable();
     motors.output_min();
 
     // setup radio
-	rc3.set_radio_min(1000);
+    rc3.set_radio_min(1000);
     rc3.set_radio_max(2000);
 
     // set rc channel ranges
@@ -89,7 +89,7 @@ void loop()
     hal.console->printf("Press 't' to run motor orders test, 's' to run stability patch test.  Be careful the motors will spin!\n");
 
     // wait for user to enter something
-    while( !hal.console->available() ) {
+    while(!hal.console->available()) {
         hal.scheduler->delay(20);
     }
 
@@ -111,7 +111,7 @@ void motor_order_test()
     hal.console->printf("testing motor order\n");
     motors.armed(true);
     for (int8_t i=1; i <= AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        hal.console->printf("Motor %d\n",(int)i);
+        hal.console->printf("Motor %d\n", (int)i);
         motors.output_test(i, 1150);
         hal.scheduler->delay(300);
         motors.output_test(i, 1000);
@@ -133,7 +133,7 @@ void stability_test()
     int16_t rpy_tests[] = {0, 1000, 2000, 3000, 4500, -1000, -2000, -3000, -4500};
     uint8_t rpy_tests_num = sizeof(rpy_tests) / sizeof(int16_t);
 
-    hal.console->printf("\nTesting stability patch\nThrottle Min:%d Max:%d\n",(int)rc3.get_radio_min(),(int)rc3.get_radio_max());
+    hal.console->printf("\nTesting stability patch\nThrottle Min:%d Max:%d\n", (int)rc3.get_radio_min(), (int)rc3.get_radio_max());
 
     // arm motors
     motors.armed(true);
