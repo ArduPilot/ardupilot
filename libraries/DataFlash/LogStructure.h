@@ -884,6 +884,19 @@ struct PACKED log_EcotronsEFI {
     */    
 };
 
+struct PACKED log_EcotronsEFI2 {
+    LOG_PACKET_HEADER;
+    uint64_t  time_us;
+    float    ignition_timing0;           
+    float    ignition_timing1;          
+    float    ignition_timing2;           
+    float    ignition_timing3;           
+    float    injection_timing0;          
+    float    injection_timing1;          
+    float    injection_timing2;          
+    float    injection_timing3; 
+};
+
 // #endif // SBP_HW_LOGGING
 
 #define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
@@ -927,9 +940,11 @@ struct PACKED log_EcotronsEFI {
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"
 
-#define ECOT_LABELS "TimeUS,LP,RPM,FL,FF,Load,TPS,EOS,CErr,SDT,BaroP,MP,MT,ECT,Volt" /*,IgnT0,IgnT1,IgnT2,IgnT3,IT0,IT1,IT2,IT3"*/
-#define ECOT_FMT    "QBfffffBBffffff" /* dddddddd"*/
+#define ECOT_LABELS "TimeUS,LP,RPM,FL,FF,Load,TPS,EOS,CErr,SDT,BaroP,MP,MT,ECT,Volt"
+#define ECOT_FMT    "QBfffffBBffffff" 
 
+#define ECOT2_LABELS "TimeUS,IgnT0,IgnT1,IgnT2,IgnT3,IT0,IT1,IT2,IT3"
+#define ECOT2_FMT    "Qffffffff"
 /*
 Format characters in the format string for binary log messages
   b   : int8_t
@@ -1168,7 +1183,8 @@ Format characters in the format string for binary log messages
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }, \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf" }, \
-    { LOG_ECOTRONSEFI_MSG, sizeof(log_EcotronsEFI), "ECOT", ECOT_FMT, ECOT_LABELS } 
+    { LOG_ECOTRONSEFI_MSG, sizeof(log_EcotronsEFI), "ECOT", ECOT_FMT, ECOT_LABELS }, \
+    { LOG_ECOTRONSEFI2_MSG, sizeof(log_EcotronsEFI2), "ECO2", ECOT2_FMT, ECOT2_LABELS } 
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -1308,6 +1324,7 @@ enum LogMessages {
     LOG_AOA_SSA_MSG,
     LOG_BEACON_MSG,
     LOG_ECOTRONSEFI_MSG,
+    LOG_ECOTRONSEFI2_MSG,
 };
 
 enum LogOriginType {

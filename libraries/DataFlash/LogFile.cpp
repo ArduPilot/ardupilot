@@ -1949,7 +1949,13 @@ void DataFlash_Class::Log_Write_EcotronsEFI(AP_EcotronsEFI& efis)
         intake_manifold_temperature : first_efi_state->intake_manifold_temperature,
         coolant_temperature         : first_efi_state->coolant_temperature,
         battery_voltage             : first_efi_state->battery_voltage
-        /*,
+    };
+
+    static_assert(ENGINE_MAX_CYLINDERS == 4 && ENGINE_MAX_INJECTORS == 4, "Expected number of cylinders and injectors is 4, current numbers do not match!");
+
+    struct log_EcotronsEFI2 pkt_ecotronsefi2 = {
+        LOG_PACKET_HEADER_INIT(LOG_ECOTRONSEFI2_MSG),
+        time_us                     : AP_HAL::micros64(),
         ignition_timing0            : first_efi_state->ignition_timing_crank_angle[0],
         ignition_timing1            : first_efi_state->ignition_timing_crank_angle[1],
         ignition_timing2            : first_efi_state->ignition_timing_crank_angle[2],
@@ -1958,8 +1964,8 @@ void DataFlash_Class::Log_Write_EcotronsEFI(AP_EcotronsEFI& efis)
         injection_timing1           : first_efi_state->injection_time_ms[1],
         injection_timing2           : first_efi_state->injection_time_ms[2],
         injection_timing3           : first_efi_state->injection_time_ms[3]
-*/
     };
 
     WriteBlock(&pkt_ecotronsefi, sizeof(pkt_ecotronsefi));
+    WriteBlock(&pkt_ecotronsefi2, sizeof(pkt_ecotronsefi2));
 }
