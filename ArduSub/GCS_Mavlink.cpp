@@ -763,7 +763,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
     }
 
     if (!sub.in_mavlink_delay && !sub.motors.armed()) {
-        handle_log_send(sub.DataFlash);
+        sub.DataFlash.handle_log_send(*this);
     }
 
     sub.gcs_out_of_time = false;
@@ -1641,13 +1641,13 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         /* no break */
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         if (!sub.in_mavlink_delay && !sub.motors.armed()) {
-            handle_log_message(msg, sub.DataFlash);
+            sub.DataFlash.handle_mavlink_msg(*this, msg);
         }
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         sub.in_log_download = false;
         if (!sub.in_mavlink_delay && !sub.motors.armed()) {
-            handle_log_message(msg, sub.DataFlash);
+            sub.DataFlash.handle_mavlink_msg(*this, msg);
         }
         break;
 
