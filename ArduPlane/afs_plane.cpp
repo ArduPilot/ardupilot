@@ -17,8 +17,6 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
 {
     plane.g2.servo_channels.disable_passthrough(true);
     
-    plane.servos_output();
-
     // and all aux channels
     SRV_Channels::set_output_limit(SRV_Channel::k_flap_auto, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
     SRV_Channels::set_output_limit(SRV_Channel::k_flap, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
@@ -28,6 +26,8 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
     SRV_Channels::set_output_limit(SRV_Channel::k_elevator_with_input, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
     SRV_Channels::set_output_limit(SRV_Channel::k_manual, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
     SRV_Channels::set_output_limit(SRV_Channel::k_none, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+
+    plane.servos_output();
 
     plane.quadplane.afs_terminate();
     
