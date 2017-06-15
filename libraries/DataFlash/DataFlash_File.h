@@ -33,7 +33,7 @@ public:
 
     // initialisation
     void Init() override;
-    bool CardInserted(void) override;
+    bool CardInserted(void) const override;
 
     // erase handling
     void EraseAll() override;

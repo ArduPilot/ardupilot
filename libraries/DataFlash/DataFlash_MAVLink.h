@@ -40,7 +40,7 @@ public:
                                bool is_critical) override;
 
     // initialisation
-    bool CardInserted(void) override { return true; }
+    bool CardInserted(void) const override { return true; }
 
     // erase handling
     void EraseAll() override {}
