@@ -104,7 +104,8 @@ public:
     /* poke backends to start if they're not already started */
     void StartUnstartedLogging(void);
 
-    void EnableWrites(bool enable);
+    void EnableWrites(bool enable) { _writes_enabled = enable; }
+    bool WritesEnabled() const { return _writes_enabled; }
 
     void StopLogging();
 
@@ -288,4 +289,7 @@ private:
 
     // possibly expensive calls to start log system:
     void Prep();
+
+    bool _writes_enabled;
+
 };
