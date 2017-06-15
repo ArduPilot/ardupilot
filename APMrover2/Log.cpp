@@ -85,9 +85,9 @@ int8_t Rover::dump_log(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::erase_logs(uint8_t argc, const Menu::arg *argv)
 {
-    in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
     do_erase_logs();
-    in_mavlink_delay = false;
+    DataFlash.EnableWrites(true);
     return 0;
 }
 
@@ -510,9 +510,9 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 // start a new log
 void Rover::start_logging()
 {
-    in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
     DataFlash.StartUnstartedLogging();
-    in_mavlink_delay = false;
+    DataFlash.EnableWrites(true);
 }
 
 #else  // LOGGING_ENABLED
