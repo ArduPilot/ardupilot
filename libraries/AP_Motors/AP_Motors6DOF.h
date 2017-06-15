@@ -1,5 +1,5 @@
-/// @file	AP_Motors6DOF.h
-/// @brief	Motor control class for ROVs with direct control over 6DOF (or fewer) in movement
+/// @file  AP_Motors6DOF.h
+/// @brief Motor control class for ROVs with direct control over 6DOF (or fewer) in movement
 
 #pragma once
 
@@ -15,7 +15,7 @@ public:
     AP_Motors6DOF(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_MotorsMatrix(loop_rate, speed_hz) {
         AP_Param::setup_object_defaults(this, var_info);
-    };
+    }
 
     // Supported frame types
     typedef enum {
@@ -46,7 +46,7 @@ public:
 
 protected:
 
-    //Override MotorsMatrix method
+    // Override MotorsMatrix method
     void add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, float lat_fac, uint8_t testing_order);
 
     void output_armed_stabilizing() override;
@@ -57,7 +57,7 @@ protected:
     AP_Int8             _motor_reverse[8];
     AP_Float            _forwardVerticalCouplingFactor;
 
-    float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
-    float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
-    float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
+    float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to throttle (climb/descent)
+    float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS];   // each motors contribution to forward/backward
+    float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];   // each motors contribution to lateral (left/right)
 };
