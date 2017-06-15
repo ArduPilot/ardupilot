@@ -1970,10 +1970,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     }
 #endif // AC_RALLY == ENABLED
 
-    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        copter.DataFlash.remote_log_block_status_msg(chan, msg);
-        break;
-
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         send_autopilot_version(FIRMWARE_VERSION);
         break;
