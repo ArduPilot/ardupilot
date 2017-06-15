@@ -17,6 +17,10 @@
 
 #define EFI_MAX_INSTANCES 2
 #define EFI_MAX_BACKENDS 2
+
+// Careful when changing these. Ecotrons sends back 4 
+// cylinders and injectors worth of data, and the 
+// mavlink message also expects 4 cylinders.
 #define ENGINE_MAX_CYLINDERS 4
 #define ENGINE_MAX_INJECTORS 4
 
