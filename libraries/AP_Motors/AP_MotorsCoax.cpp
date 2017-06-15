@@ -34,7 +34,7 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
     _servo2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
     _servo3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
     _servo4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
-    if (!_servo1 || !_servo2 || !_servo3 || !_servo4) {
+    if (_servo1 == nullptr || _servo2 == nullptr || _servo3 == nullptr || _servo4 == nullptr) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "MotorsCoax: unable to setup output channels");
         // don't set initialised_ok
         return;

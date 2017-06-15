@@ -217,8 +217,8 @@ bool AP_MotorsHeli_Dual::init_outputs()
         _swash_servo_4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
         _swash_servo_5 = SRV_Channels::get_channel_for(SRV_Channel::k_motor5, CH_5);
         _swash_servo_6 = SRV_Channels::get_channel_for(SRV_Channel::k_motor6, CH_6);
-        if (!_swash_servo_1 || !_swash_servo_2 || !_swash_servo_3 ||
-            !_swash_servo_4 || !_swash_servo_5 || !_swash_servo_6) {
+        if (_swash_servo_1 == nullptr || _swash_servo_2 == nullptr || _swash_servo_3 == nullptr ||
+            _swash_servo_4 == nullptr || _swash_servo_5 == nullptr || _swash_servo_6 == nullptr) {
             return false;
         }
     }

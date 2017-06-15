@@ -178,7 +178,8 @@ bool AP_MotorsHeli_Single::init_outputs()
         _swash_servo_3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
         _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
         _servo_aux = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, CH_7);
-        if (!_swash_servo_1 || !_swash_servo_2 || !_swash_servo_3 || !_yaw_servo || !_servo_aux) {
+        if (_swash_servo_1 == nullptr || _swash_servo_2 == nullptr ||
+            _swash_servo_3 == nullptr || _yaw_servo == nullptr || _servo_aux == nullptr) {
             return false;
         }
     }
