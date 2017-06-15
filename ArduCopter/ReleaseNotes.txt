@@ -1,5 +1,22 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5.0-rc8 15-Jun-2017
+Changes from 3.5-rc7
+1) Solo on Master:
+    a) add/fix tones and LED support
+    b) resolve dataflash health reporting issue
+2) Allow flight controller to boot even if critical sensors fail (previously stopped at startup and displayed message people could rarely see)
+3) Minor enhancements:
+    a) Landing Gear retracts/deploys only when pilot first moves switch (previously would always deploy on startup)
+    b) BeagleBoneBlue supports external compass, OLED display 
+4) Bug fixes:
+    a) increase pilot stick dead zones for roll, pitch and yaw (still slightly more narrow than AC3.4)
+    b) increase default roll, pitch and yaw rate IMAX values to 0.5, reduce default yaw rate filter to 2.5hz
+    c) reduce accel filter from 20hz to 10hz (smoothes throttle in AltHold)
+    d) fix EKF declination fusion
+    e) object avoidance fix to ignore old distance measurements and out-of-range distances from range finder
+    f) fix poxyz west-east processing (it was backwards)
+------------------------------------------------------------------
 Copter 3.5-rc7 25-May-2017
 Changes from 3.5-rc6
 1) Bug fixes and minor enhancements:
