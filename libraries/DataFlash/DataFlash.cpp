@@ -109,6 +109,8 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
 
     Prep();
 
+    EnableWrites(true);
+
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Prepared log system");
 }
 
@@ -456,10 +458,6 @@ bool DataFlash_Class::logging_started(void) {
         }
     }
     return false;
-}
-
-void DataFlash_Class::EnableWrites(bool enable) {
-    FOR_EACH_BACKEND(EnableWrites(enable));
 }
 
 // for DataFlash_MAVLink
