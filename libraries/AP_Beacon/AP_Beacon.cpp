@@ -365,7 +365,7 @@ const Vector2f* AP_Beacon::get_boundary_points(uint16_t& num_points) const
         return nullptr;
     }
 
-    num_points = boundary_num_points + 1;
+    num_points = boundary_num_points;
     return boundary;
 }
 
