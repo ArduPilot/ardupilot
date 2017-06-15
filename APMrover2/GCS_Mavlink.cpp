@@ -1542,10 +1542,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         rover.sonar.handle_msg(msg);
         break;
 
-    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        rover.DataFlash.remote_log_block_status_msg(chan, msg);
-        break;
-
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         send_autopilot_version(FIRMWARE_VERSION);
         break;
