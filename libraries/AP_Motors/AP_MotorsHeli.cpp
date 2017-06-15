@@ -129,7 +129,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("RSC_POWER_LOW", 14, AP_MotorsHeli, _rsc_power_low, AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT),
-    
+
     // @Param: RSC_POWER_HIGH
     // @DisplayName: Throttle Servo High Power Position
     // @Description: Throttle output at maximum collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX.
@@ -170,7 +170,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("RSC_SLEWRATE", 19, AP_MotorsHeli, _rsc_slewrate, 0),
-    
+
     AP_GROUPEND
 };
 
@@ -216,7 +216,7 @@ void AP_MotorsHeli::set_frame_class_and_type(motor_frame_class frame_class, moto
 void AP_MotorsHeli::output_min()
 {
     // move swash to mid
-    move_actuators(0.0f,0.0f,0.5f,0.0f);
+    move_actuators(0.0f, 0.0f, 0.5f, 0.0f);
 
     update_motor_control(ROTOR_CONTROL_STOP);
 
@@ -274,7 +274,7 @@ void AP_MotorsHeli::output_armed_zero_throttle()
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    if (_servo_test_cycle_counter > 0){
+    if (_servo_test_cycle_counter > 0) {
         // perform boot-up servo test cycle if enabled
         servo_test();
     } else {
@@ -350,7 +350,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     }
 
     // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
-    if (_rsc_runup_time <= _rsc_ramp_time){
+    if (_rsc_runup_time <= _rsc_ramp_time) {
         if (display_msg) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
         }
@@ -358,7 +358,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     }
 
     // returns false if idle output is higher than critical rotor speed as this could block runup_complete from going false
-    if ( _rsc_idle_output >=  _rsc_critical){
+    if (_rsc_idle_output >= _rsc_critical) {
         if (display_msg) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE too large");
         }
@@ -382,7 +382,7 @@ void AP_MotorsHeli::reset_swash_servo(SRV_Channel *servo)
 // update the throttle input filter
 void AP_MotorsHeli::update_throttle_filter()
 {
-    _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
+    _throttle_filter.apply(_throttle_in, 1.0f / _loop_rate);
 
     // constrain filtered throttle
     if (_throttle_filter.get() < 0.0f) {

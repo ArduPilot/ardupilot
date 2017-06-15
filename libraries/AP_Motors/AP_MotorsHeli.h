@@ -1,5 +1,5 @@
-/// @file	AP_MotorsHeli.h
-/// @brief	Motor control class for Traditional Heli
+/// @file  AP_MotorsHeli.h
+/// @brief Motor control class for Traditional Heli
 #pragma once
 
 #include <inttypes.h>
@@ -48,8 +48,8 @@ class AP_MotorsHeli : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsHeli( uint16_t         loop_rate,
-                   uint16_t         speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
+    AP_MotorsHeli(uint16_t         loop_rate,
+                  uint16_t         speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_Motors(loop_rate, speed_hz)
     {
         AP_Param::setup_object_defaults(this, var_info);
@@ -66,7 +66,7 @@ public:
     void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // set update rate to motors - a value in hertz
-    virtual void set_update_rate( uint16_t speed_hz ) = 0;
+    virtual void set_update_rate(uint16_t speed_hz) = 0;
 
     // enable - starts allowing signals to be sent to motors
     virtual void enable() = 0;
@@ -121,7 +121,7 @@ public:
 
     // ext_gyro_gain - set external gyro gain in range 0 ~ 1
     virtual void ext_gyro_gain(float gain) {}
-    
+
     // output - sends commands to the motors
     void output();
 
