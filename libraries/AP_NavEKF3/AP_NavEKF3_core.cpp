@@ -651,6 +651,14 @@ void NavEKF3_core::UpdateStrapdownEquationsNED()
 
     // accumulate the bias delta angle and time since last reset by an OF measurement arrival
     delAngBodyOF += delAngCorrected;
+	/* 
+	// I think here we shuold not use + to calculate delAngBodyOF.
+    // Rotate quaternon optical flow delta angle from previous to new and normalise.
+    // Accumulation using quaternions prevents introduction of coning errors
+    OFQuat.rotate(delAngCorrected);
+    OFQuat.normalize();
+    // And in writeOptiFlow(), OFQuat should be set zero.
+	*/
     delTimeOF += imuDataDelayed.delAngDT;
 
     // limit states to protect against divergence

@@ -96,7 +96,10 @@ void NavEKF3_core::EstimateTerrainOffset()
     // don't update terrain offset state if there is no range finder
     // don't update terrain state if not generating enough LOS rate, or without GPS, as it is poorly observable
     // don't update terrain state if we are using it as a height reference in the main filter
-    bool cantFuseFlowData = (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f);
+    // bool cantFuseFlowData = (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f);
+	// The last line may shoul be changed to as follow:
+	bool cantFuseFlowData = (gpsNotAvailable || activeHgtSource != HGT_SOURCE_BARO || activeHgtSource != HGT_SOURCE_BCN || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f);
+	// Because althought GPS is not available, if baro is available, pos_z is still observable.
     if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == HGT_SOURCE_RNG)) {
         // skip update
         inhibitGndState = true;
@@ -149,7 +152,10 @@ void NavEKF3_core::EstimateTerrainOffset()
             auxRngTestRatio = sq(innovRng) / (sq(MAX(0.01f * (float)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
 
             // Check the innovation for consistency and don't fuse if > 5Sigma
-            if ((sq(innovRng)*SK_RNG) < 25.0f)
+            // if ((sq(innovRng)*SK_RNG) < 25.0f) should be changed to be as follow??
+            // because innovRng*SK_RNG can be supposed to be vertical height between vihical and terrain,
+            // but I donnt kown what sq(innovRng)*SK_RNG means?
+            if ((sq(innovRng*SK_RNG)) < 25.0f)
             {
                 // correct the state
                 terrainState -= K_RNG * innovRng;
@@ -188,10 +194,13 @@ void NavEKF3_core::EstimateTerrainOffset()
 
             // divide velocity by range, subtract body rates and apply scale factor to
             // get predicted sensed angular optical rates relative to X and Y sensor axes
-            losPred =   relVelSensor.length()/flowRngPred;
+            // losPred =   relVelSensor.length()/flowRngPred; shuld be changed to as follow
+            losPred =   (norm(relVelSensor.x, relVelSensor.y))/flowRngPred;
+			// because losPred is not including the body Z axis rotation.
 
             // calculate innovations
             auxFlowObsInnov = losPred - sqrtf(sq(flowRadXYcomp[0]) + sq(flowRadXYcomp[1]));
+			// here flowRadXYcomp seems not be assigned any value. So flowRadXYcomp may be empty.
 
             // calculate observation jacobian
             float t3 = sq(q0);
