@@ -2138,6 +2138,7 @@ void Plane::mavlink_delay_cb()
     if (!gcs().chan(0).initialised || in_mavlink_delay) return;
 
     in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
 
     uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
@@ -2156,6 +2157,7 @@ void Plane::mavlink_delay_cb()
         gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
 
+    DataFlash.EnableWrites(true);
     in_mavlink_delay = false;
 }
 
