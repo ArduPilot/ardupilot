@@ -96,8 +96,12 @@ void NavEKF3_core::EstimateTerrainOffset()
     // don't update terrain offset state if there is no range finder
     // don't update terrain state if not generating enough LOS rate, or without GPS, as it is poorly observable
     // don't update terrain state if we are using it as a height reference in the main filter
-    bool cantFuseFlowData = (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f);
-    if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == HGT_SOURCE_RNG)) {
+    //bool cantFuseFlowData = (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f);
+	// The last line may shoul be changed to as follow:
+	bool cantFuseFlowData = (gpsNotAvailable || activeHgtSource != HGT_SOURCE_BARO || activeHgtSource != HGT_SOURCE_BCN || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f);
+	// Because althought GPS is not available, if baro or bcn is available to read the pos_z, pos_z is still observable.
+
+	if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == HGT_SOURCE_RNG)) {
         // skip update
         inhibitGndState = true;
     } else {
