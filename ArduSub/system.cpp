@@ -291,9 +291,6 @@ bool Sub::optflow_position_ok()
 bool Sub::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (in_mavlink_delay) {
-        return false;
-    }
     if (!(mask & g.log_bitmask)) {
         return false;
     }
