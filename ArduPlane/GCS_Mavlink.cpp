@@ -1952,10 +1952,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // send message to Notify
         AP_Notify::handle_play_tune(msg);
         break;
-        
-    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        plane.DataFlash.remote_log_block_status_msg(chan, msg);
-        break;
 
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
     {
