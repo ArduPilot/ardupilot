@@ -112,38 +112,8 @@ static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment:
             state->intake_manifold_temperature = intake_manifold_temperature_degc;
             state->fuel_level_percent = fuel_level_percent;
             state->fuel_flow_rate = fuel_flow_grams_per_min;
-
-/*
-            printf("<---> ECU DATA MESSAGE <--->\n"
-                    "ECU Index: %d\n"
-                    "End Of Start: %s\n"
-                    "Crank Sensor Error: %s\n"
-                    "Engine Load Percent: %d\n"
-                    "Spark Dwell Time: %.2f ms\n"
-                    "Engine Speed: %f rpm\n"
-                    "Baro Pressure: %.5f kPa\n"
-                    "Throttle Position: %.5f%%\n"
-                    "Coolant Temp: %.2f degC\n"
-                    "Battery Voltage: %.5f V\n"
-                    "Intake Manifold Pressure: %.5f kPa\n"
-                    "Intake Manifold Temperature: %.2f degC\n"
-                    "Fuel Level: %.2f%%\n"
-                    "Fuel Flow: %.5f g/min\n"
-                    "Ignition Timing Cylinder 1: %.5f CrA\n"
-                    "Ignition Timing Cylinder 2: %.5f CrA\n"
-                    "Injection Time Cylinder 1: %.5f ms\n",
-                    ecu_index, 
-                    end_of_start ? "true" : "false", 
-                    crank_sensor_error ? "true" : "false", 
-                    engine_load_percent, spark_dwell_time_ms,
-                    engine_speed_rpm, barometric_pressure_kpa, throttle_position_percent, coolant_temperature_degc,
-                    battery_voltage_volts, intake_manifold_pressure_kpa, intake_manifold_temperature_degc, 
-                    fuel_level_percent, fuel_flow_grams_per_min,
-                    state->ignition_timing_crank_angle[0],
-                    state->ignition_timing_crank_angle[1],
-                    state->injection_time_ms[0]
-                    );
-  */                  
+            
+            // Update listeners
             ap_uavcan->update_efi_state(msg.getSrcNodeID().get());
         } 
         
@@ -527,7 +497,6 @@ bool AP_UAVCAN::try_init(void)
                     _initialized = true;
 
                     debug_uavcan(1, "UAVCAN: init done\n\r");
-                        hal.console->printf("UAVCAN INIT DONE!\n\r");
 
                     return true;
                 }
