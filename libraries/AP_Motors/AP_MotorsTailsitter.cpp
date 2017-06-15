@@ -49,9 +49,9 @@ void AP_MotorsTailsitter::output_to_motors()
     if (!_flags.initialised_ok) {
         return;
     }
-    float throttle_left  = 0;
-    float throttle_right = 0;
-    
+    float throttle_left  = 0.0f;
+    float throttle_right = 0.0f;
+
     switch (_spool_mode) {
         case SHUT_DOWN:
             _throttle = 0;
@@ -73,8 +73,8 @@ void AP_MotorsTailsitter::output_to_motors()
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
-            throttle_left  = constrain_float(_throttle + _rudder*0.5, 0, 1);
-            throttle_right = constrain_float(_throttle - _rudder*0.5, 0, 1);
+            throttle_left  = constrain_float(_throttle + _rudder * 0.5f, 0.0f, 1.0f);
+            throttle_right = constrain_float(_throttle - _rudder * 0.5f, 0.0f, 1.0f);
             // initialize limits flags
             limit.roll_pitch = false;
             limit.yaw = false;
@@ -83,14 +83,14 @@ void AP_MotorsTailsitter::output_to_motors()
             break;
     }
     // outputs are setup here, and written to the HAL by the plane servos loop
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  _aileron*SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, _elevator*SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder,   _rudder*SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, _throttle*THROTTLE_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  _aileron * SERVO_OUTPUT_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, _elevator * SERVO_OUTPUT_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder,   _rudder * SERVO_OUTPUT_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, _throttle * THROTTLE_RANGE);
 
     // also support differential roll with twin motors
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  throttle_left*THROTTLE_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right*THROTTLE_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  throttle_left * THROTTLE_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right * THROTTLE_RANGE);
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     SRV_Channels::calc_pwm();
@@ -116,6 +116,6 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
         limit.throttle_upper = true;
     }
 
-    _throttle = constrain_float(_throttle, 0.1, 1);
+    _throttle = constrain_float(_throttle, 0.1f, 1.0f);
 }
 
