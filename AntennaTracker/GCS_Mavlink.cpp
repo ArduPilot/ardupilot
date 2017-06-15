@@ -848,10 +848,6 @@ mission_failed:
         }
         break;
 
-    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        tracker.DataFlash.remote_log_block_status_msg(chan, msg);
-        break;
-
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, tracker.gps);
         break;
