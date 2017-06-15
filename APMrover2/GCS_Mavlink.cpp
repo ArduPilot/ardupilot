@@ -1584,6 +1584,8 @@ void Rover::mavlink_delay_cb()
     }
 
     in_mavlink_delay = true;
+    // don't allow potentially expensive logging calls:
+    DataFlash.EnableWrites(false);
 
     const uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
@@ -1603,6 +1605,7 @@ void Rover::mavlink_delay_cb()
     }
     check_usb_mux();
 
+    DataFlash.EnableWrites(true);
     in_mavlink_delay = false;
 }
 
