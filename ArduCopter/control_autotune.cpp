@@ -636,22 +636,22 @@ void Copter::autotune_attitude_control()
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
                 // request roll to 20deg
-                attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw( direction_sign * autotune_target_angle + autotune_start_angle, autotune_pitch_cd, 0.0f, get_smoothing_gain());
+                attitude_control->input_step_bf_roll_pitch_yaw( direction_sign * autotune_target_angle, 0.0f, 0.0f);
                 break;
             case AUTOTUNE_AXIS_PITCH:
                 // request pitch to 20deg
-                attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw( autotune_roll_cd, direction_sign * autotune_target_angle + autotune_start_angle, 0.0f, get_smoothing_gain());
+                attitude_control->input_step_bf_roll_pitch_yaw( 0.0f, direction_sign * autotune_target_angle, 0.0f);
                 break;
             case AUTOTUNE_AXIS_YAW:
                 // request pitch to 20deg
-                attitude_control->input_euler_angle_roll_pitch_yaw( autotune_roll_cd, autotune_pitch_cd, wrap_180_cd(direction_sign * autotune_target_angle + autotune_start_angle), false, get_smoothing_gain());
+                attitude_control->input_step_bf_roll_pitch_yaw( 0.0f, 0.0f, direction_sign * autotune_target_angle);
                 break;
             }
         } else {
             // Testing rate P and D gains so will set body-frame rate targets.
             // Rate controller will use existing body-frame rates and convert to motor outputs
             // for all axes except the one we override here.
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw( autotune_roll_cd, autotune_pitch_cd, 0.0f, get_smoothing_gain());
+            attitude_control->input_rate_bf_roll_pitch_yaw( 0.0f, 0.0f, 0.0f);
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
                 // override body-frame roll rate
