@@ -1,5 +1,5 @@
-/// @file	AP_MotorsMatrix.h
-/// @brief	Motor control class for Matrixcopters
+/// @file  AP_MotorsMatrix.h
+/// @brief Motor control class for Matrixcopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -68,12 +68,12 @@ protected:
 
     // call vehicle supplied thrust compensation if set
     void                thrust_compensation(void) override;
-    
-    float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to roll
-    float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to pitch
-    float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
-    float               _thrust_rpyt_out[AP_MOTORS_MAX_NUM_MOTORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
-    uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
-    motor_frame_class   _last_frame_class; // most recently requested frame class (i.e. quad, hexa, octa, etc)
-    motor_frame_type    _last_frame_type; // most recently requested frame type (i.e. plus, x, v, etc)
+
+    float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS];      // each motors contribution to roll
+    float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS];     // each motors contribution to pitch
+    float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];       // each motors contribution to yaw (normally 1 or -1)
+    float               _thrust_rpyt_out[AP_MOTORS_MAX_NUM_MOTORS];  // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
+    uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];       // order of the motors in the test sequence
+    motor_frame_class   _last_frame_class;  // most recently requested frame class (i.e. quad, hexa, octa, etc)
+    motor_frame_type    _last_frame_type;   // most recently requested frame type (i.e. plus, x, v, etc)
 };
