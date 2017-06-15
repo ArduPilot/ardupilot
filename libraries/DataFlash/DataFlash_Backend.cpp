@@ -262,7 +262,7 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
 
 bool DataFlash_Backend::WritesOK() const
 {
-    if (!_writes_enabled) {
+    if (!_front.WritesEnabled()) {
         return false;
     }
     if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
