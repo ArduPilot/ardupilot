@@ -1,5 +1,5 @@
-/// @file	AP_MotorsCoax.h
-/// @brief	Motor and Servo control class for Co-axial helicopters with two motors and two flaps
+/// @file  AP_MotorsCoax.h
+/// @brief Motor and Servo control class for Co-axial helicopters with two motors and two flaps
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -35,7 +35,7 @@ public:
     void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // set update rate to motors - a value in hertz
-    void                set_update_rate( uint16_t speed_hz );
+    void                set_update_rate(uint16_t speed_hz);
 
     // enable - starts allowing signals to be sent to motors
     virtual void        enable();
@@ -56,7 +56,7 @@ protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
 
-    float               _actuator_out[NUM_ACTUATORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
+    float               _actuator_out[NUM_ACTUATORS];  // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     float               _thrust_yt_ccw;
     float               _thrust_yt_cw;
     SRV_Channel         *_servo1;
