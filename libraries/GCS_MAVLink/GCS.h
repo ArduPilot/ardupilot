@@ -129,6 +129,13 @@ public:
     // call to reset the timeout window for entering the cli
     void reset_cli_timeout();
 
+    bool is_high_bandwidth() { return chan == MAVLINK_COMM_0; }
+    // return true if this channel has hardware flow control
+    bool have_flow_control();
+
+    mavlink_channel_t get_chan() const { return chan; }
+    uint32_t get_last_heartbeat_time() const { return last_heartbeat_time; };
+
     uint32_t        last_heartbeat_time; // milliseconds
 
     // last time we got a non-zero RSSI from RADIO_STATUS
@@ -231,8 +238,6 @@ protected:
     mavlink_channel_t           chan;
     uint8_t packet_overhead(void) const { return packet_overhead_chan(chan); }
 
-    void handle_log_send(DataFlash_Class &dataflash);
-
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
 
@@ -259,7 +264,6 @@ protected:
     void handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps);
 
     void handle_common_message(mavlink_message_t *msg);
-    void handle_log_message(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_setup_signing(const mavlink_message_t *msg);
     uint8_t handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
     uint8_t handle_rc_bind(const mavlink_command_long_t &packet);
@@ -323,33 +327,6 @@ private:
     // millis value to calculate cli timeout relative to.
     // exists so we can separate the cli entry time from the system start time
     uint32_t _cli_timeout;
-
-    uint8_t  _log_listing:1; // sending log list
-    uint8_t  _log_sending:1; // sending log data
-
-    // next log list entry to send
-    uint16_t _log_next_list_entry;
-
-    // last log list entry to send
-    uint16_t _log_last_list_entry;
-
-    // number of log files
-    uint16_t _log_num_logs;
-
-    // log number for data send
-    uint16_t _log_num_data;
-
-    // offset in log
-    uint32_t _log_data_offset;
-
-    // size of log file
-    uint32_t _log_data_size;
-
-    // number of bytes left to send
-    uint32_t _log_data_remaining;
-
-    // start page of log data
-    uint16_t _log_data_page;
 
     // perf counters
     static AP_HAL::Util::perf_counter_t _perf_packet;
@@ -415,18 +392,7 @@ private:
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
 
-    void handle_log_request_list(mavlink_message_t *msg, DataFlash_Class &dataflash);
-    void handle_log_request_data(mavlink_message_t *msg, DataFlash_Class &dataflash);
-    void handle_log_request_erase(mavlink_message_t *msg, DataFlash_Class &dataflash);
-    void handle_log_request_end(mavlink_message_t *msg, DataFlash_Class &dataflash);
-    void handle_log_send_listing(DataFlash_Class &dataflash);
-    bool handle_log_send_data(DataFlash_Class &dataflash);
-
-
     void lock_channel(mavlink_channel_t chan, bool lock);
-
-    // return true if this channel has hardware flow control
-    bool have_flow_control(void);
 
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
