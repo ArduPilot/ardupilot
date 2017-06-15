@@ -85,9 +85,9 @@ int8_t Plane::dump_log(uint8_t argc, const Menu::arg *argv)
 
 int8_t Plane::erase_logs(uint8_t argc, const Menu::arg *argv)
 {
-    in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
     do_erase_logs();
-    in_mavlink_delay = false;
+    DataFlash.EnableWrites(true);
     return 0;
 }
 
