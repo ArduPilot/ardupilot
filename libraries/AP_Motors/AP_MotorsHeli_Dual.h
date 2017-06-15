@@ -24,8 +24,8 @@
 #define AP_MOTORS_HELI_DUAL_RSC                     CH_8
 
 // tandem modes
-#define AP_MOTORS_HELI_DUAL_MODE_TANDEM                0 // tandem mode (rotors front and aft)
-#define AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE            1 // transverse mode (rotors side by side)
+#define AP_MOTORS_HELI_DUAL_MODE_TANDEM                0  // tandem mode (rotors front and aft)
+#define AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE            1  // transverse mode (rotors side by side)
 
 // default differential-collective-pitch scaler
 #define AP_MOTORS_HELI_DUAL_DCP_SCALER             0.25f
@@ -52,7 +52,7 @@ public:
 
 
     // set_update_rate - set update rate to motors
-    void set_update_rate( uint16_t speed_hz ) override;
+    void set_update_rate(uint16_t speed_hz) override;
 
     // enable - starts allowing signals to be sent to motors
     void enable() override;
@@ -96,13 +96,13 @@ public:
 protected:
 
     // init_outputs
-    bool init_outputs () override;
+    bool init_outputs() override;
 
     // update_motor_controls - sends commands to motor controllers
     void update_motor_control(RotorControlState state) override;
 
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
-    void calculate_roll_pitch_collective_factors () override;
+    void calculate_roll_pitch_collective_factors() override;
 
     // move_actuators - moves swash plate to attitude of parameters passed in
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)  override;
