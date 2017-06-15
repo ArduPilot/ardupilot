@@ -1,5 +1,5 @@
-/// @file	AP_MotorsTri.h
-/// @brief	Motor control class for Tricopters
+/// @file  AP_MotorsTri.h
+/// @brief Motor control class for Tricopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -30,7 +30,7 @@ public:
     void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // set update rate to motors - a value in hertz
-    void                set_update_rate( uint16_t speed_hz );
+    void                set_update_rate(uint16_t speed_hz);
 
     // enable - starts allowing signals to be sent to motors
     virtual void        enable();
@@ -51,21 +51,21 @@ public:
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
     void                output_motor_mask(float thrust, uint8_t mask) override;
-    
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
 
     // call vehicle supplied thrust compensation if set
     void                thrust_compensation(void) override;
-    
+
     // calc_yaw_radio_output - calculate final radio output for yaw channel
-    int16_t             calc_yaw_radio_output(float yaw_input, float yaw_input_max);        // calculate radio output for yaw servo, typically in range of 1100-1900
+    int16_t             calc_yaw_radio_output(float yaw_input, float yaw_input_max);  // calculate radio output for yaw servo, typically in range of 1100-1900
 
     // parameters
 
-    SRV_Channel     *_yaw_servo; // yaw output channel
-    float           _pivot_angle;                       // Angle of yaw pivot
+    SRV_Channel     *_yaw_servo;    // yaw output channel
+    float           _pivot_angle;   // Angle of yaw pivot
     float           _thrust_right;
     float           _thrust_rear;
     float           _thrust_left;

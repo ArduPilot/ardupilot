@@ -31,7 +31,7 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
     add_motor_num(AP_MOTORS_MOT_1);
     add_motor_num(AP_MOTORS_MOT_2);
     add_motor_num(AP_MOTORS_MOT_4);
-    
+
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
 
@@ -47,7 +47,7 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
         // don't set initialised_ok
         return;
     }
-    
+
     // allow mapping of motor7
     add_motor_num(AP_MOTORS_CH_TRI_YAW);
 
@@ -62,16 +62,16 @@ void AP_MotorsTri::set_frame_class_and_type(motor_frame_class frame_class, motor
 }
 
 // set update rate to motors - a value in hertz
-void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
+void AP_MotorsTri::set_update_rate(uint16_t speed_hz)
 {
     // record requested speed
     _speed_hz = speed_hz;
 
     // set update rate for the 3 motors (but not the servo on channel 7)
-    uint32_t mask = 
-	    1U << AP_MOTORS_MOT_1 |
-	    1U << AP_MOTORS_MOT_2 |
-	    1U << AP_MOTORS_MOT_4;
+    uint32_t mask =
+        1U << AP_MOTORS_MOT_1 |
+        1U << AP_MOTORS_MOT_2 |
+        1U << AP_MOTORS_MOT_4;
     rc_set_freq(mask, _speed_hz);
 }
 
@@ -129,24 +129,17 @@ uint16_t AP_MotorsTri::get_motor_mask()
 // includes new scaling stability patch
 void AP_MotorsTri::output_armed_stabilizing()
 {
-    float   roll_thrust;                // roll thrust input value, +/- 1.0
-    float   pitch_thrust;               // pitch thrust input value, +/- 1.0
-    float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
-    float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
-    float   throttle_thrust_best_rpy;   // throttle providing maximum roll, pitch and yaw range without climbing
-    float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
-    float   rpy_low = 0.0f;             // lowest motor value
-    float   rpy_high = 0.0f;            // highest motor value
-    float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+    // Initialisation with voltage and air pressure compensation
+    const float roll_thrust = _roll_in * get_compensation_gain();    // roll thrust input value, +/- 1.0
+    const float pitch_thrust = _pitch_in * get_compensation_gain();  // pitch thrust input value, +/- 1.0
+    // yaw thrust input value, +/- 1.0
+    // we scale this so a thrust request of 1.0f will ask for full servo deflection at full rear throttle
+    const float   yaw_thrust = _yaw_in * get_compensation_gain() * sinf(radians(_yaw_servo_angle_max_deg));
+    float   throttle_thrust = get_throttle() * get_compensation_gain();  // throttle thrust input value, 0.0 - 1.0
+    float   rpy_scale;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
 
     // sanity check YAW_SV_ANGLE parameter value to avoid divide by zero
     _yaw_servo_angle_max_deg = constrain_float(_yaw_servo_angle_max_deg, AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN, AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX);
-
-    // apply voltage and air pressure compensation
-    roll_thrust = _roll_in * get_compensation_gain();
-    pitch_thrust = _pitch_in * get_compensation_gain();
-    yaw_thrust = _yaw_in * get_compensation_gain()*sinf(radians(_yaw_servo_angle_max_deg)); // we scale this so a thrust request of 1.0f will ask for full servo deflection at full rear throttle
-    throttle_thrust = get_throttle() * get_compensation_gain();
 
     // calculate angle of yaw pivot
     _pivot_angle = safe_asin(yaw_thrust);
@@ -155,7 +148,7 @@ void AP_MotorsTri::output_armed_stabilizing()
         _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg), radians(_yaw_servo_angle_max_deg));
     }
 
-    float pivot_thrust_max = cosf(_pivot_angle);
+    const float pivot_thrust_max = cosf(_pivot_angle);
     float thrust_max = 1.0f;
 
     // sanity check throttle is above zero and below current limited throttle
@@ -183,13 +176,13 @@ void AP_MotorsTri::output_armed_stabilizing()
     // set rpy_low and rpy_high to the lowest and highest values of the motors
 
     // record lowest roll pitch command
-    rpy_low = MIN(_thrust_right,_thrust_left);
-    rpy_high = MAX(_thrust_right,_thrust_left);
-    if (rpy_low > _thrust_rear){
+    float rpy_low = MIN(_thrust_right, _thrust_left);   // lowest motor value
+    float rpy_high = MAX(_thrust_right, _thrust_left);  // highest motor value
+    if (rpy_low > _thrust_rear) {
         rpy_low = _thrust_rear;
     }
     // check to see if the rear motor will reach maximum thrust before the front two motors
-    if ((1.0f - rpy_high) > (pivot_thrust_max - _thrust_rear)){
+    if ((1.0f - rpy_high) > (pivot_thrust_max - _thrust_rear)) {
         thrust_max = pivot_thrust_max;
         rpy_high = _thrust_rear;
     }
@@ -205,41 +198,42 @@ void AP_MotorsTri::output_armed_stabilizing()
     //      We will choose #2 (a mix of pilot and hover throttle) only when the throttle is quite low.  We favor reducing throttle instead of better yaw control because the pilot has commanded it
 
     // check everything fits
-    throttle_thrust_best_rpy = MIN(0.5f*thrust_max - (rpy_low+rpy_high)/2.0, _throttle_avg_max);
-    if(is_zero(rpy_low)){
+    // throttle providing maximum roll, pitch and yaw range without climbing
+    const float throttle_thrust_best_rpy = MIN(0.5f * thrust_max - (rpy_low + rpy_high) / 2.0f, _throttle_avg_max);
+    if (is_zero(rpy_low)) {
         rpy_scale = 1.0f;
     } else {
-        rpy_scale = constrain_float(-throttle_thrust_best_rpy/rpy_low, 0.0f, 1.0f);
+        rpy_scale = constrain_float(-throttle_thrust_best_rpy / rpy_low, 0.0f, 1.0f);
     }
 
     // calculate how close the motors can come to the desired throttle
-    thr_adj = throttle_thrust - throttle_thrust_best_rpy;
-    if(rpy_scale < 1.0f){
+    float thr_adj = throttle_thrust - throttle_thrust_best_rpy;  // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+    if (rpy_scale < 1.0f) {
         // Full range is being used by roll, pitch, and yaw.
         limit.roll_pitch = true;
-        if (thr_adj > 0.0f){
+        if (thr_adj > 0.0f) {
             limit.throttle_upper = true;
         }
         thr_adj = 0.0f;
-    }else{
-        if(thr_adj < -(throttle_thrust_best_rpy+rpy_low)){
+    } else {
+        if (thr_adj < -(throttle_thrust_best_rpy + rpy_low)) {
             // Throttle can't be reduced to desired value
-            thr_adj = -(throttle_thrust_best_rpy+rpy_low);
-        }else if(thr_adj > thrust_max - (throttle_thrust_best_rpy+rpy_high)){
+            thr_adj = -(throttle_thrust_best_rpy + rpy_low);
+        } else if (thr_adj > thrust_max - (throttle_thrust_best_rpy + rpy_high)) {
             // Throttle can't be increased to desired value
-            thr_adj = thrust_max - (throttle_thrust_best_rpy+rpy_high);
+            thr_adj = thrust_max - (throttle_thrust_best_rpy + rpy_high);
             limit.throttle_upper = true;
         }
     }
 
     // add scaled roll, pitch, constrained yaw and throttle for each motor
-    _thrust_right = throttle_thrust_best_rpy+thr_adj + rpy_scale*_thrust_right;
-    _thrust_left = throttle_thrust_best_rpy+thr_adj + rpy_scale*_thrust_left;
-    _thrust_rear = throttle_thrust_best_rpy+thr_adj + rpy_scale*_thrust_rear;
+    _thrust_right = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_right;
+    _thrust_left = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_left;
+    _thrust_rear = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_rear;
 
     // scale pivot thrust to account for pivot angle
     // we should not need to check for divide by zero as _pivot_angle is constrained to the 5deg ~ 80 deg range
-    _thrust_rear = _thrust_rear/cosf(_pivot_angle);
+    _thrust_rear = _thrust_rear / cosf(_pivot_angle);
 
     // constrain all outputs to 0.0f to 1.0f
     // test code should be run with these lines commented out as they should not do anything
@@ -291,7 +285,7 @@ int16_t AP_MotorsTri::calc_yaw_radio_output(float yaw_input, float yaw_input_max
         yaw_input = -yaw_input;
     }
 
-    if (yaw_input >= 0){
+    if (yaw_input >= 0) {
         ret = (_yaw_servo->get_trim() + (yaw_input/yaw_input_max * (_yaw_servo->get_output_max() - _yaw_servo->get_trim())));
     } else {
         ret = (_yaw_servo->get_trim() + (yaw_input/yaw_input_max * (_yaw_servo->get_trim() - _yaw_servo->get_output_min())));
@@ -309,7 +303,7 @@ void AP_MotorsTri::thrust_compensation(void)
 {
     if (_thrust_compensation_callback) {
         // convert 3 thrust values into an array indexed by motor number
-        float thrust[4] { _thrust_right, _thrust_left, 0, _thrust_rear };
+        float thrust[4] { _thrust_right, _thrust_left, 0.0f, _thrust_rear };
 
         // apply vehicle supplied compensation function
         _thrust_compensation_callback(thrust, 4);
