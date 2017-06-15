@@ -1,5 +1,5 @@
-/// @file	AP_MotorsSingle.h
-/// @brief	Motor and Servo control class for Singlecopters
+/// @file  AP_MotorsSingle.h
+/// @brief Motor and Servo control class for Singlecopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -13,8 +13,8 @@
 
 #define NUM_ACTUATORS 4
 
-#define AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS 250 // update rate for digital servos
-#define AP_MOTORS_SINGLE_SPEED_ANALOG_SERVOS 125  // update rate for analog servos
+#define AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS 250  // update rate for digital servos
+#define AP_MOTORS_SINGLE_SPEED_ANALOG_SERVOS 125   // update rate for analog servos
 
 #define AP_MOTORS_SINGLE_SERVO_INPUT_RANGE      4500    // roll or pitch input of -4500 will cause servos to their minimum (i.e. radio_min), +4500 will move them to their maximum (i.e. radio_max)
 
@@ -35,7 +35,7 @@ public:
     void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // set update rate to motors - a value in hertz
-    void                set_update_rate( uint16_t speed_hz );
+    void                set_update_rate(uint16_t speed_hz);
 
     // enable - starts allowing signals to be sent to motors
     virtual void        enable();
@@ -56,8 +56,8 @@ protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
 
-    int16_t             _throttle_radio_output;   // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
-    float               _actuator_out[NUM_ACTUATORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
+    int16_t             _throttle_radio_output;        // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
+    float               _actuator_out[NUM_ACTUATORS];  // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     float               _thrust_out;
     SRV_Channel         *_servo1;
     SRV_Channel         *_servo2;
