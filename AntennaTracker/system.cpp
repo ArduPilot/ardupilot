@@ -175,11 +175,13 @@ void Tracker::set_home(struct Location temp)
 void Tracker::arm_servos()
 {
     hal.util->set_soft_armed(true);
+    DataFlash.set_vehicle_armed(true);
 }
 
 void Tracker::disarm_servos()
 {
     hal.util->set_soft_armed(false);
+    DataFlash.set_vehicle_armed(false);
 }
 
 /*
