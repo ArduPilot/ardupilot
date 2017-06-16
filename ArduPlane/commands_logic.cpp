@@ -401,6 +401,11 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 
     landing.do_land(cmd, relative_altitude);
 
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+        // if we were in an abort we need to explicitly move out of the abort state, as it's sticky
+        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
+    }
+
 #if GEOFENCE_ENABLED == ENABLED 
     if (g.fence_autoenable == 1) {
         if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
