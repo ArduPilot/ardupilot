@@ -1397,12 +1397,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_ACCEPTED;
                 }
             }
-
-            if (result == MAV_RESULT_ACCEPTED) {
-                plane.gcs_send_text(MAV_SEVERITY_INFO,"Go around command accepted");
-            } else {
-                plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Rejected go around command");
-            }
             break;
 
         case MAV_CMD_DO_FENCE_ENABLE:
