@@ -281,13 +281,14 @@ void Copter::auto_wp_run()
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(), true, get_smoothing_gain());
-        uint32_t tnow = millis();
+      /*  uint32_t tnow = millis();
         if (tnow % 1000 <= 100)
         {
           std::string yaw_target = std::to_string(wrap_360_cd(get_auto_heading())*0.01f);
           const char* target_yaw_gcs = yaw_target.c_str();
           gcs_send_text(MAV_SEVERITY_INFO, target_yaw_gcs);
         }
+        */
     }
 }
 

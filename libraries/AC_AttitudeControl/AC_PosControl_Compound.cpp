@@ -24,17 +24,17 @@ AC_PosControl_Compound::AC_PosControl_Compound(const AP_AHRS_View& ahrs, const A
     AC_PosControl(ahrs, inav, motors, attitude_control, p_pos_z, p_vel_z, pid_accel_z, p_pos_xy, pi_vel_xy),
     _ahrs(ahrs),
     _motors(motors),
-    _thrust_out(0.0f),
+    _thrust_out(-1.0f),
     _use_thruster(true),
     _throttle_p(throttle_p),
-    _radio_forward_in(-1.0f);
+    _radio_forward_in(-1.0f)
 {}
 
 //To-Do: enable radio passthrough for stick-auto modes like stabilize, alt-hold, etc...
 
 void AC_PosControl_Compound::set_radio_passthrough_forward_thruster(float forward_radio_passthrough)
 {
-    _radio_forward_in = constraint_float(forward_radio_passthrough,-1.0f, 1.0f);
+    _radio_forward_in = constrain_float(forward_radio_passthrough,-1.0f, 1.0f);
     _motors.set_forward(_radio_forward_in);
 }
 
