@@ -17,6 +17,7 @@
 #include "AP_Compass_qflight.h"
 #include "AP_Compass_LIS3MDL.h"
 #include "AP_Compass_AK09916.h"
+#include "AP_Compass_QMC5883L.h"
 #if HAL_WITH_UAVCAN
 #include "AP_Compass_UAVCAN.h"
 #endif
@@ -533,6 +534,9 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR),
                                               both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_YAW_270),
                     AP_Compass_HMC5843::name, both_i2c_external);
+        //external i2c bus for QMC5883L
+        ADD_BACKEND(AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_QMC5883L_I2C_ADDR),
+                                 ROTATION_YAW_90), AP_Compass_QMC5883L::name, true);
 
         
 #if !HAL_MINIMIZE_FEATURES
