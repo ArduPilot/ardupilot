@@ -269,5 +269,10 @@ void Rover::set_servos(void) {
 
     // record last throttle before we apply skid steering
     SRV_Channels::get_output_pwm(SRV_Channel::k_throttle, last_throttle);
-    output_to_motors();
+
+    if (motor_test) {
+        motor_test_output();
+    } else {
+        output_to_motors();
+    }
 }

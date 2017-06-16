@@ -408,6 +408,9 @@ private:
     // last visual odometry update time
     uint32_t visual_odom_last_update_ms;
 
+    // True when we are doing motor test
+    bool motor_test;
+    bool initialised;
 
     // Motors
     enum ugv_type_class {
@@ -599,6 +602,11 @@ private:
     void set_loiter_active(const AP_Mission::Mission_Command& cmd);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void crash_check();
+    // Motor test
+    void motor_test_output();
+    bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc);
+    uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec);
+    void motor_test_stop();
     // Motor
     bool setup_type_class(ugv_type_class type_class);
     // output_to_motors - sends minimum values out to the motors
