@@ -126,12 +126,12 @@ bool AP_Compass_QMC5883L::init()
     set_dev_id(_instance, _dev->get_bus_id());
 
     //Enable 100HZ
- _dev->register_periodic_callback(10000,
+    _dev->register_periodic_callback(10000,
         FUNCTOR_BIND_MEMBER(&AP_Compass_QMC5883L::timer, void));
 
     return true;
 
-fail:
+ fail:
     _dev->get_semaphore()->give();
     return false;
 }
