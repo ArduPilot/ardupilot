@@ -1187,6 +1187,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
+            } else if (is_equal(packet.param5,4.0f)) {
+                // simple accel calibration
+                result = sub.ins.simple_accel_cal(sub.ahrs);
             } else if (is_equal(packet.param6,1.0f)) {
                 // compassmot calibration
                 //result = sub.mavlink_compassmot(chan);
