@@ -1204,6 +1204,9 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
+            } else if (is_equal(packet.param5,4.0f)) {
+                // simple accel calibration
+                result = plane.ins.simple_accel_cal(plane.ahrs);
             }
             else {
                     send_text(MAV_SEVERITY_WARNING, "Unsupported preflight calibration");
