@@ -838,6 +838,9 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                     } else {
                         result = MAV_RESULT_FAILED;
                     }
+                } else if (is_equal(packet.param5,4.0f)) {
+                    // simple accel calibration
+                    result = rover.ins.simple_accel_cal(rover.ahrs);
                 } else {
                     send_text(MAV_SEVERITY_WARNING, "Unsupported preflight calibration");
                 }
