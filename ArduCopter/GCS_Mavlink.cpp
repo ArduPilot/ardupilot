@@ -696,7 +696,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
     }
 
     if (!copter.in_mavlink_delay && !copter.motors->armed()) {
-        handle_log_send(copter.DataFlash);
+        copter.DataFlash.handle_log_send(*this);
     }
 
     copter.gcs_out_of_time = false;
@@ -1844,13 +1844,13 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         /* no break */
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         if (!copter.in_mavlink_delay && !copter.motors->armed()) {
-            handle_log_message(msg, copter.DataFlash);
+            copter.DataFlash.handle_mavlink_msg(*this, msg);
         }
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         copter.in_log_download = false;
         if (!copter.in_mavlink_delay && !copter.motors->armed()) {
-            handle_log_message(msg, copter.DataFlash);
+            copter.DataFlash.handle_mavlink_msg(*this, msg);
         }
         break;
 
