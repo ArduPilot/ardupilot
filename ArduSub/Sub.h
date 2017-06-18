@@ -145,9 +145,6 @@ private:
     // AP_Notify instance
     AP_Notify notify;
 
-    // has a log download started?
-    bool in_log_download;
-
     // primary input control channels
     RC_Channel *channel_roll;
     RC_Channel *channel_pitch;
