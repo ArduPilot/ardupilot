@@ -800,7 +800,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
     plane.gcs_out_of_time = false;
 
     if (!plane.in_mavlink_delay) {
-        handle_log_send(plane.DataFlash);
+        plane.DataFlash.handle_log_send(*this);
     }
 
     send_queued_parameters();
@@ -1910,13 +1910,13 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         /* no break */
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         if (!plane.in_mavlink_delay) {
-            handle_log_message(msg, plane.DataFlash);
+            plane.DataFlash.handle_mavlink_msg(*this, msg);
         }
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         plane.in_log_download = false;
         if (!plane.in_mavlink_delay) {
-            handle_log_message(msg, plane.DataFlash);
+            plane.DataFlash.handle_mavlink_msg(*this, msg);
         }
         break;
 
