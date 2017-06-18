@@ -182,9 +182,6 @@ private:
     // used to detect MAVLink acks from GCS to stop compassmot
     uint8_t command_ack_counter;
 
-    // has a log download started?
-    bool in_log_download;
-
     // primary input control channels
     RC_Channel *channel_roll;
     RC_Channel *channel_pitch;
