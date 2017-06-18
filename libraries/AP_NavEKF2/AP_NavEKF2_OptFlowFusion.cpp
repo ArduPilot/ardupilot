@@ -188,7 +188,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             losPred =   relVelSensor.length()/flowRngPred;
 
             // calculate innovations
-            auxFlowObsInnov = losPred - sqrtf(sq(flowRadXYcomp[0]) + sq(flowRadXYcomp[1]));
+            auxFlowObsInnov = losPred - sqrtf(sq(ofDataDelayed.flowRadXYcomp[0]) + sq(ofDataDelayed.flowRadXYcomp[1]));
 
             // calculate observation jacobian
             float t3 = sq(q0);
@@ -234,7 +234,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar);
 
             // don't fuse if optical flow data is outside valid range
-            if (MAX(flowRadXY[0],flowRadXY[1]) < frontend->_maxFlowRate) {
+            if (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) < frontend->_maxFlowRate) {
 
                 // correct the state
                 terrainState -= K_OPT * auxFlowObsInnov;
