@@ -356,14 +356,22 @@ void NavEKF3_core::detectFlight()
             onGround = true;
         }
 
-        // If height has increased since exiting on-ground, then we definitely are flying
-        if (!onGround && ((stateStruct.position.z - posDownAtTakeoff) < -1.5f)) {
-            inFlight = true;
-        }
+        if (!onGround) {
+            // If height has increased since exiting on-ground, then we definitely are flying
+            if ((stateStruct.position.z - posDownAtTakeoff) < -1.5f) {
+                inFlight = true;
+            }
 
-        // If rangefinder has increased since exiting on-ground, then we definitely are flying
-        if (!onGround && ((rangeDataNew.rng - rngAtStartOfFlight) > 0.5f)) {
-            inFlight = true;
+            // If rangefinder has increased since exiting on-ground, then we definitely are flying
+            if ((rangeDataNew.rng - rngAtStartOfFlight) > 0.5f) {
+                inFlight = true;
+            }
+
+            // If more than 15 seconds armed since exiting on-ground, then we definitely are flying
+            if ((imuSampleTime_ms - timeAtArming_ms) > 15000) {
+                inFlight = true;
+            }
+
         }
 
     }
