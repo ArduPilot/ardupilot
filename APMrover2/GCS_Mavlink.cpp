@@ -587,7 +587,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
     rover.gcs_out_of_time = false;
 
     if (!rover.in_mavlink_delay) {
-        handle_log_send(rover.DataFlash);
+        rover.DataFlash.handle_log_send(*this);
     }
 
     send_queued_parameters();
@@ -1520,13 +1520,13 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         /* no break */
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         if (!rover.in_mavlink_delay) {
-            handle_log_message(msg, rover.DataFlash);
+            rover.DataFlash.handle_mavlink_msg(*this, msg);
         }
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         rover.in_log_download = false;
         if (!rover.in_mavlink_delay) {
-            handle_log_message(msg, rover.DataFlash);
+            rover.DataFlash.handle_mavlink_msg(*this, msg);
         }
         break;
 
