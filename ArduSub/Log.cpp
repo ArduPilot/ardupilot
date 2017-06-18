@@ -471,7 +471,7 @@ void Sub::start_logging()
     if (g.log_bitmask == 0) {
         return;
     }
-    if (in_log_download) {
+    if (DataFlash.in_log_download()) {
         return;
     }
 
