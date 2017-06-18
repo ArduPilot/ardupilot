@@ -376,6 +376,10 @@ GCS_MAVLINK_Tracker::data_stream_send(void)
         return;
     }
 
+    if (!tracker.in_mavlink_delay) {
+        tracker.DataFlash.handle_log_send(*this);
+    }
+
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
         send_message(MSG_RAW_IMU2);
@@ -838,13 +842,13 @@ mission_failed:
         /* no break */
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         if (!tracker.in_mavlink_delay) {
-            handle_log_message(msg, tracker.DataFlash);
+            tracker.DataFlash.handle_mavlink_msg(*this, msg);
         }
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         tracker.in_log_download = false;
         if (!tracker.in_mavlink_delay) {
-            handle_log_message(msg, tracker.DataFlash);
+            tracker.DataFlash.handle_mavlink_msg(*this, msg);
         }
         break;
 
