@@ -88,7 +88,6 @@ public:
     // high level interface
     uint16_t find_last_log() const;
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
-    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs(void);
     void LogReadProcess(uint16_t log_num,
@@ -178,7 +177,7 @@ public:
     void flush(void);
 #endif
 
-    void handle_mavlink_msg(mavlink_channel_t chan, mavlink_message_t* msg);
+    void handle_mavlink_msg(class GCS_MAVLINK &, mavlink_message_t* msg);
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
@@ -212,6 +211,8 @@ public:
 
     void set_vehicle_armed(bool armed_state);
     bool vehicle_is_armed() const { return _armed; }
+
+    void handle_log_send(class GCS_MAVLINK &);
 
 protected:
 
@@ -288,5 +289,45 @@ private:
     void Prep();
 
     bool _writes_enabled;
+
+    /* support for retrieving logs via mavlink: */
+    uint8_t  _log_listing:1; // sending log list
+    uint8_t  _log_sending:1; // sending log data
+
+    // next log list entry to send
+    uint16_t _log_next_list_entry;
+
+    // last log list entry to send
+    uint16_t _log_last_list_entry;
+
+    // number of log files
+    uint16_t _log_num_logs;
+
+    // log number for data send
+    uint16_t _log_num_data;
+
+    // offset in log
+    uint32_t _log_data_offset;
+
+    // size of log file
+    uint32_t _log_data_size;
+
+    // number of bytes left to send
+    uint32_t _log_data_remaining;
+
+    // start page of log data
+    uint16_t _log_data_page;
+
+    void handle_log_message(class GCS_MAVLINK &, mavlink_message_t *msg);
+
+    void handle_log_request_list(class GCS_MAVLINK &, mavlink_message_t *msg);
+    void handle_log_request_data(class GCS_MAVLINK &, mavlink_message_t *msg);
+    void handle_log_request_erase(class GCS_MAVLINK &, mavlink_message_t *msg);
+    void handle_log_request_end(class GCS_MAVLINK &, mavlink_message_t *msg);
+    void handle_log_send_listing(class GCS_MAVLINK &);
+    bool handle_log_send_data(class GCS_MAVLINK &);
+
+    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
+    /* end support for retrieving logs via mavlink: */
 
 };
