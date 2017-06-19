@@ -97,8 +97,6 @@ private:
 
     bool usb_connected = false;
 
-    // has a log download started?
-    bool in_log_download = false;
     DataFlash_Class DataFlash;
 
     AP_GPS gps;
