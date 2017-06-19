@@ -124,7 +124,7 @@ void Tracker::send_nav_controller_output(mavlink_channel_t chan)
         nav_status.pitch,
         nav_status.bearing,
         nav_status.bearing,
-        nav_status.distance,
+        MIN(nav_status.distance, UINT16_MAX),
         alt_diff,
         0,
         0);
