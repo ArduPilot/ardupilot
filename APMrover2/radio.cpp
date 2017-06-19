@@ -129,16 +129,17 @@ void Rover::rudder_arm_disarm_check()
 void Rover::read_radio()
 {
     if (!hal.rcin->new_input()) {
+        // check if we lost RC link
         control_failsafe(channel_throttle->get_radio_in());
         return;
     }
 
     failsafe.last_valid_rc_ms = AP_HAL::millis();
-
+    // read the RC value
     RC_Channels::set_pwm_all();
-
+    // check that RC value are valid
     control_failsafe(channel_throttle->get_radio_in());
-
+    // copy RC throttle input to throttle output
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
 
     // Check if the throttle value is above 50% and we need to nudge
@@ -151,7 +152,7 @@ void Rover::read_radio()
     } else {
         throttle_nudge = 0;
     }
-
+    // apply RC skid steer mixing
     if (g.skid_steer_in) {
         // convert the two radio_in values from skid steering values
         /*
@@ -182,7 +183,7 @@ void Rover::read_radio()
         channel_steer->set_pwm(steer);
         channel_throttle->set_pwm(thr);
     }
-
+    // check if we try to do RC arm/disarm
     rudder_arm_disarm_check();
 }
 
