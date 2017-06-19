@@ -183,9 +183,6 @@ private:
 
     DataFlash_Class DataFlash;
 
-    // has a log download started?
-    bool in_log_download;
-
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
     int32_t pitch_limit_min_cd;
