@@ -155,6 +155,9 @@ void Plane::update_is_flying_5Hz(void)
     if (should_log(MASK_LOG_MODE)) {
         Log_Write_Status();
     }
+
+    // tell AHRS flying state
+    ahrs.set_likely_flying(new_is_flying);
 }
 
 /*
