@@ -408,6 +408,18 @@ private:
     // last visual odometry update time
     uint32_t visual_odom_last_update_ms;
 
+
+    // Motors
+    enum ugv_type_class {
+        UGV_TYPE_UNDEFINED = 0,
+        UGV_TYPE_ROVER = 1,
+        UGV_TYPE_TANK = 2,
+        UGV_TYPE_BOAT = 3,
+    };
+
+    ugv_type_class motor_type_class{UGV_TYPE_UNDEFINED};  // init undefined to make the correct setup at start
+    bool isTypeTank = false;
+
 private:
     // private member functions
     void ahrs_update();
@@ -588,6 +600,13 @@ private:
     void set_loiter_active(const AP_Mission::Mission_Command& cmd);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void crash_check();
+    // Motor
+    bool setup_type_class(ugv_type_class type_class);
+    // output_to_motors - sends minimum values out to the motors
+    void output_to_motors();
+    void set_freq_group(uint8_t group, uint16_t freq_hz);
+    void setup_default_function(ugv_type_class type_class);
+    void setup_motors();
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
