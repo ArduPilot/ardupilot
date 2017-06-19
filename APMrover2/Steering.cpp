@@ -1,19 +1,5 @@
 #include "Rover.h"
 
-/*****************************************
-    Throttle slew limit
-*****************************************/
-void Rover::throttle_slew_limit(void)
-{
-    if (g.throttle_slewrate > 0) {
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, g.throttle_slewrate, G_Dt);
-        if (g.skid_steer_out) {
-            // when skid steering also limit 2nd channel
-            SRV_Channels::limit_slew_rate(SRV_Channel::k_steering, g.throttle_slewrate, G_Dt);
-        }
-    }
-}
-
 /*
     check for triggering of start of auto mode
 */
@@ -234,47 +220,6 @@ void Rover::calc_nav_steer() {
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steerController.get_steering_out_lat_accel(lateral_acceleration));
 }
 
-/*
-  run the skid steering mixer
- */
-void Rover::mix_skid_steering(void)
-{
-    const float steering_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_steering) / 4500.0;
-    const float throttle_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0;
-    float motor1 = throttle_scaled + 0.5f * steering_scaled;
-    float motor2 = throttle_scaled - 0.5f * steering_scaled;
-
-    if (fabsf(throttle_scaled) <= 0.01f) {
-        // Use full range for on spot turn
-        motor1 = steering_scaled;
-        motor2 = -steering_scaled;
-    }
-    
-    // first new-style skid steering
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  1000 * motor1);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 1000 * motor2);
-
-    // now old style skid steering with skid_steer_out
-    if (g.skid_steer_out) {
-        // convert the two radio_out values to skid steering values
-        /*
-            mixing rule:
-            steering = motor1 - motor2
-            throttle = 0.5*(motor1 + motor2)
-            motor1 = throttle + 0.5*steering
-            motor2 = throttle - 0.5*steering
-        */
-        if ((control_mode == MANUAL || control_mode == LEARNING) && g.skid_steer_in) {
-            // Mixage is already done by a controller so just pass the value to motor
-            motor1 = steering_scaled;
-            motor2 = throttle_scaled;
-        }
-
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 4500 * motor1);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100 * motor2);
-    }
-}
-
 /*****************************************
     Set the flight control servos based on the current calculated values
 *****************************************/
@@ -324,66 +269,5 @@ void Rover::set_servos(void) {
 
     // record last throttle before we apply skid steering
     SRV_Channels::get_output_pwm(SRV_Channel::k_throttle, last_throttle);
-
-    if (have_skid_steering()) {
-        mix_skid_steering();
-    }
-
-    if (control_mode != MANUAL && control_mode != LEARNING) {
-        // limit throttle movement speed
-        throttle_slew_limit();
-    }
-    
-    if (!arming.is_armed()) {
-        // Some ESCs get noisy (beep error msgs) if PWM == 0.
-        // This little segment aims to avoid this.
-        switch (arming.arming_required()) {
-        case AP_Arming::NO:
-            // keep existing behavior: do nothing to radio_out
-            // (don't disarm throttle channel even if AP_Arming class is)
-            break;
-
-        case AP_Arming::YES_ZERO_PWM:
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            if (g.skid_steer_out) {
-                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-            }
-            break;
-
-        case AP_Arming::YES_MIN_PWM:
-        default:
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            if (g.skid_steer_out) {
-                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            }
-            break;
-        }
-    }
-
-    SRV_Channels::calc_pwm();
-
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
-    // send values to the PWM timers for output
-    // ----------------------------------------
-    SRV_Channels::output_ch_all();
-#endif
-}
-
-/*
-  work out if skid steering is available
- */
-bool Rover::have_skid_steering(void)
-{
-    if (g.skid_steer_out) {
-        return true;
-    }
-    if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) &&
-        SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
-        return true;
-    }
-    return false;
+    output_to_motors();
 }

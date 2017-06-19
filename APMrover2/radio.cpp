@@ -5,17 +5,15 @@
  */
 void Rover::set_control_channels(void)
 {
-
-    SRV_Channels::set_angle(SRV_Channel::k_steering, SERVO_MAX);
-    SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
-
-    // left/right throttle as -1000 to 1000 values
-    SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
-    SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
+    if (!setup_type_class((ugv_type_class)rover.g2.type_class.get())) {  // handle class change and motors
+        setup_motors();  // otherwise only update motor mapping
+    }
 
     // For a rover safety is TRIM throttle
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         if (g.skid_steer_out) {
             SRV_Channels::set_safety_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }
@@ -59,6 +57,8 @@ void Rover::init_rc_out()
     // full speed backward.
     if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         if (g.skid_steer_out) {
             SRV_Channels::set_safety_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }

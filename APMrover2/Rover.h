@@ -487,7 +487,6 @@ private:
     void calc_throttle(float target_speed);
     void calc_lateral_acceleration();
     void calc_nav_steer();
-    bool have_skid_steering();
     void mix_skid_steering();
     void set_servos(void);
     void set_auto_WP(const struct Location& loc);

@@ -164,7 +164,7 @@ void Rover::init_ardupilot()
     gps.init(&DataFlash, serial_manager);
 
     rc_override_active = hal.rcin->set_overrides(rc_override, 8);
-
+    setup_default_function((ugv_type_class)g2.type_class.get());
     set_control_channels();
     init_rc_in();        // sets up rc channels from radio
     init_rc_out();        // sets up the timer libs
