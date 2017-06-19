@@ -1903,23 +1903,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-        plane.in_log_download = true;
-        /* no break */
-    case MAVLINK_MSG_ID_LOG_ERASE:
-        /* no break */
-    case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
-        if (!plane.in_mavlink_delay) {
-            plane.DataFlash.handle_mavlink_msg(*this, msg);
-        }
-        break;
-    case MAVLINK_MSG_ID_LOG_REQUEST_END:
-        plane.in_log_download = false;
-        if (!plane.in_mavlink_delay) {
-            plane.DataFlash.handle_mavlink_msg(*this, msg);
-        }
-        break;
-
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, plane.gps);
         break;
