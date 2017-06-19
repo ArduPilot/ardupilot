@@ -164,12 +164,12 @@ void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
     const Vector3f &targets = attitude_control->get_att_target_euler_cd();
     mavlink_msg_nav_controller_output_send(
         chan,
-        targets.x / 1.0e2f,
-        targets.y / 1.0e2f,
-        targets.z / 1.0e2f,
-        wp_bearing / 1.0e2f,
-        wp_distance / 1.0e2f,
-        pos_control->get_alt_error() / 1.0e2f,
+        targets.x * 1.0e-2f,
+        targets.y * 1.0e-2f,
+        targets.z * 1.0e-2f,
+        wp_bearing * 1.0e-2f,
+        MIN(wp_distance * 1.0e-2f, UINT16_MAX),
+        pos_control->get_alt_error() * 1.0e-2f,
         0,
         0);
 }
