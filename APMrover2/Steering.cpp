@@ -224,8 +224,6 @@ void Rover::calc_nav_steer() {
     Set the flight control servos based on the current calculated values
 *****************************************/
 void Rover::set_servos(void) {
-    static uint16_t last_throttle;
-
     if (control_mode == MANUAL || control_mode == LEARNING) {
         // do a direct pass through of radio values
         SRV_Channels::set_output_pwm(SRV_Channel::k_steering, channel_steer->read());
@@ -266,9 +264,6 @@ void Rover::set_servos(void) {
             }
         }
     }
-
-    // record last throttle before we apply skid steering
-    SRV_Channels::get_output_pwm(SRV_Channel::k_throttle, last_throttle);
 
     if (motor_test) {
         motor_test_output();
