@@ -1513,23 +1513,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-    case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-        rover.in_log_download = true;
-        /* no break */
-    case MAVLINK_MSG_ID_LOG_ERASE:
-        /* no break */
-    case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
-        if (!rover.in_mavlink_delay) {
-            rover.DataFlash.handle_mavlink_msg(*this, msg);
-        }
-        break;
-    case MAVLINK_MSG_ID_LOG_REQUEST_END:
-        rover.in_log_download = false;
-        if (!rover.in_mavlink_delay) {
-            rover.DataFlash.handle_mavlink_msg(*this, msg);
-        }
-        break;
-
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, rover.gps);
         break;

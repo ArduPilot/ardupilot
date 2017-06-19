@@ -546,9 +546,6 @@ bool Rover::should_log(uint32_t mask)
     if (!DataFlash.should_log()) {
         return false;
     }
-    if (in_log_download) {
-        return false;
-    }
     start_logging();
     return true;
 }
