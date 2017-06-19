@@ -367,11 +367,11 @@ void NavEKF3_core::detectFlight()
                 inFlight = true;
             }
 
-            // If more than 15 seconds armed since exiting on-ground, then we definitely are flying
-            if ((imuSampleTime_ms - timeAtArming_ms) > 15000) {
+            // If more than 5 seconds since likely_flying was set
+            // true, then set inFlight true
+            if (_ahrs->get_time_flying_ms() > 5000) {
                 inFlight = true;
             }
-
         }
 
     }
