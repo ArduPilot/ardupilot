@@ -119,7 +119,7 @@ void Rover::calc_throttle(float target_speed) {
     // use g.speed_turn_gain for a 90 degree turn, and in proportion
     // for other turn angles
     const int32_t turn_angle = wrap_180_cd(next_navigation_leg_cd - ahrs.yaw_sensor);
-    const float speed_turn_ratio = constrain_float(fabsf(turn_angle / 9000.0f), 0, 1);
+    const float speed_turn_ratio = constrain_float(fabsf(turn_angle / 9000.0f), 0.0f, 1.0f);
     const float speed_turn_reduction = (100 - g.speed_turn_gain) * speed_turn_ratio * 0.01f;
 
     float reduction = 1.0f - steer_rate * speed_turn_reduction;
@@ -137,7 +137,7 @@ void Rover::calc_throttle(float target_speed) {
 
     groundspeed_error = fabsf(target_speed) - ground_speed;
 
-    throttle = throttle_target + (g.pidSpeedThrottle.get_pid(groundspeed_error * 100) / 100);
+    throttle = throttle_target + (g.pidSpeedThrottle.get_pid(groundspeed_error * 100.0f) / 100.0f);
 
     // also reduce the throttle by the reduction factor. This gives a
     // much faster response in turns
@@ -157,7 +157,7 @@ void Rover::calc_throttle(float target_speed) {
         // We use a linear gain, with 0 gain at a ground speed error
         // of braking_speederr, and 100% gain when groundspeed_error
         // is 2*braking_speederr
-        const float brake_gain = constrain_float(((-groundspeed_error)-g.braking_speederr)/g.braking_speederr, 0, 1);
+        const float brake_gain = constrain_float(((-groundspeed_error)-g.braking_speederr)/g.braking_speederr, 0.0f, 1.0f);
         const int16_t braking_throttle = g.throttle_max * (g.braking_percent * 0.01f) * brake_gain;
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, constrain_int16(-braking_throttle, -g.throttle_max, -g.throttle_min));
 
