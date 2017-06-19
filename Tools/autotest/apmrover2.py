@@ -32,6 +32,14 @@ def arm_rover(mavproxy, mav):
     return True
 
 
+def disarm_rover(mavproxy, mav):
+    mavproxy.send('disarm\n')
+    mavproxy.expect('DISARMED')
+
+    print("ROVER DISARMED")
+    return True
+
+
 def drive_left_circuit(mavproxy, mav):
     """Drive a left circuit, 50m on a side."""
     mavproxy.send('switch 6\n')
@@ -171,6 +179,9 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
             failed = True
         if not drive_mission(mavproxy, mav, os.path.join(testdir, "rover1.txt")):
             print("Failed mission")
+            failed = True
+        if not disarm_rover(mavproxy, mav):
+            print("Failed to DISARM")
             failed = True
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/APMrover2-log.bin")):
             print("Failed log download")
