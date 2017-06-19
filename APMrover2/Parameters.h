@@ -322,6 +322,9 @@ public:
 
     // Visual Odometry camera
     AP_VisualOdom visual_odom;
+
+    // type class
+    AP_Int8 type_class;
 };
 
 extern const AP_Param::Info var_info[];
