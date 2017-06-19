@@ -15,6 +15,7 @@ public:
     }
 
     bool pre_arm_checks(bool report) override ;
+    bool pre_arm_rc_checks(const bool display_failure);
 
 protected:
 
