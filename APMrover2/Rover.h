@@ -136,8 +136,6 @@ private:
 
     DataFlash_Class DataFlash;
 
-    bool in_log_download;
-
     // sensor drivers
     AP_GPS gps;
     AP_Baro barometer;

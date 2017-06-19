@@ -25,7 +25,6 @@ Rover::Rover(void) :
     channel_throttle(nullptr),
     channel_learn(nullptr),
     DataFlash{FIRMWARE_STRING},
-    in_log_download(false),
     modes(&g.mode1),
     L1_controller(ahrs, nullptr),
     nav_controller(&L1_controller),
