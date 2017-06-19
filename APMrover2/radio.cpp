@@ -139,8 +139,9 @@ void Rover::read_radio()
     RC_Channels::set_pwm_all();
     // check that RC value are valid
     control_failsafe(channel_throttle->get_radio_in());
-    // copy RC throttle input to throttle output
+    // copy RC scaled inputs to outputs
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
+    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, channel_steer->get_control_in());
 
     // Check if the throttle value is above 50% and we need to nudge
     // Make sure its above 50% in the direction we are travelling

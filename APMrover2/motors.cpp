@@ -76,6 +76,10 @@ void Rover::output_to_motors()
         // limit throttle movement speed
         if (g.throttle_slewrate > 0) {
             SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, g.throttle_slewrate, G_Dt);
+            if (isTypeTank) {
+                // when skid steering also limit 2nd channel
+                SRV_Channels::limit_slew_rate(SRV_Channel::k_steering, g.throttle_slewrate, G_Dt);
+            }
         }
     }
 
@@ -85,11 +89,7 @@ void Rover::output_to_motors()
         float motor1 = throttle_scaled + 0.5f * steering_scaled;
         float motor2 = throttle_scaled - 0.5f * steering_scaled;
 
-        if ((control_mode == MANUAL || control_mode == LEARNING) && g.skid_steer_in) {
-            // Mixage is already done by a controller so just pass the value to motor
-            motor1 = steering_scaled;
-            motor2 = throttle_scaled;
-        } else if (fabsf(throttle_scaled) <= 0.01f) {  // Use full range for on spot turn
+        if (fabsf(throttle_scaled) <= 0.01f) {  // Use full range for on spot turn
             motor1 = steering_scaled;
             motor2 = -steering_scaled;
         }
